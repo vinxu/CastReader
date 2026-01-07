@@ -1,0 +1,582 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 55;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		761BCCCA2F0E95070086EC4D /* CastReaderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761BCCC92F0E95070086EC4D /* CastReaderApp.swift */; };
+		761BCCCC2F0E95070086EC4D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761BCCCB2F0E95070086EC4D /* ContentView.swift */; };
+		761BCCCE2F0E95090086EC4D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 761BCCCD2F0E95090086EC4D /* Assets.xcassets */; };
+		761BCCD12F0E95090086EC4D /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 761BCCD02F0E95090086EC4D /* Preview Assets.xcassets */; };
+		761BCCDB2F0E950A0086EC4D /* CastReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761BCCDA2F0E950A0086EC4D /* CastReaderTests.swift */; };
+		761BCCE52F0E950A0086EC4D /* CastReaderUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761BCCE42F0E950A0086EC4D /* CastReaderUITests.swift */; };
+		761BCCE72F0E950A0086EC4D /* CastReaderUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761BCCE62F0E950A0086EC4D /* CastReaderUITestsLaunchTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		761BCCD72F0E950A0086EC4D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 761BCCBE2F0E95070086EC4D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 761BCCC52F0E95070086EC4D;
+			remoteInfo = CastReader;
+		};
+		761BCCE12F0E950A0086EC4D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 761BCCBE2F0E95070086EC4D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 761BCCC52F0E95070086EC4D;
+			remoteInfo = CastReader;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		761BCCC62F0E95070086EC4D /* CastReader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CastReader.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		761BCCC92F0E95070086EC4D /* CastReaderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CastReaderApp.swift; sourceTree = "<group>"; };
+		761BCCCB2F0E95070086EC4D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		761BCCCD2F0E95090086EC4D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		761BCCD02F0E95090086EC4D /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		761BCCD62F0E950A0086EC4D /* CastReaderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CastReaderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		761BCCDA2F0E950A0086EC4D /* CastReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CastReaderTests.swift; sourceTree = "<group>"; };
+		761BCCE02F0E950A0086EC4D /* CastReaderUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CastReaderUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		761BCCE42F0E950A0086EC4D /* CastReaderUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CastReaderUITests.swift; sourceTree = "<group>"; };
+		761BCCE62F0E950A0086EC4D /* CastReaderUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CastReaderUITestsLaunchTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		761BCCC32F0E95070086EC4D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		761BCCD32F0E950A0086EC4D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		761BCCDD2F0E950A0086EC4D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		761BCCBD2F0E95070086EC4D = {
+			isa = PBXGroup;
+			children = (
+				761BCCC82F0E95070086EC4D /* CastReader */,
+				761BCCD92F0E950A0086EC4D /* CastReaderTests */,
+				761BCCE32F0E950A0086EC4D /* CastReaderUITests */,
+				761BCCC72F0E95070086EC4D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		761BCCC72F0E95070086EC4D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				761BCCC62F0E95070086EC4D /* CastReader.app */,
+				761BCCD62F0E950A0086EC4D /* CastReaderTests.xctest */,
+				761BCCE02F0E950A0086EC4D /* CastReaderUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		761BCCC82F0E95070086EC4D /* CastReader */ = {
+			isa = PBXGroup;
+			children = (
+				761BCCC92F0E95070086EC4D /* CastReaderApp.swift */,
+				761BCCCB2F0E95070086EC4D /* ContentView.swift */,
+				761BCCCD2F0E95090086EC4D /* Assets.xcassets */,
+				761BCCCF2F0E95090086EC4D /* Preview Content */,
+			);
+			path = CastReader;
+			sourceTree = "<group>";
+		};
+		761BCCCF2F0E95090086EC4D /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				761BCCD02F0E95090086EC4D /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		761BCCD92F0E950A0086EC4D /* CastReaderTests */ = {
+			isa = PBXGroup;
+			children = (
+				761BCCDA2F0E950A0086EC4D /* CastReaderTests.swift */,
+			);
+			path = CastReaderTests;
+			sourceTree = "<group>";
+		};
+		761BCCE32F0E950A0086EC4D /* CastReaderUITests */ = {
+			isa = PBXGroup;
+			children = (
+				761BCCE42F0E950A0086EC4D /* CastReaderUITests.swift */,
+				761BCCE62F0E950A0086EC4D /* CastReaderUITestsLaunchTests.swift */,
+			);
+			path = CastReaderUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		761BCCC52F0E95070086EC4D /* CastReader */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 761BCCEA2F0E950A0086EC4D /* Build configuration list for PBXNativeTarget "CastReader" */;
+			buildPhases = (
+				761BCCC22F0E95070086EC4D /* Sources */,
+				761BCCC32F0E95070086EC4D /* Frameworks */,
+				761BCCC42F0E95070086EC4D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CastReader;
+			productName = CastReader;
+			productReference = 761BCCC62F0E95070086EC4D /* CastReader.app */;
+			productType = "com.apple.product-type.application";
+		};
+		761BCCD52F0E950A0086EC4D /* CastReaderTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 761BCCED2F0E950A0086EC4D /* Build configuration list for PBXNativeTarget "CastReaderTests" */;
+			buildPhases = (
+				761BCCD22F0E950A0086EC4D /* Sources */,
+				761BCCD32F0E950A0086EC4D /* Frameworks */,
+				761BCCD42F0E950A0086EC4D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				761BCCD82F0E950A0086EC4D /* PBXTargetDependency */,
+			);
+			name = CastReaderTests;
+			productName = CastReaderTests;
+			productReference = 761BCCD62F0E950A0086EC4D /* CastReaderTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		761BCCDF2F0E950A0086EC4D /* CastReaderUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 761BCCF02F0E950A0086EC4D /* Build configuration list for PBXNativeTarget "CastReaderUITests" */;
+			buildPhases = (
+				761BCCDC2F0E950A0086EC4D /* Sources */,
+				761BCCDD2F0E950A0086EC4D /* Frameworks */,
+				761BCCDE2F0E950A0086EC4D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				761BCCE22F0E950A0086EC4D /* PBXTargetDependency */,
+			);
+			name = CastReaderUITests;
+			productName = CastReaderUITests;
+			productReference = 761BCCE02F0E950A0086EC4D /* CastReaderUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		761BCCBE2F0E95070086EC4D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1340;
+				LastUpgradeCheck = 1340;
+				TargetAttributes = {
+					761BCCC52F0E95070086EC4D = {
+						CreatedOnToolsVersion = 13.4.1;
+					};
+					761BCCD52F0E950A0086EC4D = {
+						CreatedOnToolsVersion = 13.4.1;
+						TestTargetID = 761BCCC52F0E95070086EC4D;
+					};
+					761BCCDF2F0E950A0086EC4D = {
+						CreatedOnToolsVersion = 13.4.1;
+						TestTargetID = 761BCCC52F0E95070086EC4D;
+					};
+				};
+			};
+			buildConfigurationList = 761BCCC12F0E95070086EC4D /* Build configuration list for PBXProject "CastReader" */;
+			compatibilityVersion = "Xcode 13.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 761BCCBD2F0E95070086EC4D;
+			productRefGroup = 761BCCC72F0E95070086EC4D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				761BCCC52F0E95070086EC4D /* CastReader */,
+				761BCCD52F0E950A0086EC4D /* CastReaderTests */,
+				761BCCDF2F0E950A0086EC4D /* CastReaderUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		761BCCC42F0E95070086EC4D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				761BCCD12F0E95090086EC4D /* Preview Assets.xcassets in Resources */,
+				761BCCCE2F0E95090086EC4D /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		761BCCD42F0E950A0086EC4D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		761BCCDE2F0E950A0086EC4D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		761BCCC22F0E95070086EC4D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				761BCCCC2F0E95070086EC4D /* ContentView.swift in Sources */,
+				761BCCCA2F0E95070086EC4D /* CastReaderApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		761BCCD22F0E950A0086EC4D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				761BCCDB2F0E950A0086EC4D /* CastReaderTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		761BCCDC2F0E950A0086EC4D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				761BCCE72F0E950A0086EC4D /* CastReaderUITestsLaunchTests.swift in Sources */,
+				761BCCE52F0E950A0086EC4D /* CastReaderUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		761BCCD82F0E950A0086EC4D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 761BCCC52F0E95070086EC4D /* CastReader */;
+			targetProxy = 761BCCD72F0E950A0086EC4D /* PBXContainerItemProxy */;
+		};
+		761BCCE22F0E950A0086EC4D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 761BCCC52F0E95070086EC4D /* CastReader */;
+			targetProxy = 761BCCE12F0E950A0086EC4D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		761BCCE82F0E950A0086EC4D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		761BCCE92F0E950A0086EC4D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		761BCCEB2F0E950A0086EC4D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"CastReader/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.same.CastReader;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		761BCCEC2F0E950A0086EC4D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"CastReader/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.same.CastReader;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		761BCCEE2F0E950A0086EC4D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.same.CastReaderTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CastReader.app/CastReader";
+			};
+			name = Debug;
+		};
+		761BCCEF2F0E950A0086EC4D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.same.CastReaderTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CastReader.app/CastReader";
+			};
+			name = Release;
+		};
+		761BCCF12F0E950A0086EC4D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.same.CastReaderUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CastReader;
+			};
+			name = Debug;
+		};
+		761BCCF22F0E950A0086EC4D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.same.CastReaderUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CastReader;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		761BCCC12F0E95070086EC4D /* Build configuration list for PBXProject "CastReader" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				761BCCE82F0E950A0086EC4D /* Debug */,
+				761BCCE92F0E950A0086EC4D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		761BCCEA2F0E950A0086EC4D /* Build configuration list for PBXNativeTarget "CastReader" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				761BCCEB2F0E950A0086EC4D /* Debug */,
+				761BCCEC2F0E950A0086EC4D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		761BCCED2F0E950A0086EC4D /* Build configuration list for PBXNativeTarget "CastReaderTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				761BCCEE2F0E950A0086EC4D /* Debug */,
+				761BCCEF2F0E950A0086EC4D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		761BCCF02F0E950A0086EC4D /* Build configuration list for PBXNativeTarget "CastReaderUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				761BCCF12F0E950A0086EC4D /* Debug */,
+				761BCCF22F0E950A0086EC4D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 761BCCBE2F0E95070086EC4D /* Project object */;
+}
