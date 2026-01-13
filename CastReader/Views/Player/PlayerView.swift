@@ -181,6 +181,7 @@ struct PlayerView: View {
                 .padding(.bottom, 160)
             }
         }
+        .background(Color(.systemBackground))
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
