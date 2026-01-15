@@ -162,49 +162,84 @@ actor TTSService {
             throw LocalTTSError.cancelled
         }
 
-        do {
-            let response = try await APIService.shared.generateTTS(
-                text: text,
-                voice: voice,
-                speed: speed,
-                language: language
-            )
+        var remainingText = text
+        var segmentIndex = 0
 
+        // Loop until all text is processed (like web does)
+        while !remainingText.isEmpty {
             guard currentRequestId == requestId else {
                 throw LocalTTSError.cancelled
             }
 
-            // Decode base64 audio
-            guard let audioData = Data(base64Encoded: response.audio) else {
-                throw LocalTTSError.generationFailed("Failed to decode audio data")
-            }
+            do {
+                print("[TTSService] 📊 Cloud TTS request #\(segmentIndex): \(remainingText.prefix(50))...")
 
-            guard currentRequestId == requestId else {
+                let response = try await APIService.shared.generateTTS(
+                    text: remainingText,
+                    voice: voice,
+                    speed: speed,
+                    language: language
+                )
+
+                guard currentRequestId == requestId else {
+                    throw LocalTTSError.cancelled
+                }
+
+                // Debug: Log what API actually processed
+                print("[TTSService] 📊 Cloud TTS response #\(segmentIndex):")
+                print("[TTSService] 📊 - Input text length: \(remainingText.count) chars")
+                print("[TTSService] 📊 - Processed text: \(response.processedText?.prefix(100) ?? "nil")...")
+                print("[TTSService] 📊 - Unprocessed text: \(response.unprocessedText?.prefix(100) ?? "nil")...")
+                print("[TTSService] 📊 - Duration: \(response.safeDuration)s")
+                print("[TTSService] 📊 - Timestamps count: \(response.safeTimestamps.count)")
+
+                // Decode base64 audio
+                guard let audioData = Data(base64Encoded: response.audio) else {
+                    throw LocalTTSError.generationFailed("Failed to decode audio data")
+                }
+
+                guard currentRequestId == requestId else {
+                    throw LocalTTSError.cancelled
+                }
+
+                // Use timestamps from response (already in correct format)
+                let timestamps = response.safeTimestamps
+                let duration = response.safeDuration
+
+                // Use processedText for this segment's text (not full remaining text)
+                let segmentText = response.processedText ?? remainingText
+
+                let segment = AudioSegment(
+                    paragraphIndex: paragraphIndex,
+                    segmentIndex: segmentIndex,
+                    audioData: audioData,
+                    timestamps: timestamps,
+                    duration: duration,
+                    text: segmentText,
+                    unprocessedText: response.unprocessedText ?? ""
+                )
+
+                await onSegmentReady(segment)
+
+                // Check if there's more text to process
+                if let unprocessed = response.unprocessedText, !unprocessed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    remainingText = unprocessed
+                    segmentIndex += 1
+                    print("[TTSService] 📊 More text to process, continuing with segment #\(segmentIndex)")
+                } else {
+                    // All text processed
+                    print("[TTSService] 📊 All text processed for paragraph \(paragraphIndex)")
+                    break
+                }
+
+            } catch is CancellationError {
                 throw LocalTTSError.cancelled
+            } catch let error as LocalTTSError {
+                throw error
+            } catch {
+                print("[TTSService] Cloud TTS failed: \(error)")
+                throw LocalTTSError.generationFailed(error.localizedDescription)
             }
-
-            // Use timestamps from response (already in correct format)
-            let timestamps = response.safeTimestamps
-            let duration = response.safeDuration
-
-            let segment = AudioSegment(
-                paragraphIndex: paragraphIndex,
-                segmentIndex: 0,
-                audioData: audioData,
-                timestamps: timestamps,
-                duration: duration,
-                text: text
-            )
-
-            await onSegmentReady(segment)
-
-        } catch is CancellationError {
-            throw LocalTTSError.cancelled
-        } catch let error as LocalTTSError {
-            throw error
-        } catch {
-            print("[TTSService] Cloud TTS failed: \(error)")
-            throw LocalTTSError.generationFailed(error.localizedDescription)
         }
     }
 

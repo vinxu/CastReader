@@ -50,7 +50,6 @@ class MarkdownParser {
                     id: UUID().uuidString,
                     index: index,
                     type: .code,
-                    level: nil,
                     text: "", // Code blocks are not read aloud
                     html: html,
                     anchorId: nil
@@ -72,8 +71,7 @@ class MarkdownParser {
                 paragraphs.append(MarkdownParagraph(
                     id: UUID().uuidString,
                     index: index,
-                    type: .heading,
-                    level: level,
+                    type: .heading(level),
                     text: text,
                     html: "<h\(level) id=\"\(anchorId)\">\(escapeHtml(text))</h\(level)>",
                     anchorId: anchorId
@@ -115,7 +113,6 @@ class MarkdownParser {
                     id: UUID().uuidString,
                     index: index,
                     type: .blockquote,
-                    level: nil,
                     text: quoteContent,
                     html: "<blockquote>\(escapeHtml(quoteContent).replacingOccurrences(of: "\n", with: "<br>"))</blockquote>",
                     anchorId: nil
@@ -166,7 +163,6 @@ class MarkdownParser {
                     id: UUID().uuidString,
                     index: index,
                     type: .list,
-                    level: nil,
                     text: text,
                     html: html,
                     anchorId: nil
@@ -273,7 +269,6 @@ class MarkdownParser {
             id: UUID().uuidString,
             index: index,
             type: .paragraph,
-            level: nil,
             text: text,
             html: "<p>\(escapeHtml(text).replacingOccurrences(of: "\n", with: "<br>"))</p>",
             anchorId: nil

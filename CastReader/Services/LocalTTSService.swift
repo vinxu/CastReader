@@ -562,6 +562,10 @@ actor LocalTTSService {
                 let duration = Double(pcmDataSize) / (sampleRate * 2)
                 let timestamps = createApproximateTimestamps(text: sentence, duration: duration)
 
+                // Calculate remaining unprocessed text (all sentences after current one)
+                let remainingSentences = Array(sentences.dropFirst(segmentIndex + 1))
+                let unprocessedText = remainingSentences.joined(separator: " ")
+
                 let segment = AudioSegment(
                     paragraphIndex: paragraphIndex,
                     segmentIndex: segmentIndex,
@@ -569,7 +573,8 @@ actor LocalTTSService {
                     timestamps: timestamps,
                     duration: duration,
                     text: sentence,
-                    isWavFormat: true  // Local TTS generates WAV format
+                    isWavFormat: true,  // Local TTS generates WAV format
+                    unprocessedText: unprocessedText
                 )
 
                 // Callback with segment

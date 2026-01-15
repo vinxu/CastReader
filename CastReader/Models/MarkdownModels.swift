@@ -5,21 +5,13 @@
 
 import Foundation
 
-// MARK: - Paragraph Type
-enum ParagraphType: String {
-    case heading
-    case paragraph
-    case list
-    case blockquote
-    case code
-}
+// Note: ParagraphType is defined in Book.swift with associated values
 
 // MARK: - Markdown Paragraph
 struct MarkdownParagraph: Identifiable {
     let id: String           // UUID for SwiftUI
     let index: Int
-    let type: ParagraphType
-    let level: Int?          // Only for heading (1-6)
+    let type: ParagraphType  // Uses ParagraphType from Book.swift
     let text: String         // For TTS
     let html: String         // For rendering
     let anchorId: String?    // For heading anchor
@@ -52,7 +44,7 @@ extension ParsedMarkdown {
 
         // Convert to ParsedParagraph format - use new sequential indices
         let parsed = nonEmptyParagraphs.enumerated().map { idx, p in
-            ParsedParagraph(id: p.anchorId, text: p.text, html: p.html, index: idx)
+            ParsedParagraph(id: p.anchorId, text: p.text, html: p.html, index: idx, type: p.type)
         }
 
         // Convert TOC to BookIndex format

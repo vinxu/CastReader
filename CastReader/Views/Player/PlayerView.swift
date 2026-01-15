@@ -38,6 +38,7 @@ struct PlayerView: View {
     var paragraphs: [String] = []
     var parsedParagraphs: [ParsedParagraph] = []
     var indices: [BookIndex] = []
+    var language: String = "en"  // 文档语言，用于 TTS
 
     // 舒适区域：屏幕高度的 15% ~ 70%（上下都留边距）
     private let comfortTopRatio: CGFloat = 0.15    // 顶部舒适边界 15%
@@ -69,7 +70,7 @@ struct PlayerView: View {
                         ForEach(Array(viewModel.parsedParagraphs.enumerated()), id: \.offset) { index, para in
                             ParagraphView(
                                 paragraphIndex: index,
-                                text: para.text,
+                                paragraph: para,
                                 isCurrentParagraph: index == viewModel.currentParagraphIndex,
                                 ttsState: viewModel.paragraphStates[index],
                                 globalWordIndex: index == viewModel.currentParagraphIndex
@@ -222,7 +223,8 @@ struct PlayerView: View {
                 viewModel.loadContent(
                     bookId: bookId, title: bookTitle, chapterTitle: initialChapterTitle,
                     coverUrl: coverUrl, paragraphs: paragraphs,
-                    parsedParagraphs: parsedParagraphs, indices: indices
+                    parsedParagraphs: parsedParagraphs, indices: indices,
+                    language: language
                 )
             }
         }
@@ -232,125 +234,505 @@ struct PlayerView: View {
 
 // MARK: - Reader Text Style Constants
 private enum ReaderStyle {
+    // 基础字号
     static let fontSize: CGFloat = 18
     static let lineSpacing: CGFloat = 8
+
+    // 标题字号（参考 Android 样式）
+    static func headingFontSize(level: Int) -> CGFloat {
+        switch level {
+        case 1: return 28
+        case 2: return 24
+        case 3: return 20
+        case 4: return 18
+        case 5: return 16
+        case 6: return 14
+        default: return 18
+        }
+    }
+
+    // 颜色
     static let textColor = AppTheme.readerText
     static let dimmedColor = AppTheme.readerDimmed
     static let currentParagraphBackground = AppTheme.readerHighlightBackground
     static let highlightWordBackground = AppTheme.readerActiveWord
+    static let blockquoteBorderColor = AppTheme.primary
+    static let codeBackground = Color(.systemGray6)
 }
 
 // MARK: - Paragraph View
 struct ParagraphView: View {
     let paragraphIndex: Int
-    let text: String
+    let paragraph: ParsedParagraph  // 完整段落数据（包含类型和图片）
     let isCurrentParagraph: Bool
     let ttsState: ParagraphTTSState?
     let globalWordIndex: Int?
     let currentSegmentIndex: Int?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if isCurrentParagraph {
-                // TTS 完全加载 = status 为 ready 且有 segments
-                let isFullyLoaded = ttsState?.status.isReady == true && !(ttsState?.segments.isEmpty ?? true)
-                SegmentedTextView(
-                    paragraphIndex: paragraphIndex,
-                    originalText: text,
-                    segments: ttsState?.segments ?? [],
-                    globalWordIndex: globalWordIndex,
-                    currentSegmentIndex: currentSegmentIndex,
-                    isFullyLoaded: isFullyLoaded
-                )
-                .padding(.vertical, 6)
-                .padding(.horizontal, 4)
-                .background(
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(ReaderStyle.currentParagraphBackground)
-                )
-            } else {
-                Text(text)
-                    .font(.custom("Georgia", size: ReaderStyle.fontSize))
-                    .foregroundColor(ReaderStyle.dimmedColor)
-                    .lineSpacing(ReaderStyle.lineSpacing)
+        VStack(alignment: .leading, spacing: 8) {
+            // 渲染图片（如果有）
+            if let images = paragraph.images, !images.isEmpty {
+                ForEach(images) { image in
+                    ParagraphImageView(image: image)
+                }
+            }
+
+            // 渲染文本内容（根据段落类型应用不同样式）
+            if !paragraph.text.isEmpty {
+                textContentView
             }
         }
     }
-}
 
-// MARK: - Segmented Text View
-struct SegmentedTextView: View {
-    let paragraphIndex: Int
-    let originalText: String
-    let segments: [AudioSegment]
-    let globalWordIndex: Int?
-    let currentSegmentIndex: Int?
-    let isFullyLoaded: Bool  // TTS 是否完全加载
+    @ViewBuilder
+    private var textContentView: some View {
+        switch paragraph.type {
+        case .heading(let level):
+            headingView(level: level)
+        case .blockquote:
+            blockquoteView
+        case .code:
+            codeBlockView
+        case .list:
+            listItemView
+        case .image:
+            // 纯图片段落，文本部分可能为空或仅有描述
+            if !paragraph.text.isEmpty {
+                captionView
+            }
+        default:
+            paragraphTextView
+        }
+    }
 
-    var body: some View {
-        if segments.isEmpty {
-            // 没有 segments，显示原始文本
-            Text(originalText)
-                .font(.custom("Georgia", size: ReaderStyle.fontSize))
-                .foregroundColor(ReaderStyle.textColor)
-                .lineSpacing(ReaderStyle.lineSpacing)
-        } else if isFullyLoaded {
-            // 完全加载，使用 segments 渲染（支持高亮）
-            SegmentFlowView(
-                paragraphIndex: paragraphIndex,
-                segments: segments,
-                globalWordIndex: globalWordIndex,
-                currentSegmentIndex: currentSegmentIndex
-            )
-        } else {
-            // 流式加载中：已加载部分用 segments 渲染 + 未加载部分用原始文本填充
-            let loadedText = segments.flatMap { $0.timestamps.map { $0.word } }.joined(separator: " ")
-            let remainingText = getRemainingText(original: originalText, loaded: loadedText)
+    // MARK: - 标题样式
+    @ViewBuilder
+    private func headingView(level: Int) -> some View {
+        let fontSize = ReaderStyle.headingFontSize(level: level)
+        Group {
+            if isCurrentParagraph {
+                highlightedTextView(fontSize: fontSize, fontWeight: .bold)
+            } else {
+                Text(paragraph.text)
+                    .font(.custom("Georgia", size: fontSize))
+                    .fontWeight(.bold)
+                    .foregroundColor(ReaderStyle.textColor)
+                    .lineSpacing(4)
+            }
+        }
+        .padding(.top, level <= 2 ? 12 : 8)
+        .padding(.bottom, level <= 2 ? 8 : 4)
+    }
 
-            VStack(alignment: .leading, spacing: 0) {
-                // 已加载的 segments（支持高亮）
-                SegmentFlowView(
-                    paragraphIndex: paragraphIndex,
-                    segments: segments,
-                    globalWordIndex: globalWordIndex,
-                    currentSegmentIndex: currentSegmentIndex
-                )
+    // MARK: - 引用块样式
+    @ViewBuilder
+    private var blockquoteView: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Rectangle()
+                .fill(ReaderStyle.blockquoteBorderColor)
+                .frame(width: 4)
 
-                // 未加载部分的原始文本（无高亮）
-                if !remainingText.isEmpty {
-                    Text(remainingText)
+            Group {
+                if isCurrentParagraph {
+                    highlightedTextView(fontSize: ReaderStyle.fontSize, fontWeight: .regular, italic: true)
+                } else {
+                    Text(paragraph.text)
                         .font(.custom("Georgia", size: ReaderStyle.fontSize))
-                        .foregroundColor(ReaderStyle.textColor)
+                        .italic()
+                        .foregroundColor(ReaderStyle.dimmedColor)
+                        .lineSpacing(ReaderStyle.lineSpacing)
+                }
+            }
+        }
+        .padding(.vertical, 8)
+    }
+
+    // MARK: - 代码块样式
+    @ViewBuilder
+    private var codeBlockView: some View {
+        Group {
+            if isCurrentParagraph {
+                highlightedTextView(fontSize: 14, fontWeight: .regular, monospace: true)
+            } else {
+                Text(paragraph.text)
+                    .font(.system(size: 14, design: .monospaced))
+                    .foregroundColor(ReaderStyle.dimmedColor)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(ReaderStyle.codeBackground)
+        .cornerRadius(8)
+    }
+
+    // MARK: - 列表项样式
+    @ViewBuilder
+    private var listItemView: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text("•")
+                .font(.custom("Georgia", size: ReaderStyle.fontSize))
+                .foregroundColor(isCurrentParagraph ? ReaderStyle.textColor : ReaderStyle.dimmedColor)
+
+            Group {
+                if isCurrentParagraph {
+                    highlightedTextView(fontSize: ReaderStyle.fontSize, fontWeight: .regular)
+                } else {
+                    Text(paragraph.text)
+                        .font(.custom("Georgia", size: ReaderStyle.fontSize))
+                        .foregroundColor(ReaderStyle.dimmedColor)
                         .lineSpacing(ReaderStyle.lineSpacing)
                 }
             }
         }
     }
 
-    /// 获取原始文本中未被 segments 覆盖的部分
-    private func getRemainingText(original: String, loaded: String) -> String {
-        // 简单策略：找到 loaded 在 original 中的位置，返回剩余部分
-        // 处理标点符号和空格差异
-        let loadedClean = loaded.trimmingCharacters(in: .whitespaces)
+    // MARK: - 图片描述样式
+    @ViewBuilder
+    private var captionView: some View {
+        Text(paragraph.text)
+            .font(.custom("Georgia", size: 14))
+            .foregroundColor(.secondary)
+            .italic()
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+    }
 
-        // 尝试找到 loaded 文本在 original 中结束的位置
-        if let range = original.range(of: loadedClean, options: [.caseInsensitive]) {
-            let remaining = String(original[range.upperBound...])
-            return remaining.trimmingCharacters(in: .whitespaces)
+    // MARK: - 普通段落样式
+    @ViewBuilder
+    private var paragraphTextView: some View {
+        if isCurrentParagraph {
+            let segments = ttsState?.segments ?? []
+            let isFullyLoaded = ttsState?.status.isReady == true && !segments.isEmpty
+            // 关键：unprocessedText 只在有 segments 时才有意义
+            // 无 segments 时传空串，让 SegmentedTextView 显示 originalText
+            let remaining = segments.isEmpty ? "" : (ttsState?.unprocessedText ?? "")
+            SegmentedTextView(
+                paragraphIndex: paragraphIndex,
+                originalText: paragraph.text,
+                segments: segments,
+                globalWordIndex: globalWordIndex,
+                currentSegmentIndex: currentSegmentIndex,
+                isFullyLoaded: isFullyLoaded,
+                unprocessedText: remaining
+            )
+            .padding(.vertical, 6)
+            .padding(.horizontal, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(ReaderStyle.currentParagraphBackground)
+            )
+        } else {
+            Text(paragraph.text)
+                .font(.custom("Georgia", size: ReaderStyle.fontSize))
+                .foregroundColor(ReaderStyle.dimmedColor)
+                .lineSpacing(ReaderStyle.lineSpacing)
+        }
+    }
+
+    // MARK: - 高亮文本视图（用于当前播放段落）
+    @ViewBuilder
+    private func highlightedTextView(fontSize: CGFloat, fontWeight: Font.Weight, italic: Bool = false, monospace: Bool = false) -> some View {
+        let segments = ttsState?.segments ?? []
+        let isFullyLoaded = ttsState?.status.isReady == true && !segments.isEmpty
+        let remaining = segments.isEmpty ? "" : (ttsState?.unprocessedText ?? "")
+        SegmentedTextView(
+            paragraphIndex: paragraphIndex,
+            originalText: paragraph.text,
+            segments: segments,
+            globalWordIndex: globalWordIndex,
+            currentSegmentIndex: currentSegmentIndex,
+            isFullyLoaded: isFullyLoaded,
+            unprocessedText: remaining,
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+            isMonospace: monospace,
+            isItalic: italic
+        )
+        .padding(.vertical, 6)
+        .padding(.horizontal, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 4)
+                .fill(ReaderStyle.currentParagraphBackground)
+        )
+    }
+}
+
+// MARK: - Paragraph Image View
+struct ParagraphImageView: View {
+    let image: ImageBlock
+
+    /// 计算图片显示宽度
+    private var displayWidth: CGFloat {
+        if let width = image.width {
+            // 小图使用原始宽度，大图最大为屏幕宽度的 90%
+            let maxWidth = UIScreen.main.bounds.width * 0.9
+            return min(width, maxWidth)
+        }
+        // 默认：大图全宽，小图 150pt
+        return image.isSmallImage ? 150 : UIScreen.main.bounds.width * 0.9
+    }
+
+    /// 计算占位符高度
+    private var placeholderHeight: CGFloat {
+        if let width = image.width {
+            // 假设图片宽高比约为 1:1
+            return min(width, 300)
+        }
+        return image.isSmallImage ? 150 : 250
+    }
+
+    var body: some View {
+        HStack {
+            // 左对齐或居中时，不需要前置 Spacer
+            if image.alignment == .right {
+                Spacer()
+            }
+
+            VStack(spacing: 4) {
+                if let url = URL(string: image.src) {
+                    CachedAsyncImage(url: url) {
+                        // Placeholder while loading
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(.systemGray5))
+                            .frame(width: displayWidth, height: placeholderHeight)
+                            .overlay(
+                                ProgressView()
+                            )
+                    }
+                    .frame(width: displayWidth)
+                    .cornerRadius(8)
+                }
+
+                // 优先显示 caption，其次是 alt
+                if let caption = image.caption, !caption.isEmpty {
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 8)
+                } else if let alt = image.alt, !alt.isEmpty {
+                    Text(alt)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 8)
+                }
+            }
+
+            // 右对齐或居中时，不需要后置 Spacer
+            if image.alignment == .left {
+                Spacer()
+            }
+
+            // 居中需要两侧 Spacer
+            if image.alignment == .center {
+                // 已经在 HStack 中，使用 frame 居中
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: imageAlignment)
+        .padding(.vertical, image.isSmallImage ? 4 : 8)
+    }
+
+    /// SwiftUI 对齐方式
+    private var imageAlignment: Alignment {
+        switch image.alignment {
+        case .left: return .leading
+        case .right: return .trailing
+        case .center, .inline: return .center
+        }
+    }
+}
+
+// MARK: - Segmented Text View
+/// Android 风格：直接渲染 TTS 返回的文本，确保音频和文字完美对齐
+/// 显示：segments[].timestamps[].word 拼接 + remainingText（半透明）
+struct SegmentedTextView: View {
+    let paragraphIndex: Int
+    let originalText: String
+    let segments: [AudioSegment]
+    let globalWordIndex: Int?
+    let currentSegmentIndex: Int?
+    let isFullyLoaded: Bool
+    let unprocessedText: String
+    var fontSize: CGFloat = ReaderStyle.fontSize
+    var fontWeight: Font.Weight = .regular
+    var isMonospace: Bool = false
+    var isItalic: Bool = false
+
+    var body: some View {
+        Text(buildAttributedText())
+            .font(isMonospace ? .system(size: fontSize, design: .monospaced) : .custom("Georgia", size: fontSize))
+            .fontWeight(fontWeight)
+            .italic(isItalic)
+            .lineSpacing(ReaderStyle.lineSpacing)
+    }
+
+    /// 检查是否是标点符号（不需要前置空格）
+    private func isPunctuation(_ word: String) -> Bool {
+        guard let first = word.first else { return false }
+        return ".,!?;:—'\"".contains(first)
+    }
+
+    /// Android 风格构建：直接使用 TTS timestamps 的单词，不做映射
+    private func buildAttributedText() -> AttributedString {
+        // 无 segments 时，显示原文
+        if segments.isEmpty {
+            var attr = AttributedString(originalText)
+            attr.foregroundColor = ReaderStyle.textColor
+            return attr
         }
 
-        // 如果找不到精确匹配，用字符数估算
-        let loadedLength = loadedClean.count
-        if loadedLength < original.count {
-            let idx = original.index(original.startIndex, offsetBy: min(loadedLength, original.count))
-            return String(original[idx...]).trimmingCharacters(in: .whitespaces)
+        // 计算总共有多少个 TTS 单词
+        let totalTTSWords = segments.reduce(0) { $0 + $1.timestamps.count }
+
+        // 如果没有 timestamps，使用 segment.text 进行段落级高亮
+        if totalTTSWords == 0 {
+            return buildSentenceLevelText()
         }
 
-        return ""
+        // 有 timestamps，使用词级高亮
+        return buildWordLevelText()
+    }
+
+    /// 词级高亮：使用 segment.text 保留原始空白（包括换行），在其中定位并高亮 timestamps 单词
+    private func buildWordLevelText() -> AttributedString {
+        var result = AttributedString()
+        var globalWordIdx = 0
+
+        // 渲染所有 segments，使用 segment.text 保留原始格式
+        for (segmentIdx, segment) in segments.enumerated() {
+            let segmentText = segment.text
+
+            // segment 之间添加空格（如果需要）
+            if segmentIdx > 0 && !result.characters.isEmpty {
+                let lastChar = result.characters.last
+                let firstChar = segmentText.first
+                if let last = lastChar, let first = firstChar,
+                   !last.isWhitespace && !first.isWhitespace && !isPunctuation(String(first)) {
+                    var space = AttributedString(" ")
+                    space.foregroundColor = ReaderStyle.textColor
+                    result.append(space)
+                }
+            }
+
+            // 在 segment.text 中定位每个 timestamp 单词，保留原始空白
+            var searchStart = segmentText.startIndex
+
+            for timestamp in segment.timestamps {
+                let word = timestamp.word
+
+                // 在 segmentText 中查找单词位置
+                if let wordRange = segmentText.range(of: word, options: .literal, range: searchStart..<segmentText.endIndex) {
+                    // 添加单词前的空白（包括换行）
+                    if searchStart < wordRange.lowerBound {
+                        let whitespace = String(segmentText[searchStart..<wordRange.lowerBound])
+                        var wsAttr = AttributedString(whitespace)
+                        wsAttr.foregroundColor = ReaderStyle.textColor
+                        result.append(wsAttr)
+                    }
+
+                    // 添加单词（可能高亮）
+                    var wordAttr = AttributedString(word)
+                    if globalWordIdx == globalWordIndex {
+                        wordAttr.backgroundColor = ReaderStyle.highlightWordBackground
+                    }
+                    wordAttr.foregroundColor = ReaderStyle.textColor
+                    result.append(wordAttr)
+
+                    searchStart = wordRange.upperBound
+                } else {
+                    // 找不到单词，直接添加（带空格）
+                    if globalWordIdx > 0 && !isPunctuation(word) {
+                        var space = AttributedString(" ")
+                        space.foregroundColor = ReaderStyle.textColor
+                        result.append(space)
+                    }
+
+                    var wordAttr = AttributedString(word)
+                    if globalWordIdx == globalWordIndex {
+                        wordAttr.backgroundColor = ReaderStyle.highlightWordBackground
+                    }
+                    wordAttr.foregroundColor = ReaderStyle.textColor
+                    result.append(wordAttr)
+                }
+
+                globalWordIdx += 1
+            }
+
+            // 添加 segment 末尾剩余的文本（如果有）
+            if searchStart < segmentText.endIndex {
+                let trailing = String(segmentText[searchStart...])
+                var trailAttr = AttributedString(trailing)
+                trailAttr.foregroundColor = ReaderStyle.textColor
+                result.append(trailAttr)
+            }
+        }
+
+        // 渲染未处理的剩余文本（半透明）
+        if !unprocessedText.isEmpty {
+            // 添加空格分隔（如果需要）
+            if !result.characters.isEmpty {
+                let lastChar = result.characters.last
+                let firstChar = unprocessedText.first
+                if let last = lastChar, let first = firstChar,
+                   !last.isWhitespace && !first.isWhitespace {
+                    var space = AttributedString(" ")
+                    space.foregroundColor = ReaderStyle.dimmedColor
+                    result.append(space)
+                }
+            }
+
+            var remainingAttr = AttributedString(unprocessedText)
+            remainingAttr.foregroundColor = ReaderStyle.dimmedColor
+            result.append(remainingAttr)
+        }
+
+        return result
+    }
+
+    /// 句级高亮：使用 segment.text 整句高亮
+    private func buildSentenceLevelText() -> AttributedString {
+        var result = AttributedString()
+
+        // 渲染所有 segments 的 text
+        for (segmentIdx, segment) in segments.enumerated() {
+            // segment 之间加空格
+            if segmentIdx > 0 && !segment.text.hasPrefix(" ") {
+                var space = AttributedString(" ")
+                space.foregroundColor = ReaderStyle.textColor
+                result.append(space)
+            }
+
+            var segmentAttr = AttributedString(segment.text)
+
+            // 高亮当前 segment
+            if segmentIdx == currentSegmentIndex {
+                segmentAttr.backgroundColor = ReaderStyle.highlightWordBackground
+            }
+            segmentAttr.foregroundColor = ReaderStyle.textColor
+            result.append(segmentAttr)
+        }
+
+        // 渲染未处理的剩余文本（半透明）
+        if !unprocessedText.isEmpty {
+            if !result.characters.isEmpty && !unprocessedText.hasPrefix(" ") {
+                var space = AttributedString(" ")
+                space.foregroundColor = ReaderStyle.dimmedColor
+                result.append(space)
+            }
+
+            var remainingAttr = AttributedString(unprocessedText)
+            remainingAttr.foregroundColor = ReaderStyle.dimmedColor
+            result.append(remainingAttr)
+        }
+
+        return result
     }
 }
 
 // MARK: - Segment Flow View
+/// 将所有 segments 合并成一个 Text，保持文本自然流动（不强制换行）
 struct SegmentFlowView: View {
     let paragraphIndex: Int
     let segments: [AudioSegment]
@@ -358,34 +740,57 @@ struct SegmentFlowView: View {
     let currentSegmentIndex: Int?
 
     var body: some View {
-        let segmentOffsets = calculateSegmentOffsets()
-
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(segments.enumerated()), id: \.offset) { segmentIdx, segment in
-                SegmentTextView(
-                    paragraphIndex: paragraphIndex,
-                    segmentIndex: segmentIdx,
-                    words: segment.timestamps.map { $0.word },
-                    wordOffset: segmentOffsets[segmentIdx],
-                    globalWordIndex: globalWordIndex,
-                    isCurrentSegment: segmentIdx == currentSegmentIndex
-                )
-            }
-        }
+        Text(buildCombinedAttributedText())
+            .font(.custom("Georgia", size: ReaderStyle.fontSize))
+            .foregroundColor(ReaderStyle.textColor)
+            .lineSpacing(ReaderStyle.lineSpacing)
     }
 
-    private func calculateSegmentOffsets() -> [Int] {
-        var offsets: [Int] = []
-        var currentOffset = 0
-        for segment in segments {
-            offsets.append(currentOffset)
-            currentOffset += segment.timestamps.count
+    /// 将所有 segments 合并成一个 AttributedString，支持词级和段落级高亮
+    private func buildCombinedAttributedText() -> AttributedString {
+        var result = AttributedString()
+        var globalWordOffset = 0
+
+        for (segmentIdx, segment) in segments.enumerated() {
+            let isCurrentSegment = segmentIdx == currentSegmentIndex
+
+            if segment.timestamps.isEmpty {
+                // 无 timestamps → 段落级高亮
+                var segmentAttr = AttributedString(segment.text)
+                if isCurrentSegment {
+                    segmentAttr.backgroundColor = ReaderStyle.highlightWordBackground
+                }
+                segmentAttr.foregroundColor = ReaderStyle.textColor
+                result.append(segmentAttr)
+                result.append(AttributedString(" "))
+            } else {
+                // 有 timestamps → 词级高亮
+                for (localIdx, ts) in segment.timestamps.enumerated() {
+                    var wordAttr = AttributedString(ts.word)
+                    let globalIdx = globalWordOffset + localIdx
+
+                    if globalIdx == globalWordIndex {
+                        wordAttr.backgroundColor = ReaderStyle.highlightWordBackground
+                    }
+                    wordAttr.foregroundColor = ReaderStyle.textColor
+                    result.append(wordAttr)
+
+                    // 单词之间加空格
+                    if localIdx < segment.timestamps.count - 1 {
+                        result.append(AttributedString(" "))
+                    }
+                }
+                // segment 之间加空格
+                result.append(AttributedString(" "))
+                globalWordOffset += segment.timestamps.count
+            }
         }
-        return offsets
+
+        return result
     }
 }
 
-// MARK: - Segment Text View
+// MARK: - Segment Text View (保留用于单独渲染，但主要使用 SegmentFlowView)
 struct SegmentTextView: View {
     let paragraphIndex: Int
     let segmentIndex: Int

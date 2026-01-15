@@ -45,16 +45,18 @@ extension String {
     }
 
     /// Extract paragraphs from HTML content, preserving IDs
-    /// Simulates web's DOMParser + ID relay pattern
+    /// 支持复杂结构：图片容器、诗歌结构、递归处理、智能过滤、去重
     func extractParagraphsWithIds() -> [ParsedParagraph] {
+        // 使用元组存储位置和段落数据，便于排序
+        var paragraphsWithPos: [(position: Int, paragraph: ParsedParagraph)] = []
+        var processedRanges: [NSRange] = []  // 已处理的范围，用于去重
+
         // Step 1: 收集所有 id/name 属性及其在 HTML 中的位置
-        // 支持多种格式: id="x", id='x', id=x, name="x"
         var idPositions: [(position: Int, id: String)] = []
         let idPattern = #"(?:id|name)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))"#
         if let idRegex = try? NSRegularExpression(pattern: idPattern, options: [.caseInsensitive]) {
             let idMatches = idRegex.matches(in: self, options: [], range: NSRange(location: 0, length: (self as NSString).length))
             for match in idMatches {
-                // 检查三个捕获组（双引号、单引号、无引号）
                 var foundId: String? = nil
                 for groupIndex in 1...3 {
                     if match.range(at: groupIndex).location != NSNotFound,
@@ -68,78 +70,278 @@ extension String {
                 }
             }
         }
-
-        // 按位置排序
         idPositions.sort { $0.position < $1.position }
 
-        // Step 2: 匹配所有内容块（p, h1-h6, li, blockquote 等）
-        let blockPattern = #"<(p|h[1-6]|li|pre|blockquote)[^>]*>(.*?)</\1>"#
-
-        guard let blockRegex = try? NSRegularExpression(pattern: blockPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
-            return extractParagraphsFallback()
-        }
-
-        let blockMatches = blockRegex.matches(in: self, options: [], range: NSRange(location: 0, length: (self as NSString).length))
-
-        var paragraphs: [ParsedParagraph] = []
-        var index = 0
-        var pendingId: String? = nil  // ID 接力棒
-        var lastBlockEnd = 0  // 上一个块的结束位置
-        var idIndex = 0  // 当前处理到的 ID 索引
-
-        for blockMatch in blockMatches {
-            let blockStart = blockMatch.range.location
-            let blockEnd = blockStart + blockMatch.range.length
-
-            // Step 3: 收集从上一个块结束到当前块结束之间的所有 ID
-            // 这些 ID 都会更新接力棒（最后一个生效）
-            while idIndex < idPositions.count && idPositions[idIndex].position < blockEnd {
-                let (pos, id) = idPositions[idIndex]
-                // 只有在上一个块结束之后的 ID 才更新接力棒
-                if pos >= lastBlockEnd {
-                    pendingId = id
+        // Helper: 检查范围是否已处理（去重）
+        func isRangeProcessed(_ range: NSRange) -> Bool {
+            for processed in processedRanges {
+                // 如果新范围完全在已处理范围内，跳过
+                if range.location >= processed.location &&
+                   range.location + range.length <= processed.location + processed.length {
+                    return true
                 }
-                idIndex += 1
             }
-
-            // Step 4: 提取完整的 HTML 块和内部内容
-            guard let fullRange = Range(blockMatch.range, in: self),
-                  blockMatch.range(at: 2).location != NSNotFound,
-                  let innerRange = Range(blockMatch.range(at: 2), in: self) else {
-                lastBlockEnd = blockEnd
-                continue
-            }
-
-            // 保存原始 HTML（用于渲染）
-            let rawHtml = String(self[fullRange])
-            let innerHtml = String(self[innerRange])
-
-            // Step 5: 提取文本内容，处理 <br> → \n
-            // 参考 Web 版 html-parser.ts 的处理逻辑
-            let text = innerHtml.extractTextWithLineBreaks()
-
-            // Step 6: ID 接力棒逻辑
-            // 如果是空内容，不生成段落，但保留 pendingId 给下一个
-            guard !text.isEmpty else {
-                lastBlockEnd = blockEnd
-                continue
-            }
-
-            // 有内容的段落，使用接力棒中的 ID
-            let paragraphId = pendingId
-            pendingId = nil  // 接力棒交出去了，清空
-
-            paragraphs.append(ParsedParagraph(id: paragraphId, text: text, html: rawHtml, index: index))
-            index += 1
-            lastBlockEnd = blockEnd
+            return false
         }
 
-        // If no blocks found, try fallback
+        // Helper: 找到范围内最近的 ID
+        func findIdForRange(_ range: NSRange) -> String? {
+            var bestId: String? = nil
+            for (pos, id) in idPositions {
+                if pos < range.location + range.length {
+                    bestId = id
+                } else {
+                    break
+                }
+            }
+            return bestId
+        }
+
+        // Step 2: 首先处理图片容器
+        // 支持: div.figure, div.figcenter, div.figright, div.figleft, div.figfull, div.illustration, div.image
+        let figurePattern = #"<div\s+[^>]*class\s*=\s*"[^"]*(?:figure|figcenter|figright|figleft|figfull|illustration|image)[^"]*"[^>]*>(.*?)</div>"#
+        if let figureRegex = try? NSRegularExpression(pattern: figurePattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) {
+            let matches = figureRegex.matches(in: self, options: [], range: NSRange(location: 0, length: (self as NSString).length))
+            for match in matches {
+                guard !isRangeProcessed(match.range),
+                      let fullRange = Range(match.range, in: self) else { continue }
+
+                let figureHtml = String(self[fullRange])
+                // 使用高级图片提取，传入容器 HTML 以获取对齐和宽度信息
+                let images = figureHtml.extractImagesAdvanced(containerHtml: figureHtml)
+
+                // 跳过空图片容器
+                guard !images.isEmpty else { continue }
+
+                // 提取描述文字：优先 caption，其次 alt
+                let altText = images.first?.caption ?? images.first?.alt ?? ""
+
+                processedRanges.append(match.range)
+                paragraphsWithPos.append((
+                    position: match.range.location,
+                    paragraph: ParsedParagraph(
+                        id: findIdForRange(match.range),
+                        text: altText,
+                        html: figureHtml,
+                        index: 0,
+                        type: .image,
+                        images: images
+                    )
+                ))
+            }
+        }
+
+        // Step 3: 处理诗歌结构 <div class="poem">
+        // 匹配完整的 poem div（包含所有 stanza）
+        let poemPattern = #"<div\s+class\s*=\s*"poem"[^>]*>(.+?)</div>\s*</div>"#
+        if let poemRegex = try? NSRegularExpression(pattern: poemPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) {
+            let matches = poemRegex.matches(in: self, options: [], range: NSRange(location: 0, length: (self as NSString).length))
+            for match in matches {
+                guard !isRangeProcessed(match.range),
+                      let fullRange = Range(match.range, in: self) else { continue }
+
+                let poemHtml = String(self[fullRange])
+
+                // 从诗歌中提取所有诗句（支持 <span> 和 <p> 标签）
+                let poemText = poemHtml.extractPoemText()
+
+                guard !poemText.isEmpty else { continue }
+
+                processedRanges.append(match.range)
+                paragraphsWithPos.append((
+                    position: match.range.location,
+                    paragraph: ParsedParagraph(
+                        id: findIdForRange(match.range),
+                        text: poemText,
+                        html: poemHtml,
+                        index: 0,
+                        type: .blockquote,
+                        images: nil
+                    )
+                ))
+            }
+        }
+
+        // Step 4: 处理标题 h1-h6
+        let headingPattern = #"<(h[1-6])\s*[^>]*>(.*?)</\1>"#
+        if let headingRegex = try? NSRegularExpression(pattern: headingPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) {
+            let matches = headingRegex.matches(in: self, options: [], range: NSRange(location: 0, length: (self as NSString).length))
+            for match in matches {
+                guard !isRangeProcessed(match.range),
+                      let fullRange = Range(match.range, in: self),
+                      match.range(at: 1).location != NSNotFound,
+                      let tagRange = Range(match.range(at: 1), in: self),
+                      match.range(at: 2).location != NSNotFound,
+                      let innerRange = Range(match.range(at: 2), in: self) else { continue }
+
+                let rawHtml = String(self[fullRange])
+                let tagName = String(self[tagRange]).lowercased()
+                let innerHtml = String(self[innerRange])
+                let text = innerHtml.extractTextWithLineBreaks()
+
+                guard !text.isEmpty else { continue }
+
+                // 解析标题级别
+                let level = Int(String(tagName.dropFirst())) ?? 1
+
+                processedRanges.append(match.range)
+                paragraphsWithPos.append((
+                    position: match.range.location,
+                    paragraph: ParsedParagraph(
+                        id: findIdForRange(match.range),
+                        text: text,
+                        html: rawHtml,
+                        index: 0,
+                        type: .heading(level),
+                        images: nil
+                    )
+                ))
+            }
+        }
+
+        // Step 5: 处理普通段落 <p>（排除诗歌中的和表格中的）
+        let paragraphPattern = #"<p\s*[^>]*>(.*?)</p>"#
+        if let pRegex = try? NSRegularExpression(pattern: paragraphPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) {
+            let matches = pRegex.matches(in: self, options: [], range: NSRange(location: 0, length: (self as NSString).length))
+            for match in matches {
+                guard !isRangeProcessed(match.range),
+                      let fullRange = Range(match.range, in: self),
+                      match.range(at: 1).location != NSNotFound,
+                      let innerRange = Range(match.range(at: 1), in: self) else { continue }
+
+                let rawHtml = String(self[fullRange])
+                let innerHtml = String(self[innerRange])
+
+                // 跳过页码标记（包含 x-ebookmaker-pageno）
+                if rawHtml.contains("x-ebookmaker-pageno") { continue }
+
+                // 提取图片
+                let images = rawHtml.extractImages()
+
+                // 提取文本
+                let text = innerHtml.extractTextWithLineBreaks()
+
+                // 跳过空内容（除非有图片）
+                guard !text.isEmpty || !images.isEmpty else { continue }
+
+                processedRanges.append(match.range)
+                paragraphsWithPos.append((
+                    position: match.range.location,
+                    paragraph: ParsedParagraph(
+                        id: findIdForRange(match.range),
+                        text: text,
+                        html: rawHtml,
+                        index: 0,
+                        type: images.isEmpty ? .paragraph : .image,
+                        images: images.isEmpty ? nil : images
+                    )
+                ))
+            }
+        }
+
+        // Step 6: 处理独立图片（不在 figure 或 p 中的 img）
+        let standaloneImgPattern = #"<img\s+[^>]*>"#
+        if let imgRegex = try? NSRegularExpression(pattern: standaloneImgPattern, options: [.caseInsensitive]) {
+            let matches = imgRegex.matches(in: self, options: [], range: NSRange(location: 0, length: (self as NSString).length))
+            for match in matches {
+                guard !isRangeProcessed(match.range),
+                      let fullRange = Range(match.range, in: self) else { continue }
+
+                let imgHtml = String(self[fullRange])
+                let images = imgHtml.extractImages()
+
+                guard !images.isEmpty else { continue }
+
+                // 提取 alt 作为描述文字
+                let altText = images.first?.alt ?? ""
+
+                processedRanges.append(match.range)
+                paragraphsWithPos.append((
+                    position: match.range.location,
+                    paragraph: ParsedParagraph(
+                        id: findIdForRange(match.range),
+                        text: altText,
+                        html: imgHtml,
+                        index: 0,
+                        type: .image,
+                        images: images
+                    )
+                ))
+            }
+        }
+
+        // Step 7: 按位置排序（保持阅读顺序）
+        paragraphsWithPos.sort { $0.position < $1.position }
+
+        // Step 8: 重新分配索引并提取段落
+        let paragraphs: [ParsedParagraph] = paragraphsWithPos.enumerated().map { idx, item in
+            ParsedParagraph(
+                id: item.paragraph.id,
+                text: item.paragraph.text,
+                html: item.paragraph.html,
+                index: idx,
+                type: item.paragraph.type,
+                images: item.paragraph.images
+            )
+        }
+
+        // Fallback
         if paragraphs.isEmpty {
             return extractParagraphsFallback()
         }
 
         return paragraphs
+    }
+
+    /// Extract text from poem structure (preserving line breaks)
+    /// 支持两种格式：
+    /// 1. <span class="i0/i4">诗句<br/></span> （新格式）
+    /// 2. <p class="i2">诗句</p> （旧格式）
+    private func extractPoemText() -> String {
+        var lines: [String] = []
+
+        // 首先尝试匹配 <span class="i..."> 格式（新格式）
+        let spanPattern = #"<span\s+class\s*=\s*"i\d+"[^>]*>(.*?)</span>"#
+        if let spanRegex = try? NSRegularExpression(pattern: spanPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) {
+            let matches = spanRegex.matches(in: self, options: [], range: NSRange(location: 0, length: (self as NSString).length))
+            for match in matches {
+                guard match.range(at: 1).location != NSNotFound,
+                      let innerRange = Range(match.range(at: 1), in: self) else { continue }
+
+                var lineText = String(self[innerRange])
+                // 移除 <br/> 标签和 dropcap 图片
+                lineText = lineText.replacingOccurrences(of: "<br\\s*/?>", with: "", options: .regularExpression)
+                lineText = lineText.replacingOccurrences(of: "<img[^>]*class\\s*=\\s*\"dropcap\"[^>]*>", with: "", options: .regularExpression)
+                lineText = lineText.stripHtmlTags().trimmingCharacters(in: .whitespacesAndNewlines)
+                if !lineText.isEmpty {
+                    lines.append(lineText)
+                }
+            }
+        }
+
+        // 如果没找到 span，尝试匹配 <p> 格式（旧格式）
+        if lines.isEmpty {
+            let pPattern = #"<p\s+[^>]*>(.*?)</p>"#
+            if let pRegex = try? NSRegularExpression(pattern: pPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) {
+                let matches = pRegex.matches(in: self, options: [], range: NSRange(location: 0, length: (self as NSString).length))
+                for match in matches {
+                    guard match.range(at: 1).location != NSNotFound,
+                          let innerRange = Range(match.range(at: 1), in: self) else { continue }
+
+                    let lineText = String(self[innerRange]).extractTextWithLineBreaks()
+                    if !lineText.isEmpty {
+                        lines.append(lineText)
+                    }
+                }
+            }
+        }
+
+        // 如果还是没找到，直接提取文本
+        if lines.isEmpty {
+            return extractTextWithLineBreaks()
+        }
+
+        return lines.joined(separator: "\n")
     }
 
     /// Fallback method when no block tags found
@@ -151,7 +353,6 @@ extension String {
             .filter { !$0.isEmpty }
 
         return lines.enumerated().map { idx, lineText in
-            // 对于 fallback，html 就用简单的 <p> 包裹
             let html = "<p>\(lineText.replacingOccurrences(of: "\n", with: "<br>"))</p>"
             return ParsedParagraph(id: nil, text: lineText, html: html, index: idx)
         }
@@ -209,6 +410,151 @@ extension String {
         // 将多个空白字符（空格、换行、制表符）合并为单个空格
         let components = self.components(separatedBy: .whitespacesAndNewlines)
         return components.filter { !$0.isEmpty }.joined(separator: " ")
+    }
+
+    /// Extract images from HTML content (basic extraction)
+    /// Returns array of ImageBlock with src and alt attributes
+    func extractImages() -> [ImageBlock] {
+        return extractImagesAdvanced(containerHtml: nil)
+    }
+
+    /// Extract images with alignment, width, and dropcap detection
+    /// containerHtml: 容器的完整 HTML（用于提取 style 和 class）
+    func extractImagesAdvanced(containerHtml: String?) -> [ImageBlock] {
+        var images: [ImageBlock] = []
+
+        // 从容器提取对齐方式和宽度
+        var containerAlignment: ImageAlignment = .center
+        var containerWidth: CGFloat? = nil
+        var containerCaption: String? = nil
+
+        if let container = containerHtml {
+            // 提取对齐方式
+            if container.contains("figright") {
+                containerAlignment = .right
+            } else if container.contains("figleft") {
+                containerAlignment = .left
+            } else if container.contains("figcenter") {
+                containerAlignment = .center
+            }
+
+            // 提取宽度: style="width: 300px;"
+            let widthPattern = #"style\s*=\s*"[^"]*width:\s*(\d+)px"#
+            if let regex = try? NSRegularExpression(pattern: widthPattern, options: [.caseInsensitive]),
+               let match = regex.firstMatch(in: container, options: [], range: NSRange(location: 0, length: (container as NSString).length)),
+               match.range(at: 1).location != NSNotFound,
+               let widthRange = Range(match.range(at: 1), in: container) {
+                containerWidth = CGFloat(Double(String(container[widthRange])) ?? 0)
+            }
+
+            // 提取 caption: <span class="caption">...</span>
+            let captionPattern = #"<span\s+class\s*=\s*"caption"[^>]*>(.*?)</span>"#
+            if let regex = try? NSRegularExpression(pattern: captionPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]),
+               let match = regex.firstMatch(in: container, options: [], range: NSRange(location: 0, length: (container as NSString).length)),
+               match.range(at: 1).location != NSNotFound,
+               let captionRange = Range(match.range(at: 1), in: container) {
+                containerCaption = String(container[captionRange]).stripHtmlTags().trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+
+        // 匹配 <img> 标签
+        let imgTagPattern = #"<img\s+[^>]*>"#
+        guard let imgTagRegex = try? NSRegularExpression(pattern: imgTagPattern, options: [.caseInsensitive]) else {
+            return images
+        }
+
+        let matches = imgTagRegex.matches(in: self, options: [], range: NSRange(location: 0, length: (self as NSString).length))
+
+        for match in matches {
+            guard let fullRange = Range(match.range, in: self) else { continue }
+            let imgTag = String(self[fullRange])
+
+            // 检测 dropcap 装饰图
+            let isDropcap = imgTag.contains("dropcap")
+            if isDropcap { continue }  // 跳过装饰性首字母图
+
+            // 提取 src
+            var src: String? = nil
+            let srcPatterns = [
+                #"src\s*=\s*"([^"]*)""#,  // 双引号
+                #"src\s*=\s*'([^']*)'"#,  // 单引号
+                #"src\s*=\s*([^\s>]+)"#   // 无引号
+            ]
+            for pattern in srcPatterns {
+                if src != nil { break }
+                if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+                   let srcMatch = regex.firstMatch(in: imgTag, options: [], range: NSRange(location: 0, length: (imgTag as NSString).length)),
+                   srcMatch.range(at: 1).location != NSNotFound,
+                   let srcRange = Range(srcMatch.range(at: 1), in: imgTag) {
+                    src = String(imgTag[srcRange])
+                }
+            }
+
+            guard var finalSrc = src, !finalSrc.isEmpty else { continue }
+
+            // URL 编码
+            if let encoded = finalSrc.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                finalSrc = encoded
+            }
+
+            // 提取 alt
+            var alt: String? = nil
+            let altPatterns = [
+                #"alt\s*=\s*"([^"]*)""#,
+                #"alt\s*=\s*'([^']*)'"#
+            ]
+            for pattern in altPatterns {
+                if alt != nil { break }
+                if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+                   let altMatch = regex.firstMatch(in: imgTag, options: [], range: NSRange(location: 0, length: (imgTag as NSString).length)),
+                   altMatch.range(at: 1).location != NSNotFound,
+                   let altRange = Range(altMatch.range(at: 1), in: imgTag) {
+                    alt = String(imgTag[altRange])
+                    if alt?.isEmpty == true { alt = nil }
+                }
+            }
+
+            images.append(ImageBlock(
+                src: finalSrc,
+                alt: alt,
+                width: containerWidth,
+                alignment: containerAlignment,
+                caption: containerCaption,
+                isDropcap: false
+            ))
+        }
+
+        return images
+    }
+}
+
+/// Helper function to detect paragraph type from HTML tag name
+private func detectParagraphType(tagName: String, hasImages: Bool) -> ParagraphType {
+    switch tagName.lowercased() {
+    case "h1":
+        return .heading(1)
+    case "h2":
+        return .heading(2)
+    case "h3":
+        return .heading(3)
+    case "h4":
+        return .heading(4)
+    case "h5":
+        return .heading(5)
+    case "h6":
+        return .heading(6)
+    case "blockquote":
+        return .blockquote
+    case "pre":
+        return .code
+    case "li":
+        return .list
+    case "img":
+        return .image
+    case "figure":
+        return hasImages ? .image : .paragraph
+    default:
+        return .paragraph
     }
 }
 

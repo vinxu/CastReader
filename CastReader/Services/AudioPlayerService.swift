@@ -40,6 +40,11 @@ class AudioPlayerService: NSObject, ObservableObject {
     // 临时文件管理
     private var currentTempFileURL: URL?
 
+    // Track if TTS is still generating more segments
+    // This prevents premature onPlaybackComplete when segments are still loading
+    var moreSegmentsExpected: Bool = false
+    private var waitingForNextSegment: Bool = false
+
     // Callbacks
     var onSegmentComplete: (() -> Void)?
     var onPlaybackComplete: (() -> Void)?
@@ -288,14 +293,22 @@ class AudioPlayerService: NSObject, ObservableObject {
         stop()
         segmentsQueue.removeAll()
         currentSegmentIndex = 0
+        moreSegmentsExpected = false
+        waitingForNextSegment = false
     }
 
     func loadSegment(_ segment: AudioSegment) {
-        print("🔊 loadSegment: Adding segment \(segment.segmentIndex) for paragraph \(segment.paragraphIndex), queueCount will be \(segmentsQueue.count + 1)")
+        print("🔊 loadSegment: Adding segment \(segment.segmentIndex) for paragraph \(segment.paragraphIndex), queueCount will be \(segmentsQueue.count + 1), waiting=\(waitingForNextSegment)")
         segmentsQueue.append(segment)
 
+        // If we were waiting for the next segment, play it now
+        if waitingForNextSegment {
+            print("🔊 loadSegment: Was waiting, now playing segment \(segmentsQueue.count - 1)")
+            waitingForNextSegment = false
+            playSegment(at: segmentsQueue.count - 1)
+        }
         // If this is the first segment and we're not playing, start playback
-        if segmentsQueue.count == 1 && !isPlaying {
+        else if segmentsQueue.count == 1 && !isPlaying {
             print("🔊 loadSegment: First segment, starting playback")
             playSegment(at: 0)
         } else {
@@ -395,12 +408,16 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     func nextSegment() {
-        print("🔊 nextSegment: currentIndex=\(currentSegmentIndex), queueCount=\(segmentsQueue.count)")
+        print("🔊 nextSegment: currentIndex=\(currentSegmentIndex), queueCount=\(segmentsQueue.count), moreExpected=\(moreSegmentsExpected)")
         if currentSegmentIndex < segmentsQueue.count - 1 {
             print("🔊 nextSegment: Playing next segment at index \(currentSegmentIndex + 1)")
             playSegment(at: currentSegmentIndex + 1)
+        } else if moreSegmentsExpected {
+            // TTS is still generating segments, wait for them
+            print("🔊 nextSegment: No more segments in queue but TTS still loading, waiting...")
+            waitingForNextSegment = true
         } else {
-            print("🔊 nextSegment: No more segments, calling onPlaybackComplete")
+            print("🔊 nextSegment: No more segments and TTS complete, calling onPlaybackComplete")
             onPlaybackComplete?()
         }
     }

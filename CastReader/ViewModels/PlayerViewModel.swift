@@ -128,19 +128,26 @@ class PlayerViewModel: ObservableObject {
         audioPlayer.$currentSegment
             .receive(on: DispatchQueue.main)
             .sink { [weak self] segment in
+                guard let self = self else { return }
                 if let segment = segment {
-                    self?.currentTimestamps = segment.timestamps
-                    let oldIndex = self?.currentParagraphIndex ?? 0
-                    self?.currentParagraphIndex = segment.paragraphIndex
-                    self?.currentSegmentIndex = segment.segmentIndex
+                    self.currentTimestamps = segment.timestamps
+                    let oldParagraphIndex = self.currentParagraphIndex
+                    let oldSegmentIndex = self.currentSegmentIndex
+                    self.currentParagraphIndex = segment.paragraphIndex
+                    self.currentSegmentIndex = segment.segmentIndex
 
-                    if oldIndex != segment.paragraphIndex {
-                        self?.updateCurrentChapterFromMap(segment.paragraphIndex)
+                    // 计算当前 segment 前所有 segment 的单词数
+                    let wordOffset = self.getWordOffset(forSegmentIndex: segment.segmentIndex)
+                    print("🎯 [Segment Switch] paragraph=\(segment.paragraphIndex), segment=\(oldSegmentIndex)→\(segment.segmentIndex), wordOffset=\(wordOffset), timestampsCount=\(segment.timestamps.count)")
+
+                    if oldParagraphIndex != segment.paragraphIndex {
+                        self.updateCurrentChapterFromMap(segment.paragraphIndex)
                     }
                 } else {
-                    self?.currentTimestamps = []
-                    self?.highlightedWordIndex = nil
-                    self?.currentGlobalWordIndex = 0
+                    self.currentTimestamps = []
+                    self.highlightedWordIndex = nil
+                    self.currentGlobalWordIndex = 0
+                    print("🎯 [Segment Switch] currentSegment is nil, reset highlighting")
                 }
             }
             .store(in: &cancellables)
@@ -222,7 +229,8 @@ class PlayerViewModel: ObservableObject {
         coverUrl: String?,
         paragraphs: [String],
         parsedParagraphs: [ParsedParagraph] = [],
-        indices: [BookIndex] = []
+        indices: [BookIndex] = [],
+        language: String = "en"
     ) {
         if self.currentBookId == bookId && !self.paragraphs.isEmpty {
             return
@@ -235,10 +243,13 @@ class PlayerViewModel: ObservableObject {
         self.paragraphs = paragraphs
         self.parsedParagraphs = parsedParagraphs
         self.indices = indices
+        self.selectedLanguage = language  // 设置 TTS 语言
         self.currentParagraphIndex = 0
         self.currentSegmentIndex = 0
         self.currentGlobalWordIndex = 0
         self.currentChapterIndex = 0
+
+        print("🌐 [PlayerViewModel] loadContent with language: \(language)")
 
         // 初始化段落状态
         paragraphStates = [:]
@@ -384,6 +395,8 @@ class PlayerViewModel: ObservableObject {
            state.status == .ready,
            !state.segments.isEmpty {
             print("🎯 playParagraph: Using preloaded paragraph \(index)")
+            // Preloaded data is complete, no more segments expected
+            audioPlayer.moreSegmentsExpected = false
             // 使用预加载的数据，直接播放
             for segment in state.segments {
                 audioPlayer.loadSegment(segment)
@@ -417,7 +430,26 @@ class PlayerViewModel: ObservableObject {
         print("📥 loadParagraphForPlayback: Loading paragraph \(index)")
 
         let text = paragraphs[index]
+
+        // 如果段落文本为空（如纯图片段落），直接跳到下一段
+        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            print("📥 loadParagraphForPlayback: Empty paragraph \(index), skipping to next")
+            paragraphStates[index]?.status = .ready
+            audioPlayer.moreSegmentsExpected = false
+            let nextIndex = index + 1
+            if nextIndex < paragraphs.count {
+                await playParagraph(at: nextIndex)
+            } else {
+                // 没有更多段落，停止播放
+                isPlaying = false
+            }
+            return
+        }
+
         paragraphStates[index]?.status = .loading
+
+        // Mark that more segments are expected from TTS generation
+        audioPlayer.moreSegmentsExpected = true
 
         do {
             try await ttsService.generateTTSForParagraph(
@@ -432,14 +464,17 @@ class PlayerViewModel: ObservableObject {
                 }
             }
 
+            // TTS generation complete, no more segments expected for this paragraph
+            audioPlayer.moreSegmentsExpected = false
             paragraphStates[index]?.status = .ready
-            print("✅ loadParagraphForPlayback: Paragraph \(index) loaded successfully")
+            print("✅ loadParagraphForPlayback: Paragraph \(index) loaded successfully, moreSegmentsExpected=false")
 
             // 当前段落加载完成，开始预加载下一个
             startPreloadingNextParagraph(after: index)
 
         } catch LocalTTSError.cancelled {
             print("❌ loadParagraphForPlayback: Paragraph \(index) cancelled")
+            audioPlayer.moreSegmentsExpected = false
             if paragraphStates[index]?.status == .loading {
                 paragraphStates[index]?.status = .pending
                 paragraphStates[index]?.segments = []
@@ -447,6 +482,7 @@ class PlayerViewModel: ObservableObject {
             }
         } catch {
             print("❌ loadParagraphForPlayback: Paragraph \(index) error: \(error)")
+            audioPlayer.moreSegmentsExpected = false
             paragraphStates[index]?.status = .error(error.localizedDescription)
             self.error = error.localizedDescription
         }
@@ -541,6 +577,7 @@ class PlayerViewModel: ObservableObject {
 
         paragraphStates[paragraphIndex]?.segments.append(segment)
         paragraphStates[paragraphIndex]?.totalDuration += segment.duration
+        paragraphStates[paragraphIndex]?.unprocessedText = segment.unprocessedText  // 保存未处理文本
         print("📦 onSegmentPreloaded: Stored segment \(segment.segmentIndex) for paragraph \(paragraphIndex)")
     }
 
@@ -553,6 +590,7 @@ class PlayerViewModel: ObservableObject {
 
         paragraphStates[paragraphIndex]?.segments.append(segment)
         paragraphStates[paragraphIndex]?.totalDuration += segment.duration
+        paragraphStates[paragraphIndex]?.unprocessedText = segment.unprocessedText  // 保存未处理文本
 
         // 如果是当前段落，立即发送给播放器
         if paragraphIndex == currentParagraphIndex {
@@ -654,31 +692,47 @@ class PlayerViewModel: ObservableObject {
     }
 
     private func updateHighlightedWord(at time: Double) {
+        guard let state = paragraphStates[currentParagraphIndex],
+              !state.segments.isEmpty else {
+            highlightedWordIndex = nil
+            currentGlobalWordIndex = 0
+            return
+        }
+
+        // 检查当前 segment 是否有 timestamps（段落级高亮降级）
+        let currentSegment = state.segments.indices.contains(currentSegmentIndex) ? state.segments[currentSegmentIndex] : nil
+        if currentSegment?.timestamps.isEmpty == true {
+            // 无 timestamps，使用段落级高亮
+            highlightedWordIndex = nil
+            currentGlobalWordIndex = -1  // 特殊值表示段落级高亮模式
+            return
+        }
+
         guard !currentTimestamps.isEmpty else {
             highlightedWordIndex = nil
             currentGlobalWordIndex = 0
             return
         }
 
-        guard let state = paragraphStates[currentParagraphIndex],
-              !state.segments.isEmpty else {
-            return
-        }
-
         let localIdx = currentTimestamps.firstIndex { $0.endTime > time } ?? (currentTimestamps.count - 1)
 
-        if highlightedWordIndex != localIdx {
-            highlightedWordIndex = localIdx
+        let wordOffset = getWordOffset(forSegmentIndex: currentSegmentIndex)
+        let newGlobalIndex = wordOffset + localIdx
+
+        // 只在变化时打印日志，避免刷屏
+        if currentGlobalWordIndex != newGlobalIndex {
+            print("🔤 [Highlight] segment=\(currentSegmentIndex), localIdx=\(localIdx), wordOffset=\(wordOffset), globalIdx=\(newGlobalIndex)")
         }
 
-        let wordOffset = getWordOffset(forSegmentIndex: currentSegmentIndex)
-        currentGlobalWordIndex = wordOffset + localIdx
+        highlightedWordIndex = localIdx
+        currentGlobalWordIndex = newGlobalIndex
     }
 
     private func getWordOffset(forSegmentIndex segmentIndex: Int) -> Int {
         guard let state = paragraphStates[currentParagraphIndex] else { return 0 }
+        // 使用 segment.segmentIndex 属性而非数组位置，更健壮
         return state.segments
-            .prefix(segmentIndex)
+            .filter { $0.segmentIndex < segmentIndex }
             .reduce(0) { $0 + $1.timestamps.count }
     }
 

@@ -66,6 +66,7 @@ struct BookDetailView: View {
     @State private var bookParsedParagraphs: [ParsedParagraph] = []
     @State private var bookIndices: [BookIndex] = []
     @State private var bookCoverUrl: String?  // 从 BookDetail.metadata.cover 获取
+    @State private var bookLanguage: String = "en"  // 从 BookDetail.metadata.language 获取
     @State private var loadError: String?
     @State private var showErrorAlert = false
 
@@ -261,7 +262,8 @@ struct BookDetailView: View {
                     coverUrl: bookCoverUrl,  // 使用从 BookDetail.metadata.cover 获取的封面
                     paragraphs: bookParagraphs,
                     parsedParagraphs: bookParsedParagraphs,
-                    indices: bookIndices
+                    indices: bookIndices,
+                    language: bookLanguage  // 使用从 BookDetail.metadata.language 获取的语言
                 )
             }
             .navigationViewStyle(.stack)
@@ -291,6 +293,11 @@ struct BookDetailView: View {
             do {
                 let detail = try await APIService.shared.fetchBookDetail(uid: book.uid)
 
+                // Debug: Print metadata and language
+                NSLog("📚 [CategorySection] Book detail loaded: uid=%@", detail.uid)
+                NSLog("📚 [CategorySection] metadata: %@", String(describing: detail.metadata))
+                NSLog("📚 [CategorySection] metadata.language: %@", detail.metadata?.language ?? "nil")
+
                 guard let contentUrl = detail.content, !contentUrl.isEmpty else {
                     throw APIError.invalidURL
                 }
@@ -305,6 +312,7 @@ struct BookDetailView: View {
                     bookParsedParagraphs = parsedParagraphs
                     bookIndices = indices
                     bookCoverUrl = detail.coverUrl  // 使用 metadata.cover
+                    bookLanguage = detail.metadata?.language ?? "en"  // 使用 metadata.language
                     isLoadingContent = false
 
                     if paragraphs.isEmpty {

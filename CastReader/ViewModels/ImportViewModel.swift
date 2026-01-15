@@ -13,13 +13,32 @@ struct EPUBUploadResult: Identifiable {
     let title: String
     let mdUrl: String
     let coverUrl: String?
+    let language: String  // 文档语言
 
-    init(bookId: String, title: String, mdUrl: String, coverUrl: String?) {
+    init(bookId: String, title: String, mdUrl: String, coverUrl: String?, language: String = "en") {
         self.id = bookId
         self.bookId = bookId
         self.title = title
         self.mdUrl = mdUrl
         self.coverUrl = coverUrl
+        self.language = language
+    }
+}
+
+/// Result of text upload for navigation to player
+struct TextUploadResult: Identifiable {
+    let id: String
+    let documentId: String
+    let title: String
+    let mdUrl: String
+    let language: String  // 文档语言
+
+    init(documentId: String, title: String, mdUrl: String, language: String = "en") {
+        self.id = documentId
+        self.documentId = documentId
+        self.title = title
+        self.mdUrl = mdUrl
+        self.language = language
     }
 }
 
@@ -29,6 +48,7 @@ class ImportViewModel: ObservableObject {
     @Published var error: String?
     @Published var uploadSuccess = false
     @Published var epubUploadResult: EPUBUploadResult?  // For EPUB -> PlayerView navigation
+    @Published var textUploadResult: TextUploadResult?  // For text -> PlayerView navigation
 
     private let visitorService = VisitorService.shared
 
@@ -91,10 +111,11 @@ class ImportViewModel: ObservableObject {
                     bookId: doc.id,
                     title: doc.name,
                     mdUrl: doc.mdUrl ?? "",
-                    coverUrl: doc.thumbnail
+                    coverUrl: doc.thumbnail,
+                    language: doc.language ?? "en"
                 )
                 uploadSuccess = true
-                print("📗 [ImportViewModel] EPUB ready for playback: \(doc.id), mdUrl: \(doc.mdUrl ?? "nil")")
+                print("📗 [ImportViewModel] EPUB ready for playback: \(doc.id), mdUrl: \(doc.mdUrl ?? "nil"), language: \(doc.language ?? "nil")")
             } else if response.success {
                 // Backend returned success but no document - treat as async (like PDF)
                 uploadSuccess = true
@@ -163,9 +184,11 @@ class ImportViewModel: ObservableObject {
         print("📤 [ImportViewModel] uploadPDF completed, success=\(uploadSuccess)")
     }
 
-    func uploadText(_ text: String) async {
+    func uploadText(_ text: String, title: String) async {
+        print("📝 [ImportViewModel] uploadText started: title=\(title), length=\(text.count)")
         isUploading = true
         error = nil
+        textUploadResult = nil
 
         do {
             let filename = "text_\(Date().timeIntervalSince1970).txt"
@@ -174,23 +197,48 @@ class ImportViewModel: ObservableObject {
             }
 
             // Get STS credentials
+            print("📝 [ImportViewModel] Fetching STS credentials...")
             let sts = try await APIService.shared.fetchSTSCredentials()
 
             // Upload to COS
+            print("📝 [ImportViewModel] Uploading to COS...")
             let (key, _) = try await uploadToCOS(data: data, filename: filename, sts: sts)
+            print("📝 [ImportViewModel] COS upload success: \(key)")
 
             // Notify backend - use COS key as filepath (same as web)
-            _ = try await APIService.shared.notifyUpload(
+            print("📝 [ImportViewModel] Notifying backend...")
+            let response = try await APIService.shared.notifyUpload(
                 filename: filename,
                 filepath: key,
                 userId: visitorService.visitorId
             )
 
+            print("📝 [ImportViewModel] Backend response: success=\(response.success), docId=\(response.documentId ?? "nil")")
+
+            if response.success, let doc = response.document, let mdUrl = doc.mdUrl, !mdUrl.isEmpty {
+                // Server processed synchronously - we have mdUrl for playback
+                textUploadResult = TextUploadResult(
+                    documentId: doc.id,
+                    title: title.isEmpty ? doc.name : title,
+                    mdUrl: mdUrl,
+                    language: doc.language ?? "en"
+                )
+                print("📝 [ImportViewModel] Text ready for playback: \(doc.id), mdUrl: \(mdUrl), language: \(doc.language ?? "nil")")
+            } else if response.success {
+                // Backend returned success but no mdUrl - treat as async
+                print("📝 [ImportViewModel] Text uploaded, but mdUrl not ready yet")
+                self.error = "Processing... Please check Library later."
+            } else {
+                throw UploadError.uploadFailed
+            }
+
         } catch {
+            print("📝 [ImportViewModel] ❌ Error: \(error)")
             self.error = error.localizedDescription
         }
 
         isUploading = false
+        print("📝 [ImportViewModel] uploadText completed, result=\(textUploadResult?.documentId ?? "nil")")
     }
 
     /// Upload image for OCR - same flow as PDF (COS + notify), backend processes asynchronously

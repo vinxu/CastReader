@@ -46,6 +46,7 @@ struct Document: Codable, Identifiable {
     let processingStatus: ProcessingStatus?
     let voiceId: String?
     let createdAt: String?
+    let language: String?  // 文档语言
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -57,6 +58,7 @@ struct Document: Codable, Identifiable {
         case processingStatus = "processing_status"
         case voiceId = "voice_id"
         case createdAt = "created_at"
+        case language
     }
 }
 
@@ -163,19 +165,39 @@ struct TextInputData: Identifiable {
     let title: String
     let content: String
     let createdAt: Date
+    let mdUrl: String?  // If set, use server's markdown instead of local generation
+    let documentId: String?  // Server document ID
+    let language: String  // 文档语言，用于 TTS
 
-    init(title: String, content: String) {
+    init(title: String, content: String, language: String = "en") {
         self.id = UUID().uuidString
         self.title = title.isEmpty ? "Text Input" : title
         self.content = content
         self.createdAt = Date()
+        self.mdUrl = nil
+        self.documentId = nil
+        self.language = language
+    }
+
+    /// Create from server upload result (uses server's markdown)
+    init(documentId: String, title: String, content: String, mdUrl: String, language: String = "en") {
+        self.id = documentId
+        self.documentId = documentId
+        self.title = title
+        self.content = content
+        self.createdAt = Date()
+        self.mdUrl = mdUrl
+        self.language = language
     }
 
     /// Parse content and return data for PlayerView
     /// Splits text into proper paragraphs to match library format
     var playerData: (paragraphs: [String], parsedParagraphs: [ParsedParagraph], indices: [BookIndex]) {
+        // Convert [H1], [H2], etc. to standard markdown format (like server does)
+        let normalizedContent = normalizeHeadings(content)
+
         // Split content into paragraphs (by double newlines or reasonable length)
-        let contentParagraphs = splitIntoParagraphs(content)
+        let contentParagraphs = splitIntoParagraphs(normalizedContent)
 
         // Build markdown with title as heading and each paragraph separated
         var markdown = "# \(title)\n\n"
@@ -196,6 +218,38 @@ struct TextInputData: Identifiable {
         print("🟣 [TextInputData.playerData] indices: \(result.indices.count)")
 
         return result
+    }
+
+    /// Ensure [H1], [H2], etc. lines are separated by blank lines (like server does)
+    private func normalizeHeadings(_ text: String) -> String {
+        let lines = text.components(separatedBy: "\n")
+        var processedLines: [String] = []
+
+        for (index, line) in lines.enumerated() {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            // Check if this line is a heading: [H1], [H2], etc.
+            let isHeading = trimmed.range(of: "^\\[H[1-6]\\]", options: .regularExpression) != nil
+
+            // If this line is a heading, ensure blank line before it
+            if isHeading && index > 0 {
+                if let lastLine = processedLines.last, !lastLine.trimmingCharacters(in: .whitespaces).isEmpty {
+                    processedLines.append("") // Add blank line before heading
+                }
+            }
+
+            processedLines.append(line)
+
+            // If this line is a heading, ensure blank line after it
+            if isHeading && index < lines.count - 1 {
+                let nextLine = lines[index + 1].trimmingCharacters(in: .whitespaces)
+                if !nextLine.isEmpty {
+                    processedLines.append("") // Add blank line after heading
+                }
+            }
+        }
+
+        return processedLines.joined(separator: "\n")
     }
 
     /// Split text into paragraphs - by double newlines, or by sentence boundaries for long text

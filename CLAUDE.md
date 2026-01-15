@@ -592,3 +592,226 @@ NotificationCenter.default.addObserver(
 3. **切换耗时**：模型重新编译需要 1-3 秒，进入后台时有足够时间
 4. **状态管理**：切换时需先取消当前合成任务，避免冲突
 5. **CPU-only 性能**：比 GPU 慢 3-5 倍，但后台播放可接受
+
+## TTS 文本渲染 - Android 风格实现
+
+### 问题背景
+
+TTS 服务返回的文本（`processedText`）与原文存在差异：
+- 标点符号可能被调整（如 `'` → `'`）
+- 空格数量可能变化
+- 特殊字符可能被规范化
+
+如果尝试将 TTS timestamps 映射回原文，会导致：
+- 高亮位置与语音不同步
+- 部分单词无法匹配
+- 换行符丢失
+
+### 解决方案：直接渲染 TTS 文本
+
+**核心原则**：不要尝试将 TTS 文本映射回原文，直接渲染 TTS 返回的内容。
+
+```swift
+// ❌ 错误：尝试在原文中查找 TTS 单词
+func highlightWord(ttsWord: String, in originalText: String) {
+    if let range = originalText.range(of: ttsWord) {  // 经常找不到！
+        highlight(range)
+    }
+}
+
+// ✅ 正确：直接渲染 TTS 返回的文本
+func buildAttributedText() -> AttributedString {
+    var result = AttributedString()
+
+    // 渲染已处理的 segments
+    for segment in segments {
+        // 使用 segment.text 保留原始格式（包括换行）
+        // 在其中定位 timestamps 单词进行高亮
+    }
+
+    // 渲染未处理的文本（半透明）
+    if !unprocessedText.isEmpty {
+        var remaining = AttributedString(unprocessedText)
+        remaining.foregroundColor = .gray.opacity(0.6)
+        result.append(remaining)
+    }
+
+    return result
+}
+```
+
+### TTS 数据结构
+
+```swift
+struct AudioSegment {
+    let text: String           // 该 segment 的完整文本（保留格式）
+    let timestamps: [TTSTimestamp]  // 每个单词的时间戳
+    let audioData: Data
+}
+
+struct TTSTimestamp {
+    let word: String    // 单个单词（无空格）
+    let start: Double   // 开始时间
+    let end: Double     // 结束时间
+}
+
+// ViewModel 维护的状态
+struct ParagraphTTSState {
+    var segments: [AudioSegment]
+    var unprocessedText: String  // 尚未转换的剩余文本
+}
+```
+
+### 保留换行符的关键实现
+
+`segment.text` 包含原始格式（空格、换行），但 `timestamps[].word` 只是单词。
+需要在 `segment.text` 中定位每个单词，保留中间的空白：
+
+```swift
+private func buildWordLevelText() -> AttributedString {
+    var result = AttributedString()
+    var globalWordIdx = 0
+
+    for segment in segments {
+        let segmentText = segment.text
+        var searchStart = segmentText.startIndex
+
+        for timestamp in segment.timestamps {
+            let word = timestamp.word
+
+            // 在 segmentText 中查找单词位置
+            if let wordRange = segmentText.range(of: word, options: .literal,
+                                                  range: searchStart..<segmentText.endIndex) {
+                // 添加单词前的空白（包括换行！）
+                if searchStart < wordRange.lowerBound {
+                    let whitespace = String(segmentText[searchStart..<wordRange.lowerBound])
+                    var wsAttr = AttributedString(whitespace)
+                    wsAttr.foregroundColor = .primary
+                    result.append(wsAttr)
+                }
+
+                // 添加单词（可能高亮）
+                var wordAttr = AttributedString(word)
+                if globalWordIdx == currentHighlightIndex {
+                    wordAttr.backgroundColor = .yellow
+                }
+                result.append(wordAttr)
+
+                searchStart = wordRange.upperBound
+            }
+            globalWordIdx += 1
+        }
+
+        // 添加 segment 末尾剩余的文本
+        if searchStart < segmentText.endIndex {
+            let trailing = String(segmentText[searchStart...])
+            result.append(AttributedString(trailing))
+        }
+    }
+
+    return result
+}
+```
+
+### 与 Android 实现对照
+
+| 概念 | Android (Compose) | iOS (SwiftUI) |
+|------|-------------------|---------------|
+| 已处理文本 | `segments.map { it.text }` | `segments.map { $0.text }` |
+| 未处理文本 | `remainingText`（灰色） | `unprocessedText`（半透明） |
+| 单词高亮 | `timestamps[currentIdx].word` | `timestamps[globalWordIndex].word` |
+| 换行保留 | `segment.text` 包含 `\n` | `segment.text` 包含 `\n` |
+
+## TTS 播放竞态条件 - moreSegmentsExpected 标志
+
+### 问题背景
+
+TTS 流式生成时，音频播放可能比 TTS 生成快：
+1. 第一个 segment 生成完成，开始播放
+2. 第一个 segment 播放完毕，队列为空
+3. `onPlaybackComplete()` 被调用，跳到下一段落
+4. 但实际上当前段落还有更多 segment 在生成中！
+
+### 解决方案：添加 moreSegmentsExpected 标志
+
+```swift
+// AudioPlayerService.swift
+class AudioPlayerService {
+    var moreSegmentsExpected: Bool = false  // TTS 是否还在生成
+    private var waitingForNextSegment: Bool = false
+
+    func nextSegment() {
+        if currentSegmentIndex < segmentsQueue.count - 1 {
+            // 队列中还有 segment，播放下一个
+            playSegment(at: currentSegmentIndex + 1)
+        } else if moreSegmentsExpected {
+            // 队列空了但 TTS 还在生成，等待
+            waitingForNextSegment = true
+            print("🔊 Waiting for next segment...")
+        } else {
+            // 真正播放完毕
+            onPlaybackComplete?()
+        }
+    }
+
+    func loadSegment(_ segment: AudioSegment) {
+        segmentsQueue.append(segment)
+
+        if waitingForNextSegment {
+            // 之前在等待，现在有新 segment 了，继续播放
+            waitingForNextSegment = false
+            playSegment(at: segmentsQueue.count - 1)
+        } else if segmentsQueue.count == 1 && !isPlaying {
+            // 第一个 segment，开始播放
+            playSegment(at: 0)
+        }
+    }
+}
+```
+
+### ViewModel 端的配合
+
+```swift
+// PlayerViewModel.swift
+func loadParagraphForPlayback(_ index: Int) async {
+    audioPlayer.clearQueue()
+    audioPlayer.moreSegmentsExpected = true  // 开始生成前设置
+
+    do {
+        for try await segment in ttsService.streamSegments(text: text) {
+            audioPlayer.loadSegment(segment)
+        }
+        audioPlayer.moreSegmentsExpected = false  // 生成完毕
+    } catch {
+        audioPlayer.moreSegmentsExpected = false  // 出错也要重置
+        // handle error...
+    }
+}
+```
+
+### 状态流转
+
+```
+开始生成 → moreSegmentsExpected = true
+         ↓
+    生成 segment 1 → loadSegment() → 开始播放
+         ↓
+    生成 segment 2 → loadSegment() → 加入队列
+         ↓
+    segment 1 播放完 → nextSegment() → 播放 segment 2
+         ↓
+    segment 2 播放完 → nextSegment() → 队列空，但 moreSegmentsExpected=true
+         ↓                            → waitingForNextSegment = true
+    生成 segment 3 → loadSegment() → waitingForNextSegment=true，立即播放
+         ↓
+    生成完毕 → moreSegmentsExpected = false
+         ↓
+    segment 3 播放完 → nextSegment() → 队列空，moreSegmentsExpected=false
+         ↓                            → onPlaybackComplete()
+```
+
+### 注意事项
+
+1. **清理队列时重置**：`clearQueue()` 中要重置 `waitingForNextSegment = false`
+2. **错误处理**：TTS 出错时也要设置 `moreSegmentsExpected = false`
+3. **取消请求**：用户切换段落时，先取消当前 TTS 请求再设置新的标志

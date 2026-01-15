@@ -245,10 +245,76 @@ struct RelatedBook: Codable, Identifiable {
     }
 }
 
+// MARK: - Image Alignment
+enum ImageAlignment {
+    case center    // figcenter - 居中大图
+    case left      // figleft - 左对齐
+    case right     // figright - 右对齐小图
+    case inline    // 行内图片
+}
+
+// MARK: - Image Block (for inline images in HTML)
+struct ImageBlock: Identifiable {
+    let id: String              // 唯一标识
+    let src: String             // 图片 URL
+    let alt: String?            // 图片描述文字
+    let width: CGFloat?         // 图片宽度（从 style 提取）
+    let alignment: ImageAlignment  // 对齐方式
+    let caption: String?        // 图片说明文字
+    let isDropcap: Bool         // 是否是装饰性首字母
+
+    init(src: String, alt: String? = nil, width: CGFloat? = nil, alignment: ImageAlignment = .center, caption: String? = nil, isDropcap: Bool = false) {
+        self.id = UUID().uuidString
+        self.src = src
+        self.alt = alt
+        self.width = width
+        self.alignment = alignment
+        self.caption = caption
+        self.isDropcap = isDropcap
+    }
+
+    /// 判断是否是小图（宽度小于 200px 或 figright/figleft）
+    var isSmallImage: Bool {
+        if let w = width, w < 200 { return true }
+        return alignment == .right || alignment == .left
+    }
+}
+
+// MARK: - Paragraph Type (for styling)
+enum ParagraphType: Equatable {
+    case paragraph           // 普通段落
+    case heading(Int)        // 标题 (1-6)
+    case blockquote          // 引用块
+    case code                // 代码块
+    case list                // 列表项
+    case image               // 纯图片段落
+
+    var isHeading: Bool {
+        if case .heading = self { return true }
+        return false
+    }
+
+    var headingLevel: Int? {
+        if case .heading(let level) = self { return level }
+        return nil
+    }
+}
+
 // MARK: - Parsed Paragraph (for HTML parsing with IDs)
 struct ParsedParagraph {
     let id: String?      // HTML 中的 id 属性，如 "ch1"
     let text: String     // 段落纯文本内容，包含 \n（用于 TTS）
     let html: String     // 原始 HTML 内容（用于渲染样式）
     let index: Int       // 段落索引
+    let type: ParagraphType    // 段落类型（用于样式）
+    let images: [ImageBlock]?  // 段落中的图片
+
+    init(id: String?, text: String, html: String, index: Int, type: ParagraphType = .paragraph, images: [ImageBlock]? = nil) {
+        self.id = id
+        self.text = text
+        self.html = html
+        self.index = index
+        self.type = type
+        self.images = images
+    }
 }

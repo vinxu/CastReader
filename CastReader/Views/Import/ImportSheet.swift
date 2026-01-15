@@ -50,21 +50,7 @@ struct ImportSheet: View {
         .sheet(isPresented: $showTextInput) {
             TextInputView { inputData in
                 print("🟢 [ImportSheet] Received TextInputData from TextInputView")
-                print("🟢 [ImportSheet] inputData.id: \(inputData.id)")
-                print("🟢 [ImportSheet] inputData.title: \(inputData.title)")
-
-                // Background upload (fire-and-forget)
-                print("🟢 [ImportSheet] Starting background upload task...")
-                Task {
-                    await viewModel.uploadText(inputData.content)
-                }
-
-                // Pass data to parent for immediate playback
-                print("🟢 [ImportSheet] Calling onTextSubmit callback...")
                 onTextSubmit?(inputData)
-                print("🟢 [ImportSheet] onTextSubmit callback done, dismissing...")
-
-                // Dismiss ImportSheet
                 dismiss()
             }
         }
@@ -388,9 +374,6 @@ struct ImportSheetOverlay: View {
         .sheet(isPresented: $showTextInput) {
             TextInputView { inputData in
                 print("🟢 [ImportSheetOverlay] Received TextInputData from TextInputView")
-                Task {
-                    await viewModel.uploadText(inputData.content)
-                }
                 onTextSubmit?(inputData)
                 dismissSheet()
             }

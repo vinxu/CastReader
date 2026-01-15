@@ -160,7 +160,8 @@ struct LibraryView: View {
                             coverUrl: doc.thumbnail,
                             paragraphs: playerParagraphs,
                             parsedParagraphs: playerParsedParagraphs,
-                            indices: playerIndices
+                            indices: playerIndices,
+                            language: doc.language ?? "en"  // 使用文档的语言
                         )
                     }
                     .navigationViewStyle(.stack)
@@ -442,7 +443,8 @@ struct DocumentDetailView: View {
                     coverUrl: document.thumbnail,
                     paragraphs: playerParagraphs,
                     parsedParagraphs: playerParsedParagraphs,
-                    indices: playerIndices
+                    indices: playerIndices,
+                    language: document.language ?? "en"  // 使用文档的语言
                 ),
                 isActive: $showPlayer
             ) {

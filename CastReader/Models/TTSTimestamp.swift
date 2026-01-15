@@ -90,8 +90,9 @@ struct AudioSegment: Identifiable {
     let duration: Double
     let text: String
     let isWavFormat: Bool  // true for local TTS (WAV), false for cloud TTS (MP3)
+    let unprocessedText: String  // API 返回的未处理文本（用于流式渲染）
 
-    init(paragraphIndex: Int, segmentIndex: Int, audioData: Data, timestamps: [TTSTimestamp], duration: Double, text: String, isWavFormat: Bool = false) {
+    init(paragraphIndex: Int, segmentIndex: Int, audioData: Data, timestamps: [TTSTimestamp], duration: Double, text: String, isWavFormat: Bool = false, unprocessedText: String = "") {
         self.id = "\(paragraphIndex)-\(segmentIndex)"
         self.paragraphIndex = paragraphIndex
         self.segmentIndex = segmentIndex
@@ -100,6 +101,7 @@ struct AudioSegment: Identifiable {
         self.duration = duration
         self.text = text
         self.isWavFormat = isWavFormat
+        self.unprocessedText = unprocessedText
     }
 }
 
@@ -137,4 +139,5 @@ struct ParagraphTTSState {
     var segments: [AudioSegment] = []
     var totalDuration: Double = 0
     var error: String?
+    var unprocessedText: String = ""  // API 返回的未处理文本（流式渲染时显示）
 }

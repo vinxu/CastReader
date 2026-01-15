@@ -138,8 +138,32 @@ struct MainTabView: View {
                 onTextSubmit: { inputData in
                     print("🟡 [MainTabView] Received TextInputData callback")
                     print("🟡 [MainTabView] inputData.id: \(inputData.id)")
-                    print("🟡 [MainTabView] Storing as pendingTextInputData...")
-                    self.pendingTextInputData = inputData
+
+                    // Upload to server and wait for mdUrl
+                    Task {
+                        print("🟡 [MainTabView] Uploading text to server...")
+                        do {
+                            let result = try await self.uploadTextAndGetMdUrl(
+                                content: inputData.content,
+                                title: inputData.title
+                            )
+                            print("🟡 [MainTabView] Got mdUrl: \(result.mdUrl)")
+
+                            // Create TextInputData with server's mdUrl
+                            let serverData = TextInputData(
+                                documentId: result.documentId,
+                                title: result.title,
+                                content: inputData.content,
+                                mdUrl: result.mdUrl,
+                                language: result.language  // 使用服务器返回的语言
+                            )
+                            self.pendingTextInputData = serverData
+                        } catch {
+                            print("🟡 [MainTabView] Upload failed: \(error)")
+                            // Fallback to local processing
+                            self.pendingTextInputData = inputData
+                        }
+                    }
                 },
                 onEPUBUploaded: { epubResult in
                     print("📗 [MainTabView] Received EPUB upload callback")
@@ -196,6 +220,20 @@ struct MainTabView: View {
             }
         }
         return nil
+    }
+
+    /// Upload text to server and wait for mdUrl
+    private func uploadTextAndGetMdUrl(content: String, title: String) async throws -> TextUploadResult {
+        let viewModel = ImportViewModel()
+        await viewModel.uploadText(content, title: title)
+
+        if let result = viewModel.textUploadResult {
+            return result
+        } else if let error = viewModel.error {
+            throw NSError(domain: "TextUpload", code: -1, userInfo: [NSLocalizedDescriptionKey: error])
+        } else {
+            throw NSError(domain: "TextUpload", code: -2, userInfo: [NSLocalizedDescriptionKey: "Server did not return mdUrl"])
+        }
     }
 
     // 创建 + 按钮图片（上下居中）
@@ -300,51 +338,100 @@ struct MiniPlayerBar: View {
 
 // MARK: - Text Player Content (for text input direct playback)
 struct TextPlayerContent: View {
-    let textInputData: TextInputData  // Non-optional since item: pattern guarantees non-nil
+    let textInputData: TextInputData
 
-    // Compute playerData once and cache using StateObject wrapper
-    @StateObject private var dataHolder: TextPlayerDataHolder
-
-    init(textInputData: TextInputData) {
-        self.textInputData = textInputData
-        // Initialize with computed playerData
-        _dataHolder = StateObject(wrappedValue: TextPlayerDataHolder(textInputData: textInputData))
-    }
+    @State private var isLoading = true
+    @State private var loadError: String?
+    @State private var playerParagraphs: [String] = []
+    @State private var playerParsedParagraphs: [ParsedParagraph] = []
+    @State private var playerIndices: [BookIndex] = []
 
     var body: some View {
-        NavigationView {
-            PlayerView(
-                bookId: textInputData.id,
-                bookTitle: textInputData.title,
-                coverUrl: nil,
-                paragraphs: dataHolder.paragraphs,
-                parsedParagraphs: dataHolder.parsedParagraphs,
-                indices: dataHolder.indices
-            )
+        Group {
+            if isLoading {
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("Loading content...")
+                        .foregroundColor(.secondary)
+                }
+            } else if let error = loadError {
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 48))
+                        .foregroundColor(.orange)
+                    Text("Failed to load content")
+                        .font(.headline)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding()
+            } else {
+                NavigationView {
+                    PlayerView(
+                        bookId: textInputData.id,
+                        bookTitle: textInputData.title,
+                        coverUrl: nil,
+                        paragraphs: playerParagraphs,
+                        parsedParagraphs: playerParsedParagraphs,
+                        indices: playerIndices,
+                        language: textInputData.language  // 使用文档的语言
+                    )
+                }
+                .navigationViewStyle(.stack)
+            }
         }
-        .navigationViewStyle(.stack)
+        .task {
+            await loadContent()
+        }
     }
-}
 
-// Helper class to hold computed playerData (computed once on init)
-class TextPlayerDataHolder: ObservableObject {
-    let paragraphs: [String]
-    let parsedParagraphs: [ParsedParagraph]
-    let indices: [BookIndex]
-
-    init(textInputData: TextInputData) {
+    private func loadContent() async {
         print("🟡 [TextPlayerContent] Building PlayerView for id: \(textInputData.id)")
         print("🟡 [TextPlayerContent] title: \(textInputData.title)")
-        print("🟡 [TextPlayerContent] content length: \(textInputData.content.count) chars")
+        print("🟡 [TextPlayerContent] mdUrl: \(textInputData.mdUrl ?? "nil")")
 
-        let playerData = textInputData.playerData
-        print("🟡 [TextPlayerContent] playerData.paragraphs: \(playerData.paragraphs.count)")
-        print("🟡 [TextPlayerContent] playerData.parsedParagraphs: \(playerData.parsedParagraphs.count)")
-        print("🟡 [TextPlayerContent] playerData.indices: \(playerData.indices.count)")
+        do {
+            let playerData: (paragraphs: [String], parsedParagraphs: [ParsedParagraph], indices: [BookIndex])
 
-        self.paragraphs = playerData.paragraphs
-        self.parsedParagraphs = playerData.parsedParagraphs
-        self.indices = playerData.indices
+            if let mdUrl = textInputData.mdUrl, !mdUrl.isEmpty {
+                // Use server's markdown
+                print("🟡 [TextPlayerContent] Fetching markdown from server...")
+                let mdContent = try await APIService.shared.fetchMarkdownContent(url: mdUrl)
+                print("🟡 [TextPlayerContent] MD content loaded, length: \(mdContent.count) chars")
+
+                let parsed = MarkdownParser.parse(mdContent)
+                playerData = parsed.asPlayerData
+                print("🟡 [TextPlayerContent] Server markdown parsed: \(playerData.paragraphs.count) paragraphs")
+            } else {
+                // Use local generation (fallback)
+                print("🟡 [TextPlayerContent] Using local markdown generation")
+                playerData = textInputData.playerData
+            }
+
+            print("🟡 [TextPlayerContent] playerData.paragraphs: \(playerData.paragraphs.count)")
+            print("🟡 [TextPlayerContent] playerData.parsedParagraphs: \(playerData.parsedParagraphs.count)")
+            print("🟡 [TextPlayerContent] playerData.indices: \(playerData.indices.count)")
+
+            await MainActor.run {
+                playerParagraphs = playerData.paragraphs
+                playerParsedParagraphs = playerData.parsedParagraphs
+                playerIndices = playerData.indices
+
+                if playerParagraphs.isEmpty {
+                    loadError = "No content found"
+                }
+                isLoading = false
+            }
+        } catch {
+            print("🟡 [TextPlayerContent] ❌ Error: \(error)")
+            await MainActor.run {
+                loadError = error.localizedDescription
+                isLoading = false
+            }
+        }
     }
 }
 
@@ -388,7 +475,8 @@ struct EPUBPlayerContent: View {
                         coverUrl: epubResult.coverUrl,
                         paragraphs: playerParagraphs,
                         parsedParagraphs: playerParsedParagraphs,
-                        indices: playerIndices
+                        indices: playerIndices,
+                        language: epubResult.language  // 使用文档的语言
                     )
                 }
                 .navigationViewStyle(.stack)
@@ -402,6 +490,7 @@ struct EPUBPlayerContent: View {
     private func loadContent() async {
         print("📗 [EPUBPlayerContent] Loading content for: \(epubResult.bookId)")
         print("📗 [EPUBPlayerContent] mdUrl: \(epubResult.mdUrl)")
+        print("📗 [EPUBPlayerContent] language: \(epubResult.language)")
 
         guard !epubResult.mdUrl.isEmpty else {
             loadError = "No content URL available"
