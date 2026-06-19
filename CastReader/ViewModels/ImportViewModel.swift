@@ -72,13 +72,9 @@ class ImportViewModel: ObservableObject {
         epubUploadResult = nil
 
         do {
-            // Access security-scoped resource
-            guard url.startAccessingSecurityScopedResource() else {
-                print("📗 [ImportViewModel] ❌ Access denied to file")
-                throw UploadError.accessDenied
-            }
-
-            defer { url.stopAccessingSecurityScopedResource() }
+            // 安全作用域：document picker 来的 url 需申请；app 临时文件/本地拷贝返回 false 属正常，不当失败
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
 
             // Read file data
             let data = try Data(contentsOf: url)
@@ -141,13 +137,9 @@ class ImportViewModel: ObservableObject {
         uploadSuccess = false
 
         do {
-            // Access security-scoped resource
-            guard url.startAccessingSecurityScopedResource() else {
-                print("📤 [ImportViewModel] ❌ Access denied to file")
-                throw UploadError.accessDenied
-            }
-
-            defer { url.stopAccessingSecurityScopedResource() }
+            // 安全作用域：document picker 来的 url 需申请；app 临时文件/本地拷贝返回 false 属正常，不当失败
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
 
             // Read file data
             let data = try Data(contentsOf: url)

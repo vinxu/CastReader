@@ -5,13 +5,21 @@
 
 import Foundation
 
-// Note: ParagraphType is defined in Book.swift with associated values
+// MARK: - Paragraph Type（原定义于已删除的 Book.swift，迁移至此长期保留）
+enum ParagraphType: Equatable {
+    case paragraph
+    case heading(Int)
+    case blockquote
+    case code
+    case list
+    case image
+}
 
 // MARK: - Markdown Paragraph
 struct MarkdownParagraph: Identifiable {
     let id: String           // UUID for SwiftUI
     let index: Int
-    let type: ParagraphType  // Uses ParagraphType from Book.swift
+    let type: ParagraphType
     let text: String         // For TTS
     let html: String         // For rendering
     let anchorId: String?    // For heading anchor
@@ -31,25 +39,3 @@ struct ParsedMarkdown {
     let plainText: String
 }
 
-// MARK: - Extension for PlayerView compatibility
-extension ParsedMarkdown {
-    /// Convert to PlayerView's expected format
-    var asPlayerData: (paragraphs: [String], parsedParagraphs: [ParsedParagraph], indices: [BookIndex]) {
-        // IMPORTANT: Filter BOTH arrays the same way to keep indices aligned
-        // Filter out paragraphs with empty text (like code blocks)
-        let nonEmptyParagraphs = paragraphs.filter { !$0.text.isEmpty }
-
-        // TTS text array
-        let texts = nonEmptyParagraphs.map { $0.text }
-
-        // Convert to ParsedParagraph format - use new sequential indices
-        let parsed = nonEmptyParagraphs.enumerated().map { idx, p in
-            ParsedParagraph(id: p.anchorId, text: p.text, html: p.html, index: idx, type: p.type)
-        }
-
-        // Convert TOC to BookIndex format
-        let indices = toc.map { BookIndex(href: $0.id, text: $0.text) }
-
-        return (texts, parsed, indices)
-    }
-}

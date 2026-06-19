@@ -2,816 +2,171 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 产品定位
+
+CastReader iOS 是**工具型 TTS 应用**（不是图书 app）。两大产品线：
+
+- **朗读（Read Aloud）**：TTS + 词级高亮 + 自动滚动「三位一体」，像老师指读，帮用户**同时用耳朵和眼睛**锁定注意力。
+- **解读（Explain / QuickRead）**：TTS 朗读 LLM 生成的**讲解**（非原文），同时在**原文**上按时间点动画绘制**手写体标注**（高亮/下划线/圈/序号）。
+
+两个输入入口（替代选书）：**①摄像头拍摄**（端上 Vision OCR）、**②上传文件 / 输入文本**。外加 **设置** 与 **Pro 付费（StoreKit 2）+ 免费额度闸门**。
+
+> 历史：本仓库曾是图书阅读器（书城/角色分析/多角色对话 TTS），已整体移除。如在 git 历史里看到 Book/Character/Dialogue/Explore 等，均为旧代码。
+
 ## Auto Run on Simulator
 
-当用户要求启动/运行项目时，自动执行以下步骤：
-
-1. 编译项目并推送到模拟器运行
-2. 如果遇到编译错误，直接阅读 Xcode 的报错信息并自行修复代码
-3. 重复编译直到运行成功
+当用户要求启动/运行项目时，自动编译→装模拟器→运行，遇编译错误自行修复直到成功。
 
 ```bash
-# 完整的编译和运行流程
-xcodebuild -workspace CastReader.xcworkspace -scheme CastReader -destination 'platform=iOS Simulator,name=iPhone 13 Pro' -derivedDataPath build clean build
-xcrun simctl boot "iPhone 13 Pro"
-open -a Simulator
-xcrun simctl install "iPhone 13 Pro" build/Build/Products/Debug-iphonesimulator/CastReader.app
-xcrun simctl launch "iPhone 13 Pro" com.same.CastReader
+xcodebuild -workspace CastReader.xcworkspace -scheme CastReader -destination 'platform=iOS Simulator,id=<UDID>' -derivedDataPath build build
+xcrun simctl install <UDID> build/Build/Products/Debug-iphonesimulator/CastReader.app
+xcrun simctl launch <UDID> com.same.castreader
 ```
+
+> **模拟器名**：CLAUDE.md 历史写的是 "iPhone 13 Pro"，但本机可能不存在。先 `xcrun simctl list devices available | grep iPhone` 取一个真实 UDID（同名设备有重复时**必须用 UDID**，否则 `-destination` 报 "Unable to find a device"）。Bundle id = `com.same.castreader`。
 
 ## Build Commands
 
-This is a native iOS SwiftUI project using Xcode.
-
 ```bash
-# Build the project
-xcodebuild -scheme CastReader -destination 'platform=iOS Simulator,name=iPhone 13' build
-
-# Run tests (unit + UI tests)
-xcodebuild test -scheme CastReader -destination 'platform=iOS Simulator,name=iPhone 13'
-
-# Clean build
-xcodebuild clean -scheme CastReader
+# 编译（必须用 workspace，含 SPM 依赖）
+xcodebuild -workspace CastReader.xcworkspace -scheme CastReader -destination 'platform=iOS Simulator,id=<UDID>' build
+# 测试
+xcodebuild test -workspace CastReader.xcworkspace -scheme CastReader -destination 'platform=iOS Simulator,id=<UDID>'
 ```
+或 Xcode：⌘B / ⌘R / ⌘U。
 
-Or use Xcode directly: ⌘B (build), ⌘R (run), ⌘U (test).
+### 新增/删除源文件 → 必须改 project.pbxproj
 
-## Architecture
+工程是传统格式（objectVersion 55，**非** Xcode 16 文件系统同步组），每个 `.swift` 必须登记到 4 处（FileReference / BuildFile / Group.children / Sources phase）。**手改易错，用 `xcodeproj` Ruby gem 脚本**（已安装）：
 
-- **SwiftUI app** targeting iOS 15.5+
-- **Entry point:** `CastReader/CastReaderApp.swift`
-- **Pattern:** MVVM + @EnvironmentObject for global state
-- **Tests:** XCTest framework (`CastReaderTests/`, `CastReaderUITests/`)
-- **Assets:** `CastReader/Assets.xcassets/`
-
-### Project Structure
-
+```ruby
+# 增：require 'xcodeproj'; 解析 CastReader 组；ensure_group 创建子目录组；
+#     group.new_reference(name) + target.add_file_references([ref]); project.save
+# 删：project.files.select{...}.each{ |f| f.build_files.each(&:remove_from_project); f.remove_from_project }
 ```
-CastReader/
-├── Models/          # Data models (Book, Document, TTSTimestamp, etc.)
-├── Services/        # API, Audio, TTS, Visitor services
-├── ViewModels/      # MVVM view models
-├── Views/
-│   ├── Explore/     # Book browsing
-│   ├── Library/     # User documents
-│   ├── Import/      # File/text import
-│   ├── Player/      # TTS player with highlighting
-│   └── Shared/      # Reusable components
-└── Utils/           # Constants, Extensions
-```
+注意：多行 shell 变量传参易丢 token，给脚本传**显式空格分隔的参数**。
 
-No external dependencies (CocoaPods, SPM, or Carthage) are currently configured.
+## 架构
 
-## 避坑指南 (iOS 15.5 Best Practices)
+- **SwiftUI**，App target 部署目标 **iOS 17.6**（`project.pbxproj` 内 app target；project 默认与测试 target 仍是 15.5）。可用 iOS 16/17 API，但代码沿用防御式写法（带关联值 enum 手动 `Equatable`、拆分复杂 View）。
+- **入口**：`CastReaderApp.swift`（启动 `ProManager.start()` + `QuotaManager.rollIfNewDay()`）。
+- **导航**：`MainTabView` 三 Tab —— 首页（`HomeView`）/ 文库（`LibraryView`）/ 设置（`SettingsView`）。阅读宿主 `ReaderHostView` 全屏模态，顶部切「朗读/解读」。
+- **依赖（SPM）**：FluidAudio / FluidAudioTTS（本地 Kokoro CoreML TTS，24kHz）、ZIPFoundation。
 
-### 1. Enum with Associated Values 需要手动实现 Equatable
+### 统一文档模型（核心抽象）—— `Models/ReadingDocument.swift`
 
-```swift
-// ❌ 错误：带关联值的 enum 不能直接用 == 比较
-enum TTSStatus {
-    case error(String)
-}
-if status != .loading { } // 编译错误
+让「拍摄照片+OCR」与「重排纯文本」两种源，在朗读高亮与解读 marks 的**定位**上走同一接口。
 
-// ✅ 正确：添加 Equatable 协议
-enum TTSStatus: Equatable {
-    case error(String)
-}
-if status != .loading { } // 正常工作
-```
+| 类型 | 说明 |
+|------|------|
+| `ReadingDocument{sourceKind(.photo/.text), language, paragraphs, imageData?, imagePixelSize?}` | 统一文档 |
+| `ReadingParagraph{id, text, type, words:[OCRWord], bboxNorm?}` | 段落；photo 源带 OCR 词 |
+| `OCRWord{id, text, bboxNorm}` | Vision 归一化 bbox（**原点左下**） |
+| `ReadingGeometry` | Vision 归一化(左下) ↔ SwiftUI 点(左上, aspectFit) 坐标换算 |
+| `ReadingAnchorResolver`（协议）+ `PhotoAnchorResolver` | 段落+词索引 / 段落+字符范围 → 可绘制矩形 |
 
-### 2. CGFloat 需要 import SwiftUI 或 CoreGraphics
+构建器 `Utils/DocumentBuilder.swift`：`fromMarkdown`（复用 `MarkdownParser`）/ `fromPlainText` / `fromPDF`（PDFKit 本地提取）/ `fromTextFile`。
 
-```swift
-// ❌ 错误：仅 import Foundation 无法使用 CGFloat
-import Foundation
-static let height: CGFloat = 64  // Cannot find type 'CGFloat'
+### 关键服务 / VM
 
-// ✅ 正确：使用 SwiftUI（推荐）或 CoreGraphics
-import SwiftUI
-static let height: CGFloat = 64
-```
-
-### 3. Layout 协议是 iOS 16+，用 AttributedString 替代
-
-```swift
-// ❌ 错误：Layout 协议需要 iOS 16+
-struct FlowLayout: Layout {  // Cannot find type 'Layout'
-    func sizeThatFits(proposal: ProposedViewSize, ...) { }
-}
-
-// ✅ 正确：用 AttributedString 实现文字高亮（iOS 15+）
-func buildAttributedText() -> AttributedString {
-    var result = AttributedString()
-    for (index, word) in words.enumerated() {
-        var attr = AttributedString(word)
-        if index == highlightedIndex {
-            attr.backgroundColor = .green
-        }
-        result.append(attr)
-    }
-    return result
-}
-```
-
-### 4. presentationDetents 是 iOS 16+
-
-```swift
-// ❌ 错误：iOS 16+ only
-.sheet(isPresented: $show) {
-    MySheet()
-        .presentationDetents([.medium])  // 编译错误
-}
-
-// ✅ 正确：移除或用 @available 条件编译
-.sheet(isPresented: $show) {
-    MySheet()
-}
-```
-
-### 5. 复杂 SwiftUI View 需要拆分以避免类型检查超时
-
-```swift
-// ❌ 错误：body 过于复杂导致 "unable to type-check in reasonable time"
-var body: some View {
-    NavigationView {
-        List { /* 大量嵌套 */ }
-            .modifier1()
-            .modifier2()
-            // ... 20+ 链式调用
-    }
-    .sheet { }
-    .alert { }
-    .overlay { }
-}
-
-// ✅ 正确：拆分为独立的 computed properties 或子 View
-var body: some View {
-    NavigationView {
-        contentList
-    }
-    .sheet { textInputSheet }
-    .alert { errorAlert }
-    .overlay { loadingOverlay }
-}
-
-private var contentList: some View {
-    List {
-        ImportOptionRow(...)
-        ImportOptionRow(...)
-    }
-}
-
-@ViewBuilder
-private var loadingOverlay: some View {
-    if isLoading {
-        LoadingView()
-    }
-}
-```
-
-### 6. fileImporter 的 UTType 需要安全处理
-
-```swift
-// ❌ 错误：某些 UTType 可能不存在
-allowedContentTypes: [.pdf, .epub]  // .epub 可能未定义
-
-// ✅ 正确：用 UTType(identifier:) 安全创建
-private var supportedFileTypes: [UTType] {
-    var types: [UTType] = [.pdf, .plainText]
-    if let epub = UTType("org.idpf.epub-container") {
-        types.append(epub)
-    }
-    return types
-}
-```
-
-### 7. API 返回数据类型不一致 - 必须使用自定义解码器
-
-后端 API 可能对同一字段返回不同类型（String/Array/Number），必须在 Model 中处理：
-
-```swift
-// ❌ 错误：假设 API 返回固定类型
-struct BookMetadata: Codable {
-    let genre: String?      // API 有时返回 String，有时返回 [String]
-    let rating: String?     // API 有时返回 "4.5"，有时返回 4.5
-}
-
-// ✅ 正确：自定义解码器处理多类型
-struct BookMetadata: Codable {
-    let genre: [String]?    // 统一转为数组
-    let rating: Double?     // 统一转为 Double
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-
-        // genre: 可能是 String 或 [String]
-        if let arr = try? container.decodeIfPresent([String].self, forKey: .genre) {
-            genre = arr
-        } else if let str = try? container.decodeIfPresent(String.self, forKey: .genre) {
-            genre = str.components(separatedBy: ", ")
-        } else {
-            genre = nil
-        }
-
-        // rating: 可能是 Double 或 String
-        if let d = try? container.decodeIfPresent(Double.self, forKey: .rating) {
-            rating = d
-        } else if let s = try? container.decodeIfPresent(String.self, forKey: .rating) {
-            rating = Double(s)
-        } else {
-            rating = nil
-        }
-    }
-}
-```
-
-### 8. API 字段可能为 null - 所有非必需字段都用可选类型
-
-```swift
-// ❌ 错误：假设字段一定存在
-struct BookIndex: Codable {
-    let href: String    // API 可能返回 null
-    let text: String
-}
-
-// ✅ 正确：除非确定必有值，否则用可选类型
-struct BookIndex: Codable {
-    let href: String?
-    let text: String?
-}
-```
-
-### 9. 调试 API 解码错误 - 打印原始响应和详细错误
-
-```swift
-do {
-    return try decoder.decode(T.self, from: data)
-} catch {
-    // 必须打印这两项才能定位问题
-    if let json = String(data: data, encoding: .utf8) {
-        print("🔴 Raw response: \(json.prefix(1500))")
-    }
-    print("🔴 Decoding error: \(error)")  // 包含 codingPath
-    throw error
-}
-```
-
-### 10. 新增 API Model 前先用实际数据测试
-
-1. 先用 curl 或 Postman 调用 API
-2. 检查所有字段的实际类型（不要只看文档）
-3. 注意相同字段在不同记录中类型可能不同
-4. 所有非核心字段默认用可选类型
-
-### 11. API 返回的 URL 可能包含空格 - 必须 URL 编码
-
-后端返回的 URL 路径可能包含空格（如书名），`URL(string:)` 对含空格的字符串返回 nil：
-
-```swift
-// ❌ 错误：URL 含空格会返回 nil
-let urlString = "https://...com/books/1_The Declaration of Independence/book.html"
-let url = URL(string: urlString)  // nil！
-
-// ✅ 正确：先 URL 编码
-guard let encoded = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-      let url = URL(string: encoded) else {
-    throw APIError.invalidURL
-}
-```
-
-**受影响的场景：**
-- 封面图片 URL (`cover`, `metadata.cover`)
-- 书籍内容 URL (`content`)
-- 任何文件路径类 URL
-
-## TTS 播放器自动滚动功能规格
-
-### 1. 功能概述
-
-TTS 阅读器需要在播放时自动滚动，让当前朗读的段落保持在用户可视区域内。同时需要尊重用户的手动滚动行为——当用户主动滚动时，暂停自动滚动并显示"回到播放位置"按钮。
-
-**核心原则：以段落为滚动单位**（不是句子/segment），避免长段落内频繁滚动造成的冲突。
-
-### 2. 两种模式
-
-| 模式 | 状态 | 行为 |
+| 模块 | 类型 | 职责 |
 |------|------|------|
-| **自动模式** | `autoScrollEnabled = true` | 段落切换时自动滚动到新段落 |
-| **手动模式** | `autoScrollEnabled = false` | 不自动滚动，显示回弹按钮 |
+| `TTSService` | actor 单例 | 云端单声道 TTS：`generateTTSForParagraph` 流式回调 AudioSegment（本地 Kokoro 引擎已移除以减小包体积） |
+| `AudioPlayerService` | class 单例 | 播放队列、`loadSegment`、`moreSegmentsExpected` 流式标志、`$currentTime`/`$currentSegment` |
+| `OCRService` | actor 单例 | Vision `VNRecognizeTextRequest` → `ReadingDocument(.photo)`（逐词 bbox + 段落聚类） |
+| `QuickReadService` | actor 单例 | 解读后端：extract-plan(SSE)/extract-block/compose-block |
+| `ProManager` | @MainActor OO 单例 | 综合 Pro（`isPro = storeKitPro \|\| serverPro`）、StoreKit purchase/restore/manage、`Transaction.updates` |
+| `QuotaManager` | @MainActor OO 单例 | 免费额度（服务端优先 + 本地 fail-open，每日午夜重置） |
+| `AuthService` | @MainActor OO 单例 | Google(ASWebAuthenticationSession+PKCE) / Apple 登录，账号资料 |
+| `ProBackendService` | actor 单例 | readout-web 公开端点：`/api/pro/status`、`/api/pro/listen-track` |
+| `APIService` | actor 单例 | 上传(STS/COS)、文档列表、Markdown 拉取、云端单声道 TTS |
+| `ReadAloudViewModel` | @MainActor OO | 朗读编排：逐段 TTS→入队→词级高亮→自动推进→额度计时 |
+| `ExplainViewModel` | @MainActor OO | 解读编排：三段式 + 块时间线 marks 触发 + `MarkAnchoring` 锚定 |
 
-### 3. 舒适区定义
+> **音频回调单一所有权**：`AudioPlayerService.onPlaybackComplete` 只有一个；ReadAloud 与 Explain 两 VM 共享同一播放器，故回调只在 `start()` 时由当前激活模式 `activate()` 设置，并用 `isActive` 门控 `onTick`。切模式时旧 VM `deactivate()`。
 
-```
-屏幕高度
-┌─────────────────────────┐ ← 0%
-│                         │
-│ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│ ← 15% (comfortTop)
-│                         │
-│      舒适区域            │  ← 段落顶部应在此区域内
-│      (Comfort Zone)     │
-│                         │
-│ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│ ← 70% (comfortBottom)
-│                         │
-│      播放控制栏区域       │
-└─────────────────────────┘ ← 100%
-```
-
-- **舒适区上边界**: 屏幕高度的 15%
-- **舒适区下边界**: 屏幕高度的 70%
-- 段落顶部 (`minY`) 在此区间内视为"可见"，无需滚动
-
-### 4. 自动滚动触发逻辑
-
-#### 触发条件（全部满足）
-1. `autoScrollEnabled == true`
-2. `currentParagraphIndex >= 0`（有正在播放的段落）
-3. 当前段落**不在舒适区内**
-
-#### 可见性判断
-```
-isParagraphVisible(index):
-    frame = paragraphFrames[index]
-    if frame 未知: return false  // 未渲染，需要滚动
-
-    comfortTop = screenHeight * 0.15
-    comfortBottom = screenHeight * 0.70
-
-    // 第一段不检查上边界（允许在最顶部）
-    if index == 0:
-        return frame.minY <= comfortBottom
-
-    // 其他段落：顶部必须在舒适区内
-    return frame.minY >= comfortTop && frame.minY <= comfortBottom
-```
-
-#### 滚动目标位置
-```
-// 第一段：滚动到顶部
-if index == 0:
-    scrollTo(index, anchor: TOP)
-
-// 其他段落：滚动到 15% 位置（留出舒适边距）
-else:
-    scrollTo(index, anchor: 15% from top)
-```
-
-### 5. 模式切换
-
-#### 自动 → 手动（用户打断）
-**触发方式**: 检测到用户滚动手势
-```
-ScrollView.onDragGesture {
-    autoScrollEnabled = false  // 立即切换到手动模式
-}
-```
-
-#### 手动 → 自动（用户恢复）
-**触发方式**:
-1. 点击"回到播放位置"按钮
-2. 点击某个段落跳转播放
-
-**执行顺序**:
-```
-1. 先滚动到目标段落（带动画，约 0.3s）
-2. 等待滚动动画完成（延迟 0.35s）
-3. 再启用 autoScrollEnabled = true
-```
-
-**为什么要延迟启用？**
-如果立即启用，滚动动画进行中可能触发新的滚动检测，造成冲突。
-
-### 6. "回到播放位置"按钮
-
-#### 显示条件
-```
-!autoScrollEnabled && currentParagraphIndex >= 0
-```
-
-#### UI 规格
-- **位置**: 播放控制栏上方，右下角
-- **尺寸**: 36x36pt 圆形
-- **样式**: 半透明毛玻璃背景 + 阴影
-- **图标**: 定位图标（如 iOS 的 `scope`）
-
-#### 点击行为
-```
-1. 计算目标 anchor（第一段用 TOP，其他用 15%）
-2. 执行滚动动画（0.3s）
-3. 延迟 0.35s 后设置 autoScrollEnabled = true
-```
-
-### 7. 状态流转图
+### 后端端点（`Utils/Constants.swift`）
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                                                          │
-│   ┌─────────────┐     用户滚动      ┌─────────────┐     │
-│   │  自动模式    │ ───────────────→ │  手动模式    │     │
-│   │ auto=true   │                   │ auto=false  │     │
-│   └─────────────┘                   └─────────────┘     │
-│         │                                  │            │
-│         │ 段落切换                          │            │
-│         ↓                                  │            │
-│   ┌─────────────┐                          │            │
-│   │ 检查可见性   │                          │            │
-│   └─────────────┘                   显示回弹按钮         │
-│         │                                  │            │
-│    ┌────┴────┐                             │            │
-│    ↓         ↓                             │            │
-│  可见     不可见                            │            │
-│  (不滚动)  (滚动)                           │            │
-│                                            │            │
-│         ←───────── 点击按钮/点击段落 ────────┘            │
-│         (滚动 + 延迟启用 auto)                           │
-└──────────────────────────────────────────────────────────┘
+baseURL          = https://api.castreader.ai          # 云端 TTS
+readerServiceURL = http://api.castreader.ai:8123       # 文档/上传（注意 http，已在 ATS 例外）
+quickReadBaseURL = https://quickread.castreader.ai:8444 # 解读（独立后端）
+
+/api/captioned_speech_partly         # 单声道云端 TTS（partly 流式，带时间戳）
+/sts /async-md-upload-by-url /upload # STS 凭证 + 文件上传
+/documents                            # 文库文档列表
+/api/quickread/extract-plan          # 解读：SSE，事件 stage/block0/done/error
+/api/quickread/extract-block         # 解读：逐块讲解文本
+/api/quickread/compose-block         # 解读：用 TTS timestamps 回填 mark.at
 ```
 
-### 8. 实现要点
-
-#### 段落位置追踪
-使用 PreferenceKey 收集每个段落的 frame：
-```swift
-// iOS (SwiftUI)
-ParagraphView(...)
-    .id(index)
-    .background(
-        GeometryReader { geo in
-            Color.clear.preference(
-                key: ParagraphFramePreferenceKey.self,
-                value: [index: geo.frame(in: .named("scrollArea"))]
-            )
-        }
-    )
-```
-
-```kotlin
-// Android (Compose)
-LazyColumn {
-    itemsIndexed(paragraphs) { index, para ->
-        ParagraphItem(
-            modifier = Modifier.onGloballyPositioned { coordinates ->
-                paragraphPositions[index] = coordinates.positionInParent()
-            }
-        )
-    }
-}
-```
-
-#### 滚动执行
-```swift
-// iOS
-withAnimation(.easeInOut(duration: 0.3)) {
-    proxy.scrollTo(index, anchor: anchor)
-}
-
-// Android
-coroutineScope.launch {
-    listState.animateScrollToItem(index)
-}
-```
-
-#### 用户滚动检测
-```swift
-// iOS
-.simultaneousGesture(
-    DragGesture().onChanged { _ in
-        viewModel.onUserScroll()  // 设置 autoScrollEnabled = false
-    }
-)
-
-// Android
-val nestedScrollConnection = remember {
-    object : NestedScrollConnection {
-        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-            if (source == NestedScrollSource.Drag) {
-                viewModel.onUserScroll()
-            }
-            return Offset.Zero
-        }
-    }
-}
-```
-
-### 9. 注意事项
-
-1. **以段落为单位**：不要追踪每个句子/segment 的位置，会导致滚动冲突
-2. **延迟检测**：段落切换后等待 50ms 再检查位置，给 LazyList 渲染时间
-3. **防重复滚动**：检查时确认仍是当前段落，避免快速切换时堆积多个滚动
-4. **动画时长**：滚动动画 0.3s，启用自动模式延迟 0.35s（略大于动画时长）
-
-## 本地 TTS 后台播放 - GPU/CPU 动态切换
-
-### 问题背景
-
-- **Kokoro CoreML 模型**内部使用 Metal Performance Shaders (MPS)
-- **iOS 禁止后台 App 使用 GPU**，违反则进程被终止
-- 即使设置 `.cpuAndNeuralEngine`，某些算子仍会回退到 GPU，导致后台合成失败
-
-### 解决方案
-
-**前台**：使用 `.cpuAndGPU` 模式，享受 GPU 加速（快）
-**后台**：销毁 GPU 实例，重载 `.cpuOnly` 实例（慢但能工作）
-
-```
-App willResignActive → cleanup() → loadModel(.cpuOnly) → 后台继续合成
-App didBecomeActive  → cleanup() → loadModel(.cpuAndGPU) → 前台恢复快速
-```
-
-### FluidAudioTTS 库关键 API
-
-```swift
-// ❌ TtsModels.download() 硬编码了 computeUnits，无法自定义
-let models = try await TtsModels.download(.kokoro)  // 内部写死 .cpuAndNeuralEngine
-
-// ✅ 绕过方案：直接用底层 API（都是 public 的）
-let modelDict = try await DownloadUtils.loadModels(
-    .kokoro,
-    modelNames: ["kokoro_21_5s.mlmodelc", "kokoro_21_15s.mlmodelc"],
-    directory: modelsDirectory,
-    computeUnits: .cpuOnly  // ← 关键：可自定义！
-)
-
-// 包装成 TtsModels
-var loaded: [ModelNames.TTS.Variant: MLModel] = [:]
-loaded[.fiveSecond] = modelDict["kokoro_21_5s.mlmodelc"]
-loaded[.fifteenSecond] = modelDict["kokoro_21_15s.mlmodelc"]
-let ttsModels = TtsModels(models: loaded)  // ← 也是 public 的
-
-// 初始化 TtSManager
-let manager = TtSManager(defaultVoice: "af_heart")
-try await manager.initialize(models: ttsModels)
-```
-
-### 实现要点
-
-**LocalTTSService.swift**：
-```swift
-actor LocalTTSService {
-    private var currentComputeUnits: MLComputeUnits = .cpuAndGPU
-    private var isSwitchingMode = false
-
-    func switchToBackgroundMode() async throws {
-        guard currentComputeUnits != .cpuOnly else { return }
-        cancelCurrentRequest()
-        unloadModel()
-        currentComputeUnits = .cpuOnly
-        try await loadModelWithComputeUnits(.cpuOnly)
-    }
-
-    func switchToForegroundMode() async throws {
-        guard currentComputeUnits != .cpuAndGPU else { return }
-        unloadModel()
-        currentComputeUnits = .cpuAndGPU
-        try await loadModelWithComputeUnits(.cpuAndGPU)
-    }
-}
-```
-
-**PlayerViewModel.swift** - 生命周期监听：
-```swift
-NotificationCenter.default.addObserver(
-    forName: UIApplication.willResignActiveNotification,
-    object: nil, queue: .main
-) { _ in
-    Task { try? await LocalTTSService.shared.switchToBackgroundMode() }
-}
-
-NotificationCenter.default.addObserver(
-    forName: UIApplication.didBecomeActiveNotification,
-    object: nil, queue: .main
-) { _ in
-    Task { try? await LocalTTSService.shared.switchToForegroundMode() }
-}
-```
-
-### 遇到的坑
-
-1. **TtsModels.download() 不可用**：硬编码了 `computeUnits`，必须绕过
-2. **模型路径**：FluidAudio 默认下载到 `~/.cache/fluidaudio/Models/kokoro`
-3. **切换耗时**：模型重新编译需要 1-3 秒，进入后台时有足够时间
-4. **状态管理**：切换时需先取消当前合成任务，避免冲突
-5. **CPU-only 性能**：比 GPU 慢 3-5 倍，但后台播放可接受
-
-## TTS 文本渲染 - Android 风格实现
-
-### 问题背景
-
-TTS 服务返回的文本（`processedText`）与原文存在差异：
-- 标点符号可能被调整（如 `'` → `'`）
-- 空格数量可能变化
-- 特殊字符可能被规范化
-
-如果尝试将 TTS timestamps 映射回原文，会导致：
-- 高亮位置与语音不同步
-- 部分单词无法匹配
-- 换行符丢失
-
-### 解决方案：直接渲染 TTS 文本
-
-**核心原则**：不要尝试将 TTS 文本映射回原文，直接渲染 TTS 返回的内容。
-
-```swift
-// ❌ 错误：尝试在原文中查找 TTS 单词
-func highlightWord(ttsWord: String, in originalText: String) {
-    if let range = originalText.range(of: ttsWord) {  // 经常找不到！
-        highlight(range)
-    }
-}
-
-// ✅ 正确：直接渲染 TTS 返回的文本
-func buildAttributedText() -> AttributedString {
-    var result = AttributedString()
-
-    // 渲染已处理的 segments
-    for segment in segments {
-        // 使用 segment.text 保留原始格式（包括换行）
-        // 在其中定位 timestamps 单词进行高亮
-    }
-
-    // 渲染未处理的文本（半透明）
-    if !unprocessedText.isEmpty {
-        var remaining = AttributedString(unprocessedText)
-        remaining.foregroundColor = .gray.opacity(0.6)
-        result.append(remaining)
-    }
-
-    return result
-}
-```
-
-### TTS 数据结构
-
-```swift
-struct AudioSegment {
-    let text: String           // 该 segment 的完整文本（保留格式）
-    let timestamps: [TTSTimestamp]  // 每个单词的时间戳
-    let audioData: Data
-}
-
-struct TTSTimestamp {
-    let word: String    // 单个单词（无空格）
-    let start: Double   // 开始时间
-    let end: Double     // 结束时间
-}
-
-// ViewModel 维护的状态
-struct ParagraphTTSState {
-    var segments: [AudioSegment]
-    var unprocessedText: String  // 尚未转换的剩余文本
-}
-```
-
-### 保留换行符的关键实现
-
-`segment.text` 包含原始格式（空格、换行），但 `timestamps[].word` 只是单词。
-需要在 `segment.text` 中定位每个单词，保留中间的空白：
-
-```swift
-private func buildWordLevelText() -> AttributedString {
-    var result = AttributedString()
-    var globalWordIdx = 0
-
-    for segment in segments {
-        let segmentText = segment.text
-        var searchStart = segmentText.startIndex
-
-        for timestamp in segment.timestamps {
-            let word = timestamp.word
-
-            // 在 segmentText 中查找单词位置
-            if let wordRange = segmentText.range(of: word, options: .literal,
-                                                  range: searchStart..<segmentText.endIndex) {
-                // 添加单词前的空白（包括换行！）
-                if searchStart < wordRange.lowerBound {
-                    let whitespace = String(segmentText[searchStart..<wordRange.lowerBound])
-                    var wsAttr = AttributedString(whitespace)
-                    wsAttr.foregroundColor = .primary
-                    result.append(wsAttr)
-                }
-
-                // 添加单词（可能高亮）
-                var wordAttr = AttributedString(word)
-                if globalWordIdx == currentHighlightIndex {
-                    wordAttr.backgroundColor = .yellow
-                }
-                result.append(wordAttr)
-
-                searchStart = wordRange.upperBound
-            }
-            globalWordIdx += 1
-        }
-
-        // 添加 segment 末尾剩余的文本
-        if searchStart < segmentText.endIndex {
-            let trailing = String(segmentText[searchStart...])
-            result.append(AttributedString(trailing))
-        }
-    }
-
-    return result
-}
-```
-
-### 与 Android 实现对照
-
-| 概念 | Android (Compose) | iOS (SwiftUI) |
-|------|-------------------|---------------|
-| 已处理文本 | `segments.map { it.text }` | `segments.map { $0.text }` |
-| 未处理文本 | `remainingText`（灰色） | `unprocessedText`（半透明） |
-| 单词高亮 | `timestamps[currentIdx].word` | `timestamps[globalWordIndex].word` |
-| 换行保留 | `segment.text` 包含 `\n` | `segment.text` 包含 `\n` |
-
-## TTS 播放竞态条件 - moreSegmentsExpected 标志
-
-### 问题背景
-
-TTS 流式生成时，音频播放可能比 TTS 生成快：
-1. 第一个 segment 生成完成，开始播放
-2. 第一个 segment 播放完毕，队列为空
-3. `onPlaybackComplete()` 被调用，跳到下一段落
-4. 但实际上当前段落还有更多 segment 在生成中！
-
-### 解决方案：添加 moreSegmentsExpected 标志
-
-```swift
-// AudioPlayerService.swift
-class AudioPlayerService {
-    var moreSegmentsExpected: Bool = false  // TTS 是否还在生成
-    private var waitingForNextSegment: Bool = false
-
-    func nextSegment() {
-        if currentSegmentIndex < segmentsQueue.count - 1 {
-            // 队列中还有 segment，播放下一个
-            playSegment(at: currentSegmentIndex + 1)
-        } else if moreSegmentsExpected {
-            // 队列空了但 TTS 还在生成，等待
-            waitingForNextSegment = true
-            print("🔊 Waiting for next segment...")
-        } else {
-            // 真正播放完毕
-            onPlaybackComplete?()
-        }
-    }
-
-    func loadSegment(_ segment: AudioSegment) {
-        segmentsQueue.append(segment)
-
-        if waitingForNextSegment {
-            // 之前在等待，现在有新 segment 了，继续播放
-            waitingForNextSegment = false
-            playSegment(at: segmentsQueue.count - 1)
-        } else if segmentsQueue.count == 1 && !isPlaying {
-            // 第一个 segment，开始播放
-            playSegment(at: 0)
-        }
-    }
-}
-```
-
-### ViewModel 端的配合
-
-```swift
-// PlayerViewModel.swift
-func loadParagraphForPlayback(_ index: Int) async {
-    audioPlayer.clearQueue()
-    audioPlayer.moreSegmentsExpected = true  // 开始生成前设置
-
-    do {
-        for try await segment in ttsService.streamSegments(text: text) {
-            audioPlayer.loadSegment(segment)
-        }
-        audioPlayer.moreSegmentsExpected = false  // 生成完毕
-    } catch {
-        audioPlayer.moreSegmentsExpected = false  // 出错也要重置
-        // handle error...
-    }
-}
-```
-
-### 状态流转
-
-```
-开始生成 → moreSegmentsExpected = true
-         ↓
-    生成 segment 1 → loadSegment() → 开始播放
-         ↓
-    生成 segment 2 → loadSegment() → 加入队列
-         ↓
-    segment 1 播放完 → nextSegment() → 播放 segment 2
-         ↓
-    segment 2 播放完 → nextSegment() → 队列空，但 moreSegmentsExpected=true
-         ↓                            → waitingForNextSegment = true
-    生成 segment 3 → loadSegment() → waitingForNextSegment=true，立即播放
-         ↓
-    生成完毕 → moreSegmentsExpected = false
-         ↓
-    segment 3 播放完 → nextSegment() → 队列空，moreSegmentsExpected=false
-         ↓                            → onPlaybackComplete()
-```
-
-### 注意事项
-
-1. **清理队列时重置**：`clearQueue()` 中要重置 `waitingForNextSegment = false`
-2. **错误处理**：TTS 出错时也要设置 `moreSegmentsExpected = false`
-3. **取消请求**：用户切换段落时，先取消当前 TTS 请求再设置新的标志
+> **解读鉴权**：quickread 后端要求 `x-api-key`（对齐扩展的 `QUICKREAD_API_KEY`）+ `x-device-id`。`Constants.API.quickReadAPIKey` 留空时不发 key → 后端返回 **401**（解读控制条显示「重试解读」）。上线前填入真实 key。
+
+## 核心子系统细节
+
+### 拍摄 OCR + 照片叠加（`Services/OCRService.swift`、`Views/Reader/PhotoReaderCanvas.swift`）
+
+- `CameraView`（`UIImagePickerController`，模拟器无相机时回退相册）→ `CaptureFlowViewModel.process` → OCR。
+- Vision 返回行级 observation，逐词 `boundingBox(for:)` 取归一化 bbox（原点左下）；按垂直间隙/缩进聚类成段落。
+- `PhotoReaderCanvas`：照片 `aspectFit`；朗读高亮当前 OCR 词 bbox；解读把手写标注画在原文上。坐标换算见 `ReadingGeometry`（**翻转 Y**：`y = fitted.minY + (1-n.maxY)*fitted.height`）。
+- `Info.plist` 需 `NSCameraUsageDescription` + `NSPhotoLibraryUsageDescription`。
+
+### 朗读（`ViewModels/ReadAloudViewModel.swift`、`Views/Reader/TextReaderView.swift`+`ReaderTextView.swift`）
+
+- 每段 `TTSService.generateTTSForParagraph` 流式入队（生成用 `speed:1.0`，播放用 `AudioPlayerService.setPlaybackRate`）。
+- **词级高亮统一在 `currentSegment.timestamps` 内按时间定位**（每个 segment 是独立 AVPlayerItem，`currentTime` 相对当前 segment）：text 源映射为 `processedDisplayText` 内字符范围 `highlightRange`；photo 源用游标对齐到 OCR 词 `photoHighlightWordIndex`。
+- 文本渲染走 `ReaderTextView`（精简 UITextView，`ReaderRoundedBackgroundLayoutManager` 画 4px 圆角高亮 + `rects(forCharRange:)` 供解读定位）。
+
+### 解读（`ViewModels/ExplainViewModel.swift`、`Utils/MarkAnchoring.swift`+`HandwrittenMark.swift`、`Views/Reader/MarkOverlay.swift`）
+
+- TTS 读的是 LLM **讲解文本**（非原文）。每块：`extractBlock`→TTS→拼块时间线→`composeBlock` 回填 `at`→入队播放。
+- 播放中按「块时间线」elapsed（前序 segment 时长 + 当前 segment currentTime）触发 marks。
+- `MarkAnchoring.locate(markText, near:)`：把 mark 锚文本（可能带【】或被改写）**模糊匹配**到原文字符范围（归一化+首尾窗口）；失败即跳过（fail-open）。
+- `HandwrittenMark` 用确定性 `SeededGenerator`（同 mark 重绘不抖）生成手写 `Path`；`MarkInkView` 用 `Shape.trim` 做落笔动画。**iOS 端无需上传截图**，marks 客户端文本锚定。
+- **SSE 解析坑（已踩）**：`URLSession.AsyncBytes.lines` 会**吞掉 SSE 事件之间的空行**，不能靠空行判定事件边界——`QuickReadService` 改为「遇到下一个 `event:` 行或空行就 flush 上一个事件」，否则 block0 会被后续 done 覆盖、报 `noBlock0`。
+
+### 登录 / 账号（`Services/AuthService.swift`(+Apple)、`Models/UserAccount.swift`、`Views/Auth/`）
+
+- **Google**：原生 `ASWebAuthenticationSession + PKCE` 直连 Google（**无第三方 SDK**），换 code→token→解析 id_token 得 email/name/picture/sub。`callbackURLScheme` 由会话内部拦截，**无需 Info.plist URL scheme**。需在 `Constants.GoogleOAuth.clientID` 填入真实 iOS OAuth client id（未填时登录页优雅隐藏 Google 入口）。
+- **Apple**：SwiftUI `SignInWithAppleButton`（4.8 合规）。需 entitlement `com.apple.developer.applesignin`（`CastReader/CastReader.entitlements`，已设 `CODE_SIGN_ENTITLEMENTS`；真机/上架需在开发者后台开启该 capability）。
+- best-effort 把 id_token 发 `POST /api/auth/sign-in/social`（better-auth）换后端 user id；失败不影响登录，Pro 退回 device_id 维度。账号资料存 UserDefaults，token 存 Keychain。
+
+### Pro / 付费 / 额度（`Services/ProManager.swift`+`QuotaManager.swift`+`ProBackendService.swift`、`Views/Paywall/`）
+
+- **综合 Pro**：`isPro = storeKitPro || serverPro`。iOS 主通道是 **StoreKit 2 内购**（Apple 合规）；Web 端用 **Stripe**，已付费者登录/设备关联后经服务端 `serverPro` 同步到 iOS。
+- **服务端 Pro/额度**（readout-web 公开端点，`Constants.API.webURL`）：`GET /api/pro/status?device_id=&user_id=&local_date=` 回填 Pro + 额度；`POST /api/pro/listen-track` 上报朗读秒数。`device_id` 复用 visitor id；登录后附 `user_id`。`QuotaManager` 服务端值优先、fail-open 本地计数。启动/前台/登录/购买后 `ProManager.refresh()`。
+- 免费额度：每日 20min 朗读 / 3 次解读 / 仅基础音色 / 速度≤2.0x；本地午夜重置；"读完本篇" 宽限 15min 硬上限。闸门检查点（仅额度处硬阻，出错 fail-open）：开始朗读/解读、选 Pro 音色、speed>2.0x。
+- StoreKit：`Transaction.currentEntitlements` + `Transaction.updates` 监听；`openManageSubscriptions`；本地测试用根目录 `Configuration.storekit`（Edit Scheme→Run→Options→StoreKit Configuration 关联，否则付费页显示"加载订阅…"）；生产 `ai.castreader.pro.{monthly,yearly}` 在 App Store Connect 配置。**后端目前无 Apple IAP 收据校验**——iOS 端 StoreKit 权益为本地权威；如需服务端入账需后端新增 receipt-verify。
+
+### 上线前必填配置清单
+- `Constants.GoogleOAuth.clientID`：Google iOS OAuth client id。
+- `Constants.API.quickReadAPIKey`：解读后端 `x-api-key`（否则 401）。
+- App Store Connect 订阅产品 + scheme 关联 `Configuration.storekit`。
+- Apple 开发者后台为 App ID 开启 Sign in with Apple capability。
+
+## 避坑指南 (iOS Best Practices)
+
+1. **带关联值 enum 要手动 `: Equatable`** 才能用 `!=`/`==`（如 `ReadingParagraphType`、`TTSStatus`、`ExplainStatus`）。
+2. **`CGFloat`/`UIColor` 等需 `import UIKit`**（纯 `import SwiftUI` 用 `UIColor` 会报错；但文件已在 iOS target 时 `import SwiftUI` 通常够——SourceKit 单独分析新文件时常误报 "No such module 'UIKit'"/"Cannot find 'Constants'"，**以 `xcodebuild` 真实编译为准**）。
+3. **`.greatestFiniteMagnitude` 在 `CGSize(...)` 里要写 `CGFloat.greatestFiniteMagnitude`** 否则 ambiguous。
+4. iOS 16+ API（Layout 协议、presentationDetents、Charts）即便部署目标 17.6 也尽量少用，保持与既有防御式代码一致。
+5. **复杂 View 拆 `@ViewBuilder` 子视图**避免类型检查超时。
+6. `fileImporter` 的 `UTType` 用 `UTType(identifier:)` 安全创建（epub/docx 可能未内置）。
+7. API 字段类型可能不一致/为 null → Model 用可选 + 自定义解码；解码失败先打印原始响应 + `error`（含 codingPath）。
+8. 含空格的 URL 必须 `addingPercentEncoding` 否则 `URL(string:)` 返回 nil。
+
+## TTS 引擎 — 仅云端（本地 Kokoro/FluidAudio 已移除）
+
+曾有本地 Kokoro CoreML 引擎（FluidAudio/FluidAudioTTS + ESpeakNG 多语言发音字典），为减小包体积（约 -35MB，包 45M→10M）已**整体移除**——现仅云端 TTS（`TTSService` → `APIService.generateTTS` 单声道流式）。`AudioSegment.isWavFormat` 字段保留但恒为 false（云端均 mp3）。如需恢复本地/离线引擎，参考 git 历史的 `LocalTTSService` / `ModelDownloadService` / `TTSModelSettingsView` 及 `TTSProvider` 路由 + SPM FluidAudio 依赖。
+
+## TTS 文本渲染 — 直接渲染 TTS 文本，不映射回原文
+
+TTS 返回的 `processedText` 与原文有差异（标点/空格规范化）。**不要把 timestamps 映射回原文**（会找不到/不同步）。朗读当前段渲染 `processedDisplayText`（segments 的 `text` 拼接），高亮在其中按词定位；未生成段落渲染 `paragraph.text`。`AudioSegment{text, timestamps:[TTSTimestamp{word,start,end}], unprocessedText, speaker?}`。
+
+## TTS 播放竞态 — `moreSegmentsExpected` 标志
+
+流式生成时音频可能播得比生成快。`AudioPlayerService`：队列空但 `moreSegmentsExpected==true` 时置 `waitingForNextSegment` 等待，新 segment 到达继续；`==false` 才 `onPlaybackComplete`。VM 端：生成前 `clearQueue()` + `moreSegmentsExpected=true`，生成完/出错都要复位 `false`；切段先 `cancelCurrentRequest()`。
+
+## 自动滚动
+
+`TextReaderView` 用 `ScrollViewReader`：朗读时 `currentParagraphIndex` 变化滚到该段（`anchor:.center`）；解读时滚到最新 mark 所在段。photo 模式整页可见无需滚动。舒适区精细化（15%~70% + 手动打断回弹）可后续按需加。

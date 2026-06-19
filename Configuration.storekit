@@ -1,0 +1,65 @@
+{
+  "identifier" : "CASTREADER_PRO_CONFIG",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_applicationInternalID" : "0",
+    "_developerTeamID" : "0",
+    "_failTransactionsEnabled" : false
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "CASTREADER_PRO_GROUP",
+      "localizations" : [],
+      "name" : "CastReader Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "CR_PRO_MONTHLY",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "无限朗读与解读、全部高级音色、3x 语速",
+              "displayName" : "Pro 月度",
+              "locale" : "zh_CN"
+            }
+          ],
+          "productID" : "ai.castreader.pro.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Pro Monthly",
+          "subscriptionGroupID" : "CASTREADER_PRO_GROUP",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "34.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "CR_PRO_YEARLY",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "无限朗读与解读、全部高级音色、3x 语速（年付更省）",
+              "displayName" : "Pro 年度",
+              "locale" : "zh_CN"
+            }
+          ],
+          "productID" : "ai.castreader.pro.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Pro Yearly",
+          "subscriptionGroupID" : "CASTREADER_PRO_GROUP",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

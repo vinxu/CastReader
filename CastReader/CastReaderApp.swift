@@ -12,10 +12,6 @@ struct CastReaderApp: App {
     @StateObject private var visitorService = VisitorService.shared
 
     init() {
-        // Local TTS model will be loaded on-demand when user starts reading
-        // (in LocalTTSService.generateTTSForParagraph)
-        // No need to pre-load at app startup
-
         // 简单的内存警告监听
         NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
@@ -24,7 +20,25 @@ struct CastReaderApp: App {
         ) { _ in
             print("⚠️ Memory warning received, clearing audio cache...")
             Task { @MainActor in
-                PlayerViewModel.shared.clearAllAudioCache()
+                AudioPlayerService.shared.clearQueue()
+            }
+        }
+
+        // Pro 订阅状态 + 每日额度初始化
+        Task { @MainActor in
+            ProManager.shared.start()
+            QuotaManager.shared.rollIfNewDay()
+        }
+        // 刷新云端 TTS 节点配置（CN/US 路由）
+        Task { await TTSEndpoint.refreshRemoteConfig() }
+
+        // 回前台刷新 Pro/额度
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
+        ) { _ in
+            Task { @MainActor in
+                QuotaManager.shared.rollIfNewDay()
+                await ProManager.shared.refresh()
             }
         }
     }
@@ -33,6 +47,7 @@ struct CastReaderApp: App {
         WindowGroup {
             MainTabView()
                 .environmentObject(visitorService)
+                // 深色/浅色跟随系统（AppTheme 已全动态化，见 Utils/AppTheme.swift）
         }
     }
 }

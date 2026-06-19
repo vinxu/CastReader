@@ -190,36 +190,6 @@ struct TextInputData: Identifiable {
         self.language = language
     }
 
-    /// Parse content and return data for PlayerView
-    /// Splits text into proper paragraphs to match library format
-    var playerData: (paragraphs: [String], parsedParagraphs: [ParsedParagraph], indices: [BookIndex]) {
-        // Convert [H1], [H2], etc. to standard markdown format (like server does)
-        let normalizedContent = normalizeHeadings(content)
-
-        // Split content into paragraphs (by double newlines or reasonable length)
-        let contentParagraphs = splitIntoParagraphs(normalizedContent)
-
-        // Build markdown with title as heading and each paragraph separated
-        var markdown = "# \(title)\n\n"
-        markdown += contentParagraphs.joined(separator: "\n\n")
-
-        print("🟣 [TextInputData.playerData] Generated markdown with \(contentParagraphs.count) paragraphs")
-        print("🟣 [TextInputData.playerData] \(String(markdown.prefix(200)))...")
-
-        let parsed = MarkdownParser.parse(markdown)
-        print("🟣 [TextInputData.playerData] Parsed result:")
-        print("🟣 [TextInputData.playerData] paragraphs count: \(parsed.paragraphs.count)")
-        print("🟣 [TextInputData.playerData] toc count: \(parsed.toc.count)")
-
-        let result = parsed.asPlayerData
-        print("🟣 [TextInputData.playerData] asPlayerData result:")
-        print("🟣 [TextInputData.playerData] paragraphs: \(result.paragraphs.count)")
-        print("🟣 [TextInputData.playerData] parsedParagraphs: \(result.parsedParagraphs.count)")
-        print("🟣 [TextInputData.playerData] indices: \(result.indices.count)")
-
-        return result
-    }
-
     /// Ensure [H1], [H2], etc. lines are separated by blank lines (like server does)
     private func normalizeHeadings(_ text: String) -> String {
         let lines = text.components(separatedBy: "\n")

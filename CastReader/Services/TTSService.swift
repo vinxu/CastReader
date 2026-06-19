@@ -2,20 +2,19 @@
 //  TTSService.swift
 //  CastReader
 //
-//  Coordinates between local (CoreML) and cloud TTS based on:
-//  1. If local model not downloaded → always use cloud
-//  2. If local model downloaded → use user's setting (local or cloud)
-//  3. If local TTS fails in background (GPU restriction) → fallback to cloud
+//  云端 TTS 单声道路由：把段落文本流式合成为 AudioSegment（边生成边回调入队）。
+//  历史：曾支持本地 Kokoro/CoreML（FluidAudio）双引擎，为减小包体积已移除——现仅云端 TTS（见 git 历史）。
 //
 
 import Foundation
 import UIKit
+import AVFoundation
 
-// MARK: - TTS Provider
+// MARK: - TTS Error
 
-enum TTSProvider: String {
-    case local = "local"
-    case cloud = "cloud"
+enum TTSError: Error {
+    case cancelled
+    case generationFailed(String)
 }
 
 // MARK: - TTS Service
@@ -23,44 +22,18 @@ enum TTSProvider: String {
 actor TTSService {
     static let shared = TTSService()
 
-    private let localTTS = LocalTTSService.shared
     private var currentRequestId: UUID?
 
     private init() {}
 
-    // MARK: - Provider Selection
-
-    /// Get current TTS provider based on model availability and user setting
-    nonisolated var currentProvider: TTSProvider {
-        // If local model not downloaded → always cloud
-        if !LocalTTSService.checkModelExists() {
-            return .cloud
-        }
-
-        // If local model downloaded → use user setting
-        let setting = UserDefaults.standard.string(forKey: Constants.Storage.ttsProviderKey) ?? "local"
-        return TTSProvider(rawValue: setting) ?? .local
-    }
-
-    /// Check if local model is available
-    nonisolated var isLocalModelAvailable: Bool {
-        return LocalTTSService.checkModelExists()
-    }
-
-    /// Set preferred TTS provider (only effective when local model is downloaded)
-    nonisolated func setPreferredProvider(_ provider: TTSProvider) {
-        UserDefaults.standard.set(provider.rawValue, forKey: Constants.Storage.ttsProviderKey)
-    }
-
     // MARK: - TTS Generation
 
-    /// Cancel current TTS request
+    /// 取消当前 TTS 请求（使流式回调内的 requestId 校验失败而提前退出）。
     func cancelCurrentRequest() async {
         currentRequestId = nil
-        await localTTS.cancelCurrentRequest()
     }
 
-    /// Generate TTS for a paragraph (streaming mode with segment callbacks)
+    /// 生成段落 TTS（流式：每段 AudioSegment 经 onSegmentReady 回调）。仅云端。
     func generateTTSForParagraph(
         paragraphIndex: Int,
         text: String,
@@ -71,73 +44,9 @@ actor TTSService {
     ) async throws {
         let requestId = UUID()
         currentRequestId = requestId
-
-        let modelExists = LocalTTSService.checkModelExists()
-        let provider = currentProvider
-
-        print("[TTSService] Model exists: \(modelExists), Provider: \(provider)")
-
-        switch provider {
-        case .local:
-            print("[TTSService] 📱 Using LOCAL TTS for: \(text.prefix(30))...")
-            do {
-                try await generateLocalTTS(
-                    requestId: requestId,
-                    paragraphIndex: paragraphIndex,
-                    text: text,
-                    voice: voice,
-                    speed: speed,
-                    language: language,
-                    onSegmentReady: onSegmentReady
-                )
-            } catch LocalTTSError.cancelled {
-                // 取消请求不 fallback
-                throw LocalTTSError.cancelled
-            } catch {
-                // 本地 TTS 失败（可能是后台 GPU 限制），fallback 到云端
-                let errorDesc = error.localizedDescription
-                if errorDesc.contains("background") || errorDesc.contains("GPU") || errorDesc.contains("Permission") {
-                    print("[TTSService] ⚠️ Local TTS failed (background GPU restriction), falling back to cloud")
-                } else {
-                    print("[TTSService] ⚠️ Local TTS failed: \(errorDesc), falling back to cloud")
-                }
-                try await generateCloudTTS(
-                    requestId: requestId,
-                    paragraphIndex: paragraphIndex,
-                    text: text,
-                    voice: voice,
-                    speed: speed,
-                    language: language,
-                    onSegmentReady: onSegmentReady
-                )
-            }
-
-        case .cloud:
-            print("[TTSService] ☁️ Using CLOUD TTS for: \(text.prefix(30))...")
-            try await generateCloudTTS(
-                requestId: requestId,
-                paragraphIndex: paragraphIndex,
-                text: text,
-                voice: voice,
-                speed: speed,
-                language: language,
-                onSegmentReady: onSegmentReady
-            )
-        }
-    }
-
-    // MARK: - Local TTS
-
-    private func generateLocalTTS(
-        requestId: UUID,
-        paragraphIndex: Int,
-        text: String,
-        voice: String,
-        speed: Double,
-        language: String,
-        onSegmentReady: @escaping (AudioSegment) async -> Void
-    ) async throws {
-        try await localTTS.generateTTSForParagraph(
+        print("[TTSService] ☁️ Cloud TTS for: \(text.prefix(30))...")
+        try await generateCloudTTS(
+            requestId: requestId,
             paragraphIndex: paragraphIndex,
             text: text,
             voice: voice,
@@ -159,16 +68,16 @@ actor TTSService {
         onSegmentReady: @escaping (AudioSegment) async -> Void
     ) async throws {
         guard currentRequestId == requestId else {
-            throw LocalTTSError.cancelled
+            throw TTSError.cancelled
         }
 
         var remainingText = text
         var segmentIndex = 0
 
-        // Loop until all text is processed (like web does)
+        // 循环处理后端逐段返回的 unprocessedText（与扩展一致：一次请求只处理一部分）。
         while !remainingText.isEmpty {
             guard currentRequestId == requestId else {
-                throw LocalTTSError.cancelled
+                throw TTSError.cancelled
             }
 
             do {
@@ -182,10 +91,9 @@ actor TTSService {
                 )
 
                 guard currentRequestId == requestId else {
-                    throw LocalTTSError.cancelled
+                    throw TTSError.cancelled
                 }
 
-                // Debug: Log what API actually processed
                 print("[TTSService] 📊 Cloud TTS response #\(segmentIndex):")
                 print("[TTSService] 📊 - Input text length: \(remainingText.count) chars")
                 print("[TTSService] 📊 - Processed text: \(response.processedText?.prefix(100) ?? "nil")...")
@@ -193,23 +101,20 @@ actor TTSService {
                 print("[TTSService] 📊 - Duration: \(response.safeDuration)s")
                 print("[TTSService] 📊 - Timestamps count: \(response.safeTimestamps.count)")
 
-                // Decode base64 audio
                 guard let audioData = Data(base64Encoded: response.audio) else {
-                    throw LocalTTSError.generationFailed("Failed to decode audio data")
+                    throw TTSError.generationFailed("Failed to decode audio data")
                 }
 
                 guard currentRequestId == requestId else {
-                    throw LocalTTSError.cancelled
+                    throw TTSError.cancelled
                 }
 
-                // Use timestamps from response (already in correct format)
                 let timestamps = response.safeTimestamps
                 let duration = response.safeDuration
-
-                // Use processedText for this segment's text (not full remaining text)
+                // 用 processedText 作为本 segment 文本（不是整段剩余文本）
                 let segmentText = response.processedText ?? remainingText
 
-                let segment = AudioSegment(
+                let rawSegment = AudioSegment(
                     paragraphIndex: paragraphIndex,
                     segmentIndex: segmentIndex,
                     audioData: audioData,
@@ -218,40 +123,87 @@ actor TTSService {
                     text: segmentText,
                     unprocessedText: response.unprocessedText ?? ""
                 )
+                // 中文云端常无 duration（且无词时间戳）→ 用真实音频时长兜底，供解读时间线/进度。
+                // 词时间戳不合成：朗读对齐扩展，无词时间戳语言走句子级高亮。
+                let segment = ensureDuration(rawSegment)
 
                 await onSegmentReady(segment)
 
-                // Check if there's more text to process
                 if let unprocessed = response.unprocessedText, !unprocessed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     remainingText = unprocessed
                     segmentIndex += 1
                     print("[TTSService] 📊 More text to process, continuing with segment #\(segmentIndex)")
                 } else {
-                    // All text processed
                     print("[TTSService] 📊 All text processed for paragraph \(paragraphIndex)")
                     break
                 }
 
             } catch is CancellationError {
-                throw LocalTTSError.cancelled
-            } catch let error as LocalTTSError {
+                throw TTSError.cancelled
+            } catch let error as TTSError {
                 throw error
             } catch {
                 print("[TTSService] Cloud TTS failed: \(error)")
-                throw LocalTTSError.generationFailed(error.localizedDescription)
+                throw TTSError.generationFailed(error.localizedDescription)
             }
         }
     }
 
-    // MARK: - Model Management
+    // MARK: - 时间戳合成（后端对中文等语言不返回词时间戳时，按真实音频时长在字符上均匀合成）
 
-    /// Download local model if needed
-    func downloadLocalModelIfNeeded(onProgress: ((Double) -> Void)? = nil) async throws {
-        try await localTTS.downloadModelIfNeeded(onProgress: onProgress)
+    /// 若 segment 无 API duration（中文云端常为 0），用音频真实时长兜底（解读时间线/进度依赖）。
+    /// **不合成词时间戳**——朗读对齐扩展：无词时间戳的语言走句子级高亮（见 ReadAloudViewModel）；
+    /// 解读需要时间线时由 ExplainViewModel 用 synthesizeTimestamps 自行合成（仅解读路径）。
+    nonisolated private func ensureDuration(_ seg: AudioSegment) -> AudioSegment {
+        guard seg.duration <= 0.01 else { return seg }
+        let dur = audioDuration(seg.audioData)
+        guard dur > 0 else { return seg }
+        return AudioSegment(
+            paragraphIndex: seg.paragraphIndex,
+            segmentIndex: seg.segmentIndex,
+            audioData: seg.audioData,
+            timestamps: seg.timestamps,
+            duration: dur,
+            text: seg.text,
+            isWavFormat: seg.isWavFormat,
+            unprocessedText: seg.unprocessedText,
+            speaker: seg.speaker
+        )
     }
 
-    /// Load/initialize local TTS model
-    func loadLocalModel() async throws {
-        try await localTTS.loadModel()
+    /// 解析 MP3/WAV 音频的真实时长（API duration 缺失时兜底）。
+    nonisolated private func audioDuration(_ data: Data) -> Double {
+        (try? AVAudioPlayer(data: data))?.duration ?? 0
+    }
+
+    /// 把文本切成可在原文中顺序定位的 token：CJK / 标点逐字，ASCII 字母数字成串，空白跳过。
+    /// internal（非 private）以便 EvalTests 做离线确定性校验。
+    nonisolated func tokenizeForTimestamps(_ text: String) -> [String] {
+        var tokens: [String] = []
+        var run = ""
+        func flush() { if !run.isEmpty { tokens.append(run); run = "" } }
+        for ch in text {
+            if ch.isWhitespace { flush(); continue }
+            if ch.isASCII && (ch.isLetter || ch.isNumber) {
+                run.append(ch)
+            } else {
+                flush()
+                tokens.append(String(ch))
+            }
+        }
+        flush()
+        return tokens
+    }
+
+    /// 时长在 token 上均匀分配，token 即可在 segment 文本中顺序定位（满足词高亮匹配）。
+    /// internal（非 private）以便 EvalTests 做离线确定性校验。
+    nonisolated func synthesizeTimestamps(text: String, duration: Double) -> [TTSTimestamp] {
+        guard duration > 0 else { return [] }
+        let tokens = tokenizeForTimestamps(text)
+        guard !tokens.isEmpty else { return [] }
+        let per = duration / Double(tokens.count)
+        return tokens.enumerated().map { i, tok in
+            TTSTimestamp(word: tok, startTime: Double(i) * per, endTime: Double(i + 1) * per)
+        }
     }
 }

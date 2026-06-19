@@ -6,6 +6,8 @@
 	<false/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
 			<key>api.castreader.ai</key>
@@ -17,6 +19,12 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>用于拍摄文字图片并朗读或解读。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>用于选择图片识别文字并朗读或解读。</string>
+	<key>QuickReadAPIKey</key>
+	<string>$(QUICKREAD_API_KEY)</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

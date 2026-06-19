@@ -1,5 +1,6 @@
 # Xcode
 build/
+build-device/
 DerivedData/
 *.xcuserstate
 *.xcuserdatad
@@ -12,6 +13,9 @@ Packages/
 
 # CocoaPods
 Pods/
+
+# Node (WebReader 构建依赖，产物 bundle.js 已入 WebAssets)
+node_modules/
 
 # macOS
 .DS_Store
@@ -28,3 +32,6 @@ __pycache__/
 
 # Local packages (external repos)
 LocalPackages/
+
+# Secrets (build-time injected)
+Secrets.xcconfig

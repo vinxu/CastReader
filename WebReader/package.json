@@ -1,0 +1,17 @@
+{
+  "name": "castreader-webreader",
+  "private": true,
+  "type": "module",
+  "description": "把 Chrome 扩展 readout-desktop 的纯 DOM 高亮/标注 JS 编译成可注入 WKWebView 的 bundle",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  },
+  "dependencies": {
+    "epubjs": "^0.3.93",
+    "mammoth": "^1.12.0",
+    "pdfjs-dist": "^6.0.227"
+  }
+}

@@ -86,43 +86,6 @@ actor APIService {
         }
     }
 
-    // MARK: - Explore API
-
-    func fetchGenres(number: Int = 100) async throws -> [String] {
-        guard let url = URL(string: "\(Constants.API.genres)?number=\(number)") else {
-            throw APIError.invalidURL
-        }
-
-        let response: GenreResponse = try await request(url)
-        return response.list
-    }
-
-    // MARK: - Search API
-
-    func searchBooks(query: String, page: Int = 0, pageSize: Int = 10) async throws -> [Book] {
-        guard let url = URL(string: Constants.API.searchBooks) else {
-            throw APIError.invalidURL
-        }
-
-        let searchRequest = SearchRequest(text: query, pageNumber: page, pageSize: pageSize)
-        let bodyData = try JSONEncoder().encode(searchRequest)
-
-        let response: SearchResponse = try await request(url, method: "POST", body: bodyData)
-        return response.data?.list ?? []
-    }
-
-    func fetchBooks(genre: String, page: Int = 0, pageSize: Int = 20) async throws -> BookListData {
-        // URL encode the genre parameter (handles spaces and special characters)
-        let encodedGenre = genre.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? genre
-        let urlString = "\(Constants.API.books)?page_number=\(page)&page_size=\(pageSize)&genre=\(encodedGenre)"
-
-        guard let url = URL(string: urlString) else {
-            throw APIError.invalidURL
-        }
-
-        let response: BookListResponse = try await request(url)
-        return response.data
-    }
 
     // MARK: - Library API
 
@@ -283,47 +246,6 @@ actor APIService {
         }
     }
 
-    // MARK: - Book Content API
-
-    func fetchBookDetail(uid: String) async throws -> BookDetail {
-        guard let url = URL(string: "\(Constants.API.baseURL)/html-ebook?uid=\(uid)") else {
-            throw APIError.invalidURL
-        }
-
-        let response: HtmlBookResponse = try await request(url)
-
-        // Check if API returned success
-        guard response.success else {
-            if let message = response.message {
-                throw APIError.serverError(message)
-            }
-            throw APIError.bookNotFound
-        }
-
-        // Check if data exists
-        guard let data = response.data else {
-            throw APIError.bookNotFound
-        }
-
-        return data.book
-    }
-
-    func fetchHtmlContent(url urlString: String) async throws -> String {
-        // URL 编码处理空格等特殊字符
-        guard let encoded = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let contentURL = URL(string: encoded) else {
-            throw APIError.invalidURL
-        }
-
-        let (data, response) = try await session.data(from: contentURL)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              200..<300 ~= httpResponse.statusCode else {
-            throw APIError.invalidResponse
-        }
-
-        return String(data: data, encoding: .utf8) ?? ""
-    }
 
     /// Fetch Markdown content from URL
     func fetchMarkdownContent(url urlString: String) async throws -> String {
@@ -346,17 +268,23 @@ actor APIService {
     // MARK: - TTS API
 
     func generateTTS(text: String, voice: String = Constants.TTS.defaultVoice, speed: Double = Constants.TTS.defaultSpeed, language: String = Constants.TTS.defaultLanguage) async throws -> TTSResponse {
-        guard let url = URL(string: Constants.API.tts) else {
-            throw APIError.invalidURL
-        }
-
-        // Truncate text if too long (API might have limit)
+        // 节点路由（对齐扩展）：大陆时区→CN 节点，其他→US；CN 失败回退 US。
         let maxLength = 5000
         let inputText = text.count > maxLength ? String(text.prefix(maxLength)) : text
-
         let ttsRequest = TTSRequest(input: inputText, voice: voice, speed: speed, language: language)
         let bodyData = try JSONEncoder().encode(ttsRequest)
 
-        return try await request(url, method: "POST", body: bodyData)
+        let primary = TTSEndpoint.primaryBase()
+        do {
+            guard let url = URL(string: TTSEndpoint.partlyURL(base: primary)) else { throw APIError.invalidURL }
+            return try await request(url, method: "POST", body: bodyData)
+        } catch {
+            if let fb = TTSEndpoint.fallbackBase(), let url = URL(string: TTSEndpoint.partlyURL(base: fb)) {
+                print("[TTS] primary node failed (\(primary)) → fallback US: \(fb)")
+                return try await request(url, method: "POST", body: bodyData)
+            }
+            throw error
+        }
     }
+
 }
