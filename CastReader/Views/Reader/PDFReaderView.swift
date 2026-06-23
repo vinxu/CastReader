@@ -106,7 +106,7 @@ struct PDFReaderView: UIViewRepresentable {
             guard !marks.isEmpty else { lastMarkScrollId = nil; return }   // 清空（重播/退出）→ 复位
             var lastDrawnSel: PDFSelection?     // 最后一个成功画出的 mark（= 最新出现）→ 滚动跟随它
             var lastDrawnId: UUID?
-            let ink = UIColor(red: 0.17, green: 0.24, blue: 0.31, alpha: 1)   // 深墨蓝，同 native MarkInkView
+            let ink = UIColor(hexString: AppSettings.shared.highlightColorHex).withAlphaComponent(0.85)   // #FD5F01 统一橙（深浅都清晰）
             let primary = UIColor(hexString: AppSettings.shared.highlightColorHex)
             for m in marks {
                 guard m.paragraphIndex >= 0, m.paragraphIndex < doc.paragraphs.count else { continue }
@@ -296,7 +296,7 @@ final class HandwrittenPDFAnnotation: PDFAnnotation {
     var markAction = ""
     var markSeed: UInt64 = 0
     var markN: Int?
-    var inkColor = UIColor(red: 0.17, green: 0.24, blue: 0.31, alpha: 1)   // 深墨蓝，同 MarkInkView
+    var inkColor = UIColor(hexString: AppSettings.shared.highlightColorHex).withAlphaComponent(0.85)   // #FD5F01 统一橙（深浅都清晰）
     var primaryColor: UIColor = .systemOrange
 
     override func draw(with box: PDFDisplayBox, in context: CGContext) {

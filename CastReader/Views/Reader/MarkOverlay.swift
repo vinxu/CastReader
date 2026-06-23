@@ -19,8 +19,8 @@ struct MarkInkView: View {
     let action: String
     let seed: UInt64
     let n: Int?
-    var inkColor: Color = Color(red: 0.17, green: 0.24, blue: 0.31)   // 深墨蓝
-    var highlightColor: Color = AppTheme.primary.opacity(0.4)
+    var inkColor: Color = Color(red: 253/255, green: 95/255, blue: 1/255)        // #FD5F01 统一橙（深浅都清晰）
+    var highlightColor: Color = Color(red: 253/255, green: 95/255, blue: 1/255)  // 同基色，绘制时各自叠 alpha
 
     @State private var progress: CGFloat = 0
 
@@ -35,7 +35,12 @@ struct MarkInkView: View {
         }
         .allowsHitTesting(false)
         .onAppear {
-            withAnimation(.easeOut(duration: duration)) { progress = 1 }
+            guard progress == 0 else { return }   // 复用/重绘时不重播已画完的 mark
+            // 延迟一帧让 progress=0（落笔起点）先渲染，再动画到 1——否则 SwiftUI 在 overlay/LazyVStack
+            // 里常首帧直接画终值、看不到落笔过程（常驻阅读器不重建后此问题暴露）。对齐 Chrome 扩展落笔。
+            DispatchQueue.main.async {
+                withAnimation(.easeOut(duration: duration)) { progress = 1 }
+            }
         }
     }
 
@@ -43,24 +48,23 @@ struct MarkInkView: View {
     private var shapeView: some View {
         switch action {
         case "highlight":
-            // 荧光笔：半透明 + 压在文字中下部，文字透出来不被遮盖
+            // 荧光笔：半透明压在文字中下部，文字透出不被遮盖。不用 multiply（深色背景×橙=黑，荧光会消失）。
             MarkPathShape(absolutePath: HandwrittenMark.highlightPath(over: rects, seed: seed))
                 .trim(from: 0, to: progress)
-                .stroke(highlightColor.opacity(0.28), style: StrokeStyle(lineWidth: lineHeight * 0.85, lineCap: .round, lineJoin: .round))
-                .blendMode(.multiply)
+                .stroke(highlightColor.opacity(0.35), style: StrokeStyle(lineWidth: lineHeight * 0.85, lineCap: .round, lineJoin: .round))
         case "underline":
             MarkPathShape(absolutePath: HandwrittenMark.underlinePath(over: rects, seed: seed))
                 .trim(from: 0, to: progress)
-                .stroke(inkColor, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                .stroke(inkColor.opacity(0.85), style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
         case "circle", "number":
             MarkPathShape(absolutePath: HandwrittenMark.circlePath(around: rects, seed: seed))
                 .trim(from: 0, to: progress)
-                .stroke(action == "number" ? inkColor : AppTheme.primary,
+                .stroke(inkColor.opacity(0.85),
                         style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
         default:
             MarkPathShape(absolutePath: HandwrittenMark.underlinePath(over: rects, seed: seed))
                 .trim(from: 0, to: progress)
-                .stroke(inkColor, style: StrokeStyle(lineWidth: 2.0, lineCap: .round))
+                .stroke(inkColor.opacity(0.85), style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
         }
     }
 

@@ -64,6 +64,33 @@ actor QuickReadService {
         return URLSession(configuration: cfg)
     }()
 
+    // MARK: - 重试（网络波动 / 后端瞬时错误自愈，指数退避）
+
+    /// 对网络层错误 / 5xx / 429 / 408 / 瞬时 400 / 流式截断自动重试（最多 3 次，0.6→1.2→2.4s 退避）。
+    /// 让一次抖动不至于打断整条解读链路，用户无需手动 Retry。
+    private func withRetry<T>(_ operation: () async throws -> T) async throws -> T {
+        var attempt = 0
+        while true {
+            do { return try await operation() }
+            catch {
+                attempt += 1
+                guard attempt < 3, Self.isRetryable(error) else { throw error }
+                let backoff = min(4.0, 0.6 * pow(2.0, Double(attempt - 1)))
+                try? await Task.sleep(nanoseconds: UInt64(backoff * 1_000_000_000))
+            }
+        }
+    }
+
+    private static func isRetryable(_ error: Error) -> Bool {
+        if error is URLError { return true }                        // 网络层（超时 / 断连 / DNS）
+        if case QuickReadError.httpError(let code) = error {
+            return code >= 500 || code == 429 || code == 408 || code == 400   // 服务端临时 / 限流 / 网关瞬时
+        }
+        if case QuickReadError.decodeError = error { return true }   // 流式截断 / 部分响应
+        if case QuickReadError.noBlock0 = error { return true }      // SSE 中途断、没拿到首块
+        return false
+    }
+
     // MARK: - extract-plan（SSE）
 
     /// 通读全文生成大纲 + 首块。onStage/onBlock0 在事件到达时回调；返回 done 载荷。
@@ -72,12 +99,22 @@ actor QuickReadService {
                      onStage: @escaping (String) -> Void,
                      onBlock0: @escaping (PlanBlock0) -> Void) async throws -> PlanDone {
         guard let url = URL(string: Constants.API.quickReadPlan) else { throw QuickReadError.invalidURL }
+        let payload = try encoder.encode(body)
+        // 重试整条 SSE（重连重建流）；onBlock0/onStage 在 ExplainViewModel 端幂等（box 覆盖 / 仅更新 UI 文字）。
+        return try await withRetry {
+            try await self.runExtractPlanOnce(url: url, payload: payload, onStage: onStage, onBlock0: onBlock0)
+        }
+    }
+
+    private func runExtractPlanOnce(url: URL, payload: Data,
+                                    onStage: @escaping (String) -> Void,
+                                    onBlock0: @escaping (PlanBlock0) -> Void) async throws -> PlanDone {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         applyAuthHeaders(&req)
-        req.httpBody = try encoder.encode(body)
+        req.httpBody = payload
 
         let (bytes, response) = try await session.bytes(for: req)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
@@ -155,19 +192,22 @@ actor QuickReadService {
 
     private func postSection<Body: Encodable>(_ urlString: String, body: Body) async throws -> QuickreadSection {
         guard let url = URL(string: urlString) else { throw QuickReadError.invalidURL }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        applyAuthHeaders(&req)
-        req.httpBody = try encoder.encode(body)
-        let (data, response) = try await session.data(for: req)
-        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            throw QuickReadError.httpError(http.statusCode)
-        }
-        do {
-            return try decoder.decode(QuickreadSectionResponse.self, from: data).section
-        } catch {
-            throw QuickReadError.decodeError("\(error)")
+        let payload = try encoder.encode(body)
+        return try await withRetry {
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            self.applyAuthHeaders(&req)
+            req.httpBody = payload
+            let (data, response) = try await self.session.data(for: req)
+            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                throw QuickReadError.httpError(http.statusCode)
+            }
+            do {
+                return try self.decoder.decode(QuickreadSectionResponse.self, from: data).section
+            } catch {
+                throw QuickReadError.decodeError("\(error)")
+            }
         }
     }
 }

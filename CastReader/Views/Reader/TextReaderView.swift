@@ -117,7 +117,8 @@ struct TextReaderView: View {
                     let rects = tv.rects(forCharRange: ns)
                     if !rects.isEmpty {
                         MarkInkView(rects: rects, action: mark.action, seed: mark.seed, n: mark.n,
-                                    highlightColor: Color(readVM.highlightUIColor))
+                                    inkColor: Color(readVM.markBaseColor),
+                                    highlightColor: Color(readVM.markBaseColor))
                     }
                 }
             }

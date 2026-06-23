@@ -84,6 +84,8 @@ export function createMarkRenderer(
       const len = path.getTotalLength?.() ?? 120
       path.style.strokeDasharray = String(len)
       path.style.strokeDashoffset = String(len)
+      void path.getBoundingClientRect()   // 强制 reflow：让初始 dashoffset=len（落笔起点）先落地，
+      // 否则 WebKit 把 len→0 合并成一帧、跳过落笔过渡（与 native MarkInkView 首帧问题同源）。
       path.style.transition = `stroke-dashoffset 700ms ${MARK_EASE}`
       requestAnimationFrame(() => { path.style.strokeDashoffset = '0' })
     } catch { /* getTotalLength 不可用时直接显示 */ }

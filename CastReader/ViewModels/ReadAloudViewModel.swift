@@ -134,7 +134,10 @@ final class ReadAloudViewModel: ObservableObject {
         return ranges.last
     }
 
-    var highlightUIColor: UIColor { UIColor(hexString: settings.highlightColorHex) }
+    /// 朗读高亮 + 解读 mark 统一基色（设置可选，默认 #FD5F01；橙色深浅模式都清晰可见）
+    var markBaseColor: UIColor { UIColor(hexString: settings.highlightColorHex) }
+    /// 朗读词高亮背景：基色半透明（文字透出不被遮盖，深浅都可见）
+    var highlightUIColor: UIColor { markBaseColor.withAlphaComponent(0.4) }
 
     // MARK: - Bind
 

@@ -41958,6 +41958,7 @@ var __CRWeb = (() => {
         const len = (_b = (_a = path5.getTotalLength) == null ? void 0 : _a.call(path5)) != null ? _b : 120;
         path5.style.strokeDasharray = String(len);
         path5.style.strokeDashoffset = String(len);
+        void path5.getBoundingClientRect();
         path5.style.transition = `stroke-dashoffset 700ms ${MARK_EASE}`;
         requestAnimationFrame(() => {
           path5.style.strokeDashoffset = "0";

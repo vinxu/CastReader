@@ -204,7 +204,8 @@ private struct PhotoContent: View {
                 let rects = resolver.rectsForCharRange(paragraphIndex: mark.paragraphIndex, range: mark.charRange)
                 if !rects.isEmpty {
                     MarkInkView(rects: rects, action: mark.action, seed: mark.seed, n: mark.n,
-                                highlightColor: Color(readVM.highlightUIColor))
+                                inkColor: Color(readVM.markBaseColor),
+                                highlightColor: Color(readVM.markBaseColor))
                 }
             }
         }

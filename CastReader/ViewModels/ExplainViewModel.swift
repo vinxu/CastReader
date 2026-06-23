@@ -121,6 +121,12 @@ final class ExplainViewModel: ObservableObject {
 
     func start() {
         guard status == .idle || isErrorState else { return }
+        // 提交 LLM 前预校验：内容太短，LLM 没东西可讲 → 直接引导朗读，不发请求白等重试、也不消耗额度（而非无脑提交）。
+        let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
+        if contentChars < minExplainChars {
+            status = .error(String(localized: "内容太短，无法解读，试试朗读"))
+            return
+        }
         guard pro.isPro || quota.canStartExplain(isPro: pro.isPro) else {
             showPaywall = true
             return
@@ -140,6 +146,9 @@ final class ExplainViewModel: ObservableObject {
     }
 
     private var isErrorState: Bool { if case .error = status { return true } else { return false } }
+
+    /// 解读最低内容量（提交 LLM 前预校验）：中文字符密度高、阈值低；其他语言按字符计。低于此 LLM 没东西可讲。
+    private var minExplainChars: Int { doc.language.hasPrefix("zh") ? 20 : 50 }
 
     func stop() {
         orchestrationTask?.cancel()
@@ -197,6 +206,10 @@ final class ExplainViewModel: ObservableObject {
                     self.showPaywall = true
                     self.status = .idle
                     self.stageText = ""
+                } else if case QuickReadError.httpError(400) = error {
+                    // 重试 3 次仍 400：多为内容太短/不适合解读，给可读提示而非裸 HTTP 码
+                    self.status = .error(String(localized: "内容太短或暂不支持解读，请稍后重试"))
+                    self.stageText = String(localized: "解读失败")
                 } else {
                     self.status = .error(error.localizedDescription)
                     self.stageText = String(localized: "解读失败")
