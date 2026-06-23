@@ -1,15 +1,9 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
-    "" : {
-
-    },
-    "  ✓" : {
-
-    },
-    "·" : {
-
-    },
+    "" : {},
+    "  ✓" : {},
+    "·" : {},
     "%@ · %@" : {
       "localizations" : {
         "zh-Hans" : {
@@ -20,15 +14,9 @@
         }
       }
     },
-    "%lld" : {
-
-    },
-    "%lld chapters" : {
-
-    },
-    "%lld words" : {
-
-    },
+    "%lld" : {},
+    "%lld chapters" : {},
+    "%lld words" : {},
     "%lld 分钟前" : {
       "localizations" : {
         "en" : {
@@ -69,9 +57,7 @@
         }
       }
     },
-    "CastReader" : {
-
-    },
+    "CastReader" : {},
     "CastReader Pro" : {
       "localizations" : {
         "en" : {
@@ -92,9 +78,7 @@
         }
       }
     },
-    "https://example.com/article" : {
-
-    },
+    "https://example.com/article" : {},
     "PDF / TXT / 图片 / EPUB" : {
       "localizations" : {
         "en" : {
@@ -105,14 +89,23 @@
         }
       }
     },
-    "Something went wrong" : {
-
-    },
-    "Try Again" : {
-
-    },
+    "Something went wrong" : {},
+    "Try Again" : {},
     "Untitled" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untitled"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无标题"
+          }
+        }
+      }
     },
     "上传中…" : {
       "localizations" : {
@@ -1546,6 +1539,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Highlight Color"
+          }
+        }
+      }
+    },
+    "内容太短，无法解读，试试朗读" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Content too short to explain. Try Read Aloud."
+          }
+        }
+      }
+    },
+    "内容太短或暂不支持解读，请稍后重试" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Content too short or unsupported for explanation. Please try again later."
+          }
+        }
+      }
+    },
+    "无法解析该 EPUB" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't parse this EPUB."
           }
         }
       }
