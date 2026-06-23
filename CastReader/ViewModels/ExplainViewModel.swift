@@ -91,6 +91,16 @@ final class ExplainViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] p in self?.isPlaying = p }
             .store(in: &cancellables)
+        // 与朗读统一：speed 改动（设置页滑杆 / 控制条倍速按钮）实时作用到解读播放，保证「显示 = 在播」。
+        settings.$speed
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.applySpeed() }
+            .store(in: &cancellables)
+    }
+
+    /// 应用全局语速到共享播放器（与 ReadAloudViewModel.applySpeed 对称，统一由 settings.speed 驱动）。
+    private func applySpeed() {
+        audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: pro.isPro)))
     }
 
     func activate() {
@@ -116,9 +126,11 @@ final class ExplainViewModel: ObservableObject {
             return
         }
         quota.noteExplainStarted(isPro: pro.isPro)
+        setupBatchScopeIfLarge()   // EPUB/长文：解读分批，避免整本一次 extract-plan → 后端 400
         activate()
+        activeMarks = []           // 开始新解读：清上一轮残留 mark（对齐 Android startExplain；之后跨批累积不再清）
         audio.setBook(id: document.id, title: document.title, chapterTitle: String(localized: "解读"), coverUrl: nil)
-        audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: pro.isPro)))
+        applySpeed()
         status = .planning
         stageText = String(localized: "通读全文…")
 
@@ -150,7 +162,7 @@ final class ExplainViewModel: ObservableObject {
         currentBlockIndex = -1
         scrollTarget = -1
         audio.setBook(id: document.id, title: document.title, chapterTitle: String(localized: "解读"), coverUrl: nil)
-        audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: pro.isPro)))
+        applySpeed()
         orchestrationTask = Task { [weak self] in await self?.prepareAndEnqueue(block: 0) }
     }
 
@@ -317,11 +329,11 @@ final class ExplainViewModel: ObservableObject {
         guard !batch.paras.isEmpty else { status = .completed; return }
         pdfScopedParagraphs = batch.paras
         pdfBatchCursor = batch.next
-        // 重置上一批块状态（保留 isActive / audio 设置）。
+        // 重置上一批块状态（保留 isActive / audio 设置）。注意 activeMarks 跨批**累积、不清**——
+        // 否则切到下一批时前面批的手写标注全没了（对齐 Android：整个解读过程 mark 留在原文上）。
         prepared.removeAll()
         marksByBlock.removeAll()
         firedMarks.removeAll()
-        activeMarks = []
         anchorCursor = batch.paras.first?.id   // mark 锚定优先当前批段落（不回前面批找重复文本）
         currentBlockIndex = -1
         scrollTarget = -1
@@ -555,6 +567,16 @@ final class ExplainViewModel: ObservableObject {
         anchorCursor = batch.paras.first?.id   // mark 锚定优先当前批段落（不回前面批找重复文本）
     }
 
+    /// 内容超过一批阈值时（整本 EPUB 4094 段等），解读改分批：设第一批 scope，复用 PDF 连续解读续批，
+    /// 避免把整本书一次性 extract-plan（请求体过大 → 后端 400）。PDF 已由翻页设 scope，这里不覆盖。
+    private func setupBatchScopeIfLarge() {
+        guard pdfScopedParagraphs == nil else { return }
+        let paras = doc.paragraphs
+        let total = paras.reduce(0) { $0 + $1.text.count }
+        guard total > pdfBatchCharLimit, let first = paras.first else { return }
+        setPdfScope([first], all: paras)
+    }
+
     /// 解读未启动 → PDFReaderView 翻页时据此决定是否把当前可见页设为解读起点（进行中翻页不改起点）。
     var isExplainIdle: Bool { status == .idle || isErrorState }
 
@@ -602,6 +624,7 @@ final class ExplainViewModel: ObservableObject {
         case .code: return "code"
         case .list: return "list"
         case .caption: return "caption"
+        case .image: return "caption"   // 图片段（text 已置空）映射为后端已知类型，避免未知 type
         }
     }
 

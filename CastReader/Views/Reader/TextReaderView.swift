@@ -6,6 +6,34 @@
 //
 
 import SwiftUI
+import UIKit
+import ImageIO
+
+/// EPUB 图片降采样解码器（对齐 Android Coil 自动降采样）：用 ImageIO 缩略图避免大图全分辨率解码占内存/卡顿；
+/// 按字节 hash 缓存（同图复用、换书不串）。LazyVStack 仅可见段触发，配合此降采样根治大图性能问题。
+enum EpubImageDecoder {
+    private static let cache = NSCache<NSNumber, UIImage>()
+
+    static func downsampled(_ data: Data, maxPixel: CGFloat = 1400) -> UIImage? {
+        let key = NSNumber(value: data.hashValue)
+        if let hit = cache.object(forKey: key) { return hit }
+        let opts: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixel * UIScreen.main.scale
+        ]
+        let img: UIImage?
+        if let src = CGImageSourceCreateWithData(data as CFData, nil),
+           let cg = CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary) {
+            img = UIImage(cgImage: cg)
+        } else {
+            img = UIImage(data: data)   // 缩略图失败兜底全解码
+        }
+        if let img { cache.setObject(img, forKey: key) }
+        return img
+    }
+}
 
 /// 持有各段 ReaderUITextView 引用（供解读 mark 取矩形）。非 ObservableObject，避免触发刷新循环。
 private final class TextViewRegistry {
@@ -43,6 +71,27 @@ struct TextReaderView: View {
 
     @ViewBuilder
     private func paragraphRow(_ para: ReadingParagraph) -> some View {
+        if para.type == .image {
+            imageRow(para)
+        } else {
+            textRow(para)
+        }
+    }
+
+    /// EPUB 内嵌图片段（降采样解码防大图 OOM/卡顿——对齐 Android Coil；aspectFit 适宽）。
+    @ViewBuilder
+    private func imageRow(_ para: ReadingParagraph) -> some View {
+        if let data = para.imageData, let ui = EpubImageDecoder.downsampled(data) {
+            Image(uiImage: ui)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxWidth: .infinity)
+                .cornerRadius(6)
+        }
+    }
+
+    @ViewBuilder
+    private func textRow(_ para: ReadingParagraph) -> some View {
         let isCurrent = (mode == .read && para.id == readVM.currentParagraphIndex)
         let text = (mode == .read) ? readVM.displayText(for: para.id) : para.text
         ReaderTextView(

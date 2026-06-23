@@ -51,7 +51,7 @@ xcodebuild test -workspace CastReader.xcworkspace -scheme CastReader -destinatio
 - **SwiftUI**，App target 部署目标 **iOS 17.6**（`project.pbxproj` 内 app target；project 默认与测试 target 仍是 15.5）。可用 iOS 16/17 API，但代码沿用防御式写法（带关联值 enum 手动 `Equatable`、拆分复杂 View）。
 - **入口**：`CastReaderApp.swift`（启动 `ProManager.start()` + `QuotaManager.rollIfNewDay()`）。
 - **导航**：`MainTabView` 三 Tab —— 首页（`HomeView`）/ 文库（`LibraryView`）/ 设置（`SettingsView`）。阅读宿主 `ReaderHostView` 全屏模态，顶部切「朗读/解读」。
-- **依赖（SPM）**：FluidAudio / FluidAudioTTS（本地 Kokoro CoreML TTS，24kHz）、ZIPFoundation。
+- **依赖（SPM）**：ZIPFoundation（解 EPUB/DOCX 的 zip）、SwiftSoup（EPUB 章节 XHTML → 段落，Jsoup 的 Swift 移植）。
 
 ### 统一文档模型（核心抽象）—— `Models/ReadingDocument.swift`
 
@@ -124,6 +124,15 @@ quickReadBaseURL = https://quickread.castreader.ai:8444 # 解读（独立后端�
 - `MarkAnchoring.locate(markText, near:)`：把 mark 锚文本（可能带【】或被改写）**模糊匹配**到原文字符范围（归一化+首尾窗口）；失败即跳过（fail-open）。
 - `HandwrittenMark` 用确定性 `SeededGenerator`（同 mark 重绘不抖）生成手写 `Path`；`MarkInkView` 用 `Shape.trim` 做落笔动画。**iOS 端无需上传截图**，marks 客户端文本锚定。
 - **SSE 解析坑（已踩）**：`URLSession.AsyncBytes.lines` 会**吞掉 SSE 事件之间的空行**，不能靠空行判定事件边界——`QuickReadService` 改为「遇到下一个 `event:` 行或空行就 flush 上一个事件」，否则 block0 会被后续 done 覆盖、报 `noBlock0`。
+
+### EPUB（原生解析渲染，含图片）—— `Services/EpubNativeEngine.swift`+`Utils/HtmlParser.swift`
+
+弃 epub.js/WebView（整本 DOM 高亮 overlay + `setActive` flood → 性能崩），改纯本地原生解析（回译 Android `EpubNativeEngine.kt`/`HtmlParser.kt`/`EpubReaderScreen.kt`）：
+
+- `EpubNativeEngine.parse(data:)`：ZIPFoundation 解包 → 读 `META-INF/container.xml` 找 OPF → SwiftSoup(`Parser.xmlParser()`) 解析 manifest(id→href,type)+spine(顺序) → 内嵌图片(media-type `image/*`)解字节存 `[规范化href: Data]` → 按 spine 逐章 XHTML 经 `HtmlParser` 抽段落 → 合并、重排连续 id、图片相对 href 回填字节。**三套坐标统一相对 OPF 目录**（images key / 章节 href / `resolveImageHref` 输出）；`zipPath()` 才转 zip 根。`SwiftSoup.Document` 须显式限定（CastReader 另有 `Models/Document.swift` 同名）。
+- `HtmlParser.parse(xhtml)`：SwiftSoup 递归遍历 body 按 tag 分派（img/figure/h1-6/p/blockquote/pre/li/div），跳过 script/style/nav/toc/pageno；parse 开头全局 `remove` 噪声(linenum/pageno/dropcap)以免 per-element clone（SwiftSoup `copy()` 返 Node 非 Element）。产出 `[EpubBlock]`(type+text+imageHref)。
+- `DocumentBuilder.fromEPUB` → `ReadingDocument(.epub)`，走 **TextReaderView 原生渲染**（`.epub` 已从 `isWebRendered` 移除）：图片段(`type==.image`)用 `EpubImageDecoder.downsampled`(ImageIO 缩略图降采样，对齐 Coil)渲染，其余段复用文本/词高亮/mark 管线。**图片段 text 置空但占 id**（保 index 连续 → mark 锚定/解读分批不错位），`isReadable=false` 朗读自动跳过封面图。
+- 朗读/解读/MarkAnchoring **零改动复用**（与 text/PDF 源同管线，`currentParagraphIndex==para.id`）；解读分批同 PDF（`setupBatchScopeIfLarge`）。大书后台线程解析（`HomeView` EPUB 入口 `Task.detached`）避免卡 UI。自检 `CastReaderTests/EpubNativeEngineTests`（真实 EPUB 段落/图片/id 连续性）。
 
 ### 登录 / 账号（`Services/AuthService.swift`(+Apple)、`Models/UserAccount.swift`、`Views/Auth/`）
 

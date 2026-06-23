@@ -20,9 +20,9 @@
 		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>用于拍摄文字图片并朗读或解读。</string>
+	<string>拍下书本、文档或屏幕上的文字，CastReader 在本机识别后即可为你朗读（边读边高亮跟随），或生成 AI 讲解并在原文上做手写标注。照片仅在设备上识别，不会上传。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>用于选择图片识别文字并朗读或解读。</string>
+	<string>从相册选取含文字的图片，CastReader 在本机识别后即可为你朗读，或生成 AI 讲解并在原文上做手写标注。图片仅在设备上识别，不会上传。</string>
 	<key>QuickReadAPIKey</key>
 	<string>$(QUICKREAD_API_KEY)</string>
 	<key>UIBackgroundModes</key>

@@ -52577,8 +52577,9 @@ var __CRWeb = (() => {
           }
           mm.convertToHtml({ arrayBuffer: bytes.buffer }).then((res) => {
             const article = document.createElement("article");
-            article.style.cssText = "max-width:680px;margin:0 auto;padding:16px 18px;font-size:18px;line-height:1.7";
+            article.style.cssText = "max-width:680px;margin:0 auto;padding:16px 18px;font-size:18px;line-height:1.8;text-align:justify;overflow-wrap:break-word;hyphens:auto";
             article.innerHTML = res.value;
+            document.body.style.cssText = "";
             document.body.innerHTML = "";
             document.body.appendChild(article);
             showDbg("docx ok html=" + res.value.length);
@@ -52622,8 +52623,9 @@ var __CRWeb = (() => {
           }).then((htmls) => {
             const list = htmls || [];
             const article = document.createElement("article");
-            article.style.cssText = "max-width:680px;margin:0 auto;padding:16px 18px;font-size:18px;line-height:1.7";
+            article.style.cssText = "max-width:680px;margin:0 auto;padding:16px 18px;font-size:18px;line-height:1.8;text-align:justify;overflow-wrap:break-word;hyphens:auto";
             article.innerHTML = list.join("\n");
+            document.body.style.cssText = "";
             document.body.innerHTML = "";
             document.body.appendChild(article);
             showDbg("epub chapters=" + list.length + " len=" + article.innerHTML.length);
@@ -52699,7 +52701,7 @@ var __CRWeb = (() => {
       },
       scrollTo(arg) {
         var _a;
-        (_a = paraElements.get(arg.paragraphIndex)) == null ? void 0 : _a.scrollIntoView({ block: "center", behavior: "smooth" });
+        (_a = paraElements.get(arg.paragraphIndex)) == null ? void 0 : _a.scrollIntoView({ block: "center", behavior: "auto" });
       },
       setAutoScroll(_arg) {
       },

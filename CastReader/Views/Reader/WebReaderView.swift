@@ -49,7 +49,7 @@ struct WebReaderView: UIViewRepresentable {
             if document.sourceKind == .docx { context.coordinator.pendingDocxBase64 = b64 }
             else { context.coordinator.pendingEpubBase64 = b64 }
             webView.loadHTMLString(
-                "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body></body></html>",
+                "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:transparent\"><div style=\"width:30px;height:30px;border:3px solid rgba(150,150,150,.25);border-top-color:#999;border-radius:50%;animation:crspin .8s linear infinite\"></div><style>@keyframes crspin{to{transform:rotate(360deg)}}</style></body></html>",
                 baseURL: URL(string: "https://castreader.local/local"))
         }
         return webView

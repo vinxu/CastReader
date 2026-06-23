@@ -106,10 +106,16 @@ final class HistoryStore: ObservableObject {
             guard let built = DocumentBuilder.fromPDFNative(url: tmp, title: rec.title) else { return nil }
             return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .pdf, language: built.language,
                                    paragraphs: built.paragraphs, fileData: data)
-        case .docx, .epub:
+        case .docx:
             guard let data = try? Data(contentsOf: payloadURL(rec.id)) else { return nil }
-            return ReadingDocument(id: rec.id, title: rec.title, sourceKind: rec.sourceKind,
+            return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .docx,
                                    language: rec.language, paragraphs: [], fileData: data)
+        case .epub:
+            // EPUB 原生重开：从字节重新解析为段落（像 PDF），而非旧 WebView 的空 paragraphs（否则白屏）
+            guard let data = try? Data(contentsOf: payloadURL(rec.id)),
+                  let built = DocumentBuilder.fromEPUB(data: data, title: rec.title) else { return nil }
+            return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .epub, language: built.language,
+                                   paragraphs: built.paragraphs, fileData: data)
         case .photo:
             guard let data = try? Data(contentsOf: payloadURL(rec.id)), let img = UIImage(data: data) else { return nil }
             let cap = CaptureFlowViewModel()

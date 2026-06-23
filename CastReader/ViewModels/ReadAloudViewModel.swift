@@ -66,6 +66,11 @@ final class ReadAloudViewModel: ObservableObject {
 
     // 高亮/计时游标
     private var lastWordKey = ""
+    // 词级高亮预对齐缓存（对齐 Android ensureWordAligned）：整段 TTS 词序一次性对齐到 processedDisplayText 字符区间，
+    // 游标单向只进，根治每帧 indexOf 重复定位 + 短词子串带偏 + 一词找不到全盘 nil（EPUB 长段卡死的根因）。
+    private var alignedPara = -1
+    private var alignedSegCount = -1
+    private var wordRanges: [NSRange?] = []
     private var photoCursor = 0
     private var lastSegmentId = ""
     private var lastSegmentMaxTime: Double = 0
@@ -190,6 +195,11 @@ final class ReadAloudViewModel: ObservableObject {
 
     func togglePlayPause() {
         if currentParagraphIndex < 0 { start(); return }
+        // 从暂停恢复播放时补额度闸门：否则免费用户在「宽限硬上限」弹墙后关墙、再点播放即可无限续听。
+        if !audio.isPlaying, !pro.isPro, !quota.canStartListen(isPro: pro.isPro) {
+            showPaywall = true
+            return
+        }
         audio.togglePlayPause()
     }
 
@@ -482,7 +492,7 @@ final class ReadAloudViewModel: ObservableObject {
         // 对齐扩展：无词时间戳（中文等语言后端不返回）→ 高亮当前整句（整个 segment 文本），随 segment 推进；
         // 有词时间戳（英文）→ 词级逐字高亮（"老师指读"）。判断依据是「该 segment 是否有词时间戳」，与语言无关。
         if seg.timestamps.isEmpty {
-            if document.sourceKind == .text {
+            if document.sourceKind.isNativeTextRendered {
                 let content = contentRange(in: seg.text as NSString)
                 highlightRange = NSRange(location: base + content.location, length: content.length)
             } else if document.sourceKind == .photo {
@@ -507,9 +517,12 @@ final class ReadAloudViewModel: ObservableObject {
         let wordKey = "\(seg.id)#\(localIdx)"
         defer { lastWordKey = wordKey }
 
-        if document.sourceKind == .text {
-            if let within = wordRange(in: seg.text, words: seg.timestamps.map { $0.word }, index: localIdx) {
-                highlightRange = NSRange(location: base + within.location, length: within.length)
+        if document.sourceKind.isNativeTextRendered {
+            // 预对齐查表（绝对位置，已含前序 segment 偏移）；对齐失败的词保留上一个高亮、不跳
+            ensureWordAligned()
+            let gIdx = segs.prefix(segPos).reduce(0) { $0 + $1.timestamps.count } + localIdx
+            if gIdx >= 0, gIdx < wordRanges.count, let r = wordRanges[gIdx] {
+                highlightRange = r
             }
         } else {
             // photo：仅当新词时推进游标
@@ -531,19 +544,43 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     /// 在 segment 文本中定位第 index 个词的 NSRange。
-    private func wordRange(in text: String, words: [String], index: Int) -> NSRange? {
-        let ns = text as NSString
-        var searchStart = 0
-        for i in 0...index {
-            let w = words[i]
-            guard !w.isEmpty else { continue }
-            let remaining = NSRange(location: searchStart, length: ns.length - searchStart)
-            let found = ns.range(of: w, options: [.literal], range: remaining)
-            if found.location == NSNotFound { return nil }
-            if i == index { return found }
-            searchStart = found.location + found.length
+    /// 一次性把当前段所有 TTS 词序对齐到 processedDisplayText（segs 拼接）字符区间，游标单向只进，缓存查表。
+    /// 对齐 Android ensureWordAligned，根治 EPUB 长段词高亮卡死：
+    /// ①预对齐缓存（不每帧 indexOf 重复定位）②游标单向（重复词按序命中、短词不被远处同名子串带偏）
+    /// ③找不到的词存 nil 但 cursor 不动、继续后续词（不再「一词找不到就全盘失败」）。
+    /// segments 流式增长（数量变化）时重对齐。
+    private func ensureWordAligned() {
+        let segs = segmentsByParagraph[currentParagraphIndex] ?? []
+        if alignedPara == currentParagraphIndex && alignedSegCount == segs.count { return }
+        let full = segs.map { $0.text }.joined() as NSString
+        let punct = CharacterSet(charactersIn: ".,!?;:\"'()[]").union(.whitespacesAndNewlines)
+        var ranges: [NSRange?] = []
+        var cursor = 0
+        for seg in segs {
+            for ts in seg.timestamps {
+                let word = ts.word.trimmingCharacters(in: .whitespacesAndNewlines)
+                if word.isEmpty { ranges.append(nil); continue }
+                let tail = NSRange(location: cursor, length: max(0, full.length - cursor))
+                var found = full.range(of: word, options: [.caseInsensitive], range: tail)
+                var len = (word as NSString).length
+                if found.location == NSNotFound {
+                    let stripped = word.trimmingCharacters(in: punct)
+                    if stripped.count >= 2 {
+                        found = full.range(of: stripped, options: [.caseInsensitive], range: tail)
+                        len = (stripped as NSString).length
+                    }
+                }
+                if found.location != NSNotFound {
+                    ranges.append(NSRange(location: found.location, length: len))
+                    cursor = found.location + len
+                } else {
+                    ranges.append(nil)   // 找不到 → nil，cursor 不动，继续下一个词
+                }
+            }
         }
-        return nil
+        wordRanges = ranges
+        alignedPara = currentParagraphIndex
+        alignedSegCount = segs.count
     }
 
     /// photo 无词时间戳时：把「段内第 segPos 个 segment + 其内部进度」线性映射到 OCR 词索引（句子级近似）。
@@ -594,7 +631,6 @@ final class ReadAloudViewModel: ObservableObject {
         }
         // 宽限硬上限：超额后继续播放累计，超过 graceCap 强制停止
         if !pro.isPro && quota.listenRemaining <= 0 {
-            graceSeconds += 0   // 提交在 commitListen 累加，这里仅判断
             if graceSeconds > quota.graceCapSeconds {
                 audio.pause()
                 showPaywall = true

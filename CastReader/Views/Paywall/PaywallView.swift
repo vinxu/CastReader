@@ -36,6 +36,9 @@ struct ProUpsellContent: View {
     @ObservedObject private var auth = AuthService.shared
     @State private var busy = false
     @State private var showLogin = false
+    @State private var loadFailed = false
+    @State private var showRestoreAlert = false
+    @State private var restoreMessage = ""
 
     private let benefits: [(String, String)] = [
         ("infinity", String(localized: "无限朗读时长")),
@@ -50,8 +53,17 @@ struct ProUpsellContent: View {
                 header
                 benefitList
                 buySection
-                Button("恢复购买") { Task { await pro.restore() } }
-                    .font(.subheadline)
+                Button("恢复购买") {
+                    Task {
+                        busy = true
+                        await pro.restore()
+                        busy = false
+                        restoreMessage = pro.isPro ? String(localized: "已恢复 Pro 会员") : String(localized: "未找到可恢复的购买")
+                        showRestoreAlert = true
+                    }
+                }
+                .font(.subheadline)
+                .disabled(busy)
                 accountRow
                 termsRow
             }
@@ -59,8 +71,18 @@ struct ProUpsellContent: View {
         }
         .background(AppTheme.background.ignoresSafeArea())
         .sheet(isPresented: $showLogin) { LoginView() }
-        .onAppear { Task { await pro.loadProducts(); await pro.refresh() } }
+        .alert("恢复购买", isPresented: $showRestoreAlert) {
+            Button("好", role: .cancel) {}
+        } message: { Text(restoreMessage) }
+        .onAppear { Task { await reloadProducts(); await pro.refresh() } }
         .onChange(of: pro.isPro) { isPro in if isPro { onPurchased() } }
+    }
+
+    /// 加载产品；加载后仍为空标记 loadFailed，供付费墙显示「重试」而非永久转圈。
+    private func reloadProducts() async {
+        loadFailed = false
+        await pro.loadProducts()
+        loadFailed = pro.products.isEmpty
     }
 
     @ViewBuilder
@@ -77,7 +99,7 @@ struct ProUpsellContent: View {
 
     private var termsRow: some View {
         VStack(spacing: 4) {
-            Text("订阅自动续期，可随时在 App Store 取消。")
+            Text("自动续订订阅，当前周期结束前 24 小时自动续费；可随时在 App Store 设置中取消。")
             HStack(spacing: 4) {
                 Link("服务条款", destination: URL(string: Constants.API.termsURL)!)
                 Text("·")
@@ -123,7 +145,14 @@ struct ProUpsellContent: View {
             Label("你已是 Pro 会员", systemImage: "checkmark.seal.fill")
                 .foregroundColor(.green).font(.headline)
         } else if pro.products.isEmpty {
-            ProgressView("加载订阅…")
+            VStack(spacing: 10) {
+                if loadFailed {
+                    Text("订阅信息加载失败").font(.subheadline).foregroundColor(AppTheme.mutedForeground)
+                    Button("重试") { Task { await reloadProducts() } }.font(.subheadline.weight(.semibold))
+                } else {
+                    ProgressView("加载订阅…")
+                }
+            }
         } else {
             VStack(spacing: 12) {
                 ForEach(pro.products, id: \.id) { product in
@@ -131,8 +160,11 @@ struct ProUpsellContent: View {
                         busy = true
                         Task { _ = await pro.purchase(product); busy = false }
                     } label: {
-                        HStack {
-                            Text(product.displayName).fontWeight(.semibold)
+                        HStack(alignment: .firstTextBaseline) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(product.displayName).fontWeight(.semibold)
+                                Text(periodText(product)).font(.caption).opacity(0.85)
+                            }
                             Spacer()
                             Text(product.displayPrice).fontWeight(.bold)
                         }
@@ -145,6 +177,17 @@ struct ProUpsellContent: View {
                     .disabled(busy)
                 }
             }
+        }
+    }
+
+    /// 订阅周期文案（满足 Apple 3.1.2：购买点附近明示订阅时长）。
+    private func periodText(_ p: Product) -> String {
+        switch p.subscription?.subscriptionPeriod.unit {
+        case .month: return String(localized: "按月订阅")
+        case .year: return String(localized: "按年订阅")
+        case .week: return String(localized: "按周订阅")
+        case .day: return String(localized: "按天订阅")
+        default: return ""
         }
     }
 }

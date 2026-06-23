@@ -54,8 +54,10 @@ private struct MiniPlayerBar: View {
     private func onPlayTap() {
         if isFinished {
             if isExplain { explainVM.replay() } else { readVM.start() }
+        } else if isExplain {
+            audio.togglePlayPause()        // 解读次数已在 start 计扣，暂停/恢复不涉及额度
         } else {
-            audio.togglePlayPause()
+            readVM.togglePlayPause()       // 朗读按时长计 → 经 VM 补额度闸门，防暂停后绕过
         }
     }
 

@@ -25,6 +25,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler {
     private var cancellables = Set<AnyCancellable>()
     private var didInit = false
     private var didAutoStart = false
+    private var isReadMode = true        // 当前模式；onRendered 自动开播据此决定启动朗读还是解读
     private var shownMarkIds = Set<String>()
 
     // MARK: - 关联 VM + 订阅
@@ -116,11 +117,16 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler {
         call("init", ["segments": segs, "color": AppSettings.shared.highlightColorHex])
         didInit = true
 
-        // 仅会话首次自动开播；从 Mini Player 展开会重建 WebView/bridge（didAutoStart 重置），
-        // 此时 readVM 已有进度（currentParagraphIndex>=0）→ 不重新开始播放。
-        if AppSettings.shared.autoPlay && !didAutoStart && readVM.currentParagraphIndex < 0 {
+        // 段落就绪后才自动开播，且按「当前模式」启动对应 VM（剪贴板/网址 autoplay 进解读时启动解读，
+        // 避免用空段落请求后端 → 解读 HTTP 400 / 朗读无内容）。从 Mini Player 展开会重建 bridge（didAutoStart 重置），
+        // 此时 readVM 已有进度（currentParagraphIndex>=0）→ 不重复开播。
+        if AppSettings.shared.autoPlay && !didAutoStart {
             didAutoStart = true
-            readVM.start()
+            if isReadMode {
+                if readVM.currentParagraphIndex < 0 { readVM.start() }
+            } else {
+                explainVM?.start()
+            }
         }
     }
 
@@ -161,6 +167,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler {
 
     /// 切朗读/解读模式：启停 DOM 高亮层。
     func setActive(readMode: Bool) {
+        isReadMode = readMode
         call("setActive", ["active": readMode])
     }
 

@@ -99,6 +99,15 @@ enum DocumentBuilder {
             || (0xFF00...0xFFEF).contains(v)   // 全角字符/标点
     }
 
+    /// 本地 EPUB 原生解析（ZIPFoundation + SwiftSoup，含内嵌图片，不上传、不走 WebView）。
+    static func fromEPUB(data: Data, title: String) -> ReadingDocument? {
+        guard let parsed = EpubNativeEngine.parse(data: data, fallbackTitle: title), !parsed.paragraphs.isEmpty else { return nil }
+        let sample = parsed.paragraphs.prefix(40).filter { $0.type.isReadable }.map(\.text).joined(separator: " ")
+        let lang = detectLanguage(sample)
+        return ReadingDocument(title: parsed.title ?? title, sourceKind: .epub, language: lang,
+                               paragraphs: parsed.paragraphs, fileData: data)   // 保留原始字节供历史重开重新解析
+    }
+
     /// 本地纯文本文件。
     static func fromTextFile(url: URL) -> ReadingDocument? {
         guard let text = try? String(contentsOf: url, encoding: .utf8) ?? String(contentsOf: url) else { return nil }

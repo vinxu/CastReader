@@ -39,8 +39,9 @@ final class AuthService: NSObject, ObservableObject {
     @Published var isWorking = false
 
     var isSignedIn: Bool { account != nil }
-    /// 查 Pro 用的账号 id（优先后端 user id）。
-    var proUserId: String? { account?.backendUserId ?? account?.id }
+    /// 查 Pro 用的账号 id：仅用后端 better-auth user id；关联失败时为 nil → Pro 查询退回 device_id 维度。
+    /// 不回退 provider sub（account.id），因其与后端 user_id 不同命名空间，会查不到 Web 端付费的 Pro。
+    var proUserId: String? { account?.backendUserId }
 
     private var webSession: ASWebAuthenticationSession?
     private let accountKey = "auth_account_v1"
@@ -72,7 +73,10 @@ final class AuthService: NSObject, ObservableObject {
         persist()
         KeychainStore.delete("google_id_token")
         KeychainStore.delete("google_access_token")
-        Task { await ProManager.shared.refreshServer() }   // 退回 device_id 维度
+        Task { @MainActor in
+            ProManager.shared.clearServerEntitlement()   // 先本地清，避免 refreshServer 失败时 serverPro 滞留为 true
+            await ProManager.shared.refreshServer()       // 再按 device_id 维度刷新
+        }
     }
 
     /// 供 Apple 登录扩展写入账号（private(set) 仅本文件可设）。

@@ -41,7 +41,11 @@ final class PlayerCoordinator: ObservableObject {
         isReaderPresented = true
         HistoryStore.shared.record(document)   // 进文库历史（新增/置顶；纯本地、不上云）
         if autoplay, let s = session {
-            if mode == .read { s.readVM.start() } else { s.explainVM.start() }
+            // web/docx/epub 源段落由 WebView 异步提取，autoplay 交给 WebReaderBridge.onRendered 段落就绪后按 mode 启动；
+            // 此处立即 start 会用空段落请求后端（解读 HTTP 400 / 朗读无内容）。
+            if !document.sourceKind.isWebRendered {
+                if mode == .read { s.readVM.start() } else { s.explainVM.start() }
+            }
         }
     }
 

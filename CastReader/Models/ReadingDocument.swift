@@ -17,12 +17,16 @@ enum ReadingSourceKind: String, Equatable, Codable {
     case web     // 网址：WKWebView 直接加载网页 DOM，高亮/标注经 JS bridge（保留原排版）
     case docx    // 本地 DOCX：WKWebView 内 mammoth.js 转 HTML 渲染（不上传后端），复用 web 的高亮/标注/提取链路
     case pdf     // 本地 PDF：PDFKit 原生 PDFView 渲染（保排版不重排），朗读高亮用 characterBounds overlay
-    case epub    // 本地 EPUB：WKWebView 内 epub.js 解析逐章渲染（不上传），复用 web 的高亮/标注/提取链路
+    case epub    // 本地 EPUB：ZIPFoundation 解包 + SwiftSoup 抽段落（含内嵌图片字节），原生 TextReaderView 渲染（不上传、不走 WebView）
 }
 
 extension ReadingSourceKind {
-    /// WKWebView 渲染的源（网页 / 本地 DOCX / 本地 EPUB）：正文提取在 DOM、高亮/标注经 WebReaderBridge 驱动。
-    var isWebRendered: Bool { self == .web || self == .docx || self == .epub }
+    /// WKWebView 渲染的源（网页 / 本地 DOCX）：正文提取在 DOM、高亮/标注经 WebReaderBridge 驱动。
+    /// 注意：EPUB 已改为原生解析渲染（走 TextReaderView），不在此列。
+    var isWebRendered: Bool { self == .web || self == .docx }
+
+    /// 原生文本渲染源（重排文本 / EPUB）：走 TextReaderView，朗读词/句高亮统一用 processedDisplayText 内字符范围。
+    var isNativeTextRendered: Bool { self == .text || self == .epub }
 }
 
 // MARK: - OCR Word
@@ -43,10 +47,11 @@ enum ReadingParagraphType: Equatable {
     case code
     case list
     case caption
+    case image   // 仅 epub：内嵌图片段（text 为 alt/caption，不朗读），渲染走 imageData
 
-    /// 是否参与朗读（代码块不读）
+    /// 是否参与朗读（代码块、图片段不读）
     var isReadable: Bool {
-        self != .code
+        self != .code && self != .image
     }
 }
 
@@ -58,10 +63,12 @@ struct ReadingParagraph: Identifiable, Equatable {
     var bboxNorm: CGRect? = nil // 仅 photo，段落包络（用于滚动/居中）
     var pdfPageIndex: Int? = nil // 仅 pdf：该句所在 PDF 页
     var pdfRange: NSRange? = nil // 仅 pdf：该句在该页 string 内的字符范围（PDFKit characterBounds 高亮用）
+    var imageData: Data? = nil   // 仅 epub：内嵌图片字节（PNG/JPEG），type==.image 时直接渲染
 
     init(id: Int, text: String, type: ReadingParagraphType = .paragraph,
          words: [OCRWord] = [], bboxNorm: CGRect? = nil,
-         pdfPageIndex: Int? = nil, pdfRange: NSRange? = nil) {
+         pdfPageIndex: Int? = nil, pdfRange: NSRange? = nil,
+         imageData: Data? = nil) {
         self.id = id
         self.text = text
         self.type = type
@@ -69,6 +76,7 @@ struct ReadingParagraph: Identifiable, Equatable {
         self.bboxNorm = bboxNorm
         self.pdfPageIndex = pdfPageIndex
         self.pdfRange = pdfRange
+        self.imageData = imageData
     }
 }
 

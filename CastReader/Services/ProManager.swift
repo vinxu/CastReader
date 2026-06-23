@@ -71,6 +71,13 @@ final class ProManager: ObservableObject {
         QuotaManager.shared.applyServerStatus(status)
     }
 
+    /// 登出时清服务端权益（避免 refreshServer 网络失败 fail-open 时 serverPro 滞留为旧的 true）。
+    func clearServerEntitlement() {
+        serverPro = false
+        serverPlan = nil
+        serverAccount = nil
+    }
+
     /// 打开系统「管理订阅」面板（模拟器不支持）。
     func openManageSubscriptions() async {
         guard let scene = UIApplication.shared.connectedScenes
@@ -116,13 +123,18 @@ final class ProManager: ObservableObject {
             let result = try await product.purchase()
             switch result {
             case .success(let verification):
+                // verified / unverified 都要 finish，否则已扣费的交易会反复回到队列；
+                // 权益以 refresh 后的 currentEntitlements 为准（unverified 不计权益，安全）。
                 if case .verified(let t) = verification {
                     await t.finish()
-                    await refresh()
-                    return isPro
+                } else if case .unverified(let t, _) = verification {
+                    await t.finish()
                 }
-                return false
-            case .userCancelled, .pending:
+                await refresh()
+                return isPro
+            case .pending:
+                return false   // 待批准（如家长 Ask to Buy）：完成后经 Transaction.updates 自动入账
+            case .userCancelled:
                 return false
             @unknown default:
                 return false

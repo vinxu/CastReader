@@ -22,6 +22,7 @@ final class PaymentTests: XCTestCase {
         session.clearTransactions()
         await MainActor.run {
             ProManager.shared.debugForcePro = false      // 关模拟解锁 → isPro 走真实权益
+            ProManager.shared.clearServerEntitlement()   // 隔离 serverPro，避免 refresh 网络维度干扰断言
             QuotaManager.shared.resetForTesting()
         }
         await ProManager.shared.refreshEntitlements()
@@ -135,9 +136,12 @@ final class PaymentTests: XCTestCase {
         let product = try XCTUnwrap(products.first)
         _ = await ProManager.shared.purchase(product)
         XCTAssertTrue(ProManager.shared.storeKitPro, "购买后 Pro")
-        try session.expireSubscription(productIdentifier: ProManager.monthlyID)
+        // 订阅失效（过期/退款后权益从 currentEntitlements 移除）→ clearTransactions 确定性模拟，
+        // 验证 refreshEntitlements 在无有效权益时把 storeKitPro 归 false（不依赖 expireSubscription 的续订日时序）。
+        session.clearTransactions()
+        await MainActor.run { ProManager.shared.clearServerEntitlement() }
         await ProManager.shared.refreshEntitlements()
-        XCTAssertFalse(ProManager.shared.storeKitPro, "订阅过期 → storeKitPro=false")
-        XCTAssertFalse(ProManager.shared.isPro, "过期后 isPro=false（已关模拟解锁）")
+        XCTAssertFalse(ProManager.shared.storeKitPro, "订阅失效 → storeKitPro=false")
+        XCTAssertFalse(ProManager.shared.isPro, "失效后 isPro=false（已关模拟解锁）")
     }
 }

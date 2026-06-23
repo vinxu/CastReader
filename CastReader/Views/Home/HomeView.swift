@@ -148,12 +148,24 @@ struct HomeView: View {
         } else if ["txt", "text", "md", "markdown"].contains(ext) {
             if let doc = DocumentBuilder.fromTextFile(url: url) { coordinator.open(doc) }
             else { notice = String(localized: "无法读取文本文件") }
-        } else if ext == "docx" || ext == "epub" {
-            // DOCX/EPUB 本地渲染（WebView 内 mammoth/epub.js 保排版）——不上传后端。
+        } else if ext == "docx" {
+            // DOCX 本地渲染（WebView 内 mammoth 保排版）——不上传后端。
             if let data = try? Data(contentsOf: url) {
                 let title = url.deletingPathExtension().lastPathComponent
-                let kind: ReadingSourceKind = (ext == "docx") ? .docx : .epub
-                coordinator.open(ReadingDocument(title: title, sourceKind: kind, paragraphs: [], fileData: data))
+                coordinator.open(ReadingDocument(title: title, sourceKind: .docx, paragraphs: [], fileData: data))
+            } else { notice = String(localized: "无法读取该文件") }
+        } else if ext == "epub" {
+            // EPUB 原生解析（ZIPFoundation + SwiftSoup，含内嵌图片）——不上传、不走 WebView。
+            // 大书 4000+ 段解析较重，后台线程做，避免卡 UI。data 已在安全作用域内同步读出。
+            if let data = try? Data(contentsOf: url) {
+                let title = url.deletingPathExtension().lastPathComponent
+                Task {
+                    let doc = await Task.detached(priority: .userInitiated) {
+                        DocumentBuilder.fromEPUB(data: data, title: title)
+                    }.value
+                    if let doc { coordinator.open(doc) }
+                    else { notice = String(localized: "无法解析该 EPUB") }
+                }
             } else { notice = String(localized: "无法读取该文件") }
         } else {
             // EPUB 等 → 暂仍走后端处理（EPUB 本地化为后续里程碑）

@@ -48,14 +48,20 @@ struct MainTabView: View {
                     .padding(.bottom, 50)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+
+            // 阅读器常驻顶层（会话存活期间）：用上移/下移替代 fullScreenCover 的 present/dismiss，
+            // View 永不重建 → 收起再展开保留滚动位置、UITextView registry、解读 mark（根治重建丢状态）。
+            if let s = coordinator.session {
+                ReaderHostView(readVM: s.readVM, explainVM: s.explainVM, coordinator: coordinator, document: s.document)
+                    .id(s.id)   // 仅换文档（session 变）才重建；同文档收起/展开不重建
+                    .offset(y: coordinator.isReaderPresented ? 0 : UIScreen.main.bounds.height)
+                    .transition(.move(edge: .bottom))   // 首次 open / close 时从底部滑入滑出
+                    .animation(.spring(response: 0.4, dampingFraction: 0.9), value: coordinator.isReaderPresented)
+                    .zIndex(10)
+            }
         }
         .environmentObject(coordinator)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: coordinator.showsMiniPlayer)
-        .fullScreenCover(isPresented: $coordinator.isReaderPresented) {
-            if let s = coordinator.session {
-                ReaderHostView(readVM: s.readVM, explainVM: s.explainVM, coordinator: coordinator, document: s.document)
-            }
-        }
         .onChange(of: scenePhase) { phase in
             if phase == .active { clipboard.check() }   // 进 App / 回前台 → 探测剪贴板
         }

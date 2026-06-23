@@ -2,7 +2,8 @@
 //  ExplainControlBar.swift
 //  CastReader
 //
-//  解读控制条：阶段提示 / 块进度 / 播放暂停 / 开始 / 重试。
+//  解读控制条：上层字幕（讲解文本，全宽多行，逐句推进），下层控制（播放/暂停 · 段进度 · 倍速）。
+//  字幕独占一行不被按钮挤压，避免截断。
 //
 
 import SwiftUI
@@ -11,18 +12,39 @@ struct ExplainControlBar: View {
     @ObservedObject var vm: ExplainViewModel
 
     var body: some View {
-        HStack(spacing: 14) {
-            content
-            Spacer(minLength: 0)
+        VStack(alignment: .leading, spacing: 10) {
+            subtitleRow
+            HStack(spacing: 14) {
+                controlContent
+                Spacer(minLength: 0)
+            }
         }
         .foregroundColor(AppTheme.foreground)
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .frame(minHeight: 64)
+        .animation(.easeInOut(duration: 0.2), value: vm.explanationText)
     }
 
+    // MARK: 字幕（播放中显示讲解文本，全宽 2 行，独立空间不被控制按钮挤）
+
     @ViewBuilder
-    private var content: some View {
+    private var subtitleRow: some View {
+        if case .streaming = vm.status, !vm.isPreparingNext, !vm.explanationText.isEmpty {
+            Text(vm.explanationText)
+                .font(.callout)
+                .foregroundColor(AppTheme.foreground)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .transition(.opacity)
+        }
+    }
+
+    // MARK: 控制行
+
+    @ViewBuilder
+    private var controlContent: some View {
         switch vm.status {
         case .idle:
             startButton(title: String(localized: "开始解读"), icon: "sparkles")
@@ -52,16 +74,11 @@ struct ExplainControlBar: View {
                         .font(.system(size: 44))
                         .foregroundColor(AppTheme.primary)
                 }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("讲解中 · 第 \(block + 1)/\(total) 段")
-                        .font(.subheadline.weight(.semibold))
-                    if !vm.explanationText.isEmpty {
-                        Text(vm.explanationText)
-                            .font(.caption)
-                            .foregroundColor(AppTheme.mutedForeground)
-                            .lineLimit(1)
-                    }
-                }
+                Text("讲解中 · 第 \(block + 1)/\(total) 段")
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                SpeedMenu()
             }
         case .completed:
             Image(systemName: "checkmark.circle.fill").foregroundColor(.green)

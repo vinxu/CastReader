@@ -27,6 +27,7 @@ struct ReaderHostView: View {
             Divider()
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .id(document.id)   // 锁定 identity 到文档：切朗读/解读不重建 reader（保住 EPUB 已渲染的 WebView，避免闪白重载）
             Divider()
             controls
         }
@@ -73,13 +74,14 @@ struct ReaderHostView: View {
     @ViewBuilder
     private var content: some View {
         switch document.sourceKind {
-        case .web, .docx, .epub:
+        case .web, .docx:
             WebReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode)
         case .pdf:
             PDFReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode)
         case .photo:
             PhotoReaderCanvas(document: document, readVM: readVM, explainVM: explainVM, mode: mode)
-        case .text:
+        case .epub, .text:
+            // EPUB 已原生解析为段落（含图片段），与 text 源共用 TextReaderView 渲染管线
             TextReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode)
         }
     }
@@ -109,7 +111,6 @@ struct ReaderHostView: View {
 
 private struct ReadControlBar: View {
     @ObservedObject var vm: ReadAloudViewModel
-    @ObservedObject private var settings = AppSettings.shared
 
     var body: some View {
         HStack(spacing: 24) {
@@ -125,24 +126,42 @@ private struct ReadControlBar: View {
                 Image(systemName: "goforward.15").font(.system(size: 20))
             }
             Spacer()
-            Menu {
-                ForEach(AudioPlayerService.speedOptions, id: \.self) { s in
-                    Button {
-                        vm.setSpeed(Double(s))
-                    } label: {
-                        Text(String(format: "%.2gx", s)) + Text(abs(Double(s) - settings.speed) < 0.01 ? "  ✓" : "")
-                    }
-                }
-            } label: {
-                Text(String(format: "%.2gx", settings.speed))
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(AppTheme.surfaceVariant)
-                    .cornerRadius(8)
-            }
+            SpeedMenu()
         }
         .foregroundColor(AppTheme.foreground)
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
+    }
+}
+
+/// 共享调速菜单（朗读 / 解读控制条复用）：选速即写入全局 speed 并立刻作用于当前播放（共享 AudioPlayerService）。
+/// 速度档位 0.5–2.0x，免费即可用；Pro 的 3x 走设置页滑杆（带额度闸门）。
+struct SpeedMenu: View {
+    @ObservedObject private var settings = AppSettings.shared
+    @ObservedObject private var pro = ProManager.shared
+    @ObservedObject private var audio = AudioPlayerService.shared
+
+    var body: some View {
+        Menu {
+            ForEach(AudioPlayerService.speedOptions, id: \.self) { s in
+                Button {
+                    settings.speed = Double(s)
+                    audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: pro.isPro)))
+                } label: {
+                    // ✓ 对比「实际播放速率」audio.playbackRate，而非 settings.speed，保证勾选项=在播
+                    Text(String(format: "%.2gx", s)) + Text(abs(s - audio.playbackRate) < 0.01 ? "  ✓" : "")
+                }
+            }
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "speedometer").font(.caption)
+                // 直接显示 AVPlayer 实际在用的速率（@Published，每段切换都会保持）→ 显示永远等于在播
+                Text(String(format: "%.2gx", Double(audio.playbackRate))).font(.subheadline.weight(.semibold))
+            }
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .background(AppTheme.surfaceVariant)
+            .foregroundColor(AppTheme.foreground)
+            .cornerRadius(8)
+        }
     }
 }

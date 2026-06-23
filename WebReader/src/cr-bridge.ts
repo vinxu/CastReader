@@ -198,8 +198,9 @@ export function initBridge(deps: CRDeps): void {
         mm.convertToHtml({ arrayBuffer: bytes.buffer })
           .then((res) => {
             const article = document.createElement('article')
-            article.style.cssText = 'max-width:680px;margin:0 auto;padding:16px 18px;font-size:18px;line-height:1.7'
+            article.style.cssText = 'max-width:680px;margin:0 auto;padding:16px 18px;font-size:18px;line-height:1.8;text-align:justify;overflow-wrap:break-word;hyphens:auto'
             article.innerHTML = res.value
+            document.body.style.cssText = ''   // 清掉 loadHTMLString 的 loading flex+100vh 样式，否则 article 被居中裁切、高亮坐标偏
             document.body.innerHTML = ''
             document.body.appendChild(article)
             showDbg('docx ok html=' + res.value.length)
@@ -238,8 +239,9 @@ export function initBridge(deps: CRDeps): void {
         }).then((htmls) => {
           const list = (htmls as string[]) || []
           const article = document.createElement('article')
-          article.style.cssText = 'max-width:680px;margin:0 auto;padding:16px 18px;font-size:18px;line-height:1.7'
+          article.style.cssText = 'max-width:680px;margin:0 auto;padding:16px 18px;font-size:18px;line-height:1.8;text-align:justify;overflow-wrap:break-word;hyphens:auto'
           article.innerHTML = list.join('\n')
+          document.body.style.cssText = ''   // 清掉 loadHTMLString 的 loading flex+100vh 样式，否则 article 被居中裁切、高亮坐标偏
           document.body.innerHTML = ''
           document.body.appendChild(article)
           showDbg('epub chapters=' + list.length + ' len=' + article.innerHTML.length)
@@ -283,7 +285,7 @@ export function initBridge(deps: CRDeps): void {
     setColor(arg: { hex: string }): void { color = arg.hex; markRenderer.setColor(arg.hex) },
     setActive(arg: { active: boolean }): void { if (arg.active) markRenderer.clear(); else clearOverlay() },
     scrollTo(arg: { paragraphIndex: number }): void {
-      paraElements.get(arg.paragraphIndex)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      paraElements.get(arg.paragraphIndex)?.scrollIntoView({ block: 'center', behavior: 'auto' })
     },
     setAutoScroll(_arg: { enabled: boolean }): void { /* M2 */ },
     showMark(arg: { id: string; paragraphIndex: number; charStart: number; charEnd: number; action: string; n?: number; seed: number }): void {
