@@ -190,6 +190,42 @@ actor QuickReadService {
         return try await postSection(Constants.API.quickReadComposeBlock, body: body)
     }
 
+    // MARK: - 快道（fast-block0）
+
+    /// 快道：标题 + 开头 N 段 → 一次 LLM 直出 block_0{narration, marks}（marks 无 at），跳过读整篇 + compose。
+    /// 失败即抛出、**不重试**（快道的意义是快；失败由竞速兜底——质道 block_0 自然顶上）。超时 8s。
+    /// 返回精简 section（text=narration、events=过滤后的 marks）。
+    func fastBlock0(title: String, openingParas: [String], lang: String?,
+                    depth: String, prevSummary: String?) async throws -> QuickreadSection {
+        guard let url = URL(string: Constants.API.quickReadFastBlock0) else { throw QuickReadError.invalidURL }
+        let body = FastBlock0Request(title: title,
+                                     openingParas: openingParas.map { FastBlock0OpeningPara(text: $0) },
+                                     lang: lang, depth: depth, prev_summary: prevSummary)
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        applyAuthHeaders(&req)
+        req.httpBody = try encoder.encode(body)
+        req.timeoutInterval = 8   // 快道超时即放弃，走质道
+
+        let (data, response) = try await session.data(for: req)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            throw QuickReadError.httpError(http.statusCode)
+        }
+        let resp = try decoder.decode(FastBlock0Response.self, from: data)
+        guard let b0 = resp.block_0,
+              !b0.narration.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw QuickReadError.noBlock0
+        }
+        // marks 精简形态 → QuickreadEvent：过滤 style 白名单 + 非空 text；at 留空（端侧均匀分布，见 ensureTiming）
+        let allowed: Set<String> = ["circle", "underline", "highlight", "number"]
+        let events = (b0.marks ?? [])
+            .filter { allowed.contains($0.style) && !$0.text.isEmpty }
+            .map { QuickreadEvent(at: nil, action: $0.style, text: $0.text, n: $0.n, role: nil, note: nil) }
+        return QuickreadSection(id: "fast-0", text: b0.narration, style: "explain",
+                                cinematic: QuickreadCinematic(events: events))
+    }
+
     private func postSection<Body: Encodable>(_ urlString: String, body: Body) async throws -> QuickreadSection {
         guard let url = URL(string: urlString) else { throw QuickReadError.invalidURL }
         let payload = try encoder.encode(body)

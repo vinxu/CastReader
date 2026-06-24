@@ -82,6 +82,7 @@ struct ExtractPlanRequest: Codable {
     let text: String
     let fullText: String
     let paragraphs: [QuickreadParagraphDTO]
+    var prev_summary: String?  // 快道激活 → 质道承接快道 narration（block_1 不复述开头、衔接连贯）；书籍翻页承接同字段
 }
 
 struct ExtractBlockRequest: Codable {
@@ -105,6 +106,35 @@ struct ComposeBlockRequest: Codable {
 /// extract-block / compose-block 的响应包裹
 struct QuickreadSectionResponse: Codable {
     let section: QuickreadSection
+}
+
+// MARK: - 快道（fast-block0）：跳过「读整篇」+「compose」，一次 LLM 直出 block_0 秒开
+
+struct FastBlock0OpeningPara: Codable { let text: String }
+
+struct FastBlock0Request: Codable {
+    let title: String
+    let openingParas: [FastBlock0OpeningPara]
+    let lang: String?
+    let depth: String
+    let prev_summary: String?
+}
+
+/// 快道 mark 精简形态（无 at，端侧均匀分布；style ∈ circle|underline|highlight|number）
+struct FastBlock0Mark: Codable {
+    let style: String
+    let text: String
+    let n: Int?
+}
+
+struct FastBlock0Body: Codable {
+    let narration: String
+    let marks: [FastBlock0Mark]?
+}
+
+struct FastBlock0Response: Codable {
+    let block_0: FastBlock0Body?
+    let fast_ms: Double?
 }
 
 // MARK: - Status

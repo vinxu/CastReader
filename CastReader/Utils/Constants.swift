@@ -32,6 +32,7 @@ enum Constants {
         static let quickReadPlan = "\(quickReadBaseURL)/api/quickread/extract-plan"          // SSE
         static let quickReadExtractBlock = "\(quickReadBaseURL)/api/quickread/extract-block" // JSON
         static let quickReadComposeBlock = "\(quickReadBaseURL)/api/quickread/compose-block" // JSON
+        static let quickReadFastBlock0 = "\(quickReadBaseURL)/api/quickread/fast-block0"     // 快道：直出 block_0 秒开
 
         // 账号 / Pro 后端（Web，readout-web）
         static let webURL = "https://castreader.ai"

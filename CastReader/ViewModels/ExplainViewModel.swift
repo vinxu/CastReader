@@ -71,6 +71,15 @@ final class ExplainViewModel: ObservableObject {
     private var anchorCursor: Int? = nil
     private var markHit = 0, markTotal = 0   // mark 匹配成功率诊断（CRDBG）
 
+    // 快道（Fast-Lane）：快道占 block_0 秒开，质道吃剩余段、块顺延为 block_(idxBase+j)。idxBase=0 即未走快道（原单路）。
+    private var idxBase = 0
+    private var fastSection: QuickreadSection?
+    private var block0Claimed = false
+    private var fastTask: Task<Void, Never>?
+    private var forcedExplainLang: String?   // 快道激活时锁定语言（快道+质道同语言，避免开头/后续语言不一致）
+    /// 质道 plan 失败标志（402/400/网络）：让 prepareBlock 的 section0 等待循环跳出，避免快道占位后死等挂起。
+    private var planFailed = false
+
     private var orchestrationTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
     private(set) var isActive = false
@@ -132,16 +141,24 @@ final class ExplainViewModel: ObservableObject {
             return
         }
         quota.noteExplainStarted(isPro: pro.isPro)
-        setupBatchScopeIfLarge()   // EPUB/长文：解读分批，避免整本一次 extract-plan → 后端 400
         activate()
         activeMarks = []           // 开始新解读：清上一轮残留 mark（对齐 Android startExplain；之后跨批累积不再清）
+        idxBase = 0; block0Claimed = false; fastSection = nil; forcedExplainLang = nil; planFailed = false
+        // text/web/EPUB 的 scope 只由快道 setupQuoteScope 设；重试解读前清掉上轮残留，否则 fastLaneEligibleOpening
+        // 的 `pdfScopedParagraphs == nil` 守卫失败 → 退化成只讲 rest、永久丢开头段（PDF 翻页 scope 不受影响）。
+        if [.text, .web, .epub].contains(doc.sourceKind) { pdfScopedParagraphs = nil; pdfBatchCursor = nil }
         audio.setBook(id: document.id, title: document.title, chapterTitle: String(localized: "解读"), coverUrl: nil)
         applySpeed()
         status = .planning
         stageText = String(localized: "通读全文…")
 
-        orchestrationTask = Task { [weak self] in
-            await self?.runPlan()
+        // 快道（Fast-Lane）：text/web/EPUB 整页长文 → 先一次轻量 LLM 直出 block_0 秒开，质道吃剩余段顺延 block_1+。
+        // 快道先 LLM+TTS 决定 idxBase/scope 再启动质道（失败则质道吃全量、绝不漏开头）。门控不过 → 原单路质道。
+        if let opening = fastLaneEligibleOpening() {
+            fastTask = Task { [weak self] in await self?.runFastLaneThenQuote(opening: opening) }
+        } else {
+            setupBatchScopeIfLarge()   // EPUB/长文：解读分批，避免整本一次 extract-plan → 后端 400
+            orchestrationTask = Task { [weak self] in await self?.runPlan() }
         }
     }
 
@@ -150,8 +167,84 @@ final class ExplainViewModel: ObservableObject {
     /// 解读最低内容量（提交 LLM 前预校验）：中文字符密度高、阈值低；其他语言按字符计。低于此 LLM 没东西可讲。
     private var minExplainChars: Int { doc.language.hasPrefix("zh") ? 20 : 50 }
 
+    /// 快道内容上限：rest 整段一次 extract-plan（不分批，§4.7）能被后端单次处理的体量上界（对齐「一篇长文」≈
+    /// 网页文章，实测 ~6800 字 plan 正常）。超过（整本 EPUB/超长）退回分批路径，避免单次 plan 过大 → 后端 400。
+    private let fastLaneMaxChars = 12000
+
+    // MARK: - 快道（Fast-Lane）
+
+    /// 快道门控（§5.1）：text/web/EPUB 整页长文首次解读。返回开头 N 段（累计 ~350 字 / ≤2 段）；nil = 不快道。
+    private func fastLaneEligibleOpening() -> [ReadingParagraph]? {
+        guard [.text, .web, .epub].contains(doc.sourceKind) else { return nil }   // photo/PDF 翻页跳过
+        guard pdfScopedParagraphs == nil else { return nil }                       // 已设批次范围（PDF 翻页）跳过
+        let readable = doc.readableParagraphs
+        let totalChars = readable.reduce(0) { $0 + $1.text.count }
+        // 下界：短内容质道本就快，快道不值当。上界：rest 整段喂一个 plan（不分批），整本 EPUB/超长会超后端
+        // 单次 plan 上限 → 400；超上界退回原分批路径（setupBatchScopeIfLarge），保证大文档仍能逐批听完。
+        guard readable.count >= 6, totalChars >= 2500, totalChars <= fastLaneMaxChars else { return nil }
+        var n = 0, acc = 0
+        for p in readable { n += 1; acc += p.text.count; if acc >= 350 || n >= 2 { break } }
+        guard readable.count - n >= 2 else { return nil }                          // 剩余够质道跑
+        return Array(readable.prefix(n))
+    }
+
+    /// 快道激活后，质道吃 rest **全部、单次** extract-plan（对齐文档 §4.7：在 rest 上正常顺序分块、running_summary
+    /// 自洽，无需再分批）。重索引 0-based 让质道当成「从开头的一篇文章」；mark 锚定独立、锚 doc 全集不受影响。
+    /// 注意：不能再对 rest 分批——分批会破坏 rest 块间连续性，与 prev_summary 承接冲突（实测导致跳段）。
+    private func setupQuoteScope(rest: [ReadingParagraph]) {
+        pdfScopedParagraphs = rest.enumerated().map {
+            ReadingParagraph(id: $0.offset, text: $0.element.text, type: $0.element.type)
+        }
+        pdfBatchCursor = nil   // 不续批：rest 一次喂完
+    }
+
+    /// 快道 block_0 → 可播放块：TTS narration + ensureTiming 均匀铺 at（跳过 compose，§5.5）。
+    private func prepareFastBlock(_ section: QuickreadSection, language: String) async throws -> PreparedBlock {
+        var segs: [AudioSegment] = []
+        try await TTSService.shared.generateTTSForParagraph(
+            paragraphIndex: 0, text: section.text,
+            voice: settings.voice(for: language), speed: 1.0, language: language) { segs.append($0) }
+        guard !segs.isEmpty else { throw QuickReadError.noBlock0 }
+        let duration = segs.reduce(0) { $0 + effectiveDuration($1) }
+        let marks = ensureTiming(section.events, duration: duration)
+        return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text))
+    }
+
+    /// 快道执行：先 LLM(fast-block0) + TTS 决定 idxBase/scope，再启动质道。
+    /// 成功 → 占 block_0 秒开 + 质道吃剩余段（idxBase=1）；失败 → idxBase=0 + 质道吃全量（绝不漏开头）。
+    private func runFastLaneThenQuote(opening: [ReadingParagraph]) async {
+        let lang = settings.explainLangOrNil ?? doc.language   // 锁定确定语言（快道+质道同语言，不让 server 对快道默认 en）
+        await MainActor.run { self.forcedExplainLang = lang }
+        var fastPB: PreparedBlock?
+        if let section = try? await QuickReadService.shared.fastBlock0(
+                title: doc.title, openingParas: opening.map { $0.text },
+                lang: lang, depth: settings.explainDepth, prevSummary: nil),
+           let pb = try? await prepareFastBlock(section, language: lang) {
+            await MainActor.run { self.fastSection = section }
+            fastPB = pb
+        }
+        await MainActor.run {
+            guard self.isActive, case .planning = self.status else { return }
+            if let pb = fastPB {
+                self.idxBase = 1
+                self.block0Claimed = true
+                let readable = self.doc.readableParagraphs
+                self.setupQuoteScope(rest: Array(readable.dropFirst(opening.count)))
+                self.totalBlocks = max(1, self.idxBase + 1)   // 预估，handlePlan 收到质道总块数后修正
+                self.enqueue(pb, idx: 0)                       // 秒开
+                NSLog("CRDBG fastlane block_0 emit (opening=%d marks=%d)", opening.count, pb.marks.count)
+            } else {
+                self.idxBase = 0
+                self.setupBatchScopeIfLarge()                  // 快道失败兜底：质道吃全量
+                NSLog("CRDBG fastlane failed → 质道吃全量")
+            }
+            self.orchestrationTask = Task { [weak self] in await self?.runPlan() }
+        }
+    }
+
     func stop() {
         orchestrationTask?.cancel()
+        fastTask?.cancel()
         Task { await TTSService.shared.cancelCurrentRequest() }
         audio.clearBook()
         clearPagePrefetch()
@@ -164,6 +257,7 @@ final class ExplainViewModel: ObservableObject {
     func replay() {
         guard totalBlocks > 0, !prepared.isEmpty else { start(); return }   // 没解读过 → 当普通开始
         orchestrationTask?.cancel()
+        fastTask?.cancel()
         activate()
         firedMarks.removeAll()
         activeMarks = []          // 触发 bridge clearMarks，清掉上一轮 DOM 手写标注
@@ -191,16 +285,17 @@ final class ExplainViewModel: ObservableObject {
             // 之前 app 误用 block0 的 0 → max(1,0)=1 → 只播首块就"完成"。对齐扩展：用 done 的值。
             await MainActor.run {
                 NSLog("CRDBG explain DONE total_blocks=%d (block0 占位后 totalBlocks=%d)", done.total_blocks ?? -1, self.totalBlocks)
-                if let tb = done.total_blocks, tb > self.totalBlocks {
-                    self.totalBlocks = tb
+                if let tb = done.total_blocks, self.idxBase + tb > self.totalBlocks {
+                    self.totalBlocks = self.idxBase + tb   // 快道占 idxBase 块 + 质道 tb 块（漏加 idxBase 会丢质道最后一块）
                     // done 晚于首块播完到达时会误判 .completed → 在此续播下一块。
-                    if case .completed = self.status, self.currentBlockIndex + 1 < tb {
+                    if case .completed = self.status, self.currentBlockIndex + 1 < self.totalBlocks {
                         Task { await self.prepareAndEnqueue(block: self.currentBlockIndex + 1) }
                     }
                 }
             }
         } catch {
             await MainActor.run {
+                self.planFailed = true   // 通知 prepareBlock 的 section0 等待循环跳出（快道占位后不再死等挂起）
                 // server entitlement 超限 → 付费墙（对齐扩展：免费额度用满当付费墙，不当普通错误）
                 if case QuickReadError.httpError(402) = error {
                     self.showPaywall = true
@@ -221,14 +316,27 @@ final class ExplainViewModel: ObservableObject {
 
     private func handlePlan(_ plan: PlanBlock0) {
         jobId = plan.job_id
-        totalBlocks = max(1, plan.total_blocks)
-        outputLanguage = plan.output_language ?? settings.explainLangOrNil ?? doc.language
-        section0 = plan.block_0
+        totalBlocks = idxBase + max(1, plan.total_blocks)   // 快道占 idxBase 块 + 质道块
+        // 快道激活（forcedExplainLang != nil）时它优先：block_0 已用此语言朗读，质道必须跟随，不能被
+        // plan.output_language 盖过（否则质道与快道开头语言/音色不一致）。非快道时才用 plan 返回的语言。
+        outputLanguage = forcedExplainLang ?? plan.output_language ?? settings.explainLangOrNil ?? doc.language
+        section0 = plan.block_0                              // 质道首块 = iOS block_idxBase
         let scoped = pdfScopedParagraphs ?? doc.paragraphs   // 实际传后端的范围（PDF 逐批时是当前批，非整本）
-        NSLog("CRDBG explain PLAN total_blocks=%d batchParas=%d batchChars=%d depth=%@ block0Events=%d",
-              plan.total_blocks, scoped.count, scoped.reduce(0) { $0 + $1.text.count }, settings.explainDepth, plan.block_0.events.count)
-        // 启动块 0
-        Task { await self.prepareAndEnqueue(block: 0) }
+        NSLog("CRDBG explain PLAN total_blocks=%d idxBase=%d batchParas=%d batchChars=%d depth=%@ block0Events=%d",
+              plan.total_blocks, idxBase, scoped.count, scoped.reduce(0) { $0 + $1.text.count }, settings.explainDepth, plan.block_0.events.count)
+        if !block0Claimed {
+            // 快道没占（idxBase=0 / 快道失败）→ 质道占 block_0
+            block0Claimed = true
+            Task { await self.prepareAndEnqueue(block: 0) }
+        } else {
+            // 快道已占 block_0 → 后台预取质道首块 block_idxBase，消除块间 gap（播完 block_0 由 onBlockComplete 续接）
+            Task { [weak self] in
+                guard let self else { return }
+                if let pb = try? await self.prepareBlock(self.idxBase) {
+                    await MainActor.run { if self.prepared[self.idxBase] == nil { self.prepared[self.idxBase] = pb } }
+                }
+            }
+        }
     }
 
     // MARK: - 块准备与入队
@@ -254,18 +362,26 @@ final class ExplainViewModel: ObservableObject {
 
     private func prepareBlock(_ idx: Int) async throws -> PreparedBlock {
         if let cached = prepared[idx] { return cached }
-        // 取讲解文本（block 0 用 plan 的 section0，其余拉 extract-block）
+        // 快道占 block_0（idxBase=1）→ iOS idx 映射到质道块 qIdx = idx - idxBase。
+        // 质道首块（qIdx<=0）用 plan 的 section0；快道占位时 block_0 播放期间质道 plan 通常已返回，
+        // 极端未到则短暂等待（block_0 narration 音频较长，足够质道 plan 完成）。其余拉 extract-block。
+        let qIdx = idx - idxBase
         let section: QuickreadSection
-        if idx == 0, let s0 = section0 {
+        if qIdx <= 0 {
+            // 等质道 plan 返回 section0；plan 失败（planFailed）或失活则跳出，避免快道占位后死等挂起。
+            // 失败时静默抛 CancellationError——错误/付费墙状态已由 runPlan 的 catch 设置，prepareAndEnqueue 不覆盖。
+            while section0 == nil, isActive, !planFailed { try await Task.sleep(nanoseconds: 200_000_000) }
+            guard let s0 = section0 else { throw CancellationError() }
             section = s0
         } else {
-            section = try await QuickReadService.shared.extractBlock(jobId: jobId, blockIdx: idx)
+            section = try await QuickReadService.shared.extractBlock(jobId: jobId, blockIdx: qIdx)
         }
-        return try await prepareSection(section, idx: idx, jobId: jobId, language: outputLanguage)
+        return try await prepareSection(section, idx: idx, composeIdx: qIdx, jobId: jobId, language: outputLanguage)
     }
 
     /// 讲解 section → 可播放块（TTS + 拼时间线 + composeBlock 回填 mark.at）。参数化 jobId/语言 → 当前页与页间预取共用。
-    private func prepareSection(_ section: QuickreadSection, idx: Int, jobId: String, language: String) async throws -> PreparedBlock {
+    /// idx = iOS 块序（TTS 段标识、匹配 currentBlockIndex）；composeIdx = 质道块号（快道激活后两者差 idxBase）。
+    private func prepareSection(_ section: QuickreadSection, idx: Int, composeIdx: Int, jobId: String, language: String) async throws -> PreparedBlock {
         // TTS 讲解文本（收集全部 segment）
         var segs: [AudioSegment] = []
         try await TTSService.shared.generateTTSForParagraph(
@@ -295,7 +411,7 @@ final class ExplainViewModel: ObservableObject {
 
         var marks: [QuickreadEvent]
         if let composed = try? await QuickReadService.shared.composeBlock(
-            jobId: jobId, blockIdx: idx, timestamps: timeline, duration: duration) {
+            jobId: jobId, blockIdx: composeIdx, timestamps: timeline, duration: duration) {
             marks = composed.events
         } else {
             marks = section.events
@@ -621,11 +737,15 @@ final class ExplainViewModel: ObservableObject {
         return ExtractPlanRequest(
             source_url: src,
             title: doc.title,
-            lang: settings.explainLangOrNil,
+            lang: forcedExplainLang ?? settings.explainLangOrNil,   // 快道激活 → 用锁定语言，与快道 block_0 一致
             depth: settings.explainDepth,
             text: fullText,
             fullText: fullText,
-            paragraphs: paras
+            paragraphs: paras,
+            // 传 prev_summary = 快道 narration（文档 §0.5 ②「连贯层」）：质道「接 rest[0] 顺序讲、不复述、不跳」
+            // 由 server 质道承接 prompt 负责（已改目标驱动 + 上线，中英文各 2 篇验证通过）。客户端只传、不写
+            // 「别复述/别跳」逻辑。快道未激活时 fastSection=nil → prev_summary=nil（质道吃全篇，正常路径）。
+            prev_summary: fastSection?.text
         )
     }
 
