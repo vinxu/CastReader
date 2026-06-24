@@ -36,13 +36,12 @@ struct LibraryView: View {
         }
     }
 
+    // 作为「设置」里的二级页被 push（不自带 NavigationView，复用设置页的导航栈）。
     var body: some View {
-        NavigationView {
-            content
-                .navigationTitle("文库")
-                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索标题或网址")
-        }
-        .navigationViewStyle(.stack)
+        content
+            .navigationTitle("文库")
+            .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索标题或网址")
     }
 
     @ViewBuilder

@@ -196,11 +196,11 @@ actor QuickReadService {
     /// 失败即抛出、**不重试**（快道的意义是快；失败由竞速兜底——质道 block_0 自然顶上）。超时 8s。
     /// 返回精简 section（text=narration、events=过滤后的 marks）。
     func fastBlock0(title: String, openingParas: [String], lang: String?,
-                    depth: String, prevSummary: String?) async throws -> QuickreadSection {
+                    depth: String, prevSummary: String?, contentType: String?) async throws -> QuickreadSection {
         guard let url = URL(string: Constants.API.quickReadFastBlock0) else { throw QuickReadError.invalidURL }
         let body = FastBlock0Request(title: title,
                                      openingParas: openingParas.map { FastBlock0OpeningPara(text: $0) },
-                                     lang: lang, depth: depth, prev_summary: prevSummary)
+                                     lang: lang, depth: depth, prev_summary: prevSummary, content_type: contentType)
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")

@@ -52,6 +52,57 @@ enum QuickreadDepth: String, CaseIterable, Codable, Identifiable {
     }
 }
 
+/// 场景化「划重点·批注」预设（PRD：6 个长内容场景）。rawValue = 后端 content_type，按值分支划/批 prompt。
+/// 客户端只负责把场景信号（content_type + depth 预设）传到位；未知值后端降级为通用解读、零回归。
+enum ExplainContentType: String, CaseIterable, Identifiable {
+    case paper, book, report, contract, study, manual
+    var id: String { rawValue }
+
+    /// 场景名（首页入口标题）。
+    var displayName: String {
+        switch self {
+        case .paper:    return String(localized: "论文 / 学术")
+        case .book:     return String(localized: "书籍 / 长篇")
+        case .report:   return String(localized: "报告 / 研报")
+        case .contract: return String(localized: "合同 / 条款")
+        case .study:    return String(localized: "教材 / 学习")
+        case .manual:   return String(localized: "说明书 / 文档")
+        }
+    }
+
+    /// 一句「这个场景划什么」。
+    var subtitle: String {
+        switch self {
+        case .paper:    return String(localized: "研究问题 · 方法 · 结论 · 贡献")
+        case .book:     return String(localized: "核心观点 · 金句 · 概念 · 转折")
+        case .report:   return String(localized: "核心结论 · 关键数据 · 风险")
+        case .contract: return String(localized: "权利义务 · 金额期限 · 风险条款")
+        case .study:    return String(localized: "知识点 · 定义 · 易考点")
+        case .manual:   return String(localized: "关键步骤 · 警告 · 参数")
+        }
+    }
+
+    /// 首页入口图标（SF Symbol）。
+    var icon: String {
+        switch self {
+        case .paper:    return "doc.text.magnifyingglass"
+        case .book:     return "book"
+        case .report:   return "chart.bar.doc.horizontal"
+        case .contract: return "doc.plaintext"
+        case .study:    return "graduationcap"
+        case .manual:   return "wrench.and.screwdriver"
+        }
+    }
+
+    /// 场景预设的解读深度（覆盖用户全局设置；PRD §1 表）。
+    var suggestedDepth: QuickreadDepth {
+        switch self {
+        case .paper, .contract: return .deep
+        case .book, .report, .study, .manual: return .standard
+        }
+    }
+}
+
 /// extract-plan 的 `block0` 事件载荷
 struct PlanBlock0: Codable, Equatable {
     let job_id: String
@@ -83,6 +134,7 @@ struct ExtractPlanRequest: Codable {
     let fullText: String
     let paragraphs: [QuickreadParagraphDTO]
     var prev_summary: String?  // 快道激活 → 质道承接快道 narration（block_1 不复述开头、衔接连贯）；书籍翻页承接同字段
+    var content_type: String?  // 场景化「划什么/怎么批」（paper|book|report|contract|study|manual）；nil = 通用解读
 }
 
 struct ExtractBlockRequest: Codable {
@@ -118,6 +170,7 @@ struct FastBlock0Request: Codable {
     let lang: String?
     let depth: String
     let prev_summary: String?
+    let content_type: String?  // 同 extract-plan：场景 content_type，快道 block_0 也按场景划/批
 }
 
 /// 快道 mark 精简形态（无 at，端侧均匀分布；style ∈ circle|underline|highlight|number）

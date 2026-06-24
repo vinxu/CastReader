@@ -2,7 +2,7 @@
 //  MainTabView.swift
 //  CastReader
 //
-//  三 Tab：首页（拍摄/上传/输入）· 文库（历史文档）· 设置。
+//  底部导航 [首页 | ➕ | 设置]：首页（场景化批注本）· 中间凸起 ➕（通用导入弹层）· 设置（含文库入口）。
 //
 
 import SwiftUI
@@ -10,6 +10,7 @@ import SwiftUI
 struct MainTabView: View {
     @StateObject private var coordinator = PlayerCoordinator()
     @StateObject private var clipboard = ClipboardImportViewModel()
+    @StateObject private var importRouter = ImportRouter()
     @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: Int
 
@@ -33,14 +34,21 @@ struct MainTabView: View {
                 HomeView()
                     .tabItem { Label("首页", systemImage: "house.fill") }
                     .tag(0)
-                LibraryView()
-                    .tabItem { Label("文库", systemImage: "books.vertical.fill") }
+                // 中间占位：被凸起 ➕ 覆盖；万一点到 tab item 也走通用导入并回首页。
+                Color.clear
+                    .tabItem { Label("", systemImage: "plus") }
                     .tag(1)
                 SettingsView()
                     .tabItem { Label("设置", systemImage: "gearshape.fill") }
                     .tag(2)
             }
             .tint(AppTheme.primary)
+            .onChange(of: selectedTab) { newTab in
+                if newTab == 1 { selectedTab = 0; importRouter.requestGeneral() }
+            }
+
+            // 中间凸起 ➕：通用导入入口（scenario=null）。reader 展开时被其顶层覆盖，收起时显示。
+            plusButton
 
             // Mini Player 悬浮在 tab bar 上方（有会话且阅读器收起时）
             if coordinator.showsMiniPlayer {
@@ -61,6 +69,7 @@ struct MainTabView: View {
             }
         }
         .environmentObject(coordinator)
+        .environmentObject(importRouter)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: coordinator.showsMiniPlayer)
         .onChange(of: scenePhase) { phase in
             if phase == .active { clipboard.check() }   // 进 App / 回前台 → 探测剪贴板
@@ -74,6 +83,28 @@ struct MainTabView: View {
             )
             .presentationDetents([.height(290)])
         }
+    }
+
+    /// 中间凸起 ➕：点开通用导入弹层（切到首页承载）。
+    private var plusButton: some View {
+        Button {
+            selectedTab = 0
+            importRouter.requestGeneral()
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(AppTheme.primary)
+                    .frame(width: 56, height: 56)
+                    .shadow(color: AppTheme.primary.opacity(0.4), radius: 8, y: 3)
+                Image(systemName: "plus")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+        }
+        .accessibilityIdentifier("plusImportButton")
+        .accessibilityLabel(Text("导入内容"))
+        .offset(y: -6)
+        .allowsHitTesting(!coordinator.isReaderPresented)   // 阅读器展开时不拦截（其实已被顶层覆盖）
     }
 
     /// 剪贴板选朗读/解读 → 构建文档 → 进入对应播放（autoplay 直接开播，链路最短）。

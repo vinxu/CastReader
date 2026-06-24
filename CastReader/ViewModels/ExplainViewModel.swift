@@ -24,6 +24,16 @@ final class ExplainViewModel: ObservableObject {
 
     let document: ReadingDocument
 
+    /// 场景 content_type（从首页场景入口进入时设置；通用 ➕ 导入为 nil）。决定后端「划什么/怎么批」prompt 分支 +
+    /// 解读深度预设（覆盖用户全局 explainDepth）。由 PlayerCoordinator.open(scenario:) 注入。
+    var scenario: String? = nil
+
+    /// 解读深度：有场景用场景预设深度（PRD §2.1 覆盖全局），否则用用户设置。
+    private var effectiveDepth: String {
+        if let sc = scenario, let ct = ExplainContentType(rawValue: sc) { return ct.suggestedDepth.rawValue }
+        return settings.explainDepth
+    }
+
     // .web 源：用 WebView extractor 提取的段落构成讲解/锚定文档（原始 document.paragraphs 为空）。
     private var webDoc: ReadingDocument? = nil
     private var doc: ReadingDocument { webDoc ?? document }
@@ -218,7 +228,7 @@ final class ExplainViewModel: ObservableObject {
         var fastPB: PreparedBlock?
         if let section = try? await QuickReadService.shared.fastBlock0(
                 title: doc.title, openingParas: opening.map { $0.text },
-                lang: lang, depth: settings.explainDepth, prevSummary: nil),
+                lang: lang, depth: effectiveDepth, prevSummary: nil, contentType: scenario),
            let pb = try? await prepareFastBlock(section, language: lang) {
             await MainActor.run { self.fastSection = section }
             fastPB = pb
@@ -738,14 +748,15 @@ final class ExplainViewModel: ObservableObject {
             source_url: src,
             title: doc.title,
             lang: forcedExplainLang ?? settings.explainLangOrNil,   // 快道激活 → 用锁定语言，与快道 block_0 一致
-            depth: settings.explainDepth,
+            depth: effectiveDepth,                                  // 有场景用场景预设深度，否则用户全局设置
             text: fullText,
             fullText: fullText,
             paragraphs: paras,
             // 传 prev_summary = 快道 narration（文档 §0.5 ②「连贯层」）：质道「接 rest[0] 顺序讲、不复述、不跳」
             // 由 server 质道承接 prompt 负责（已改目标驱动 + 上线，中英文各 2 篇验证通过）。客户端只传、不写
             // 「别复述/别跳」逻辑。快道未激活时 fastSection=nil → prev_summary=nil（质道吃全篇，正常路径）。
-            prev_summary: fastSection?.text
+            prev_summary: fastSection?.text,
+            content_type: scenario                                  // 场景信号（nil = 通用解读）
         )
     }
 

@@ -27,6 +27,7 @@ struct SettingsView: View {
             Form {
                 accountSection
                 proSection
+                librarySection
                 playbackSection
                 voiceSection
                 explainSection
@@ -118,6 +119,26 @@ struct SettingsView: View {
             if pro.isPro {
                 Button("管理订阅") { Task { await pro.openManageSubscriptions() } }
             }
+        }
+    }
+
+    // MARK: 文库（历史记录入口；从底部 Tab 下沉到设置）
+
+    private var librarySection: some View {
+        Section {
+            NavigationLink {
+                LibraryView()
+            } label: {
+                HStack {
+                    Image(systemName: "books.vertical.fill").foregroundColor(AppTheme.primary)
+                    Text("文库")
+                    Spacer()
+                    Text("\(HistoryStore.shared.records.count)")
+                        .foregroundColor(AppTheme.mutedForeground)
+                }
+            }
+        } footer: {
+            Text("拍摄、上传、输入网址或文本，处理过的内容都在这里。仅保存在本机。")
         }
     }
 

@@ -28,14 +28,19 @@ final class PlayerCoordinator: ObservableObject {
     var showsMiniPlayer: Bool { session != nil && !isReaderPresented }
 
     /// 打开文档：新文档建会话（先停掉旧会话播放），同文档复用；展开完整阅读器；autoplay 时立即开播（剪贴板快捷入口用）。
-    func open(_ document: ReadingDocument, mode: ReaderMode = .read, autoplay: Bool = false) {
+    /// scenario：从首页场景入口进入时的 content_type（注入 ExplainViewModel 驱动「划什么/怎么批」+ 深度预设）；nil = 通用。
+    func open(_ document: ReadingDocument, mode: ReaderMode = .read, autoplay: Bool = false, scenario: String? = nil) {
         if session?.id != document.id {
             session?.readVM.stop()
             session?.explainVM.stop()
+            let explainVM = ExplainViewModel(document: document)
+            explainVM.scenario = scenario
             session = Session(id: document.id,
                               document: document,
                               readVM: ReadAloudViewModel(document: document),
-                              explainVM: ExplainViewModel(document: document))
+                              explainVM: explainVM)
+        } else if let scenario {
+            session?.explainVM.scenario = scenario   // 同文档以场景重新进入：更新场景信号
         }
         self.mode = mode
         isReaderPresented = true
