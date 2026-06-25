@@ -258,7 +258,8 @@ struct HomeView: View {
         } else if ext == "docx" {
             // DOCX 本地渲染（WebView 内 mammoth 保排版）——不上传后端。
             if let data = try? Data(contentsOf: url) {
-                let title = url.deletingPathExtension().lastPathComponent
+                // 标题：DOCX 内嵌标题（core.xml/首段）优先，回退文件名。
+                let title = DocumentBuilder.docxTitle(data: data) ?? url.deletingPathExtension().lastPathComponent
                 finishImport(ReadingDocument(title: title, sourceKind: .docx, paragraphs: [], fileData: data))
             } else { notice = String(localized: "无法读取该文件") }
         } else if ext == "epub" {

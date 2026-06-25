@@ -8,8 +8,53 @@
 
 import Foundation
 import PDFKit
+import ZIPFoundation
 
 enum DocumentBuilder {
+
+    /// DOCX 标题：docProps/core.xml 的 <dc:title> →（空则）document.xml 首段文本 → nil（调用方回退文件名）。
+    static func docxTitle(data: Data) -> String? {
+        guard let archive = try? Archive(data: data, accessMode: .read) else { return nil }
+        func read(_ path: String) -> String? {
+            guard let entry = archive[path] else { return nil }
+            var d = Data()
+            guard (try? archive.extract(entry) { d.append($0) }) != nil else { return nil }
+            return String(data: d, encoding: .utf8)
+        }
+        if let core = read("docProps/core.xml"),
+           let t = firstGroup(core, #"<dc:title>([\s\S]*?)</dc:title>"#), isMeaningfulTitle(t) {
+            return String(decodeXmlEntities(t).prefix(120))
+        }
+        if let doc = read("word/document.xml"),
+           let firstP = firstGroup(doc, #"(<w:p\b[\s\S]*?</w:p>)"#) {
+            let runs = allGroups(firstP, #"<w:t[^>]*>([\s\S]*?)</w:t>"#).joined()
+            let t = decodeXmlEntities(runs).trimmingCharacters(in: .whitespacesAndNewlines)
+            if t.count >= 2 { return String(t.prefix(60)) }
+        }
+        return nil
+    }
+
+    private static func firstGroup(_ s: String, _ pattern: String) -> String? {
+        guard let re = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
+        let ns = s as NSString
+        guard let m = re.firstMatch(in: s, range: NSRange(location: 0, length: ns.length)), m.numberOfRanges > 1 else { return nil }
+        return ns.substring(with: m.range(at: 1))
+    }
+
+    private static func allGroups(_ s: String, _ pattern: String) -> [String] {
+        guard let re = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return [] }
+        let ns = s as NSString
+        return re.matches(in: s, range: NSRange(location: 0, length: ns.length))
+            .compactMap { $0.numberOfRanges > 1 ? ns.substring(with: $0.range(at: 1)) : nil }
+    }
+
+    private static func decodeXmlEntities(_ s: String) -> String {
+        var r = s
+        for (k, v) in ["&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": "\"", "&apos;": "'", "&#39;": "'"] {
+            r = r.replacingOccurrences(of: k, with: v)
+        }
+        return r
+    }
 
     /// 本地 PDF 文本提取（PDFKit，即时可读，无需后端）。
     static func fromPDF(url: URL, title: String? = nil) -> ReadingDocument? {
@@ -42,8 +87,33 @@ enum DocumentBuilder {
         }
         guard !paragraphs.isEmpty else { return nil }
         let lang = detectLanguage(paragraphs.prefix(30).map(\.text).joined(separator: " "))
-        return ReadingDocument(title: title ?? url.deletingPathExtension().lastPathComponent,
+        // 标题：优先 PDF 元数据标题（有意义时）→ 首句/首行 → 文件名（避免 arxiv-id 文件名等 demo 感）。
+        let metaTitle = (pdf.documentAttributes?[PDFDocumentAttribute.titleAttribute] as? String)
+        let resolved = title ?? derivePDFTitle(meta: metaTitle, firstText: paragraphs.first?.text,
+                                               fallback: url.deletingPathExtension().lastPathComponent)
+        return ReadingDocument(title: resolved,
                                sourceKind: .pdf, language: lang, paragraphs: paragraphs, fileData: data)
+    }
+
+    /// PDF 标题推导：元数据标题（剔除 "Microsoft Word - …"/untitled 等垃圾）→ 首段文本（截断）→ 文件名兜底。
+    static func derivePDFTitle(meta: String?, firstText: String?, fallback: String) -> String {
+        if let m = meta?.trimmingCharacters(in: .whitespacesAndNewlines), isMeaningfulTitle(m) {
+            return String(m.prefix(120))
+        }
+        if let f = firstText?.trimmingCharacters(in: .whitespacesAndNewlines), f.count >= 4 {
+            return String(f.prefix(60))
+        }
+        return fallback
+    }
+
+    /// 标题是否「像个真标题」：非空、长度合理、不是 Office 导出的占位垃圾。
+    static func isMeaningfulTitle(_ s: String) -> Bool {
+        let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard t.count >= 2, t.count <= 200 else { return false }
+        let low = t.lowercased()
+        let junk = ["untitled", "microsoft word -", "microsoft powerpoint -", "powerpoint presentation",
+                    "doc1", "document1", "slide 1", "无标题"]
+        return !junk.contains { low == $0 || low.hasPrefix($0) }
     }
 
     /// page string 内按句末标点切句（中文 。！？；+ 英文 .!?; 后接空白/结尾），换行不切句（PDF 硬换行常在句中）。

@@ -141,4 +141,26 @@ class CastReaderTests: XCTestCase {
                                    baseURL: URL(string: "https://x.com")!)
         XCTAssertNil(r.imageURL)
     }
+
+    // MARK: - 文件标题推导（PDF/DOCX 不再只用文件名）
+
+    func testPDFTitlePrefersMeaningfulMetadata() {
+        // 有意义的元数据标题 → 直接用
+        XCTAssertEqual(DocumentBuilder.derivePDFTitle(meta: "Attention Is All You Need",
+                                                      firstText: "arXiv:1706.03762 Provided proper...", fallback: "1706.03762"),
+                       "Attention Is All You Need")
+        // 垃圾元数据（Office 导出）→ 回退首段文本（截断）
+        XCTAssertEqual(DocumentBuilder.derivePDFTitle(meta: "Microsoft Word - doc1.docx",
+                                                      firstText: "季度财务报告与风险提示", fallback: "doc1"),
+                       "季度财务报告与风险提示")
+        // 无元数据、首段太短 → 文件名兜底
+        XCTAssertEqual(DocumentBuilder.derivePDFTitle(meta: nil, firstText: "x", fallback: "report"), "report")
+    }
+
+    func testIsMeaningfulTitle() {
+        XCTAssertTrue(DocumentBuilder.isMeaningfulTitle("Deep Residual Learning"))
+        XCTAssertFalse(DocumentBuilder.isMeaningfulTitle("untitled"))
+        XCTAssertFalse(DocumentBuilder.isMeaningfulTitle("Microsoft Word - Document1"))
+        XCTAssertFalse(DocumentBuilder.isMeaningfulTitle(" "))
+    }
 }
