@@ -10,6 +10,16 @@ import SwiftUI
 
 enum HandwrittenMark {
 
+    /// 重要度（weight）→ 笔触粗细倍率（P1 轴 1「划得准·分层」：核心论点粗笔 / 支撑细节细线）。
+    /// 后端未给 weight 时返回 1.0（与历史一致，零回归）。
+    static func weightMultiplier(_ weight: String?) -> CGFloat {
+        switch weight {
+        case "primary", "high":   return 1.6
+        case "tertiary", "low":   return 0.65
+        default:                  return 1.0   // secondary / normal / nil
+        }
+    }
+
     /// 绘制时长（秒）。circle 按周长估算，其余按宽度。
     static func duration(action: String, rects: [CGRect]) -> Double {
         let bounds = rects.reduce(CGRect.null) { $0.union($1) }
@@ -58,6 +68,65 @@ enum HandwrittenMark {
                 path.addLine(to: CGPoint(x: x, y: y))
             }
         }
+        return path
+    }
+
+    /// 波浪下划线（P1：风险/警示语义）：沿每行底部画正弦波浪。
+    static func wavePath(over rects: [CGRect], seed: UInt64) -> Path {
+        var rng = SeededGenerator(seed: seed)
+        var path = Path()
+        for r in rects.sorted(by: { $0.minY < $1.minY }) {
+            let baseY = r.maxY - max(1.0, r.height * 0.06)
+            let amp = max(1.6, r.height * 0.12)
+            let wavelength = max(7.0, r.height * 0.55)
+            let phase = CGFloat(rng.nextDouble(in: 0...Double.pi))
+            let steps = max(4, Int(r.width / 3))
+            path.move(to: CGPoint(x: r.minX + 1, y: baseY))
+            for s in 1...steps {
+                let t = CGFloat(s) / CGFloat(steps)
+                let x = r.minX + 1 + (r.width - 2) * t
+                let y = baseY + amp * sin((x - r.minX) / wavelength * 2 * CGFloat.pi + phase)
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+        }
+        return path
+    }
+
+    /// 删除线：沿每行中线略抖动的横线（P1）。
+    static func strikePath(over rects: [CGRect], seed: UInt64) -> Path {
+        var rng = SeededGenerator(seed: seed)
+        var path = Path()
+        for r in rects.sorted(by: { $0.minY < $1.minY }) {
+            let midY = r.midY + rng.nextDouble(in: -0.6...0.6)
+            let amp = max(0.5, r.height * 0.03)
+            let steps = max(2, Int(r.width / 20))
+            path.move(to: CGPoint(x: r.minX + 1, y: midY + rng.nextDouble(in: -amp...amp)))
+            for s in 1...steps {
+                let t = CGFloat(s) / CGFloat(steps)
+                let x = r.minX + 1 + (r.width - 2) * t
+                path.addLine(to: CGPoint(x: x, y: midY + rng.nextDouble(in: -amp...amp)))
+            }
+        }
+        return path
+    }
+
+    /// 星标（P1）：画在该范围右侧外的一颗手绘五角星。
+    static func starPath(near rects: [CGRect], seed: UInt64) -> Path {
+        var rng = SeededGenerator(seed: seed)
+        let b = rects.reduce(CGRect.null) { $0.union($1) }
+        let radius = max(7.0, min(12.0, b.height * 0.5))
+        let cx = b.maxX + radius + 6
+        let cy = b.midY
+        var path = Path()
+        for i in 0...10 {
+            let isOuter = i % 2 == 0
+            let jitter = CGFloat(rng.nextDouble(in: -0.06...0.06))
+            let rr = (isOuter ? radius : radius * 0.42) * (1 + jitter)
+            let ang = -CGFloat.pi / 2 + CGFloat(i) * CGFloat.pi / 5
+            let p = CGPoint(x: cx + rr * cos(ang), y: cy + rr * sin(ang))
+            if i == 0 { path.move(to: p) } else { path.addLine(to: p) }
+        }
+        path.closeSubpath()
         return path
     }
 

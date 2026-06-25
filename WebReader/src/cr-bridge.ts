@@ -288,7 +288,7 @@ export function initBridge(deps: CRDeps): void {
       paraElements.get(arg.paragraphIndex)?.scrollIntoView({ block: 'center', behavior: 'auto' })
     },
     setAutoScroll(_arg: { enabled: boolean }): void { /* M2 */ },
-    showMark(arg: { id: string; paragraphIndex: number; charStart: number; charEnd: number; action: string; n?: number; seed: number }): void {
+    showMark(arg: { id: string; paragraphIndex: number; charStart: number; charEnd: number; action: string; n?: number; seed: number; weight?: string; role?: string }): void {
       markRenderer.show(arg)
     },
     clearMarks(): void { markRenderer.clear() },

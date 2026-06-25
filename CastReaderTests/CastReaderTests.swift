@@ -88,4 +88,57 @@ class CastReaderTests: XCTestCase {
         vm.scenario = ExplainContentType.paper.rawValue
         XCTAssertEqual(vm.scenario, "paper")
     }
+
+    // MARK: - P1 分层标注：weight → 笔触粗细
+
+    func testWeightMultiplier() {
+        XCTAssertEqual(HandwrittenMark.weightMultiplier("primary"), 1.6)
+        XCTAssertEqual(HandwrittenMark.weightMultiplier("tertiary"), 0.65)
+        XCTAssertEqual(HandwrittenMark.weightMultiplier("secondary"), 1.0)
+        XCTAssertEqual(HandwrittenMark.weightMultiplier(nil), 1.0)   // 后端没给 → 零回归
+    }
+
+    /// mark 事件解码出 weight/role（后端 P1 字段；缺省时为 nil）。
+    func testQuickreadEventDecodesWeightRole() throws {
+        let json = #"{"action":"wave","text":"风险","weight":"primary","role":"caution"}"#.data(using: .utf8)!
+        let ev = try JSONDecoder().decode(QuickreadEvent.self, from: json)
+        XCTAssertEqual(ev.action, "wave")
+        XCTAssertEqual(ev.weight, "primary")
+        XCTAssertEqual(ev.role, "caution")
+
+        let bare = #"{"action":"underline","text":"x"}"#.data(using: .utf8)!
+        let ev2 = try JSONDecoder().decode(QuickreadEvent.self, from: bare)
+        XCTAssertNil(ev2.weight)
+    }
+
+    // MARK: - 封面 + 标题：网页元数据解析
+
+    func testLinkMetadataParsesOGTitleAndImage() {
+        let html = """
+        <html><head>
+        <title>Fallback Title</title>
+        <meta property="og:title" content="Real Article Title &amp; More">
+        <meta property="og:image" content="https://cdn.example.com/cover.jpg">
+        </head><body></body></html>
+        """
+        let r = LinkMetadata.parse(html: html, baseURL: URL(string: "https://example.com/post")!)
+        XCTAssertEqual(r.title, "Real Article Title & More")   // og 优先 + 实体解码
+        XCTAssertEqual(r.imageURL, "https://cdn.example.com/cover.jpg")
+    }
+
+    func testLinkMetadataResolvesRelativeImageAndFallsBackToTitleTag() {
+        let html = """
+        <head><title>Only Title Tag</title>
+        <meta name="twitter:image" content="/img/cover.png"></head>
+        """
+        let r = LinkMetadata.parse(html: html, baseURL: URL(string: "https://blog.example.com/a/b")!)
+        XCTAssertEqual(r.title, "Only Title Tag")                          // 无 og:title → 回退 <title>
+        XCTAssertEqual(r.imageURL, "https://blog.example.com/img/cover.png") // 相对路径解析为绝对
+    }
+
+    func testLinkMetadataNoMetaReturnsNilImage() {
+        let r = LinkMetadata.parse(html: "<html><head></head><body>hi</body></html>",
+                                   baseURL: URL(string: "https://x.com")!)
+        XCTAssertNil(r.imageURL)
+    }
 }

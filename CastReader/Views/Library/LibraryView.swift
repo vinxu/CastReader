@@ -178,13 +178,11 @@ private struct HistoryRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8).fill(AppTheme.primary.opacity(0.12)).frame(width: 44, height: 44)
-                Image(systemName: icon).font(.system(size: 18)).foregroundColor(AppTheme.primary)
-            }
+            CoverThumbnail(record: record, cornerRadius: 8)
+                .frame(width: 48, height: 60)
             VStack(alignment: .leading, spacing: 3) {
                 Text(record.title).font(.subheadline.weight(.medium))
-                    .foregroundColor(AppTheme.foreground).lineLimit(1)
+                    .foregroundColor(AppTheme.foreground).lineLimit(2)
                 Text("\(sourceLabel) · \(relativeTime)").font(.caption).foregroundColor(AppTheme.mutedForeground)
             }
             Spacer()
@@ -195,16 +193,6 @@ private struct HistoryRow: View {
         .contentShape(Rectangle())
     }
 
-    private var icon: String {
-        switch record.sourceKind {
-        case .web: return "link"
-        case .pdf: return "doc.richtext"
-        case .docx: return "doc.text"
-        case .epub: return "book"
-        case .photo: return "photo"
-        case .text: return "text.alignleft"
-        }
-    }
     private var sourceLabel: String {
         switch record.sourceKind {
         case .web: return String(localized: "网页")

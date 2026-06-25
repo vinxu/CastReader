@@ -137,6 +137,7 @@ struct PDFReaderView: UIViewRepresentable {
                 ann.markAction = m.action
                 ann.markSeed = m.seed
                 ann.markN = m.n
+                ann.markWeight = m.weight
                 ann.inkColor = ink
                 ann.primaryColor = primary
                 page.addAnnotation(ann)
@@ -296,6 +297,7 @@ final class HandwrittenPDFAnnotation: PDFAnnotation {
     var markAction = ""
     var markSeed: UInt64 = 0
     var markN: Int?
+    var markWeight: String?               // P1：重要度分层 → 笔触粗细
     var inkColor = UIColor(hexString: AppSettings.shared.highlightColorHex).withAlphaComponent(0.85)   // #FD5F01 统一橙（深浅都清晰）
     var primaryColor: UIColor = .systemOrange
 
@@ -316,25 +318,40 @@ final class HandwrittenPDFAnnotation: PDFAnnotation {
         context.translateBy(x: b.minX, y: b.maxY)
         context.scaleBy(x: 1, y: -1)
 
+        let wMul = HandwrittenMark.weightMultiplier(markWeight)
         switch markAction {
         case "highlight":
             path = HandwrittenMark.highlightPath(over: local, seed: markSeed)
             stroke = primaryColor
-            lineWidth = (local.map { $0.height }.max() ?? 18) * 0.85
+            lineWidth = (local.map { $0.height }.max() ?? 18) * 0.85 * wMul
             alpha = 0.28
             context.setBlendMode(.multiply)
         case "circle", "number":
             path = HandwrittenMark.circlePath(around: local, seed: markSeed)
             stroke = (markAction == "number") ? inkColor : primaryColor
-            lineWidth = 2.4
+            lineWidth = 2.4 * wMul
         case "underline":
             path = HandwrittenMark.underlinePath(over: local, seed: markSeed)
             stroke = inkColor
-            lineWidth = 2.2
+            lineWidth = 2.2 * wMul
+        case "wave":
+            path = HandwrittenMark.wavePath(over: local, seed: markSeed)
+            stroke = inkColor
+            lineWidth = 2.2 * wMul
+            alpha = 0.9
+        case "strike":
+            path = HandwrittenMark.strikePath(over: local, seed: markSeed)
+            stroke = inkColor
+            lineWidth = 2.2 * wMul
+        case "star":
+            path = HandwrittenMark.starPath(near: local, seed: markSeed)
+            stroke = inkColor
+            lineWidth = 2.2 * wMul
+            alpha = 0.9
         default:
             path = HandwrittenMark.underlinePath(over: local, seed: markSeed)
             stroke = inkColor
-            lineWidth = 2.0
+            lineWidth = 2.0 * wMul
         }
 
         context.addPath(path.cgPath)

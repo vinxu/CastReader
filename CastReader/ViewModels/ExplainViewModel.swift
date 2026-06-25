@@ -17,6 +17,8 @@ struct ResolvedMark: Identifiable, Equatable {
     let action: String
     let n: Int?
     let seed: UInt64
+    var weight: String? = nil   // P1：重要度分层（primary/secondary/tertiary）→ 笔触粗细
+    var role: String? = nil     // P1：语义角色（key/caution/term/example），透传
 }
 
 @MainActor
@@ -664,7 +666,8 @@ final class ExplainViewModel: ObservableObject {
         anchorCursor = hit.paragraphIndex
         let seed = "\(hit.paragraphIndex)-\(hit.range.lowerBound)-\(ev.action)".stableSeed
         let mark = ResolvedMark(id: ev.id, paragraphIndex: hit.paragraphIndex,
-                                charRange: hit.range, action: ev.action, n: ev.n, seed: seed)
+                                charRange: hit.range, action: ev.action, n: ev.n, seed: seed,
+                                weight: ev.weight, role: ev.role)
         activeMarks.append(mark)
         scrollTarget = hit.paragraphIndex   // 跟随讲解滚动
     }

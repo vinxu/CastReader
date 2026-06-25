@@ -41892,6 +41892,25 @@ var __CRWeb = (() => {
 
   // src/mark-renderer.ts
   var SVG_NS = "http://www.w3.org/2000/svg";
+  function weightMul(weight) {
+    if (weight === "primary" || weight === "high") return 1.6;
+    if (weight === "tertiary" || weight === "low") return 0.65;
+    return 1;
+  }
+  function handDrawnWave(x0, y, x1, amp, rng) {
+    const width = x1 - x0;
+    const wavelength = Math.max(7, amp * 4);
+    const phase = rng() * Math.PI;
+    const steps = Math.max(4, Math.round(width / 3));
+    let d = `M ${x0.toFixed(1)} ${y.toFixed(1)}`;
+    for (let s = 1; s <= steps; s++) {
+      const t = s / steps;
+      const x = x0 + width * t;
+      const yy = y + amp * Math.sin((x - x0) / wavelength * 2 * Math.PI + phase);
+      d += ` L ${x.toFixed(1)} ${yy.toFixed(1)}`;
+    }
+    return d;
+  }
   function createMarkRenderer(getParaEl, initialColor) {
     let svg = null;
     let color = initialColor;
@@ -41989,39 +42008,46 @@ var __CRWeb = (() => {
         maxX = Math.max(maxX, rc.right);
         maxY = Math.max(maxY, rc.bottom);
       });
+      const wm = weightMul(m.weight);
       switch (m.action) {
         case "underline":
           lineRects.forEach((rc) => {
             const lx = rc.left + sx, ly = rc.top + sy + rc.height * 1.02;
-            appendPath(s, handDrawnLine(lx, ly, lx + rc.width, ly, 4, rng), 2.5, 0.95);
+            appendPath(s, handDrawnLine(lx, ly, lx + rc.width, ly, 4, rng), 2.5 * wm, 0.95);
+          });
+          break;
+        case "wave":
+          lineRects.forEach((rc) => {
+            const lx = rc.left + sx, ly = rc.top + sy + rc.height * 1;
+            appendPath(s, handDrawnWave(lx, ly, lx + rc.width, Math.max(1.6, rc.height * 0.12), rng), 2.2 * wm, 0.9);
           });
           break;
         case "strike":
           lineRects.forEach((rc) => {
             const lx = rc.left + sx, ly = rc.top + sy + rc.height * 0.6;
-            appendPath(s, handDrawnLine(lx, ly, lx + rc.width, ly, 3, rng), 2.5, 0.95);
+            appendPath(s, handDrawnLine(lx, ly, lx + rc.width, ly, 3, rng), 2.5 * wm, 0.95);
           });
           break;
         case "circle": {
           const cx = (minX + maxX) / 2 + sx, cy = (minY + maxY) / 2 + sy;
-          appendPath(s, handDrawnLoop(cx, cy, (maxX - minX) / 2 + 8, (maxY - minY) / 2 + 5, 12, rng), 2.5, 0.95);
+          appendPath(s, handDrawnLoop(cx, cy, (maxX - minX) / 2 + 8, (maxY - minY) / 2 + 5, 12, rng), 2.5 * wm, 0.95);
           break;
         }
         case "star":
-          appendPath(s, handDrawnStar(last2.right + sx + 14, last2.top + sy + last2.height / 2, 10, rng), 2.5, 0.95);
+          appendPath(s, handDrawnStar(last2.right + sx + 14, last2.top + sy + last2.height / 2, 10, rng), 2.5 * wm, 0.95);
           break;
         case "question":
-          appendPath(s, handDrawnQuery(last2.right + sx + 12, last2.top + sy + last2.height / 2, 14, rng), 2.5, 0.95);
+          appendPath(s, handDrawnQuery(last2.right + sx + 12, last2.top + sy + last2.height / 2, 14, rng), 2.5 * wm, 0.95);
           break;
         case "exclaim":
-          appendPath(s, handDrawnExclaim(last2.right + sx + 12, last2.top + sy + last2.height / 2, 14, rng), 2.5, 0.95);
+          appendPath(s, handDrawnExclaim(last2.right + sx + 12, last2.top + sy + last2.height / 2, 14, rng), 2.5 * wm, 0.95);
           break;
         case "highlight":
         default:
           lineRects.forEach((rc) => {
             const lx = rc.left + sx;
             const ly = rc.top + sy + rc.height / 2;
-            appendPath(s, handDrawnLine(lx, ly, lx + rc.width, ly, 3, rng), rc.height * 0.85, 0.3);
+            appendPath(s, handDrawnLine(lx, ly, lx + rc.width, ly, 3, rng), rc.height * 0.85 * wm, 0.3);
           });
           break;
       }

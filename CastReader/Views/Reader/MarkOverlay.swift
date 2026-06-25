@@ -21,10 +21,12 @@ struct MarkInkView: View {
     let n: Int?
     var inkColor: Color = Color(red: 253/255, green: 95/255, blue: 1/255)        // #FD5F01 统一橙（深浅都清晰）
     var highlightColor: Color = Color(red: 253/255, green: 95/255, blue: 1/255)  // 同基色，绘制时各自叠 alpha
+    var weight: String? = nil   // P1：重要度分层 → 笔触粗细倍率（nil = 普通，零回归）
 
     @State private var progress: CGFloat = 0
 
     private var duration: Double { HandwrittenMark.duration(action: action, rects: rects) }
+    private var wMul: CGFloat { HandwrittenMark.weightMultiplier(weight) }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -51,20 +53,33 @@ struct MarkInkView: View {
             // 荧光笔：半透明压在文字中下部，文字透出不被遮盖。不用 multiply（深色背景×橙=黑，荧光会消失）。
             MarkPathShape(absolutePath: HandwrittenMark.highlightPath(over: rects, seed: seed))
                 .trim(from: 0, to: progress)
-                .stroke(highlightColor.opacity(0.35), style: StrokeStyle(lineWidth: lineHeight * 0.85, lineCap: .round, lineJoin: .round))
+                .stroke(highlightColor.opacity(0.35), style: StrokeStyle(lineWidth: lineHeight * 0.85 * wMul, lineCap: .round, lineJoin: .round))
         case "underline":
             MarkPathShape(absolutePath: HandwrittenMark.underlinePath(over: rects, seed: seed))
                 .trim(from: 0, to: progress)
-                .stroke(inkColor.opacity(0.85), style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                .stroke(inkColor.opacity(0.85), style: StrokeStyle(lineWidth: 2.4 * wMul, lineCap: .round, lineJoin: .round))
+        case "wave":
+            // 波浪线：风险/警示语义（P1）。
+            MarkPathShape(absolutePath: HandwrittenMark.wavePath(over: rects, seed: seed))
+                .trim(from: 0, to: progress)
+                .stroke(inkColor.opacity(0.9), style: StrokeStyle(lineWidth: 2.2 * wMul, lineCap: .round, lineJoin: .round))
+        case "strike":
+            MarkPathShape(absolutePath: HandwrittenMark.strikePath(over: rects, seed: seed))
+                .trim(from: 0, to: progress)
+                .stroke(inkColor.opacity(0.85), style: StrokeStyle(lineWidth: 2.2 * wMul, lineCap: .round, lineJoin: .round))
+        case "star":
+            MarkPathShape(absolutePath: HandwrittenMark.starPath(near: rects, seed: seed))
+                .trim(from: 0, to: progress)
+                .stroke(inkColor.opacity(0.9), style: StrokeStyle(lineWidth: 2.2 * wMul, lineCap: .round, lineJoin: .round))
         case "circle", "number":
             MarkPathShape(absolutePath: HandwrittenMark.circlePath(around: rects, seed: seed))
                 .trim(from: 0, to: progress)
                 .stroke(inkColor.opacity(0.85),
-                        style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                        style: StrokeStyle(lineWidth: 2.4 * wMul, lineCap: .round, lineJoin: .round))
         default:
             MarkPathShape(absolutePath: HandwrittenMark.underlinePath(over: rects, seed: seed))
                 .trim(from: 0, to: progress)
-                .stroke(inkColor.opacity(0.85), style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
+                .stroke(inkColor.opacity(0.85), style: StrokeStyle(lineWidth: 2.2 * wMul, lineCap: .round))
         }
     }
 

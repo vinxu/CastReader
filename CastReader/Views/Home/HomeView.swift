@@ -355,30 +355,16 @@ private struct ContinueCard: View {
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 8) {
-                Image(systemName: icon).font(.system(size: 18)).foregroundColor(AppTheme.primary)
+                CoverThumbnail(record: record, cornerRadius: 14)
+                    .frame(width: 156, height: 100)
+                    .shadow(color: .black.opacity(0.08), radius: 5, y: 2)
                 Text(record.title)
-                    .font(.caption.weight(.medium)).foregroundColor(AppTheme.foreground)
+                    .font(.caption.weight(.semibold)).foregroundColor(AppTheme.foreground)
                     .lineLimit(2).multilineTextAlignment(.leading)
-                Spacer(minLength: 0)
+                    .frame(width: 156, height: 34, alignment: .topLeading)
             }
-            .frame(width: 132, height: 96, alignment: .topLeading)
-            .padding(12)
-            .background(AppTheme.surface)
-            .cornerRadius(14)
-            .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
         }
         .buttonStyle(.plain)
-    }
-
-    private var icon: String {
-        switch record.sourceKind {
-        case .web: return "link"
-        case .pdf: return "doc.richtext"
-        case .docx: return "doc.text"
-        case .epub: return "book"
-        case .photo: return "photo"
-        case .text: return "text.alignleft"
-        }
     }
 }
 

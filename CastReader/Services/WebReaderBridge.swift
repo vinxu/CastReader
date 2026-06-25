@@ -161,6 +161,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler {
                 "seed": Int(truncatingIfNeeded: m.seed & 0xFFFFFFFF),
             ]
             if let n = m.n { payload["n"] = n }
+            if let w = m.weight { payload["weight"] = w }   // P1：重要度分层
+            if let r = m.role { payload["role"] = r }
             call("showMark", payload)
         }
     }

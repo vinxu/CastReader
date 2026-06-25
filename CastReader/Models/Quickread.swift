@@ -14,14 +14,15 @@ import Foundation
 struct QuickreadEvent: Codable, Equatable, Identifiable {
     var id = UUID()
     var at: Double?            // 触发时刻（秒）
-    var action: String         // highlight | underline | circle | number | ...
+    var action: String         // highlight | underline | wave | strike | circle | star | number | ...
     var text: String?          // 锚定原文（可能带【】或被改写）
     var n: Int?                // 序号（number action）
-    var role: String?          // key | caution | term | example
+    var role: String?          // key | caution | term | example（语义角色，P1 透传，渲染主要看 weight+action）
+    var weight: String?        // primary | secondary | tertiary（重要度分层 → 笔触粗细；nil = 普通，零回归）
     var note: String?          // 旁注
 
     enum CodingKeys: String, CodingKey {
-        case at, action, text, n, role, note
+        case at, action, text, n, role, weight, note
     }
 }
 
