@@ -52,9 +52,11 @@ enum ImportSource: String, Identifiable, CaseIterable {
 }
 
 /// ➕（底部中间）→ HomeView 通用导入的跨视图触发器（MainTabView 持有并注入）。
+/// ➕ 用原生 Menu 列来源、锚定到按钮；选中后把来源经此交给 HomeView 真正 present（文件选择器/相机/输入框在 HomeView）。
 final class ImportRouter: ObservableObject {
     @Published var generalToken = 0
-    func requestGeneral() { generalToken += 1 }
+    var chosenSource: ImportSource?   // ➕ 菜单选中的来源（通用导入 scenario=nil）
+    func pick(_ source: ImportSource) { chosenSource = source; generalToken += 1 }
 }
 
 struct HomeView: View {
@@ -69,9 +71,6 @@ struct HomeView: View {
 
     // 导入流程状态
     @State private var importScenario: String?      // 本次导入要附加的场景 content_type（nil = 通用）
-    @State private var showMethodDialog = false      // 来源选择（confirmationDialog 动作表）
-    @State private var methodSources: [ImportSource] = []
-    @State private var methodTitle = ""
     @State private var inputSheet: InputSheet?
 
     @State private var showCamera = false
@@ -95,12 +94,13 @@ struct HomeView: View {
             .overlay { if captureVM.isProcessing || importVM.isUploading { processingOverlay } }
         }
         .navigationViewStyle(.stack)
-        .onChange(of: importRouter.generalToken) { _ in startGeneralImport() }
-        .confirmationDialog(methodTitle, isPresented: $showMethodDialog, titleVisibility: .visible) {
-            ForEach(methodSources) { src in
-                Button(src.label) { trigger(src) }
+        // ➕（底部）选了来源 → 通用导入（scenario=nil）。来源选择由 ➕ 原生 Menu 承载，锚定到按钮。
+        .onChange(of: importRouter.generalToken) { _ in
+            if let src = importRouter.chosenSource {
+                importScenario = nil
+                trigger(src)
+                importRouter.chosenSource = nil
             }
-            Button("取消", role: .cancel) {}
         }
         .sheet(item: $inputSheet) { sheet in
             switch sheet {
@@ -151,12 +151,15 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("继续看").font(.headline).foregroundColor(AppTheme.foreground)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                HStack(spacing: 14) {
                     ForEach(history.records.prefix(8)) { rec in
                         ContinueCard(record: rec) { reopen(rec) }
                     }
                 }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 2)
             }
+            .padding(.horizontal, -2)
         }
     }
 
@@ -170,7 +173,28 @@ struct HomeView: View {
             }
             LazyVGrid(columns: scenarioColumns, spacing: 14) {
                 ForEach(ExplainContentType.allCases) { ct in
-                    ScenarioCard(ct: ct) { handleScenarioTap(ct) }
+                    let sources = ImportSource.sources(for: ct)
+                    if sources.count == 1 {
+                        // 单来源：直接触发（无需选择）。
+                        Button {
+                            importScenario = ct.rawValue
+                            trigger(sources[0])
+                        } label: { ScenarioCard(ct: ct) }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("scenario-\(ct.rawValue)")
+                    } else {
+                        // 多来源：原生 Menu —— 系统自动锚定到卡片、箭头指向它，符合当前 iOS UI。
+                        Menu {
+                            ForEach(sources) { src in
+                                Button {
+                                    importScenario = ct.rawValue
+                                    trigger(src)
+                                } label: { Label(src.label, systemImage: src.icon) }
+                            }
+                        } label: { ScenarioCard(ct: ct) }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("scenario-\(ct.rawValue)")
+                    }
                 }
             }
         }
@@ -178,28 +202,7 @@ struct HomeView: View {
 
     // MARK: - 导入触发
 
-    /// 点场景：写场景信号 → 单来源直接触发，多来源弹来源选择动作表。
-    private func handleScenarioTap(_ ct: ExplainContentType) {
-        importScenario = ct.rawValue
-        let sources = ImportSource.sources(for: ct)
-        if sources.count == 1 {
-            trigger(sources[0])
-        } else {
-            methodSources = sources
-            methodTitle = ct.displayName
-            showMethodDialog = true
-        }
-    }
-
-    /// ➕ 通用导入：scenario=null，列全部 5 种方式。
-    private func startGeneralImport() {
-        importScenario = nil
-        methodSources = ImportSource.general
-        methodTitle = String(localized: "导入内容")
-        showMethodDialog = true
-    }
-
-    /// 触发选中的导入来源。异步一帧：让 confirmationDialog 完全收起后再 present 下一个 modal，避免双层冲突。
+    /// 触发选中的导入来源。异步一帧：让来源 Menu 完全收起后再 present 下一个 modal，避免双层冲突。
     private func trigger(_ src: ImportSource) {
         switch src {
         case .camera:       cameraSource = .camera; DispatchQueue.main.async { showCamera = true }
@@ -320,30 +323,27 @@ struct HomeView: View {
 
 private struct ScenarioCard: View {
     let ct: ExplainContentType
-    let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
-                Image(systemName: ct.icon)
-                    .font(.system(size: 22))
-                    .foregroundColor(AppTheme.primary)
-                    .frame(width: 46, height: 46)
-                    .background(AppTheme.primary.opacity(0.12))
-                    .cornerRadius(12)
-                Text(ct.displayName).font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.foreground)
-                Text(ct.subtitle)
-                    .font(.caption2).foregroundColor(AppTheme.mutedForeground)
-                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
-            .padding(14)
-            .background(AppTheme.surface)
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: ct.icon)
+                .font(.system(size: 22))
+                .foregroundColor(AppTheme.primary)
+                .frame(width: 46, height: 46)
+                .background(AppTheme.primary.opacity(0.12))
+                .cornerRadius(12)
+            Text(ct.displayName).font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.foreground)
+            Text(ct.subtitle)
+                .font(.caption2).foregroundColor(AppTheme.mutedForeground)
+                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
+        .padding(14)
+        .background(AppTheme.surface)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.05), radius: 6, y: 2)
+        .contentShape(Rectangle())
     }
 }
 
@@ -353,17 +353,25 @@ private struct ContinueCard: View {
     let record: HistoryRecord
     let action: () -> Void
 
+    private let cardWidth: CGFloat = 168
+
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
-                CoverThumbnail(record: record, cornerRadius: 14)
-                    .frame(width: 156, height: 100)
-                    .shadow(color: .black.opacity(0.08), radius: 5, y: 2)
+            VStack(alignment: .leading, spacing: 0) {
+                // 封面：固定 16:9，scaledToFill 裁切填充（不拉伸）；只圆上角由整卡 clip 实现。
+                CoverThumbnail(record: record, cornerRadius: 0)
+                    .frame(width: cardWidth, height: cardWidth * 9 / 16)
                 Text(record.title)
                     .font(.caption.weight(.semibold)).foregroundColor(AppTheme.foreground)
                     .lineLimit(2).multilineTextAlignment(.leading)
-                    .frame(width: 156, height: 34, alignment: .topLeading)
+                    .frame(width: cardWidth - 20, height: 38, alignment: .topLeading)
+                    .padding(.horizontal, 10).padding(.vertical, 8)
             }
+            .frame(width: cardWidth)
+            .background(AppTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppTheme.foreground.opacity(0.06), lineWidth: 1))
+            .shadow(color: .black.opacity(0.06), radius: 6, y: 3)
         }
         .buttonStyle(.plain)
     }

@@ -44,7 +44,7 @@ struct MainTabView: View {
             }
             .tint(AppTheme.primary)
             .onChange(of: selectedTab) { newTab in
-                if newTab == 1 { selectedTab = 0; importRouter.requestGeneral() }
+                if newTab == 1 { selectedTab = 0 }   // 中间占位 tab 被点 → 回首页（实际导入走 ➕ Menu）
             }
 
             // 中间凸起 ➕：通用导入入口（scenario=null）。reader 展开时被其顶层覆盖，收起时显示。
@@ -85,11 +85,16 @@ struct MainTabView: View {
         }
     }
 
-    /// 中间凸起 ➕：点开通用导入弹层（切到首页承载）。
+    /// 中间凸起 ➕：原生 Menu 列 5 种导入方式，系统自动锚定到按钮（箭头指向 ➕，符合当前 iOS UI）。
+    /// 选中后切到首页 + 经 ImportRouter 把来源交给 HomeView present（文件选择器/相机/输入框都在 HomeView）。
     private var plusButton: some View {
-        Button {
-            selectedTab = 0
-            importRouter.requestGeneral()
+        Menu {
+            ForEach(ImportSource.general) { src in
+                Button {
+                    selectedTab = 0
+                    importRouter.pick(src)
+                } label: { Label(src.label, systemImage: src.icon) }
+            }
         } label: {
             ZStack {
                 Circle()

@@ -65,12 +65,13 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.buttons["输入网址"].exists)
     }
 
-    /// 点「论文 / 学术」(来源 PDF/网址，多来源) → 弹出该场景的来源选择（含网址）。
+    /// 点「论文 / 学术」(来源 PDF/网址，多来源) → 原生 Menu 锚定到卡片，列出 上传文件 + 输入网址。
     func testScenarioTapOpensSourcePicker() {
         let app = launchZh()
-        app.staticTexts["论文 / 学术"].tap()
-        // 多来源场景弹来源选择动作表（列出 上传文件 + 输入网址）。
-        XCTAssertTrue(app.buttons["输入网址"].waitForExistence(timeout: 5), "场景未弹来源选择")
+        let card = app.buttons["scenario-paper"]
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        card.tap()
+        XCTAssertTrue(app.buttons["输入网址"].waitForExistence(timeout: 5), "场景 Menu 未弹来源选择")
     }
 
     /// 文库已从底部 Tab 下沉到「设置」：设置页存在「文库」入口。
