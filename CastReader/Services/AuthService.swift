@@ -85,6 +85,30 @@ final class AuthService: NSObject, ObservableObject {
         persist()
     }
 
+    /// Pro 查询需要 readout-web / better-auth 的 user id。旧版本若登录时换取失败，
+    /// 会持久化成 backendUserId=nil；刷新 Pro 前用已保存的 Google id_token 轻量重试一次。
+    func ensureBackendUserIdForPro() async -> String? {
+        guard var acc = account else { return nil }
+        if let id = acc.backendUserId, !id.isEmpty { return id }
+        guard acc.provider == "google",
+              let idToken = KeychainStore.get("google_id_token"),
+              !idToken.isEmpty else {
+            return nil
+        }
+        do {
+            guard let id = try await exchangeWithBackend(provider: "google", idToken: idToken),
+                  !id.isEmpty else {
+                return nil
+            }
+            acc.backendUserId = id
+            account = acc
+            persist()
+            return id
+        } catch {
+            return nil
+        }
+    }
+
     // MARK: - Google 登录
 
     func signInWithGoogle() async throws {
@@ -182,7 +206,11 @@ final class AuthService: NSObject, ObservableObject {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: Any] = ["provider": provider, "idToken": ["token": idToken]]
+        let body: [String: Any] = [
+            "provider": provider,
+            "idToken": ["token": idToken],
+            "device_id": ProBackendService.deviceId
+        ]
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await URLSession.shared.data(for: req)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { return nil }

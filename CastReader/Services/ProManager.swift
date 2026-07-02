@@ -63,8 +63,9 @@ final class ProManager: ObservableObject {
 
     /// 拉取服务端 Pro/额度（device_id + 可选 user_id），回填额度到 QuotaManager。
     func refreshServer() async {
-        let userId = AuthService.shared.proUserId
-        guard let status = await ProBackendService.shared.fetchStatus(userId: userId) else { return }
+        let userId = await AuthService.shared.ensureBackendUserIdForPro()
+        let email = AuthService.shared.account?.email
+        guard let status = await ProBackendService.shared.fetchStatus(userId: userId, email: email) else { return }
         serverPro = status.pro
         serverPlan = status.plan
         serverAccount = status.account

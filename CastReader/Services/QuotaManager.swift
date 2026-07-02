@@ -79,8 +79,9 @@ final class QuotaManager: ObservableObject {
         if let r = serverListenRemaining { serverListenRemaining = max(0, r - seconds) }
         persist()
         let userId = AuthService.shared.proUserId
+        let email = AuthService.shared.account?.email
         let secs = Int(seconds.rounded())
-        Task { await ProBackendService.shared.trackListen(seconds: secs, userId: userId) }
+        Task { await ProBackendService.shared.trackListen(seconds: secs, userId: userId, email: email) }
     }
 
     /// 解读开始一次（免费才计数，乐观扣减服务端剩余）。
