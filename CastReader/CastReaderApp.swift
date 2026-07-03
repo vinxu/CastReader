@@ -31,6 +31,8 @@ struct CastReaderApp: App {
         }
         // 刷新云端 TTS 节点配置（CN/US 路由）
         Task { await TTSEndpoint.refreshRemoteConfig() }
+        // 刷新云端解读(quickread)后端地址（换后端零发版；兜底 qr.castreader.ai）
+        Task { await QuickReadEndpoint.refreshRemoteConfig() }
 
         // 回前台刷新 Pro/额度
         NotificationCenter.default.addObserver(

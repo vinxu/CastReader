@@ -28,7 +28,9 @@ enum Constants {
         static var quickReadAPIKey: String {
             (Bundle.main.object(forInfoDictionaryKey: "QuickReadAPIKey") as? String) ?? ""
         }
-        static let quickReadBaseURL = "https://quickread.castreader.ai:8444"
+        /// ⚠️ 运行时实际后端地址走 `QuickReadEndpoint`（COS 远程配置优先，兜底 qr.castreader.ai）。
+        /// 下面这些常量已不再被调用（QuickReadService 改用 QuickReadEndpoint），仅保留兜底值供参考。
+        static let quickReadBaseURL = "https://qr.castreader.ai"
         static let quickReadPlan = "\(quickReadBaseURL)/api/quickread/extract-plan"          // SSE
         static let quickReadExtractBlock = "\(quickReadBaseURL)/api/quickread/extract-block" // JSON
         static let quickReadComposeBlock = "\(quickReadBaseURL)/api/quickread/compose-block" // JSON

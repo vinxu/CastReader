@@ -605,7 +605,7 @@ POST /api/quickread/compose-block
 
 ### 9.3 额度 / Pro（readout-web 公开端点）
 
-- `GET https://castreader.ai/api/pro/status?device_id=&user_id=&local_date=` → 回 Pro 状态 + 当日额度。
+- `GET https://castreader.ai/api/pro/status?device_id=&user_id=&email=&local_date=` → 回 Pro 状态 + 当日额度。登录后必须尽量传 `device_id + user_id + email`，服务端统一归一化 provider id 与后端 user id。
 - `POST https://castreader.ai/api/pro/listen-track` `{device_id|user_id, seconds}` → 上报朗读秒数。
 - 免费额度（参考 iOS）：每日 20 分钟朗读 / 3 次解读 / 仅基础音色 / 速度 ≤2.0x；本地午夜重置；服务端值优先、出错 fail-open 本地计数。
 - **解读 402** = 该 device 免费额度用满 → 弹**付费墙**（不是报错）。

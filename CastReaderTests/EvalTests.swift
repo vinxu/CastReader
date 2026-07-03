@@ -303,6 +303,39 @@ final class EvalTests: XCTestCase {
 
     // MARK: - PH 照片中文高亮（无词时间戳 → 按 segment 进度线性推进 OCR 词；离线确定性）
 
+    private func ocrParagraph(text: String, ocrWords: [String]) -> ReadingParagraph {
+        let words = ocrWords.enumerated().map { idx, word in
+            OCRWord(id: idx, text: word, bboxNorm: CGRect(x: CGFloat(idx) * 0.01, y: 0.5, width: 0.008, height: 0.02))
+        }
+        return ReadingParagraph(id: 0, text: text, type: .paragraph, words: words)
+    }
+
+    private func timestamps(_ words: [String]) -> [TTSTimestamp] {
+        words.enumerated().map { idx, word in
+            TTSTimestamp(word: word, startTime: Double(idx), endTime: Double(idx) + 0.5)
+        }
+    }
+
+    /// Kindle/OCR 英文词高亮必须像扩展一样只向前匹配：同段重复词不能跳回之前的同名词。
+    func testOCRWordAligner_RepeatedWordsFollowReadingOrder() {
+        let words = ["the", "cat", "and", "the", "dog", "saw", "the", "cat"]
+        let paragraph = ocrParagraph(text: words.joined(separator: " "), ocrWords: words)
+        let mapped = OCRWordAligner.mapTimestampWords(timestamps(words), in: paragraph)
+        XCTAssertEqual(mapped, [0, 1, 2, 3, 4, 5, 6, 7])
+    }
+
+    /// OCR 偶尔漏词时，缺失词可以不高亮，但绝不能用 nearest bbox 拉回 cursor 前面的词。
+    func testOCRWordAligner_MissingOCRWordDoesNotBacktrack() {
+        let ttsWords = ["the", "cat", "and", "the", "dog", "saw", "the", "cat"]
+        let ocrWords = ["the", "cat", "the", "dog", "saw", "the", "cat"]
+        let paragraph = ocrParagraph(text: ttsWords.joined(separator: " "), ocrWords: ocrWords)
+        let mapped = OCRWordAligner.mapTimestampWords(timestamps(ttsWords), in: paragraph)
+
+        XCTAssertEqual(mapped, [0, 1, nil, 2, 3, 4, 5, 6])
+        let compact = mapped.compactMap { $0 }
+        XCTAssertEqual(compact, compact.sorted(), "OCR word indexes must be monotonic: \(mapped)")
+    }
+
     /// 照片中文 TTS 无词时间戳，高亮按段内进度推进。验证 photoWordIndex 单调不减、覆盖首末词、不越界。
     @MainActor
     func testPhotoWordIndex_MonotonicAndBounded() {

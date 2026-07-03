@@ -62,14 +62,23 @@ class CastReaderTests: XCTestCase {
         XCTAssertTrue(try encodedJSON(req).contains("\"content_type\":\"contract\""))
     }
 
-    /// §1 表：论文/合同 = deep；书籍/报告/教材/说明书 = standard。
-    func testScenarioSuggestedDepth() {
-        XCTAssertEqual(ExplainContentType.paper.suggestedDepth, .deep)
-        XCTAssertEqual(ExplainContentType.contract.suggestedDepth, .deep)
-        XCTAssertEqual(ExplainContentType.book.suggestedDepth, .standard)
-        XCTAssertEqual(ExplainContentType.report.suggestedDepth, .standard)
-        XCTAssertEqual(ExplainContentType.study.suggestedDepth, .standard)
-        XCTAssertEqual(ExplainContentType.manual.suggestedDepth, .standard)
+    /// content_type 与 depth 正交：场景**不**覆盖用户深度。设深度=速览，进「论文」场景，requestDepth 仍=速览。
+    @MainActor
+    func testScenarioDoesNotOverrideDepth() {
+        let prev = AppSettings.shared.explainDepth
+        defer { AppSettings.shared.explainDepth = prev }
+
+        let doc = ReadingDocument(title: "T", sourceKind: .text,
+                                  paragraphs: [ReadingParagraph(id: 0, text: "hello world", type: .paragraph)])
+        let vm = ExplainViewModel(document: doc)
+
+        AppSettings.shared.explainDepth = QuickreadDepth.overview.rawValue
+        vm.scenario = ExplainContentType.paper.rawValue   // 论文（旧逻辑会强制 deep）
+        XCTAssertEqual(vm.requestDepth, "overview", "场景不应覆盖用户深度")
+
+        AppSettings.shared.explainDepth = QuickreadDepth.deep.rawValue
+        XCTAssertEqual(vm.requestDepth, "deep", "深度始终跟随用户设置")
+
         XCTAssertEqual(ExplainContentType.allCases.count, 6)
     }
 
@@ -79,9 +88,20 @@ class CastReaderTests: XCTestCase {
                        ["paper", "book", "report", "contract", "study", "manual"])
     }
 
-    /// 场景注入 ExplainViewModel 后，scenario 决定有效深度（覆盖全局设置）。
+    /// 场景只改变导入来源排序，不限制来源能力；尤其说明书 / Git 文档必须支持 Web 链接。
+    func testScenarioImportSourcesAreRecommendationsOnly() {
+        let allSources = Set(ImportSource.allCases)
+        for ct in ExplainContentType.allCases {
+            XCTAssertEqual(Set(ImportSource.sources(for: ct)), allSources, "\(ct.rawValue) 不应缺导入来源")
+        }
+
+        XCTAssertEqual(ImportSource.sources(for: .manual).first, .url, "说明书 / 文档场景应优先支持 Web 链接")
+        XCTAssertEqual(ImportSource.general.first, .url, "底部 + 快速导入应优先支持 Web 链接")
+    }
+
+    /// 场景注入 ExplainViewModel：scenario 被正确设置（驱动 content_type，不动深度）。
     @MainActor
-    func testScenarioInjectionOverridesDepth() {
+    func testScenarioInjection() {
         let doc = ReadingDocument(title: "T", sourceKind: .text,
                                   paragraphs: [ReadingParagraph(id: 0, text: "hello world", type: .paragraph)])
         let vm = ExplainViewModel(document: doc)
@@ -109,6 +129,18 @@ class CastReaderTests: XCTestCase {
         let bare = #"{"action":"underline","text":"x"}"#.data(using: .utf8)!
         let ev2 = try JSONDecoder().decode(QuickreadEvent.self, from: bare)
         XCTAssertNil(ev2.weight)
+    }
+
+    /// fast-block0 同样要接住场景化标注的样式与分层字段；否则首块会把 wave/star 等新 mark 丢薄。
+    func testFastBlock0MarkDecodesScenarioFields() throws {
+        let json = #"{"style":"star","text":"a key sentence","n":2,"weight":"primary","role":"key","note":"why it matters"}"#.data(using: .utf8)!
+        let mark = try JSONDecoder().decode(FastBlock0Mark.self, from: json)
+        XCTAssertEqual(mark.style, "star")
+        XCTAssertEqual(mark.text, "a key sentence")
+        XCTAssertEqual(mark.n, 2)
+        XCTAssertEqual(mark.weight, "primary")
+        XCTAssertEqual(mark.role, "key")
+        XCTAssertEqual(mark.note, "why it matters")
     }
 
     // MARK: - 封面 + 标题：网页元数据解析
@@ -140,6 +172,61 @@ class CastReaderTests: XCTestCase {
         let r = LinkMetadata.parse(html: "<html><head></head><body>hi</body></html>",
                                    baseURL: URL(string: "https://x.com")!)
         XCTAssertNil(r.imageURL)
+    }
+
+    // MARK: - Kindle 书架扫描防误判
+
+    private func kindleBook(
+        id: String,
+        asin: String? = nil,
+        title: String,
+        url: String
+    ) -> KindleBook {
+        KindleBook(
+            id: id,
+            asin: asin,
+            title: title,
+            author: "",
+            coverURL: nil,
+            readerURL: url,
+            progressLabel: "",
+            lastOpenedAt: nil,
+            lastSyncedAt: Date(),
+            lastReadPageKey: nil,
+            lastReadURL: nil
+        )
+    }
+
+    func testKindleBookValidatorRejectsAmazonMarketingLinks() {
+        let fakeBooks = [
+            kindleBook(id: "download", title: "在应用商店中下载", url: "https://read.amazon.com/kindle-library"),
+            kindleBook(id: "learn-more", title: "了解更多有关 Kindle APP 的信息", url: "https://read.amazon.com/landing"),
+            kindleBook(id: "any-device", title: "在任何设备上阅读 read.amazon.com", url: "https://read.amazon.com/kindle-library"),
+            kindleBook(id: "app", title: "Download the Kindle App", url: "https://read.amazon.com/download")
+        ]
+
+        for book in fakeBooks {
+            XCTAssertFalse(book.isLikelyLibraryBook, "不应把 Kindle 引导/营销链接当成书：\(book.title)")
+        }
+    }
+
+    func testKindleBookValidatorAcceptsReaderBooks() {
+        XCTAssertTrue(
+            kindleBook(
+                id: "B012345678",
+                asin: "B012345678",
+                title: "A Real Kindle Book",
+                url: "https://read.amazon.com/?asin=B012345678"
+            ).isLikelyLibraryBook
+        )
+
+        XCTAssertTrue(
+            kindleBook(
+                id: "reader",
+                title: "Another Real Kindle Book",
+                url: "https://read.amazon.com/reader/B012345678"
+            ).isLikelyLibraryBook
+        )
     }
 
     // MARK: - 文件标题推导（PDF/DOCX 不再只用文件名）

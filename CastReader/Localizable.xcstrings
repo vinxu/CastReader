@@ -1,8 +1,12 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
-    "" : {},
-    "  ✓" : {},
+    "" : {
+
+    },
+    "·" : {
+
+    },
     "%@ · %@" : {
       "localizations" : {
         "zh-Hans" : {
@@ -13,9 +17,15 @@
         }
       }
     },
-    "%lld" : {},
-    "%lld chapters" : {},
-    "%lld words" : {},
+    "%lld" : {
+
+    },
+    "%lld chapters" : {
+
+    },
+    "%lld words" : {
+
+    },
     "%lld 分钟前" : {
       "localizations" : {
         "en" : {
@@ -46,6 +56,16 @@
         }
       }
     },
+    "Amazon Kindle 账号" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amazon Kindle account"
+          }
+        }
+      }
+    },
     "Apple 登录失败" : {
       "localizations" : {
         "en" : {
@@ -56,13 +76,49 @@
         }
       }
     },
-    "CastReader" : {},
+    "Cancel" : {
+
+    },
+    "CastReader" : {
+
+    },
     "CastReader Pro" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "CastReader Pro"
+          }
+        }
+      }
+    },
+    "Debug only：测试锁屏后 WebView 是否还能滚动" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Debug only: test whether WebView can keep scrolling after the phone is locked"
+          }
+        }
+      }
+    },
+    "EPUB、PDF 长文、书摘或章节" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "EPUBs, long PDFs, excerpts, or chapters"
+          }
+        }
+      }
+    },
+    "GitHub 文档、API 文档、产品手册、帮助中心" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub docs, API docs, product manuals, and help centers"
           }
         }
       }
@@ -77,7 +133,99 @@
         }
       }
     },
+    "https://example.com/article" : {
+
+    },
+    "Kindle" : {
+
+    },
+    "Kindle Book" : {
+
+    },
+    "Kindle 书架" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle Library"
+          }
+        }
+      }
+    },
+    "Kindle 书架响应异常。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unexpected Kindle library response."
+          }
+        }
+      }
+    },
+    "Kindle 书架已同步。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle library synced."
+          }
+        }
+      }
+    },
+    "Kindle 后台滚动测试" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle Background Scroll Probe"
+          }
+        }
+      }
+    },
+    "Kindle 返回了异常的页面数据。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle returned unexpected page data."
+          }
+        }
+      }
+    },
+    "Kindle 页面图片无法解析。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Kindle page image could not be decoded."
+          }
+        }
+      }
+    },
+    "Kindle 页面正在准备中。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle pages are already being prepared."
+          }
+        }
+      }
+    },
+    "Kindle 页面还没有准备好" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Kindle page is not ready yet"
+          }
+        }
+      }
+    },
     "PDF / TXT / 图片 / EPUB" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -87,8 +235,25 @@
         }
       }
     },
-    "Something went wrong" : {},
-    "Try Again" : {},
+    "PDF、DOCX、EPUB、TXT" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF, DOCX, EPUB, TXT"
+          }
+        }
+      }
+    },
+    "Playback Speed" : {
+
+    },
+    "Something went wrong" : {
+
+    },
+    "Try Again" : {
+
+    },
     "Untitled" : {
       "localizations" : {
         "en" : {
@@ -105,8 +270,6 @@
         }
       }
     },
-    "https://example.com/article" : {},
-    "·" : {},
     "上传中…" : {
       "localizations" : {
         "en" : {
@@ -137,6 +300,16 @@
         }
       }
     },
+    "下一页 Kindle 页面已就绪。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready on next Kindle page."
+          }
+        }
+      }
+    },
     "与" : {
       "localizations" : {
         "en" : {
@@ -153,6 +326,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chinese"
+          }
+        }
+      }
+    },
+    "书名" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Title"
           }
         }
       }
@@ -177,7 +360,18 @@
         }
       }
     },
+    "今日朗读剩余 %d 分钟 · 解读 %d 次" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d min Read Aloud · %d Explain left today"
+          }
+        }
+      }
+    },
     "今日朗读剩余 %lld 分钟 · 解读 %lld 次" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -188,11 +382,22 @@
       }
     },
     "从相册选择" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose from Library"
+          }
+        }
+      }
+    },
+    "作者" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Author"
           }
         }
       }
@@ -213,6 +418,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Continue with Google"
+          }
+        }
+      }
+    },
+    "先导入内容，也可以指定一个解读场景" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import content first, or choose an explanation scenario"
           }
         }
       }
@@ -247,6 +462,99 @@
         }
       }
     },
+    "关注定义、知识点、例题和易错点" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus on definitions, concepts, examples, and common mistakes"
+          }
+        }
+      }
+    },
+    "关注权利义务、金额期限和风险条款" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus on rights, obligations, amounts, deadlines, and risk clauses"
+          }
+        }
+      }
+    },
+    "关注核心观点、概念、转折和金句" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus on core ideas, concepts, turning points, and memorable lines"
+          }
+        }
+      }
+    },
+    "关注核心观点、概念关系和转折" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus on core ideas, concept relationships, and turning points"
+          }
+        }
+      }
+    },
+    "关注步骤、参数、限制和警告" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus on steps, parameters, limits, and warnings"
+          }
+        }
+      }
+    },
+    "关注研究问题、方法、实验和贡献" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus on research questions, methods, experiments, and contributions"
+          }
+        }
+      }
+    },
+    "关注研究问题、方法、结论和贡献" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus on the research question, method, conclusions, and contribution"
+          }
+        }
+      }
+    },
+    "关注结论、关键数据、假设和风险" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus on conclusions, key data, assumptions, and risks"
+          }
+        }
+      }
+    },
+    "关注结论、数据、风险和前提" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus on conclusions, data, risks, and assumptions"
+          }
+        }
+      }
+    },
     "关键步骤 · 警告 · 参数" : {
       "localizations" : {
         "en" : {
@@ -277,6 +585,16 @@
         }
       }
     },
+    "内容太短，无法解读，试试朗读" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Content too short to explain. Try Read Aloud."
+          }
+        }
+      }
+    },
     "内容太短或暂不支持解读，请稍后重试" : {
       "localizations" : {
         "en" : {
@@ -287,12 +605,22 @@
         }
       }
     },
-    "内容太短，无法解读，试试朗读" : {
+    "最近" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Content too short to explain. Try Read Aloud."
+            "value" : "Recent"
+          }
+        }
+      }
+    },
+    "最高 3x 语速" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up to 3x Speed"
           }
         }
       }
@@ -313,6 +641,37 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete all local history in your Library. History is stored only on this device and is never uploaded or synced to the cloud."
+          }
+        }
+      }
+    },
+    "刷新" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh"
+          }
+        }
+      }
+    },
+    "刷新 Kindle 书架" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh Kindle library"
+          }
+        }
+      }
+    },
+    "刷新 Kindle 书籍" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh Kindle book"
           }
         }
       }
@@ -353,6 +712,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "There's text in your clipboard"
+          }
+        }
+      }
+    },
+    "加载更多" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Load more"
           }
         }
       }
@@ -418,6 +787,46 @@
         }
       }
     },
+    "合同、条款、协议、报价和 SLA" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contracts, terms, agreements, quotes, and SLAs"
+          }
+        }
+      }
+    },
+    "同步" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync"
+          }
+        }
+      }
+    },
+    "同步 Kindle 书架" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync Kindle library"
+          }
+        }
+      }
+    },
+    "同步需要处理。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync needs attention."
+          }
+        }
+      }
+    },
     "图片" : {
       "localizations" : {
         "en" : {
@@ -448,6 +857,26 @@
         }
       }
     },
+    "如果已经看到 Kindle 书架，请点同步。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If you see your Kindle library, tap Sync."
+          }
+        }
+      }
+    },
+    "完成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        }
+      }
+    },
     "导入内容" : {
       "localizations" : {
         "en" : {
@@ -458,12 +887,42 @@
         }
       }
     },
+    "导入方式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Method"
+          }
+        }
+      }
+    },
     "将删除文库中全部本地历史，此操作不可撤销。" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "This will delete all local history in your Library. This action cannot be undone."
+          }
+        }
+      }
+    },
+    "将清除本机 Kindle 书架缓存和 read.amazon.com 登录状态。首页 Kindle 模块会回到绑定 Kindle，需要重新登录和同步。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This will clear the local Kindle shelf cache and the read.amazon.com sign-in state. The Kindle module on Home will return to Connect Kindle, and you will need to sign in and sync again."
+          }
+        }
+      }
+    },
+    "尚未开始" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not started"
           }
         }
       }
@@ -488,12 +947,32 @@
         }
       }
     },
+    "已到达当前 Kindle 内容末尾。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reached the end of the current Kindle content."
+          }
+        }
+      }
+    },
     "已取消登录" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sign-in canceled"
+          }
+        }
+      }
+    },
+    "已同步的 Kindle 书架" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your synced Kindle library"
           }
         }
       }
@@ -508,12 +987,42 @@
         }
       }
     },
+    "已在本机同步 %d 本书。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d books synced locally."
+          }
+        }
+      }
+    },
+    "已就绪。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready."
+          }
+        }
+      }
+    },
     "已恢复 Pro 会员" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pro restored"
+          }
+        }
+      }
+    },
+    "已找到 %d 本 Kindle 书…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Found %d Kindle books..."
           }
         }
       }
@@ -558,6 +1067,16 @@
         }
       }
     },
+    "已绑定" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected"
+          }
+        }
+      }
+    },
     "已解锁" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -580,6 +1099,17 @@
         }
       }
     },
+    "开发期默认解锁全部能力。测试真实付费 / 跨平台权益时请关闭，并在 Xcode 中运行（StoreKit 本地配置才会生效）。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All features are unlocked by default during development. Turn this off when testing real purchases or cross-platform entitlements, and run from Xcode so the local StoreKit configuration takes effect."
+          }
+        }
+      }
+    },
     "开始" : {
       "localizations" : {
         "en" : {
@@ -596,6 +1126,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Start Explain"
+          }
+        }
+      }
+    },
+    "当前 Kindle 页面已就绪。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready on this Kindle page."
+          }
+        }
+      }
+    },
+    "当前 Kindle 页面没有识别到可朗读文本。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No readable text was recognized on this Kindle page."
+          }
+        }
+      }
+    },
+    "当前打开的是 Kindle 书籍页面，请返回 Kindle 书架后同步。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle book page open. Return to Kindle Library, then Sync."
+          }
+        }
+      }
+    },
+    "当前是 Kindle 书籍页面，请回到书架后同步。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is a Kindle book page. Sync from the library shelf."
+          }
+        }
+      }
+    },
+    "当前页面暂时没有找到 Kindle 书籍。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Kindle books were found on this page yet."
+          }
+        }
+      }
+    },
+    "当前页面没有找到 Kindle 书籍。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Kindle books were found on this page."
+          }
+        }
+      }
+    },
+    "快速导入" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Import"
           }
         }
       }
@@ -630,7 +1230,38 @@
         }
       }
     },
+    "打开 Amazon Kindle 并登录。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Amazon Kindle and sign in."
+          }
+        }
+      }
+    },
+    "打开 Kindle 书架，然后点同步。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open your Kindle library, then tap Sync."
+          }
+        }
+      }
+    },
+    "打开任意位置，然后点播放开始朗读。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open any position, then tap Play to read aloud."
+          }
+        }
+      }
+    },
     "打开网页，朗读或解读" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -645,12 +1276,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reports"
+            "value" : "Reports / Research"
           }
         }
       }
     },
     "拍摄 / 相册" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -670,6 +1302,16 @@
         }
       }
     },
+    "拍摄纸质内容或屏幕" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture printed content or a screen"
+          }
+        }
+      }
+    },
     "拍照" : {
       "localizations" : {
         "en" : {
@@ -681,6 +1323,7 @@
       }
     },
     "拍照或从相册选图，识别文字" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -730,12 +1373,42 @@
         }
       }
     },
+    "排序" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sort"
+          }
+        }
+      }
+    },
+    "推荐" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recommended"
+          }
+        }
+      }
+    },
     "提示" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Notice"
+          }
+        }
+      }
+    },
+    "搜索 Kindle 书籍" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search Kindle books"
           }
         }
       }
@@ -766,6 +1439,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Textbooks / Study"
+          }
+        }
+      }
+    },
+    "教材、课件、学习资料、习题讲义" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Textbooks, slides, study materials, and exercises"
           }
         }
       }
@@ -831,6 +1514,37 @@
         }
       }
     },
+    "无法把高亮附加到 Kindle 页面：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not attach highlights to the Kindle page: %@"
+          }
+        }
+      }
+    },
+    "无法捕获 Kindle 页面：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not capture the Kindle page: %@"
+          }
+        }
+      }
+    },
+    "无法解析 Kindle 页面图片" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not parse the Kindle page image"
+          }
+        }
+      }
+    },
     "无法解析登录信息" : {
       "localizations" : {
         "en" : {
@@ -851,6 +1565,17 @@
         }
       }
     },
+    "无法读取 Kindle 当前页" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not read the current Kindle page"
+          }
+        }
+      }
+    },
     "无法读取图片" : {
       "localizations" : {
         "en" : {
@@ -866,7 +1591,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Couldn't read the file: %@"
+            "value" : "Could not read file: %@"
           }
         }
       }
@@ -931,16 +1656,6 @@
         }
       }
     },
-    "最高 3x 语速" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Up to 3x Speed"
-          }
-        }
-      }
-    },
     "月度订阅" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -992,6 +1707,17 @@
         }
       }
     },
+    "未找到 Kindle 页面图片：%@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not find the Kindle page image: %@"
+          }
+        }
+      }
+    },
     "未找到匹配「%@」的记录" : {
       "localizations" : {
         "en" : {
@@ -1012,6 +1738,16 @@
         }
       }
     },
+    "未知作者" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown author"
+          }
+        }
+      }
+    },
     "未识别到文字" : {
       "localizations" : {
         "en" : {
@@ -1028,6 +1764,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rights · Amounts & terms · Risk clauses"
+          }
+        }
+      }
+    },
+    "查看全部" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View all"
           }
         }
       }
@@ -1072,12 +1818,134 @@
         }
       }
     },
+    "模拟 Pro 解锁" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulate Pro Unlock"
+          }
+        }
+      }
+    },
+    "正在准备 Kindle 页面…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing Kindle pages..."
+          }
+        }
+      }
+    },
+    "正在准备当前 Kindle 页面…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing current Kindle page..."
+          }
+        }
+      }
+    },
     "正在准备第 %lld/%lld 段…" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Preparing block %1$lld/%2$lld…"
+          }
+        }
+      }
+    },
+    "正在刷新当前 Kindle 页面…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refreshing current Kindle page..."
+          }
+        }
+      }
+    },
+    "正在加载下一页 Kindle 页面…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading next Kindle page..."
+          }
+        }
+      }
+    },
+    "正在对齐 Kindle 页面…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aligning Kindle page..."
+          }
+        }
+      }
+    },
+    "正在打开下一页 Kindle 页面…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opening next Kindle page..."
+          }
+        }
+      }
+    },
+    "正在扫描 Kindle 书架…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scanning Kindle library..."
+          }
+        }
+      }
+    },
+    "正在捕获第 %d 页…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capturing page %d..."
+          }
+        }
+      }
+    },
+    "正在预加载第 %d 页…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefetching page %d..."
+          }
+        }
+      }
+    },
+    "没有匹配的书籍" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No matching books"
+          }
+        }
+      }
+    },
+    "没有找到 Kindle 页面图片，请打开书籍页面后重试。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Kindle page image was found. Open a book page and try again."
           }
         }
       }
@@ -1123,11 +1991,23 @@
       }
     },
     "照片来源" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Photo Source"
+          }
+        }
+      }
+    },
+    "登录" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in"
           }
         }
       }
@@ -1162,6 +2042,26 @@
         }
       }
     },
+    "登录后同步书架" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to sync your shelf"
+          }
+        }
+      }
+    },
+    "登录后点同步。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in, then tap Sync."
+          }
+        }
+      }
+    },
     "登录回调无效" : {
       "localizations" : {
         "en" : {
@@ -1192,6 +2092,16 @@
         }
       }
     },
+    "研报、行业报告、数据分析文章" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Research reports, industry reports, and data analysis articles"
+          }
+        }
+      }
+    },
     "研究问题 · 方法 · 结论 · 贡献" : {
       "localizations" : {
         "en" : {
@@ -1213,11 +2123,32 @@
       }
     },
     "粘贴或输入一段文字" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Paste or type some text"
+          }
+        }
+      }
+    },
+    "粘贴或输入一段文本" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste or type a passage"
+          }
+        }
+      }
+    },
+    "粘贴文本" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste Text"
           }
         }
       }
@@ -1228,6 +2159,27 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Composing…"
+          }
+        }
+      }
+    },
+    "绑定 Kindle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Kindle"
+          }
+        }
+      }
+    },
+    "继续" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
           }
         }
       }
@@ -1292,7 +2244,18 @@
         }
       }
     },
+    "网页、文档站、文章链接" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Web pages, docs, and article links"
+          }
+        }
+      }
+    },
     "自动划重点 · 写批注" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1352,6 +2315,46 @@
         }
       }
     },
+    "解绑" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unbind"
+          }
+        }
+      }
+    },
+    "解绑 Kindle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unbind Kindle"
+          }
+        }
+      }
+    },
+    "解绑 Kindle？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unbind Kindle?"
+          }
+        }
+      }
+    },
+    "解绑只清除本机 CastReader 的 Kindle 登录状态和书架缓存，不会影响 Amazon 账号或 Kindle 图书。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unbinding only clears the Kindle sign-in state and shelf cache on this device. It will not affect your Amazon account or Kindle books."
+          }
+        }
+      }
+    },
     "解读" : {
       "localizations" : {
         "en" : {
@@ -1368,6 +2371,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Explaining"
+          }
+        }
+      }
+    },
+    "解读场景" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scenarios"
           }
         }
       }
@@ -1428,6 +2441,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Explain returned no first block"
+          }
+        }
+      }
+    },
+    "解读深度" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explanation Depth"
           }
         }
       }
@@ -1513,6 +2536,16 @@
         }
       }
     },
+    "论文、arXiv、DOI 页面、学术 PDF" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Papers, arXiv, DOI pages, and academic PDFs"
+          }
+        }
+      }
+    },
     "设置" : {
       "localizations" : {
         "en" : {
@@ -1573,6 +2606,37 @@
         }
       }
     },
+    "请滚动 Kindle 书架后再点同步。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scroll the Kindle library, then tap Sync again."
+          }
+        }
+      }
+    },
+    "请登录 Amazon Kindle，然后点同步。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to Amazon Kindle, then tap Sync."
+          }
+        }
+      }
+    },
+    "调试" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Debug"
+          }
+        }
+      }
+    },
     "账号" : {
       "localizations" : {
         "en" : {
@@ -1604,6 +2668,7 @@
       }
     },
     "输入文字" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1633,12 +2698,43 @@
         }
       }
     },
+    "返回 Kindle 书架后再同步。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Return to Kindle Library, then Sync."
+          }
+        }
+      }
+    },
     "还没有历史记录" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "No history yet"
+          }
+        }
+      }
+    },
+    "还没有可朗读的 Kindle 页面" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No readable Kindle page is available yet"
+          }
+        }
+      }
+    },
+    "还没有同步书籍" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No books synced yet."
           }
         }
       }
@@ -1654,6 +2750,7 @@
       }
     },
     "选一个场景，AI 在你的原文上划重点、写批注" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1669,6 +2766,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You'll be asked to allow paste once you choose"
+          }
+        }
+      }
+    },
+    "选择导入和解读时使用的内容视角" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a lens for imports and explanations"
+          }
+        }
+      }
+    },
+    "选择截图或图片" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a screenshot or image"
+          }
+        }
+      }
+    },
+    "选择来源" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Source"
+          }
+        }
+      }
+    },
+    "通用" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "General"
           }
         }
       }

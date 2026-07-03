@@ -13,6 +13,7 @@ import Foundation
 
 enum ReadingSourceKind: String, Equatable, Codable {
     case photo   // 拍摄/选图，带 Vision OCR 的词级 bbox
+    case kindle  // Kindle Cloud Reader：多页渲染图 + Vision OCR 词级 bbox
     case text    // 上传文件 / 文本输入，重排纯文本
     case web     // 网址：WKWebView 直接加载网页 DOM，高亮/标注经 JS bridge（保留原排版）
     case docx    // 本地 DOCX：WKWebView 内 mammoth.js 转 HTML 渲染（不上传后端），复用 web 的高亮/标注/提取链路
@@ -27,6 +28,9 @@ extension ReadingSourceKind {
 
     /// 原生文本渲染源（重排文本 / EPUB）：走 TextReaderView，朗读词/句高亮统一用 processedDisplayText 内字符范围。
     var isNativeTextRendered: Bool { self == .text || self == .epub }
+
+    /// OCR 图片几何源：用每个词的 Vision bbox 在原图上叠加高亮/mark。
+    var isOCRImageRendered: Bool { self == .photo || self == .kindle }
 }
 
 // MARK: - OCR Word
@@ -47,7 +51,7 @@ enum ReadingParagraphType: Equatable {
     case code
     case list
     case caption
-    case image   // 仅 epub：内嵌图片段（text 为 alt/caption，不朗读），渲染走 imageData
+    case image   // EPUB 内嵌图片 / Kindle 页面图（不朗读），渲染走 imageData
 
     /// 是否参与朗读（代码块、图片段不读）
     var isReadable: Bool {
@@ -63,11 +67,12 @@ struct ReadingParagraph: Identifiable, Equatable {
     var bboxNorm: CGRect? = nil // 仅 photo，段落包络（用于滚动/居中）
     var pdfPageIndex: Int? = nil // 仅 pdf：该句所在 PDF 页
     var pdfRange: NSRange? = nil // 仅 pdf：该句在该页 string 内的字符范围（PDFKit characterBounds 高亮用）
+    var pageIndex: Int? = nil    // 仅 kindle：该 OCR 段落所属的 Kindle 渲染页
     var imageData: Data? = nil   // 仅 epub：内嵌图片字节（PNG/JPEG），type==.image 时直接渲染
 
     init(id: Int, text: String, type: ReadingParagraphType = .paragraph,
          words: [OCRWord] = [], bboxNorm: CGRect? = nil,
-         pdfPageIndex: Int? = nil, pdfRange: NSRange? = nil,
+         pdfPageIndex: Int? = nil, pdfRange: NSRange? = nil, pageIndex: Int? = nil,
          imageData: Data? = nil) {
         self.id = id
         self.text = text
@@ -76,6 +81,7 @@ struct ReadingParagraph: Identifiable, Equatable {
         self.bboxNorm = bboxNorm
         self.pdfPageIndex = pdfPageIndex
         self.pdfRange = pdfRange
+        self.pageIndex = pageIndex
         self.imageData = imageData
     }
 }

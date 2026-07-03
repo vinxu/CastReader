@@ -26,15 +26,18 @@ final class ExplainViewModel: ObservableObject {
 
     let document: ReadingDocument
 
-    /// 场景 content_type（从首页场景入口进入时设置；通用 ➕ 导入为 nil）。决定后端「划什么/怎么批」prompt 分支 +
-    /// 解读深度预设（覆盖用户全局 explainDepth）。由 PlayerCoordinator.open(scenario:) 注入。
+    /// 场景 content_type（从首页场景入口进入时设置；通用 ➕ 导入为 nil）。仅决定后端「划什么/怎么批」prompt 分支，
+    /// 与解读深度正交、**不影响 depth**（depth 始终 = 用户设置的 3 档）。由 PlayerCoordinator.open(scenario:) 注入。
+    /// 内部可见（仅供单测断言「场景不覆盖深度」）。
     var scenario: String? = nil
 
-    /// 解读深度：有场景用场景预设深度（PRD §2.1 覆盖全局），否则用用户设置。
-    private var effectiveDepth: String {
-        if let sc = scenario, let ct = ExplainContentType(rawValue: sc) { return ct.suggestedDepth.rawValue }
-        return settings.explainDepth
-    }
+    private var playbackBookID: String?
+    private var playbackTitle: String?
+    private var playbackChapterTitle: String?
+    private var playbackCoverURL: String?
+
+    /// 发给后端的解读深度：永远 = 用户在设置里选的 3 档（速览/标准/深入），场景绝不改它（content_type 与 depth 正交）。
+    var requestDepth: String { settings.explainDepth }
 
     // .web 源：用 WebView extractor 提取的段落构成讲解/锚定文档（原始 document.paragraphs 为空）。
     private var webDoc: ReadingDocument? = nil
@@ -78,10 +81,19 @@ final class ExplainViewModel: ObservableObject {
     private var section0: QuickreadSection?
 
     private var prepared: [Int: PreparedBlock] = [:]
+    private var preparingBlocks = Set<Int>()
     private var marksByBlock: [Int: [QuickreadEvent]] = [:]
+    private var replayBlocks: [PreparedBlock] = []   // 完整解读播放轨道；跨 PDF/长文批次保留，供「重播」从头顺序播放
+    private var isReplayingCached = false
     private var firedMarks = Set<String>()
     private var anchorCursor: Int? = nil
     private var markHit = 0, markTotal = 0   // mark 匹配成功率诊断（CRDBG）
+
+    private func debugLog(_ format: String, _ args: CVarArg...) {
+        #if DEBUG
+        NSLog("CRDBG %@", String(format: format, arguments: args))
+        #endif
+    }
 
     // 快道（Fast-Lane）：快道占 block_0 秒开，质道吃剩余段、块顺延为 block_(idxBase+j)。idxBase=0 即未走快道（原单路）。
     private var idxBase = 0
@@ -99,6 +111,22 @@ final class ExplainViewModel: ObservableObject {
     init(document: ReadingDocument) {
         self.document = document
         bind()
+    }
+
+    func configurePlaybackMetadata(id: String, title: String, coverURL: String?, chapterTitle: String? = nil) {
+        playbackBookID = id
+        playbackTitle = title
+        playbackCoverURL = coverURL
+        playbackChapterTitle = chapterTitle
+    }
+
+    private func applyPlaybackMetadata() {
+        audio.setBook(
+            id: playbackBookID ?? document.id,
+            title: playbackTitle ?? document.title,
+            chapterTitle: playbackChapterTitle ?? String(localized: "解读"),
+            coverUrl: playbackCoverURL
+        )
     }
 
     deinit { orchestrationTask?.cancel() }
@@ -155,11 +183,14 @@ final class ExplainViewModel: ObservableObject {
         quota.noteExplainStarted(isPro: pro.isPro)
         activate()
         activeMarks = []           // 开始新解读：清上一轮残留 mark（对齐 Android startExplain；之后跨批累积不再清）
-        idxBase = 0; block0Claimed = false; fastSection = nil; forcedExplainLang = nil; planFailed = false
+        replayBlocks.removeAll()
+        preparingBlocks.removeAll()
+        isReplayingCached = false
+        idxBase = 0; block0Claimed = false; fastSection = nil; forcedExplainLang = nil; planFailed = false; batchPrevSummary = nil
         // text/web/EPUB 的 scope 只由快道 setupQuoteScope 设；重试解读前清掉上轮残留，否则 fastLaneEligibleOpening
         // 的 `pdfScopedParagraphs == nil` 守卫失败 → 退化成只讲 rest、永久丢开头段（PDF 翻页 scope 不受影响）。
         if [.text, .web, .epub].contains(doc.sourceKind) { pdfScopedParagraphs = nil; pdfBatchCursor = nil }
-        audio.setBook(id: document.id, title: document.title, chapterTitle: String(localized: "解读"), coverUrl: nil)
+        applyPlaybackMetadata()
         applySpeed()
         status = .planning
         stageText = String(localized: "通读全文…")
@@ -219,6 +250,8 @@ final class ExplainViewModel: ObservableObject {
         guard !segs.isEmpty else { throw QuickReadError.noBlock0 }
         let duration = segs.reduce(0) { $0 + effectiveDuration($1) }
         let marks = ensureTiming(section.events, duration: duration)
+        debugLog("fastlane prepare marks_raw=%d marks_timed=%d segs=%d duration=%.2f text=%d",
+                 section.events.count, marks.count, segs.count, duration, section.text.count)
         return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text))
     }
 
@@ -230,7 +263,7 @@ final class ExplainViewModel: ObservableObject {
         var fastPB: PreparedBlock?
         if let section = try? await QuickReadService.shared.fastBlock0(
                 title: doc.title, openingParas: opening.map { $0.text },
-                lang: lang, depth: effectiveDepth, prevSummary: nil, contentType: scenario),
+                lang: lang, depth: requestDepth, prevSummary: nil, contentType: scenario),
            let pb = try? await prepareFastBlock(section, language: lang) {
             await MainActor.run { self.fastSection = section }
             fastPB = pb
@@ -244,11 +277,11 @@ final class ExplainViewModel: ObservableObject {
                 self.setupQuoteScope(rest: Array(readable.dropFirst(opening.count)))
                 self.totalBlocks = max(1, self.idxBase + 1)   // 预估，handlePlan 收到质道总块数后修正
                 self.enqueue(pb, idx: 0)                       // 秒开
-                NSLog("CRDBG fastlane block_0 emit (opening=%d marks=%d)", opening.count, pb.marks.count)
+                self.debugLog("fastlane block_0 emit (opening=%d marks=%d)", opening.count, pb.marks.count)
             } else {
                 self.idxBase = 0
                 self.setupBatchScopeIfLarge()                  // 快道失败兜底：质道吃全量
-                NSLog("CRDBG fastlane failed → 质道吃全量")
+                self.debugLog("fastlane failed -> quote full")
             }
             self.orchestrationTask = Task { [weak self] in await self?.runPlan() }
         }
@@ -260,6 +293,8 @@ final class ExplainViewModel: ObservableObject {
         Task { await TTSService.shared.cancelCurrentRequest() }
         audio.clearBook()
         clearPagePrefetch()
+        preparingBlocks.removeAll()
+        isReplayingCached = false
         status = .idle
     }
 
@@ -267,18 +302,26 @@ final class ExplainViewModel: ObservableObject {
 
     /// 重新播放已解读完的内容：复用缓存块（不重新调后端 LLM、不耗额度），从第一块重头播。
     func replay() {
-        guard totalBlocks > 0, !prepared.isEmpty else { start(); return }   // 没解读过 → 当普通开始
+        if replayBlocks.isEmpty {
+            // 兼容旧会话/短文：若还没形成完整轨道，就把当前批缓存作为兜底；全新会话则普通开始。
+            let current = prepared.keys.sorted().compactMap { prepared[$0] }
+            if !current.isEmpty { replayBlocks = current } else { start(); return }
+        }
         orchestrationTask?.cancel()
         fastTask?.cancel()
         activate()
+        isReplayingCached = true
+        preparingBlocks.removeAll()
         firedMarks.removeAll()
         activeMarks = []          // 触发 bridge clearMarks，清掉上一轮 DOM 手写标注
         anchorCursor = nil
+        batchPrevSummary = nil
         currentBlockIndex = -1
         scrollTarget = -1
-        audio.setBook(id: document.id, title: document.title, chapterTitle: String(localized: "解读"), coverUrl: nil)
+        totalBlocks = replayBlocks.count
+        applyPlaybackMetadata()
         applySpeed()
-        orchestrationTask = Task { [weak self] in await self?.prepareAndEnqueue(block: 0) }
+        enqueueReplayBlock(0)
     }
 
     // MARK: - Plan
@@ -296,7 +339,7 @@ final class ExplainViewModel: ObservableObject {
             // 权威总块数取自 done 事件：block0 事件的 total_blocks 后端常发 0 占位（plan 尚未算完总数）。
             // 之前 app 误用 block0 的 0 → max(1,0)=1 → 只播首块就"完成"。对齐扩展：用 done 的值。
             await MainActor.run {
-                NSLog("CRDBG explain DONE total_blocks=%d (block0 占位后 totalBlocks=%d)", done.total_blocks ?? -1, self.totalBlocks)
+                self.debugLog("explain DONE total_blocks=%d (block0 placeholder totalBlocks=%d)", done.total_blocks ?? -1, self.totalBlocks)
                 if let tb = done.total_blocks, self.idxBase + tb > self.totalBlocks {
                     self.totalBlocks = self.idxBase + tb   // 快道占 idxBase 块 + 质道 tb 块（漏加 idxBase 会丢质道最后一块）
                     // done 晚于首块播完到达时会误判 .completed → 在此续播下一块。
@@ -334,8 +377,8 @@ final class ExplainViewModel: ObservableObject {
         outputLanguage = forcedExplainLang ?? plan.output_language ?? settings.explainLangOrNil ?? doc.language
         section0 = plan.block_0                              // 质道首块 = iOS block_idxBase
         let scoped = pdfScopedParagraphs ?? doc.paragraphs   // 实际传后端的范围（PDF 逐批时是当前批，非整本）
-        NSLog("CRDBG explain PLAN total_blocks=%d idxBase=%d batchParas=%d batchChars=%d depth=%@ block0Events=%d",
-              plan.total_blocks, idxBase, scoped.count, scoped.reduce(0) { $0 + $1.text.count }, settings.explainDepth, plan.block_0.events.count)
+        debugLog("explain PLAN total_blocks=%d idxBase=%d batchParas=%d batchChars=%d depth=%@ block0Events=%d",
+                 plan.total_blocks, idxBase, scoped.count, scoped.reduce(0) { $0 + $1.text.count }, requestDepth, plan.block_0.events.count)
         if !block0Claimed {
             // 快道没占（idxBase=0 / 快道失败）→ 质道占 block_0
             block0Claimed = true
@@ -374,6 +417,15 @@ final class ExplainViewModel: ObservableObject {
 
     private func prepareBlock(_ idx: Int) async throws -> PreparedBlock {
         if let cached = prepared[idx] { return cached }
+        while preparingBlocks.contains(idx) {
+            try await Task.sleep(nanoseconds: 80_000_000)
+            if let cached = prepared[idx] { return cached }
+            if !isActive { throw CancellationError() }
+        }
+        preparingBlocks.insert(idx)
+        defer { preparingBlocks.remove(idx) }
+
+        if let cached = prepared[idx] { return cached }
         // 快道占 block_0（idxBase=1）→ iOS idx 映射到质道块 qIdx = idx - idxBase。
         // 质道首块（qIdx<=0）用 plan 的 section0；快道占位时 block_0 播放期间质道 plan 通常已返回，
         // 极端未到则短暂等待（block_0 narration 音频较长，足够质道 plan 完成）。其余拉 extract-block。
@@ -388,7 +440,9 @@ final class ExplainViewModel: ObservableObject {
         } else {
             section = try await QuickReadService.shared.extractBlock(jobId: jobId, blockIdx: qIdx)
         }
-        return try await prepareSection(section, idx: idx, composeIdx: qIdx, jobId: jobId, language: outputLanguage)
+        let pb = try await prepareSection(section, idx: idx, composeIdx: qIdx, jobId: jobId, language: outputLanguage)
+        prepared[idx] = pb
+        return pb
     }
 
     /// 讲解 section → 可播放块（TTS + 拼时间线 + composeBlock 回填 mark.at）。参数化 jobId/语言 → 当前页与页间预取共用。
@@ -422,33 +476,53 @@ final class ExplainViewModel: ObservableObject {
         let duration = offset
 
         var marks: [QuickreadEvent]
+        var composedCount: Int?
         if let composed = try? await QuickReadService.shared.composeBlock(
             jobId: jobId, blockIdx: composeIdx, timestamps: timeline, duration: duration) {
             marks = composed.events
+            composedCount = composed.events.count
         } else {
             marks = section.events
         }
         marks = ensureTiming(marks, duration: duration)
+        debugLog("prepareSection idx=%d composeIdx=%d sectionMarks=%d composedMarks=%@ finalMarks=%d segs=%d timeline=%d duration=%.2f text=%d",
+                 idx, composeIdx, section.events.count, composedCount.map(String.init) ?? "nil",
+                 marks.count, segs.count, timeline.count, duration, section.text.count)
 
         return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text))
     }
 
     private func enqueue(_ pb: PreparedBlock, idx: Int) {
         prepared[idx] = pb   // 缓存每块（含 block 0），供 replay 复用、不重新 TTS/调后端
+        if !isReplayingCached {
+            replayBlocks.append(pb)
+        }
         audio.clearQueue()
         currentBlockIndex = idx
         explanationText = pb.sentences.first ?? pb.text
         marksByBlock[idx] = pb.marks
+        debugLog("enqueue block=%d total=%d marks=%d text=%d segs=%d",
+                 idx, totalBlocks, pb.marks.count, pb.text.count, pb.segments.count)
         status = .streaming(block: idx, total: totalBlocks)
         isPreparingNext = false
         audio.moreSegmentsExpected = true
         for seg in pb.segments { audio.loadSegment(seg) }
         audio.moreSegmentsExpected = false
         // PDF 连续解读：当前页一开始播就后台预取下一页首块，切页时秒接（消除页间 gap）。
-        prefetchNextPage()
+        if !isReplayingCached { prefetchNextPage() }
     }
 
     private func onBlockComplete() {
+        if isReplayingCached {
+            let next = currentBlockIndex + 1
+            if next < replayBlocks.count {
+                enqueueReplayBlock(next)
+            } else {
+                isReplayingCached = false
+                status = .completed
+            }
+            return
+        }
         let next = currentBlockIndex + 1
         if next < totalBlocks {
             // 下一块未预取好 → 显示「准备下一段」loading，避免块间静默被误以为卡住。
@@ -464,15 +538,30 @@ final class ExplainViewModel: ObservableObject {
         status = .completed
     }
 
+    private func enqueueReplayBlock(_ idx: Int) {
+        guard idx >= 0, idx < replayBlocks.count else {
+            isReplayingCached = false
+            status = .completed
+            return
+        }
+        enqueue(replayBlocks[idx], idx: idx)
+    }
+
     /// PDF 连续解读：切到下一批续播。命中批间预取 → 跳过 extract-plan；否则实时规划（显示「继续讲解…」）。
     private func advanceBatch(fromGlobalIndex start: Int) {
         let batch = pdfBatch(fromGlobalIndex: start)
         guard !batch.paras.isEmpty else { status = .completed; return }
+        let prevSummary = makeBatchContinuitySummary()
+        batchPrevSummary = prevSummary
+        debugLog("advanceBatch start=%d paras=%d chars=%d prevSummary=%d prefetched=%@",
+                 start, batch.paras.count, batch.paras.reduce(0) { $0 + $1.text.count },
+                 prevSummary?.count ?? 0, (prefetchedBatch?.startIndex == start) ? "yes" : "no")
         pdfScopedParagraphs = batch.paras
         pdfBatchCursor = batch.next
         // 重置上一批块状态（保留 isActive / audio 设置）。注意 activeMarks 跨批**累积、不清**——
         // 否则切到下一批时前面批的手写标注全没了（对齐 Android：整个解读过程 mark 留在原文上）。
         prepared.removeAll()
+        preparingBlocks.removeAll()
         marksByBlock.removeAll()
         firedMarks.removeAll()
         anchorCursor = batch.paras.first?.id   // mark 锚定优先当前批段落（不回前面批找重复文本）
@@ -486,10 +575,23 @@ final class ExplainViewModel: ObservableObject {
             totalBlocks = pf.totalBlocks
             outputLanguage = pf.outputLanguage
             section0 = pf.section0       // prepareBlock(0) 直接用、跳过 extract-block
+            batchPrevSummary = pf.prevSummary ?? batchPrevSummary
             isPreparingNext = true
             stageText = String(localized: "继续讲解…")
             status = .planning
-            orchestrationTask = Task { [weak self] in await self?.prepareAndEnqueue(block: 0) }
+            if let pb0 = pf.preparedBlock0 {
+                isPreparingNext = false
+                enqueue(pb0, idx: 0)
+                if totalBlocks > 1 {
+                    Task { [weak self] in
+                        if let pb1 = try? await self?.prepareBlock(1) {
+                            await MainActor.run { self?.prepared[1] = pb1 }
+                        }
+                    }
+                }
+            } else {
+                orchestrationTask = Task { [weak self] in await self?.prepareAndEnqueue(block: 0) }
+            }
             return
         }
         // 未预取 → 实时规划。
@@ -509,26 +611,69 @@ final class ExplainViewModel: ObservableObject {
         let jobId: String
         let totalBlocks: Int
         let outputLanguage: String
+        let prevSummary: String?
         let section0: QuickreadSection   // 仅预规划首块文本，不预生成 TTS（TTSService 单请求，预生成会取消当前播放的 TTS）
+        let preparedBlock0: PreparedBlock?
     }
     private var prefetchedBatch: BatchPlan?
     private var prefetchingBatchStart: Int?
 
     private func clearPagePrefetch() { prefetchedBatch = nil; prefetchingBatchStart = nil }
 
-    /// 后台预规划下一批（仅 extract-plan，不生成 TTS）→ 切批时跳过「通读」gap。非 PDF 连续模式自动 no-op。
+    /// 后台预规划下一批：倒数第二块播起先 plan，最后一块播起再生成下一批 block0 TTS，切批时直接播放。
     private func prefetchNextPage() {
-        guard prefetchedBatch == nil, prefetchingBatchStart == nil else { return }
         guard let start = pdfBatchCursor else { return }
         let batch = pdfBatch(fromGlobalIndex: start)
         guard !batch.paras.isEmpty else { return }
+        let prevSummary = makeBatchContinuitySummary()
+
+        if let existing = prefetchedBatch, existing.startIndex == start {
+            guard existing.preparedBlock0 == nil,
+                  currentBlockIndex >= max(0, totalBlocks - 1),
+                  prefetchingBatchStart == nil else { return }
+            prefetchingBatchStart = start
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    let pb0 = try await self.prepareSection(existing.section0, idx: 0, composeIdx: 0,
+                                                            jobId: existing.jobId, language: existing.outputLanguage)
+                    await MainActor.run {
+                        if self.prefetchedBatch?.startIndex == start {
+                            self.prefetchedBatch = BatchPlan(startIndex: existing.startIndex,
+                                                             jobId: existing.jobId,
+                                                             totalBlocks: existing.totalBlocks,
+                                                             outputLanguage: existing.outputLanguage,
+                                                             prevSummary: existing.prevSummary,
+                                                             section0: existing.section0,
+                                                             preparedBlock0: pb0)
+                            self.debugLog("prefetchBatch block0 READY start=%d marks=%d text=%d",
+                                          start, pb0.marks.count, pb0.text.count)
+                        }
+                        if self.prefetchingBatchStart == start { self.prefetchingBatchStart = nil }
+                    }
+                } catch {
+                    await MainActor.run { if self.prefetchingBatchStart == start { self.prefetchingBatchStart = nil } }
+                }
+            }
+            return
+        }
+
+        guard prefetchedBatch == nil, prefetchingBatchStart == nil else { return }
+        guard currentBlockIndex >= max(0, totalBlocks - 2) else { return }
         prefetchingBatchStart = start
         Task { [weak self] in
             guard let self else { return }
             do {
-                let plan = try await self.planBatch(startIndex: start, paras: batch.paras)
-                if self.prefetchingBatchStart == start { self.prefetchedBatch = plan }
+                let plan = try await self.planBatch(startIndex: start, paras: batch.paras, prevSummary: prevSummary)
+                if self.prefetchingBatchStart == start {
+                    self.prefetchedBatch = plan
+                    self.debugLog("prefetchBatch PLAN start=%d total=%d prevSummary=%d",
+                                  start, plan.totalBlocks, plan.prevSummary?.count ?? 0)
+                }
                 self.prefetchingBatchStart = nil
+                if self.currentBlockIndex >= max(0, self.totalBlocks - 1) {
+                    self.prefetchNextPage()
+                }
             } catch {
                 if self.prefetchingBatchStart == start { self.prefetchingBatchStart = nil }
             }
@@ -537,8 +682,8 @@ final class ExplainViewModel: ObservableObject {
 
     /// 对给定批 extract-plan（仅规划，**不生成 TTS**）→ 切批时跳过「通读」那段 gap。
     /// 关键：不碰 TTSService（其为单请求模型，预生成 TTS 会取消当前正在播放的 TTS → "request was cancelled"）。
-    private func planBatch(startIndex: Int, paras: [ReadingParagraph]) async throws -> BatchPlan {
-        let req = buildPlanRequest(paras: paras)
+    private func planBatch(startIndex: Int, paras: [ReadingParagraph], prevSummary: String?) async throws -> BatchPlan {
+        let req = buildPlanRequest(paras: paras, prevSummary: prevSummary)
         // onBlock0 在 QuickReadService actor 同步回调，用 Sendable box 收集（不写当前播放状态）。
         let box = PlanBlock0Box()
         let done = try await QuickReadService.shared.extractPlan(req, onStage: { _ in }, onBlock0: { box.set($0) })
@@ -546,7 +691,9 @@ final class ExplainViewModel: ObservableObject {
         let lang = b.output_language ?? settings.explainLangOrNil ?? doc.language
         var total = max(1, b.total_blocks)
         if let tb = done.total_blocks, tb > total { total = tb }
-        return BatchPlan(startIndex: startIndex, jobId: b.job_id, totalBlocks: total, outputLanguage: lang, section0: b.block_0)
+        return BatchPlan(startIndex: startIndex, jobId: b.job_id, totalBlocks: total,
+                         outputLanguage: lang, prevSummary: prevSummary, section0: b.block_0,
+                         preparedBlock0: nil)
     }
 
     // MARK: - marks 触发（块时间线）
@@ -658,11 +805,11 @@ final class ExplainViewModel: ObservableObject {
         guard let anchorText = ev.text, !anchorText.isEmpty else { return }
         markTotal += 1
         guard let hit = MarkAnchoring.locate(markText: anchorText, in: doc, near: anchorCursor) else {
-            NSLog("CRDBG mark MISS %d/%d [%@]", markHit, markTotal, String(anchorText.prefix(28)))
+            debugLog("mark MISS %d/%d [%@]", markHit, markTotal, String(anchorText.prefix(28)))
             return
         }
         markHit += 1
-        NSLog("CRDBG mark HIT %d/%d para=%d [%@]", markHit, markTotal, hit.paragraphIndex, String(anchorText.prefix(28)))
+        debugLog("mark HIT %d/%d para=%d [%@]", markHit, markTotal, hit.paragraphIndex, String(anchorText.prefix(28)))
         anchorCursor = hit.paragraphIndex
         let seed = "\(hit.paragraphIndex)-\(hit.range.lowerBound)-\(ev.action)".stableSeed
         let mark = ResolvedMark(id: ev.id, paragraphIndex: hit.paragraphIndex,
@@ -691,6 +838,7 @@ final class ExplainViewModel: ObservableObject {
     private var pdfScopedParagraphs: [ReadingParagraph]?
     private var pdfAllParagraphs: [ReadingParagraph]?   // PDF 全部段落（有序，连续解读用）
     private var pdfBatchCursor: Int?                     // 下一批起始全局段索引（nil = 已到末尾）
+    private var batchPrevSummary: String?                // 长文分批承接：上一批讲解摘要，传给下一批 prev_summary
     /// 单次 plan 的内容上限（字符）。对齐「网页解读一次喂一篇文章」的体量——批太大后端切块变粗、mark 摊薄
     /// （实测 9000 字才 6 块/20 mark → PDF 一页才一个）；太小则批边界频繁、衔接差。
     /// ~3000 字≈5 页≈一篇短文，让后端对每批的切块/标注密度回到网页那种水平（mark 密）。后端 plan 无续接上下文，批内才连贯。
@@ -700,6 +848,7 @@ final class ExplainViewModel: ObservableObject {
     func setPdfScope(_ paras: [ReadingParagraph]?, all: [ReadingParagraph]? = nil) {
         if let all { pdfAllParagraphs = all }
         clearPagePrefetch()
+        batchPrevSummary = nil
         guard let startId = paras?.first?.id, !(paras?.isEmpty ?? true) else {
             pdfScopedParagraphs = nil; pdfBatchCursor = nil; return
         }
@@ -740,27 +889,46 @@ final class ExplainViewModel: ObservableObject {
     }
 
     private func buildPlanRequest() -> ExtractPlanRequest {
-        buildPlanRequest(paras: pdfScopedParagraphs ?? doc.paragraphs)
+        buildPlanRequest(paras: pdfScopedParagraphs ?? doc.paragraphs, prevSummary: batchPrevSummary)
     }
 
-    private func buildPlanRequest(paras sourceParas: [ReadingParagraph]) -> ExtractPlanRequest {
+    private func buildPlanRequest(paras sourceParas: [ReadingParagraph], prevSummary: String?) -> ExtractPlanRequest {
         let paras = sourceParas.map { QuickreadParagraphDTO(text: $0.text, type: typeString($0.type)) }
         let fullText = sourceParas.map(\.text).joined(separator: "\n\n")
         let src = doc.sourceURL ?? "castreader://doc/\(doc.id)"
+        let continuity = prevSummary ?? fastSection?.text
         return ExtractPlanRequest(
             source_url: src,
             title: doc.title,
             lang: forcedExplainLang ?? settings.explainLangOrNil,   // 快道激活 → 用锁定语言，与快道 block_0 一致
-            depth: effectiveDepth,                                  // 有场景用场景预设深度，否则用户全局设置
+            depth: requestDepth,                                    // 永远=用户设置的 3 档；场景不改深度（与 content_type 正交）
             text: fullText,
             fullText: fullText,
             paragraphs: paras,
-            // 传 prev_summary = 快道 narration（文档 §0.5 ②「连贯层」）：质道「接 rest[0] 顺序讲、不复述、不跳」
-            // 由 server 质道承接 prompt 负责（已改目标驱动 + 上线，中英文各 2 篇验证通过）。客户端只传、不写
-            // 「别复述/别跳」逻辑。快道未激活时 fastSection=nil → prev_summary=nil（质道吃全篇，正常路径）。
-            prev_summary: fastSection?.text,
+            // prev_summary 有两种来源：①快道 narration → 质道接着讲；②长文分批上一批摘要 → 下一批接着讲。
+            // 后端看到该字段后应避免重新开场、复述全文，而是从本批开头顺序续讲。
+            prev_summary: continuity,
             content_type: scenario                                  // 场景信号（nil = 通用解读）
         )
+    }
+
+    private func makeBatchContinuitySummary() -> String? {
+        let texts = (0..<max(0, totalBlocks))
+            .compactMap { prepared[$0]?.text.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        guard !texts.isEmpty else { return batchPrevSummary }
+        let joined = texts.joined(separator: " ")
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !joined.isEmpty else { return batchPrevSummary }
+        let clipped = String(joined.suffix(900))
+        if let previous = batchPrevSummary, !previous.isEmpty {
+            let combined = (previous + " " + clipped)
+                .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return String(combined.suffix(1200))
+        }
+        return clipped
     }
 
     private func typeString(_ t: ReadingParagraphType) -> String {

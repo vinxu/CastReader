@@ -192,7 +192,8 @@ private struct PhotoContent: View {
     private func overlay(resolver: PhotoAnchorResolver) -> some View {
         if mode == .read {
             if let wi = readVM.photoHighlightWordIndex {
-                ForEach(resolver.rectsForWord(paragraphIndex: readVM.currentParagraphIndex, wordIndex: wi), id: \.self) { rect in
+                let rects = resolver.rectsForWord(paragraphIndex: readVM.currentParagraphIndex, wordIndex: wi)
+                ForEach(Array(rects.enumerated()), id: \.offset) { _, rect in
                     RoundedRectangle(cornerRadius: 3)
                         .fill(Color(readVM.highlightUIColor).opacity(0.38))
                         .frame(width: rect.width + 4, height: rect.height + 2)

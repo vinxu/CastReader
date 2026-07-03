@@ -37,6 +37,59 @@ final class PaymentTests: XCTestCase {
         }
     }
 
+    // MARK: 0. 服务端 Pro 状态响应
+
+    func testProStatusDecodesWrappedServerResponse() throws {
+        let json = """
+        {
+          "code": 0,
+          "message": "ok",
+          "data": {
+            "pro": true,
+            "plan": "yearly",
+            "account": {
+              "name": "Reader",
+              "email": "reader@example.com",
+              "image": "https://example.com/avatar.png"
+            },
+            "freeRemaining": 3,
+            "freeMax": 3,
+            "listenSeconds": 42,
+            "listenLimit": 1200,
+            "listenRemaining": 1158
+          }
+        }
+        """.data(using: .utf8)!
+
+        let status = try ProStatusDTO.decodeServerResponse(from: json)
+
+        XCTAssertTrue(status.pro)
+        XCTAssertEqual(status.plan, "yearly")
+        XCTAssertEqual(status.account?.email, "reader@example.com")
+        XCTAssertEqual(status.listenRemaining, 1158)
+    }
+
+    func testProStatusStillDecodesDirectResponse() throws {
+        let json = """
+        {
+          "pro": false,
+          "plan": null,
+          "account": null,
+          "freeRemaining": 2,
+          "freeMax": 3,
+          "listenSeconds": 60,
+          "listenLimit": 1200,
+          "listenRemaining": 1140
+        }
+        """.data(using: .utf8)!
+
+        let status = try ProStatusDTO.decodeServerResponse(from: json)
+
+        XCTAssertFalse(status.pro)
+        XCTAssertEqual(status.freeRemaining, 2)
+        XCTAssertEqual(status.listenSeconds, 60)
+    }
+
     // MARK: 1. 产品加载
 
     @MainActor

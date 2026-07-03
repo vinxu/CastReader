@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @StateObject private var coordinator = PlayerCoordinator()
+    @StateObject private var kindleCenter = KindlePlaybackCenter.shared
     @StateObject private var clipboard = ClipboardImportViewModel()
     @StateObject private var importRouter = ImportRouter()
     @Environment(\.scenePhase) private var scenePhase
@@ -44,15 +45,22 @@ struct MainTabView: View {
             }
             .tint(AppTheme.primary)
             .onChange(of: selectedTab) { newTab in
-                if newTab == 1 { selectedTab = 0 }   // 中间占位 tab 被点 → 回首页（实际导入走 ➕ Menu）
+                if newTab == 1 { selectedTab = 0 }   // 中间占位 tab 被点 → 回首页（实际导入走凸起按钮）
             }
 
-            // 中间凸起 ➕：通用导入入口（scenario=null）。reader 展开时被其顶层覆盖，收起时显示。
-            plusButton
+            // 中间凸起 ➕：通用导入入口（scenario=null）。沉浸式阅读页会隐藏主 chrome。
+            if !importRouter.hideMainChrome {
+                plusButton
+                    .transition(.opacity)
+            }
 
             // Mini Player 悬浮在 tab bar 上方（有会话且阅读器收起时）
-            if coordinator.showsMiniPlayer {
+            if coordinator.showsMiniPlayer && !importRouter.hideMainChrome {
                 MiniPlayerView(coordinator: coordinator)
+                    .padding(.bottom, 50)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if kindleCenter.showsMiniPlayer && !importRouter.hideMainChrome {
+                KindleMiniPlayerView(center: kindleCenter)
                     .padding(.bottom, 50)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -67,10 +75,21 @@ struct MainTabView: View {
                     .animation(.spring(response: 0.4, dampingFraction: 0.9), value: coordinator.isReaderPresented)
                     .zIndex(10)
             }
+
+            if let model = kindleCenter.model, kindleCenter.isPresented {
+                KindleBookView(model: model)
+                    .id(ObjectIdentifier(model))
+                    .transition(.move(edge: .bottom))
+                    .animation(.spring(response: 0.4, dampingFraction: 0.9), value: kindleCenter.isPresented)
+                    .zIndex(11)
+            }
         }
         .environmentObject(coordinator)
         .environmentObject(importRouter)
+        .toolbar(importRouter.hideMainChrome ? .hidden : .visible, for: .tabBar)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: coordinator.showsMiniPlayer)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: kindleCenter.showsMiniPlayer)
+        .animation(.spring(response: 0.32, dampingFraction: 0.9), value: importRouter.hideMainChrome)
         .onChange(of: scenePhase) { phase in
             if phase == .active { clipboard.check() }   // 进 App / 回前台 → 探测剪贴板
         }
@@ -85,30 +104,27 @@ struct MainTabView: View {
         }
     }
 
-    /// 中间凸起 ➕：原生 Menu 列 5 种导入方式，系统自动锚定到按钮（箭头指向 ➕，符合当前 iOS UI）。
-    /// 选中后切到首页 + 经 ImportRouter 把来源交给 HomeView present（文件选择器/相机/输入框都在 HomeView）。
+    /// 中间凸起 ➕：打开快速导入面板。来源选择与具体 present 都在 HomeView。
     private var plusButton: some View {
-        Menu {
-            ForEach(ImportSource.general) { src in
-                Button {
-                    selectedTab = 0
-                    importRouter.pick(src)
-                } label: { Label(src.label, systemImage: src.icon) }
-            }
+        Button {
+            selectedTab = 0
+            importRouter.openQuickImport()
         } label: {
             ZStack {
                 Circle()
                     .fill(AppTheme.primary)
-                    .frame(width: 56, height: 56)
-                    .shadow(color: AppTheme.primary.opacity(0.4), radius: 8, y: 3)
+                    .frame(width: 40, height: 40)              // 缩到能放进浮岛 tab bar，留上下余量、不再一边冒头
+                    .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
                 Image(systemName: "plus")
-                    .font(.system(size: 26, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.white)
             }
         }
+        .buttonStyle(.plain)
         .accessibilityIdentifier("plusImportButton")
         .accessibilityLabel(Text("导入内容"))
-        .offset(y: -6)
+        // 垂直居中到底部导航条：取「-2 顶冒 / +10 底冒」两临界中点、偏高侧 → +3。旋钮：负=上、正=下。
+        .offset(y: 3)
         .allowsHitTesting(!coordinator.isReaderPresented)   // 阅读器展开时不拦截（其实已被顶层覆盖）
     }
 

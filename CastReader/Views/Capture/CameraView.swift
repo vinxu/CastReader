@@ -13,25 +13,34 @@ struct CameraView: UIViewControllerRepresentable {
     var onImage: (UIImage) -> Void
     var onCancel: () -> Void
 
+    private var resolvedSourceType: UIImagePickerController.SourceType {
+        if sourceType == .camera && !UIImagePickerController.isSourceTypeAvailable(.camera) {
+            return .photoLibrary
+        }
+        return sourceType
+    }
+
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
         // 用指定来源；要相机但不可用（如模拟器）时回退相册
-        if sourceType == .camera && !UIImagePickerController.isSourceTypeAvailable(.camera) {
-            picker.sourceType = .photoLibrary
-        } else {
-            picker.sourceType = sourceType
-        }
+        picker.sourceType = resolvedSourceType
         picker.allowsEditing = false
         picker.delegate = context.coordinator
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {
+        context.coordinator.parent = self
+        let nextSourceType = resolvedSourceType
+        if uiViewController.sourceType != nextSourceType {
+            uiViewController.sourceType = nextSourceType
+        }
+    }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: CameraView
+        var parent: CameraView
         init(_ parent: CameraView) { self.parent = parent }
 
         func imagePickerController(_ picker: UIImagePickerController,

@@ -80,6 +80,8 @@ struct ReaderHostView: View {
             PDFReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode)
         case .photo:
             PhotoReaderCanvas(document: document, readVM: readVM, explainVM: explainVM, mode: mode)
+        case .kindle:
+            KindleReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode)
         case .epub, .text:
             // EPUB 已原生解析为段落（含图片段），与 text 源共用 TextReaderView 渲染管线
             TextReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode)
@@ -135,23 +137,16 @@ private struct ReadControlBar: View {
 }
 
 /// 共享调速菜单（朗读 / 解读控制条复用）：选速即写入全局 speed 并立刻作用于当前播放（共享 AudioPlayerService）。
-/// 速度档位 0.5–2.0x，免费即可用；Pro 的 3x 走设置页滑杆（带额度闸门）。
 struct SpeedMenu: View {
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var pro = ProManager.shared
     @ObservedObject private var audio = AudioPlayerService.shared
+    @State private var showPaywall = false
+    @State private var showSpeedPicker = false
 
     var body: some View {
-        Menu {
-            ForEach(AudioPlayerService.speedOptions, id: \.self) { s in
-                Button {
-                    settings.speed = Double(s)
-                    audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: pro.isPro)))
-                } label: {
-                    // ✓ 对比「实际播放速率」audio.playbackRate，而非 settings.speed，保证勾选项=在播
-                    Text(String(format: "%.2gx", s)) + Text(abs(s - audio.playbackRate) < 0.01 ? "  ✓" : "")
-                }
-            }
+        Button {
+            showSpeedPicker = true
         } label: {
             HStack(spacing: 3) {
                 Image(systemName: "speedometer").font(.caption)
@@ -163,5 +158,42 @@ struct SpeedMenu: View {
             .foregroundColor(AppTheme.foreground)
             .cornerRadius(8)
         }
+        .buttonStyle(.plain)
+        .confirmationDialog("Playback Speed", isPresented: $showSpeedPicker, titleVisibility: .visible) {
+            ForEach(AudioPlayerService.proSpeedOptions.reversed(), id: \.self) { s in
+                Button(speedTitle(s)) {
+                    selectSpeed(s)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .sheet(isPresented: $showPaywall) { PaywallView() }
+    }
+
+    private func speedTitle(_ speed: Float) -> String {
+        var title = String(format: "%.2gx", speed)
+        if abs(speed - audio.playbackRate) < 0.01 {
+            title += "  Selected"
+        }
+        if !pro.isPro && Double(speed) > AppSettings.freeMaxSpeed {
+            title += "  Pro"
+        }
+        return title
+    }
+
+    private func selectSpeed(_ speed: Float) {
+        if !pro.isPro && Double(speed) > AppSettings.freeMaxSpeed {
+            showPaywall = true
+            return
+        }
+        settings.speed = Double(speed)
+        let effective = Float(settings.effectiveSpeed(isPro: pro.isPro))
+        audio.setPlaybackRate(effective)
+        #if DEBUG
+        NSLog("CRDBG SPEED selected=%.2f effective=%.2f isPlaying=%@",
+              Double(speed),
+              Double(effective),
+              audio.isPlaying ? "Y" : "N")
+        #endif
     }
 }

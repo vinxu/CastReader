@@ -71,6 +71,7 @@ final class HistoryStore: ObservableObject {
             case .web: return nil
             case .text: return doc.fullText.data(using: .utf8)
             case .photo: return doc.imageData
+            case .kindle: return doc.fullText.data(using: .utf8)
             case .pdf, .docx, .epub: return doc.fileData
             }
         }()
@@ -91,6 +92,44 @@ final class HistoryStore: ObservableObject {
         if rec.coverPath == nil {   // 首次记录 → 异步生成封面（+ web 抓取真实标题），best-effort，不阻塞打开
             Task { await generateCover(for: doc) }
         }
+    }
+
+    /// Kindle 书本级历史：点击朗读/解读后写入顶部 Continue。这里保存的是书架 metadata，
+    /// 不是某一页 OCR 临时文档，避免 MiniPlayer/锁屏/首页拿不到书封和真实书名。
+    func recordKindleBook(_ book: KindleBook, language: String = Constants.TTS.defaultLanguage) {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        if let payload = try? encoder.encode(book) {
+            try? payload.write(to: payloadURL(book.id))
+        }
+
+        let now = Date()
+        let existing = records.first(where: { $0.id == book.id })
+        var rec = HistoryRecord(
+            id: book.id,
+            title: book.title.isEmpty ? String(localized: "Kindle Book") : book.title,
+            sourceKindRaw: ReadingSourceKind.kindle.rawValue,
+            sourceURL: book.effectiveReaderURL,
+            language: language,
+            createdAt: existing?.createdAt ?? now,
+            lastOpenedAt: now
+        )
+        rec.coverPath = existing?.coverPath
+        records.removeAll { $0.id == book.id }
+        records.insert(rec, at: 0)
+        save()
+
+        if rec.coverPath == nil || rec.coverPath == "" {
+            Task { await generateCoverFromURL(book.coverURL, id: book.id) }
+        }
+    }
+
+    func kindleBook(for rec: HistoryRecord) -> KindleBook? {
+        guard rec.sourceKind == .kindle,
+              let data = try? Data(contentsOf: payloadURL(rec.id)) else { return nil }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try? decoder.decode(KindleBook.self, from: data)
     }
 
     func delete(_ id: String) {
@@ -127,6 +166,7 @@ final class HistoryStore: ObservableObject {
         case .web:   (title, imageData) = await webCover(doc.sourceURL)
         case .pdf:   if let d = doc.fileData { imageData = await Task.detached { Self.pdfFirstPageJPEG(d) }.value }
         case .photo: imageData = doc.imageData
+        case .kindle: imageData = doc.paragraphs.first(where: { $0.type == .image && $0.imageData != nil })?.imageData
         case .epub:  imageData = doc.paragraphs.first(where: { $0.type == .image && $0.imageData != nil })?.imageData
         case .text, .docx: break
         }
@@ -141,7 +181,7 @@ final class HistoryStore: ObservableObject {
         case .web:   (title, imageData) = await webCover(rec.sourceURL)
         case .pdf:   if let d = try? Data(contentsOf: payloadURL(rec.id)) { imageData = await Task.detached { Self.pdfFirstPageJPEG(d) }.value }
         case .photo: imageData = try? Data(contentsOf: payloadURL(rec.id))
-        case .epub, .docx, .text: break
+        case .epub, .docx, .kindle, .text: break
         }
         finishCover(id: rec.id, imageData: imageData, title: title)
     }
@@ -153,6 +193,22 @@ final class HistoryStore: ObservableObject {
         var img: Data?
         if let s = meta.imageURL, let u = URL(string: s) { img = try? await URLSession.shared.data(from: u).0 }
         return (meta.title, img)
+    }
+
+    private func generateCoverFromURL(_ urlString: String?, id: String) async {
+        guard let url = Self.makeURL(urlString) else {
+            finishCover(id: id, imageData: nil, title: nil)
+            return
+        }
+        let imageData = try? await URLSession.shared.data(from: url).0
+        finishCover(id: id, imageData: imageData, title: nil)
+    }
+
+    private nonisolated static func makeURL(_ raw: String?) -> URL? {
+        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else { return nil }
+        if let url = URL(string: raw) { return url }
+        guard let encoded = raw.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return nil }
+        return URL(string: encoded)
     }
 
     /// 落地封面 + 标题：写降采样 jpeg、置 coverPath（无图时置 "" 标记已尝试，用占位、不再重复抓取）。
@@ -222,6 +278,13 @@ final class HistoryStore: ObservableObject {
             guard let data = try? Data(contentsOf: payloadURL(rec.id)) else { return nil }
             return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .docx,
                                    language: rec.language, paragraphs: [], fileData: data)
+        case .kindle:
+            if kindleBook(for: rec) != nil { return nil }
+            guard let data = try? Data(contentsOf: payloadURL(rec.id)),
+                  let text = String(data: data, encoding: .utf8) else { return nil }
+            let built = DocumentBuilder.fromPlainText(text, title: rec.title)
+            return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .text,
+                                   language: built.language, paragraphs: built.paragraphs)
         case .epub:
             // EPUB 原生重开：从字节重新解析为段落（像 PDF），而非旧 WebView 的空 paragraphs（否则白屏）
             guard let data = try? Data(contentsOf: payloadURL(rec.id)),

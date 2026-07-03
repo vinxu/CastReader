@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct MiniPlayerView: View {
     @ObservedObject var coordinator: PlayerCoordinator
@@ -25,6 +26,8 @@ private struct MiniPlayerBar: View {
     @ObservedObject private var audio = AudioPlayerService.shared
     @ObservedObject private var readVM: ReadAloudViewModel
     @ObservedObject private var explainVM: ExplainViewModel
+    @ObservedObject private var history = HistoryStore.shared
+    @State private var cover: UIImage?
 
     init(session: PlayerCoordinator.Session, coordinator: PlayerCoordinator) {
         self.session = session
@@ -102,16 +105,50 @@ private struct MiniPlayerBar: View {
         .padding(.horizontal, 8)
     }
 
+    private var playbackCoverID: String { audio.currentBookId ?? session.id }
+
+    /// 封面 key：随当前播放书籍、远程封面、本地封面落地变化触发重载。
+    private var coverKey: String {
+        let local = history.records.first(where: { $0.id == playbackCoverID })?.coverPath
+            ?? history.records.first(where: { $0.id == session.id })?.coverPath
+            ?? ""
+        return "\(playbackCoverID)|\(local)|\(audio.currentCoverUrl ?? "")"
+    }
+
+    private func loadCover() async -> UIImage? {
+        let id = playbackCoverID
+        if let image = await Task.detached(operation: { AudioPlayerService.localCoverImage(forID: id) }).value {
+            return image
+        }
+        guard let raw = audio.currentCoverUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else { return nil }
+        let url = URL(string: raw)
+            ?? raw.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed).flatMap(URL.init(string:))
+        guard let url else { return nil }
+        guard let data = try? await URLSession.shared.data(from: url).0 else { return nil }
+        return UIImage(data: data)
+    }
+
     private var icon: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
                 .fill(AppTheme.primary.opacity(0.15))
                 .frame(width: 40, height: 40)
-            Image(systemName: isExplain ? "sparkles" : "speaker.wave.2.fill")
-                .font(.system(size: 17))
-                .foregroundColor(AppTheme.primary)
+            if let cover {
+                Image(uiImage: cover).resizable().scaledToFill()
+                    .frame(width: 40, height: 40)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                Image(systemName: isExplain ? "sparkles" : "speaker.wave.2.fill")
+                    .font(.system(size: 17))
+                    .foregroundColor(AppTheme.primary)
+            }
         }
+        .frame(width: 40, height: 40)
         .contentShape(Rectangle())
         .onTapGesture { coordinator.expand() }
+        .task(id: coverKey) {
+            cover = await loadCover()
+        }
     }
 }

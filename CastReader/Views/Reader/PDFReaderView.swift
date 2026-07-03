@@ -50,7 +50,9 @@ struct PDFReaderView: UIViewRepresentable {
         private var cancellables = Set<AnyCancellable>()
         private var doc: ReadingDocument?
         private var shown: [(page: PDFPage, ann: PDFAnnotation)] = []
-        private var markShown: [(page: PDFPage, ann: PDFAnnotation)] = []
+        private var markShown: [UUID: [(page: PDFPage, ann: PDFAnnotation)]] = [:]
+        private var markKeysById: [UUID: String] = [:]
+        private var drawnMarkKeys = Set<String>()
         private var autoScroll = true
         private var lastMode: ReaderMode?
         private var lastSel: PDFSelection?      // 上一句的 selection：顺序前向 findString，解决长 PDF 重复句歧义 + 提速
@@ -61,6 +63,12 @@ struct PDFReaderView: UIViewRepresentable {
         private var wordRects: [CGRect] = []
         private var wordRectsPara = -1
         private var wordSearchLoc = 0           // 句内 findString 顺序游标（page.string 绝对字符位置）
+
+        private func debugLog(_ format: String, _ args: CVarArg...) {
+            #if DEBUG
+            NSLog("CRDBG %@", String(format: format, arguments: args))
+            #endif
+        }
 
         /// 切模式：朗读模式清解读标注、解读模式清朗读高亮（两层互不残留）。
         func setMode(_ mode: ReaderMode) {
@@ -96,19 +104,45 @@ struct PDFReaderView: UIViewRepresentable {
         }
 
         private func clearMarkAnnotations() {
-            for item in markShown { item.page.removeAnnotation(item.ann) }
+            for items in markShown.values {
+                for item in items { item.page.removeAnnotation(item.ann) }
+            }
             markShown.removeAll()
+            markKeysById.removeAll()
+            drawnMarkKeys.removeAll()
         }
 
         private func showMarks(_ marks: [ResolvedMark]) {
             guard let pdfDoc = pdfView?.document, let doc else { return }
-            clearMarkAnnotations()
-            guard !marks.isEmpty else { lastMarkScrollId = nil; return }   // 清空（重播/退出）→ 复位
+            guard !marks.isEmpty else {
+                clearMarkAnnotations()
+                lastMarkScrollId = nil
+                return
+            }   // 清空（重播/退出）→ 复位
+
+            // activeMarks 是累积数组；PDF annotation 不能每次全量重加，否则透明 stroke 会视觉叠深。
+            // 这里只补画新 mark，并清理已经不在 activeMarks 里的旧 mark。
+            let activeIds = Set(marks.map(\.id))
+            for id in Array(markShown.keys) where !activeIds.contains(id) {
+                if let items = markShown[id] {
+                    for item in items { item.page.removeAnnotation(item.ann) }
+                }
+                markShown[id] = nil
+                if let key = markKeysById.removeValue(forKey: id) { drawnMarkKeys.remove(key) }
+            }
+
             var lastDrawnSel: PDFSelection?     // 最后一个成功画出的 mark（= 最新出现）→ 滚动跟随它
             var lastDrawnId: UUID?
             let ink = UIColor(hexString: AppSettings.shared.highlightColorHex).withAlphaComponent(0.85)   // #FD5F01 统一橙（深浅都清晰）
             let primary = UIColor(hexString: AppSettings.shared.highlightColorHex)
             for m in marks {
+                if markShown[m.id] != nil { continue }
+                let markKey = "\(m.paragraphIndex)#\(m.charRange.lowerBound)-\(m.charRange.upperBound)#\(m.action)"
+                if drawnMarkKeys.contains(markKey) {
+                    markShown[m.id] = []
+                    markKeysById[m.id] = markKey
+                    continue
+                }
                 guard m.paragraphIndex >= 0, m.paragraphIndex < doc.paragraphs.count else { continue }
                 let para = doc.paragraphs[m.paragraphIndex]
                 guard let pageIdx = para.pdfPageIndex, let page = pdfDoc.page(at: pageIdx) else { continue }
@@ -119,8 +153,16 @@ struct PDFReaderView: UIViewRepresentable {
                     .replacingOccurrences(of: "\n", with: "")
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 guard markText.count >= 1 else { continue }
-                let sels = pdfDoc.findString(markText, withOptions: [.caseInsensitive])
-                guard let sel = sels.first(where: { $0.pages.contains(page) }) ?? sels.first else { continue }
+                let rangeSel = pdfSelectionForMark(pdfDoc: pdfDoc, page: page, paragraph: para, charRange: m.charRange)
+                let exactSel: PDFSelection? = {
+                    guard rangeSel == nil else { return nil }
+                    let sels = pdfDoc.findString(markText, withOptions: [.caseInsensitive])
+                    return sels.first(where: { $0.pages.contains(page) }) ?? sels.first
+                }()
+                guard let sel = rangeSel ?? exactSel else {
+                    debugLog("pdfMark MISS para=%d action=%@ text=%@", m.paragraphIndex, m.action, String(markText.prefix(28)))
+                    continue
+                }
                 // 收集该 mark 在当前页的各行 bounds（page 坐标）
                 var lineBounds: [CGRect] = []
                 for lineSel in sel.selectionsByLine() {
@@ -141,7 +183,11 @@ struct PDFReaderView: UIViewRepresentable {
                 ann.inkColor = ink
                 ann.primaryColor = primary
                 page.addAnnotation(ann)
-                markShown.append((page, ann))
+                markShown[m.id, default: []].append((page, ann))
+                markKeysById[m.id] = markKey
+                drawnMarkKeys.insert(markKey)
+                debugLog("pdfMark DRAW para=%d page=%d action=%@ source=%@ text=%@",
+                         m.paragraphIndex, pageIdx, m.action, rangeSel == nil ? "search" : "range", String(markText.prefix(28)))
                 lastDrawnSel = sel; lastDrawnId = m.id   // 跟踪最新画出的 mark
             }
             // 滚动跟随最新标注：mark 变化且已移出视野才滚（同页从上到下、跨页都跟随；在视野内不跳、同 mark 不抖）。
@@ -158,6 +204,68 @@ struct PDFReaderView: UIViewRepresentable {
             let viewRect = pv.convert(pageBounds, from: page)   // page 坐标 → PDFView 坐标
             let safe = pv.bounds.insetBy(dx: 0, dy: 60)         // 上下留 60pt 余量
             return !safe.contains(CGPoint(x: viewRect.midX, y: viewRect.midY))
+        }
+
+        /// MarkAnchoring 给的是 `paragraph.text`（已去 PDF 硬换行/trim 后）的 Character range；
+        /// PDFKit 需要 `page.string` 里的原始 UTF-16 character index。这里重建清洗过程的字符映射，
+        /// 避免 findString 失败时退回整段 range，导致一条 mark 画成整段高亮。
+        private func pdfSelectionForMark(pdfDoc: PDFDocument, page: PDFPage, paragraph: ReadingParagraph, charRange: Range<Int>) -> PDFSelection? {
+            guard let rawRange = paragraph.pdfRange,
+                  let pageText = page.string,
+                  rawRange.location >= 0,
+                  rawRange.location + rawRange.length <= (pageText as NSString).length else { return nil }
+            let mapped = cleanedPDFCharacterMap(pageText: pageText, rawRange: rawRange)
+            guard !mapped.isEmpty else { return nil }
+            var lower = max(0, charRange.lowerBound)
+            var upper = min(mapped.count, charRange.upperBound)
+            while lower < upper && mapped[lower].char.isWhitespace { lower += 1 }
+            while upper > lower && mapped[upper - 1].char.isWhitespace { upper -= 1 }
+            guard lower < upper else { return nil }
+            let start = mapped[lower].utf16Offset
+            let endItem = mapped[upper - 1]
+            let end = endItem.utf16Offset + endItem.utf16Length
+            guard end > start else { return nil }
+            return pdfDoc.selection(from: page, atCharacterIndex: start, to: page, atCharacterIndex: end)
+        }
+
+        private func cleanedPDFCharacterMap(pageText: String, rawRange: NSRange) -> [(char: Character, utf16Offset: Int, utf16Length: Int)] {
+            let ns = pageText as NSString
+            let raw = ns.substring(with: rawRange)
+            let chars = Array(raw)
+            var rawOffsets: [Int] = []
+            var cursor = raw.startIndex
+            while cursor < raw.endIndex {
+                let next = raw.index(after: cursor)
+                let offset = raw.utf16.distance(from: raw.utf16.startIndex, to: cursor.samePosition(in: raw.utf16) ?? raw.utf16.startIndex)
+                rawOffsets.append(rawRange.location + offset)
+                cursor = next
+            }
+
+            var mapped: [(char: Character, utf16Offset: Int, utf16Length: Int)] = []
+            for (i, ch) in chars.enumerated() {
+                let rawOffset = rawOffsets.indices.contains(i) ? rawOffsets[i] : rawRange.location
+                let rawLength = String(ch).utf16.count
+                if ch == "\n" || ch == "\r" {
+                    let prev = i > 0 ? chars[i - 1] : " "
+                    let next = (i + 1 < chars.count) ? chars[i + 1] : " "
+                    if isCJKPDFChar(prev) && isCJKPDFChar(next) {
+                        continue
+                    }
+                    mapped.append((" ", rawOffset, rawLength))
+                } else {
+                    mapped.append((ch, rawOffset, rawLength))
+                }
+            }
+
+            while let first = mapped.first, first.char.isWhitespace { mapped.removeFirst() }
+            while let last = mapped.last, last.char.isWhitespace { mapped.removeLast() }
+            return mapped
+        }
+
+        private func isCJKPDFChar(_ c: Character) -> Bool {
+            guard let v = c.unicodeScalars.first?.value else { return false }
+            return (0x4E00...0x9FFF).contains(v) || (0x3400...0x4DBF).contains(v)
+                || (0x3000...0x303F).contains(v) || (0xFF00...0xFFEF).contains(v)
         }
 
         @objc func handleTap(_ g: UITapGestureRecognizer) {

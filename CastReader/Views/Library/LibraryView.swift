@@ -17,7 +17,7 @@ struct LibraryView: View {
     @State private var selectedKind: ReadingSourceKind? = nil   // nil = 全部
 
     // 类型筛选固定展示顺序（只展示实际出现过的类型）。
-    private static let kindOrder: [ReadingSourceKind] = [.web, .pdf, .docx, .epub, .photo, .text]
+    private static let kindOrder: [ReadingSourceKind] = [.web, .pdf, .docx, .epub, .kindle, .photo, .text]
 
     private var availableKinds: [ReadingSourceKind] {
         let present = Set(history.records.map { $0.sourceKind })
@@ -128,6 +128,7 @@ struct LibraryView: View {
         case .pdf: return "PDF"
         case .docx: return "DOCX"
         case .epub: return "EPUB"
+        case .kindle: return "Kindle"
         case .photo: return String(localized: "图片")
         case .text: return String(localized: "文本")
         }
@@ -199,6 +200,7 @@ private struct HistoryRow: View {
         case .pdf: return "PDF"
         case .docx: return "DOCX"
         case .epub: return "EPUB"
+        case .kindle: return "Kindle"
         case .photo: return String(localized: "图片")
         case .text: return String(localized: "文本")
         }

@@ -11,20 +11,28 @@ import UIKit
 
 struct CoverThumbnail: View {
     let record: HistoryRecord
+    var contentMode: ContentMode = .fill
     var cornerRadius: CGFloat = 12
 
     @State private var image: UIImage?
 
     var body: some View {
-        ZStack {
-            if let image {
-                Image(uiImage: image).resizable().scaledToFill()
-            } else {
-                placeholder
+        GeometryReader { proxy in
+            ZStack {
+                if let image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: contentMode)
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                } else {
+                    placeholder
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                }
             }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         }
-        .clipped()
-        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         .task(id: record.coverPath) { await load() }
     }
 
@@ -48,6 +56,7 @@ struct CoverThumbnail: View {
         case .pdf: return "doc.richtext"
         case .docx: return "doc.text"
         case .epub: return "book"
+        case .kindle: return "book.pages"
         case .photo: return "photo"
         case .text: return "text.alignleft"
         }

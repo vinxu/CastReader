@@ -94,15 +94,10 @@ enum ExplainContentType: String, CaseIterable, Identifiable {
         case .manual:   return "wrench.and.screwdriver"
         }
     }
-
-    /// 场景预设的解读深度（覆盖用户全局设置；PRD §1 表）。
-    var suggestedDepth: QuickreadDepth {
-        switch self {
-        case .paper, .contract: return .deep
-        case .book, .report, .study, .manual: return .standard
-        }
-    }
 }
+
+// 注：content_type 与 depth 正交——场景不预设/不覆盖深度。深度始终由用户在设置里选的 3 档 QuickreadDepth 决定。
+// 见 docs/场景解读适配规范.md。
 
 /// extract-plan 的 `block0` 事件载荷
 struct PlanBlock0: Codable, Equatable {
@@ -117,6 +112,7 @@ struct PlanDone: Codable, Equatable {
     let job_id: String?
     let total_blocks: Int?
     let model_used: String?
+    let page_summary: String?
 }
 
 // MARK: - Requests
@@ -174,11 +170,14 @@ struct FastBlock0Request: Codable {
     let content_type: String?  // 同 extract-plan：场景 content_type，快道 block_0 也按场景划/批
 }
 
-/// 快道 mark 精简形态（无 at，端侧均匀分布；style ∈ circle|underline|highlight|number）
+/// 快道 mark 精简形态（无 at，端侧均匀分布；style 走统一工具箱）。
 struct FastBlock0Mark: Codable {
     let style: String
     let text: String
     let n: Int?
+    let role: String?
+    let weight: String?
+    let note: String?
 }
 
 struct FastBlock0Body: Codable {

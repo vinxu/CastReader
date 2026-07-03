@@ -9,6 +9,7 @@ import Foundation
 import AVFoundation
 import Combine
 import MediaPlayer
+import UIKit
 
 class AudioPlayerService: NSObject, ObservableObject {
     static let shared = AudioPlayerService()
@@ -26,12 +27,16 @@ class AudioPlayerService: NSObject, ObservableObject {
     @Published var currentBookTitle: String?
     @Published var currentChapterTitle: String?
     @Published var currentCoverUrl: String?
+    private var currentCoverImage: UIImage?   // 本地封面（Now Playing artwork）
 
     // MARK: - Private Properties
     private var player: AVPlayer?
     private var playerItem: AVPlayerItem?
     private var timeObserver: Any?
     private var cancellables = Set<AnyCancellable>()
+    private var playerStateCancellable: AnyCancellable?
+    private var wasInterrupted = false
+    private var playbackSuspendedByInterruption = false
 
     // Segments queue
     private var segmentsQueue: [AudioSegment] = []
@@ -88,6 +93,13 @@ class AudioPlayerService: NSObject, ObservableObject {
                 object: session
             )
 
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(handleAppDidBecomeActive),
+                name: UIApplication.didBecomeActiveNotification,
+                object: nil
+            )
+
             print("✅ Audio session configured for background playback")
         } catch {
             print("❌ Failed to setup audio session: \(error)")
@@ -103,24 +115,26 @@ class AudioPlayerService: NSObject, ObservableObject {
 
         switch type {
         case .began:
-            // 音频被中断（如来电），暂停播放
-            print("🔇 Audio interrupted - pausing")
-            pause()
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.wasInterrupted = true
+                self.playbackSuspendedByInterruption = true
+                print("🔇 Audio interrupted - pausing")
+                self.pause()
+            }
 
         case .ended:
-            // 中断结束，检查是否应该恢复播放
-            if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
-                let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
-                if options.contains(.shouldResume) {
-                    print("🔊 Audio interruption ended - resuming")
-                    // 重新激活 audio session
-                    do {
-                        try AVAudioSession.sharedInstance().setActive(true)
-                        play()
-                    } catch {
-                        print("❌ Failed to reactivate audio session: \(error)")
-                    }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                // 被其他 App / 系统中断后不要自动续播。保持暂停状态，等用户明确点击播放。
+                // 否则 AVAudioSession 给 shouldResume 时会把 UI 重新标成 playing，但实际声音可能已被别的 App 接管。
+                do {
+                    try AVAudioSession.sharedInstance().setActive(true)
+                } catch {
+                    print("❌ Failed to reactivate audio session: \(error)")
                 }
+                self.wasInterrupted = false
+                self.syncPlaybackStateFromPlayer(reason: "interruption-ended")
             }
 
         @unknown default:
@@ -137,12 +151,17 @@ class AudioPlayerService: NSObject, ObservableObject {
 
         switch reason {
         case .oldDeviceUnavailable:
-            // 耳机被拔掉，暂停播放
-            print("🎧 Audio route changed (headphones removed) - pausing")
-            pause()
+            DispatchQueue.main.async { [weak self] in
+                print("🎧 Audio route changed (headphones removed) - pausing")
+                self?.pause()
+            }
         default:
             break
         }
+    }
+
+    @objc private func handleAppDidBecomeActive() {
+        syncPlaybackStateFromPlayer(reason: "app-active")
     }
 
     private func setupRemoteCommandCenter() {
@@ -232,19 +251,29 @@ class AudioPlayerService: NSObject, ObservableObject {
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? playbackRate : 0.0
 
-        // Load cover image if available
-        if let coverUrlString = currentCoverUrl,
-           let encoded = coverUrlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-           let coverUrl = URL(string: encoded) {
+        // 封面：优先本地封面文件（History/<id>.cover.jpg，与「继续看」卡片同源）；惰性加载一次后缓存。
+        if currentCoverImage == nil, let id = currentBookId { currentCoverImage = Self.localCoverImage(forID: id) }
+        if let image = currentCoverImage {
+            nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        } else if let coverUrlString = currentCoverUrl,
+                  let encoded = coverUrlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                  let coverUrl = URL(string: encoded) {
             loadArtwork(from: coverUrl) { artwork in
-                if let artwork = artwork {
-                    nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
-                }
+                if let artwork = artwork { nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork }
                 MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
             }
         } else {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
         }
+    }
+
+    /// 本地封面文件（路径确定，不依赖 @MainActor 的 HistoryStore，避免跨 actor）。
+    static func localCoverImage(forID id: String) -> UIImage? {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let url = docs.appendingPathComponent("History/\(id).cover.jpg")
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return UIImage(contentsOfFile: url.path)
     }
 
     private func loadArtwork(from url: URL, completion: @escaping (MPMediaItemArtwork?) -> Void) {
@@ -259,6 +288,7 @@ class AudioPlayerService: NSObject, ObservableObject {
 
             let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
             DispatchQueue.main.async {
+                self.currentCoverImage = image
                 completion(artwork)
             }
         }.resume()
@@ -275,6 +305,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentBookTitle = title
         currentChapterTitle = chapterTitle
         currentCoverUrl = coverUrl
+        currentCoverImage = Self.localCoverImage(forID: id)   // 本地封面（锁屏/控制中心 artwork）
     }
 
     func clearBook() {
@@ -283,6 +314,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentBookTitle = nil
         currentChapterTitle = nil
         currentCoverUrl = nil
+        currentCoverImage = nil
         segmentsQueue.removeAll()
         currentSegmentIndex = 0
         clearNowPlayingInfo()
@@ -300,6 +332,12 @@ class AudioPlayerService: NSObject, ObservableObject {
     func loadSegment(_ segment: AudioSegment) {
         print("🔊 loadSegment: Adding segment \(segment.segmentIndex) for paragraph \(segment.paragraphIndex), queueCount will be \(segmentsQueue.count + 1), waiting=\(waitingForNextSegment)")
         segmentsQueue.append(segment)
+
+        guard !playbackSuspendedByInterruption else {
+            waitingForNextSegment = false
+            print("🔊 loadSegment: Queued while interrupted; waiting for user resume")
+            return
+        }
 
         // If we were waiting for the next segment, play it now
         if waitingForNextSegment {
@@ -337,8 +375,18 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     func play() {
-        player?.play()
-        player?.rate = playbackRate
+        guard let player else {
+            isPlaying = false
+            updateNowPlayingInfo()
+            return
+        }
+        playbackSuspendedByInterruption = false
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("❌ Failed to activate audio session before play: \(error)")
+        }
+        player.playImmediately(atRate: playbackRate)
         isPlaying = true
         updateNowPlayingInfo()
     }
@@ -363,6 +411,9 @@ class AudioPlayerService: NSObject, ObservableObject {
         player?.pause()
         player = nil
         playerItem = nil
+        playerStateCancellable?.cancel()
+        playerStateCancellable = nil
+        playbackSuspendedByInterruption = false
         isPlaying = false
         currentTime = 0
         duration = 0
@@ -392,7 +443,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     func setPlaybackRate(_ rate: Float) {
         playbackRate = rate
         if isPlaying {
-            player?.rate = rate
+            player?.playImmediately(atRate: rate)
         }
         updateNowPlayingInfo()
     }
@@ -476,6 +527,7 @@ class AudioPlayerService: NSObject, ObservableObject {
 
         let asset = AVURLAsset(url: url)
         playerItem = AVPlayerItem(asset: asset)
+        playerItem?.audioTimePitchAlgorithm = .timeDomain
 
         // Create or update player
         if player == nil {
@@ -483,6 +535,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         } else {
             player?.replaceCurrentItem(with: playerItem)
         }
+        observePlayerPlaybackState()
 
         isBuffering = true
 
@@ -499,9 +552,15 @@ class AudioPlayerService: NSObject, ObservableObject {
                     if seconds.isFinite && seconds > 0 {
                         self.duration = seconds
                     }
+                    guard !self.playbackSuspendedByInterruption else {
+                        self.player?.pause()
+                        self.isPlaying = false
+                        self.updateNowPlayingInfo()
+                        print("Audio ready but suspended by interruption; waiting for user resume")
+                        return
+                    }
                     // Start playback
-                    self.player?.play()
-                    self.player?.rate = self.playbackRate
+                    self.player?.playImmediately(atRate: self.playbackRate)
                     self.isPlaying = true
                     self.updateNowPlayingInfo()
                     print("Audio ready to play, duration: \(seconds)")
@@ -549,6 +608,42 @@ class AudioPlayerService: NSObject, ObservableObject {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
 
+    private func observePlayerPlaybackState() {
+        playerStateCancellable?.cancel()
+        playerStateCancellable = player?
+            .publisher(for: \.timeControlStatus)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.syncPlaybackStateFromPlayer(reason: "time-control")
+            }
+    }
+
+    private func syncPlaybackStateFromPlayer(reason: String) {
+        guard let player else {
+            if isPlaying {
+                isPlaying = false
+                updateNowPlayingInfo()
+            }
+            return
+        }
+        let actuallyPlaying = player.timeControlStatus == .playing && player.rate > 0
+        guard actuallyPlaying != isPlaying else {
+            updateNowPlayingElapsedTime()
+            return
+        }
+        #if DEBUG
+        NSLog("CRDBG AUDIO syncPlayback reason=%@ actual=%@ uiWas=%@ rate=%.2f status=%ld interrupted=%@",
+              reason,
+              actuallyPlaying ? "playing" : "paused",
+              isPlaying ? "playing" : "paused",
+              Double(player.rate),
+              player.timeControlStatus.rawValue,
+              wasInterrupted ? "Y" : "N")
+        #endif
+        isPlaying = actuallyPlaying
+        updateNowPlayingInfo()
+    }
+
     private func removeTimeObserver() {
         if let observer = timeObserver {
             player?.removeTimeObserver(observer)
@@ -566,7 +661,8 @@ class AudioPlayerService: NSObject, ObservableObject {
 
 // MARK: - Playback Speed Options
 extension AudioPlayerService {
-    static let speedOptions: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    static let freeSpeedOptions: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    static let proSpeedOptions: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 3.0]
 
     var speedDisplayText: String {
         if playbackRate == 1.0 {

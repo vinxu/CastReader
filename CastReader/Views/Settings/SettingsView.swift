@@ -12,9 +12,11 @@ struct SettingsView: View {
     @ObservedObject private var pro = ProManager.shared
     @ObservedObject private var quota = QuotaManager.shared
     @ObservedObject private var auth = AuthService.shared
+    @ObservedObject private var kindleStore = KindleLibraryStore.shared
     @State private var showPaywall = false
     @State private var showLogin = false
     @State private var showClearHistory = false
+    @State private var showUnbindKindle = false
 
     private let explainLanguages: [(String, String)] = [
         ("", String(localized: "跟随原文")), ("en", "English"), ("zh", "中文"), ("ja", "日本語"),
@@ -26,6 +28,7 @@ struct SettingsView: View {
         NavigationView {
             Form {
                 accountSection
+                connectedServicesSection
                 proSection
                 librarySection
                 playbackSection
@@ -44,6 +47,17 @@ struct SettingsView: View {
                 Button("清除全部", role: .destructive) { HistoryStore.shared.clearAll() }
                 Button("取消", role: .cancel) {}
             } message: { Text("将删除文库中全部本地历史，此操作不可撤销。") }
+            .alert("解绑 Kindle？", isPresented: $showUnbindKindle) {
+                Button("解绑", role: .destructive) {
+                    Task { @MainActor in
+                        KindlePlaybackCenter.shared.close()
+                        await kindleStore.disconnectAccount()
+                    }
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("将清除本机 Kindle 书架缓存和 read.amazon.com 登录状态。首页 Kindle 模块会回到绑定 Kindle，需要重新登录和同步。")
+            }
         }
         .navigationViewStyle(.stack)
     }
@@ -94,6 +108,41 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: 已绑定服务
+
+    @ViewBuilder
+    private var connectedServicesSection: some View {
+        if kindleStore.hasConnected {
+            Section {
+                HStack(spacing: 12) {
+                    Image(systemName: "books.vertical.fill")
+                        .foregroundColor(AppTheme.primary)
+                        .frame(width: 34, height: 34)
+                        .background(AppTheme.primary.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Kindle")
+                            .font(.headline)
+                        Text(kindleStore.boundAccountDisplayName)
+                            .font(.caption)
+                            .foregroundColor(AppTheme.mutedForeground)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                }
+
+                Button(role: .destructive) {
+                    showUnbindKindle = true
+                } label: {
+                    Text("解绑 Kindle")
+                }
+            } header: {
+                Text("已绑定")
+            } footer: {
+                Text("解绑只清除本机 CastReader 的 Kindle 登录状态和书架缓存，不会影响 Amazon 账号或 Kindle 图书。")
+            }
+        }
+    }
+
     // MARK: Pro
 
     private var proSection: some View {
@@ -110,7 +159,7 @@ struct SettingsView: View {
                             Text(LocalizedStringKey(pro.serverPlan == "yearly" ? "年度订阅" : (pro.serverPlan == "monthly" ? "月度订阅" : "已解锁")))
                                 .font(.caption).foregroundColor(AppTheme.mutedForeground)
                         } else {
-                            Text("今日朗读剩余 \(Int(quota.listenRemaining / 60)) 分钟 · 解读 \(quota.explainRemaining) 次")
+                            Text(String(format: String(localized: "今日朗读剩余 %d 分钟 · 解读 %d 次"), Int(quota.listenRemaining / 60), quota.explainRemaining))
                                 .font(.caption).foregroundColor(AppTheme.mutedForeground)
                         }
                     }
@@ -136,7 +185,9 @@ struct SettingsView: View {
                     Text("\(HistoryStore.shared.records.count)")
                         .foregroundColor(AppTheme.mutedForeground)
                 }
+                .accessibilityIdentifier("settingsLibraryLink")
             }
+            .accessibilityIdentifier("settingsLibraryLink")
         } footer: {
             Text("拍摄、上传、输入网址或文本，处理过的内容都在这里。仅保存在本机。")
         }

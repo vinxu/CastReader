@@ -71,16 +71,40 @@ final class ReadAloudViewModel: ObservableObject {
     private var alignedPara = -1
     private var alignedSegCount = -1
     private var wordRanges: [NSRange?] = []
+    private var ocrAlignedPara = -1
+    private var ocrAlignedSegCount = -1
+    private var ocrWordIndexes: [Int?] = []
     private var photoCursor = 0
     private var lastSegmentId = ""
     private var lastSegmentMaxTime: Double = 0
     private var graceSeconds: Double = 0
     private(set) var isActive = false
 
+    private var playbackBookID: String?
+    private var playbackTitle: String?
+    private var playbackChapterTitle: String?
+    private var playbackCoverURL: String?
+
     init(document: ReadingDocument) {
         self.document = document
         recomputeReadableIndices()
         bind()
+    }
+
+    func configurePlaybackMetadata(id: String, title: String, coverURL: String?, chapterTitle: String? = nil) {
+        playbackBookID = id
+        playbackTitle = title
+        playbackCoverURL = coverURL
+        playbackChapterTitle = chapterTitle
+    }
+
+    private func applyPlaybackMetadata() {
+        audio.setBook(
+            id: playbackBookID ?? document.id,
+            title: playbackTitle ?? document.title,
+            chapterTitle: playbackChapterTitle,
+            coverUrl: playbackCoverURL
+        )
     }
 
     deinit {
@@ -191,7 +215,7 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         activate()
-        audio.setBook(id: document.id, title: document.title, chapterTitle: nil, coverUrl: nil)
+        applyPlaybackMetadata()
         applySpeed()
         generate(readableIndices[0])
     }
@@ -218,10 +242,48 @@ final class ReadAloudViewModel: ObservableObject {
         // activate 幂等；已 start 过再点句重复设回调/setBook 无害。
         if !isActive {
             activate()
-            audio.setBook(id: document.id, title: document.title, chapterTitle: nil, coverUrl: nil)
+            applyPlaybackMetadata()
             applySpeed()
         }
         generate(paragraphIndex)
+    }
+
+    /// 用外部已经生成好的首段音频启动朗读。Kindle 页级预加载会使用这个入口：
+    /// 页面 OCR/文档和下一页首段 TTS 都提前完成时，翻页后无需再等首字节。
+    func startWithPrefetchedSegments(_ segments: [AudioSegment], paragraphIndex: Int) {
+        guard readableIndices.contains(paragraphIndex), !segments.isEmpty else {
+            jump(to: paragraphIndex)
+            return
+        }
+        guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
+            showPaywall = true
+            return
+        }
+
+        activate()
+        applyPlaybackMetadata()
+        applySpeed()
+        isFinished = false
+        generationTask?.cancel()
+        clearPrefetch()
+        Task { await TTSService.shared.cancelCurrentRequest() }
+
+        audio.clearQueue()
+        audio.moreSegmentsExpected = false
+        segmentsByParagraph[paragraphIndex] = segments
+        currentParagraphIndex = paragraphIndex
+        processedDisplayText = segments.map { $0.text }.joined()
+        highlightRange = nil
+        photoHighlightWordIndex = nil
+        pdfHighlight = nil
+        photoCursor = 0
+        clearOCRWordAlignment()
+        lastWordKey = ""
+        status = .ready
+        if document.sourceKind.isWebRendered { webAudioSegments.append(contentsOf: segments) }
+        audio.loadSegments(segments)
+
+        Task { [weak self] in await self?.preloadNext(after: paragraphIndex) }
     }
 
     func setSpeed(_ s: Double) {
@@ -258,6 +320,7 @@ final class ReadAloudViewModel: ObservableObject {
         photoHighlightWordIndex = nil
         pdfHighlight = nil
         photoCursor = 0
+        clearOCRWordAlignment()
         lastWordKey = ""
         status = .loading
 
@@ -377,6 +440,7 @@ final class ReadAloudViewModel: ObservableObject {
         photoHighlightWordIndex = nil
         pdfHighlight = nil
         photoCursor = 0
+        clearOCRWordAlignment()
         lastWordKey = ""
         if document.sourceKind.isWebRendered { webAudioSegments.append(contentsOf: segs) }
 
@@ -498,9 +562,9 @@ final class ReadAloudViewModel: ObservableObject {
             if document.sourceKind.isNativeTextRendered {
                 let content = contentRange(in: seg.text as NSString)
                 highlightRange = NSRange(location: base + content.location, length: content.length)
-            } else if document.sourceKind == .photo {
-                // photo + 无词时间戳（中文云端 TTS 不返回词级时间戳）：按段内 segment 进度线性推进
-                // OCR 词高亮，否则照片中文永远不高亮。单调不减，防流式 segment 数抖动导致回跳。
+            } else if document.sourceKind.isOCRImageRendered {
+                // OCR 图片源 + 无词时间戳（中文云端 TTS 不返回词级时间戳）：按段内 segment 进度线性推进
+                // OCR 词高亮，否则照片/Kindle 中文永远不高亮。单调不减，防流式 segment 数抖动导致回跳。
                 let wordCount = document.paragraphs[currentParagraphIndex].words.count
                 let segDur = audio.duration > 0.01 ? audio.duration : (seg.duration > 0.01 ? seg.duration : 0)
                 let segProg = segDur > 0.01 ? min(1.0, max(0, t) / segDur) : 0
@@ -527,9 +591,14 @@ final class ReadAloudViewModel: ObservableObject {
             if gIdx >= 0, gIdx < wordRanges.count, let r = wordRanges[gIdx] {
                 highlightRange = r
             }
-        } else {
-            // photo：仅当新词时推进游标
-            if wordKey != lastWordKey {
+        } else if document.sourceKind.isOCRImageRendered {
+            ensureOCRWordAligned()
+            let gIdx = segs.prefix(segPos).reduce(0) { $0 + $1.timestamps.count } + localIdx
+            if gIdx >= 0, gIdx < ocrWordIndexes.count, let idx = ocrWordIndexes[gIdx] {
+                let next = max(photoHighlightWordIndex ?? -1, idx)
+                if next != photoHighlightWordIndex { photoHighlightWordIndex = next }
+            } else if document.sourceKind != .kindle, wordKey != lastWordKey {
+                // Fallback only when the timestamp word cannot be resolved to paragraph text.
                 advancePhotoCursor(toward: seg.timestamps[localIdx].word)
             }
         }
@@ -584,6 +653,37 @@ final class ReadAloudViewModel: ObservableObject {
         wordRanges = ranges
         alignedPara = currentParagraphIndex
         alignedSegCount = segs.count
+    }
+
+    private func ensureOCRWordAligned() {
+        guard currentParagraphIndex >= 0, currentParagraphIndex < document.paragraphs.count else { return }
+        let segs = segmentsByParagraph[currentParagraphIndex] ?? []
+        if ocrAlignedPara == currentParagraphIndex && ocrAlignedSegCount == segs.count { return }
+        let allowFallback = document.sourceKind != .kindle
+        ocrWordIndexes = OCRWordAligner.mapTimestampWords(
+            in: document.paragraphs[currentParagraphIndex],
+            segments: segs,
+            allowFallback: allowFallback
+        )
+        ocrAlignedPara = currentParagraphIndex
+        ocrAlignedSegCount = segs.count
+        #if DEBUG
+        let hit = ocrWordIndexes.compactMap { $0 }.count
+        let total = ocrWordIndexes.count
+        if total > 0 {
+            NSLog("CRDBG ocr align para=%d hit=%d/%d mode=%@",
+                  currentParagraphIndex,
+                  hit,
+                  total,
+                  allowFallback ? "fallback" : "strict")
+        }
+        #endif
+    }
+
+    private func clearOCRWordAlignment() {
+        ocrAlignedPara = -1
+        ocrAlignedSegCount = -1
+        ocrWordIndexes = []
     }
 
     /// photo 无词时间戳时：把「段内第 segPos 个 segment + 其内部进度」线性映射到 OCR 词索引（句子级近似）。
