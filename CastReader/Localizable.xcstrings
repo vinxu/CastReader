@@ -605,6 +605,26 @@
         }
       }
     },
+    "正在同步会员状态…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncing Pro status..."
+          }
+        }
+      }
+    },
+    "解读服务暂未识别 Pro 会员，请稍后重试" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explain has not recognized your Pro status yet. Please try again."
+          }
+        }
+      }
+    },
     "最近" : {
       "localizations" : {
         "en" : {

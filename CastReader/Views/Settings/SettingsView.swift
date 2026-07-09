@@ -205,20 +205,31 @@ struct SettingsView: View {
                 }
                 Slider(value: Binding(
                     get: { settings.speed },
-                    set: { newValue in
-                        if !pro.isPro && newValue > AppSettings.freeMaxSpeed {
-                            settings.speed = AppSettings.freeMaxSpeed
-                            showPaywall = true
-                        } else {
-                            settings.speed = newValue
-                        }
-                    }), in: AppSettings.minSpeed...AppSettings.maxSpeed, step: 0.25)
+                    set: { newValue in handleSpeedChange(newValue) }),
+                    in: AppSettings.minSpeed...AppSettings.maxSpeed,
+                    step: 0.25)
                 if !pro.isPro {
                     Text("免费版语速上限 2.0x").font(.caption2).foregroundColor(AppTheme.mutedForeground)
                 }
             }
             Toggle("自动播放", isOn: $settings.autoPlay)
             Toggle("自动滚动", isOn: $settings.autoScroll)
+        }
+    }
+
+    private func handleSpeedChange(_ newValue: Double) {
+        if !pro.isPro && newValue > AppSettings.freeMaxSpeed {
+            Task { @MainActor in
+                await pro.refresh()
+                if pro.isPro {
+                    settings.speed = newValue
+                } else {
+                    settings.speed = AppSettings.freeMaxSpeed
+                    showPaywall = true
+                }
+            }
+        } else {
+            settings.speed = newValue
         }
     }
 
@@ -235,8 +246,7 @@ struct SettingsView: View {
         Menu {
             ForEach(VoiceCatalog.voices(for: language)) { v in
                 Button {
-                    if v.isPro && !pro.isPro { showPaywall = true }
-                    else { selection.wrappedValue = v.code }
+                    selectVoice(v, selection: selection)
                 } label: {
                     HStack {
                         Text(v.name)
@@ -253,6 +263,21 @@ struct SettingsView: View {
                     .foregroundColor(AppTheme.mutedForeground)
                 Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundColor(AppTheme.mutedForeground)
             }
+        }
+    }
+
+    private func selectVoice(_ voice: VoiceOption, selection: Binding<String>) {
+        if voice.isPro && !pro.isPro {
+            Task { @MainActor in
+                await pro.refresh()
+                if pro.isPro {
+                    selection.wrappedValue = voice.code
+                } else {
+                    showPaywall = true
+                }
+            }
+        } else {
+            selection.wrappedValue = voice.code
         }
     }
 

@@ -42,6 +42,7 @@ final class ProManager: ObservableObject {
         return storeKitPro || serverPro
     }
 
+    private static let appAccountTokenKey = "storekit_app_account_token_v1"
     private var updatesTask: Task<Void, Never>?
 
     private init() {}
@@ -109,7 +110,10 @@ final class ProManager: ObservableObject {
             guard Self.productIDs.contains(t.productID) else { continue }
             let notRevoked = t.revocationDate == nil
             let notExpired = (t.expirationDate ?? Date.distantFuture) > Date()
-            if notRevoked && notExpired { active = true }
+            if notRevoked && notExpired {
+                active = true
+                debugTransaction("entitlement", t)
+            }
         }
         storeKitPro = active
     }
@@ -121,14 +125,16 @@ final class ProManager: ObservableObject {
         purchaseInFlight = true
         defer { purchaseInFlight = false }
         do {
-            let result = try await product.purchase()
+            let result = try await product.purchase(options: [.appAccountToken(Self.appAccountToken)])
             switch result {
             case .success(let verification):
                 // verified / unverified 都要 finish，否则已扣费的交易会反复回到队列；
                 // 权益以 refresh 后的 currentEntitlements 为准（unverified 不计权益，安全）。
                 if case .verified(let t) = verification {
+                    debugTransaction("purchase verified", t)
                     await t.finish()
                 } else if case .unverified(let t, _) = verification {
+                    debugTransaction("purchase unverified", t)
                     await t.finish()
                 }
                 await refresh()
@@ -161,9 +167,32 @@ final class ProManager: ObservableObject {
         Task.detached {
             for await update in Transaction.updates {
                 guard case .verified(let t) = update else { continue }
+                await ProManager.shared.debugTransaction("transaction update", t)
                 await t.finish()
                 await ProManager.shared.refresh()
             }
         }
+    }
+
+    private static var appAccountToken: UUID {
+        let d = UserDefaults.standard
+        if let raw = d.string(forKey: appAccountTokenKey), let id = UUID(uuidString: raw) {
+            return id
+        }
+        let id = UUID()
+        d.set(id.uuidString, forKey: appAccountTokenKey)
+        return id
+    }
+
+    private func debugTransaction(_ label: String, _ transaction: Transaction) {
+        #if DEBUG
+        print("[Pro] \(label) product=\(transaction.productID) tx=\(Self.redact("\(transaction.id)")) original=\(Self.redact("\(transaction.originalID)")) appAccount=\(Self.redact(transaction.appAccountToken?.uuidString)) expires=\(transaction.expirationDate?.description ?? "nil") revoked=\(transaction.revocationDate == nil ? "N" : "Y")")
+        #endif
+    }
+
+    private static func redact(_ value: String?) -> String {
+        guard let value, !value.isEmpty else { return "nil" }
+        if value.count <= 8 { return "\(value.prefix(2))…" }
+        return "\(value.prefix(4))…\(value.suffix(4))"
     }
 }

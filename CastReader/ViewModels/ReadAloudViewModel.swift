@@ -44,6 +44,7 @@ final class ReadAloudViewModel: ObservableObject {
 
     private var segmentsByParagraph: [Int: [AudioSegment]] = [:]
     private var generationTask: Task<Void, Never>?
+    private var listenCapRefreshTask: Task<Void, Never>?
     private var preloaded = Set<Int>()
     private var cancellables = Set<AnyCancellable>()
     private var readableIndices: [Int] = []
@@ -109,6 +110,7 @@ final class ReadAloudViewModel: ObservableObject {
 
     deinit {
         generationTask?.cancel()
+        listenCapRefreshTask?.cancel()
     }
 
     private func recomputeReadableIndices() {
@@ -182,6 +184,17 @@ final class ReadAloudViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applySpeed() }
             .store(in: &cancellables)
+        pro.$storeKitPro
+            .combineLatest(pro.$serverPro)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.applySpeed() }
+            .store(in: &cancellables)
+        #if DEBUG
+        pro.$debugForcePro
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.applySpeed() }
+            .store(in: &cancellables)
+        #endif
     }
 
     /// 成为当前激活模式（接管音频回调）。
@@ -195,6 +208,8 @@ final class ReadAloudViewModel: ObservableObject {
     func deactivate() {
         isActive = false
         generationTask?.cancel()
+        listenCapRefreshTask?.cancel()
+        listenCapRefreshTask = nil
         clearPrefetch()
         Task { await TTSService.shared.cancelCurrentRequest() }
         audio.moreSegmentsExpected = false
@@ -209,8 +224,17 @@ final class ReadAloudViewModel: ObservableObject {
     // MARK: - Start / control
 
     func start() {
+        start(allowAccessRefresh: true)
+    }
+
+    private func start(allowAccessRefresh: Bool) {
         guard !readableIndices.isEmpty else { status = .error(String(localized: "无可朗读内容")); return }
         guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
+            if allowAccessRefresh {
+                refreshAccessThenRetryStart()
+                return
+            }
+            status = .pending
             showPaywall = true
             return
         }
@@ -224,7 +248,7 @@ final class ReadAloudViewModel: ObservableObject {
         if currentParagraphIndex < 0 { start(); return }
         // 从暂停恢复播放时补额度闸门：否则免费用户在「宽限硬上限」弹墙后关墙、再点播放即可无限续听。
         if !audio.isPlaying, !pro.isPro, !quota.canStartListen(isPro: pro.isPro) {
-            showPaywall = true
+            refreshAccessThenRetryResume()
             return
         }
         audio.togglePlayPause()
@@ -235,8 +259,20 @@ final class ReadAloudViewModel: ObservableObject {
 
     /// 点击段落跳读。
     func jump(to paragraphIndex: Int) {
+        jump(to: paragraphIndex, allowAccessRefresh: true)
+    }
+
+    private func jump(to paragraphIndex: Int, allowAccessRefresh: Bool) {
         guard readableIndices.contains(paragraphIndex) else { return }
-        guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else { showPaywall = true; return }
+        guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
+            if allowAccessRefresh {
+                refreshAccessThenRetryJump(to: paragraphIndex)
+                return
+            }
+            status = .pending
+            showPaywall = true
+            return
+        }
         // 首次直接点击句子跳读（未经 start）→ 必须补激活：否则 audio.onPlaybackComplete 未挂，读完一句不 advance
         //（“只读一句就停、没看到加载下一句”），且 isActive=false 时 onTick 直接 return（无高亮、不计额度）。
         // activate 幂等；已 start 过再点句重复设回调/setBook 无害。
@@ -251,11 +287,20 @@ final class ReadAloudViewModel: ObservableObject {
     /// 用外部已经生成好的首段音频启动朗读。Kindle 页级预加载会使用这个入口：
     /// 页面 OCR/文档和下一页首段 TTS 都提前完成时，翻页后无需再等首字节。
     func startWithPrefetchedSegments(_ segments: [AudioSegment], paragraphIndex: Int) {
+        startWithPrefetchedSegments(segments, paragraphIndex: paragraphIndex, allowAccessRefresh: true)
+    }
+
+    private func startWithPrefetchedSegments(_ segments: [AudioSegment], paragraphIndex: Int, allowAccessRefresh: Bool) {
         guard readableIndices.contains(paragraphIndex), !segments.isEmpty else {
             jump(to: paragraphIndex)
             return
         }
         guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
+            if allowAccessRefresh {
+                refreshAccessThenRetryPrefetched(segments, paragraphIndex: paragraphIndex)
+                return
+            }
+            status = .pending
             showPaywall = true
             return
         }
@@ -286,6 +331,44 @@ final class ReadAloudViewModel: ObservableObject {
         Task { [weak self] in await self?.preloadNext(after: paragraphIndex) }
     }
 
+    private func refreshAccessThenRetryStart() {
+        status = .loading
+        Task { [weak self] in
+            await ProManager.shared.refresh()
+            self?.start(allowAccessRefresh: false)
+        }
+    }
+
+    private func refreshAccessThenRetryResume() {
+        Task { [weak self] in
+            await ProManager.shared.refresh()
+            await MainActor.run {
+                guard let self else { return }
+                if self.pro.isPro || self.quota.canStartListen(isPro: self.pro.isPro) {
+                    self.audio.togglePlayPause()
+                } else {
+                    self.showPaywall = true
+                }
+            }
+        }
+    }
+
+    private func refreshAccessThenRetryJump(to paragraphIndex: Int) {
+        status = .loading
+        Task { [weak self] in
+            await ProManager.shared.refresh()
+            self?.jump(to: paragraphIndex, allowAccessRefresh: false)
+        }
+    }
+
+    private func refreshAccessThenRetryPrefetched(_ segments: [AudioSegment], paragraphIndex: Int) {
+        status = .loading
+        Task { [weak self] in
+            await ProManager.shared.refresh()
+            self?.startWithPrefetchedSegments(segments, paragraphIndex: paragraphIndex, allowAccessRefresh: false)
+        }
+    }
+
     func setSpeed(_ s: Double) {
         settings.speed = s   // 触发 applySpeed 经由订阅
     }
@@ -296,6 +379,8 @@ final class ReadAloudViewModel: ObservableObject {
 
     func stop() {
         generationTask?.cancel()
+        listenCapRefreshTask?.cancel()
+        listenCapRefreshTask = nil
         clearPrefetch()
         Task { await TTSService.shared.cancelCurrentRequest() }
         audio.clearBook()
@@ -454,6 +539,10 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func advance() {
+        advance(allowAccessRefresh: true)
+    }
+
+    private func advance(allowAccessRefresh: Bool) {
         commitListen()
         NSLog("CRDBG advance from para=%d readable=%d", currentParagraphIndex, readableIndices.count)
         guard let pos = readableIndices.firstIndex(of: currentParagraphIndex) else { return }
@@ -465,6 +554,11 @@ final class ReadAloudViewModel: ObservableObject {
         }
         // 段落边界做额度闸门（“读完本篇”自然边界）
         if !pro.isPro && !quota.canStartListen(isPro: pro.isPro) {
+            if allowAccessRefresh {
+                refreshAccessThenRetryAdvance()
+                return
+            }
+            status = .ready
             showPaywall = true
             audio.pause()
             return
@@ -493,6 +587,15 @@ final class ReadAloudViewModel: ObservableObject {
         }
         // ③ 无预取 → 正常生成
         generate(nextIndex)
+    }
+
+    private func refreshAccessThenRetryAdvance() {
+        status = .loading
+        audio.pause()
+        Task { [weak self] in
+            await ProManager.shared.refresh()
+            self?.advance(allowAccessRefresh: false)
+        }
     }
 
     // MARK: - 高亮
@@ -735,8 +838,26 @@ final class ReadAloudViewModel: ObservableObject {
         // 宽限硬上限：超额后继续播放累计，超过 graceCap 强制停止
         if !pro.isPro && quota.listenRemaining <= 0 {
             if graceSeconds > quota.graceCapSeconds {
-                audio.pause()
-                showPaywall = true
+                refreshAccessThenHandleListenCap()
+            }
+        }
+    }
+
+    private func refreshAccessThenHandleListenCap() {
+        guard listenCapRefreshTask == nil else { return }
+        status = .loading
+        listenCapRefreshTask = Task { [weak self] in
+            await ProManager.shared.refresh()
+            guard let self else { return }
+            self.listenCapRefreshTask = nil
+            if self.pro.isPro {
+                self.graceSeconds = 0
+                self.applySpeed()
+                self.status = .ready
+            } else {
+                self.audio.pause()
+                self.status = .ready
+                self.showPaywall = true
             }
         }
     }

@@ -68,11 +68,19 @@ actor ProBackendService {
         }
         comps?.queryItems = items
         guard let url = comps?.url else { return nil }
+        Self.debugLog("status START device=\(Self.redact(Self.deviceId)) user=\(Self.redact(userId)) email=\(Self.redactEmail(email))")
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
-            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { return nil }
-            return try ProStatusDTO.decodeServerResponse(from: data)
+            guard let http = response as? HTTPURLResponse else { return nil }
+            guard (200..<300).contains(http.statusCode) else {
+                Self.debugLog("status HTTP \(http.statusCode) body=\(Self.preview(data))")
+                return nil
+            }
+            let status = try ProStatusDTO.decodeServerResponse(from: data)
+            Self.debugLog("status DONE pro=\(status.pro ? "Y" : "N") plan=\(status.plan ?? "nil") free=\(status.freeRemaining.map(String.init) ?? "nil") listen=\(status.listenRemaining.map(String.init) ?? "nil")")
+            return status
         } catch {
+            Self.debugLog("status FAIL error=\(error.localizedDescription)")
             return nil   // fail-open
         }
     }
@@ -83,14 +91,27 @@ actor ProBackendService {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        var body: [String: Any] = ["device_id": Self.deviceId, "seconds": seconds]
+        var body: [String: Any] = [
+            "device_id": Self.deviceId,
+            "seconds": seconds,
+            "local_date": Self.localDay()
+        ]
         if let userId = userId, !userId.isEmpty { body["user_id"] = userId }
         if let email = email?.trimmingCharacters(in: .whitespacesAndNewlines),
            !email.isEmpty {
             body["email"] = email.lowercased()
         }
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        _ = try? await URLSession.shared.data(for: req)
+        Self.debugLog("track START seconds=\(seconds) device=\(Self.redact(Self.deviceId)) user=\(Self.redact(userId)) email=\(Self.redactEmail(email))")
+        do {
+            let (data, response) = try await URLSession.shared.data(for: req)
+            guard let http = response as? HTTPURLResponse else { return }
+            if !(200..<300).contains(http.statusCode) {
+                Self.debugLog("track HTTP \(http.statusCode) body=\(Self.preview(data))")
+            }
+        } catch {
+            Self.debugLog("track FAIL error=\(error.localizedDescription)")
+        }
     }
 
     static func localDay() -> String {
@@ -98,5 +119,31 @@ actor ProBackendService {
         f.calendar = .current; f.locale = .current; f.timeZone = .current
         f.dateFormat = "yyyy-MM-dd"
         return f.string(from: Date())
+    }
+
+    private static func debugLog(_ message: String) {
+        #if DEBUG
+        print("[ProBackend] \(message)")
+        #endif
+    }
+
+    private static func redact(_ value: String?) -> String {
+        guard let value, !value.isEmpty else { return "nil" }
+        if value.count <= 8 { return "\(value.prefix(2))…" }
+        return "\(value.prefix(4))…\(value.suffix(4))"
+    }
+
+    private static func redactEmail(_ value: String?) -> String {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+            return "nil"
+        }
+        let parts = value.split(separator: "@", maxSplits: 1)
+        guard parts.count == 2 else { return redact(value) }
+        return "\(parts[0].prefix(2))…@\(parts[1])"
+    }
+
+    private static func preview(_ data: Data) -> String {
+        guard !data.isEmpty else { return "" }
+        return String(data: data.prefix(1024), encoding: .utf8) ?? "<\(data.count) bytes>"
     }
 }

@@ -24,6 +24,9 @@ struct PaywallView: View {
                 }
         }
         .navigationViewStyle(.stack)
+        .task {
+            if pro.isPro { dismiss() }
+        }
         .onChange(of: pro.isPro) { isPro in if isPro { dismiss() } }
     }
 }
@@ -75,6 +78,9 @@ struct ProUpsellContent: View {
             Button("好", role: .cancel) {}
         } message: { Text(restoreMessage) }
         .onAppear { Task { await reloadProducts(); await pro.refresh() } }
+        .task {
+            if pro.isPro { onPurchased() }
+        }
         .onChange(of: pro.isPro) { isPro in if isPro { onPurchased() } }
     }
 

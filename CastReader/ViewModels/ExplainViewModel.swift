@@ -145,6 +145,17 @@ final class ExplainViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applySpeed() }
             .store(in: &cancellables)
+        pro.$storeKitPro
+            .combineLatest(pro.$serverPro)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.applySpeed() }
+            .store(in: &cancellables)
+        #if DEBUG
+        pro.$debugForcePro
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.applySpeed() }
+            .store(in: &cancellables)
+        #endif
     }
 
     /// 应用全局语速到共享播放器（与 ReadAloudViewModel.applySpeed 对称，统一由 settings.speed 驱动）。
@@ -169,6 +180,10 @@ final class ExplainViewModel: ObservableObject {
     // MARK: - Start
 
     func start() {
+        start(allowAccessRefresh: true)
+    }
+
+    private func start(allowAccessRefresh: Bool) {
         guard status == .idle || isErrorState else { return }
         // 提交 LLM 前预校验：内容太短，LLM 没东西可讲 → 直接引导朗读，不发请求白等重试、也不消耗额度（而非无脑提交）。
         let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
@@ -177,6 +192,10 @@ final class ExplainViewModel: ObservableObject {
             return
         }
         guard pro.isPro || quota.canStartExplain(isPro: pro.isPro) else {
+            if allowAccessRefresh {
+                refreshAccessThenRetryStart()
+                return
+            }
             showPaywall = true
             return
         }
@@ -202,6 +221,18 @@ final class ExplainViewModel: ObservableObject {
         } else {
             setupBatchScopeIfLarge()   // EPUB/长文：解读分批，避免整本一次 extract-plan → 后端 400
             orchestrationTask = Task { [weak self] in await self?.runPlan() }
+        }
+    }
+
+    private func refreshAccessThenRetryStart() {
+        stageText = String(localized: "正在同步会员状态…")
+        Task { [weak self] in
+            await ProManager.shared.refresh()
+            await MainActor.run {
+                guard let self else { return }
+                self.stageText = ""
+                self.start(allowAccessRefresh: false)
+            }
         }
     }
 
@@ -349,13 +380,21 @@ final class ExplainViewModel: ObservableObject {
                 }
             }
         } catch {
+            if case QuickReadError.httpError(402) = error {
+                await ProManager.shared.refresh()
+            }
             await MainActor.run {
                 self.planFailed = true   // 通知 prepareBlock 的 section0 等待循环跳出（快道占位后不再死等挂起）
                 // server entitlement 超限 → 付费墙（对齐扩展：免费额度用满当付费墙，不当普通错误）
                 if case QuickReadError.httpError(402) = error {
-                    self.showPaywall = true
-                    self.status = .idle
-                    self.stageText = ""
+                    if self.pro.isPro {
+                        self.status = .error(String(localized: "解读服务暂未识别 Pro 会员，请稍后重试"))
+                        self.stageText = String(localized: "解读失败")
+                    } else {
+                        self.showPaywall = true
+                        self.status = .idle
+                        self.stageText = ""
+                    }
                 } else if case QuickReadError.httpError(400) = error {
                     // 重试 3 次仍 400：多为内容太短/不适合解读，给可读提示而非裸 HTTP 码
                     self.status = .error(String(localized: "内容太短或暂不支持解读，请稍后重试"))

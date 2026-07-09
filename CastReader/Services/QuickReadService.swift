@@ -77,25 +77,18 @@ actor QuickReadService {
         #endif
     }
 
-    /// 稳定设备 ID（复用 visitor id），用于 x-device-id。每次读取 UserDefaults，
-    /// 让额度/测试可通过替换 visitor id 控制设备身份；生产环境读到的是稳定 id，行为不变。
+    /// 稳定设备 ID（复用 visitor id），用于 x-device-id。必须与 /api/pro/status 同一个维度，
+    /// 否则 QuickRead 额度/Pro 判断会和客户端 Pro 状态脱节。
     private static var deviceId: String {
-        #if DEBUG
-        // 开发期：每次请求用新 device id，规避后端按 device 的免费解读额度上限，方便反复测试。
-        // block/compose 用 plan 返回的 jobId 关联，与 device id 无关，故不影响一次解读链路。生产不编译此分支。
-        return UUID().uuidString
-        #else
-        let d = UserDefaults.standard
-        if let id = d.string(forKey: Constants.Storage.visitorIdKey) { return id }
-        let id = UUID().uuidString
-        d.set(id, forKey: Constants.Storage.visitorIdKey)
-        return id
-        #endif
+        ProBackendService.deviceId
     }
 
     private struct AuthHeaderIdentity {
         let userId: String?
         let email: String?
+        let isPro: Bool
+        let storeKitPro: Bool
+        let serverPro: Bool
     }
 
     private func authHeaderIdentity() async -> AuthHeaderIdentity {
@@ -104,16 +97,17 @@ actor QuickReadService {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return AuthHeaderIdentity(
                 userId: AuthService.shared.proUserId,
-                email: email.isEmpty ? nil : email.lowercased()
+                email: email.isEmpty ? nil : email.lowercased(),
+                isPro: ProManager.shared.isPro,
+                storeKitPro: ProManager.shared.storeKitPro,
+                serverPro: ProManager.shared.serverPro
             )
         }
     }
 
     /// 解读后端鉴权 header。device 兜底；登录后附带 user/email，保证 Pro gate 与 /api/pro/status 同口径。
     private func applyAuthHeaders(_ req: inout URLRequest, identity: AuthHeaderIdentity) {
-        if !Constants.API.quickReadAPIKey.isEmpty {
-            req.setValue(Constants.API.quickReadAPIKey, forHTTPHeaderField: "x-api-key")
-        }
+        applyBaseHeaders(&req)
         req.setValue(Self.deviceId, forHTTPHeaderField: "x-device-id")
         if let userId = identity.userId, !userId.isEmpty {
             req.setValue(userId, forHTTPHeaderField: "x-user-id")
@@ -121,6 +115,58 @@ actor QuickReadService {
         if let email = identity.email, !email.isEmpty {
             req.setValue(email, forHTTPHeaderField: "x-user-email")
         }
+    }
+
+    private func applyBaseHeaders(_ req: inout URLRequest) {
+        if !Constants.API.quickReadAPIKey.isEmpty {
+            req.setValue(Constants.API.quickReadAPIKey, forHTTPHeaderField: "x-api-key")
+        }
+        req.setValue(Self.localDateString(), forHTTPHeaderField: "x-local-date")
+        req.setValue("ios", forHTTPHeaderField: "x-client-platform")
+    }
+
+    private static func localDateString() -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
+    }
+
+    private func debugAuth(_ label: String, identity: AuthHeaderIdentity) {
+        debugLog("\(label) AUTH device=\(Self.redact(Self.deviceId)) user=\(Self.redact(identity.userId)) email=\(Self.redactEmail(identity.email)) pro=\(identity.isPro ? "Y" : "N") storeKit=\(identity.storeKitPro ? "Y" : "N") server=\(identity.serverPro ? "Y" : "N")")
+    }
+
+    private static func redact(_ value: String?) -> String {
+        guard let value, !value.isEmpty else { return "nil" }
+        if value.count <= 8 { return "\(value.prefix(2))…" }
+        return "\(value.prefix(4))…\(value.suffix(4))"
+    }
+
+    private static func redactEmail(_ value: String?) -> String {
+        guard let value, !value.isEmpty else { return "nil" }
+        let parts = value.split(separator: "@", maxSplits: 1)
+        guard parts.count == 2 else { return redact(value) }
+        return "\(parts[0].prefix(2))…@\(parts[1])"
+    }
+
+    private static func errorPreview(_ data: Data) -> String {
+        guard !data.isEmpty else { return "" }
+        return String(data: data.prefix(2048), encoding: .utf8) ?? "<\(data.count) bytes>"
+    }
+
+    private static func errorPreview(from bytes: URLSession.AsyncBytes, limit: Int = 2048) async -> String {
+        var data = Data()
+        do {
+            for try await byte in bytes {
+                data.append(byte)
+                if data.count >= limit { break }
+            }
+        } catch {
+            return "read-error:\(error.localizedDescription)"
+        }
+        return errorPreview(data)
     }
 
     private lazy var session: URLSession = {
@@ -183,19 +229,38 @@ actor QuickReadService {
 
     private func runExtractPlanOnce(url: URL, payload: Data,
                                     onStage: @escaping (String) -> Void,
-                                    onBlock0: @escaping (PlanBlock0) -> Void) async throws -> PlanDone {
+                                    onBlock0: @escaping (PlanBlock0) -> Void,
+                                    includeIdentityHeaders: Bool = true) async throws -> PlanDone {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         let identity = await authHeaderIdentity()
-        applyAuthHeaders(&req, identity: identity)
+        if includeIdentityHeaders {
+            applyAuthHeaders(&req, identity: identity)
+            debugAuth("extract-plan", identity: identity)
+        } else {
+            applyBaseHeaders(&req)
+            debugLog("extract-plan AUTH legacy-pro-retry device/user/email omitted pro=\(identity.isPro ? "Y" : "N") storeKit=\(identity.storeKitPro ? "Y" : "N") server=\(identity.serverPro ? "Y" : "N")")
+        }
         req.httpBody = payload
 
         let startedAt = Date()
         let (bytes, response) = try await session.bytes(for: req)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            debugLog("extract-plan HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt))")
+            let body = await Self.errorPreview(from: bytes)
+            debugLog("extract-plan HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(body)")
+            if http.statusCode == 402,
+               includeIdentityHeaders,
+               identity.isPro,
+               (body.contains("free_daily_limit") || body.contains("quota_exceeded")) {
+                debugLog("extract-plan PRO gate mismatch; retrying once with legacy headers")
+                return try await runExtractPlanOnce(url: url,
+                                                    payload: payload,
+                                                    onStage: onStage,
+                                                    onBlock0: onBlock0,
+                                                    includeIdentityHeaders: false)
+            }
             throw QuickReadError.httpError(http.statusCode)
         }
 
@@ -295,12 +360,13 @@ actor QuickReadService {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let identity = await authHeaderIdentity()
         applyAuthHeaders(&req, identity: identity)
+        debugAuth("fast-block0", identity: identity)
         req.httpBody = try encoder.encode(body)
         req.timeoutInterval = 8   // 快道超时即放弃，走质道
 
         let (data, response) = try await session.data(for: req)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            debugLog("fast-block0 HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt))")
+            debugLog("fast-block0 HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(Self.errorPreview(data))")
             throw QuickReadError.httpError(http.statusCode)
         }
         let resp = try decoder.decode(FastBlock0Response.self, from: data)
@@ -335,10 +401,11 @@ actor QuickReadService {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             let identity = await self.authHeaderIdentity()
             self.applyAuthHeaders(&req, identity: identity)
+            self.debugAuth(label, identity: identity)
             req.httpBody = payload
             let (data, response) = try await self.session.data(for: req)
             if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-                self.debugLog("\(label) HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt))")
+                self.debugLog("\(label) HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(Self.errorPreview(data))")
                 throw QuickReadError.httpError(http.statusCode)
             }
             do {

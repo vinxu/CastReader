@@ -144,14 +144,17 @@ struct SpeedMenu: View {
     @State private var showPaywall = false
     @State private var showSpeedPicker = false
 
+    private var displayedSpeed: Float {
+        Float(settings.effectiveSpeed(isPro: pro.isPro))
+    }
+
     var body: some View {
         Button {
             showSpeedPicker = true
         } label: {
             HStack(spacing: 3) {
                 Image(systemName: "speedometer").font(.caption)
-                // 直接显示 AVPlayer 实际在用的速率（@Published，每段切换都会保持）→ 显示永远等于在播
-                Text(String(format: "%.2gx", Double(audio.playbackRate))).font(.subheadline.weight(.semibold))
+                Text(String(format: "%.2gx", Double(displayedSpeed))).font(.subheadline.weight(.semibold))
             }
             .padding(.horizontal, 12).padding(.vertical, 6)
             .background(AppTheme.surfaceVariant)
@@ -172,7 +175,7 @@ struct SpeedMenu: View {
 
     private func speedTitle(_ speed: Float) -> String {
         var title = String(format: "%.2gx", speed)
-        if abs(speed - audio.playbackRate) < 0.01 {
+        if abs(speed - displayedSpeed) < 0.01 {
             title += "  Selected"
         }
         if !pro.isPro && Double(speed) > AppSettings.freeMaxSpeed {
@@ -183,9 +186,24 @@ struct SpeedMenu: View {
 
     private func selectSpeed(_ speed: Float) {
         if !pro.isPro && Double(speed) > AppSettings.freeMaxSpeed {
-            showPaywall = true
+            refreshAccessThenSelectSpeed(speed)
             return
         }
+        applySelectedSpeed(speed)
+    }
+
+    private func refreshAccessThenSelectSpeed(_ speed: Float) {
+        Task { @MainActor in
+            await pro.refresh()
+            if pro.isPro {
+                applySelectedSpeed(speed)
+            } else {
+                showPaywall = true
+            }
+        }
+    }
+
+    private func applySelectedSpeed(_ speed: Float) {
         settings.speed = Double(speed)
         let effective = Float(settings.effectiveSpeed(isPro: pro.isPro))
         audio.setPlaybackRate(effective)
