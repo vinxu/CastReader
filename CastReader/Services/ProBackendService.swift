@@ -45,11 +45,7 @@ actor ProBackendService {
 
     /// 稳定设备 id（复用 visitor id）。
     static var deviceId: String {
-        let d = UserDefaults.standard
-        if let id = d.string(forKey: Constants.Storage.visitorIdKey) { return id }
-        let id = UUID().uuidString
-        d.set(id, forKey: Constants.Storage.visitorIdKey)
-        return id
+        StableDeviceID.current
     }
 
     /// 查询 Pro/额度。登录后同时传 user_id 和 email，避免跨端订阅只绑定在 Web user/device 上时漏判。

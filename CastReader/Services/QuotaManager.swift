@@ -86,12 +86,13 @@ final class QuotaManager: ObservableObject {
         }
     }
 
-    /// 解读开始一次（免费才计数，乐观扣减服务端剩余）。
+    /// 解读开始一次。服务端额度由 extract-plan 的 entitlement consume 负责；
+    /// 本地只在服务端状态不可用时做 fallback 计数，避免一次会话双扣。
     func noteExplainStarted(isPro: Bool) {
         guard !isPro else { return }
         rollIfNewDay()
+        guard serverExplainRemaining == nil else { return }
         explainCount += 1
-        if let r = serverExplainRemaining { serverExplainRemaining = max(0, r - 1) }
         persist()
     }
 

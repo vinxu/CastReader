@@ -665,6 +665,7 @@ final class ExplainViewModel: ObservableObject {
 
     /// 后台预规划下一批：倒数第二块播起先 plan，最后一块播起再生成下一批 block0 TTS，切批时直接播放。
     private func prefetchNextPage() {
+        guard pro.isPro else { return }
         guard let start = pdfBatchCursor else { return }
         let batch = pdfBatch(fromGlobalIndex: start)
         guard !batch.paras.isEmpty else { return }

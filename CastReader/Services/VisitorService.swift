@@ -11,18 +11,10 @@ class VisitorService: ObservableObject {
     @Published private(set) var visitorId: String
 
     private init() {
-        if let existingId = UserDefaults.standard.string(forKey: Constants.Storage.visitorIdKey) {
-            self.visitorId = existingId
-        } else {
-            let newId = UUID().uuidString
-            UserDefaults.standard.set(newId, forKey: Constants.Storage.visitorIdKey)
-            self.visitorId = newId
-        }
+        self.visitorId = StableDeviceID.current
     }
 
     func resetVisitorId() {
-        let newId = UUID().uuidString
-        UserDefaults.standard.set(newId, forKey: Constants.Storage.visitorIdKey)
-        self.visitorId = newId
+        self.visitorId = StableDeviceID.rotateForTesting()
     }
 }

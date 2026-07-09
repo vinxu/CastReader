@@ -4203,6 +4203,10 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
 
     private func startContinuousExplainPrefetch(after pageKey: String, runID: UUID) {
         guard isContinuousExplainActive(runID), !pageKey.isEmpty else { return }
+        guard ProManager.shared.isPro else {
+            appendLog("KINDLE explain prefetch skip free-user after=\(pageKey.prefix(8))")
+            return
+        }
         audio.moreSegmentsExpected = true
         continuousPrefetchTask = Task { [weak self] in
             guard let self else { return }
