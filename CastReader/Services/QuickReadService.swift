@@ -125,6 +125,15 @@ actor QuickReadService {
         req.setValue("ios", forHTTPHeaderField: "x-client-platform")
     }
 
+    /// A QuickRead session should spend quota at session start only. Follow-up
+    /// block/compose calls are authorized by job_id and intentionally omit
+    /// entitlement identity so a conservative server won't count every block as
+    /// a new explain.
+    private func applyContinuationHeaders(_ req: inout URLRequest) {
+        applyBaseHeaders(&req)
+        req.setValue("true", forHTTPHeaderField: "x-quickread-continuation")
+    }
+
     private static func localDateString() -> String {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
@@ -136,6 +145,10 @@ actor QuickReadService {
 
     private func debugAuth(_ label: String, identity: AuthHeaderIdentity) {
         debugLog("\(label) AUTH device=\(Self.redact(Self.deviceId)) user=\(Self.redact(identity.userId)) email=\(Self.redactEmail(identity.email)) emailMissing=\(identity.email == nil ? "Y" : "N") pro=\(identity.isPro ? "Y" : "N") storeKitLocal=\(identity.storeKitLocalPro ? "Y" : "N") server=\(identity.serverPro ? "Y" : "N") syncNeeded=\(identity.needsEmailSync ? "Y" : "N")")
+    }
+
+    private func debugContinuationAuth(_ label: String, identity: AuthHeaderIdentity) {
+        debugLog("\(label) AUTH continuation=Y identityHeaders=N sessionDevice=\(Self.redact(Self.deviceId)) sessionEmail=\(Self.redactEmail(identity.email)) pro=\(identity.isPro ? "Y" : "N")")
     }
 
     private static func redact(_ value: String?) -> String {
@@ -383,8 +396,8 @@ actor QuickReadService {
             req.httpMethod = "POST"
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             let identity = await self.authHeaderIdentity()
-            self.applyAuthHeaders(&req, identity: identity)
-            self.debugAuth(label, identity: identity)
+            self.applyContinuationHeaders(&req)
+            self.debugContinuationAuth(label, identity: identity)
             req.httpBody = payload
             let (data, response) = try await self.session.data(for: req)
             if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {

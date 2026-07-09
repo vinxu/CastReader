@@ -249,6 +249,7 @@ final class ExplainViewModel: ObservableObject {
 
     /// 快道门控（§5.1）：text/web/EPUB 整页长文首次解读。返回开头 N 段（累计 ~350 字 / ≤2 段）；nil = 不快道。
     private func fastLaneEligibleOpening() -> [ReadingParagraph]? {
+        guard pro.isPro else { return nil }                                      // 免费额度按会话计，避免快道被后端误算一次解读
         guard [.text, .web, .epub].contains(doc.sourceKind) else { return nil }   // photo/PDF 翻页跳过
         guard pdfScopedParagraphs == nil else { return nil }                       // 已设批次范围（PDF 翻页）跳过
         let readable = doc.readableParagraphs
