@@ -19,12 +19,14 @@ final class ProManager: ObservableObject {
     static let yearlyID = "ai.castreader.pro.yearly"
     static let productIDs: Set<String> = [monthlyID, yearlyID]
 
+    @Published private(set) var storeKitLocalPro = false
     @Published private(set) var storeKitPro = false
     @Published private(set) var serverPro = false
     @Published private(set) var serverPlan: String?
     @Published private(set) var serverAccount: ProAccountDTO?
     @Published private(set) var products: [Product] = []
     @Published private(set) var purchaseInFlight = false
+    @Published private(set) var needsEmailSync = false
 
     #if DEBUG
     /// 仅 DEBUG：模拟 Pro 解锁开关（设置→调试可切换）。默认 true 保持开发期全解锁（方便反复测朗读/解读）；
@@ -34,16 +36,21 @@ final class ProManager: ObservableObject {
     }
     #endif
 
-    /// 综合 Pro：iOS 内购 或 服务端账号 Pro（Web Stripe 付费者登录/设备关联后）。
+    /// 当前设备可用 Pro。跨端 Pro 真相是 serverPro(email-primary)；StoreKit 本地权益只作为短期兼容放行。
     var isPro: Bool {
         #if DEBUG
         if debugForcePro { return true }
         #endif
-        return storeKitPro || serverPro
+        return storeKitLocalPro || serverPro
+    }
+
+    var isCrossPlatformPro: Bool {
+        serverPro && AuthService.shared.normalizedEmail != nil
     }
 
     private static let appAccountTokenKey = "storekit_app_account_token_v1"
     private var updatesTask: Task<Void, Never>?
+    private var serverEmail: String?
 
     private init() {}
 
@@ -65,12 +72,30 @@ final class ProManager: ObservableObject {
     /// 拉取服务端 Pro/额度（device_id + 可选 user_id），回填额度到 QuotaManager。
     func refreshServer() async {
         let userId = await AuthService.shared.ensureBackendUserIdForPro()
-        let email = AuthService.shared.account?.email
+        let email = AuthService.shared.normalizedEmail
+        if email == nil {
+            debugLog("status EMAIL missing; device_id is quota-only and will not grant cross-platform Pro")
+            serverPro = false
+            serverPlan = nil
+            serverAccount = nil
+            serverEmail = nil
+        } else if serverEmail != nil && serverEmail != email {
+            debugLog("status account changed; clearing previous server entitlement before refresh")
+            serverPro = false
+            serverPlan = nil
+            serverAccount = nil
+            serverEmail = nil
+        }
         guard let status = await ProBackendService.shared.fetchStatus(userId: userId, email: email) else { return }
-        serverPro = status.pro
+        serverPro = email != nil && status.pro
+        if status.pro && email == nil {
+            debugLog("status ignored server pro without email; source must be email-primary")
+        }
         serverPlan = status.plan
         serverAccount = status.account
+        serverEmail = email
         QuotaManager.shared.applyServerStatus(status)
+        refreshSyncState(reason: "refresh-server")
     }
 
     /// 登出时清服务端权益（避免 refreshServer 网络失败 fail-open 时 serverPro 滞留为旧的 true）。
@@ -78,6 +103,8 @@ final class ProManager: ObservableObject {
         serverPro = false
         serverPlan = nil
         serverAccount = nil
+        serverEmail = nil
+        refreshSyncState(reason: "clear-server")
     }
 
     /// 打开系统「管理订阅」面板（模拟器不支持）。
@@ -115,13 +142,18 @@ final class ProManager: ObservableObject {
                 debugTransaction("entitlement", t)
             }
         }
-        storeKitPro = active
+        setStoreKitLocalPro(active, reason: "refresh-entitlements")
     }
 
     // MARK: - 购买 / 恢复
 
     @discardableResult
     func purchase(_ product: Product) async -> Bool {
+        guard AuthService.shared.normalizedEmail != nil else {
+            refreshSyncState(reason: "purchase-blocked-missing-email")
+            debugLog("purchase BLOCK missing-email product=\(product.id) localStoreKit=\(storeKitLocalPro ? "Y" : "N")")
+            return false
+        }
         purchaseInFlight = true
         defer { purchaseInFlight = false }
         do {
@@ -184,9 +216,30 @@ final class ProManager: ObservableObject {
         return id
     }
 
+    private func setStoreKitLocalPro(_ active: Bool, reason: String) {
+        storeKitLocalPro = active
+        storeKitPro = active
+        refreshSyncState(reason: reason)
+    }
+
+    func refreshSyncState(reason: String) {
+        let hasEmail = AuthService.shared.normalizedEmail != nil
+        let pending = storeKitLocalPro && !serverPro
+        needsEmailSync = pending
+        if pending {
+            debugLog("sync-needed reason=\(reason) hasEmail=\(hasEmail ? "Y" : "N") localStoreKit=Y server=N")
+        }
+    }
+
     private func debugTransaction(_ label: String, _ transaction: Transaction) {
         #if DEBUG
         print("[Pro] \(label) product=\(transaction.productID) tx=\(Self.redact("\(transaction.id)")) original=\(Self.redact("\(transaction.originalID)")) appAccount=\(Self.redact(transaction.appAccountToken?.uuidString)) expires=\(transaction.expirationDate?.description ?? "nil") revoked=\(transaction.revocationDate == nil ? "N" : "Y")")
+        #endif
+    }
+
+    private func debugLog(_ message: String) {
+        #if DEBUG
+        print("[Pro] \(message)")
         #endif
     }
 

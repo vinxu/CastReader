@@ -184,7 +184,7 @@ final class ReadAloudViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applySpeed() }
             .store(in: &cancellables)
-        pro.$storeKitPro
+        pro.$storeKitLocalPro
             .combineLatest(pro.$serverPro)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applySpeed() }

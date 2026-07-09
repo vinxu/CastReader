@@ -78,7 +78,7 @@ final class QuotaManager: ObservableObject {
         listenSeconds += seconds
         if let r = serverListenRemaining { serverListenRemaining = max(0, r - seconds) }
         persist()
-        let email = AuthService.shared.account?.email
+        let email = AuthService.shared.normalizedEmail
         let secs = Int(seconds.rounded())
         Task { @MainActor in
             let userId = await AuthService.shared.ensureBackendUserIdForPro()

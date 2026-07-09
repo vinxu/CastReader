@@ -87,20 +87,20 @@ actor QuickReadService {
         let userId: String?
         let email: String?
         let isPro: Bool
-        let storeKitPro: Bool
+        let storeKitLocalPro: Bool
         let serverPro: Bool
+        let needsEmailSync: Bool
     }
 
     private func authHeaderIdentity() async -> AuthHeaderIdentity {
         await MainActor.run {
-            let email = (AuthService.shared.account?.email ?? "")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
             return AuthHeaderIdentity(
                 userId: AuthService.shared.proUserId,
-                email: email.isEmpty ? nil : email.lowercased(),
+                email: AuthService.shared.normalizedEmail,
                 isPro: ProManager.shared.isPro,
-                storeKitPro: ProManager.shared.storeKitPro,
-                serverPro: ProManager.shared.serverPro
+                storeKitLocalPro: ProManager.shared.storeKitLocalPro,
+                serverPro: ProManager.shared.serverPro,
+                needsEmailSync: ProManager.shared.needsEmailSync
             )
         }
     }
@@ -135,7 +135,7 @@ actor QuickReadService {
     }
 
     private func debugAuth(_ label: String, identity: AuthHeaderIdentity) {
-        debugLog("\(label) AUTH device=\(Self.redact(Self.deviceId)) user=\(Self.redact(identity.userId)) email=\(Self.redactEmail(identity.email)) pro=\(identity.isPro ? "Y" : "N") storeKit=\(identity.storeKitPro ? "Y" : "N") server=\(identity.serverPro ? "Y" : "N")")
+        debugLog("\(label) AUTH device=\(Self.redact(Self.deviceId)) user=\(Self.redact(identity.userId)) email=\(Self.redactEmail(identity.email)) emailMissing=\(identity.email == nil ? "Y" : "N") pro=\(identity.isPro ? "Y" : "N") storeKitLocal=\(identity.storeKitLocalPro ? "Y" : "N") server=\(identity.serverPro ? "Y" : "N") syncNeeded=\(identity.needsEmailSync ? "Y" : "N")")
     }
 
     private static func redact(_ value: String?) -> String {
@@ -229,20 +229,14 @@ actor QuickReadService {
 
     private func runExtractPlanOnce(url: URL, payload: Data,
                                     onStage: @escaping (String) -> Void,
-                                    onBlock0: @escaping (PlanBlock0) -> Void,
-                                    includeIdentityHeaders: Bool = true) async throws -> PlanDone {
+                                    onBlock0: @escaping (PlanBlock0) -> Void) async throws -> PlanDone {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         let identity = await authHeaderIdentity()
-        if includeIdentityHeaders {
-            applyAuthHeaders(&req, identity: identity)
-            debugAuth("extract-plan", identity: identity)
-        } else {
-            applyBaseHeaders(&req)
-            debugLog("extract-plan AUTH legacy-pro-retry device/user/email omitted pro=\(identity.isPro ? "Y" : "N") storeKit=\(identity.storeKitPro ? "Y" : "N") server=\(identity.serverPro ? "Y" : "N")")
-        }
+        applyAuthHeaders(&req, identity: identity)
+        debugAuth("extract-plan", identity: identity)
         req.httpBody = payload
 
         let startedAt = Date()
@@ -250,17 +244,6 @@ actor QuickReadService {
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             let body = await Self.errorPreview(from: bytes)
             debugLog("extract-plan HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(body)")
-            if http.statusCode == 402,
-               includeIdentityHeaders,
-               identity.isPro,
-               (body.contains("free_daily_limit") || body.contains("quota_exceeded")) {
-                debugLog("extract-plan PRO gate mismatch; retrying once with legacy headers")
-                return try await runExtractPlanOnce(url: url,
-                                                    payload: payload,
-                                                    onStage: onStage,
-                                                    onBlock0: onBlock0,
-                                                    includeIdentityHeaders: false)
-            }
             throw QuickReadError.httpError(http.statusCode)
         }
 

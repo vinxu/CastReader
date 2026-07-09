@@ -1037,6 +1037,46 @@
         }
       }
     },
+    "已恢复购买，本机已解锁；跨平台同步等待 Apple 验证接口。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase restored. This device is unlocked; cross-platform sync is waiting for Apple verification."
+          }
+        }
+      }
+    },
+    "已检测到购买，本机已解锁；跨平台同步等待 Apple 验证接口。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase detected. This device is unlocked; cross-platform sync is waiting for Apple verification."
+          }
+        }
+      }
+    },
+    "已检测到购买，请登录邮箱同步 Pro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase detected. Log in with your email to sync Pro."
+          }
+        }
+      }
+    },
+    "已检测到购买，请登录邮箱完成跨平台同步。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase detected. Log in with your email to enable cross-platform Pro."
+          }
+        }
+      }
+    },
     "已找到 %d 本 Kindle 书…" : {
       "localizations" : {
         "en" : {
@@ -1758,6 +1798,36 @@
         }
       }
     },
+    "本机已解锁，跨平台同步待完成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlocked on this device. Cross-platform sync is pending."
+          }
+        }
+      }
+    },
+    "本机已解锁；登录邮箱后可完成跨平台同步。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This device is unlocked; log in with your email to sync Pro across platforms."
+          }
+        }
+      }
+    },
+    "本机已解锁；跨平台同步等待 Apple 验证接口。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This device is unlocked; cross-platform sync is waiting for Apple verification."
+          }
+        }
+      }
+    },
     "未知作者" : {
       "localizations" : {
         "en" : {
@@ -2058,6 +2128,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sign in to sync Pro and usage across devices"
+          }
+        }
+      }
+    },
+    "登录邮箱同步 Pro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log in with email to sync Pro"
+          }
+        }
+      }
+    },
+    "登录邮箱后购买 Pro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log in with email to buy Pro"
           }
         }
       }

@@ -39,6 +39,16 @@ final class AuthService: NSObject, ObservableObject {
     @Published var isWorking = false
 
     var isSignedIn: Bool { account != nil }
+    var normalizedEmail: String? {
+        guard let raw = account?.email else {
+            return nil
+        }
+        let email = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !email.isEmpty else { return nil }
+        return email
+    }
+    var hasEmailAccount: Bool { normalizedEmail != nil }
+
     /// 查 Pro 用的账号 id：仅用后端 better-auth user id；关联失败时为 nil → Pro 查询退回 device_id 维度。
     /// 不回退 provider sub（account.id），因其与后端 user_id 不同命名空间，会查不到 Web 端付费的 Pro。
     var proUserId: String? { account?.backendUserId }
@@ -76,6 +86,7 @@ final class AuthService: NSObject, ObservableObject {
         Task { @MainActor in
             ProManager.shared.clearServerEntitlement()   // 先本地清，避免 refreshServer 失败时 serverPro 滞留为 true
             await ProManager.shared.refreshServer()       // 再按 device_id 维度刷新
+            ProManager.shared.refreshSyncState(reason: "sign-out")
         }
     }
 

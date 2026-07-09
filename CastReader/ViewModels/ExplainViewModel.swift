@@ -145,7 +145,7 @@ final class ExplainViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applySpeed() }
             .store(in: &cancellables)
-        pro.$storeKitPro
+        pro.$storeKitLocalPro
             .combineLatest(pro.$serverPro)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applySpeed() }
@@ -387,7 +387,10 @@ final class ExplainViewModel: ObservableObject {
                 self.planFailed = true   // 通知 prepareBlock 的 section0 等待循环跳出（快道占位后不再死等挂起）
                 // server entitlement 超限 → 付费墙（对齐扩展：免费额度用满当付费墙，不当普通错误）
                 if case QuickReadError.httpError(402) = error {
-                    if self.pro.isPro {
+                    if self.pro.needsEmailSync {
+                        self.status = .error(String(localized: AuthService.shared.hasEmailAccount ? "本机已解锁；跨平台同步等待 Apple 验证接口。" : "已检测到购买，请登录邮箱同步 Pro"))
+                        self.stageText = String(localized: "解读失败")
+                    } else if self.pro.isPro {
                         self.status = .error(String(localized: "解读服务暂未识别 Pro 会员，请稍后重试"))
                         self.stageText = String(localized: "解读失败")
                     } else {

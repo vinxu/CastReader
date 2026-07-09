@@ -69,6 +69,9 @@ actor ProBackendService {
         comps?.queryItems = items
         guard let url = comps?.url else { return nil }
         Self.debugLog("status START device=\(Self.redact(Self.deviceId)) user=\(Self.redact(userId)) email=\(Self.redactEmail(email))")
+        if email?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true {
+            Self.debugLog("status EMAIL missing; request is anonymous/quota-only")
+        }
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
             guard let http = response as? HTTPURLResponse else { return nil }
@@ -103,6 +106,9 @@ actor ProBackendService {
         }
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         Self.debugLog("track START seconds=\(seconds) device=\(Self.redact(Self.deviceId)) user=\(Self.redact(userId)) email=\(Self.redactEmail(email))")
+        if email?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true {
+            Self.debugLog("track EMAIL missing; listen attribution is anonymous/quota-only")
+        }
         do {
             let (data, response) = try await URLSession.shared.data(for: req)
             guard let http = response as? HTTPURLResponse else { return }

@@ -25,9 +25,9 @@ struct PaywallView: View {
         }
         .navigationViewStyle(.stack)
         .task {
-            if pro.isPro { dismiss() }
+            if pro.isCrossPlatformPro { dismiss() }
         }
-        .onChange(of: pro.isPro) { isPro in if isPro { dismiss() } }
+        .onChange(of: pro.isCrossPlatformPro) { isPro in if isPro { dismiss() } }
     }
 }
 
@@ -61,7 +61,7 @@ struct ProUpsellContent: View {
                         busy = true
                         await pro.restore()
                         busy = false
-                        restoreMessage = pro.isPro ? String(localized: "已恢复 Pro 会员") : String(localized: "未找到可恢复的购买")
+                        restoreMessage = restoreResultMessage
                         showRestoreAlert = true
                     }
                 }
@@ -79,9 +79,9 @@ struct ProUpsellContent: View {
         } message: { Text(restoreMessage) }
         .onAppear { Task { await reloadProducts(); await pro.refresh() } }
         .task {
-            if pro.isPro { onPurchased() }
+            if pro.isCrossPlatformPro { onPurchased() }
         }
-        .onChange(of: pro.isPro) { isPro in if isPro { onPurchased() } }
+        .onChange(of: pro.isCrossPlatformPro) { isPro in if isPro { onPurchased() } }
     }
 
     /// 加载产品；加载后仍为空标记 loadFailed，供付费墙显示「重试」而非永久转圈。
@@ -93,7 +93,20 @@ struct ProUpsellContent: View {
 
     @ViewBuilder
     private var accountRow: some View {
-        if let acc = auth.account {
+        if pro.needsEmailSync && !auth.hasEmailAccount {
+            Button { showLogin = true } label: {
+                Text("登录邮箱同步 Pro").font(.caption.weight(.semibold))
+            }
+            Text("已检测到购买，请登录邮箱完成跨平台同步。")
+                .font(.caption2)
+                .foregroundColor(AppTheme.mutedForeground)
+                .multilineTextAlignment(.center)
+        } else if pro.needsEmailSync {
+            Text("已检测到购买，本机已解锁；跨平台同步等待 Apple 验证接口。")
+                .font(.caption)
+                .foregroundColor(AppTheme.mutedForeground)
+                .multilineTextAlignment(.center)
+        } else if let acc = auth.account {
             Text("已登录：\(acc.displayName)")
                 .font(.caption).foregroundColor(AppTheme.mutedForeground)
         } else {
@@ -147,9 +160,26 @@ struct ProUpsellContent: View {
 
     @ViewBuilder
     private var buySection: some View {
-        if pro.isPro {
+        if pro.isCrossPlatformPro {
             Label("你已是 Pro 会员", systemImage: "checkmark.seal.fill")
                 .foregroundColor(.green).font(.headline)
+        } else if pro.storeKitLocalPro {
+            VStack(spacing: 10) {
+                Label("已检测到购买，请登录邮箱同步 Pro", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
+                    .foregroundColor(AppTheme.primary)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                Text(auth.hasEmailAccount
+                     ? String(localized: "本机已解锁；跨平台同步等待 Apple 验证接口。")
+                     : String(localized: "本机已解锁；登录邮箱后可完成跨平台同步。"))
+                    .font(.caption)
+                    .foregroundColor(AppTheme.mutedForeground)
+                    .multilineTextAlignment(.center)
+                if !auth.hasEmailAccount {
+                    Button("登录邮箱同步 Pro") { showLogin = true }
+                        .font(.subheadline.weight(.semibold))
+                }
+            }
         } else if pro.products.isEmpty {
             VStack(spacing: 10) {
                 if loadFailed {
@@ -158,6 +188,18 @@ struct ProUpsellContent: View {
                 } else {
                     ProgressView("加载订阅…")
                 }
+            }
+        } else if !auth.hasEmailAccount {
+            Button { showLogin = true } label: {
+                HStack {
+                    Image(systemName: "person.crop.circle.badge.checkmark")
+                    Text("登录邮箱后购买 Pro").fontWeight(.semibold)
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(AppTheme.primary)
+                .foregroundColor(.white)
+                .cornerRadius(14)
             }
         } else {
             VStack(spacing: 12) {
@@ -184,6 +226,19 @@ struct ProUpsellContent: View {
                 }
             }
         }
+    }
+
+    private var restoreResultMessage: String {
+        if pro.isCrossPlatformPro {
+            return String(localized: "已恢复 Pro 会员")
+        }
+        if pro.storeKitLocalPro {
+            if auth.hasEmailAccount {
+                return String(localized: "已恢复购买，本机已解锁；跨平台同步等待 Apple 验证接口。")
+            }
+            return String(localized: "已检测到购买，请登录邮箱同步 Pro")
+        }
+        return String(localized: "未找到可恢复的购买")
     }
 
     /// 订阅周期文案（满足 Apple 3.1.2：购买点附近明示订阅时长）。

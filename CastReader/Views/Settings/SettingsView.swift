@@ -151,12 +151,12 @@ struct SettingsView: View {
                 UpgradeView()
             } label: {
                 HStack {
-                    Image(systemName: pro.isPro ? "crown.fill" : "crown")
+                    Image(systemName: proIconName)
                         .foregroundColor(AppTheme.primary)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(LocalizedStringKey(pro.isPro ? "CastReader Pro" : "升级到 Pro")).font(.headline)
+                        Text(LocalizedStringKey(proTitle)).font(.headline)
                         if pro.isPro {
-                            Text(LocalizedStringKey(pro.serverPlan == "yearly" ? "年度订阅" : (pro.serverPlan == "monthly" ? "月度订阅" : "已解锁")))
+                            Text(LocalizedStringKey(proSubtitle))
                                 .font(.caption).foregroundColor(AppTheme.mutedForeground)
                         } else {
                             Text(String(format: String(localized: "今日朗读剩余 %d 分钟 · 解读 %d 次"), Int(quota.listenRemaining / 60), quota.explainRemaining))
@@ -168,7 +168,29 @@ struct SettingsView: View {
             if pro.isPro {
                 Button("管理订阅") { Task { await pro.openManageSubscriptions() } }
             }
+            if pro.needsEmailSync && !auth.hasEmailAccount {
+                Button("登录邮箱同步 Pro") { showLogin = true }
+            }
         }
+    }
+
+    private var proIconName: String {
+        if pro.needsEmailSync { return "exclamationmark.seal.fill" }
+        return pro.isPro ? "crown.fill" : "crown"
+    }
+
+    private var proTitle: String {
+        pro.isPro ? "CastReader Pro" : "升级到 Pro"
+    }
+
+    private var proSubtitle: String {
+        if pro.isCrossPlatformPro {
+            return pro.serverPlan == "yearly" ? "年度订阅" : (pro.serverPlan == "monthly" ? "月度订阅" : "已解锁")
+        }
+        if pro.needsEmailSync {
+            return auth.hasEmailAccount ? "本机已解锁，跨平台同步待完成" : "已检测到购买，请登录邮箱同步 Pro"
+        }
+        return "已解锁"
     }
 
     // MARK: 文库（历史记录入口；从底部 Tab 下沉到设置）
