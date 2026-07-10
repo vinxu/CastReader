@@ -27,6 +27,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     @Published var currentBookTitle: String?
     @Published var currentChapterTitle: String?
     @Published var currentCoverUrl: String?
+    @Published var currentCaption: String?
     private var currentCoverImage: UIImage?   // 本地封面（Now Playing artwork）
 
     // MARK: - Private Properties
@@ -240,9 +241,14 @@ class AudioPlayerService: NSObject, ObservableObject {
             nowPlayingInfo[MPMediaItemPropertyTitle] = bookTitle
         }
 
-        // Artist/Album - use book title as album
+        // Artist/Album - show the current spoken caption on the lock screen.
+        // iOS renders this as the secondary line in the system Now Playing card.
         if let bookTitle = currentBookTitle {
             nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = bookTitle
+        }
+        if let caption = currentCaption, !caption.isEmpty {
+            nowPlayingInfo[MPMediaItemPropertyArtist] = caption
+        } else {
             nowPlayingInfo[MPMediaItemPropertyArtist] = "CastReader"
         }
 
@@ -301,11 +307,21 @@ class AudioPlayerService: NSObject, ObservableObject {
     // MARK: - Public Methods
 
     func setBook(id: String, title: String, chapterTitle: String?, coverUrl: String?) {
+        if currentBookId != id {
+            currentCaption = nil
+        }
         currentBookId = id
         currentBookTitle = title
         currentChapterTitle = chapterTitle
         currentCoverUrl = coverUrl
         currentCoverImage = Self.localCoverImage(forID: id)   // 本地封面（锁屏/控制中心 artwork）
+    }
+
+    func setNowPlayingCaption(_ caption: String?) {
+        let cleaned = Self.cleanCaption(caption)
+        guard cleaned != currentCaption else { return }
+        currentCaption = cleaned
+        updateNowPlayingInfo()
     }
 
     func clearBook() {
@@ -314,6 +330,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentBookTitle = nil
         currentChapterTitle = nil
         currentCoverUrl = nil
+        currentCaption = nil
         currentCoverImage = nil
         segmentsQueue.removeAll()
         currentSegmentIndex = 0
@@ -327,6 +344,19 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentSegmentIndex = 0
         moreSegmentsExpected = false
         waitingForNextSegment = false
+    }
+
+    private static func cleanCaption(_ caption: String?) -> String? {
+        guard let caption else { return nil }
+        let cleaned = caption
+            .replacingOccurrences(of: "\n", with: " ")
+            .split(whereSeparator: { $0.isWhitespace })
+            .joined(separator: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return nil }
+        let maxCount = 120
+        if cleaned.count <= maxCount { return cleaned }
+        return String(cleaned.prefix(maxCount)).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
     }
 
     func loadSegment(_ segment: AudioSegment) {

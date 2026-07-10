@@ -80,11 +80,13 @@ final class ReadAloudViewModel: ObservableObject {
     private var lastSegmentMaxTime: Double = 0
     private var graceSeconds: Double = 0
     private(set) var isActive = false
+    private var lastNowPlayingCaption: String?
 
     private var playbackBookID: String?
     private var playbackTitle: String?
     private var playbackChapterTitle: String?
     private var playbackCoverURL: String?
+    var onDocumentFinished: (() -> Void)?
 
     init(document: ReadingDocument) {
         self.document = document
@@ -115,7 +117,7 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func recomputeReadableIndices() {
         readableIndices = paras.enumerated()
-            .filter { $0.element.type.isReadable && !$0.element.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .filter { $0.element.type.isReadable && SpeechTextSanitizer.containsSpeakableContent($0.element.text) }
             .map { $0.offset }
     }
 
@@ -214,6 +216,8 @@ final class ReadAloudViewModel: ObservableObject {
         Task { await TTSService.shared.cancelCurrentRequest() }
         audio.moreSegmentsExpected = false
         audio.pause()
+        audio.setNowPlayingCaption(nil)
+        lastNowPlayingCaption = nil
         // 清朗读高亮状态，避免切到解读后残留（web 源 DOM 另由 setActive→clearOverlay 清）
         highlightRange = nil
         photoHighlightWordIndex = nil
@@ -311,7 +315,6 @@ final class ReadAloudViewModel: ObservableObject {
         isFinished = false
         generationTask?.cancel()
         clearPrefetch()
-        Task { await TTSService.shared.cancelCurrentRequest() }
 
         audio.clearQueue()
         audio.moreSegmentsExpected = false
@@ -394,7 +397,6 @@ final class ReadAloudViewModel: ObservableObject {
         isFinished = false   // 开始播放某段 → 未完成
         generationTask?.cancel()
         clearPrefetch()   // 重新生成某段 → 作废旧预取
-        Task { await TTSService.shared.cancelCurrentRequest() }
 
         audio.clearQueue()
         audio.moreSegmentsExpected = true
@@ -415,14 +417,19 @@ final class ReadAloudViewModel: ObservableObject {
         generationTask = Task { [weak self] in
             guard let self = self else { return }
             do {
+                // 顺序很重要：自动翻页后会立刻启动下一页 TTS。这里不能在外层丢一个
+                // fire-and-forget cancel，否则它可能晚于新请求执行，把下一页请求取消掉。
+                await TTSService.shared.cancelCurrentRequest()
+                try Task.checkCancellation()
+                NSLog("CRDBG generate request begin para=%d", index)
                 try await TTSService.shared.generateTTSForParagraph(
                     paragraphIndex: index,
-                    text: para.text,
+                    text: SpeechTextSanitizer.sanitizedForTTS(para.text),
                     voice: voice,
                     speed: 1.0,                       // 1.0 生成，播放用 playbackRate
                     language: self.docLanguage
                 ) { [weak self] segment in
-                    await self?.appendSegment(segment, paragraph: index)
+                    self?.appendSegment(segment, paragraph: index)
                 }
                 await MainActor.run {
                     self.audio.moreSegmentsExpected = false
@@ -431,6 +438,8 @@ final class ReadAloudViewModel: ObservableObject {
                 await self.preloadNext(after: index)
             } catch is CancellationError {
                 // 切段取消，忽略
+            } catch TTSError.cancelled {
+                NSLog("CRDBG generate request cancelled para=%d", index)
             } catch {
                 await MainActor.run {
                     self.audio.moreSegmentsExpected = false
@@ -477,7 +486,11 @@ final class ReadAloudViewModel: ObservableObject {
             var collected: [AudioSegment] = []
             do {
                 try await TTSService.shared.generateTTSForParagraph(
-                    paragraphIndex: nextIndex, text: para.text, voice: voice, speed: 1.0, language: lang
+                    paragraphIndex: nextIndex,
+                    text: SpeechTextSanitizer.sanitizedForTTS(para.text),
+                    voice: voice,
+                    speed: 1.0,
+                    language: lang
                 ) { segment in
                     collected.append(segment)
                 }
@@ -550,6 +563,8 @@ final class ReadAloudViewModel: ObservableObject {
         guard nextPos < readableIndices.count else {
             status = .ready
             isFinished = true
+            NSLog("CRDBG read document finished para=%d readable=%d", currentParagraphIndex, readableIndices.count)
+            onDocumentFinished?()
             return
         }
         // 段落边界做额度闸门（“读完本篇”自然边界）
@@ -604,6 +619,96 @@ final class ReadAloudViewModel: ObservableObject {
         guard isActive else { return }
         accountListen(t)
         updateHighlight(t)
+        updateNowPlayingCaption(t)
+    }
+
+    private func updateNowPlayingCaption(_ t: Double) {
+        guard let seg = audio.currentSegment, seg.paragraphIndex == currentParagraphIndex else { return }
+        let caption = Self.caption(for: seg, at: t, duration: audio.duration)
+        guard caption != lastNowPlayingCaption else { return }
+        lastNowPlayingCaption = caption
+        audio.setNowPlayingCaption(caption)
+    }
+
+    private static func caption(for segment: AudioSegment, at time: Double, duration: Double) -> String {
+        let text = segment.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return "" }
+        if !segment.timestamps.isEmpty,
+           let word = currentTimestampWord(in: segment, at: time),
+           let sentence = sentence(containing: word.word, in: text) {
+            return sentence
+        }
+        let effectiveDuration = duration > 0.01 ? duration : segment.duration
+        if let sentence = sentenceByProgress(in: text, time: time, duration: effectiveDuration) {
+            return sentence
+        }
+        return text
+    }
+
+    private static func currentTimestampWord(in segment: AudioSegment, at time: Double) -> TTSTimestamp? {
+        var current: TTSTimestamp?
+        for ts in segment.timestamps {
+            if time + 0.02 >= ts.startTime { current = ts } else { break }
+        }
+        return current ?? segment.timestamps.first
+    }
+
+    private static func sentence(containing word: String, in text: String) -> String? {
+        let ranges = sentenceRanges(in: text)
+        guard !ranges.isEmpty else { return nil }
+        let ns = text as NSString
+        let normalizedWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !normalizedWord.isEmpty {
+            for range in ranges {
+                let found = ns.range(of: normalizedWord, options: [.caseInsensitive], range: range)
+                if found.location != NSNotFound {
+                    return ns.substring(with: range).trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+            }
+        }
+        return ns.substring(with: ranges[0]).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func sentenceByProgress(in text: String, time: Double, duration: Double) -> String? {
+        let ranges = sentenceRanges(in: text)
+        guard !ranges.isEmpty else { return nil }
+        guard duration > 0.01 else {
+            return (text as NSString).substring(with: ranges[0]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let ns = text as NSString
+        let target = Int(min(1, max(0, time / duration)) * Double(ns.length))
+        for range in ranges where target < range.location + range.length {
+            return ns.substring(with: range).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return ns.substring(with: ranges.last!).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func sentenceRanges(in text: String) -> [NSRange] {
+        let ns = text as NSString
+        guard ns.length > 0 else { return [] }
+        let chars = Array(text)
+        var ranges: [NSRange] = []
+        var start = 0
+        func appendRange(end: Int) {
+            guard end > start else { start = end; return }
+            let raw = String(chars[start..<end])
+            let leading = raw.prefix { $0.isWhitespace || $0.isNewline }.count
+            let trailing = raw.reversed().prefix { $0.isWhitespace || $0.isNewline }.count
+            let location = start + leading
+            let length = max(0, end - trailing - location)
+            if length > 0 { ranges.append(NSRange(location: location, length: length)) }
+            start = end
+        }
+        for i in chars.indices {
+            var shouldCut = "。！？!?；;\n".contains(chars[i])
+            if chars[i] == "." {
+                let next = i + 1 < chars.count ? chars[i + 1] : " "
+                shouldCut = next.isWhitespace || next.isNewline
+            }
+            if shouldCut { appendRange(end: i + 1) }
+        }
+        if start < chars.count { appendRange(end: chars.count) }
+        return ranges.isEmpty ? [NSRange(location: 0, length: ns.length)] : ranges
     }
 
     private func updateHighlight(_ t: Double) {

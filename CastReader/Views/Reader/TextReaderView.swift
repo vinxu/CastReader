@@ -45,6 +45,7 @@ struct TextReaderView: View {
     @ObservedObject var readVM: ReadAloudViewModel
     @ObservedObject var explainVM: ExplainViewModel
     let mode: ReaderMode
+    let refocusToken: Int
 
     @State private var registry = TextViewRegistry()
 
@@ -65,6 +66,27 @@ struct TextReaderView: View {
             .onChange(of: explainVM.scrollTarget) { target in
                 guard mode == .explain, target >= 0 else { return }
                 withAnimation(.easeInOut(duration: 0.45)) { proxy.scrollTo(target, anchor: UnitPoint(x: 0.5, y: 0.35)) }
+            }
+            .onChange(of: refocusToken) { _ in
+                refocus(proxy)
+            }
+        }
+    }
+
+    private func refocus(_ proxy: ScrollViewProxy) {
+        switch mode {
+        case .read:
+            guard readVM.autoScrollEnabled, readVM.currentParagraphIndex >= 0 else { return }
+            ReaderRunLog.write("TEXT refocus read para=\(readVM.currentParagraphIndex) token=\(refocusToken)")
+            withAnimation(.easeInOut(duration: 0.35)) {
+                proxy.scrollTo(readVM.currentParagraphIndex, anchor: UnitPoint(x: 0.5, y: 0.30))
+            }
+        case .explain:
+            let target = explainVM.activeMarks.last?.paragraphIndex ?? explainVM.scrollTarget
+            guard target >= 0 else { return }
+            ReaderRunLog.write("TEXT refocus explain para=\(target) token=\(refocusToken)")
+            withAnimation(.easeInOut(duration: 0.45)) {
+                proxy.scrollTo(target, anchor: UnitPoint(x: 0.5, y: 0.35))
             }
         }
     }

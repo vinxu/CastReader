@@ -30,6 +30,8 @@ final class PlayerCoordinator: ObservableObject {
     /// 打开文档：新文档建会话（先停掉旧会话播放），同文档复用；展开完整阅读器；autoplay 时立即开播（剪贴板快捷入口用）。
     /// scenario：从首页场景入口进入时的 content_type（注入 ExplainViewModel 驱动「划什么/怎么批」+ 深度预设）；nil = 通用。
     func open(_ document: ReadingDocument, mode: ReaderMode = .read, autoplay: Bool = false, scenario: String? = nil) {
+        KindlePlaybackCenter.shared.close()
+
         if session?.id != document.id {
             session?.readVM.stop()
             session?.explainVM.stop()

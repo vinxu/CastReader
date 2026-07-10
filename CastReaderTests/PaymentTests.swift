@@ -21,6 +21,7 @@ final class PaymentTests: XCTestCase {
         session.disableDialogs = true     // 购买不弹确认框，自动成交
         session.clearTransactions()
         await MainActor.run {
+            AuthService.shared.signOut()
             ProManager.shared.debugForcePro = false      // 关模拟解锁 → isPro 走真实权益
             ProManager.shared.clearServerEntitlement()   // 隔离 serverPro，避免 refresh 网络维度干扰断言
             QuotaManager.shared.resetForTesting()
@@ -32,9 +33,22 @@ final class PaymentTests: XCTestCase {
         session?.clearTransactions()
         session = nil
         await MainActor.run {
+            AuthService.shared.signOut()
             ProManager.shared.debugForcePro = true       // 恢复开发期解锁
             QuotaManager.shared.resetForTesting()
         }
+    }
+
+    @MainActor
+    private func signInPurchaseAccount() {
+        AuthService.shared.applyAccount(UserAccount(
+            id: "storekit-test-provider-id",
+            email: "storekit-test@example.com",
+            name: "StoreKit Test",
+            pictureURL: nil,
+            provider: "google",
+            backendUserId: "storekit-test-backend-id"
+        ))
     }
 
     // MARK: 0. 服务端 Pro 状态响应
@@ -133,7 +147,21 @@ final class PaymentTests: XCTestCase {
     // MARK: 3. 购买解锁 Pro
 
     @MainActor
+    func testPurchase_requiresEmail() async throws {
+        let products = try await Product.products(for: [ProManager.monthlyID])
+        let product = try XCTUnwrap(products.first, "未加载月度产品")
+        XCTAssertFalse(AuthService.shared.hasEmailAccount, "测试起点应为未登录邮箱")
+
+        let unlocked = await ProManager.shared.purchase(product)
+
+        XCTAssertFalse(unlocked, "未登录邮箱时不允许发起新购买")
+        XCTAssertFalse(ProManager.shared.storeKitPro, "购买被拦截时不应产生本地 StoreKit 权益")
+        XCTAssertFalse(ProManager.shared.isPro, "未登录且未购买时不是 Pro")
+    }
+
+    @MainActor
     func testPurchase_unlocksPro() async throws {
+        signInPurchaseAccount()
         let products = try await Product.products(for: [ProManager.monthlyID])
         let product = try XCTUnwrap(products.first, "未加载月度产品")
         let unlocked = await ProManager.shared.purchase(product)
@@ -173,6 +201,7 @@ final class PaymentTests: XCTestCase {
 
     @MainActor
     func testRestorePurchase() async throws {
+        signInPurchaseAccount()
         let products = try await Product.products(for: [ProManager.yearlyID])
         let product = try XCTUnwrap(products.first)
         _ = await ProManager.shared.purchase(product)
@@ -185,6 +214,7 @@ final class PaymentTests: XCTestCase {
 
     @MainActor
     func testExpiry_revertsToFree() async throws {
+        signInPurchaseAccount()
         let products = try await Product.products(for: [ProManager.monthlyID])
         let product = try XCTUnwrap(products.first)
         _ = await ProManager.shared.purchase(product)

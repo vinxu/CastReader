@@ -270,7 +270,11 @@ actor APIService {
     func generateTTS(text: String, voice: String = Constants.TTS.defaultVoice, speed: Double = Constants.TTS.defaultSpeed, language: String = Constants.TTS.defaultLanguage) async throws -> TTSResponse {
         // 节点路由（对齐扩展）：大陆时区→CN 节点，其他→US；CN 失败回退 US。
         let maxLength = 5000
-        let inputText = text.count > maxLength ? String(text.prefix(maxLength)) : text
+        let sanitized = SpeechTextSanitizer.sanitizedForTTS(text)
+        guard SpeechTextSanitizer.containsSpeakableContent(sanitized) else {
+            throw APIError.serverError("No speakable text for TTS")
+        }
+        let inputText = sanitized.count > maxLength ? String(sanitized.prefix(maxLength)) : sanitized
         let ttsRequest = TTSRequest(input: inputText, voice: voice, speed: speed, language: language)
         let bodyData = try JSONEncoder().encode(ttsRequest)
 

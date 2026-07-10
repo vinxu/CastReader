@@ -40,3 +40,52 @@ enum LanguageDetector {
         return "en"
     }
 }
+
+enum SpeechTextSanitizer {
+    /// Text sent to TTS must contain speakable content, not Markdown markers or visual separators.
+    static func sanitizedForTTS(_ text: String) -> String {
+        var s = text
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\u{00A0}", with: " ")
+
+        // Keep arithmetic multiplication readable, but remove standalone Markdown/bullet/star ornaments.
+        s = s.replacingOccurrences(
+            of: #"(?<=\d)\s*[*＊﹡×]\s*(?=\d)"#,
+            with: " times ",
+            options: .regularExpression
+        )
+        s = s.replacingOccurrences(
+            of: #"(?m)^\s*[*＊﹡⁕✱✲✳✴✶✷✸✹✺✻✼✽✾✿❀❁❂❃❋•◦▪▫‣⁃]\s+"#,
+            with: "",
+            options: .regularExpression
+        )
+        s = s.replacingOccurrences(
+            of: #"[*＊﹡⁕✱✲✳✴✶✷✸✹✺✻✼✽✾✿❀❁❂❃❋_`~#]+"#,
+            with: " ",
+            options: .regularExpression
+        )
+        s = s.replacingOccurrences(
+            of: #"[•◦▪▫‣⁃]+"#,
+            with: " ",
+            options: .regularExpression
+        )
+        s = s.replacingOccurrences(
+            of: #"[\s\n]+"#,
+            with: " ",
+            options: .regularExpression
+        )
+        return s.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func containsSpeakableContent(_ text: String) -> Bool {
+        sanitizedForTTS(text).unicodeScalars.contains(where: isSpeakableScalar)
+    }
+
+    private static func isSpeakableScalar(_ scalar: UnicodeScalar) -> Bool {
+        let v = scalar.value
+        if (0x4E00...0x9FFF).contains(v) || (0x3400...0x4DBF).contains(v) { return true }
+        if (0x3040...0x309F).contains(v) || (0x30A0...0x30FF).contains(v) { return true }
+        if (0xAC00...0xD7AF).contains(v) { return true }
+        return scalar.properties.isAlphabetic || CharacterSet.decimalDigits.contains(scalar)
+    }
+}

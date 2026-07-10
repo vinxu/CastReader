@@ -15,6 +15,7 @@ struct PhotoReaderCanvas: UIViewRepresentable {
     @ObservedObject var readVM: ReadAloudViewModel
     @ObservedObject var explainVM: ExplainViewModel
     let mode: ReaderMode
+    let refocusToken: Int
 
     func makeCoordinator() -> Coordinator {
         Coordinator(document: document, readVM: readVM, explainVM: explainVM, mode: mode)
@@ -48,6 +49,7 @@ struct PhotoReaderCanvas: UIViewRepresentable {
     func updateUIView(_ scroll: UIScrollView, context: Context) {
         context.coordinator.update(mode: mode)
         context.coordinator.relayoutIfNeeded()
+        context.coordinator.refocusIfNeeded(refocusToken)
     }
 
     @MainActor
@@ -61,6 +63,7 @@ struct PhotoReaderCanvas: UIViewRepresentable {
         private var host: UIHostingController<PhotoContent>?
         private var cancellables = Set<AnyCancellable>()
         private var laidOutWidth: CGFloat = 0
+        private var lastRefocusToken = 0
 
         init(document: ReadingDocument, readVM: ReadAloudViewModel, explainVM: ExplainViewModel, mode: ReaderMode) {
             self.document = document
@@ -90,6 +93,25 @@ struct PhotoReaderCanvas: UIViewRepresentable {
             guard newMode != mode else { return }
             mode = newMode
             host?.rootView = PhotoContent(document: document, readVM: readVM, explainVM: explainVM, mode: newMode)
+        }
+
+        func refocusIfNeeded(_ token: Int) {
+            guard token != lastRefocusToken else { return }
+            lastRefocusToken = token
+            relayoutIfNeeded()
+            switch mode {
+            case .read:
+                ReaderRunLog.write("PHOTO refocus read para=\(readVM.currentParagraphIndex) word=\(readVM.photoHighlightWordIndex.map(String.init) ?? "nil") token=\(token)")
+                scrollToCurrentReadAnchor()
+            case .explain:
+                if let mark = explainVM.activeMarks.last {
+                    ReaderRunLog.write("PHOTO refocus explain mark para=\(mark.paragraphIndex) token=\(token)")
+                    scrollToMark(mark)
+                } else if explainVM.scrollTarget >= 0 {
+                    ReaderRunLog.write("PHOTO refocus explain para=\(explainVM.scrollTarget) token=\(token)")
+                    scrollToParagraph(explainVM.scrollTarget)
+                }
+            }
         }
 
         private var imageAspect: CGFloat {
@@ -150,6 +172,26 @@ struct PhotoReaderCanvas: UIViewRepresentable {
             scrollToContent(resolver.rectsForCharRange(paragraphIndex: mark.paragraphIndex, range: mark.charRange))
         }
 
+        private func scrollToCurrentReadAnchor() {
+            guard readVM.currentParagraphIndex >= 0 else { return }
+            scrollToWord(paragraph: readVM.currentParagraphIndex, word: readVM.photoHighlightWordIndex)
+            if readVM.photoHighlightWordIndex == nil {
+                scrollToParagraph(readVM.currentParagraphIndex)
+            }
+        }
+
+        private func scrollToParagraph(_ paragraph: Int) {
+            guard let host, paragraph >= 0, paragraph < document.paragraphs.count else { return }
+            let para = document.paragraphs[paragraph]
+            let resolver = PhotoAnchorResolver(document: document, fitted: host.view.bounds)
+            if !para.words.isEmpty {
+                scrollToContent(resolver.rectsForWord(paragraphIndex: paragraph, wordIndex: 0))
+            } else {
+                let end = max(1, min(para.text.count, 1))
+                scrollToContent(resolver.rectsForCharRange(paragraphIndex: paragraph, range: 0..<end))
+            }
+        }
+
         /// 把内容坐标矩形（未缩放）滚到可见（含上下留白；已可见则 scrollRectToVisible 自动不滚，避免抖动）。
         private func scrollToContent(_ rects: [CGRect]) {
             guard let scroll, !rects.isEmpty else { return }
@@ -158,6 +200,7 @@ struct PhotoReaderCanvas: UIViewRepresentable {
             let z = scroll.zoomScale
             let target = CGRect(x: union.minX * z, y: union.minY * z - 100,
                                 width: max(1, union.width * z), height: union.height * z + 200)
+            ReaderRunLog.write("PHOTO scroll targetY=\(Int(target.minY)) zoom=\(String(format: "%.2f", z))")
             scroll.scrollRectToVisible(target, animated: true)
         }
     }

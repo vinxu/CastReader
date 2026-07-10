@@ -10,6 +10,12 @@
             "state" : "new",
             "value" : "CastReader"
           }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CastReader"
+          }
         }
       }
     },
@@ -19,8 +25,8 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Capture text from books, documents, or screens. CastReader recognizes it on your device, then reads it aloud or generates an AI explanation with handwritten-style notes. Photos are recognized on-device and never uploaded."
+            "state" : "translated",
+            "value" : "Capture text from books, documents, or screens. CastReader recognizes it on your device, then reads it aloud with synchronized highlighting or generates an AI explanation with handwritten-style notes. Photos are recognized on-device and are not uploaded."
           }
         },
         "zh-Hans" : {
@@ -37,8 +43,8 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Pick a photo containing text. CastReader recognizes it on your device, then reads it aloud or generates an AI explanation with handwritten-style notes. Photos are never uploaded."
+            "state" : "translated",
+            "value" : "Choose photos that contain text. CastReader recognizes them on your device, then reads them aloud with synchronized highlighting or generates an AI explanation with handwritten-style notes. Photos are recognized on-device and are not uploaded."
           }
         },
         "zh-Hans" : {

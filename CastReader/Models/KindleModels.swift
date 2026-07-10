@@ -41,7 +41,7 @@ struct KindleBook: Identifiable, Codable, Equatable {
     }
 
     var effectiveReaderURL: String {
-        lastReadURL?.isEmpty == false ? (lastReadURL ?? readerURL) : readerURL
+        KindleBookValidator.repairedReaderURL(for: self, preferLastRead: true) ?? readerURL
     }
 
     var isLikelyLibraryBook: Bool {
@@ -70,7 +70,7 @@ enum KindleBookValidator {
             return false
         }
 
-        let rawURL = book.readerURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawURL = repairedReaderURL(for: book, preferLastRead: false) ?? book.readerURL.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !rawURL.isEmpty else { return false }
 
         let lowerURL = rawURL.lowercased()
@@ -86,9 +86,24 @@ enum KindleBookValidator {
     }
 
     static func containsASIN(_ raw: String?) -> Bool {
-        guard let raw, !raw.isEmpty else { return false }
-        return raw.range(of: #"(?i)(^|[?&=/:\s-])([A-Z0-9]{10})(?=$|[&#/\s-])"#, options: .regularExpression) != nil
-            || raw.range(of: #"(?i)[?&]asin=([A-Z0-9]{10})(?=$|[&#])"#, options: .regularExpression) != nil
+        asinValue(in: raw) != nil
+    }
+
+    static func asinValue(in raw: String?) -> String? {
+        guard let raw, !raw.isEmpty else { return nil }
+        let patterns = [
+            #"(?i)[?&]asin=([A-Z0-9]{10})(?=$|[&#])"#,
+            #"(?i)(^|[?&=/:\s-])([A-Z0-9]{10})(?=$|[&#/\s-])"#
+        ]
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
+            let range = NSRange(raw.startIndex..<raw.endIndex, in: raw)
+            guard let match = regex.firstMatch(in: raw, range: range) else { continue }
+            let group = match.numberOfRanges > 2 ? 2 : 1
+            guard let swiftRange = Range(match.range(at: group), in: raw) else { continue }
+            return String(raw[swiftRange]).uppercased()
+        }
+        return nil
     }
 
     static func isKindleReaderPath(_ raw: String) -> Bool {
@@ -96,6 +111,51 @@ enum KindleBookValidator {
         let host = url.host?.lowercased() ?? ""
         guard host.contains("read.amazon.") else { return false }
         return url.path.lowercased().contains("/reader/")
+    }
+
+    static func repairedReaderURL(for book: KindleBook, preferLastRead: Bool) -> String? {
+        let candidates = preferLastRead ? [book.lastReadURL, Optional(book.readerURL)] : [Optional(book.readerURL), book.lastReadURL]
+        for candidate in candidates {
+            if let usable = usableReaderURL(candidate, fallbackASIN: book.asin ?? book.id) {
+                return usable
+            }
+        }
+        if let asin = asinValue(in: book.asin) ?? asinValue(in: book.id) {
+            return canonicalReaderURL(asin: asin)
+        }
+        return nil
+    }
+
+    static func usableReaderURL(_ raw: String?, fallbackASIN: String? = nil) -> String? {
+        guard let raw else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        if isBareKindleRoot(trimmed), let asin = asinValue(in: fallbackASIN) {
+            return canonicalReaderURL(asin: asin)
+        }
+
+        if let asin = asinValue(in: trimmed) {
+            return canonicalReaderURL(asin: asin)
+        }
+
+        if isKindleReaderPath(trimmed) {
+            return trimmed
+        }
+
+        return nil
+    }
+
+    static func canonicalReaderURL(asin: String) -> String {
+        "https://read.amazon.com/?asin=\(asin.uppercased())&ref_=kwl_kr_iv_rec_1"
+    }
+
+    private static func isBareKindleRoot(_ raw: String) -> Bool {
+        guard let url = URL(string: raw) else { return false }
+        let host = url.host?.lowercased() ?? ""
+        guard host.contains("read.amazon.") else { return false }
+        let path = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        return path.isEmpty && (url.query?.isEmpty ?? true)
     }
 }
 

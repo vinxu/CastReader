@@ -29,12 +29,7 @@ struct MarkInkView: View {
     private var wMul: CGFloat { HandwrittenMark.weightMultiplier(weight) }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            shapeView
-            if action == "number", let n = n {
-                numberBadge(n)
-            }
-        }
+        shapeView
         .allowsHitTesting(false)
         .onAppear {
             guard progress == 0 else { return }   // 复用/重绘时不重播已画完的 mark
@@ -71,26 +66,21 @@ struct MarkInkView: View {
             MarkPathShape(absolutePath: HandwrittenMark.starPath(near: rects, seed: seed))
                 .trim(from: 0, to: progress)
                 .stroke(inkColor.opacity(0.9), style: StrokeStyle(lineWidth: 2.2 * wMul, lineCap: .round, lineJoin: .round))
-        case "circle", "number":
+        case "circle":
             MarkPathShape(absolutePath: HandwrittenMark.circlePath(around: rects, seed: seed))
                 .trim(from: 0, to: progress)
                 .stroke(inkColor.opacity(0.85),
                         style: StrokeStyle(lineWidth: 2.4 * wMul, lineCap: .round, lineJoin: .round))
+        case "number":
+            MarkPathShape(absolutePath: HandwrittenMark.numberPath(near: rects, n: n ?? 1, seed: seed))
+                .trim(from: 0, to: progress)
+                .stroke(inkColor.opacity(0.9),
+                        style: StrokeStyle(lineWidth: 2.5 * wMul, lineCap: .round, lineJoin: .round))
         default:
             MarkPathShape(absolutePath: HandwrittenMark.underlinePath(over: rects, seed: seed))
                 .trim(from: 0, to: progress)
                 .stroke(inkColor.opacity(0.85), style: StrokeStyle(lineWidth: 2.2 * wMul, lineCap: .round))
         }
-    }
-
-    private func numberBadge(_ n: Int) -> some View {
-        let ring = HandwrittenMark.numberRingRect(near: rects)
-        return Text("\(n)")
-            .font(.system(size: ring.height * 0.55, weight: .bold, design: .rounded))
-            .foregroundColor(inkColor)
-            .frame(width: ring.width, height: ring.height)
-            .position(x: ring.midX, y: ring.midY)
-            .opacity(Double(progress))
     }
 
     private var lineHeight: CGFloat {

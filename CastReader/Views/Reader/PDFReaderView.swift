@@ -16,6 +16,7 @@ struct PDFReaderView: UIViewRepresentable {
     @ObservedObject var readVM: ReadAloudViewModel
     @ObservedObject var explainVM: ExplainViewModel
     let mode: ReaderMode
+    let refocusToken: Int
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -40,6 +41,7 @@ struct PDFReaderView: UIViewRepresentable {
 
     func updateUIView(_ v: PDFView, context: Context) {
         context.coordinator.setMode(mode)
+        context.coordinator.refocusIfNeeded(refocusToken, mode: mode)
     }
 
     @MainActor
@@ -63,6 +65,7 @@ struct PDFReaderView: UIViewRepresentable {
         private var wordRects: [CGRect] = []
         private var wordRectsPara = -1
         private var wordSearchLoc = 0           // 句内 findString 顺序游标（page.string 绝对字符位置）
+        private var lastRefocusToken = 0
 
         private func debugLog(_ format: String, _ args: CVarArg...) {
             #if DEBUG
@@ -75,6 +78,35 @@ struct PDFReaderView: UIViewRepresentable {
             guard mode != lastMode else { return }
             lastMode = mode
             if mode == .read { clearMarkAnnotations() } else { clearHighlights() }
+        }
+
+        func refocusIfNeeded(_ token: Int, mode: ReaderMode) {
+            guard token != lastRefocusToken else { return }
+            lastRefocusToken = token
+            refocus(mode: mode)
+        }
+
+        private func refocus(mode: ReaderMode) {
+            updatePdfScope()
+            switch mode {
+            case .read:
+                if let cmd = readVM?.pdfHighlight {
+                    ReaderRunLog.write("PDF refocus read word para=\(cmd.paragraphIndex) word=\(cmd.wordIndex)")
+                    highlightWord(cmd)
+                    if autoScroll { scrollToParagraph(cmd.paragraphIndex) }
+                } else if let idx = readVM?.currentParagraphIndex, idx >= 0 {
+                    ReaderRunLog.write("PDF refocus read para=\(idx)")
+                    highlight(idx)
+                }
+            case .explain:
+                let marks = explainVM?.activeMarks ?? []
+                showMarks(marks)
+                if let mark = marks.last, scrollToResolvedMark(mark) { return }
+                if let target = explainVM?.scrollTarget, target >= 0 {
+                    ReaderRunLog.write("PDF refocus explain para=\(target)")
+                    scrollToParagraph(target)
+                }
+            }
         }
 
         func attach(readVM: ReadAloudViewModel, explainVM: ExplainViewModel, doc: ReadingDocument) {
@@ -204,6 +236,35 @@ struct PDFReaderView: UIViewRepresentable {
             let viewRect = pv.convert(pageBounds, from: page)   // page 坐标 → PDFView 坐标
             let safe = pv.bounds.insetBy(dx: 0, dy: 60)         // 上下留 60pt 余量
             return !safe.contains(CGPoint(x: viewRect.midX, y: viewRect.midY))
+        }
+
+        private func scrollToResolvedMark(_ mark: ResolvedMark) -> Bool {
+            guard let pdfView, let pdfDoc = pdfView.document, let doc,
+                  mark.paragraphIndex >= 0, mark.paragraphIndex < doc.paragraphs.count else { return false }
+            let para = doc.paragraphs[mark.paragraphIndex]
+            guard let pageIdx = para.pdfPageIndex, let page = pdfDoc.page(at: pageIdx) else { return false }
+            guard let sel = pdfSelectionForMark(pdfDoc: pdfDoc, page: page, paragraph: para, charRange: mark.charRange) else {
+                return false
+            }
+            ReaderRunLog.write("PDF scroll mark para=\(mark.paragraphIndex) page=\(pageIdx)")
+            pdfView.go(to: sel)
+            return true
+        }
+
+        private func scrollToParagraph(_ idx: Int) {
+            guard let pdfView, let pdfDoc = pdfView.document, let doc,
+                  idx >= 0, idx < doc.paragraphs.count else { return }
+            let para = doc.paragraphs[idx]
+            guard let pageIdx = para.pdfPageIndex,
+                  let page = pdfDoc.page(at: pageIdx),
+                  let range = para.pdfRange,
+                  let pageText = page.string else { return }
+            let nsLength = (pageText as NSString).length
+            guard range.location >= 0, range.location < nsLength else { return }
+            let end = min(nsLength, range.location + max(1, min(range.length, 24)))
+            guard let sel = pdfDoc.selection(from: page, atCharacterIndex: range.location, to: page, atCharacterIndex: end) else { return }
+            ReaderRunLog.write("PDF scroll para=\(idx) page=\(pageIdx)")
+            pdfView.go(to: sel)
         }
 
         /// MarkAnchoring 给的是 `paragraph.text`（已去 PDF 硬换行/trim 后）的 Character range；
@@ -434,10 +495,15 @@ final class HandwrittenPDFAnnotation: PDFAnnotation {
             lineWidth = (local.map { $0.height }.max() ?? 18) * 0.85 * wMul
             alpha = 0.28
             context.setBlendMode(.multiply)
-        case "circle", "number":
+        case "circle":
             path = HandwrittenMark.circlePath(around: local, seed: markSeed)
-            stroke = (markAction == "number") ? inkColor : primaryColor
+            stroke = primaryColor
             lineWidth = 2.4 * wMul
+        case "number":
+            path = HandwrittenMark.numberPath(near: local, n: markN ?? 1, seed: markSeed)
+            stroke = inkColor
+            lineWidth = 2.5 * wMul
+            alpha = 0.9
         case "underline":
             path = HandwrittenMark.underlinePath(over: local, seed: markSeed)
             stroke = inkColor
@@ -468,21 +534,6 @@ final class HandwrittenPDFAnnotation: PDFAnnotation {
         context.setLineCap(.round)
         context.setLineJoin(.round)
         context.strokePath()
-
-        // 序号徽标：在翻转后的局部 y 下坐标系里直接画文字（正立）。
-        if markAction == "number", let n = markN {
-            context.setBlendMode(.normal)
-            let ring = HandwrittenMark.numberRingRect(near: local)
-            let attrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: ring.height * 0.55, weight: .bold),
-                .foregroundColor: inkColor
-            ]
-            let s = NSAttributedString(string: "\(n)", attributes: attrs)
-            let sz = s.size()
-            UIGraphicsPushContext(context)
-            s.draw(at: CGPoint(x: ring.midX - sz.width / 2, y: ring.midY - sz.height / 2))
-            UIGraphicsPopContext()
-        }
 
         context.restoreGState()
     }

@@ -68,11 +68,21 @@ final class ExplainViewModel: ObservableObject {
     private let pro = ProManager.shared
     private let quota = QuotaManager.shared
 
-    private struct PreparedBlock {
+    fileprivate struct PreparedBlock {
         let segments: [AudioSegment]
         let marks: [QuickreadEvent]     // at 已填
         let text: String
         let sentences: [String]         // 讲解文本按句切分（字幕逐句显示，按播放进度推进）
+    }
+
+    struct PrefetchedFirstBlock {
+        let jobId: String
+        let totalBlocks: Int
+        let outputLanguage: String
+        let textFingerprint: String
+        let previousSummary: String?
+        fileprivate let section0: QuickreadSection
+        fileprivate let block0: PreparedBlock
     }
 
     private var jobId: String = ""
@@ -95,6 +105,15 @@ final class ExplainViewModel: ObservableObject {
         #endif
     }
 
+    private func elapsedMs(since start: Date) -> Int {
+        max(0, Int(Date().timeIntervalSince(start) * 1000))
+    }
+
+    private func kindlePerfLog(_ message: String) {
+        guard doc.sourceKind == .kindle else { return }
+        KindleRunLog.write("KINDLE explain perf \(message)")
+    }
+
     // 快道（Fast-Lane）：快道占 block_0 秒开，质道吃剩余段、块顺延为 block_(idxBase+j)。idxBase=0 即未走快道（原单路）。
     private var idxBase = 0
     private var fastSection: QuickreadSection?
@@ -107,6 +126,7 @@ final class ExplainViewModel: ObservableObject {
     private var orchestrationTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
     private(set) var isActive = false
+    private var lastNowPlayingCaption: String?
 
     init(document: ReadingDocument) {
         self.document = document
@@ -175,6 +195,8 @@ final class ExplainViewModel: ObservableObject {
         clearPagePrefetch()
         audio.moreSegmentsExpected = false
         audio.pause()
+        audio.setNowPlayingCaption(nil)
+        lastNowPlayingCaption = nil
     }
 
     // MARK: - Start
@@ -224,16 +246,85 @@ final class ExplainViewModel: ObservableObject {
         }
     }
 
-    private func refreshAccessThenRetryStart() {
+    func startFromPrefetched(_ prefetched: PrefetchedFirstBlock) {
+        startFromPrefetched(prefetched, allowAccessRefresh: true)
+    }
+
+    private func startFromPrefetched(_ prefetched: PrefetchedFirstBlock, allowAccessRefresh: Bool) {
+        guard status == .idle || isErrorState else { return }
+        let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
+        if contentChars < minExplainChars {
+            status = .error(String(localized: "内容太短，无法解读，试试朗读"))
+            return
+        }
+        guard pro.isPro || quota.canStartExplain(isPro: pro.isPro) else {
+            if allowAccessRefresh {
+                refreshAccessThenRetryStart(prefetched: prefetched)
+                return
+            }
+            showPaywall = true
+            return
+        }
+        quota.noteExplainStarted(isPro: pro.isPro)
+        activate()
+        activeMarks = []
+        replayBlocks.removeAll()
+        preparingBlocks.removeAll()
+        prepared.removeAll()
+        marksByBlock.removeAll()
+        firedMarks.removeAll()
+        isReplayingCached = false
+        idxBase = 0
+        block0Claimed = true
+        fastSection = nil
+        forcedExplainLang = nil
+        planFailed = false
+        batchPrevSummary = prefetched.previousSummary
+        if [.text, .web, .epub, .kindle].contains(doc.sourceKind) {
+            pdfScopedParagraphs = nil
+            pdfBatchCursor = nil
+        }
+        jobId = prefetched.jobId
+        totalBlocks = max(1, prefetched.totalBlocks)
+        outputLanguage = prefetched.outputLanguage
+        section0 = prefetched.section0
+        currentBlockIndex = -1
+        scrollTarget = -1
+        applyPlaybackMetadata()
+        applySpeed()
+        status = .planning
+        stageText = String(localized: "继续讲解…")
+        debugLog("prefetched start job=%@ total=%d lang=%@ fp=%@",
+                 prefetched.jobId, prefetched.totalBlocks, prefetched.outputLanguage,
+                 String(prefetched.textFingerprint.prefix(24)))
+        kindlePerfLog("prefetched-start total=\(totalBlocks) chars=\(doc.fullText.count) paras=\(doc.paragraphs.count)")
+        enqueue(prefetched.block0, idx: 0)
+        if totalBlocks > 1 {
+            startBackgroundPrepare(block: 1, reason: "prefetched-start")
+        }
+    }
+
+    private func refreshAccessThenRetryStart(prefetched: PrefetchedFirstBlock? = nil) {
         stageText = String(localized: "正在同步会员状态…")
         Task { [weak self] in
             await ProManager.shared.refresh()
             await MainActor.run {
                 guard let self else { return }
                 self.stageText = ""
-                self.start(allowAccessRefresh: false)
+                if let prefetched {
+                    self.startFromPrefetched(prefetched, allowAccessRefresh: false)
+                } else {
+                    self.start(allowAccessRefresh: false)
+                }
             }
         }
+    }
+
+    func shouldDeferExternalPagePrefetchForCurrentBlock() -> Bool {
+        guard doc.sourceKind == .kindle, isActive, status.isActive else { return false }
+        guard currentBlockIndex >= 0 else { return true }
+        let next = currentBlockIndex + 1
+        return next < totalBlocks && prepared[next] == nil
     }
 
     private var isErrorState: Bool { if case .error = status { return true } else { return false } }
@@ -371,13 +462,19 @@ final class ExplainViewModel: ObservableObject {
             // 权威总块数取自 done 事件：block0 事件的 total_blocks 后端常发 0 占位（plan 尚未算完总数）。
             // 之前 app 误用 block0 的 0 → max(1,0)=1 → 只播首块就"完成"。对齐扩展：用 done 的值。
             await MainActor.run {
+                let oldTotal = self.totalBlocks
                 self.debugLog("explain DONE total_blocks=%d (block0 placeholder totalBlocks=%d)", done.total_blocks ?? -1, self.totalBlocks)
                 if let tb = done.total_blocks, self.idxBase + tb > self.totalBlocks {
                     self.totalBlocks = self.idxBase + tb   // 快道占 idxBase 块 + 质道 tb 块（漏加 idxBase 会丢质道最后一块）
+                    self.kindlePerfLog("plan-done total-update old=\(oldTotal) new=\(self.totalBlocks) current=\(self.currentBlockIndex)")
                     // done 晚于首块播完到达时会误判 .completed → 在此续播下一块。
                     if case .completed = self.status, self.currentBlockIndex + 1 < self.totalBlocks {
                         Task { await self.prepareAndEnqueue(block: self.currentBlockIndex + 1) }
                     }
+                }
+                let next = max(0, self.currentBlockIndex + 1)
+                if next < self.totalBlocks {
+                    self.startBackgroundPrepare(block: next, reason: "plan-done")
                 }
             }
         } catch {
@@ -426,54 +523,96 @@ final class ExplainViewModel: ObservableObject {
             // 快道没占（idxBase=0 / 快道失败）→ 质道占 block_0
             block0Claimed = true
             Task { await self.prepareAndEnqueue(block: 0) }
+            if totalBlocks > 1 {
+                startBackgroundPrepare(block: 1, reason: "plan-block0")
+            }
         } else {
             // 快道已占 block_0 → 后台预取质道首块 block_idxBase，消除块间 gap（播完 block_0 由 onBlockComplete 续接）
-            Task { [weak self] in
-                guard let self else { return }
-                if let pb = try? await self.prepareBlock(self.idxBase) {
-                    await MainActor.run { if self.prepared[self.idxBase] == nil { self.prepared[self.idxBase] = pb } }
-                }
-            }
+            startBackgroundPrepare(block: idxBase, reason: "plan-after-fastlane")
         }
     }
 
     // MARK: - 块准备与入队
 
     private func prepareAndEnqueue(block idx: Int) async {
+        let startedAt = Date()
+        let cachedAtStart = prepared[idx] != nil
+        kindlePerfLog("prepare-enqueue begin idx=\(idx) total=\(totalBlocks) cached=\(cachedAtStart ? "Y" : "N")")
+        if cachedAtStart {
+            kindlePerfLog("kindleExplainBlockPrefetch hit idx=\(idx) source=prepare-enqueue")
+        } else {
+            kindlePerfLog("kindleExplainBlockPrefetch fallback idx=\(idx) source=prepare-enqueue")
+        }
         do {
             let pb = try await prepareBlock(idx)
             await MainActor.run { self.enqueue(pb, idx: idx) }
+            kindlePerfLog("prepare-enqueue ready idx=\(idx) totalMs=\(elapsedMs(since: startedAt)) segs=\(pb.segments.count) text=\(pb.text.count)")
             // 预取下一块
             if idx + 1 < totalBlocks {
-                Task { [weak self] in
-                    if let pb2 = try? await self?.prepareBlock(idx + 1) {
-                        await MainActor.run { self?.prepared[idx + 1] = pb2 }
-                    }
-                }
+                startBackgroundPrepare(block: idx + 1, reason: "after-enqueue-\(idx)")
             }
         } catch is CancellationError {
             await MainActor.run { self.isPreparingNext = false }
         } catch {
+            kindlePerfLog("prepare-enqueue error idx=\(idx) totalMs=\(elapsedMs(since: startedAt)) error=\(error.localizedDescription)")
             await MainActor.run { self.status = .error(error.localizedDescription); self.isPreparingNext = false }
         }
     }
 
-    private func prepareBlock(_ idx: Int) async throws -> PreparedBlock {
-        if let cached = prepared[idx] { return cached }
+    private func startBackgroundPrepare(block idx: Int, reason: String) {
+        guard idx >= 0, idx < totalBlocks else { return }
+        guard prepared[idx] == nil, !preparingBlocks.contains(idx) else {
+            kindlePerfLog("background-prepare skip reason=\(reason) idx=\(idx) cached=\(prepared[idx] == nil ? "N" : "Y") preparing=\(preparingBlocks.contains(idx) ? "Y" : "N")")
+            return
+        }
+        kindlePerfLog("background-prepare schedule reason=\(reason) idx=\(idx) total=\(totalBlocks)")
+        kindlePerfLog("kindleExplainBlockPrefetch start reason=\(reason) idx=\(idx) total=\(totalBlocks)")
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let pb = try await self.prepareBlock(idx, detachedTTS: true)
+                await MainActor.run {
+                    if self.prepared[idx] == nil {
+                        self.prepared[idx] = pb
+                    }
+                    self.kindlePerfLog("background-prepare ready reason=\(reason) idx=\(idx) segs=\(pb.segments.count) text=\(pb.text.count)")
+                    self.kindlePerfLog("kindleExplainBlockPrefetch ready reason=\(reason) idx=\(idx) segs=\(pb.segments.count) text=\(pb.text.count)")
+                }
+            } catch is CancellationError {
+                await MainActor.run { self.kindlePerfLog("background-prepare cancelled reason=\(reason) idx=\(idx)") }
+            } catch {
+                await MainActor.run { self.kindlePerfLog("background-prepare miss reason=\(reason) idx=\(idx) error=\(error.localizedDescription)") }
+            }
+        }
+    }
+
+    private func prepareBlock(_ idx: Int, detachedTTS: Bool = false) async throws -> PreparedBlock {
+        let startedAt = Date()
+        if let cached = prepared[idx] {
+            kindlePerfLog("prepare-block cache-hit idx=\(idx) detached=\(detachedTTS ? "Y" : "N")")
+            return cached
+        }
+        var waitedMs = 0
+        let waitStartedAt = Date()
         while preparingBlocks.contains(idx) {
             try await Task.sleep(nanoseconds: 80_000_000)
             if let cached = prepared[idx] { return cached }
             if !isActive { throw CancellationError() }
         }
+        waitedMs = elapsedMs(since: waitStartedAt)
         preparingBlocks.insert(idx)
         defer { preparingBlocks.remove(idx) }
 
-        if let cached = prepared[idx] { return cached }
+        if let cached = prepared[idx] {
+            kindlePerfLog("prepare-block cache-hit-after-wait idx=\(idx) detached=\(detachedTTS ? "Y" : "N") waitedMs=\(waitedMs)")
+            return cached
+        }
         // 快道占 block_0（idxBase=1）→ iOS idx 映射到质道块 qIdx = idx - idxBase。
         // 质道首块（qIdx<=0）用 plan 的 section0；快道占位时 block_0 播放期间质道 plan 通常已返回，
         // 极端未到则短暂等待（block_0 narration 音频较长，足够质道 plan 完成）。其余拉 extract-block。
         let qIdx = idx - idxBase
         let section: QuickreadSection
+        let sectionStartedAt = Date()
         if qIdx <= 0 {
             // 等质道 plan 返回 section0；plan 失败（planFailed）或失活则跳出，避免快道占位后死等挂起。
             // 失败时静默抛 CancellationError——错误/付费墙状态已由 runPlan 的 catch 设置，prepareAndEnqueue 不覆盖。
@@ -483,25 +622,40 @@ final class ExplainViewModel: ObservableObject {
         } else {
             section = try await QuickReadService.shared.extractBlock(jobId: jobId, blockIdx: qIdx)
         }
-        let pb = try await prepareSection(section, idx: idx, composeIdx: qIdx, jobId: jobId, language: outputLanguage)
+        let sectionMs = elapsedMs(since: sectionStartedAt)
+        let pb = try await prepareSection(section, idx: idx, composeIdx: qIdx, jobId: jobId, language: outputLanguage, detachedTTS: detachedTTS)
         prepared[idx] = pb
+        kindlePerfLog("prepare-block ready idx=\(idx) qIdx=\(qIdx) detached=\(detachedTTS ? "Y" : "N") waitedMs=\(waitedMs) sectionMs=\(sectionMs) totalMs=\(elapsedMs(since: startedAt))")
         return pb
     }
 
     /// 讲解 section → 可播放块（TTS + 拼时间线 + composeBlock 回填 mark.at）。参数化 jobId/语言 → 当前页与页间预取共用。
     /// idx = iOS 块序（TTS 段标识、匹配 currentBlockIndex）；composeIdx = 质道块号（快道激活后两者差 idxBase）。
-    private func prepareSection(_ section: QuickreadSection, idx: Int, composeIdx: Int, jobId: String, language: String) async throws -> PreparedBlock {
+    private func prepareSection(_ section: QuickreadSection, idx: Int, composeIdx: Int, jobId: String, language: String, detachedTTS: Bool = false) async throws -> PreparedBlock {
+        let startedAt = Date()
         // TTS 讲解文本（收集全部 segment）
         var segs: [AudioSegment] = []
-        try await TTSService.shared.generateTTSForParagraph(
-            paragraphIndex: idx,
-            text: section.text,
-            voice: settings.voice(for: language),
-            speed: 1.0,
-            language: language
-        ) { segment in
-            segs.append(segment)
+        let ttsStartedAt = Date()
+        if detachedTTS {
+            segs = try await TTSService.shared.generatePrefetchSegments(
+                paragraphIndex: idx,
+                text: section.text,
+                voice: settings.voice(for: language),
+                speed: 1.0,
+                language: language
+            )
+        } else {
+            try await TTSService.shared.generateTTSForParagraph(
+                paragraphIndex: idx,
+                text: section.text,
+                voice: settings.voice(for: language),
+                speed: 1.0,
+                language: language
+            ) { segment in
+                segs.append(segment)
+            }
         }
+        let ttsMs = elapsedMs(since: ttsStartedAt)
 
         // 拼块时间线 → composeBlock 回填 at
         var timeline: [ComposeTimestamp] = []
@@ -520,6 +674,7 @@ final class ExplainViewModel: ObservableObject {
 
         var marks: [QuickreadEvent]
         var composedCount: Int?
+        let composeStartedAt = Date()
         if let composed = try? await QuickReadService.shared.composeBlock(
             jobId: jobId, blockIdx: composeIdx, timestamps: timeline, duration: duration) {
             marks = composed.events
@@ -527,10 +682,12 @@ final class ExplainViewModel: ObservableObject {
         } else {
             marks = section.events
         }
+        let composeMs = elapsedMs(since: composeStartedAt)
         marks = ensureTiming(marks, duration: duration)
         debugLog("prepareSection idx=%d composeIdx=%d sectionMarks=%d composedMarks=%@ finalMarks=%d segs=%d timeline=%d duration=%.2f text=%d",
                  idx, composeIdx, section.events.count, composedCount.map(String.init) ?? "nil",
                  marks.count, segs.count, timeline.count, duration, section.text.count)
+        kindlePerfLog("prepare-section idx=\(idx) qIdx=\(composeIdx) detached=\(detachedTTS ? "Y" : "N") ttsMs=\(ttsMs) composeMs=\(composeMs) totalMs=\(elapsedMs(since: startedAt)) sectionMarks=\(section.events.count) composedMarks=\(composedCount.map(String.init) ?? "nil") finalMarks=\(marks.count) segs=\(segs.count) text=\(section.text.count)")
 
         return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text))
     }
@@ -543,6 +700,7 @@ final class ExplainViewModel: ObservableObject {
         audio.clearQueue()
         currentBlockIndex = idx
         explanationText = pb.sentences.first ?? pb.text
+        updateNowPlayingCaption(explanationText)
         marksByBlock[idx] = pb.marks
         debugLog("enqueue block=%d total=%d marks=%d text=%d segs=%d",
                  idx, totalBlocks, pb.marks.count, pb.text.count, pb.segments.count)
@@ -569,7 +727,14 @@ final class ExplainViewModel: ObservableObject {
         let next = currentBlockIndex + 1
         if next < totalBlocks {
             // 下一块未预取好 → 显示「准备下一段」loading，避免块间静默被误以为卡住。
-            if prepared[next] == nil { isPreparingNext = true }
+            let nextReady = prepared[next] != nil
+            kindlePerfLog("block-complete current=\(currentBlockIndex) next=\(next) total=\(totalBlocks) nextReady=\(nextReady ? "Y" : "N")")
+            if nextReady {
+                kindlePerfLog("kindleExplainBlockPrefetch hit current=\(currentBlockIndex) next=\(next)")
+            } else {
+                kindlePerfLog("kindleExplainBlockPrefetch await current=\(currentBlockIndex) next=\(next)")
+                isPreparingNext = true
+            }
             Task { await prepareAndEnqueue(block: next) }
             return
         }
@@ -740,6 +905,52 @@ final class ExplainViewModel: ObservableObject {
                          preparedBlock0: nil)
     }
 
+    func currentContinuitySummary() -> String? {
+        makeBatchContinuitySummary()
+    }
+
+    func prefetchFirstBlock(
+        for targetDocument: ReadingDocument,
+        previousSummary: String?,
+        textFingerprint: String
+    ) async throws -> PrefetchedFirstBlock {
+        guard pro.isPro else { throw CancellationError() }
+        let readableChars = targetDocument.readableParagraphs.reduce(0) {
+            $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count
+        }
+        guard readableChars >= minExplainChars else { throw QuickReadError.noBlock0 }
+        let req = buildPlanRequest(document: targetDocument, paras: targetDocument.paragraphs, prevSummary: previousSummary)
+        let box = PlanBlock0Box()
+        let done = try await QuickReadService.shared.extractPlan(
+            req,
+            onStage: { _ in },
+            onBlock0: { box.set($0) }
+        )
+        guard let b = box.value else { throw QuickReadError.noBlock0 }
+        let lang = b.output_language ?? settings.explainLangOrNil ?? targetDocument.language
+        var total = max(1, b.total_blocks)
+        if let tb = done.total_blocks, tb > total { total = tb }
+        let pb0 = try await prepareSection(
+            b.block_0,
+            idx: 0,
+            composeIdx: 0,
+            jobId: b.job_id,
+            language: lang,
+            detachedTTS: true
+        )
+        debugLog("prefetch first block READY job=%@ total=%d marks=%d text=%d fp=%@",
+                 b.job_id, total, pb0.marks.count, pb0.text.count, String(textFingerprint.prefix(24)))
+        return PrefetchedFirstBlock(
+            jobId: b.job_id,
+            totalBlocks: total,
+            outputLanguage: lang,
+            textFingerprint: textFingerprint,
+            previousSummary: previousSummary,
+            section0: b.block_0,
+            block0: pb0
+        )
+    }
+
     // MARK: - marks 触发（块时间线）
 
     private func onTick(_ t: Double) {
@@ -755,6 +966,7 @@ final class ExplainViewModel: ObservableObject {
             let progress = blockDur > 0.01 ? blockElapsed / blockDur : 0
             if let cur = Self.subtitleForProgress(sentences, progress: progress), explanationText != cur {
                 explanationText = cur
+                updateNowPlayingCaption(cur)
             }
         }
 
@@ -766,6 +978,12 @@ final class ExplainViewModel: ObservableObject {
             firedMarks.insert(key)
             resolveAndShow(ev)
         }
+    }
+
+    private func updateNowPlayingCaption(_ caption: String?) {
+        guard caption != lastNowPlayingCaption else { return }
+        lastNowPlayingCaption = caption
+        audio.setNowPlayingCaption(caption)
     }
 
     /// 当前块入队后 segments 也存于 prepared；兜底空数组。
@@ -937,13 +1155,17 @@ final class ExplainViewModel: ObservableObject {
     }
 
     private func buildPlanRequest(paras sourceParas: [ReadingParagraph], prevSummary: String?) -> ExtractPlanRequest {
+        buildPlanRequest(document: doc, paras: sourceParas, prevSummary: prevSummary)
+    }
+
+    private func buildPlanRequest(document targetDoc: ReadingDocument, paras sourceParas: [ReadingParagraph], prevSummary: String?) -> ExtractPlanRequest {
         let paras = sourceParas.map { QuickreadParagraphDTO(text: $0.text, type: typeString($0.type)) }
         let fullText = sourceParas.map(\.text).joined(separator: "\n\n")
-        let src = doc.sourceURL ?? "castreader://doc/\(doc.id)"
+        let src = targetDoc.sourceURL ?? "castreader://doc/\(targetDoc.id)"
         let continuity = prevSummary ?? fastSection?.text
         return ExtractPlanRequest(
             source_url: src,
-            title: doc.title,
+            title: targetDoc.title,
             lang: forcedExplainLang ?? settings.explainLangOrNil,   // 快道激活 → 用锁定语言，与快道 block_0 一致
             depth: requestDepth,                                    // 永远=用户设置的 3 档；场景不改深度（与 content_type 正交）
             text: fullText,

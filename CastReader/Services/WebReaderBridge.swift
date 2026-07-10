@@ -27,6 +27,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler {
     private var didAutoStart = false
     private var isReadMode = true        // 当前模式；onRendered 自动开播据此决定启动朗读还是解读
     private var shownMarkIds = Set<String>()
+    private var lastRefocusToken = 0
 
     // MARK: - 关联 VM + 订阅
 
@@ -171,6 +172,21 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler {
     func setActive(readMode: Bool) {
         isReadMode = readMode
         call("setActive", ["active": readMode])
+    }
+
+    func refocusIfNeeded(_ token: Int, readMode: Bool) {
+        guard token != lastRefocusToken else { return }
+        lastRefocusToken = token
+        if readMode {
+            guard let readVM, readVM.autoScrollEnabled, readVM.currentParagraphIndex >= 0 else { return }
+            ReaderRunLog.write("WEB refocus read para=\(readVM.currentParagraphIndex) token=\(token) didInit=\(didInit)")
+            call("scrollTo", ["paragraphIndex": readVM.currentParagraphIndex, "anchor": 0.3, "reason": "refocus"])
+        } else {
+            let target = explainVM?.activeMarks.last?.paragraphIndex ?? explainVM?.scrollTarget ?? -1
+            guard target >= 0 else { return }
+            ReaderRunLog.write("WEB refocus explain para=\(target) token=\(token) didInit=\(didInit)")
+            call("scrollTo", ["paragraphIndex": target, "anchor": 0.35, "reason": "refocus"])
+        }
     }
 
     func setColor(_ hex: String) { call("setColor", ["hex": hex]) }

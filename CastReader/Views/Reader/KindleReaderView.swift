@@ -14,6 +14,7 @@ struct KindleReaderView: View {
     @ObservedObject var readVM: ReadAloudViewModel
     @ObservedObject var explainVM: ExplainViewModel
     let mode: ReaderMode
+    let refocusToken: Int
 
     private var pages: [KindlePage] {
         let imageParas = document.paragraphs.filter { $0.type == .image && $0.imageData != nil }
@@ -56,6 +57,27 @@ struct KindleReaderView: View {
                 withAnimation(.easeInOut(duration: 0.45)) {
                     proxy.scrollTo(pageID, anchor: UnitPoint(x: 0.5, y: 0.30))
                 }
+            }
+            .onChange(of: refocusToken) { _ in
+                refocus(proxy)
+            }
+        }
+    }
+
+    private func refocus(_ proxy: ScrollViewProxy) {
+        switch mode {
+        case .read:
+            guard readVM.autoScrollEnabled,
+                  readVM.currentParagraphIndex >= 0,
+                  let pageID = pageID(forParagraph: readVM.currentParagraphIndex) else { return }
+            withAnimation(.easeInOut(duration: 0.35)) {
+                proxy.scrollTo(pageID, anchor: UnitPoint(x: 0.5, y: 0.28))
+            }
+        case .explain:
+            let target = explainVM.activeMarks.last?.paragraphIndex ?? explainVM.scrollTarget
+            guard target >= 0, let pageID = pageID(forParagraph: target) else { return }
+            withAnimation(.easeInOut(duration: 0.45)) {
+                proxy.scrollTo(pageID, anchor: UnitPoint(x: 0.5, y: 0.30))
             }
         }
     }

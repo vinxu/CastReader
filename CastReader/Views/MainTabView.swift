@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct MainTabView: View {
+    private static let miniPlayerBottomPadding: CGFloat = 68
+
     @StateObject private var coordinator = PlayerCoordinator()
     @StateObject private var kindleCenter = KindlePlaybackCenter.shared
     @StateObject private var clipboard = ClipboardImportViewModel()
@@ -37,7 +39,11 @@ struct MainTabView: View {
                     .tag(0)
                 // 中间占位：被凸起 ➕ 覆盖；万一点到 tab item 也走通用导入并回首页。
                 Color.clear
-                    .tabItem { Label("", systemImage: "plus") }
+                    .tabItem {
+                        Image(uiImage: Self.plusTabImage)
+                            .renderingMode(.original)
+                        Text("")
+                    }
                     .tag(1)
                 SettingsView()
                     .tabItem { Label("设置", systemImage: "gearshape.fill") }
@@ -45,23 +51,24 @@ struct MainTabView: View {
             }
             .tint(AppTheme.primary)
             .onChange(of: selectedTab) { newTab in
-                if newTab == 1 { selectedTab = 0 }   // 中间占位 tab 被点 → 回首页（实际导入走凸起按钮）
+                if newTab == 1 {
+                    selectedTab = 0
+                    importRouter.openQuickImport()
+                }
             }
 
-            // 中间凸起 ➕：通用导入入口（scenario=null）。沉浸式阅读页会隐藏主 chrome。
             if !importRouter.hideMainChrome {
-                plusButton
-                    .transition(.opacity)
+                plusTapTarget
             }
 
             // Mini Player 悬浮在 tab bar 上方（有会话且阅读器收起时）
             if coordinator.showsMiniPlayer && !importRouter.hideMainChrome {
                 MiniPlayerView(coordinator: coordinator)
-                    .padding(.bottom, 50)
+                    .padding(.bottom, Self.miniPlayerBottomPadding)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             } else if kindleCenter.showsMiniPlayer && !importRouter.hideMainChrome {
                 KindleMiniPlayerView(center: kindleCenter)
-                    .padding(.bottom, 50)
+                    .padding(.bottom, Self.miniPlayerBottomPadding)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
@@ -93,6 +100,9 @@ struct MainTabView: View {
         .onChange(of: scenePhase) { phase in
             if phase == .active { clipboard.check() }   // 进 App / 回前台 → 探测剪贴板
         }
+        .onChange(of: kindleCenter.isPresented) { isPresented in
+            if isPresented { coordinator.close() }
+        }
         .sheet(item: $clipboard.detected) { kind in
             ClipboardPromptView(
                 kind: kind,
@@ -104,28 +114,40 @@ struct MainTabView: View {
         }
     }
 
-    /// 中间凸起 ➕：打开快速导入面板。来源选择与具体 present 都在 HomeView。
-    private var plusButton: some View {
+    private static let plusTabImage: UIImage = {
+        let size = CGSize(width: 40, height: 40)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { context in
+            let rect = CGRect(origin: .zero, size: size)
+            UIColor(AppTheme.primary).setFill()
+            context.cgContext.fillEllipse(in: rect)
+
+            let path = UIBezierPath()
+            path.lineWidth = 3.2
+            path.lineCapStyle = .round
+            path.move(to: CGPoint(x: size.width / 2, y: 10.5))
+            path.addLine(to: CGPoint(x: size.width / 2, y: size.height - 10.5))
+            path.move(to: CGPoint(x: 10.5, y: size.height / 2))
+            path.addLine(to: CGPoint(x: size.width - 10.5, y: size.height / 2))
+            UIColor.white.setStroke()
+            path.stroke()
+        }
+        return image.withRenderingMode(.alwaysOriginal)
+    }()
+
+    private var plusTapTarget: some View {
         Button {
             selectedTab = 0
             importRouter.openQuickImport()
         } label: {
-            ZStack {
-                Circle()
-                    .fill(AppTheme.primary)
-                    .frame(width: 40, height: 40)              // 缩到能放进浮岛 tab bar，留上下余量、不再一边冒头
-                    .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
-                Image(systemName: "plus")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.white)
-            }
+            Color.clear
+                .frame(width: 88, height: 58)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("plusImportButton")
         .accessibilityLabel(Text("导入内容"))
-        // 垂直居中到底部导航条：取「-2 顶冒 / +10 底冒」两临界中点、偏高侧 → +3。旋钮：负=上、正=下。
-        .offset(y: 3)
-        .allowsHitTesting(!coordinator.isReaderPresented)   // 阅读器展开时不拦截（其实已被顶层覆盖）
+        .offset(y: 4)
     }
 
     /// 剪贴板选朗读/解读 → 构建文档 → 进入对应播放（autoplay 直接开播，链路最短）。

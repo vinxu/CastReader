@@ -94,11 +94,88 @@ struct KindleLibraryConnectView: View {
     }
 }
 
+struct KindleViewportCrop: Equatable {
+    var scale: CGFloat
+    var heightScale: CGFloat
+    var offsetX: CGFloat
+    var offsetY: CGFloat
+
+    init(scale: CGFloat, heightScale: CGFloat? = nil, offsetX: CGFloat, offsetY: CGFloat) {
+        self.scale = scale
+        self.heightScale = heightScale ?? scale
+        self.offsetX = offsetX
+        self.offsetY = offsetY
+    }
+
+    static let identity = KindleViewportCrop(scale: 1, heightScale: 1, offsetX: 0, offsetY: 0)
+
+    var isIdentity: Bool {
+        abs(scale - 1) < 0.001 &&
+            abs(heightScale - 1) < 0.001 &&
+            abs(offsetX) < 0.5 &&
+            abs(offsetY) < 0.5
+    }
+}
+
+final class KindleWebViewContainer: UIView {
+    let webView: WKWebView
+    var crop: KindleViewportCrop = .identity {
+        didSet {
+            if crop != oldValue {
+                setNeedsLayout()
+            }
+        }
+    }
+
+    init(webView: WKWebView, crop: KindleViewportCrop = .identity) {
+        self.webView = webView
+        self.crop = crop
+        super.init(frame: .zero)
+        clipsToBounds = true
+        addSubview(webView)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let size = bounds.size
+        webView.transform = .identity
+        if crop.isIdentity {
+            webView.frame = bounds
+            return
+        }
+
+        let widthScale = max(1, min(crop.scale, 2.4))
+        let heightScale = max(1, min(crop.heightScale, 2.4))
+        webView.frame = CGRect(
+            x: crop.offsetX,
+            y: crop.offsetY,
+            width: size.width * widthScale,
+            height: size.height * heightScale
+        )
+    }
+}
+
 struct KindleWebView: UIViewRepresentable {
     let webView: WKWebView
+    var crop: KindleViewportCrop = .identity
 
-    func makeUIView(context: Context) -> WKWebView { webView }
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
+    func makeUIView(context: Context) -> KindleWebViewContainer {
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
+        webView.scrollView.contentInset = .zero
+        webView.scrollView.scrollIndicatorInsets = .zero
+        if #available(iOS 13.0, *) {
+            webView.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
+        }
+        return KindleWebViewContainer(webView: webView, crop: crop)
+    }
+
+    func updateUIView(_ uiView: KindleWebViewContainer, context: Context) {
+        uiView.crop = crop
+    }
 }
 
 @MainActor

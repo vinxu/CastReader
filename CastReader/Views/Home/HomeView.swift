@@ -2677,7 +2677,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
                 ))
                 nextID += 1
             }
-            for para in page.document.paragraphs where para.type.isReadable && !para.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            for para in page.document.paragraphs where para.type.isReadable && SpeechTextSanitizer.containsSpeakableContent(para.text) {
                 paras.append(ReadingParagraph(
                     id: nextID,
                     text: para.text,
@@ -2689,7 +2689,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
                 nextID += 1
             }
         }
-        guard paras.contains(where: { $0.type.isReadable && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+        guard paras.contains(where: { $0.type.isReadable && SpeechTextSanitizer.containsSpeakableContent($0.text) }) else {
             return nil
         }
         let title = pages.first?.title.replacingOccurrences(of: " · \(pages.first?.key.prefix(8) ?? "")", with: "") ?? "Kindle"
@@ -3087,8 +3087,8 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
 
             for paragraph in readable {
                 guard !Task.isCancelled, isContinuousReadActive(runID) else { return }
-                let text = paragraph.text.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !text.isEmpty else { continue }
+                let text = SpeechTextSanitizer.sanitizedForTTS(paragraph.text)
+                guard SpeechTextSanitizer.containsSpeakableContent(text) else { continue }
                 continuousStatus = String(localized: "Generating paragraph \(paragraph.id + 1)/\(page.document.paragraphs.count)...")
                 try await TTSService.shared.generateTTSForParagraph(
                     paragraphIndex: paragraph.id,
@@ -3539,8 +3539,8 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         appendLog("KINDLE enqueue page reason=\(reason) key=\(page.key.prefix(8)) paras=\(readable.count)")
         for paragraph in readable {
             guard !Task.isCancelled, isContinuousReading else { return }
-            let text = paragraph.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty else { continue }
+            let text = SpeechTextSanitizer.sanitizedForTTS(paragraph.text)
+            guard SpeechTextSanitizer.containsSpeakableContent(text) else { continue }
             try await TTSService.shared.generateTTSForParagraph(
                 paragraphIndex: paragraph.id,
                 text: text,

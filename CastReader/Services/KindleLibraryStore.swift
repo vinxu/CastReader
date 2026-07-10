@@ -171,7 +171,19 @@ final class KindleLibraryStore: ObservableObject {
     }
 
     private func sanitized(_ input: [KindleBook]) -> [KindleBook] {
-        input.filter(\.isLikelyLibraryBook)
+        input.compactMap { raw in
+            var book = raw
+            guard book.isLikelyLibraryBook else { return nil }
+            if let repaired = KindleBookValidator.repairedReaderURL(for: book, preferLastRead: false) {
+                book.readerURL = repaired
+            }
+            if let repairedLastRead = KindleBookValidator.usableReaderURL(book.lastReadURL, fallbackASIN: book.asin ?? book.id) {
+                book.lastReadURL = repairedLastRead
+            } else {
+                book.lastReadURL = nil
+            }
+            return book
+        }
     }
 
     private func setAccount(_ account: KindleAccountInfo) {

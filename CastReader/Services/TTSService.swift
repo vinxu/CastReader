@@ -42,18 +42,74 @@ actor TTSService {
         language: String = Constants.TTS.defaultLanguage,
         onSegmentReady: @escaping (AudioSegment) async -> Void
     ) async throws {
+        let sanitized = SpeechTextSanitizer.sanitizedForTTS(text)
+        guard SpeechTextSanitizer.containsSpeakableContent(sanitized) else {
+            print("[TTSService] ⏭️ Skip non-speakable paragraph \(paragraphIndex): \(text.prefix(30))")
+            return
+        }
         let requestId = UUID()
         currentRequestId = requestId
-        print("[TTSService] ☁️ Cloud TTS for: \(text.prefix(30))...")
+        print("[TTSService] ☁️ Cloud TTS for: \(sanitized.prefix(30))...")
         try await generateCloudTTS(
             requestId: requestId,
             paragraphIndex: paragraphIndex,
-            text: text,
+            text: sanitized,
             voice: voice,
             speed: speed,
             language: language,
             onSegmentReady: onSegmentReady
         )
+    }
+
+    /// 生成可缓存的 TTS segments，不触碰 `currentRequestId`。
+    ///
+    /// Kindle 解读会在当前页播放时预生成下一页 block_0；如果复用 `generateTTSForParagraph`，
+    /// 会把当前页正在准备的 TTS 请求取消掉。这个方法直接走云端 API，但不参与“当前请求”取消机制，
+    /// 适合用于页间预生成/缓存。
+    func generatePrefetchSegments(
+        paragraphIndex: Int,
+        text: String,
+        voice: String = Constants.TTS.defaultVoice,
+        speed: Double = Constants.TTS.defaultSpeed,
+        language: String = Constants.TTS.defaultLanguage
+    ) async throws -> [AudioSegment] {
+        var remainingText = SpeechTextSanitizer.sanitizedForTTS(text)
+        var segmentIndex = 0
+        var segments: [AudioSegment] = []
+
+        while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
+            try Task.checkCancellation()
+            let response = try await APIService.shared.generateTTS(
+                text: remainingText,
+                voice: voice,
+                speed: speed,
+                language: language
+            )
+            try Task.checkCancellation()
+            guard let audioData = Data(base64Encoded: response.audio) else {
+                throw TTSError.generationFailed("Failed to decode audio data")
+            }
+            let rawSegment = AudioSegment(
+                paragraphIndex: paragraphIndex,
+                segmentIndex: segmentIndex,
+                audioData: audioData,
+                timestamps: response.safeTimestamps,
+                duration: response.safeDuration,
+                text: response.processedText ?? remainingText,
+                unprocessedText: response.unprocessedText ?? ""
+            )
+            segments.append(ensureDuration(rawSegment))
+
+            if let unprocessed = response.unprocessedText,
+               !unprocessed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                remainingText = SpeechTextSanitizer.sanitizedForTTS(unprocessed)
+                segmentIndex += 1
+            } else {
+                break
+            }
+        }
+
+        return segments
     }
 
     // MARK: - Cloud TTS
@@ -71,11 +127,11 @@ actor TTSService {
             throw TTSError.cancelled
         }
 
-        var remainingText = text
+        var remainingText = SpeechTextSanitizer.sanitizedForTTS(text)
         var segmentIndex = 0
 
         // 循环处理后端逐段返回的 unprocessedText（与扩展一致：一次请求只处理一部分）。
-        while !remainingText.isEmpty {
+        while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
             guard currentRequestId == requestId else {
                 throw TTSError.cancelled
             }
@@ -130,7 +186,7 @@ actor TTSService {
                 await onSegmentReady(segment)
 
                 if let unprocessed = response.unprocessedText, !unprocessed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    remainingText = unprocessed
+                    remainingText = SpeechTextSanitizer.sanitizedForTTS(unprocessed)
                     segmentIndex += 1
                     print("[TTSService] 📊 More text to process, continuing with segment #\(segmentIndex)")
                 } else {

@@ -15,6 +15,7 @@ struct WebReaderView: UIViewRepresentable {
     @ObservedObject var readVM: ReadAloudViewModel
     @ObservedObject var explainVM: ExplainViewModel
     let mode: ReaderMode
+    let refocusToken: Int
 
     func makeCoordinator() -> WebReaderBridge { WebReaderBridge() }
 
@@ -57,6 +58,7 @@ struct WebReaderView: UIViewRepresentable {
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.setActive(readMode: mode == .read)
+        context.coordinator.refocusIfNeeded(refocusToken, readMode: mode == .read)
     }
 
     /// 读取 app bundle 内 WebAssets/bundle.js 作为注入脚本源。
