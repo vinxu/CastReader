@@ -18,6 +18,7 @@ struct SettingsView: View {
     @State private var showLogin = false
     @State private var showClearHistory = false
     @State private var showUnbindKindle = false
+    @State private var showVoiceBrowser = false
 
     private let explainLanguages: [(String, String)] = [
         ("", String(localized: "跟随原文")), ("en", "English"), ("zh", "中文"), ("ja", "日本語"),
@@ -43,6 +44,7 @@ struct SettingsView: View {
             }
             .navigationTitle("设置")
             .sheet(isPresented: $showPaywall) { PaywallView() }
+            .sheet(isPresented: $showVoiceBrowser) { VoiceBrowserView() }
             .sheet(isPresented: $showLogin) { LoginView() }
             .alert("清除全部历史记录？", isPresented: $showClearHistory) {
                 Button("清除全部", role: .destructive) { HistoryStore.shared.clearAll() }
@@ -260,48 +262,21 @@ struct SettingsView: View {
 
     private var voiceSection: some View {
         Section("音色") {
-            voicePicker(title: "英文", language: "en", selection: $settings.voiceEN)
-            voicePicker(title: "中文", language: "zh", selection: $settings.voiceZH)
+            selectedVoiceRow(title: "英文", language: "en")
+            selectedVoiceRow(title: "中文", language: "zh")
+            Button { showVoiceBrowser = true } label: {
+                Label("浏览全部音色", systemImage: "waveform")
+            }
         }
         .id(voiceCatalog.revision)
     }
 
-    private func voicePicker(title: LocalizedStringKey, language: String, selection: Binding<String>) -> some View {
-        Menu {
-            ForEach(VoiceCatalog.voices(for: language)) { v in
-                Button {
-                    selectVoice(v, selection: selection)
-                } label: {
-                    HStack {
-                        Text(v.name)
-                        if v.isPro && !pro.isPro { Image(systemName: "lock.fill") }
-                        if selection.wrappedValue == v.code { Image(systemName: "checkmark") }
-                    }
-                }
-            }
-        } label: {
-            HStack {
-                Text(title)
-                Spacer()
-                Text(VoiceCatalog.displayName(for: selection.wrappedValue))
-                    .foregroundColor(AppTheme.mutedForeground)
-                Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundColor(AppTheme.mutedForeground)
-            }
-        }
-    }
-
-    private func selectVoice(_ voice: VoiceOption, selection: Binding<String>) {
-        if voice.isPro && !pro.isPro {
-            Task { @MainActor in
-                await pro.refresh()
-                if pro.isPro {
-                    selection.wrappedValue = voice.code
-                } else {
-                    showPaywall = true
-                }
-            }
-        } else {
-            selection.wrappedValue = voice.code
+    private func selectedVoiceRow(title: LocalizedStringKey, language: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Text(VoiceCatalog.displayName(for: settings.voice(for: language)))
+                .foregroundColor(AppTheme.mutedForeground)
         }
     }
 

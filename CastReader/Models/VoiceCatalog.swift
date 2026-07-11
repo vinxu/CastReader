@@ -22,6 +22,9 @@ struct VoiceOption: Identifiable, Equatable, Hashable {
     let enabled: Bool
     let selectable: Bool
     let locale: String
+    let tags: [String]
+    let avatarURL64: String?
+    let avatarURL256: String?
 
     var id: String { code }
 
@@ -37,7 +40,10 @@ struct VoiceOption: Identifiable, Equatable, Hashable {
         timestampMode: String = "word",
         enabled: Bool = true,
         selectable: Bool = true,
-        locale: String = ""
+        locale: String = "",
+        tags: [String] = [],
+        avatarURL64: String? = nil,
+        avatarURL256: String? = nil
     ) {
         self.code = code
         self.name = name
@@ -51,6 +57,9 @@ struct VoiceOption: Identifiable, Equatable, Hashable {
         self.enabled = enabled
         self.selectable = selectable
         self.locale = locale
+        self.tags = tags
+        self.avatarURL64 = avatarURL64
+        self.avatarURL256 = avatarURL256
     }
 }
 
@@ -239,11 +248,17 @@ enum VoiceCatalog {
         return catalog.voices.map(option(from:))
     }
 
+    static var selectableVoices: [VoiceOption] {
+        all.filter(\.selectable)
+    }
+
     /// selectable 是选择器可见性的唯一权威；status 只描述质量/维护状态。
     static func voices(for language: String) -> [VoiceOption] {
         let normalized = normalizedLanguage(language)
         guard let catalog = runtime.read() else {
-            return normalized == "zh" ? chinese : english
+            if normalized == "zh" { return chinese }
+            if normalized == "en" { return english }
+            return []
         }
         return catalog.voices
             .filter {
@@ -271,21 +286,18 @@ enum VoiceCatalog {
         voices(for: language).first { !$0.isPro }?.code ?? fallbackDefault(for: language)
     }
 
-    /// 所有朗读/解读入口都通过这里解析 voice。英文/中文旧偏好原样保留；
-    /// 其他语言仅在远端目录存在时采用权威 defaultVoice。
+    /// 所有朗读/解读入口都通过这里解析 voice。任意语言的已保存偏好优先，
+    /// 未保存时采用远端权威 defaultVoice，目录不可用才走静态安全 fallback。
     static func resolvedVoice(preferred: String, for language: String) -> String {
         let normalized = normalizedLanguage(language)
-        if normalized == "en" || normalized == "zh" {
-            let value = preferred.trimmed
-            return value.isEmpty ? defaultVoice(for: normalized) : value
-        }
+        let value = preferred.trimmed
+        if !value.isEmpty { return value }
         if let remoteDefault = runtime.read()?.languages.first(where: {
             normalizedLanguage($0.code) == normalized
         })?.defaultVoice.trimmed, !remoteDefault.isEmpty {
             return remoteDefault
         }
-        let value = preferred.trimmed
-        return value.isEmpty ? fallbackDefault(for: language) : value
+        return fallbackDefault(for: language)
     }
 
     static func hasRemoteCatalog() -> Bool { runtime.read() != nil }
@@ -331,7 +343,10 @@ enum VoiceCatalog {
             timestampMode: voice.timestampMode,
             enabled: voice.enabled,
             selectable: voice.selectable,
-            locale: voice.locale
+            locale: voice.locale,
+            tags: voice.tags ?? [],
+            avatarURL64: voice.avatar?.url64,
+            avatarURL256: voice.avatar?.url256
         )
     }
 }
@@ -444,6 +459,6 @@ final class VoiceCatalogService: ObservableObject {
     }
 }
 
-private extension String {
+extension String {
     var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
 }

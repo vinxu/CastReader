@@ -18,8 +18,7 @@ final class AppSettings: ObservableObject {
 
     private let d: UserDefaults
 
-    @Published var voiceEN: String { didSet { d.set(voiceEN, forKey: K.voiceEN) } }
-    @Published var voiceZH: String { didSet { d.set(voiceZH, forKey: K.voiceZH) } }
+    @Published private(set) var voicesByLanguage: [String: String]
     @Published var speed: Double { didSet { d.set(speed, forKey: K.speed) } }
     @Published var explainLanguage: String { didSet { d.set(explainLanguage, forKey: K.explainLang) } } // "" = 跟随原文
     @Published var explainDepth: String { didSet { d.set(explainDepth, forKey: K.explainDepth) } }
@@ -29,8 +28,16 @@ final class AppSettings: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         d = defaults
-        voiceEN = d.string(forKey: K.voiceEN) ?? "af_heart"
-        voiceZH = d.string(forKey: K.voiceZH) ?? "zf_001"
+        var storedVoices = d.dictionary(forKey: K.voicesByLanguage)?
+            .compactMapValues { $0 as? String } ?? [:]
+        if storedVoices["en"] == nil {
+            storedVoices["en"] = d.string(forKey: K.voiceEN) ?? "af_heart"
+        }
+        if storedVoices["zh"] == nil {
+            storedVoices["zh"] = d.string(forKey: K.voiceZH) ?? "zf_001"
+        }
+        voicesByLanguage = storedVoices
+        d.set(storedVoices, forKey: K.voicesByLanguage)
         speed = d.object(forKey: K.speed) as? Double ?? 1.0
         explainLanguage = d.string(forKey: K.explainLang) ?? ""
         explainDepth = d.string(forKey: K.explainDepth) ?? QuickreadDepth.standard.rawValue
@@ -39,14 +46,52 @@ final class AppSettings: ObservableObject {
         autoPlay = d.object(forKey: K.autoPlay) as? Bool ?? true
     }
 
-    /// 该语言当前选用的音色（zh* 用中文音色，其余英文）。
+    /// 旧调用方兼容属性；真实存储已经迁移为按语言字典。
+    var voiceEN: String {
+        get { selectedVoiceID(for: "en") ?? "af_heart" }
+        set { _ = setVoice(newValue, for: "en") }
+    }
+
+    var voiceZH: String {
+        get { selectedVoiceID(for: "zh") ?? "zf_001" }
+        set { _ = setVoice(newValue, for: "zh") }
+    }
+
+    func selectedVoiceID(for language: String) -> String? {
+        guard let value = voicesByLanguage[VoiceCatalog.normalizedLanguage(language)]?.trimmed,
+              !value.isEmpty else { return nil }
+        return value
+    }
+
+    /// 每种内容语言只读取自己的偏好；目录有该语言时由其 defaultVoice 补位。
     func voice(for language: String) -> String {
-        let preferred = VoiceCatalog.normalizedLanguage(language) == "zh" ? voiceZH : voiceEN
+        let normalized = VoiceCatalog.normalizedLanguage(language)
+        var preferred = selectedVoiceID(for: normalized) ?? ""
+        if let option = VoiceCatalog.option(for: preferred),
+           VoiceCatalog.normalizedLanguage(option.lang) != normalized {
+            preferred = ""
+        }
         return VoiceCatalog.resolvedVoice(preferred: preferred, for: language)
     }
 
-    func setVoice(_ code: String, for language: String) {
-        if VoiceCatalog.normalizedLanguage(language) == "zh" { voiceZH = code } else { voiceEN = code }
+    /// 返回 false 表示拒绝跨语言或无效偏好，调用方不得展示为已选。
+    @discardableResult
+    func setVoice(_ code: String, for language: String) -> Bool {
+        let normalized = VoiceCatalog.normalizedLanguage(language)
+        let value = code.trimmed
+        guard !normalized.isEmpty, !value.isEmpty else { return false }
+        if let option = VoiceCatalog.option(for: value),
+           VoiceCatalog.normalizedLanguage(option.lang) != normalized {
+            return false
+        }
+
+        var next = voicesByLanguage
+        next[normalized] = value
+        voicesByLanguage = next
+        d.set(next, forKey: K.voicesByLanguage)
+        if normalized == "en" { d.set(value, forKey: K.voiceEN) }
+        if normalized == "zh" { d.set(value, forKey: K.voiceZH) }
+        return true
     }
 
     /// 讲解语言：空串表示跟随原文（请求里传 nil）。
@@ -63,6 +108,7 @@ final class AppSettings: ObservableObject {
     private enum K {
         static let voiceEN = "voice_en"
         static let voiceZH = "voice_zh"
+        static let voicesByLanguage = "tts_voice_by_language_v1"
         static let speed = "tts_speed"
         static let explainLang = "explain_language"
         static let explainDepth = "explain_depth"

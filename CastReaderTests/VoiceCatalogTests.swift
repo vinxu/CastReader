@@ -132,6 +132,9 @@ final class VoiceCatalogTests: XCTestCase {
 
         XCTAssertEqual(catalog.voices.first?.avatar?.id, "heart")
         XCTAssertEqual(catalog.voices.first?.avatar?.url64, "https://cdn.example/heart-64.png")
+        try VoiceCatalog.install(catalog)
+        defer { VoiceCatalog.resetForTesting() }
+        XCTAssertEqual(VoiceCatalog.option(for: "af_heart")?.avatarURL64, "https://cdn.example/heart-64.png")
     }
 
     func testRemoteLanguageDefaultAndFallbackResolution() throws {
@@ -140,7 +143,8 @@ final class VoiceCatalogTests: XCTestCase {
         let settings = AppSettings(defaults: defaults)
 
         VoiceCatalog.resetForTesting()
-        XCTAssertEqual(settings.voice(for: "ja-JP"), "af_bella")
+        XCTAssertEqual(settings.voice(for: "ja-JP"), Constants.TTS.defaultVoice)
+        XCTAssertTrue(VoiceCatalog.voices(for: "ja-JP").isEmpty)
 
         let catalog = try TTSVoiceCatalogDocument.decodeServerResponse(
             from: fixture("tts-voice-catalog-direct")
@@ -148,6 +152,103 @@ final class VoiceCatalogTests: XCTestCase {
         try VoiceCatalog.install(catalog)
         defer { VoiceCatalog.resetForTesting() }
         XCTAssertEqual(settings.voice(for: "ja-JP"), "jf_alpha")
+    }
+
+    func testVoiceBrowserSearchAndFiltersUseCatalogMetadata() {
+        let voices = [
+            VoiceOption(
+                code: "af_nova", name: "Nova", isPro: true, lang: "en", gender: "female",
+                locale: "en-US", tags: ["warm", "narration"]
+            ),
+            VoiceOption(
+                code: "zm_009", name: "云泽", isPro: false, lang: "zh", gender: "male",
+                locale: "zh-CN", tags: ["calm"]
+            ),
+            VoiceOption(
+                code: "hidden", name: "Hidden", isPro: false, lang: "en", gender: "male",
+                selectable: false, locale: "en-GB", tags: ["news"]
+            ),
+        ]
+
+        XCTAssertEqual(VoiceBrowserFilter.apply(
+            voices: voices, search: "narration", language: "", gender: "", tier: .all
+        ).map(\.code), ["af_nova"])
+        XCTAssertEqual(VoiceBrowserFilter.apply(
+            voices: voices, search: "nova", language: "", gender: "", tier: .all
+        ).map(\.code), ["af_nova"])
+        XCTAssertEqual(VoiceBrowserFilter.apply(
+            voices: voices, search: "zm_", language: "zh-Hans", gender: "male", tier: .free
+        ).map(\.code), ["zm_009"])
+        XCTAssertEqual(VoiceBrowserFilter.apply(
+            voices: voices, search: "en-us", language: "en", gender: "female", tier: .pro
+        ).map(\.code), ["af_nova"])
+        XCTAssertFalse(VoiceBrowserFilter.apply(
+            voices: voices, search: "hidden", language: "", gender: "", tier: .all
+        ).contains { $0.code == "hidden" })
+    }
+
+    @MainActor
+    func testFavoritesAndRecentPersistWithDedupAndLimit() {
+        let defaults = isolatedDefaults()
+        let store = VoiceLibraryStore(defaults: defaults)
+
+        store.toggleFavorite("af_heart")
+        store.toggleFavorite("zf_001")
+        for index in 0..<15 { store.recordRecent("voice_\(index)") }
+        store.recordRecent("voice_7")
+
+        XCTAssertEqual(store.favoriteIDs, Set(["af_heart", "zf_001"]))
+        XCTAssertEqual(store.recentIDs.count, VoiceLibraryStore.recentLimit)
+        XCTAssertEqual(store.recentIDs.first, "voice_7")
+        XCTAssertEqual(store.recentIDs.filter { $0 == "voice_7" }.count, 1)
+
+        let reloaded = VoiceLibraryStore(defaults: defaults)
+        XCTAssertEqual(reloaded.favoriteIDs, store.favoriteIDs)
+        XCTAssertEqual(reloaded.recentIDs, store.recentIDs)
+        reloaded.toggleFavorite("af_heart")
+        XCTAssertFalse(reloaded.isFavorite("af_heart"))
+    }
+
+    func testLegacyVoicePreferencesMigrateAndStayLanguageScoped() throws {
+        defer { VoiceCatalog.resetForTesting() }
+        let defaults = isolatedDefaults()
+        defaults.set("am_adam", forKey: "voice_en")
+        defaults.set("zm_009", forKey: "voice_zh")
+        let catalog = try TTSVoiceCatalogDocument.decodeServerResponse(
+            from: fixture("tts-voice-catalog-direct")
+        )
+        try VoiceCatalog.install(catalog)
+
+        let settings = AppSettings(defaults: defaults)
+        XCTAssertEqual(settings.voiceEN, "am_adam")
+        XCTAssertEqual(settings.voiceZH, "zm_009")
+        XCTAssertEqual(settings.voice(for: "ja-JP"), "jf_alpha")
+        XCTAssertTrue(settings.setVoice("jf_alpha", for: "ja-JP"))
+        XCTAssertFalse(settings.setVoice("af_heart", for: "zh-Hans"))
+
+        let reloaded = AppSettings(defaults: defaults)
+        XCTAssertEqual(reloaded.selectedVoiceID(for: "ja"), "jf_alpha")
+        XCTAssertEqual(reloaded.voice(for: "en-GB"), "am_adam")
+        XCTAssertEqual(reloaded.voice(for: "zh-CN"), "zm_009")
+    }
+
+    @MainActor
+    func testProSelectionGateDoesNotSaveBeforeEntitlement() {
+        VoiceCatalog.resetForTesting()
+        let settings = AppSettings(defaults: isolatedDefaults())
+        let proVoice = VoiceOption(
+            code: "af_nova", name: "Nova", isPro: true, lang: "en", gender: "female"
+        )
+        let freeVoice = VoiceOption(
+            code: "af_bella", name: "Bella", isPro: false, lang: "en", gender: "female"
+        )
+
+        XCTAssertFalse(VoiceSelectionPolicy.select(proVoice, isPro: false, settings: settings))
+        XCTAssertEqual(settings.voiceEN, "af_heart")
+        XCTAssertTrue(VoiceSelectionPolicy.select(freeVoice, isPro: false, settings: settings))
+        XCTAssertEqual(settings.voiceEN, "af_bella")
+        XCTAssertTrue(VoiceSelectionPolicy.select(proVoice, isPro: true, settings: settings))
+        XCTAssertEqual(settings.voiceEN, "af_nova")
     }
 
     @MainActor
