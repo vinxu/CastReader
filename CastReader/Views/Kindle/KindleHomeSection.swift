@@ -14,10 +14,6 @@ struct KindleHomeSection: View {
         Set(history.records.compactMap { $0.sourceKind == .kindle ? $0.id : nil })
     }
 
-    private var latestKindleBookID: String? {
-        history.records.first(where: { $0.sourceKind == .kindle })?.id
-    }
-
     private var orderedHomeBooks: [KindleBook] {
         let storeByID = Dictionary(uniqueKeysWithValues: store.books.map { ($0.id, $0) })
         var seen = Set<String>()
@@ -133,7 +129,6 @@ struct KindleHomeSection: View {
                     } label: {
                         KindleBookRailCard(
                             book: book,
-                            isContinue: book.id == latestKindleBookID,
                             isRecent: recentKindleBookIDs.contains(book.id)
                         )
                     }
@@ -145,11 +140,11 @@ struct KindleHomeSection: View {
         }
         .padding(.horizontal, -2)
     }
+
 }
 
 private struct KindleBookRailCard: View {
     let book: KindleBook
-    let isContinue: Bool
     let isRecent: Bool
 
     var body: some View {
@@ -160,14 +155,14 @@ private struct KindleBookRailCard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppTheme.border.opacity(0.65), lineWidth: 1))
 
-                if isContinue || isRecent {
-                    Text(LocalizedStringKey(isContinue ? "继续" : "最近"))
+                if isRecent {
+                    Text("最近")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(AppTheme.primaryForeground)
                         .lineLimit(1)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 4)
-                        .background(AppTheme.primary.opacity(isContinue ? 0.95 : 0.82), in: Capsule())
+                        .background(AppTheme.primary.opacity(0.82), in: Capsule())
                         .padding(6)
                 }
             }

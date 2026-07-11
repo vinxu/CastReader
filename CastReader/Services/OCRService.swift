@@ -71,8 +71,10 @@ actor OCRService {
 
         let joined = paragraphs.map(\.text).joined(separator: " ")
         let lang = detectLanguage(joined)
-        NSLog("CRDBG OCR strategy=%@ paras=%d lang=%@ chars=%d head=%@",
-              paragraphStrategy.logName, paragraphs.count, lang, joined.count, String(joined.prefix(50)))
+        #if DEBUG
+        NSLog("CRDBG OCR strategy=%@ paras=%d lang=%@ chars=%d",
+              paragraphStrategy.logName, paragraphs.count, lang, joined.count)
+        #endif
         let pixel = CGSize(width: image.size.width * image.scale,
                            height: image.size.height * image.scale)
         let jpeg = image.jpegData(compressionQuality: 0.9)

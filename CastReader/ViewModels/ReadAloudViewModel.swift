@@ -258,6 +258,29 @@ final class ReadAloudViewModel: ObservableObject {
         audio.togglePlayPause()
     }
 
+    /// Idempotent entry-point for external "Continue Listening" actions.
+    /// Reattaching while audio is playing or TTS is still loading must not pause
+    /// playback or start a duplicate generation request.
+    func ensurePlaying() {
+        if audio.isPlaying { return }
+        if currentParagraphIndex < 0 {
+            start()
+            return
+        }
+        if status.isLoading || isBuffering || (status.isStreaming && audio.currentSegment == nil) {
+            return
+        }
+        guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
+            refreshAccessThenRetryResume()
+            return
+        }
+        if audio.currentSegment != nil {
+            audio.play()
+        } else if !isFinished {
+            jump(to: currentParagraphIndex)
+        }
+    }
+
     func skipForward() { audio.skipForward(seconds: 15) }
     func skipBackward() { audio.skipBackward(seconds: 15) }
 

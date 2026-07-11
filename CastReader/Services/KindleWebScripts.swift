@@ -3297,13 +3297,15 @@ enum KindleWebScripts {
 
           var chevron = document.querySelector(dir === 'left' ? '#kr-chevron-left' : '#kr-chevron-right')
             || document.querySelector(dir === 'left' ? 'button[aria-label="Previous page"],button[title="Previous page"]' : 'button[aria-label="Next page"],button[title="Next page"]');
-          if (crKindleNativeControlVisible(chevron)) {
+          var chevronEnabled = !!chevron && !chevron.disabled && String(chevron.getAttribute && chevron.getAttribute('aria-disabled') || '').toLowerCase() !== 'true';
+          var chevronVisible = crKindlePageControlVisible(chevron);
+          if (chevronEnabled) {
             try { chevron.click(); } catch (_) {
               try { chevron.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true })); } catch (_) {}
             }
-            return JSON.stringify({ ok:true, direction:dir, strategy:'native-chevron', tried:tried.concat(['native-chevron']).join('|'), url:location.href });
+            return JSON.stringify({ ok:true, direction:dir, strategy:'native-chevron', controlVisible:crKindleNativeControlVisible(chevron), tried:tried.concat(['native-chevron']).join('|'), url:location.href });
           }
-          tried.push(chevron ? 'hidden-chevron' : 'no-chevron');
+          tried.push(chevron ? 'disabled-chevron' : 'no-chevron');
 
           if (crKindleDispatchNativePointerTurn(dir)) {
             return JSON.stringify({ ok:true, direction:dir, strategy:'native-tap-zone', tried:tried.concat(['native-tap-zone']).join('|'), url:location.href });
@@ -3316,10 +3318,9 @@ enum KindleWebScripts {
             var ae = document.activeElement;
             if (ae && ae !== document.body && ae !== document.documentElement && ae.blur) ae.blur();
             var opts = { key:key, code:key, keyCode:code, which:code, bubbles:true, cancelable:true };
-            [document.body, document.documentElement, document, window].forEach(function(target) {
-              try { target.dispatchEvent(new KeyboardEvent('keydown', opts)); } catch (_) {}
-              try { target.dispatchEvent(new KeyboardEvent('keyup', opts)); } catch (_) {}
-            });
+            var target = document.activeElement || document.body || document;
+            target.dispatchEvent(new KeyboardEvent('keydown', opts));
+            target.dispatchEvent(new KeyboardEvent('keyup', opts));
             return JSON.stringify({ ok:true, direction:dir, strategy:'native-keyboard', tried:tried.concat(['native-keyboard']).join('|'), url:location.href });
           } catch (_) {
             tried.push('keyboard-failed');
@@ -3383,7 +3384,7 @@ enum KindleWebScripts {
 
     static let pageCaptureBootstrap = """
     (function() {
-      var crKindleInstallVersion = 29;
+      var crKindleInstallVersion = 33;
       var crKindleOcrMaxWidth = 768;
       var crKindleOcrJpegQuality = 0.85;
       if (window.__crKindleInstalledVersion === crKindleInstallVersion) {
@@ -3433,7 +3434,108 @@ enum KindleWebScripts {
       window.__crKindleProbe.navigationSeq = Number(window.__crKindleProbe.navigationSeq || 0);
       window.__crKindleProbe.navigationAt = Number(window.__crKindleProbe.navigationAt || 0);
       window.__crKindleProbe.navigationReason = String(window.__crKindleProbe.navigationReason || '');
+      window.__crKindleProbe.syncDialogVisible = !!window.__crKindleProbe.syncDialogVisible;
+      window.__crKindleProbe.syncDialogSignature = String(window.__crKindleProbe.syncDialogSignature || '');
       function crKindleNow() { return Date.now ? Date.now() : new Date().getTime(); }
+      function crKindlePostNative(type, payload) {
+        try {
+          var handler = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.castReaderKindle;
+          if (handler && handler.postMessage) {
+            handler.postMessage(Object.assign({ type:type }, payload || {}));
+          }
+        } catch (_) {}
+      }
+      function crKindleSyncDialogText(el) {
+        try {
+          var text = String((el && (el.innerText || el.textContent)) || '');
+          if (el && el.shadowRoot) text += ' ' + String(el.shadowRoot.textContent || '');
+          return text.replace(/\\s+/g, ' ').trim();
+        } catch (_) { return ''; }
+      }
+      function crKindleVisibleElement(el) {
+        if (!el || !el.getBoundingClientRect) return false;
+        try {
+          var style = getComputedStyle(el);
+          var rect = el.getBoundingClientRect();
+          return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 20 && rect.height > 20;
+        } catch (_) { return false; }
+      }
+      function crKindleSyncDialogCandidate() {
+        try {
+          var nodes = Array.from(document.querySelectorAll('ion-alert,ion-modal,[role="dialog"],[aria-modal="true"],.alert-wrapper,.modal-wrapper'));
+          for (var i = 0; i < nodes.length; i++) {
+            var el = nodes[i];
+            if (!crKindleVisibleElement(el)) continue;
+            var text = crKindleSyncDialogText(el);
+            if (/most\\s+recent\\s+(page|location)\\s+read/i.test(text) ||
+                (/most\\s+recent\\s+location/i.test(text) && /location\\s+\\d+/i.test(text)) ||
+                (/最近.*(阅读页|阅读位置)/.test(text) && /位置\\s*\\d+/.test(text))) {
+              return { element:el, text:text };
+            }
+          }
+        } catch (_) {}
+        return null;
+      }
+      function crKindleInstallSyncDialogButtonObservers(candidate, localLocation, cloudLocation) {
+        try {
+          var roots = [candidate.element];
+          if (candidate.element.shadowRoot) roots.push(candidate.element.shadowRoot);
+          roots.forEach(function(root) {
+            Array.from(root.querySelectorAll('button,[role="button"],ion-button')).forEach(function(button) {
+              if (button.__crKindleSyncObserved) return;
+              var label = crKindleSyncDialogText(button).toLowerCase();
+              var choice = /^(yes|ok|go|continue|是|确定|前往|继续)$/.test(label) ? 'yes' : (/^(no|cancel|stay|否|取消|留在当前页)$/.test(label) ? 'no' : '');
+              if (!choice) return;
+              button.__crKindleSyncObserved = true;
+              button.addEventListener('click', function() {
+                crKindlePostNative('kindle-sync-dialog-choice', {
+                  visible:true,
+                  choice:choice,
+                  localLocation:localLocation,
+                  cloudLocation:cloudLocation
+                });
+              }, true);
+            });
+          });
+        } catch (_) {}
+      }
+      function crKindleCheckSyncDialog() {
+        try {
+          var candidate = crKindleSyncDialogCandidate();
+          if (!candidate) {
+            if (window.__crKindleProbe.syncDialogVisible) {
+              window.__crKindleProbe.syncDialogVisible = false;
+              window.__crKindleProbe.syncDialogSignature = '';
+              crKindlePostNative('kindle-sync-dialog', { visible:false });
+            }
+            return;
+          }
+          var locations = [];
+          var regex = /(?:location|位置)\\s*(\\d+)/ig;
+          var match;
+          while ((match = regex.exec(candidate.text)) !== null && locations.length < 3) {
+            locations.push(Number(match[1] || 0));
+          }
+          var localLocation = locations.length > 0 ? locations[0] : 0;
+          var cloudLocation = locations.length > 1 ? locations[1] : 0;
+          var signature = String(localLocation) + '|' + String(cloudLocation);
+          crKindleInstallSyncDialogButtonObservers(candidate, localLocation, cloudLocation);
+          if (!window.__crKindleProbe.syncDialogVisible || window.__crKindleProbe.syncDialogSignature !== signature) {
+            window.__crKindleProbe.syncDialogVisible = true;
+            window.__crKindleProbe.syncDialogSignature = signature;
+            crKindlePostNative('kindle-sync-dialog', {
+              visible:true,
+              localLocation:localLocation || null,
+              cloudLocation:cloudLocation || null
+            });
+          }
+        } catch (_) {}
+      }
+      try {
+        if (window.__crKindleSyncDialogTimer) clearInterval(window.__crKindleSyncDialogTimer);
+        window.__crKindleSyncDialogTimer = setInterval(crKindleCheckSyncDialog, 250);
+        setTimeout(crKindleCheckSyncDialog, 0);
+      } catch (_) {}
       function crKindleAllowProgrammaticScroll(ms) {
         try {
           window.__crKindleProbe.programmaticScrollUntil = Math.max(
@@ -3778,53 +3880,13 @@ enum KindleWebScripts {
         if (!reader || !reader.getBoundingClientRect) return false;
         var rect = reader.getBoundingClientRect();
         if (!rect || rect.width <= 0 || rect.height <= 0) return false;
-        var startX = dir === 'left' ? rect.left + rect.width * 0.28 : rect.right - rect.width * 0.28;
-        var endX = dir === 'left' ? rect.right - rect.width * 0.18 : rect.left + rect.width * 0.18;
+        var x = dir === 'left' ? rect.left + 40 : rect.right - 40;
         var y = rect.top + rect.height * 0.5;
-        var target = document.elementFromPoint(startX, y) || reader;
-        function eventOpts(x) {
-          return { clientX:x, clientY:y, screenX:x, screenY:y, pageX:x + window.scrollX, pageY:y + window.scrollY, bubbles:true, cancelable:true };
-        }
-        function makeTouch(x, force) {
-          return new Touch({
-            identifier: 7717,
-            target: target,
-            clientX: x,
-            clientY: y,
-            screenX: x,
-            screenY: y,
-            pageX: x + window.scrollX,
-            pageY: y + window.scrollY,
-            radiusX: 4,
-            radiusY: 4,
-            rotationAngle: 0,
-            force: force
-          });
-        }
-        try {
-          var startTouch = makeTouch(startX, 0.55);
-          var midTouch = makeTouch((startX + endX) * 0.5, 0.55);
-          var endTouch = makeTouch(endX, 0.2);
-          target.dispatchEvent(new TouchEvent('touchstart', { touches:[startTouch], targetTouches:[startTouch], changedTouches:[startTouch], bubbles:true, cancelable:true }));
-          target.dispatchEvent(new TouchEvent('touchmove', { touches:[midTouch], targetTouches:[midTouch], changedTouches:[midTouch], bubbles:true, cancelable:true }));
-          target.dispatchEvent(new TouchEvent('touchmove', { touches:[endTouch], targetTouches:[endTouch], changedTouches:[endTouch], bubbles:true, cancelable:true }));
-          target.dispatchEvent(new TouchEvent('touchend', { touches:[], targetTouches:[], changedTouches:[endTouch], bubbles:true, cancelable:true }));
-        } catch (_) {}
-        try {
-          target.dispatchEvent(new PointerEvent('pointerdown', Object.assign({ pointerId:1, pointerType:'touch', isPrimary:true }, eventOpts(startX))));
-          target.dispatchEvent(new PointerEvent('pointermove', Object.assign({ pointerId:1, pointerType:'touch', isPrimary:true }, eventOpts((startX + endX) * 0.5))));
-          target.dispatchEvent(new PointerEvent('pointermove', Object.assign({ pointerId:1, pointerType:'touch', isPrimary:true }, eventOpts(endX))));
-          target.dispatchEvent(new PointerEvent('pointerup', Object.assign({ pointerId:1, pointerType:'touch', isPrimary:true }, eventOpts(endX))));
-        } catch (_) {}
-        try {
-          target.dispatchEvent(new PointerEvent('pointerdown', Object.assign({ pointerId:2, pointerType:'mouse' }, eventOpts(startX))));
-          target.dispatchEvent(new PointerEvent('pointermove', Object.assign({ pointerId:2, pointerType:'mouse' }, eventOpts((startX + endX) * 0.5))));
-          target.dispatchEvent(new PointerEvent('pointerup', Object.assign({ pointerId:2, pointerType:'mouse' }, eventOpts(endX))));
-        } catch (_) {}
-        var tapX = dir === 'left' ? rect.left + Math.min(48, rect.width * 0.12) : rect.right - Math.min(48, rect.width * 0.12);
-        try { target.dispatchEvent(new MouseEvent('mousedown', eventOpts(tapX))); } catch (_) {}
-        try { target.dispatchEvent(new MouseEvent('mouseup', eventOpts(tapX))); } catch (_) {}
-        try { target.dispatchEvent(new MouseEvent('click', eventOpts(tapX))); } catch (_) {}
+        var target = document.elementFromPoint(x, y) || reader;
+        var opts = { clientX:x, clientY:y, screenX:x, screenY:y, pageX:x + window.scrollX, pageY:y + window.scrollY, bubbles:true, cancelable:true };
+        try { target.dispatchEvent(new PointerEvent('pointerdown', Object.assign({ pointerId:1, pointerType:'mouse' }, opts))); } catch (_) {}
+        try { target.dispatchEvent(new PointerEvent('pointerup', Object.assign({ pointerId:1, pointerType:'mouse' }, opts))); } catch (_) {}
+        try { target.dispatchEvent(new MouseEvent('click', opts)); } catch (_) {}
         return true;
       }
       function crKindlePageControlVisible(el) {
@@ -3894,36 +3956,40 @@ enum KindleWebScripts {
             tried.push('scrubber-error:' + String(e));
           }
 
-          // Match Android: drive Kindle's own page scrubber first. Chevron/tap
-          // controls can accept events without moving the rendered page.
+          // Match the extension's proven main-world transport: the Kindle
+          // scrubber is the most reliable page action. Dispatch it once, then
+          // let Swift poll the real visible page before any fallback is tried.
           try {
-            if (scrubber && typeof scrubber.value !== 'undefined') {
-              var oldValue = Number(scrubber.value || 0);
-              if (isFinite(oldValue)) {
-                var newValue = oldValue + step;
-                scrubber.value = newValue;
-                try { scrubber.dispatchEvent(new CustomEvent('ionInput', { detail: { value:newValue }, bubbles:true })); } catch (_) {}
-                try { scrubber.dispatchEvent(new CustomEvent('ionChange', { detail: { value:newValue }, bubbles:true })); } catch (_) {}
-                return finish({
-                  ok:true,
-                  direction:dir,
-                  strategy:'native-scrubber',
-                  tried:tried.concat(['native-scrubber']).join('|'),
-                  oldKey:currentKey,
-                  oldValue:oldValue,
-                  newValue:newValue,
-                  url:location.href
-                });
-              }
-              tried.push('scrubber-nonfinite');
+            if (scrubber && typeof scrubber.value === 'number') {
+              var scrubberOldValue = Number(scrubber.value || 0);
+              var scrubberNewValue = scrubberOldValue + step;
+              scrubber.value = scrubberNewValue;
+              scrubber.dispatchEvent(new CustomEvent('ionInput', { detail: { value:scrubberNewValue }, bubbles:true }));
+              scrubber.dispatchEvent(new CustomEvent('ionChange', { detail: { value:scrubberNewValue }, bubbles:true }));
+              return finish({
+                ok:true,
+                direction:dir,
+                strategy:'native-scrubber',
+                dispatchCount:1,
+                tried:tried.concat(['native-scrubber']).join('|'),
+                oldKey:currentKey,
+                oldValue:scrubberOldValue,
+                newValue:scrubberNewValue,
+                url:location.href
+              });
             }
           } catch (e) {
-            tried.push('scrubber-error:' + String(e));
+            tried.push('scrubber-dispatch-error:' + String(e));
           }
 
+          // Kindle often keeps the real chevron mounted but visually hidden.
+          // The extension intentionally clicks that control before falling back
+          // to an edge tap; Swift still verifies the real visible page changed.
           var chevron = document.querySelector(dir === 'left' ? '#kr-chevron-left' : '#kr-chevron-right')
             || document.querySelector(dir === 'left' ? 'button[aria-label="Previous page"],button[title="Previous page"]' : 'button[aria-label="Next page"],button[title="Next page"]');
-          if (crKindlePageControlVisible(chevron)) {
+          var chevronEnabled = !!chevron && !chevron.disabled && String(chevron.getAttribute && chevron.getAttribute('aria-disabled') || '').toLowerCase() !== 'true';
+          var chevronVisible = crKindlePageControlVisible(chevron);
+          if (chevronEnabled) {
             try { chevron.click(); } catch (_) {
               try { chevron.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true })); } catch (_) {}
             }
@@ -3931,12 +3997,14 @@ enum KindleWebScripts {
               ok:true,
               direction:dir,
               strategy:'native-chevron',
+              controlVisible:chevronVisible,
+              dispatchCount:1,
               tried:tried.concat(['native-chevron']).join('|'),
               oldKey:currentKey,
               url:location.href
             });
           }
-          tried.push(chevron ? 'hidden-chevron' : 'no-chevron');
+          tried.push(chevron ? 'disabled-chevron' : 'no-chevron');
 
           if (crKindleDispatchPointerTurn(dir)) {
             return finish({
@@ -3956,11 +4024,9 @@ enum KindleWebScripts {
             var ae = document.activeElement;
             if (ae && ae !== document.body && ae !== document.documentElement && ae.blur) ae.blur();
             var opts = { key:key, code:key, keyCode:code, which:code, bubbles:true, cancelable:true };
-            [document.activeElement, document.body, document.documentElement, document, window].forEach(function(target) {
-              if (!target) return;
-              try { target.dispatchEvent(new KeyboardEvent('keydown', opts)); } catch (_) {}
-              try { target.dispatchEvent(new KeyboardEvent('keyup', opts)); } catch (_) {}
-            });
+            var target = document.activeElement || document.body || document;
+            target.dispatchEvent(new KeyboardEvent('keydown', opts));
+            target.dispatchEvent(new KeyboardEvent('keyup', opts));
             return finish({
               ok:true,
               direction:dir,
@@ -4022,16 +4088,13 @@ enum KindleWebScripts {
           }
           tried.push(scrubber ? 'hidden-scrubber' : 'no-scrubber');
 
-          var chevron = document.querySelector(dir === 'left' ? '#kr-chevron-left' : '#kr-chevron-right')
-            || document.querySelector(dir === 'left' ? 'button[aria-label="Previous page"],button[title="Previous page"]' : 'button[aria-label="Next page"],button[title="Next page"]');
-          if (crKindlePageControlVisible(chevron)) {
-            try { chevron.click(); } catch (_) {
-              try { chevron.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true })); } catch (_) {}
-            }
-            tried.push('chevron');
-            return finish({ ok:true, direction:dir, strategy:'direct-chevron' });
+          // The primary transport already tried Kindle's chevron. The next
+          // extension-aligned fallback is one edge tap, not another keyboard.
+          if (crKindleDispatchPointerTurn(dir)) {
+            tried.push('tap-zone');
+            return finish({ ok:true, direction:dir, strategy:'direct-tap-zone', dispatchCount:1 });
           }
-          tried.push(chevron ? 'hidden-chevron' : 'no-chevron');
+          tried.push('no-tap-zone');
 
           try {
             var target = null;
@@ -4068,21 +4131,15 @@ enum KindleWebScripts {
             var key = dir === 'left' ? 'ArrowLeft' : 'ArrowRight';
             var code = dir === 'left' ? 37 : 39;
             var opts = { key:key, code:key, keyCode:code, which:code, bubbles:true, cancelable:true };
-            [document.body, document.documentElement, document, window].forEach(function(targetNode) {
-              try { targetNode.dispatchEvent(new KeyboardEvent('keydown', opts)); } catch (_) {}
-              try { targetNode.dispatchEvent(new KeyboardEvent('keyup', opts)); } catch (_) {}
-            });
+            var targetNode = document.activeElement || document.body || document;
+            targetNode.dispatchEvent(new KeyboardEvent('keydown', opts));
+            targetNode.dispatchEvent(new KeyboardEvent('keyup', opts));
             tried.push('keyboard');
             return finish({ ok:true, direction:dir, strategy:'direct-keyboard' });
           } catch (e) {
             tried.push('keyboard-error:' + String(e && e.message || e));
           }
 
-          if (crKindleDispatchPointerTurn(dir)) {
-            tried.push('tap-zone');
-            return finish({ ok:true, direction:dir, strategy:'direct-tap-zone' });
-          }
-          tried.push('no-tap-zone');
           return finish({ ok:false, direction:dir, reason:'direct-page-control-unavailable' });
         } catch (e) {
           return JSON.stringify({ ok:false, reason:String(e && e.message || e), direction:String(direction || ''), anchorKey:String(anchorKey || ''), url:location.href });
@@ -5260,6 +5317,27 @@ enum KindleWebScripts {
           return JSON.stringify(shot);
         } catch (e) {
           return JSON.stringify({ ok:false, reason:String(e), url: location.href });
+        }
+      };
+      window.__crKindleLockCurrentPageForPlayback = function(expectedKey) {
+        try {
+          expectedKey = String(expectedKey || '');
+          var c = currentReadingCandidate();
+          if (!c || !c.key) {
+            return JSON.stringify({ ok:false, reason:'no-current-candidate', expectedKey:expectedKey, url:location.href });
+          }
+          if (expectedKey && String(c.key || '') !== expectedKey) {
+            return JSON.stringify({ ok:false, reason:'visible-key-mismatch', expectedKey:expectedKey, key:String(c.key || ''), url:location.href });
+          }
+          c = lockLiveCandidate(c) || c;
+          return JSON.stringify({
+            ok:true,
+            key:String(c.key || ''),
+            sessionId:Number(window.__crKindleProbe.liveSessionId || 0),
+            url:location.href
+          });
+        } catch (e) {
+          return JSON.stringify({ ok:false, reason:String(e), expectedKey:String(expectedKey || ''), url:location.href });
         }
       };
       function orderedIndexForCandidate(list, candidate) {

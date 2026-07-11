@@ -4405,7 +4405,8 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         var indexes = OCRWordAligner.wordIndexes(overlapping: hit.range, in: paragraph)
         if indexes.count > 24 {
             indexes = Array(indexes.prefix(24))
-            appendLog("KINDLE mark clipped text=\(text.prefix(30)) words=24")
+            let markHash = KindleListeningAnchorResolver.pageTextHash(paragraphTexts: [text])
+            appendLog("KINDLE mark clipped chars=\(text.count) hash=\(markHash.prefix(12)) words=24")
         }
         guard !indexes.isEmpty else { return nil }
         let rects = indexes.compactMap { idx -> CGRect? in
@@ -5016,9 +5017,11 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss"
         let line = "\(formatter.string(from: Date())) [\(appStateText)] \(message)"
+        #if DEBUG
         NSLog("CRDBG WKProbe %@", line)
         print("CRDBG WKProbe \(line)")
         appendLogFileLine(line)
+        #endif
         logLines.append(line)
         if logLines.count > 120 {
             logLines.removeFirst(logLines.count - 120)

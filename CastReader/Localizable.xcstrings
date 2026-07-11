@@ -31,7 +31,7 @@
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "%1$@ · %2$@"
           }
         }
@@ -178,8 +178,8 @@
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Explaining · block %1$lld/%2$lld"
+            "state" : "translated",
+            "value" : "解读中 · 第 %1$lld/%2$lld 段"
           }
         }
       }
@@ -384,7 +384,14 @@
       }
     },
     "上一页" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous page"
+          }
+        }
+      }
     },
     "上传中…" : {
       "localizations" : {
@@ -417,7 +424,14 @@
       }
     },
     "下一页" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next page"
+          }
+        }
+      }
     },
     "下一页 Kindle 页面已就绪。" : {
       "localizations" : {
@@ -1887,7 +1901,14 @@
       }
     },
     "暂未缓存这本书的目录，请先竖屏打开一次目录。" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No table of contents is cached for this book yet. Open it once in portrait first."
+          }
+        }
+      }
     },
     "月度订阅" : {
       "extractionState" : "stale",
@@ -2619,6 +2640,16 @@
         }
       }
     },
+    "继续听" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue Listening"
+          }
+        }
+      }
+    },
     "继续即表示同意" : {
       "localizations" : {
         "en" : {
@@ -2645,6 +2676,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Continuing…"
+          }
+        }
+      }
+    },
+    "已从当前页开始朗读。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading from the current page."
+          }
+        }
+      }
+    },
+    "已恢复 Kindle 朗读。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle reading resumed."
+          }
+        }
+      }
+    },
+    "正在恢复 Kindle 朗读…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resuming Kindle reading…"
+          }
+        }
+      }
+    },
+    "正在应用 Kindle 阅读位置…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applying the Kindle reading position…"
+          }
+        }
+      }
+    },
+    "请先确认 Kindle 阅读位置。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a Kindle reading position first."
           }
         }
       }

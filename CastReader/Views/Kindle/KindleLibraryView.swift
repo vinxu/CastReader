@@ -83,12 +83,10 @@ struct KindleLibraryView: View {
     private var bookList: some View {
         LazyVStack(spacing: 12) {
             ForEach(visibleBooks) { book in
-                Button {
-                    KindlePlaybackCenter.shared.open(book: book)
-                } label: {
-                    KindleLibraryRow(book: book)
-                }
-                .buttonStyle(.plain)
+                KindleLibraryRow(
+                    book: book,
+                    open: { KindlePlaybackCenter.shared.open(book: book) }
+                )
             }
         }
     }
@@ -130,6 +128,7 @@ struct KindleLibraryView: View {
 
 private struct KindleLibraryRow: View {
     let book: KindleBook
+    let open: () -> Void
 
     private var lastOpenedText: String {
         let date = book.lastOpenedAt ?? book.lastSyncedAt
@@ -137,37 +136,42 @@ private struct KindleLibraryRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 14) {
-            KindleCoverView(urlString: book.coverURL)
-                .frame(width: 64, height: 94)
-                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 7).stroke(AppTheme.border.opacity(0.65), lineWidth: 1))
+        HStack(spacing: 12) {
+            HStack(spacing: 14) {
+                KindleCoverView(urlString: book.coverURL)
+                    .frame(width: 64, height: 94)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 7).stroke(AppTheme.border.opacity(0.65), lineWidth: 1))
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text(book.title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(AppTheme.foreground)
-                    .lineLimit(2)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(book.title)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppTheme.foreground)
+                        .lineLimit(2)
 
-                Text(book.displayAuthor)
-                    .font(.caption)
+                    Text(book.displayAuthor)
+                        .font(.caption)
+                        .foregroundColor(AppTheme.mutedForeground)
+                        .lineLimit(1)
+
+                    HStack(spacing: 8) {
+                        Text(book.displayProgress)
+                        Text("·")
+                        Text(lastOpenedText)
+                    }
+                    .font(.caption2)
                     .foregroundColor(AppTheme.mutedForeground)
                     .lineLimit(1)
-
-                HStack(spacing: 8) {
-                    Text(book.displayProgress)
-                    Text("·")
-                    Text(lastOpenedText)
                 }
-                .font(.caption2)
-                .foregroundColor(AppTheme.mutedForeground)
-                .lineLimit(1)
+                Spacer(minLength: 4)
             }
+            .contentShape(Rectangle())
+            .onTapGesture(perform: open)
 
-            Spacer(minLength: 8)
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.semibold))
                 .foregroundColor(AppTheme.mutedForeground.opacity(0.8))
+                .frame(width: 28)
         }
         .padding(12)
         .background(AppTheme.surface)

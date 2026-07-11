@@ -47,9 +47,9 @@ struct KindleBookView: View {
                 if !usesCompactPlaybackBar {
                     Divider()
                     playbackBar
-                        .opacity(shouldHidePlaybackForNativeTOC ? 0 : 1)
-                        .allowsHitTesting(!shouldHidePlaybackForNativeTOC)
-                        .accessibilityHidden(shouldHidePlaybackForNativeTOC)
+                        .opacity(shouldHidePlaybackForNativeTOC ? 0 : (model.isKindleSyncDialogVisible ? 0.45 : 1))
+                        .allowsHitTesting(!shouldHidePlaybackForNativeTOC && !model.isKindleSyncDialogVisible)
+                        .accessibilityHidden(shouldHidePlaybackForNativeTOC || model.isKindleSyncDialogVisible)
                 }
             }
 
@@ -57,9 +57,9 @@ struct KindleBookView: View {
                 landscapePlaybackOverlay
                     .padding(.horizontal, 22)
                     .padding(.bottom, 8)
-                    .opacity(shouldHidePlaybackForNativeTOC ? 0 : 1)
-                    .allowsHitTesting(!shouldHidePlaybackForNativeTOC)
-                    .accessibilityHidden(shouldHidePlaybackForNativeTOC)
+                    .opacity(shouldHidePlaybackForNativeTOC ? 0 : (model.isKindleSyncDialogVisible ? 0.45 : 1))
+                    .allowsHitTesting(!shouldHidePlaybackForNativeTOC && !model.isKindleSyncDialogVisible)
+                    .accessibilityHidden(shouldHidePlaybackForNativeTOC || model.isKindleSyncDialogVisible)
             }
 
             if model.isNativeTOCPresented {
@@ -106,6 +106,8 @@ struct KindleBookView: View {
                 model.noteReaderLayoutChange(reason: "foreground")
                 model.notePlaybackLayoutChange(reason: "foreground")
                 schedulePlaybackRefocus(reason: "foreground")
+            } else {
+                model.flushListeningAnchor(reason: phase == .background ? "background" : "inactive")
             }
         }
         .onReceive(AudioPlayerService.shared.$isPlaying.removeDuplicates()) { isPlaying in
@@ -117,6 +119,7 @@ struct KindleBookView: View {
         .onDisappear {
             importRouter.hideMainChrome = false
             refocusTask?.cancel()
+            model.flushListeningAnchor(reason: "reader-disappear")
             if model.shouldKeepAliveForMiniPlayer {
                 KindlePlaybackCenter.shared.activate(model: model)
             } else {
@@ -187,6 +190,8 @@ struct KindleBookView: View {
             }
             .padding(3)
             .background(AppTheme.surfaceVariant, in: Capsule())
+            .opacity(model.isKindleSyncDialogVisible ? 0.5 : 1)
+            .allowsHitTesting(!model.isKindleSyncDialogVisible)
         }
         .frame(height: headerHeight)
         .padding(.horizontal, 14)
@@ -259,7 +264,24 @@ struct KindleBookView: View {
 
     @ViewBuilder
     private var preparingStatusOverlay: some View {
-        EmptyView()
+        if model.isKindleSyncDialogVisible {
+            VStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                    Text(String(localized: "请先确认 Kindle 阅读位置。"))
+                        .font(.caption.weight(.semibold))
+                }
+                .foregroundColor(AppTheme.foreground)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(.regularMaterial, in: Capsule())
+                .overlay(Capsule().stroke(AppTheme.mutedForeground.opacity(0.16), lineWidth: 0.5))
+                .padding(.top, 12)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+            .allowsHitTesting(false)
+        }
     }
 
     @ViewBuilder
@@ -911,9 +933,12 @@ final class KindlePlaybackCenter: ObservableObject {
 
     private init() {}
 
-    func open(book: KindleBook) {
+    func open(book: KindleBook, continueListening: Bool = false) {
         if let active = model, active.isSameBook(as: book) {
             active.refreshMetadata(from: book)
+            if continueListening {
+                active.requestContinueListening()
+            }
             isPresented = true
             return
         }
@@ -921,6 +946,9 @@ final class KindlePlaybackCenter: ObservableObject {
         let old = model
         let next = KindleBookViewModel(book: book)
         model = next
+        if continueListening {
+            KindleRunLog.write("KINDLE audiobook cold continue ignored book=\(String(book.id.prefix(24))) reason=no-live-session")
+        }
         isPresented = true
         old?.stopAll()
     }
@@ -1128,6 +1156,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     @Published var isNativeTOCLoading = false
     @Published var nativeTOCError: String?
     @Published var nativeTOCEntries: [KindleTOCEntry] = []
+    @Published private(set) var isKindleSyncDialogVisible = false
+    @Published private(set) var kindleSyncLocalLocation: Int?
+    @Published private(set) var kindleSyncCloudLocation: Int?
     private var lastNativeTOCSelectionText: String?
     private var lastNativeTOCSelectionPageKey: String?
     private var nativeTOCTask: Task<Void, Never>?
@@ -1230,6 +1261,18 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var bridgedNextResumeByPageKey: [String: Int] = [:]
     private var refocusWordRoutes: [String: KindleRenderRoute] = [:]
     private var playbackAnchor: KindlePlaybackAnchor?
+    private let continueListeningGate = KindleAutoplayRequestGate()
+    private var continueListeningRequestedAt: [Int: Date] = [:]
+    private var continueListeningTask: Task<Void, Never>?
+    private var continueListeningBaselineTask: Task<Void, Never>?
+    private var syncDialogResolutionTask: Task<Void, Never>?
+    private var syncDialogEpoch: UInt64 = 0
+    private var syncDialogShouldResume = false
+    private var syncDialogResumeMode: ReaderMode?
+    private var pendingPersistentAnchor: KindleListeningAnchor?
+    private var listeningAnchorPersistTask: Task<Void, Never>?
+    private var lastListeningAnchorPersistedAt: Date?
+    private var pageTextHashByKey: [String: String] = [:]
     private var expectedNextBlobByAfterKey: [String: String] = [:]
     private var blobOrderByKey: [String: Int] = [:]
     private var lastActivatedBlobKey: String?
@@ -1792,6 +1835,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE script message invalid \(String(describing: body))")
             return
         }
+        if let event = KindleSyncDialogEvent(payload: payload) {
+            handleKindleSyncDialogEvent(event)
+            return
+        }
         let type = payload["type"] as? String ?? "unknown"
         switch type {
         case "toc-click", "toc-after-click", "toc-close", "toc-close-error":
@@ -1824,6 +1871,74 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE toc event type=\(type) text=\(text) active=\(active) label=\(label) raw=\(raw) count=\(count) clicked=\(clicked) url=\(Self.keyLog(payload["url"] as? String ?? ""))")
         default:
             KindleRunLog.write("KINDLE script event type=\(type) payload=\(payload)")
+        }
+    }
+
+    private func handleKindleSyncDialogEvent(_ event: KindleSyncDialogEvent) {
+        if let localLocation = event.localLocation { kindleSyncLocalLocation = localLocation }
+        if let cloudLocation = event.cloudLocation { kindleSyncCloudLocation = cloudLocation }
+
+        if let choice = event.choice {
+            statusText = String(localized: "正在应用 Kindle 阅读位置…")
+            KindleRunLog.write("KINDLE sync dialog choice=\(choice.rawValue) local=\(kindleSyncLocalLocation ?? -1) cloud=\(kindleSyncCloudLocation ?? -1)")
+            return
+        }
+
+        if event.isVisible {
+            guard !isKindleSyncDialogVisible else { return }
+            syncDialogEpoch &+= 1
+            syncDialogResolutionTask?.cancel()
+            syncDialogResolutionTask = nil
+            syncDialogResumeMode = mode
+            syncDialogShouldResume = isCurrentModePlaybackActiveOrPreparing || isAdvancingLivePage || isPageTurnResuming
+            isKindleSyncDialogVisible = true
+            if syncDialogShouldResume {
+                stopPlaybackForPageTurn(reason: "kindle-sync-dialog", clearLiveOverlay: false)
+                if let resumeMode = syncDialogResumeMode { mode = resumeMode }
+            }
+            statusText = String(localized: "请先确认 Kindle 阅读位置。")
+            KindleRunLog.write("KINDLE sync dialog shown local=\(kindleSyncLocalLocation ?? -1) cloud=\(kindleSyncCloudLocation ?? -1) resume=\(syncDialogShouldResume ? "Y" : "N") mode=\(mode.rawValue)")
+            return
+        }
+
+        finishKindleSyncDialog(reason: "observer-hidden")
+    }
+
+    private func finishKindleSyncDialog(reason: String) {
+        guard isKindleSyncDialogVisible else { return }
+        isKindleSyncDialogVisible = false
+        syncDialogEpoch &+= 1
+        let epoch = syncDialogEpoch
+        let shouldResume = syncDialogShouldResume
+        let resumeMode = syncDialogResumeMode ?? mode
+        syncDialogShouldResume = false
+        syncDialogResumeMode = nil
+        statusText = String(localized: "正在应用 Kindle 阅读位置…")
+        KindleRunLog.write("KINDLE sync dialog hidden reason=\(reason) local=\(kindleSyncLocalLocation ?? -1) cloud=\(kindleSyncCloudLocation ?? -1) resume=\(shouldResume ? "Y" : "N")")
+
+        syncDialogResolutionTask?.cancel()
+        syncDialogResolutionTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            try? await Task.sleep(nanoseconds: 650_000_000)
+            guard !Task.isCancelled, self.syncDialogEpoch == epoch, !self.isKindleSyncDialogVisible else { return }
+            do {
+                try await self.ensureCaptureScriptInstalled(reason: "kindle-sync-dialog-resolved")
+                try await self.waitForPageReady()
+                try await self.waitForKindleImageStable()
+                guard !Task.isCancelled, self.syncDialogEpoch == epoch, !self.isKindleSyncDialogVisible else { return }
+                self.resetLiveSession(clearPlaybackCenter: false)
+                self.mode = resumeMode
+                if shouldResume {
+                    try await self.startCurrentMode()
+                } else {
+                    self.statusText = String(localized: "打开任意位置，然后点播放开始朗读。")
+                }
+                KindleRunLog.write("KINDLE sync dialog resolved resume=\(shouldResume ? "Y" : "N") mode=\(resumeMode.rawValue) key=\(Self.keyLog(self.livePageKey ?? ""))")
+            } catch {
+                self.statusText = error.localizedDescription
+                KindleRunLog.write("KINDLE sync dialog resolve failed resume=\(shouldResume ? "Y" : "N") error=\(error.localizedDescription)")
+            }
+            self.syncDialogResolutionTask = nil
         }
     }
 
@@ -1939,6 +2054,33 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         store.markOpened(book)
     }
 
+    func requestContinueListening() {
+        guard !isKindleSyncDialogVisible else {
+            statusText = String(localized: "请先确认 Kindle 阅读位置。")
+            return
+        }
+        let request = continueListeningGate.request(for: book.id)
+        continueListeningRequestedAt[request] = Date()
+        KindleRunLog.write("KINDLE audiobook continue requested request=\(request) book=\(Self.keyLog(book.id)) anchor=\(store.hasListeningAnchor(for: book.id) ? "Y" : "N")")
+
+        if mode != .read {
+            flushListeningAnchor(reason: "continue-mode-switch")
+            stopPlaybackForPageTurn(reason: "continue-listening-mode-switch", clearLiveOverlay: false)
+            applyModeSelection(.read)
+        }
+        if webView.url != nil, !webView.isLoading {
+            schedulePendingContinueListening(reason: "request-ready-webview")
+        }
+    }
+
+    func flushListeningAnchor(reason: String) {
+        listeningAnchorPersistTask?.cancel()
+        listeningAnchorPersistTask = nil
+        guard let anchor = pendingPersistentAnchor else { return }
+        pendingPersistentAnchor = nil
+        persistListeningAnchor(anchor, reason: reason)
+    }
+
     func reload() {
         resetLiveSession()
         if webView.url == nil {
@@ -1959,11 +2101,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             try? await self?.waitForKindleImageStable()
             await self?.logReaderLayoutProbe(reason: "didFinish")
             await self?.logKindleGeometrySnapshot(reason: "didFinish")
+            self?.schedulePendingContinueListening(reason: "webview-did-finish")
         }
         KindleRunLog.write("KINDLE webview didFinish url=\(webView.url?.absoluteString ?? "")")
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        finishKindleSyncDialog(reason: "navigation-start")
         KindleRunLog.write("KINDLE webview didStart url=\(webView.url?.absoluteString ?? "")")
     }
 
@@ -1973,6 +2117,71 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         KindleRunLog.write("KINDLE webview didFailProvisional url=\(webView.url?.absoluteString ?? "") error=\(error.localizedDescription)")
+    }
+
+    private func schedulePendingContinueListening(reason: String) {
+        guard continueListeningGate.hasPendingRequest(for: book.id), continueListeningTask == nil else { return }
+        continueListeningTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            guard let request = self.continueListeningGate.consume(for: self.book.id) else {
+                self.continueListeningTask = nil
+                return
+            }
+            let requestedAt = self.continueListeningRequestedAt.removeValue(forKey: request) ?? Date()
+            await self.performContinueListening(request: request, requestedAt: requestedAt, reason: reason)
+            self.continueListeningTask = nil
+            self.schedulePendingContinueListening(reason: "coalesced-request")
+        }
+    }
+
+    private func performContinueListening(request: Int, requestedAt: Date, reason: String) async {
+        let audio = AudioPlayerService.shared
+        if mode == .read,
+           let vm = readVM,
+           vm.currentParagraphIndex >= 0,
+           !vm.isFinished,
+           audio.currentBookId == book.id {
+            startContinueListeningBaseline(
+                request: request,
+                requestedAt: requestedAt,
+                match: .exact,
+                reason: "memory-session",
+                pageTextHash: store.listeningAnchor(for: book.id)?.pageTextHash ?? ""
+            )
+            vm.ensurePlaying()
+            startPageKeyWatcher()
+            KindlePlaybackCenter.shared.activate(model: self)
+            KindleRunLog.write("KINDLE audiobook continue existing-session request=\(request) key=\(Self.keyLog(livePageKey ?? "")) p=\(vm.currentParagraphIndex)")
+            return
+        }
+
+        statusText = String(localized: "打开任意位置，然后点播放开始朗读。")
+        KindleRunLog.write("KINDLE audiobook continue unavailable request=\(request) reason=no-live-session source=\(reason) anchor=\(store.hasListeningAnchor(for: book.id) ? "Y" : "N")")
+    }
+
+    private func startContinueListeningBaseline(
+        request: Int,
+        requestedAt: Date,
+        match: KindleListeningAnchorMatch,
+        reason: String,
+        pageTextHash: String
+    ) {
+        continueListeningBaselineTask?.cancel()
+        continueListeningBaselineTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            for _ in 0..<200 {
+                guard !Task.isCancelled else { return }
+                let audio = AudioPlayerService.shared
+                if audio.isPlaying, audio.currentBookId == self.book.id {
+                    let elapsedMs = Int(Date().timeIntervalSince(requestedAt) * 1_000)
+                    KindleRunLog.write("KINDLE audiobook first-audio request=\(request) elapsedMs=\(elapsedMs) match=\(match.rawValue) reason=\(reason) key=\(Self.keyLog(self.livePageKey ?? "")) hash=\(pageTextHash.prefix(12))")
+                    return
+                }
+                try? await Task.sleep(nanoseconds: 50_000_000)
+            }
+            let elapsedMs = Int(Date().timeIntervalSince(requestedAt) * 1_000)
+            KindleRunLog.write("KINDLE audiobook first-audio-timeout request=\(request) elapsedMs=\(elapsedMs) match=\(match.rawValue) reason=\(reason) key=\(Self.keyLog(self.livePageKey ?? "")) hash=\(pageTextHash.prefix(12))")
+        }
     }
 
     private func stabilizeInitialReaderLayout(reason: String) async {
@@ -2847,6 +3056,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func selectMode(_ newMode: ReaderMode, autoStart: Bool = false) {
+        guard !isKindleSyncDialogVisible else {
+            statusText = String(localized: "请先确认 Kindle 阅读位置。")
+            return
+        }
         guard mode != newMode else {
             if autoStart {
                 Task { try? await startCurrentMode() }
@@ -2933,6 +3146,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func startCurrentMode() async throws {
+        guard !isKindleSyncDialogVisible else {
+            statusText = String(localized: "请先确认 Kindle 阅读位置。")
+            return
+        }
         #if DEBUG
         NSLog("CRDBG KINDLE start requested mode=%@ hasRead=%@ readPara=%d preparing=%@",
               mode.rawValue,
@@ -3016,6 +3233,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func turnPage(_ direction: KindlePageTurnDirection) async {
+        guard !isKindleSyncDialogVisible else {
+            statusText = String(localized: "请先确认 Kindle 阅读位置。")
+            KindleRunLog.write("KINDLE page turn blocked sync-dialog direction=\(direction.logName)")
+            return
+        }
         let resumeMode = pendingManualPageResumeMode ?? mode
         let shouldResume = shouldResumeAfterUserPageTurn
         KindleRunLog.write("KINDLE page turn requested \(direction.logName) mode=\(mode.rawValue) resume=\(shouldResume)")
@@ -3389,6 +3611,24 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
     }
 
+    private func lockCurrentPageForCachedPlayback(expectedKey rawKey: String) async -> (key: String, sessionId: Int)? {
+        let key = normalizedPageKey(rawKey)
+        guard !key.isEmpty else { return nil }
+        let escapedKey = key
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+        guard let result = try? await evaluateJSON(
+            "window.__crKindleLockCurrentPageForPlayback && window.__crKindleLockCurrentPageForPlayback('\(escapedKey)')"
+        ),
+        Self.boolValue(result["ok"]),
+        normalizedPageKey(result["key"] as? String) == key,
+        let sessionId = Self.int(from: result["sessionId"]),
+        sessionId > 0 else {
+            return nil
+        }
+        return (key, sessionId)
+    }
+
     private func requestKindlePageTurnTarget(_ direction: KindlePageTurnDirection, oldKey: String) async throws -> (targetKey: String, result: [String: Any]) {
         var lastFailureReason = ""
         var lastResult: [String: Any] = [:]
@@ -3415,8 +3655,28 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 return (immediateTarget, result)
             }
 
-            if let targetKey = await waitForNavigationTargetKey(oldKey: oldKey, timeoutNanoseconds: 4_200_000_000) {
+            let nativeControlFirst = strategy == "native-scrubber" || strategy == "native-chevron" || strategy == "native-keyboard" || strategy == "native-tap-zone"
+            let initialWait: UInt64 = nativeControlFirst ? 900_000_000 : 4_200_000_000
+            if let targetKey = await waitForNavigationTargetKey(oldKey: oldKey, timeoutNanoseconds: initialWait) {
                 return (targetKey, result)
+            }
+
+            if nativeControlFirst,
+               let scrubberFallback = try? await requestKindleDirectPageTurn(direction, anchorKey: oldKey) {
+                lastResult = scrubberFallback
+                let fallbackOK = Self.boolValue(scrubberFallback["ok"])
+                let fallbackStrategy = scrubberFallback["strategy"] as? String ?? ""
+                let fallbackReason = scrubberFallback["reason"] as? String ?? ""
+                KindleRunLog.write("KINDLE page turn direct-fallback \(direction.logName) attempt=\(attempt) old=\(Self.keyLog(oldKey)) ok=\(fallbackOK) strategy=\(fallbackStrategy) reason=\(fallbackReason)")
+                if fallbackOK,
+                   let fallbackTarget = (scrubberFallback["targetKey"] as? String)?.nilIfEmpty,
+                   fallbackTarget != oldKey {
+                    return (fallbackTarget, scrubberFallback)
+                }
+                if fallbackOK,
+                   let targetKey = await waitForNavigationTargetKey(oldKey: oldKey, timeoutNanoseconds: 2_400_000_000) {
+                    return (targetKey, scrubberFallback)
+                }
             }
 
             if let fallback = try? await requestKindleForceAdjacentPageTurn(direction, anchorKey: oldKey) {
@@ -3516,6 +3776,29 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return try await evaluateJSON(script)
     }
 
+    private func requestKindleDirectPageTurn(_ direction: KindlePageTurnDirection, anchorKey: String) async throws -> [String: Any] {
+        let jsDirection: String
+        switch direction {
+        case .previous: jsDirection = "previous"
+        case .next: jsDirection = "next"
+        }
+        let escapedDirection = jsDirection
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+        let escapedAnchor = anchorKey
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+        let script = """
+        (function() {
+          if (typeof window.__crKindleDirectPage !== 'function') {
+            return JSON.stringify({ ok:false, reason:'missing-direct-page' });
+          }
+          return window.__crKindleDirectPage('\(escapedDirection)', '\(escapedAnchor)');
+        })()
+        """
+        return try await evaluateJSON(script)
+    }
+
     private func requestKindleForceAdjacentPageTurn(_ direction: KindlePageTurnDirection, anchorKey: String) async throws -> [String: Any] {
         let jsDirection: String
         switch direction {
@@ -3600,6 +3883,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func stopAll() {
+        flushListeningAnchor(reason: "stop-all")
+        continueListeningTask?.cancel()
+        continueListeningTask = nil
+        continueListeningBaselineTask?.cancel()
+        continueListeningBaselineTask = nil
+        syncDialogResolutionTask?.cancel()
+        syncDialogResolutionTask = nil
         readerLayoutRepairTask?.cancel()
         readerLayoutRepairTask = nil
         layoutPlaybackRestartTask?.cancel()
@@ -3773,8 +4063,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 )
                 #if DEBUG
                 let wordCount = doc.paragraphs.reduce(0) { $0 + $1.words.count }
-                let startHead = doc.paragraphs.first(where: { $0.id == liveStartParagraphIndex })?.text.prefix(48) ?? ""
-                NSLog("CRDBG KINDLE live document key=%@ captured=%@ session=%d kind=%@ paras=%d words=%d chars=%d visible=%.3f..%.3f start=%d head=%@ attempt=%d",
+                let textHash = KindleListeningAnchorResolver.pageTextHash(paragraphs: doc.paragraphs)
+                NSLog("CRDBG KINDLE live document key=%@ captured=%@ session=%d kind=%@ paras=%d words=%d chars=%d hash=%@ visible=%.3f..%.3f start=%d attempt=%d",
                       Self.keyLog(actualLiveKey),
                       Self.keyLog(page.key),
                       page.sessionId,
@@ -3782,10 +4072,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                       doc.paragraphs.count,
                       wordCount,
                       doc.fullText.count,
+                      String(textHash.prefix(12)),
                       liveVisibleTopNorm ?? -1,
                       liveVisibleBottomNorm ?? -1,
                       liveStartParagraphIndex ?? -1,
-                      String(startHead),
                       attempt)
                 #endif
                 resetViewModels(document: doc)
@@ -3999,25 +4289,26 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let pageKey = normalizedPageKey(rawPageKey)
         guard !pageKey.isEmpty else { return nil }
         if let prefetch = cachedExplainPrefetchCandidates[pageKey] {
-            if prefetch.afterKey == afterKey,
-               prefetch.textFingerprint == textFingerprint {
+            if prefetch.textFingerprint == textFingerprint {
                 cachedExplainPrefetchCandidates[pageKey] = nil
                 if cachedExplainPrefetch?.pageKey == prefetch.pageKey {
                     cachedExplainPrefetch = nil
                 }
+                if prefetch.afterKey != afterKey {
+                    KindleRunLog.write("KINDLE explain prefetch consume reordered key=\(Self.keyLog(pageKey)) originalAfter=\(Self.keyLog(prefetch.afterKey)) actualAfter=\(Self.keyLog(afterKey)) fingerprint=match")
+                }
                 return prefetch.payload
             }
             cachedExplainPrefetchCandidates[pageKey] = nil
-            KindleRunLog.write("KINDLE explain prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-or-after-mismatch")
+            KindleRunLog.write("KINDLE explain prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-mismatch")
         }
         if let prefetch = cachedExplainPrefetch,
            normalizedPageKey(prefetch.pageKey) == pageKey {
             cachedExplainPrefetch = nil
-            if prefetch.afterKey == afterKey,
-               prefetch.textFingerprint == textFingerprint {
+            if prefetch.textFingerprint == textFingerprint {
                 return prefetch.payload
             }
-            KindleRunLog.write("KINDLE explain prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-or-after-mismatch")
+            KindleRunLog.write("KINDLE explain prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-mismatch")
         }
         return nil
     }
@@ -4083,6 +4374,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
       }
 
     private func stopPlaybackForPageTurn(reason: String, clearLiveOverlay: Bool = true) {
+        flushListeningAnchor(reason: "page-turn")
         stopPageKeyWatcher()
         manualPageResumeTask?.cancel()
         manualPageResumeTask = nil
@@ -4211,6 +4503,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 try? await Task.sleep(nanoseconds: 250_000_000)
                 guard !Task.isCancelled,
                       self.shouldResumeAfterUserPageTurn,
+                      !self.isKindleSyncDialogVisible,
                       !self.isPageTurnResuming,
                       !self.isAdvancingLivePage,
                       let liveKey = self.livePageKey?.nilIfEmpty else { continue }
@@ -4946,7 +5239,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     centerCharRange: target.charRange
                 ) else {
                     #if DEBUG
-                    NSLog("CRDBG KINDLE refocus scan miss reason=%@ phase=%@ attempt=%d offset=%d key=%@ targetP=%d targetW=%@ paras=%d text=%@",
+                    let capturedHash = KindleListeningAnchorResolver.pageTextHash(paragraphs: capturedDocument.paragraphs)
+                    NSLog("CRDBG KINDLE refocus scan miss reason=%@ phase=%@ attempt=%d offset=%d key=%@ targetP=%d targetW=%@ paras=%d chars=%d hash=%@",
                           reason,
                           phase,
                           attempt,
@@ -4955,7 +5249,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                           target.paragraphIndex,
                           target.wordIndex.map(String.init) ?? "nil",
                           capturedDocument.paragraphs.count,
-                          String(capturedDocument.fullText.prefix(90)))
+                          capturedDocument.fullText.count,
+                          String(capturedHash.prefix(12)))
                     #endif
                     continue
                 }
@@ -5053,6 +5348,128 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             pageKey: pageKey ?? (canReusePrevious ? previous?.pageKey : nil),
             updatedAt: Date()
         )
+        if mode == .read {
+            updatePersistentListeningAnchor(
+                document: document,
+                paragraphIndex: paragraphIndex,
+                wordIndex: wordIndex ?? (canReusePrevious ? previous?.wordIndex : nil),
+                charRange: charRange ?? (canReusePrevious ? previous?.charRange : nil),
+                pageKey: pageKey ?? (canReusePrevious ? previous?.pageKey : nil)
+            )
+        }
+    }
+
+    private func updatePersistentListeningAnchor(
+        document: ReadingDocument,
+        paragraphIndex: Int,
+        wordIndex: Int?,
+        charRange _: Range<Int>?,
+        pageKey rawPageKey: String?
+    ) {
+        guard let pageKey = rawPageKey?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !pageKey.isEmpty,
+              let page = livePage,
+              page.key == pageKey || livePageKey == pageKey else { return }
+
+        let route = wordIndex.flatMap { textQueue?.wordRoutes["\(paragraphIndex)#\($0)"] }
+            ?? textQueue.flatMap { Self.firstRenderRoute(in: $0.wordRoutes, paragraphIndex: paragraphIndex) }
+        guard let route else { return }
+
+        let pageHash: String
+        let baseDocument = makeLiveDocument(from: page)
+        if let cached = pageTextHashByKey[pageKey] {
+            pageHash = cached
+        } else {
+            pageHash = KindleListeningAnchorResolver.pageTextHash(paragraphs: baseDocument.paragraphs)
+            pageTextHashByKey[pageKey] = pageHash
+        }
+        guard let sourceParagraph = baseDocument.paragraphs.first(where: { $0.id == route.sourceParagraphID }) else {
+            return
+        }
+        let charOffset = KindleListeningAnchorResolver.charOffset(
+            in: sourceParagraph,
+            wordIndex: route.sourceWordIndex
+        )
+        let phrase = KindleListeningAnchorResolver.anchorPhrase(in: sourceParagraph.text, charOffset: charOffset)
+        guard !phrase.phrase.isEmpty else { return }
+        let settings = AppSettings.shared
+        let anchor = KindleListeningAnchor(
+            bookId: book.id,
+            pageKey: pageKey,
+            pageTextHash: pageHash,
+            paragraphIndex: route.sourceParagraphID,
+            wordIndex: route.sourceWordIndex,
+            charOffset: charOffset,
+            anchorPhrase: phrase.phrase,
+            anchorWordOffset: phrase.anchorWordOffset,
+            voice: settings.voice(for: document.language),
+            speed: settings.speed,
+            updatedAt: Date(),
+            schemaVersion: KindleListeningAnchor.currentSchemaVersion,
+            readerImplementationVersion: KindleListeningAnchor.currentReaderImplementationVersion
+        )
+        enqueuePersistentListeningAnchor(anchor)
+    }
+
+    private func playbackPosition(
+        forSourceParagraph sourceParagraph: Int,
+        sourceWordIndex: Int?
+    ) -> (paragraphIndex: Int, wordIndex: Int)? {
+        guard let routes = textQueue?.wordRoutes else { return nil }
+        var candidates: [(paragraphIndex: Int, wordIndex: Int, sourceWordIndex: Int)] = []
+        for (key, route) in routes where route.sourceParagraphID == sourceParagraph {
+            let components = key.split(separator: "#", maxSplits: 1).compactMap { Int($0) }
+            guard components.count == 2 else { continue }
+            let candidate = (
+                paragraphIndex: components[0],
+                wordIndex: components[1],
+                sourceWordIndex: route.sourceWordIndex
+            )
+            if let sourceWordIndex, route.sourceWordIndex == sourceWordIndex {
+                return (candidate.paragraphIndex, candidate.wordIndex)
+            }
+            candidates.append(candidate)
+        }
+        guard !candidates.isEmpty else { return nil }
+        let target = sourceWordIndex ?? candidates.map(\.sourceWordIndex).min() ?? 0
+        let nearest = candidates.min {
+            let lhsDistance = abs($0.sourceWordIndex - target)
+            let rhsDistance = abs($1.sourceWordIndex - target)
+            if lhsDistance == rhsDistance {
+                if $0.paragraphIndex == $1.paragraphIndex { return $0.wordIndex < $1.wordIndex }
+                return $0.paragraphIndex < $1.paragraphIndex
+            }
+            return lhsDistance < rhsDistance
+        }
+        guard let nearest else { return nil }
+        return (nearest.paragraphIndex, nearest.wordIndex)
+    }
+
+    private func enqueuePersistentListeningAnchor(_ anchor: KindleListeningAnchor) {
+        pendingPersistentAnchor = anchor
+        let interval: TimeInterval = 1.0
+        let elapsed = lastListeningAnchorPersistedAt.map { Date().timeIntervalSince($0) } ?? interval
+        if elapsed >= interval {
+            pendingPersistentAnchor = nil
+            persistListeningAnchor(anchor, reason: "coalesced-immediate")
+            return
+        }
+        guard listeningAnchorPersistTask == nil else { return }
+        let delay = max(0.05, interval - elapsed)
+        listeningAnchorPersistTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard let self, !Task.isCancelled else { return }
+            self.listeningAnchorPersistTask = nil
+            guard let latest = self.pendingPersistentAnchor else { return }
+            self.pendingPersistentAnchor = nil
+            self.persistListeningAnchor(latest, reason: "coalesced-timer")
+        }
+    }
+
+    private func persistListeningAnchor(_ anchor: KindleListeningAnchor, reason: String) {
+        store.saveListeningAnchor(anchor)
+        lastListeningAnchorPersistedAt = Date()
+        KindleRunLog.write("KINDLE audiobook anchor saved reason=\(reason) book=\(Self.keyLog(anchor.bookId)) key=\(Self.keyLog(anchor.pageKey)) hash=\(anchor.pageTextHash.prefix(12)) p=\(anchor.paragraphIndex) w=\(anchor.wordIndex ?? -1) offset=\(anchor.charOffset) schema=\(anchor.schemaVersion) reader=\(anchor.readerImplementationVersion)")
     }
 
     private func scrollTowardRefocusTarget(_ target: KindleRefocusTarget) async throws {
@@ -5198,7 +5615,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 routes["\(oldParagraph.id)#\(pair.oldWordIndex)"] = KindleRenderRoute(
                     slot: .current,
                     overlayParagraphID: oldParagraph.id,
-                    overlayWordIndex: overlayWordIndex
+                    overlayWordIndex: overlayWordIndex,
+                    sourceParagraphID: oldParagraph.id,
+                    sourceWordIndex: pair.oldWordIndex
                 )
             }
 
@@ -5468,7 +5887,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     routes[routeKey(paragraphID: paragraphID, wordIndex: logicalStart + offset)] = KindleRenderRoute(
                         slot: .current,
                         overlayParagraphID: paragraphID,
-                        overlayWordIndex: overlayStart + offset
+                        overlayWordIndex: overlayStart + offset,
+                        sourceParagraphID: part.source.id,
+                        sourceWordIndex: lower + offset
                     )
                 }
             }
@@ -5942,7 +6363,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         status: String,
         reason: String
     ) async {
-        guard mode == continuationMode else { return }
+        guard mode == continuationMode, !isKindleSyncDialogVisible else {
+            KindleRunLog.write("KINDLE auto advance blocked sync-dialog mode=\(continuationMode.rawValue) reason=\(reason)")
+            return
+        }
         let oldKey = rawOldKey.trimmingCharacters(in: .whitespacesAndNewlines)
         let previousSnapshot = currentPreparedPageSnapshot()
         statusText = status
@@ -5954,10 +6378,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             await setKindlePageModeLocked(true)
             _ = try? await evaluateJSON("window.__crKindleLiveClear && window.__crKindleLiveClear()")
 
-            try await requestNativeNextPageForAutoAdvance(oldKey: oldKey, reason: reason)
-            guard mode == continuationMode else { return }
-            guard let targetKey = await waitForNavigationTargetKey(oldKey: oldKey, timeoutNanoseconds: 4_200_000_000) else {
-                throw KindleBookError.captureFailed("auto-next-no-visible-change")
+            let targetKey = try await requestNativeNextPageForAutoAdvance(oldKey: oldKey, reason: reason)
+            guard mode == continuationMode, !isKindleSyncDialogVisible else {
+                KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance suspended sync-dialog old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(targetKey)) reason=\(reason)")
+                return
             }
             pendingCaptureKey = targetKey
 
@@ -5972,6 +6396,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 startOverride: prepared.startParagraphIndex,
                 startKindOverride: .sourceParagraph
             )
+            guard !isKindleSyncDialogVisible else {
+                KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance suspended-before-play sync-dialog old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(prepared.page.key)) reason=\(reason)")
+                return
+            }
 
             if let previousSnapshot {
                 pageBackStack.append(previousSnapshot)
@@ -6006,6 +6434,25 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     ) async throws -> KindleCachedPage {
         try await waitForKindleImageStable()
         let targetKey = normalizedPageKey(rawTargetKey)
+        let visibleKey = normalizedPageKey(await currentVisibleKindlePageKey())
+        guard !targetKey.isEmpty, visibleKey == targetKey else {
+            throw KindleBookError.captureFailed("auto-next-visible-key-mismatch:\(visibleKey)")
+        }
+
+        if let cached = preparedCandidate(forKey: targetKey),
+           let locked = await lockCurrentPageForCachedPlayback(expectedKey: targetKey) {
+            let reboundPage = cached.page.replacingSessionId(locked.sessionId)
+            let rebound = KindleCachedPage(
+                afterKey: oldKey,
+                page: reboundPage,
+                document: cached.document,
+                startParagraphIndex: cached.startParagraphIndex
+            )
+            let fingerprint = Self.explainFingerprint(cached.document)
+            KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto next candidate-hit old=\(Self.keyLog(oldKey)) current=\(Self.keyLog(targetKey)) source=page-key-cache originalAfter=\(Self.keyLog(cached.afterKey)) fingerprint=\(fingerprint.prefix(12)) session=\(locked.sessionId)")
+            return rebound
+        }
+
         let page = try await captureVisiblePage(pageIndex: 0, targetKey: targetKey.nilIfEmpty)
         let captured = try makePreparedPage(afterKey: oldKey, page: page)
         let capturedKey = captured.page.key.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -6033,14 +6480,16 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return preparedCandidate(afterKey: oldKey, targetKey: targetKey)
     }
 
-    private func requestNativeNextPageForAutoAdvance(oldKey: String, reason: String) async throws {
-        let result = try await requestKindlePageTurn(.next, anchorKey: oldKey)
+    private func requestNativeNextPageForAutoAdvance(oldKey: String, reason: String) async throws -> String {
+        let target = try await requestKindlePageTurnTarget(.next, oldKey: oldKey)
+        let result = target.result
         let ok = Self.boolValue(result["ok"])
         let strategy = result["strategy"] as? String ?? ""
-        KindleRunLog.write("KINDLE auto next turn-only old=\(Self.keyLog(oldKey)) ok=\(ok) strategy=\(strategy) reason=\(reason) tried=\(String(describing: result["tried"] ?? result["fallbackTried"] ?? ""))")
+        KindleRunLog.write("KINDLE auto next turn-only old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(target.targetKey)) ok=\(ok) strategy=\(strategy) reason=\(reason) tried=\(String(describing: result["tried"] ?? result["fallbackTried"] ?? ""))")
         guard ok else {
             throw KindleBookError.captureFailed("auto-next-turn-failed:\(result["reason"] as? String ?? "unknown")")
         }
+        return target.targetKey
     }
 
     private func advanceExplainUsingCachedPageIfAvailable(after oldKey: String) async -> Bool {
@@ -6572,13 +7021,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                       reason)
             } else {
                 if wordIndex == 0 || wordIndex % 12 == 0 {
-                    KindleRunLog.write("KINDLE read highlight hit key=\(Self.keyLog(livePageKey ?? "")) p=\(paragraphIndex) w=\(wordIndex) word=\(String(describing: result["wordText"] ?? ""))")
+                    KindleRunLog.write("KINDLE read highlight hit key=\(Self.keyLog(livePageKey ?? "")) p=\(paragraphIndex) w=\(wordIndex)")
                 }
-                NSLog("CRDBG KINDLE highlight key=%@ p=%d w=%d word=%@ bbox=%@ pct=%@ xy=%@,%@ %@x%@ screen=%@ ov=%@,%@ %@x%@ img=%@ imgOffset=%@ parentRect=%@ stale=%@ position=%@ parent=%@ point=%@ local=%@",
+                NSLog("CRDBG KINDLE highlight key=%@ p=%d w=%d bbox=%@ pct=%@ xy=%@,%@ %@x%@ screen=%@ ov=%@,%@ %@x%@ img=%@ imgOffset=%@ parentRect=%@ stale=%@ position=%@ parent=%@ point=%@ local=%@",
                       Self.keyLog(livePageKey ?? ""),
                       paragraphIndex,
                       wordIndex,
-                      String(describing: result["wordText"] ?? ""),
                       String(describing: result["bboxNorm"] ?? ""),
                       String(describing: result["pct"] ?? ""),
                       String(describing: result["left"] ?? "?"),
@@ -9021,6 +9469,8 @@ private struct KindleRenderRoute {
     let slot: KindleReadPageSlot
     let overlayParagraphID: Int
     let overlayWordIndex: Int
+    let sourceParagraphID: Int
+    let sourceWordIndex: Int
 }
 
 private struct KindleWordCharRange {
@@ -9072,6 +9522,24 @@ private struct CapturedKindlePage {
     let document: ReadingDocument
     let text: String
     let columnLayout: String
+
+    func replacingSessionId(_ sessionId: Int) -> CapturedKindlePage {
+        CapturedKindlePage(
+            pageIndex: pageIndex,
+            key: key,
+            sessionId: sessionId,
+            kind: kind,
+            title: title,
+            url: url,
+            progress: progress,
+            visibleTopNorm: visibleTopNorm,
+            visibleBottomNorm: visibleBottomNorm,
+            imageData: imageData,
+            document: document,
+            text: text,
+            columnLayout: columnLayout
+        )
+    }
 }
 
 private enum KindleBookError: LocalizedError {

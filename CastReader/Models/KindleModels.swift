@@ -7,6 +7,7 @@
 //  book metadata and local reading position.
 //
 
+import CryptoKit
 import Foundation
 import SwiftUI
 
@@ -46,6 +47,410 @@ struct KindleBook: Identifiable, Codable, Equatable {
 
     var isLikelyLibraryBook: Bool {
         KindleBookValidator.isLikelyLibraryBook(self)
+    }
+}
+
+/// Cross-platform semantic contract for resuming Kindle audio from a sentence-level anchor.
+/// `charOffset` is a UTF-16 offset so Swift, Kotlin, and JavaScript can exchange it safely.
+struct KindleListeningAnchor: Codable, Equatable {
+    static let currentSchemaVersion = 1
+    static let currentReaderImplementationVersion = 1
+
+    let bookId: String
+    let pageKey: String
+    let pageTextHash: String
+    let paragraphIndex: Int
+    let wordIndex: Int?
+    let charOffset: Int
+    let anchorPhrase: String
+    let anchorWordOffset: Int
+    let voice: String
+    let speed: Double
+    let updatedAt: Date
+    let schemaVersion: Int
+    let readerImplementationVersion: Int
+}
+
+extension KindleListeningAnchor {
+    private enum CodingKeys: String, CodingKey {
+        case bookId, pageKey, pageTextHash, paragraphIndex, wordIndex, charOffset
+        case anchorPhrase, anchorWordOffset, voice, speed, updatedAt
+        case schemaVersion, readerImplementationVersion
+        case legacyTextHash = "textHash"
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        bookId = try values.decode(String.self, forKey: .bookId)
+        pageKey = try values.decode(String.self, forKey: .pageKey)
+        pageTextHash = try values.decodeIfPresent(String.self, forKey: .pageTextHash)
+            ?? values.decode(String.self, forKey: .legacyTextHash)
+        paragraphIndex = try values.decode(Int.self, forKey: .paragraphIndex)
+        wordIndex = try values.decodeIfPresent(Int.self, forKey: .wordIndex)
+        charOffset = try values.decode(Int.self, forKey: .charOffset)
+        anchorPhrase = try values.decode(String.self, forKey: .anchorPhrase)
+        anchorWordOffset = try values.decode(Int.self, forKey: .anchorWordOffset)
+        voice = try values.decode(String.self, forKey: .voice)
+        speed = try values.decode(Double.self, forKey: .speed)
+        updatedAt = try values.decode(Date.self, forKey: .updatedAt)
+        schemaVersion = try values.decode(Int.self, forKey: .schemaVersion)
+        readerImplementationVersion = try values.decode(Int.self, forKey: .readerImplementationVersion)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(bookId, forKey: .bookId)
+        try values.encode(pageKey, forKey: .pageKey)
+        try values.encode(pageTextHash, forKey: .pageTextHash)
+        try values.encode(paragraphIndex, forKey: .paragraphIndex)
+        try values.encodeIfPresent(wordIndex, forKey: .wordIndex)
+        try values.encode(charOffset, forKey: .charOffset)
+        try values.encode(anchorPhrase, forKey: .anchorPhrase)
+        try values.encode(anchorWordOffset, forKey: .anchorWordOffset)
+        try values.encode(voice, forKey: .voice)
+        try values.encode(speed, forKey: .speed)
+        try values.encode(updatedAt, forKey: .updatedAt)
+        try values.encode(schemaVersion, forKey: .schemaVersion)
+        try values.encode(readerImplementationVersion, forKey: .readerImplementationVersion)
+    }
+}
+
+enum KindleListeningAnchorMatch: String, Codable, Equatable {
+    case exact
+    case relocated
+    case fallback
+}
+
+struct KindleListeningAnchorResolution: Equatable {
+    let match: KindleListeningAnchorMatch
+    let paragraphIndex: Int
+    let wordIndex: Int?
+    let charOffset: Int
+    let reason: String
+}
+
+struct KindleAnchorPhrase: Equatable {
+    let phrase: String
+    let anchorWordOffset: Int
+}
+
+enum KindleListeningAnchorResolver {
+    static func pageTextHash(paragraphs: [ReadingParagraph]) -> String {
+        pageTextHash(paragraphTexts: paragraphs.map(\.text))
+    }
+
+    static func pageTextHash(paragraphTexts: [String]) -> String {
+        let canonical = paragraphTexts
+            .map { searchTokens(in: $0).map(\.value).joined(separator: " ") }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
+        let digest = SHA256.hash(data: Data(canonical.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    static func charOffset(in paragraph: ReadingParagraph, wordIndex: Int?) -> Int {
+        guard let wordIndex, paragraph.words.indices.contains(wordIndex) else { return 0 }
+        let ranges = wordRanges(in: paragraph)
+        return ranges.first(where: { $0.wordIndex == wordIndex })?.range.location ?? 0
+    }
+
+    static func anchorPhrase(in text: String, charOffset: Int) -> KindleAnchorPhrase {
+        let tokens = searchTokens(in: text)
+        guard !tokens.isEmpty else { return KindleAnchorPhrase(phrase: "", anchorWordOffset: 0) }
+        let target = min(max(0, charOffset), (text as NSString).length)
+        let targetIndex = tokens.firstIndex(where: { NSLocationInRange(target, $0.range) })
+            ?? tokens.firstIndex(where: { $0.range.location >= target })
+            ?? (tokens.count - 1)
+        let start = max(0, targetIndex - 5)
+        let end = min(tokens.count, targetIndex + 6)
+        return KindleAnchorPhrase(
+            phrase: tokens[start..<end].map(\.value).joined(separator: " "),
+            anchorWordOffset: targetIndex - start
+        )
+    }
+
+    static func resolve(
+        _ anchor: KindleListeningAnchor,
+        bookId: String,
+        pageKey: String,
+        paragraphs: [ReadingParagraph],
+        currentTextHash: String? = nil
+    ) -> KindleListeningAnchorResolution {
+        let fallback = fallbackResolution(paragraphs: paragraphs, reason: "unavailable")
+        guard anchor.schemaVersion == KindleListeningAnchor.currentSchemaVersion else {
+            return fallbackResolution(paragraphs: paragraphs, reason: "schema-mismatch")
+        }
+        guard anchor.readerImplementationVersion == KindleListeningAnchor.currentReaderImplementationVersion else {
+            return fallbackResolution(paragraphs: paragraphs, reason: "reader-version-mismatch")
+        }
+        guard anchor.bookId == bookId else {
+            return fallbackResolution(paragraphs: paragraphs, reason: "book-mismatch")
+        }
+        let expectedKey = anchor.pageKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let actualKey = pageKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !expectedKey.isEmpty, expectedKey == actualKey else {
+            return fallbackResolution(paragraphs: paragraphs, reason: "page-key-mismatch")
+        }
+        guard fallback.paragraphIndex >= 0 else { return fallback }
+
+        let currentHash = currentTextHash ?? pageTextHash(paragraphs: paragraphs)
+        if currentHash == anchor.pageTextHash,
+           let paragraph = paragraphs.first(where: { $0.id == anchor.paragraphIndex }) {
+            let nsLength = (paragraph.text as NSString).length
+            let offset = min(max(0, anchor.charOffset), nsLength)
+            let word = validatedWordIndex(anchor.wordIndex, paragraph: paragraph)
+                ?? nearestWordIndex(in: paragraph, charOffset: offset)
+            return KindleListeningAnchorResolution(
+                match: .exact,
+                paragraphIndex: paragraph.id,
+                wordIndex: word,
+                charOffset: offset,
+                reason: "page-key-and-hash"
+            )
+        }
+
+        let phraseTokens = searchTokens(in: anchor.anchorPhrase).map(\.value)
+        guard !phraseTokens.isEmpty else {
+            return fallbackResolution(paragraphs: paragraphs, reason: "text-hash-mismatch-no-phrase")
+        }
+        let candidates = locateCandidates(
+            phraseTokens: phraseTokens,
+            anchorWordOffset: anchor.anchorWordOffset,
+            in: paragraphs
+        )
+        guard let best = candidates.first, best.score >= 0.84 else {
+            return fallbackResolution(paragraphs: paragraphs, reason: "anchor-score-low")
+        }
+        if candidates.count > 1, best.score - candidates[1].score < 0.12 {
+            return fallbackResolution(paragraphs: paragraphs, reason: "anchor-ambiguous")
+        }
+        if best.score >= 0.84 {
+            return KindleListeningAnchorResolution(
+                match: .relocated,
+                paragraphIndex: best.paragraph.id,
+                wordIndex: nearestWordIndex(in: best.paragraph, charOffset: best.charOffset),
+                charOffset: best.charOffset,
+                reason: "anchor-fuzzy"
+            )
+        }
+        return fallbackResolution(paragraphs: paragraphs, reason: "anchor-score-low")
+    }
+
+    private struct LocatedPhrase {
+        let paragraph: ReadingParagraph
+        let charOffset: Int
+        let score: Double
+    }
+
+    private struct WordRange {
+        let wordIndex: Int
+        let range: NSRange
+    }
+
+    private struct SearchToken {
+        let value: String
+        let range: NSRange
+    }
+
+    private static func locateCandidates(
+        phraseTokens: [String],
+        anchorWordOffset: Int,
+        in paragraphs: [ReadingParagraph]
+    ) -> [LocatedPhrase] {
+        guard !phraseTokens.isEmpty else { return [] }
+        let anchorOffset = min(max(0, anchorWordOffset), phraseTokens.count - 1)
+        var matches: [LocatedPhrase] = []
+        for paragraph in paragraphs where paragraph.type.isReadable {
+            let tokens = searchTokens(in: paragraph.text)
+            guard !tokens.isEmpty else { continue }
+            for center in tokens.indices {
+                let start = center - anchorOffset
+                guard start >= 0, start < tokens.count else { continue }
+                let end = min(tokens.count, start + phraseTokens.count)
+                let candidate = Array(tokens[start..<end].map(\.value))
+                let score = tokenSimilarity(phraseTokens, candidate)
+                let resolvedCenter = min(tokens.count - 1, start + anchorOffset)
+                matches.append(LocatedPhrase(
+                    paragraph: paragraph,
+                    charOffset: tokens[resolvedCenter].range.location,
+                    score: score
+                ))
+            }
+        }
+        return matches.sorted {
+            if $0.score == $1.score {
+                if $0.paragraph.id == $1.paragraph.id { return $0.charOffset < $1.charOffset }
+                return $0.paragraph.id < $1.paragraph.id
+            }
+            return $0.score > $1.score
+        }
+    }
+
+    private static func fallbackResolution(paragraphs: [ReadingParagraph], reason: String) -> KindleListeningAnchorResolution {
+        guard let paragraph = paragraphs.first(where: {
+            $0.type.isReadable && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }) else {
+            return KindleListeningAnchorResolution(
+                match: .fallback,
+                paragraphIndex: -1,
+                wordIndex: nil,
+                charOffset: 0,
+                reason: reason
+            )
+        }
+        return KindleListeningAnchorResolution(
+            match: .fallback,
+            paragraphIndex: paragraph.id,
+            wordIndex: paragraph.words.isEmpty ? nil : 0,
+            charOffset: 0,
+            reason: reason
+        )
+    }
+
+    private static func validatedWordIndex(_ wordIndex: Int?, paragraph: ReadingParagraph) -> Int? {
+        guard let wordIndex, paragraph.words.indices.contains(wordIndex) else { return nil }
+        return wordIndex
+    }
+
+    private static func nearestWordIndex(in paragraph: ReadingParagraph, charOffset: Int) -> Int? {
+        let ranges = wordRanges(in: paragraph)
+        guard !ranges.isEmpty else { return nil }
+        if let containing = ranges.first(where: { NSLocationInRange(charOffset, $0.range) }) {
+            return containing.wordIndex
+        }
+        if let following = ranges.first(where: { $0.range.location >= charOffset }) {
+            return following.wordIndex
+        }
+        return ranges.last?.wordIndex
+    }
+
+    private static func wordRanges(in paragraph: ReadingParagraph) -> [WordRange] {
+        let text = paragraph.text as NSString
+        var cursor = 0
+        var result: [WordRange] = []
+        let punctuation = CharacterSet.punctuationCharacters
+            .union(.symbols)
+            .union(.whitespacesAndNewlines)
+        for (index, word) in paragraph.words.enumerated() {
+            let raw = word.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !raw.isEmpty, cursor <= text.length else { continue }
+            let tail = NSRange(location: cursor, length: max(0, text.length - cursor))
+            var range = text.range(of: raw, options: [.caseInsensitive, .diacriticInsensitive], range: tail)
+            if range.location == NSNotFound {
+                let stripped = raw.trimmingCharacters(in: punctuation)
+                if !stripped.isEmpty {
+                    range = text.range(of: stripped, options: [.caseInsensitive, .diacriticInsensitive], range: tail)
+                }
+            }
+            guard range.location != NSNotFound else { continue }
+            result.append(WordRange(wordIndex: index, range: range))
+            cursor = NSMaxRange(range)
+        }
+        return result
+    }
+
+    private static func searchTokens(in text: String) -> [SearchToken] {
+        guard let regex = try? NSRegularExpression(pattern: #"[\p{L}\p{N}]+"#) else { return [] }
+        let fullRange = NSRange(location: 0, length: (text as NSString).length)
+        return regex.matches(in: text, range: fullRange).map { match in
+            let raw = (text as NSString).substring(with: match.range)
+            return SearchToken(
+                value: raw
+                    .folding(options: [.diacriticInsensitive, .widthInsensitive], locale: nil)
+                    .lowercased(with: Locale(identifier: "en_US_POSIX")),
+                range: match.range
+            )
+        }
+    }
+
+    private static func tokenSimilarity(_ lhs: [String], _ rhs: [String]) -> Double {
+        let denominator = max(lhs.count, rhs.count)
+        guard denominator > 0 else { return 1 }
+        var previous = Array(0...rhs.count)
+        for (leftIndex, left) in lhs.enumerated() {
+            var current = Array(repeating: 0, count: rhs.count + 1)
+            current[0] = leftIndex + 1
+            for (rightIndex, right) in rhs.enumerated() {
+                let substitution = previous[rightIndex] + (left == right ? 0 : 1)
+                current[rightIndex + 1] = min(
+                    previous[rightIndex + 1] + 1,
+                    current[rightIndex] + 1,
+                    substitution
+                )
+            }
+            previous = current
+        }
+        return max(0, 1 - Double(previous[rhs.count]) / Double(denominator))
+    }
+}
+
+/// Consumes each explicit Continue Listening request once, even if WebKit emits
+/// multiple readiness/navigation callbacks for the same request.
+final class KindleAutoplayRequestGate {
+    private var latestRequestByBook: [String: Int] = [:]
+    private var consumedRequestByBook: [String: Int] = [:]
+
+    func hasPendingRequest(for bookId: String) -> Bool {
+        latestRequestByBook[bookId, default: 0] > consumedRequestByBook[bookId, default: 0]
+    }
+
+    @discardableResult
+    func request(for bookId: String) -> Int {
+        let next = latestRequestByBook[bookId, default: 0] + 1
+        latestRequestByBook[bookId] = next
+        return next
+    }
+
+    func consume(for bookId: String) -> Int? {
+        guard hasPendingRequest(for: bookId) else { return nil }
+        let request = latestRequestByBook[bookId, default: 0]
+        consumedRequestByBook[bookId] = request
+        return request
+    }
+}
+
+enum KindleSyncDialogChoice: String, Equatable {
+    case yes
+    case no
+    case unknown
+}
+
+struct KindleSyncDialogEvent: Equatable {
+    let isVisible: Bool
+    let localLocation: Int?
+    let cloudLocation: Int?
+    let choice: KindleSyncDialogChoice?
+
+    init?(payload: [String: Any]) {
+        let type = payload["type"] as? String
+        guard type == "kindle-sync-dialog" || type == "kindle-sync-dialog-choice" else { return nil }
+        isVisible = Self.boolValue(payload["visible"]) ?? (type == "kindle-sync-dialog-choice")
+        localLocation = Self.intValue(payload["localLocation"])
+        cloudLocation = Self.intValue(payload["cloudLocation"])
+        if type == "kindle-sync-dialog-choice" {
+            choice = KindleSyncDialogChoice(rawValue: (payload["choice"] as? String ?? "").lowercased()) ?? .unknown
+        } else {
+            choice = nil
+        }
+    }
+
+    private static func intValue(_ value: Any?) -> Int? {
+        if let number = value as? NSNumber { return number.intValue }
+        if let string = value as? String { return Int(string) }
+        return nil
+    }
+
+    private static func boolValue(_ value: Any?) -> Bool? {
+        if let bool = value as? Bool { return bool }
+        if let number = value as? NSNumber { return number.boolValue }
+        if let string = value as? String {
+            switch string.lowercased() {
+            case "true", "1", "yes": return true
+            case "false", "0", "no": return false
+            default: return nil
+            }
+        }
+        return nil
     }
 }
 

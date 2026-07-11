@@ -18,6 +18,7 @@ final class KindleLibraryStore: ObservableObject {
     @Published private(set) var hasConnected = false
     @Published private(set) var accountLabel: String?
     @Published private(set) var accountEmail: String?
+    @Published private(set) var listeningAnchors: [String: KindleListeningAnchor] = [:]
     @Published var isRefreshing = false
     @Published var lastError: String?
 
@@ -25,6 +26,7 @@ final class KindleLibraryStore: ObservableObject {
     private let connectedKey = "kindle.library.connected.v1"
     private let accountLabelKey = "kindle.library.account.label.v1"
     private let accountEmailKey = "kindle.library.account.email.v1"
+    private let listeningAnchorsKey = "kindle.listening.anchors.v1"
 
     private init() {
         load()
@@ -114,6 +116,24 @@ final class KindleLibraryStore: ObservableObject {
         update(bookID: book.id) { $0.lastOpenedAt = Date() }
     }
 
+    func listeningAnchor(for bookID: String) -> KindleListeningAnchor? {
+        listeningAnchors[bookID]
+    }
+
+    func hasListeningAnchor(for bookID: String) -> Bool {
+        listeningAnchors[bookID] != nil
+    }
+
+    func saveListeningAnchor(_ anchor: KindleListeningAnchor) {
+        listeningAnchors[anchor.bookId] = anchor
+        save()
+    }
+
+    func removeListeningAnchor(for bookID: String) {
+        guard listeningAnchors.removeValue(forKey: bookID) != nil else { return }
+        save()
+    }
+
     func updateProgress(bookID: String, pageKey: String?, url: String?, progressLabel: String? = nil) {
         update(bookID: bookID) { book in
             book.lastOpenedAt = Date()
@@ -128,6 +148,7 @@ final class KindleLibraryStore: ObservableObject {
         hasConnected = false
         accountLabel = nil
         accountEmail = nil
+        listeningAnchors.removeAll()
         lastError = nil
         save()
     }
@@ -142,6 +163,12 @@ final class KindleLibraryStore: ObservableObject {
         hasConnected = defaults.bool(forKey: connectedKey)
         accountLabel = defaults.string(forKey: accountLabelKey)
         accountEmail = defaults.string(forKey: accountEmailKey)
+        if let anchorData = defaults.data(forKey: listeningAnchorsKey),
+           let decodedAnchors = try? JSONDecoder.kindle.decode([String: KindleListeningAnchor].self, from: anchorData) {
+            listeningAnchors = decodedAnchors
+        } else {
+            listeningAnchors = [:]
+        }
         guard let data = defaults.data(forKey: booksKey),
               let decoded = try? JSONDecoder.kindle.decode([KindleBook].self, from: data) else {
             books = []
@@ -165,6 +192,9 @@ final class KindleLibraryStore: ObservableObject {
         defaults.set(hasConnected, forKey: connectedKey)
         defaults.set(accountLabel, forKey: accountLabelKey)
         defaults.set(accountEmail, forKey: accountEmailKey)
+        if let anchorData = try? JSONEncoder.kindle.encode(listeningAnchors) {
+            defaults.set(anchorData, forKey: listeningAnchorsKey)
+        }
         if let data = try? JSONEncoder.kindle.encode(books) {
             defaults.set(data, forKey: booksKey)
         }

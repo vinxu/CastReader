@@ -42,8 +42,11 @@ enum Constants {
         static let proListenTrack = "\(webURL)/api/pro/listen-track"    // POST {device_id|user_id, seconds}
         static let authSocialSignIn = "\(webURL)/api/auth/sign-in/social" // POST {provider, idToken:{token}} (better-auth)
         static let pricingURL = "\(webURL)/pricing"
-        static let termsURL = "\(webURL)/terms"
-        static let privacyURL = "\(webURL)/privacy"
+        private static var legalLanguagePath: String {
+            Locale.current.language.languageCode?.identifier == "zh" ? "zh" : "en"
+        }
+        static var termsURL: String { "\(webURL)/\(legalLanguagePath)/terms-of-service" }
+        static var privacyURL: String { "\(webURL)/\(legalLanguagePath)/privacy-policy" }
     }
 
     /// Google OAuth（原生 ASWebAuthenticationSession + PKCE，无需 SDK）。

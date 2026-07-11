@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import WebKit
 @testable import CastReader
 
 class CastReaderTests: XCTestCase {
@@ -249,5 +250,319 @@ class CastReaderTests: XCTestCase {
         XCTAssertFalse(DocumentBuilder.isMeaningfulTitle("untitled"))
         XCTAssertFalse(DocumentBuilder.isMeaningfulTitle("Microsoft Word - Document1"))
         XCTAssertFalse(DocumentBuilder.isMeaningfulTitle(" "))
+    }
+
+    // MARK: - Kindle Audiobook sentence resume anchor
+
+    private func anchorParagraph(id: Int, _ text: String) -> ReadingParagraph {
+        let words = text.split(whereSeparator: { $0.isWhitespace }).enumerated().map {
+            OCRWord(id: $0.offset, text: String($0.element), bboxNorm: .zero)
+        }
+        return ReadingParagraph(id: id, text: text, words: words, pageIndex: 0)
+    }
+
+    private func listeningAnchor(
+        paragraphs: [ReadingParagraph],
+        targetParagraph: Int,
+        targetWord: Int,
+        pageKey: String = "page-real-1",
+        schemaVersion: Int = KindleListeningAnchor.currentSchemaVersion,
+        readerVersion: Int = KindleListeningAnchor.currentReaderImplementationVersion
+    ) -> KindleListeningAnchor {
+        let paragraph = paragraphs.first(where: { $0.id == targetParagraph })!
+        let charOffset = KindleListeningAnchorResolver.charOffset(in: paragraph, wordIndex: targetWord)
+        let phrase = KindleListeningAnchorResolver.anchorPhrase(in: paragraph.text, charOffset: charOffset)
+        return KindleListeningAnchor(
+            bookId: "book-1",
+            pageKey: pageKey,
+            pageTextHash: KindleListeningAnchorResolver.pageTextHash(paragraphs: paragraphs),
+            paragraphIndex: targetParagraph,
+            wordIndex: targetWord,
+            charOffset: charOffset,
+            anchorPhrase: phrase.phrase,
+            anchorWordOffset: phrase.anchorWordOffset,
+            voice: "af_heart",
+            speed: 1.5,
+            updatedAt: Date(timeIntervalSince1970: 1_700_000_000),
+            schemaVersion: schemaVersion,
+            readerImplementationVersion: readerVersion
+        )
+    }
+
+    func testKindleListeningAnchorExactSamePageMatch() {
+        let paragraphs = [
+            anchorParagraph(id: 0, "An opening paragraph establishes the scene for this page."),
+            anchorParagraph(id: 1, "The narrator now reaches the exact sentence that should continue after reopening the book.")
+        ]
+        let anchor = listeningAnchor(paragraphs: paragraphs, targetParagraph: 1, targetWord: 6)
+        let result = KindleListeningAnchorResolver.resolve(
+            anchor,
+            bookId: "book-1",
+            pageKey: "page-real-1",
+            paragraphs: paragraphs
+        )
+        XCTAssertEqual(result.match, .exact)
+        XCTAssertEqual(result.paragraphIndex, 1)
+        XCTAssertEqual(result.wordIndex, 6)
+    }
+
+    func testKindleListeningAnchorRelocatesAfterSmallTextChange() {
+        let original = [
+            anchorParagraph(id: 0, "An opening paragraph establishes the scene for this page."),
+            anchorParagraph(id: 1, "The narrator now reaches the exact sentence that should continue after reopening the book.")
+        ]
+        let anchor = listeningAnchor(paragraphs: original, targetParagraph: 1, targetWord: 6)
+        let changed = [
+            anchorParagraph(id: 0, "A newly recognized heading appears before the original OCR text."),
+            anchorParagraph(id: 1, original[0].text),
+            anchorParagraph(id: 2, original[1].text)
+        ]
+        let result = KindleListeningAnchorResolver.resolve(
+            anchor,
+            bookId: "book-1",
+            pageKey: "page-real-1",
+            paragraphs: changed
+        )
+        XCTAssertEqual(result.match, .relocated)
+        XCTAssertEqual(result.paragraphIndex, 2)
+        XCTAssertEqual(result.reason, "anchor-fuzzy")
+    }
+
+    func testKindleListeningAnchorInvalidPageAndHashFallBackSafely() {
+        let original = [
+            anchorParagraph(id: 0, "Original words locate a unique sentence in the captured Kindle page."),
+            anchorParagraph(id: 1, "Another readable paragraph follows it for the rest of the page.")
+        ]
+        let anchor = listeningAnchor(paragraphs: original, targetParagraph: 1, targetWord: 3)
+        let pageMismatch = KindleListeningAnchorResolver.resolve(
+            anchor,
+            bookId: "book-1",
+            pageKey: "different-real-page",
+            paragraphs: original
+        )
+        XCTAssertEqual(pageMismatch.match, .fallback)
+        XCTAssertEqual(pageMismatch.paragraphIndex, 0)
+        XCTAssertEqual(pageMismatch.reason, "page-key-mismatch")
+
+        let unrelated = [anchorParagraph(id: 0, "Completely unrelated replacement content without the saved token window.")]
+        let hashMismatch = KindleListeningAnchorResolver.resolve(
+            anchor,
+            bookId: "book-1",
+            pageKey: "page-real-1",
+            paragraphs: unrelated
+        )
+        XCTAssertEqual(hashMismatch.match, .fallback)
+        XCTAssertEqual(hashMismatch.paragraphIndex, 0)
+    }
+
+    func testKindleListeningAnchorOldSchemaFallsBack() {
+        let paragraphs = [anchorParagraph(id: 0, "A valid page still rejects an anchor written by an obsolete schema.")]
+        let anchor = listeningAnchor(
+            paragraphs: paragraphs,
+            targetParagraph: 0,
+            targetWord: 4,
+            schemaVersion: 0
+        )
+        let result = KindleListeningAnchorResolver.resolve(
+            anchor,
+            bookId: "book-1",
+            pageKey: "page-real-1",
+            paragraphs: paragraphs
+        )
+        XCTAssertEqual(result.match, .fallback)
+        XCTAssertEqual(result.reason, "schema-mismatch")
+    }
+
+    func testKindleContinueListeningAutoplayGateConsumesOncePerBook() {
+        let gate = KindleAutoplayRequestGate()
+        XCTAssertEqual(gate.request(for: "book-a"), 1)
+        XCTAssertEqual(gate.consume(for: "book-a"), 1)
+        XCTAssertNil(gate.consume(for: "book-a"), "同一请求的重复 WebKit ready 回调不得再次 autoplay")
+
+        XCTAssertEqual(gate.request(for: "book-b"), 1)
+        XCTAssertEqual(gate.request(for: "book-b"), 2)
+        XCTAssertEqual(gate.consume(for: "book-b"), 2, "连续点击应合并为最新一次 ensurePlaying 请求")
+        XCTAssertNil(gate.consume(for: "book-b"))
+    }
+
+    func testKindleSyncDialogEventParsesLocationsWithoutBodyText() throws {
+        let event = try XCTUnwrap(KindleSyncDialogEvent(payload: [
+            "type": "kindle-sync-dialog",
+            "visible": true,
+            "localLocation": 1097,
+            "cloudLocation": "1088"
+        ]))
+        XCTAssertTrue(event.isVisible)
+        XCTAssertEqual(event.localLocation, 1097)
+        XCTAssertEqual(event.cloudLocation, 1088)
+        XCTAssertNil(event.choice)
+    }
+
+    func testKindleSyncDialogChoiceIsSeparateFromPageTruth() throws {
+        let event = try XCTUnwrap(KindleSyncDialogEvent(payload: [
+            "type": "kindle-sync-dialog-choice",
+            "visible": true,
+            "choice": "no",
+            "localLocation": 1097,
+            "cloudLocation": 1088
+        ]))
+        XCTAssertEqual(event.choice, .no)
+        XCTAssertEqual(event.localLocation, 1097)
+        XCTAssertEqual(event.cloudLocation, 1088)
+    }
+
+    @MainActor
+    func testKindleSyncDialogBootstrapDetectsDialogAndChoice() async throws {
+        let collector = KindleTestMessageCollector()
+        let controller = WKUserContentController()
+        controller.add(collector, name: "castReaderKindle")
+        let configuration = WKWebViewConfiguration()
+        configuration.userContentController = controller
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 800), configuration: configuration)
+        let window = UIWindow(frame: webView.frame)
+        window.isHidden = false
+        window.addSubview(webView)
+        defer { webView.removeFromSuperview() }
+
+        webView.loadHTMLString(
+            """
+            <!doctype html><html><body>
+            <div role="dialog" aria-modal="true" style="position:fixed;left:30px;top:120px;width:330px;height:240px">
+              <h2>Most Recent Page Read</h2>
+              <p>You're on location 1097. The most recent location is 1088. Go to location 1088?</p>
+              <button id="no">No</button><button id="yes">Yes</button>
+            </div>
+            <button id="kr-chevron-right" aria-label="Next page" style="opacity:0;pointer-events:none">Next</button>
+            <script>
+              window.hiddenChevronClickCount = 0;
+              window.hiddenKeyboardTurnCount = 0;
+              document.getElementById('kr-chevron-right').addEventListener('click', function() {
+                window.hiddenChevronClickCount += 1;
+              });
+              window.addEventListener('keydown', function(event) {
+                if (event.key === 'ArrowRight') window.hiddenKeyboardTurnCount += 1;
+              });
+            </script>
+            </body></html>
+            """,
+            baseURL: URL(string: "https://read.amazon.com")
+        )
+        for _ in 0..<30 {
+            if let loaded = try? await webView.evaluateJavaScript("!!document.querySelector('[role=dialog]')") as? Bool,
+               loaded { break }
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        _ = try await webView.evaluateJavaScript(KindleWebScripts.pageCaptureBootstrap)
+
+        for _ in 0..<30 where !collector.messages.contains(where: { ($0["type"] as? String) == "kindle-sync-dialog" }) {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        let shownPayload = try XCTUnwrap(collector.messages.first(where: { ($0["type"] as? String) == "kindle-sync-dialog" }))
+        let shown = try XCTUnwrap(KindleSyncDialogEvent(payload: shownPayload))
+        XCTAssertEqual(shown.localLocation, 1097)
+        XCTAssertEqual(shown.cloudLocation, 1088)
+
+        _ = try await webView.evaluateJavaScript("document.getElementById('no').click()")
+        for _ in 0..<20 where !collector.messages.contains(where: { ($0["type"] as? String) == "kindle-sync-dialog-choice" }) {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        let choicePayload = try XCTUnwrap(collector.messages.first(where: { ($0["type"] as? String) == "kindle-sync-dialog-choice" }))
+        XCTAssertEqual(KindleSyncDialogEvent(payload: choicePayload)?.choice, .no)
+
+        let rawTurn = try await webView.evaluateJavaScript("window.__crKindleTurnPage('next')")
+        let turnJSON = try XCTUnwrap(rawTurn as? String)
+        let turnData = try XCTUnwrap(turnJSON.data(using: .utf8))
+        let turn = try XCTUnwrap(JSONSerialization.jsonObject(with: turnData) as? [String: Any])
+        XCTAssertEqual(turn["strategy"] as? String, "native-chevron")
+        XCTAssertEqual(turn["controlVisible"] as? Bool, false)
+        let clickCount = try await webView.evaluateJavaScript("window.hiddenChevronClickCount") as? Int
+        XCTAssertEqual(clickCount, 1, "scrubber 不存在时应尝试 Kindle 的隐藏 chevron")
+        let keyboardCount = try await webView.evaluateJavaScript("window.hiddenKeyboardTurnCount") as? Int
+        XCTAssertEqual(keyboardCount, 0, "chevron 可用时不得提前发送 keyboard")
+
+        _ = try await webView.evaluateJavaScript(
+            """
+            (function() {
+              document.getElementById('kr-chevron-right').remove();
+              document.body.style.minHeight = '700px';
+              window.edgeTapCount = 0;
+              document.body.addEventListener('click', function() { window.edgeTapCount += 1; });
+            })()
+            """
+        )
+        let rawTapTurn = try await webView.evaluateJavaScript("window.__crKindleTurnPage('next')")
+        let tapJSON = try XCTUnwrap(rawTapTurn as? String)
+        let tapData = try XCTUnwrap(tapJSON.data(using: .utf8))
+        let tapTurn = try XCTUnwrap(JSONSerialization.jsonObject(with: tapData) as? [String: Any])
+        XCTAssertEqual(tapTurn["strategy"] as? String, "native-tap-zone")
+        let edgeTapCount = try await webView.evaluateJavaScript("window.edgeTapCount") as? Int
+        XCTAssertEqual(edgeTapCount, 1)
+
+        _ = try await webView.evaluateJavaScript(
+            """
+            (function() {
+              var scrubber = document.createElement('ion-range');
+              scrubber.id = 'kr-scrubber-bar';
+              Object.defineProperty(scrubber, 'value', { value: 10, writable: true, configurable: true });
+              window.scrubberInputCount = 0;
+              window.scrubberChangeCount = 0;
+              scrubber.addEventListener('ionInput', function() { window.scrubberInputCount += 1; });
+              scrubber.addEventListener('ionChange', function() { window.scrubberChangeCount += 1; });
+              document.body.appendChild(scrubber);
+            })()
+            """
+        )
+        let rawScrubberTurn = try await webView.evaluateJavaScript("window.__crKindleTurnPage('next')")
+        let scrubberJSON = try XCTUnwrap(rawScrubberTurn as? String)
+        let scrubberData = try XCTUnwrap(scrubberJSON.data(using: .utf8))
+        let scrubberTurn = try XCTUnwrap(JSONSerialization.jsonObject(with: scrubberData) as? [String: Any])
+        XCTAssertEqual(scrubberTurn["strategy"] as? String, "native-scrubber")
+        XCTAssertEqual(scrubberTurn["dispatchCount"] as? Int, 1)
+        let inputCount = try await webView.evaluateJavaScript("window.scrubberInputCount") as? Int
+        let changeCount = try await webView.evaluateJavaScript("window.scrubberChangeCount") as? Int
+        let keyboardCountAfterScrubber = try await webView.evaluateJavaScript("window.hiddenKeyboardTurnCount") as? Int
+        XCTAssertEqual(inputCount, 1)
+        XCTAssertEqual(changeCount, 1)
+        XCTAssertEqual(keyboardCountAfterScrubber, 0, "scrubber 可用时不得再发送 keyboard")
+    }
+
+    func testKindleListeningHashAndAnchorTokenContract() {
+        let a = [anchorParagraph(id: 0, "Hello,  WORLD!  Kindle 123")]
+        let b = [anchorParagraph(id: 0, "hello world kindle 123")]
+        XCTAssertEqual(
+            KindleListeningAnchorResolver.pageTextHash(paragraphs: a),
+            KindleListeningAnchorResolver.pageTextHash(paragraphs: b)
+        )
+
+        let paragraph = anchorParagraph(id: 0, "zero one two three four five six seven eight nine ten eleven twelve")
+        let offset = KindleListeningAnchorResolver.charOffset(in: paragraph, wordIndex: 6)
+        let phrase = KindleListeningAnchorResolver.anchorPhrase(in: paragraph.text, charOffset: offset)
+        XCTAssertLessThanOrEqual(phrase.phrase.split(separator: " ").count, 11)
+        XCTAssertEqual(phrase.anchorWordOffset, 5)
+    }
+
+    func testKindleListeningAnchorUsesSharedPageTextHashFieldAndMigratesLegacyKey() throws {
+        let paragraphs = [anchorParagraph(id: 0, "A stable sentence used for cross-platform resume metadata.")]
+        let anchor = listeningAnchor(paragraphs: paragraphs, targetParagraph: 0, targetWord: 3)
+        let encoded = try JSONEncoder().encode(anchor)
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        XCTAssertEqual(json["pageTextHash"] as? String, anchor.pageTextHash)
+        XCTAssertNil(json["textHash"])
+
+        json["textHash"] = json.removeValue(forKey: "pageTextHash")
+        let legacyData = try JSONSerialization.data(withJSONObject: json)
+        let migrated = try JSONDecoder().decode(KindleListeningAnchor.self, from: legacyData)
+        XCTAssertEqual(migrated.pageTextHash, anchor.pageTextHash)
+    }
+}
+
+@MainActor
+private final class KindleTestMessageCollector: NSObject, WKScriptMessageHandler {
+    var messages: [[String: Any]] = []
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if let payload = message.body as? [String: Any] {
+            messages.append(payload)
+        }
     }
 }
