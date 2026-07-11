@@ -120,13 +120,17 @@ actor APIService {
         return sts
     }
 
-    func notifyUpload(filename: String, filepath: String, userId: String, voiceId: String = Constants.TTS.defaultVoice) async throws -> UploadResponse {
+    func notifyUpload(filename: String, filepath: String, userId: String, voiceId: String? = nil) async throws -> UploadResponse {
         guard let url = URL(string: Constants.API.asyncUpload) else {
             throw APIError.invalidURL
         }
 
         print("📤 [API] notifyUpload URL: \(url)")
-        print("📤 [API] notifyUpload params: filename=\(filename), filepath=\(filepath), user_id=\(userId), voice_id=\(voiceId)")
+        let resolvedVoice = VoiceCatalog.resolvedVoice(
+            preferred: voiceId ?? "",
+            for: Constants.TTS.defaultLanguage
+        )
+        print("📤 [API] notifyUpload params: filename=\(filename), filepath=\(filepath), user_id=\(userId), voice_id=\(resolvedVoice)")
 
         // Use multipart/form-data format (same as web)
         let boundary = "Boundary-\(UUID().uuidString)"
@@ -142,7 +146,7 @@ actor APIService {
         appendFormField(name: "filename", value: filename)
         appendFormField(name: "filepath", value: filepath)
         appendFormField(name: "user_id", value: userId)
-        appendFormField(name: "voice_id", value: voiceId)
+        appendFormField(name: "voice_id", value: resolvedVoice)
 
         bodyData.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
@@ -177,7 +181,7 @@ actor APIService {
     }
 
     /// Upload EPUB file synchronously (returns immediately with book data)
-    func uploadEPUB(fileData: Data, filename: String, userId: String, voiceId: String = Constants.TTS.defaultVoice) async throws -> EPUBUploadResponse {
+    func uploadEPUB(fileData: Data, filename: String, userId: String, voiceId: String? = nil) async throws -> EPUBUploadResponse {
         guard let url = URL(string: Constants.API.syncUpload) else {
             throw APIError.invalidURL
         }
@@ -201,10 +205,14 @@ actor APIService {
         bodyData.append("Content-Disposition: form-data; name=\"user_id\"\r\n\r\n".data(using: .utf8)!)
         bodyData.append("\(userId)\r\n".data(using: .utf8)!)
 
+        let resolvedVoice = VoiceCatalog.resolvedVoice(
+            preferred: voiceId ?? "",
+            for: Constants.TTS.defaultLanguage
+        )
         // Add voice_id field
         bodyData.append("--\(boundary)\r\n".data(using: .utf8)!)
         bodyData.append("Content-Disposition: form-data; name=\"voice_id\"\r\n\r\n".data(using: .utf8)!)
-        bodyData.append("\(voiceId)\r\n".data(using: .utf8)!)
+        bodyData.append("\(resolvedVoice)\r\n".data(using: .utf8)!)
 
         bodyData.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
@@ -267,7 +275,7 @@ actor APIService {
 
     // MARK: - TTS API
 
-    func generateTTS(text: String, voice: String = Constants.TTS.defaultVoice, speed: Double = Constants.TTS.defaultSpeed, language: String = Constants.TTS.defaultLanguage) async throws -> TTSResponse {
+    func generateTTS(text: String, voice: String? = nil, speed: Double = Constants.TTS.defaultSpeed, language: String = Constants.TTS.defaultLanguage) async throws -> TTSResponse {
         // 节点路由（对齐扩展）：大陆时区→CN 节点，其他→US；CN 失败回退 US。
         let maxLength = 5000
         let sanitized = SpeechTextSanitizer.sanitizedForTTS(text)
@@ -275,7 +283,11 @@ actor APIService {
             throw APIError.serverError("No speakable text for TTS")
         }
         let inputText = sanitized.count > maxLength ? String(sanitized.prefix(maxLength)) : sanitized
-        let ttsRequest = TTSRequest(input: inputText, voice: voice, speed: speed, language: language)
+        let resolvedVoice = VoiceCatalog.resolvedVoice(
+            preferred: voice ?? "",
+            for: language
+        )
+        let ttsRequest = TTSRequest(input: inputText, voice: resolvedVoice, speed: speed, language: language)
         let bodyData = try JSONEncoder().encode(ttsRequest)
 
         let primary = TTSEndpoint.primaryBase()

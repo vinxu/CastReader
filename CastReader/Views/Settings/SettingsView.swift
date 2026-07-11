@@ -13,6 +13,7 @@ struct SettingsView: View {
     @ObservedObject private var quota = QuotaManager.shared
     @ObservedObject private var auth = AuthService.shared
     @ObservedObject private var kindleStore = KindleLibraryStore.shared
+    @ObservedObject private var voiceCatalog = VoiceCatalogService.shared
     @State private var showPaywall = false
     @State private var showLogin = false
     @State private var showClearHistory = false
@@ -262,6 +263,7 @@ struct SettingsView: View {
             voicePicker(title: "英文", language: "en", selection: $settings.voiceEN)
             voicePicker(title: "中文", language: "zh", selection: $settings.voiceZH)
         }
+        .id(voiceCatalog.revision)
     }
 
     private func voicePicker(title: LocalizedStringKey, language: String, selection: Binding<String>) -> some View {

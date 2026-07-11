@@ -20,6 +20,7 @@ enum Constants {
 
         // TTS
         static let tts = "\(baseURL)/api/captioned_speech_partly"
+        static let ttsCatalog = "\(baseURL)/api/tts/catalog?contract=tts-voice-catalog-v1"
 
         // 解读 / QuickRead（独立后端）
         /// 解读后端鉴权 key（对齐扩展的 QUICKREAD_API_KEY）。留空则不发送 x-api-key，后端会返回 401。

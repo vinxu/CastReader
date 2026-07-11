@@ -28,6 +28,7 @@ struct CastReaderApp: App {
         Task { @MainActor in
             ProManager.shared.start()
             QuotaManager.shared.rollIfNewDay()
+            VoiceCatalogService.shared.start()
         }
         // 刷新云端 TTS 节点配置（CN/US 路由）
         Task { await TTSEndpoint.refreshRemoteConfig() }
@@ -41,6 +42,7 @@ struct CastReaderApp: App {
             Task { @MainActor in
                 QuotaManager.shared.rollIfNewDay()
                 await ProManager.shared.refresh()
+                await VoiceCatalogService.shared.refreshIfStale()
             }
         }
     }

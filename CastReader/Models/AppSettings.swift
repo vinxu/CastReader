@@ -16,7 +16,7 @@ final class AppSettings: ObservableObject {
     static let maxSpeed: Double = 3.0
     static let minSpeed: Double = 0.5
 
-    private let d = UserDefaults.standard
+    private let d: UserDefaults
 
     @Published var voiceEN: String { didSet { d.set(voiceEN, forKey: K.voiceEN) } }
     @Published var voiceZH: String { didSet { d.set(voiceZH, forKey: K.voiceZH) } }
@@ -27,7 +27,8 @@ final class AppSettings: ObservableObject {
     @Published var autoScroll: Bool { didSet { d.set(autoScroll, forKey: K.autoScroll) } }
     @Published var autoPlay: Bool { didSet { d.set(autoPlay, forKey: K.autoPlay) } }
 
-    private init() {
+    init(defaults: UserDefaults = .standard) {
+        d = defaults
         voiceEN = d.string(forKey: K.voiceEN) ?? "af_heart"
         voiceZH = d.string(forKey: K.voiceZH) ?? "zf_001"
         speed = d.object(forKey: K.speed) as? Double ?? 1.0
@@ -40,11 +41,12 @@ final class AppSettings: ObservableObject {
 
     /// 该语言当前选用的音色（zh* 用中文音色，其余英文）。
     func voice(for language: String) -> String {
-        language.hasPrefix("zh") ? voiceZH : voiceEN
+        let preferred = VoiceCatalog.normalizedLanguage(language) == "zh" ? voiceZH : voiceEN
+        return VoiceCatalog.resolvedVoice(preferred: preferred, for: language)
     }
 
     func setVoice(_ code: String, for language: String) {
-        if language.hasPrefix("zh") { voiceZH = code } else { voiceEN = code }
+        if VoiceCatalog.normalizedLanguage(language) == "zh" { voiceZH = code } else { voiceEN = code }
     }
 
     /// 讲解语言：空串表示跟随原文（请求里传 nil）。
