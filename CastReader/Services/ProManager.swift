@@ -148,10 +148,33 @@ final class ProManager: ObservableObject {
     // MARK: - 购买 / 恢复
 
     @discardableResult
-    func purchase(_ product: Product) async -> Bool {
+    func purchase(_ product: Product, analyticsTrigger: String = "unknown") async -> Bool {
+        let purchaseAttemptId = UUID().uuidString
+        let analyticsContext = AnalyticsEventContext(
+            productArea: .billing,
+            surface: "paywall",
+            entryPoint: analyticsTrigger,
+            purchaseAttemptId: purchaseAttemptId
+        )
+        ProductAnalytics.shared.track(
+            .purchaseStart,
+            context: analyticsContext,
+            properties: .init(trigger: analyticsTrigger, store: "app_store", productId: product.id)
+        )
         guard AuthService.shared.normalizedEmail != nil else {
             refreshSyncState(reason: "purchase-blocked-missing-email")
             debugLog("purchase BLOCK missing-email product=\(product.id) localStoreKit=\(storeKitLocalPro ? "Y" : "N")")
+            ProductAnalytics.shared.track(
+                .purchaseResult,
+                context: analyticsContext,
+                properties: .init(
+                    result: AnalyticsResult.blocked.rawValue,
+                    errorCode: "email_required",
+                    trigger: analyticsTrigger,
+                    store: "app_store",
+                    productId: product.id
+                )
+            )
             return false
         }
         purchaseInFlight = true
@@ -170,16 +193,69 @@ final class ProManager: ObservableObject {
                     await t.finish()
                 }
                 await refresh()
+                ProductAnalytics.shared.track(
+                    .purchaseResult,
+                    context: analyticsContext,
+                    properties: .init(
+                        result: isPro ? AnalyticsResult.success.rawValue : AnalyticsResult.failed.rawValue,
+                        errorCode: isPro ? nil : "entitlement_not_active",
+                        trigger: analyticsTrigger,
+                        store: "app_store",
+                        productId: product.id
+                    )
+                )
                 return isPro
             case .pending:
+                ProductAnalytics.shared.track(
+                    .purchaseResult,
+                    context: analyticsContext,
+                    properties: .init(
+                        result: AnalyticsResult.pending.rawValue,
+                        trigger: analyticsTrigger,
+                        store: "app_store",
+                        productId: product.id
+                    )
+                )
                 return false   // 待批准（如家长 Ask to Buy）：完成后经 Transaction.updates 自动入账
             case .userCancelled:
+                ProductAnalytics.shared.track(
+                    .purchaseResult,
+                    context: analyticsContext,
+                    properties: .init(
+                        result: AnalyticsResult.cancelled.rawValue,
+                        trigger: analyticsTrigger,
+                        store: "app_store",
+                        productId: product.id
+                    )
+                )
                 return false
             @unknown default:
+                ProductAnalytics.shared.track(
+                    .purchaseResult,
+                    context: analyticsContext,
+                    properties: .init(
+                        result: AnalyticsResult.failed.rawValue,
+                        errorCode: "unknown_storekit_result",
+                        trigger: analyticsTrigger,
+                        store: "app_store",
+                        productId: product.id
+                    )
+                )
                 return false
             }
         } catch {
             print("⚠️ [Pro] purchase failed: \(error)")
+            ProductAnalytics.shared.track(
+                .purchaseResult,
+                context: analyticsContext,
+                properties: .init(
+                    result: AnalyticsResult.failed.rawValue,
+                    errorCode: "storekit_error",
+                    trigger: analyticsTrigger,
+                    store: "app_store",
+                    productId: product.id
+                )
+            )
             return false
         }
     }

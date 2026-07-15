@@ -469,6 +469,7 @@ enum KindleWebScripts {
               isReaderPage: readerPage,
               account: accountInfo(),
               url: location.href,
+              userAgent: navigator.userAgent || '',
               title: document.title || '',
               count: books.length,
         books: books.slice(0, 120)

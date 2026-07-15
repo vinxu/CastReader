@@ -1,0 +1,75 @@
+{
+  "contract": "tts-voice-catalog-v1",
+  "version": "2026-07-12.english-31",
+  "languages": [
+    {
+      "code": "en",
+      "locale": "en-US",
+      "name": "English",
+      "status": "ga",
+      "defaultVoice": "af_heart",
+      "timestampMode": "word"
+    }
+  ],
+  "voices": [
+    {
+      "id": "af_heart",
+      "name": "Heart",
+      "engine": "kokoro",
+      "modelVersion": "v1.0",
+      "language": "en",
+      "locale": "en-US",
+      "genderPresentation": "female",
+      "tier": "free",
+      "status": "ga",
+      "enabled": true,
+      "selectable": true,
+      "timestampMode": "word",
+      "accent": "American",
+      "recommended": true,
+      "description": "Warm and expressive",
+      "bestFor": ["general"],
+      "avatar": {"url64": "https://cdn.example/heart-64.png", "url256": "https://cdn.example/heart-256.png"},
+      "sampleUrl": "https://cdn.example/af_heart.mp3"
+    },
+    {
+      "id": "bf_alice",
+      "name": "Alice",
+      "engine": "kokoro",
+      "modelVersion": "v1.0",
+      "language": "en",
+      "locale": "en-GB",
+      "genderPresentation": "female",
+      "tier": "pro",
+      "status": "ga",
+      "enabled": false,
+      "selectable": true,
+      "timestampMode": "word",
+      "accent": "British",
+      "sourceModelVersion": "Kokoro-v1.0",
+      "collection": "English Essentials",
+      "recommended": true,
+      "qualityGrade": "A",
+      "trainingDuration": "12h",
+      "description": "A clear natural British voice",
+      "descriptionZh": "清晰自然的英式女声",
+      "bestFor": ["audiobooks", "long-form"],
+      "avatar": {"url64": "https://cdn.example/alice-64.png", "url256": "https://cdn.example/alice-256.png"},
+      "sampleUrl": "https://cdn.example/bf_alice.mp3"
+    },
+    {
+      "id": "af_maple",
+      "name": "Maple",
+      "engine": "kokoro",
+      "modelVersion": "v1.0",
+      "language": "en",
+      "locale": "en-US",
+      "genderPresentation": "female",
+      "tier": "pro",
+      "status": "beta",
+      "enabled": true,
+      "selectable": false,
+      "timestampMode": "word"
+    }
+  ]
+}

@@ -16,6 +16,7 @@ final class PlayerCoordinator: ObservableObject {
     struct Session: Identifiable {
         let id: String
         let document: ReadingDocument
+        let analyticsContext: AnalyticsContentContext
         let readVM: ReadAloudViewModel
         let explainVM: ExplainViewModel
     }
@@ -29,17 +30,37 @@ final class PlayerCoordinator: ObservableObject {
 
     /// 打开文档：新文档建会话（先停掉旧会话播放），同文档复用；展开完整阅读器；autoplay 时立即开播（剪贴板快捷入口用）。
     /// scenario：从首页场景入口进入时的 content_type（注入 ExplainViewModel 驱动「划什么/怎么批」+ 深度预设）；nil = 通用。
-    func open(_ document: ReadingDocument, mode: ReaderMode = .read, autoplay: Bool = false, scenario: String? = nil) {
+    func open(
+        _ document: ReadingDocument,
+        mode: ReaderMode = .read,
+        autoplay: Bool = false,
+        scenario: String? = nil,
+        analyticsContext suppliedAnalyticsContext: AnalyticsContentContext? = nil
+    ) {
         KindlePlaybackCenter.shared.close()
 
         if session?.id != document.id {
             session?.readVM.stop()
             session?.explainVM.stop()
-            let explainVM = ExplainViewModel(document: document)
+            let analyticsContext: AnalyticsContentContext
+            if let suppliedAnalyticsContext {
+                analyticsContext = suppliedAnalyticsContext
+            } else {
+                let fallback = AnalyticsContentContext.fallback(for: document)
+                analyticsContext = ProductAnalytics.shared.beginContentIntent(
+                    source: fallback.source,
+                    format: fallback.format,
+                    entryPoint: fallback.entryPoint,
+                    intendedMode: mode == .read ? "read" : "explain"
+                )
+            }
+            ProductAnalytics.shared.contentReady(analyticsContext, document: document)
+            let explainVM = ExplainViewModel(document: document, analyticsContext: analyticsContext)
             explainVM.scenario = scenario
             session = Session(id: document.id,
                               document: document,
-                              readVM: ReadAloudViewModel(document: document),
+                              analyticsContext: analyticsContext,
+                              readVM: ReadAloudViewModel(document: document, analyticsContext: analyticsContext),
                               explainVM: explainVM)
         } else if let scenario {
             session?.explainVM.scenario = scenario   // 同文档以场景重新进入：更新场景信号

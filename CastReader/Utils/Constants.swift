@@ -6,6 +6,12 @@
 import SwiftUI
 
 enum Constants {
+    enum Features {
+        /// Voice cloning remains implemented and its persisted data is retained,
+        /// but the feature is intentionally unavailable in this release.
+        static let voiceCloningEnabled = false
+    }
+
     enum API {
         static let baseURL = "https://api.castreader.ai"
         static let readerServiceURL = "http://api.castreader.ai:8123"
@@ -20,6 +26,7 @@ enum Constants {
 
         // TTS
         static let tts = "\(baseURL)/api/captioned_speech_partly"
+        static let ttsCatalog = "\(baseURL)/api/tts/catalog?contract=tts-voice-catalog-v1"
 
         // 解读 / QuickRead（独立后端）
         /// 解读后端鉴权 key（对齐扩展的 QUICKREAD_API_KEY）。留空则不发送 x-api-key，后端会返回 401。

@@ -10,6 +10,14 @@ import UIKit
 
 class CastReaderUITests: XCTestCase {
 
+    /// 声音克隆发布开关关闭时，不向用户暴露尚未开放的「已创建」入口。
+    func testVoiceBrowserHidesCreatedTabWhileFeatureDisabled() throws {
+        let app = launchZh()
+        app.tabBars.buttons["音色"].tap()
+        XCTAssertTrue(app.buttons["探索"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["已创建"].exists)
+    }
+
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
 
@@ -61,13 +69,28 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.buttons["connectKindleButton"].exists)
     }
 
-    /// 底部中间 ➕ → 弹出快速导入面板（含「上传文件」「输入网址」等方式）。
+    /// 底部中间 ➕ 保持原行为，弹出快速导入面板。
     func testPlusOpensImportSheet() {
         let app = launchZh()
-        XCTAssertTrue(app.buttons["plusImportButton"].waitForExistence(timeout: 5))
-        app.buttons["plusImportButton"].tap()
+        let plus = app.buttons["plusImportButton"]
+        XCTAssertTrue(plus.waitForExistence(timeout: 5))
+        plus.tap()
         XCTAssertTrue(app.buttons["上传文件"].waitForExistence(timeout: 5), "➕ 未弹出导入方式")
         XCTAssertTrue(app.buttons["输入网址"].exists)
+    }
+
+    /// 首页和中间 ➕ 保持不变，只把右侧 Settings 替换成 Voice。
+    func testHomePlusAndVoiceNavigation() {
+        let app = launchZh()
+        XCTAssertTrue(app.tabBars.buttons["首页"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["plusImportButton"].exists)
+        XCTAssertTrue(app.tabBars.buttons["音色"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.tabBars.buttons["设置"].exists)
+
+        app.tabBars.buttons["音色"].tap()
+        XCTAssertTrue(app.navigationBars["音色"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["探索"].exists)
+        XCTAssertTrue(app.buttons["settingsGearButton"].exists)
     }
 
     /// 点「论文 / 学术」→ 场景导入面板，列出上传文件 + 输入网址等来源。
@@ -132,14 +155,15 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "synced")).firstMatch.waitForExistence(timeout: 30))
     }
 
-    /// 文库已从底部 Tab 下沉到「设置」：设置页存在「文库」入口。
-    func testLibraryMovedIntoSettings() {
+    /// 设置入口放在 Voice 右上角，首页本身保持不变。
+    func testVoiceSettingsGearKeepsLibraryEntry() {
         let app = launchZh()
-        let settingsTab = app.tabBars.buttons["设置"]
-        XCTAssertTrue(settingsTab.waitForExistence(timeout: 5), "底部缺设置 Tab")
-        settingsTab.tap()
+        app.tabBars.buttons["音色"].tap()
+        let settingsGear = app.buttons["settingsGearButton"].firstMatch
+        XCTAssertTrue(settingsGear.waitForExistence(timeout: 5), "Voice 右上角缺设置入口")
+        settingsGear.tap()
         XCTAssertTrue(app.buttons["settingsLibraryLink"].waitForExistence(timeout: 5), "设置里缺文库入口")
-        // 文库不应再是底部 Tab（底部仅 首页/占位/设置 共 3 项）
+        XCTAssertFalse(app.tabBars.buttons["设置"].exists)
     }
 
     private func tapFirstExisting(in app: XCUIApplication, labels: [String]) {

@@ -24,6 +24,7 @@ struct PDFWordHighlight: Equatable {
 final class ReadAloudViewModel: ObservableObject {
 
     let document: ReadingDocument
+    let analyticsContext: AnalyticsContentContext
 
     // 渲染状态
     @Published var currentParagraphIndex: Int = -1
@@ -82,14 +83,24 @@ final class ReadAloudViewModel: ObservableObject {
     private(set) var isActive = false
     private var lastNowPlayingCaption: String?
 
+    // 产品分析会话只使用播放器真实推进时间；跳读造成的大跨度 currentTime 不计入里程碑。
+    private var analyticsReadSessionId: String?
+    private var analyticsReadStartedAt: Date?
+    private var analyticsFirstAudioTracked = false
+    private var analyticsPlaybackSeconds: Double = 0
+    private var analyticsMilestones = Set<Int>()
+    private var analyticsLastSegmentId: String?
+    private var analyticsLastPosition: Double?
+
     private var playbackBookID: String?
     private var playbackTitle: String?
     private var playbackChapterTitle: String?
     private var playbackCoverURL: String?
     var onDocumentFinished: (() -> Void)?
 
-    init(document: ReadingDocument) {
+    init(document: ReadingDocument, analyticsContext: AnalyticsContentContext? = nil) {
         self.document = document
+        self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         recomputeReadableIndices()
         bind()
     }
@@ -176,7 +187,7 @@ final class ReadAloudViewModel: ObservableObject {
             .store(in: &cancellables)
         audio.$isPlaying
             .receive(on: RunLoop.main)
-            .sink { [weak self] p in self?.isPlaying = p }
+            .sink { [weak self] p in self?.handlePlaybackState(p) }
             .store(in: &cancellables)
         audio.$isBuffering
             .receive(on: RunLoop.main)
@@ -208,6 +219,7 @@ final class ReadAloudViewModel: ObservableObject {
     /// 退出激活（切到解读模式时调用）：必须停掉生成/预取，否则流式生成的新 segment 经 loadSegment 会自动
     /// 重新 playSegment（首段未播放时），导致「切到解读后朗读还在响」。
     func deactivate() {
+        endAnalyticsReadSession(result: .cancelled, reason: "mode_switched")
         isActive = false
         generationTask?.cancel()
         listenCapRefreshTask?.cancel()
@@ -242,6 +254,7 @@ final class ReadAloudViewModel: ObservableObject {
             showPaywall = true
             return
         }
+        beginAnalyticsReadSessionIfNeeded(resume: false)
         activate()
         applyPlaybackMetadata()
         applySpeed()
@@ -255,6 +268,7 @@ final class ReadAloudViewModel: ObservableObject {
             refreshAccessThenRetryResume()
             return
         }
+        if !audio.isPlaying { beginAnalyticsReadSessionIfNeeded(resume: true) }
         audio.togglePlayPause()
     }
 
@@ -275,6 +289,7 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         if audio.currentSegment != nil {
+            beginAnalyticsReadSessionIfNeeded(resume: true)
             audio.play()
         } else if !isFinished {
             jump(to: currentParagraphIndex)
@@ -308,6 +323,7 @@ final class ReadAloudViewModel: ObservableObject {
             applyPlaybackMetadata()
             applySpeed()
         }
+        beginAnalyticsReadSessionIfNeeded(resume: currentParagraphIndex >= 0)
         generate(paragraphIndex)
     }
 
@@ -332,6 +348,7 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
 
+        beginAnalyticsReadSessionIfNeeded(resume: currentParagraphIndex >= 0)
         activate()
         applyPlaybackMetadata()
         applySpeed()
@@ -371,6 +388,7 @@ final class ReadAloudViewModel: ObservableObject {
             await MainActor.run {
                 guard let self else { return }
                 if self.pro.isPro || self.quota.canStartListen(isPro: self.pro.isPro) {
+                    self.beginAnalyticsReadSessionIfNeeded(resume: true)
                     self.audio.togglePlayPause()
                 } else {
                     self.showPaywall = true
@@ -411,6 +429,7 @@ final class ReadAloudViewModel: ObservableObject {
         Task { await TTSService.shared.cancelCurrentRequest() }
         audio.clearBook()
         commitListen()
+        endAnalyticsReadSession(result: .cancelled, reason: "closed")
     }
 
     // MARK: - Generation
@@ -466,7 +485,15 @@ final class ReadAloudViewModel: ObservableObject {
             } catch {
                 await MainActor.run {
                     self.audio.moreSegmentsExpected = false
-                    if self.currentParagraphIndex == index { self.status = .error(error.localizedDescription) }
+                    if self.currentParagraphIndex == index {
+                        self.status = .error(error.localizedDescription)
+                        self.endAnalyticsReadSession(
+                            result: .failed,
+                            reason: "tts_failed",
+                            errorStage: "tts",
+                            errorCode: Self.analyticsErrorCode(error)
+                        )
+                    }
                 }
             }
         }
@@ -587,6 +614,7 @@ final class ReadAloudViewModel: ObservableObject {
             status = .ready
             isFinished = true
             NSLog("CRDBG read document finished para=%d readable=%d", currentParagraphIndex, readableIndices.count)
+            endAnalyticsReadSession(result: .success, reason: "completed")
             onDocumentFinished?()
             return
         }
@@ -599,6 +627,7 @@ final class ReadAloudViewModel: ObservableObject {
             status = .ready
             showPaywall = true
             audio.pause()
+            endAnalyticsReadSession(result: .blocked, reason: "listen_quota")
             return
         }
         let nextIndex = readableIndices[nextPos]
@@ -640,6 +669,7 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func onTick(_ t: Double) {
         guard isActive else { return }
+        accountAnalyticsPlayback(t)
         accountListen(t)
         updateHighlight(t)
         updateNowPlayingCaption(t)
@@ -952,6 +982,137 @@ final class ReadAloudViewModel: ObservableObject {
         s.lowercased().trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
     }
 
+    // MARK: - Product analytics
+
+    private func beginAnalyticsReadSessionIfNeeded(resume: Bool) {
+        guard analyticsReadSessionId == nil else { return }
+        analyticsReadSessionId = UUID().uuidString
+        analyticsReadStartedAt = Date()
+        analyticsFirstAudioTracked = false
+        analyticsPlaybackSeconds = 0
+        analyticsMilestones.removeAll()
+        analyticsLastSegmentId = nil
+        analyticsLastPosition = nil
+        let voice = settings.voice(for: docLanguage)
+        ProductAnalytics.shared.track(
+            .readStart,
+            context: analyticsEventContext,
+            properties: .init(
+                contentSource: analyticsContext.source.rawValue,
+                contentFormat: AnalyticsContentFormat(document.sourceKind).rawValue,
+                language: docLanguage,
+                voiceId: voice,
+                speed: settings.effectiveSpeed(isPro: pro.isPro),
+                resume: resume || analyticsContext.entryPoint == "history_resume"
+            )
+        )
+    }
+
+    private func handlePlaybackState(_ playing: Bool) {
+        isPlaying = playing
+        guard playing else {
+            analyticsLastSegmentId = nil
+            analyticsLastPosition = nil
+            return
+        }
+        guard isActive,
+              !analyticsFirstAudioTracked,
+              analyticsReadSessionId != nil,
+              audio.currentSegment != nil else { return }
+        analyticsFirstAudioTracked = true
+        let latency = max(0, Int(Date().timeIntervalSince(analyticsReadStartedAt ?? Date()) * 1000))
+        ProductAnalytics.shared.track(
+            .readFirstAudio,
+            context: analyticsEventContext,
+            properties: .init(
+                latencyMs: latency,
+                language: docLanguage,
+                voiceId: settings.voice(for: docLanguage)
+            )
+        )
+    }
+
+    private func accountAnalyticsPlayback(_ currentTime: Double) {
+        guard audio.isPlaying,
+              analyticsReadSessionId != nil,
+              let segment = audio.currentSegment else { return }
+        if analyticsLastSegmentId == segment.id,
+           let previous = analyticsLastPosition,
+           currentTime >= previous {
+            // Cap a single tick so a manual seek does not manufacture usage.
+            analyticsPlaybackSeconds += min(2.0, currentTime - previous)
+        }
+        analyticsLastSegmentId = segment.id
+        analyticsLastPosition = currentTime
+
+        for milestone in [30, 180, 300, 600, 1800]
+        where analyticsPlaybackSeconds >= Double(milestone) && !analyticsMilestones.contains(milestone) {
+            analyticsMilestones.insert(milestone)
+            if milestone >= 300 { ProductAnalytics.shared.noteMeaningfulReadReached() }
+            ProductAnalytics.shared.track(
+                .readMilestone,
+                context: analyticsEventContext,
+                properties: .init(
+                    milestoneSeconds: milestone,
+                    playbackSeconds: Int(analyticsPlaybackSeconds),
+                    completionBucket: analyticsCompletionBucket
+                )
+            )
+        }
+    }
+
+    private func endAnalyticsReadSession(
+        result: AnalyticsResult,
+        reason: String,
+        errorStage: String? = nil,
+        errorCode: String? = nil
+    ) {
+        guard analyticsReadSessionId != nil else { return }
+        ProductAnalytics.shared.track(
+            .readEnd,
+            context: analyticsEventContext,
+            properties: .init(
+                result: result.rawValue,
+                errorStage: errorStage,
+                errorCode: errorCode,
+                playbackSeconds: Int(analyticsPlaybackSeconds),
+                completionBucket: analyticsCompletionBucket,
+                endReason: reason
+            )
+        )
+        analyticsReadSessionId = nil
+        analyticsReadStartedAt = nil
+        analyticsFirstAudioTracked = false
+        analyticsLastSegmentId = nil
+        analyticsLastPosition = nil
+    }
+
+    private var analyticsEventContext: AnalyticsEventContext {
+        AnalyticsEventContext(
+            productArea: .readAloud,
+            surface: document.sourceKind == .kindle ? "kindle_reader" : "reader",
+            entryPoint: analyticsContext.entryPoint,
+            contentSessionId: analyticsContext.contentSessionId,
+            readSessionId: analyticsReadSessionId
+        )
+    }
+
+    private var analyticsCompletionBucket: String {
+        guard let position = readableIndices.firstIndex(of: currentParagraphIndex) else { return "unknown" }
+        return ProductAnalytics.completionBucket(completed: position + 1, total: readableIndices.count)
+    }
+
+    private static func analyticsErrorCode(_ error: Error) -> String {
+        if error is URLError { return "network" }
+        if error is CancellationError { return "cancelled" }
+        let description = String(describing: error).lowercased()
+        if description.contains("401") { return "http_401" }
+        if description.contains("402") { return "http_402" }
+        if description.contains("429") { return "http_429" }
+        if description.contains("timeout") { return "timeout" }
+        return "tts_failed"
+    }
+
     // MARK: - 额度计时
 
     private func accountListen(_ t: Double) {
@@ -986,6 +1147,7 @@ final class ReadAloudViewModel: ObservableObject {
                 self.audio.pause()
                 self.status = .ready
                 self.showPaywall = true
+                self.endAnalyticsReadSession(result: .blocked, reason: "listen_quota")
             }
         }
     }

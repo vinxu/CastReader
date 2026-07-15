@@ -5,15 +5,15 @@
       "comment" : "Bundle name",
       "extractionState" : "extracted_with_value",
       "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "CastReader"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "CastReader"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
             "value" : "CastReader"
           }
         }
@@ -33,6 +33,18 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "拍下书本、文档或屏幕上的文字，CastReader 在本机识别后即可为你朗读（边读边高亮跟随），或生成 AI 讲解并在原文上做手写标注。照片仅在设备上识别，不会上传。"
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Privacy - Microphone Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Record a short sample to create your personal voice."
           }
         }
       }

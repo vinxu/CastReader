@@ -26,8 +26,10 @@ struct CastReaderApp: App {
 
         // Pro 订阅状态 + 每日额度初始化
         Task { @MainActor in
+            ProductAnalytics.shared.startAppSession()
             ProManager.shared.start()
             QuotaManager.shared.rollIfNewDay()
+            VoiceCatalogService.shared.start()
         }
         // 刷新云端 TTS 节点配置（CN/US 路由）
         Task { await TTSEndpoint.refreshRemoteConfig() }
@@ -39,9 +41,17 @@ struct CastReaderApp: App {
             forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
         ) { _ in
             Task { @MainActor in
+                ProductAnalytics.shared.didBecomeActive()
                 QuotaManager.shared.rollIfNewDay()
                 await ProManager.shared.refresh()
+                await VoiceCatalogService.shared.refreshIfStale()
             }
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main
+        ) { _ in
+            Task { @MainActor in ProductAnalytics.shared.didEnterBackground() }
         }
     }
 

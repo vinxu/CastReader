@@ -37,7 +37,7 @@ actor TTSService {
     func generateTTSForParagraph(
         paragraphIndex: Int,
         text: String,
-        voice: String = Constants.TTS.defaultVoice,
+        voice: String? = nil,
         speed: Double = Constants.TTS.defaultSpeed,
         language: String = Constants.TTS.defaultLanguage,
         onSegmentReady: @escaping (AudioSegment) async -> Void
@@ -49,12 +49,16 @@ actor TTSService {
         }
         let requestId = UUID()
         currentRequestId = requestId
+        let resolvedVoice = VoiceCatalog.resolvedVoice(
+            preferred: voice ?? "",
+            for: language
+        )
         print("[TTSService] ☁️ Cloud TTS for: \(sanitized.prefix(30))...")
         try await generateCloudTTS(
             requestId: requestId,
             paragraphIndex: paragraphIndex,
             text: sanitized,
-            voice: voice,
+            voice: resolvedVoice,
             speed: speed,
             language: language,
             onSegmentReady: onSegmentReady
@@ -69,19 +73,23 @@ actor TTSService {
     func generatePrefetchSegments(
         paragraphIndex: Int,
         text: String,
-        voice: String = Constants.TTS.defaultVoice,
+        voice: String? = nil,
         speed: Double = Constants.TTS.defaultSpeed,
         language: String = Constants.TTS.defaultLanguage
     ) async throws -> [AudioSegment] {
         var remainingText = SpeechTextSanitizer.sanitizedForTTS(text)
         var segmentIndex = 0
         var segments: [AudioSegment] = []
+        let resolvedVoice = VoiceCatalog.resolvedVoice(
+            preferred: voice ?? "",
+            for: language
+        )
 
         while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
             try Task.checkCancellation()
             let response = try await APIService.shared.generateTTS(
                 text: remainingText,
-                voice: voice,
+                voice: resolvedVoice,
                 speed: speed,
                 language: language
             )

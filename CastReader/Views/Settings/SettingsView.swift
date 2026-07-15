@@ -13,10 +13,12 @@ struct SettingsView: View {
     @ObservedObject private var quota = QuotaManager.shared
     @ObservedObject private var auth = AuthService.shared
     @ObservedObject private var kindleStore = KindleLibraryStore.shared
+    @ObservedObject private var voiceCatalog = VoiceCatalogService.shared
     @State private var showPaywall = false
     @State private var showLogin = false
     @State private var showClearHistory = false
     @State private var showUnbindKindle = false
+    @State private var showVoiceBrowser = false
 
     private let explainLanguages: [(String, String)] = [
         ("", String(localized: "跟随原文")), ("en", "English"), ("zh", "中文"), ("ja", "日本語"),
@@ -41,7 +43,10 @@ struct SettingsView: View {
                 #endif
             }
             .navigationTitle("设置")
-            .sheet(isPresented: $showPaywall) { PaywallView() }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView(analyticsTrigger: "settings_upgrade", analyticsSurface: "settings")
+            }
+            .sheet(isPresented: $showVoiceBrowser) { VoiceBrowserView() }
             .sheet(isPresented: $showLogin) { LoginView() }
             .alert("清除全部历史记录？", isPresented: $showClearHistory) {
                 Button("清除全部", role: .destructive) { HistoryStore.shared.clearAll() }
@@ -259,48 +264,19 @@ struct SettingsView: View {
 
     private var voiceSection: some View {
         Section("音色") {
-            voicePicker(title: "英文", language: "en", selection: $settings.voiceEN)
-            voicePicker(title: "中文", language: "zh", selection: $settings.voiceZH)
-        }
-    }
-
-    private func voicePicker(title: LocalizedStringKey, language: String, selection: Binding<String>) -> some View {
-        Menu {
-            ForEach(VoiceCatalog.voices(for: language)) { v in
-                Button {
-                    selectVoice(v, selection: selection)
-                } label: {
-                    HStack {
-                        Text(v.name)
-                        if v.isPro && !pro.isPro { Image(systemName: "lock.fill") }
-                        if selection.wrappedValue == v.code { Image(systemName: "checkmark") }
-                    }
+            Button { showVoiceBrowser = true } label: {
+                HStack {
+                    Label("管理各语言音色", systemImage: "waveform")
+                    Spacer()
+                    Text(VoiceBrowserLanguage.languageCountText(VoiceCatalog.availableLanguages.count))
+                        .foregroundStyle(AppTheme.mutedForeground)
                 }
             }
-        } label: {
-            HStack {
-                Text(title)
-                Spacer()
-                Text(VoiceCatalog.displayName(for: selection.wrappedValue))
-                    .foregroundColor(AppTheme.mutedForeground)
-                Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundColor(AppTheme.mutedForeground)
-            }
+            Text("每种语言分别记忆所选音色；可用语言由云端目录自动更新。")
+                .font(.footnote)
+                .foregroundStyle(AppTheme.mutedForeground)
         }
-    }
-
-    private func selectVoice(_ voice: VoiceOption, selection: Binding<String>) {
-        if voice.isPro && !pro.isPro {
-            Task { @MainActor in
-                await pro.refresh()
-                if pro.isPro {
-                    selection.wrappedValue = voice.code
-                } else {
-                    showPaywall = true
-                }
-            }
-        } else {
-            selection.wrappedValue = voice.code
-        }
+        .id(voiceCatalog.revision)
     }
 
     // MARK: 解读

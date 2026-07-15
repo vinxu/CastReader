@@ -27,6 +27,7 @@ extension AuthService {
         // best-effort：把 Apple identity token 发给 better-auth 换 user id
         if let tokenData = cred.identityToken, let token = String(data: tokenData, encoding: .utf8) {
             acc.backendUserId = (try? await exchangeWithBackend(provider: "apple", idToken: token)) ?? prior?.backendUserId
+            _ = try? await MobileSessionStore.shared.exchange(provider: "apple", idToken: token)
         }
 
         applyAccount(acc)

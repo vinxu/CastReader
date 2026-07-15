@@ -64,7 +64,12 @@ struct ReaderHostView: View {
             scheduleRefocusBurst(reason: "orientation")
         }
         // 收起阅读器（minimize）不停播放，由 Mini Player 接管；真正停止只在 Mini Player ✕（coordinator.close）。
-        .sheet(isPresented: paywallBinding) { PaywallView() }
+        .sheet(isPresented: paywallBinding) {
+            PaywallView(
+                analyticsTrigger: readVM.showPaywall ? "listen_quota" : "explain_quota",
+                analyticsSurface: "reader"
+            )
+        }
     }
 
     private var portraitBody: some View {
@@ -444,7 +449,9 @@ struct SpeedMenu: View {
             }
             Button("Cancel", role: .cancel) {}
         }
-        .sheet(isPresented: $showPaywall) { PaywallView() }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(analyticsTrigger: "pro_speed", analyticsSurface: "reader_controls")
+        }
     }
 
     private func speedTitle(_ speed: Float) -> String {

@@ -21,6 +21,9 @@
         }
       }
     },
+    "%.1f 秒 · 需 3–30 秒 · 不超过 4 MB" : {
+
+    },
     "%@ · %@" : {
       "localizations" : {
         "en" : {
@@ -67,6 +70,16 @@
         }
       }
     },
+    "%lld 个音色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld voices"
+          }
+        }
+      }
+    },
     "%lld 分钟前" : {
       "localizations" : {
         "en" : {
@@ -93,6 +106,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld h ago"
+          }
+        }
+      }
+    },
+    "%lld 种语言" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld languages"
           }
         }
       }
@@ -138,6 +161,7 @@
       }
     },
     "CastReader Pro" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -146,6 +170,9 @@
           }
         }
       }
+    },
+    "CASTREADER PRO" : {
+
     },
     "Debug only：测试锁屏后 WebView 是否还能滚动" : {
       "extractionState" : "stale",
@@ -157,6 +184,9 @@
           }
         }
       }
+    },
+    "English" : {
+
     },
     "EPUB、PDF 长文、书摘或章节" : {
       "localizations" : {
@@ -264,6 +294,16 @@
         }
       }
     },
+    "Kindle 书籍需要重新同步" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Kindle book needs to be synced again"
+          }
+        }
+      }
+    },
     "Kindle 后台滚动测试" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -271,6 +311,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kindle Background Scroll Probe"
+          }
+        }
+      }
+    },
+    "Kindle 登录已过期，请重新登录并同步书架。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Kindle session has expired. Sign in again and sync your library."
           }
         }
       }
@@ -347,6 +397,9 @@
         }
       }
     },
+    "PRO" : {
+
+    },
     "Something went wrong" : {
       "localizations" : {
         "en" : {
@@ -356,6 +409,9 @@
           }
         }
       }
+    },
+    "Today is a pleasant day. I am recording this sample in a clear, natural voice so CastReader can reproduce my voice accurately." : {
+
     },
     "Try Again" : {
       "localizations" : {
@@ -443,6 +499,9 @@
         }
       }
     },
+    "下次可创建时间：%@" : {
+
+    },
     "与" : {
       "localizations" : {
         "en" : {
@@ -463,12 +522,32 @@
         }
       }
     },
+    "中文录制" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recorded in Chinese"
+          }
+        }
+      }
+    },
     "书名" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Title"
+          }
+        }
+      }
+    },
+    "书架已同步，但 Kindle 未能打开这本书。请重试或返回书架。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your library was synced, but Kindle could not open this book. Try again or return to the library."
           }
         }
       }
@@ -492,6 +571,9 @@
           }
         }
       }
+    },
+    "今天的天气很舒服。我正在用清晰、自然的声音录制一段样本，让 CastReader 更准确地还原我的声音。" : {
+
     },
     "今日朗读剩余 %d 分钟 · 解读 %d 次" : {
       "localizations" : {
@@ -555,12 +637,45 @@
         }
       }
     },
+    "修复并打开" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repair and Open"
+          }
+        }
+      }
+    },
+    "停止录音" : {
+
+    },
+    "停止试听" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop preview"
+          }
+        }
+      }
+    },
     "先导入内容，也可以指定一个解读场景" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import content first, or choose an explanation scenario"
+          }
+        }
+      }
+    },
+    "免费" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free"
           }
         }
       }
@@ -768,6 +883,32 @@
         }
       }
     },
+    "创建声音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create Voice"
+          }
+        }
+      }
+    },
+    "创建新声音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create New Voice"
+          }
+        }
+      }
+    },
+    "删除" : {
+
+    },
+    "删除后将无法继续使用这个声音。" : {
+
+    },
     "删除文库中全部本地历史。历史仅保存在本机，不会上传或同步到云端。" : {
       "localizations" : {
         "en" : {
@@ -777,6 +918,9 @@
           }
         }
       }
+    },
+    "删除这个声音？" : {
+
     },
     "刷新" : {
       "extractionState" : "stale",
@@ -806,6 +950,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Refresh Kindle book"
+          }
+        }
+      }
+    },
+    "刷新会重新同步书架并更新这本书的入口，不会清除朗读设置。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This refresh syncs your library and updates this book's entry without clearing playback settings."
           }
         }
       }
@@ -880,6 +1034,9 @@
         }
       }
     },
+    "升级到 CastReader Pro" : {
+
+    },
     "升级到 Pro" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -887,6 +1044,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Upgrade to Pro"
+          }
+        }
+      }
+    },
+    "升级后可创建，并为中文或英语选择自己的声音。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade to create a voice and choose it for Chinese or English."
           }
         }
       }
@@ -907,6 +1074,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "取消收藏" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from Favorites"
+          }
+        }
+      }
+    },
+    "口音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accent"
           }
         }
       }
@@ -977,6 +1164,67 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Use Camera, Upload File, Enter URL, or Enter Text on Home — processed content shows up here"
+          }
+        }
+      }
+    },
+    "声音克隆" : {
+
+    },
+    "声音克隆仅面向 Pro 会员" : {
+
+    },
+    "声音克隆登录服务尚未就绪，请稍后再试" : {
+
+    },
+    "声音克隆请求失败" : {
+
+    },
+    "声音克隆返回数据无效" : {
+
+    },
+    "声音克隆需要 Pro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice cloning requires Pro"
+          }
+        }
+      }
+    },
+    "声音克隆需要安全的账号会话。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice cloning requires a secure account session."
+          }
+        }
+      }
+    },
+    "声音服务暂时不可用，请稍后重试" : {
+
+    },
+    "声音服务繁忙，请重试" : {
+
+    },
+    "多语言" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Multilingual"
+          }
+        }
+      }
+    },
+    "女声" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Female"
           }
         }
       }
@@ -1071,12 +1319,33 @@
         }
       }
     },
+    "尝试其他搜索或筛选条件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try another search or filter."
+          }
+        }
+      }
+    },
     "已上传，处理完成后在「文库」查看" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Uploaded. You'll find it in your Library once processing is done"
+          }
+        }
+      }
+    },
+    "已从当前页开始朗读。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading from the current page."
           }
         }
       }
@@ -1090,6 +1359,9 @@
           }
         }
       }
+    },
+    "已创建" : {
+
     },
     "已到达当前 Kindle 内容末尾。" : {
       "localizations" : {
@@ -1147,6 +1419,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ready."
+          }
+        }
+      }
+    },
+    "已恢复 Kindle 朗读。" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle reading resumed."
           }
         }
       }
@@ -1334,6 +1617,9 @@
         }
       }
     },
+    "开始录音" : {
+
+    },
     "开始解读" : {
       "localizations" : {
         "en" : {
@@ -1404,6 +1690,25 @@
         }
       }
     },
+    "录音文件必须不超过 4 MB" : {
+
+    },
+    "录音未能完整保存，请重录" : {
+
+    },
+    "录音未通过服务器校验" : {
+
+    },
+    "录音语言" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recording Language"
+          }
+        }
+      }
+    },
     "快速导入" : {
       "localizations" : {
         "en" : {
@@ -1424,6 +1729,16 @@
         }
       }
     },
+    "性别" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gender"
+          }
+        }
+      }
+    },
     "恢复购买" : {
       "localizations" : {
         "en" : {
@@ -1433,6 +1748,22 @@
           }
         }
       }
+    },
+    "我的声音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My Voices"
+          }
+        }
+      }
+    },
+    "我的声音 %lld" : {
+
+    },
+    "我确认这是我本人的声音，并授权 CastReader 用它生成语音。" : {
+
     },
     "打开" : {
       "localizations" : {
@@ -1607,6 +1938,16 @@
         }
       }
     },
+    "探索" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore"
+          }
+        }
+      }
+    },
     "推荐" : {
       "localizations" : {
         "en" : {
@@ -1647,12 +1988,42 @@
         }
       }
     },
+    "搜索语言" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search languages"
+          }
+        }
+      }
+    },
+    "搜索音色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search voices"
+          }
+        }
+      }
+    },
     "播放" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Playback"
+          }
+        }
+      }
+    },
+    "收藏" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorites"
           }
         }
       }
@@ -1737,6 +2108,9 @@
           }
         }
       }
+    },
+    "无法开始录音" : {
+
     },
     "无法把高亮附加到 Kindle 页面：%@" : {
       "localizations" : {
@@ -1880,6 +2254,26 @@
         }
       }
     },
+    "暂无最近使用的音色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No recently used voices"
+          }
+        }
+      }
+    },
+    "暂无收藏的音色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No favorite voices yet"
+          }
+        }
+      }
+    },
     "暂未找到这本书的目录。" : {
       "localizations" : {
         "en" : {
@@ -1951,6 +2345,16 @@
         }
       }
     },
+    "朗读语言" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice Language"
+          }
+        }
+      }
+    },
     "未命名" : {
       "localizations" : {
         "en" : {
@@ -1998,6 +2402,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unknown author"
+          }
+        }
+      }
+    },
+    "未能在 Kindle 书架找到这本书，请手动同步书架。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This book could not be found in your Kindle library. Please sync the library manually."
           }
         }
       }
@@ -2052,6 +2466,9 @@
           }
         }
       }
+    },
+    "查看 Pro" : {
+
     },
     "查看全部" : {
       "localizations" : {
@@ -2114,6 +2531,17 @@
         }
       }
     },
+    "正在从 Kindle 书架打开书籍…" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opening the book from your Kindle library…"
+          }
+        }
+      }
+    },
     "正在从当前 Kindle 页面继续…" : {
       "localizations" : {
         "en" : {
@@ -2124,12 +2552,32 @@
         }
       }
     },
+    "正在修复…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repairing…"
+          }
+        }
+      }
+    },
     "正在准备 Kindle 页面…" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Preparing Kindle pages..."
+          }
+        }
+      }
+    },
+    "正在准备…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing…"
           }
         }
       }
@@ -2174,6 +2622,9 @@
         }
       }
     },
+    "正在创建声音" : {
+
+    },
     "正在刷新当前 Kindle 页面…" : {
       "localizations" : {
         "en" : {
@@ -2214,6 +2665,16 @@
         }
       }
     },
+    "正在同步 Kindle 书架…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncing your Kindle library…"
+          }
+        }
+      }
+    },
     "正在同步会员状态…" : {
       "localizations" : {
         "en" : {
@@ -2231,6 +2692,37 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aligning Kindle page..."
+          }
+        }
+      }
+    },
+    "正在应用 Kindle 阅读位置…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applying the Kindle reading position…"
+          }
+        }
+      }
+    },
+    "正在恢复 Kindle 朗读…" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resuming Kindle reading…"
+          }
+        }
+      }
+    },
+    "正在打开 Kindle 书架…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opening your Kindle library…"
           }
         }
       }
@@ -2281,6 +2773,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Updating table of contents..."
+          }
+        }
+      }
+    },
+    "正在等待 Kindle 书架加载…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for your Kindle library…"
           }
         }
       }
@@ -2345,12 +2847,48 @@
         }
       }
     },
+    "正在重新同步 Kindle 书籍…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncing the Kindle book again…"
+          }
+        }
+      }
+    },
+    "正在重新打开书籍…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reopening the book…"
+          }
+        }
+      }
+    },
     "正在预加载第 %d 页…" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prefetching page %d..."
+          }
+        }
+      }
+    },
+    "此音色需要 CastReader Pro" : {
+
+    },
+    "每 24 小时只能创建一个声音" : {
+
+    },
+    "每种语言分别记忆所选音色；可用语言由云端目录自动更新。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice choices are saved per language, and available languages update automatically from the cloud catalog."
           }
         }
       }
@@ -2366,12 +2904,33 @@
         }
       }
     },
+    "没有匹配的音色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No matching voices"
+          }
+        }
+      }
+    },
     "没有找到 Kindle 页面图片，请打开书籍页面后重试。" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "No Kindle page image was found. Open a book page and try again."
+          }
+        }
+      }
+    },
+    "浏览全部音色" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Browse All Voices"
           }
         }
       }
@@ -2427,8 +2986,37 @@
         }
       }
     },
+    "用于中文" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use for Chinese"
+          }
+        }
+      }
+    },
+    "用于英语" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use for English"
+          }
+        }
+      }
+    },
+    "男声" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Male"
+          }
+        }
+      }
+    },
     "登录" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2464,6 +3052,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sign in to sync Pro and usage across devices"
+          }
+        }
+      }
+    },
+    "登录后创建声音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to create a voice"
           }
         }
       }
@@ -2568,6 +3166,16 @@
         }
       }
     },
+    "管理各语言音色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage Voices by Language"
+          }
+        }
+      }
+    },
     "管理订阅" : {
       "localizations" : {
         "en" : {
@@ -2640,22 +3248,23 @@
         }
       }
     },
-    "继续听" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continue Listening"
-          }
-        }
-      }
-    },
     "继续即表示同意" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "By continuing, you agree to our"
+          }
+        }
+      }
+    },
+    "继续听" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue Listening"
           }
         }
       }
@@ -2676,56 +3285,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Continuing…"
-          }
-        }
-      }
-    },
-    "已从当前页开始朗读。" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reading from the current page."
-          }
-        }
-      }
-    },
-    "已恢复 Kindle 朗读。" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kindle reading resumed."
-          }
-        }
-      }
-    },
-    "正在恢复 Kindle 朗读…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resuming Kindle reading…"
-          }
-        }
-      }
-    },
-    "正在应用 Kindle 阅读位置…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Applying the Kindle reading position…"
-          }
-        }
-      }
-    },
-    "请先确认 Kindle 阅读位置。" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose a Kindle reading position first."
           }
         }
       }
@@ -2770,6 +3329,19 @@
         }
       }
     },
+    "美国" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "US"
+          }
+        }
+      }
+    },
+    "聆听更多，理解更深" : {
+
+    },
     "自动划重点 · 写批注" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2811,12 +3383,33 @@
         }
       }
     },
+    "英国" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UK"
+          }
+        }
+      }
+    },
     "英文" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "English"
+          }
+        }
+      }
+    },
+    "英语录制" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recorded in English"
           }
         }
       }
@@ -2982,6 +3575,7 @@
       }
     },
     "解锁全部朗读与解读能力" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2990,6 +3584,9 @@
           }
         }
       }
+    },
+    "解锁完整朗读、解读与高级声音体验" : {
+
     },
     "订阅信息加载失败" : {
       "localizations" : {
@@ -3102,12 +3699,44 @@
         }
       }
     },
+    "试听" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview"
+          }
+        }
+      }
+    },
+    "试听音色" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview voice"
+          }
+        }
+      }
+    },
     "该分类暂无记录" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "No records in this category"
+          }
+        }
+      }
+    },
+    "语言" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language"
           }
         }
       }
@@ -3132,6 +3761,25 @@
         }
       }
     },
+    "请先登录以使用声音克隆" : {
+
+    },
+    "请先确认 Kindle 阅读位置。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a Kindle reading position first."
+          }
+        }
+      }
+    },
+    "请先确认声音授权" : {
+
+    },
+    "请在系统设置中允许麦克风权限" : {
+
+    },
     "请滚动 Kindle 书架后再点同步。" : {
       "localizations" : {
         "en" : {
@@ -3151,6 +3799,19 @@
           }
         }
       }
+    },
+    "请自然朗读下面这段话" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read this passage naturally"
+          }
+        }
+      }
+    },
+    "请至少录制 3 秒" : {
+
     },
     "调试" : {
       "extractionState" : "stale",
@@ -3234,12 +3895,25 @@
         }
       }
     },
+    "返回" : {
+
+    },
     "返回 Kindle 书架后再同步。" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Return to Kindle Library, then Sync."
+          }
+        }
+      }
+    },
+    "还没有创建的声音" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No created voices yet"
           }
         }
       }
@@ -3274,6 +3948,9 @@
           }
         }
       }
+    },
+    "这个声音已不存在，请重新创建" : {
+
     },
     "退出登录" : {
       "localizations" : {
@@ -3366,12 +4043,35 @@
         }
       }
     },
+    "重录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record Again"
+          }
+        }
+      }
+    },
     "重播" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Replay"
+          }
+        }
+      }
+    },
+    "重新登录" : {
+
+    },
+    "重新登录以启用声音克隆" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in again to enable voice cloning"
           }
         }
       }
@@ -3406,12 +4106,32 @@
         }
       }
     },
+    "需要建立安全的 CastReader 移动会话。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A secure CastReader mobile session is required."
+          }
+        }
+      }
+    },
     "音色" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Voice"
+          }
+        }
+      }
+    },
+    "音色分类" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voice Category"
           }
         }
       }

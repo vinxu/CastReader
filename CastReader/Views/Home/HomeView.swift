@@ -65,6 +65,25 @@ enum ImportSource: String, Identifiable, CaseIterable {
         case .manual:   return [.url, .file, .text, .camera, .photoLibrary]
         }
     }
+
+    var analyticsSource: AnalyticsContentSource {
+        switch self {
+        case .camera: return .camera
+        case .photoLibrary: return .photoLibrary
+        case .file: return .file
+        case .url: return .url
+        case .text: return .text
+        }
+    }
+
+    var analyticsFormat: AnalyticsContentFormat {
+        switch self {
+        case .camera, .photoLibrary: return .photo
+        case .url: return .web
+        case .text: return .text
+        case .file: return .unknown
+        }
+    }
 }
 
 /// ➕（底部中间）→ HomeView 通用导入的跨视图触发器（MainTabView 持有并注入）。
@@ -101,6 +120,7 @@ struct HomeView: View {
     // 导入流程状态
     @State private var importScenario: String?      // 本次导入要附加的场景 content_type（nil = 通用）
     @State private var importMode: ReaderMode = .read
+    @State private var importAnalyticsContext: AnalyticsContentContext?
     @State private var activeSheet: HomeSheet?
 
     @State private var imagePickerRequest: ImagePickerRequest?
@@ -142,12 +162,16 @@ struct HomeView: View {
                     activeSheet = nil
                     let doc = DocumentBuilder.fromPlainText(text, title: title)
                     if !doc.isEmpty { finishImport(doc) }
+                    else { failImport(stage: "parse", code: "empty_content") }
                 }
             case .url:
                 URLInputSheet { urlString in
                     activeSheet = nil
                     if let doc = makeWebDocument(urlString) { finishImport(doc) }
-                    else { notice = String(localized: "网址无效") }
+                    else {
+                        failImport(stage: "validation", code: "invalid_url")
+                        notice = String(localized: "网址无效")
+                    }
                 }
             }
         }
@@ -163,7 +187,12 @@ struct HomeView: View {
                     imagePickerRequest = nil
                     Task {
                         await captureVM.process(image: image)
-                        if let doc = captureVM.document { finishImport(doc); captureVM.reset() }
+                        if let doc = captureVM.document {
+                            finishImport(doc)
+                            captureVM.reset()
+                        } else {
+                            failImport(stage: "ocr", code: captureVM.error == nil ? "empty_content" : "recognition_failed")
+                        }
                     }
                 },
                 onCancel: { imagePickerRequest = nil }
@@ -275,6 +304,12 @@ struct HomeView: View {
     private func beginImport(_ src: ImportSource, scenario: ExplainContentType?, mode: ReaderMode) {
         importScenario = scenario?.rawValue
         importMode = mode
+        importAnalyticsContext = ProductAnalytics.shared.beginContentIntent(
+            source: src.analyticsSource,
+            format: src.analyticsFormat,
+            entryPoint: scenario == nil ? "quick_import" : "scenario_import",
+            intendedMode: mode == .read ? "read" : "explain"
+        )
         activeSheet = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
             trigger(src)
@@ -296,15 +331,37 @@ struct HomeView: View {
     private func finishImport(_ doc: ReadingDocument) {
         let scenario = importScenario
         let mode = importMode
+        let analyticsContext = importAnalyticsContext
         let shouldAutoplay = scenario != nil || mode == .explain
-        coordinator.open(doc, mode: mode, autoplay: shouldAutoplay, scenario: scenario)
+        coordinator.open(
+            doc,
+            mode: mode,
+            autoplay: shouldAutoplay,
+            scenario: scenario,
+            analyticsContext: analyticsContext
+        )
         importScenario = nil
         importMode = .read
+        importAnalyticsContext = nil
+    }
+
+    private func failImport(stage: String, code: String) {
+        guard let context = importAnalyticsContext else { return }
+        ProductAnalytics.shared.contentFailed(context, stage: stage, code: code)
+        importAnalyticsContext = nil
     }
 
     private func reopen(_ rec: HistoryRecord) {
         Task {
-            if let doc = await history.reopen(rec) { coordinator.open(doc) }
+            if let doc = await history.reopen(rec) {
+                let context = ProductAnalytics.shared.beginContentIntent(
+                    source: .history,
+                    format: AnalyticsContentFormat(doc.sourceKind),
+                    entryPoint: "history_resume",
+                    intendedMode: "read"
+                )
+                coordinator.open(doc, analyticsContext: context)
+            }
         }
     }
 
@@ -327,23 +384,40 @@ struct HomeView: View {
             if let data = try? Data(contentsOf: url), let img = UIImage(data: data) {
                 Task {
                     await captureVM.process(image: img)
-                    if let doc = captureVM.document { finishImport(doc); captureVM.reset() }
+                    if let doc = captureVM.document {
+                        finishImport(doc)
+                        captureVM.reset()
+                    } else {
+                        failImport(stage: "ocr", code: captureVM.error == nil ? "empty_content" : "recognition_failed")
+                    }
                 }
-            } else { notice = String(localized: "无法读取图片") }
+            } else {
+                failImport(stage: "file_read", code: "unreadable_image")
+                notice = String(localized: "无法读取图片")
+            }
         } else if ext == "pdf" {
             // PDFKit 原生渲染（保排版）：保留 PDF 字节给 PDFView，按句记录 page+range 供高亮。
             if let doc = DocumentBuilder.fromPDFNative(url: url) { finishImport(doc) }
-            else { notice = String(localized: "无法读取该 PDF（可能是扫描件无文字层，请用「拍摄」）") }
+            else {
+                failImport(stage: "parse", code: "pdf_no_text_layer")
+                notice = String(localized: "无法读取该 PDF（可能是扫描件无文字层，请用「拍摄」）")
+            }
         } else if ["txt", "text", "md", "markdown"].contains(ext) {
             if let doc = DocumentBuilder.fromTextFile(url: url) { finishImport(doc) }
-            else { notice = String(localized: "无法读取文本文件") }
+            else {
+                failImport(stage: "parse", code: "text_parse_failed")
+                notice = String(localized: "无法读取文本文件")
+            }
         } else if ext == "docx" {
             // DOCX 本地渲染（WebView 内 mammoth 保排版）——不上传后端。
             if let data = try? Data(contentsOf: url) {
                 // 标题：DOCX 内嵌标题（core.xml/首段）优先，回退文件名。
                 let title = DocumentBuilder.docxTitle(data: data) ?? url.deletingPathExtension().lastPathComponent
                 finishImport(ReadingDocument(title: title, sourceKind: .docx, paragraphs: [], fileData: data))
-            } else { notice = String(localized: "无法读取该文件") }
+            } else {
+                failImport(stage: "file_read", code: "docx_read_failed")
+                notice = String(localized: "无法读取该文件")
+            }
         } else if ext == "epub" {
             // EPUB 原生解析（ZIPFoundation + SwiftSoup，含内嵌图片）——不上传、不走 WebView。
             // 大书 4000+ 段解析较重，后台线程做，避免卡 UI。data 已在安全作用域内同步读出。
@@ -358,9 +432,15 @@ struct HomeView: View {
                     importScenario = scenario
                     importMode = mode
                     if let doc { finishImport(doc) }
-                    else { notice = String(localized: "无法解析该 EPUB") }
+                    else {
+                        failImport(stage: "parse", code: "epub_parse_failed")
+                        notice = String(localized: "无法解析该 EPUB")
+                    }
                 }
-            } else { notice = String(localized: "无法读取该文件") }
+            } else {
+                failImport(stage: "file_read", code: "epub_read_failed")
+                notice = String(localized: "无法读取该文件")
+            }
         } else {
             // 其他未知格式 → 暂仍走后端处理
             let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
@@ -372,6 +452,7 @@ struct HomeView: View {
                     notice = importVM.error ?? String(localized: "已上传，处理完成后在「文库」查看")
                 }
             } catch {
+                failImport(stage: "file_read", code: "copy_failed")
                 notice = String(format: String(localized: "无法读取文件：%@"), error.localizedDescription)
             }
         }

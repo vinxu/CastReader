@@ -10,6 +10,7 @@ struct TTSRequest: Codable {
     let model: String
     let input: String
     let voice: String
+    let voiceCode: String
     let responseFormat: String
     let returnTimestamps: Bool
     let speed: Double
@@ -20,6 +21,7 @@ struct TTSRequest: Codable {
         case model
         case input
         case voice
+        case voiceCode = "voice_code"
         case responseFormat = "response_format"
         case returnTimestamps = "return_timestamps"
         case speed
@@ -31,6 +33,7 @@ struct TTSRequest: Codable {
         self.model = "kokoro"
         self.input = input
         self.voice = voice
+        self.voiceCode = voice
         self.responseFormat = "mp3"
         self.returnTimestamps = true
         self.speed = speed

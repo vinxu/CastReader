@@ -120,13 +120,17 @@ actor APIService {
         return sts
     }
 
-    func notifyUpload(filename: String, filepath: String, userId: String, voiceId: String = Constants.TTS.defaultVoice) async throws -> UploadResponse {
+    func notifyUpload(filename: String, filepath: String, userId: String, voiceId: String? = nil) async throws -> UploadResponse {
         guard let url = URL(string: Constants.API.asyncUpload) else {
             throw APIError.invalidURL
         }
 
         print("📤 [API] notifyUpload URL: \(url)")
-        print("📤 [API] notifyUpload params: filename=\(filename), filepath=\(filepath), user_id=\(userId), voice_id=\(voiceId)")
+        let resolvedVoice = VoiceCatalog.resolvedVoice(
+            preferred: voiceId ?? "",
+            for: Constants.TTS.defaultLanguage
+        )
+        print("📤 [API] notifyUpload params: filename=\(filename), filepath=\(filepath), user_id=\(userId), voice_id=\(resolvedVoice)")
 
         // Use multipart/form-data format (same as web)
         let boundary = "Boundary-\(UUID().uuidString)"
@@ -142,7 +146,7 @@ actor APIService {
         appendFormField(name: "filename", value: filename)
         appendFormField(name: "filepath", value: filepath)
         appendFormField(name: "user_id", value: userId)
-        appendFormField(name: "voice_id", value: voiceId)
+        appendFormField(name: "voice_id", value: resolvedVoice)
 
         bodyData.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
@@ -177,7 +181,7 @@ actor APIService {
     }
 
     /// Upload EPUB file synchronously (returns immediately with book data)
-    func uploadEPUB(fileData: Data, filename: String, userId: String, voiceId: String = Constants.TTS.defaultVoice) async throws -> EPUBUploadResponse {
+    func uploadEPUB(fileData: Data, filename: String, userId: String, voiceId: String? = nil) async throws -> EPUBUploadResponse {
         guard let url = URL(string: Constants.API.syncUpload) else {
             throw APIError.invalidURL
         }
@@ -201,10 +205,14 @@ actor APIService {
         bodyData.append("Content-Disposition: form-data; name=\"user_id\"\r\n\r\n".data(using: .utf8)!)
         bodyData.append("\(userId)\r\n".data(using: .utf8)!)
 
+        let resolvedVoice = VoiceCatalog.resolvedVoice(
+            preferred: voiceId ?? "",
+            for: Constants.TTS.defaultLanguage
+        )
         // Add voice_id field
         bodyData.append("--\(boundary)\r\n".data(using: .utf8)!)
         bodyData.append("Content-Disposition: form-data; name=\"voice_id\"\r\n\r\n".data(using: .utf8)!)
-        bodyData.append("\(voiceId)\r\n".data(using: .utf8)!)
+        bodyData.append("\(resolvedVoice)\r\n".data(using: .utf8)!)
 
         bodyData.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
@@ -267,16 +275,32 @@ actor APIService {
 
     // MARK: - TTS API
 
-    func generateTTS(text: String, voice: String = Constants.TTS.defaultVoice, speed: Double = Constants.TTS.defaultSpeed, language: String = Constants.TTS.defaultLanguage) async throws -> TTSResponse {
+    func generateTTS(text: String, voice: String? = nil, speed: Double = Constants.TTS.defaultSpeed, language: String = Constants.TTS.defaultLanguage) async throws -> TTSResponse {
         // 节点路由（对齐扩展）：大陆时区→CN 节点，其他→US；CN 失败回退 US。
-        let maxLength = 5000
         let sanitized = SpeechTextSanitizer.sanitizedForTTS(text)
         guard SpeechTextSanitizer.containsSpeakableContent(sanitized) else {
             throw APIError.serverError("No speakable text for TTS")
         }
+        let requestedVoice = voice ?? ""
+        let featureSafeVoice = !Constants.Features.voiceCloningEnabled && requestedVoice.hasPrefix("vc_")
+            ? ""
+            : requestedVoice
+        let resolvedVoice = VoiceCatalog.resolvedVoice(
+            preferred: featureSafeVoice,
+            for: language
+        )
+        // Clone compatibility endpoint accepts up to 600 characters and returns
+        // unprocessedText for the existing continuation loop. Never send an
+        // oversized clone request and never recover by changing narrators.
+        let maxLength = resolvedVoice.hasPrefix("vc_") ? 600 : 5000
         let inputText = sanitized.count > maxLength ? String(sanitized.prefix(maxLength)) : sanitized
-        let ttsRequest = TTSRequest(input: inputText, voice: voice, speed: speed, language: language)
+        let ttsRequest = TTSRequest(input: inputText, voice: resolvedVoice, speed: speed, language: language)
         let bodyData = try JSONEncoder().encode(ttsRequest)
+        NSLog("[TTSRoute] language=%@ voice=%@ clone=%@", language, resolvedVoice, resolvedVoice.hasPrefix("vc_") ? "Y" : "N")
+
+        if resolvedVoice.hasPrefix("vc_") {
+            return try await requestClonedVoiceTTS(body: bodyData, voiceID: resolvedVoice)
+        }
 
         let primary = TTSEndpoint.primaryBase()
         do {
@@ -288,6 +312,50 @@ actor APIService {
                 return try await request(url, method: "POST", body: bodyData)
             }
             throw error
+        }
+    }
+
+    private func requestClonedVoiceTTS(body: Data, voiceID: String, canRefresh: Bool = true) async throws -> TTSResponse {
+        guard let url = URL(string: Constants.API.tts) else { throw APIError.invalidURL }
+        guard let token = await MobileSessionStore.shared.sessionToken(), !token.isEmpty else {
+            await MainActor.run { VoiceCloneAccessCoordinator.shared.prompt = .signIn }
+            throw VoiceCloneError.sessionUnavailable
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.httpBody = body
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
+        if http.statusCode == 401, canRefresh,
+           await MobileSessionStore.shared.refreshSession() != nil {
+            return try await requestClonedVoiceTTS(body: body, voiceID: voiceID, canRefresh: false)
+        }
+        guard 200..<300 ~= http.statusCode else {
+            switch http.statusCode {
+            case 401:
+                await MobileSessionStore.shared.invalidateSession()
+                await MainActor.run { VoiceCloneAccessCoordinator.shared.prompt = .signIn }
+            case 403:
+                await MainActor.run {
+                    AppSettings.shared.clearActiveClonedVoice(ifMatching: voiceID)
+                    VoiceCloneAccessCoordinator.shared.prompt = .paywall
+                }
+            case 404:
+                await MainActor.run { AppSettings.shared.clearActiveClonedVoice(ifMatching: voiceID) }
+            default:
+                break
+            }
+            throw APIError.httpError(http.statusCode)
+        }
+        do {
+            return try decoder.decode(TTSResponse.self, from: data)
+        } catch {
+            throw APIError.decodingError(error)
         }
     }
 

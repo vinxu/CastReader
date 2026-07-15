@@ -2,7 +2,7 @@
 //  MainTabView.swift
 //  CastReader
 //
-//  底部导航 [首页 | ➕ | 设置]：首页（场景化批注本）· 中间凸起 ➕（通用导入弹层）· 设置（含文库入口）。
+//  底部导航 [首页 | ➕ | 音色]：保留原首页与快速导入，只将设置 Tab 替换为音色。
 //
 
 import SwiftUI
@@ -14,6 +14,7 @@ struct MainTabView: View {
     @StateObject private var kindleCenter = KindlePlaybackCenter.shared
     @StateObject private var clipboard = ClipboardImportViewModel()
     @StateObject private var importRouter = ImportRouter()
+    @StateObject private var voiceCloneAccess = VoiceCloneAccessCoordinator.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: Int
 
@@ -45,8 +46,8 @@ struct MainTabView: View {
                         Text("")
                     }
                     .tag(1)
-                SettingsView()
-                    .tabItem { Label("设置", systemImage: "gearshape.fill") }
+                VoiceBrowserView(presentation: .tab)
+                    .tabItem { Label("音色", systemImage: "waveform") }
                     .tag(2)
             }
             .tint(AppTheme.primary)
@@ -112,6 +113,30 @@ struct MainTabView: View {
             )
             .presentationDetents([.height(290)])
         }
+        .sheet(item: voiceClonePromptBinding) { prompt in
+            switch prompt {
+            case .signIn:
+                LoginView()
+            case .paywall:
+                PaywallView(analyticsTrigger: "voice_clone", analyticsSurface: "voice_clone")
+            case .message(let message):
+                NavigationStack {
+                    ContentUnavailableView("声音克隆", systemImage: "waveform.badge.exclamationmark", description: Text(message))
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("完成") { voiceCloneAccess.prompt = nil }
+                            }
+                        }
+                }
+            }
+        }
+    }
+
+    private var voiceClonePromptBinding: Binding<VoiceCloneAccessCoordinator.Prompt?> {
+        Binding(
+            get: { Constants.Features.voiceCloningEnabled ? voiceCloneAccess.prompt : nil },
+            set: { voiceCloneAccess.prompt = Constants.Features.voiceCloningEnabled ? $0 : nil }
+        )
     }
 
     private static let plusTabImage: UIImage = {
@@ -154,18 +179,59 @@ struct MainTabView: View {
     private func handleClipboard(_ kind: ClipboardImportViewModel.Kind, mode: ReaderMode) {
         clipboard.consume()
         guard let content = clipboard.read(kind) else { return }   // 用户确认后才读取剪贴板（系统弹一次 Allow Paste）；拒绝→nil
+        let format: AnalyticsContentFormat
+        switch content {
+        case .url: format = .web
+        case .text: format = .text
+        case .image: format = .photo
+        }
+        let analyticsContext = ProductAnalytics.shared.beginContentIntent(
+            source: .clipboard,
+            format: format,
+            entryPoint: "clipboard_prompt",
+            intendedMode: mode == .read ? "read" : "explain"
+        )
         switch content {
         case .url(let s):
-            if let doc = DocumentBuilder.fromWebURL(s) { coordinator.open(doc, mode: mode, autoplay: true) }
+            if let doc = DocumentBuilder.fromWebURL(s) {
+                coordinator.open(doc, mode: mode, autoplay: true, analyticsContext: analyticsContext)
+            } else {
+                ProductAnalytics.shared.contentFailed(analyticsContext, stage: "validation", code: "invalid_url")
+            }
         case .text(let t):
             let doc = DocumentBuilder.fromPlainText(t, title: String(localized: "剪贴板文本"))
-            if !doc.isEmpty { coordinator.open(doc, mode: mode, autoplay: true) }
+            if !doc.isEmpty {
+                coordinator.open(doc, mode: mode, autoplay: true, analyticsContext: analyticsContext)
+            } else {
+                ProductAnalytics.shared.contentFailed(analyticsContext, stage: "parse", code: "empty_content")
+            }
         case .image(let img):
             Task { @MainActor in
                 let cap = CaptureFlowViewModel()
                 await cap.process(image: img)
-                if let doc = cap.document { coordinator.open(doc, mode: mode, autoplay: true) }
+                if let doc = cap.document {
+                    coordinator.open(doc, mode: mode, autoplay: true, analyticsContext: analyticsContext)
+                } else {
+                    ProductAnalytics.shared.contentFailed(
+                        analyticsContext,
+                        stage: "ocr",
+                        code: cap.error == nil ? "empty_content" : "recognition_failed"
+                    )
+                }
             }
         }
+    }
+}
+
+struct SettingsToolbarButton: View {
+    @State private var showSettings = false
+
+    var body: some View {
+        Button { showSettings = true } label: {
+            Image(systemName: "gearshape")
+        }
+        .accessibilityLabel(Text("设置"))
+        .accessibilityIdentifier("settingsGearButton")
+        .sheet(isPresented: $showSettings) { SettingsView() }
     }
 }

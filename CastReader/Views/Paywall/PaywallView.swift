@@ -11,28 +11,68 @@ import StoreKit
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var pro = ProManager.shared
+    let reason: String?
+    let analyticsTrigger: String
+    let analyticsSurface: String
+    @State private var didTrackImpression = false
+
+    init(
+        reason: String? = nil,
+        analyticsTrigger: String = "unknown",
+        analyticsSurface: String = "paywall"
+    ) {
+        self.reason = reason
+        self.analyticsTrigger = analyticsTrigger
+        self.analyticsSurface = analyticsSurface
+    }
 
     var body: some View {
-        NavigationView {
-            ProUpsellContent(onPurchased: { dismiss() })
-                .navigationTitle("CastReader Pro")
+        NavigationStack {
+            ProUpsellContent(reason: reason, analyticsTrigger: analyticsTrigger, onPurchased: { dismiss() })
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("关闭") { dismiss() }
+                        Button { dismiss() } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 14, weight: .bold))
+                                .frame(width: 32, height: 32)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                        .accessibilityLabel(Text("关闭"))
                     }
                 }
         }
-        .navigationViewStyle(.stack)
         .task {
             if pro.isCrossPlatformPro { dismiss() }
         }
+        .onAppear {
+            guard !didTrackImpression else { return }
+            didTrackImpression = true
+            ProductAnalytics.shared.track(
+                .paywallShown,
+                context: AnalyticsEventContext(productArea: .billing, surface: analyticsSurface, entryPoint: analyticsTrigger),
+                properties: .init(
+                    trigger: analyticsTrigger,
+                    entitlementState: Self.entitlementState(pro),
+                    hadMeaningfulReading: ProductAnalytics.shared.hadMeaningfulReading
+                )
+            )
+        }
         .onChange(of: pro.isCrossPlatformPro) { isPro in if isPro { dismiss() } }
+    }
+
+    private static func entitlementState(_ pro: ProManager) -> String {
+        if pro.isCrossPlatformPro { return "pro" }
+        if pro.storeKitLocalPro { return "storekit_local_only" }
+        if pro.serverPro { return "server_pro" }
+        return "free"
     }
 }
 
 /// Pro 权益 + 购买按钮（PaywallView 与 UpgradeView 共用）。
 struct ProUpsellContent: View {
+    var reason: String? = nil
+    var analyticsTrigger: String = "unknown"
     var onPurchased: () -> Void = {}
 
     @ObservedObject private var pro = ProManager.shared
@@ -42,6 +82,7 @@ struct ProUpsellContent: View {
     @State private var loadFailed = false
     @State private var showRestoreAlert = false
     @State private var restoreMessage = ""
+    @State private var selectedProductID: String?
 
     private let benefits: [(String, String)] = [
         ("infinity", String(localized: "无限朗读时长")),
@@ -54,6 +95,7 @@ struct ProUpsellContent: View {
         ScrollView {
             VStack(spacing: 24) {
                 header
+                if let reason, !reason.isEmpty { reasonBanner(reason) }
                 benefitList
                 buySection
                 Button("恢复购买") {
@@ -78,6 +120,12 @@ struct ProUpsellContent: View {
             Button("好", role: .cancel) {}
         } message: { Text(restoreMessage) }
         .onAppear { Task { await reloadProducts(); await pro.refresh() } }
+        .onChange(of: pro.products.map(\.id)) { ids in
+            if selectedProductID == nil || !ids.contains(selectedProductID ?? "") {
+                selectedProductID = pro.products.first(where: { $0.subscription?.subscriptionPeriod.unit == .year })?.id
+                    ?? pro.products.first?.id
+            }
+        }
         .task {
             if pro.isCrossPlatformPro { onPurchased() }
         }
@@ -131,13 +179,42 @@ struct ProUpsellContent: View {
 
     private var header: some View {
         VStack(spacing: 8) {
-            Image(systemName: "crown.fill")
-                .font(.system(size: 44)).foregroundColor(AppTheme.primary)
-            Text("CastReader Pro").font(.title2.weight(.bold))
-            Text("解锁全部朗读与解读能力")
-                .font(.subheadline).foregroundColor(AppTheme.mutedForeground)
+            ZStack {
+                Circle().fill(.white.opacity(0.18)).frame(width: 62, height: 62)
+                Image(systemName: "headphones")
+                    .font(.system(size: 31, weight: .semibold)).foregroundStyle(.white)
+                Image(systemName: "sparkles")
+                    .font(.system(size: 14, weight: .bold)).foregroundStyle(.yellow)
+                    .offset(x: 23, y: -22)
+            }
+            Text("CASTREADER PRO").font(.caption.weight(.bold)).foregroundStyle(.white.opacity(0.88))
+            Text("聆听更多，理解更深").font(.title2.weight(.bold)).foregroundStyle(.white)
+            Text("解锁完整朗读、解读与高级声音体验")
+                .font(.subheadline).foregroundStyle(.white.opacity(0.88))
+                .multilineTextAlignment(.center)
         }
-        .padding(.top, 12)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+        .padding(.horizontal, 16)
+        .background(
+            LinearGradient(
+                colors: [AppTheme.primary, Color(red: 1, green: 0.48, blue: 0.20), Color(red: 0.30, green: 0.24, blue: 0.64)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 8)
+        )
+    }
+
+    private func reasonBanner(_ reason: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "lock.fill").foregroundStyle(AppTheme.primary)
+            Text(reason).font(.subheadline.weight(.semibold)).foregroundStyle(AppTheme.foreground)
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(AppTheme.primary.opacity(0.09), in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppTheme.primary.opacity(0.18)))
     }
 
     private var benefitList: some View {
@@ -155,7 +232,7 @@ struct ProUpsellContent: View {
         }
         .padding(18)
         .background(AppTheme.surface)
-        .cornerRadius(16)
+        .cornerRadius(8)
     }
 
     @ViewBuilder
@@ -205,8 +282,7 @@ struct ProUpsellContent: View {
             VStack(spacing: 12) {
                 ForEach(pro.products, id: \.id) { product in
                     Button {
-                        busy = true
-                        Task { _ = await pro.purchase(product); busy = false }
+                        selectedProductID = product.id
                     } label: {
                         HStack(alignment: .firstTextBaseline) {
                             VStack(alignment: .leading, spacing: 2) {
@@ -218,12 +294,30 @@ struct ProUpsellContent: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(AppTheme.primary)
-                        .foregroundColor(.white)
-                        .cornerRadius(14)
+                        .background(AppTheme.surface)
+                        .foregroundColor(AppTheme.foreground)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(selectedProductID == product.id ? AppTheme.primary : AppTheme.border, lineWidth: selectedProductID == product.id ? 2 : 1)
+                        )
                     }
                     .disabled(busy)
                 }
+                Button {
+                    guard let product = pro.products.first(where: { $0.id == selectedProductID }) else { return }
+                    busy = true
+                    Task { _ = await pro.purchase(product, analyticsTrigger: analyticsTrigger); busy = false }
+                } label: {
+                    HStack {
+                        if busy { ProgressView().tint(.white) }
+                        Text("升级到 CastReader Pro").fontWeight(.bold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppTheme.primary)
+                .disabled(busy || selectedProductID == nil)
             }
         }
     }

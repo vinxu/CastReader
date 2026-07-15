@@ -1,0 +1,41 @@
+{
+  "code": 0,
+  "message": "ok",
+  "data": {
+    "contract": "tts-voice-catalog-v1",
+    "version": "fixture.envelope",
+    "languages": [
+      {
+        "code": "en",
+        "locale": "en-US",
+        "name": "English",
+        "status": "ga",
+        "defaultVoice": "af_heart",
+        "timestampMode": "word"
+      }
+    ],
+    "voices": [
+      {
+        "id": "af_heart",
+        "name": "Heart",
+        "engine": "kokoro",
+        "modelVersion": "v1.0",
+        "language": "en",
+        "locale": "en-US",
+        "genderPresentation": "female",
+        "tier": "free",
+        "status": "ga",
+        "enabled": true,
+        "selectable": true,
+        "timestampMode": "word",
+        "tags": [],
+        "avatar": {
+          "id": "heart",
+          "url64": "https://cdn.example/heart-64.png",
+          "url256": "https://cdn.example/heart-256.png"
+        },
+        "sampleUrl": null
+      }
+    ]
+  }
+}

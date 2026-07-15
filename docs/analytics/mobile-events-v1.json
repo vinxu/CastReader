@@ -1,0 +1,151 @@
+{
+  "contract_version": 1,
+  "transport": {
+    "endpoint": "https://castreader.ai/api/events",
+    "batch_max": 20,
+    "compatibility": "dual_v2_legacy"
+  },
+  "required_envelope_fields": [
+    "eventId",
+    "eventName",
+    "eventVersion",
+    "occurredAt",
+    "environment",
+    "clientPlatform",
+    "clientVariant",
+    "clientVersion",
+    "anonymousId",
+    "appSessionId",
+    "productArea",
+    "surface",
+    "properties"
+  ],
+  "events": [
+    {
+      "name": "app_session_start",
+      "legacy_event": "session_start",
+      "product_area": "app",
+      "required_properties": ["launchType"],
+      "optional_properties": []
+    },
+    {
+      "name": "content_intent",
+      "legacy_event": "feature_use",
+      "product_area": "reader",
+      "required_properties": ["contentSource", "contentFormat"],
+      "optional_properties": ["intendedMode"]
+    },
+    {
+      "name": "content_ready",
+      "legacy_event": "reader_file_loaded",
+      "product_area": "reader",
+      "required_properties": ["contentSource", "contentFormat", "lengthBucket", "paragraphCountBucket"],
+      "optional_properties": ["latencyMs"]
+    },
+    {
+      "name": "content_failed",
+      "legacy_event": "reader_file_error",
+      "product_area": "reader",
+      "required_properties": ["contentSource", "contentFormat", "result", "errorStage", "errorCode"],
+      "optional_properties": ["latencyMs"]
+    },
+    {
+      "name": "read_start",
+      "legacy_event": "reading_start",
+      "product_area": "read_aloud",
+      "required_properties": ["contentSource", "contentFormat", "language", "voiceId", "speed", "resume"],
+      "optional_properties": []
+    },
+    {
+      "name": "read_first_audio",
+      "legacy_event": "perf_metric",
+      "product_area": "read_aloud",
+      "required_properties": ["latencyMs", "language", "voiceId"],
+      "optional_properties": []
+    },
+    {
+      "name": "read_milestone",
+      "legacy_event": "playback_progress",
+      "product_area": "read_aloud",
+      "required_properties": ["milestoneSeconds", "playbackSeconds"],
+      "optional_properties": ["completionBucket"]
+    },
+    {
+      "name": "read_end",
+      "legacy_event": "reading_end",
+      "product_area": "read_aloud",
+      "required_properties": ["result", "endReason", "playbackSeconds", "completionBucket"],
+      "optional_properties": ["errorStage", "errorCode"]
+    },
+    {
+      "name": "explain_start",
+      "legacy_event": "quickread_pipeline_start",
+      "product_area": "explain",
+      "required_properties": ["contentSource", "contentFormat", "language", "scenario"],
+      "optional_properties": []
+    },
+    {
+      "name": "explain_first_block",
+      "legacy_event": "quickread_player_open",
+      "product_area": "explain",
+      "required_properties": ["latencyMs", "scenario"],
+      "optional_properties": []
+    },
+    {
+      "name": "explain_milestone",
+      "legacy_event": "quickread_video_complete",
+      "product_area": "explain",
+      "required_properties": ["milestone", "blocksStarted", "blocksCompleted"],
+      "optional_properties": []
+    },
+    {
+      "name": "explain_end",
+      "legacy_event": "quickread_pipeline_done",
+      "product_area": "explain",
+      "required_properties": ["result", "endReason", "blocksStarted", "blocksCompleted", "completionBucket"],
+      "optional_properties": ["errorStage", "errorCode"]
+    },
+    {
+      "name": "paywall_shown",
+      "legacy_event": "paywall_shown",
+      "product_area": "billing",
+      "required_properties": ["trigger", "entitlementState"],
+      "optional_properties": ["hadMeaningfulReading"]
+    },
+    {
+      "name": "purchase_start",
+      "legacy_event": "checkout_started",
+      "product_area": "billing",
+      "required_properties": ["store", "productId", "trigger"],
+      "optional_properties": []
+    },
+    {
+      "name": "purchase_result",
+      "legacy_event": "checkout_completed",
+      "legacy_event_by_result": {
+        "success": "checkout_completed",
+        "cancelled": "checkout_return_cancel",
+        "pending": "checkout_error",
+        "blocked": "checkout_error",
+        "failed": "checkout_error"
+      },
+      "product_area": "billing",
+      "required_properties": ["store", "productId", "trigger", "result"],
+      "optional_properties": ["errorCode"]
+    }
+  ],
+  "privacy_forbidden_keys": [
+    "content",
+    "text",
+    "ocrText",
+    "fileName",
+    "title",
+    "url",
+    "urlPath",
+    "referrer",
+    "email",
+    "imageData",
+    "rawError",
+    "responseBody"
+  ]
+}

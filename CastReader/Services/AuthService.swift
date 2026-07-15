@@ -80,6 +80,8 @@ final class AuthService: NSObject, ObservableObject {
 
     func signOut() {
         account = nil
+        AppSettings.shared.clearActiveClonedVoice()
+        Task { await MobileSessionStore.shared.invalidateSession() }
         persist()
         KeychainStore.delete("google_id_token")
         KeychainStore.delete("google_access_token")
@@ -88,6 +90,17 @@ final class AuthService: NSObject, ObservableObject {
             await ProManager.shared.refreshServer()       // 再按 device_id 维度刷新
             ProManager.shared.refreshSyncState(reason: "sign-out")
         }
+    }
+
+    /// Migrates an already signed-in Google account into the first-party mobile
+    /// session on demand. Apple identity tokens are only available during the
+    /// authorization callback, so an older Apple login must sign in again.
+    func ensureMobileSessionForVoiceClone() async -> Bool {
+        guard Constants.Features.voiceCloningEnabled else { return false }
+        if await MobileSessionStore.shared.sessionToken() != nil { return true }
+        guard account?.provider == "google",
+              let idToken = KeychainStore.get("google_id_token"), !idToken.isEmpty else { return false }
+        return (try? await MobileSessionStore.shared.exchange(provider: "google", idToken: idToken)) != nil
     }
 
     /// 供 Apple 登录扩展写入账号（private(set) 仅本文件可设）。
@@ -157,6 +170,10 @@ final class AuthService: NSObject, ObservableObject {
 
         // best-effort：换后端 user id（失败不影响登录，Pro 退回 device_id）
         acc.backendUserId = try? await exchangeWithBackend(provider: "google", idToken: idToken)
+
+        // Voice clone requires a first-party cms_ session. Login remains usable if
+        // this exchange is temporarily unavailable; clone UI stays fail closed.
+        _ = try? await MobileSessionStore.shared.exchange(provider: "google", idToken: idToken)
 
         account = acc
         persist()

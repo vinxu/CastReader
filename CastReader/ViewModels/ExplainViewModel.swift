@@ -25,6 +25,7 @@ struct ResolvedMark: Identifiable, Equatable {
 final class ExplainViewModel: ObservableObject {
 
     let document: ReadingDocument
+    let analyticsContext: AnalyticsContentContext
 
     /// 场景 content_type（从首页场景入口进入时设置；通用 ➕ 导入为 nil）。仅决定后端「划什么/怎么批」prompt 分支，
     /// 与解读深度正交、**不影响 depth**（depth 始终 = 用户设置的 3 档）。由 PlayerCoordinator.open(scenario:) 注入。
@@ -127,9 +128,17 @@ final class ExplainViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private(set) var isActive = false
     private var lastNowPlayingCaption: String?
+    private var analyticsExplainSessionId: String?
+    private var analyticsExplainStartedAt: Date?
+    private var analyticsFirstBlockTracked = false
+    private var analyticsSecondBlockStarted = false
+    private var analyticsFirstBlockCompleted = false
+    private var analyticsBlocksStarted = Set<Int>()
+    private var analyticsBlocksCompleted = Set<Int>()
 
-    init(document: ReadingDocument) {
+    init(document: ReadingDocument, analyticsContext: AnalyticsContentContext? = nil) {
         self.document = document
+        self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         bind()
     }
 
@@ -158,7 +167,7 @@ final class ExplainViewModel: ObservableObject {
             .store(in: &cancellables)
         audio.$isPlaying
             .receive(on: RunLoop.main)
-            .sink { [weak self] p in self?.isPlaying = p }
+            .sink { [weak self] p in self?.handleAnalyticsPlaybackState(p) }
             .store(in: &cancellables)
         // 与朗读统一：speed 改动（设置页滑杆 / 控制条倍速按钮）实时作用到解读播放，保证「显示 = 在播」。
         settings.$speed
@@ -189,6 +198,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     func deactivate() {
+        endAnalyticsExplainSession(result: .cancelled, reason: "mode_switched")
         isActive = false
         orchestrationTask?.cancel()
         isPreparingNext = false
@@ -221,6 +231,7 @@ final class ExplainViewModel: ObservableObject {
             showPaywall = true
             return
         }
+        beginAnalyticsExplainSession()
         quota.noteExplainStarted(isPro: pro.isPro)
         activate()
         activeMarks = []           // 开始新解读：清上一轮残留 mark（对齐 Android startExplain；之后跨批累积不再清）
@@ -265,6 +276,7 @@ final class ExplainViewModel: ObservableObject {
             showPaywall = true
             return
         }
+        beginAnalyticsExplainSession()
         quota.noteExplainStarted(isPro: pro.isPro)
         activate()
         activeMarks = []
@@ -419,6 +431,7 @@ final class ExplainViewModel: ObservableObject {
         preparingBlocks.removeAll()
         isReplayingCached = false
         status = .idle
+        endAnalyticsExplainSession(result: .cancelled, reason: "closed")
     }
 
     func togglePlayPause() { audio.togglePlayPause() }
@@ -432,6 +445,7 @@ final class ExplainViewModel: ObservableObject {
         }
         orchestrationTask?.cancel()
         fastTask?.cancel()
+        beginAnalyticsExplainSession()
         activate()
         isReplayingCached = true
         preparingBlocks.removeAll()
@@ -445,6 +459,130 @@ final class ExplainViewModel: ObservableObject {
         applyPlaybackMetadata()
         applySpeed()
         enqueueReplayBlock(0)
+    }
+
+    // MARK: - Product analytics
+
+    private func beginAnalyticsExplainSession() {
+        guard analyticsExplainSessionId == nil else { return }
+        analyticsExplainSessionId = UUID().uuidString
+        analyticsExplainStartedAt = Date()
+        analyticsFirstBlockTracked = false
+        analyticsSecondBlockStarted = false
+        analyticsFirstBlockCompleted = false
+        analyticsBlocksStarted.removeAll()
+        analyticsBlocksCompleted.removeAll()
+        ProductAnalytics.shared.track(
+            .explainStart,
+            context: analyticsEventContext,
+            properties: .init(
+                contentSource: analyticsContext.source.rawValue,
+                contentFormat: AnalyticsContentFormat(document.sourceKind).rawValue,
+                language: doc.language,
+                scenario: analyticsScenario
+            )
+        )
+    }
+
+    private func handleAnalyticsPlaybackState(_ playing: Bool) {
+        isPlaying = playing
+        guard playing,
+              isActive,
+              analyticsExplainSessionId != nil,
+              currentBlockIndex >= 0,
+              audio.currentSegment != nil else { return }
+
+        analyticsBlocksStarted.insert(currentBlockIndex)
+        if !analyticsFirstBlockTracked {
+            analyticsFirstBlockTracked = true
+            let latency = max(0, Int(Date().timeIntervalSince(analyticsExplainStartedAt ?? Date()) * 1000))
+            ProductAnalytics.shared.track(
+                .explainFirstBlock,
+                context: analyticsEventContext,
+                properties: .init(latencyMs: latency, scenario: analyticsScenario)
+            )
+        }
+        if currentBlockIndex >= 1, !analyticsSecondBlockStarted {
+            analyticsSecondBlockStarted = true
+            ProductAnalytics.shared.track(
+                .explainMilestone,
+                context: analyticsEventContext,
+                properties: .init(
+                    milestone: "second_block_started",
+                    blocksStarted: analyticsBlocksStarted.count,
+                    blocksCompleted: analyticsBlocksCompleted.count
+                )
+            )
+        }
+    }
+
+    private func recordAnalyticsBlockCompleted(_ index: Int) {
+        guard analyticsExplainSessionId != nil, index >= 0 else { return }
+        analyticsBlocksCompleted.insert(index)
+        if index == 0, !analyticsFirstBlockCompleted {
+            analyticsFirstBlockCompleted = true
+            ProductAnalytics.shared.noteMeaningfulReadReached()
+            ProductAnalytics.shared.track(
+                .explainMilestone,
+                context: analyticsEventContext,
+                properties: .init(
+                    milestone: "first_block_completed",
+                    blocksStarted: analyticsBlocksStarted.count,
+                    blocksCompleted: analyticsBlocksCompleted.count
+                )
+            )
+        }
+    }
+
+    private func endAnalyticsExplainSession(
+        result: AnalyticsResult,
+        reason: String,
+        errorStage: String? = nil,
+        errorCode: String? = nil
+    ) {
+        guard analyticsExplainSessionId != nil else { return }
+        ProductAnalytics.shared.track(
+            .explainEnd,
+            context: analyticsEventContext,
+            properties: .init(
+                result: result.rawValue,
+                errorStage: errorStage,
+                errorCode: errorCode,
+                completionBucket: ProductAnalytics.completionBucket(
+                    completed: analyticsBlocksCompleted.count,
+                    total: max(totalBlocks, analyticsBlocksStarted.count)
+                ),
+                endReason: reason,
+                blocksStarted: analyticsBlocksStarted.count,
+                blocksCompleted: analyticsBlocksCompleted.count
+            )
+        )
+        analyticsExplainSessionId = nil
+        analyticsExplainStartedAt = nil
+    }
+
+    private var analyticsEventContext: AnalyticsEventContext {
+        AnalyticsEventContext(
+            productArea: .explain,
+            surface: document.sourceKind == .kindle ? "kindle_reader" : "reader",
+            entryPoint: analyticsContext.entryPoint,
+            contentSessionId: analyticsContext.contentSessionId,
+            explainSessionId: analyticsExplainSessionId
+        )
+    }
+
+    private var analyticsScenario: String {
+        let value = scenario?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return value.isEmpty ? "general" : value
+    }
+
+    private static func analyticsErrorCode(_ error: Error) -> String {
+        if error is URLError { return "network" }
+        if error is CancellationError { return "cancelled" }
+        if case QuickReadError.httpError(let code) = error { return "http_\(code)" }
+        let description = String(describing: error).lowercased()
+        if description.contains("timeout") { return "timeout" }
+        return "quickread_failed"
     }
 
     // MARK: - Plan
@@ -496,13 +634,31 @@ final class ExplainViewModel: ObservableObject {
                         self.status = .idle
                         self.stageText = ""
                     }
+                    self.endAnalyticsExplainSession(
+                        result: .blocked,
+                        reason: "explain_quota",
+                        errorStage: "plan",
+                        errorCode: "http_402"
+                    )
                 } else if case QuickReadError.httpError(400) = error {
                     // 重试 3 次仍 400：多为内容太短/不适合解读，给可读提示而非裸 HTTP 码
                     self.status = .error(String(localized: "内容太短或暂不支持解读，请稍后重试"))
                     self.stageText = String(localized: "解读失败")
+                    self.endAnalyticsExplainSession(
+                        result: .failed,
+                        reason: "plan_failed",
+                        errorStage: "plan",
+                        errorCode: "http_400"
+                    )
                 } else {
                     self.status = .error(error.localizedDescription)
                     self.stageText = String(localized: "解读失败")
+                    self.endAnalyticsExplainSession(
+                        result: .failed,
+                        reason: "plan_failed",
+                        errorStage: "plan",
+                        errorCode: Self.analyticsErrorCode(error)
+                    )
                 }
             }
             return
@@ -555,7 +711,16 @@ final class ExplainViewModel: ObservableObject {
             await MainActor.run { self.isPreparingNext = false }
         } catch {
             kindlePerfLog("prepare-enqueue error idx=\(idx) totalMs=\(elapsedMs(since: startedAt)) error=\(error.localizedDescription)")
-            await MainActor.run { self.status = .error(error.localizedDescription); self.isPreparingNext = false }
+            await MainActor.run {
+                self.status = .error(error.localizedDescription)
+                self.isPreparingNext = false
+                self.endAnalyticsExplainSession(
+                    result: .failed,
+                    reason: "block_failed",
+                    errorStage: "block_prepare",
+                    errorCode: Self.analyticsErrorCode(error)
+                )
+            }
         }
     }
 
@@ -714,6 +879,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     private func onBlockComplete() {
+        recordAnalyticsBlockCompleted(currentBlockIndex)
         if isReplayingCached {
             let next = currentBlockIndex + 1
             if next < replayBlocks.count {
@@ -721,6 +887,7 @@ final class ExplainViewModel: ObservableObject {
             } else {
                 isReplayingCached = false
                 status = .completed
+                endAnalyticsExplainSession(result: .success, reason: "replay_completed")
             }
             return
         }
@@ -744,12 +911,14 @@ final class ExplainViewModel: ObservableObject {
             return
         }
         status = .completed
+        endAnalyticsExplainSession(result: .success, reason: "completed")
     }
 
     private func enqueueReplayBlock(_ idx: Int) {
         guard idx >= 0, idx < replayBlocks.count else {
             isReplayingCached = false
             status = .completed
+            endAnalyticsExplainSession(result: .success, reason: "replay_completed")
             return
         }
         enqueue(replayBlocks[idx], idx: idx)
@@ -758,7 +927,11 @@ final class ExplainViewModel: ObservableObject {
     /// PDF 连续解读：切到下一批续播。命中批间预取 → 跳过 extract-plan；否则实时规划（显示「继续讲解…」）。
     private func advanceBatch(fromGlobalIndex start: Int) {
         let batch = pdfBatch(fromGlobalIndex: start)
-        guard !batch.paras.isEmpty else { status = .completed; return }
+        guard !batch.paras.isEmpty else {
+            status = .completed
+            endAnalyticsExplainSession(result: .success, reason: "completed")
+            return
+        }
         let prevSummary = makeBatchContinuitySummary()
         batchPrevSummary = prevSummary
         debugLog("advanceBatch start=%d paras=%d chars=%d prevSummary=%d prefetched=%@",
@@ -964,6 +1137,10 @@ final class ExplainViewModel: ObservableObject {
         if let sentences = prepared[currentBlockIndex]?.sentences {
             let blockDur = segs.reduce(0) { $0 + effectiveDuration($1) }
             let progress = blockDur > 0.01 ? blockElapsed / blockDur : 0
+            if currentBlockIndex == 0,
+               ProductAnalytics.isMeaningfulExplainBlockProgress(progress) {
+                recordAnalyticsBlockCompleted(0)
+            }
             if let cur = Self.subtitleForProgress(sentences, progress: progress), explanationText != cur {
                 explanationText = cur
                 updateNowPlayingCaption(cur)

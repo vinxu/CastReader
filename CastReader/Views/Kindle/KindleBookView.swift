@@ -133,7 +133,11 @@ struct KindleBookView: View {
             GeometryReader { proxy in
                 let webSize = proxy.size
                 let crop = model.effectiveViewportCrop(forSurfaceSize: webSize)
-                KindleWebView(webView: model.webView, crop: crop)
+                KindleWebView(
+                    webView: model.libraryRecoveryWebView ?? model.webView,
+                    crop: model.libraryRecoveryWebView == nil ? crop : .identity
+                )
+                    .id(ObjectIdentifier(model.libraryRecoveryWebView ?? model.webView))
                     .frame(width: webSize.width, height: webSize.height)
                     .onAppear {
                         if !model.isNativeTOCPresented && !model.isKindleTOCVisible {
@@ -152,6 +156,9 @@ struct KindleBookView: View {
                     }
             }
             preparingStatusOverlay
+            if model.isStaleBookEntryError {
+                staleBookRecoveryOverlay
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
@@ -160,6 +167,59 @@ struct KindleBookView: View {
                 Color.clear.preference(key: KindleReaderSurfaceSizePreferenceKey.self, value: proxy.size)
             }
         )
+    }
+
+    private var staleBookRecoveryOverlay: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "arrow.triangle.2.circlepath")
+                .font(.system(size: 30, weight: .semibold))
+                .foregroundStyle(AppTheme.primary)
+            Text("Kindle 书籍需要重新同步")
+                .font(.headline)
+            Text("刷新会重新同步书架并更新这本书的入口，不会清除朗读设置。")
+                .font(.subheadline)
+                .foregroundStyle(AppTheme.mutedForeground)
+                .multilineTextAlignment(.center)
+            if model.isStaleBookRecovering {
+                Text(model.staleBookRecoveryProgressText)
+                    .font(.caption)
+                    .foregroundStyle(AppTheme.mutedForeground)
+            }
+            if let message = model.staleBookRecoveryMessage {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(AppTheme.destructive)
+                    .multilineTextAlignment(.center)
+            }
+            Button {
+                model.retryStaleBookRecovery()
+            } label: {
+                HStack(spacing: 8) {
+                    if model.isStaleBookRecovering { ProgressView().tint(.white) }
+                    Text(model.isStaleBookRecovering ? "正在修复…" : "修复并打开")
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(AppTheme.primary)
+            .disabled(model.isStaleBookRecovering)
+            Button("返回") {
+                if KindlePlaybackCenter.shared.isPresented && KindlePlaybackCenter.shared.isOwning(model) {
+                    KindlePlaybackCenter.shared.minimize()
+                } else {
+                    dismiss()
+                }
+            }
+            .disabled(model.isStaleBookRecovering)
+        }
+        .padding(22)
+        .frame(maxWidth: 380)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppTheme.border, lineWidth: 0.5))
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.2))
+        .allowsHitTesting(true)
     }
 
     private var header: some View {
@@ -953,6 +1013,17 @@ final class KindlePlaybackCenter: ObservableObject {
         old?.stopAll()
     }
 
+    func replaceAfterLibraryRecovery(current: KindleBookViewModel, book: KindleBook) {
+        guard model === current else {
+            KindleRunLog.write("KINDLE stale-entry fresh-reader skipped reason=ownership-changed book=\(String(book.id.prefix(24)))")
+            return
+        }
+        let next = KindleBookViewModel(book: book, staleRecoveryAlreadyAttempted: true)
+        model = next
+        isPresented = true
+        KindleRunLog.write("KINDLE stale-entry fresh-reader created book=\(String(book.id.prefix(24)))")
+    }
+
     func activate(model: KindleBookViewModel) {
         self.model = model
     }
@@ -1159,6 +1230,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     @Published private(set) var isKindleSyncDialogVisible = false
     @Published private(set) var kindleSyncLocalLocation: Int?
     @Published private(set) var kindleSyncCloudLocation: Int?
+    @Published private(set) var isStaleBookEntryError = false
+    @Published private(set) var isStaleBookRecovering = false
+    @Published private(set) var staleBookRecoveryMessage: String?
+    @Published private(set) var staleBookRecoveryProgressText = String(localized: "正在准备…")
+    @Published private(set) var libraryRecoveryWebView: WKWebView?
     private var lastNativeTOCSelectionText: String?
     private var lastNativeTOCSelectionPageKey: String?
     private var nativeTOCTask: Task<Void, Never>?
@@ -1193,6 +1269,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var shownMarkIds = Set<String>()
     private var animatedMarkIds = Set<String>()
     private var didLoad = false
+    private var staleBookRecoveryAttempted = false
+    private var staleBookRecoveryTask: Task<Void, Never>?
+    private var staleBookErrorProbeTask: Task<Void, Never>?
+    private var readerSetupTask: Task<Void, Never>?
     private var pageKeysByDocumentID: [String: [Int: String]] = [:]
     private var lastSyncedPageIndex: Int?
     private var isAdvancingLivePage = false
@@ -1200,6 +1280,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var cancellables = Set<AnyCancellable>()
     private var playbackCancellables = Set<AnyCancellable>()
     private let store = KindleLibraryStore.shared
+    private let analyticsContext: AnalyticsContentContext
+    private var analyticsContentReadyTracked = false
     private static let ocrCaptureMaxWidth = 768
     private static let ocrCaptureJpegQuality = 0.85
     private static var ocrCaptureJavaScriptArguments: String {
@@ -1779,8 +1861,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
     }
 
-    init(book: KindleBook) {
+    init(book: KindleBook, staleRecoveryAlreadyAttempted: Bool = false) {
         self.book = book
+        self.analyticsContext = ProductAnalytics.shared.beginContentIntent(
+            source: .kindle,
+            format: .kindle,
+            entryPoint: "kindle_library",
+            intendedMode: "read"
+        )
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
         config.defaultWebpagePreferences.allowsContentJavaScript = true
@@ -1809,6 +1897,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             webView.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
         }
         super.init()
+        staleBookRecoveryAttempted = staleRecoveryAlreadyAttempted
         nativeTOCEntries = Self.loadCachedNativeTOCEntries(for: book)
         if !nativeTOCEntries.isEmpty {
             KindleRunLog.write("KINDLE native toc cache restored entries=\(nativeTOCEntries.count)")
@@ -2082,7 +2171,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func reload() {
-        resetLiveSession()
+        resetLiveSession(clearPlaybackCenter: false)
         if webView.url == nil {
             load(book.effectiveReaderURL, reason: "reload-empty")
         } else {
@@ -2092,18 +2181,176 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        statusText = String(localized: "打开任意位置，然后点播放开始朗读。")
-        configurePageModeGestures()
-        Task { @MainActor [weak self] in
-            await self?.applyKindleReaderPreferences(reason: "didFinish")
-            self?.installCaptureScript()
-            await self?.setKindlePageModeLocked(true)
-            try? await self?.waitForKindleImageStable()
-            await self?.logReaderLayoutProbe(reason: "didFinish")
-            await self?.logKindleGeometrySnapshot(reason: "didFinish")
-            self?.schedulePendingContinueListening(reason: "webview-did-finish")
+        let finishedURL = webView.url?.absoluteString ?? ""
+        KindleRunLog.write("KINDLE webview didFinish url=\(finishedURL)")
+        if isStaleBookRecovering, finishedURL.contains("kindle-library") {
+            readerSetupTask?.cancel()
+            readerSetupTask = nil
+            statusText = String(localized: "正在同步 Kindle 书架…")
+            KindleRunLog.write("KINDLE webview didFinish library-recovery skip-reader-setup")
+            return
         }
-        KindleRunLog.write("KINDLE webview didFinish url=\(webView.url?.absoluteString ?? "")")
+        statusText = String(localized: "打开任意位置，然后点播放开始朗读。")
+        scheduleReaderSetup(reason: "didFinish")
+        detectAndRecoverStaleBookEntry()
+    }
+
+    private func scheduleReaderSetup(reason: String) {
+        readerSetupTask?.cancel()
+        configurePageModeGestures()
+        readerSetupTask = Task { @MainActor [weak self] in
+            guard let self, !Task.isCancelled else { return }
+            await self.applyKindleReaderPreferences(reason: reason)
+            guard !Task.isCancelled else { return }
+            self.installCaptureScript()
+            await self.setKindlePageModeLocked(true)
+            guard !Task.isCancelled else { return }
+            try? await self.waitForKindleImageStable()
+            guard !Task.isCancelled else { return }
+            await self.logReaderLayoutProbe(reason: reason)
+            await self.logKindleGeometrySnapshot(reason: reason)
+            self.schedulePendingContinueListening(reason: "webview-\(reason)")
+        }
+    }
+
+    private func detectAndRecoverStaleBookEntry() {
+        guard staleBookRecoveryTask == nil, !isStaleBookRecovering else { return }
+        staleBookErrorProbeTask?.cancel()
+        staleBookErrorProbeTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            for attempt in 0..<48 {
+                guard !Task.isCancelled else { return }
+                if await self.hasStaleBookErrorDOM() {
+                    self.isStaleBookEntryError = true
+                    KindleRunLog.write("KINDLE stale-entry error detected attempt=\(attempt)")
+                    if self.staleBookRecoveryAttempted {
+                        self.statusText = String(localized: "书架已同步，但 Kindle 未能打开这本书。请重试或返回书架。")
+                        self.staleBookRecoveryMessage = self.statusText
+                        KindleRunLog.write("KINDLE stale-entry fresh-reader failed no-auto-loop book=\(Self.keyLog(self.book.id))")
+                    } else {
+                        self.startStaleBookRecovery()
+                    }
+                    return
+                }
+                try? await Task.sleep(nanoseconds: 250_000_000)
+            }
+            KindleRunLog.write("KINDLE stale-entry probe clear attempts=48")
+        }
+    }
+
+    private func hasStaleBookErrorDOM() async -> Bool {
+        let script = """
+        (function() {
+          function norm(v) { return String(v || '').replace(/\\s+/g, ' ').trim().toLowerCase(); }
+          var bodyText = norm(document.body && document.body.innerText);
+          var exact = bodyText.indexOf('please try to open this book from the library again') >= 0;
+          var title = bodyText.indexOf('oops') >= 0 && bodyText.indexOf('something went wrong') >= 0;
+          var nodes = Array.prototype.slice.call(document.querySelectorAll('[role="dialog"], [aria-modal="true"], button, a'));
+          var back = nodes.some(function(el) {
+            var t = norm((el.innerText || '') + ' ' + (el.getAttribute && el.getAttribute('aria-label') || ''));
+            return t.indexOf('back to library') >= 0 || t.indexOf('return to library') >= 0;
+          });
+          var dialog = nodes.some(function(el) {
+            if (!(el.matches && el.matches('[role="dialog"], [aria-modal="true"]'))) return false;
+            var t = norm(el.innerText);
+            return t.indexOf('something went wrong') >= 0 || t.indexOf('open this book from the library') >= 0;
+          });
+          return !!(exact || dialog || (title && back));
+        })();
+        """
+        do {
+            return (try await evaluate(script) as? Bool) == true
+        } catch {
+            return false
+        }
+    }
+
+    func retryStaleBookRecovery() {
+        guard !isStaleBookRecovering else { return }
+        staleBookRecoveryAttempted = false
+        staleBookRecoveryTask?.cancel()
+        staleBookRecoveryTask = nil
+        startStaleBookRecovery()
+    }
+
+    private func startStaleBookRecovery() {
+        guard !staleBookRecoveryAttempted, staleBookRecoveryTask == nil else { return }
+        staleBookRecoveryAttempted = true
+        isStaleBookRecovering = true
+        staleBookRecoveryMessage = nil
+        staleBookRecoveryProgressText = String(localized: "正在准备…")
+        isPreparing = true
+        statusText = String(localized: "正在重新同步 Kindle 书籍…")
+        let target = book
+        KindleRunLog.write("KINDLE stale-entry auto-recovery start book=\(Self.keyLog(target.id))")
+        staleBookErrorProbeTask?.cancel()
+        staleBookErrorProbeTask = nil
+        readerSetupTask?.cancel()
+        readerSetupTask = nil
+        let recoveryWebView = makeLibraryRecoveryWebView()
+        libraryRecoveryWebView = recoveryWebView
+        // Keep the current reader mounted while the same visible WKWebView
+        // is replaced by a clean, mobile-UA shelf WebView. Clearing
+        // PlaybackCenter here would dismiss that visible recovery surface.
+        resetLiveSession(clearPlaybackCenter: false)
+        staleBookRecoveryTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            // Allow SwiftUI to attach the recovery WebView at a real size before
+            // loading Kindle's SPA. A zero-sized/unattached WebView does not
+            // render the virtualized shelf.
+            await Task.yield()
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            let result = await KindleLibraryRecoveryService.shared.recover(
+                book: target,
+                in: recoveryWebView
+            ) { progress in
+                self.staleBookRecoveryProgressText = progress
+            }
+            guard !Task.isCancelled else { return }
+            self.libraryRecoveryWebView = nil
+            self.staleBookRecoveryTask = nil
+            self.isPreparing = false
+            self.isStaleBookRecovering = false
+            switch result {
+            case .recovered(let latest):
+                self.isStaleBookEntryError = false
+                self.staleBookRecoveryMessage = nil
+                self.staleBookRecoveryProgressText = String(localized: "正在重新打开书籍…")
+                self.refreshMetadata(from: latest)
+                self.statusText = String(localized: "打开任意位置，然后点播放开始朗读。")
+                KindleRunLog.write("KINDLE stale-entry auto-recovery synced book=\(Self.keyLog(latest.id)) fresh-reader=begin")
+                KindlePlaybackCenter.shared.replaceAfterLibraryRecovery(current: self, book: latest)
+            case .signInRequired:
+                self.statusText = String(localized: "Kindle 登录已过期，请重新登录并同步书架。")
+                self.staleBookRecoveryMessage = self.statusText
+                KindleRunLog.write("KINDLE stale-entry auto-recovery auth-required")
+            case .notFound:
+                self.statusText = String(localized: "未能在 Kindle 书架找到这本书，请手动同步书架。")
+                self.staleBookRecoveryMessage = self.statusText
+                KindleRunLog.write("KINDLE stale-entry auto-recovery not-found book=\(Self.keyLog(target.id))")
+            case .reopenFailed:
+                self.statusText = String(localized: "书架已同步，但 Kindle 未能打开这本书。请重试或返回书架。")
+                self.staleBookRecoveryMessage = self.statusText
+                KindleRunLog.write("KINDLE stale-entry auto-recovery reopen-failed book=\(Self.keyLog(target.id))")
+            }
+        }
+    }
+
+    private func makeLibraryRecoveryWebView() -> WKWebView {
+        // Keep this configuration aligned with KindleLibrarySyncViewModel. In
+        // particular, do not set the desktop reader UA and do not inject reader
+        // scripts; Amazon uses the shelf client to refresh its book session.
+        let config = WKWebViewConfiguration()
+        config.websiteDataStore = .default()
+        config.defaultWebpagePreferences.allowsContentJavaScript = true
+        let recovery = WKWebView(frame: .zero, configuration: config)
+        recovery.scrollView.contentInsetAdjustmentBehavior = .never
+        recovery.scrollView.contentInset = .zero
+        recovery.scrollView.scrollIndicatorInsets = .zero
+        if #available(iOS 13.0, *) {
+            recovery.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
+        }
+        return recovery
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
@@ -2225,7 +2472,16 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private func applyKindleReaderPreferences(reason: String) async {
         var lastStage = ""
         for attempt in 1...5 {
-            try? await Task.sleep(nanoseconds: attempt == 1 ? 1_000_000_000 : 450_000_000)
+            guard !Task.isCancelled else {
+                KindleRunLog.write("KINDLE reader prefs cancelled reason=\(reason) attempt=\(attempt)")
+                return
+            }
+            do {
+                try await Task.sleep(nanoseconds: attempt == 1 ? 1_000_000_000 : 450_000_000)
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
             do {
                 let result = try await evaluateJSON(KindleWebScripts.applyReaderPreferences)
                 let ok = Self.boolValue(result["ok"])
@@ -4113,6 +4369,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func resetLiveSession(clearPlaybackCenter: Bool = true) {
+        KindleRunLog.write("KINDLE live session reset clearCenter=\(clearPlaybackCenter ? "Y" : "N")")
         readerLayoutRepairTask?.cancel()
         readerLayoutRepairTask = nil
         layoutPlaybackRestartTask?.cancel()
@@ -4940,7 +5197,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func makeReadVM(document: ReadingDocument) -> ReadAloudViewModel {
-        let vm = ReadAloudViewModel(document: document)
+        trackAnalyticsContentReadyIfNeeded(document)
+        let vm = ReadAloudViewModel(document: document, analyticsContext: analyticsContext)
         vm.configurePlaybackMetadata(id: book.id, title: book.title, coverURL: book.coverURL)
         bindReadPageFinished(vm)
         return vm
@@ -4954,7 +5212,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func makeExplainVM(document: ReadingDocument) -> ExplainViewModel {
-        let vm = ExplainViewModel(document: document)
+        trackAnalyticsContentReadyIfNeeded(document)
+        let vm = ExplainViewModel(document: document, analyticsContext: analyticsContext)
         vm.scenario = ExplainContentType.book.rawValue
         vm.configurePlaybackMetadata(
             id: book.id,
@@ -4963,6 +5222,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             chapterTitle: String(localized: "解读")
         )
         return vm
+    }
+
+    private func trackAnalyticsContentReadyIfNeeded(_ document: ReadingDocument) {
+        guard !analyticsContentReadyTracked else { return }
+        analyticsContentReadyTracked = true
+        ProductAnalytics.shared.contentReady(analyticsContext, document: document)
     }
 
     private func recordPlaybackStart(language: String) {
