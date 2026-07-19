@@ -843,6 +843,13 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func advance(allowAccessRefresh: Bool) {
+        // AVPlayer completion notifications can be repeated during queue swaps or
+        // interruption recovery. A finished playback generation owns exactly one
+        // terminal transition; start/jump/generate explicitly clears isFinished.
+        guard !isFinished else {
+            NSLog("CRDBG advance ignored duplicate document-finished para=%d", currentParagraphIndex)
+            return
+        }
         commitListen()
         NSLog("CRDBG advance from para=%d readable=%d", currentParagraphIndex, readableIndices.count)
         guard let pos = readableIndices.firstIndex(of: currentParagraphIndex) else { return }

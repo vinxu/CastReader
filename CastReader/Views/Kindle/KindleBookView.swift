@@ -1554,7 +1554,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var pageKeysByDocumentID: [String: [Int: String]] = [:]
     private var lastSyncedPageIndex: Int?
     private var isAdvancingLivePage = false
-    private var readAutoAdvanceTriggeredPageKey: String?
+    private var readPageSessionGeneration: UInt64 = 0
+    private var activeReadPageSession: KindleReadPageSession?
+    private var consumedReadPageGeneration: UInt64?
     private var cancellables = Set<AnyCancellable>()
     private var playbackCancellables = Set<AnyCancellable>()
     private let store = KindleLibraryStore.shared
@@ -1616,6 +1618,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var continuousReadOldVMDetached = false
     private var continuousReadAudioCompletedBeforeCommit = false
     private var continuousReadTurnFailureCount = 0
+    /// Semantic page actions are non-idempotent. Once attempted, visual/cache
+    /// staging may retry, but the React paired action may not be sent again.
+    private var continuousReadSemanticTurnAttempted = false
+    private var continuousReadConfirmedTargetKey: String?
 
     // Explain prefetch layer: owns the next page block_0 plan + TTS + marks.
     private var explainPrefetchTask: Task<Void, Never>?
@@ -4495,6 +4501,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         isContinuingExplainPage = false
         cancelPageCaching(clearPrepared: true)
         clearPendingContinuation()
+        invalidateReadPageSession(reason: "stop-all")
         readVM?.stop()
         explainVM?.stop()
         readVM?.deactivate()
@@ -4580,6 +4587,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             clearKindleMarkState(resetAnimationHistory: true)
             cancelLiveHighlightTasks()
             playbackCancellables.removeAll()
+            invalidateReadPageSession(reason: "force-live-document")
             readVM?.stop()
             explainVM?.stop()
             readVM = nil
@@ -4724,7 +4732,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         liveVisibleBottomNorm = nil
         pendingCaptureKey = nil
         suppressNextScrollParagraphIndex = nil
-        readAutoAdvanceTriggeredPageKey = nil
+        invalidateReadPageSession(reason: "reset-live-session")
         textQueue = nil
         activeReadPageSlot = .current
         pageBackStack.removeAll()
@@ -5005,7 +5013,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         lastHighlightedWordByParagraph.removeAll()
         refocusWordRoutes.removeAll()
         playbackAnchor = nil
-        readAutoAdvanceTriggeredPageKey = nil
+        invalidateReadPageSession(reason: "page-turn-\(reason)")
         textQueue = nil
         activeReadPageSlot = .current
         if clearLiveOverlay {
@@ -5492,17 +5500,47 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private func makeReadVM(document: ReadingDocument) -> ReadAloudViewModel {
         trackAnalyticsContentReadyIfNeeded(document)
+        readPageSessionGeneration &+= 1
+        let session = KindleReadPageSession(
+            generation: readPageSessionGeneration,
+            documentID: document.id
+        )
+        activeReadPageSession = session
+        consumedReadPageGeneration = nil
         let vm = ReadAloudViewModel(document: document, analyticsContext: analyticsContext)
         vm.configurePlaybackMetadata(id: book.id, title: book.title, coverURL: book.coverURL)
-        bindReadPageFinished(vm)
+        bindReadPageFinished(vm, session: session)
+        KindleRunLog.write(
+            "KINDLE read session installed generation=\(session.generation) " +
+            "document=\(session.documentID.prefix(8)) key=\(Self.keyLog(livePageKey ?? ""))"
+        )
         return vm
     }
 
-    private func bindReadPageFinished(_ vm: ReadAloudViewModel) {
-        vm.onDocumentFinished = { [weak self] in
-            guard let self else { return }
-            Task { await self.handleReadPageFinished(source: "vm-callback") }
+    private func bindReadPageFinished(_ vm: ReadAloudViewModel, session: KindleReadPageSession) {
+        vm.onDocumentFinished = { [weak self, weak vm] in
+            guard let self, let vm else { return }
+            Task { @MainActor [weak self, weak vm] in
+                guard let self, let vm else { return }
+                await self.handleReadPageFinished(
+                    source: "vm-callback",
+                    session: session,
+                    owner: vm
+                )
+            }
         }
+    }
+
+    private func invalidateReadPageSession(reason: String) {
+        if let activeReadPageSession {
+            KindleRunLog.write(
+                "KINDLE read session invalidated reason=\(reason) " +
+                "generation=\(activeReadPageSession.generation) " +
+                "document=\(activeReadPageSession.documentID.prefix(8))"
+            )
+        }
+        activeReadPageSession = nil
+        consumedReadPageGeneration = nil
     }
 
     private func makeExplainVM(document: ReadingDocument) -> ExplainViewModel {
@@ -6735,15 +6773,6 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             }
             .store(in: &playbackCancellables)
 
-        readVM.$isFinished
-            .removeDuplicates()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] finished in
-                guard let self, finished, self.mode == .read else { return }
-                Task { await self.handleReadPageFinished(source: "published-finished") }
-            }
-            .store(in: &playbackCancellables)
-
         readVM.$status
             .combineLatest(readVM.$currentParagraphIndex)
             .receive(on: RunLoop.main)
@@ -6829,7 +6858,6 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         reason: String
     ) -> Bool {
         guard mode == .read, let vm = readVM else { return false }
-        readAutoAdvanceTriggeredPageKey = nil
         let readableIDs = document.paragraphs
             .filter { $0.type.isReadable && SpeechTextSanitizer.containsSpeakableContent($0.text) }
             .map(\.id)
@@ -6927,6 +6955,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continuousReadOldVMDetached = false
         continuousReadAudioCompletedBeforeCommit = false
         continuousReadTurnFailureCount = 0
+        continuousReadSemanticTurnAttempted = false
+        continuousReadConfirmedTargetKey = nil
         continuousReadStagedPage = nil
         continuousReadStagedLiveKey = nil
         let audio = AudioPlayerService.shared
@@ -6942,6 +6972,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 Self.explainFingerprint($0.document) ==
                     Self.explainFingerprint(active.target.document)
             } ?? false
+            if self.continuousReadStagedPage != nil, !fingerprintMatches {
+                // The semantic action reached a different surface than the
+                // speculative cache predicted. Wait for this audio boundary,
+                // then commit the confirmed surface with freshly generated audio.
+                self.beginContinuousReadCommitIfNeeded(serial: serial)
+            }
             return KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
                 hasConfirmedVisibleSurface: self.continuousReadStagedPage != nil,
                 textFingerprintMatches: fingerprintMatches
@@ -7034,47 +7070,105 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         await setKindlePageModeLocked(true)
 
         let expectedKey = normalizedPageKey(handoff.target.page.key)
-        let visibleBefore = normalizedPageKey(await currentVisibleKindlePageKey())
-        if visibleBefore != expectedKey {
-            let targetKey = try await requestNativeNextPageForAutoAdvance(
-                oldKey: handoff.oldKey,
-                reason: "read-continuous-page-turn"
-            )
-            guard normalizedPageKey(targetKey) == expectedKey else {
-                throw KindleBookError.captureFailed("continuous-target-mismatch:\(targetKey)")
+        let oldKey = normalizedPageKey(handoff.oldKey)
+        var visibleKey = normalizedPageKey(await currentVisibleKindlePageKey())
+        var targetKey = KindleContinuousVisualTurnContract.stagingTargetKey(
+            oldKey: oldKey,
+            expectedKey: expectedKey,
+            visibleKey: visibleKey,
+            semanticActionAttempted: continuousReadSemanticTurnAttempted,
+            confirmedTargetKey: continuousReadConfirmedTargetKey
+        )
+
+        if KindleContinuousVisualTurnContract.shouldDispatchSemanticAction(
+            expectedKey: expectedKey,
+            visibleKey: visibleKey,
+            semanticActionAttempted: continuousReadSemanticTurnAttempted,
+            confirmedTargetKey: continuousReadConfirmedTargetKey
+        ) {
+            // Mark before entering the non-idempotent request. Even when its
+            // confirmation throws, a retry is observation-only.
+            continuousReadSemanticTurnAttempted = true
+            do {
+                let turnedKey = try await requestNativeNextPageForAutoAdvance(
+                    oldKey: handoff.oldKey,
+                    reason: "read-continuous-page-turn"
+                )
+                guard continuousReadHandoff?.serial == handoff.serial else {
+                    throw CancellationError()
+                }
+                let confirmed = normalizedPageKey(turnedKey)
+                continuousReadConfirmedTargetKey = confirmed.nilIfEmpty
+                targetKey = confirmed.nilIfEmpty
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                // The action may already have changed the page even if its
+                // evidence probe timed out. Recover the visible surface without
+                // ever dispatching a second action.
+                visibleKey = normalizedPageKey(await currentVisibleKindlePageKey())
+                targetKey = KindleContinuousVisualTurnContract.stagingTargetKey(
+                    oldKey: oldKey,
+                    expectedKey: expectedKey,
+                    visibleKey: visibleKey,
+                    semanticActionAttempted: true,
+                    confirmedTargetKey: continuousReadConfirmedTargetKey
+                )
+                guard let recovered = targetKey?.nilIfEmpty else { throw error }
+                continuousReadConfirmedTargetKey = recovered
+                KindleRunLog.write(
+                    "KINDLE read continuous turn-confirmation recovered serial=\(handoff.serial) " +
+                    "expected=\(Self.keyLog(expectedKey)) visible=\(Self.keyLog(recovered))"
+                )
             }
+        }
+
+        guard let targetKey = targetKey?.nilIfEmpty else {
+            throw KindleBookError.captureFailed("continuous-stage-target-unavailable")
+        }
+        if targetKey != expectedKey {
+            KindleRunLog.write(
+                "KINDLE read continuous target-reconciled serial=\(handoff.serial) " +
+                "prefetched=\(Self.keyLog(expectedKey)) confirmed=\(Self.keyLog(targetKey)) " +
+                "actionAttempted=\(continuousReadSemanticTurnAttempted ? "Y" : "N")"
+            )
         }
 
         let staged = try await preparedPageForNativeAutoAdvance(
             afterKey: handoff.oldKey,
-            targetKey: expectedKey,
+            targetKey: targetKey,
             mode: .read
         )
         let actualKey = try await installLiveOverlay(page: staged.page, document: staged.document)
         guard continuousReadHandoff?.serial == handoff.serial else { throw CancellationError() }
         let prefetchedFingerprint = Self.explainFingerprint(handoff.target.document)
         let stagedFingerprint = Self.explainFingerprint(staged.document)
-        guard prefetchedFingerprint == stagedFingerprint else {
-            let wasWaitingAtBoundary = AudioPlayerService.shared.isBuffering
-            continuousReadTurnTask = nil
-            cancelContinuousReadHandoff(reason: "staged-fingerprint-mismatch")
-            if wasWaitingAtBoundary {
-                AudioPlayerService.shared.nextSegment()
-            }
-            KindleRunLog.write(
-                "KINDLE read continuous visual-turn reject-fingerprint serial=\(handoff.serial) " +
-                "prefetched=\(prefetchedFingerprint.prefix(12)) staged=\(stagedFingerprint.prefix(12))"
-            )
-            throw KindleBookError.captureFailed("continuous-fingerprint-mismatch")
-        }
+        let fingerprintMatches = prefetchedFingerprint == stagedFingerprint
         continuousReadStagedPage = staged
         continuousReadStagedLiveKey = actualKey
         continuousReadTurnFailureCount = 0
         KindleRunLog.write(
             "KINDLE read continuous visual-turn ready serial=\(handoff.serial) " +
-            "target=\(Self.keyLog(staged.page.key)) actual=\(Self.keyLog(actualKey))"
+            "target=\(Self.keyLog(staged.page.key)) actual=\(Self.keyLog(actualKey)) " +
+            "fingerprint=\(fingerprintMatches ? "match" : "fallback")"
         )
-        AudioPlayerService.shared.resumeGatedSegmentIfPossible()
+        if fingerprintMatches {
+            AudioPlayerService.shared.resumeGatedSegmentIfPossible()
+        } else if KindleContinuousPageHandoffContract.shouldCommitConfirmedFallbackAtBoundary(
+            hasConfirmedVisibleSurface: true,
+            textFingerprintMatches: false,
+            isQueuedSegmentGated: AudioPlayerService.shared.isQueuedSegmentGated
+        ) {
+            // The gate may have been evaluated while visual confirmation was
+            // still in flight. It is now holding the next-page audio, so no new
+            // callback will wake the fallback path. Commit the confirmed real
+            // page and regenerate its audio without dispatching another turn.
+            KindleRunLog.write(
+                "KINDLE read continuous fallback-boundary-ready serial=\(handoff.serial) " +
+                "target=\(Self.keyLog(staged.page.key))"
+            )
+            beginContinuousReadCommitIfNeeded(serial: handoff.serial)
+        }
     }
 
     private func beginContinuousReadCommitIfNeeded(serial: Int) {
@@ -7084,6 +7178,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
         if !continuousReadOldVMDetached {
             readVM?.detachForContinuousPageHandoff()
+            invalidateReadPageSession(reason: "continuous-handoff-\(serial)-detached")
             continuousReadOldVMDetached = true
             AudioPlayerService.shared.onPlaybackComplete = { [weak self] in
                 guard let self,
@@ -7136,6 +7231,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continuousReadOldVMDetached = false
         continuousReadAudioCompletedBeforeCommit = false
         continuousReadTurnFailureCount = 0
+        continuousReadSemanticTurnAttempted = false
+        continuousReadConfirmedTargetKey = nil
         AudioPlayerService.shared.canStartQueuedSegment = nil
         invalidatePagePreloads(clearPrepared: false, reason: "continuous-page-commit")
 
@@ -7167,11 +7264,29 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
 
         do {
+            let previousOwner = readVM
+            let previousOwnerDocumentID = previousOwner?.document.id
             let queuedDocument = try await buildTextQueueForCurrentPage(baseDocument: staged.document)
             let start = liveStartParagraphIndex
                 ?? queuedDocument.paragraphs.first(where: { $0.type.isReadable })?.id
                 ?? handoff.paragraphIndex
-            guard canAdoptPrefetchedAudio else {
+
+            // buildTextQueueForCurrentPage normally installs a fresh VM as part
+            // of publishing the new page. Keep the invariant explicit here so a
+            // future queue refactor cannot silently let page-local paragraph IDs
+            // make the previous page owner look compatible.
+            if readVM == nil || readVM === previousOwner || readVM?.document.id != queuedDocument.id {
+                resetViewModels(document: queuedDocument)
+            }
+            guard let vm = readVM else {
+                throw KindleBookError.captureFailed("continuous-target-owner-unavailable")
+            }
+            let ownerCanAdopt = KindleContinuousPageHandoffContract.canAdoptPreparedAudio(
+                previousOwnerDocumentID: previousOwnerDocumentID,
+                activeOwnerDocumentID: vm.document.id,
+                targetDocumentID: queuedDocument.id
+            )
+            guard canAdoptPrefetchedAudio, ownerCanAdopt else {
                 AudioPlayerService.shared.clearQueue()
                 _ = consumeStartAudioCandidate(
                     pageKey: staged.page.key,
@@ -7181,20 +7296,41 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 let started = startReadPlayback(
                     document: queuedDocument,
                     startHint: start,
-                    reason: "continuous-fingerprint-fallback"
+                    prefetchedIndex: ownerCanAdopt && canAdoptPrefetchedAudio ? start : nil,
+                    prefetchedSegments: ownerCanAdopt && canAdoptPrefetchedAudio ? handoff.segments : [],
+                    reason: canAdoptPrefetchedAudio
+                        ? "continuous-owner-fallback"
+                        : "continuous-fingerprint-fallback"
                 )
                 guard started else {
-                    throw KindleBookError.captureFailed("continuous-fingerprint-fallback-not-started")
+                    throw KindleBookError.captureFailed("continuous-safe-fallback-not-started")
                 }
                 KindleRunLog.write(
-                    "KINDLE read continuous fingerprint-fallback serial=\(serial) key=\(Self.keyLog(actualKey)) " +
+                    "KINDLE read continuous safe-fallback serial=\(serial) key=\(Self.keyLog(actualKey)) " +
+                    "fingerprint=\(canAdoptPrefetchedAudio ? "Y" : "N") owner=\(ownerCanAdopt ? "Y" : "N") " +
                     "prefetched=\(prefetchedFingerprint.prefix(12)) staged=\(stagedFingerprint.prefix(12))"
                 )
                 return
             }
-            guard let vm = readVM,
-                  vm.adoptContinuousPlayback(handoff.segments, paragraphIndex: start) else {
-                throw KindleBookError.captureFailed("continuous-audio-adoption-failed")
+            guard vm.adoptContinuousPlayback(handoff.segments, paragraphIndex: start) else {
+                // The prepared item may have ended while the visual surface was
+                // committing. Restart the confirmed current page from its first
+                // prepared utterance instead of pausing or advancing again.
+                AudioPlayerService.shared.clearQueue()
+                let restarted = startReadPlayback(
+                    document: queuedDocument,
+                    startHint: start,
+                    prefetchedIndex: start,
+                    prefetchedSegments: handoff.segments,
+                    reason: "continuous-adoption-restart"
+                )
+                guard restarted else {
+                    throw KindleBookError.captureFailed("continuous-audio-adoption-restart-failed")
+                }
+                KindleRunLog.write(
+                    "KINDLE read continuous adoption-restarted serial=\(serial) key=\(Self.keyLog(actualKey))"
+                )
+                return
             }
             _ = consumeStartAudioCandidate(
                 pageKey: staged.page.key,
@@ -7240,18 +7376,50 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continuousReadOldVMDetached = false
         continuousReadAudioCompletedBeforeCommit = false
         continuousReadTurnFailureCount = 0
+        continuousReadSemanticTurnAttempted = false
+        continuousReadConfirmedTargetKey = nil
         KindleRunLog.write("KINDLE read continuous cancelled reason=\(reason) serial=\(handoff.serial)")
     }
 
-    private func handleReadPageFinished(source: String) async {
-        guard mode == .read else {
-            KindleRunLog.write("KINDLE read page finished ignored source=\(source) mode=\(mode.rawValue)")
+    private func handleReadPageFinished(
+        source: String,
+        session: KindleReadPageSession,
+        owner: ReadAloudViewModel
+    ) async {
+        let liveKey = normalizedPageKey(livePageKey?.nilIfEmpty ?? livePage?.key)
+        let decision = KindleReadPageCompletionContract.decision(
+            isReadMode: mode == .read,
+            ownerMatches: readVM === owner,
+            activeSession: activeReadPageSession,
+            eventSession: session,
+            consumedGeneration: consumedReadPageGeneration,
+            currentPageKey: liveKey
+        )
+        guard decision == .accept else {
+            KindleRunLog.write(
+                "KINDLE read page finished rejected source=\(source) decision=\(String(describing: decision)) " +
+                "eventGeneration=\(session.generation) activeGeneration=\(activeReadPageSession?.generation.description ?? "nil") " +
+                "key=\(Self.keyLog(liveKey))"
+            )
             return
         }
-        let liveKey = livePageKey?.nilIfEmpty
+
+        // Consume before the first suspension point. A second callback from the
+        // same VM can then never overlap this page turn, even if it is already
+        // queued on the main RunLoop.
+        consumedReadPageGeneration = session.generation
         let observedKey = await currentVisibleKindlePageKey()
-        if let liveKey,
-           let observed = observedKey.nilIfEmpty,
+        guard activeReadPageSession == session,
+              consumedReadPageGeneration == session.generation,
+              readVM === owner,
+              normalizedPageKey(livePageKey?.nilIfEmpty ?? livePage?.key) == liveKey else {
+            KindleRunLog.write(
+                "KINDLE read page finished stale-after-probe source=\(source) " +
+                "eventGeneration=\(session.generation) key=\(Self.keyLog(liveKey))"
+            )
+            return
+        }
+        if let observed = observedKey.nilIfEmpty,
            observed != liveKey {
             KindleRunLog.write("KINDLE read page finished visible-changed source=\(source) live=\(Self.keyLog(liveKey)) visible=\(Self.keyLog(observed))")
             scheduleExternalPageChangeResume(
@@ -7262,17 +7430,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             )
             return
         }
-        let currentKey = (liveKey ?? observedKey).trimmingCharacters(in: .whitespacesAndNewlines)
-        if !currentKey.isEmpty, readAutoAdvanceTriggeredPageKey == currentKey {
-            KindleRunLog.write("KINDLE read page finished duplicate source=\(source) key=\(Self.keyLog(currentKey))")
-            return
-        }
-        readAutoAdvanceTriggeredPageKey = currentKey
-        KindleRunLog.write("KINDLE read page finished source=\(source) key=\(Self.keyLog(currentKey))")
+        KindleRunLog.write(
+            "KINDLE read page finished accepted source=\(source) generation=\(session.generation) " +
+            "key=\(Self.keyLog(liveKey))"
+        )
         #if DEBUG
-        NSLog("CRDBG KINDLE read page finished source=%@ key=%@", source, Self.keyLog(currentKey))
+        NSLog("CRDBG KINDLE read page finished source=%@ generation=%llu key=%@",
+              source, session.generation, Self.keyLog(liveKey))
         #endif
-        await advanceToNextLivePageIfNeeded()
+        await advanceToNextLivePageIfNeeded(session: session, expectedPageKey: liveKey)
     }
 
     private func resetReadSourceStateForAdvance() async {
@@ -7295,16 +7461,46 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         _ = try? await evaluateJSON("window.__crKindleLiveClear && window.__crKindleLiveClear()")
     }
 
-    private func advanceToNextLivePageIfNeeded() async {
-        guard mode == .read, !isAdvancingLivePage else { return }
-        isAdvancingLivePage = true
-        let visibleOldKey = await currentVisibleKindlePageKey()
-        let oldKey: String
-        if let visibleKey = visibleOldKey.nilIfEmpty {
-            oldKey = visibleKey
-        } else {
-            oldKey = await currentKindlePageKey()
+    private func advanceToNextLivePageIfNeeded(
+        session: KindleReadPageSession,
+        expectedPageKey: String
+    ) async {
+        guard mode == .read,
+              !isAdvancingLivePage,
+              activeReadPageSession == session,
+              consumedReadPageGeneration == session.generation,
+              normalizedPageKey(livePageKey?.nilIfEmpty ?? livePage?.key) == expectedPageKey else {
+            KindleRunLog.write(
+                "KINDLE read auto advance rejected-stale generation=\(session.generation) " +
+                "key=\(Self.keyLog(expectedPageKey))"
+            )
+            return
         }
+        let visibleOldKey = await currentVisibleKindlePageKey()
+        guard activeReadPageSession == session,
+              consumedReadPageGeneration == session.generation,
+              normalizedPageKey(livePageKey?.nilIfEmpty ?? livePage?.key) == expectedPageKey else {
+            KindleRunLog.write(
+                "KINDLE read auto advance stale-after-visible-probe generation=\(session.generation) " +
+                "key=\(Self.keyLog(expectedPageKey))"
+            )
+            return
+        }
+        if let visibleKey = visibleOldKey.nilIfEmpty, visibleKey != expectedPageKey {
+            KindleRunLog.write(
+                "KINDLE read auto advance visible-changed generation=\(session.generation) " +
+                "expected=\(Self.keyLog(expectedPageKey)) visible=\(Self.keyLog(visibleKey))"
+            )
+            scheduleExternalPageChangeResume(
+                visibleKey: visibleKey,
+                oldKey: expectedPageKey,
+                reason: "read-auto-visible-change",
+                force: true
+            )
+            return
+        }
+        let oldKey = visibleOldKey.nilIfEmpty ?? expectedPageKey
+        isAdvancingLivePage = true
         defer { isAdvancingLivePage = false }
 
         statusText = AppLocalized("正在加载下一页 Kindle 页面…")

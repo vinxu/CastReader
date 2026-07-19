@@ -84,6 +84,13 @@ class AudioPlayerService: NSObject, ObservableObject {
         !segmentsQueue.isEmpty
     }
 
+    /// True only when `canStartQueuedSegment` has held a concrete queue item.
+    /// This is narrower than `isBuffering`, which can also describe AVPlayer
+    /// loading and therefore must not be used as a page-boundary ownership flag.
+    var isQueuedSegmentGated: Bool {
+        gatedSegmentIndex != nil
+    }
+
     // MARK: - Initialization
     private override init() {
         super.init()

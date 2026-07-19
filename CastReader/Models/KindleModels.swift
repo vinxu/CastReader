@@ -288,6 +288,112 @@ enum KindleContinuousPageHandoffContract {
     ) -> Bool {
         hasConfirmedVisibleSurface && textFingerprintMatches
     }
+
+    /// A continuous handoff may reuse the shared audio queue, but it must never
+    /// reuse the previous page's ReadAloudViewModel. Kindle OCR paragraph IDs are
+    /// page-local (normally starting at zero), so an ID-only check cannot prove
+    /// that the playback owner belongs to the newly visible page.
+    static func canAdoptPreparedAudio(
+        previousOwnerDocumentID: String?,
+        activeOwnerDocumentID: String?,
+        targetDocumentID: String
+    ) -> Bool {
+        guard !targetDocumentID.isEmpty,
+              let activeOwnerDocumentID,
+              activeOwnerDocumentID == targetDocumentID else { return false }
+        guard let previousOwnerDocumentID else { return true }
+        return activeOwnerDocumentID != previousOwnerDocumentID
+    }
+
+    /// A speculative next-page cache miss is recoverable with fresh audio. If
+    /// the player already reached the held queue item before visual confirmation
+    /// completed, no second gate callback will arrive by itself; commit the
+    /// confirmed surface immediately. When old-page audio is still playing, the
+    /// normal queue boundary remains responsible for starting the commit.
+    static func shouldCommitConfirmedFallbackAtBoundary(
+        hasConfirmedVisibleSurface: Bool,
+        textFingerprintMatches: Bool,
+        isQueuedSegmentGated: Bool
+    ) -> Bool {
+        hasConfirmedVisibleSurface && !textFingerprintMatches && isQueuedSegmentGated
+    }
+}
+
+/// A Kindle page-turn action is non-idempotent: retrying the action after an
+/// observation/cache mismatch skips a page. This contract keeps action dispatch
+/// separate from the retryable work of identifying and staging the new surface.
+enum KindleContinuousVisualTurnContract {
+    static func shouldDispatchSemanticAction(
+        expectedKey: String,
+        visibleKey: String,
+        semanticActionAttempted: Bool,
+        confirmedTargetKey: String?
+    ) -> Bool {
+        let expected = expectedKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let visible = visibleKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let confirmed = confirmedTargetKey?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return !expected.isEmpty && visible != expected &&
+            !semanticActionAttempted && confirmed.isEmpty
+    }
+
+    /// Prefer the surface returned by the semantic action. If confirmation
+    /// failed after dispatch, a visibly changed surface is still recoverable,
+    /// but the action itself must never be sent again.
+    static func stagingTargetKey(
+        oldKey: String,
+        expectedKey: String,
+        visibleKey: String,
+        semanticActionAttempted: Bool,
+        confirmedTargetKey: String?
+    ) -> String? {
+        let old = oldKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let expected = expectedKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let visible = visibleKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let confirmed = confirmedTargetKey?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !confirmed.isEmpty { return confirmed }
+        if !expected.isEmpty, visible == expected { return expected }
+        if semanticActionAttempted, !visible.isEmpty, visible != old { return visible }
+        return nil
+    }
+}
+
+struct KindleReadPageSession: Equatable {
+    let generation: UInt64
+    let documentID: String
+}
+
+/// Page completion is an ownership event, not merely an `isFinished` state.
+/// Only the currently installed ReadAloudViewModel may consume the active page
+/// session, and each generation is consumable exactly once.
+enum KindleReadPageCompletionContract {
+    enum Decision: Equatable {
+        case accept
+        case wrongMode
+        case missingPageKey
+        case staleOwner
+        case staleSession
+        case duplicate
+    }
+
+    static func decision(
+        isReadMode: Bool,
+        ownerMatches: Bool,
+        activeSession: KindleReadPageSession?,
+        eventSession: KindleReadPageSession,
+        consumedGeneration: UInt64?,
+        currentPageKey: String
+    ) -> Decision {
+        guard isReadMode else { return .wrongMode }
+        guard !currentPageKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return .missingPageKey
+        }
+        guard ownerMatches else { return .staleOwner }
+        guard activeSession == eventSession else { return .staleSession }
+        guard consumedGeneration != eventSession.generation else { return .duplicate }
+        return .accept
+    }
 }
 
 enum KindleForwardProgress: Equatable { case forward, backward, unchanged, unverifiable }

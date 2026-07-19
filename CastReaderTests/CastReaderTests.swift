@@ -713,6 +713,152 @@ class CastReaderTests: XCTestCase {
         XCTAssertFalse(KindleWebScripts.pageCaptureBootstrap.contains("toDataURL('image/jpeg', quality)"))
     }
 
+    func testKindleReadPageCompletionHasSingleSessionOwner() {
+        let pageA = KindleReadPageSession(generation: 41, documentID: "doc-a")
+        let pageB = KindleReadPageSession(generation: 42, documentID: "doc-b")
+
+        XCTAssertEqual(
+            KindleReadPageCompletionContract.decision(
+                isReadMode: true,
+                ownerMatches: true,
+                activeSession: pageA,
+                eventSession: pageA,
+                consumedGeneration: nil,
+                currentPageKey: "page-a"
+            ),
+            .accept
+        )
+        XCTAssertEqual(
+            KindleReadPageCompletionContract.decision(
+                isReadMode: true,
+                ownerMatches: true,
+                activeSession: pageA,
+                eventSession: pageA,
+                consumedGeneration: pageA.generation,
+                currentPageKey: "page-a"
+            ),
+            .duplicate,
+            "同一页的第二个完成信号不得再次触发翻页"
+        )
+        XCTAssertEqual(
+            KindleReadPageCompletionContract.decision(
+                isReadMode: true,
+                ownerMatches: false,
+                activeSession: pageB,
+                eventSession: pageA,
+                consumedGeneration: nil,
+                currentPageKey: "page-b"
+            ),
+            .staleOwner,
+            "上一页迟到的 VM 回调不得消费新页"
+        )
+        XCTAssertEqual(
+            KindleReadPageCompletionContract.decision(
+                isReadMode: true,
+                ownerMatches: true,
+                activeSession: pageB,
+                eventSession: pageA,
+                consumedGeneration: nil,
+                currentPageKey: "page-b"
+            ),
+            .staleSession,
+            "即使页内段落 ID 都从零开始，会话代际不同也必须拒绝"
+        )
+    }
+
+    func testKindleContinuousHandoffRequiresFreshTargetDocumentOwner() {
+        XCTAssertTrue(KindleContinuousPageHandoffContract.canAdoptPreparedAudio(
+            previousOwnerDocumentID: "doc-a",
+            activeOwnerDocumentID: "doc-b",
+            targetDocumentID: "doc-b"
+        ))
+        XCTAssertFalse(KindleContinuousPageHandoffContract.canAdoptPreparedAudio(
+            previousOwnerDocumentID: "doc-a",
+            activeOwnerDocumentID: "doc-a",
+            targetDocumentID: "doc-b"
+        ))
+        XCTAssertFalse(KindleContinuousPageHandoffContract.canAdoptPreparedAudio(
+            previousOwnerDocumentID: "doc-a",
+            activeOwnerDocumentID: "doc-c",
+            targetDocumentID: "doc-b"
+        ))
+    }
+
+    func testKindleContinuousFallbackCommitsWhenAudioAlreadyReachedBoundary() {
+        XCTAssertTrue(
+            KindleContinuousPageHandoffContract.shouldCommitConfirmedFallbackAtBoundary(
+                hasConfirmedVisibleSurface: true,
+                textFingerprintMatches: false,
+                isQueuedSegmentGated: true
+            ),
+            "真实页确认晚于音频边界时必须立即接管并生成真实页音频"
+        )
+        XCTAssertFalse(
+            KindleContinuousPageHandoffContract.shouldCommitConfirmedFallbackAtBoundary(
+                hasConfirmedVisibleSurface: true,
+                textFingerprintMatches: false,
+                isQueuedSegmentGated: false
+            ),
+            "旧页仍在播放时不能提前截断，继续等待自然音频边界"
+        )
+        XCTAssertFalse(
+            KindleContinuousPageHandoffContract.shouldCommitConfirmedFallbackAtBoundary(
+                hasConfirmedVisibleSurface: true,
+                textFingerprintMatches: true,
+                isQueuedSegmentGated: true
+            ),
+            "预加载命中时继续使用正常的无缝队列恢复路径"
+        )
+    }
+
+    func testKindleContinuousVisualTurnNeverRetriesSemanticActionAfterMismatch() {
+        let old = "page-10"
+        let speculative = "held-surface-a"
+
+        XCTAssertTrue(KindleContinuousVisualTurnContract.shouldDispatchSemanticAction(
+            expectedKey: speculative,
+            visibleKey: old,
+            semanticActionAttempted: false,
+            confirmedTargetKey: nil
+        ))
+
+        let actual = "page-11"
+        XCTAssertFalse(KindleContinuousVisualTurnContract.shouldDispatchSemanticAction(
+            expectedKey: speculative,
+            visibleKey: actual,
+            semanticActionAttempted: true,
+            confirmedTargetKey: actual
+        ), "预加载 key 与真实下一页不一致时不得重发翻页动作")
+        XCTAssertEqual(
+            KindleContinuousVisualTurnContract.stagingTargetKey(
+                oldKey: old,
+                expectedKey: speculative,
+                visibleKey: actual,
+                semanticActionAttempted: true,
+                confirmedTargetKey: actual
+            ),
+            actual,
+            "翻页成功后应改为接管真实可见页，而不是为了命中猜测缓存继续翻页"
+        )
+
+        XCTAssertFalse(KindleContinuousVisualTurnContract.shouldDispatchSemanticAction(
+            expectedKey: speculative,
+            visibleKey: actual,
+            semanticActionAttempted: true,
+            confirmedTargetKey: nil
+        ), "即使动作确认超时，已尝试过的非幂等动作也不能重发")
+        XCTAssertEqual(
+            KindleContinuousVisualTurnContract.stagingTargetKey(
+                oldKey: old,
+                expectedKey: speculative,
+                visibleKey: actual,
+                semanticActionAttempted: true,
+                confirmedTargetKey: nil
+            ),
+            actual
+        )
+    }
+
     @MainActor
     func testKindleChineseVisionOCRUsesGraphemeGeometry() async throws {
         let size = CGSize(width: 1400, height: 560)
