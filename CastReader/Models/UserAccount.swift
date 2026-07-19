@@ -18,7 +18,7 @@ struct UserAccount: Codable, Equatable {
     var displayName: String {
         if let n = name, !n.isEmpty { return n }
         if let e = email, !e.isEmpty { return e }
-        return String(localized: "已登录")
+        return AppLocalized("已登录")
     }
 
     var initial: String {

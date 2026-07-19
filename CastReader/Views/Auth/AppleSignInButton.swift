@@ -21,7 +21,7 @@ struct AppleSignInButton: View {
             case .success(let authorization):
                 Task {
                     let ok = await AuthService.shared.handleAppleAuthorization(authorization)
-                    await MainActor.run { ok ? onSuccess() : onError(String(localized: "Apple 登录失败")) }
+                    await MainActor.run { ok ? onSuccess() : onError(AppLocalized("Apple 登录失败")) }
                 }
             case .failure(let error):
                 let ns = error as NSError

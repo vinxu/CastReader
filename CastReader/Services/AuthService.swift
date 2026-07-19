@@ -22,11 +22,11 @@ enum AuthError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notConfigured: return String(localized: "尚未配置 Google 登录")
-        case .cancelled: return String(localized: "已取消登录")
-        case .invalidCallback: return String(localized: "登录回调无效")
-        case .tokenExchangeFailed(let m): return String(localized: "登录失败：\(m)")
-        case .invalidIDToken: return String(localized: "无法解析登录信息")
+        case .notConfigured: return AppLocalized("尚未配置 Google 登录")
+        case .cancelled: return AppLocalized("已取消登录")
+        case .invalidCallback: return AppLocalized("登录回调无效")
+        case .tokenExchangeFailed(let m): return AppLocalized("登录失败：\(m)")
+        case .invalidIDToken: return AppLocalized("无法解析登录信息")
         }
     }
 }

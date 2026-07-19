@@ -305,13 +305,23 @@ final class ImageCache {
 
 // MARK: - Cached Async Image
 
+enum CachedAsyncImageLoadContract {
+    static func shouldCommit(
+        activeRequest: String?,
+        completedRequest: String,
+        isCancelled: Bool
+    ) -> Bool {
+        !isCancelled && activeRequest == completedRequest
+    }
+}
+
 struct CachedAsyncImage<Placeholder: View>: View {
     let url: URL?
     let contentMode: ContentMode
     let placeholder: () -> Placeholder
 
     @State private var image: UIImage?
-    @State private var isLoading = false
+    @State private var activeRequest: String?
 
     init(url: URL?, contentMode: ContentMode = .fill, @ViewBuilder placeholder: @escaping () -> Placeholder) {
         self.url = url
@@ -327,46 +337,48 @@ struct CachedAsyncImage<Placeholder: View>: View {
                     .aspectRatio(contentMode: contentMode)
             } else {
                 placeholder()
-                    .onAppear {
-                        loadImage()
-                    }
             }
         }
-        .onChange(of: url) { _ in
+        .task(id: url?.absoluteString) {
+            let requestURL = url
+            let requestKey = requestURL?.absoluteString
+            activeRequest = requestKey
             image = nil
-            loadImage()
+            await loadImage(requestURL, requestKey: requestKey)
         }
     }
 
-    private func loadImage() {
-        guard let url = url else { return }
-        let urlString = url.absoluteString
+    @MainActor
+    private func loadImage(_ requestURL: URL?, requestKey: String?) async {
+        guard let requestURL, let requestKey else { return }
 
         // 先检查缓存（内存 + 磁盘）
-        if let cached = ImageCache.shared.get(urlString) {
-            self.image = cached
+        if let cached = ImageCache.shared.get(requestKey),
+           CachedAsyncImageLoadContract.shouldCommit(
+                activeRequest: activeRequest,
+                completedRequest: requestKey,
+                isCancelled: Task.isCancelled
+           ) {
+            image = cached
             return
         }
 
-        guard !isLoading else { return }
-        isLoading = true
-
-        Task {
-            do {
-                let (data, _) = try await URLSession.shared.data(from: url)
-                if let uiImage = UIImage(data: data) {
-                    // 保存到缓存（内存 + 磁盘）
-                    ImageCache.shared.set(urlString, image: uiImage, data: data)
-                    await MainActor.run {
-                        self.image = uiImage
-                    }
-                }
-            } catch {
-                // 加载失败，保持 placeholder
+        do {
+            let (data, _) = try await URLSession.shared.data(from: requestURL)
+            try Task.checkCancellation()
+            guard let uiImage = UIImage(data: data) else { return }
+            // 还是可以缓存已返回的图片，但只有当它仍是当前请求时才能回写 UI。
+            ImageCache.shared.set(requestKey, image: uiImage, data: data)
+            guard CachedAsyncImageLoadContract.shouldCommit(
+                activeRequest: activeRequest,
+                completedRequest: requestKey,
+                isCancelled: Task.isCancelled
+            ) else {
+                return
             }
-            await MainActor.run {
-                isLoading = false
-            }
+            image = uiImage
+        } catch {
+            // URL 变化会取消旧 task；网络失败则保持当前占位图。
         }
     }
 }

@@ -32,7 +32,7 @@ final class VoiceCloneStore: ObservableObject {
         if let label = labels[voice.voiceId] { return label }
         let order = max(1, voices.sorted { ($0.createdAt ?? "") < ($1.createdAt ?? "") }
             .firstIndex(where: { $0.voiceId == voice.voiceId }).map { $0 + 1 } ?? 1)
-        return String(localized: "我的声音 \(order)")
+        return AppLocalized("我的声音 \(order)")
     }
 
     func referenceLanguage(for voice: ClonedVoice) -> String? {
@@ -167,7 +167,7 @@ final class VoiceCloneStore: ObservableObject {
 
     private func assignLabelIfNeeded(_ voiceId: String) {
         guard labels[voiceId] == nil else { return }
-        labels[voiceId] = String(localized: "我的声音 \(labels.count + 1)")
+        labels[voiceId] = AppLocalized("我的声音 \(labels.count + 1)")
         persistLabels()
     }
 

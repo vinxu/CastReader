@@ -8,6 +8,174 @@
 import Foundation
 import Combine
 
+enum AppLanguage: String, CaseIterable, Identifiable {
+    case system
+    case english = "en"
+    case simplifiedChinese = "zh-Hans"
+    case japanese = "ja"
+    case spanish = "es"
+    case french = "fr"
+    case brazilianPortuguese = "pt-BR"
+    case italian = "it"
+    case hindi = "hi"
+
+    var id: String { rawValue }
+
+    var bundleLocalization: String? {
+        self == .system ? nil : rawValue
+    }
+
+    var locale: Locale {
+        switch self {
+        case .system: return .autoupdatingCurrent
+        case .english: return Locale(identifier: "en_US")
+        case .simplifiedChinese: return Locale(identifier: "zh_CN")
+        case .japanese: return Locale(identifier: "ja_JP")
+        case .spanish: return Locale(identifier: "es_ES")
+        case .french: return Locale(identifier: "fr_FR")
+        case .brazilianPortuguese: return Locale(identifier: "pt_BR")
+        case .italian: return Locale(identifier: "it_IT")
+        case .hindi: return Locale(identifier: "hi_IN")
+        }
+    }
+
+    /// Keep language names self-identifying so users can always recover after
+    /// selecting a language they do not read.
+    var displayName: String {
+        switch self {
+        case .system: return AppLocalized("跟随系统")
+        case .english: return "English"
+        case .simplifiedChinese: return "简体中文"
+        case .japanese: return "日本語"
+        case .spanish: return "Español"
+        case .french: return "Français"
+        case .brazilianPortuguese: return "Português (Brasil)"
+        case .italian: return "Italiano"
+        case .hindi: return "हिन्दी"
+        }
+    }
+}
+
+final class AppLanguageManager: ObservableObject {
+    static let shared = AppLanguageManager()
+
+    @Published private(set) var selectedLanguage: AppLanguage
+    private(set) var localizationBundle: Bundle
+
+    private let defaults: UserDefaults
+    private static let defaultsKey = "interfaceLanguage"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        let restoredLanguage = defaults.string(forKey: Self.defaultsKey)
+            .flatMap(AppLanguage.init(rawValue:)) ?? .system
+        selectedLanguage = restoredLanguage
+        localizationBundle = Self.bundle(for: restoredLanguage)
+    }
+
+    var locale: Locale { selectedLanguage.locale }
+
+    func select(_ language: AppLanguage) {
+        guard selectedLanguage != language else { return }
+        localizationBundle = Self.bundle(for: language)
+        defaults.set(language.rawValue, forKey: Self.defaultsKey)
+        selectedLanguage = language
+    }
+
+    private static func bundle(for language: AppLanguage) -> Bundle {
+        guard let localization = language.bundleLocalization,
+              let path = Bundle.main.path(forResource: localization, ofType: "lproj"),
+              let languageBundle = Bundle(path: path) else {
+            return .main
+        }
+        return languageBundle
+    }
+}
+
+/// Runtime strings must use the selected language bundle explicitly. Foundation
+/// caches localized lookups by bundle identity, so swapping Bundle.main cannot
+/// reliably support multiple consecutive in-app language changes.
+func AppLocalized(_ key: String.LocalizationValue) -> String {
+    let language = AppLanguageManager.shared
+    return String(
+        localized: key,
+        bundle: language.localizationBundle,
+        locale: language.locale
+    )
+}
+
+extension Notification.Name {
+    static let castReaderPlaybackVoiceWillSwitch = Notification.Name("castReaderPlaybackVoiceWillSwitch")
+}
+
+struct VoiceSwitchProgress: Equatable, Identifiable {
+    let id: UUID
+    let language: String
+    let fromVoiceID: String
+    let toVoiceID: String
+    let fromVoiceName: String
+    let toVoiceName: String
+    let startedAt: Date
+
+    var localizedMessage: String {
+        String(
+            format: AppLocalized("正在切换音色：%@ → %@"),
+            fromVoiceName,
+            toVoiceName
+        )
+    }
+}
+
+/// One global, observable transaction for an in-flight playback voice handoff.
+/// The player, Kindle controls and voice browser all observe the same value, so
+/// a selection can never look like a no-op while new audio is being prepared.
+@MainActor
+final class VoiceSwitchStatusCenter: ObservableObject {
+    static let shared = VoiceSwitchStatusCenter()
+
+    @Published private(set) var progress: VoiceSwitchProgress?
+    private let minimumVisibleDuration: TimeInterval = 0.65
+
+    private init() {}
+
+    @discardableResult
+    func begin(language: String, from oldVoiceID: String, to newVoiceID: String) -> UUID {
+        let id = UUID()
+        progress = VoiceSwitchProgress(
+            id: id,
+            language: VoiceCatalog.normalizedLanguage(language),
+            fromVoiceID: oldVoiceID,
+            toVoiceID: newVoiceID,
+            fromVoiceName: Self.displayName(for: oldVoiceID),
+            toVoiceName: Self.displayName(for: newVoiceID),
+            startedAt: Date()
+        )
+        return id
+    }
+
+    func finish(_ id: UUID) {
+        guard let current = progress, current.id == id else { return }
+        let delay = max(0, minimumVisibleDuration - Date().timeIntervalSince(current.startedAt))
+        guard delay > 0.01 else {
+            progress = nil
+            return
+        }
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard self?.progress?.id == id else { return }
+            self?.progress = nil
+        }
+    }
+
+    private static func displayName(for voiceID: String) -> String {
+        if let option = VoiceCatalog.option(for: voiceID) { return option.name }
+        if let clone = VoiceCloneStore.shared.voices.first(where: { $0.voiceId == voiceID }) {
+            return VoiceCloneStore.shared.displayName(for: clone)
+        }
+        return voiceID
+    }
+}
+
 final class AppSettings: ObservableObject {
     static let shared = AppSettings()
 
@@ -58,7 +226,10 @@ final class AppSettings: ObservableObject {
         d.set(storedClones, forKey: K.clonedVoicesByLanguage)
         d.removeObject(forKey: K.activeClonedVoice)
         speed = d.object(forKey: K.speed) as? Double ?? 1.0
-        explainLanguage = d.string(forKey: K.explainLang) ?? ""
+        let storedExplainLanguage = d.string(forKey: K.explainLang) ?? ""
+        explainLanguage = storedExplainLanguage.isEmpty
+            ? ""
+            : (SupportedTTSLanguage(identifier: storedExplainLanguage)?.rawValue ?? "")
         explainDepth = d.string(forKey: K.explainDepth) ?? QuickreadDepth.standard.rawValue
         highlightColorHex = d.string(forKey: K.highlightColor) ?? "#FD5F01"
         autoScroll = d.object(forKey: K.autoScroll) as? Bool ?? true

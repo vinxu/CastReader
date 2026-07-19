@@ -31,9 +31,8 @@ final class CaptureFlowViewModel: ObservableObject {
         error = nil
     }
 
-    /// 同时识别中英（Vision 支持多语言列表）。中文在前——Vision 按顺序作识别偏好，
-    /// 中文为主的截图/文档若英文在前会偏向英文模型、漏识别中文行，导致语言误判为英文。
+    /// OCR 候选语言与 TTS 八语目录共用同一来源；Vision 实际不支持的 locale 会在 OCRService 过滤。
     static func visionLanguages() -> [String] {
-        ["zh-Hans", "en-US"]
+        SupportedTTSLanguage.allCases.map(\.visionRecognitionLanguage)
     }
 }

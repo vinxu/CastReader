@@ -130,7 +130,10 @@ private struct KindlePageCanvas: View {
         if mode == .read {
             if page.paragraphIDs.contains(readVM.currentParagraphIndex),
                let wi = readVM.photoHighlightWordIndex {
-                let rects = resolver.rectsForWord(paragraphIndex: readVM.currentParagraphIndex, wordIndex: wi)
+                let indexes = readVM.photoHighlightWordRange ?? wi..<(wi + 1)
+                let rects = indexes.flatMap {
+                    resolver.rectsForWord(paragraphIndex: readVM.currentParagraphIndex, wordIndex: $0)
+                }
                 ForEach(Array(rects.enumerated()), id: \.offset) { _, rect in
                     RoundedRectangle(cornerRadius: 3)
                         .fill(Color(readVM.highlightUIColor).opacity(0.38))

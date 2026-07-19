@@ -24,7 +24,7 @@ final class KindleLibraryRecoveryService {
         defer { isRecovering = false }
 
         do {
-            onProgress(String(localized: "正在打开 Kindle 书架…"))
+            onProgress(AppLocalized("正在打开 Kindle 书架…"))
             webView.load(URLRequest(url: KindleWebScripts.libraryURL, cachePolicy: .reloadIgnoringLocalCacheData))
             for _ in 0..<40 {
                 try Task.checkCancellation()
@@ -38,7 +38,7 @@ final class KindleLibraryRecoveryService {
             var recoveredBooks: [KindleBook] = []
             var authRequired = false
             var initialPayload: RecoveryPayload?
-            onProgress(String(localized: "正在等待 Kindle 书架加载…"))
+            onProgress(AppLocalized("正在等待 Kindle 书架加载…"))
             for readinessAttempt in 0..<24 {
                 let payload = try await scrape(webView)
                 let rowCount = payload.books?.count ?? 0
@@ -51,7 +51,7 @@ final class KindleLibraryRecoveryService {
             }
 
             var idlePasses = 0
-            onProgress(String(localized: "正在同步 Kindle 书架…"))
+            onProgress(AppLocalized("正在同步 Kindle 书架…"))
             for pass in 0..<12 {
                 let before = Set(recoveredBooks.map(\.id)).count
                 let payload: RecoveryPayload
@@ -81,7 +81,7 @@ final class KindleLibraryRecoveryService {
             // error cannot recover in-place, even after a real shelf click. The
             // caller must recreate the reader WKWebView after this shelf sync,
             // matching the proven manual flow: sync shelf -> exit -> reopen book.
-            onProgress(String(localized: "正在重新打开书籍…"))
+            onProgress(AppLocalized("正在重新打开书籍…"))
             KindleRunLog.write("KINDLE library auto-recovery synchronized book=\(Self.logKey(latest.id)) fresh-reader=required")
             return .recovered(latest)
         } catch {
@@ -101,7 +101,7 @@ final class KindleLibraryRecoveryService {
             data = try JSONSerialization.data(withJSONObject: value)
         } else {
             throw NSError(domain: "KindleLibraryRecovery", code: -2, userInfo: [
-                NSLocalizedDescriptionKey: String(localized: "Kindle 书架响应异常。")
+                NSLocalizedDescriptionKey: AppLocalized("Kindle 书架响应异常。")
             ])
         }
         guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
@@ -116,7 +116,9 @@ final class KindleLibraryRecoveryService {
                 author: Self.string(row["author"]),
                 coverURL: Self.string(row["coverURL"] ?? row["cover_url"]),
                 readerURL: Self.string(row["readerURL"] ?? row["reader_url"]),
-                progressLabel: Self.string(row["progressLabel"] ?? row["progress_label"])
+                progressLabel: Self.string(row["progressLabel"] ?? row["progress_label"]),
+                language: Self.string(row["language"]),
+                languageSource: Self.string(row["languageSource"] ?? row["language_source"])
             )
         }
         return RecoveryPayload(
@@ -418,6 +420,8 @@ private struct RecoveryScrapedBook {
     let coverURL: String?
     let readerURL: String?
     let progressLabel: String?
+    let language: String?
+    let languageSource: String?
 
     var book: KindleBook? {
         let resolvedID = id?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -426,7 +430,8 @@ private struct RecoveryScrapedBook {
         guard !resolvedID.isEmpty, !resolvedTitle.isEmpty, !resolvedURL.isEmpty else { return nil }
         return KindleBook(
             id: resolvedID, asin: asin, title: resolvedTitle, author: author ?? "", coverURL: coverURL,
-            readerURL: resolvedURL, progressLabel: progressLabel ?? "", lastOpenedAt: nil,
+            readerURL: resolvedURL, progressLabel: progressLabel ?? "", language: language,
+            languageSource: languageSource, lastOpenedAt: nil,
             lastSyncedAt: Date(), lastReadPageKey: nil, lastReadURL: nil
         )
     }

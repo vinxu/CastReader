@@ -80,7 +80,7 @@ final class HistoryStore: ObservableObject {
         let now = Date()
         let existing = records.first(where: { $0.id == doc.id })
         let createdAt = existing?.createdAt ?? now
-        var rec = HistoryRecord(id: doc.id, title: doc.title.isEmpty ? String(localized: "未命名") : doc.title,
+        var rec = HistoryRecord(id: doc.id, title: doc.title.isEmpty ? AppLocalized("未命名") : doc.title,
                                 sourceKindRaw: doc.sourceKind.rawValue, sourceURL: doc.sourceURL,
                                 language: doc.language, createdAt: createdAt, lastOpenedAt: now)
         rec.coverPath = existing?.coverPath   // 沿用已生成的封面/标题，避免重复抓取
@@ -107,7 +107,7 @@ final class HistoryStore: ObservableObject {
         let existing = records.first(where: { $0.id == book.id })
         var rec = HistoryRecord(
             id: book.id,
-            title: book.title.isEmpty ? String(localized: "Kindle Book") : book.title,
+            title: book.title.isEmpty ? AppLocalized("Kindle Book") : book.title,
             sourceKindRaw: ReadingSourceKind.kindle.rawValue,
             sourceURL: book.effectiveReaderURL,
             language: language,

@@ -1,72 +1,222 @@
 {
-  "sourceLanguage" : "zh-Hans",
-  "strings" : {
-    "CFBundleName" : {
-      "comment" : "Bundle name",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CastReader"
+  "sourceLanguage": "zh-Hans",
+  "strings": {
+    "CFBundleName": {
+      "comment": "Bundle name",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "CastReader"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "new",
+            "value": "CastReader"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader"
           }
         }
       }
     },
-    "NSCameraUsageDescription" : {
-      "comment" : "Privacy - Camera Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Capture text from books, documents, or screens. CastReader recognizes it on your device, then reads it aloud with synchronized highlighting or generates an AI explanation with handwritten-style notes. Photos are recognized on-device and are not uploaded."
+    "NSCameraUsageDescription": {
+      "comment": "Privacy - Camera Usage Description",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture text from books, documents, or screens. CastReader recognizes it on your device, then reads it aloud with synchronized highlighting or generates an AI explanation with handwritten-style notes. Photos are processed on-device and are not uploaded."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "拍下书本、文档或屏幕上的文字，CastReader 在本机识别后即可为你朗读（边读边高亮跟随），或生成 AI 讲解并在原文上做手写标注。照片仅在设备上识别，不会上传。"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拍下书本、文档或屏幕上的文字，CastReader 在本机识别后即可为你朗读（边读边高亮跟随），或生成 AI 讲解并在原文上做手写标注。照片仅在设备上识别，不会上传。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本や書類、画面の文字を撮影します。CastReaderは端末上で文字を認識し、同期ハイライト付きで読み上げたり、手書き風の注釈を付けたAI解説を生成したりします。写真は端末内でのみ処理され、アップロードされません。"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captura texto de libros, documentos o pantallas. CastReader lo reconoce en el dispositivo y después lo lee en voz alta con resaltado sincronizado o genera una explicación con IA y anotaciones manuscritas. Las fotos se procesan en el dispositivo y no se suben."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photographiez du texte dans des livres, des documents ou sur des écrans. CastReader le reconnaît sur votre appareil, puis le lit à voix haute avec un surlignage synchronisé ou génère une explication par IA accompagnée d’annotations manuscrites. Les photos sont traitées sur l’appareil et ne sont pas importées."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture textos de livros, documentos ou telas. O CastReader reconhece o conteúdo no dispositivo e depois o lê em voz alta com destaque sincronizado ou gera uma explicação por IA com anotações manuscritas. As fotos são processadas no dispositivo e não são enviadas."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acquisisci testo da libri, documenti o schermi. CastReader lo riconosce sul dispositivo, quindi lo legge ad alta voce con evidenziazione sincronizzata oppure genera una spiegazione tramite IA con annotazioni manoscritte. Le foto vengono elaborate sul dispositivo e non vengono caricate."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "किताबों, दस्तावेज़ों या स्क्रीन से टेक्स्ट कैप्चर करें। CastReader इसे आपके डिवाइस पर पहचानकर सिंक्रोनाइज़्ड हाइलाइटिंग के साथ पढ़ता है या हस्तलिखित नोट्स वाली AI व्याख्या बनाता है। फ़ोटो केवल डिवाइस पर प्रोसेस की जाती हैं और अपलोड नहीं होतीं।"
           }
         }
       }
     },
-    "NSMicrophoneUsageDescription" : {
-      "comment" : "Privacy - Microphone Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Record a short sample to create your personal voice."
+    "NSMicrophoneUsageDescription": {
+      "comment": "Privacy - Microphone Usage Description",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "录制一段简短样本，用于创建你的个人声音。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "短い音声サンプルを録音して、自分の声を作成します。"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Graba una muestra breve para crear tu voz personal."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrez un court extrait pour créer votre voix personnelle."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grave uma breve amostra para criar sua voz pessoal."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registra un breve campione per creare la tua voce personale."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अपनी व्यक्तिगत आवाज़ बनाने के लिए एक छोटा नमूना रिकॉर्ड करें।"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record a short sample to create your personal voice."
           }
         }
       }
     },
-    "NSPhotoLibraryUsageDescription" : {
-      "comment" : "Privacy - Photo Library Usage Description",
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose photos that contain text. CastReader recognizes them on your device, then reads them aloud with synchronized highlighting or generates an AI explanation with handwritten-style notes. Photos are recognized on-device and are not uploaded."
+    "NSPhotoLibraryUsageDescription": {
+      "comment": "Privacy - Photo Library Usage Description",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose photos that contain text. CastReader recognizes the text on your device, then reads it aloud with synchronized highlighting or generates an AI explanation with handwritten-style notes. Photos are processed on-device and are not uploaded."
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "从相册选取含文字的图片，CastReader 在本机识别后即可为你朗读，或生成 AI 讲解并在原文上做手写标注。图片仅在设备上识别，不会上传。"
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从相册选取含文字的图片，CastReader 在本机识别后即可为你朗读，或生成 AI 讲解并在原文上做手写标注。图片仅在设备上识别，不会上传。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文字を含む写真を選択します。CastReaderは端末上で文字を認識し、同期ハイライト付きで読み上げたり、手書き風の注釈を付けたAI解説を生成したりします。写真は端末内でのみ処理され、アップロードされません。"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selecciona fotos que contengan texto. CastReader lo reconoce en el dispositivo y después lo lee en voz alta con resaltado sincronizado o genera una explicación con IA y anotaciones manuscritas. Las fotos se procesan en el dispositivo y no se suben."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sélectionnez des photos contenant du texte. CastReader le reconnaît sur votre appareil, puis le lit à voix haute avec un surlignage synchronisé ou génère une explication par IA accompagnée d’annotations manuscrites. Les photos sont traitées sur l’appareil et ne sont pas importées."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selecione fotos que contenham texto. O CastReader reconhece o conteúdo no dispositivo e depois o lê em voz alta com destaque sincronizado ou gera uma explicação por IA com anotações manuscritas. As fotos são processadas no dispositivo e não são enviadas."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scegli foto che contengono testo. CastReader lo riconosce sul dispositivo, quindi lo legge ad alta voce con evidenziazione sincronizzata oppure genera una spiegazione tramite IA con annotazioni manoscritte. Le foto vengono elaborate sul dispositivo e non vengono caricate."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "टेक्स्ट वाली फ़ोटो चुनें। CastReader टेक्स्ट को आपके डिवाइस पर पहचानकर सिंक्रोनाइज़्ड हाइलाइटिंग के साथ पढ़ता है या हस्तलिखित नोट्स वाली AI व्याख्या बनाता है। फ़ोटो केवल डिवाइस पर प्रोसेस की जाती हैं और अपलोड नहीं होतीं।"
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

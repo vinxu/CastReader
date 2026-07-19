@@ -17,6 +17,10 @@ struct ExplainControlBar: View {
             HStack(spacing: 14) {
                 controlContent
                 Spacer(minLength: 0)
+                PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
+                if showsSpeedControl {
+                    SpeedMenu()
+                }
             }
         }
         .foregroundColor(AppTheme.foreground)
@@ -47,15 +51,15 @@ struct ExplainControlBar: View {
     private var controlContent: some View {
         switch vm.status {
         case .idle:
-            startButton(title: String(localized: "开始解读"), icon: "sparkles")
+            startButton(title: AppLocalized("开始解读"), icon: "sparkles")
         case .error(let msg):
             VStack(alignment: .leading, spacing: 4) {
-                startButton(title: String(localized: "重试解读"), icon: "arrow.clockwise")
+                startButton(title: AppLocalized("重试解读"), icon: "arrow.clockwise")
                 Text(msg).font(.caption2).foregroundColor(AppTheme.destructive).lineLimit(1)
             }
         case .planning:
             ProgressView()
-            Text(vm.stageText.isEmpty ? String(localized: "通读全文…") : vm.stageText)
+            Text(vm.stageText.isEmpty ? AppLocalized("通读全文…") : vm.stageText)
                 .font(.subheadline)
                 .foregroundColor(AppTheme.mutedForeground)
         case .streaming(let block, let total):
@@ -77,18 +81,24 @@ struct ExplainControlBar: View {
                 Text("讲解中 · 第 \(block + 1)/\(total) 段")
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
-                Spacer(minLength: 8)
-                SpeedMenu()
             }
         case .completed:
             Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
             Text("解读完成").font(.subheadline.weight(.semibold))
-            Spacer()
             Button { vm.replay() } label: {
                 Label("重播", systemImage: "arrow.clockwise")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.primary)
             }
+        }
+    }
+
+    private var showsSpeedControl: Bool {
+        switch vm.status {
+        case .streaming, .completed:
+            return true
+        case .idle, .error, .planning:
+            return false
         }
     }
 

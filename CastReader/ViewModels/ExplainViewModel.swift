@@ -57,6 +57,7 @@ final class ExplainViewModel: ObservableObject {
     @Published var isPlaying: Bool = false
     @Published var scrollTarget: Int = -1         // 跟随讲解滚动到的段落（mark 命中时更新）
     @Published var isPreparingNext: Bool = false  // 块间等待下一段处理 → 控制条显示 loading，避免被误以为卡住
+    @Published private(set) var playbackLanguage: String
 
     /// segment 的有效时长：云端 TTS 的 API duration 常为 0，用最后一个时间戳的 endTime 兜底。
     private func effectiveDuration(_ seg: AudioSegment) -> Double {
@@ -88,8 +89,11 @@ final class ExplainViewModel: ObservableObject {
 
     private var jobId: String = ""
     private var totalBlocks: Int = 0
-    private var outputLanguage: String = "en"
+    private var outputLanguage: String
     private var section0: QuickreadSection?
+    private var playbackVoiceID: String
+    private var activeVoiceSwitchID: UUID?
+    private var voiceSwitchTask: Task<Void, Never>?
 
     private var prepared: [Int: PreparedBlock] = [:]
     private var preparingBlocks = Set<Int>()
@@ -139,7 +143,25 @@ final class ExplainViewModel: ObservableObject {
     init(document: ReadingDocument, analyticsContext: AnalyticsContentContext? = nil) {
         self.document = document
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
+        let initialLanguage = VoiceCatalog.normalizedLanguage(
+            AppSettings.shared.explainLangOrNil ?? document.language
+        )
+        self.outputLanguage = initialLanguage
+        self.playbackLanguage = initialLanguage
+        self.playbackVoiceID = AppSettings.shared.voice(for: initialLanguage)
         bind()
+    }
+
+    /// Explain speaks the generated narration, so its voice follows the
+    /// requested output language rather than the source document language.
+    var hasStartedPlayback: Bool {
+        if currentBlockIndex >= 0 { return true }
+        switch status {
+        case .planning, .streaming, .completed:
+            return true
+        case .idle, .error:
+            return false
+        }
     }
 
     func configurePlaybackMetadata(id: String, title: String, coverURL: String?, chapterTitle: String? = nil) {
@@ -153,12 +175,15 @@ final class ExplainViewModel: ObservableObject {
         audio.setBook(
             id: playbackBookID ?? document.id,
             title: playbackTitle ?? document.title,
-            chapterTitle: playbackChapterTitle ?? String(localized: "解读"),
+            chapterTitle: playbackChapterTitle ?? AppLocalized("解读"),
             coverUrl: playbackCoverURL
         )
     }
 
-    deinit { orchestrationTask?.cancel() }
+    deinit {
+        orchestrationTask?.cancel()
+        voiceSwitchTask?.cancel()
+    }
 
     private func bind() {
         audio.$currentTime
@@ -173,6 +198,17 @@ final class ExplainViewModel: ObservableObject {
         settings.$speed
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applySpeed() }
+            .store(in: &cancellables)
+        settings.$voicesByLanguage
+            .combineLatest(settings.$clonedVoicesByLanguage)
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.handleVoicePreferenceChanged() }
+            .store(in: &cancellables)
+        settings.$explainLanguage
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.refreshIdlePlaybackLanguage() }
             .store(in: &cancellables)
         pro.$storeKitLocalPro
             .combineLatest(pro.$serverPro)
@@ -192,6 +228,218 @@ final class ExplainViewModel: ObservableObject {
         audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: pro.isPro)))
     }
 
+    private func setOutputLanguage(_ language: String) {
+        let normalized = VoiceCatalog.normalizedLanguage(language)
+        guard !normalized.isEmpty else { return }
+        outputLanguage = normalized
+        playbackLanguage = normalized
+        playbackVoiceID = settings.voice(for: normalized)
+    }
+
+    private func refreshIdlePlaybackLanguage() {
+        guard currentBlockIndex < 0, !isActive else { return }
+        setOutputLanguage(settings.explainLangOrNil ?? doc.language)
+    }
+
+    private func handleVoicePreferenceChanged() {
+        let newVoiceID = settings.voice(for: playbackLanguage)
+        guard newVoiceID != playbackVoiceID else { return }
+        let oldVoiceID = playbackVoiceID
+        playbackVoiceID = newVoiceID
+
+        guard isActive,
+              currentBlockIndex >= 0,
+              let original = prepared[currentBlockIndex] else { return }
+
+        let blockIndex = currentBlockIndex
+        let shouldAutoPlay = audio.isPlaying
+        let previewHadSuspendedPlayback = VoicePreviewPlaybackCoordinator.shared.cancelForVoiceSwitch()
+        VoiceSamplePlayer.shared.stop(resumeSuspendedPlayback: false)
+        VoiceClonePreviewPlayer.shared.stop(resumeSuspendedPlayback: false)
+        let resumeAfterSwitch = shouldAutoPlay || previewHadSuspendedPlayback
+
+        voiceSwitchTask?.cancel()
+        if let oldSwitchID = activeVoiceSwitchID {
+            VoiceSwitchStatusCenter.shared.finish(oldSwitchID)
+        }
+        NotificationCenter.default.post(
+            name: .castReaderPlaybackVoiceWillSwitch,
+            object: self,
+            userInfo: [
+                "language": playbackLanguage,
+                "fromVoiceID": oldVoiceID,
+                "toVoiceID": newVoiceID,
+            ]
+        )
+        let switchID = VoiceSwitchStatusCenter.shared.begin(
+            language: playbackLanguage,
+            from: oldVoiceID,
+            to: newVoiceID
+        )
+        activeVoiceSwitchID = switchID
+
+        // Stop voice A immediately. The narration text/marks remain cached;
+        // only the current block audio and its timing are regenerated.
+        audio.pause()
+        audio.clearQueue()
+        audio.moreSegmentsExpected = true
+        isPreparingNext = true
+
+        voiceSwitchTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let rebuilt = try await self.revoicePreparedBlock(
+                    original,
+                    blockIndex: blockIndex,
+                    language: self.playbackLanguage,
+                    voiceID: newVoiceID
+                )
+                try Task.checkCancellation()
+                guard self.activeVoiceSwitchID == switchID,
+                      self.currentBlockIndex == blockIndex,
+                      self.isActive else { return }
+                self.installVoiceSwitchedBlock(
+                    rebuilt,
+                    replacing: original,
+                    blockIndex: blockIndex,
+                    autoPlay: resumeAfterSwitch
+                )
+                VoiceSwitchStatusCenter.shared.finish(switchID)
+                self.activeVoiceSwitchID = nil
+            } catch is CancellationError {
+                guard self.activeVoiceSwitchID == switchID else { return }
+                self.audio.moreSegmentsExpected = false
+                self.isPreparingNext = false
+                VoiceSwitchStatusCenter.shared.finish(switchID)
+                self.activeVoiceSwitchID = nil
+            } catch {
+                guard self.activeVoiceSwitchID == switchID else { return }
+                // A network failure must not strand the player. Restore the
+                // cached old block and preserve whether the user was playing.
+                self.installVoiceSwitchedBlock(
+                    original,
+                    replacing: original,
+                    blockIndex: blockIndex,
+                    autoPlay: resumeAfterSwitch
+                )
+                VoiceSwitchStatusCenter.shared.finish(switchID)
+                self.activeVoiceSwitchID = nil
+                self.debugLog("explain voice switch failed block=%d error=%@", blockIndex, error.localizedDescription)
+            }
+        }
+    }
+
+    private func revoicePreparedBlock(
+        _ original: PreparedBlock,
+        blockIndex: Int,
+        language: String,
+        voiceID: String
+    ) async throws -> PreparedBlock {
+        let segments = try await TTSService.shared.generatePrefetchSegments(
+            paragraphIndex: blockIndex,
+            text: original.text,
+            voice: voiceID,
+            speed: 1.0,
+            language: language
+        )
+        guard !segments.isEmpty else { throw QuickReadError.noBlock0 }
+
+        var timeline: [ComposeTimestamp] = []
+        var duration = 0.0
+        for segment in segments {
+            let timestamps = segment.timestamps.isEmpty
+                ? TTSService.shared.synthesizeTimestamps(
+                    text: segment.text,
+                    duration: effectiveDuration(segment)
+                )
+                : segment.timestamps
+            for timestamp in timestamps {
+                timeline.append(ComposeTimestamp(
+                    word: timestamp.word,
+                    start: timestamp.startTime + duration,
+                    end: timestamp.endTime + duration
+                ))
+            }
+            duration += effectiveDuration(segment)
+        }
+
+        let qualityBlockIndex = blockIndex - idxBase
+        let recomposed: [QuickreadEvent]?
+        if !jobId.isEmpty,
+           qualityBlockIndex >= 0,
+           let composed = try? await QuickReadService.shared.composeBlock(
+                jobId: jobId,
+                blockIdx: qualityBlockIndex,
+                timestamps: timeline,
+                duration: duration
+           ) {
+            recomposed = composed.events
+        } else {
+            recomposed = nil
+        }
+        let oldDuration = original.segments.reduce(0) { $0 + effectiveDuration($1) }
+        let marks = recomposed.map { ensureTiming($0, duration: duration) }
+            ?? retimeEvents(original.marks, from: oldDuration, to: duration)
+        return PreparedBlock(
+            segments: segments,
+            marks: marks,
+            text: original.text,
+            sentences: Self.splitSentences(original.text)
+        )
+    }
+
+    private func retimeEvents(
+        _ events: [QuickreadEvent],
+        from oldDuration: Double,
+        to newDuration: Double
+    ) -> [QuickreadEvent] {
+        guard oldDuration > 0.01, newDuration > 0.01 else {
+            return ensureTiming(events, duration: newDuration)
+        }
+        let scale = newDuration / oldDuration
+        let scaled = events.map { event -> QuickreadEvent in
+            var value = event
+            if let at = value.at {
+                value.at = min(newDuration, max(0, at * scale))
+            }
+            return value
+        }
+        return ensureTiming(scaled, duration: newDuration)
+    }
+
+    private func installVoiceSwitchedBlock(
+        _ block: PreparedBlock,
+        replacing original: PreparedBlock,
+        blockIndex: Int,
+        autoPlay: Bool
+    ) {
+        prepared[blockIndex] = block
+        if let replayIndex = replayBlocks.lastIndex(where: { $0.text == original.text }) {
+            replayBlocks[replayIndex] = block
+        }
+        marksByBlock[blockIndex] = block.marks
+        currentBlockIndex = blockIndex
+        explanationText = block.sentences.first ?? block.text
+        updateNowPlayingCaption(explanationText)
+        status = .streaming(block: blockIndex, total: totalBlocks)
+        isPreparingNext = false
+        audio.clearQueue()
+        audio.moreSegmentsExpected = true
+        for segment in block.segments {
+            audio.loadSegment(segment, autoPlay: autoPlay)
+        }
+        audio.moreSegmentsExpected = false
+    }
+
+    private func finishVoiceSwitchIfNeeded() {
+        voiceSwitchTask?.cancel()
+        voiceSwitchTask = nil
+        if let switchID = activeVoiceSwitchID {
+            VoiceSwitchStatusCenter.shared.finish(switchID)
+            activeVoiceSwitchID = nil
+        }
+    }
+
     func activate() {
         isActive = true
         audio.onPlaybackComplete = { [weak self] in self?.onBlockComplete() }
@@ -207,6 +455,7 @@ final class ExplainViewModel: ObservableObject {
         audio.pause()
         audio.setNowPlayingCaption(nil)
         lastNowPlayingCaption = nil
+        finishVoiceSwitchIfNeeded()
     }
 
     // MARK: - Start
@@ -220,7 +469,7 @@ final class ExplainViewModel: ObservableObject {
         // 提交 LLM 前预校验：内容太短，LLM 没东西可讲 → 直接引导朗读，不发请求白等重试、也不消耗额度（而非无脑提交）。
         let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
         if contentChars < minExplainChars {
-            status = .error(String(localized: "内容太短，无法解读，试试朗读"))
+            status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
             return
         }
         guard pro.isPro || quota.canStartExplain(isPro: pro.isPro) else {
@@ -232,6 +481,7 @@ final class ExplainViewModel: ObservableObject {
             return
         }
         beginAnalyticsExplainSession()
+        setOutputLanguage(settings.explainLangOrNil ?? doc.language)
         quota.noteExplainStarted(isPro: pro.isPro)
         activate()
         activeMarks = []           // 开始新解读：清上一轮残留 mark（对齐 Android startExplain；之后跨批累积不再清）
@@ -245,7 +495,7 @@ final class ExplainViewModel: ObservableObject {
         applyPlaybackMetadata()
         applySpeed()
         status = .planning
-        stageText = String(localized: "通读全文…")
+        stageText = AppLocalized("通读全文…")
 
         // 快道（Fast-Lane）：text/web/EPUB 整页长文 → 先一次轻量 LLM 直出 block_0 秒开，质道吃剩余段顺延 block_1+。
         // 快道先 LLM+TTS 决定 idxBase/scope 再启动质道（失败则质道吃全量、绝不漏开头）。门控不过 → 原单路质道。
@@ -265,7 +515,7 @@ final class ExplainViewModel: ObservableObject {
         guard status == .idle || isErrorState else { return }
         let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
         if contentChars < minExplainChars {
-            status = .error(String(localized: "内容太短，无法解读，试试朗读"))
+            status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
             return
         }
         guard pro.isPro || quota.canStartExplain(isPro: pro.isPro) else {
@@ -298,14 +548,14 @@ final class ExplainViewModel: ObservableObject {
         }
         jobId = prefetched.jobId
         totalBlocks = max(1, prefetched.totalBlocks)
-        outputLanguage = prefetched.outputLanguage
+        setOutputLanguage(prefetched.outputLanguage)
         section0 = prefetched.section0
         currentBlockIndex = -1
         scrollTarget = -1
         applyPlaybackMetadata()
         applySpeed()
         status = .planning
-        stageText = String(localized: "继续讲解…")
+        stageText = AppLocalized("继续讲解…")
         debugLog("prefetched start job=%@ total=%d lang=%@ fp=%@",
                  prefetched.jobId, prefetched.totalBlocks, prefetched.outputLanguage,
                  String(prefetched.textFingerprint.prefix(24)))
@@ -317,7 +567,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     private func refreshAccessThenRetryStart(prefetched: PrefetchedFirstBlock? = nil) {
-        stageText = String(localized: "正在同步会员状态…")
+        stageText = AppLocalized("正在同步会员状态…")
         Task { [weak self] in
             await ProManager.shared.refresh()
             await MainActor.run {
@@ -425,6 +675,7 @@ final class ExplainViewModel: ObservableObject {
     func stop() {
         orchestrationTask?.cancel()
         fastTask?.cancel()
+        finishVoiceSwitchIfNeeded()
         Task { await TTSService.shared.cancelCurrentRequest() }
         audio.clearBook()
         clearPagePrefetch()
@@ -624,11 +875,11 @@ final class ExplainViewModel: ObservableObject {
                 // server entitlement 超限 → 付费墙（对齐扩展：免费额度用满当付费墙，不当普通错误）
                 if case QuickReadError.httpError(402) = error {
                     if self.pro.needsEmailSync {
-                        self.status = .error(String(localized: AuthService.shared.hasEmailAccount ? "本机已解锁；跨平台同步等待 Apple 验证接口。" : "已检测到购买，请登录邮箱同步 Pro"))
-                        self.stageText = String(localized: "解读失败")
+                        self.status = .error(AppLocalized(AuthService.shared.hasEmailAccount ? "本机已解锁；跨平台同步等待 Apple 验证接口。" : "已检测到购买，请登录邮箱同步 Pro"))
+                        self.stageText = AppLocalized("解读失败")
                     } else if self.pro.isPro {
-                        self.status = .error(String(localized: "解读服务暂未识别 Pro 会员，请稍后重试"))
-                        self.stageText = String(localized: "解读失败")
+                        self.status = .error(AppLocalized("解读服务暂未识别 Pro 会员，请稍后重试"))
+                        self.stageText = AppLocalized("解读失败")
                     } else {
                         self.showPaywall = true
                         self.status = .idle
@@ -642,8 +893,8 @@ final class ExplainViewModel: ObservableObject {
                     )
                 } else if case QuickReadError.httpError(400) = error {
                     // 重试 3 次仍 400：多为内容太短/不适合解读，给可读提示而非裸 HTTP 码
-                    self.status = .error(String(localized: "内容太短或暂不支持解读，请稍后重试"))
-                    self.stageText = String(localized: "解读失败")
+                    self.status = .error(AppLocalized("内容太短或暂不支持解读，请稍后重试"))
+                    self.stageText = AppLocalized("解读失败")
                     self.endAnalyticsExplainSession(
                         result: .failed,
                         reason: "plan_failed",
@@ -652,7 +903,7 @@ final class ExplainViewModel: ObservableObject {
                     )
                 } else {
                     self.status = .error(error.localizedDescription)
-                    self.stageText = String(localized: "解读失败")
+                    self.stageText = AppLocalized("解读失败")
                     self.endAnalyticsExplainSession(
                         result: .failed,
                         reason: "plan_failed",
@@ -670,7 +921,7 @@ final class ExplainViewModel: ObservableObject {
         totalBlocks = idxBase + max(1, plan.total_blocks)   // 快道占 idxBase 块 + 质道块
         // 快道激活（forcedExplainLang != nil）时它优先：block_0 已用此语言朗读，质道必须跟随，不能被
         // plan.output_language 盖过（否则质道与快道开头语言/音色不一致）。非快道时才用 plan 返回的语言。
-        outputLanguage = forcedExplainLang ?? plan.output_language ?? settings.explainLangOrNil ?? doc.language
+        setOutputLanguage(forcedExplainLang ?? plan.output_language ?? settings.explainLangOrNil ?? doc.language)
         section0 = plan.block_0                              // 质道首块 = iOS block_idxBase
         let scoped = pdfScopedParagraphs ?? doc.paragraphs   // 实际传后端的范围（PDF 逐批时是当前批，非整本）
         debugLog("explain PLAN total_blocks=%d idxBase=%d batchParas=%d batchChars=%d depth=%@ block0Events=%d",
@@ -954,11 +1205,11 @@ final class ExplainViewModel: ObservableObject {
             prefetchedBatch = nil
             jobId = pf.jobId
             totalBlocks = pf.totalBlocks
-            outputLanguage = pf.outputLanguage
+            setOutputLanguage(pf.outputLanguage)
             section0 = pf.section0       // prepareBlock(0) 直接用、跳过 extract-block
             batchPrevSummary = pf.prevSummary ?? batchPrevSummary
             isPreparingNext = true
-            stageText = String(localized: "继续讲解…")
+            stageText = AppLocalized("继续讲解…")
             status = .planning
             if let pb0 = pf.preparedBlock0 {
                 isPreparingNext = false
@@ -980,7 +1231,7 @@ final class ExplainViewModel: ObservableObject {
         jobId = ""
         totalBlocks = 0
         isPreparingNext = true
-        stageText = String(localized: "继续讲解…")
+        stageText = AppLocalized("继续讲解…")
         status = .planning
         orchestrationTask = Task { [weak self] in await self?.runPlan() }
     }
@@ -1388,8 +1639,8 @@ final class ExplainViewModel: ObservableObject {
 
     private func friendlyStage(_ s: String) -> String {
         switch s {
-        case "extract": return String(localized: "通读全文…")
-        case "compose": return String(localized: "组织讲解…")
+        case "extract": return AppLocalized("通读全文…")
+        case "compose": return AppLocalized("组织讲解…")
         default: return s
         }
     }

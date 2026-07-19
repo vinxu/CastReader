@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject private var settings = AppSettings.shared
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     @ObservedObject private var pro = ProManager.shared
     @ObservedObject private var quota = QuotaManager.shared
     @ObservedObject private var auth = AuthService.shared
@@ -20,16 +21,18 @@ struct SettingsView: View {
     @State private var showUnbindKindle = false
     @State private var showVoiceBrowser = false
 
-    private let explainLanguages: [(String, String)] = [
-        ("", String(localized: "跟随原文")), ("en", "English"), ("zh", "中文"), ("ja", "日本語"),
-        ("es", "Español"), ("fr", "Français"), ("pt", "Português"), ("it", "Italiano"), ("hi", "हिन्दी")
-    ]
+    private var explainLanguages: [(String, String)] {
+        [("", AppLocalized("跟随原文"))] + SupportedTTSLanguage.allCases.map {
+            ($0.rawValue, $0.nativeName)
+        }
+    }
     private let palette = ["#FD5F01", "#FFD400", "#34C759", "#0A84FF", "#FF2D55", "#AF52DE"]
 
     var body: some View {
         NavigationView {
             Form {
                 accountSection
+                languageSection
                 connectedServicesSection
                 proSection
                 librarySection
@@ -65,6 +68,24 @@ struct SettingsView: View {
             }
         }
         .navigationViewStyle(.stack)
+    }
+
+    // MARK: 应用语言
+
+    private var languageSection: some View {
+        Section {
+            NavigationLink {
+                AppLanguagePickerView()
+            } label: {
+                HStack {
+                    Label("语言", systemImage: "globe")
+                    Spacer()
+                    Text(appLanguage.selectedLanguage.displayName)
+                        .foregroundColor(AppTheme.mutedForeground)
+                }
+            }
+            .accessibilityIdentifier("settingsLanguageLink")
+        }
     }
 
     // MARK: 账号
@@ -159,12 +180,12 @@ struct SettingsView: View {
                     Image(systemName: proIconName)
                         .foregroundColor(AppTheme.primary)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(LocalizedStringKey(proTitle)).font(.headline)
+                        Text(proTitle).font(.headline)
                         if pro.isPro {
-                            Text(LocalizedStringKey(proSubtitle))
+                            Text(proSubtitle)
                                 .font(.caption).foregroundColor(AppTheme.mutedForeground)
                         } else {
-                            Text(String(format: String(localized: "今日朗读剩余 %d 分钟 · 解读 %d 次"), Int(quota.listenRemaining / 60), quota.explainRemaining))
+                            Text(String(format: AppLocalized("今日朗读剩余 %d 分钟 · 解读 %d 次"), Int(quota.listenRemaining / 60), quota.explainRemaining))
                                 .font(.caption).foregroundColor(AppTheme.mutedForeground)
                         }
                     }
@@ -184,11 +205,11 @@ struct SettingsView: View {
         return pro.isPro ? "crown.fill" : "crown"
     }
 
-    private var proTitle: String {
+    private var proTitle: LocalizedStringKey {
         pro.isPro ? "CastReader Pro" : "升级到 Pro"
     }
 
-    private var proSubtitle: String {
+    private var proSubtitle: LocalizedStringKey {
         if pro.isCrossPlatformPro {
             return pro.serverPlan == "yearly" ? "年度订阅" : (pro.serverPlan == "monthly" ? "月度订阅" : "已解锁")
         }
@@ -337,4 +358,31 @@ struct SettingsView: View {
         }
     }
     #endif
+}
+
+private struct AppLanguagePickerView: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
+
+    var body: some View {
+        List(AppLanguage.allCases) { language in
+            Button {
+                appLanguage.select(language)
+            } label: {
+                HStack {
+                    Text(language.displayName)
+                        .foregroundColor(AppTheme.foreground)
+                    Spacer()
+                    if appLanguage.selectedLanguage == language {
+                        Image(systemName: "checkmark")
+                            .font(.body.weight(.semibold))
+                            .foregroundColor(AppTheme.primary)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .accessibilityIdentifier("appLanguage.\(language.rawValue)")
+        }
+        .navigationTitle("语言")
+        .navigationBarTitleDisplayMode(.inline)
+    }
 }

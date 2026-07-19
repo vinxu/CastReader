@@ -10,6 +10,9 @@ import SwiftUI
 @main
 struct CastReaderApp: App {
     @StateObject private var visitorService = VisitorService.shared
+    @StateObject private var appLanguage = AppLanguageManager.shared
+    @State private var showSafariPro = false
+    @State private var showSafariAccount = false
 
     init() {
         // 简单的内存警告监听
@@ -18,8 +21,15 @@ struct CastReaderApp: App {
             object: nil,
             queue: .main
         ) { _ in
-            print("⚠️ Memory warning received, clearing audio cache...")
+            print("⚠️ Memory warning received")
             Task { @MainActor in
+                // Never turn an ordinary memory warning into a playback stop.
+                // The queue is the active spoken-audio pipeline, not a disposable
+                // cache; iOS background audio must remain uninterrupted.
+                guard !AudioPlayerService.shared.hasActivePlayback else {
+                    print("⚠️ Keeping active audio queue during memory warning")
+                    return
+                }
                 AudioPlayerService.shared.clearQueue()
             }
         }
@@ -59,7 +69,37 @@ struct CastReaderApp: App {
         WindowGroup {
             MainTabView()
                 .environmentObject(visitorService)
+                .environment(\.locale, appLanguage.locale)
                 // 深色/浅色跟随系统（AppTheme 已全动态化，见 Utils/AppTheme.swift）
+                .onOpenURL { url in
+                    if url.scheme == "castreader", url.host == "pro" {
+                        showSafariPro = true
+                    } else if url.scheme == "castreader", url.host == "account" {
+                        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+                        let action = components?.queryItems?.first(where: { $0.name == "action" })?.value
+                        if action == "signout" {
+                            AuthService.shared.signOut()
+                            SafariExtensionBridge.syncFromApp()
+                            showSafariAccount = false
+                        } else {
+                            showSafariAccount = true
+                        }
+                    }
+                }
+                .sheet(isPresented: $showSafariPro) {
+                    PaywallView(
+                        reason: AppLocalized("从 Safari 解锁完整朗读与解读"),
+                        analyticsTrigger: "safari_extension",
+                        analyticsSurface: "safari_extension"
+                    )
+                }
+                .sheet(isPresented: $showSafariAccount) {
+                    if AuthService.shared.isSignedIn {
+                        SettingsView()
+                    } else {
+                        LoginView()
+                    }
+                }
         }
     }
 }

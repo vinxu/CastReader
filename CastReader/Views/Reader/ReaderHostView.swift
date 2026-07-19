@@ -239,6 +239,9 @@ private struct ReadControlBar: View {
                 Image(systemName: "goforward.15").font(.system(size: 20))
             }
             Spacer()
+            if vm.hasStartedPlayback {
+                PlaybackVoiceButton(language: vm.playbackLanguage)
+            }
             SpeedMenu()
         }
         .foregroundColor(AppTheme.foreground)
@@ -273,8 +276,13 @@ private struct ReaderLandscapeReadOverlay: View {
             .readerLandscapePill()
 
             Spacer(minLength: 0)
-            SpeedMenu()
-                .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
+            HStack(spacing: 12) {
+                if vm.hasStartedPlayback {
+                    PlaybackVoiceButton(language: vm.playbackLanguage)
+                }
+                SpeedMenu()
+            }
+            .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
         }
     }
 }
@@ -288,7 +296,10 @@ private struct ReaderLandscapeExplainOverlay: View {
             HStack(alignment: .bottom, spacing: 14) {
                 controlPill
                 Spacer(minLength: 0)
-                SpeedMenu()
+                HStack(spacing: 10) {
+                    PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
+                    SpeedMenu()
+                }
                     .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
             }
         }
@@ -328,7 +339,7 @@ private struct ReaderLandscapeExplainOverlay: View {
                         .font(.system(size: 42))
                         .foregroundColor(AppTheme.primary)
                 }
-                Text(String(localized: "开始解读"))
+                Text(AppLocalized("开始解读"))
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
             case .error:
@@ -337,20 +348,20 @@ private struct ReaderLandscapeExplainOverlay: View {
                         .font(.system(size: 38))
                         .foregroundColor(AppTheme.primary)
                 }
-                Text(String(localized: "重试解读"))
+                Text(AppLocalized("重试解读"))
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
             case .planning:
                 ProgressView()
                     .frame(width: 38, height: 38)
-                Text(vm.stageText.isEmpty ? String(localized: "通读全文…") : vm.stageText)
+                Text(vm.stageText.isEmpty ? AppLocalized("通读全文…") : vm.stageText)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
             case .streaming(let block, let total):
                 if vm.isPreparingNext {
                     ProgressView()
                         .frame(width: 38, height: 38)
-                    Text(String(localized: "正在准备下一段…"))
+                    Text(AppLocalized("正在准备下一段…"))
                         .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
                 } else {
@@ -369,7 +380,7 @@ private struct ReaderLandscapeExplainOverlay: View {
                         .font(.system(size: 38))
                         .foregroundColor(AppTheme.primary)
                 }
-                Text(String(localized: "解读完成"))
+                Text(AppLocalized("解读完成"))
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
             }
@@ -416,39 +427,64 @@ enum ReaderRunLog {
 }
 
 /// 共享调速菜单（朗读 / 解读控制条复用）：选速即写入全局 speed 并立刻作用于当前播放（共享 AudioPlayerService）。
+enum SpeedMenuStyle {
+    case capsule
+    case console
+    case compact
+}
+
 struct SpeedMenu: View {
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var pro = ProManager.shared
     @ObservedObject private var audio = AudioPlayerService.shared
     @State private var showPaywall = false
-    @State private var showSpeedPicker = false
+    var style: SpeedMenuStyle = .capsule
 
     private var displayedSpeed: Float {
         Float(settings.effectiveSpeed(isPro: pro.isPro))
     }
 
     var body: some View {
-        Button {
-            showSpeedPicker = true
-        } label: {
-            HStack(spacing: 3) {
-                Image(systemName: "speedometer").font(.caption)
-                Text(String(format: "%.2gx", Double(displayedSpeed))).font(.subheadline.weight(.semibold))
-            }
-            .padding(.horizontal, 12).padding(.vertical, 6)
-            .background(AppTheme.surfaceVariant)
-            .foregroundColor(AppTheme.foreground)
-            .cornerRadius(8)
-        }
-        .buttonStyle(.plain)
-        .confirmationDialog("Playback Speed", isPresented: $showSpeedPicker, titleVisibility: .visible) {
-            ForEach(AudioPlayerService.proSpeedOptions.reversed(), id: \.self) { s in
-                Button(speedTitle(s)) {
-                    selectSpeed(s)
+        Menu {
+            ForEach(AudioPlayerService.proSpeedOptions.reversed(), id: \.self) { speed in
+                Button(speedTitle(speed)) {
+                    selectSpeed(speed)
                 }
             }
-            Button("Cancel", role: .cancel) {}
+        } label: {
+            switch style {
+            case .capsule:
+                HStack(spacing: 3) {
+                    Image(systemName: "speedometer").font(.caption)
+                    Text(String(format: "%.2gx", Double(displayedSpeed)))
+                        .font(.subheadline.weight(.semibold))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(AppTheme.surfaceVariant)
+                .foregroundColor(AppTheme.foreground)
+                .cornerRadius(8)
+            case .console:
+                VStack(spacing: 4) {
+                    Image(systemName: "speedometer")
+                        .font(.system(size: 19, weight: .semibold))
+                        .frame(height: 28)
+                    Text(String(format: "%.2gx", Double(displayedSpeed)))
+                        .font(.caption2.weight(.medium))
+                }
+                .foregroundStyle(AppTheme.foreground)
+                .frame(maxWidth: .infinity)
+            case .compact:
+                HStack(spacing: 4) {
+                    Image(systemName: "speedometer")
+                    Text(String(format: "%.2gx", Double(displayedSpeed)))
+                        .font(.caption.weight(.semibold))
+                }
+                .foregroundStyle(AppTheme.foreground)
+                .frame(height: 36)
+            }
         }
+        .buttonStyle(.plain)
         .sheet(isPresented: $showPaywall) {
             PaywallView(analyticsTrigger: "pro_speed", analyticsSurface: "reader_controls")
         }

@@ -15,6 +15,7 @@ struct MainTabView: View {
     @StateObject private var clipboard = ClipboardImportViewModel()
     @StateObject private var importRouter = ImportRouter()
     @StateObject private var voiceCloneAccess = VoiceCloneAccessCoordinator.shared
+    @StateObject private var playbackVoicePanel = PlaybackVoicePanelCenter.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: Int
 
@@ -84,13 +85,25 @@ struct MainTabView: View {
                     .zIndex(10)
             }
 
-            if let model = kindleCenter.model, kindleCenter.isPresented {
+            // Kindle reader follows the same keep-alive model as ReaderHostView:
+            // minimizing moves it offscreen instead of removing its WKWebView.
+            // This keeps semantic page turns, TTS generation and playback alive
+            // for Mini Player/background use, while preserving the exact page.
+            if let model = kindleCenter.model {
                 KindleBookView(model: model)
                     .id(ObjectIdentifier(model))
+                    .offset(y: kindleCenter.isPresented ? 0 : UIScreen.main.bounds.height)
+                    .allowsHitTesting(kindleCenter.isPresented)
                     .transition(.move(edge: .bottom))
                     .animation(.spring(response: 0.4, dampingFraction: 0.9), value: kindleCenter.isPresented)
                     .zIndex(11)
             }
+
+            // Player voice selection is an in-app overlay, not a system sheet.
+            // This keeps ReaderHost/Kindle WKWebView geometry completely stable
+            // while the user previews or switches voices.
+            PlaybackVoicePanelOverlay(center: playbackVoicePanel)
+                .zIndex(100)
         }
         .environmentObject(coordinator)
         .environmentObject(importRouter)
@@ -98,6 +111,7 @@ struct MainTabView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: coordinator.showsMiniPlayer)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: kindleCenter.showsMiniPlayer)
         .animation(.spring(response: 0.32, dampingFraction: 0.9), value: importRouter.hideMainChrome)
+        .animation(.spring(response: 0.34, dampingFraction: 0.9), value: playbackVoicePanel.isPresented)
         .onChange(of: scenePhase) { phase in
             if phase == .active { clipboard.check() }   // 进 App / 回前台 → 探测剪贴板
         }
@@ -199,7 +213,7 @@ struct MainTabView: View {
                 ProductAnalytics.shared.contentFailed(analyticsContext, stage: "validation", code: "invalid_url")
             }
         case .text(let t):
-            let doc = DocumentBuilder.fromPlainText(t, title: String(localized: "剪贴板文本"))
+            let doc = DocumentBuilder.fromPlainText(t, title: AppLocalized("剪贴板文本"))
             if !doc.isEmpty {
                 coordinator.open(doc, mode: mode, autoplay: true, analyticsContext: analyticsContext)
             } else {

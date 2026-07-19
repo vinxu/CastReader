@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import UIKit
 import WebKit
 @testable import CastReader
 
@@ -469,61 +470,485 @@ class CastReaderTests: XCTestCase {
         let choicePayload = try XCTUnwrap(collector.messages.first(where: { ($0["type"] as? String) == "kindle-sync-dialog-choice" }))
         XCTAssertEqual(KindleSyncDialogEvent(payload: choicePayload)?.choice, .no)
 
-        let rawTurn = try await webView.evaluateJavaScript("window.__crKindleTurnPage('next')")
+        _ = try await webView.evaluateJavaScript(
+            """
+            (function() {
+              var leaf = document.createElement('span');
+              document.getElementById('kr-chevron-right').appendChild(leaf);
+              window.leftActionCount = 0;
+              window.rightActionCount = 0;
+              var root = { memoizedProps:{}, pendingProps:{
+                leftAction:function(){ window.leftActionCount += 1; },
+                rightAction:function(){ window.rightActionCount += 1; },
+                pageProgressionDirection:'ltr'
+              }, return:null, type:{name:'KindlePagination'} };
+              var fiber = root;
+              for (var i = 0; i < 24; i++) fiber = { memoizedProps:{ onClick:function(){} }, pendingProps:{}, return:fiber };
+              leaf.__reactFiber$test = fiber;
+            })()
+            """
+        )
+        let rawTurn = try await webView.evaluateJavaScript("window.__crKindleSemanticPageTurn('next')")
         let turnJSON = try XCTUnwrap(rawTurn as? String)
         let turnData = try XCTUnwrap(turnJSON.data(using: .utf8))
         let turn = try XCTUnwrap(JSONSerialization.jsonObject(with: turnData) as? [String: Any])
-        XCTAssertEqual(turn["strategy"] as? String, "native-chevron")
-        XCTAssertEqual(turn["controlVisible"] as? Bool, false)
-        let clickCount = try await webView.evaluateJavaScript("window.hiddenChevronClickCount") as? Int
-        XCTAssertEqual(clickCount, 1, "scrubber 不存在时应尝试 Kindle 的隐藏 chevron")
-        let keyboardCount = try await webView.evaluateJavaScript("window.hiddenKeyboardTurnCount") as? Int
-        XCTAssertEqual(keyboardCount, 0, "chevron 可用时不得提前发送 keyboard")
+        XCTAssertEqual(turn["strategy"] as? String, "react-paired-action")
+        XCTAssertEqual(turn["propsSource"] as? String, "pendingProps")
+        XCTAssertEqual(turn["fiberDepth"] as? Int, 24)
+        XCTAssertEqual(turn["dispatchCount"] as? Int, 1)
+        let rightActionCount = try await webView.evaluateJavaScript("window.rightActionCount") as? Int
+        let leftActionCount = try await webView.evaluateJavaScript("window.leftActionCount") as? Int
+        let hiddenChevronClickCount = try await webView.evaluateJavaScript("window.hiddenChevronClickCount") as? Int
+        let hiddenKeyboardTurnCount = try await webView.evaluateJavaScript("window.hiddenKeyboardTurnCount") as? Int
+        XCTAssertEqual(rightActionCount, 1)
+        XCTAssertEqual(leftActionCount, 0)
+        XCTAssertEqual(hiddenChevronClickCount, 0)
+        XCTAssertEqual(hiddenKeyboardTurnCount, 0)
 
-        _ = try await webView.evaluateJavaScript(
+        let rtlFallbackRaw = try await webView.evaluateJavaScript(
             """
             (function() {
-              document.getElementById('kr-chevron-right').remove();
-              document.body.style.minHeight = '700px';
-              window.edgeTapCount = 0;
-              document.body.addEventListener('click', function() { window.edgeTapCount += 1; });
+              var leaf = document.querySelector('#kr-chevron-right span');
+              leaf.__reactFiber$test = { memoizedProps:{
+                leftAction:function(){ window.leftActionCount += 1; },
+                rightAction:function(){ window.rightActionCount += 1; }
+              }, pendingProps:{}, return:null, type:{name:'KindlePagination'} };
+              return window.__crKindleSemanticPageTurn('next', 'rtl');
             })()
             """
         )
-        let rawTapTurn = try await webView.evaluateJavaScript("window.__crKindleTurnPage('next')")
-        let tapJSON = try XCTUnwrap(rawTapTurn as? String)
-        let tapData = try XCTUnwrap(tapJSON.data(using: .utf8))
-        let tapTurn = try XCTUnwrap(JSONSerialization.jsonObject(with: tapData) as? [String: Any])
-        XCTAssertEqual(tapTurn["strategy"] as? String, "native-tap-zone")
-        let edgeTapCount = try await webView.evaluateJavaScript("window.edgeTapCount") as? Int
-        XCTAssertEqual(edgeTapCount, 1)
+        let rtlFallbackData = try XCTUnwrap((rtlFallbackRaw as? String)?.data(using: .utf8))
+        let rtlFallback = try XCTUnwrap(JSONSerialization.jsonObject(with: rtlFallbackData) as? [String: Any])
+        XCTAssertEqual(rtlFallback["semanticAction"] as? String, "leftAction")
+        XCTAssertEqual(rtlFallback["progressionSource"] as? String, "language-fallback")
+        let rtlLeftActionCount = try await webView.evaluateJavaScript("window.leftActionCount") as? Int
+        XCTAssertEqual(rtlLeftActionCount, 1)
 
-        _ = try await webView.evaluateJavaScript(
+        let compatibilityRaw = try await webView.evaluateJavaScript(
+            "[window.__crKindleDirectPage('right'), window.__crKindleForceAdjacentPage('left')]"
+        )
+        let compatibility = try XCTUnwrap(compatibilityRaw as? [String])
+        XCTAssertEqual(compatibility.count, 2)
+        for raw in compatibility {
+            let data = try XCTUnwrap(raw.data(using: .utf8))
+            let result = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            XCTAssertEqual(result["strategy"] as? String, "react-paired-action")
+            XCTAssertEqual(result["dispatchCount"] as? Int, 1)
+        }
+        let compatibilityRightCount = try await webView.evaluateJavaScript("window.rightActionCount") as? Int
+        let compatibilityLeftCount = try await webView.evaluateJavaScript("window.leftActionCount") as? Int
+        XCTAssertEqual(compatibilityRightCount, 2)
+        XCTAssertEqual(compatibilityLeftCount, 2)
+
+        let singleHandlerRaw = try await webView.evaluateJavaScript(
             """
             (function() {
-              var scrubber = document.createElement('ion-range');
-              scrubber.id = 'kr-scrubber-bar';
-              Object.defineProperty(scrubber, 'value', { value: 10, writable: true, configurable: true });
-              window.scrubberInputCount = 0;
-              window.scrubberChangeCount = 0;
-              scrubber.addEventListener('ionInput', function() { window.scrubberInputCount += 1; });
-              scrubber.addEventListener('ionChange', function() { window.scrubberChangeCount += 1; });
-              document.body.appendChild(scrubber);
+              var leaf = document.querySelector('#kr-chevron-right span');
+              leaf.__reactFiber$test = { memoizedProps:{ onClick:function(){} }, pendingProps:{}, return:null };
+              return window.__crKindleSemanticPageTurn('next');
             })()
             """
         )
-        let rawScrubberTurn = try await webView.evaluateJavaScript("window.__crKindleTurnPage('next')")
-        let scrubberJSON = try XCTUnwrap(rawScrubberTurn as? String)
-        let scrubberData = try XCTUnwrap(scrubberJSON.data(using: .utf8))
-        let scrubberTurn = try XCTUnwrap(JSONSerialization.jsonObject(with: scrubberData) as? [String: Any])
-        XCTAssertEqual(scrubberTurn["strategy"] as? String, "native-scrubber")
-        XCTAssertEqual(scrubberTurn["dispatchCount"] as? Int, 1)
-        let inputCount = try await webView.evaluateJavaScript("window.scrubberInputCount") as? Int
-        let changeCount = try await webView.evaluateJavaScript("window.scrubberChangeCount") as? Int
-        let keyboardCountAfterScrubber = try await webView.evaluateJavaScript("window.hiddenKeyboardTurnCount") as? Int
-        XCTAssertEqual(inputCount, 1)
-        XCTAssertEqual(changeCount, 1)
-        XCTAssertEqual(keyboardCountAfterScrubber, 0, "scrubber 可用时不得再发送 keyboard")
+        let singleHandlerData = try XCTUnwrap((singleHandlerRaw as? String)?.data(using: .utf8))
+        let singleHandler = try XCTUnwrap(JSONSerialization.jsonObject(with: singleHandlerData) as? [String: Any])
+        XCTAssertEqual(singleHandler["ok"] as? Bool, false, "单个 click handler 不能冒充 paired pagination actions")
+    }
+
+    func testKindleEightLanguageAndPageEvidenceContracts() throws {
+        let expected = [
+            "en-US":"en", "zh-CN":"zh", "ja-JP":"ja", "es-ES":"es",
+            "fr-FR":"fr", "pt-BR":"pt", "it-IT":"it", "hi-IN":"hi",
+            "pt-PT":"pt", "por":"pt"
+        ]
+        for (input, language) in expected {
+            XCTAssertEqual(KindleLanguageContract.profile(language: input)?.language, language)
+        }
+        XCTAssertEqual(KindleLanguageContract.profile(language: "pt-PT")?.visionLocale, "pt-BR")
+        XCTAssertEqual(KindleLanguageContract.profile(language: "zh")?.visionLocale, "zh-Hans")
+        XCTAssertEqual(KindleLanguageContract.profile(language: "zh")?.tesseractModel, "chi_sim")
+        XCTAssertEqual(KindleLanguageContract.profile(language: "hi")?.tesseractModel, "hin")
+        XCTAssertEqual(
+            ["en", "zh", "ja", "es", "fr", "pt", "it", "hi"].compactMap {
+                KindleLanguageContract.profile(language: $0)?.tesseractModel
+            },
+            ["eng", "chi_sim", "jpn", "spa", "fra", "por", "ita", "hin"]
+        )
+        XCTAssertEqual(KindleLanguageContract.profile(language: "ja")?.readingDirection, .rtl)
+        XCTAssertFalse(
+            try XCTUnwrap(KindleLanguageContract.profile(language: "ja", writingMode: .vertical)).isSupported,
+            "日语竖排必须在生产 OCR/TTS 前阻止"
+        )
+        XCTAssertEqual(KindleLanguageContract.profile(language: "ja", writingMode: .vertical)?.tesseractModel, "jpn_vert")
+        XCTAssertEqual(
+            KindleOCRRoutingContract.route(for: try XCTUnwrap(KindleLanguageContract.profile(language: "zh"))),
+            KindleOCRRoute(primary: .vision, fallback: .tesseract)
+        )
+        XCTAssertEqual(
+            KindleOCRRoutingContract.route(for: try XCTUnwrap(KindleLanguageContract.profile(language: "hi"))),
+            KindleOCRRoute(primary: .tesseract, fallback: nil)
+        )
+        XCTAssertEqual(
+            KindleOCRRoutingContract.route(
+                for: try XCTUnwrap(KindleLanguageContract.profile(language: "ja", writingMode: .vertical))
+            ),
+            KindleOCRRoute(primary: .tesseract, fallback: nil)
+        )
+        XCTAssertEqual(
+            KindleOCRTextContract.tokens(in: "研究哲学、文学", language: "zh"),
+            ["研", "究", "哲", "学", "、", "文", "学"]
+        )
+        XCTAssertEqual(
+            KindleOCRTextContract.tokens(in: "Kindle reader", language: "en"),
+            ["Kindle", "reader"]
+        )
+        XCTAssertEqual(
+            KindleOCRTextContract.tokens(in: "हिन्दी भाषा", language: "hi"),
+            ["हिन्दी", "भाषा"],
+            "天城文组合附标必须保留在完整词内"
+        )
+        XCTAssertEqual(KindleLanguageContract.alignmentText("人 間"), KindleLanguageContract.alignmentText("人間"))
+        XCTAssertEqual(KindleLanguageContract.alignmentText("café"), KindleLanguageContract.alignmentText("cafe\u{301}"))
+        XCTAssertEqual(KindleLanguageContract.alignmentText("हिन्दी"), KindleLanguageContract.alignmentText("हि न्दी"))
+        XCTAssertTrue(KindleLanguageContract.endsWithHardTerminal("समाप्त॥”"))
+        XCTAssertTrue(KindleLanguageContract.startsWithListMarker("1) पहला बिंदु"))
+        XCTAssertTrue(KindleLanguageContract.startsWithListMarker("२) दूसरा बिंदु"))
+        XCTAssertTrue(KindleLanguageContract.startsWithListMarker("• गोदान का परिचय"))
+        XCTAssertTrue(KindleLanguageContract.endsWithHeadingDelimiter("मुख्य पात्र："))
+        XCTAssertFalse(KindleLanguageContract.startsWithListMarker("सामान्य अनुच्छेद"))
+        XCTAssertEqual(KindleLanguageContract.join(["人", "間"], language: "ja"), "人間")
+        XCTAssertTrue(KindleLanguageContract.shouldPreferRawParagraphs(language: "hi", raw: 4, visualLines: 5, rebuilt: 1))
+        XCTAssertFalse(KindleLanguageContract.isVerified(language: "ja", source: nil), "旧缓存语言没有证据来源，必须重新确认")
+        XCTAssertTrue(KindleLanguageContract.isVerified(language: "ja", source: "renderer-metadata"))
+        XCTAssertTrue(KindlePlaybackLifecycleContract.shouldKeepPlayback(
+            surfaceAttached: true,
+            explicitlyClosed: false
+        ))
+        XCTAssertFalse(KindlePlaybackLifecycleContract.shouldKeepPlayback(
+            surfaceAttached: false,
+            explicitlyClosed: false
+        ))
+        XCTAssertTrue(KindlePlaybackLifecycleContract.requiresImmediateVisualSync(
+            readerPresented: true,
+            applicationActive: true
+        ))
+        XCTAssertFalse(KindlePlaybackLifecycleContract.requiresImmediateVisualSync(
+            readerPresented: false,
+            applicationActive: true
+        ))
+        XCTAssertFalse(KindlePlaybackLifecycleContract.requiresImmediateVisualSync(
+            readerPresented: true,
+            applicationActive: false
+        ))
+        XCTAssertTrue(KindleContinuousPageHandoffContract.shouldArm(
+            isReadMode: true,
+            isLastReadableParagraph: true,
+            currentTTSComplete: true,
+            hasPreparedPage: true,
+            hasPreparedAudio: true,
+            audioIsPlaying: true
+        ))
+        XCTAssertFalse(KindleContinuousPageHandoffContract.shouldArm(
+            isReadMode: true,
+            isLastReadableParagraph: true,
+            currentTTSComplete: true,
+            hasPreparedPage: true,
+            hasPreparedAudio: false,
+            audioIsPlaying: true
+        ))
+        XCTAssertTrue(KindleContinuousPageHandoffContract.shouldBeginVisualTurn(
+            currentSegmentID: "current-tail",
+            predecessorSegmentID: "current-tail",
+            remainingAudioSeconds: 2.6,
+            playbackRate: 2.0
+        ))
+        XCTAssertFalse(KindleContinuousPageHandoffContract.shouldBeginVisualTurn(
+            currentSegmentID: "earlier-segment",
+            predecessorSegmentID: "current-tail",
+            remainingAudioSeconds: 0.2,
+            playbackRate: 1.0
+        ))
+        XCTAssertTrue(KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
+            hasConfirmedVisibleSurface: true,
+            textFingerprintMatches: true
+        ))
+        XCTAssertFalse(KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
+            hasConfirmedVisibleSurface: true,
+            textFingerprintMatches: false
+        ))
+        XCTAssertEqual(
+            KindleWritingModeContract.infer(from: [CGSize(width: 0.8, height: 0.1), CGSize(width: 0.7, height: 0.12)]),
+            .horizontal
+        )
+        XCTAssertEqual(
+            KindleWritingModeContract.infer(from: [CGSize(width: 0.08, height: 0.8), CGSize(width: 0.1, height: 0.7)]),
+            .vertical
+        )
+
+        let englishFragment = LanguageDetector.Evidence(language: "en", confidence: 0.91, readableCharacterCount: 15)
+        let japanesePage = LanguageDetector.Evidence(language: "ja", confidence: 0.96, readableCharacterCount: 180)
+        let japaneseTitle = LanguageDetector.evidence(for: "人間失格 日本語版")
+        let bad = KindleOCRConsensus.score(page: englishFragment, requestedLanguage: "en", title: japaneseTitle)
+        let good = KindleOCRConsensus.score(page: japanesePage, requestedLanguage: "ja", title: japaneseTitle)
+        XCTAssertEqual(good.language, "ja")
+        XCTAssertGreaterThan(good.value, bad.value * 3, "完整日语 OCR 必须压过少量英文模型噪声")
+
+        XCTAssertTrue(KindleColumnLayoutContract.isDualColumn(aspect: 1.01, pixelsReadable: true, centerGutter: true))
+        XCTAssertTrue(KindleColumnLayoutContract.isDualColumn(aspect: 1.12, pixelsReadable: true, centerGutter: true))
+        XCTAssertFalse(KindleColumnLayoutContract.isDualColumn(aspect: 1.70, pixelsReadable: true, centerGutter: false))
+        XCTAssertTrue(KindleColumnLayoutContract.isDualColumn(aspect: 1.70, pixelsReadable: false, centerGutter: false))
+        XCTAssertNil(KindleColumnLayoutContract.cacheSignature(contentKey: "same", pixelFingerprint: nil, pixelSize: CGSize(width: 100, height: 100)))
+        XCTAssertNotEqual(
+            KindleColumnLayoutContract.cacheSignature(contentKey: "same", pixelFingerprint: "a", pixelSize: CGSize(width: 100, height: 100)),
+            KindleColumnLayoutContract.cacheSignature(contentKey: "same", pixelFingerprint: "b", pixelSize: CGSize(width: 100, height: 100))
+        )
+
+        XCTAssertTrue(KindleTurnContract.confirms(progress: .unchanged, beforeFingerprint: "a", afterFingerprint: "b", semanticActionDispatched: true, stableVisualSamples: 2))
+        XCTAssertFalse(KindleTurnContract.confirms(progress: .unchanged, beforeFingerprint: "a", afterFingerprint: "b", semanticActionDispatched: true, stableVisualSamples: 1))
+        XCTAssertFalse(KindleTurnContract.confirms(progress: .forward, beforeFingerprint: "a", afterFingerprint: "a", semanticActionDispatched: true, stableVisualSamples: 2))
+        XCTAssertFalse(KindleTurnContract.confirms(progress: .backward, beforeFingerprint: "a", afterFingerprint: "b", semanticActionDispatched: true, stableVisualSamples: 2))
+        XCTAssertEqual(KindleTurnContract.progress(beforeLocation: 2, afterLocation: 2, beforeRenderer: 10, afterRenderer: 11), .forward)
+        XCTAssertEqual(KindleTurnContract.progressNumber("स्थान १२३"), 123)
+        XCTAssertTrue(KindleWebScripts.pageCaptureBootstrap.contains("crKindleOcrMaxWidth = 2048"))
+        XCTAssertTrue(KindleWebScripts.pageCaptureBootstrap.contains("toDataURL('image/png')"))
+        XCTAssertFalse(KindleWebScripts.pageCaptureBootstrap.contains("toDataURL('image/jpeg', quality)"))
+    }
+
+    @MainActor
+    func testKindleChineseVisionOCRUsesGraphemeGeometry() async throws {
+        let size = CGSize(width: 1400, height: 560)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { context in
+            context.cgContext.setFillColor(UIColor.white.cgColor)
+            context.cgContext.fill(CGRect(origin: .zero, size: size))
+            let style = NSMutableParagraphStyle()
+            style.lineSpacing = 18
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont(name: "Songti SC", size: 54) ?? UIFont.systemFont(ofSize: 54),
+                .foregroundColor: UIColor.black,
+                .paragraphStyle: style
+            ]
+            let text = "王国维字静安，号观堂，浙江海宁人，是我国近代享有国际盛誉的著名学者。\n他中过秀才，早年学习英、日文，研究哲学、文学。"
+            text.draw(in: CGRect(x: 60, y: 60, width: 1280, height: 440), withAttributes: attributes)
+        }
+        let profile = try XCTUnwrap(KindleLanguageContract.profile(language: "zh"))
+        let document = try await OCRService.shared.recognizeKindle(
+            image: image,
+            profile: profile,
+            title: "中文 OCR 契约",
+            paragraphStrategy: .kindleLayout
+        )
+        XCTAssertTrue(document.fullText.contains("研究哲学、文学"))
+        let words = document.paragraphs.flatMap(\.words)
+        XCTAssertTrue(words.contains(where: { $0.text == "研" }))
+        XCTAssertTrue(words.contains(where: { $0.text == "究" }))
+        XCTAssertTrue(words.allSatisfy { !$0.bboxNorm.isNull && $0.bboxNorm.width > 0 && $0.bboxNorm.height > 0 })
+    }
+
+    @MainActor
+    func testKindleRendererMetadataLanguageAuthority() async throws {
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 800))
+        webView.loadHTMLString("<!doctype html><html><body>reader</body></html>", baseURL: URL(string: "https://read.amazon.com"))
+        for _ in 0..<40 {
+            let body = try? await webView.evaluateJavaScript("document.body && document.body.textContent") as? String
+            if body?.contains("reader") == true { break }
+            try await Task.sleep(nanoseconds: 25_000_000)
+        }
+        _ = try await webView.evaluateJavaScript(KindleWebScripts.metadataBootstrap)
+        let raw = try await webView.evaluateJavaScript(
+            "JSON.stringify(window.__crKindleExtractMetadataProfile({renderer:{book:{book_locale:'jpn'},layout:{orientation:'vertical'},pagination:{page_turn_direction:'rtl'}}}))"
+        )
+        let data = try XCTUnwrap((raw as? String)?.data(using: .utf8))
+        let profile = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(profile["language"] as? String, "ja")
+        XCTAssertEqual(profile["writingMode"] as? String, "horizontal", "generic orientation 不能冒充日语竖排")
+        XCTAssertEqual(profile["pageProgressionDirection"] as? String, "rtl")
+        XCTAssertEqual(profile["source"] as? String, "renderer-metadata")
+    }
+
+    @MainActor
+    func testKindleRendererTokenGeometryBuildsVerticalJapaneseColumns() async throws {
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 800))
+        webView.loadHTMLString("<!doctype html><html><body>reader</body></html>", baseURL: URL(string: "https://read.amazon.com"))
+        for _ in 0..<40 {
+            let body = try? await webView.evaluateJavaScript("document.body && document.body.textContent") as? String
+            if body?.contains("reader") == true { break }
+            try await Task.sleep(nanoseconds: 25_000_000)
+        }
+        _ = try await webView.evaluateJavaScript(KindleWebScripts.metadataBootstrap)
+        let raw = try await webView.evaluateJavaScript(
+            """
+            (function() {
+              var page = {pageIndex:4, children:[
+                {startPositionId:100,endPositionId:109,x:300,y:20,width:20,height:300,words:[
+                  {startPositionId:100,endPositionId:104,x:300,y:20,width:20,height:130},
+                  {startPositionId:105,endPositionId:109,x:300,y:170,width:20,height:150}
+                ]},
+                {startPositionId:110,endPositionId:119,x:250,y:20,width:20,height:300,words:[
+                  {startPositionId:110,endPositionId:114,x:250,y:20,width:20,height:130},
+                  {startPositionId:115,endPositionId:119,x:250,y:170,width:20,height:150}
+                ]}
+              ]};
+              return JSON.stringify(window.__crKindleExtractRendererFiles([
+                {name:'metadata.json',value:{book_locale:'jpn',writingMode:'horizontal'}},
+                {name:'tokens_1_1.json',value:[page]}
+              ], 'https://read.amazon.com/renderer/render?startingPosition=100', null));
+            })()
+            """
+        )
+        let data = try XCTUnwrap((raw as? String)?.data(using: .utf8))
+        let profile = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(profile["language"] as? String, "ja")
+        XCTAssertEqual(profile["writingMode"] as? String, "vertical")
+        XCTAssertEqual(profile["writingModeSource"] as? String, "token-geometry")
+        let hints = try XCTUnwrap(profile["verticalColumnHints"] as? [[String: Any]])
+        XCTAssertEqual(hints.count, 2)
+        XCTAssertEqual(hints.first?["startPositionId"] as? Int, 100)
+    }
+
+    func testKindleParagraphVisualFragmentsStaySeparatedAcrossGutter() {
+        let paragraph = ReadingParagraph(
+            id: 0,
+            text: "one continued paragraph",
+            words: [],
+            bboxNorm: CGRect(x: 0.1, y: 0.1, width: 0.8, height: 0.8),
+            visualFragments: [
+                OCRVisualFragment(column: .left, bboxNorm: CGRect(x: 0.1, y: 0.1, width: 0.35, height: 0.1), wordIDs: [0]),
+                OCRVisualFragment(column: .right, bboxNorm: CGRect(x: 0.55, y: 0.8, width: 0.35, height: 0.1), wordIDs: [1])
+            ]
+        )
+        XCTAssertEqual(paragraph.visualFragments.count, 2)
+        XCTAssertLessThan(paragraph.visualFragments[0].bboxNorm.maxX, paragraph.visualFragments[1].bboxNorm.minX)
+    }
+
+    func testSpanishWordTimestampCapabilityAndPerSegmentFallback() {
+        XCTAssertEqual(SupportedTTSLanguage.spanish.timestampMode, "word")
+        XCTAssertEqual(SupportedTTSLanguage.english.timestampMode, "word")
+        for language in [SupportedTTSLanguage.chinese, .japanese, .french, .brazilianPortuguese, .italian, .hindi] {
+            XCTAssertEqual(language.timestampMode, "segment")
+        }
+
+        func timestamps(_ words: [String]) -> [TTSTimestamp] {
+            words.enumerated().map {
+                TTSTimestamp(word: $0.element, startTime: Double($0.offset), endTime: Double($0.offset + 1))
+            }
+        }
+        XCTAssertTrue(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "El rápido zorro español",
+            timestamps: timestamps(["El", "rápido", "zorro", "español"])
+        ))
+        XCTAssertFalse(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "El rápido zorro español",
+            timestamps: timestamps(["El", "rápido"])
+        ))
+        XCTAssertFalse(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "Esta respuesta contiene muchas palabras diferentes",
+            timestamps: timestamps(["Esta respuesta contiene"])
+        ))
+        let chineseWords = "一二三四五六七八九十".map(String.init)
+        XCTAssertEqual(
+            ReadAloudViewModel.alignedPhotoWordRange(
+                words: chineseWords,
+                segmentTexts: ["一二三四五"],
+                segPos: 0
+            ),
+            0..<5
+        )
+        XCTAssertEqual(
+            ReadAloudViewModel.alignedPhotoWordRange(
+                words: chineseWords,
+                segmentTexts: ["一二三四五", "六七八九十"],
+                segPos: 0
+            ),
+            0..<5,
+            "后续流式 segment 到达时，当前 segment 的高亮范围不得重新分配"
+        )
+        XCTAssertEqual(
+            ReadAloudViewModel.alignedPhotoWordRange(
+                words: chineseWords,
+                segmentTexts: ["一二三四五", "六七八九十"],
+                segPos: 1
+            ),
+            5..<10
+        )
+        XCTAssertEqual(
+            ReadAloudViewModel.alignedPhotoWordRange(
+                words: ["你", "好", "你", "好"],
+                segmentTexts: ["你好", "你好"],
+                segPos: 1
+            ),
+            2..<4,
+            "重复文本必须沿 OCR 游标单调向前"
+        )
+        XCTAssertEqual(
+            ReadAloudViewModel.alignedPhotoWordRange(
+                words: ["Le", "lecteur", "Kindle", "avance"],
+                segmentTexts: ["Le lecteur", "Kindle avance"],
+                segPos: 1
+            ),
+            2..<4
+        )
+        let japaneseWords = [
+            "明", "智", "君", "は", "枕", "を", "ぎゅっと", "抱きしめ", "、",
+            "目", "を", "つぶった", "が", "、", "どうしても", "涙", "が", "にじんでくる", "。"
+        ]
+        XCTAssertEqual(
+            ReadAloudViewModel.alignedPhotoWordRange(
+                words: japaneseWords,
+                segmentTexts: ["明智君は枕をぎゅっと抱きしめ、目をつぶったが、どうしても涙がにじんでくる。"],
+                segPos: 0
+            ),
+            0..<japaneseWords.count,
+            "日语句子必须忽略 OCR 分词与标点差异并覆盖完整视觉句子"
+        )
+        XCTAssertNil(
+            ReadAloudViewModel.alignedPhotoWordRange(
+                words: japaneseWords,
+                segmentTexts: ["OCRに存在しない文章です。"],
+                segPos: 0
+            ),
+            "匹配失败不能退回句首并错误高亮第一个字"
+        )
+    }
+
+    func testJapaneseNaturalSentenceRequestsMatchAndroidAndExtension() {
+        XCTAssertEqual(
+            TTSSentenceSegmenter.requestUnits(
+                "良くフリーエネルギーと言えば、多いと思います。物質に永久はありません。",
+                language: "ja-JP"
+            ),
+            [
+                "良くフリーエネルギーと言えば、多いと思います。",
+                "物質に永久はありません。"
+            ]
+        )
+        XCTAssertEqual(
+            TTSSentenceSegmenter.requestUnits(
+                "一文目です！「本当ですか？」三文目です。",
+                language: "ja"
+            ),
+            ["一文目です！", "「本当ですか？」", "三文目です。"]
+        )
+        XCTAssertEqual(
+            TTSSentenceSegmenter.requestUnits(
+                "これは同じ文が画面の幅で\n折り返されただけです。",
+                language: "ja"
+            ),
+            ["これは同じ文が画面の幅で折り返されただけです。"]
+        )
+        XCTAssertEqual(
+            TTSSentenceSegmenter.requestUnits(
+                "First sentence. Second sentence.",
+                language: "en"
+            ).count,
+            1
+        )
+        XCTAssertEqual(
+            TTSSentenceSegmenter.requestUnits(
+                "Primera frase. Segunda frase.",
+                language: "es-ES"
+            ).count,
+            1
+        )
     }
 
     func testKindleListeningHashAndAnchorTokenContract() {
@@ -553,6 +978,295 @@ class CastReaderTests: XCTestCase {
         let legacyData = try JSONSerialization.data(withJSONObject: json)
         let migrated = try JSONDecoder().decode(KindleListeningAnchor.self, from: legacyData)
         XCTAssertEqual(migrated.pageTextHash, anchor.pageTextHash)
+    }
+}
+
+final class LocalizationCatalogTests: XCTestCase {
+    private let appLocales = ["en", "zh-Hans", "ja", "es", "fr", "pt-BR", "it", "hi"]
+    private let translatedLocales = ["en", "zh-Hans", "ja", "es", "fr", "pt-BR", "it", "hi"]
+
+    private var repositoryRoot: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
+    private func catalog(named name: String) throws -> [String: Any] {
+        let url = repositoryRoot.appendingPathComponent("CastReader/\(name).xcstrings")
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw XCTSkip("Source catalog checks run on the host build machine")
+        }
+        let data = try Data(contentsOf: url)
+        return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+
+    private func formatSignature(_ value: String) throws -> [String] {
+        let pattern = #"%(?:\d+\$)?[-+0 #']*(?:\d+|\*)?(?:\.\d+)?(?:hh|ll|h|l|z|t|j)?([@diuoxXfFeEgGaAcCsSp])"#
+        let regex = try NSRegularExpression(pattern: pattern)
+        let range = NSRange(value.startIndex..<value.endIndex, in: value)
+        return regex.matches(in: value, range: range).compactMap { match in
+            guard let scalarRange = Range(match.range(at: 1), in: value) else { return nil }
+            let scalar = String(value[scalarRange])
+            if "diuoxXc".contains(scalar) { return "integer" }
+            if "fFeEgGaA".contains(scalar) { return "float" }
+            if scalar == "@" { return "object" }
+            return scalar
+        }.sorted()
+    }
+
+    func testAppLanguagePickerContainsSystemAndAllEightLanguages() {
+        XCTAssertEqual(
+            AppLanguage.allCases.map(\.rawValue),
+            ["system", "en", "zh-Hans", "ja", "es", "fr", "pt-BR", "it", "hi"]
+        )
+    }
+
+    func testAppLanguageOverrideChangesRuntimeLocalizedStrings() {
+        let manager = AppLanguageManager.shared
+        let previousLanguage = manager.selectedLanguage
+        defer { manager.select(previousLanguage) }
+
+        manager.select(.english)
+        XCTAssertEqual(AppLocalized("首页"), "Home")
+        XCTAssertEqual(AppLocalized("跟随系统"), "Follow System")
+
+        manager.select(.japanese)
+        XCTAssertEqual(AppLocalized("首页"), "ホーム")
+        XCTAssertEqual(AppLocalized("跟随系统"), "システム設定に従う")
+
+        manager.select(.simplifiedChinese)
+        XCTAssertEqual(AppLocalized("首页"), "首页")
+        XCTAssertEqual(AppLocalized("论文 / 学术"), "论文 / 学术")
+        XCTAssertEqual(AppLocalized("书籍 / 长篇"), "书籍 / 长篇")
+        XCTAssertEqual(AppLocalized("报告 / 研报"), "报告 / 研报")
+        XCTAssertEqual(AppLocalized("合同 / 条款"), "合同 / 条款")
+        XCTAssertEqual(AppLocalized("教材 / 学习"), "教材 / 学习")
+        XCTAssertEqual(AppLocalized("说明书 / 文档"), "说明书 / 文档")
+    }
+
+    func testKindlePlaybackAccessGateCoversReadAndExplainQuota() {
+        XCTAssertFalse(
+            KindlePlaybackAccessGate.canStart(
+                mode: .read,
+                isPro: false,
+                listenRemaining: 0,
+                explainRemaining: 3
+            )
+        )
+        XCTAssertTrue(
+            KindlePlaybackAccessGate.canStart(
+                mode: .read,
+                isPro: false,
+                listenRemaining: 1,
+                explainRemaining: 0
+            )
+        )
+        XCTAssertFalse(
+            KindlePlaybackAccessGate.canStart(
+                mode: .explain,
+                isPro: false,
+                listenRemaining: 1200,
+                explainRemaining: 0
+            )
+        )
+        XCTAssertTrue(
+            KindlePlaybackAccessGate.canStart(
+                mode: .explain,
+                isPro: true,
+                listenRemaining: 0,
+                explainRemaining: 0
+            )
+        )
+    }
+
+    func testEightLanguageCatalogIsCompleteAndFormatSafe() throws {
+        let root = try catalog(named: "Localizable")
+        XCTAssertEqual(root["sourceLanguage"] as? String, "zh-Hans")
+        let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+        let protectedTokens = ["CastReader", "Apple", "Google", "Safari", "StoreKit", "WebView", "Xcode", "Amazon", "EPUB", "PDF", "DOCX", "TXT", "URL", "SLA", "API", "HTTP"]
+
+        for (key, rawEntry) in strings where !key.isEmpty {
+            let entry = try XCTUnwrap(rawEntry as? [String: Any], "Invalid entry: \(key)")
+            let localizations = try XCTUnwrap(entry["localizations"] as? [String: Any], "No localizations: \(key)")
+            let expectedSignature = try formatSignature(key)
+
+            for locale in translatedLocales {
+                let rawLocalization = try XCTUnwrap(localizations[locale], "Missing \(locale): \(key)")
+                let localization = try XCTUnwrap(rawLocalization as? [String: Any])
+                let unit = try XCTUnwrap(localization["stringUnit"] as? [String: Any])
+                let value = try XCTUnwrap(unit["value"] as? String)
+                XCTAssertFalse(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, "Empty \(locale): \(key)")
+                XCTAssertEqual(unit["state"] as? String, "translated", "Untranslated \(locale): \(key)")
+                XCTAssertEqual(try formatSignature(value), expectedSignature, "Format mismatch \(locale): \(key) => \(value)")
+
+                for token in protectedTokens where key.contains(token) {
+                    XCTAssertTrue(value.contains(token), "Protected token \(token) changed in \(locale): \(key) => \(value)")
+                }
+            }
+        }
+    }
+
+    func testInfoPlistCatalogCoversAllAppLocales() throws {
+        let root = try catalog(named: "InfoPlist")
+        let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+        XCTAssertEqual(Set(strings.keys), [
+            "CFBundleName", "NSCameraUsageDescription", "NSMicrophoneUsageDescription", "NSPhotoLibraryUsageDescription"
+        ])
+
+        for (key, rawEntry) in strings {
+            let entry = try XCTUnwrap(rawEntry as? [String: Any])
+            let localizations = try XCTUnwrap(entry["localizations"] as? [String: Any])
+            for locale in appLocales {
+                let localization = try XCTUnwrap(localizations[locale] as? [String: Any], "Missing \(locale): \(key)")
+                let unit = try XCTUnwrap(localization["stringUnit"] as? [String: Any])
+                let value = try XCTUnwrap(unit["value"] as? String)
+                XCTAssertFalse(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, "Empty \(locale): \(key)")
+            }
+        }
+    }
+
+    func testCoreNavigationTerminologyIsNativeAndStable() throws {
+        let root = try catalog(named: "Localizable")
+        let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+        let expected: [String: [String: String]] = [
+            "首页": ["en": "Home", "zh-Hans": "首页", "ja": "ホーム", "es": "Inicio", "fr": "Accueil", "pt-BR": "Início", "it": "Home", "hi": "होम"],
+            "文库": ["en": "Library", "zh-Hans": "文库", "ja": "ライブラリ", "es": "Biblioteca", "fr": "Bibliothèque", "pt-BR": "Biblioteca", "it": "Libreria", "hi": "लाइब्रेरी"],
+            "设置": ["en": "Settings", "zh-Hans": "设置", "ja": "設定", "es": "Ajustes", "fr": "Réglages", "pt-BR": "Ajustes", "it": "Impostazioni", "hi": "सेटिंग्स"],
+            "朗读": ["en": "Read Aloud", "zh-Hans": "朗读", "ja": "読み上げ", "es": "Leer en voz alta", "fr": "Lire à voix haute", "pt-BR": "Ler em voz alta", "it": "Leggi ad alta voce", "hi": "ज़ोर से पढ़ें"],
+            "解读": ["en": "Explain", "zh-Hans": "解读", "ja": "解説", "es": "Explicar", "fr": "Expliquer", "pt-BR": "Explicar", "it": "Spiega", "hi": "व्याख्या"],
+            "Kindle": ["en": "Kindle", "zh-Hans": "Kindle", "ja": "Kindle", "es": "Kindle", "fr": "Kindle", "pt-BR": "Kindle", "it": "Kindle", "hi": "Kindle"]
+        ]
+
+        for (key, locales) in expected {
+            let entry = try XCTUnwrap(strings[key] as? [String: Any])
+            let localizations = try XCTUnwrap(entry["localizations"] as? [String: Any])
+            for (locale, expectedValue) in locales {
+                let localization = try XCTUnwrap(localizations[locale] as? [String: Any])
+                let unit = try XCTUnwrap(localization["stringUnit"] as? [String: Any])
+                XCTAssertEqual(unit["value"] as? String, expectedValue, "Unexpected \(locale) term for \(key)")
+            }
+        }
+    }
+
+    func testProjectDeclaresAllEightKnownRegions() throws {
+        let projectURL = repositoryRoot.appendingPathComponent("CastReader.xcodeproj/project.pbxproj")
+        guard FileManager.default.fileExists(atPath: projectURL.path) else {
+            throw XCTSkip("Project source checks run on the host build machine")
+        }
+        let project = try String(
+            contentsOf: projectURL,
+            encoding: .utf8
+        )
+        for locale in appLocales {
+            XCTAssertTrue(project.contains(locale), "Project does not declare \(locale)")
+        }
+    }
+
+    // MARK: - Player control deck / Kindle surface stability
+
+    func testKindleReaderSurfaceFreezesWhilePlayerVoiceOverlayIsPresented() {
+        let stable = CGSize(width: 430, height: 690)
+        let transient = CGSize(width: 453, height: 690)
+
+        XCTAssertEqual(
+            KindleReaderSurfaceContract.renderSize(
+                measured: transient,
+                stable: stable,
+                isPlayerOverlayPresented: true
+            ),
+            stable,
+            "Voice UI must not resize the Kindle WebView"
+        )
+        XCTAssertEqual(
+            KindleReaderSurfaceContract.renderSize(
+                measured: transient,
+                stable: stable,
+                isPlayerOverlayPresented: false
+            ),
+            transient,
+            "Real reader layout changes still need to propagate"
+        )
+    }
+
+    func testKindleVisualCandidateDriftCannotRestartPlaybackWithoutSemanticNavigation() {
+        XCTAssertFalse(
+            KindleExternalNavigationContract.shouldBeginResume(
+                semanticSequenceAdvanced: false,
+                hasActivePlayback: true,
+                isReaderStable: true,
+                isInternalTurnInFlight: false
+            ),
+            "OCR/preload candidate changes are not user page turns"
+        )
+        XCTAssertTrue(
+            KindleExternalNavigationContract.shouldBeginResume(
+                semanticSequenceAdvanced: true,
+                hasActivePlayback: true,
+                isReaderStable: true,
+                isInternalTurnInFlight: false
+            )
+        )
+        XCTAssertFalse(
+            KindleExternalNavigationContract.shouldBeginResume(
+                semanticSequenceAdvanced: true,
+                hasActivePlayback: true,
+                isReaderStable: true,
+                isInternalTurnInFlight: true
+            ),
+            "An internal turn already in flight owns the transition"
+        )
+    }
+
+    func testCachedAsyncImageRejectsStaleVoiceAvatarCompletion() {
+        XCTAssertTrue(
+            CachedAsyncImageLoadContract.shouldCommit(
+                activeRequest: "https://cdn.example/voice-b.png",
+                completedRequest: "https://cdn.example/voice-b.png",
+                isCancelled: false
+            )
+        )
+        XCTAssertFalse(
+            CachedAsyncImageLoadContract.shouldCommit(
+                activeRequest: "https://cdn.example/voice-b.png",
+                completedRequest: "https://cdn.example/voice-a.png",
+                isCancelled: false
+            )
+        )
+        XCTAssertFalse(
+            CachedAsyncImageLoadContract.shouldCommit(
+                activeRequest: "https://cdn.example/voice-b.png",
+                completedRequest: "https://cdn.example/voice-b.png",
+                isCancelled: true
+            )
+        )
+    }
+
+    @MainActor
+    func testPlaybackVoicePanelUsesOneNormalizedRootRequest() {
+        let center = PlaybackVoicePanelCenter.shared
+        center.dismiss()
+        center.present(language: "ja-JP")
+        XCTAssertTrue(center.isPresented)
+        XCTAssertEqual(center.request?.language, "ja")
+        center.dismiss()
+        XCTAssertFalse(center.isPresented)
+    }
+
+    @MainActor
+    func testExplainVoiceUsesTargetLanguageInsteadOfSourceLanguage() {
+        let settings = AppSettings.shared
+        let previous = settings.explainLanguage
+        defer { settings.explainLanguage = previous }
+        settings.explainLanguage = "es"
+
+        let document = ReadingDocument(
+            title: "Japanese source",
+            sourceKind: .text,
+            language: "ja",
+            paragraphs: [ReadingParagraph(id: 0, text: "十分な長さの日本語本文です。", type: .paragraph)]
+        )
+        let vm = ExplainViewModel(document: document)
+        XCTAssertEqual(vm.playbackLanguage, "es")
     }
 }
 

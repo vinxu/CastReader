@@ -146,16 +146,16 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .signInRequired: return String(localized: "请先登录以使用声音克隆")
-        case .sessionUnavailable: return String(localized: "声音克隆登录服务尚未就绪，请稍后再试")
-        case .proRequired: return String(localized: "声音克隆仅面向 Pro 会员")
-        case .voiceNotFound: return String(localized: "这个声音已不存在，请重新创建")
+        case .signInRequired: return AppLocalized("请先登录以使用声音克隆")
+        case .sessionUnavailable: return AppLocalized("声音克隆登录服务尚未就绪，请稍后再试")
+        case .proRequired: return AppLocalized("声音克隆仅面向 Pro 会员")
+        case .voiceNotFound: return AppLocalized("这个声音已不存在，请重新创建")
         case .invalidRecording(let message): return message
-        case .creationLimit: return String(localized: "每 24 小时只能创建一个声音")
-        case .workerBusy(let message): return message ?? String(localized: "声音服务繁忙，请重试")
-        case .temporaryUnavailable: return String(localized: "声音服务暂时不可用，请稍后重试")
-        case .server(_, let message): return message ?? String(localized: "声音克隆请求失败")
-        case .invalidResponse: return String(localized: "声音克隆返回数据无效")
+        case .creationLimit: return AppLocalized("每 24 小时只能创建一个声音")
+        case .workerBusy(let message): return message ?? AppLocalized("声音服务繁忙，请重试")
+        case .temporaryUnavailable: return AppLocalized("声音服务暂时不可用，请稍后重试")
+        case .server(_, let message): return message ?? AppLocalized("声音克隆请求失败")
+        case .invalidResponse: return AppLocalized("声音克隆返回数据无效")
         }
     }
 }

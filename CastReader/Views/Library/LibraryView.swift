@@ -93,7 +93,7 @@ struct LibraryView: View {
     private var categoryBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                categoryChip(title: String(localized: "全部"), count: history.records.count, kind: nil)
+                categoryChip(title: AppLocalized("全部"), count: history.records.count, kind: nil)
                 ForEach(availableKinds, id: \.self) { k in
                     categoryChip(title: label(k), count: history.records.filter { $0.sourceKind == k }.count, kind: k)
                 }
@@ -124,13 +124,13 @@ struct LibraryView: View {
 
     private func label(_ k: ReadingSourceKind) -> String {
         switch k {
-        case .web: return String(localized: "网页")
+        case .web: return AppLocalized("网页")
         case .pdf: return "PDF"
         case .docx: return "DOCX"
         case .epub: return "EPUB"
         case .kindle: return "Kindle"
-        case .photo: return String(localized: "图片")
-        case .text: return String(localized: "文本")
+        case .photo: return AppLocalized("图片")
+        case .text: return AppLocalized("文本")
         }
     }
 
@@ -139,7 +139,9 @@ struct LibraryView: View {
     private var noResultState: some View {
         VStack(spacing: 12) {
             Image(systemName: "magnifyingglass").font(.system(size: 40)).foregroundColor(AppTheme.mutedForeground)
-            Text(searchText.isEmpty ? "该分类暂无记录" : "未找到匹配「\(searchText)」的记录")
+            Text(searchText.isEmpty
+                 ? LocalizedStringKey("该分类暂无记录")
+                 : LocalizedStringKey("未找到匹配「\(searchText)」的记录"))
                 .font(.subheadline).foregroundColor(AppTheme.mutedForeground)
                 .multilineTextAlignment(.center).padding(.horizontal, 40)
         }
@@ -196,30 +198,31 @@ private struct HistoryRow: View {
 
     private var sourceLabel: String {
         switch record.sourceKind {
-        case .web: return String(localized: "网页")
+        case .web: return AppLocalized("网页")
         case .pdf: return "PDF"
         case .docx: return "DOCX"
         case .epub: return "EPUB"
         case .kindle: return "Kindle"
-        case .photo: return String(localized: "图片")
-        case .text: return String(localized: "文本")
+        case .photo: return AppLocalized("图片")
+        case .text: return AppLocalized("文本")
         }
     }
 
-    /// 「多久前读过」：确定性中文相对时间（不用 RelativeDateTimeFormatter，避免差值≈0/负时吐英文怪串）。
+    /// 「多久前读过」：短时间走本地化相对文案，较久日期交给当前 Locale 格式化。
     private var relativeTime: String { Self.relative(record.lastOpenedAt) }
 
     static func relative(_ date: Date) -> String {
         let s = Date().timeIntervalSince(date)
-        if s < 60 { return String(localized: "刚刚") }                       // 含时钟漂移/未来（s<0）兜底
-        if s < 3600 { return String(localized: "\(Int(s / 60)) 分钟前") }
-        if s < 86_400 { return String(localized: "\(Int(s / 3600)) 小时前") }
-        if s < 86_400 * 2 { return String(localized: "昨天") }
-        if s < 86_400 * 7 { return String(localized: "\(Int(s / 86_400)) 天前") }
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "zh_CN")
-        f.dateFormat = (s < 86_400 * 365) ? "M月d日" : "yyyy年M月d日"
-        return f.string(from: date)
+        if s < 60 { return AppLocalized("刚刚") }                       // 含时钟漂移/未来（s<0）兜底
+        if s < 3600 { return AppLocalized("\(Int(s / 60)) 分钟前") }
+        if s < 86_400 { return AppLocalized("\(Int(s / 3600)) 小时前") }
+        if s < 86_400 * 2 { return AppLocalized("昨天") }
+        if s < 86_400 * 7 { return AppLocalized("\(Int(s / 86_400)) 天前") }
+        let dateStyle: Date.FormatStyle.DateStyle = s < 86_400 * 365 ? .abbreviated : .numeric
+        return date.formatted(
+            Date.FormatStyle(date: dateStyle, time: .omitted)
+                .locale(.current)
+        )
     }
 }
 

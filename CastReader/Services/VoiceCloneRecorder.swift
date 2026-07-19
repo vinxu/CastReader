@@ -28,7 +28,7 @@ final class VoiceCloneRecorder: NSObject, ObservableObject, @preconcurrency AVAu
         stopPlayback()
         errorMessage = nil
         guard await requestPermission() else {
-            errorMessage = String(localized: "请在系统设置中允许麦克风权限")
+            errorMessage = AppLocalized("请在系统设置中允许麦克风权限")
             return
         }
         do {
@@ -49,7 +49,7 @@ final class VoiceCloneRecorder: NSObject, ObservableObject, @preconcurrency AVAu
             recorder.delegate = self
             recorder.isMeteringEnabled = true
             guard recorder.prepareToRecord(), recorder.record(forDuration: maximumDuration) else {
-                throw VoiceCloneError.invalidRecording(String(localized: "无法开始录音"))
+                throw VoiceCloneError.invalidRecording(AppLocalized("无法开始录音"))
             }
             self.recorder = recorder
             recordingURL = url
@@ -101,7 +101,7 @@ final class VoiceCloneRecorder: NSObject, ObservableObject, @preconcurrency AVAu
 
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
         finishRecording()
-        if !flag { errorMessage = String(localized: "录音未能完整保存，请重录") }
+        if !flag { errorMessage = AppLocalized("录音未能完整保存，请重录") }
     }
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
@@ -125,9 +125,9 @@ final class VoiceCloneRecorder: NSObject, ObservableObject, @preconcurrency AVAu
         }
         state = .recorded
         if duration < minimumDuration {
-            errorMessage = String(localized: "请至少录制 3 秒")
+            errorMessage = AppLocalized("请至少录制 3 秒")
         } else if fileSize > maximumBytes {
-            errorMessage = String(localized: "录音文件必须不超过 4 MB")
+            errorMessage = AppLocalized("录音文件必须不超过 4 MB")
         }
         resetAudioSession()
     }

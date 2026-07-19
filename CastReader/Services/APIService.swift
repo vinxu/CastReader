@@ -281,22 +281,23 @@ actor APIService {
         guard SpeechTextSanitizer.containsSpeakableContent(sanitized) else {
             throw APIError.serverError("No speakable text for TTS")
         }
+        let canonicalLanguage = SupportedTTSLanguage.canonicalCode(language)
         let requestedVoice = voice ?? ""
         let featureSafeVoice = !Constants.Features.voiceCloningEnabled && requestedVoice.hasPrefix("vc_")
             ? ""
             : requestedVoice
         let resolvedVoice = VoiceCatalog.resolvedVoice(
             preferred: featureSafeVoice,
-            for: language
+            for: canonicalLanguage
         )
         // Clone compatibility endpoint accepts up to 600 characters and returns
         // unprocessedText for the existing continuation loop. Never send an
         // oversized clone request and never recover by changing narrators.
         let maxLength = resolvedVoice.hasPrefix("vc_") ? 600 : 5000
         let inputText = sanitized.count > maxLength ? String(sanitized.prefix(maxLength)) : sanitized
-        let ttsRequest = TTSRequest(input: inputText, voice: resolvedVoice, speed: speed, language: language)
+        let ttsRequest = TTSRequest(input: inputText, voice: resolvedVoice, speed: speed, language: canonicalLanguage)
         let bodyData = try JSONEncoder().encode(ttsRequest)
-        NSLog("[TTSRoute] language=%@ voice=%@ clone=%@", language, resolvedVoice, resolvedVoice.hasPrefix("vc_") ? "Y" : "N")
+        NSLog("[TTSRoute] language=%@ voice=%@ clone=%@", canonicalLanguage, resolvedVoice, resolvedVoice.hasPrefix("vc_") ? "Y" : "N")
 
         if resolvedVoice.hasPrefix("vc_") {
             return try await requestClonedVoiceTTS(body: bodyData, voiceID: resolvedVoice)

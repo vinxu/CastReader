@@ -35,6 +35,16 @@ xcodebuild test -workspace CastReader.xcworkspace -scheme CastReader -destinatio
 ```
 或 Xcode：⌘B / ⌘R / ⌘U。
 
+## App Store 发布自动化
+
+当用户说“提交到 App Store 审核”“提交到应用市场去审核”“发布 iOS 新版本”或等价表达时，必须使用个人 Skill `$submit-castreader-ios-to-app-store`：
+
+`/Users/xuxuheng/.codex/skills/submit-castreader-ios-to-app-store/SKILL.md`
+
+完整提交指令默认授权：读取 App Store Connect 当前版本与最大 Build → 更新版本号 → 测试/归档/签名 → 上传并等待 `VALID` → 创建新版本 → 八语 App Info 与版本元数据 → 截图/审核资料/合规检查 → 绑定 Build → Review Submission → 状态回读。不要只停在打包、上传或保存草稿。
+
+项目内 SOP 见 `docs/iOS-AppStore-Release-SOP.md`，八语文案源为 `docs/CastReader-AppStore-Metadata-8-Languages.md`。不得输出 `.p8`、JWT 或签名凭据，不得为过审擅自修改价格、订阅、地区、App Privacy、年龄分级或法律声明。
+
 ### 新增/删除源文件 → 必须改 project.pbxproj
 
 工程是传统格式（objectVersion 55，**非** Xcode 16 文件系统同步组），每个 `.swift` 必须登记到 4 处（FileReference / BuildFile / Group.children / Sources phase）。**手改易错，用 `xcodeproj` Ruby gem 脚本**（已安装）：

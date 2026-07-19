@@ -47,6 +47,7 @@ enum Constants {
         static let webURL = "https://castreader.ai"
         static let proStatus = "\(webURL)/api/pro/status"               // GET ?device_id=&user_id=&local_date=
         static let proListenTrack = "\(webURL)/api/pro/listen-track"    // POST {device_id|user_id, seconds}
+        static let proVerifyApple = "\(webURL)/api/pro/verify-apple"    // POST signed StoreKit 2 transaction
         static let authSocialSignIn = "\(webURL)/api/auth/sign-in/social" // POST {provider, idToken:{token}} (better-auth)
         static let pricingURL = "\(webURL)/pricing"
         private static var legalLanguagePath: String {

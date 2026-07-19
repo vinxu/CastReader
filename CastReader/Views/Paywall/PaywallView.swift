@@ -85,10 +85,10 @@ struct ProUpsellContent: View {
     @State private var selectedProductID: String?
 
     private let benefits: [(String, String)] = [
-        ("infinity", String(localized: "无限朗读时长")),
-        ("sparkles", String(localized: "无限解读次数")),
-        ("waveform", String(localized: "全部高级音色")),
-        ("hare.fill", String(localized: "最高 3x 语速")),
+        ("infinity", AppLocalized("无限朗读时长")),
+        ("sparkles", AppLocalized("无限解读次数")),
+        ("waveform", AppLocalized("全部高级音色")),
+        ("hare.fill", AppLocalized("最高 3x 语速")),
     ]
 
     var body: some View {
@@ -247,8 +247,8 @@ struct ProUpsellContent: View {
                     .font(.headline)
                     .multilineTextAlignment(.center)
                 Text(auth.hasEmailAccount
-                     ? String(localized: "本机已解锁；跨平台同步等待 Apple 验证接口。")
-                     : String(localized: "本机已解锁；登录邮箱后可完成跨平台同步。"))
+                     ? AppLocalized("本机已解锁；跨平台同步等待 Apple 验证接口。")
+                     : AppLocalized("本机已解锁；登录邮箱后可完成跨平台同步。"))
                     .font(.caption)
                     .foregroundColor(AppTheme.mutedForeground)
                     .multilineTextAlignment(.center)
@@ -324,24 +324,24 @@ struct ProUpsellContent: View {
 
     private var restoreResultMessage: String {
         if pro.isCrossPlatformPro {
-            return String(localized: "已恢复 Pro 会员")
+            return AppLocalized("已恢复 Pro 会员")
         }
         if pro.storeKitLocalPro {
             if auth.hasEmailAccount {
-                return String(localized: "已恢复购买，本机已解锁；跨平台同步等待 Apple 验证接口。")
+                return AppLocalized("已恢复购买，本机已解锁；跨平台同步等待 Apple 验证接口。")
             }
-            return String(localized: "已检测到购买，请登录邮箱同步 Pro")
+            return AppLocalized("已检测到购买，请登录邮箱同步 Pro")
         }
-        return String(localized: "未找到可恢复的购买")
+        return AppLocalized("未找到可恢复的购买")
     }
 
     /// 订阅周期文案（满足 Apple 3.1.2：购买点附近明示订阅时长）。
     private func periodText(_ p: Product) -> String {
         switch p.subscription?.subscriptionPeriod.unit {
-        case .month: return String(localized: "按月订阅")
-        case .year: return String(localized: "按年订阅")
-        case .week: return String(localized: "按周订阅")
-        case .day: return String(localized: "按天订阅")
+        case .month: return AppLocalized("按月订阅")
+        case .year: return AppLocalized("按年订阅")
+        case .week: return AppLocalized("按周订阅")
+        case .day: return AppLocalized("按天订阅")
         default: return ""
         }
     }

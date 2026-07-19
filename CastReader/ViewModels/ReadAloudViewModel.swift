@@ -31,6 +31,7 @@ final class ReadAloudViewModel: ObservableObject {
     @Published var processedDisplayText: String? = nil   // 当前段已朗读文本（text 模式渲染）
     @Published var highlightRange: NSRange? = nil          // 当前词字符范围（processedDisplayText 内）
     @Published var photoHighlightWordIndex: Int? = nil     // photo 模式：OCR 词索引
+    @Published var photoHighlightWordRange: Range<Int>? = nil // OCR 图片：单词或当前 segment 的词范围
     @Published var isPlaying: Bool = false
     @Published var isBuffering: Bool = false
     @Published var status: TTSStatus = .pending
@@ -49,6 +50,9 @@ final class ReadAloudViewModel: ObservableObject {
     private var preloaded = Set<Int>()
     private var cancellables = Set<AnyCancellable>()
     private var readableIndices: [Int] = []
+    private var generationEpoch: UInt64 = 0
+    private var playbackVoiceID: String
+    private var activeVoiceSwitchID: UUID?
 
     // 预生成下一段 TTS（消除段间等首字节的 gap）：当前段生成完即后台预取下一段到缓存，advance 命中则秒接。
     private var prefetchTask: Task<Void, Never>?
@@ -101,6 +105,7 @@ final class ReadAloudViewModel: ObservableObject {
     init(document: ReadingDocument, analyticsContext: AnalyticsContentContext? = nil) {
         self.document = document
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
+        self.playbackVoiceID = AppSettings.shared.voice(for: document.language)
         recomputeReadableIndices()
         bind()
     }
@@ -110,6 +115,105 @@ final class ReadAloudViewModel: ObservableObject {
         playbackTitle = title
         playbackCoverURL = coverURL
         playbackChapterTitle = chapterTitle
+    }
+
+    /// A Kindle page handoff is safe only after the last readable chunk has
+    /// finished generating all of its own segments. At that point, appending the
+    /// next page's prepared audio cannot reorder a still-streaming current page.
+    var isOnLastReadableParagraph: Bool {
+        currentParagraphIndex >= 0 && currentParagraphIndex == readableIndices.last
+    }
+
+    var currentTTSCompleteForPageHandoff: Bool {
+        isActive && !isFinished && status.isReady &&
+            audio.currentSegment?.paragraphIndex == currentParagraphIndex &&
+            !audio.moreSegmentsExpected
+    }
+
+    /// Loading/streaming does not imply the play control must be locked: a
+    /// paused voice switch may already have a prepared queue item.
+    var canResumePlayback: Bool {
+        audio.currentSegment != nil || audio.hasQueuedSegments
+    }
+
+    /// Player-facing voice controls must follow the language that is actually
+    /// being read. Web content learns this only after DOM extraction, while
+    /// PDF/text/Kindle content already carries it on the document.
+    var playbackLanguage: String {
+        VoiceCatalog.normalizedLanguage(docLanguage)
+    }
+
+    /// The voice avatar is deliberately hidden before the first Play action.
+    /// Once a paragraph has entered the playback pipeline it remains available
+    /// while paused or completed, so the user can switch voices without having
+    /// to start the old voice again first.
+    var hasStartedPlayback: Bool {
+        currentParagraphIndex >= 0 && !status.isPending
+    }
+
+    /// Relinquish callback/highlight ownership while leaving the shared player
+    /// and its queue untouched. The next Kindle page VM adopts the already
+    /// playing queued item, so calling the normal `deactivate()` here would
+    /// introduce exactly the pause this handoff is designed to remove.
+    func detachForContinuousPageHandoff() {
+        guard isActive else { return }
+        generationEpoch &+= 1
+        commitListen()
+        endAnalyticsReadSession(result: .success, reason: "kindle_page_handoff")
+        isActive = false
+        generationTask?.cancel()
+        generationTask = nil
+        listenCapRefreshTask?.cancel()
+        listenCapRefreshTask = nil
+        clearPrefetch()
+    }
+
+    /// Adopt next-page segments that AudioPlayerService is already playing.
+    /// This updates paragraph/highlight/callback ownership without clearing the
+    /// queue or restarting the current AVPlayerItem.
+    @discardableResult
+    func adoptContinuousPlayback(_ segments: [AudioSegment], paragraphIndex: Int) -> Bool {
+        guard readableIndices.contains(paragraphIndex),
+              !segments.isEmpty,
+              let current = audio.currentSegment,
+              segments.contains(where: { $0.id == current.id }) else {
+            return false
+        }
+
+        beginAnalyticsReadSessionIfNeeded(resume: false)
+        activate()
+        applyPlaybackMetadata()
+        applySpeed()
+        playbackVoiceID = settings.voice(for: docLanguage)
+        isFinished = false
+        generationEpoch &+= 1
+        generationTask?.cancel()
+        generationTask = nil
+        clearPrefetch()
+
+        audio.moreSegmentsExpected = false
+        segmentsByParagraph[paragraphIndex] = segments
+        currentParagraphIndex = paragraphIndex
+        processedDisplayText = segments.map { $0.text }.joined()
+        highlightRange = nil
+        photoHighlightWordIndex = nil
+        photoHighlightWordRange = nil
+        pdfHighlight = nil
+        photoCursor = 0
+        clearOCRWordAlignment()
+        lastWordKey = ""
+        status = .ready
+        if document.sourceKind.isWebRendered { webAudioSegments.append(contentsOf: segments) }
+
+        Task { [weak self] in await self?.preloadNext(after: paragraphIndex) }
+        return true
+    }
+
+    /// Covers the rare case where a very short prefetched utterance finishes
+    /// while the Kindle visual surface is still committing the page turn.
+    func continueAfterAdoptedPlaybackCompleted() {
+        guard isActive, currentParagraphIndex >= 0 else { return }
+        advance()
     }
 
     private func applyPlaybackMetadata() {
@@ -136,6 +240,9 @@ final class ReadAloudViewModel: ObservableObject {
     func loadWebParagraphs(_ p: [ReadingParagraph], language: String? = nil) {
         webParagraphs = p
         if let language { webLanguage = language }
+        if !isActive, currentParagraphIndex < 0 {
+            playbackVoiceID = settings.voice(for: docLanguage)
+        }
         webAudioSegments = []
         recomputeReadableIndices()
     }
@@ -197,6 +304,12 @@ final class ReadAloudViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.applySpeed() }
             .store(in: &cancellables)
+        settings.$voicesByLanguage
+            .combineLatest(settings.$clonedVoicesByLanguage)
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.handleVoicePreferenceChanged() }
+            .store(in: &cancellables)
         pro.$storeKitLocalPro
             .combineLatest(pro.$serverPro)
             .receive(on: RunLoop.main)
@@ -221,6 +334,7 @@ final class ReadAloudViewModel: ObservableObject {
     func deactivate() {
         endAnalyticsReadSession(result: .cancelled, reason: "mode_switched")
         isActive = false
+        generationEpoch &+= 1
         generationTask?.cancel()
         listenCapRefreshTask?.cancel()
         listenCapRefreshTask = nil
@@ -233,8 +347,13 @@ final class ReadAloudViewModel: ObservableObject {
         // 清朗读高亮状态，避免切到解读后残留（web 源 DOM 另由 setActive→clearOverlay 清）
         highlightRange = nil
         photoHighlightWordIndex = nil
+        photoHighlightWordRange = nil
         webHighlight = nil
         pdfHighlight = nil
+        if let switchID = activeVoiceSwitchID {
+            VoiceSwitchStatusCenter.shared.finish(switchID)
+            activeVoiceSwitchID = nil
+        }
     }
 
     // MARK: - Start / control
@@ -244,7 +363,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func start(allowAccessRefresh: Bool) {
-        guard !readableIndices.isEmpty else { status = .error(String(localized: "无可朗读内容")); return }
+        guard !readableIndices.isEmpty else { status = .error(AppLocalized("无可朗读内容")); return }
         guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
             if allowAccessRefresh {
                 refreshAccessThenRetryStart()
@@ -269,6 +388,10 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         if !audio.isPlaying { beginAnalyticsReadSessionIfNeeded(resume: true) }
+        if !audio.isPlaying, !audio.hasQueuedSegments, audio.currentSegment == nil, !isFinished {
+            generate(currentParagraphIndex)
+            return
+        }
         audio.togglePlayPause()
     }
 
@@ -281,14 +404,16 @@ final class ReadAloudViewModel: ObservableObject {
             start()
             return
         }
-        if status.isLoading || isBuffering || (status.isStreaming && audio.currentSegment == nil) {
+        if (status.isLoading || isBuffering || status.isStreaming),
+           audio.currentSegment == nil,
+           !audio.hasQueuedSegments {
             return
         }
         guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
             refreshAccessThenRetryResume()
             return
         }
-        if audio.currentSegment != nil {
+        if audio.currentSegment != nil || audio.hasQueuedSegments {
             beginAnalyticsReadSessionIfNeeded(resume: true)
             audio.play()
         } else if !isFinished {
@@ -352,7 +477,9 @@ final class ReadAloudViewModel: ObservableObject {
         activate()
         applyPlaybackMetadata()
         applySpeed()
+        playbackVoiceID = settings.voice(for: docLanguage)
         isFinished = false
+        generationEpoch &+= 1
         generationTask?.cancel()
         clearPrefetch()
 
@@ -363,6 +490,7 @@ final class ReadAloudViewModel: ObservableObject {
         processedDisplayText = segments.map { $0.text }.joined()
         highlightRange = nil
         photoHighlightWordIndex = nil
+        photoHighlightWordRange = nil
         pdfHighlight = nil
         photoCursor = 0
         clearOCRWordAlignment()
@@ -422,20 +550,37 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     func stop() {
+        generationEpoch &+= 1
         generationTask?.cancel()
+        generationTask = nil
         listenCapRefreshTask?.cancel()
         listenCapRefreshTask = nil
         clearPrefetch()
         Task { await TTSService.shared.cancelCurrentRequest() }
+        audio.moreSegmentsExpected = false
         audio.clearBook()
+        status = .pending
+        if let switchID = activeVoiceSwitchID {
+            VoiceSwitchStatusCenter.shared.finish(switchID)
+            activeVoiceSwitchID = nil
+        }
         commitListen()
         endAnalyticsReadSession(result: .cancelled, reason: "closed")
     }
 
     // MARK: - Generation
 
-    private func generate(_ index: Int) {
-        NSLog("CRDBG generate para=%d lang=%@ web=%@", index, docLanguage, document.sourceKind.isWebRendered ? "Y" : "N")
+    private func generate(
+        _ index: Int,
+        voiceOverride: String? = nil,
+        autoPlay: Bool = true,
+        voiceSwitchID: UUID? = nil
+    ) {
+        generationEpoch &+= 1
+        let epoch = generationEpoch
+        let voice = voiceOverride ?? settings.voice(for: docLanguage)
+        playbackVoiceID = voice
+        NSLog("CRDBG generate para=%d lang=%@ voice=%@ epoch=%llu web=%@", index, docLanguage, voice, epoch, document.sourceKind.isWebRendered ? "Y" : "N")
         isFinished = false   // 开始播放某段 → 未完成
         generationTask?.cancel()
         clearPrefetch()   // 重新生成某段 → 作废旧预取
@@ -447,6 +592,7 @@ final class ReadAloudViewModel: ObservableObject {
         processedDisplayText = nil
         highlightRange = nil
         photoHighlightWordIndex = nil
+        photoHighlightWordRange = nil
         pdfHighlight = nil
         photoCursor = 0
         clearOCRWordAlignment()
@@ -454,8 +600,6 @@ final class ReadAloudViewModel: ObservableObject {
         status = .loading
 
         let para = paras[index]
-        let voice = settings.voice(for: docLanguage)
-
         generationTask = Task { [weak self] in
             guard let self = self else { return }
             do {
@@ -463,7 +607,7 @@ final class ReadAloudViewModel: ObservableObject {
                 // fire-and-forget cancel，否则它可能晚于新请求执行，把下一页请求取消掉。
                 await TTSService.shared.cancelCurrentRequest()
                 try Task.checkCancellation()
-                NSLog("CRDBG generate request begin para=%d", index)
+                NSLog("CRDBG generate request begin para=%d voice=%@ epoch=%llu", index, voice, epoch)
                 try await TTSService.shared.generateTTSForParagraph(
                     paragraphIndex: index,
                     text: SpeechTextSanitizer.sanitizedForTTS(para.text),
@@ -471,22 +615,42 @@ final class ReadAloudViewModel: ObservableObject {
                     speed: 1.0,                       // 1.0 生成，播放用 playbackRate
                     language: self.docLanguage
                 ) { [weak self] segment in
-                    self?.appendSegment(segment, paragraph: index)
+                    self?.appendSegment(
+                        segment,
+                        paragraph: index,
+                        epoch: epoch,
+                        autoPlay: autoPlay,
+                        voiceSwitchID: voiceSwitchID
+                    )
                 }
                 await MainActor.run {
+                    guard self.generationEpoch == epoch,
+                          self.currentParagraphIndex == index else { return }
                     self.audio.moreSegmentsExpected = false
-                    if self.currentParagraphIndex == index { self.status = .ready }
+                    self.status = .ready
+                    if let voiceSwitchID, self.activeVoiceSwitchID == voiceSwitchID {
+                        VoiceSwitchStatusCenter.shared.finish(voiceSwitchID)
+                        self.activeVoiceSwitchID = nil
+                    }
                 }
-                await self.preloadNext(after: index)
+                if self.generationEpoch == epoch {
+                    await self.preloadNext(after: index)
+                }
             } catch is CancellationError {
-                // 切段取消，忽略
+                self.finishCancelledGenerationIfCurrent(epoch: epoch, voiceSwitchID: voiceSwitchID)
             } catch TTSError.cancelled {
-                NSLog("CRDBG generate request cancelled para=%d", index)
+                NSLog("CRDBG generate request cancelled para=%d epoch=%llu", index, epoch)
+                self.finishCancelledGenerationIfCurrent(epoch: epoch, voiceSwitchID: voiceSwitchID)
             } catch {
                 await MainActor.run {
+                    guard self.generationEpoch == epoch else { return }
                     self.audio.moreSegmentsExpected = false
                     if self.currentParagraphIndex == index {
                         self.status = .error(error.localizedDescription)
+                        if let voiceSwitchID, self.activeVoiceSwitchID == voiceSwitchID {
+                            VoiceSwitchStatusCenter.shared.finish(voiceSwitchID)
+                            self.activeVoiceSwitchID = nil
+                        }
                         self.endAnalyticsReadSession(
                             result: .failed,
                             reason: "tts_failed",
@@ -499,14 +663,86 @@ final class ReadAloudViewModel: ObservableObject {
         }
     }
 
-    private func appendSegment(_ segment: AudioSegment, paragraph: Int) {
-        guard paragraph == currentParagraphIndex else { return }
+    private func appendSegment(
+        _ segment: AudioSegment,
+        paragraph: Int,
+        epoch: UInt64,
+        autoPlay: Bool,
+        voiceSwitchID: UUID?
+    ) {
+        guard epoch == generationEpoch, paragraph == currentParagraphIndex else {
+            NSLog("CRDBG drop stale TTS segment para=%d epoch=%llu current=%llu", paragraph, epoch, generationEpoch)
+            return
+        }
         segmentsByParagraph[paragraph, default: []].append(segment)
         let segs = segmentsByParagraph[paragraph] ?? []
         processedDisplayText = segs.map { $0.text }.joined()
         if document.sourceKind.isWebRendered { webAudioSegments.append(segment) }
-        audio.loadSegment(segment)
+        audio.loadSegment(segment, autoPlay: autoPlay)
         status = .streaming
+        if let voiceSwitchID, activeVoiceSwitchID == voiceSwitchID {
+            VoiceSwitchStatusCenter.shared.finish(voiceSwitchID)
+            activeVoiceSwitchID = nil
+        }
+    }
+
+    private func finishCancelledGenerationIfCurrent(epoch: UInt64, voiceSwitchID: UUID?) {
+        guard generationEpoch == epoch else { return }
+        audio.moreSegmentsExpected = false
+        status = audio.hasQueuedSegments || audio.currentSegment != nil ? .ready : .pending
+        if let voiceSwitchID, activeVoiceSwitchID == voiceSwitchID {
+            VoiceSwitchStatusCenter.shared.finish(voiceSwitchID)
+            activeVoiceSwitchID = nil
+        }
+    }
+
+    private func handleVoicePreferenceChanged() {
+        let newVoiceID = settings.voice(for: docLanguage)
+        guard newVoiceID != playbackVoiceID else { return }
+        let oldVoiceID = playbackVoiceID
+        playbackVoiceID = newVoiceID
+
+        guard isActive,
+              currentParagraphIndex >= 0,
+              readableIndices.contains(currentParagraphIndex),
+              !isFinished else { return }
+
+        let previewHadSuspendedPlayback = VoicePreviewPlaybackCoordinator.shared.cancelForVoiceSwitch()
+        VoiceSamplePlayer.shared.stop(resumeSuspendedPlayback: false)
+        VoiceClonePreviewPlayer.shared.stop(resumeSuspendedPlayback: false)
+        let shouldAutoPlay = audio.isPlaying ||
+            previewHadSuspendedPlayback ||
+            status.isLoading ||
+            (status.isStreaming && audio.currentSegment == nil && !audio.hasQueuedSegments)
+        NotificationCenter.default.post(
+            name: .castReaderPlaybackVoiceWillSwitch,
+            object: self,
+            userInfo: [
+                "language": VoiceCatalog.normalizedLanguage(docLanguage),
+                "fromVoiceID": oldVoiceID,
+                "toVoiceID": newVoiceID,
+            ]
+        )
+        let switchID = VoiceSwitchStatusCenter.shared.begin(
+            language: docLanguage,
+            from: oldVoiceID,
+            to: newVoiceID
+        )
+        activeVoiceSwitchID = switchID
+        NSLog(
+            "CRDBG voice switch begin lang=%@ from=%@ to=%@ para=%d autoPlay=%@",
+            docLanguage,
+            oldVoiceID,
+            newVoiceID,
+            currentParagraphIndex,
+            shouldAutoPlay ? "Y" : "N"
+        )
+        generate(
+            currentParagraphIndex,
+            voiceOverride: newVoiceID,
+            autoPlay: shouldAutoPlay,
+            voiceSwitchID: switchID
+        )
     }
 
     /// 当前段生成完后调用：后台预生成下一段 TTS 到缓存（不入队播放），advance 命中时秒接，消除段间等首字节的 gap。
@@ -586,6 +822,7 @@ final class ReadAloudViewModel: ObservableObject {
         processedDisplayText = segs.map { $0.text }.joined()
         highlightRange = nil
         photoHighlightWordIndex = nil
+        photoHighlightWordRange = nil
         pdfHighlight = nil
         photoCursor = 0
         clearOCRWordAlignment()
@@ -764,6 +1001,28 @@ final class ReadAloudViewModel: ObservableObject {
         return ranges.isEmpty ? [NSRange(location: 0, length: ns.length)] : ranges
     }
 
+    private func hasReliableWordHighlight(_ segment: AudioSegment) -> Bool {
+        guard SupportedTTSLanguage(identifier: docLanguage)?.timestampMode == "word" else { return false }
+        return TTSTimestampQuality.hasReliableWordGranularity(text: segment.text, timestamps: segment.timestamps)
+    }
+
+    private func wordHighlightSegments(_ segments: [AudioSegment]) -> [AudioSegment] {
+        segments.map { segment in
+            guard !hasReliableWordHighlight(segment) else { return segment }
+            return AudioSegment(
+                paragraphIndex: segment.paragraphIndex,
+                segmentIndex: segment.segmentIndex,
+                audioData: segment.audioData,
+                timestamps: [],
+                duration: segment.duration,
+                text: segment.text,
+                isWavFormat: segment.isWavFormat,
+                unprocessedText: segment.unprocessedText,
+                speaker: segment.speaker
+            )
+        }
+    }
+
     private func updateHighlight(_ t: Double) {
         guard let seg = audio.currentSegment, seg.paragraphIndex == currentParagraphIndex else { return }
 
@@ -775,7 +1034,7 @@ final class ReadAloudViewModel: ObservableObject {
             let base = segs.prefix(segPos).reduce(0) { $0 + ($1.text as NSString).length }
 
             // 有词时间戳（英文）→ 逐词：下发词数组+索引+segment序号，JS 在 DOM 虚拟全文前向匹配（不靠字符偏移，对齐扩展 highlight-sync）。
-            if !seg.timestamps.isEmpty {
+            if hasReliableWordHighlight(seg) {
                 var localIdx = -1
                 for (i, ts) in seg.timestamps.enumerated() {
                     if t + 0.02 >= ts.startTime { localIdx = i } else { break }
@@ -800,14 +1059,15 @@ final class ReadAloudViewModel: ObservableObject {
         // 发 pdfHighlight 让 PDFReaderView 在句范围内 findString 定位词、画词矩形（中文无词时间戳→不发，仅句级）。
         if document.sourceKind == .pdf {
             let segs = segmentsByParagraph[currentParagraphIndex] ?? []
-            guard let segPos = segs.firstIndex(where: { $0.id == seg.id }), !seg.timestamps.isEmpty else { return }
+            guard let segPos = segs.firstIndex(where: { $0.id == seg.id }), hasReliableWordHighlight(seg) else { return }
             var localIdx = -1
             for (i, ts) in seg.timestamps.enumerated() {
                 if t + 0.02 >= ts.startTime { localIdx = i } else { break }
             }
             guard localIdx >= 0 else { return }
-            let priorWords = segs.prefix(segPos).reduce(0) { $0 + $1.timestamps.count }
-            let words = segs.flatMap { $0.timestamps.map { $0.word } }
+            let wordSegments = wordHighlightSegments(segs)
+            let priorWords = wordSegments.prefix(segPos).reduce(0) { $0 + $1.timestamps.count }
+            let words = wordSegments.flatMap { $0.timestamps.map { $0.word } }
             let cmd = PDFWordHighlight(paragraphIndex: currentParagraphIndex, words: words, wordIndex: priorWords + localIdx)
             if pdfHighlight != cmd { pdfHighlight = cmd }
             return
@@ -819,19 +1079,23 @@ final class ReadAloudViewModel: ObservableObject {
 
         // 对齐扩展：无词时间戳（中文等语言后端不返回）→ 高亮当前整句（整个 segment 文本），随 segment 推进；
         // 有词时间戳（英文）→ 词级逐字高亮（"老师指读"）。判断依据是「该 segment 是否有词时间戳」，与语言无关。
-        if seg.timestamps.isEmpty {
+        if !hasReliableWordHighlight(seg) {
             if document.sourceKind.isNativeTextRendered {
                 let content = contentRange(in: seg.text as NSString)
                 highlightRange = NSRange(location: base + content.location, length: content.length)
             } else if document.sourceKind.isOCRImageRendered {
-                // OCR 图片源 + 无词时间戳（中文云端 TTS 不返回词级时间戳）：按段内 segment 进度线性推进
-                // OCR 词高亮，否则照片/Kindle 中文永远不高亮。单调不减，防流式 segment 数抖动导致回跳。
-                let wordCount = document.paragraphs[currentParagraphIndex].words.count
-                let segDur = audio.duration > 0.01 ? audio.duration : (seg.duration > 0.01 ? seg.duration : 0)
-                let segProg = segDur > 0.01 ? min(1.0, max(0, t) / segDur) : 0
-                if let idx = Self.photoWordIndex(wordCount: wordCount, segPos: segPos, segCount: segs.count, segProgress: segProg) {
-                    let next = max(photoHighlightWordIndex ?? -1, idx)
-                    if next != photoHighlightWordIndex { photoHighlightWordIndex = next }
+                // Segment highlight is derived from the segment's own text and
+                // the OCR word stream. It must not depend on `segs.count`: that
+                // count grows while TTS streams and previously repartitioned an
+                // already-playing Chinese/Japanese/Hindi segment on screen.
+                let words = document.paragraphs[currentParagraphIndex].words.map(\.text)
+                if let range = Self.alignedPhotoWordRange(
+                    words: words,
+                    segmentTexts: segs.map(\.text),
+                    segPos: segPos
+                ) {
+                    photoHighlightWordRange = range
+                    if range.lowerBound != photoHighlightWordIndex { photoHighlightWordIndex = range.lowerBound }
                 }
             }
             return
@@ -848,15 +1112,16 @@ final class ReadAloudViewModel: ObservableObject {
         if document.sourceKind.isNativeTextRendered {
             // 预对齐查表（绝对位置，已含前序 segment 偏移）；对齐失败的词保留上一个高亮、不跳
             ensureWordAligned()
-            let gIdx = segs.prefix(segPos).reduce(0) { $0 + $1.timestamps.count } + localIdx
+            let gIdx = wordHighlightSegments(segs).prefix(segPos).reduce(0) { $0 + $1.timestamps.count } + localIdx
             if gIdx >= 0, gIdx < wordRanges.count, let r = wordRanges[gIdx] {
                 highlightRange = r
             }
         } else if document.sourceKind.isOCRImageRendered {
             ensureOCRWordAligned()
-            let gIdx = segs.prefix(segPos).reduce(0) { $0 + $1.timestamps.count } + localIdx
+            let gIdx = wordHighlightSegments(segs).prefix(segPos).reduce(0) { $0 + $1.timestamps.count } + localIdx
             if gIdx >= 0, gIdx < ocrWordIndexes.count, let idx = ocrWordIndexes[gIdx] {
                 let next = max(photoHighlightWordIndex ?? -1, idx)
+                photoHighlightWordRange = next..<(next + 1)
                 if next != photoHighlightWordIndex { photoHighlightWordIndex = next }
             } else if document.sourceKind != .kindle, wordKey != lastWordKey {
                 // Fallback only when the timestamp word cannot be resolved to paragraph text.
@@ -889,7 +1154,7 @@ final class ReadAloudViewModel: ObservableObject {
         let punct = CharacterSet(charactersIn: ".,!?;:\"'()[]").union(.whitespacesAndNewlines)
         var ranges: [NSRange?] = []
         var cursor = 0
-        for seg in segs {
+        for seg in wordHighlightSegments(segs) {
             for ts in seg.timestamps {
                 let word = ts.word.trimmingCharacters(in: .whitespacesAndNewlines)
                 if word.isEmpty { ranges.append(nil); continue }
@@ -918,7 +1183,7 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func ensureOCRWordAligned() {
         guard currentParagraphIndex >= 0, currentParagraphIndex < document.paragraphs.count else { return }
-        let segs = segmentsByParagraph[currentParagraphIndex] ?? []
+        let segs = wordHighlightSegments(segmentsByParagraph[currentParagraphIndex] ?? [])
         if ocrAlignedPara == currentParagraphIndex && ocrAlignedSegCount == segs.count { return }
         let allowFallback = document.sourceKind != .kindle
         ocrWordIndexes = OCRWordAligner.mapTimestampWords(
@@ -956,11 +1221,99 @@ final class ReadAloudViewModel: ObservableObject {
         return min(wordCount - 1, max(0, Int(progress * Double(wordCount))))
     }
 
+    nonisolated static func photoWordRange(wordCount: Int, segPos: Int, segCount: Int) -> Range<Int>? {
+        guard wordCount > 0 else { return nil }
+        let count = max(segCount, segPos + 1)
+        let start = min(wordCount - 1, max(0, Int(floor(Double(segPos) * Double(wordCount) / Double(count)))))
+        let end = min(wordCount, max(start + 1, Int(ceil(Double(segPos + 1) * Double(wordCount) / Double(count)))))
+        return start..<end
+    }
+
+    /// Align one TTS segment to OCR word boxes using normalized Unicode text.
+    /// Prefix segments are deterministically replayed from the paragraph start so
+    /// repeated phrases resolve monotonically, matching the extension contract.
+    /// A failed match is never treated as a successful cursor match: doing that
+    /// made Japanese segments jump back to, or paint only, the first glyph.
+    nonisolated static func alignedPhotoWordRange(
+        words: [String],
+        segmentTexts: [String],
+        segPos: Int
+    ) -> Range<Int>? {
+        guard !words.isEmpty, segPos >= 0, segPos < segmentTexts.count else { return nil }
+
+        let normalizedWords = words.map {
+            KindleLanguageContract.alignmentText($0).unicodeScalars.map(\.value)
+        }
+        var wordSpans: [Range<Int>] = []
+        var full: [UInt32] = []
+        for word in normalizedWords {
+            let start = full.count
+            full.append(contentsOf: word)
+            wordSpans.append(start..<full.count)
+        }
+        guard !full.isEmpty else { return nil }
+
+        var cursor = 0
+        var target: Range<Int>?
+        for index in 0...segPos {
+            let needle = KindleLanguageContract.alignmentText(segmentTexts[index])
+                .unicodeScalars.map(\.value)
+            guard !needle.isEmpty else {
+                if index == segPos { return nil }
+                continue
+            }
+            guard let start = normalizedSubsequenceStart(
+                haystack: full,
+                needle: needle,
+                from: cursor
+            ) else {
+                return nil
+            }
+            let end = min(full.count, start + needle.count)
+            guard end > start else { return nil }
+            if index == segPos { target = start..<end }
+            cursor = end
+        }
+        guard let target else { return nil }
+
+        guard let first = wordSpans.firstIndex(where: { $0.upperBound > target.lowerBound && !$0.isEmpty }),
+              let last = wordSpans.lastIndex(where: { $0.lowerBound < target.upperBound && !$0.isEmpty }),
+              last >= first else { return nil }
+        // Alignment normalization intentionally removes punctuation. Vision can
+        // emit Japanese/CJK sentence punctuation as its own OCR word, so carry
+        // adjacent trailing punctuation-only boxes into the visual sentence.
+        var upperBound = last + 1
+        while upperBound < normalizedWords.count, normalizedWords[upperBound].isEmpty {
+            upperBound += 1
+        }
+        return first..<upperBound
+    }
+
+    private nonisolated static func normalizedSubsequenceStart(
+        haystack: [UInt32],
+        needle: [UInt32],
+        from start: Int
+    ) -> Int? {
+        guard !needle.isEmpty, start >= 0, start <= haystack.count,
+              needle.count <= haystack.count - start else { return nil }
+        let finalStart = haystack.count - needle.count
+        guard start <= finalStart else { return nil }
+        for index in start...finalStart {
+            var matches = true
+            for offset in needle.indices where haystack[index + offset] != needle[offset] {
+                matches = false
+                break
+            }
+            if matches { return index }
+        }
+        return nil
+    }
+
     /// photo：把当前 TTS 词对齐到 OCR 词（游标只前进，匹配优先，否则顺移）。
     private func advancePhotoCursor(toward word: String) {
         guard currentParagraphIndex >= 0, currentParagraphIndex < document.paragraphs.count else { return }
         let words = document.paragraphs[currentParagraphIndex].words
-        guard !words.isEmpty else { photoHighlightWordIndex = nil; return }
+        guard !words.isEmpty else { photoHighlightWordIndex = nil; photoHighlightWordRange = nil; return }
         let target = normalize(word)
         let window = 6
         let upper = min(words.count, photoCursor + window)
@@ -968,6 +1321,7 @@ final class ReadAloudViewModel: ObservableObject {
             for i in photoCursor..<upper {
                 if normalize(words[i].text) == target {
                     photoHighlightWordIndex = i
+                    photoHighlightWordRange = i..<(i + 1)
                     photoCursor = i + 1
                     return
                 }
@@ -975,6 +1329,7 @@ final class ReadAloudViewModel: ObservableObject {
         }
         let idx = min(photoCursor, words.count - 1)
         photoHighlightWordIndex = idx
+        photoHighlightWordRange = idx..<(idx + 1)
         photoCursor = idx + 1
     }
 

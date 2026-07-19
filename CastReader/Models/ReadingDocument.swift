@@ -42,6 +42,20 @@ struct OCRWord: Identifiable, Equatable {
     let bboxNorm: CGRect   // Vision 归一化（原点左下），原样保存
 }
 
+/// One independently paintable region of a logical OCR paragraph. A Kindle
+/// paragraph can continue from the bottom of one spread column at the top of
+/// the next; keeping both fragments prevents a highlight union across the
+/// center gutter.
+struct OCRVisualFragment: Equatable {
+    enum Column: String, Equatable {
+        case single, left, right
+    }
+
+    var column: Column
+    var bboxNorm: CGRect
+    var wordIDs: [Int]
+}
+
 // MARK: - Paragraph
 
 enum ReadingParagraphType: Equatable {
@@ -65,6 +79,7 @@ struct ReadingParagraph: Identifiable, Equatable {
     var type: ReadingParagraphType = .paragraph
     var words: [OCRWord] = []   // 仅 photo，按阅读顺序
     var bboxNorm: CGRect? = nil // 仅 photo，段落包络（用于滚动/居中）
+    var visualFragments: [OCRVisualFragment] = [] // Kindle 跨栏段落的独立绘制区域
     var pdfPageIndex: Int? = nil // 仅 pdf：该句所在 PDF 页
     var pdfRange: NSRange? = nil // 仅 pdf：该句在该页 string 内的字符范围（PDFKit characterBounds 高亮用）
     var pageIndex: Int? = nil    // 仅 kindle：该 OCR 段落所属的 Kindle 渲染页
@@ -72,6 +87,7 @@ struct ReadingParagraph: Identifiable, Equatable {
 
     init(id: Int, text: String, type: ReadingParagraphType = .paragraph,
          words: [OCRWord] = [], bboxNorm: CGRect? = nil,
+         visualFragments: [OCRVisualFragment] = [],
          pdfPageIndex: Int? = nil, pdfRange: NSRange? = nil, pageIndex: Int? = nil,
          imageData: Data? = nil) {
         self.id = id
@@ -79,6 +95,7 @@ struct ReadingParagraph: Identifiable, Equatable {
         self.type = type
         self.words = words
         self.bboxNorm = bboxNorm
+        self.visualFragments = visualFragments
         self.pdfPageIndex = pdfPageIndex
         self.pdfRange = pdfRange
         self.pageIndex = pageIndex

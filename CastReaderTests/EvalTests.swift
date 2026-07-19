@@ -59,7 +59,7 @@ final class EvalTests: XCTestCase {
         }
     }
 
-    // MARK: - 语言检测（离线确定性 = 守住中文用中文音色、英文用英文音色，不混）
+    // MARK: - 八语检测（离线确定性 = 文档语言、音色与 TTS 请求不混）
 
     func testLanguageDetection() {
         let cases: [(String, String)] = [
@@ -67,6 +67,12 @@ final class EvalTests: XCTestCase {
             ("This is plain English text for language detection testing.", "en"),
             ("投资金额 200 万美元，Post-Money Valuation Cap 为 2000 万美元。", "zh"),  // 中英混排仍判中文
             ("Reading aloud helps you focus on the page while listening to it.", "en"),
+            ("これは日本語の文章です。音声で読み上げながら内容を理解します。", "ja"),
+            ("Leer en voz alta ayuda a mantener la atención y comprender mejor el texto.", "es"),
+            ("La lecture à voix haute aide à rester concentré et à mieux comprendre le texte.", "fr"),
+            ("A leitura em voz alta ajuda você a manter o foco e compreender melhor o texto.", "pt"),
+            ("La lettura ad alta voce aiuta a mantenere la concentrazione e capire meglio il testo.", "it"),
+            ("ज़ोर से पढ़ना ध्यान बनाए रखने और पाठ को बेहतर ढंग से समझने में मदद करता है।", "hi"),
         ]
         for (text, expect) in cases {
             let got = LanguageDetector.detect(text)

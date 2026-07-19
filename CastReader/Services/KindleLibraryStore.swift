@@ -47,7 +47,7 @@ final class KindleLibraryStore: ObservableObject {
         if let label = accountLabel?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty {
             return label
         }
-        return String(localized: "Amazon Kindle 账号")
+        return AppLocalized("Amazon Kindle 账号")
     }
 
     func sortedBooks(sort: KindleLibrarySort, query: String) -> [KindleBook] {
@@ -77,7 +77,7 @@ final class KindleLibraryStore: ObservableObject {
     func mergeScrapedBooks(_ scraped: [KindleBook], account: KindleAccountInfo? = nil) {
         let validBooks = sanitized(scraped)
         guard !validBooks.isEmpty else {
-            lastError = String(localized: "当前页面没有找到 Kindle 书籍。")
+            lastError = AppLocalized("当前页面没有找到 Kindle 书籍。")
             if books.isEmpty {
                 hasConnected = false
                 save()
@@ -93,6 +93,13 @@ final class KindleLibraryStore: ObservableObject {
                 old.coverURL = incoming.coverURL ?? old.coverURL
                 old.readerURL = incoming.readerURL.isEmpty ? old.readerURL : incoming.readerURL
                 old.progressLabel = incoming.progressLabel.isEmpty ? old.progressLabel : incoming.progressLabel
+                if incoming.language != nil {
+                    old.language = incoming.language
+                    old.languageSource = incoming.languageSource
+                    old.kindleWritingMode = incoming.kindleWritingMode
+                    old.kindleReadingDirection = incoming.kindleReadingDirection
+                    old.kindlePageProgressionDirection = incoming.kindlePageProgressionDirection
+                }
                 old.lastSyncedAt = incoming.lastSyncedAt
                 existingByID[incoming.id] = old
             } else {
@@ -106,7 +113,7 @@ final class KindleLibraryStore: ObservableObject {
         if let account {
             setAccount(account)
         } else if accountLabel == nil && accountEmail == nil {
-            accountLabel = String(localized: "Amazon Kindle 账号")
+            accountLabel = AppLocalized("Amazon Kindle 账号")
         }
         lastError = nil
         save()
@@ -114,6 +121,23 @@ final class KindleLibraryStore: ObservableObject {
 
     func markOpened(_ book: KindleBook) {
         update(bookID: book.id) { $0.lastOpenedAt = Date() }
+    }
+
+    func updateLanguageProfile(
+        bookID: String,
+        language: String,
+        source: String,
+        writingMode: KindleWritingMode = .horizontal,
+        readingDirection: KindleReadingDirection? = nil,
+        pageProgressionDirection: KindleReadingDirection? = nil
+    ) {
+        update(bookID: bookID) {
+            $0.language = KindleLanguageContract.normalize(language)
+            $0.languageSource = source
+            $0.kindleWritingMode = writingMode.rawValue
+            $0.kindleReadingDirection = readingDirection?.rawValue
+            $0.kindlePageProgressionDirection = pageProgressionDirection?.rawValue
+        }
     }
 
     func listeningAnchor(for bookID: String) -> KindleListeningAnchor? {
@@ -225,7 +249,7 @@ final class KindleLibraryStore: ObservableObject {
         if let label, !label.isEmpty {
             accountLabel = label
         } else if accountLabel == nil {
-            accountLabel = String(localized: "Amazon Kindle 账号")
+            accountLabel = AppLocalized("Amazon Kindle 账号")
         }
     }
 

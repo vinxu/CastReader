@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CastReader Kindle OCR</title>
+</head>
+<body>
+  <script>
+    window.castReaderKindleOCRError = '';
+    window.addEventListener('error', (event) => {
+      window.castReaderKindleOCRError = String(event.message || event.error || 'script-error');
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      window.castReaderKindleOCRError = String(event.reason || 'promise-rejection');
+    });
+  </script>
+  <script type="module" src="ocr.js"></script>
+</body>
+</html>

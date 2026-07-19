@@ -179,6 +179,7 @@ struct TTSVoiceCatalogDocument: Codable, Equatable {
         for language in languages {
             let code = VoiceCatalog.normalizedLanguage(language.code)
             guard !code.isEmpty,
+                  SupportedTTSLanguage(identifier: code) != nil,
                   !language.locale.trimmed.isEmpty,
                   !language.name.trimmed.isEmpty,
                   !language.status.trimmed.isEmpty,
@@ -308,7 +309,23 @@ enum VoiceCatalog {
         .init(code: "zm_098", name: "云瀚", isPro: true, lang: "zh", gender: "male", timestampMode: "segment"),
     ]
 
-    static let fallbackAll: [VoiceOption] = english + chinese
+    /// 网络目录/缓存尚未到达时也能为八种语言解析正确的默认音色。
+    /// 这里只保留每种新增语言的免费默认音色；完整音色与元数据仍以服务端为准。
+    static let multilingualDefaults: [VoiceOption] = SupportedTTSLanguage.allCases
+        .filter { $0 != .english && $0 != .chinese }
+        .map {
+            VoiceOption(
+                code: $0.defaultVoiceID,
+                name: $0.defaultVoiceName,
+                isPro: false,
+                lang: $0.rawValue,
+                gender: "female",
+                timestampMode: $0.timestampMode,
+                locale: $0.localeIdentifier
+            )
+        }
+
+    static let fallbackAll: [VoiceOption] = english + chinese + multilingualDefaults
 
     static var all: [VoiceOption] {
         guard let catalog = runtime.read() else { return fallbackAll }
@@ -319,28 +336,30 @@ enum VoiceCatalog {
         all.filter(\.selectable)
     }
 
-    /// 服务端声明顺序就是浏览器展示顺序；没有可选音色的语言不进入选择器。
-    /// 离线或首次启动时保留中英文静态 fallback，网络目录到达后自动扩展。
+    /// 八语产品顺序就是浏览器展示顺序；没有可选音色的语言不进入选择器。
+    /// 离线或首次启动时每种语言都有安全默认，网络目录到达后替换为完整音色元数据。
     static var availableLanguages: [VoiceCatalogLanguageOption] {
         guard let catalog = runtime.read() else {
-            return [
+            return SupportedTTSLanguage.allCases.map { language in
                 VoiceCatalogLanguageOption(
-                    code: "zh", locale: "zh-CN", name: "Mandarin Chinese",
-                    status: "ga", voiceCount: chinese.count
-                ),
-                VoiceCatalogLanguageOption(
-                    code: "en", locale: "en-US", name: "English",
-                    status: "ga", voiceCount: english.count
-                ),
-            ]
+                    code: language.rawValue,
+                    locale: language.localeIdentifier,
+                    name: language.catalogName,
+                    status: language == .english || language == .chinese ? "ga" : "offline-default",
+                    voiceCount: voices(for: language.rawValue).count
+                )
+            }
         }
 
         let counts = Dictionary(grouping: catalog.voices.filter(\.selectable)) {
             normalizedLanguage($0.language)
         }.mapValues(\.count)
 
-        return catalog.languages.compactMap { language in
-            let code = normalizedLanguage(language.code)
+        return SupportedTTSLanguage.allCases.compactMap { supported in
+            guard let language = catalog.languages.first(where: {
+                normalizedLanguage($0.code) == supported.rawValue
+            }) else { return nil }
+            let code = supported.rawValue
             guard let count = counts[code], count > 0 else { return nil }
             return VoiceCatalogLanguageOption(
                 code: code,
@@ -361,9 +380,7 @@ enum VoiceCatalog {
     static func voices(for language: String) -> [VoiceOption] {
         let normalized = normalizedLanguage(language)
         guard let catalog = runtime.read() else {
-            if normalized == "zh" { return chinese }
-            if normalized == "en" { return english }
-            return []
+            return fallbackAll.filter { normalizedLanguage($0.lang) == normalized }
         }
         return catalog.voices
             .filter {
@@ -432,7 +449,7 @@ enum VoiceCatalog {
     }
 
     private static func fallbackDefault(for language: String) -> String {
-        normalizedLanguage(language) == "zh" ? "zf_001" : Constants.TTS.defaultVoice
+        SupportedTTSLanguage(identifier: language)?.defaultVoiceID ?? Constants.TTS.defaultVoice
     }
 
     private static func fallbackEnglish(

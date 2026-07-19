@@ -35,8 +35,8 @@ struct ClipboardPromptView: View {
                 .foregroundColor(AppTheme.mutedForeground)
 
             HStack(spacing: 12) {
-                actionButton(String(localized: "朗读"), "speaker.wave.2.fill", AppTheme.primary, action: onRead)
-                actionButton(String(localized: "解读"), "sparkles", AppTheme.primaryDark, action: onExplain)
+                actionButton(AppLocalized("朗读"), "speaker.wave.2.fill", AppTheme.primary, action: onRead)
+                actionButton(AppLocalized("解读"), "sparkles", AppTheme.primaryDark, action: onExplain)
             }
 
             Text("选择后系统会请求一次「允许粘贴」")
@@ -66,9 +66,9 @@ struct ClipboardPromptView: View {
 
     private var title: String {
         switch kind {
-        case .url: return String(localized: "剪贴板里有一个链接")
-        case .text: return String(localized: "剪贴板里有一段文本")
-        case .image: return String(localized: "剪贴板里有一张图片")
+        case .url: return AppLocalized("剪贴板里有一个链接")
+        case .text: return AppLocalized("剪贴板里有一段文本")
+        case .image: return AppLocalized("剪贴板里有一张图片")
         }
     }
 

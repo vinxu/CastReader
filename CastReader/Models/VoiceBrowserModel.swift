@@ -27,8 +27,7 @@ enum VoiceTierFilter: String, CaseIterable, Identifiable {
 }
 
 enum VoiceBrowserLanguage {
-    /// 仅用于网络目录尚未载入时的安全默认；不是语言白名单。
-    static let primary = ["zh", "en"]
+    static let primary = SupportedTTSLanguage.allCases.map(\.rawValue)
 
     static func defaultLanguage(
         preferredLanguages: [String],
@@ -54,14 +53,14 @@ enum VoiceBrowserLanguage {
 
     static func voiceCountText(_ count: Int) -> String {
         String.localizedStringWithFormat(
-            String(localized: "%lld 个音色"),
+            AppLocalized("%lld 个音色"),
             Int64(count)
         )
     }
 
     static func languageCountText(_ count: Int) -> String {
         String.localizedStringWithFormat(
-            String(localized: "%lld 种语言"),
+            AppLocalized("%lld 种语言"),
             Int64(count)
         )
     }
@@ -249,6 +248,17 @@ final class VoicePreviewPlaybackCoordinator {
               audio.currentBookId == suspendedBookID else { return }
         audio.play()
         NSLog("[VoicePreview] resumed content segment=%@", segmentID)
+    }
+
+    /// A real voice selection supersedes the temporary preview. Return whether
+    /// content had been playing so the voice handoff can preserve that intent
+    /// without briefly resuming the old voice first.
+    @discardableResult
+    func cancelForVoiceSwitch() -> Bool {
+        let shouldResume = suspendedSegmentID != nil
+        suspendedSegmentID = nil
+        suspendedBookID = nil
+        return shouldResume
     }
 }
 

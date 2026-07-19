@@ -181,7 +181,7 @@ struct KindleWebView: UIViewRepresentable {
 @MainActor
 final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigationDelegate {
     @Published var isSyncing = false
-    @Published var statusText = String(localized: "打开 Amazon Kindle 并登录。")
+    @Published var statusText = AppLocalized("打开 Amazon Kindle 并登录。")
     @Published var errorText: String?
     @Published var currentReaderBook: KindleBook?
 
@@ -206,22 +206,22 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
 
     func loadLibrary() {
         currentReaderBook = nil
-        statusText = String(localized: "打开 Kindle 书架，然后点同步。")
+        statusText = AppLocalized("打开 Kindle 书架，然后点同步。")
         webView.load(URLRequest(url: KindleWebScripts.libraryURL))
     }
 
     func secondaryStatusText(bookCount: Int) -> String {
         if currentReaderBook != nil {
-            return String(localized: "返回 Kindle 书架后再同步。")
+            return AppLocalized("返回 Kindle 书架后再同步。")
         }
         if bookCount > 0 {
-            return String(format: String(localized: "已在本机同步 %d 本书。"), bookCount)
+            return String(format: AppLocalized("已在本机同步 %d 本书。"), bookCount)
         }
-        return String(localized: "登录后点同步。")
+        return AppLocalized("登录后点同步。")
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        statusText = String(localized: "如果已经看到 Kindle 书架，请点同步。")
+        statusText = AppLocalized("如果已经看到 Kindle 书架，请点同步。")
         Task { await refreshPageState() }
     }
 
@@ -232,7 +232,7 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         defer { isSyncing = false }
 
         do {
-            statusText = String(localized: "正在扫描 Kindle 书架…")
+            statusText = AppLocalized("正在扫描 Kindle 书架…")
             var byID: [String: KindleBook] = [:]
             let maxPasses = lightPass ? 2 : 12
             var idlePasses = 0
@@ -259,13 +259,13 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                     idlePasses = 0
                 }
                 if payload.authRequired == true {
-                    statusText = String(localized: "请登录 Amazon Kindle，然后点同步。")
+                    statusText = AppLocalized("请登录 Amazon Kindle，然后点同步。")
                 } else if payload.isReaderPage == true {
-                    statusText = String(localized: "当前打开的是 Kindle 书籍页面，请返回 Kindle 书架后同步。")
+                    statusText = AppLocalized("当前打开的是 Kindle 书籍页面，请返回 Kindle 书架后同步。")
                 } else if byID.isEmpty && payload.hasReaderSignals != true {
-                    statusText = String(localized: "打开 Kindle 书架，然后点同步。")
+                    statusText = AppLocalized("打开 Kindle 书架，然后点同步。")
                 } else {
-                    statusText = String(format: String(localized: "已找到 %d 本 Kindle 书…"), byID.count)
+                    statusText = String(format: AppLocalized("已找到 %d 本 Kindle 书…"), byID.count)
                 }
                 if pass >= 2 && idlePasses >= 2 { break }
                 try await scrollLibraryForward()
@@ -275,24 +275,24 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             let books = Array(byID.values)
             if books.isEmpty {
                 if sawReaderPage {
-                    statusText = String(localized: "当前打开的是 Kindle 书籍页面，请返回 Kindle 书架后同步。")
+                    statusText = AppLocalized("当前打开的是 Kindle 书籍页面，请返回 Kindle 书架后同步。")
                 } else if sawAuthRequired {
-                    statusText = String(localized: "请登录 Amazon Kindle，然后点同步。")
+                    statusText = AppLocalized("请登录 Amazon Kindle，然后点同步。")
                 } else if sawLibrarySignals {
-                    statusText = String(localized: "请滚动 Kindle 书架后再点同步。")
+                    statusText = AppLocalized("请滚动 Kindle 书架后再点同步。")
                 } else {
-                    statusText = String(localized: "打开 Kindle 书架，然后点同步。")
+                    statusText = AppLocalized("打开 Kindle 书架，然后点同步。")
                 }
                 if !lightPass {
-                    errorText = String(localized: "当前页面暂时没有找到 Kindle 书籍。")
+                    errorText = AppLocalized("当前页面暂时没有找到 Kindle 书籍。")
                 }
             } else {
                 store.mergeScrapedBooks(books, account: accountInfo)
-                statusText = String(localized: "Kindle 书架已同步。")
+                statusText = AppLocalized("Kindle 书架已同步。")
                 _ = try? await evaluate("window.scrollTo(0, 0);")
             }
         } catch {
-            statusText = String(localized: "同步需要处理。")
+            statusText = AppLocalized("同步需要处理。")
             errorText = error.localizedDescription
         }
     }
@@ -378,7 +378,7 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         if JSONSerialization.isValidJSONObject(value) {
             return try JSONSerialization.data(withJSONObject: value)
         }
-        throw NSError(domain: "KindleLibrary", code: -1, userInfo: [NSLocalizedDescriptionKey: String(localized: "Kindle 书架响应异常。")])
+        throw NSError(domain: "KindleLibrary", code: -1, userInfo: [NSLocalizedDescriptionKey: AppLocalized("Kindle 书架响应异常。")])
     }
 }
 

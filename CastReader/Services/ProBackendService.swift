@@ -84,6 +84,71 @@ actor ProBackendService {
         }
     }
 
+    /// Upload an Apple-signed StoreKit 2 transaction under the authenticated
+    /// first-party mobile session. The server verifies Apple's JWS chain and
+    /// binds the entitlement to the session's email-backed account.
+    func verifyAppleTransaction(_ signedTransaction: String) async -> Bool {
+        guard !signedTransaction.isEmpty,
+              let url = URL(string: Constants.API.proVerifyApple) else { return false }
+        return await performAppleVerification(
+            signedTransaction: signedTransaction,
+            url: url,
+            canRefreshSession: true
+        )
+    }
+
+    private func performAppleVerification(
+        signedTransaction: String,
+        url: URL,
+        canRefreshSession: Bool
+    ) async -> Bool {
+        var token = await MobileSessionStore.shared.sessionToken()
+        if token == nil, canRefreshSession {
+            token = await MobileSessionStore.shared.refreshSession()
+        }
+        guard let token, !token.isEmpty else {
+            Self.debugLog("verify-apple SKIP mobile-session-missing")
+            return false
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: [
+            "signed_transaction": signedTransaction,
+            "device_id": Self.deviceId,
+            "local_date": Self.localDay()
+        ])
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return false }
+            if http.statusCode == 401, canRefreshSession,
+               await MobileSessionStore.shared.refreshSession() != nil {
+                return await performAppleVerification(
+                    signedTransaction: signedTransaction,
+                    url: url,
+                    canRefreshSession: false
+                )
+            }
+            guard (200..<300).contains(http.statusCode) else {
+                Self.debugLog("verify-apple HTTP \(http.statusCode) body=\(Self.preview(data))")
+                return false
+            }
+            guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let payload = root["data"] as? [String: Any],
+                  payload["pro"] as? Bool == true else {
+                Self.debugLog("verify-apple invalid response body=\(Self.preview(data))")
+                return false
+            }
+            Self.debugLog("verify-apple DONE pro=Y")
+            return true
+        } catch {
+            Self.debugLog("verify-apple FAIL error=\(error.localizedDescription)")
+            return false
+        }
+    }
+
     /// 上报朗读秒数（增量）。fire-and-forget。
     func trackListen(seconds: Int, userId: String?, email: String?) async {
         guard seconds > 0, let url = URL(string: Constants.API.proListenTrack) else { return }

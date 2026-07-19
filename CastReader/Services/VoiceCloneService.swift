@@ -39,11 +39,11 @@ actor VoiceCloneService {
             throw VoiceCloneError.temporaryUnavailable
         }
         guard consentConfirmed else {
-            throw VoiceCloneError.invalidRecording(String(localized: "请先确认声音授权"))
+            throw VoiceCloneError.invalidRecording(AppLocalized("请先确认声音授权"))
         }
         let values = try recordingURL.resourceValues(forKeys: [.fileSizeKey])
         guard let size = values.fileSize, size > 0, size <= 4 * 1024 * 1024 else {
-            throw VoiceCloneError.invalidRecording(String(localized: "录音文件必须不超过 4 MB"))
+            throw VoiceCloneError.invalidRecording(AppLocalized("录音文件必须不超过 4 MB"))
         }
         let reference = try Data(contentsOf: recordingURL)
         let boundary = "CastReaderVoiceClone-\(UUID().uuidString)"
@@ -143,7 +143,7 @@ actor VoiceCloneService {
             throw VoiceCloneError.signInRequired
         case 403: throw VoiceCloneError.proRequired
         case 404: throw VoiceCloneError.voiceNotFound
-        case 413, 422: throw VoiceCloneError.invalidRecording(message ?? String(localized: "录音未通过服务器校验"))
+        case 413, 422: throw VoiceCloneError.invalidRecording(message ?? AppLocalized("录音未通过服务器校验"))
         case 429 where VoiceCloneResponseParser.serverCode(from: data)?.uppercased() == "VOICE_CREATION_LIMIT":
             throw VoiceCloneError.creationLimit(VoiceCloneResponseParser.nextCreateAt(from: data))
         case 429 where ["CLONE_WORKER_BUSY", "VOICE_WORKER_BUSY"].contains(VoiceCloneResponseParser.serverCode(from: data)?.uppercased() ?? ""):

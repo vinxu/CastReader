@@ -14,6 +14,8 @@ struct KindleBookView: View {
     @EnvironmentObject private var importRouter: ImportRouter
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.scenePhase) private var scenePhase
+    @ObservedObject private var playbackCenter = KindlePlaybackCenter.shared
+    @ObservedObject private var playbackVoicePanel = PlaybackVoicePanelCenter.shared
     @StateObject private var model: KindleBookViewModel
     @State private var refocusTask: Task<Void, Never>?
     @State private var readerSurfaceSize: CGSize = .zero
@@ -76,18 +78,38 @@ struct KindleBookView: View {
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .navigationBar)
-        .toolbar(.hidden, for: .tabBar)
+        .toolbar(playbackCenter.isPresented ? .hidden : .visible, for: .tabBar)
         .onAppear {
-            importRouter.hideMainChrome = true
+            importRouter.hideMainChrome = playbackCenter.isPresented
+            model.setReaderSurfaceAttached(true)
+            model.setReaderPresented(playbackCenter.isPresented)
+            model.setApplicationActive(scenePhase == .active)
+            model.setPlayerControlOverlayPresented(playbackVoicePanel.isPresented)
             model.loadIfNeeded()
             schedulePlaybackRefocus(reason: "appear")
+        }
+        .onChange(of: playbackCenter.isPresented) { isPresented in
+            guard playbackCenter.isOwning(model) else { return }
+            importRouter.hideMainChrome = isPresented
+            model.setReaderPresented(isPresented)
+            if isPresented {
+                model.noteReaderLayoutChange(reason: "expand")
+                model.notePlaybackLayoutChange(reason: "expand")
+                schedulePlaybackRefocus(reason: "expand")
+            } else {
+                refocusTask?.cancel()
+                model.flushListeningAnchor(reason: "mini-player")
+            }
         }
         .onChange(of: verticalSizeClass) { _ in
             model.noteReaderLayoutChange(reason: "orientation")
             model.notePlaybackLayoutChange(reason: "orientation")
         }
+        .onChange(of: playbackVoicePanel.isPresented) { presented in
+            model.setPlayerControlOverlayPresented(presented)
+        }
         .onPreferenceChange(KindleReaderSurfaceSizePreferenceKey.self) { size in
-            if model.isNativeTOCPresented || model.isKindleTOCVisible {
+            if model.isNativeTOCPresented || model.isKindleTOCVisible || playbackVoicePanel.isPresented {
                 return
             }
             let previous = readerSurfaceSize
@@ -102,6 +124,7 @@ struct KindleBookView: View {
             }
         }
         .onChange(of: scenePhase) { phase in
+            model.setApplicationActive(phase == .active)
             if phase == .active {
                 model.noteReaderLayoutChange(reason: "foreground")
                 model.notePlaybackLayoutChange(reason: "foreground")
@@ -117,21 +140,43 @@ struct KindleBookView: View {
             }
         }
         .onDisappear {
-            importRouter.hideMainChrome = false
+            // A model replacement can remove this old view while the new Kindle
+            // reader is already presented. Do not briefly expose main chrome over
+            // the replacement reader; explicit close/minimize owns that change.
+            if !playbackCenter.isPresented || playbackCenter.model == nil {
+                importRouter.hideMainChrome = false
+            }
             refocusTask?.cancel()
             model.flushListeningAnchor(reason: "reader-disappear")
-            if model.shouldKeepAliveForMiniPlayer {
-                KindlePlaybackCenter.shared.activate(model: model)
-            } else {
-                model.stopAll()
-            }
+            model.setReaderPresented(false)
+            model.setReaderSurfaceAttached(false)
+            model.setPlayerControlOverlayPresented(false)
         }
+        .sheet(isPresented: kindlePaywallBinding) {
+            PaywallView(
+                analyticsTrigger: model.mode == .read ? "listen_quota" : "explain_quota",
+                analyticsSurface: "kindle_reader"
+            )
+        }
+    }
+
+    private var kindlePaywallBinding: Binding<Bool> {
+        Binding(
+            get: { model.showPaywall },
+            set: { newValue in
+                if !newValue { model.dismissPaywall() }
+            }
+        )
     }
 
     private var readerSurface: some View {
         ZStack(alignment: .bottomLeading) {
             GeometryReader { proxy in
-                let webSize = proxy.size
+                let webSize = KindleReaderSurfaceContract.renderSize(
+                    measured: proxy.size,
+                    stable: readerSurfaceSize,
+                    isPlayerOverlayPresented: playbackVoicePanel.isPresented
+                )
                 let crop = model.effectiveViewportCrop(forSurfaceSize: webSize)
                 KindleWebView(
                     webView: model.libraryRecoveryWebView ?? model.webView,
@@ -154,6 +199,7 @@ struct KindleBookView: View {
                             model.updateReaderSurfaceSize(webSize)
                         }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
             preparingStatusOverlay
             if model.isStaleBookEntryError {
@@ -196,7 +242,7 @@ struct KindleBookView: View {
             } label: {
                 HStack(spacing: 8) {
                     if model.isStaleBookRecovering { ProgressView().tint(.white) }
-                    Text(model.isStaleBookRecovering ? "正在修复…" : "修复并打开")
+                    Text(LocalizedStringKey(model.isStaleBookRecovering ? "正在修复…" : "修复并打开"))
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -245,8 +291,8 @@ struct KindleBookView: View {
             Spacer(minLength: 8)
 
             HStack(spacing: 2) {
-                kindleModeButton(.read, title: String(localized: "朗读"))
-                kindleModeButton(.explain, title: String(localized: "解读"))
+                kindleModeButton(.read, title: AppLocalized("朗读"))
+                kindleModeButton(.explain, title: AppLocalized("解读"))
             }
             .padding(3)
             .background(AppTheme.surfaceVariant, in: Capsule())
@@ -310,7 +356,7 @@ struct KindleBookView: View {
             HStack(spacing: 10) {
                 ProgressView()
                     .tint(AppTheme.foreground)
-                Text(String(localized: "正在跳转章节…"))
+                Text(AppLocalized("正在跳转章节…"))
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.foreground)
             }
@@ -328,7 +374,7 @@ struct KindleBookView: View {
             VStack {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.triangle.2.circlepath")
-                    Text(String(localized: "请先确认 Kindle 阅读位置。"))
+                    Text(AppLocalized("请先确认 Kindle 阅读位置。"))
                         .font(.caption.weight(.semibold))
                 }
                 .foregroundColor(AppTheme.foreground)
@@ -346,7 +392,7 @@ struct KindleBookView: View {
 
     @ViewBuilder
     private var playbackBar: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        ZStack(alignment: .top) {
             if model.mode == .explain, let vm = model.explainVM {
                 KindleExplainPlaybackBar(
                     vm: vm,
@@ -377,8 +423,23 @@ struct KindleBookView: View {
                     showTOC: { showTOC() }
                 )
             }
+
+            if let error = model.playbackErrorText, !error.isEmpty {
+                Text(error)
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(.red)
+                    .lineLimit(2)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(.regularMaterial, in: Capsule())
+                    .offset(y: -42)
+                    .allowsHitTesting(false)
+            }
         }
-        .frame(height: usesCompactPlaybackBar ? 72 : 96)
+        // Playback state, voice availability and errors must never change the
+        // Kindle viewport height. A fixed single-line console prevents React
+        // from reconciling the reader surface when playback begins.
+        .frame(height: 72)
         .background(.regularMaterial)
     }
 
@@ -420,12 +481,20 @@ struct KindleBookView: View {
     private func startCurrentMode() {
         Task {
             do {
+                model.playbackErrorText = nil
                 try await model.startCurrentMode()
+            } catch is CancellationError {
+                // Cancellation is an internal lifecycle signal (for example while
+                // Kindle is applying its cloud/local position), not a user-facing
+                // playback failure.
+                KindleRunLog.write("KINDLE start cancelled mode=\(model.mode.rawValue)")
             } catch {
                 #if DEBUG
                 NSLog("CRDBG KINDLE start error mode=%@ %@", model.mode.rawValue, error.localizedDescription)
                 #endif
                 model.statusText = error.localizedDescription
+                model.playbackErrorText = error.localizedDescription
+                KindleRunLog.write("KINDLE start failed mode=\(model.mode.rawValue) error=\(error.localizedDescription)")
             }
         }
     }
@@ -473,6 +542,19 @@ private struct KindleReaderSurfaceSizePreferenceKey: PreferenceKey {
     }
 }
 
+enum KindleReaderSurfaceContract {
+    static func renderSize(
+        measured: CGSize,
+        stable: CGSize,
+        isPlayerOverlayPresented: Bool
+    ) -> CGSize {
+        guard isPlayerOverlayPresented,
+              stable.width > 4,
+              stable.height > 4 else { return measured }
+        return stable
+    }
+}
+
 private struct KindleEmptyPlaybackBar: View {
     let isPreparing: Bool
     let compact: Bool
@@ -482,8 +564,14 @@ private struct KindleEmptyPlaybackBar: View {
     let showTOC: () -> Void
 
     var body: some View {
-        HStack(spacing: compact ? 18 : 24) {
-            KindlePageTurnButton(systemName: "chevron.left", accessibilityLabel: String(localized: "上一页"), action: previousPage)
+        KindlePlaybackConsole(
+            isLandscape: compact,
+            playbackStatus: isPreparing ? AppLocalized("正在准备…") : AppLocalized("已暂停"),
+            voiceLanguage: nil,
+            previousPage: previousPage,
+            nextPage: nextPage,
+            showTOC: showTOC
+        ) {
             Button(action: play) {
                 KindlePlayButtonContent(
                     isLoading: isPreparing,
@@ -492,19 +580,13 @@ private struct KindleEmptyPlaybackBar: View {
                 )
             }
             .disabled(isPreparing)
-            KindlePageTurnButton(systemName: "chevron.right", accessibilityLabel: String(localized: "下一页"), action: nextPage)
-            Spacer(minLength: 0)
-            KindlePageTurnButton(systemName: "line.3.horizontal", accessibilityLabel: String(localized: "目录"), action: showTOC)
-            SpeedMenu()
         }
-        .foregroundColor(AppTheme.foreground)
-        .padding(.horizontal, compact ? 18 : 24)
-        .padding(.vertical, compact ? 8 : 12)
     }
 }
 
 private struct KindleReadPlaybackBar: View {
     @ObservedObject var vm: ReadAloudViewModel
+    @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let isPreparing: Bool
     let compact: Bool
     let start: () -> Void
@@ -513,12 +595,21 @@ private struct KindleReadPlaybackBar: View {
     let showTOC: () -> Void
 
     private var isLoading: Bool {
-        isPreparing || (vm.status.isLoadingOrStreaming && !vm.isPlaying)
+        voiceSwitch.progress != nil ||
+            isPreparing ||
+            (vm.status.isLoadingOrStreaming && !vm.isPlaying && !vm.canResumePlayback)
     }
 
     var body: some View {
-        HStack(spacing: compact ? 18 : 24) {
-            KindlePageTurnButton(systemName: "chevron.left", accessibilityLabel: String(localized: "上一页"), action: previousPage)
+        KindlePlaybackConsole(
+            isLandscape: compact,
+            playbackStatus: playbackStatus,
+            statusMessage: voiceSwitch.progress?.localizedMessage,
+            voiceLanguage: vm.hasStartedPlayback ? vm.playbackLanguage : nil,
+            previousPage: previousPage,
+            nextPage: nextPage,
+            showTOC: showTOC
+        ) {
             Button(action: start) {
                 KindlePlayButtonContent(
                     isLoading: isLoading,
@@ -527,14 +618,12 @@ private struct KindleReadPlaybackBar: View {
                 )
             }
             .disabled(isLoading)
-            KindlePageTurnButton(systemName: "chevron.right", accessibilityLabel: String(localized: "下一页"), action: nextPage)
-            Spacer(minLength: 0)
-            KindlePageTurnButton(systemName: "line.3.horizontal", accessibilityLabel: String(localized: "目录"), action: showTOC)
-            SpeedMenu()
         }
-        .foregroundColor(AppTheme.foreground)
-        .padding(.horizontal, compact ? 18 : 24)
-        .padding(.vertical, compact ? 8 : 12)
+    }
+
+    private var playbackStatus: String {
+        if voiceSwitch.progress != nil || isLoading { return AppLocalized("正在准备…") }
+        return vm.isPlaying ? AppLocalized("朗读中") : AppLocalized("已暂停")
     }
 }
 
@@ -586,8 +675,122 @@ private struct KindlePageTurnButton: View {
     }
 }
 
+/// One single-line control deck for every Kindle playback state and
+/// orientation. Previous/next stay immediately beside play; TOC, voice and
+/// speed form one compact tool group. Button order and height never change.
+private struct KindlePlaybackConsole<PlayControl: View>: View {
+    let isLandscape: Bool
+    let playbackStatus: String
+    let statusMessage: String?
+    let voiceLanguage: String?
+    let previousPage: () -> Void
+    let nextPage: () -> Void
+    let showTOC: () -> Void
+    let playControl: PlayControl
+
+    init(
+        isLandscape: Bool,
+        playbackStatus: String,
+        statusMessage: String? = nil,
+        voiceLanguage: String?,
+        previousPage: @escaping () -> Void,
+        nextPage: @escaping () -> Void,
+        showTOC: @escaping () -> Void,
+        @ViewBuilder playControl: () -> PlayControl
+    ) {
+        self.isLandscape = isLandscape
+        self.playbackStatus = playbackStatus
+        self.statusMessage = statusMessage
+        self.voiceLanguage = voiceLanguage
+        self.previousPage = previousPage
+        self.nextPage = nextPage
+        self.showTOC = showTOC
+        self.playControl = playControl()
+    }
+
+    var body: some View {
+        if isLandscape {
+            singleLineBody
+                .kindleLandscapePill()
+        } else {
+            singleLineBody
+                .padding(.horizontal, 12)
+                .frame(height: 64)
+        }
+    }
+
+    private var singleLineBody: some View {
+        HStack(spacing: isLandscape ? 12 : 8) {
+            HStack(spacing: isLandscape ? 12 : 6) {
+                KindlePageTurnButton(
+                    systemName: "chevron.left",
+                    accessibilityLabel: AppLocalized("上一页"),
+                    action: previousPage
+                )
+                playControl
+                KindlePageTurnButton(
+                    systemName: "chevron.right",
+                    accessibilityLabel: AppLocalized("下一页"),
+                    action: nextPage
+                )
+            }
+
+            if let statusMessage, !statusMessage.isEmpty {
+                Text(statusMessage)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(AppTheme.mutedForeground)
+                    .lineLimit(1)
+                    .frame(maxWidth: isLandscape ? 180 : 76)
+            }
+
+            Divider().frame(height: 30)
+
+            KindlePageTurnButton(
+                systemName: "list.bullet",
+                accessibilityLabel: AppLocalized("目录"),
+                action: showTOC
+            )
+            voiceControl(showsLabel: false)
+            SpeedMenu(style: .compact)
+        }
+        .foregroundStyle(AppTheme.foreground)
+        .accessibilityElement(children: .contain)
+        .accessibilityValue(Text(playbackStatus))
+    }
+
+    @ViewBuilder
+    private func voiceControl(showsLabel: Bool) -> some View {
+        if let voiceLanguage, !voiceLanguage.isEmpty {
+            PlaybackVoiceButton(
+                language: voiceLanguage,
+                size: 32,
+                showsLabel: showsLabel
+            )
+        } else {
+            VStack(spacing: showsLabel ? 4 : 0) {
+                ZStack {
+                    Circle()
+                        .stroke(AppTheme.mutedForeground.opacity(0.55), lineWidth: 1.5)
+                    Image(systemName: "waveform")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundStyle(AppTheme.mutedForeground.opacity(0.55))
+                }
+                .frame(width: 28, height: 28)
+                    .frame(width: 32, height: 32)
+                if showsLabel {
+                    Text(AppLocalized("音色"))
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(AppTheme.mutedForeground.opacity(0.65))
+                }
+            }
+            .accessibilityHidden(true)
+        }
+    }
+}
+
 private struct KindleExplainPlaybackBar: View {
     @ObservedObject var vm: ExplainViewModel
+    @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let compact: Bool
     let isContinuingPage: Bool
     let start: () -> Void
@@ -610,18 +813,32 @@ private struct KindleExplainPlaybackBar: View {
                 .zIndex(1)
             }
 
-            HStack(spacing: compact ? 18 : 24) {
-                KindlePageTurnButton(systemName: "chevron.left", accessibilityLabel: String(localized: "上一页"), action: previousPage)
+            KindlePlaybackConsole(
+                isLandscape: compact,
+                playbackStatus: playbackStatus,
+                statusMessage: voiceSwitch.progress?.localizedMessage,
+                voiceLanguage: vm.playbackLanguage,
+                previousPage: previousPage,
+                nextPage: nextPage,
+                showTOC: showTOC
+            ) {
                 centerControl
-                KindlePageTurnButton(systemName: "chevron.right", accessibilityLabel: String(localized: "下一页"), action: nextPage)
-                Spacer(minLength: 0)
-                KindlePageTurnButton(systemName: "line.3.horizontal", accessibilityLabel: String(localized: "目录"), action: showTOC)
-                SpeedMenu()
             }
         }
         .foregroundColor(AppTheme.foreground)
-        .padding(.horizontal, compact ? 18 : 24)
-        .padding(.vertical, compact ? 8 : 12)
+    }
+
+    private var playbackStatus: String {
+        if voiceSwitch.progress != nil || isContinuingPage || vm.isPreparingNext {
+            return AppLocalized("正在准备…")
+        }
+        switch vm.status {
+        case .idle: return AppLocalized("开始解读")
+        case .planning: return AppLocalized("正在准备…")
+        case .streaming: return vm.isPlaying ? AppLocalized("解读中") : AppLocalized("已暂停")
+        case .completed: return AppLocalized("解读完成")
+        case .error: return AppLocalized("重试解读")
+        }
     }
 
     @ViewBuilder
@@ -727,8 +944,14 @@ private struct KindleLandscapeEmptyOverlay: View {
     var body: some View {
         HStack {
             Spacer(minLength: 0)
-            HStack(spacing: 18) {
-                KindlePageTurnButton(systemName: "chevron.left", accessibilityLabel: String(localized: "上一页"), action: previousPage)
+            KindlePlaybackConsole(
+                isLandscape: true,
+                playbackStatus: isPreparing ? AppLocalized("正在准备…") : AppLocalized("已暂停"),
+                voiceLanguage: nil,
+                previousPage: previousPage,
+                nextPage: nextPage,
+                showTOC: showTOC
+            ) {
                 Button(action: start) {
                     KindlePlayButtonContent(
                         isLoading: isPreparing,
@@ -737,17 +960,14 @@ private struct KindleLandscapeEmptyOverlay: View {
                     )
                 }
                 .disabled(isPreparing)
-                KindlePageTurnButton(systemName: "chevron.right", accessibilityLabel: String(localized: "下一页"), action: nextPage)
-                KindlePageTurnButton(systemName: "line.3.horizontal", accessibilityLabel: String(localized: "目录"), action: showTOC)
-                SpeedMenu()
             }
-            .kindleLandscapePill()
         }
     }
 }
 
 private struct KindleLandscapeReadOverlay: View {
     @ObservedObject var vm: ReadAloudViewModel
+    @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let isPreparing: Bool
     let start: () -> Void
     let previousPage: () -> Void
@@ -755,14 +975,23 @@ private struct KindleLandscapeReadOverlay: View {
     let showTOC: () -> Void
 
     private var isLoading: Bool {
-        isPreparing || (vm.status.isLoadingOrStreaming && !vm.isPlaying)
+        voiceSwitch.progress != nil ||
+            isPreparing ||
+            (vm.status.isLoadingOrStreaming && !vm.isPlaying && !vm.canResumePlayback)
     }
 
     var body: some View {
         HStack {
             Spacer(minLength: 0)
-            HStack(spacing: 18) {
-                KindlePageTurnButton(systemName: "chevron.left", accessibilityLabel: String(localized: "上一页"), action: previousPage)
+            KindlePlaybackConsole(
+                isLandscape: true,
+                playbackStatus: isLoading ? AppLocalized("正在准备…") : (vm.isPlaying ? AppLocalized("朗读中") : AppLocalized("已暂停")),
+                statusMessage: voiceSwitch.progress?.localizedMessage,
+                voiceLanguage: vm.hasStartedPlayback ? vm.playbackLanguage : nil,
+                previousPage: previousPage,
+                nextPage: nextPage,
+                showTOC: showTOC
+            ) {
                 Button(action: start) {
                     KindlePlayButtonContent(
                         isLoading: isLoading,
@@ -771,18 +1000,14 @@ private struct KindleLandscapeReadOverlay: View {
                     )
                 }
                 .disabled(isLoading)
-                KindlePageTurnButton(systemName: "chevron.right", accessibilityLabel: String(localized: "下一页"), action: nextPage)
-                KindlePageTurnButton(systemName: "line.3.horizontal", accessibilityLabel: String(localized: "目录"), action: showTOC)
-                SpeedMenu()
             }
-            .foregroundColor(AppTheme.foreground)
-            .kindleLandscapePill()
         }
     }
 }
 
 private struct KindleLandscapeExplainOverlay: View {
     @ObservedObject var vm: ExplainViewModel
+    @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let isContinuingPage: Bool
     let start: () -> Void
     let previousPage: () -> Void
@@ -809,63 +1034,78 @@ private struct KindleLandscapeExplainOverlay: View {
 
     @ViewBuilder
     private var controlPill: some View {
-        HStack(spacing: 14) {
-            KindlePageTurnButton(systemName: "chevron.left", accessibilityLabel: String(localized: "上一页"), action: previousPage)
-            switch vm.status {
-            case .idle:
-                if isContinuingPage {
-                    ProgressView()
-                        .frame(width: 38, height: 38)
-                } else {
-                    Button(action: start) {
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 44))
-                            .foregroundColor(AppTheme.primary)
-                    }
-                }
-            case .planning:
-                ProgressView()
-                    .frame(width: 38, height: 38)
-            case .streaming:
-                if isContinuingPage || vm.isPreparingNext {
-                    ProgressView()
-                        .frame(width: 38, height: 38)
-                } else {
-                    Button { vm.togglePlayPause() } label: {
-                        Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                            .font(.system(size: 44))
-                            .foregroundColor(AppTheme.primary)
-                    }
-                }
-            case .completed:
-                if isContinuingPage {
-                    ProgressView()
-                        .frame(width: 38, height: 38)
-                } else {
-                    Button { vm.replay() } label: {
-                        Image(systemName: "arrow.clockwise.circle.fill")
-                            .font(.system(size: 38))
-                            .foregroundColor(AppTheme.primary)
-                    }
-                }
-            case .error:
-                if isContinuingPage {
-                    ProgressView()
-                        .frame(width: 38, height: 38)
-                } else {
-                    Button(action: start) {
-                        Image(systemName: "arrow.clockwise.circle.fill")
-                            .font(.system(size: 38))
-                            .foregroundColor(AppTheme.primary)
-                    }
+        KindlePlaybackConsole(
+            isLandscape: true,
+            playbackStatus: playbackStatus,
+            statusMessage: voiceSwitch.progress?.localizedMessage,
+            voiceLanguage: vm.playbackLanguage,
+            previousPage: previousPage,
+            nextPage: nextPage,
+            showTOC: showTOC
+        ) {
+            centerPlayControl
+        }
+    }
+
+    private var playbackStatus: String {
+        if voiceSwitch.progress != nil || isContinuingPage || vm.isPreparingNext {
+            return AppLocalized("正在准备…")
+        }
+        switch vm.status {
+        case .idle: return AppLocalized("开始解读")
+        case .planning: return AppLocalized("正在准备…")
+        case .streaming: return vm.isPlaying ? AppLocalized("解读中") : AppLocalized("已暂停")
+        case .completed: return AppLocalized("解读完成")
+        case .error: return AppLocalized("重试解读")
+        }
+    }
+
+    @ViewBuilder
+    private var centerPlayControl: some View {
+        switch vm.status {
+        case .idle:
+            if isContinuingPage {
+                ProgressView().frame(width: 38, height: 38)
+            } else {
+                Button(action: start) {
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(AppTheme.primary)
                 }
             }
-            KindlePageTurnButton(systemName: "chevron.right", accessibilityLabel: String(localized: "下一页"), action: nextPage)
-            KindlePageTurnButton(systemName: "line.3.horizontal", accessibilityLabel: String(localized: "目录"), action: showTOC)
-            SpeedMenu()
+        case .planning:
+            ProgressView().frame(width: 38, height: 38)
+        case .streaming:
+            if isContinuingPage || vm.isPreparingNext {
+                ProgressView().frame(width: 38, height: 38)
+            } else {
+                Button { vm.togglePlayPause() } label: {
+                    Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(AppTheme.primary)
+                }
+            }
+        case .completed:
+            if isContinuingPage {
+                ProgressView().frame(width: 38, height: 38)
+            } else {
+                Button { vm.replay() } label: {
+                    Image(systemName: "arrow.clockwise.circle.fill")
+                        .font(.system(size: 38))
+                        .foregroundColor(AppTheme.primary)
+                }
+            }
+        case .error:
+            if isContinuingPage {
+                ProgressView().frame(width: 38, height: 38)
+            } else {
+                Button(action: start) {
+                    Image(systemName: "arrow.clockwise.circle.fill")
+                        .font(.system(size: 38))
+                        .foregroundColor(AppTheme.primary)
+                }
+            }
         }
-        .foregroundColor(AppTheme.foreground)
-        .kindleLandscapePill()
     }
 }
 
@@ -905,6 +1145,27 @@ enum KindleRunLog {
     }
 }
 
+/// Pure access contract used before Kindle performs screenshot capture/OCR.
+/// The ReadAloud/Explain view models remain the final authority at playback
+/// time, while this gate prevents an already exhausted user from waiting for
+/// unnecessary page preparation before the paywall appears.
+enum KindlePlaybackAccessGate {
+    static func canStart(
+        mode: ReaderMode,
+        isPro: Bool,
+        listenRemaining: Double,
+        explainRemaining: Int
+    ) -> Bool {
+        if isPro { return true }
+        switch mode {
+        case .read:
+            return listenRemaining > 0
+        case .explain:
+            return explainRemaining > 0
+        }
+    }
+}
+
 private extension UIApplication.State {
     var debugName: String {
         switch self {
@@ -919,13 +1180,15 @@ private extension UIApplication.State {
 struct KindleMiniPlayerView: View {
     @ObservedObject var center: KindlePlaybackCenter
     @ObservedObject private var audio = AudioPlayerService.shared
+    @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
 
     private var model: KindleBookViewModel? { center.model }
 
     private var statusText: String {
-        guard model != nil else { return String(localized: "已暂停") }
-        if audio.isPlaying { return String(localized: "朗读中") }
-        return String(localized: "已暂停")
+        if let progress = voiceSwitch.progress { return progress.localizedMessage }
+        guard model != nil else { return AppLocalized("已暂停") }
+        if audio.isPlaying { return AppLocalized("朗读中") }
+        return AppLocalized("已暂停")
     }
 
     var body: some View {
@@ -951,14 +1214,27 @@ struct KindleMiniPlayerView: View {
                 .contentShape(Rectangle())
                 .onTapGesture { center.expand() }
 
+                if model.mode == .explain, let vm = model.explainVM {
+                    PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
+                } else if let vm = model.readVM, vm.hasStartedPlayback {
+                    PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
+                }
+
                 Button {
                     Task { try? await model.startCurrentMode() }
                 } label: {
-                    Image(systemName: audio.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 19))
-                        .foregroundColor(AppTheme.foreground)
-                        .frame(width: 34, height: 34)
+                    Group {
+                        if voiceSwitch.progress != nil {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: audio.isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 19))
+                                .foregroundColor(AppTheme.foreground)
+                        }
+                    }
+                    .frame(width: 34, height: 34)
                 }
+                .disabled(voiceSwitch.progress != nil)
 
                 Button { center.close() } label: {
                     Image(systemName: "xmark")
@@ -1105,7 +1381,7 @@ private struct KindleNativeTOCPanel: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text(String(localized: "目录"))
+                Text(AppLocalized("目录"))
                     .font(.headline.weight(.semibold))
                     .foregroundColor(AppTheme.foreground)
                 Spacer()
@@ -1129,7 +1405,7 @@ private struct KindleNativeTOCPanel: View {
                     VStack(spacing: 12) {
                         ProgressView()
                             .tint(AppTheme.primary)
-                        Text(String(localized: "正在加载目录…"))
+                        Text(AppLocalized("正在加载目录…"))
                             .font(.subheadline)
                             .foregroundColor(AppTheme.mutedForeground)
                     }
@@ -1187,7 +1463,7 @@ private struct KindleNativeTOCPanel: View {
                                     ProgressView()
                                         .scaleEffect(0.82)
                                         .tint(AppTheme.primary)
-                                    Text(String(localized: "正在更新目录…"))
+                                    Text(AppLocalized("正在更新目录…"))
                                         .font(.footnote)
                                         .foregroundColor(AppTheme.mutedForeground)
                                 }
@@ -1216,9 +1492,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     @Published var book: KindleBook
     @Published var isPreparing = false
     @Published var statusText = ""
+    @Published var playbackErrorText: String?
     @Published var mode: ReaderMode = .read
     @Published var readVM: ReadAloudViewModel?
     @Published var explainVM: ExplainViewModel?
+    @Published var showPaywall = false
     @Published var isContinuingExplainPage = false
     @Published var isPageTurnResuming = false
     @Published var viewportCrop: KindleViewportCrop = .identity
@@ -1233,7 +1511,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     @Published private(set) var isStaleBookEntryError = false
     @Published private(set) var isStaleBookRecovering = false
     @Published private(set) var staleBookRecoveryMessage: String?
-    @Published private(set) var staleBookRecoveryProgressText = String(localized: "正在准备…")
+    @Published private(set) var staleBookRecoveryProgressText = AppLocalized("正在准备…")
     @Published private(set) var libraryRecoveryWebView: WKWebView?
     private var lastNativeTOCSelectionText: String?
     private var lastNativeTOCSelectionPageKey: String?
@@ -1282,10 +1560,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private let store = KindleLibraryStore.shared
     private let analyticsContext: AnalyticsContentContext
     private var analyticsContentReadyTracked = false
-    private static let ocrCaptureMaxWidth = 768
-    private static let ocrCaptureJpegQuality = 0.85
+    /// Preserve native Kindle glyph pixels for OCR. The JavaScript capture uses
+    /// lossless PNG; this cap only protects against abnormally large renderer images.
+    private static let ocrCaptureMaxWidth = 2048
     private static var ocrCaptureJavaScriptArguments: String {
-        "\(ocrCaptureMaxWidth), \(ocrCaptureJpegQuality)"
+        "\(ocrCaptureMaxWidth)"
     }
 
     // Render layer: consumes word routes and paints highlight/marks onto the live Kindle page.
@@ -1328,6 +1607,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     // Playback prefetch layer: owns audio generated for a known utterance. Kept separate from page cache.
     private var cachedStartAudio: KindleAudioPrefetch?
     private var cachedStartAudioCandidates: [String: KindleAudioPrefetch] = [:]
+    private var continuousReadHandoff: KindleContinuousReadHandoff?
+    private var continuousReadTurnTask: Task<Void, Never>?
+    private var continuousReadCommitTask: Task<Void, Never>?
+    private var continuousReadStagedPage: KindleCachedPage?
+    private var continuousReadStagedLiveKey: String?
+    private var continuousReadHandoffSerial = 0
+    private var continuousReadOldVMDetached = false
+    private var continuousReadAudioCompletedBeforeCommit = false
+    private var continuousReadTurnFailureCount = 0
 
     // Explain prefetch layer: owns the next page block_0 plan + TTS + marks.
     private var explainPrefetchTask: Task<Void, Never>?
@@ -1351,6 +1639,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var syncDialogEpoch: UInt64 = 0
     private var syncDialogShouldResume = false
     private var syncDialogResumeMode: ReaderMode?
+    private var pendingStartAfterSyncResolution = false
     private var pendingPersistentAnchor: KindleListeningAnchor?
     private var listeningAnchorPersistTask: Task<Void, Never>?
     private var lastListeningAnchorPersistedAt: Date?
@@ -1362,22 +1651,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var suppressExternalPageChangeUntil: Date?
     private var readerLayoutUnstableUntil: Date?
     private var externalMismatchKey: String?
-    private var externalMismatchCount = 0
-    private var externalMismatchFirstAt: Date?
     private var readerSurfaceSize: CGSize = .zero
+    private var isReaderSurfaceAttached = false
+    private var isReaderPresented = false
+    private var isPlayerControlOverlayPresented = false
+    private var isApplicationActive = true
+    private var needsForegroundVisualResync = false
+    private var lastConfirmedTurnFingerprint: String?
+    private var kindleVerticalColumnHints: [KindleVerticalColumnHint] = []
 
     // Playback layer: tracks continuation after a cross-page utterance has consumed the next page's first paragraph.
     private var pendingCurrentPageContinuation = false
     private var pendingContinuationParagraphIndex: Int?
     private var pendingContinuationSegments: [AudioSegment] = []
     private var pendingContinuationTask: Task<Void, Never>?
-
-    var shouldKeepAliveForMiniPlayer: Bool {
-        if AudioPlayerService.shared.currentBookId == book.id { return true }
-        if let vm = readVM, vm.currentParagraphIndex >= 0 { return true }
-        if let vm = explainVM, vm.status.isActive || vm.isPlaying { return true }
-        return false
-    }
 
     var shouldRunPlaybackRefocus: Bool {
         guard AudioPlayerService.shared.currentBookId == book.id else { return false }
@@ -1397,7 +1684,62 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         !hasActivePlaybackSession
     }
 
+    func setReaderSurfaceAttached(_ attached: Bool) {
+        guard isReaderSurfaceAttached != attached else { return }
+        isReaderSurfaceAttached = attached
+        KindleRunLog.write("KINDLE lifecycle surfaceAttached=\(attached ? "Y" : "N")")
+    }
+
+    func setReaderPresented(_ presented: Bool) {
+        guard isReaderPresented != presented else { return }
+        isReaderPresented = presented
+        KindleRunLog.write("KINDLE lifecycle presented=\(presented ? "Y" : "N")")
+        if presented, needsForegroundVisualResync {
+            KindleRunLog.write("KINDLE lifecycle visual-resync pending reason=reader-presented")
+        }
+    }
+
+    func setPlayerControlOverlayPresented(_ presented: Bool) {
+        guard isPlayerControlOverlayPresented != presented else { return }
+        isPlayerControlOverlayPresented = presented
+        clearExternalMismatchState()
+        if presented {
+            suppressExternalPageChangeUntil = .distantFuture
+            KindleRunLog.write("KINDLE player overlay begin stableSurface=\(Self.sizeLog(readerSurfaceSize))")
+        } else {
+            // Let the custom panel finish its dismissal animation without
+            // interpreting transient geometry or candidate order as a page turn.
+            suppressExternalPageChangeUntil = Date().addingTimeInterval(1.5)
+            KindleRunLog.write("KINDLE player overlay end grace=1.5 stableSurface=\(Self.sizeLog(readerSurfaceSize))")
+        }
+    }
+
+    func setApplicationActive(_ active: Bool) {
+        guard isApplicationActive != active else { return }
+        isApplicationActive = active
+        KindleRunLog.write("KINDLE lifecycle appActive=\(active ? "Y" : "N")")
+        if active, needsForegroundVisualResync {
+            KindleRunLog.write("KINDLE lifecycle visual-resync pending reason=app-active")
+        }
+    }
+
+    private var requiresImmediateVisualSync: Bool {
+        KindlePlaybackLifecycleContract.requiresImmediateVisualSync(
+            readerPresented: isReaderPresented,
+            applicationActive: isApplicationActive
+        )
+    }
+
+    private func deferVisualSyncUntilForeground(reason: String) {
+        needsForegroundVisualResync = true
+        KindleRunLog.write("KINDLE lifecycle visual-sync deferred reason=\(reason)")
+    }
+
     func notePlaybackLayoutChange(reason: String) {
+        guard !isPlayerControlOverlayPresented else {
+            KindleRunLog.write("KINDLE layout ignored reason=\(reason) source=player-overlay")
+            return
+        }
         guard hasActivePlaybackSession || shouldRunPlaybackRefocus else { return }
         let seconds: TimeInterval
         switch reason {
@@ -1418,6 +1760,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             width: max(1, size.width.rounded(.toNearestOrAwayFromZero)),
             height: max(1, size.height.rounded(.toNearestOrAwayFromZero))
         )
+        guard !isPlayerControlOverlayPresented else {
+            KindleRunLog.write("KINDLE viewport crop keep-current reason=player-overlay surface=\(Self.sizeLog(normalized))")
+            return
+        }
         if isReaderSurfaceFrozen {
             if Self.isOrientationChange(from: readerSurfaceSize, to: normalized) {
                 readerSurfaceFreezeUntil = nil
@@ -1456,6 +1802,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             width: max(1, size.width.rounded(.toNearestOrAwayFromZero)),
             height: max(1, size.height.rounded(.toNearestOrAwayFromZero))
         )
+        if isPlayerControlOverlayPresented {
+            return viewportCrop
+        }
         guard normalized.width > 80, normalized.height > 80 else {
             return viewportCrop
         }
@@ -1490,6 +1839,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func noteReaderLayoutChange(reason: String) {
+        guard !isPlayerControlOverlayPresented else {
+            KindleRunLog.write("KINDLE reader layout ignored reason=\(reason) source=player-overlay")
+            return
+        }
         guard didLoad else { return }
         preparePlaybackForReaderLayoutRestartIfNeeded(reason: reason)
         markReaderLayoutUnstable(reason: reason)
@@ -1538,7 +1891,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         pendingLayoutPlaybackOldKey = livePageKey?.nilIfEmpty
         stopPlaybackForPageTurn(reason: "layout-\(reason)-pending", clearLiveOverlay: false)
         mode = oldMode
-        statusText = String(localized: "正在适配屏幕方向…")
+        statusText = AppLocalized("正在适配屏幕方向…")
         KindleRunLog.write("KINDLE layout playback pending reason=\(reason) mode=\(oldMode.rawValue) old=\(Self.keyLog(pendingLayoutPlaybackOldKey ?? ""))")
     }
 
@@ -1875,12 +2228,23 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let userContentController = WKUserContentController()
         if #available(iOS 14.0, *) {
             userContentController.addUserScript(WKUserScript(
+                source: KindleWebScripts.metadataBootstrap,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true,
+                in: .page
+            ))
+            userContentController.addUserScript(WKUserScript(
                 source: KindleWebScripts.pageCaptureBootstrap,
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true,
                 in: .page
             ))
         } else {
+            userContentController.addUserScript(WKUserScript(
+                source: KindleWebScripts.metadataBootstrap,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
             userContentController.addUserScript(WKUserScript(
                 source: KindleWebScripts.pageCaptureBootstrap,
                 injectionTime: .atDocumentStart,
@@ -1906,6 +2270,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         webView.configuration.userContentController.add(self, name: "castReaderKindle")
         configurePageModeGestures()
         webView.allowsBackForwardNavigationGestures = false
+        NotificationCenter.default.publisher(for: .castReaderPlaybackVoiceWillSwitch)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] notification in
+                self?.handlePlaybackVoiceWillSwitch(notification)
+            }
+            .store(in: &cancellables)
     }
 
     deinit {
@@ -1930,6 +2300,22 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         let type = payload["type"] as? String ?? "unknown"
         switch type {
+        case "kindle-user-page-gesture":
+            let direction = payload["direction"] as? String ?? "unknown"
+            guard shouldResumeAfterUserPageTurn,
+                  !isPageTurnResuming,
+                  !isAdvancingLivePage,
+                  let oldKey = livePageKey?.nilIfEmpty else {
+                KindleRunLog.write("KINDLE user page gesture ignored direction=\(direction) active=\(shouldResumeAfterUserPageTurn ? "Y" : "N")")
+                return
+            }
+            KindleRunLog.write("KINDLE user page gesture direction=\(direction) old=\(Self.keyLog(oldKey))")
+            scheduleExternalPageChangeResume(
+                visibleKey: nil,
+                oldKey: oldKey,
+                reason: "kindle-swipe-\(direction)",
+                force: true
+            )
         case "toc-click", "toc-after-click", "toc-close", "toc-close-error":
             if isNativeTOCBridgeJumping {
                 KindleRunLog.write("KINDLE toc event ignored-bridge-jump type=\(type) text=\(Self.keyLog(payload["text"] as? String ?? ""))")
@@ -1968,7 +2354,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if let cloudLocation = event.cloudLocation { kindleSyncCloudLocation = cloudLocation }
 
         if let choice = event.choice {
-            statusText = String(localized: "正在应用 Kindle 阅读位置…")
+            statusText = AppLocalized("正在应用 Kindle 阅读位置…")
             KindleRunLog.write("KINDLE sync dialog choice=\(choice.rawValue) local=\(kindleSyncLocalLocation ?? -1) cloud=\(kindleSyncCloudLocation ?? -1)")
             return
         }
@@ -1980,12 +2366,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             syncDialogResolutionTask = nil
             syncDialogResumeMode = mode
             syncDialogShouldResume = isCurrentModePlaybackActiveOrPreparing || isAdvancingLivePage || isPageTurnResuming
+            pendingStartAfterSyncResolution = false
             isKindleSyncDialogVisible = true
             if syncDialogShouldResume {
                 stopPlaybackForPageTurn(reason: "kindle-sync-dialog", clearLiveOverlay: false)
                 if let resumeMode = syncDialogResumeMode { mode = resumeMode }
             }
-            statusText = String(localized: "请先确认 Kindle 阅读位置。")
+            statusText = AppLocalized("请先确认 Kindle 阅读位置。")
             KindleRunLog.write("KINDLE sync dialog shown local=\(kindleSyncLocalLocation ?? -1) cloud=\(kindleSyncCloudLocation ?? -1) resume=\(syncDialogShouldResume ? "Y" : "N") mode=\(mode.rawValue)")
             return
         }
@@ -2002,7 +2389,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let resumeMode = syncDialogResumeMode ?? mode
         syncDialogShouldResume = false
         syncDialogResumeMode = nil
-        statusText = String(localized: "正在应用 Kindle 阅读位置…")
+        statusText = AppLocalized("正在应用 Kindle 阅读位置…")
         KindleRunLog.write("KINDLE sync dialog hidden reason=\(reason) local=\(kindleSyncLocalLocation ?? -1) cloud=\(kindleSyncCloudLocation ?? -1) resume=\(shouldResume ? "Y" : "N")")
 
         syncDialogResolutionTask?.cancel()
@@ -2017,17 +2404,27 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 guard !Task.isCancelled, self.syncDialogEpoch == epoch, !self.isKindleSyncDialogVisible else { return }
                 self.resetLiveSession(clearPlaybackCenter: false)
                 self.mode = resumeMode
-                if shouldResume {
+                let shouldStart = shouldResume || self.pendingStartAfterSyncResolution
+                self.pendingStartAfterSyncResolution = false
+                // Publish resolution before starting. startCurrentMode() otherwise
+                // sees this task and correctly defers a user tap, which would make
+                // an automatic resume defer itself forever.
+                self.syncDialogResolutionTask = nil
+                if shouldStart {
                     try await self.startCurrentMode()
                 } else {
-                    self.statusText = String(localized: "打开任意位置，然后点播放开始朗读。")
+                    self.statusText = AppLocalized("打开任意位置，然后点播放开始朗读。")
                 }
-                KindleRunLog.write("KINDLE sync dialog resolved resume=\(shouldResume ? "Y" : "N") mode=\(resumeMode.rawValue) key=\(Self.keyLog(self.livePageKey ?? ""))")
+                KindleRunLog.write("KINDLE sync dialog resolved resume=\(shouldResume ? "Y" : "N") requested=\(shouldStart ? "Y" : "N") mode=\(resumeMode.rawValue) key=\(Self.keyLog(self.livePageKey ?? ""))")
+            } catch is CancellationError {
+                KindleRunLog.write("KINDLE sync dialog resolve cancelled resume=\(shouldResume ? "Y" : "N")")
             } catch {
                 self.statusText = error.localizedDescription
                 KindleRunLog.write("KINDLE sync dialog resolve failed resume=\(shouldResume ? "Y" : "N") error=\(error.localizedDescription)")
             }
-            self.syncDialogResolutionTask = nil
+            if self.syncDialogEpoch == epoch {
+                self.syncDialogResolutionTask = nil
+            }
         }
     }
 
@@ -2145,7 +2542,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     func requestContinueListening() {
         guard !isKindleSyncDialogVisible else {
-            statusText = String(localized: "请先确认 Kindle 阅读位置。")
+            statusText = AppLocalized("请先确认 Kindle 阅读位置。")
             return
         }
         let request = continueListeningGate.request(for: book.id)
@@ -2186,11 +2583,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if isStaleBookRecovering, finishedURL.contains("kindle-library") {
             readerSetupTask?.cancel()
             readerSetupTask = nil
-            statusText = String(localized: "正在同步 Kindle 书架…")
+            statusText = AppLocalized("正在同步 Kindle 书架…")
             KindleRunLog.write("KINDLE webview didFinish library-recovery skip-reader-setup")
             return
         }
-        statusText = String(localized: "打开任意位置，然后点播放开始朗读。")
+        statusText = AppLocalized("打开任意位置，然后点播放开始朗读。")
         scheduleReaderSetup(reason: "didFinish")
         detectAndRecoverStaleBookEntry()
     }
@@ -2224,7 +2621,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     self.isStaleBookEntryError = true
                     KindleRunLog.write("KINDLE stale-entry error detected attempt=\(attempt)")
                     if self.staleBookRecoveryAttempted {
-                        self.statusText = String(localized: "书架已同步，但 Kindle 未能打开这本书。请重试或返回书架。")
+                        self.statusText = AppLocalized("书架已同步，但 Kindle 未能打开这本书。请重试或返回书架。")
                         self.staleBookRecoveryMessage = self.statusText
                         KindleRunLog.write("KINDLE stale-entry fresh-reader failed no-auto-loop book=\(Self.keyLog(self.book.id))")
                     } else {
@@ -2278,9 +2675,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         staleBookRecoveryAttempted = true
         isStaleBookRecovering = true
         staleBookRecoveryMessage = nil
-        staleBookRecoveryProgressText = String(localized: "正在准备…")
+        staleBookRecoveryProgressText = AppLocalized("正在准备…")
         isPreparing = true
-        statusText = String(localized: "正在重新同步 Kindle 书籍…")
+        statusText = AppLocalized("正在重新同步 Kindle 书籍…")
         let target = book
         KindleRunLog.write("KINDLE stale-entry auto-recovery start book=\(Self.keyLog(target.id))")
         staleBookErrorProbeTask?.cancel()
@@ -2315,21 +2712,21 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             case .recovered(let latest):
                 self.isStaleBookEntryError = false
                 self.staleBookRecoveryMessage = nil
-                self.staleBookRecoveryProgressText = String(localized: "正在重新打开书籍…")
+                self.staleBookRecoveryProgressText = AppLocalized("正在重新打开书籍…")
                 self.refreshMetadata(from: latest)
-                self.statusText = String(localized: "打开任意位置，然后点播放开始朗读。")
+                self.statusText = AppLocalized("打开任意位置，然后点播放开始朗读。")
                 KindleRunLog.write("KINDLE stale-entry auto-recovery synced book=\(Self.keyLog(latest.id)) fresh-reader=begin")
                 KindlePlaybackCenter.shared.replaceAfterLibraryRecovery(current: self, book: latest)
             case .signInRequired:
-                self.statusText = String(localized: "Kindle 登录已过期，请重新登录并同步书架。")
+                self.statusText = AppLocalized("Kindle 登录已过期，请重新登录并同步书架。")
                 self.staleBookRecoveryMessage = self.statusText
                 KindleRunLog.write("KINDLE stale-entry auto-recovery auth-required")
             case .notFound:
-                self.statusText = String(localized: "未能在 Kindle 书架找到这本书，请手动同步书架。")
+                self.statusText = AppLocalized("未能在 Kindle 书架找到这本书，请手动同步书架。")
                 self.staleBookRecoveryMessage = self.statusText
                 KindleRunLog.write("KINDLE stale-entry auto-recovery not-found book=\(Self.keyLog(target.id))")
             case .reopenFailed:
-                self.statusText = String(localized: "书架已同步，但 Kindle 未能打开这本书。请重试或返回书架。")
+                self.statusText = AppLocalized("书架已同步，但 Kindle 未能打开这本书。请重试或返回书架。")
                 self.staleBookRecoveryMessage = self.statusText
                 KindleRunLog.write("KINDLE stale-entry auto-recovery reopen-failed book=\(Self.keyLog(target.id))")
             }
@@ -2402,7 +2799,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return
         }
 
-        statusText = String(localized: "打开任意位置，然后点播放开始朗读。")
+        statusText = AppLocalized("打开任意位置，然后点播放开始朗读。")
         KindleRunLog.write("KINDLE audiobook continue unavailable request=\(request) reason=no-live-session source=\(reason) anchor=\(store.hasListeningAnchor(for: book.id) ? "Y" : "N")")
     }
 
@@ -2529,7 +2926,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 self.isNativeTOCPresented = true
                 self.isKindleTOCVisible = false
                 self.isNativeTOCLoading = false
-                self.nativeTOCError = self.nativeTOCEntries.isEmpty ? String(localized: "暂未缓存这本书的目录，请先竖屏打开一次目录。") : nil
+                self.nativeTOCError = self.nativeTOCEntries.isEmpty ? AppLocalized("暂未缓存这本书的目录，请先竖屏打开一次目录。") : nil
                 self.statusText = ""
                 KindleRunLog.write("KINDLE native toc cached panel source=playback-bar entries=\(self.nativeTOCEntries.count) epoch=\(epoch)")
             }
@@ -2633,7 +3030,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 KindleRunLog.write("KINDLE native toc bridge ready source=\(reason) entries=\(nativeTOCEntries.count) epoch=\(epoch)")
             } else {
                 isNativeTOCLoading = false
-                nativeTOCError = String(localized: "暂未找到这本书的目录。")
+                nativeTOCError = AppLocalized("暂未找到这本书的目录。")
                 _ = await closeTOCIfVisible(reason: "native-scan-empty")
                 await setNativeKindleTOCHidden(false, reason: "native-scan-empty")
                 isKindleTOCVisible = false
@@ -2642,7 +3039,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return
         } else {
             isNativeTOCLoading = false
-            nativeTOCError = String(localized: "暂未找到这本书的目录。")
+            nativeTOCError = AppLocalized("暂未找到这本书的目录。")
             _ = await closeTOCIfVisible(reason: "native-load-open-failed")
             await setNativeKindleTOCHidden(false, reason: "native-load-open-failed")
             await setNativeKindleTOCSheetStyled(false, reason: "native-load-open-failed")
@@ -2662,7 +3059,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         KindleRunLog.write("KINDLE toc select begin index=\(entry.index) path=\(Self.keyLog(entry.path)) text=\(Self.keyLog(entry.text)) resume=\(shouldResume) mode=\(resumeMode.rawValue) epoch=\(epoch)")
         isNativeTOCPresented = false
         isKindleTOCVisible = false
-        statusText = String(localized: "正在跳转章节…")
+        statusText = AppLocalized("正在跳转章节…")
         readerSurfaceFreezeUntil = nil
         restoreReaderViewportCrop(reason: "toc-select-start")
 
@@ -2681,7 +3078,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if shouldResume {
             isPageTurnResuming = true
             KindlePlaybackCenter.shared.activate(model: self)
-            statusText = String(localized: "正在切换 Kindle 页面…")
+            statusText = AppLocalized("正在切换 Kindle 页面…")
         }
         installCaptureScript()
         await setKindlePageModeLocked(false)
@@ -2709,7 +3106,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
         guard didOpenNativeTOC else {
             isNativeTOCLoading = false
-            nativeTOCError = String(localized: "跳转失败，请重试。")
+            nativeTOCError = AppLocalized("跳转失败，请重试。")
             _ = await closeTOCIfVisible(reason: "native-jump-open-failed")
             await setNativeKindleTOCHidden(false, reason: "native-jump-open-failed")
             await restoreViewportAfterNativeTOCBridge(reason: "native-jump-open-failed")
@@ -2771,7 +3168,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                         }
                         KindleRunLog.write("KINDLE native toc jump clicked-no-navigation index=\(entry.index) old=\(Self.keyLog(oldKey)) current=\(Self.keyLog(currentKey)) text=\(Self.keyLog(entry.text))")
                         isNativeTOCLoading = false
-                        nativeTOCError = String(localized: "跳转失败，请重试。")
+                        nativeTOCError = AppLocalized("跳转失败，请重试。")
                         _ = await closeTOCIfVisible(reason: "native-jump-no-navigation")
                         await setNativeKindleTOCHidden(false, reason: "native-jump-no-navigation")
                         await restoreViewportAfterNativeTOCBridge(reason: "native-jump-no-navigation")
@@ -2817,7 +3214,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     } else {
                         pendingManualPageResumeMode = nil
                         isPageTurnResuming = false
-                        statusText = String(localized: "打开任意位置后，选择朗读或解读。")
+                        statusText = AppLocalized("打开任意位置后，选择朗读或解读。")
                     }
                     KindleRunLog.write("KINDLE native toc jump complete keep-viewport resume=\(shouldResume) epoch=\(epoch)")
                     return
@@ -2829,7 +3226,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
 
         isNativeTOCLoading = false
-        nativeTOCError = String(localized: "跳转失败，请重试。")
+        nativeTOCError = AppLocalized("跳转失败，请重试。")
         _ = await closeTOCIfVisible(reason: "native-jump-failed")
         await setNativeKindleTOCHidden(false, reason: "native-jump-failed")
         await restoreViewportAfterNativeTOCBridge(reason: "native-jump-failed")
@@ -3038,7 +3435,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func runTOCProbe(reason: String) async {
-        statusText = String(localized: "正在探测 Kindle 目录…")
+        statusText = AppLocalized("正在探测 Kindle 目录…")
         isKindleTOCVisible = true
         installCaptureScript()
         await setKindlePageModeLocked(false)
@@ -3096,7 +3493,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 #endif
                 if count > 0 {
                     isKindleTOCVisible = true
-                    statusText = String(localized: "已探测到 Kindle 目录。")
+                    statusText = AppLocalized("已探测到 Kindle 目录。")
                     return
                 }
             } catch {
@@ -3107,7 +3504,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             }
             try? await Task.sleep(nanoseconds: attempt == 1 ? 900_000_000 : 650_000_000)
         }
-        statusText = String(localized: "暂未探测到 Kindle 目录。")
+        statusText = AppLocalized("暂未探测到 Kindle 目录。")
         isKindleTOCVisible = false
         await setKindlePageModeLocked(true)
         KindleRunLog.write("KINDLE toc probe incomplete reason=\(reason) lastStage=\(lastStage)")
@@ -3313,7 +3710,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     func selectMode(_ newMode: ReaderMode, autoStart: Bool = false) {
         guard !isKindleSyncDialogVisible else {
-            statusText = String(localized: "请先确认 Kindle 阅读位置。")
+            statusText = AppLocalized("请先确认 Kindle 阅读位置。")
             return
         }
         guard mode != newMode else {
@@ -3403,7 +3800,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     func startCurrentMode() async throws {
         guard !isKindleSyncDialogVisible else {
-            statusText = String(localized: "请先确认 Kindle 阅读位置。")
+            statusText = AppLocalized("请先确认 Kindle 阅读位置。")
+            return
+        }
+        if syncDialogResolutionTask != nil {
+            pendingStartAfterSyncResolution = true
+            statusText = AppLocalized("正在应用 Kindle 阅读位置…")
+            KindleRunLog.write("KINDLE start deferred waiting-sync mode=\(mode.rawValue)")
             return
         }
         #if DEBUG
@@ -3425,6 +3828,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 }
                 KindleRunLog.write("KINDLE read restart stale-vm p=\(vm.currentParagraphIndex) status=\(String(describing: vm.status)) audioBook=\(Self.keyLog(audio.currentBookId ?? ""))")
             }
+            guard await ensurePlaybackAccess(for: .read) else { return }
             let singlePageDoc = try await ensureLiveDocument(force: true)
             let doc = try await buildTextQueueForCurrentPage(baseDocument: singlePageDoc)
             let vm = readVM ?? makeReadVM(document: doc)
@@ -3464,6 +3868,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     break
                 }
             }
+            guard await ensurePlaybackAccess(for: .explain) else { return }
             let singlePageDoc = try await ensureLiveDocument(force: true)
             guard let vm = explainVM else { return }
             mode = .explain
@@ -3488,9 +3893,41 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
     }
 
+    private func ensurePlaybackAccess(for requestedMode: ReaderMode) async -> Bool {
+        let pro = ProManager.shared
+        let quota = QuotaManager.shared
+        quota.rollIfNewDay()
+
+        func hasAccess() -> Bool {
+            KindlePlaybackAccessGate.canStart(
+                mode: requestedMode,
+                isPro: pro.isPro,
+                listenRemaining: quota.listenRemaining,
+                explainRemaining: quota.explainRemaining
+            )
+        }
+
+        guard !hasAccess() else { return true }
+        await pro.refresh()
+        guard !hasAccess() else { return true }
+
+        showPaywall = true
+        playbackErrorText = nil
+        KindleRunLog.write(
+            "KINDLE paywall requested mode=\(requestedMode.rawValue) listenRemaining=\(Int(quota.listenRemaining)) explainRemaining=\(quota.explainRemaining)"
+        )
+        return false
+    }
+
+    func dismissPaywall() {
+        readVM?.showPaywall = false
+        explainVM?.showPaywall = false
+        showPaywall = false
+    }
+
     func turnPage(_ direction: KindlePageTurnDirection) async {
         guard !isKindleSyncDialogVisible else {
-            statusText = String(localized: "请先确认 Kindle 阅读位置。")
+            statusText = AppLocalized("请先确认 Kindle 阅读位置。")
             KindleRunLog.write("KINDLE page turn blocked sync-dialog direction=\(direction.logName)")
             return
         }
@@ -3539,6 +3976,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         shouldResumeAfterTurn: Bool,
         resumeMode: ReaderMode
     ) async -> Bool {
+        let fallbackOldKey = livePageKey
+        let reason = "manual-\(direction.logName)"
+        // Stop the old page before any WebView readiness/geometry await. Audio,
+        // TTS generation and continuous-page handoff must not survive a user turn.
+        if shouldResumeAfterTurn {
+            stopPlaybackForPageTurn(reason: reason, clearLiveOverlay: false)
+            mode = resumeMode
+            isPageTurnResuming = true
+        }
+        cancelInFlightProcessingForManualPageTurn(reason: reason)
+
         do {
             try await ensureCaptureScriptInstalled(reason: "manual-\(direction.logName)")
             await setKindlePageModeLocked(true)
@@ -3547,17 +3995,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             let oldKey: String
             if let visibleKey = visibleOldKey.nilIfEmpty {
                 oldKey = visibleKey
+            } else if let fallbackOldKey = fallbackOldKey?.nilIfEmpty {
+                oldKey = fallbackOldKey
             } else {
                 oldKey = await currentKindlePageKey()
             }
             manualPageResumeTask?.cancel()
-            let reason = "manual-\(direction.logName)"
-            if shouldResumeAfterTurn {
-                stopPlaybackForPageTurn(reason: reason, clearLiveOverlay: false)
-                mode = resumeMode
-                isPageTurnResuming = true
-            }
-            cancelInFlightProcessingForManualPageTurn(reason: reason)
             pendingCaptureKey = nil
             clearExternalMismatchState()
             if shouldResumeAfterTurn {
@@ -3572,7 +4015,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 pageBackStack.removeAll()
                 pageForwardStack.removeAll()
                 KindlePlaybackCenter.shared.activate(model: self)
-                statusText = String(localized: "正在切换 Kindle 页面…")
+                statusText = AppLocalized("正在切换 Kindle 页面…")
             }
 
             let turnTarget = try await requestKindlePageTurnTarget(direction, oldKey: oldKey)
@@ -3590,7 +4033,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             } else {
                 pendingManualPageResumeMode = nil
                 isPageTurnResuming = false
-                statusText = String(localized: "打开任意位置后，选择朗读或解读。")
+                statusText = AppLocalized("打开任意位置后，选择朗读或解读。")
             }
             return true
         } catch {
@@ -3616,7 +4059,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         pendingManualPageResumeMode = resumeMode
         isPageTurnResuming = true
         manualPageResumeTask?.cancel()
-        statusText = String(localized: "正在等待 Kindle 页面稳定…")
+        statusText = AppLocalized("正在等待 Kindle 页面稳定…")
         KindleRunLog.write("KINDLE manual resume scheduled mode=\(resumeMode.rawValue) old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(targetKey ?? "")) dir=\(direction?.logName ?? "unknown") reason=\(reason) epoch=\(epoch)")
         manualPageResumeTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 850_000_000)
@@ -3672,7 +4115,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
 
         do {
-            statusText = String(localized: "正在从当前 Kindle 页面继续…")
+            statusText = AppLocalized("正在从当前 Kindle 页面继续…")
             try await ensureCaptureScriptInstalled(reason: "\(reason)-resume")
             guard !Task.isCancelled, preloadEpoch == epoch else { return }
             await setKindlePageModeLocked(true)
@@ -3722,7 +4165,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE manual resume started mode=\(resumeMode.rawValue) old=\(Self.keyLog(activationOldKey)) new=\(Self.keyLog(prepared.page.key)) reason=\(reason) epoch=\(epoch)")
         } catch {
             pendingCaptureKey = nil
-            statusText = String(localized: "已暂停，请点击播放继续。")
+            statusText = AppLocalized("已暂停，请点击播放继续。")
             KindleRunLog.write("KINDLE manual resume failed mode=\(resumeMode.rawValue) old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(targetKey ?? "")) reason=\(reason) error=\(error.localizedDescription)")
         }
     }
@@ -3886,84 +4329,64 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func requestKindlePageTurnTarget(_ direction: KindlePageTurnDirection, oldKey: String) async throws -> (targetKey: String, result: [String: Any]) {
-        var lastFailureReason = ""
-        var lastResult: [String: Any] = [:]
-
-        for attempt in 1...3 {
-            let result = try await requestKindlePageTurn(direction, anchorKey: oldKey)
-            lastResult = result
-            let ok = Self.boolValue(result["ok"])
-            let strategy = result["strategy"] as? String ?? ""
-            let reason = result["reason"] as? String ?? ""
-            if !reason.isEmpty {
-                lastFailureReason = reason
-            }
-            KindleRunLog.write("KINDLE page turn request \(direction.logName) attempt=\(attempt) old=\(Self.keyLog(oldKey)) ok=\(ok) strategy=\(strategy) tried=\(String(describing: result["tried"] ?? result["fallbackTried"] ?? "")) reason=\(reason)")
-
-            guard ok else {
-                try? await Task.sleep(nanoseconds: 220_000_000)
-                continue
-            }
-
-            if let immediateTarget = (result["targetKey"] as? String)?.nilIfEmpty,
-               immediateTarget != oldKey {
-                KindleRunLog.write("KINDLE page turn target immediate \(direction.logName) old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(immediateTarget))")
-                return (immediateTarget, result)
-            }
-
-            let nativeControlFirst = strategy == "native-scrubber" || strategy == "native-chevron" || strategy == "native-keyboard" || strategy == "native-tap-zone"
-            let initialWait: UInt64 = nativeControlFirst ? 900_000_000 : 4_200_000_000
-            if let targetKey = await waitForNavigationTargetKey(oldKey: oldKey, timeoutNanoseconds: initialWait) {
-                return (targetKey, result)
-            }
-
-            if nativeControlFirst,
-               let scrubberFallback = try? await requestKindleDirectPageTurn(direction, anchorKey: oldKey) {
-                lastResult = scrubberFallback
-                let fallbackOK = Self.boolValue(scrubberFallback["ok"])
-                let fallbackStrategy = scrubberFallback["strategy"] as? String ?? ""
-                let fallbackReason = scrubberFallback["reason"] as? String ?? ""
-                KindleRunLog.write("KINDLE page turn direct-fallback \(direction.logName) attempt=\(attempt) old=\(Self.keyLog(oldKey)) ok=\(fallbackOK) strategy=\(fallbackStrategy) reason=\(fallbackReason)")
-                if fallbackOK,
-                   let fallbackTarget = (scrubberFallback["targetKey"] as? String)?.nilIfEmpty,
-                   fallbackTarget != oldKey {
-                    return (fallbackTarget, scrubberFallback)
-                }
-                if fallbackOK,
-                   let targetKey = await waitForNavigationTargetKey(oldKey: oldKey, timeoutNanoseconds: 2_400_000_000) {
-                    return (targetKey, scrubberFallback)
-                }
-            }
-
-            if let fallback = try? await requestKindleForceAdjacentPageTurn(direction, anchorKey: oldKey) {
-                lastResult = fallback
-                let fallbackOK = Self.boolValue(fallback["ok"])
-                let fallbackStrategy = fallback["strategy"] as? String ?? ""
-                let fallbackReason = fallback["reason"] as? String ?? ""
-                if !fallbackReason.isEmpty {
-                    lastFailureReason = fallbackReason
-                }
-                KindleRunLog.write("KINDLE page turn force-adjacent \(direction.logName) attempt=\(attempt) old=\(Self.keyLog(oldKey)) ok=\(fallbackOK) strategy=\(fallbackStrategy) target=\(Self.keyLog(fallback["targetKey"] as? String ?? "")) reason=\(fallbackReason)")
-                if fallbackOK,
-                   let fallbackTarget = (fallback["targetKey"] as? String)?.nilIfEmpty,
-                   fallbackTarget != oldKey {
-                    return (fallbackTarget, fallback)
-                }
-                if fallbackOK,
-                   let targetKey = await waitForNavigationTargetKey(oldKey: oldKey, timeoutNanoseconds: 1_600_000_000) {
-                    return (targetKey, fallback)
-                }
-            }
-
-            lastFailureReason = "target-key-timeout"
+        lastConfirmedTurnFingerprint = nil
+        guard isReaderSurfaceAttached, webView.window != nil else {
+            throw KindleBookError.captureFailed("reader-surface-not-visible")
+        }
+        let beforeState = try await evaluateJSON("window.__crKindleState && window.__crKindleState()")
+        let beforeFingerprint = (beforeState["pixelFingerprint"] as? String)?.nilIfEmpty
+        let beforeProgress = KindleTurnContract.progressNumber(beforeState["progress"] as? String)
+        guard beforeFingerprint != nil else {
+            throw KindleBookError.captureFailed("visible-pixel-fingerprint-unavailable")
         }
 
-        let strategy = lastResult["strategy"] as? String ?? ""
-        KindleRunLog.write("KINDLE page turn \(direction.logName) no-visible-change old=\(Self.keyLog(oldKey)) strategy=\(strategy) reason=\(lastFailureReason)")
-        throw KindleBookError.captureFailed("page-turn-no-visible-change:\(lastFailureReason.nilIfEmpty ?? "unknown")")
+        var result = try await requestKindlePageTurn(direction)
+        guard Self.boolValue(result["ok"]), Self.int(from: result["dispatchCount"]) == 1 else {
+            throw KindleBookError.captureFailed(result["reason"] as? String ?? "semantic-page-action-unavailable")
+        }
+
+        var lastFingerprint: String?
+        var stableSamples = 0
+        var lastState: [String: Any] = beforeState
+        for _ in 0..<24 {
+            try await Task.sleep(nanoseconds: 200_000_000)
+            guard !Task.isCancelled else { throw CancellationError() }
+            let state = try await evaluateJSON("window.__crKindleState && window.__crKindleState()")
+            lastState = state
+            let fingerprint = (state["pixelFingerprint"] as? String)?.nilIfEmpty
+            if fingerprint != beforeFingerprint, fingerprint == lastFingerprint {
+                stableSamples += 1
+            } else {
+                stableSamples = fingerprint != beforeFingerprint ? 1 : 0
+            }
+            lastFingerprint = fingerprint
+            let afterProgress = KindleTurnContract.progressNumber(state["progress"] as? String)
+            let progress = KindleTurnContract.progress(
+                beforeLocation: beforeProgress, afterLocation: afterProgress,
+                beforeRenderer: nil, afterRenderer: nil
+            )
+            if KindleTurnContract.confirms(
+                progress: progress,
+                beforeFingerprint: beforeFingerprint,
+                afterFingerprint: fingerprint,
+                semanticActionDispatched: true,
+                stableVisualSamples: stableSamples
+            ) {
+                let targetKey = (state["key"] as? String)?.nilIfEmpty ?? oldKey
+                result["targetKey"] = targetKey
+                result["afterFingerprint"] = fingerprint
+                result["stableVisualSamples"] = stableSamples
+                lastConfirmedTurnFingerprint = fingerprint
+                KindleRunLog.write("KINDLE_TURN_CONFIRM progress=\(String(describing: progress)) before=\(beforeFingerprint?.prefix(18) ?? "") after=\(fingerprint?.prefix(18) ?? "") stable=\(stableSamples) accepted=Y")
+                return (targetKey, result)
+            }
+            if progress == .backward { break }
+        }
+        KindleRunLog.write("KINDLE_TURN_CONFIRM before=\(beforeFingerprint?.prefix(18) ?? "") after=\((lastState["pixelFingerprint"] as? String)?.prefix(18) ?? "") stable=\(stableSamples) accepted=N")
+        throw KindleBookError.captureFailed("semantic-page-turn-unconfirmed")
     }
 
-    private func requestKindlePageTurn(_ direction: KindlePageTurnDirection, anchorKey: String) async throws -> [String: Any] {
+    private func requestKindlePageTurn(_ direction: KindlePageTurnDirection) async throws -> [String: Any] {
         await setKindlePageModeLockedLightweight(true, reason: "turn-\(direction.logName)")
         let jsDirection: String
         switch direction {
@@ -3975,107 +4398,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let escapedDirection = jsDirection
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "'", with: "\\'")
-        let escapedAnchor = anchorKey
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
+        let progressionFallback = persistedKindleLanguageProfile()?.pageProgressionFallback.rawValue ?? "ltr"
         let script = """
         (function() {
-          var direction = '\(escapedDirection)';
-          var anchorKey = '\(escapedAnchor)';
-          var calls = [
-            ['page', window.__crKindleTurnPage],
-            ['native', window.__crKindleTurnNativePage],
-            ['direct', window.__crKindleDirectPage]
-          ];
-          var tried = [];
-          var last = null;
-          function decode(raw, name) {
-            if (raw == null) return { ok:false, reason:name + '-empty-result' };
-            if (typeof raw === 'string') {
-              try { return JSON.parse(raw); } catch (e) {
-                return { ok:false, reason:name + '-invalid-json', raw:String(raw).slice(0, 180) };
-              }
-            }
-            if (typeof raw === 'object') return raw;
-            return { ok:false, reason:name + '-unsupported-result', raw:String(raw).slice(0, 180) };
+          if (typeof window.__crKindleSemanticPageTurn !== 'function') {
+            return JSON.stringify({ ok:false, reason:'semantic-page-action-unavailable', dispatchCount:0 });
           }
-          for (var i = 0; i < calls.length; i++) {
-            var name = calls[i][0];
-            var fn = calls[i][1];
-            if (typeof fn !== 'function') {
-              tried.push(name + ':missing');
-              continue;
-            }
-            var payload;
-            try {
-              payload = name === 'direct' ? decode(fn(direction, anchorKey), name) : decode(fn(direction), name);
-            } catch (e) {
-              payload = { ok:false, reason:name + '-exception:' + String(e && e.message || e) };
-            }
-            payload = payload || { ok:false, reason:name + '-null-payload' };
-            payload.api = name;
-            last = payload;
-            tried.push(name + ':' + (payload.ok ? 'ok' : (payload.reason || 'failed')) + ':' + (payload.strategy || payload.mode || ''));
-            if (payload.ok) {
-              payload.fallbackTried = tried.join('|');
-              return JSON.stringify(payload);
-            }
-          }
-          if (last) {
-            last.ok = false;
-            last.fallbackTried = tried.join('|');
-            return JSON.stringify(last);
-          }
-          return JSON.stringify({ ok:false, reason:'no-turn-api', fallbackTried:tried.join('|'), url:location.href });
-        })()
-        """
-        return try await evaluateJSON(script)
-    }
-
-    private func requestKindleDirectPageTurn(_ direction: KindlePageTurnDirection, anchorKey: String) async throws -> [String: Any] {
-        let jsDirection: String
-        switch direction {
-        case .previous: jsDirection = "previous"
-        case .next: jsDirection = "next"
-        }
-        let escapedDirection = jsDirection
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
-        let escapedAnchor = anchorKey
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
-        let script = """
-        (function() {
-          if (typeof window.__crKindleDirectPage !== 'function') {
-            return JSON.stringify({ ok:false, reason:'missing-direct-page' });
-          }
-          return window.__crKindleDirectPage('\(escapedDirection)', '\(escapedAnchor)');
-        })()
-        """
-        return try await evaluateJSON(script)
-    }
-
-    private func requestKindleForceAdjacentPageTurn(_ direction: KindlePageTurnDirection, anchorKey: String) async throws -> [String: Any] {
-        let jsDirection: String
-        switch direction {
-        case .previous:
-            jsDirection = "previous"
-        case .next:
-            jsDirection = "next"
-        }
-        let escapedDirection = jsDirection
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
-        let escapedAnchor = anchorKey
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
-        let script = """
-        (function() {
-          var fn = window.__crKindleForceAdjacentPage;
-          if (typeof fn !== 'function') {
-            return JSON.stringify({ ok:false, reason:'force-adjacent-unavailable' });
-          }
-          return fn('\(escapedDirection)', '\(escapedAnchor)');
+          return window.__crKindleSemanticPageTurn('\(escapedDirection)', '\(progressionFallback)');
         })()
         """
         return try await evaluateJSON(script)
@@ -4146,6 +4475,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continueListeningBaselineTask = nil
         syncDialogResolutionTask?.cancel()
         syncDialogResolutionTask = nil
+        pendingStartAfterSyncResolution = false
         readerLayoutRepairTask?.cancel()
         readerLayoutRepairTask = nil
         layoutPlaybackRestartTask?.cancel()
@@ -4178,7 +4508,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             throw KindleBookError.busy
         }
         isPreparing = true
-        statusText = String(localized: "正在准备 Kindle 页面…")
+        statusText = AppLocalized("正在准备 Kindle 页面…")
         defer { isPreparing = false }
 
         installCaptureScript()
@@ -4191,11 +4521,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
         for index in 0..<target {
             if index > 0 {
-                statusText = String(format: String(localized: "正在预加载第 %d 页…"), index + 1)
+                statusText = String(format: AppLocalized("正在预加载第 %d 页…"), index + 1)
                 try await scrollForward()
                 try await Task.sleep(nanoseconds: 850_000_000)
             }
-            statusText = String(format: String(localized: "正在捕获第 %d 页…"), index + 1)
+            statusText = String(format: AppLocalized("正在捕获第 %d 页…"), index + 1)
             let page = try await captureVisiblePage(pageIndex: index)
             guard !page.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 if captured.isEmpty { throw KindleBookError.noText }
@@ -4216,7 +4546,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if let first = captured.first {
             store.updateProgress(bookID: book.id, pageKey: first.key, url: first.url, progressLabel: first.progress)
         }
-        statusText = String(localized: "已就绪。")
+        statusText = AppLocalized("已就绪。")
         return doc
     }
 
@@ -4224,7 +4554,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if !force, let liveDocument { return liveDocument }
         guard !isPreparing else { throw KindleBookError.busy }
         isPreparing = true
-        statusText = String(localized: "正在准备当前 Kindle 页面…")
+        statusText = AppLocalized("正在准备当前 Kindle 页面…")
         var prepareEpoch = preloadEpoch
         defer { isPreparing = false }
 
@@ -4268,7 +4598,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             // Starting playback must not move the Kindle page. Capture exactly what
             // the user is looking at, then derive the first readable paragraph from
             // that visible band. Page turns and layout recovery own explicit alignment.
-            statusText = String(localized: "正在读取当前 Kindle 页面…")
+            statusText = AppLocalized("正在读取当前 Kindle 页面…")
         }
         try await waitForKindleImageStable()
         guard !Task.isCancelled, preloadEpoch == prepareEpoch else { throw CancellationError() }
@@ -4279,7 +4609,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         for attempt in 1...3 {
             guard !Task.isCancelled, preloadEpoch == prepareEpoch else { throw CancellationError() }
             if attempt > 1 {
-                statusText = String(localized: "正在刷新当前 Kindle 页面…")
+                statusText = AppLocalized("正在刷新当前 Kindle 页面…")
                 _ = try? await evaluateJSON("window.__crKindleLiveClear && window.__crKindleLiveClear()")
                 try await Task.sleep(nanoseconds: 220_000_000)
                 try await waitForKindleImageStable()
@@ -4342,7 +4672,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 if force {
                     await logKindleGeometrySnapshot(reason: "post-overlay-\(mode.rawValue)")
                 }
-                statusText = String(localized: "当前 Kindle 页面已就绪。")
+                statusText = AppLocalized("当前 Kindle 页面已就绪。")
                 return doc
             } catch KindleBookError.overlayFailed(let reason) where reason == "live-candidate-not-visible" || reason == "captured-page-not-visible" {
                 lastOverlayError = KindleBookError.overlayFailed(reason)
@@ -4428,6 +4758,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         cancelLiveHighlightTasks()
         readVM = makeReadVM(document: document)
         explainVM = makeExplainVM(document: document)
+        showPaywall = false
         bindLivePlayback(document: document)
     }
 
@@ -4508,11 +4839,36 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         pruneCandidateCaches()
     }
 
-    private func consumeStartAudioCandidate(pageKey rawPageKey: String, textFingerprint: String) -> KindleAudioPrefetch? {
+    private func startAudioCandidate(
+        pageKey rawPageKey: String,
+        textFingerprint: String,
+        voiceID: String
+    ) -> KindleAudioPrefetch? {
+        let pageKey = normalizedPageKey(rawPageKey)
+        guard !pageKey.isEmpty else { return nil }
+        if let audio = cachedStartAudioCandidates[pageKey],
+           audio.textFingerprint == textFingerprint,
+           audio.voiceID == voiceID {
+            return audio
+        }
+        if let audio = cachedStartAudio,
+           normalizedPageKey(audio.pageKey) == pageKey,
+           audio.textFingerprint == textFingerprint,
+           audio.voiceID == voiceID {
+            return audio
+        }
+        return nil
+    }
+
+    private func consumeStartAudioCandidate(
+        pageKey rawPageKey: String,
+        textFingerprint: String,
+        voiceID: String
+    ) -> KindleAudioPrefetch? {
         let pageKey = normalizedPageKey(rawPageKey)
         guard !pageKey.isEmpty else { return nil }
         if let audio = cachedStartAudioCandidates[pageKey] {
-            if audio.textFingerprint == textFingerprint {
+            if audio.textFingerprint == textFingerprint, audio.voiceID == voiceID {
                 cachedStartAudioCandidates[pageKey] = nil
                 if cachedStartAudio?.pageKey == audio.pageKey {
                     cachedStartAudio = nil
@@ -4520,15 +4876,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 return audio
             }
             cachedStartAudioCandidates[pageKey] = nil
-            KindleRunLog.write("KINDLE read prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-mismatch")
+            KindleRunLog.write("KINDLE read prefetch discard key=\(Self.keyLog(pageKey)) reason=text-or-voice-mismatch cachedVoice=\(audio.voiceID) expectedVoice=\(voiceID)")
         }
         if let audio = cachedStartAudio,
            normalizedPageKey(audio.pageKey) == pageKey {
             cachedStartAudio = nil
-            if audio.textFingerprint == textFingerprint {
+            if audio.textFingerprint == textFingerprint, audio.voiceID == voiceID {
                 return audio
             }
-            KindleRunLog.write("KINDLE read prefetch discard key=\(Self.keyLog(pageKey)) reason=fingerprint-mismatch")
+            KindleRunLog.write("KINDLE read prefetch discard key=\(Self.keyLog(pageKey)) reason=text-or-voice-mismatch cachedVoice=\(audio.voiceID) expectedVoice=\(voiceID)")
         }
         return nil
     }
@@ -4701,6 +5057,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if pendingManualPageResumeMode != nil || activeManualTurnShouldResume {
             return true
         }
+        let audio = AudioPlayerService.shared
+        if audio.currentBookId == book.id, audio.currentSegment != nil {
+            // Includes a user-paused item and the continuous-page boundary where
+            // the old VM can already be detached while its audio still owns the book.
+            return true
+        }
         return isCurrentModePlaybackActiveOrPreparing
     }
 
@@ -4763,19 +5125,35 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                       !self.isKindleSyncDialogVisible,
                       !self.isPageTurnResuming,
                       !self.isAdvancingLivePage,
+                      self.continuousReadTurnTask == nil,
+                      self.continuousReadCommitTask == nil,
                       let liveKey = self.livePageKey?.nilIfEmpty else { continue }
+
+                if self.isPlayerControlOverlayPresented {
+                    self.clearExternalMismatchState()
+                    continue
+                }
 
                 let state = try? await self.evaluateJSON("window.__crKindleState && window.__crKindleState()")
                 let navigationSeq = Self.int(from: state?["navigationSeq"]) ?? self.handledKindleNavigationSeq
-                if navigationSeq > self.handledKindleNavigationSeq {
+                let semanticSequenceAdvanced = navigationSeq > self.handledKindleNavigationSeq
+                if semanticSequenceAdvanced {
                     self.handledKindleNavigationSeq = navigationSeq
                     let reason = state?["navigationReason"] as? String ?? "navigation"
-                    KindleRunLog.write("KINDLE navigation intent seq=\(navigationSeq) reason=\(reason) live=\(Self.keyLog(liveKey))")
-                    self.scheduleExternalPageChangeResume(
-                        visibleKey: (state?["key"] as? String)?.nilIfEmpty,
-                        oldKey: liveKey,
-                        reason: "kindle-navigation-\(reason)"
+                    let canResume = KindleExternalNavigationContract.shouldBeginResume(
+                        semanticSequenceAdvanced: true,
+                        hasActivePlayback: self.shouldResumeAfterUserPageTurn,
+                        isReaderStable: !self.isReaderLayoutCurrentlyUnstable,
+                        isInternalTurnInFlight: self.isPageTurnResuming || self.isAdvancingLivePage
                     )
+                    KindleRunLog.write("KINDLE navigation intent seq=\(navigationSeq) reason=\(reason) live=\(Self.keyLog(liveKey)) accepted=\(canResume ? "Y" : "N")")
+                    if canResume {
+                        self.scheduleExternalPageChangeResume(
+                            visibleKey: nil,
+                            oldKey: liveKey,
+                            reason: "kindle-navigation-\(reason)"
+                        )
+                    }
                     continue
                 }
 
@@ -4784,56 +5162,18 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     self.clearExternalMismatchState()
                     continue
                 }
-                if self.isExpectedPlaybackVisibleKey(visibleKey) {
-                    self.clearExternalMismatchState()
-                    KindleRunLog.write("KINDLE external page mismatch expected-playback visible=\(Self.keyLog(visibleKey)) live=\(Self.keyLog(liveKey))")
-                    continue
+                // A different visual candidate alone is not user navigation.
+                // Preload capture, OCR overlays and Kindle React reconciliation
+                // all produce these transient keys. Only navigationSeq above is
+                // authorized to stop/restart playback.
+                let changed = self.externalMismatchKey != visibleKey
+                self.clearExternalMismatchState()
+                self.externalMismatchKey = visibleKey
+                if changed {
+                    KindleRunLog.write("KINDLE visual candidate drift ignored-no-semantic visible=\(Self.keyLog(visibleKey)) live=\(Self.keyLog(liveKey))")
                 }
-                if self.isReaderLayoutCurrentlyUnstable {
-                    self.clearExternalMismatchState()
-                    KindleRunLog.write("KINDLE external page mismatch suppressed-layout visible=\(Self.keyLog(visibleKey)) live=\(Self.keyLog(liveKey))")
-                    continue
-                }
-                let orderedCount = Self.int(from: state?["orderedCount"]) ?? 0
-                let visibleArea = Self.numberValue(state?["visibleArea"]) ?? 0
-                if orderedCount <= 0 || visibleArea <= 0 {
-                    self.clearExternalMismatchState()
-                    KindleRunLog.write("KINDLE external page mismatch suppressed-empty-layout visible=\(Self.keyLog(visibleKey)) live=\(Self.keyLog(liveKey)) ordered=\(orderedCount) visible=\(visibleArea)")
-                    continue
-                }
-                if self.shouldSuppressExternalPageChange(visibleKey: visibleKey, liveKey: liveKey) {
-                    continue
-                }
-                let stable = self.recordExternalMismatch(visibleKey: visibleKey, liveKey: liveKey)
-                guard stable else { continue }
-                self.scheduleExternalPageChangeResume(
-                    visibleKey: visibleKey,
-                    oldKey: liveKey,
-                    reason: "external-visible-page-change"
-                )
             }
         }
-    }
-
-    private func isExpectedPlaybackVisibleKey(_ rawKey: String) -> Bool {
-        let key = rawKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else { return true }
-        var expected = Set<String>()
-        if let liveKey = livePageKey?.nilIfEmpty {
-            expected.insert(liveKey)
-        }
-        if let targetKey = currentRefocusTarget()?.pageKey?.nilIfEmpty {
-            expected.insert(targetKey)
-        }
-        if let queue = textQueue {
-            if let currentKey = queue.currentPage.key.nilIfEmpty {
-                expected.insert(currentKey)
-            }
-            if let nextKey = queue.nextPage?.key.nilIfEmpty {
-                expected.insert(nextKey)
-            }
-        }
-        return expected.contains(key)
     }
 
     private func scheduleExternalPageChangeFromCurrentVisiblePage(reason: String) async -> Bool {
@@ -4847,26 +5187,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             clearExternalMismatchState()
             return false
         }
-        guard !isExpectedPlaybackVisibleKey(visibleKey) else {
-            clearExternalMismatchState()
-            KindleRunLog.write("KINDLE external page refocus-intercept expected visible=\(Self.keyLog(visibleKey)) live=\(Self.keyLog(liveKey)) reason=\(reason)")
-            return false
-        }
-
-        let orderedCount = Self.int(from: state?["orderedCount"]) ?? 0
-        let visibleArea = Self.numberValue(state?["visibleArea"]) ?? 0
-        guard orderedCount > 0, visibleArea > 0 else {
-            KindleRunLog.write("KINDLE external page refocus-intercept skipped-empty visible=\(Self.keyLog(visibleKey)) live=\(Self.keyLog(liveKey)) ordered=\(orderedCount) visible=\(visibleArea) reason=\(reason)")
-            return false
-        }
-
-        KindleRunLog.write("KINDLE external page refocus-intercept visible=\(Self.keyLog(visibleKey)) live=\(Self.keyLog(liveKey)) reason=\(reason)")
-        scheduleExternalPageChangeResume(
-            visibleKey: visibleKey,
-            oldKey: liveKey,
-            reason: "refocus-visible-page-change-\(reason)"
-        )
-        return true
+        clearExternalMismatchState()
+        KindleRunLog.write("KINDLE refocus visual drift ignored-no-semantic visible=\(Self.keyLog(visibleKey)) live=\(Self.keyLog(liveKey)) reason=\(reason)")
+        return false
     }
 
     private func isPlaybackKeyStillVisibleAndAligned(_ key: String) async -> Bool {
@@ -4887,39 +5210,6 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private func clearExternalMismatchState() {
         externalMismatchKey = nil
-        externalMismatchCount = 0
-        externalMismatchFirstAt = nil
-    }
-
-    private func shouldSuppressExternalPageChange(visibleKey: String, liveKey: String) -> Bool {
-        guard let until = suppressExternalPageChangeUntil else { return false }
-        let now = Date()
-        if now < until {
-            clearExternalMismatchState()
-            let remainingMs = Int(until.timeIntervalSince(now) * 1000)
-            KindleRunLog.write("KINDLE external page mismatch suppressed visible=\(Self.keyLog(visibleKey)) live=\(Self.keyLog(liveKey)) remainingMs=\(remainingMs)")
-            return true
-        }
-        suppressExternalPageChangeUntil = nil
-        return false
-    }
-
-    private func recordExternalMismatch(visibleKey: String, liveKey: String) -> Bool {
-        let now = Date()
-        if externalMismatchKey != visibleKey {
-            externalMismatchKey = visibleKey
-            externalMismatchCount = 1
-            externalMismatchFirstAt = now
-        } else {
-            externalMismatchCount += 1
-        }
-        let elapsed = now.timeIntervalSince(externalMismatchFirstAt ?? now)
-        let stable = externalMismatchCount >= 2 && elapsed >= 0.35
-        KindleRunLog.write("KINDLE external page mismatch \(stable ? "stable" : "pending") visible=\(Self.keyLog(visibleKey)) live=\(Self.keyLog(liveKey)) count=\(externalMismatchCount) elapsedMs=\(Int(elapsed * 1000))")
-        if stable {
-            clearExternalMismatchState()
-        }
-        return stable
     }
 
     private func scheduleExternalPageChangeResume(
@@ -4981,14 +5271,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         pageBackStack.removeAll()
         pageForwardStack.removeAll()
         pendingCaptureKey = nil
-        statusText = String(localized: "正在切换 Kindle 页面…")
+        statusText = AppLocalized("正在切换 Kindle 页面…")
 
         do {
             installCaptureScript()
             await setKindlePageModeLocked(true)
             guard let targetKey = await waitForNavigationTargetKey(oldKey: oldKey, timeoutNanoseconds: 20_000_000_000) else {
                 KindleRunLog.write("KINDLE navigation restart timeout old=\(Self.keyLog(oldKey))")
-                statusText = String(localized: "已暂停，请选择要朗读的位置。")
+                statusText = AppLocalized("已暂停，请选择要朗读的位置。")
                 return
             }
             pendingCaptureKey = targetKey
@@ -5167,7 +5457,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 ?? queuedDocument.paragraphs.first(where: { $0.type.isReadable })?.id
                 ?? 0
             let fingerprint = Self.explainFingerprint(document)
-            let startAudio = consumeStartAudioCandidate(pageKey: target.page.key, textFingerprint: fingerprint)
+            let startAudio = consumeStartAudioCandidate(
+                pageKey: target.page.key,
+                textFingerprint: fingerprint,
+                voiceID: AppSettings.shared.voice(for: document.language)
+            )
             let hasPrefetchedStart = startAudio?.paragraphIndex == start && !(startAudio?.segments.isEmpty ?? true)
             let prefetchedSegmentCount = hasPrefetchedStart ? (startAudio?.segments.count ?? 0) : 0
             KindleRunLog.write("KINDLE read restart after-turn begin reason=\(reason) key=\(Self.keyLog(target.page.key)) start=\(start) prefetched=\(hasPrefetchedStart ? "Y" : "N") segs=\(prefetchedSegmentCount)")
@@ -5219,7 +5513,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             id: book.id,
             title: book.title,
             coverURL: book.coverURL,
-            chapterTitle: String(localized: "解读")
+            chapterTitle: AppLocalized("解读")
         )
         return vm
     }
@@ -5243,7 +5537,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return
         }
         guard !isRefocusingPlayback else { return }
-        if await scheduleExternalPageChangeFromCurrentVisiblePage(reason: reason) {
+        // Foreground/expand recovery is anchored to what audio is currently
+        // speaking. Treating the stale visible page as a manual page change here
+        // would rewind playback after a long background session.
+        if reason != "foreground", reason != "expand", reason != "highlight-recovery",
+           await scheduleExternalPageChangeFromCurrentVisiblePage(reason: reason) {
             return
         }
         if Self.refocusHandledByLayoutRestart(reason) {
@@ -5266,6 +5564,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
            canUseCurrentOverlay,
            await refreshLiveOverlay(reason: reason, attempt: 1) {
             await refocusPlaybackPositionOnce(reason: reason, attempt: 1)
+            needsForegroundVisualResync = false
             return
         }
 
@@ -5295,7 +5594,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private static func refocusNeedsFreshProjection(_ reason: String) -> Bool {
         switch reason {
-        case "orientation", "reader-size", "surfaceSize", "foreground":
+        case "orientation", "reader-size", "surfaceSize", "foreground", "expand", "highlight-recovery":
             return true
         default:
             return false
@@ -5308,7 +5607,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private static func refocusShouldWaitForStableLayout(_ reason: String) -> Bool {
         switch reason {
-        case "orientation", "reader-size", "surfaceSize", "highlight-miss", "route-miss":
+        case "orientation", "reader-size", "surfaceSize", "highlight-miss", "route-miss", "highlight-recovery":
             return true
         default:
             return false
@@ -5434,6 +5733,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                   match.projection.matchedWordCount)
             #endif
             KindleRunLog.write("KINDLE refocus refresh hit reason=\(reason) attempt=\(attempt) offset=\(match.offset) key=\(Self.keyLog(actualKey)) p=\(target.paragraphIndex) w=\(target.wordIndex.map(String.init) ?? "nil") paras=\(match.projection.document.paragraphs.count) routes=\(match.projection.wordRoutes.count)")
+            needsForegroundVisualResync = false
         } catch {
             KindleRunLog.write("KINDLE refocus refresh error reason=\(reason) attempt=\(attempt) \(error.localizedDescription)")
             #if DEBUG
@@ -6044,11 +6344,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         liveStartIndexKind = .playbackChunk
         resetViewModels(document: window.document)
         let previousKey = livePageKey
-        let actualKey = await installLiveOverlayIfPossible(
-            page: currentPage,
-            document: window.currentOverlayDocument,
-            reason: "read-window-current"
-        )
+        let actualKey = try await installLiveOverlay(page: currentPage, document: window.currentOverlayDocument)
         livePageKey = actualKey
         markBlobTransition(
             source: "read-window-current",
@@ -6377,13 +6673,30 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private func bindLivePlayback(document: ReadingDocument) {
         guard let readVM, let explainVM else { return }
 
-        readVM.$photoHighlightWordIndex
+        readVM.$showPaywall
+            .combineLatest(explainVM.$showPaywall)
+            .map { $0 || $1 }
+            .removeDuplicates()
             .receive(on: RunLoop.main)
-            .sink { [weak self, weak readVM] wordIndex in
+            .sink { [weak self] shouldShow in
+                guard shouldShow else { return }
+                self?.showPaywall = true
+            }
+            .store(in: &playbackCancellables)
+
+        // The range is authoritative for OCR-rendered content. Listening only to
+        // the lower-bound word index loses Japanese/Chinese sentence updates when
+        // consecutive segments share the same anchor during streaming/refocus.
+        readVM.$photoHighlightWordRange
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self, weak readVM] range in
                 guard let self,
                       let readVM,
                       self.mode == .read,
-                      let wordIndex else { return }
+                      let range,
+                      !range.isEmpty else { return }
+                let wordIndex = range.lowerBound
                 let paragraphIndex = readVM.currentParagraphIndex
                 guard paragraphIndex >= 0 else { return }
                 self.recordPlaybackAnchor(
@@ -6393,7 +6706,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     wordIndex: wordIndex,
                     charRange: nil
                 )
-                self.enqueueHighlightWord(paragraphIndex: paragraphIndex, wordIndex: wordIndex)
+                if range.count > 1 {
+                    self.enqueueHighlightWordRange(paragraphIndex: paragraphIndex, range: range)
+                } else {
+                    self.enqueueHighlightWord(paragraphIndex: paragraphIndex, wordIndex: wordIndex)
+                }
             }
             .store(in: &playbackCancellables)
 
@@ -6424,6 +6741,39 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             .sink { [weak self] finished in
                 guard let self, finished, self.mode == .read else { return }
                 Task { await self.handleReadPageFinished(source: "published-finished") }
+            }
+            .store(in: &playbackCancellables)
+
+        readVM.$status
+            .combineLatest(readVM.$currentParagraphIndex)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] status, paragraphIndex in
+                guard let self,
+                      self.mode == .read,
+                      paragraphIndex >= 0,
+                      status.isReady else { return }
+                self.maybeArmContinuousReadHandoff(reason: "read-status-ready")
+            }
+            .store(in: &playbackCancellables)
+
+        let audio = AudioPlayerService.shared
+        audio.$currentTime
+            .combineLatest(audio.$duration, audio.$currentSegment)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] currentTime, duration, segment in
+                self?.handleContinuousReadHandoffProgress(
+                    currentTime: currentTime,
+                    duration: duration,
+                    segment: segment
+                )
+            }
+            .store(in: &playbackCancellables)
+        audio.$isPlaying
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] isPlaying in
+                guard isPlaying else { return }
+                self?.maybeArmContinuousReadHandoff(reason: "audio-resumed")
             }
             .store(in: &playbackCancellables)
 
@@ -6512,6 +6862,387 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return true
     }
 
+    /// Arm a true audio-queue handoff once the current page's final chunk and
+    /// the next page's OCR + first TTS utterance are all complete. Page preload
+    /// used to stop at the cache; this promotes that cache into the live queue so
+    /// AVPlayer can cross the page boundary just like an ordinary segment edge.
+    private func maybeArmContinuousReadHandoff(reason: String) {
+        guard continuousReadHandoff == nil,
+              continuousReadCommitTask == nil,
+              mode == .read,
+              !isAdvancingLivePage,
+              !isPageTurnResuming,
+              !isKindleSyncDialogVisible,
+              let vm = readVM,
+              let oldKey = livePageKey?.nilIfEmpty,
+              let target = preparedCandidate(afterKey: oldKey) else { return }
+
+        let fingerprint = Self.explainFingerprint(target.document)
+        guard let prefetched = startAudioCandidate(
+            pageKey: target.page.key,
+            textFingerprint: fingerprint,
+            voiceID: AppSettings.shared.voice(for: target.document.language)
+        ) else { return }
+
+        let shouldArm = KindleContinuousPageHandoffContract.shouldArm(
+            isReadMode: mode == .read,
+            isLastReadableParagraph: vm.isOnLastReadableParagraph,
+            currentTTSComplete: vm.currentTTSCompleteForPageHandoff,
+            hasPreparedPage: true,
+            hasPreparedAudio: !prefetched.segments.isEmpty,
+            audioIsPlaying: AudioPlayerService.shared.isPlaying
+        )
+        guard shouldArm,
+              prefetched.paragraphIndex >= 0,
+              !prefetched.segments.isEmpty,
+              let predecessor = AudioPlayerService.shared.queuedTailSegmentID else { return }
+
+        continuousReadHandoffSerial += 1
+        let serial = continuousReadHandoffSerial
+        let rebased = prefetched.segments.enumerated().map { offset, segment in
+            AudioSegment(
+                paragraphIndex: segment.paragraphIndex,
+                segmentIndex: 700_000_000 + (serial % 100_000) * 1_000 + offset,
+                audioData: segment.audioData,
+                timestamps: segment.timestamps,
+                duration: segment.duration,
+                text: segment.text,
+                isWavFormat: segment.isWavFormat,
+                unprocessedText: segment.unprocessedText,
+                speaker: segment.speaker
+            )
+        }
+        let handoff = KindleContinuousReadHandoff(
+            serial: serial,
+            oldKey: oldKey,
+            target: target,
+            previousSnapshot: currentPreparedPageSnapshot(),
+            paragraphIndex: prefetched.paragraphIndex,
+            segments: rebased,
+            segmentIDs: Set(rebased.map(\.id)),
+            predecessorSegmentID: predecessor
+        )
+
+        continuousReadHandoff = handoff
+        continuousReadOldVMDetached = false
+        continuousReadAudioCompletedBeforeCommit = false
+        continuousReadTurnFailureCount = 0
+        continuousReadStagedPage = nil
+        continuousReadStagedLiveKey = nil
+        let audio = AudioPlayerService.shared
+        audio.canStartQueuedSegment = { [weak self] segment in
+            guard let self,
+                  let active = self.continuousReadHandoff,
+                  active.serial == serial,
+                  active.segmentIDs.contains(segment.id) else {
+                return true
+            }
+            self.beginContinuousReadPageTurnIfNeeded(serial: serial, trigger: "queue-gate")
+            let fingerprintMatches = self.continuousReadStagedPage.map {
+                Self.explainFingerprint($0.document) ==
+                    Self.explainFingerprint(active.target.document)
+            } ?? false
+            return KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
+                hasConfirmedVisibleSurface: self.continuousReadStagedPage != nil,
+                textFingerprintMatches: fingerprintMatches
+            )
+        }
+        let appendedAfter = audio.appendPreparedSegmentsForContinuousPlayback(rebased)
+        guard appendedAfter == predecessor else {
+            cancelContinuousReadHandoff(reason: "queue-boundary-changed")
+            return
+        }
+
+        KindleRunLog.write(
+            "KINDLE read continuous armed reason=\(reason) serial=\(serial) old=\(Self.keyLog(oldKey)) " +
+            "next=\(Self.keyLog(target.page.key)) predecessor=\(predecessor) segs=\(rebased.count)"
+        )
+        handleContinuousReadHandoffProgress(
+            currentTime: audio.currentTime,
+            duration: audio.duration,
+            segment: audio.currentSegment
+        )
+    }
+
+    private func handleContinuousReadHandoffProgress(
+        currentTime: Double,
+        duration: Double,
+        segment: AudioSegment?
+    ) {
+        guard mode == .read,
+              let handoff = continuousReadHandoff,
+              let segment else { return }
+
+        if handoff.segmentIDs.contains(segment.id) {
+            beginContinuousReadCommitIfNeeded(serial: handoff.serial)
+            return
+        }
+
+        let remaining = max(0, duration - currentTime)
+        if KindleContinuousPageHandoffContract.shouldBeginVisualTurn(
+            currentSegmentID: segment.id,
+            predecessorSegmentID: handoff.predecessorSegmentID,
+            remainingAudioSeconds: remaining,
+            playbackRate: AudioPlayerService.shared.playbackRate
+        ) {
+            beginContinuousReadPageTurnIfNeeded(serial: handoff.serial, trigger: "tail-lead")
+        }
+    }
+
+    private func beginContinuousReadPageTurnIfNeeded(serial: Int, trigger: String) {
+        guard continuousReadTurnTask == nil,
+              let handoff = continuousReadHandoff,
+              handoff.serial == serial else { return }
+        suppressExternalPageChangeUntil = Date().addingTimeInterval(6)
+        clearExternalMismatchState()
+        cancelLiveHighlightTasks()
+        KindleRunLog.write(
+            "KINDLE read continuous visual-turn begin trigger=\(trigger) serial=\(serial) " +
+            "old=\(Self.keyLog(handoff.oldKey)) target=\(Self.keyLog(handoff.target.page.key))"
+        )
+        continuousReadTurnTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                try await self.stageContinuousReadPage(handoff)
+            } catch is CancellationError {
+                KindleRunLog.write("KINDLE read continuous visual-turn cancelled serial=\(serial)")
+            } catch {
+                KindleRunLog.write("KINDLE read continuous visual-turn miss serial=\(serial) error=\(error.localizedDescription)")
+                guard self.continuousReadHandoff?.serial == serial else { return }
+                self.continuousReadTurnFailureCount += 1
+                let failureCount = self.continuousReadTurnFailureCount
+                self.continuousReadTurnTask = nil
+                if failureCount < 2 {
+                    Task { @MainActor [weak self] in
+                        try? await Task.sleep(nanoseconds: 180_000_000)
+                        self?.beginContinuousReadPageTurnIfNeeded(serial: serial, trigger: "retry-\(failureCount)")
+                    }
+                } else {
+                    let wasWaitingAtBoundary = AudioPlayerService.shared.isBuffering
+                    self.cancelContinuousReadHandoff(reason: "visual-turn-retries-exhausted")
+                    if wasWaitingAtBoundary {
+                        AudioPlayerService.shared.nextSegment()
+                    }
+                }
+            }
+        }
+    }
+
+    private func stageContinuousReadPage(_ handoff: KindleContinuousReadHandoff) async throws {
+        guard continuousReadHandoff?.serial == handoff.serial else { throw CancellationError() }
+        try await ensureCaptureScriptInstalled(reason: "read-continuous-page-turn")
+        await setKindlePageModeLocked(true)
+
+        let expectedKey = normalizedPageKey(handoff.target.page.key)
+        let visibleBefore = normalizedPageKey(await currentVisibleKindlePageKey())
+        if visibleBefore != expectedKey {
+            let targetKey = try await requestNativeNextPageForAutoAdvance(
+                oldKey: handoff.oldKey,
+                reason: "read-continuous-page-turn"
+            )
+            guard normalizedPageKey(targetKey) == expectedKey else {
+                throw KindleBookError.captureFailed("continuous-target-mismatch:\(targetKey)")
+            }
+        }
+
+        let staged = try await preparedPageForNativeAutoAdvance(
+            afterKey: handoff.oldKey,
+            targetKey: expectedKey,
+            mode: .read
+        )
+        let actualKey = try await installLiveOverlay(page: staged.page, document: staged.document)
+        guard continuousReadHandoff?.serial == handoff.serial else { throw CancellationError() }
+        let prefetchedFingerprint = Self.explainFingerprint(handoff.target.document)
+        let stagedFingerprint = Self.explainFingerprint(staged.document)
+        guard prefetchedFingerprint == stagedFingerprint else {
+            let wasWaitingAtBoundary = AudioPlayerService.shared.isBuffering
+            continuousReadTurnTask = nil
+            cancelContinuousReadHandoff(reason: "staged-fingerprint-mismatch")
+            if wasWaitingAtBoundary {
+                AudioPlayerService.shared.nextSegment()
+            }
+            KindleRunLog.write(
+                "KINDLE read continuous visual-turn reject-fingerprint serial=\(handoff.serial) " +
+                "prefetched=\(prefetchedFingerprint.prefix(12)) staged=\(stagedFingerprint.prefix(12))"
+            )
+            throw KindleBookError.captureFailed("continuous-fingerprint-mismatch")
+        }
+        continuousReadStagedPage = staged
+        continuousReadStagedLiveKey = actualKey
+        continuousReadTurnFailureCount = 0
+        KindleRunLog.write(
+            "KINDLE read continuous visual-turn ready serial=\(handoff.serial) " +
+            "target=\(Self.keyLog(staged.page.key)) actual=\(Self.keyLog(actualKey))"
+        )
+        AudioPlayerService.shared.resumeGatedSegmentIfPossible()
+    }
+
+    private func beginContinuousReadCommitIfNeeded(serial: Int) {
+        guard continuousReadCommitTask == nil,
+              let handoff = continuousReadHandoff,
+              handoff.serial == serial else { return }
+
+        if !continuousReadOldVMDetached {
+            readVM?.detachForContinuousPageHandoff()
+            continuousReadOldVMDetached = true
+            AudioPlayerService.shared.onPlaybackComplete = { [weak self] in
+                guard let self,
+                      self.continuousReadHandoff?.serial == serial else { return }
+                self.continuousReadAudioCompletedBeforeCommit = true
+                KindleRunLog.write("KINDLE read continuous queued-audio completed-before-commit serial=\(serial)")
+            }
+        }
+        beginContinuousReadPageTurnIfNeeded(serial: serial, trigger: "audio-boundary")
+        KindleRunLog.write("KINDLE read continuous audio-boundary serial=\(serial) key=\(Self.keyLog(handoff.target.page.key))")
+        continuousReadCommitTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.commitContinuousReadHandoff(serial: serial)
+        }
+    }
+
+    private func commitContinuousReadHandoff(serial: Int) async {
+        guard let initial = continuousReadHandoff, initial.serial == serial else { return }
+        if let turnTask = continuousReadTurnTask {
+            _ = await turnTask.value
+        }
+
+        if continuousReadStagedPage == nil {
+            do {
+                try await stageContinuousReadPage(initial)
+            } catch {
+                statusText = AppLocalized("下一页已缓存，但 Kindle 页面同步失败，已暂停。")
+                continuousReadCommitTask = nil
+                cancelContinuousReadHandoff(reason: "commit-page-sync-failed")
+                AudioPlayerService.shared.clearQueue()
+                KindleRunLog.write("KINDLE read continuous commit failed serial=\(serial) error=\(error.localizedDescription)")
+                return
+            }
+        }
+
+        guard let handoff = continuousReadHandoff,
+              handoff.serial == serial,
+              let staged = continuousReadStagedPage else { return }
+        let actualKey = continuousReadStagedLiveKey?.nilIfEmpty ?? staged.page.key
+        let completedBeforeCommit = continuousReadAudioCompletedBeforeCommit
+        let prefetchedFingerprint = Self.explainFingerprint(handoff.target.document)
+        let stagedFingerprint = Self.explainFingerprint(staged.document)
+        let canAdoptPrefetchedAudio = prefetchedFingerprint == stagedFingerprint
+
+        continuousReadHandoff = nil
+        continuousReadTurnTask = nil
+        continuousReadCommitTask = nil
+        continuousReadStagedPage = nil
+        continuousReadStagedLiveKey = nil
+        continuousReadOldVMDetached = false
+        continuousReadAudioCompletedBeforeCommit = false
+        continuousReadTurnFailureCount = 0
+        AudioPlayerService.shared.canStartQueuedSegment = nil
+        invalidatePagePreloads(clearPrepared: false, reason: "continuous-page-commit")
+
+        liveDocument = staged.document
+        livePage = staged.page
+        livePageKey = actualKey
+        liveStartParagraphIndex = staged.startParagraphIndex ?? firstReadableParagraph(in: staged.document)
+        liveStartIndexKind = .sourceParagraph
+        liveVisibleTopNorm = 0
+        liveVisibleBottomNorm = 1
+        pendingCaptureKey = nil
+        textQueue = nil
+        activeReadPageSlot = .current
+        store.updateProgress(
+            bookID: book.id,
+            pageKey: staged.page.key,
+            url: staged.page.url,
+            progressLabel: staged.page.progress
+        )
+        markBlobTransition(
+            source: "read-continuous-handoff",
+            oldKey: handoff.oldKey,
+            expectedKey: staged.page.key,
+            actualKey: actualKey
+        )
+        if let previousSnapshot = handoff.previousSnapshot {
+            pageBackStack.append(previousSnapshot)
+            pageForwardStack.removeAll()
+        }
+
+        do {
+            let queuedDocument = try await buildTextQueueForCurrentPage(baseDocument: staged.document)
+            let start = liveStartParagraphIndex
+                ?? queuedDocument.paragraphs.first(where: { $0.type.isReadable })?.id
+                ?? handoff.paragraphIndex
+            guard canAdoptPrefetchedAudio else {
+                AudioPlayerService.shared.clearQueue()
+                _ = consumeStartAudioCandidate(
+                    pageKey: staged.page.key,
+                    textFingerprint: stagedFingerprint,
+                    voiceID: AppSettings.shared.voice(for: staged.document.language)
+                )
+                let started = startReadPlayback(
+                    document: queuedDocument,
+                    startHint: start,
+                    reason: "continuous-fingerprint-fallback"
+                )
+                guard started else {
+                    throw KindleBookError.captureFailed("continuous-fingerprint-fallback-not-started")
+                }
+                KindleRunLog.write(
+                    "KINDLE read continuous fingerprint-fallback serial=\(serial) key=\(Self.keyLog(actualKey)) " +
+                    "prefetched=\(prefetchedFingerprint.prefix(12)) staged=\(stagedFingerprint.prefix(12))"
+                )
+                return
+            }
+            guard let vm = readVM,
+                  vm.adoptContinuousPlayback(handoff.segments, paragraphIndex: start) else {
+                throw KindleBookError.captureFailed("continuous-audio-adoption-failed")
+            }
+            _ = consumeStartAudioCandidate(
+                pageKey: staged.page.key,
+                textFingerprint: Self.explainFingerprint(staged.document),
+                voiceID: AppSettings.shared.voice(for: staged.document.language)
+            )
+            startPageKeyWatcher()
+            KindlePlaybackCenter.shared.activate(model: self)
+            statusText = AppLocalized("正在朗读 Kindle…")
+            KindleRunLog.write(
+                "KINDLE read continuous committed serial=\(serial) old=\(Self.keyLog(handoff.oldKey)) " +
+                "new=\(Self.keyLog(actualKey)) p=\(start) segs=\(handoff.segments.count)"
+            )
+            if completedBeforeCommit {
+                vm.continueAfterAdoptedPlaybackCompleted()
+            }
+        } catch {
+            statusText = AppLocalized("下一页播放衔接失败，请点击播放继续。")
+            AudioPlayerService.shared.clearQueue()
+            KindleRunLog.write("KINDLE read continuous adoption failed serial=\(serial) error=\(error.localizedDescription)")
+        }
+    }
+
+    private func cancelContinuousReadHandoff(reason: String, force: Bool = false) {
+        guard let handoff = continuousReadHandoff else { return }
+        let audio = AudioPlayerService.shared
+        if !force,
+           let currentID = audio.currentSegment?.id,
+           handoff.segmentIDs.contains(currentID),
+           continuousReadCommitTask != nil {
+            KindleRunLog.write("KINDLE read continuous cancel deferred-active reason=\(reason) serial=\(handoff.serial)")
+            return
+        }
+        continuousReadTurnTask?.cancel()
+        continuousReadCommitTask?.cancel()
+        _ = audio.removePendingSegments(withIDs: handoff.segmentIDs)
+        audio.canStartQueuedSegment = nil
+        continuousReadHandoff = nil
+        continuousReadTurnTask = nil
+        continuousReadCommitTask = nil
+        continuousReadStagedPage = nil
+        continuousReadStagedLiveKey = nil
+        continuousReadOldVMDetached = false
+        continuousReadAudioCompletedBeforeCommit = false
+        continuousReadTurnFailureCount = 0
+        KindleRunLog.write("KINDLE read continuous cancelled reason=\(reason) serial=\(handoff.serial)")
+    }
+
     private func handleReadPageFinished(source: String) async {
         guard mode == .read else {
             KindleRunLog.write("KINDLE read page finished ignored source=\(source) mode=\(mode.rawValue)")
@@ -6576,7 +7307,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         defer { isAdvancingLivePage = false }
 
-        statusText = String(localized: "正在加载下一页 Kindle 页面…")
+        statusText = AppLocalized("正在加载下一页 Kindle 页面…")
         KindleRunLog.write("KINDLE read auto advance begin key=\(Self.keyLog(oldKey)) visible=\(Self.keyLog(visibleOldKey))")
         #if DEBUG
         NSLog("CRDBG KINDLE read auto advance begin key=%@", Self.keyLog(oldKey))
@@ -6585,7 +7316,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         await advanceByNativePageTurnAndContinue(
             oldKey: oldKey,
             continuationMode: .read,
-            status: String(localized: "正在翻到下一页 Kindle 页面…"),
+            status: AppLocalized("正在翻到下一页 Kindle 页面…"),
             reason: "read-auto-next-page"
         )
     }
@@ -6608,7 +7339,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             isContinuingExplainPage = false
         }
 
-        statusText = String(localized: "正在加载下一页 Kindle 解读…")
+        statusText = AppLocalized("正在加载下一页 Kindle 解读…")
         KindleRunLog.write("KINDLE explain auto advance begin key=\(Self.keyLog(oldKey)) visible=\(Self.keyLog(visibleOldKey))")
         #if DEBUG
         NSLog("CRDBG KINDLE explain auto advance begin key=%@", Self.keyLog(oldKey))
@@ -6617,7 +7348,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         await advanceByNativePageTurnAndContinue(
             oldKey: oldKey,
             continuationMode: .explain,
-            status: String(localized: "正在翻到下一页 Kindle 解读…"),
+            status: AppLocalized("正在翻到下一页 Kindle 解读…"),
             reason: "explain-auto-next-page"
         )
     }
@@ -6681,7 +7412,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance success old=\(Self.keyLog(oldKey)) new=\(Self.keyLog(prepared.page.key)) reason=\(reason)")
         } catch {
             pendingCaptureKey = nil
-            statusText = String(localized: "已停在当前页，请点击播放继续。")
+            statusText = AppLocalized("已停在当前页，请点击播放继续。")
             KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance failed old=\(Self.keyLog(oldKey)) reason=\(reason) error=\(error.localizedDescription)")
             #if DEBUG
             NSLog("CRDBG KINDLE auto advance failed mode=%@ old=%@ error=%@",
@@ -6704,7 +7435,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             throw KindleBookError.captureFailed("auto-next-visible-key-mismatch:\(visibleKey)")
         }
 
+        let confirmedPixelFingerprint = lastConfirmedTurnFingerprint
         if let cached = preparedCandidate(forKey: targetKey),
+           cached.page.pixelFingerprint != nil,
+           cached.page.pixelFingerprint == confirmedPixelFingerprint,
            let locked = await lockCurrentPageForCachedPlayback(expectedKey: targetKey) {
             let reboundPage = cached.page.replacingSessionId(locked.sessionId)
             let rebound = KindleCachedPage(
@@ -6721,7 +7455,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let page = try await captureVisiblePage(pageIndex: 0, targetKey: targetKey.nilIfEmpty)
         let captured = try makePreparedPage(afterKey: oldKey, page: page)
         let capturedKey = captured.page.key.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard capturedKey != oldKey else {
+        let pixelChanged = captured.page.pixelFingerprint != nil &&
+            captured.page.pixelFingerprint == confirmedPixelFingerprint &&
+            captured.page.pixelFingerprint != livePage?.pixelFingerprint
+        guard capturedKey != oldKey || pixelChanged else {
             throw KindleBookError.captureFailed("auto-next-same-visible-page")
         }
         if !targetKey.isEmpty, capturedKey != targetKey {
@@ -6731,6 +7468,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let fingerprint = Self.explainFingerprint(captured.document)
         if let candidate = preparedCandidate(forKey: capturedKey),
            candidate.afterKey == oldKey,
+           candidate.page.pixelFingerprint == captured.page.pixelFingerprint,
+           candidate.document.language == captured.document.language,
+           candidate.page.columnLayout == captured.page.columnLayout,
            Self.explainFingerprint(candidate.document) == fingerprint {
             KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto next candidate-hit old=\(Self.keyLog(oldKey)) current=\(Self.keyLog(capturedKey)) source=current-visible fingerprint=match")
         } else {
@@ -6810,7 +7550,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
               )
               let newKey = livePageKey ?? ""
               if !oldKey.isEmpty, oldKey == newKey {
-                  statusText = String(localized: "已到达当前 Kindle 内容末尾。")
+                  statusText = AppLocalized("已到达当前 Kindle 内容末尾。")
                   return
             }
             markBlobTransition(
@@ -6948,7 +7688,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 let newKey = livePageKey ?? ""
                 let start = liveStartParagraphIndex ?? doc.paragraphs.first(where: { $0.type.isReadable })?.id ?? 0
                 let fingerprint = Self.explainFingerprint(singlePageDoc)
-                let startAudio = consumeStartAudioCandidate(pageKey: prepared.page.key, textFingerprint: fingerprint)
+                let startAudio = consumeStartAudioCandidate(
+                    pageKey: prepared.page.key,
+                    textFingerprint: fingerprint,
+                    voiceID: AppSettings.shared.voice(for: singlePageDoc.language)
+                )
                 #if DEBUG
                 NSLog("CRDBG KINDLE live advance prepared ready oldKey=%@ newKey=%@ start=%d paras=%d chars=%d",
                       Self.keyLog(oldKey),
@@ -7011,7 +7755,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
               let newTop = liveVisibleTopNorm
               let newBottom = liveVisibleBottomNorm
             if !oldKey.isEmpty, oldKey == newKey {
-                statusText = String(localized: "已到达当前 Kindle 内容末尾。")
+                statusText = AppLocalized("已到达当前 Kindle 内容末尾。")
                 #if DEBUG
                 NSLog("CRDBG KINDLE live advance no-move key=%@ oldTop=%@ newTop=%@",
                       Self.keyLog(newKey),
@@ -7054,6 +7798,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func installLiveOverlay(page: CapturedKindlePage, document: ReadingDocument) async throws -> String {
+        guard isReaderSurfaceAttached, webView.window != nil else {
+            throw KindleBookError.overlayFailed("reader-surface-not-visible")
+        }
         let payload: [String: Any] = [
             "key": page.key,
             "sessionId": page.sessionId,
@@ -7096,25 +7843,6 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
               String(describing: result["local"] ?? ""))
         #endif
         return actualKey
-    }
-
-    private func installLiveOverlayIfPossible(
-        page: CapturedKindlePage,
-        document: ReadingDocument,
-        reason: String
-    ) async -> String {
-        do {
-            return try await installLiveOverlay(page: page, document: document)
-        } catch {
-            KindleRunLog.write("KINDLE live overlay soft-miss reason=\(reason) key=\(Self.keyLog(page.key)) error=\(error.localizedDescription)")
-            #if DEBUG
-            NSLog("CRDBG KINDLE live overlay soft-miss reason=%@ key=%@ error=%@",
-                  reason,
-                  Self.keyLog(page.key),
-                  error.localizedDescription)
-            #endif
-            return page.key
-        }
     }
 
     private func highlightWord(
@@ -7424,6 +8152,25 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return nil
     }
 
+    private static func verticalColumnHints(from value: Any?) -> [KindleVerticalColumnHint] {
+        (value as? [[String: Any]] ?? []).compactMap { raw in
+            guard let left = numberValue(raw["leftRatio"]),
+                  let right = numberValue(raw["rightRatio"]),
+                  let top = numberValue(raw["topRatio"]),
+                  let bottom = numberValue(raw["bottomRatio"]),
+                  right > left, bottom > top else { return nil }
+            return KindleVerticalColumnHint(
+                leftRatio: left,
+                rightRatio: right,
+                topRatio: top,
+                bottomRatio: bottom,
+                expectedCharacters: Int(numberValue(raw["expectedCharacters"]) ?? 0),
+                startPositionID: numberValue(raw["startPositionId"]).map(Int.init),
+                endPositionID: numberValue(raw["endPositionId"]).map(Int.init)
+            )
+        }
+    }
+
     private func resetBlobOrderTracker() {
         expectedNextBlobByAfterKey.removeAll()
         blobOrderByKey.removeAll()
@@ -7630,6 +8377,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func invalidatePagePreloads(clearPrepared: Bool, reason: String) {
+        cancelContinuousReadHandoff(reason: reason)
         preloadEpoch &+= 1
         cancelPageCaching(clearPrepared: clearPrepared)
         clearPendingContinuation()
@@ -7640,6 +8388,55 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         nextPagePreloadFailureCount.removeAll()
         nextPagePreloadCooldownUntil.removeAll()
         KindleRunLog.write("KINDLE preload invalidate reason=\(reason) epoch=\(preloadEpoch) clear=\(clearPrepared)")
+    }
+
+    private func handlePlaybackVoiceWillSwitch(_ notification: Notification) {
+        let requestedLanguage = VoiceCatalog.normalizedLanguage(
+            notification.userInfo?["language"] as? String ?? ""
+        )
+        guard !requestedLanguage.isEmpty else { return }
+
+        if mode == .explain,
+           let activeExplainVM = explainVM,
+           let sourceVM = notification.object as? ExplainViewModel,
+           sourceVM === activeExplainVM,
+           requestedLanguage == activeExplainVM.playbackLanguage {
+            explainPrefetchTask?.cancel()
+            explainPrefetchTask = nil
+            explainPrefetchingAfterKey = nil
+            deferredExplainPreloadTask?.cancel()
+            deferredExplainPreloadTask = nil
+            deferredExplainPreloadAfterKey = nil
+            cachedExplainPrefetch = nil
+            cachedExplainPrefetchCandidates.removeAll()
+            let fromVoice = notification.userInfo?["fromVoiceID"] as? String ?? "-"
+            let toVoice = notification.userInfo?["toVoiceID"] as? String ?? "-"
+            KindleRunLog.write("KINDLE explain voice switch invalidate audio-prefetch from=\(fromVoice) to=\(toVoice) lang=\(requestedLanguage)")
+            return
+        }
+
+        guard mode == .read,
+              let activeReadVM = readVM,
+              let sourceVM = notification.object as? ReadAloudViewModel,
+              sourceVM === activeReadVM else { return }
+        let playbackLanguage = VoiceCatalog.normalizedLanguage(
+            readVM?.document.language ?? liveDocument?.language ?? ""
+        )
+        guard requestedLanguage == playbackLanguage else { return }
+
+        // Audio prefetched with voice A must never be adopted after the live VM
+        // has switched to voice B. Keep OCR/page captures, invalidate only audio
+        // continuations, and immediately warm the prepared next page again.
+        cancelContinuousReadHandoff(reason: "voice-switch", force: true)
+        clearPendingContinuation()
+        cachedStartAudio = nil
+        cachedStartAudioCandidates.removeAll()
+        let fromVoice = notification.userInfo?["fromVoiceID"] as? String ?? "-"
+        let toVoice = notification.userInfo?["toVoiceID"] as? String ?? "-"
+        KindleRunLog.write("KINDLE voice switch invalidate audio-prefetch from=\(fromVoice) to=\(toVoice) lang=\(requestedLanguage)")
+        if let liveKey = livePageKey?.nilIfEmpty {
+            startCachingNextPage(afterKey: liveKey)
+        }
     }
 
     private func cancelPageCaching(clearPrepared: Bool) {
@@ -7950,9 +8747,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard !afterKey.isEmpty, !pageKey.isEmpty, pageKey != afterKey else { return false }
 
         let fingerprint = Self.explainFingerprint(prepared.document)
+        let voiceID = AppSettings.shared.voice(for: prepared.document.language)
         if let cached = cachedStartAudioCandidates[pageKey] ?? cachedStartAudio,
            normalizedPageKey(cached.pageKey) == pageKey {
-            if cached.textFingerprint == fingerprint {
+            if cached.textFingerprint == fingerprint, cached.voiceID == voiceID {
                 KindleRunLog.write("KINDLE read preload tts-skip-cache reason=\(reason) after=\(Self.keyLog(afterKey)) key=\(Self.keyLog(pageKey))")
                 return false
             }
@@ -7973,9 +8771,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let segments = try await generateDetachedTTSSegments(
             paragraphIndex: startIndex,
             text: chunks[startIndex].text,
-            language: prepared.document.language
+            language: prepared.document.language,
+            voiceOverride: voiceID
         )
         guard !Task.isCancelled, preloadEpoch == epoch else { throw CancellationError() }
+        guard AppSettings.shared.voice(for: prepared.document.language) == voiceID else {
+            KindleRunLog.write("KINDLE read preload tts-drop-stale reason=voice-changed key=\(Self.keyLog(pageKey)) generatedVoice=\(voiceID)")
+            return false
+        }
         guard let current = preparedCandidate(forKey: pageKey),
               normalizedPageKey(current.afterKey) == afterKey,
               normalizedPageKey(current.page.key) == pageKey,
@@ -7987,6 +8790,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let audio = KindleAudioPrefetch(
             pageKey: pageKey,
             textFingerprint: fingerprint,
+            voiceID: voiceID,
             paragraphIndex: startIndex,
             segments: segments
         )
@@ -7999,6 +8803,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
               segments.count)
         #endif
         KindleRunLog.write("KINDLE read preload tts-ready reason=\(reason) after=\(Self.keyLog(afterKey)) key=\(Self.keyLog(pageKey)) p=\(startIndex) resumePreferred=\(preferredStart ?? -1) segs=\(segments.count) epoch=\(epoch)")
+        maybeArmContinuousReadHandoff(reason: "next-page-audio-ready")
         return true
     }
 
@@ -8118,7 +8923,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         startOverride: Int? = nil,
         startKindOverride: KindleStartIndexKind? = nil
     ) async throws -> ReadingDocument {
-        statusText = String(localized: "正在打开下一页 Kindle 页面…")
+        statusText = AppLocalized("正在打开下一页 Kindle 页面…")
         liveDocument = nil
         livePage = nil
         livePageKey = nil
@@ -8190,7 +8995,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             expectedKey: activatedPage.key,
             actualKey: actualLiveKey
         )
-        statusText = String(localized: "下一页 Kindle 页面已就绪。")
+        statusText = AppLocalized("下一页 Kindle 页面已就绪。")
         #if DEBUG
         NSLog("CRDBG KINDLE page preload consumed oldKey=%@ requested=%@ actual=%@ start=%d",
               Self.keyLog(oldKey),
@@ -8205,63 +9010,16 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private func generateDetachedTTSSegments(
         paragraphIndex: Int,
         text: String,
-        language: String
+        language: String,
+        voiceOverride: String? = nil
     ) async throws -> [AudioSegment] {
-        var segments: [AudioSegment] = []
-        var remainingText = SpeechTextSanitizer.sanitizedForTTS(text)
-        var segmentIndex = 0
-        let voice = AppSettings.shared.voice(for: language)
-
-        while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
-            try Task.checkCancellation()
-            let response = try await APIService.shared.generateTTS(
-                text: remainingText,
-                voice: voice,
-                speed: 1.0,
-                language: language
-            )
-            try Task.checkCancellation()
-            guard let audioData = Data(base64Encoded: response.audio) else {
-                throw TTSError.generationFailed("Failed to decode prefetched audio")
-            }
-            let raw = AudioSegment(
-                paragraphIndex: paragraphIndex,
-                segmentIndex: segmentIndex,
-                audioData: audioData,
-                timestamps: response.safeTimestamps,
-                duration: response.safeDuration,
-                text: response.processedText ?? remainingText,
-                unprocessedText: response.unprocessedText ?? ""
-            )
-            segments.append(ensureDetachedDuration(raw))
-
-            if let unprocessed = response.unprocessedText,
-               !unprocessed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                remainingText = SpeechTextSanitizer.sanitizedForTTS(unprocessed)
-                segmentIndex += 1
-            } else {
-                break
-            }
-        }
-        return segments
-    }
-
-    private func ensureDetachedDuration(_ segment: AudioSegment) -> AudioSegment {
-        guard segment.duration <= 0.01,
-              let duration = try? AVAudioPlayer(data: segment.audioData).duration,
-              duration > 0 else {
-            return segment
-        }
-        return AudioSegment(
-            paragraphIndex: segment.paragraphIndex,
-            segmentIndex: segment.segmentIndex,
-            audioData: segment.audioData,
-            timestamps: segment.timestamps,
-            duration: duration,
-            text: segment.text,
-            isWavFormat: segment.isWavFormat,
-            unprocessedText: segment.unprocessedText,
-            speaker: segment.speaker
+        let voice = voiceOverride ?? AppSettings.shared.voice(for: language)
+        return try await TTSService.shared.generatePrefetchSegments(
+            paragraphIndex: paragraphIndex,
+            text: text,
+            voice: voice,
+            speed: 1.0,
+            language: language
         )
     }
 
@@ -8270,12 +9028,84 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return visualSyncSequence
     }
 
+    private var isContinuousReadVisualTransition: Bool {
+        continuousReadHandoff != nil &&
+            (continuousReadTurnTask != nil || continuousReadStagedPage != nil)
+    }
+
     private func enqueueHighlightWord(paragraphIndex: Int, wordIndex: Int) {
+        guard !isContinuousReadVisualTransition else { return }
         let sequence = nextVisualSyncSequence()
         visualSyncTask?.cancel()
         visualSyncTask = Task { [weak self] in
             guard let self, !Task.isCancelled else { return }
             await self.highlightWord(paragraphIndex: paragraphIndex, wordIndex: wordIndex, sequence: sequence)
+        }
+    }
+
+    private func enqueueHighlightWordRange(paragraphIndex: Int, range: Range<Int>) {
+        guard !isContinuousReadVisualTransition else { return }
+        let sequence = nextVisualSyncSequence()
+        visualSyncTask?.cancel()
+        visualSyncTask = Task { [weak self] in
+            guard let self, !Task.isCancelled else { return }
+            await self.highlightWordRange(paragraphIndex: paragraphIndex, range: range, sequence: sequence)
+        }
+    }
+
+    private func highlightWordRange(paragraphIndex: Int, range: Range<Int>, sequence: UInt64) async {
+        guard !range.isEmpty, isCurrentVisualSequence(sequence) else { return }
+        // A refocus projection describes the pixels currently visible after an
+        // expand/orientation change, so it must win over the older preload
+        // queue. Resolve every word instead of extrapolating a union range from
+        // two possibly missing endpoints (the Japanese segment failure).
+        let mappedRoutes: [KindleRenderRoute] = range.compactMap { wordIndex in
+            refocusWordRoutes["\(paragraphIndex)#\(wordIndex)"]
+                ?? textQueue?.wordRoutes["\(paragraphIndex)#\(wordIndex)"]
+        }
+        let anchorRoute = mappedRoutes.first
+        let compatibleRoutes: [KindleRenderRoute]
+        if let anchorRoute {
+            compatibleRoutes = mappedRoutes.filter {
+                $0.slot == anchorRoute.slot && $0.overlayParagraphID == anchorRoute.overlayParagraphID
+            }
+        } else {
+            compatibleRoutes = []
+        }
+        let overlayParagraph = anchorRoute?.overlayParagraphID ?? paragraphIndex
+        let start = compatibleRoutes.map(\.overlayWordIndex).min() ?? range.lowerBound
+        let end = (compatibleRoutes.map(\.overlayWordIndex).max().map { $0 + 1 }) ?? range.upperBound
+        if let anchorRoute {
+            await switchRenderPageIfNeeded(to: anchorRoute.slot)
+        }
+        guard isCurrentVisualSequence(sequence) else { return }
+        do {
+            let result = try await evaluateJSON(
+                "window.__crKindleLiveHighlightWords && window.__crKindleLiveHighlightWords(\(overlayParagraph), \(start), \(end), \(sequence))"
+            )
+            guard Self.boolValue(result["ok"]) else {
+                throw KindleBookError.overlayFailed(result["reason"] as? String ?? "segment-highlight-failed")
+            }
+            KindleRunLog.write("KINDLE_HIGHLIGHT p=\(paragraphIndex) mode=segment words=\(range.count) routed=\(compatibleRoutes.count) rects=\(Self.int(from: result["rects"]) ?? 0)")
+        } catch {
+            KindleRunLog.write("KINDLE read segment highlight error p=\(paragraphIndex) range=\(range.lowerBound)..<\(range.upperBound) error=\(error.localizedDescription)")
+            if requiresImmediateVisualSync {
+                // Projection mismatch is recoverable and must never destroy the
+                // VM/TTS queue. Pause at the same audio item, rebuild routes from
+                // the visible pixels, then resume the exact item.
+                let audio = AudioPlayerService.shared
+                let shouldResume = audio.isPlaying
+                audio.pause()
+                await refocusPlaybackPosition(reason: "highlight-recovery")
+                if shouldResume,
+                   audio.currentBookId == book.id,
+                   readVM != nil {
+                    audio.play()
+                }
+                KindleRunLog.write("KINDLE read segment highlight recovered p=\(paragraphIndex) resumed=\(shouldResume ? "Y" : "N")")
+            } else {
+                deferVisualSyncUntilForeground(reason: "segment-highlight-unavailable")
+            }
         }
     }
 
@@ -8443,6 +9273,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if let bbox = paragraph.bboxNorm {
             payload["bboxNorm"] = rectPayload(bbox)
         }
+        payload["visualFragments"] = paragraph.visualFragments.map { fragment in
+            [
+                "column": fragment.column.rawValue,
+                "bboxNorm": rectPayload(fragment.bboxNorm),
+                "wordIDs": fragment.wordIDs
+            ] as [String: Any]
+        }
         return payload
     }
 
@@ -8518,6 +9355,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func installCaptureScript() {
+        webView.evaluateJavaScript(KindleWebScripts.metadataBootstrap, completionHandler: nil)
         webView.evaluateJavaScript(KindleWebScripts.pageCaptureBootstrap, completionHandler: nil)
     }
 
@@ -8526,6 +9364,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let script = """
         (function() {
           try {
+            \(KindleWebScripts.metadataBootstrap)
             \(KindleWebScripts.pageCaptureBootstrap)
           } catch (e) {
             return JSON.stringify({
@@ -8828,14 +9667,26 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let afterKey = payload["afterKey"] as? String ?? ""
         let natural = payload["natural"] as? String ?? "?"
         let rendered = payload["rendered"] as? String ?? "?"
+        let encoding = payload["ocrEncoding"] as? String ?? "unknown"
         let bitmapWidth = image.cgImage?.width ?? Int((image.size.width * image.scale).rounded())
         let bitmapHeight = image.cgImage?.height ?? Int((image.size.height * image.scale).rounded())
         let words = ocrDoc.paragraphs.reduce(0) { $0 + $1.words.count }
         let dataKb = max(1, (imageData.count + 1023) / 1024)
-        KindleRunLog.write("KINDLE OCR snapshot source=\(source) key=\(Self.keyLog(key)) after=\(Self.keyLog(afterKey)) natural=\(natural) rendered=\(rendered) bitmap=\(bitmapWidth)x\(bitmapHeight) dataKb=\(dataKb) decodeMs=\(decodeMs) ocrMs=\(ocrMs) layout=\(recognized.layout) paras=\(ocrDoc.paragraphs.count) words=\(words) chars=\(ocrDoc.fullText.count)")
+        KindleRunLog.write("KINDLE OCR snapshot source=\(source) key=\(Self.keyLog(key)) after=\(Self.keyLog(afterKey)) natural=\(natural) rendered=\(rendered) bitmap=\(bitmapWidth)x\(bitmapHeight) encoding=\(encoding) dataKb=\(dataKb) decodeMs=\(decodeMs) ocrMs=\(ocrMs) layout=\(recognized.layout) paras=\(ocrDoc.paragraphs.count) words=\(words) chars=\(ocrDoc.fullText.count)")
+        #if DEBUG
+        Self.persistKindleOCRDebugFixture(
+            imageData: imageData,
+            document: ocrDoc,
+            layout: recognized.layout,
+            natural: natural,
+            rendered: rendered,
+            encoding: encoding
+        )
+        #endif
         return CapturedKindlePage(
             pageIndex: pageIndex,
             key: key,
+            pixelFingerprint: payload["pixelFingerprint"] as? String,
             sessionId: Self.int(from: payload["sessionId"]) ?? 0,
             kind: payload["kind"] as? String ?? "",
             title: payload["title"] as? String ?? book.title,
@@ -8851,35 +9702,65 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func recognizeKindlePage(image: UIImage, imageData: Data) async throws -> (document: ReadingDocument, layout: String) {
+        // Same authority order as the extension: renderer metadata first, then a
+        // previously verified profile, finally independent single-locale OCR consensus.
+        var profile = await rendererKindleLanguageProfile()
+        if profile == nil, KindleLanguageContract.isVerified(language: book.language, source: book.languageSource) {
+            profile = persistedKindleLanguageProfile()
+        }
+        if profile == nil {
+            let probe = try await OCRService.shared.probeKindleLanguage(
+                image: image,
+                titleContext: [book.title, book.author].filter { !$0.isEmpty }.joined(separator: " ")
+            )
+            profile = KindleLanguageContract.profile(language: probe.language)
+            if let profile {
+                persistKindleLanguageProfile(profile, source: "ocr-consensus-v2")
+                KindleRunLog.write("KINDLE_PROFILE_PROBE selected=\(profile.language) winningLocale=\(probe.visionLocale) chars=\(probe.readableCharacterCount) score=\(Int(probe.score))")
+            }
+        }
+        guard let profile else {
+            throw KindleBookError.captureFailed("unsupported-kindle-language")
+        }
+        guard profile.isSupported else {
+            throw KindleBookError.verticalJapaneseUnsupported
+        }
+        let ocrRoute = KindleOCRRoutingContract.route(for: profile).engines.map(\.rawValue).joined(separator: ">")
+        KindleRunLog.write("KINDLE_PROFILE asin=\(Self.keyLog(book.asin ?? book.id)) language=\(profile.language) ocrRoute=\(ocrRoute) ocrModel=\(profile.tesseractModel) ocrLocale=\(profile.visionLocale) reading=\(profile.readingDirection.rawValue) progressionFallback=\(profile.pageProgressionFallback.rawValue) writing=\(profile.writingMode.rawValue)")
         let layout = detectKindleColumnLayout(image)
         if layout.isDual,
            let split = splitKindleDualColumns(image) {
-            let left = try? await OCRService.shared.recognize(
+            let left = try? await OCRService.shared.recognizeKindle(
                 image: split.left.image,
-                languages: CaptureFlowViewModel.visionLanguages(),
+                profile: profile,
                 title: book.title,
-                paragraphStrategy: .kindleLayout
+                paragraphStrategy: .kindleLayout,
+                verticalColumnHints: kindleVerticalColumnHints
             )
-            let right = try? await OCRService.shared.recognize(
+            let right = try? await OCRService.shared.recognizeKindle(
                 image: split.right.image,
-                languages: CaptureFlowViewModel.visionLanguages(),
+                profile: profile,
                 title: book.title,
-                paragraphStrategy: .kindleLayout
+                paragraphStrategy: .kindleLayout,
+                verticalColumnHints: kindleVerticalColumnHints
             )
 
-            let columns = [
+            var columns = [
                 left.map { (document: $0, originX: split.left.originX, width: split.left.width) },
                 right.map { (document: $0, originX: split.right.originX, width: split.right.width) }
             ].compactMap { $0 }
+            if profile.readingDirection == .rtl { columns.reverse() }
 
             if !columns.isEmpty {
                 let merged = mergeKindleColumnDocuments(
                     columns,
                     fullPixelWidth: split.fullWidth,
                     fullPixelHeight: split.fullHeight,
-                    imageData: imageData
+                    imageData: imageData,
+                    language: profile.language
                 )
                 if hasReadableParagraphs(merged) {
+                    try validateKindleWritingMode(profile: profile, document: merged)
                     return (merged, "dual:\(layout.reason)")
                 }
             }
@@ -8887,14 +9768,107 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE OCR dual fallback reason=\(layout.reason) left=\(left?.paragraphs.count ?? -1) right=\(right?.paragraphs.count ?? -1)")
         }
 
-        var doc = try await OCRService.shared.recognize(
+        var doc = try await OCRService.shared.recognizeKindle(
             image: image,
-            languages: CaptureFlowViewModel.visionLanguages(),
+            profile: profile,
             title: book.title,
-            paragraphStrategy: .kindleLayout
+            paragraphStrategy: .kindleLayout,
+            verticalColumnHints: kindleVerticalColumnHints
         )
         doc.sourceKind = .kindle
+        doc.paragraphs = doc.paragraphs.map { paragraph in
+            var paragraph = paragraph
+            if paragraph.visualFragments.isEmpty,
+               let bbox = paragraph.bboxNorm ?? unionNorm(for: paragraph.words) {
+                paragraph.visualFragments = [OCRVisualFragment(
+                    column: .single,
+                    bboxNorm: bbox,
+                    wordIDs: paragraph.words.map(\.id)
+                )]
+            }
+            return paragraph
+        }
+        try validateKindleWritingMode(profile: profile, document: doc)
         return (doc, layout.isDual ? "single-fallback:\(layout.reason)" : "single:\(layout.reason)")
+    }
+
+    private func persistedKindleLanguageProfile() -> KindleLanguageProfile? {
+        let writingMode = KindleWritingMode(rawValue: book.kindleWritingMode ?? "") ?? .horizontal
+        let reading = KindleReadingDirection(rawValue: book.kindleReadingDirection ?? "")
+        let progression = KindleReadingDirection(rawValue: book.kindlePageProgressionDirection ?? "")
+        return KindleLanguageContract.profile(
+            language: book.language,
+            writingMode: writingMode,
+            readingDirection: reading,
+            pageProgressionDirection: progression
+        )
+    }
+
+    private func rendererKindleLanguageProfile() async -> KindleLanguageProfile? {
+        guard let payload = try? await evaluateJSON(KindleWebScripts.readMetadataProfile),
+              let language = payload["language"] as? String else { return nil }
+        kindleVerticalColumnHints = Self.verticalColumnHints(from: payload["verticalColumnHints"])
+        var writingMode = KindleWritingMode(rawValue: payload["writingMode"] as? String ?? "") ?? .horizontal
+        let tokenGeometry = payload["writingModeSource"] as? String == "token-geometry"
+        var source = tokenGeometry ? "renderer-token-geometry" : "renderer-metadata"
+        if writingMode == .vertical,
+           !tokenGeometry,
+           KindleLanguageContract.normalize(language) == KindleLanguageContract.normalize(book.language),
+           book.languageSource == "renderer-metadata+geometry",
+           book.kindleWritingMode == KindleWritingMode.horizontal.rawValue {
+            writingMode = .horizontal
+            source = "renderer-metadata+geometry"
+        }
+        let reading = KindleReadingDirection(rawValue: payload["readingDirection"] as? String ?? "")
+        let progression = KindleReadingDirection(rawValue: payload["pageProgressionDirection"] as? String ?? "")
+        guard let profile = KindleLanguageContract.profile(
+            language: language,
+            writingMode: writingMode,
+            readingDirection: reading,
+            pageProgressionDirection: progression
+        ) else { return nil }
+        KindleRunLog.write("KINDLE_PROFILE_RENDERER language=\(profile.language) writing=\(profile.writingMode.rawValue) source=\(source) verticalHints=\(kindleVerticalColumnHints.count)")
+        persistKindleLanguageProfile(profile, source: source)
+        return profile
+    }
+
+    private func persistKindleLanguageProfile(_ profile: KindleLanguageProfile, source: String) {
+        book.language = profile.language
+        book.languageSource = source
+        book.kindleWritingMode = profile.writingMode.rawValue
+        book.kindleReadingDirection = profile.readingDirection.rawValue
+        book.kindlePageProgressionDirection = profile.pageProgressionFallback.rawValue
+        store.updateLanguageProfile(
+            bookID: book.id,
+            language: profile.language,
+            source: source,
+            writingMode: profile.writingMode,
+            readingDirection: profile.readingDirection,
+            pageProgressionDirection: profile.pageProgressionFallback
+        )
+    }
+
+    private func validateKindleWritingMode(profile: KindleLanguageProfile, document: ReadingDocument) throws {
+        if profile.tesseractModel == "jpn_vert" {
+            guard !kindleVerticalColumnHints.isEmpty else {
+                throw KindleBookError.verticalJapaneseUnsupported
+            }
+            return
+        }
+        let sizes = document.paragraphs.compactMap { paragraph -> CGSize? in
+            guard let bbox = paragraph.bboxNorm, bbox.width > 0, bbox.height > 0 else { return nil }
+            return bbox.size
+        }
+        let geometryMode = KindleWritingModeContract.infer(from: sizes)
+        guard let geometryMode, geometryMode != profile.writingMode,
+              let corrected = KindleLanguageContract.profile(
+                language: profile.language,
+                writingMode: geometryMode,
+                readingDirection: profile.readingDirection,
+                pageProgressionDirection: profile.pageProgressionFallback
+              ) else { return }
+        KindleRunLog.write("KINDLE_PROFILE_GEOMETRY corrected=\(profile.writingMode.rawValue)->\(geometryMode.rawValue) language=\(profile.language) paras=\(sizes.count)")
+        persistKindleLanguageProfile(corrected, source: "renderer-metadata+geometry")
     }
 
     private func makeDocument(from pages: [CapturedKindlePage]) -> ReadingDocument {
@@ -8913,9 +9887,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             nextParagraphID += 1
 
             for para in page.document.paragraphs where para.type.isReadable && SpeechTextSanitizer.containsSpeakableContent(para.text) {
+                var wordIDMap: [Int: Int] = [:]
                 let remappedWords = para.words.map { word -> OCRWord in
-                    defer { nextWordID += 1 }
-                    return OCRWord(id: nextWordID, text: word.text, bboxNorm: word.bboxNorm)
+                    let newID = nextWordID
+                    nextWordID += 1
+                    wordIDMap[word.id] = newID
+                    return OCRWord(id: newID, text: word.text, bboxNorm: word.bboxNorm)
                 }
                 paragraphs.append(ReadingParagraph(
                     id: nextParagraphID,
@@ -8923,6 +9900,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     type: para.type,
                     words: remappedWords,
                     bboxNorm: para.bboxNorm,
+                    visualFragments: para.visualFragments.map {
+                        OCRVisualFragment(column: $0.column, bboxNorm: $0.bboxNorm,
+                                          wordIDs: $0.wordIDs.compactMap { wordIDMap[$0] })
+                    },
                     pageIndex: page.pageIndex
                 ))
                 nextParagraphID += 1
@@ -8951,12 +9932,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 defer { nextWordID += 1 }
                 return OCRWord(id: nextWordID, text: word.text, bboxNorm: word.bboxNorm)
             }
+            let remappedIDs = Dictionary(uniqueKeysWithValues: zip(para.words.map(\.id), remappedWords.map(\.id)))
             paragraphs.append(ReadingParagraph(
                 id: nextParagraphID,
                 text: paraText,
                 type: para.type,
                 words: remappedWords,
                 bboxNorm: para.bboxNorm ?? unionNorm(for: remappedWords),
+                visualFragments: para.visualFragments.map {
+                    OCRVisualFragment(column: $0.column, bboxNorm: $0.bboxNorm,
+                                      wordIDs: $0.wordIDs.compactMap { remappedIDs[$0] })
+                },
                 pageIndex: 0
             ))
             nextParagraphID += 1
@@ -9006,10 +9992,6 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return KindleColumnDetection(isDual: false, reason: "empty-image")
         }
         let aspect = width / height
-        if aspect <= 1.15 {
-            return KindleColumnDetection(isDual: false, reason: "aspect-\(String(format: "%.2f", Double(aspect)))")
-        }
-
         guard let bands = sampleKindleColumnBands(cgImage: cg) else {
             return KindleColumnDetection(isDual: aspect > 1.35, reason: "aspect-fallback-\(String(format: "%.2f", Double(aspect)))")
         }
@@ -9108,13 +10090,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         _ columns: [(document: ReadingDocument, originX: CGFloat, width: CGFloat)],
         fullPixelWidth: CGFloat,
         fullPixelHeight: CGFloat,
-        imageData: Data
+        imageData: Data,
+        language: String
     ) -> ReadingDocument {
         var paragraphs: [ReadingParagraph] = []
         var nextParagraphID = 0
         var nextWordID = 0
 
-        for column in columns {
+        for (columnIndex, column) in columns.enumerated() {
             for paragraph in column.document.paragraphs where paragraph.type.isReadable {
                 let text = paragraph.text.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !text.isEmpty else { continue }
@@ -9134,23 +10117,62 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 let paragraphBox = unionNorm(for: words) ?? paragraph.bboxNorm.map {
                     remapColumnRectToFullPage($0, originX: column.originX, width: column.width, fullWidth: fullPixelWidth)
                 }
+                let physicalColumn: OCRVisualFragment.Column = column.originX > 0 ? .right : .left
+                let fragment = OCRVisualFragment(
+                    column: physicalColumn,
+                    bboxNorm: paragraphBox ?? .zero,
+                    wordIDs: words.map(\.id)
+                )
                 paragraphs.append(ReadingParagraph(
                     id: nextParagraphID,
                     text: text,
                     type: paragraph.type,
                     words: words,
                     bboxNorm: paragraphBox,
+                    visualFragments: [fragment],
                     pageIndex: 0
                 ))
                 nextParagraphID += 1
             }
+
+            if columnIndex == 0, columns.count == 2,
+               let boundary = paragraphs.indices.last {
+                // Remember the logical boundary; after the second column is
+                // appended it may be joined without losing either fragment.
+                paragraphs[boundary].pageIndex = -1
+            }
+        }
+
+
+        if let boundary = paragraphs.lastIndex(where: { $0.pageIndex == -1 }),
+           paragraphs.indices.contains(boundary + 1),
+           !KindleLanguageContract.endsWithHardTerminal(paragraphs[boundary].text) {
+            let left = paragraphs[boundary]
+            let right = paragraphs[boundary + 1]
+            let mergedWords = left.words + right.words
+            paragraphs[boundary] = ReadingParagraph(
+                id: left.id,
+                text: KindleLanguageContract.join([left.text, right.text], language: language),
+                type: left.type,
+                words: mergedWords,
+                bboxNorm: unionNorm(for: mergedWords),
+                visualFragments: left.visualFragments + right.visualFragments,
+                pageIndex: 0
+            )
+            paragraphs.remove(at: boundary + 1)
+        }
+        paragraphs = paragraphs.enumerated().map { index, paragraph in
+            var value = paragraph
+            value.pageIndex = 0
+            return ReadingParagraph(id: index, text: value.text, type: value.type, words: value.words,
+                                    bboxNorm: value.bboxNorm, visualFragments: value.visualFragments, pageIndex: 0)
         }
 
         let joined = paragraphs.map(\.text).joined(separator: " ")
         return ReadingDocument(
             title: "\(book.title) · Kindle",
             sourceKind: .kindle,
-            language: LanguageDetector.detect(joined),
+            language: language,
             paragraphs: paragraphs,
             imageData: imageData,
             imagePixelSize: CGSize(width: fullPixelWidth, height: fullPixelHeight),
@@ -9579,6 +10601,76 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return Data(base64Encoded: String(dataURL[dataURL.index(after: comma)...]))
     }
 
+    #if DEBUG
+    /// Local-only fixture used during connected-device OCR verification. It is
+    /// never uploaded and deliberately lives in Caches so it can be exported,
+    /// compared with the source pixels, then deleted after the test session.
+    private static func persistKindleOCRDebugFixture(
+        imageData: Data,
+        document: ReadingDocument,
+        layout: String,
+        natural: String,
+        rendered: String,
+        encoding: String
+    ) {
+        let fileManager = FileManager.default
+        guard let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first else { return }
+        let directory = caches.appendingPathComponent("KindleOCRDebug", isDirectory: true)
+        do {
+            try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+            let timestamp = Int(Date().timeIntervalSince1970 * 1000)
+            let nonce = UUID().uuidString.prefix(8)
+            let stem = "\(document.language)-\(timestamp)-\(nonce)"
+            let imageName = "\(stem).png"
+            let manifestName = "\(stem).json"
+            try imageData.write(to: directory.appendingPathComponent(imageName), options: .atomic)
+
+            let paragraphs: [[String: Any]] = document.paragraphs.map { paragraph in
+                let words: [[String: Any]] = paragraph.words.map { word in
+                    [
+                        "text": word.text,
+                        "x": word.bboxNorm.origin.x,
+                        "y": word.bboxNorm.origin.y,
+                        "width": word.bboxNorm.width,
+                        "height": word.bboxNorm.height
+                    ]
+                }
+                return [
+                    "id": paragraph.id,
+                    "text": paragraph.text,
+                    "words": words
+                ]
+            }
+            let manifest: [String: Any] = [
+                "createdAtMs": timestamp,
+                "language": document.language,
+                "layout": layout,
+                "natural": natural,
+                "rendered": rendered,
+                "encoding": encoding,
+                "image": imageName,
+                "paragraphs": paragraphs
+            ]
+            let json = try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
+            try json.write(to: directory.appendingPathComponent(manifestName), options: .atomic)
+
+            let files = try fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.contentModificationDateKey],
+                options: [.skipsHiddenFiles]
+            ).sorted {
+                let lhs = (try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                let rhs = (try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                return lhs < rhs
+            }
+            for old in files.dropLast(120) { try? fileManager.removeItem(at: old) }
+            KindleRunLog.write("KINDLE_OCR_FIXTURE saved=\(stem) files=\(files.count + 2)")
+        } catch {
+            KindleRunLog.write("KINDLE_OCR_FIXTURE failed=\(error.localizedDescription.prefix(120))")
+        }
+    }
+    #endif
+
     private static func stableKey(_ data: Data) -> String {
         let head = data.prefix(384)
         return "\(data.count)-\(head.base64EncodedString().prefix(18))"
@@ -9643,8 +10735,20 @@ private struct KindleCachedPage {
 private struct KindleAudioPrefetch {
     let pageKey: String
     let textFingerprint: String
+    let voiceID: String
     let paragraphIndex: Int
     let segments: [AudioSegment]
+}
+
+private struct KindleContinuousReadHandoff {
+    let serial: Int
+    let oldKey: String
+    let target: KindleCachedPage
+    let previousSnapshot: KindleCachedPage?
+    let paragraphIndex: Int
+    let segments: [AudioSegment]
+    let segmentIDs: Set<String>
+    let predecessorSegmentID: String
 }
 
 private struct KindleRefocusTarget {
@@ -9776,6 +10880,7 @@ private struct KindleTextQueue {
 private struct CapturedKindlePage {
     let pageIndex: Int
     let key: String
+    let pixelFingerprint: String?
     let sessionId: Int
     let kind: String
     let title: String
@@ -9792,6 +10897,7 @@ private struct CapturedKindlePage {
         CapturedKindlePage(
             pageIndex: pageIndex,
             key: key,
+            pixelFingerprint: pixelFingerprint,
             sessionId: sessionId,
             kind: kind,
             title: title,
@@ -9815,23 +10921,26 @@ private enum KindleBookError: LocalizedError {
     case invalidPayload
     case captureFailed(String)
     case overlayFailed(String)
+    case verticalJapaneseUnsupported
 
     var errorDescription: String? {
         switch self {
         case .busy:
-            return String(localized: "Kindle 页面正在准备中。")
+            return AppLocalized("Kindle 页面正在准备中。")
         case .noImage:
-            return String(localized: "没有找到 Kindle 页面图片，请打开书籍页面后重试。")
+            return AppLocalized("没有找到 Kindle 页面图片，请打开书籍页面后重试。")
         case .noText:
-            return String(localized: "当前 Kindle 页面没有识别到可朗读文本。")
+            return AppLocalized("当前 Kindle 页面没有识别到可朗读文本。")
         case .badImage:
-            return String(localized: "Kindle 页面图片无法解析。")
+            return AppLocalized("Kindle 页面图片无法解析。")
         case .invalidPayload:
-            return String(localized: "Kindle 返回了异常的页面数据。")
+            return AppLocalized("Kindle 返回了异常的页面数据。")
         case .captureFailed(let reason):
-            return String(format: String(localized: "无法捕获 Kindle 页面：%@"), reason)
+            return String(format: AppLocalized("无法捕获 Kindle 页面：%@"), reason)
         case .overlayFailed(let reason):
-            return String(format: String(localized: "无法把高亮附加到 Kindle 页面：%@"), reason)
+            return String(format: AppLocalized("无法把高亮附加到 Kindle 页面：%@"), reason)
+        case .verticalJapaneseUnsupported:
+            return AppLocalized("当前日文竖排页没有获得完整的 Kindle 文字列映射，或处于双页模式。为避免漏句和错高亮，已在朗读前停止；请切换为单页后重试。")
         }
     }
 }

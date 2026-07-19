@@ -170,7 +170,7 @@ struct HomeView: View {
                     if let doc = makeWebDocument(urlString) { finishImport(doc) }
                     else {
                         failImport(stage: "validation", code: "invalid_url")
-                        notice = String(localized: "网址无效")
+                        notice = AppLocalized("网址无效")
                     }
                 }
             }
@@ -393,20 +393,20 @@ struct HomeView: View {
                 }
             } else {
                 failImport(stage: "file_read", code: "unreadable_image")
-                notice = String(localized: "无法读取图片")
+                notice = AppLocalized("无法读取图片")
             }
         } else if ext == "pdf" {
             // PDFKit 原生渲染（保排版）：保留 PDF 字节给 PDFView，按句记录 page+range 供高亮。
             if let doc = DocumentBuilder.fromPDFNative(url: url) { finishImport(doc) }
             else {
                 failImport(stage: "parse", code: "pdf_no_text_layer")
-                notice = String(localized: "无法读取该 PDF（可能是扫描件无文字层，请用「拍摄」）")
+                notice = AppLocalized("无法读取该 PDF（可能是扫描件无文字层，请用「拍摄」）")
             }
         } else if ["txt", "text", "md", "markdown"].contains(ext) {
             if let doc = DocumentBuilder.fromTextFile(url: url) { finishImport(doc) }
             else {
                 failImport(stage: "parse", code: "text_parse_failed")
-                notice = String(localized: "无法读取文本文件")
+                notice = AppLocalized("无法读取文本文件")
             }
         } else if ext == "docx" {
             // DOCX 本地渲染（WebView 内 mammoth 保排版）——不上传后端。
@@ -416,7 +416,7 @@ struct HomeView: View {
                 finishImport(ReadingDocument(title: title, sourceKind: .docx, paragraphs: [], fileData: data))
             } else {
                 failImport(stage: "file_read", code: "docx_read_failed")
-                notice = String(localized: "无法读取该文件")
+                notice = AppLocalized("无法读取该文件")
             }
         } else if ext == "epub" {
             // EPUB 原生解析（ZIPFoundation + SwiftSoup，含内嵌图片）——不上传、不走 WebView。
@@ -434,12 +434,12 @@ struct HomeView: View {
                     if let doc { finishImport(doc) }
                     else {
                         failImport(stage: "parse", code: "epub_parse_failed")
-                        notice = String(localized: "无法解析该 EPUB")
+                        notice = AppLocalized("无法解析该 EPUB")
                     }
                 }
             } else {
                 failImport(stage: "file_read", code: "epub_read_failed")
-                notice = String(localized: "无法读取该文件")
+                notice = AppLocalized("无法读取该文件")
             }
         } else {
             // 其他未知格式 → 暂仍走后端处理
@@ -449,11 +449,11 @@ struct HomeView: View {
                 try FileManager.default.copyItem(at: url, to: tmp)
                 Task {
                     await importVM.uploadFile(tmp)
-                    notice = importVM.error ?? String(localized: "已上传，处理完成后在「文库」查看")
+                    notice = importVM.error ?? AppLocalized("已上传，处理完成后在「文库」查看")
                 }
             } catch {
                 failImport(stage: "file_read", code: "copy_failed")
-                notice = String(format: String(localized: "无法读取文件：%@"), error.localizedDescription)
+                notice = String(format: AppLocalized("无法读取文件：%@"), error.localizedDescription)
             }
         }
     }
@@ -474,7 +474,7 @@ struct HomeView: View {
             Color.black.opacity(0.35).ignoresSafeArea()
             VStack(spacing: 12) {
                 ProgressView().tint(.white)
-                Text(importVM.isUploading ? String(localized: "上传中…") : String(localized: "识别中…")).foregroundColor(.white).font(.subheadline)
+                Text(importVM.isUploading ? AppLocalized("上传中…") : AppLocalized("识别中…")).foregroundColor(.white).font(.subheadline)
             }
             .padding(24).background(.ultraThinMaterial).cornerRadius(16)
         }
@@ -547,7 +547,7 @@ private struct ImportOptionsSheet: View {
                 .padding(20)
             }
             .background(AppTheme.background.ignoresSafeArea())
-            .navigationTitle(panel.fixedScenario == nil ? "快速导入" : "选择来源")
+            .navigationTitle(LocalizedStringKey(panel.fixedScenario == nil ? "快速导入" : "选择来源"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -568,10 +568,10 @@ private struct ImportOptionsSheet: View {
                     .cornerRadius(12)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(activeScenario?.displayName ?? String(localized: "快速导入"))
+                    Text(activeScenario?.displayName ?? AppLocalized("快速导入"))
                         .font(.headline)
                         .foregroundColor(AppTheme.foreground)
-                    Text(activeScenario?.subtitle ?? String(localized: "先导入内容，也可以指定一个解读场景"))
+                    Text(activeScenario?.subtitle ?? AppLocalized("先导入内容，也可以指定一个解读场景"))
                         .font(.caption)
                         .foregroundColor(AppTheme.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
@@ -602,7 +602,7 @@ private struct ImportOptionsSheet: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ScenarioChip(
-                        title: String(localized: "通用"),
+                        title: AppLocalized("通用"),
                         icon: "text.alignleft",
                         selected: selectedScenario == nil
                     ) {
@@ -1226,7 +1226,7 @@ private struct KindleBackgroundProbeSheet: View {
                     try await model.ensureCurrentPageCached()
                 }
                 guard let doc = model.makeCachedKindleDocument() else {
-                    notice = String(localized: "还没有可朗读的 Kindle 页面")
+                    notice = AppLocalized("还没有可朗读的 Kindle 页面")
                     return
                 }
                 model.stop()
@@ -1551,10 +1551,10 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
 
         var errorDescription: String? {
             switch self {
-            case .webViewMissing: return String(localized: "Kindle 页面还没有准备好")
-            case .invalidPayload: return String(localized: "无法读取 Kindle 当前页")
-            case .noImage(let reason): return String(format: String(localized: "未找到 Kindle 页面图片：%@"), reason)
-            case .badImageData: return String(localized: "无法解析 Kindle 页面图片")
+            case .webViewMissing: return AppLocalized("Kindle 页面还没有准备好")
+            case .invalidPayload: return AppLocalized("无法读取 Kindle 当前页")
+            case .noImage(let reason): return String(format: AppLocalized("未找到 Kindle 页面图片：%@"), reason)
+            case .badImageData: return AppLocalized("无法解析 Kindle 页面图片")
             }
         }
     }
@@ -2790,7 +2790,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
     private func captureCurrentPage(shouldCache: Bool) async throws -> CapturedPage {
         guard !isPreparingDocument else { throw CaptureError.invalidPayload }
         isPreparingDocument = true
-        prepareStatus = String(localized: "Capturing Kindle page...")
+        prepareStatus = AppLocalized("Capturing Kindle page...")
         defer {
             isPreparingDocument = false
             prepareStatus = ""
@@ -2837,7 +2837,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         let title = cleanKindleTitle(titleRaw, key: key)
         appendLog("\(logPrefix) key=\(key.prefix(8)) source=\(payload["source"] as? String ?? "?") title=\(title) bytes=\(imageData.count)")
 
-        prepareStatus = String(localized: "Recognizing Kindle text...")
+        prepareStatus = AppLocalized("Recognizing Kindle text...")
         var doc = try await OCRService.shared.recognize(
             image: image,
             languages: CaptureFlowViewModel.visionLanguages(),
@@ -2928,7 +2928,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
                 lastKey = page.key
             }
             for i in 0..<count {
-                prepareStatus = String(localized: "Loading next Kindle page...")
+                prepareStatus = AppLocalized("Loading next Kindle page...")
                 let nextKey = try await advanceUntilNewKey(previousKey: lastKey)
                 guard !nextKey.isEmpty else {
                     appendLog("KINDLE prefetch stop no next key")
@@ -2957,7 +2957,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         continuousReadRunID = UUID()
         let runID = continuousReadRunID
         isContinuousReading = true
-        continuousStatus = String(localized: "Preparing Kindle read aloud...")
+        continuousStatus = AppLocalized("Preparing Kindle read aloud...")
         clearContinuousIssue()
         resetContinuousReadState(keepAudio: true)
         continuousReadPageKeys.removeAll()
@@ -3080,34 +3080,34 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
     }
 
     private func setSourceBlockedIssue(mode: KindlePipelineMode, reason: String) {
-        let prefix = mode == .read ? String(localized: "Kindle read aloud") : String(localized: "Kindle explain")
+        let prefix = mode == .read ? AppLocalized("Kindle read aloud") : AppLocalized("Kindle explain")
         switch reason {
         case "anchor-not-held":
             setContinuousIssue(
                 kind: .sourceNotReady,
-                title: String(localized: "Kindle source is out of sync"),
-                message: String(localized: "\(prefix) is waiting because the original Kindle page no longer contains the current playback page. Keep the book page open, scroll near the current content, then tap Retry."),
+                title: AppLocalized("Kindle source is out of sync"),
+                message: AppLocalized("\(prefix) is waiting because the original Kindle page no longer contains the current playback page. Keep the book page open, scroll near the current content, then tap Retry."),
                 canRetry: true
             )
         case "app-not-active":
             setContinuousIssue(
                 kind: .waitingForMorePages,
-                title: String(localized: "Need the Kindle page open to load more"),
-                message: String(localized: "\(prefix) can keep playing buffered audio in the background, but loading new Kindle pages requires the app to be open. Reopen the reader and tap Retry."),
+                title: AppLocalized("Need the Kindle page open to load more"),
+                message: AppLocalized("\(prefix) can keep playing buffered audio in the background, but loading new Kindle pages requires the app to be open. Reopen the reader and tap Retry."),
                 canRetry: true
             )
         case "source-at-tail", "no-new-after-anchor":
             setContinuousIssue(
                 kind: .ended,
-                title: String(localized: "No more loaded Kindle pages"),
-                message: String(localized: "\(prefix) reached the end of the loaded Kindle content. If this is not the end of the book, scroll the Kindle page slightly so it loads more content, then tap Retry."),
+                title: AppLocalized("No more loaded Kindle pages"),
+                message: AppLocalized("\(prefix) reached the end of the loaded Kindle content. If this is not the end of the book, scroll the Kindle page slightly so it loads more content, then tap Retry."),
                 canRetry: true
             )
         default:
             setContinuousIssue(
                 kind: .waitingForMorePages,
-                title: String(localized: "Waiting for more Kindle pages"),
-                message: String(localized: "\(prefix) could not find a new loaded Kindle page yet. Keep the Kindle reader open, let the page finish loading, or scroll the source page a little, then tap Retry. Reason: \(reason)"),
+                title: AppLocalized("Waiting for more Kindle pages"),
+                message: AppLocalized("\(prefix) could not find a new loaded Kindle page yet. Keep the Kindle reader open, let the page finish loading, or scroll the source page a little, then tap Retry. Reason: \(reason)"),
                 canRetry: true
             )
         }
@@ -3141,7 +3141,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             continuousLastParagraphKey = ""
             continuousLastWordKey = ""
             continuousLastWordIndexByParagraph.removeAll()
-            continuousStatus = String(localized: "Capturing Kindle page...")
+            continuousStatus = AppLocalized("Capturing Kindle page...")
 
             let page = try await captureCurrentPage(shouldCache: true)
             guard !Task.isCancelled, isContinuousReadActive(runID) else { return }
@@ -3153,11 +3153,11 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             audio.setBook(
                 id: "kindle-\(page.key)",
                 title: page.title,
-                chapterTitle: String(localized: "Kindle"),
+                chapterTitle: AppLocalized("Kindle"),
                 coverUrl: nil
             )
             appendLog("KINDLE continuous page reason=\(reason) key=\(page.key.prefix(8)) paras=\(page.document.readableParagraphs.count)")
-            continuousStatus = String(localized: "Generating Kindle audio...")
+            continuousStatus = AppLocalized("Generating Kindle audio...")
 
             let readable = page.document.readableParagraphs
             guard !readable.isEmpty else {
@@ -3170,7 +3170,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
                 guard !Task.isCancelled, isContinuousReadActive(runID) else { return }
                 let text = SpeechTextSanitizer.sanitizedForTTS(paragraph.text)
                 guard SpeechTextSanitizer.containsSpeakableContent(text) else { continue }
-                continuousStatus = String(localized: "Generating paragraph \(paragraph.id + 1)/\(page.document.paragraphs.count)...")
+                continuousStatus = AppLocalized("Generating paragraph \(paragraph.id + 1)/\(page.document.paragraphs.count)...")
                 try await TTSService.shared.generateTTSForParagraph(
                     paragraphIndex: paragraph.id,
                     text: text,
@@ -3187,18 +3187,18 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             guard !Task.isCancelled, isContinuousReadActive(runID) else { return }
             audio.moreSegmentsExpected = true
             continuousReadPageKeys.insert(page.key)
-            continuousStatus = String(localized: "Reading Kindle page...")
+            continuousStatus = AppLocalized("Reading Kindle page...")
             let segmentCount = continuousSegmentsByPageParagraph[page.key]?.values.flatMap { $0 }.count ?? 0
             appendLog("KINDLE continuous page ready key=\(page.key.prefix(8)) segments=\(segmentCount)")
             scheduleContinuousReadPrefetch(after: page.key, runID: runID)
         } catch {
             guard isContinuousReadActive(runID) else { return }
             audio.moreSegmentsExpected = false
-            continuousStatus = String(localized: "Kindle read failed: \(error.localizedDescription)")
+            continuousStatus = AppLocalized("Kindle read failed: \(error.localizedDescription)")
             appendLog("KINDLE continuous error \(error.localizedDescription)")
             setContinuousIssue(
                 kind: .pageFailed,
-                title: String(localized: "Kindle read preparation failed"),
+                title: AppLocalized("Kindle read preparation failed"),
                 message: error.localizedDescription,
                 canRetry: true
             )
@@ -3232,7 +3232,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
                 audio.setBook(
                     id: "kindle-\(page.key)",
                     title: page.title,
-                    chapterTitle: String(localized: "Kindle"),
+                    chapterTitle: AppLocalized("Kindle"),
                     coverUrl: nil
                 )
             }
@@ -3285,12 +3285,12 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             ? continuousPlayingPageKey
             : (activeContinuousPage?.key ?? "")
         guard !anchorKey.isEmpty else {
-            continuousStatus = String(localized: "Kindle page state is not ready.")
+            continuousStatus = AppLocalized("Kindle page state is not ready.")
             audio.moreSegmentsExpected = false
             setContinuousIssue(
                 kind: .sourceNotReady,
-                title: String(localized: "Kindle page is not ready"),
-                message: String(localized: "Open a Kindle book page, keep it visible for a moment, then retry."),
+                title: AppLocalized("Kindle page is not ready"),
+                message: AppLocalized("Open a Kindle book page, keep it visible for a moment, then retry."),
                 canRetry: true
             )
             return
@@ -3299,12 +3299,12 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         clearContinuousIssue()
         if continuousReadPrefetchTask != nil {
             continuousPendingReadPrefetch = (anchorKey, runID)
-            continuousStatus = String(localized: "Preparing more Kindle pages...")
+            continuousStatus = AppLocalized("Preparing more Kindle pages...")
             audio.moreSegmentsExpected = true
             appendLog("KINDLE read queue drained while prefetch active after=\(anchorKey.prefix(8))")
             return
         }
-        continuousStatus = String(localized: "Loading more Kindle pages...")
+        continuousStatus = AppLocalized("Loading more Kindle pages...")
         audio.moreSegmentsExpected = true
         let prepared = await prefetchLivePagesAfter(
             anchorKey,
@@ -3314,11 +3314,11 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         guard isContinuousReadActive(runID) else { return }
         if prepared <= 0 {
             audio.moreSegmentsExpected = false
-            continuousStatus = String(localized: "Waiting for Kindle to load more pages.")
+            continuousStatus = AppLocalized("Waiting for Kindle to load more pages.")
             setSourceBlockedIssue(mode: .read, reason: continuousLastReadSourceReason.isEmpty ? "no-candidates" : continuousLastReadSourceReason)
         } else {
             clearContinuousIssue()
-            continuousStatus = String(localized: "Reading Kindle page...")
+            continuousStatus = AppLocalized("Reading Kindle page...")
         }
     }
 
@@ -3392,7 +3392,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             audio.moreSegmentsExpected = false
             setContinuousIssue(
                 kind: .pageFailed,
-                title: String(localized: "Kindle page preparation failed"),
+                title: AppLocalized("Kindle page preparation failed"),
                 message: error.localizedDescription,
                 canRetry: true
             )
@@ -3910,7 +3910,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         continuousExplainRunID = UUID()
         let runID = continuousExplainRunID
         isContinuousExplaining = true
-        continuousStatus = String(localized: "Preparing Kindle explain...")
+        continuousStatus = AppLocalized("Preparing Kindle explain...")
         activeContinuousPage = nil
         continuousPreparedPages.removeAll()
         continuousPreparingPageKeys.removeAll()
@@ -3946,7 +3946,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         audio.clearQueue()
         audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: ProManager.shared.isPro)))
         audio.moreSegmentsExpected = true
-        audio.setBook(id: "kindle-explain-\(urlString.hashValue)", title: "Kindle", chapterTitle: String(localized: "解读"), coverUrl: nil)
+        audio.setBook(id: "kindle-explain-\(urlString.hashValue)", title: "Kindle", chapterTitle: AppLocalized("解读"), coverUrl: nil)
         audio.onPlaybackComplete = { [weak self] in
             Task { @MainActor in
                 await self?.handleContinuousExplainQueueDrained(runID: runID)
@@ -4033,7 +4033,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             }
             nativePlaybackMarks = []
             nativePlaybackWordIndex = nil
-            continuousStatus = String(localized: "Capturing Kindle page...")
+            continuousStatus = AppLocalized("Capturing Kindle page...")
             try? await webView?.evaluateJavaScript("window.__crBgProbeClearOCRMarks && window.__crBgProbeClearOCRMarks()")
 
             let page = try await captureCurrentPage(shouldCache: true)
@@ -4043,7 +4043,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             continuousPlayingPageKey = page.key
             showNativePlaybackPage(page, paragraphIndex: -1, wordIndex: nil, reason: reason)
             appendLog("KINDLE explain page reason=\(reason) key=\(page.key.prefix(8)) paras=\(page.document.readableParagraphs.count) chars=\(page.document.fullText.count)")
-            audio.setBook(id: "kindle-explain-\(page.key)", title: page.title, chapterTitle: String(localized: "解读"), coverUrl: nil)
+            audio.setBook(id: "kindle-explain-\(page.key)", title: page.title, chapterTitle: AppLocalized("解读"), coverUrl: nil)
 
             let didPrepare = try await prepareKindleExplainPage(page: page, reason: reason, runID: runID, updatesStatus: true)
             guard isContinuousExplainActive(runID), !Task.isCancelled else { return }
@@ -4053,11 +4053,11 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
                 appendLog("KINDLE explain empty page, requesting pipeline refill")
                 await handleContinuousExplainQueueDrained(runID: runID)
             }
-            continuousStatus = String(localized: "Explaining Kindle page...")
+            continuousStatus = AppLocalized("Explaining Kindle page...")
         } catch {
             guard isContinuousExplainActive(runID) else { return }
             audio.moreSegmentsExpected = false
-            continuousStatus = String(localized: "Kindle explain failed: \(error.localizedDescription)")
+            continuousStatus = AppLocalized("Kindle explain failed: \(error.localizedDescription)")
             appendLog("KINDLE explain error \(error.localizedDescription)")
         }
     }
@@ -4069,7 +4069,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         guard !readable.isEmpty else { return false }
 
         if updatesStatus {
-            continuousStatus = String(localized: "Planning Kindle explanation...")
+            continuousStatus = AppLocalized("Planning Kindle explanation...")
         }
         let planBox = KindlePlanBlock0Box()
         let request = buildKindlePlanRequest(page: page)
@@ -4096,7 +4096,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         for blockIndex in 0..<total {
             guard isContinuousExplainActive(runID), !Task.isCancelled else { return false }
             if updatesStatus {
-                continuousStatus = String(localized: "Preparing explanation \(blockIndex + 1)/\(total)...")
+                continuousStatus = AppLocalized("Preparing explanation \(blockIndex + 1)/\(total)...")
             }
             let section = blockIndex == 0
                 ? block0.block_0
@@ -4144,12 +4144,12 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             ? continuousPlayingPageKey
             : (activeContinuousPage?.key ?? "")
         guard !anchorKey.isEmpty else {
-            continuousStatus = String(localized: "Kindle page state is not ready.")
+            continuousStatus = AppLocalized("Kindle page state is not ready.")
             audio.moreSegmentsExpected = false
             setContinuousIssue(
                 kind: .sourceNotReady,
-                title: String(localized: "Kindle page is not ready"),
-                message: String(localized: "Open a Kindle book page, keep it visible for a moment, then retry."),
+                title: AppLocalized("Kindle page is not ready"),
+                message: AppLocalized("Open a Kindle book page, keep it visible for a moment, then retry."),
                 canRetry: true
             )
             return
@@ -4158,12 +4158,12 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         clearContinuousIssue()
         if continuousPrefetchTask != nil {
             continuousPendingPrefetch = (anchorKey, runID)
-            continuousStatus = String(localized: "Preparing more Kindle pages...")
+            continuousStatus = AppLocalized("Preparing more Kindle pages...")
             audio.moreSegmentsExpected = true
             appendLog("KINDLE explain queue drained while prefetch active after=\(anchorKey.prefix(8))")
             return
         }
-        continuousStatus = String(localized: "Loading more Kindle pages...")
+        continuousStatus = AppLocalized("Loading more Kindle pages...")
         audio.moreSegmentsExpected = true
         let prepared = await prefetchExplainPagesAfter(
             anchorKey,
@@ -4173,11 +4173,11 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         guard isContinuousExplainActive(runID) else { return }
         if prepared <= 0 {
             audio.moreSegmentsExpected = false
-            continuousStatus = String(localized: "Waiting for Kindle to load more pages.")
+            continuousStatus = AppLocalized("Waiting for Kindle to load more pages.")
             setSourceBlockedIssue(mode: .explain, reason: continuousLastExplainSourceReason.isEmpty ? "no-candidates" : continuousLastExplainSourceReason)
         } else {
             clearContinuousIssue()
-            continuousStatus = String(localized: "Explaining Kindle page...")
+            continuousStatus = AppLocalized("Explaining Kindle page...")
         }
     }
 
@@ -4262,7 +4262,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
                 audio.setBook(
                     id: "kindle-explain-\(page.key)",
                     title: page.title,
-                    chapterTitle: String(localized: "解读"),
+                    chapterTitle: AppLocalized("解读"),
                     coverUrl: nil
                 )
                 showNativePlaybackPage(page, paragraphIndex: -1, wordIndex: nil, reason: "explain-playback-switch")
@@ -4372,7 +4372,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             appendLog("KINDLE explain prefetch error \(error.localizedDescription)")
             setContinuousIssue(
                 kind: .pageFailed,
-                title: String(localized: "Kindle page preparation failed"),
+                title: AppLocalized("Kindle page preparation failed"),
                 message: error.localizedDescription,
                 canRetry: true
             )
@@ -4588,8 +4588,8 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
 
     private func friendlyKindleStage(_ stage: String) -> String {
         switch stage {
-        case "extract": return String(localized: "Reading Kindle page...")
-        case "compose": return String(localized: "Preparing explanation...")
+        case "extract": return AppLocalized("Reading Kindle page...")
+        case "compose": return AppLocalized("Preparing explanation...")
         default: return stage
         }
     }

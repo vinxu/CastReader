@@ -100,7 +100,9 @@ struct VoiceCloneCreatedView: View {
                     .overlay(Circle().stroke(AppTheme.background, lineWidth: 2))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text(previewPlayer.playingVoiceId == voice.voiceId ? "停止试听" : "试听"))
+                .accessibilityLabel(Text(LocalizedStringKey(
+                    previewPlayer.playingVoiceId == voice.voiceId ? "停止试听" : "试听"
+                )))
             }
 
             Button {
@@ -130,9 +132,9 @@ struct VoiceCloneCreatedView: View {
 
     private func cloneMetadata(_ voice: ClonedVoice) -> String {
         let reference = store.referenceLanguage(for: voice)
-        let recording = reference == "zh" ? String(localized: "中文录制") :
-            (reference == "en" ? String(localized: "英语录制") : String(localized: "多语言"))
-        let target = language == "zh" ? String(localized: "用于中文") : String(localized: "用于英语")
+        let recording = reference == "zh" ? AppLocalized("中文录制") :
+            (reference == "en" ? AppLocalized("英语录制") : AppLocalized("多语言"))
+        let target = language == "zh" ? AppLocalized("用于中文") : AppLocalized("用于英语")
         return "\(recording) · \(target)"
     }
 
@@ -194,7 +196,10 @@ private struct VoiceCloneCreationView: View {
                         }.buttonStyle(.borderedProminent).tint(AppTheme.primary)
                         if recorder.state == .recorded || recorder.state == .playing {
                             Button(action: recorder.togglePlayback) {
-                                Label(recorder.state == .playing ? "停止试听" : "试听", systemImage: recorder.state == .playing ? "stop.circle" : "play.circle")
+                                Label(
+                                    LocalizedStringKey(recorder.state == .playing ? "停止试听" : "试听"),
+                                    systemImage: recorder.state == .playing ? "stop.circle" : "play.circle"
+                                )
                             }
                             Button("重录", action: recorder.replaceRecording)
                         }
@@ -221,9 +226,9 @@ private struct VoiceCloneCreationView: View {
     private var recordTitle: LocalizedStringKey { recorder.state == .recording ? "停止录音" : "开始录音" }
     private var recordingScript: String {
         if recordingLanguage == "zh" {
-            return String(localized: "今天的天气很舒服。我正在用清晰、自然的声音录制一段样本，让 CastReader 更准确地还原我的声音。")
+            return AppLocalized("今天的天气很舒服。我正在用清晰、自然的声音录制一段样本，让 CastReader 更准确地还原我的声音。")
         }
-        return String(localized: "Today is a pleasant day. I am recording this sample in a clear, natural voice so CastReader can reproduce my voice accurately.")
+        return AppLocalized("Today is a pleasant day. I am recording this sample in a clear, natural voice so CastReader can reproduce my voice accurately.")
     }
     private func recordAction() {
         if recorder.state == .recording { recorder.stopRecording() }

@@ -13,7 +13,8 @@ import SwiftUI
 
 struct KindleBook: Identifiable, Codable, Equatable {
     enum CodingKeys: String, CodingKey {
-        case id, asin, title, author, coverURL, readerURL, progressLabel
+        case id, asin, title, author, coverURL, readerURL, progressLabel, language, languageSource
+        case kindleWritingMode, kindleReadingDirection, kindlePageProgressionDirection
         case lastOpenedAt, lastSyncedAt, lastReadPageKey, lastReadURL
     }
 
@@ -24,6 +25,12 @@ struct KindleBook: Identifiable, Codable, Equatable {
     var coverURL: String?
     var readerURL: String
     var progressLabel: String
+    var language: String? = nil
+    /// `nil` means a legacy/unverified value and must not become the OCR authority.
+    var languageSource: String? = nil
+    var kindleWritingMode: String? = nil
+    var kindleReadingDirection: String? = nil
+    var kindlePageProgressionDirection: String? = nil
     var lastOpenedAt: Date?
     var lastSyncedAt: Date
     var lastReadPageKey: String?
@@ -31,13 +38,13 @@ struct KindleBook: Identifiable, Codable, Equatable {
 
     var displayAuthor: String {
         author.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? String(localized: "未知作者")
+            ? AppLocalized("未知作者")
             : author
     }
 
     var displayProgress: String {
         progressLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? String(localized: "尚未开始")
+            ? AppLocalized("尚未开始")
             : progressLabel
     }
 
@@ -47,6 +54,297 @@ struct KindleBook: Identifiable, Codable, Equatable {
 
     var isLikelyLibraryBook: Bool {
         KindleBookValidator.isLikelyLibraryBook(self)
+    }
+}
+
+enum KindleReadingDirection: String, Equatable { case ltr, rtl }
+enum KindleWritingMode: String, Equatable { case horizontal, vertical }
+enum KindleOCREngine: String, Equatable { case vision, tesseract }
+
+struct KindleOCRRoute: Equatable {
+    let primary: KindleOCREngine
+    let fallback: KindleOCREngine?
+
+    var engines: [KindleOCREngine] {
+        fallback.map { [primary, $0] } ?? [primary]
+    }
+}
+
+struct KindleLanguageProfile: Equatable {
+    let language: String
+    let visionLocale: String
+    let tesseractModel: String
+    let readingDirection: KindleReadingDirection
+    let pageProgressionFallback: KindleReadingDirection
+    let writingMode: KindleWritingMode
+
+    /// Production Kindle playback currently supports horizontal text only.
+    /// The bundled vertical-Japanese recognizer remains an isolated experiment;
+    /// it must not enter OCR/TTS until its geometry contract is fully verified.
+    var isSupported: Bool { writingMode == .horizontal }
+}
+
+/// Cross-engine parity is defined by text order + geometry + quality, not by
+/// forcing every language through the same binary. Vision is the iOS authority
+/// where it has a native model; Hindi and vertical Japanese keep dedicated
+/// Tesseract paths.
+enum KindleOCRRoutingContract {
+    static func route(for profile: KindleLanguageProfile) -> KindleOCRRoute {
+        if profile.language == "ja", profile.writingMode == .vertical {
+            return KindleOCRRoute(primary: .tesseract, fallback: nil)
+        }
+        if profile.language == "hi" {
+            return KindleOCRRoute(primary: .tesseract, fallback: nil)
+        }
+        return KindleOCRRoute(primary: .vision, fallback: .tesseract)
+    }
+}
+
+struct KindleVerticalColumnHint: Equatable {
+    let leftRatio: Double
+    let rightRatio: Double
+    let topRatio: Double
+    let bottomRatio: Double
+    let expectedCharacters: Int
+    let startPositionID: Int?
+    let endPositionID: Int?
+
+    var javaScriptValue: [String: Any] {
+        var value: [String: Any] = [
+            "leftRatio": leftRatio,
+            "rightRatio": rightRatio,
+            "topRatio": topRatio,
+            "bottomRatio": bottomRatio,
+            "expectedCharacters": expectedCharacters
+        ]
+        if let startPositionID { value["startPositionId"] = startPositionID }
+        if let endPositionID { value["endPositionId"] = endPositionID }
+        return value
+    }
+}
+
+enum KindleLanguageContract {
+    static let trustedLanguageSources: Set<String> = [
+        "renderer-metadata", "renderer-token-geometry", "renderer-metadata+geometry", "ocr-consensus-v2"
+    ]
+    private static let aliases: [String: String] = [
+        "eng": "en", "zho": "zh", "chi": "zh", "jpn": "ja",
+        "spa": "es", "fra": "fr", "fre": "fr", "por": "pt",
+        "ita": "it", "hin": "hi"
+    ]
+    private static let locales: [String: String] = [
+        "en": "en-US", "zh": "zh-Hans", "ja": "ja-JP", "es": "es-ES",
+        "fr": "fr-FR", "pt": "pt-BR", "it": "it-IT", "hi": "hi-IN"
+    ]
+    private static let tesseractModels: [String: String] = [
+        "en": "eng", "zh": "chi_sim", "ja": "jpn", "es": "spa",
+        "fr": "fra", "pt": "por", "it": "ita", "hi": "hin"
+    ]
+
+    static func normalize(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let primary = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased().replacingOccurrences(of: "_", with: "-")
+            .split(separator: "-").first.map(String.init) ?? ""
+        let language = aliases[primary] ?? primary
+        return locales[language] == nil ? nil : language
+    }
+
+    static func profile(
+        language: String?,
+        writingMode: KindleWritingMode = .horizontal,
+        readingDirection: KindleReadingDirection? = nil,
+        pageProgressionDirection: KindleReadingDirection? = nil
+    ) -> KindleLanguageProfile? {
+        guard let language = normalize(language),
+              let locale = locales[language],
+              var tesseractModel = tesseractModels[language] else { return nil }
+        if language == "ja", writingMode == .vertical { tesseractModel = "jpn_vert" }
+        return KindleLanguageProfile(
+            language: language,
+            visionLocale: locale,
+            tesseractModel: tesseractModel,
+            readingDirection: readingDirection ?? (language == "ja" ? .rtl : .ltr),
+            pageProgressionFallback: pageProgressionDirection ?? (language == "ja" ? .rtl : .ltr),
+            writingMode: writingMode
+        )
+    }
+
+    static func isVerified(language: String?, source: String?) -> Bool {
+        normalize(language) != nil && source.map(trustedLanguageSources.contains) == true
+    }
+
+    static func endsWithHardTerminal(_ value: String) -> Bool {
+        value.trimmingCharacters(in: .whitespacesAndNewlines)
+            .range(of: #"[.!?。！？…।॥][\s\"'»”’\)\]\）\】\」\』]*$"#, options: .regularExpression) != nil
+    }
+
+    /// Script-neutral list boundary used by the OCR paragraph contract.
+    /// `\p{Nd}` includes both ASCII and Devanagari digits.
+    static func startsWithListMarker(_ value: String) -> Bool {
+        value.range(
+            of: #"^\s*(?:[•◦▪‣⁃∙·●○■□◆◇►▸]|\p{Nd}{1,3}[\)\]\.．、）:]|[A-Za-z][\)\.])\s*\S"#,
+            options: .regularExpression
+        ) != nil
+    }
+
+    static func endsWithHeadingDelimiter(_ value: String) -> Bool {
+        value.trimmingCharacters(in: .whitespacesAndNewlines)
+            .range(of: #"[:：][\s\"'»”’\)\]\）]*$"#, options: .regularExpression) != nil
+    }
+
+    static func alignmentText(_ value: String) -> String {
+        value.decomposedStringWithCompatibilityMapping.lowercased().unicodeScalars
+            .filter { CharacterSet.letters.contains($0) || CharacterSet.decimalDigits.contains($0) || CharacterSet.nonBaseCharacters.contains($0) }
+            .map(String.init).joined()
+    }
+
+    static func join(_ parts: [String], language: String) -> String {
+        let values = parts.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        return values.joined(separator: normalize(language).map { $0 == "zh" || $0 == "ja" } == true ? "" : " ")
+    }
+
+    static func shouldPreferRawParagraphs(language: String, raw: Int, visualLines: Int, rebuilt: Int) -> Bool {
+        guard let language = normalize(language), ["zh", "ja", "hi"].contains(language) else { return false }
+        return raw > 1 && raw > rebuilt && raw <= visualLines
+    }
+}
+
+enum KindleWritingModeContract {
+    /// Kindle renderer metadata sometimes calls a portrait page/image `vertical`.
+    /// Strongly elongated paragraph rectangles are the actual glyph-flow authority.
+    static func infer(from paragraphSizes: [CGSize]) -> KindleWritingMode? {
+        var horizontalVotes = 0
+        var verticalVotes = 0
+        for size in paragraphSizes where size.width > 0 && size.height > 0 {
+            let ratio = size.width / size.height
+            if ratio >= 2.5 { horizontalVotes += 1 }
+            else if ratio <= 0.4 { verticalVotes += 1 }
+        }
+        if horizontalVotes == 0 && verticalVotes == 0 { return nil }
+        if horizontalVotes >= max(1, verticalVotes * 2) { return .horizontal }
+        if verticalVotes >= max(1, horizontalVotes * 2) { return .vertical }
+        return nil
+    }
+}
+
+enum KindleColumnLayoutContract {
+    static func isDualColumn(aspect: CGFloat, pixelsReadable: Bool, centerGutter: Bool) -> Bool {
+        if pixelsReadable { return centerGutter }
+        return aspect > 1.35
+    }
+
+    static func cacheSignature(contentKey: String, pixelFingerprint: String?, pixelSize: CGSize) -> String? {
+        guard let pixelFingerprint, !pixelFingerprint.isEmpty else { return nil }
+        return "\(contentKey)|\(pixelFingerprint)|\(Int(pixelSize.width))x\(Int(pixelSize.height))"
+    }
+}
+
+/// Kindle playback lifecycle deliberately separates presentation from session
+/// ownership. Mini player and background audio keep the reader surface attached;
+/// only a foreground, expanded reader requires every visual update immediately.
+enum KindlePlaybackLifecycleContract {
+    static func shouldKeepPlayback(surfaceAttached: Bool, explicitlyClosed: Bool) -> Bool {
+        surfaceAttached && !explicitlyClosed
+    }
+
+    static func requiresImmediateVisualSync(readerPresented: Bool, applicationActive: Bool) -> Bool {
+        readerPresented && applicationActive
+    }
+}
+
+/// Pure scheduling contract for a gapless Kindle page boundary. OCR and the
+/// next page's first utterance must both be complete before audio is appended;
+/// the visual page turn may then start during the tail of the current item.
+enum KindleContinuousPageHandoffContract {
+    static func shouldArm(
+        isReadMode: Bool,
+        isLastReadableParagraph: Bool,
+        currentTTSComplete: Bool,
+        hasPreparedPage: Bool,
+        hasPreparedAudio: Bool,
+        audioIsPlaying: Bool
+    ) -> Bool {
+        isReadMode && isLastReadableParagraph && currentTTSComplete &&
+            hasPreparedPage && hasPreparedAudio && audioIsPlaying
+    }
+
+    static func shouldBeginVisualTurn(
+        currentSegmentID: String?,
+        predecessorSegmentID: String,
+        remainingAudioSeconds: Double,
+        playbackRate: Float,
+        wallClockLeadSeconds: Double = 1.4
+    ) -> Bool {
+        guard currentSegmentID == predecessorSegmentID,
+              remainingAudioSeconds >= 0 else { return false }
+        let rate = max(0.25, Double(playbackRate))
+        return remainingAudioSeconds / rate <= wallClockLeadSeconds
+    }
+
+    static func shouldReleaseAudioGate(
+        hasConfirmedVisibleSurface: Bool,
+        textFingerprintMatches: Bool
+    ) -> Bool {
+        hasConfirmedVisibleSurface && textFingerprintMatches
+    }
+}
+
+enum KindleForwardProgress: Equatable { case forward, backward, unchanged, unverifiable }
+
+enum KindleTurnContract {
+    static func progressNumber(_ label: String?) -> Int? {
+        guard let label else { return nil }
+        let scalars = label.precomposedStringWithCompatibilityMapping.unicodeScalars.map { scalar -> String in
+            let value = Int(scalar.value)
+            let zero: Int?
+            switch value {
+            case 0xFF10...0xFF19: zero = 0xFF10
+            case 0x0966...0x096F: zero = 0x0966
+            case 0x0660...0x0669: zero = 0x0660
+            case 0x06F0...0x06F9: zero = 0x06F0
+            default: zero = nil
+            }
+            return zero.map { String(value - $0) } ?? String(scalar)
+        }.joined()
+        guard let range = scalars.range(of: #"\d+"#, options: .regularExpression) else { return nil }
+        return Int(scalars[range])
+    }
+
+    static func progress(beforeLocation: Int?, afterLocation: Int?, beforeRenderer: Int?, afterRenderer: Int?) -> KindleForwardProgress {
+        func compare(_ before: Int?, _ after: Int?) -> KindleForwardProgress? {
+            guard let before, let after else { return nil }
+            if after > before { return .forward }
+            if after < before { return .backward }
+            return .unchanged
+        }
+        if let location = compare(beforeLocation, afterLocation), location != .unchanged { return location }
+        if let renderer = compare(beforeRenderer, afterRenderer), renderer != .unchanged { return renderer }
+        return compare(beforeLocation, afterLocation) ?? compare(beforeRenderer, afterRenderer) ?? .unverifiable
+    }
+
+    static func confirms(progress: KindleForwardProgress, beforeFingerprint: String?, afterFingerprint: String?, semanticActionDispatched: Bool, stableVisualSamples: Int) -> Bool {
+        guard let beforeFingerprint, let afterFingerprint, beforeFingerprint != afterFingerprint, progress != .backward else { return false }
+        return progress == .forward || (semanticActionDispatched && stableVisualSamples >= 2)
+    }
+}
+
+/// External Kindle navigation is user intent, not a visual-layout heuristic.
+/// OCR preloading and React surface reconciliation can temporarily change the
+/// candidate reported by `__crKindleState`; that visual drift must never stop
+/// or restart audio unless the Kindle page itself emitted a semantic
+/// navigation sequence.
+enum KindleExternalNavigationContract {
+    static func shouldBeginResume(
+        semanticSequenceAdvanced: Bool,
+        hasActivePlayback: Bool,
+        isReaderStable: Bool,
+        isInternalTurnInFlight: Bool
+    ) -> Bool {
+        semanticSequenceAdvanced &&
+            hasActivePlayback &&
+            isReaderStable &&
+            !isInternalTurnInFlight
     }
 }
 

@@ -6,7 +6,11 @@ final class ProductAnalyticsTests: XCTestCase {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let data = try Data(contentsOf: root.appendingPathComponent("docs/analytics/mobile-events-v1.json"))
+        let contractURL = root.appendingPathComponent("docs/analytics/mobile-events-v1.json")
+        guard FileManager.default.fileExists(atPath: contractURL.path) else {
+            throw XCTSkip("工程内 analytics 合同仅在 host 测试环境可读")
+        }
+        let data = try Data(contentsOf: contractURL)
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let events = try XCTUnwrap(object["events"] as? [[String: Any]])
         let names = Set(events.compactMap { $0["name"] as? String })

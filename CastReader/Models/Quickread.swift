@@ -46,9 +46,9 @@ enum QuickreadDepth: String, CaseIterable, Codable, Identifiable {
     var id: String { rawValue }
     var displayName: String {
         switch self {
-        case .overview: return String(localized: "速览")
-        case .standard: return String(localized: "标准")
-        case .deep: return String(localized: "深入")
+        case .overview: return AppLocalized("速览")
+        case .standard: return AppLocalized("标准")
+        case .deep: return AppLocalized("深入")
         }
     }
 }
@@ -62,24 +62,24 @@ enum ExplainContentType: String, CaseIterable, Identifiable {
     /// 场景名（首页入口标题）。
     var displayName: String {
         switch self {
-        case .paper:    return String(localized: "论文 / 学术")
-        case .book:     return String(localized: "书籍 / 长篇")
-        case .report:   return String(localized: "报告 / 研报")
-        case .contract: return String(localized: "合同 / 条款")
-        case .study:    return String(localized: "教材 / 学习")
-        case .manual:   return String(localized: "说明书 / 文档")
+        case .paper:    return AppLocalized("论文 / 学术")
+        case .book:     return AppLocalized("书籍 / 长篇")
+        case .report:   return AppLocalized("报告 / 研报")
+        case .contract: return AppLocalized("合同 / 条款")
+        case .study:    return AppLocalized("教材 / 学习")
+        case .manual:   return AppLocalized("说明书 / 文档")
         }
     }
 
     /// 一句「这个场景划什么」。
     var subtitle: String {
         switch self {
-        case .paper:    return String(localized: "研究问题 · 方法 · 结论 · 贡献")
-        case .book:     return String(localized: "核心观点 · 金句 · 概念 · 转折")
-        case .report:   return String(localized: "核心结论 · 关键数据 · 风险")
-        case .contract: return String(localized: "权利义务 · 金额期限 · 风险条款")
-        case .study:    return String(localized: "知识点 · 定义 · 易考点")
-        case .manual:   return String(localized: "关键步骤 · 警告 · 参数")
+        case .paper:    return AppLocalized("研究问题 · 方法 · 结论 · 贡献")
+        case .book:     return AppLocalized("核心观点 · 金句 · 概念 · 转折")
+        case .report:   return AppLocalized("核心结论 · 关键数据 · 风险")
+        case .contract: return AppLocalized("权利义务 · 金额期限 · 风险条款")
+        case .study:    return AppLocalized("知识点 · 定义 · 易考点")
+        case .manual:   return AppLocalized("关键步骤 · 警告 · 参数")
         }
     }
 

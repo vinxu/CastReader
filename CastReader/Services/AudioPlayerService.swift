@@ -42,6 +42,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     // Segments queue
     private var segmentsQueue: [AudioSegment] = []
     private var currentSegmentIndex = 0
+    private var gatedSegmentIndex: Int?
 
     // 临时文件管理
     private var currentTempFileURL: URL?
@@ -54,6 +55,10 @@ class AudioPlayerService: NSObject, ObservableObject {
     // Callbacks
     var onSegmentComplete: (() -> Void)?
     var onPlaybackComplete: (() -> Void)?
+    /// Optional queue-boundary gate. Kindle uses it to ensure the semantic page
+    /// turn and visible-surface confirmation finish before prepared next-page
+    /// audio is allowed to start. Other readers leave it nil.
+    var canStartQueuedSegment: ((AudioSegment) -> Bool)?
 
     // MARK: - Computed Properties
     var hasActivePlayback: Bool {
@@ -63,6 +68,20 @@ class AudioPlayerService: NSObject, ObservableObject {
     var progress: Double {
         guard duration > 0 else { return 0 }
         return currentTime / duration
+    }
+
+    /// Last item currently owned by the player queue. Kindle uses this as the
+    /// boundary marker when it appends the already-generated first utterance of
+    /// the next page. The marker lets the page turn begin shortly before the
+    /// audio queue crosses that boundary without interrupting the current item.
+    var queuedTailSegmentID: String? {
+        segmentsQueue.last?.id
+    }
+
+    /// True when a prepared segment can be started even if no AVPlayer exists
+    /// yet (for example, a paused voice switch that generated its first item).
+    var hasQueuedSegments: Bool {
+        !segmentsQueue.isEmpty
     }
 
     // MARK: - Initialization
@@ -334,6 +353,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentCoverImage = nil
         segmentsQueue.removeAll()
         currentSegmentIndex = 0
+        canStartQueuedSegment = nil
         clearNowPlayingInfo()
     }
 
@@ -342,6 +362,8 @@ class AudioPlayerService: NSObject, ObservableObject {
         stop()
         segmentsQueue.removeAll()
         currentSegmentIndex = 0
+        gatedSegmentIndex = nil
+        canStartQueuedSegment = nil
         moreSegmentsExpected = false
         waitingForNextSegment = false
     }
@@ -359,7 +381,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         return String(cleaned.prefix(maxCount)).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
     }
 
-    func loadSegment(_ segment: AudioSegment) {
+    func loadSegment(_ segment: AudioSegment, autoPlay: Bool = true) {
         print("🔊 loadSegment: Adding segment \(segment.segmentIndex) for paragraph \(segment.paragraphIndex), queueCount will be \(segmentsQueue.count + 1), waiting=\(waitingForNextSegment)")
         segmentsQueue.append(segment)
 
@@ -370,17 +392,18 @@ class AudioPlayerService: NSObject, ObservableObject {
         }
 
         // If we were waiting for the next segment, play it now
-        if waitingForNextSegment {
+        if waitingForNextSegment, autoPlay {
             print("🔊 loadSegment: Was waiting, now playing segment \(segmentsQueue.count - 1)")
             waitingForNextSegment = false
             playSegment(at: segmentsQueue.count - 1)
         }
         // If this is the first segment and we're not playing, start playback
-        else if segmentsQueue.count == 1 && !isPlaying {
+        else if autoPlay && segmentsQueue.count == 1 && !isPlaying {
             print("🔊 loadSegment: First segment, starting playback")
             playSegment(at: 0)
         } else {
-            print("🔊 loadSegment: Segment queued (isPlaying=\(isPlaying), queueCount=\(segmentsQueue.count))")
+            if !autoPlay { waitingForNextSegment = false }
+            print("🔊 loadSegment: Segment queued (autoPlay=\(autoPlay), isPlaying=\(isPlaying), queueCount=\(segmentsQueue.count))")
         }
     }
 
@@ -404,10 +427,74 @@ class AudioPlayerService: NSObject, ObservableObject {
         }
     }
 
+    /// Append fully prepared audio behind the current queue without stopping or
+    /// replacing the playing AVPlayerItem. This is intentionally separate from
+    /// `loadSegments`, whose replace-and-start semantics are correct for jumps
+    /// but would create an audible page-boundary gap for Kindle.
+    @discardableResult
+    func appendPreparedSegmentsForContinuousPlayback(_ segments: [AudioSegment]) -> String? {
+        guard !segments.isEmpty else { return segmentsQueue.last?.id }
+        let predecessor = segmentsQueue.last?.id
+        let firstAppendedIndex = segmentsQueue.count
+        segmentsQueue.append(contentsOf: segments)
+        print("🔊 appendPreparedSegments: Added \(segments.count) segments after \(predecessor ?? "none")")
+
+        guard !playbackSuspendedByInterruption else {
+            waitingForNextSegment = false
+            return predecessor
+        }
+        if waitingForNextSegment {
+            waitingForNextSegment = false
+            playSegment(at: firstAppendedIndex)
+        } else if currentSegment == nil, !isPlaying {
+            playSegment(at: firstAppendedIndex)
+        }
+        return predecessor
+    }
+
+    /// Remove only not-yet-played handoff items. The current and historical
+    /// queue prefix is preserved so cancellation cannot cut audible playback.
+    /// Returns false when one of the requested ids is already the current item.
+    @discardableResult
+    func removePendingSegments(withIDs ids: Set<String>) -> Bool {
+        guard !ids.isEmpty, !segmentsQueue.isEmpty else { return true }
+        let currentID = currentSegment?.id
+        let currentWasRequested = currentID.map(ids.contains) ?? false
+        let gatedID = gatedSegmentIndex.flatMap { index in
+            segmentsQueue.indices.contains(index) ? segmentsQueue[index].id : nil
+        }
+        let suffixStart = min(segmentsQueue.count, currentSegmentIndex + 1)
+        if suffixStart < segmentsQueue.count {
+            let retainedSuffix = segmentsQueue[suffixStart...].filter { !ids.contains($0.id) }
+            segmentsQueue.replaceSubrange(suffixStart..<segmentsQueue.count, with: retainedSuffix)
+        }
+        gatedSegmentIndex = gatedID.flatMap { id in
+            ids.contains(id) ? nil : segmentsQueue.firstIndex(where: { $0.id == id })
+        }
+        if let gatedID, ids.contains(gatedID) {
+            isBuffering = false
+        }
+        print("🔊 removePendingSegments: Removed pending handoff segments, currentRequested=\(currentWasRequested)")
+        return !currentWasRequested
+    }
+
+    /// Retry a queue item previously held by `canStartQueuedSegment`. If the
+    /// gate is still closed this remains a no-op and keeps buffering state.
+    func resumeGatedSegmentIfPossible() {
+        guard let index = gatedSegmentIndex else { return }
+        playSegment(at: index)
+    }
+
     func play() {
         guard let player else {
-            isPlaying = false
-            updateNowPlayingInfo()
+            guard !segmentsQueue.isEmpty else {
+                isPlaying = false
+                updateNowPlayingInfo()
+                return
+            }
+            playbackSuspendedByInterruption = false
+            let index = segmentsQueue.indices.contains(currentSegmentIndex) ? currentSegmentIndex : 0
+            playSegment(at: index)
             return
         }
         playbackSuspendedByInterruption = false
@@ -448,6 +535,8 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentTime = 0
         duration = 0
         currentSegment = nil
+        gatedSegmentIndex = nil
+        isBuffering = false
         // Clear Combine subscriptions to prevent stale observers
         cancellables.removeAll()
         // 清理临时文件
@@ -519,13 +608,24 @@ class AudioPlayerService: NSObject, ObservableObject {
             return
         }
 
+        let segment = segmentsQueue[index]
+        if let canStartQueuedSegment, !canStartQueuedSegment(segment) {
+            gatedSegmentIndex = index
+            isPlaying = false
+            isBuffering = true
+            updateNowPlayingInfo()
+            print("🔊 playSegment[\(index)]: Held by queue-boundary gate")
+            return
+        }
+        gatedSegmentIndex = nil
+        isBuffering = false
+
         // 删除上一个临时文件（释放磁盘空间）
         if let oldURL = currentTempFileURL {
             try? FileManager.default.removeItem(at: oldURL)
         }
 
         currentSegmentIndex = index
-        let segment = segmentsQueue[index]
         currentSegment = segment
 
         print("🔊 playSegment[\(index)]: audioData size: \(segment.audioData.count), duration: \(segment.duration)")

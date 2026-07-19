@@ -58,6 +58,48 @@ class CastReaderUITests: XCTestCase {
         return app
     }
 
+    /// 八个正式语言包都必须能独立启动，并显示各自的首页标签。
+    func testLaunchesInAllEightSupportedLanguages() {
+        let configurations: [(language: String, locale: String, home: String)] = [
+            ("en", "en_US", "Home"),
+            ("zh-Hans", "zh_CN", "首页"),
+            ("ja", "ja_JP", "ホーム"),
+            ("es", "es_ES", "Inicio"),
+            ("fr", "fr_FR", "Accueil"),
+            ("pt-BR", "pt_BR", "Início"),
+            ("it", "it_IT", "Home"),
+            ("hi", "hi_IN", "होम")
+        ]
+
+        for configuration in configurations {
+            let app = XCUIApplication()
+            app.launchArguments = [
+                "-AppleLanguages", "(\(configuration.language))",
+                "-AppleLocale", configuration.locale
+            ]
+            app.launch()
+            XCTAssertTrue(
+                app.tabBars.buttons[configuration.home].waitForExistence(timeout: 5),
+                "Missing localized Home tab for \(configuration.language)"
+            )
+            app.terminate()
+        }
+    }
+
+    func testCanSwitchInterfaceLanguageInsideTheApp() {
+        let app = launchZh()
+        app.buttons["settingsGearButton"].tap()
+        XCTAssertTrue(app.buttons["settingsLanguageLink"].waitForExistence(timeout: 5))
+        app.buttons["settingsLanguageLink"].tap()
+        XCTAssertTrue(app.buttons["appLanguage.en"].waitForExistence(timeout: 5))
+        app.buttons["appLanguage.en"].tap()
+        XCTAssertTrue(app.navigationBars["Language"].waitForExistence(timeout: 5))
+
+        // Leave the shared simulator state deterministic for the remaining tests.
+        app.buttons["appLanguage.zh-Hans"].tap()
+        XCTAssertTrue(app.navigationBars["语言"].waitForExistence(timeout: 5))
+    }
+
     /// 首页渲染横向场景 chips，并把 Kindle 作为独立内容源展示。
     func testHomeShowsScenarioChipsAndKindle() {
         let app = launchZh()

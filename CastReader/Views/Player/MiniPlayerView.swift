@@ -27,6 +27,7 @@ private struct MiniPlayerBar: View {
     @ObservedObject private var readVM: ReadAloudViewModel
     @ObservedObject private var explainVM: ExplainViewModel
     @ObservedObject private var history = HistoryStore.shared
+    @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     @State private var cover: UIImage?
 
     init(session: PlayerCoordinator.Session, coordinator: PlayerCoordinator) {
@@ -44,9 +45,10 @@ private struct MiniPlayerBar: View {
     }
 
     private var statusText: String {
-        if isFinished { return String(localized: "已播完 · 点播放重读") }
-        if audio.isPlaying { return isExplain ? String(localized: "解读中") : String(localized: "朗读中") }
-        return String(localized: "已暂停")
+        if let progress = voiceSwitch.progress { return progress.localizedMessage }
+        if isFinished { return AppLocalized("已播完 · 点播放重读") }
+        if audio.isPlaying { return isExplain ? AppLocalized("解读中") : AppLocalized("朗读中") }
+        return AppLocalized("已暂停")
     }
 
     private var playIcon: String {
@@ -81,12 +83,25 @@ private struct MiniPlayerBar: View {
             .contentShape(Rectangle())
             .onTapGesture { coordinator.expand() }
 
-            Button { onPlayTap() } label: {
-                Image(systemName: playIcon)
-                    .font(.system(size: 19))
-                    .foregroundColor(AppTheme.foreground)
-                    .frame(width: 34, height: 34)
+            if isExplain {
+                PlaybackVoiceButton(language: explainVM.playbackLanguage, size: 34)
+            } else if readVM.hasStartedPlayback {
+                PlaybackVoiceButton(language: readVM.playbackLanguage, size: 34)
             }
+
+            Button { onPlayTap() } label: {
+                Group {
+                    if voiceSwitch.progress != nil {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: playIcon)
+                            .font(.system(size: 19))
+                            .foregroundColor(AppTheme.foreground)
+                    }
+                }
+                .frame(width: 34, height: 34)
+            }
+            .disabled(voiceSwitch.progress != nil)
             Button { coordinator.close() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 13, weight: .semibold))

@@ -55,11 +55,11 @@ enum QuickReadError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidURL: return String(localized: "无效的解读服务地址")
-        case .httpError(let c): return String(localized: "解读服务错误 (HTTP \(c))")
-        case .serverError(let m): return String(localized: "解读失败：\(m)")
-        case .decodeError(let m): return String(localized: "解读数据解析失败：\(m)")
-        case .noBlock0: return String(localized: "解读未返回首块内容")
+        case .invalidURL: return AppLocalized("无效的解读服务地址")
+        case .httpError(let c): return AppLocalized("解读服务错误 (HTTP \(c))")
+        case .serverError(let m): return AppLocalized("解读失败：\(m)")
+        case .decodeError(let m): return AppLocalized("解读数据解析失败：\(m)")
+        case .noBlock0: return AppLocalized("解读未返回首块内容")
         }
     }
 }

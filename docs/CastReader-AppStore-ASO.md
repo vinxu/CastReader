@@ -1,5 +1,7 @@
 # CastReader · App Store 上架文案 + ASO 方案
 
+> 八语上架终稿请使用 [CastReader-AppStore-Metadata-8-Languages.md](CastReader-AppStore-Metadata-8-Languages.md)。本文仅保留为早期中英文 ASO 基线。
+
 > 工具型 TTS 应用，两大功能：**朗读（Read Aloud）**＋**AI 解读（Explain）**。
 > 多源输入：拍照 OCR / 网页 URL / PDF / EPUB / 文本。
 > 字符上限：App 名称 30、副标题 30、关键词 100（逗号分隔、不计空格策略）、推广文本 170。

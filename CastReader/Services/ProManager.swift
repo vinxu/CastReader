@@ -132,6 +132,8 @@ final class ProManager: ObservableObject {
 
     func refreshEntitlements() async {
         var active = false
+        var latestSignedTransaction: String?
+        var latestExpiration = Date.distantPast
         for await result in Transaction.currentEntitlements {
             guard case .verified(let t) = result else { continue }
             guard Self.productIDs.contains(t.productID) else { continue }
@@ -140,9 +142,20 @@ final class ProManager: ObservableObject {
             if notRevoked && notExpired {
                 active = true
                 debugTransaction("entitlement", t)
+                let expiration = t.expirationDate ?? Date.distantFuture
+                if expiration > latestExpiration {
+                    latestExpiration = expiration
+                    latestSignedTransaction = result.jwsRepresentation
+                }
             }
         }
         setStoreKitLocalPro(active, reason: "refresh-entitlements")
+        if active,
+           AuthService.shared.normalizedEmail != nil,
+           let latestSignedTransaction {
+            let synced = await ProBackendService.shared.verifyAppleTransaction(latestSignedTransaction)
+            debugLog("storekit-server-sync result=\(synced ? "Y" : "N")")
+        }
     }
 
     // MARK: - 购买 / 恢复
@@ -305,6 +318,7 @@ final class ProManager: ObservableObject {
         if pending {
             debugLog("sync-needed reason=\(reason) hasEmail=\(hasEmail ? "Y" : "N") localStoreKit=Y server=N")
         }
+        SafariExtensionBridge.syncFromApp()
     }
 
     private func debugTransaction(_ label: String, _ transaction: Transaction) {

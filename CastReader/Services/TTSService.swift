@@ -77,7 +77,6 @@ actor TTSService {
         speed: Double = Constants.TTS.defaultSpeed,
         language: String = Constants.TTS.defaultLanguage
     ) async throws -> [AudioSegment] {
-        var remainingText = SpeechTextSanitizer.sanitizedForTTS(text)
         var segmentIndex = 0
         var segments: [AudioSegment] = []
         let resolvedVoice = VoiceCatalog.resolvedVoice(
@@ -85,35 +84,42 @@ actor TTSService {
             for: language
         )
 
-        while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
-            try Task.checkCancellation()
-            let response = try await APIService.shared.generateTTS(
-                text: remainingText,
-                voice: resolvedVoice,
-                speed: speed,
-                language: language
-            )
-            try Task.checkCancellation()
-            guard let audioData = Data(base64Encoded: response.audio) else {
-                throw TTSError.generationFailed("Failed to decode audio data")
-            }
-            let rawSegment = AudioSegment(
-                paragraphIndex: paragraphIndex,
-                segmentIndex: segmentIndex,
-                audioData: audioData,
-                timestamps: response.safeTimestamps,
-                duration: response.safeDuration,
-                text: response.processedText ?? remainingText,
-                unprocessedText: response.unprocessedText ?? ""
-            )
-            segments.append(ensureDuration(rawSegment))
-
-            if let unprocessed = response.unprocessedText,
-               !unprocessed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                remainingText = SpeechTextSanitizer.sanitizedForTTS(unprocessed)
+        let requestUnits = TTSSentenceSegmenter.requestUnits(
+            SpeechTextSanitizer.sanitizedForTTS(text),
+            language: language
+        )
+        for requestUnit in requestUnits {
+            var remainingText = requestUnit
+            while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
+                try Task.checkCancellation()
+                let response = try await APIService.shared.generateTTS(
+                    text: remainingText,
+                    voice: resolvedVoice,
+                    speed: speed,
+                    language: language
+                )
+                try Task.checkCancellation()
+                guard let audioData = Data(base64Encoded: response.audio) else {
+                    throw TTSError.generationFailed("Failed to decode audio data")
+                }
+                let rawSegment = AudioSegment(
+                    paragraphIndex: paragraphIndex,
+                    segmentIndex: segmentIndex,
+                    audioData: audioData,
+                    timestamps: response.safeTimestamps,
+                    duration: response.safeDuration,
+                    text: response.processedText ?? remainingText,
+                    unprocessedText: response.unprocessedText ?? ""
+                )
+                segments.append(ensureDuration(rawSegment))
                 segmentIndex += 1
-            } else {
-                break
+
+                if let unprocessed = response.unprocessedText,
+                   !unprocessed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    remainingText = SpeechTextSanitizer.sanitizedForTTS(unprocessed)
+                } else {
+                    break
+                }
             }
         }
 
@@ -135,11 +141,14 @@ actor TTSService {
             throw TTSError.cancelled
         }
 
-        var remainingText = SpeechTextSanitizer.sanitizedForTTS(text)
         var segmentIndex = 0
+        let requestUnits = TTSSentenceSegmenter.requestUnits(text, language: language)
 
-        // 循环处理后端逐段返回的 unprocessedText（与扩展一致：一次请求只处理一部分）。
-        while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
+        // Segment-timed languages first split into natural sentences. The inner
+        // loop still consumes a backend partial response without dropping text.
+        for requestUnit in requestUnits {
+          var remainingText = requestUnit
+          while SpeechTextSanitizer.containsSpeakableContent(remainingText) {
             guard currentRequestId == requestId else {
                 throw TTSError.cancelled
             }
@@ -192,10 +201,10 @@ actor TTSService {
                 let segment = ensureDuration(rawSegment)
 
                 await onSegmentReady(segment)
+                segmentIndex += 1
 
                 if let unprocessed = response.unprocessedText, !unprocessed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     remainingText = SpeechTextSanitizer.sanitizedForTTS(unprocessed)
-                    segmentIndex += 1
                     print("[TTSService] 📊 More text to process, continuing with segment #\(segmentIndex)")
                 } else {
                     print("[TTSService] 📊 All text processed for paragraph \(paragraphIndex)")
@@ -210,6 +219,7 @@ actor TTSService {
                 print("[TTSService] Cloud TTS failed: \(error)")
                 throw TTSError.generationFailed(error.localizedDescription)
             }
+          }
         }
     }
 

@@ -50,6 +50,7 @@ final class VoiceCatalogTests: XCTestCase {
         XCTAssertFalse(VoiceCatalog.hasRemoteCatalog())
         XCTAssertEqual(VoiceCatalog.voices(for: "en").count, 28)
         XCTAssertEqual(VoiceCatalog.voices(for: "zh").count, 10)
+        XCTAssertEqual(VoiceCatalog.availableLanguages.map(\.code), ["en", "zh", "ja", "es", "fr", "pt", "it", "hi"])
     }
 
     func testSelectableIsTheOnlyPickerVisibilityAuthority() throws {
@@ -122,6 +123,24 @@ final class VoiceCatalogTests: XCTestCase {
             .allSatisfy { $0.locale == "en-US" })
     }
 
+    func testEightLanguageAuthorityAndOfflineDefaults() {
+        VoiceCatalog.resetForTesting()
+        XCTAssertEqual(SupportedTTSLanguage.allCases.map(\.rawValue), [
+            "en", "zh", "ja", "es", "fr", "pt", "it", "hi",
+        ])
+        XCTAssertEqual(SupportedTTSLanguage(identifier: "pt-BR"), .brazilianPortuguese)
+        XCTAssertEqual(SupportedTTSLanguage(identifier: "zh_Hans"), .chinese)
+        XCTAssertNil(SupportedTTSLanguage(identifier: "ko-KR"))
+
+        for language in SupportedTTSLanguage.allCases {
+            XCTAssertEqual(
+                VoiceCatalog.resolvedVoice(preferred: "", for: language.localeIdentifier),
+                language.defaultVoiceID
+            )
+            XCTAssertFalse(VoiceCatalog.voices(for: language.rawValue).isEmpty)
+        }
+    }
+
     func testLegacyPreferenceSurvivesRemoteCatalogAndRemainsCurrentSessionVoice() throws {
         defer { VoiceCatalog.resetForTesting() }
         let defaults = isolatedDefaults()
@@ -192,8 +211,8 @@ final class VoiceCatalogTests: XCTestCase {
         let settings = AppSettings(defaults: defaults)
 
         VoiceCatalog.resetForTesting()
-        XCTAssertEqual(settings.voice(for: "ja-JP"), Constants.TTS.defaultVoice)
-        XCTAssertTrue(VoiceCatalog.voices(for: "ja-JP").isEmpty)
+        XCTAssertEqual(settings.voice(for: "ja-JP"), "jf_alpha")
+        XCTAssertEqual(VoiceCatalog.voices(for: "ja-JP").map(\.code), ["jf_alpha"])
 
         let catalog = try TTSVoiceCatalogDocument.decodeServerResponse(
             from: fixture("tts-voice-catalog-direct")
@@ -305,6 +324,10 @@ final class VoiceCatalogTests: XCTestCase {
         )
         XCTAssertEqual(
             VoiceBrowserLanguage.defaultLanguage(preferredLanguages: ["fr-FR"]),
+            "fr"
+        )
+        XCTAssertEqual(
+            VoiceBrowserLanguage.defaultLanguage(preferredLanguages: ["de-DE"]),
             "en"
         )
         XCTAssertEqual(
@@ -472,6 +495,23 @@ final class VoiceCatalogTests: XCTestCase {
         XCTAssertEqual(VoiceCatalog.voices(for: "en").count, 28)
         XCTAssertEqual(VoiceCatalog.voices(for: "zh").count, 10)
         VoiceCatalogTestURLProtocol.handler = nil
+    }
+
+    @MainActor
+    func testNewestVoiceSwitchTransactionCannotBeClearedByStaleCompletion() async {
+        let center = VoiceSwitchStatusCenter.shared
+        let first = center.begin(language: "ja", from: "jf_alpha", to: "jf_beta")
+        let second = center.begin(language: "ja", from: "jf_beta", to: "jf_gamma")
+
+        center.finish(first)
+        XCTAssertEqual(center.progress?.id, second)
+        XCTAssertEqual(center.progress?.fromVoiceID, "jf_beta")
+        XCTAssertEqual(center.progress?.toVoiceID, "jf_gamma")
+        XCTAssertTrue(center.progress?.localizedMessage.contains("→") == true)
+
+        center.finish(second)
+        try? await Task.sleep(nanoseconds: 750_000_000)
+        XCTAssertNil(center.progress)
     }
 }
 

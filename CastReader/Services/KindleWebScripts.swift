@@ -245,6 +245,267 @@ enum KindleWebScripts {
     })();
     """
 
+    /// Mirrors the extension's renderer-metadata authority in Kindle's page world.
+    /// Only the small normalized profile is retained; renderer text/TAR data never crosses the bridge.
+    static let metadataBootstrap = """
+    (function() {
+      if (window.__crKindleMetadataInstalled === 3) return;
+      window.__crKindleMetadataInstalled = 3;
+      var PROFILE_ATTR = 'data-castreader-kindle-profile';
+      var LANGUAGE_KEYS = /^(?:lang|language|languageCode|bookLanguage|bookLocale|contentLanguage|contentLocale|locale)$/i;
+      var WRITING_KEYS = /^(?:writingMode|writingOrientation|textOrientation)$/i;
+      var READING_KEYS = /^(?:pageProgressionDirection|readingDirection|pageTurnDirection|direction)$/i;
+      var PROGRESSION_KEYS = /^(?:pageProgressionDirection|pageTurnDirection)$/i;
+
+      function normalizedKey(key) { return String(key || '').replace(/[-_]/g, ''); }
+      function findMetadataString(value, pattern, depth, seen) {
+        if (!value || typeof value !== 'object' || depth > 5) return null;
+        seen = seen || [];
+        if (seen.indexOf(value) >= 0) return null;
+        seen.push(value);
+        var keys;
+        try { keys = Object.keys(value); } catch (e) { return null; }
+        for (var i = 0; i < keys.length; i++) {
+          var child;
+          try { child = value[keys[i]]; } catch (e) { continue; }
+          if (pattern.test(normalizedKey(keys[i])) && typeof child === 'string' && child.trim()) return child;
+        }
+        for (var j = 0; j < keys.length; j++) {
+          var nested;
+          try { nested = value[keys[j]]; } catch (e) { continue; }
+          var found = findMetadataString(nested, pattern, depth + 1, seen);
+          if (found) return found;
+        }
+        return null;
+      }
+      function normalizeLanguage(value) {
+        var primary = String(value || '').trim().toLowerCase().replace(/_/g, '-').split('-')[0];
+        var aliases = { eng:'en', zho:'zh', chi:'zh', jpn:'ja', spa:'es', fra:'fr', fre:'fr', por:'pt', ita:'it', hin:'hi' };
+        primary = aliases[primary] || primary;
+        return /^(?:en|zh|ja|es|fr|pt|it|hi)$/.test(primary) ? primary : null;
+      }
+      function direction(value) {
+        if (/rtl|right[-_ ]?to[-_ ]?left|horizontal-rl|vertical-rl/i.test(value || '')) return 'rtl';
+        if (/ltr|left[-_ ]?to[-_ ]?right|horizontal-lr|vertical-lr/i.test(value || '')) return 'ltr';
+        return null;
+      }
+      function publish(metadata) {
+        var language = normalizeLanguage(findMetadataString(metadata, LANGUAGE_KEYS, 0, []));
+        if (!language) return null;
+        var writingRaw = findMetadataString(metadata, WRITING_KEYS, 0, []);
+        var readingRaw = findMetadataString(metadata, READING_KEYS, 0, []);
+        var progressionRaw = findMetadataString(metadata, PROGRESSION_KEYS, 0, []);
+        var profile = {
+          language: language,
+          writingMode: /vertical|tb-rl|tb-lr/i.test(writingRaw || '') ? 'vertical' : 'horizontal',
+          readingDirection: direction(readingRaw) || (language === 'ja' ? 'rtl' : 'ltr'),
+          pageProgressionDirection: direction(progressionRaw) || (language === 'ja' ? 'rtl' : 'ltr'),
+          source: 'renderer-metadata'
+        };
+        window.__crKindleMetadataProfile = profile;
+        try {
+          if (document.documentElement) document.documentElement.setAttribute(PROFILE_ATTR, JSON.stringify(profile));
+        } catch (e) {}
+        return profile;
+      }
+      function parseTar(buffer) {
+        var view = new Uint8Array(buffer), offset = 0, files = [];
+        while (offset + 512 <= view.length) {
+          var nameEnd = offset;
+          while (nameEnd < offset + 100 && view[nameEnd] !== 0) nameEnd++;
+          var filename = new TextDecoder().decode(view.slice(offset, nameEnd));
+          if (!filename) break;
+          var sizeStr = '';
+          for (var i = offset + 124; i < offset + 136; i++) {
+            var ch = view[i];
+            if (ch === 0 || ch === 32) break;
+            sizeStr += String.fromCharCode(ch);
+          }
+          var size = parseInt(sizeStr, 8) || 0;
+          var start = offset + 512, end = start + size;
+          if (size > 0 && end <= view.length && /\\.json$/i.test(filename)) {
+            try {
+              files.push({ name:filename, value:JSON.parse(new TextDecoder().decode(view.slice(start, end))) });
+            } catch (e) {}
+          }
+          offset = start + Math.ceil(size / 512) * 512;
+        }
+        return files;
+      }
+      function median(values) {
+        values = values.filter(Number.isFinite).sort(function(a,b){ return a-b; });
+        if (!values.length) return 0;
+        var middle = Math.floor(values.length / 2);
+        return values.length % 2 ? values[middle] : (values[middle - 1] + values[middle]) / 2;
+      }
+      function overlapRatio(aStart, aSize, bStart, bSize) {
+        var smaller = Math.min(aSize, bSize);
+        if (!(smaller > 0)) return 0;
+        return Math.max(0, Math.min(aStart + aSize, bStart + bSize) - Math.max(aStart, bStart)) / smaller;
+      }
+      function inferTokenWritingMode(blocks) {
+        var horizontal = 0, vertical = 0;
+        (blocks || []).forEach(function(block) {
+          var width = Number(block && block.width), height = Number(block && block.height);
+          if (!(width > 0) || !(height > 0)) return;
+          var ratio = width / height;
+          if (ratio >= 2.5) horizontal++;
+          else if (ratio <= 0.4) vertical++;
+        });
+        if (!horizontal && !vertical) return null;
+        if (horizontal >= Math.max(1, vertical * 2)) return 'horizontal';
+        if (vertical >= Math.max(1, horizontal * 2)) return 'vertical';
+        return null;
+      }
+      function groupVerticalTokenWords(entries) {
+        if (!entries.length) return [];
+        var typical = Math.max(1, median(entries.map(function(entry){ return entry.width; })));
+        var groups = [];
+        entries.forEach(function(entry) {
+          var center = entry.x + entry.width / 2, best = null, bestDelta = Infinity;
+          groups.forEach(function(group) {
+            var centers = group.map(function(item){ return item.x + item.width / 2; });
+            var sizes = group.map(function(item){ return item.width; });
+            var groupCenter = median(centers), size = Math.max(1, median(sizes));
+            var delta = Math.abs(center - groupCenter);
+            var close = delta <= typical * 0.65;
+            var overlaps = overlapRatio(entry.x, entry.width, groupCenter - size / 2, size) >= 0.5 && delta <= typical;
+            if ((close || overlaps) && delta < bestDelta) { best = group; bestDelta = delta; }
+          });
+          if (best) best.push(entry); else groups.push([entry]);
+        });
+        groups.forEach(function(group){ group.sort(function(a,b){ return a.y-b.y; }); });
+        return groups;
+      }
+      function buildVerticalTokenHints(page) {
+        var blocks = page && page.children || [];
+        if (!blocks.length) return [];
+        var maxRight = Math.max.apply(null, blocks.map(function(block){ return Number(block.x) + Number(block.width); }));
+        var minX = Math.min.apply(null, blocks.map(function(block){ return Number(block.x); }));
+        var maxBottom = Math.max.apply(null, blocks.map(function(block){ return Number(block.y) + Number(block.height); }));
+        var minY = Math.min.apply(null, blocks.map(function(block){ return Number(block.y); }));
+        var pageWidth = maxRight + minX, pageHeight = maxBottom + minY;
+        if (!(pageWidth > 0) || !(pageHeight > 0)) return [];
+        var entries = [];
+        blocks.forEach(function(block) {
+          (block.words || []).forEach(function(word) {
+            var x = Number(word.x), y = Number(word.y), width = Number(word.width), height = Number(word.height);
+            if (!Number.isFinite(x) || !Number.isFinite(y) || !(width > 0) || !(height > 0)) return;
+            entries.push({
+              x:x, y:y, width:width, height:height,
+              startPositionId:Number(word.startPositionId), endPositionId:Number(word.endPositionId)
+            });
+          });
+        });
+        return groupVerticalTokenWords(entries).map(function(column) {
+          var left = Math.max(0, Math.min.apply(null, column.map(function(item){ return item.x; })));
+          var right = Math.min(pageWidth, Math.max.apply(null, column.map(function(item){ return item.x + item.width; })));
+          var top = Math.max(0, Math.min.apply(null, column.map(function(item){ return item.y; })));
+          var bottom = Math.min(pageHeight, Math.max.apply(null, column.map(function(item){ return item.y + item.height; })));
+          var spans = column.map(function(item){
+            return { start:item.startPositionId, end:Math.max(item.startPositionId, item.endPositionId) };
+          }).filter(function(span){ return Number.isFinite(span.start) && Number.isFinite(span.end); })
+            .sort(function(a,b){ return a.start-b.start; });
+          var merged = [];
+          spans.forEach(function(span) {
+            var previous = merged[merged.length - 1];
+            if (previous && span.start <= previous.end + 1) previous.end = Math.max(previous.end, span.end);
+            else merged.push({ start:span.start, end:span.end });
+          });
+          return {
+            leftRatio:left/pageWidth, rightRatio:right/pageWidth,
+            topRatio:top/pageHeight, bottomRatio:bottom/pageHeight,
+            expectedCharacters:merged.reduce(function(sum, span){ return sum + Math.max(1, span.end-span.start+1); }, 0),
+            startPositionId:merged.length ? merged[0].start : null,
+            endPositionId:merged.length ? merged[merged.length - 1].end : null
+          };
+        }).filter(function(hint){ return hint.rightRatio-hint.leftRatio > 0.001; })
+          .sort(function(a,b){
+            var ap = Number.isFinite(a.startPositionId) ? a.startPositionId : Number.MAX_SAFE_INTEGER;
+            var bp = Number.isFinite(b.startPositionId) ? b.startPositionId : Number.MAX_SAFE_INTEGER;
+            return ap-bp || b.leftRatio-a.leftRatio;
+          });
+      }
+      function startingPosition(url, options) {
+        try {
+          var parsed = new URL(url, location.href);
+          var value = parsed.searchParams.get('startingPosition');
+          if (value && Number.isFinite(Number(value))) return Number(value);
+        } catch (e) {}
+        try {
+          var body = options && options.body;
+          if (typeof body === 'string') {
+            var match = body.match(/(?:startingPosition|starting_position)[^0-9-]*(-?[0-9]+)/i);
+            if (match) return Number(match[1]);
+          }
+        } catch (e) {}
+        return null;
+      }
+      function publishRendererFiles(files, url, options) {
+        var profile = publish({ files:files.map(function(file){ return file.value; }) });
+        var tokenFile = files.find(function(file){ return /(?:^|\\/)tokens[^/]*\\.json$/i.test(file.name); });
+        var pages = tokenFile && Array.isArray(tokenFile.value) ? tokenFile.value : [];
+        if (!profile || !pages.length) return profile;
+        var start = startingPosition(url, options);
+        var page = pages.find(function(candidate) {
+          var children = candidate && candidate.children || [];
+          if (!children.length || !Number.isFinite(start)) return false;
+          var min = Math.min.apply(null, children.map(function(block){ return Number(block.startPositionId); }));
+          var max = Math.max.apply(null, children.map(function(block){ return Number(block.endPositionId); }));
+          return start >= min && start <= max;
+        }) || pages[0];
+        var geometryMode = inferTokenWritingMode(page && page.children || []);
+        if (geometryMode) {
+          profile.writingMode = geometryMode;
+          profile.writingModeSource = 'token-geometry';
+        }
+        profile.verticalColumnHints = geometryMode === 'vertical' ? buildVerticalTokenHints(page) : [];
+        profile.tokenPageIndex = Number(page && page.pageIndex);
+        window.__crKindleMetadataProfile = profile;
+        try {
+          if (document.documentElement) document.documentElement.setAttribute(PROFILE_ATTR, JSON.stringify(profile));
+        } catch (e) {}
+        return profile;
+      }
+      window.__crKindleExtractMetadataProfile = publish;
+      window.__crKindleExtractRendererFiles = publishRendererFiles;
+      window.__crKindleReadMetadataProfile = function() {
+        if (window.__crKindleMetadataProfile) return window.__crKindleMetadataProfile;
+        try {
+          var raw = document.documentElement && document.documentElement.getAttribute(PROFILE_ATTR);
+          return raw ? JSON.parse(raw) : null;
+        } catch (e) { return null; }
+      };
+      var originalFetch = window.fetch;
+      if (typeof originalFetch === 'function') {
+        window.fetch = async function() {
+          var args = Array.prototype.slice.call(arguments);
+          var response = await originalFetch.apply(this, args);
+          try {
+            var url = args[0] instanceof Request ? args[0].url : String(args[0] || '');
+            if (url.indexOf('/renderer/render') >= 0) {
+              response.clone().arrayBuffer().then(function(buffer) {
+                var files = parseTar(buffer);
+                publishRendererFiles(files, url, args[1]);
+              }).catch(function() {});
+            }
+          } catch (e) {}
+          return response;
+        };
+      }
+    })();
+    """
+
+    static let readMetadataProfile = """
+    (function() {
+      try {
+        var profile = typeof window.__crKindleReadMetadataProfile === 'function'
+          ? window.__crKindleReadMetadataProfile() : null;
+        return profile ? JSON.stringify(profile) : '';
+      } catch (e) { return ''; }
+    })();
+    """
+
     static let scrapeLibrary = """
     (function() {
       function text(el) { return (el && (el.innerText || el.textContent) || '').replace(/\\s+/g, ' ').trim(); }
@@ -381,6 +642,17 @@ enum KindleWebScripts {
               var m = raw.match(/(\\d{1,3}\\s*%|Page\\s+\\d+[^\\n,;]*|Location\\s+\\d+[^\\n,;]*|Last\\s+read[^\\n,;]*)/i);
               return m ? m[1].replace(/\\s+/g, ' ').trim() : '';
             }
+            function languageFrom(card) {
+              var nodes = [card].concat(Array.from((card && card.querySelectorAll) ? card.querySelectorAll('[lang],[data-language],[data-language-code],[data-book-language],[data-locale]') : []));
+              var aliases = { eng:'en', zho:'zh', chi:'zh', jpn:'ja', spa:'es', fra:'fr', fre:'fr', por:'pt', ita:'it', hin:'hi' };
+              for (var i = 0; i < nodes.length; i++) {
+                var raw = attr(nodes[i], 'data-book-language') || attr(nodes[i], 'data-language-code') || attr(nodes[i], 'data-language') || attr(nodes[i], 'data-locale') || attr(nodes[i], 'lang');
+                var primary = String(raw || '').trim().toLowerCase().replace(/_/g, '-').split('-')[0];
+                primary = aliases[primary] || primary;
+                if (/^(?:en|zh|ja|es|fr|pt|it|hi)$/.test(primary)) return primary;
+              }
+              return '';
+            }
             function accountInfo() {
               var email = '';
               var label = '';
@@ -448,6 +720,7 @@ enum KindleWebScripts {
         if (!id || seen[id]) return;
         seen[id] = true;
         var cover = attr(img, 'src') || attr(img, 'data-src') || attr(img, 'srcset').split(' ')[0] || bgURL(card);
+        var language = languageFrom(card);
         books.push({
           id: id,
           asin: asin,
@@ -455,7 +728,9 @@ enum KindleWebScripts {
           author: authorFrom(card, title),
           coverURL: cover ? abs(cover) : '',
           readerURL: href,
-          progressLabel: progressFrom(card)
+          progressLabel: progressFrom(card),
+          language: language,
+          languageSource: language ? 'library-hint' : ''
         });
       });
       var signin = Array.from(document.querySelectorAll('input[type=email], input[name=email], input[type=password], #ap_email, #ap_password')).some(visible);
@@ -3385,9 +3660,13 @@ enum KindleWebScripts {
 
     static let pageCaptureBootstrap = """
     (function() {
-      var crKindleInstallVersion = 33;
-      var crKindleOcrMaxWidth = 768;
-      var crKindleOcrJpegQuality = 0.85;
+      var crKindleInstallVersion = 37;
+      // OCR keeps the source glyphs lossless. Kindle pages are mostly flat-color
+      // text surfaces, so PNG is often no larger than JPEG and avoids destroying
+      // CJK punctuation / Devanagari combining marks. 2048px is only a safety cap;
+      // normal Kindle surfaces keep their native pixels.
+      var crKindleOcrMaxWidth = 2048;
+      var crKindleOcrJpegQuality = 1;
       if (window.__crKindleInstalledVersion === crKindleInstallVersion) {
         return;
       }
@@ -4053,6 +4332,97 @@ enum KindleWebScripts {
         }
       };
       window.__crKindleTurnNativePage = window.__crKindleTurnPage;
+      function crKindlePaginationProps(value) {
+        return !!value && typeof value === 'object' &&
+          typeof value.leftAction === 'function' && typeof value.rightAction === 'function';
+      }
+      function crKindleFiberName(fiber) {
+        try {
+          var t = fiber && (fiber.elementType || fiber.type);
+          return typeof t === 'string' ? t : String((t && (t.displayName || t.name)) || 'anonymous');
+        } catch (_) { return 'anonymous'; }
+      }
+      function crKindlePaginationFromFiber(start) {
+        var fiber = start, visited = [], depth = 0;
+        while (fiber && depth < 64) {
+          if (visited.indexOf(fiber) >= 0) return null;
+          visited.push(fiber);
+          var candidates = [
+            { value:fiber.memoizedProps, source:'memoizedProps' },
+            { value:fiber.pendingProps, source:'pendingProps' }
+          ];
+          for (var i = 0; i < candidates.length; i++) {
+            if (crKindlePaginationProps(candidates[i].value)) {
+              return { props:candidates[i].value, propsSource:candidates[i].source,
+                component:crKindleFiberName(fiber), fiberDepth:depth };
+            }
+          }
+          fiber = fiber.return;
+          depth += 1;
+        }
+        return null;
+      }
+      function crKindleReactFiberForNode(node) {
+        if (!node) return null;
+        try {
+          var keys = Object.keys(node);
+          for (var i = 0; i < keys.length; i++) {
+            if (keys[i].indexOf('__reactFiber$') === 0 || keys[i].indexOf('__reactInternalInstance$') === 0) {
+              return node[keys[i]];
+            }
+          }
+        } catch (_) {}
+        return null;
+      }
+      function crKindleFindPaginationActions() {
+        var selectors = [
+          '#kr-chevron-left', '#kr-chevron-right',
+          '[aria-label="Previous page"]', '[aria-label="Next page"]',
+          '[title="Previous page"]', '[title="Next page"]'
+        ];
+        var nodes = [], seen = [];
+        function add(node) {
+          if (!node || seen.indexOf(node) >= 0) return;
+          seen.push(node); nodes.push(node);
+        }
+        selectors.forEach(function(selector) {
+          Array.from(document.querySelectorAll(selector)).forEach(function(node) {
+            add(node); Array.from(node.querySelectorAll('*')).forEach(add);
+            add(node.closest && node.closest('button,[role="button"],ion-button'));
+            add(node.parentElement); add(node.previousElementSibling); add(node.nextElementSibling);
+          });
+        });
+        for (var i = 0; i < nodes.length; i++) {
+          var match = crKindlePaginationFromFiber(crKindleReactFiberForNode(nodes[i]));
+          if (match) return match;
+        }
+        return null;
+      }
+      window.__crKindleFindPaginationActions = crKindleFindPaginationActions;
+      window.__crKindleSemanticPageTurn = function(direction, fallbackProgression) {
+        try {
+          var match = crKindleFindPaginationActions();
+          if (!match) return JSON.stringify({ ok:false, reason:'pagination-component-unavailable', dispatchCount:0 });
+          var progression = String(match.props.pageProgressionDirection || '').toLowerCase();
+          var progressionSource = 'react-component';
+          if (progression !== 'rtl' && progression !== 'ltr') {
+            progression = String(fallbackProgression || '').toLowerCase() === 'rtl' ? 'rtl' : 'ltr';
+            progressionSource = 'language-fallback';
+          }
+          var next = String(direction || 'next').toLowerCase() !== 'previous';
+          var useLeft = next ? progression === 'rtl' : progression !== 'rtl';
+          var action = useLeft ? match.props.leftAction : match.props.rightAction;
+          var fingerprint = crKindleVisiblePixelFingerprint(currentReadingCandidate());
+          action.call(match.props);
+          return JSON.stringify({ ok:true, strategy:'react-paired-action', semanticAction:useLeft ? 'leftAction' : 'rightAction',
+            progressionDirection:progression, progressionSource:progressionSource, component:match.component, fiberDepth:match.fiberDepth,
+            propsSource:match.propsSource, dispatchCount:1, beforeFingerprint:fingerprint });
+        } catch (e) {
+          return JSON.stringify({ ok:false, reason:'semantic-action-error:' + String(e && e.message || e), dispatchCount:0 });
+        }
+      };
+      window.__crKindleTurnPage = window.__crKindleSemanticPageTurn;
+      window.__crKindleTurnNativePage = window.__crKindleSemanticPageTurn;
       window.__crKindleDirectPage = function(direction, anchorKey) {
         try {
           var raw = String(direction || '').toLowerCase();
@@ -4194,6 +4564,20 @@ enum KindleWebScripts {
           return JSON.stringify({ ok:false, reason:String(e && e.message || e), direction:String(direction || ''), anchorKey:String(anchorKey || ''), url:location.href });
         }
       };
+      // Compatibility names must never revive the retired scrubber/tap/
+      // keyboard/candidate fallbacks. Every page-turn entry point converges on
+      // one paired React semantic action.
+      function crKindleCompatibilitySemanticTurn(direction) {
+        var raw = String(direction || '').toLowerCase();
+        var semanticDirection = (raw === 'previous' || raw === 'prev' || raw === 'back' || raw === 'left' || raw === '-1')
+          ? 'previous'
+          : 'next';
+        return window.__crKindleSemanticPageTurn(semanticDirection);
+      }
+      window.__crKindleTurnPage = crKindleCompatibilitySemanticTurn;
+      window.__crKindleTurnNativePage = crKindleCompatibilitySemanticTurn;
+      window.__crKindleDirectPage = crKindleCompatibilitySemanticTurn;
+      window.__crKindleForceAdjacentPage = crKindleCompatibilitySemanticTurn;
       if (window.__crKindlePageModeLockInstalledVersion !== crKindleInstallVersion) {
         window.__crKindlePageModeLockInstalledVersion = crKindleInstallVersion;
         window.__crKindlePageModeLockInstalled = true;
@@ -4294,6 +4678,48 @@ enum KindleWebScripts {
           return false;
         }
       }
+      function crKindleInstallUserPageGestureObserver() {
+        if (window.__crKindleUserPageGestureObserverInstalled) return;
+        window.__crKindleUserPageGestureObserverInstalled = true;
+        var start = null;
+        function begin(e) {
+          try {
+            var touch = e && e.touches && e.touches.length === 1 ? e.touches[0] : null;
+            if (!touch || !window.__crKindleProbe || !window.__crKindleProbe.pageModeLocked) {
+              start = null;
+              return;
+            }
+            var target = e.target || document.elementFromPoint(touch.clientX, touch.clientY);
+            if (!isKindleReaderTarget(target) && !shouldBlockReaderScrollEvent(e)) {
+              start = null;
+              return;
+            }
+            start = { x:Number(touch.clientX || 0), y:Number(touch.clientY || 0), at:crKindleNow() };
+          } catch (_) { start = null; }
+        }
+        function finish(e) {
+          try {
+            var first = start;
+            start = null;
+            var touch = e && e.changedTouches && e.changedTouches.length === 1 ? e.changedTouches[0] : null;
+            if (!first || !touch) return;
+            var dx = Number(touch.clientX || 0) - first.x;
+            var dy = Number(touch.clientY || 0) - first.y;
+            var elapsed = crKindleNow() - first.at;
+            if (elapsed > 1400 || Math.abs(dx) < 44 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+            crKindlePostNative('kindle-user-page-gesture', {
+              direction:dx < 0 ? 'left' : 'right',
+              dx:Math.round(dx),
+              dy:Math.round(dy),
+              elapsed:elapsed
+            });
+          } catch (_) { start = null; }
+        }
+        try { document.addEventListener('touchstart', begin, { capture:true, passive:true }); } catch (_) {}
+        try { document.addEventListener('touchend', finish, { capture:true, passive:true }); } catch (_) {}
+        try { document.addEventListener('touchcancel', function() { start = null; }, { capture:true, passive:true }); } catch (_) {}
+      }
+      crKindleInstallUserPageGestureObserver();
       function documentScrollNodes() {
         var out = [];
         [document.scrollingElement, document.documentElement, document.body].forEach(function(el) {
@@ -4660,6 +5086,27 @@ enum KindleWebScripts {
         } catch (_) {
           return '';
         }
+      }
+      function crKindleVisiblePixelFingerprint(candidate) {
+        candidate = refreshCandidate(candidate || currentReadingCandidate());
+        var img = candidate && candidate.img;
+        if (!img || !img.complete || !(img.naturalWidth > 0)) return '';
+        try {
+          var size = 48;
+          var canvas = document.createElement('canvas');
+          canvas.width = size; canvas.height = size;
+          var ctx = canvas.getContext('2d', { willReadFrequently:true });
+          if (!ctx) return '';
+          ctx.drawImage(img, 0, 0, size, size);
+          var data = ctx.getImageData(0, 0, size, size).data;
+          var hashA = 0x811c9dc5, hashB = 0x9e3779b9;
+          for (var i = 0; i < data.length; i += 4) {
+            var lum = ((data[i] * 77 + data[i + 1] * 150 + data[i + 2] * 29) >>> 8) ^ data[i + 3];
+            hashA = Math.imul(hashA ^ lum, 0x01000193) >>> 0;
+            hashB = Math.imul(hashB ^ (lum + (i >>> 2)), 0x85ebca6b) >>> 0;
+          }
+          return 'px:' + Number(candidate.nw || img.naturalWidth || 0) + 'x' + Number(candidate.nh || img.naturalHeight || 0) + ':' + hashA.toString(16) + ':' + hashB.toString(16);
+        } catch (_) { return ''; }
       }
       function crKindleHeldKeyByImageFingerprint(key) {
         key = String(key || '');
@@ -5282,12 +5729,13 @@ enum KindleWebScripts {
         return {
           ok: true,
           key: key || '',
+          pixelFingerprint: crKindleVisiblePixelFingerprint(candidate || currentReadingCandidate()),
           source: 'visible',
-          image: canvas.toDataURL('image/jpeg', quality),
+          image: canvas.toDataURL('image/png'),
           natural: nw + 'x' + nh,
           rendered: canvas.width + 'x' + canvas.height,
           ocrMaxWidth: maxWidth,
-          ocrJpegQuality: quality,
+          ocrEncoding: 'png',
           pageRect: { left:rect.left||0, top:rect.top||0, width:rect.width||0, height:rect.height||0 },
           visibleTopNorm: topNorm,
           visibleBottomNorm: bottomNorm,
@@ -5960,6 +6408,12 @@ enum KindleWebScripts {
         if (!para) return null;
         return para.bboxNorm || crKindleNormUnion(para.words || []);
       }
+      function crKindleParagraphFragmentRects(para, mapper) {
+        var fragments = (para && para.visualFragments) || [];
+        return fragments.map(function(fragment) {
+          return mapper(fragment && fragment.bboxNorm);
+        }).filter(Boolean);
+      }
       function crKindleLiveViewport() {
         var h = Math.max(1, Number(innerHeight || document.documentElement.clientHeight || 1));
         return {
@@ -6604,6 +7058,7 @@ enum KindleWebScripts {
             div.setAttribute('data-castreader-overlay', 'kindle-word-local');
             ov.appendChild(div);
           }
+          div.textContent = '';
           div.style.position = 'absolute';
           div.style.left = (rect.left - 2) + 'px';
           div.style.top = (rect.top - 1) + 'px';
@@ -6697,6 +7152,52 @@ enum KindleWebScripts {
             point:pointTag,
             parent:parentTag
           });
+        } catch (e) {
+          return JSON.stringify({ ok:false, reason:String(e) });
+        }
+      };
+      window.__crKindleLiveHighlightWords = function(paragraphIndex, startWordIndex, endWordIndex, sequence) {
+        try {
+          var seq = Number(sequence || 0);
+          var currentSeq = Number(window.__crKindleProbe.visualSeq || 0);
+          if (seq > 0 && seq < currentSeq) return JSON.stringify({ ok:false, stale:true, reason:'stale-visual-seq' });
+          if (seq > 0) window.__crKindleProbe.visualSeq = seq;
+          var expectedKey = String(window.__crKindleProbe.liveKey || '');
+          var candidate = crKindleCandidateForKey(expectedKey);
+          var para = crKindleFindLiveParagraph(paragraphIndex);
+          var start = Math.max(0, Number(startWordIndex || 0));
+          var end = Math.min(para && para.words ? para.words.length : 0, Number(endWordIndex || 0));
+          if (!para || !para.words || end <= start) return JSON.stringify({ ok:false, reason:'word-range-not-found' });
+          if (candidate && candidate.rect) crKindleEnsureLiveOverlay(candidate);
+          var state = crKindleUpdateLiveOverlay(candidate);
+          if (!state || state.stale) return JSON.stringify({ ok:false, reason:'captured-page-not-visible', key:expectedKey });
+          var rects = crKindleLineUnions(para.words.slice(start, end).map(function(word) {
+            return crKindleNormRectInOverlay(word && word.bboxNorm);
+          }).filter(Boolean));
+          if (!rects.length) return JSON.stringify({ ok:false, reason:'word-range-no-rects' });
+          var ov = window.__crKindleProbe.liveOverlay;
+          if (!ov) return JSON.stringify({ ok:false, reason:'no-overlay' });
+          var container = ov.querySelector('#castreader-kindle-live-word');
+          if (!container) {
+            container = document.createElement('div');
+            container.id = 'castreader-kindle-live-word';
+            container.className = 'cr-kindle-live-word-range';
+            container.setAttribute('data-castreader-overlay', 'kindle-segment-local');
+            ov.appendChild(container);
+          }
+          container.textContent = '';
+          container.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:20;';
+          rects.forEach(function(rect) {
+            var div = document.createElement('div');
+            div.style.cssText = 'position:absolute;pointer-events:none;background:rgba(242,101,34,0.28);border-radius:3px;box-sizing:border-box;';
+            div.style.left = (rect.left - 2) + 'px';
+            div.style.top = (rect.top - 1) + 'px';
+            div.style.width = (rect.width + 4) + 'px';
+            div.style.height = (rect.height + 2) + 'px';
+            container.appendChild(div);
+          });
+          return JSON.stringify({ ok:true, key:expectedKey, paragraphIndex:paragraphIndex,
+            startWordIndex:start, endWordIndex:end, rects:rects.length, sequence:seq });
         } catch (e) {
           return JSON.stringify({ ok:false, reason:String(e) });
         }
@@ -6921,8 +7422,11 @@ enum KindleWebScripts {
           if (!words.length && para.words) words = para.words;
           var rects = crKindleLineUnions(words.map(function(word) { return crKindleNormRectInOverlay(word.bboxNorm); }).filter(Boolean));
           if (!rects.length) {
-            var fallback = crKindleNormRectInOverlay(crKindleParagraphNormRect(para));
-            if (fallback) rects = [fallback];
+            rects = crKindleParagraphFragmentRects(para, crKindleNormRectInOverlay);
+            if (!rects.length) {
+              var fallback = crKindleNormRectInOverlay(crKindleParagraphNormRect(para));
+              if (fallback) rects = [fallback];
+            }
           }
           var svg = crKindleMarkSvg(layer);
           if (!svg) return JSON.stringify({ ok:false, reason:'no-mark-svg', key:expectedKey });
@@ -6947,6 +7451,7 @@ enum KindleWebScripts {
           var words = crKindleWordsForRange(para, Number(data.charStart || 0), Number(data.charEnd || 0));
           if (!words.length && para.words) words = para.words;
           var rects = crKindleLineUnions(words.map(function(word) { return crKindleNormRectInViewport(word.bboxNorm); }).filter(Boolean));
+          if (!rects.length) rects = crKindleParagraphFragmentRects(para, crKindleNormRectInViewport);
           var rect = crKindleUnion(rects);
           if (!rect) rect = crKindleNormRectInViewport(crKindleParagraphNormRect(para));
           var result = crKindleLiveComfortScrollRect(rect, expectedKey, 'mark', 220);
@@ -7217,6 +7722,8 @@ enum KindleWebScripts {
           heldIndex: crKindleHeldIndex(key),
           heldCount: (window.__crKindleProbe.heldPageKeys || []).length,
           liveKey: String(window.__crKindleProbe.liveKey || ''),
+          pixelFingerprint: crKindleVisiblePixelFingerprint(c),
+          progress: (document.body && (document.body.innerText || '').match(/(?:Page|Location|Emplacement|Position|P[aá]gina|Posici[oó]n|Ubicaci[oó]n|Localiza[cç][aã]o|Posizione|页码|頁碼|位置|ページ|पृष्ठ|स्थान)\\s*[:#-]?\\s*[0-9０-９०-९٠-٩۰-۹]+/i) || [''])[0],
           navigationSeq: Number(window.__crKindleProbe.navigationSeq || 0),
           navigationAt: Number(window.__crKindleProbe.navigationAt || 0),
           navigationReason: String(window.__crKindleProbe.navigationReason || ''),

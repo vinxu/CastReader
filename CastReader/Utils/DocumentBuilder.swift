@@ -281,6 +281,6 @@ enum DocumentBuilder {
     }
 
     private static func defaultTitle(_ paragraphs: [ReadingParagraph]) -> String {
-        String((paragraphs.first?.text ?? String(localized: "Untitled")).prefix(40))
+        String((paragraphs.first?.text ?? AppLocalized("Untitled")).prefix(40))
     }
 }
