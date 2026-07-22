@@ -966,13 +966,7 @@ class CastReaderTests: XCTestCase {
         XCTAssertLessThan(paragraph.visualFragments[0].bboxNorm.maxX, paragraph.visualFragments[1].bboxNorm.minX)
     }
 
-    func testSpanishWordTimestampCapabilityAndPerSegmentFallback() {
-        XCTAssertEqual(SupportedTTSLanguage.spanish.timestampMode, "word")
-        XCTAssertEqual(SupportedTTSLanguage.english.timestampMode, "word")
-        for language in [SupportedTTSLanguage.chinese, .japanese, .french, .brazilianPortuguese, .italian, .hindi] {
-            XCTAssertEqual(language.timestampMode, "segment")
-        }
-
+    func testTimestampQualityIsLanguageNeutralAndFallsBackPerSegment() {
         func timestamps(_ words: [String]) -> [TTSTimestamp] {
             words.enumerated().map {
                 TTSTimestamp(word: $0.element, startTime: Double($0.offset), endTime: Double($0.offset + 1))
@@ -980,16 +974,54 @@ class CastReaderTests: XCTestCase {
         }
         XCTAssertTrue(TTSTimestampQuality.hasReliableWordGranularity(
             text: "El rápido zorro español",
-            timestamps: timestamps(["El", "rápido", "zorro", "español"])
+            timestamps: timestamps(["El", "rápido", "zorro", "español"]),
+            duration: 4
+        ))
+        XCTAssertTrue(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "La lettura segue ogni parola",
+            timestamps: timestamps(["La", "lettura", "segue", "ogni", "parola"]),
+            duration: 5
+        ), "Italian word timing must not be blocked by a language allowlist")
+        XCTAssertTrue(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "中文逐词高亮测试",
+            timestamps: timestamps(["中文", "逐词", "高亮", "测试"]),
+            duration: 4
+        ), "Any future valid compact-script word timing should be accepted")
+        XCTAssertFalse(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "中文整句时间戳不能伪装成一个单词。",
+            timestamps: [TTSTimestamp(word: "中文整句时间戳不能伪装成一个单词。", startTime: 0, endTime: 3)],
+            duration: 3
+        ))
+        XCTAssertFalse(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "日本語の文全体を一語として扱わない。",
+            timestamps: [TTSTimestamp(word: "日本語の文全体を一語として扱わない。", startTime: 0, endTime: 3)],
+            duration: 3
         ))
         XCTAssertFalse(TTSTimestampQuality.hasReliableWordGranularity(
             text: "El rápido zorro español",
-            timestamps: timestamps(["El", "rápido"])
+            timestamps: timestamps(["El", "rápido"]),
+            duration: 2
         ))
         XCTAssertFalse(TTSTimestampQuality.hasReliableWordGranularity(
             text: "Esta respuesta contiene muchas palabras diferentes",
-            timestamps: timestamps(["Esta respuesta contiene"])
+            timestamps: timestamps(["Esta respuesta contiene"]),
+            duration: 1
         ))
+        XCTAssertFalse(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "time must move forward",
+            timestamps: [
+                TTSTimestamp(word: "time", startTime: 0, endTime: 1),
+                TTSTimestamp(word: "must", startTime: 0.7, endTime: 0.9),
+                TTSTimestamp(word: "move", startTime: 1.1, endTime: 2),
+                TTSTimestamp(word: "forward", startTime: 2, endTime: 3)
+            ],
+            duration: 3
+        ), "timestamp ends must be monotonic")
+        XCTAssertFalse(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "timestamps stay inside audio",
+            timestamps: timestamps(["timestamps", "stay", "inside", "audio"]),
+            duration: 2
+        ), "timestamps outside the actual audio duration must fall back")
         let chineseWords = "一二三四五六七八九十".map(String.init)
         XCTAssertEqual(
             ReadAloudViewModel.alignedPhotoWordRange(
@@ -1188,6 +1220,166 @@ final class LocalizationCatalogTests: XCTestCase {
         XCTAssertEqual(AppLocalized("合同 / 条款"), "合同 / 条款")
         XCTAssertEqual(AppLocalized("教材 / 学习"), "教材 / 学习")
         XCTAssertEqual(AppLocalized("说明书 / 文档"), "说明书 / 文档")
+    }
+
+    func testHomeProCardPurchaseContractRoutesWithoutAnIntermediatePaywall() {
+        XCTAssertEqual(
+            HomeProPurchaseContract.primaryAction(
+                isPro: true,
+                hasYearlyProduct: true,
+                hasEmailAccount: true,
+                isLoadingProducts: false,
+                isPurchaseInFlight: false
+            ),
+            .none
+        )
+        XCTAssertEqual(
+            HomeProPurchaseContract.primaryAction(
+                isPro: false,
+                hasYearlyProduct: true,
+                hasEmailAccount: true,
+                isLoadingProducts: true,
+                isPurchaseInFlight: false
+            ),
+            .none
+        )
+        XCTAssertEqual(
+            HomeProPurchaseContract.primaryAction(
+                isPro: false,
+                hasYearlyProduct: false,
+                hasEmailAccount: true,
+                isLoadingProducts: false,
+                isPurchaseInFlight: false
+            ),
+            .showPlans
+        )
+        XCTAssertEqual(
+            HomeProPurchaseContract.primaryAction(
+                isPro: false,
+                hasYearlyProduct: true,
+                hasEmailAccount: false,
+                isLoadingProducts: false,
+                isPurchaseInFlight: false
+            ),
+            .requireLogin
+        )
+        XCTAssertEqual(
+            HomeProPurchaseContract.primaryAction(
+                isPro: false,
+                hasYearlyProduct: true,
+                hasEmailAccount: true,
+                isLoadingProducts: false,
+                isPurchaseInFlight: false
+            ),
+            .purchaseYearly
+        )
+        XCTAssertEqual(
+            HomeProPurchaseContract.primaryAction(
+                isPro: false,
+                hasYearlyProduct: true,
+                hasEmailAccount: true,
+                isLoadingProducts: false,
+                isPurchaseInFlight: true
+            ),
+            .none
+        )
+    }
+
+    func testShareInboxExtractsThePageURLFromSharedCaptionText() {
+        let text = "Worth reading today — https://example.com/articles/focus?source=share"
+        XCTAssertEqual(
+            ShareInboxLinkExtractor.firstWebURL(in: text)?.absoluteString,
+            "https://example.com/articles/focus?source=share"
+        )
+        XCTAssertNil(ShareInboxLinkExtractor.firstWebURL(in: "A useful note with no page link"))
+        XCTAssertNil(ShareInboxLinkExtractor.firstWebURL(in: "Contact reader@example.com"))
+    }
+
+    func testShareInboxBadgeCountsOnlyItemsCreatedAfterLastSeenDate() {
+        let seenAt = Date(timeIntervalSince1970: 2_000)
+        func record(id: UUID = UUID(), createdAt: Date) -> ShareInboxRecord {
+            ShareInboxRecord(
+                id: id,
+                createdAt: createdAt,
+                kind: .url,
+                mode: .read,
+                title: "Shared article",
+                payloadFilename: nil,
+                sourceURL: "https://example.com",
+                previewImageFilename: nil,
+                linkMetadataFetchedAt: nil
+            )
+        }
+        let records = [
+            record(createdAt: Date(timeIntervalSince1970: 1_000)),
+            record(createdAt: seenAt),
+            record(createdAt: Date(timeIntervalSince1970: 3_000))
+        ]
+
+        XCTAssertEqual(ShareInboxStore.unreadCount(in: records, lastSeenAt: nil), 3)
+        XCTAssertEqual(ShareInboxStore.unreadCount(in: records, lastSeenAt: seenAt), 1)
+    }
+
+    func testDynamicWebExtractionRejectsTitleOnlyPayloadButAcceptsArticleBody() throws {
+        func paragraph(_ index: Int, _ text: String) throws -> WebRenderedParagraph {
+            try XCTUnwrap(WebRenderedParagraph([
+                "paragraphIndex": index,
+                "text": text,
+                "type": "paragraph"
+            ]))
+        }
+
+        let weak = [try paragraph(0, "人民日报文章标题")]
+        XCTAssertTrue(WebExtractionReadiness.isWeak(weak))
+
+        let body = [
+            try paragraph(0, String(repeating: "正文第一段内容。", count: 12)),
+            try paragraph(1, String(repeating: "正文第二段内容。", count: 12)),
+            try paragraph(2, String(repeating: "正文第三段内容。", count: 12))
+        ]
+        XCTAssertFalse(WebExtractionReadiness.isWeak(body))
+    }
+
+    func testShareInboxRecordRemainsBackwardCompatibleBeforeLinkPreviewFields() throws {
+        let id = UUID()
+        let legacyJSON = """
+        {
+          "id": "\(id.uuidString)",
+          "createdAt": 0,
+          "kind": "url",
+          "mode": "read",
+          "title": "example.com",
+          "sourceURL": "https://example.com"
+        }
+        """
+        let record = try JSONDecoder().decode(ShareInboxRecord.self, from: Data(legacyJSON.utf8))
+        XCTAssertEqual(record.id, id)
+        XCTAssertNil(record.fallbackTitle)
+        XCTAssertNil(record.previewImageFilename)
+        XCTAssertNil(record.linkMetadataFetchedAt)
+    }
+
+    func testHomeProCardWeeklyPriceUsesAnnualPriceDividedByFiftyTwo() throws {
+        var weekly = HomeProPricing.weeklyPrice(from: try XCTUnwrap(Decimal(string: "34.99")))
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &weekly, 2, .plain)
+        XCTAssertEqual(rounded, Decimal(string: "0.67"))
+    }
+
+    func testHomeProCardCopyFollowsAllEightRuntimeLanguages() {
+        let manager = AppLanguageManager.shared
+        let previousLanguage = manager.selectedLanguage
+        defer { manager.select(previousLanguage) }
+
+        for language in AppLanguage.allCases where language != .system {
+            manager.select(language)
+            let headline = AppLocalized("让每本 Kindle 都开口说话")
+            let benefits = AppLocalized("Kindle 连续朗读 · 100+ 专业音色 · 8 种语言")
+            let cta = String(format: AppLocalized("以 %@/年成为 Pro"), "PRICE")
+            XCTAssertFalse(headline.isEmpty, "Missing headline for \(language.rawValue)")
+            XCTAssertFalse(benefits.isEmpty, "Missing benefits for \(language.rawValue)")
+            XCTAssertTrue(cta.contains("PRICE"), "Missing price placeholder for \(language.rawValue): \(cta)")
+        }
     }
 
     func testKindlePlaybackAccessGateCoversReadAndExplainQuota() {
@@ -1413,6 +1605,633 @@ final class LocalizationCatalogTests: XCTestCase {
         )
         let vm = ExplainViewModel(document: document)
         XCTAssertEqual(vm.playbackLanguage, "es")
+    }
+
+    // MARK: - Unified eight-language import contract
+
+    func testReadingSentenceContractCoversAllEightLanguages() {
+        let samples: [String: String] = [
+            "en": "First sentence. Second sentence!",
+            "zh": "第一句话。第二句话！",
+            "ja": "最初の文です。次の文です！",
+            "es": "Primera frase. Segunda frase!",
+            "fr": "Première phrase. Deuxième phrase !",
+            "pt": "Primeira frase. Segunda frase!",
+            "it": "Prima frase. Seconda frase!",
+            "hi": "यह पहला वाक्य है। यह दूसरा वाक्य है॥"
+        ]
+        XCTAssertEqual(Set(samples.keys), Set(SupportedTTSLanguage.allCases.map(\.rawValue)))
+        for (language, text) in samples {
+            XCTAssertEqual(
+                ReadingSentenceContract.segments(text).count,
+                2,
+                "\(language) must preserve both sentence units"
+            )
+        }
+    }
+
+    func testReadingSentenceContractPreservesJapaneseAndChineseVisualWraps() {
+        XCTAssertEqual(
+            ReadingSentenceContract.normalizeWhitespace("日\n本\n語です。", language: "ja"),
+            "日本語です。"
+        )
+        XCTAssertEqual(
+            ReadingSentenceContract.normalizeWhitespace("中\n文内容。", language: "zh"),
+            "中文内容。"
+        )
+        XCTAssertEqual(
+            ReadingSentenceContract.normalizeWhitespace("hello\nworld.", language: "en"),
+            "hello world."
+        )
+    }
+
+    func testImportedOCRHindiSelectionRequiresStrongIndependentEvidence() {
+        let weakVision = LanguageDetector.Evidence(language: "en", confidence: 0.31, readableCharacterCount: 9)
+        let hindi = LanguageDetector.Evidence(language: "hi", confidence: 0.98, readableCharacterCount: 48)
+        XCTAssertTrue(ImportedOCRLanguageSelection.shouldRunHindiProbe(vision: weakVision))
+        XCTAssertTrue(ImportedOCRLanguageSelection.shouldPreferHindi(
+            vision: weakVision,
+            hindi: hindi,
+            hindiMeanConfidence: 82
+        ))
+
+        let strongEnglish = LanguageDetector.Evidence(language: "en", confidence: 0.97, readableCharacterCount: 180)
+        XCTAssertFalse(ImportedOCRLanguageSelection.shouldRunHindiProbe(vision: strongEnglish))
+        XCTAssertFalse(ImportedOCRLanguageSelection.shouldPreferHindi(
+            vision: strongEnglish,
+            hindi: LanguageDetector.Evidence(language: "hi", confidence: 0.7, readableCharacterCount: 10),
+            hindiMeanConfidence: 42
+        ))
+    }
+
+    func testPDFRenderingModeSeparatesTextLayerFromOCRReflow() {
+        let native = ReadingDocument(
+            title: "Native PDF",
+            sourceKind: .pdf,
+            paragraphs: [ReadingParagraph(
+                id: 0,
+                text: "Searchable text.",
+                pdfPageIndex: 0,
+                pdfRange: NSRange(location: 0, length: 16)
+            )]
+        )
+        XCTAssertTrue(native.usesNativePDFRendering)
+        XCTAssertFalse(native.usesNativeTextRendering)
+
+        let scanned = ReadingDocument(
+            title: "Scanned PDF",
+            sourceKind: .pdf,
+            language: "hi",
+            paragraphs: [ReadingParagraph(id: 0, text: "यह स्कैन किया गया पाठ है।", pdfPageIndex: 0)]
+        )
+        XCTAssertFalse(scanned.usesNativePDFRendering)
+        XCTAssertTrue(scanned.usesNativeTextRendering)
+    }
+
+    // MARK: - 微信读书 live Canvas 合同
+
+    func testWeReadAvailabilityIsGlobalWithoutLocaleRestrictions() {
+        XCTAssertTrue(WeReadAvailability.isAvailable(
+            appLanguage: .simplifiedChinese,
+            systemLanguageCode: "en",
+            timeZoneIdentifier: "America/Los_Angeles"
+        ))
+        XCTAssertTrue(WeReadAvailability.isAvailable(
+            appLanguage: .system,
+            systemLanguageCode: "zh-Hans",
+            timeZoneIdentifier: "Europe/Paris"
+        ))
+        XCTAssertTrue(WeReadAvailability.isAvailable(
+            appLanguage: .english,
+            systemLanguageCode: "en",
+            timeZoneIdentifier: "Asia/Shanghai"
+        ))
+        XCTAssertTrue(WeReadAvailability.isAvailable(
+            appLanguage: .japanese,
+            systemLanguageCode: "ja",
+            timeZoneIdentifier: "Asia/Tokyo"
+        ))
+        XCTAssertTrue(WeReadAvailability.isAvailable(
+            appLanguage: .french,
+            systemLanguageCode: "fr",
+            timeZoneIdentifier: "Europe/Paris"
+        ))
+        XCTAssertTrue(WeReadAvailability.isAvailable(
+            appLanguage: .hindi,
+            systemLanguageCode: "hi",
+            timeZoneIdentifier: "Asia/Kolkata"
+        ))
+    }
+
+    func testDedicatedBookRailsDoNotDuplicateInHomeContinue() {
+        XCTAssertFalse(HomeContinueContract.includes(.kindle))
+        XCTAssertFalse(HomeContinueContract.includes(.weread))
+        XCTAssertTrue(HomeContinueContract.includes(.web))
+        XCTAssertTrue(HomeContinueContract.includes(.pdf))
+    }
+
+    func testWeReadBookAndSingleTurnContracts() {
+        let readerURL = "https://weread.qq.com/web/reader/abcdef"
+        XCTAssertEqual(WeReadBookValidator.usableReaderURL(readerURL), readerURL)
+        XCTAssertNil(WeReadBookValidator.usableReaderURL("https://weread.qq.com/web/shelf"))
+        XCTAssertNil(WeReadBookValidator.usableReaderURL("https://example.com/web/reader/a"))
+        XCTAssertEqual(
+            WeReadBookValidator.stableID(bookID: "abcdef", readerURL: readerURL, title: "Book"),
+            "weread:abcdef"
+        )
+
+        let before = WeReadPageFingerprint.make(first: "第一页", last: "结尾", progress: "10%", route: readerURL)
+        let after = WeReadPageFingerprint.make(first: "第二页", last: "新结尾", progress: "11%", route: readerURL)
+        XCTAssertNotEqual(before, after)
+        XCTAssertTrue(WeReadPageTurnContract.canCommit(previous: before, next: after, actionID: "one-semantic-click"))
+        XCTAssertFalse(WeReadPageTurnContract.canCommit(previous: before, next: before, actionID: "one-semantic-click"))
+        XCTAssertFalse(WeReadPageTurnContract.canCommit(previous: before, next: after, actionID: ""))
+        XCTAssertEqual(WeReadPageTurnContract.semanticNextLabels(), ["下一页"])
+        XCTAssertEqual(WeReadPageTurnContract.manualRestartDelayNanoseconds, 600_000_000)
+
+        let evidenceBefore = WeReadPageEvidence(
+            contentFingerprint: before,
+            layoutFingerprint: "layout-a",
+            columnFingerprint: "0:0|1:900",
+            canvasEpoch: 4
+        )
+        XCTAssertFalse(WeReadPageTurnContract.canCommit(
+            previous: evidenceBefore,
+            next: evidenceBefore,
+            actionID: "one-semantic-click"
+        ))
+        XCTAssertTrue(WeReadPageTurnContract.canCommit(
+            previous: evidenceBefore,
+            next: WeReadPageEvidence(
+                contentFingerprint: before,
+                layoutFingerprint: "layout-a",
+                columnFingerprint: "0:1800|1:2700",
+                canvasEpoch: 5
+            ),
+            actionID: "one-semantic-click"
+        ))
+        XCTAssertFalse(WeReadPageTurnContract.canCommit(
+            previous: evidenceBefore,
+            next: WeReadPageEvidence(
+                contentFingerprint: before,
+                layoutFingerprint: "layout-b",
+                columnFingerprint: "0:0|1:900",
+                canvasEpoch: 5
+            ),
+            actionID: ""
+        ))
+
+        XCTAssertTrue(WeReadContinuousPageHandoffContract.shouldArm(
+            sourceFingerprint: before,
+            currentFingerprint: before,
+            hasPreparedAudio: true,
+            isLastReadableParagraph: true,
+            currentTTSComplete: true,
+            audioIsPlaying: true
+        ))
+        XCTAssertFalse(WeReadContinuousPageHandoffContract.shouldArm(
+            sourceFingerprint: before,
+            currentFingerprint: after,
+            hasPreparedAudio: true,
+            isLastReadableParagraph: true,
+            currentTTSComplete: true,
+            audioIsPlaying: true
+        ))
+        XCTAssertTrue(WeReadContinuousPageHandoffContract.shouldBeginVisualTurn(
+            currentSegmentID: "tail",
+            predecessorSegmentID: "tail",
+            remainingAudioSeconds: 0.9,
+            playbackRate: 1.5
+        ))
+        XCTAssertFalse(WeReadContinuousPageHandoffContract.shouldBeginVisualTurn(
+            currentSegmentID: "other",
+            predecessorSegmentID: "tail",
+            remainingAudioSeconds: 0,
+            playbackRate: 1
+        ))
+        XCTAssertTrue(WeReadContinuousPageHandoffContract.canReleasePreparedAudio(
+            sourceFingerprint: before,
+            previousFingerprint: before,
+            predictedContentFingerprint: after,
+            visibleContentFingerprint: after,
+            predictedText: ["下一页正文"],
+            visibleText: ["下一页正文"],
+            preparedVoiceID: "zf_xiaobei",
+            selectedVoiceID: "zf_xiaobei"
+        ))
+        XCTAssertFalse(WeReadContinuousPageHandoffContract.canReleasePreparedAudio(
+            sourceFingerprint: before,
+            previousFingerprint: before,
+            predictedContentFingerprint: after,
+            visibleContentFingerprint: "unexpected-page",
+            predictedText: ["这是预测的下一页内容，连续文字必须能够对应。"],
+            visibleText: ["这是完全不同的一页，不能释放错误的预加载音频。"],
+            preparedVoiceID: "zf_xiaobei",
+            selectedVoiceID: "zf_xiaobei"
+        ))
+
+        let mapped = WeReadCrossPageSpeechContract.boundarySegment(
+            segmentTexts: ["第一句。", "这句话从本页开始并跨到下一页才结束。"],
+            boundaryUTF16Offset: ("第一句。这句话从本页开始" as NSString).length
+        )
+        XCTAssertEqual(mapped?.sequence, 1)
+        XCTAssertEqual(
+            mapped?.fraction ?? -1,
+            Double(("这句话从本页开始" as NSString).length) /
+                Double(("这句话从本页开始并跨到下一页才结束。" as NSString).length),
+            accuracy: 0.0001
+        )
+        let cue = WeReadBoundaryAudioCue(
+            segmentID: "boundary-sentence",
+            segmentSequence: 1,
+            boundaryTime: 2.4,
+            segmentDuration: 4.8
+        )
+        XCTAssertTrue(WeReadCrossPageSpeechContract.shouldRequestTurn(
+            currentSegmentID: "boundary-sentence",
+            cue: cue,
+            currentTime: 1.9,
+            playbackRate: 1,
+            leadSeconds: 0.6
+        ))
+        XCTAssertFalse(WeReadCrossPageSpeechContract.shouldRequestTurn(
+            currentSegmentID: "another-sentence",
+            cue: cue,
+            currentTime: 2.4,
+            playbackRate: 1,
+            leadSeconds: 0.6
+        ))
+
+        // The source-DOM cursor, not speculative audio readiness, is the
+        // authority for exactly-once speech across a visual page boundary.
+        // The first four UTF-16 code units on the confirmed page were already
+        // spoken by the old page's complete natural-sentence audio item.
+        let partiallyConsumed = WeReadCrossPageSpeechContract.consumeAlreadySpokenPrefix(
+            in: [
+                WeReadSourceTextSlice(
+                    visibleParagraphIndex: 0,
+                    sourceParagraphIndex: 7,
+                    sourceUTF16Start: 20,
+                    sourceUTF16End: 29,
+                    text: "已经读过的新页内容。"
+                ),
+                WeReadSourceTextSlice(
+                    visibleParagraphIndex: 1,
+                    sourceParagraphIndex: 8,
+                    sourceUTF16Start: 0,
+                    sourceUTF16End: 5,
+                    text: "下一段。"
+                ),
+            ],
+            through: WeReadConsumedTextCursor(sourceParagraphIndex: 7, sourceUTF16End: 24)
+        )
+        XCTAssertEqual(partiallyConsumed.texts, ["的新页内容。", "下一段。"])
+        XCTAssertEqual(partiallyConsumed.carryParagraphIndex, 0)
+        XCTAssertEqual(partiallyConsumed.carryUTF16Length, 4)
+
+        // Preserve visual paragraph indices even when the carry sentence has
+        // consumed the entire first slice. The next TTS request must begin at
+        // paragraph 1 rather than rebuilding the page from paragraph 0.
+        let fullyConsumed = WeReadCrossPageSpeechContract.consumeAlreadySpokenPrefix(
+            in: [
+                WeReadSourceTextSlice(
+                    visibleParagraphIndex: 0,
+                    sourceParagraphIndex: 7,
+                    sourceUTF16Start: 24,
+                    sourceUTF16End: 28,
+                    text: "已读完。"
+                ),
+                WeReadSourceTextSlice(
+                    visibleParagraphIndex: 1,
+                    sourceParagraphIndex: 8,
+                    sourceUTF16Start: 0,
+                    sourceUTF16End: 5,
+                    text: "真正新句。"
+                ),
+            ],
+            through: WeReadConsumedTextCursor(sourceParagraphIndex: 7, sourceUTF16End: 28)
+        )
+        XCTAssertEqual(fullyConsumed.texts, ["", "真正新句。"])
+        XCTAssertEqual(fullyConsumed.carryParagraphIndex, 0)
+        XCTAssertEqual(fullyConsumed.carryUTF16Length, 4)
+    }
+
+    func testWeReadExplainOwnsItsPageLifecycle() {
+        // QuickRead annotations and status updates can repaint the Canvas, but
+        // they are not navigation and must not restart the explanation.
+        for reason in ["canvas", "resize", "mutation", "foreground"] {
+            XCTAssertFalse(WeReadExplainPageEventContract.shouldHandleVisualChange(
+                isReadMode: false,
+                reason: reason,
+                hasPendingSemanticTurn: false,
+                hasPendingManualTurn: false,
+                refreshActive: false
+            ))
+        }
+
+        XCTAssertTrue(WeReadExplainPageEventContract.shouldHandleVisualChange(
+            isReadMode: false,
+            reason: "manual-intent",
+            hasPendingSemanticTurn: false,
+            hasPendingManualTurn: false,
+            refreshActive: false
+        ))
+        XCTAssertTrue(WeReadExplainPageEventContract.shouldHandleVisualChange(
+            isReadMode: false,
+            reason: "canvas",
+            hasPendingSemanticTurn: true,
+            hasPendingManualTurn: false,
+            refreshActive: false
+        ))
+        XCTAssertTrue(WeReadExplainPageEventContract.shouldHandleVisualChange(
+            isReadMode: false,
+            reason: "canvas",
+            hasPendingSemanticTurn: false,
+            hasPendingManualTurn: true,
+            refreshActive: false
+        ))
+        XCTAssertTrue(WeReadExplainPageEventContract.shouldHandleVisualChange(
+            isReadMode: false,
+            reason: "theme",
+            hasPendingSemanticTurn: false,
+            hasPendingManualTurn: false,
+            refreshActive: true
+        ))
+        XCTAssertTrue(WeReadExplainPageEventContract.shouldHandleVisualChange(
+            isReadMode: true,
+            reason: "canvas",
+            hasPendingSemanticTurn: false,
+            hasPendingManualTurn: false,
+            refreshActive: false
+        ))
+
+        XCTAssertFalse(WeReadExplainPageEventContract.shouldResumeExplanation(isAutomaticTurn: false))
+        XCTAssertTrue(WeReadExplainPageEventContract.shouldResumeExplanation(isAutomaticTurn: true))
+        XCTAssertTrue(WeReadExplainPageEventContract.shouldResumeExplanation(
+            isAutomaticTurn: false,
+            resumeAlreadyArmed: true
+        ))
+        XCTAssertTrue(WeReadExplainPageEventContract.shouldResumeExplanation(
+            isAutomaticTurn: false,
+            wasLiveExplaining: true
+        ))
+    }
+
+    func testWeReadExplainPrefetchRequiresExactVisiblePageAndCurrentSettings() {
+        let baseline = (
+            source: "page-a",
+            predicted: "page-b-content",
+            voice: "zf_xiaoxiao",
+            depth: "standard"
+        )
+        XCTAssertTrue(WeReadExplainPagePrefetchContract.canConsume(
+            sourceFingerprint: baseline.source,
+            previousFingerprint: baseline.source,
+            predictedContentFingerprint: baseline.predicted,
+            visibleContentFingerprint: baseline.predicted,
+            predictedText: ["预测页面正文"],
+            visibleText: ["预测页面正文"],
+            payloadTextFingerprint: baseline.predicted,
+            preparedVoiceID: baseline.voice,
+            selectedVoiceID: baseline.voice,
+            preparedDepth: baseline.depth,
+            selectedDepth: baseline.depth
+        ))
+        let predictedPage = "下一页从这一句开始。" + String(repeating: "微信读书分页正文连续内容。", count: 12)
+        let visiblePage = predictedPage + String(repeating: "真实页面尾部多出的正文。", count: 3)
+        let boundaryMatch = WeReadSpeculativeTextContract.evaluate(
+            predicted: [predictedPage],
+            visible: [visiblePage]
+        )
+        XCTAssertTrue(boundaryMatch.isCompatible)
+        XCTAssertEqual(boundaryMatch.predictedCoverage, 1, accuracy: 0.0001)
+        XCTAssertGreaterThan(boundaryMatch.visibleCoverage, 0.70)
+        XCTAssertTrue(WeReadExplainPagePrefetchContract.canConsume(
+            sourceFingerprint: baseline.source,
+            previousFingerprint: baseline.source,
+            predictedContentFingerprint: baseline.predicted,
+            visibleContentFingerprint: "different-boundary-fingerprint",
+            predictedText: [predictedPage],
+            visibleText: [visiblePage],
+            payloadTextFingerprint: baseline.predicted,
+            preparedVoiceID: baseline.voice,
+            selectedVoiceID: baseline.voice,
+            preparedDepth: baseline.depth,
+            selectedDepth: baseline.depth
+        ))
+        XCTAssertFalse(WeReadExplainPagePrefetchContract.canConsume(
+            sourceFingerprint: baseline.source,
+            previousFingerprint: baseline.source,
+            predictedContentFingerprint: baseline.predicted,
+            visibleContentFingerprint: "a-different-page",
+            predictedText: ["预测页面包含一段足够长的连续正文，用于验证下一页。"],
+            visibleText: ["错误页面包含完全不同的内容，不允许命中推测缓存。"],
+            payloadTextFingerprint: baseline.predicted,
+            preparedVoiceID: baseline.voice,
+            selectedVoiceID: baseline.voice,
+            preparedDepth: baseline.depth,
+            selectedDepth: baseline.depth
+        ))
+        XCTAssertFalse(WeReadExplainPagePrefetchContract.canConsume(
+            sourceFingerprint: baseline.source,
+            previousFingerprint: baseline.source,
+            predictedContentFingerprint: baseline.predicted,
+            visibleContentFingerprint: baseline.predicted,
+            predictedText: ["预测页面正文"],
+            visibleText: ["预测页面正文"],
+            payloadTextFingerprint: baseline.predicted,
+            preparedVoiceID: baseline.voice,
+            selectedVoiceID: "zf_xiaoyi",
+            preparedDepth: baseline.depth,
+            selectedDepth: baseline.depth
+        ))
+        XCTAssertFalse(WeReadExplainPagePrefetchContract.canConsume(
+            sourceFingerprint: baseline.source,
+            previousFingerprint: baseline.source,
+            predictedContentFingerprint: baseline.predicted,
+            visibleContentFingerprint: baseline.predicted,
+            predictedText: ["预测页面正文"],
+            visibleText: ["预测页面正文"],
+            payloadTextFingerprint: baseline.predicted,
+            preparedVoiceID: baseline.voice,
+            selectedVoiceID: baseline.voice,
+            preparedDepth: baseline.depth,
+            selectedDepth: "deep"
+        ))
+    }
+
+    func testWeReadViewportCropIsPredictedBeforeLoadAndCalibratedFromVisibleText() {
+        let phone = CGSize(width: 390, height: 700)
+        let predicted = WeReadViewportCrop.predicted(for: phone)
+        XCTAssertEqual(predicted.widthScale, 1.19, accuracy: 0.001)
+        XCTAssertEqual(predicted.offsetX, -37.05, accuracy: 0.01)
+        let initialFrame = predicted.webViewFrame(for: phone)
+        XCTAssertEqual(initialFrame.origin.x, predicted.offsetX, accuracy: 0.001)
+        XCTAssertEqual(initialFrame.origin.y, 0, accuracy: 0.001)
+        XCTAssertEqual(initialFrame.width, phone.width * 1.19, accuracy: 0.001)
+        XCTAssertEqual(initialFrame.height, phone.height, accuracy: 0.001)
+        XCTAssertEqual(WeReadViewportCrop.compactReaderBreakpoint, 700)
+        XCTAssertEqual(WeReadViewportCrop.compactPageHorizontalPadding, 50)
+        XCTAssertEqual(WeReadViewportCrop.compactOpeningWidthScale, 1.19)
+
+        let calibrated = WeReadViewportCrop.calibrated(
+            for: phone,
+            layoutWidthScale: predicted.widthScale,
+            contentLeftRatio: 0.16,
+            contentRightRatio: 0.84
+        )
+        XCTAssertNotNil(calibrated)
+        // Runtime text bounds are diagnostics only and must never resize or
+        // translate WKWebView after the opening navigation.
+        XCTAssertEqual(calibrated?.widthScale ?? 0, predicted.widthScale, accuracy: 0.001)
+        XCTAssertEqual(calibrated?.offsetX ?? 1, predicted.offsetX, accuracy: 0.01)
+
+        XCTAssertNil(WeReadViewportCrop.calibrated(
+            for: phone,
+            layoutWidthScale: predicted.widthScale,
+            contentLeftRatio: 0.49,
+            contentRightRatio: 0.51
+        ))
+        XCTAssertEqual(WeReadInitialPlaybackContract.stabilityDelayNanoseconds, 1_800_000_000)
+    }
+
+    func testWeReadPlaybackResumeFindsCurrentSentenceAcrossViewportReflow() {
+        let anchor = WeReadPlaybackResumeAnchor(
+            segmentText: "所谓的“社会话题性”，在她的作品里并不是目的。",
+            sourceParagraphText: "但金爱烂的可贵之处在于，所谓的社会话题性，在她的作品里并不是目的，而是场景中的一个因素。",
+            segmentProgress: 0.43,
+            wasPlaying: true
+        )
+        let paragraphs = [
+            ReadingParagraph(id: 0, text: "上一段已经结束。", type: .paragraph),
+            ReadingParagraph(id: 1, text: "所谓的社会话题性，在她的作品里并不是目的。", type: .paragraph),
+            ReadingParagraph(id: 2, text: "而是场景中的一个因素。", type: .paragraph),
+        ]
+        XCTAssertEqual(WeReadPlaybackResumeContract.paragraphIndex(in: paragraphs, anchor: anchor), 1)
+        XCTAssertTrue(WeReadPlaybackResumeContract.segmentMatches(
+            "所谓的社会话题性，在她的作品里并不是目的。",
+            anchor: anchor
+        ))
+        XCTAssertFalse(WeReadPlaybackResumeContract.segmentMatches("完全不同的一句话。", anchor: anchor))
+    }
+
+    func testWeReadBackgroundLifecycleNeverReloadsForTransientForegroundProbeFailure() {
+        XCTAssertFalse(WeReadBackgroundLifecycleContract.shouldReload(
+            probeSucceeded: false,
+            webContentProcessTerminationObserved: false
+        ))
+        XCTAssertFalse(WeReadBackgroundLifecycleContract.shouldReload(
+            probeSucceeded: true,
+            webContentProcessTerminationObserved: false
+        ))
+        XCTAssertTrue(WeReadBackgroundLifecycleContract.shouldReload(
+            probeSucceeded: false,
+            webContentProcessTerminationObserved: true
+        ))
+        XCTAssertFalse(WeReadBackgroundLifecycleContract.shouldScheduleRefreshFallback(
+            applicationIsActive: false
+        ))
+        XCTAssertTrue(WeReadBackgroundLifecycleContract.shouldScheduleRefreshFallback(
+            applicationIsActive: true
+        ))
+        XCTAssertEqual(WeReadBackgroundLifecycleContract.foregroundProbeDelays.count, 3)
+        XCTAssertEqual(WeReadBackgroundLifecycleContract.foregroundProbeTimeout, 0.8)
+    }
+
+    func testWeReadRejectsGenericCoverAltAsBookTitle() {
+        let generic = WeReadBook(
+            id: "weread:bad",
+            title: "书籍封面",
+            author: "",
+            coverURL: nil,
+            readerURL: "https://weread.qq.com/web/reader/abcdef",
+            progressLabel: "",
+            bookID: "abcdef",
+            lastOpenedAt: nil,
+            lastSyncedAt: Date(),
+            lastPageFingerprint: nil,
+            lastReaderURL: nil
+        )
+        XCTAssertFalse(WeReadBookValidator.isLikelyLibraryBook(generic))
+        XCTAssertTrue(WeReadWebScripts.libraryScan.contains("bookData.author"))
+        XCTAssertTrue(WeReadWebScripts.libraryScan.contains(":scope > .title"))
+    }
+
+    func testWeReadBookEntryRecoveryRetriesCanonicalBeforeShelfScan() {
+        let canonical = "https://weread.qq.com/web/reader/book123"
+        let resume = "https://weread.qq.com/web/reader/book123?chapter=9"
+
+        XCTAssertEqual(
+            WeReadBookEntryRecoveryContract.localFallbackURL(
+                failedURL: resume,
+                canonicalURL: canonical,
+                resumeURL: resume
+            ),
+            canonical
+        )
+        XCTAssertNil(WeReadBookEntryRecoveryContract.localFallbackURL(
+            failedURL: canonical,
+            canonicalURL: canonical,
+            resumeURL: resume
+        ))
+        XCTAssertFalse(WeReadBookEntryRecoveryContract.shouldDiscardResumeURL(
+            oldCanonicalURL: canonical,
+            newCanonicalURL: canonical,
+            resumeURL: resume
+        ))
+        XCTAssertTrue(WeReadBookEntryRecoveryContract.shouldDiscardResumeURL(
+            oldCanonicalURL: canonical,
+            newCanonicalURL: "https://weread.qq.com/web/reader/book123-new",
+            resumeURL: resume
+        ))
+    }
+
+    func testWeReadBridgePreservesNoPrivateAPIBoundary() {
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("preRenderContainer"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("renderTargetContainer"))
+        XCTAssertTrue(WeReadWebScripts.canvasIntercept.contains("CanvasRenderingContext2D.prototype.clearRect"))
+        XCTAssertTrue(WeReadWebScripts.canvasIntercept.contains("effectiveArea>=area*.45"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("han/sample.length>=.45"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains(".readerFooter_button:last-child"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("clean(candidate.textContent)==='下一页'"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("contentFingerprint"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("resolveSegmentRange"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("computeSourceSpan"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("manualTurnIntent"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("wereadLayoutStable"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("resumeAfterForeground"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("relayout(a)"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("document.addEventListener('pointerdown',manualTurnIntent,true)"))
+        XCTAssertFalse(WeReadWebScripts.readerBridge.contains("${columns}|${progress}"))
+        XCTAssertFalse(WeReadWebScripts.readerBridge.contains("chapterInfos"))
+        XCTAssertFalse(WeReadWebScripts.readerBridge.contains("decodeChapterResponse"))
+    }
+
+    func testWeReadUIStringsCoverAllEightRuntimeLanguages() {
+        let keys = [
+            "已同步的微信读书书架",
+            "绑定微信读书",
+            "登录后同步书架与阅读进度",
+            "正在扫描微信读书书架…（%d）",
+            "请先登录微信读书，再点同步。",
+            "微信读书书籍链接已失效，请重新登录并同步书架。",
+            "微信读书登录已失效，请重新登录后继续。",
+            "书架中没有找到这本书，请重新同步微信读书书架。"
+        ]
+        for language in AppLanguage.allCases where language != .system {
+            guard let localization = language.bundleLocalization,
+                  let path = Bundle.main.path(forResource: localization, ofType: "lproj"),
+                  let bundle = Bundle(path: path) else {
+                return XCTFail("Missing runtime bundle for \(language.rawValue)")
+            }
+            for key in keys {
+                let value = bundle.localizedString(forKey: key, value: nil, table: nil)
+                XCTAssertFalse(value.isEmpty, "Empty WeRead translation for \(language.rawValue): \(key)")
+                if language != .simplifiedChinese {
+                    XCTAssertNotEqual(value, key, "Missing WeRead translation for \(language.rawValue): \(key)")
+                }
+            }
+        }
     }
 }
 

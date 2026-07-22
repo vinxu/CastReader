@@ -6,7 +6,7 @@ final class ProductAnalyticsTests: XCTestCase {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        let contractURL = root.appendingPathComponent("docs/analytics/mobile-events-v1.json")
+        let contractURL = root.appendingPathComponent("docs/analytics/mobile-events-v2.json")
         guard FileManager.default.fileExists(atPath: contractURL.path) else {
             throw XCTSkip("工程内 analytics 合同仅在 host 测试环境可读")
         }
@@ -41,7 +41,7 @@ final class ProductAnalyticsTests: XCTestCase {
             XCTAssertEqual(envelope.deviceId, envelope.anonymousId)
             XCTAssertEqual(envelope.timestamp, envelope.occurredAt)
             XCTAssertFalse(envelope.event.isEmpty)
-            XCTAssertEqual(envelope.eventVersion, 1)
+            XCTAssertEqual(envelope.eventVersion, 2)
         }
     }
 
@@ -162,7 +162,10 @@ final class ProductAnalyticsTests: XCTestCase {
         case .contentIntent, .contentReady, .contentFailed: return .reader
         case .readStart, .readFirstAudio, .readMilestone, .readEnd: return .readAloud
         case .explainStart, .explainFirstBlock, .explainMilestone, .explainEnd: return .explain
-        case .paywallShown, .purchaseStart, .purchaseResult: return .billing
+        case .paywallShown, .homeProCardImpression, .homeProCardYearlyPurchaseTap,
+             .homeProCardSecondaryTap, .purchaseStart, .purchaseResult,
+             .entitlementActivated:
+            return .billing
         }
     }
 
@@ -194,10 +197,19 @@ final class ProductAnalyticsTests: XCTestCase {
             return .init(result: "success", completionBucket: "complete", endReason: "completed", blocksStarted: 2, blocksCompleted: 2)
         case .paywallShown:
             return .init(trigger: "listen_quota", entitlementState: "free", hadMeaningfulReading: true)
+        case .homeProCardImpression, .homeProCardYearlyPurchaseTap, .homeProCardSecondaryTap:
+            return .init()
         case .purchaseStart:
             return .init(trigger: "listen_quota", store: "app_store", productId: "ai.castreader.pro.monthly")
         case .purchaseResult:
             return purchaseResult(.success)
+        case .entitlementActivated:
+            return .init(
+                trigger: "listen_quota",
+                store: "app_store",
+                productId: "ai.castreader.pro.monthly",
+                activationSource: "storekit_verified"
+            )
         }
     }
 

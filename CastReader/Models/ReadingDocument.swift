@@ -14,6 +14,7 @@ import Foundation
 enum ReadingSourceKind: String, Equatable, Codable {
     case photo   // 拍摄/选图，带 Vision OCR 的词级 bbox
     case kindle  // Kindle Cloud Reader：多页渲染图 + Vision OCR 词级 bbox
+    case weread  // 微信读书：实时 Canvas/DOM bridge（不 OCR、不保存章节正文）
     case text    // 上传文件 / 文本输入，重排纯文本
     case web     // 网址：WKWebView 直接加载网页 DOM，高亮/标注经 JS bridge（保留原排版）
     case docx    // 本地 DOCX：WKWebView 内 mammoth.js 转 HTML 渲染（不上传后端），复用 web 的高亮/标注/提取链路
@@ -24,7 +25,7 @@ enum ReadingSourceKind: String, Equatable, Codable {
 extension ReadingSourceKind {
     /// WKWebView 渲染的源（网页 / 本地 DOCX）：正文提取在 DOM、高亮/标注经 WebReaderBridge 驱动。
     /// 注意：EPUB 已改为原生解析渲染（走 TextReaderView），不在此列。
-    var isWebRendered: Bool { self == .web || self == .docx }
+    var isWebRendered: Bool { self == .web || self == .docx || self == .weread }
 
     /// 原生文本渲染源（重排文本 / EPUB）：走 TextReaderView，朗读词/句高亮统一用 processedDisplayText 内字符范围。
     var isNativeTextRendered: Bool { self == .text || self == .epub }
@@ -151,6 +152,17 @@ struct ReadingDocument: Identifiable, Equatable {
 
     var isEmpty: Bool {
         readableParagraphs.isEmpty
+    }
+
+    /// Text-layer PDFs retain exact PDFKit ranges and render in PDFView. A
+    /// scanned or hybrid PDF is OCR-reflowed and intentionally has no pdfRange,
+    /// so it uses the same text/highlight pipeline as TXT and EPUB.
+    var usesNativePDFRendering: Bool {
+        sourceKind == .pdf && paragraphs.contains { $0.pdfRange != nil }
+    }
+
+    var usesNativeTextRendering: Bool {
+        sourceKind.isNativeTextRendered || (sourceKind == .pdf && !usesNativePDFRendering)
     }
 }
 

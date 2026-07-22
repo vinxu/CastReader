@@ -4847,6 +4847,54 @@
         }
       }
     },
+    "内容接收箱": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Content Inbox" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "コンテンツ受信箱" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Bandeja de contenido" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Boîte de réception" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Caixa de entrada" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Raccolta contenuti" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "सामग्री इनबॉक्स" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "内容接收箱" } }
+      }
+    },
+    "内容暂时无法打开，请重试": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This content could not be opened. Please try again." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "コンテンツを開けませんでした。もう一度お試しください。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "No se pudo abrir este contenido. Inténtalo de nuevo." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Impossible d’ouvrir ce contenu. Réessayez." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Não foi possível abrir este conteúdo. Tente novamente." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Impossibile aprire questo contenuto. Riprova." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "यह सामग्री नहीं खुल सकी। फिर से कोशिश करें।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "内容暂时无法打开，请重试" } }
+      }
+    },
+    "接收箱是空的": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Your inbox is empty" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "受信箱は空です" } },
+        "es": { "stringUnit": { "state": "translated", "value": "La bandeja está vacía" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "La boîte de réception est vide" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "A caixa de entrada está vazia" } },
+        "it": { "stringUnit": { "state": "translated", "value": "La raccolta è vuota" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "इनबॉक्स खाली है" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "接收箱是空的" } }
+      }
+    },
+    "从其他应用分享网页、文字、文档或图片到 CastReader，内容会保存在这里。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Share webpages, text, documents, or images from other apps to CastReader. They will be saved here." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "他のアプリからウェブページ、テキスト、文書、画像を CastReader に共有すると、ここに保存されます。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Comparte páginas web, texto, documentos o imágenes desde otras apps a CastReader. Se guardarán aquí." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Partagez des pages web, du texte, des documents ou des images avec CastReader. Ils seront enregistrés ici." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Compartilhe páginas, textos, documentos ou imagens de outros apps com o CastReader. Eles ficarão salvos aqui." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Condividi pagine web, testo, documenti o immagini da altre app a CastReader. Verranno salvati qui." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "अन्य ऐप्स से वेबपेज, टेक्स्ट, दस्तावेज़ या इमेज CastReader में साझा करें। वे यहाँ सहेजे जाएंगे।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "从其他应用分享网页、文字、文档或图片到 CastReader，内容会保存在这里。" } }
+      }
+    },
     "删除": {
       "localizations": {
         "ja": {
@@ -23185,6 +23233,998 @@
             "value": "当前日文竖排页没有获得完整的 Kindle 文字列映射，或处于双页模式。为避免漏句和错高亮，已在朗读前停止；请切换为单页后重试。"
           }
         }
+      }
+    },
+    "%@/年": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@/year"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "年額%@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ al año"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ par an"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@/ano"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ all’anno"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@/वर्ष"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@/年"
+          }
+        }
+      }
+    },
+    "折合约 %@/周": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About %@/week"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "週あたり約%@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aproximadamente %@ por semana"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Environ %@ par semaine"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerca de %@ por semana"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Circa %@ a settimana"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लगभग %@/सप्ताह"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "折合约 %@/周"
+          }
+        }
+      }
+    },
+    "以 %@/年成为 Pro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Become Pro for %@/year"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "年額%@でProになる"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hazte Pro por %@ al año"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passez Pro pour %@ par an"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seja Pro por %@/ano"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passa a Pro per %@ all’anno"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@/वर्ष में Pro बनें"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以 %@/年成为 Pro"
+          }
+        }
+      }
+    },
+    "让每本 Kindle 都开口说话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make every Kindle book speak"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kindleの本を、声で楽しもう"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haz que tus libros Kindle cobren voz"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donnez une voix à vos livres Kindle"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dê voz aos seus livros Kindle"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dai voce ai tuoi libri Kindle"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अपनी Kindle किताबों को आवाज़ दें"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "让每本 Kindle 都开口说话"
+          }
+        }
+      }
+    },
+    "Kindle 连续朗读 · 100+ 专业音色 · 8 种语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuous Kindle reading · 100+ professional voices · 8 languages"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kindleを連続朗読 · 100種類以上のプロ音声 · 8言語"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lectura continua de Kindle · Más de 100 voces profesionales · 8 idiomas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture Kindle en continu · Plus de 100 voix professionnelles · 8 langues"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leitura contínua no Kindle · Mais de 100 vozes profissionais · 8 idiomas"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lettura Kindle continua · Oltre 100 voci professionali · 8 lingue"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लगातार Kindle वाचन · 100+ प्रोफ़ेशनल आवाज़ें · 8 भाषाएँ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kindle 连续朗读 · 100+ 专业音色 · 8 种语言"
+          }
+        }
+      }
+    },
+    "月度方案与恢复购买": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monthly plan and restore purchases"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "月額プランと購入の復元"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan mensual y restaurar compras"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forfait mensuel et restaurer les achats"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plano mensal e restaurar compras"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piano mensile e ripristina acquisti"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मासिक प्लान और खरीदारी बहाल करें"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "月度方案与恢复购买"
+          }
+        }
+      }
+    },
+    "按年自动续订，可随时取消": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renews annually. Cancel anytime."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "年ごとに自動更新。いつでもキャンセルできます"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renovación anual. Cancela cuando quieras."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renouvellement annuel. Annulation à tout moment."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Renovação anual. Cancele quando quiser."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rinnovo annuale. Annulla quando vuoi."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सालाना नवीनीकरण। कभी भी रद्द करें।"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按年自动续订，可随时取消"
+          }
+        }
+      }
+    },
+    "正在加载价格": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading price…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "価格を読み込み中…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cargando el precio…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chargement du prix…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carregando preço…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caricamento del prezzo…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कीमत लोड हो रही है…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在加载价格"
+          }
+        }
+      }
+    },
+    "价格暂不可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Price unavailable"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "価格を取得できません"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Precio no disponible"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prix indisponible"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preço indisponível"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prezzo non disponibile"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कीमत उपलब्ध नहीं है"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "价格暂不可用"
+          }
+        }
+      }
+    },
+    "正在连接 App Store…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecting to the App Store…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Storeに接続中…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectando con App Store…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion à l’App Store…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectando à App Store…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connessione all’App Store…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store से कनेक्ट हो रहा है…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在连接 App Store…"
+          }
+        }
+      }
+    },
+    "查看 Pro 方案": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View Pro plans"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proプランを見る"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver planes Pro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir les offres Pro"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver planos Pro"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vedi i piani Pro"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pro प्लान देखें"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看 Pro 方案"
+          }
+        }
+      }
+    },
+    "微信读书": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "WeRead" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead" } },
+        "es": { "stringUnit": { "state": "translated", "value": "WeRead" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "WeRead" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "WeRead" } },
+        "it": { "stringUnit": { "state": "translated", "value": "WeRead" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "WeRead" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "微信读书" } }
+      }
+    },
+    "已同步的微信读书书架": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Your synced WeRead library" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "同期済みの WeRead ライブラリ" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Tu biblioteca de WeRead sincronizada" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Votre bibliothèque WeRead synchronisée" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Sua biblioteca WeRead sincronizada" } },
+        "it": { "stringUnit": { "state": "translated", "value": "La tua libreria WeRead sincronizzata" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "आपकी सिंक की गई WeRead लाइब्रेरी" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已同步的微信读书书架" } }
+      }
+    },
+    "还没有同步书籍": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No books synced yet" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "まだ本が同期されていません" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Aún no hay libros sincronizados" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Aucun livre synchronisé pour le moment" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Nenhum livro sincronizado ainda" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Nessun libro sincronizzato" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "अभी कोई किताब सिंक नहीं हुई है" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "还没有同步书籍" } }
+      }
+    },
+    "绑定微信读书": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Connect WeRead" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead を連携" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Conectar WeRead" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Connecter WeRead" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Conectar o WeRead" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Collega WeRead" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "WeRead कनेक्ट करें" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "绑定微信读书" } }
+      }
+    },
+    "登录后同步书架与阅读进度": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sign in to sync your library and reading progress" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ログインして本棚と読書進捗を同期" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Inicia sesión para sincronizar tu biblioteca y progreso" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Connectez-vous pour synchroniser votre bibliothèque et votre progression" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Entre para sincronizar sua biblioteca e o progresso de leitura" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Accedi per sincronizzare libreria e avanzamento di lettura" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "अपनी लाइब्रेरी और पढ़ने की प्रगति सिंक करने के लिए साइन इन करें" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "登录后同步书架与阅读进度" } }
+      }
+    },
+    "微信读书书架": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "WeRead Library" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead 本棚" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Biblioteca de WeRead" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Bibliothèque WeRead" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Biblioteca do WeRead" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Libreria WeRead" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "WeRead लाइब्रेरी" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "微信读书书架" } }
+      }
+    },
+    "搜索微信读书书籍": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search WeRead books" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead の本を検索" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Buscar libros de WeRead" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Rechercher des livres WeRead" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Buscar livros no WeRead" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Cerca libri WeRead" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "WeRead किताबें खोजें" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "搜索微信读书书籍" } }
+      }
+    },
+    "没有匹配的书籍": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No matching books" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "一致する本がありません" } },
+        "es": { "stringUnit": { "state": "translated", "value": "No hay libros coincidentes" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Aucun livre correspondant" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Nenhum livro correspondente" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Nessun libro corrispondente" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "कोई मिलती-जुलती किताब नहीं" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "没有匹配的书籍" } }
+      }
+    },
+    "已同步 %d 本微信读书书籍。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%d WeRead books synced." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead の本を %d 冊同期しました。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Se sincronizaron %d libros de WeRead." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "%d livres WeRead synchronisés." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "%d livros do WeRead sincronizados." } },
+        "it": { "stringUnit": { "state": "translated", "value": "%d libri WeRead sincronizzati." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "%d WeRead किताबें सिंक हो गईं।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已同步 %d 本微信读书书籍。" } }
+      }
+    },
+    "当前页面没有找到微信读书书籍。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No WeRead books were found on this page." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "このページに WeRead の本が見つかりません。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "No se encontraron libros de WeRead en esta página." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Aucun livre WeRead trouvé sur cette page." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Nenhum livro do WeRead foi encontrado nesta página." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Nessun libro WeRead trovato in questa pagina." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "इस पेज पर कोई WeRead किताब नहीं मिली।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "当前页面没有找到微信读书书籍。" } }
+      }
+    },
+    "微信读书书籍链接已失效，请重新登录并同步书架。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This WeRead book link has expired. Sign in again and sync your library." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "この WeRead の本のリンクは無効です。再度ログインして本棚を同期してください。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "El enlace de este libro de WeRead ha caducado. Vuelve a iniciar sesión y sincroniza tu biblioteca." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Le lien de ce livre WeRead a expiré. Reconnectez-vous et synchronisez votre bibliothèque." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "O link deste livro do WeRead expirou. Entre novamente e sincronize sua biblioteca." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Il link di questo libro WeRead è scaduto. Accedi di nuovo e sincronizza la libreria." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "इस WeRead किताब का लिंक समाप्त हो गया है। फिर से साइन इन करके लाइब्रेरी सिंक करें।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "微信读书书籍链接已失效，请重新登录并同步书架。" } }
+      }
+    },
+    "文档": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Document" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "書類" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Documento" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Document" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Documento" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Documento" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "दस्तावेज़" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "文档" } }
+      }
+    },
+    "微信读书登录已失效，请重新登录后继续。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Your WeRead session has expired. Sign in again to continue." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead のログインが期限切れです。再度ログインして続けてください。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Tu sesión de WeRead ha caducado. Vuelve a iniciar sesión para continuar." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Votre session WeRead a expiré. Reconnectez-vous pour continuer." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Sua sessão do WeRead expirou. Entre novamente para continuar." } },
+        "it": { "stringUnit": { "state": "translated", "value": "La sessione WeRead è scaduta. Accedi di nuovo per continuare." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "आपका WeRead सत्र समाप्त हो गया है। जारी रखने के लिए फिर से साइन इन करें।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "微信读书登录已失效，请重新登录后继续。" } }
+      }
+    },
+    "书架中没有找到这本书，请重新同步微信读书书架。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This book was not found in your library. Sync your WeRead library again." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "本棚にこの本が見つかりません。WeRead 本棚をもう一度同期してください。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Este libro no se encontró en tu biblioteca. Vuelve a sincronizar tu biblioteca de WeRead." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Ce livre est introuvable dans votre bibliothèque. Synchronisez à nouveau votre bibliothèque WeRead." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Este livro não foi encontrado na sua biblioteca. Sincronize novamente a biblioteca do WeRead." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Questo libro non è stato trovato nella libreria. Sincronizza di nuovo la libreria WeRead." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "यह किताब आपकी लाइब्रेरी में नहीं मिली। अपनी WeRead लाइब्रेरी फिर से सिंक करें।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "书架中没有找到这本书，请重新同步微信读书书架。" } }
+      }
+    },
+    "微信读书账号": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "WeRead account" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead アカウント" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Cuenta de WeRead" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Compte WeRead" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Conta WeRead" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Account WeRead" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "WeRead खाता" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "微信读书账号" } }
+      }
+    },
+    "打开微信读书并登录。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open WeRead and sign in." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead を開いてログインしてください。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Abre WeRead e inicia sesión." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Ouvrez WeRead et connectez-vous." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Abra o WeRead e entre." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Apri WeRead e accedi." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "WeRead खोलें और साइन इन करें।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "打开微信读书并登录。" } }
+      }
+    },
+    "最近阅读": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Recently read" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "最近読んだ本" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Leídos recientemente" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Lecture récente" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Lidos recentemente" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Letti di recente" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "हाल में पढ़ी गई" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "最近阅读" } }
+      }
+    },
+    "正在扫描微信读书书架…（%d）": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Scanning your WeRead library… (%d)" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead の本棚をスキャン中…（%d）" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Escaneando tu biblioteca de WeRead… (%d)" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Analyse de votre bibliothèque WeRead… (%d)" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Analisando sua biblioteca WeRead… (%d)" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Scansione della libreria WeRead… (%d)" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "आपकी WeRead लाइब्रेरी स्कैन हो रही है… (%d)" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在扫描微信读书书架…（%d）" } }
+      }
+    },
+    "没有找到书架书籍。请在微信读书网页的书架页登录后重试。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No library books found. Sign in on the WeRead Library page, then try again." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "本棚の本が見つかりません。WeRead の本棚ページでログインしてから、もう一度お試しください。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "No se encontraron libros. Inicia sesión en la página Biblioteca de WeRead e inténtalo de nuevo." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Aucun livre trouvé. Connectez-vous à la page Bibliothèque WeRead, puis réessayez." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Nenhum livro encontrado. Entre na página Biblioteca do WeRead e tente novamente." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Nessun libro trovato. Accedi alla pagina Libreria WeRead e riprova." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "लाइब्रेरी में कोई किताब नहीं मिली। WeRead लाइब्रेरी पेज पर साइन इन करके फिर कोशिश करें।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "没有找到书架书籍。请在微信读书网页的书架页登录后重试。" } }
+      }
+    },
+    "登录后打开书架，再点同步。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sign in, open your library, then tap Sync." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ログイン後に本棚を開き、「同期」をタップしてください。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Inicia sesión, abre tu biblioteca y toca Sincronizar." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Connectez-vous, ouvrez votre bibliothèque, puis touchez Synchroniser." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Entre, abra sua biblioteca e toque em Sincronizar." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Accedi, apri la libreria e tocca Sincronizza." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "साइन इन करें, लाइब्रेरी खोलें, फिर सिंक पर टैप करें।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "登录后打开书架，再点同步。" } }
+      }
+    },
+    "请先登录微信读书，再点同步。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sign in to WeRead first, then tap Sync." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "先に WeRead にログインしてから、「同期」をタップしてください。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Primero inicia sesión en WeRead y luego toca Sincronizar." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Connectez-vous d'abord à WeRead, puis touchez Synchroniser." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Entre primeiro no WeRead e depois toque em Sincronizar." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Accedi prima a WeRead, quindi tocca Sincronizza." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "पहले WeRead में साइन इन करें, फिर सिंक पर टैप करें।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "请先登录微信读书，再点同步。" } }
+      }
+    },
+    "书架中有 %d 本书可以同步": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%d books available to sync" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "同期できる本が %d 冊あります" } },
+        "es": { "stringUnit": { "state": "translated", "value": "%d libros disponibles para sincronizar" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "%d livres disponibles à synchroniser" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "%d livros disponíveis para sincronizar" } },
+        "it": { "stringUnit": { "state": "translated", "value": "%d libri disponibili per la sincronizzazione" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "%d किताबें सिंक करने के लिए उपलब्ध हैं" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "书架中有 %d 本书可以同步" } }
+      }
+    },
+    "内容服务": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Content Services" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "コンテンツサービス" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Servicios de contenido" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Services de contenu" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Serviços de conteúdo" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Servizi di contenuti" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "कंटेंट सेवाएँ" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "内容服务" } }
+      }
+    },
+    "同步 %d 本书": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sync %d Books" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "%d 冊を同期" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Sincronizar %d libros" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Synchroniser %d livres" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Sincronizar %d livros" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Sincronizza %d libri" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "%d किताबें सिंक करें" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "同步 %d 本书" } }
+      }
+    },
+    "将清除本机微信读书书架、阅读进度和登录状态，不会影响微信读书账号或书籍。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This clears the local WeRead library, reading progress, and sign-in state. It does not affect your WeRead account or books." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "この端末の WeRead 本棚、読書進捗、ログイン状態を消去します。WeRead のアカウントや本には影響しません。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Se borrarán la biblioteca, el progreso y la sesión local de WeRead. Tu cuenta y tus libros no se verán afectados." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "La bibliothèque, la progression et la connexion WeRead locales seront effacées. Votre compte et vos livres ne seront pas affectés." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Isso apagará a biblioteca, o progresso e o login local do WeRead. Sua conta e seus livros não serão afetados." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Verranno cancellati libreria, avanzamento e accesso WeRead locali. L'account e i libri non saranno modificati." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "इससे स्थानीय WeRead लाइब्रेरी, पढ़ने की प्रगति और साइन-इन स्थिति हट जाएगी। आपका खाता और किताबें प्रभावित नहीं होंगी।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "将清除本机微信读书书架、阅读进度和登录状态，不会影响微信读书账号或书籍。" } }
+      }
+    },
+    "已找到 %d 本微信读书书籍。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Found %d WeRead books." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead の本が %d 冊見つかりました。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Se encontraron %d libros de WeRead." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "%d livres WeRead trouvés." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "%d livros do WeRead encontrados." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Trovati %d libri WeRead." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "%d WeRead किताबें मिलीं।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已找到 %d 本微信读书书籍。" } }
+      }
+    },
+    "未绑定": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Not connected" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "未連携" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Sin conectar" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Non connecté" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Não conectado" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Non collegato" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "कनेक्ट नहीं है" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "未绑定" } }
+      }
+    },
+    "正在打开微信读书书架…": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Opening your WeRead library…" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead 本棚を開いています…" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Abriendo tu biblioteca de WeRead…" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Ouverture de votre bibliothèque WeRead…" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Abrindo sua biblioteca WeRead…" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Apertura della libreria WeRead…" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "आपकी WeRead लाइब्रेरी खुल रही है…" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在打开微信读书书架…" } }
+      }
+    },
+    "登录成功后将自动进入书架。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "After signing in, your library will open automatically." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ログイン後、本棚が自動的に開きます。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Después de iniciar sesión, tu biblioteca se abrirá automáticamente." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Après la connexion, votre bibliothèque s'ouvrira automatiquement." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Após entrar, sua biblioteca abrirá automaticamente." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Dopo l'accesso, la libreria si aprirà automaticamente." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "साइन इन करने के बाद आपकी लाइब्रेरी अपने आप खुलेगी।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "登录成功后将自动进入书架。" } }
+      }
+    },
+    "登录成功，正在进入书架…": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Signed in. Opening your library…" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ログインしました。本棚を開いています…" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Sesión iniciada. Abriendo tu biblioteca…" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Connexion réussie. Ouverture de votre bibliothèque…" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Login concluído. Abrindo sua biblioteca…" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Accesso riuscito. Apertura della libreria…" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "साइन इन हो गया। लाइब्रेरी खुल रही है…" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "登录成功，正在进入书架…" } }
+      }
+    },
+    "解除微信读书登录": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Clear WeRead Sign-In" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead のログインを解除" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Cerrar sesión de WeRead" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Effacer la connexion WeRead" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Remover login do WeRead" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Rimuovi accesso WeRead" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "WeRead साइन-इन हटाएँ" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "解除微信读书登录" } }
+      }
+    },
+    "解除微信读书绑定？": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Disconnect WeRead?" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead の連携を解除しますか？" } },
+        "es": { "stringUnit": { "state": "translated", "value": "¿Desconectar WeRead?" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Déconnecter WeRead ?" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Desconectar o WeRead?" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Scollegare WeRead?" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "WeRead डिस्कनेक्ट करें?" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "解除微信读书绑定？" } }
+      }
+    },
+    "解除绑定": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Disconnect" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "連携を解除" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Desconectar" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Déconnecter" } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Desconectar" } },
+        "it": { "stringUnit": { "state": "translated", "value": "Scollega" } },
+        "hi": { "stringUnit": { "state": "translated", "value": "डिस्कनेक्ट करें" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "解除绑定" } }
+      }
+    },
+    "解除绑定只清除本机 CastReader 的登录状态和书架缓存，不会影响原平台账号或书籍。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Disconnecting only clears CastReader's local sign-in state and library cache. It does not affect the original account or books." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "連携解除では CastReader 内のログイン状態と本棚キャッシュだけを消去します。元のアカウントや本には影響しません。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Desconectar solo borra la sesión y la caché local de CastReader. No afecta a la cuenta ni a los libros originales." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "La déconnexion efface uniquement la connexion et le cache locaux de CastReader. Elle n'affecte pas le compte ni les livres d'origine." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Desconectar apaga apenas o login e o cache local do CastReader. A conta e os livros originais não são afetados." } },
+        "it": { "stringUnit": { "state": "translated", "value": "La disconnessione cancella solo accesso e cache locali di CastReader. Non modifica l'account o i libri originali." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "डिस्कनेक्ट करने से केवल CastReader की स्थानीय साइन-इन स्थिति और लाइब्रेरी कैश हटेंगे। मूल खाता और किताबें प्रभावित नहीं होंगी।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "解除绑定只清除本机 CastReader 的登录状态和书架缓存，不会影响原平台账号或书籍。" } }
+      }
+    },
+    "请先登录微信读书，登录后会自动进入书架。": {
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sign in to WeRead. Your library will open automatically afterward." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "WeRead にログインしてください。ログイン後、本棚が自動的に開きます。" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Inicia sesión en WeRead. Después, tu biblioteca se abrirá automáticamente." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Connectez-vous à WeRead. Votre bibliothèque s'ouvrira ensuite automatiquement." } },
+        "pt-BR": { "stringUnit": { "state": "translated", "value": "Entre no WeRead. Sua biblioteca abrirá automaticamente em seguida." } },
+        "it": { "stringUnit": { "state": "translated", "value": "Accedi a WeRead. La libreria si aprirà automaticamente." } },
+        "hi": { "stringUnit": { "state": "translated", "value": "WeRead में साइन इन करें। इसके बाद आपकी लाइब्रेरी अपने आप खुलेगी।" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "请先登录微信读书，登录后会自动进入书架。" } }
       }
     },
     "高亮颜色": {

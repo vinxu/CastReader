@@ -492,6 +492,25 @@ class AudioPlayerService: NSObject, ObservableObject {
         playSegment(at: index)
     }
 
+    /// Start a specifically queued item from a stable fractional checkpoint.
+    /// Web readers use this only after an unavoidable WebKit reload. Seeking is
+    /// applied after AVPlayerItem becomes ready and before audio is allowed to
+    /// resume, so recovery never emits a short burst from the sentence start.
+    @discardableResult
+    func startQueuedSegment(
+        id: String,
+        progress: Double,
+        autoPlay: Bool
+    ) -> Bool {
+        guard let index = segmentsQueue.firstIndex(where: { $0.id == id }) else { return false }
+        playSegment(
+            at: index,
+            initialProgress: min(0.98, max(0, progress)),
+            autoPlayWhenReady: autoPlay
+        )
+        return true
+    }
+
     func play() {
         guard let player else {
             guard !segmentsQueue.isEmpty else {
@@ -609,7 +628,11 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     // MARK: - Private Methods
 
-    private func playSegment(at index: Int) {
+    private func playSegment(
+        at index: Int,
+        initialProgress: Double? = nil,
+        autoPlayWhenReady: Bool = true
+    ) {
         guard index >= 0 && index < segmentsQueue.count else {
             print("🔴 playSegment: index \(index) out of range (queue size: \(segmentsQueue.count))")
             return
@@ -646,13 +669,21 @@ class AudioPlayerService: NSObject, ObservableObject {
         do {
             try segment.audioData.write(to: tempURL)
             print("🔊 playSegment[\(index)]: Written to \(tempURL.lastPathComponent), calling playAudio")
-            playAudio(from: tempURL)
+            playAudio(
+                from: tempURL,
+                initialProgress: initialProgress,
+                autoPlayWhenReady: autoPlayWhenReady
+            )
         } catch {
             print("🔴 playSegment[\(index)]: Failed to write audio data: \(error)")
         }
     }
 
-    private func playAudio(from url: URL) {
+    private func playAudio(
+        from url: URL,
+        initialProgress: Double? = nil,
+        autoPlayWhenReady: Bool = true
+    ) {
         removeTimeObserver()
 
         // Ensure audio session is active
@@ -696,10 +727,32 @@ class AudioPlayerService: NSObject, ObservableObject {
                         print("Audio ready but suspended by interruption; waiting for user resume")
                         return
                     }
-                    // Start playback
-                    self.player?.playImmediately(atRate: self.playbackRate)
-                    self.isPlaying = true
-                    self.updateNowPlayingInfo()
+                    if let initialProgress, seconds.isFinite, seconds > 0 {
+                        let targetSeconds = seconds * min(0.98, max(0, initialProgress))
+                        let target = CMTime(seconds: targetSeconds, preferredTimescale: 600)
+                        let expectedItem = self.playerItem
+                        self.player?.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self, weak expectedItem] _ in
+                            guard let self, expectedItem === self.playerItem else { return }
+                            self.currentTime = targetSeconds
+                            if autoPlayWhenReady {
+                                self.player?.playImmediately(atRate: self.playbackRate)
+                                self.isPlaying = true
+                            } else {
+                                self.player?.pause()
+                                self.isPlaying = false
+                            }
+                            self.updateNowPlayingInfo()
+                            print("Audio restored at \(targetSeconds)s / \(seconds)s")
+                        }
+                    } else if autoPlayWhenReady {
+                        self.player?.playImmediately(atRate: self.playbackRate)
+                        self.isPlaying = true
+                        self.updateNowPlayingInfo()
+                    } else {
+                        self.player?.pause()
+                        self.isPlaying = false
+                        self.updateNowPlayingInfo()
+                    }
                     print("Audio ready to play, duration: \(seconds)")
                 case .failed:
                     self.isBuffering = false

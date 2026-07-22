@@ -309,7 +309,7 @@ struct PDFReaderView: UIViewRepresentable {
                 if ch == "\n" || ch == "\r" {
                     let prev = i > 0 ? chars[i - 1] : " "
                     let next = (i + 1 < chars.count) ? chars[i + 1] : " "
-                    if isCJKPDFChar(prev) && isCJKPDFChar(next) {
+                    if ReadingSentenceContract.isCJKOrKana(prev) && ReadingSentenceContract.isCJKOrKana(next) {
                         continue
                     }
                     mapped.append((" ", rawOffset, rawLength))
@@ -321,12 +321,6 @@ struct PDFReaderView: UIViewRepresentable {
             while let first = mapped.first, first.char.isWhitespace { mapped.removeFirst() }
             while let last = mapped.last, last.char.isWhitespace { mapped.removeLast() }
             return mapped
-        }
-
-        private func isCJKPDFChar(_ c: Character) -> Bool {
-            guard let v = c.unicodeScalars.first?.value else { return false }
-            return (0x4E00...0x9FFF).contains(v) || (0x3400...0x4DBF).contains(v)
-                || (0x3000...0x303F).contains(v) || (0xFF00...0xFFEF).contains(v)
         }
 
         @objc func handleTap(_ g: UITapGestureRecognizer) {

@@ -11,6 +11,7 @@ import SwiftUI
 
 @MainActor
 final class PlayerCoordinator: ObservableObject {
+    private static let orientationOwner = "document-player"
 
     /// 一次播放会话：一个文档配一对 VM。会话存活期间播放不断，跨阅读器开合、跨 Tab。
     struct Session: Identifiable {
@@ -66,6 +67,7 @@ final class PlayerCoordinator: ObservableObject {
             session?.explainVM.scenario = scenario   // 同文档以场景重新进入：更新场景信号
         }
         self.mode = mode
+        updateOrientationForExpandedReader(document)
         isReaderPresented = true
         HistoryStore.shared.record(document)   // 进文库历史（新增/置顶；纯本地、不上云）
         if autoplay, let s = session {
@@ -78,10 +80,23 @@ final class PlayerCoordinator: ObservableObject {
     }
 
     /// 收起阅读器（不停播放）→ Mini Player 接管。
-    func minimize() { isReaderPresented = false }
+    func minimize() {
+        guard let document = session?.document else { return }
+        if document.sourceKind == .weread {
+            // WeRead is portrait-only in both full reader and Mini Player.
+            AppOrientationLock.lockPortrait(owner: Self.orientationOwner)
+        } else {
+            AppOrientationLock.lockCurrent(owner: Self.orientationOwner)
+        }
+        isReaderPresented = false
+    }
 
     /// 从 Mini Player 重新展开完整阅读器。
-    func expand() { guard session != nil else { return }; isReaderPresented = true }
+    func expand() {
+        guard let document = session?.document else { return }
+        updateOrientationForExpandedReader(document)
+        isReaderPresented = true
+    }
 
     /// 关闭会话（Mini Player 的 ✕）：停止播放并清空。
     func close() {
@@ -89,5 +104,14 @@ final class PlayerCoordinator: ObservableObject {
         session?.explainVM.stop()
         session = nil
         isReaderPresented = false
+        AppOrientationLock.unlock(owner: Self.orientationOwner)
+    }
+
+    private func updateOrientationForExpandedReader(_ document: ReadingDocument) {
+        if document.sourceKind == .weread {
+            AppOrientationLock.lockPortrait(owner: Self.orientationOwner)
+        } else {
+            AppOrientationLock.unlock(owner: Self.orientationOwner)
+        }
     }
 }

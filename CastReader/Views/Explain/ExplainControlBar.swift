@@ -26,7 +26,11 @@ struct ExplainControlBar: View {
         .foregroundColor(AppTheme.foreground)
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .frame(minHeight: 64)
+        // Keep the subtitle slot and the complete bar height invariant across
+        // idle/planning/streaming. In WeRead this view sits next to WKWebView;
+        // an intrinsic-height animation would repaginate the Canvas for every
+        // generated sentence.
+        .frame(height: 124)
         .animation(.easeInOut(duration: 0.2), value: vm.explanationText)
     }
 
@@ -34,15 +38,18 @@ struct ExplainControlBar: View {
 
     @ViewBuilder
     private var subtitleRow: some View {
-        if case .streaming = vm.status, !vm.isPreparingNext, !vm.explanationText.isEmpty {
-            Text(vm.explanationText)
-                .font(.callout)
-                .foregroundColor(AppTheme.foreground)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .transition(.opacity)
+        ZStack(alignment: .topLeading) {
+            if case .streaming = vm.status, !vm.isPreparingNext, !vm.explanationText.isEmpty {
+                Text(vm.explanationText)
+                    .font(.callout)
+                    .foregroundColor(AppTheme.foreground)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .transition(.opacity)
+            }
         }
+        .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40, alignment: .topLeading)
+        .clipped()
     }
 
     // MARK: 控制行
@@ -83,20 +90,28 @@ struct ExplainControlBar: View {
                     .lineLimit(1)
             }
         case .completed:
-            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-            Text("解读完成").font(.subheadline.weight(.semibold))
-            Button { vm.replay() } label: {
-                Label("重播", systemImage: "arrow.clockwise")
+            if vm.isContinuingLivePage {
+                ProgressView().frame(width: 44, height: 44)
+                Text(AppLocalized("继续讲解…"))
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(AppTheme.primary)
+            } else {
+                Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+                Text(AppLocalized("解读完成")).font(.subheadline.weight(.semibold))
+                Button { vm.replay() } label: {
+                    Label("重播", systemImage: "arrow.clockwise")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppTheme.primary)
+                }
             }
         }
     }
 
     private var showsSpeedControl: Bool {
         switch vm.status {
-        case .streaming, .completed:
+        case .streaming:
             return true
+        case .completed:
+            return !vm.isContinuingLivePage
         case .idle, .error, .planning:
             return false
         }

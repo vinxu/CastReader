@@ -102,6 +102,7 @@ struct KindleBookView: View {
             }
         }
         .onChange(of: verticalSizeClass) { _ in
+            guard playbackCenter.isPresented else { return }
             model.noteReaderLayoutChange(reason: "orientation")
             model.notePlaybackLayoutChange(reason: "orientation")
         }
@@ -109,6 +110,7 @@ struct KindleBookView: View {
             model.setPlayerControlOverlayPresented(presented)
         }
         .onPreferenceChange(KindleReaderSurfaceSizePreferenceKey.self) { size in
+            guard playbackCenter.isPresented else { return }
             if model.isNativeTOCPresented || model.isKindleTOCVisible || playbackVoicePanel.isPresented {
                 return
             }
@@ -439,6 +441,7 @@ struct KindleBookView: View {
         // Playback state, voice availability and errors must never change the
         // Kindle viewport height. A fixed single-line console prevents React
         // from reconciling the reader surface when playback begins.
+        .frame(maxWidth: .infinity)
         .frame(height: 72)
         .background(.regularMaterial)
     }
@@ -710,41 +713,85 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
 
     var body: some View {
         if isLandscape {
-            singleLineBody
+            compactSingleLineBody
                 .kindleLandscapePill()
         } else {
-            singleLineBody
-                .padding(.horizontal, 12)
+            fullWidthBody
                 .frame(height: 64)
         }
     }
 
-    private var singleLineBody: some View {
-        HStack(spacing: isLandscape ? 12 : 8) {
-            HStack(spacing: isLandscape ? 12 : 6) {
-                KindlePageTurnButton(
-                    systemName: "chevron.left",
-                    accessibilityLabel: AppLocalized("上一页"),
-                    action: previousPage
-                )
-                playControl
-                KindlePageTurnButton(
-                    systemName: "chevron.right",
-                    accessibilityLabel: AppLocalized("下一页"),
-                    action: nextPage
-                )
-            }
+    /// Portrait uses the full bar width as two balanced interaction zones.
+    /// Keeping the playback cluster and tool cluster in equal flexible columns
+    /// prevents an intrinsic-width HStack from bunching every button together
+    /// in the middle while the surrounding material spans the whole screen.
+    private var fullWidthBody: some View {
+        HStack(spacing: 0) {
+            playbackCluster(spacing: 8)
+                .frame(maxWidth: .infinity)
+                .layoutPriority(1)
 
             if let statusMessage, !statusMessage.isEmpty {
                 Text(statusMessage)
                     .font(.caption.weight(.medium))
                     .foregroundStyle(AppTheme.mutedForeground)
                     .lineLimit(1)
-                    .frame(maxWidth: isLandscape ? 180 : 76)
+                    .frame(maxWidth: 72)
             }
 
             Divider().frame(height: 30)
 
+            utilityCluster(spacing: 8)
+                .frame(maxWidth: .infinity)
+                .layoutPriority(1)
+        }
+        .padding(.horizontal, 8)
+        .frame(maxWidth: .infinity)
+        .foregroundStyle(AppTheme.foreground)
+        .accessibilityElement(children: .contain)
+        .accessibilityValue(Text(playbackStatus))
+    }
+
+    /// Landscape remains an intrinsic capsule overlay, so it deliberately
+    /// keeps the compact single-line composition instead of expanding.
+    private var compactSingleLineBody: some View {
+        HStack(spacing: 12) {
+            playbackCluster(spacing: 12)
+
+            if let statusMessage, !statusMessage.isEmpty {
+                Text(statusMessage)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(AppTheme.mutedForeground)
+                    .lineLimit(1)
+                    .frame(maxWidth: 180)
+            }
+
+            Divider().frame(height: 30)
+            utilityCluster(spacing: 12)
+        }
+        .foregroundStyle(AppTheme.foreground)
+        .accessibilityElement(children: .contain)
+        .accessibilityValue(Text(playbackStatus))
+    }
+
+    private func playbackCluster(spacing: CGFloat) -> some View {
+        HStack(spacing: spacing) {
+            KindlePageTurnButton(
+                systemName: "chevron.left",
+                accessibilityLabel: AppLocalized("上一页"),
+                action: previousPage
+            )
+            playControl
+            KindlePageTurnButton(
+                systemName: "chevron.right",
+                accessibilityLabel: AppLocalized("下一页"),
+                action: nextPage
+            )
+        }
+    }
+
+    private func utilityCluster(spacing: CGFloat) -> some View {
+        HStack(spacing: spacing) {
             KindlePageTurnButton(
                 systemName: "list.bullet",
                 accessibilityLabel: AppLocalized("目录"),
@@ -753,9 +800,6 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
             voiceControl(showsLabel: false)
             SpeedMenu(style: .compact)
         }
-        .foregroundStyle(AppTheme.foreground)
-        .accessibilityElement(children: .contain)
-        .accessibilityValue(Text(playbackStatus))
     }
 
     @ViewBuilder
@@ -1259,6 +1303,7 @@ struct KindleMiniPlayerView: View {
 @MainActor
 final class KindlePlaybackCenter: ObservableObject {
     static let shared = KindlePlaybackCenter()
+    private static let orientationOwner = "kindle-player"
 
     @Published private(set) var model: KindleBookViewModel?
     @Published var isPresented = false
@@ -1270,6 +1315,7 @@ final class KindlePlaybackCenter: ObservableObject {
     private init() {}
 
     func open(book: KindleBook, continueListening: Bool = false) {
+        AppOrientationLock.unlock(owner: Self.orientationOwner)
         if let active = model, active.isSameBook(as: book) {
             active.refreshMetadata(from: book)
             if continueListening {
@@ -1296,6 +1342,7 @@ final class KindlePlaybackCenter: ObservableObject {
         }
         let next = KindleBookViewModel(book: book, staleRecoveryAlreadyAttempted: true)
         model = next
+        AppOrientationLock.unlock(owner: Self.orientationOwner)
         isPresented = true
         KindleRunLog.write("KINDLE stale-entry fresh-reader created book=\(String(book.id.prefix(24)))")
     }
@@ -1310,10 +1357,13 @@ final class KindlePlaybackCenter: ObservableObject {
 
     func expand() {
         guard model != nil else { return }
+        AppOrientationLock.unlock(owner: Self.orientationOwner)
         isPresented = true
     }
 
     func minimize() {
+        guard model != nil else { return }
+        AppOrientationLock.lockCurrent(owner: Self.orientationOwner)
         isPresented = false
     }
 
@@ -1321,6 +1371,7 @@ final class KindlePlaybackCenter: ObservableObject {
         let active = model
         model = nil
         isPresented = false
+        AppOrientationLock.unlock(owner: Self.orientationOwner)
         active?.stopAll()
     }
 
@@ -1328,6 +1379,7 @@ final class KindlePlaybackCenter: ObservableObject {
         guard model === candidate else { return }
         model = nil
         isPresented = false
+        AppOrientationLock.unlock(owner: Self.orientationOwner)
     }
 }
 
@@ -10483,7 +10535,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private static func isKindleChunkTerminator(_ ch: Character) -> Bool {
-        Set<Character>(".!?;:。！？；：").contains(ch)
+        Set<Character>(".!?;:。！？；：…।॥").contains(ch)
     }
 
     private static func isKindleChunkSoftBreak(_ ch: Character) -> Bool {
@@ -10527,7 +10579,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private static func endsWithKindleHardTerminal(_ text: String) -> Bool {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
-            .range(of: #"[.!?。！？]["')\]\u{201D}\u{2019}]*$"#, options: .regularExpression) != nil
+            .range(of: #"[.!?。！？…।॥]["')\]\u{201D}\u{2019}]*$"#, options: .regularExpression) != nil
     }
 
     private static func endsWithKindleSoftContinuationPunctuation(_ text: String) -> Bool {

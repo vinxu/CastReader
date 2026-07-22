@@ -40,12 +40,18 @@ private struct MiniPlayerBar: View {
     private var isExplain: Bool { coordinator.mode == .explain }
 
     private var isFinished: Bool {
-        if isExplain { if case .completed = explainVM.status { return true }; return false }
+        if isExplain {
+            if case .completed = explainVM.status {
+                return !explainVM.isContinuingLivePage
+            }
+            return false
+        }
         return readVM.isFinished
     }
 
     private var statusText: String {
         if let progress = voiceSwitch.progress { return progress.localizedMessage }
+        if isExplain, explainVM.isContinuingLivePage { return AppLocalized("继续讲解…") }
         if isFinished { return AppLocalized("已播完 · 点播放重读") }
         if audio.isPlaying { return isExplain ? AppLocalized("解读中") : AppLocalized("朗读中") }
         return AppLocalized("已暂停")
@@ -101,7 +107,7 @@ private struct MiniPlayerBar: View {
                 }
                 .frame(width: 34, height: 34)
             }
-            .disabled(voiceSwitch.progress != nil)
+            .disabled(voiceSwitch.progress != nil || (isExplain && explainVM.isContinuingLivePage))
             Button { coordinator.close() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 13, weight: .semibold))

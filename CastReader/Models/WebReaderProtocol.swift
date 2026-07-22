@@ -27,6 +27,12 @@ struct WebRenderedParagraph {
     let text: String
     let type: String
 
+    init(paragraphIndex: Int, text: String, type: String = "paragraph") {
+        self.paragraphIndex = paragraphIndex
+        self.text = text
+        self.type = type
+    }
+
     init?(_ dict: [String: Any]) {
         guard let idx = dict["paragraphIndex"] as? Int, let text = dict["text"] as? String else { return nil }
         self.paragraphIndex = idx
@@ -43,5 +49,6 @@ struct WebHighlightCmd: Equatable {
     var words: [String]? = nil         // 词级（英文/有词时间戳）：当前 segment 的词文本数组
     var wordIndex: Int = -1            // 词级：当前词在 segment 内索引
     var segSeq: Int = -1               // 词级：segment 在段落的序号（JS 按此重建词 Range 缓存的前向 cursor）
+    var segmentTexts: [String]? = nil   // 句级：当前段落全部 TTS segment；JS 按扩展算法重放匹配回页面原文
     var isWord: Bool { words != nil }
 }

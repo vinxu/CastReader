@@ -7,7 +7,9 @@
 //
 
 import Foundation
+import CoreImage
 import PDFKit
+import UIKit
 import ZIPFoundation
 
 enum DocumentBuilder {
@@ -72,12 +74,26 @@ enum DocumentBuilder {
     /// PDF 本地原生渲染（PDFKit PDFView 保排版）：提取每页文本按句切段，记录每句的 page + 页内字符范围（characterBounds 高亮用）。
     static func fromPDFNative(url: URL, title: String? = nil) -> ReadingDocument? {
         guard let pdf = PDFDocument(url: url), let data = try? Data(contentsOf: url) else { return nil }
+        return nativePDFDocument(
+            pdf: pdf,
+            data: data,
+            title: title,
+            fallbackTitle: url.deletingPathExtension().lastPathComponent
+        )
+    }
+
+    private static func nativePDFDocument(
+        pdf: PDFDocument,
+        data: Data,
+        title: String?,
+        fallbackTitle: String
+    ) -> ReadingDocument? {
         var paragraphs: [ReadingParagraph] = []
         var pid = 0
         for pageIdx in 0..<pdf.pageCount {
             guard let page = pdf.page(at: pageIdx), let pageStr = page.string else { continue }
             let ns = pageStr as NSString
-            for r in sentenceRangesInPage(ns) {
+            for r in ReadingSentenceContract.nsRanges(in: pageStr) {
                 // pdfRange(r) 保留 page.string 原始范围（高亮 needle 用精确子串）；text 去 PDF 硬换行供 TTS 朗读（否则在换行处停顿）。
                 let text = stripPdfLineBreaks(ns.substring(with: r)).trimmingCharacters(in: .whitespacesAndNewlines)
                 if text.count < 2 { continue }
@@ -90,9 +106,89 @@ enum DocumentBuilder {
         // 标题：优先 PDF 元数据标题（有意义时）→ 首句/首行 → 文件名（避免 arxiv-id 文件名等 demo 感）。
         let metaTitle = (pdf.documentAttributes?[PDFDocumentAttribute.titleAttribute] as? String)
         let resolved = title ?? derivePDFTitle(meta: metaTitle, firstText: paragraphs.first?.text,
-                                               fallback: url.deletingPathExtension().lastPathComponent)
+                                               fallback: fallbackTitle)
         return ReadingDocument(title: resolved,
                                sourceKind: .pdf, language: lang, paragraphs: paragraphs, fileData: data)
+    }
+
+    /// Unified PDF import. Fully searchable PDFs keep their original layout and
+    /// exact PDFKit ranges. If any content page lacks a usable text layer, the
+    /// document becomes a single OCR/text-reflow track so native and scanned
+    /// pages cannot diverge into two incompatible highlight systems.
+    static func fromPDFWithOCR(
+        data: Data,
+        title: String? = nil,
+        fallbackTitle: String = "PDF"
+    ) async -> ReadingDocument? {
+        guard let pdf = PDFDocument(data: data), pdf.pageCount > 0 else { return nil }
+        let pageTexts: [String] = (0..<pdf.pageCount).map {
+            pdf.page(at: $0)?.string ?? ""
+        }
+        let pagesRequiringOCR = (0..<pdf.pageCount).map { pageIndex in
+            !hasUsablePDFTextLayer(pageTexts[pageIndex])
+                && pdf.page(at: pageIndex).map(pdfPageHasVisibleInk) == true
+        }
+        let requiresOCRReflow = pagesRequiringOCR.contains(true)
+        if !requiresOCRReflow {
+            return nativePDFDocument(pdf: pdf, data: data, title: title, fallbackTitle: fallbackTitle)
+        }
+
+        var paragraphs: [ReadingParagraph] = []
+        for pageIndex in 0..<pdf.pageCount {
+            let pageText = pageTexts[pageIndex]
+            if hasUsablePDFTextLayer(pageText) {
+                let ns = pageText as NSString
+                for range in ReadingSentenceContract.nsRanges(in: pageText) {
+                    let value = stripPdfLineBreaks(ns.substring(with: range))
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard value.count >= 2 else { continue }
+                    paragraphs.append(ReadingParagraph(
+                        id: paragraphs.count,
+                        text: value,
+                        pdfPageIndex: pageIndex
+                    ))
+                }
+                continue
+            }
+
+            guard pagesRequiringOCR[pageIndex],
+                  let page = pdf.page(at: pageIndex),
+                  let image = renderPDFPageForOCR(page) else { continue }
+            do {
+                let ocr = try await OCRService.shared.recognizeImportedImage(
+                    image: image,
+                    title: title ?? fallbackTitle
+                )
+                for paragraph in ocr.paragraphs where
+                    paragraph.type.isReadable && SpeechTextSanitizer.containsSpeakableContent(paragraph.text) {
+                    paragraphs.append(ReadingParagraph(
+                        id: paragraphs.count,
+                        text: paragraph.text,
+                        type: paragraph.type,
+                        pdfPageIndex: pageIndex
+                    ))
+                }
+            } catch {
+                #if DEBUG
+                NSLog("CRDBG PDF OCR page=%d failed=%@", pageIndex, error.localizedDescription)
+                #endif
+            }
+        }
+        guard !paragraphs.isEmpty else { return nil }
+        let language = detectLanguage(paragraphs.prefix(40).map(\.text).joined(separator: " "))
+        let metaTitle = pdf.documentAttributes?[PDFDocumentAttribute.titleAttribute] as? String
+        let resolvedTitle = title ?? derivePDFTitle(
+            meta: metaTitle,
+            firstText: paragraphs.first?.text,
+            fallback: fallbackTitle
+        )
+        return ReadingDocument(
+            title: resolvedTitle,
+            sourceKind: .pdf,
+            language: language,
+            paragraphs: paragraphs,
+            fileData: data
+        )
     }
 
     /// PDF 标题推导：元数据标题（剔除 "Microsoft Word - …"/untitled 等垃圾）→ 首段文本（截断）→ 文件名兜底。
@@ -116,30 +212,57 @@ enum DocumentBuilder {
         return !junk.contains { low == $0 || low.hasPrefix($0) }
     }
 
-    /// page string 内按句末标点切句（中文 。！？；+ 英文 .!?; 后接空白/结尾），换行不切句（PDF 硬换行常在句中）。
-    private static func sentenceRangesInPage(_ ns: NSString) -> [NSRange] {
-        var ranges: [NSRange] = []
-        var start = 0
-        let len = ns.length
-        var i = 0
-        while i < len {
-            let cu = ns.character(at: i)
-            var isEnd = (cu == 0x3002 || cu == 0xFF01 || cu == 0xFF1F || cu == 0xFF1B   // 。！？；
-                         || cu == 0x21 || cu == 0x3F || cu == 0x3B)                      // ! ? ;
-            if cu == 0x2E {   // '.'：英文句点仅当后接空白/结尾才切（避免小数/缩写）
-                let nextBreak = (i + 1 >= len) || {
-                    let n = ns.character(at: i + 1); return n == 0x20 || n == 0x0A || n == 0x0D
-                }()
-                if nextBreak { isEnd = true }
-            }
-            if isEnd {
-                ranges.append(NSRange(location: start, length: i + 1 - start))
-                start = i + 1
-            }
-            i += 1
+    private static func hasUsablePDFTextLayer(_ text: String) -> Bool {
+        let evidence = LanguageDetector.evidence(for: text)
+        return evidence.readableCharacterCount >= 12 && SpeechTextSanitizer.containsSpeakableContent(text)
+    }
+
+    /// Empty separator pages are common in otherwise searchable PDFs. A small
+    /// rendered luminance probe prevents one truly blank page from forcing the
+    /// entire document into OCR reflow, while scanned text/pages remain visible.
+    private static func pdfPageHasVisibleInk(_ page: PDFPage) -> Bool {
+        let bounds = page.bounds(for: .mediaBox)
+        guard bounds.width > 1, bounds.height > 1 else { return false }
+        let scale = 180 / max(bounds.width, bounds.height)
+        let thumbnail = page.thumbnail(
+            of: CGSize(width: bounds.width * scale, height: bounds.height * scale),
+            for: .mediaBox
+        )
+        guard let input = CIImage(image: thumbnail),
+              let filter = CIFilter(name: "CIAreaAverage") else { return true }
+        filter.setValue(input, forKey: kCIInputImageKey)
+        filter.setValue(CIVector(cgRect: input.extent), forKey: kCIInputExtentKey)
+        guard let output = filter.outputImage else { return true }
+        var pixel = [UInt8](repeating: 255, count: 4)
+        CIContext(options: [.workingColorSpace: NSNull()]).render(
+            output,
+            toBitmap: &pixel,
+            rowBytes: 4,
+            bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
+            format: .RGBA8,
+            colorSpace: nil
+        )
+        let luminance = (0.2126 * Double(pixel[0]) + 0.7152 * Double(pixel[1]) + 0.0722 * Double(pixel[2])) / 255
+        return luminance < 0.997
+    }
+
+    /// Render before OCR at a bounded high resolution. This is deliberately
+    /// independent of the JPEG used for history thumbnails: OCR receives clean
+    /// lossless pixels and is never fed a compressed preview.
+    private static func renderPDFPageForOCR(_ page: PDFPage) -> UIImage? {
+        let bounds = page.bounds(for: .mediaBox)
+        guard bounds.width > 1, bounds.height > 1 else { return nil }
+        let targetLongEdge = min(2800, max(bounds.width, bounds.height) * 3)
+        let scale = targetLongEdge / max(bounds.width, bounds.height)
+        let size = CGSize(width: bounds.width * scale, height: bounds.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+            context.cgContext.translateBy(x: 0, y: size.height)
+            context.cgContext.scaleBy(x: scale, y: -scale)
+            page.draw(with: .mediaBox, to: context.cgContext)
         }
-        if start < len { ranges.append(NSRange(location: start, length: len - start)) }
-        return ranges
     }
 
     /// 去掉 PDF 硬换行（视觉排版换行，非句子边界，否则 TTS 在此停顿）：CJK 字之间删除（连续）、其余替空格（保英文词边界）。
@@ -151,7 +274,7 @@ enum DocumentBuilder {
             if c == "\n" || c == "\r" {
                 let prev = i > 0 ? chars[i - 1] : " "
                 let next = (i + 1 < chars.count) ? chars[i + 1] : " "
-                if isCJKChar(prev) && isCJKChar(next) {
+                if ReadingSentenceContract.isCJKOrKana(prev) && ReadingSentenceContract.isCJKOrKana(next) {
                     continue   // CJK 之间的换行 → 删除（中文连续、不停顿）
                 }
                 out.append(" ")   // 英文等 → 空格（保词边界）
@@ -160,13 +283,6 @@ enum DocumentBuilder {
             }
         }
         return out
-    }
-
-    private static func isCJKChar(_ c: Character) -> Bool {
-        guard let v = c.unicodeScalars.first?.value else { return false }
-        return (0x4E00...0x9FFF).contains(v) || (0x3400...0x4DBF).contains(v)
-            || (0x3000...0x303F).contains(v)   // CJK 标点
-            || (0xFF00...0xFFEF).contains(v)   // 全角字符/标点
     }
 
     /// 本地 EPUB 原生解析（ZIPFoundation + SwiftSoup，含内嵌图片，不上传、不走 WebView）。
@@ -261,19 +377,8 @@ enum DocumentBuilder {
 
     /// 按句末标点拆句（中英）。
     private static func splitSentences(_ text: String) -> [String] {
-        var out: [String] = []
-        var cur = ""
-        for ch in text {
-            cur.append(ch)
-            if "。！？!?".contains(ch) {
-                let t = cur.trimmingCharacters(in: .whitespaces)
-                if !t.isEmpty { out.append(t) }
-                cur = ""
-            }
-        }
-        let tail = cur.trimmingCharacters(in: .whitespaces)
-        if !tail.isEmpty { out.append(tail) }
-        return out.isEmpty ? [text] : out
+        let values = ReadingSentenceContract.segments(text)
+        return values.isEmpty ? [text] : values
     }
 
     private static func detectLanguage(_ text: String) -> String {

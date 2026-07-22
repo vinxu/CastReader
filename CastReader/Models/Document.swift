@@ -259,30 +259,6 @@ struct TextInputData: Identifiable {
 
     /// Split text into sentences
     private func splitIntoSentences(_ text: String) -> [String] {
-        var sentences: [String] = []
-        var currentSentence = ""
-
-        // Sentence-ending punctuation
-        let sentenceEnders: Set<Character> = [".", "!", "?", "。", "！", "？"]
-
-        for char in text {
-            currentSentence.append(char)
-
-            if sentenceEnders.contains(char) {
-                let trimmed = currentSentence.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmed.isEmpty {
-                    sentences.append(trimmed)
-                }
-                currentSentence = ""
-            }
-        }
-
-        // Add remaining text
-        let remaining = currentSentence.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !remaining.isEmpty {
-            sentences.append(remaining)
-        }
-
-        return sentences
+        ReadingSentenceContract.segments(text, lineBreakIsBoundary: true)
     }
 }

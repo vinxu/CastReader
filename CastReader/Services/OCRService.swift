@@ -268,9 +268,127 @@ enum KindleOCRTextContract {
     }
 }
 
+/// Language selection for camera, photo-library, clipboard, shared images and
+/// scanned PDF pages. Vision can auto-detect seven product locales on current
+/// iOS runtimes, but does not expose a Hindi recognizer; a guarded Hindi
+/// Tesseract probe closes that gap without running eight OCR models together.
+enum ImportedOCRLanguageSelection {
+    static func shouldRunHindiProbe(vision: LanguageDetector.Evidence?) -> Bool {
+        guard let vision else { return true }
+        return vision.readableCharacterCount < 24 || vision.confidence < 0.88
+    }
+
+    static func shouldPreferHindi(
+        vision: LanguageDetector.Evidence?,
+        hindi: LanguageDetector.Evidence,
+        hindiMeanConfidence: Double
+    ) -> Bool {
+        guard hindi.language == "hi",
+              hindi.readableCharacterCount >= 6,
+              hindi.confidence >= 0.82,
+              hindiMeanConfidence >= 50 else { return false }
+        guard let vision else { return true }
+        let hindiScore = hindi.confidence
+            * min(1, Double(hindi.readableCharacterCount) / 24)
+            * min(1, hindiMeanConfidence / 75)
+        let visionScore = vision.confidence * min(1, Double(vision.readableCharacterCount) / 24)
+        return hindi.readableCharacterCount >= max(6, Int(Double(vision.readableCharacterCount) * 0.55))
+            && hindiScore >= max(0.38, visionScore * 0.9)
+    }
+}
+
 actor OCRService {
     static let shared = OCRService()
     private init() {}
+
+    private struct TesseractDocumentCandidate {
+        let document: ReadingDocument
+        let meanConfidence: Double
+    }
+
+    /// Authoritative OCR entry used by every non-Kindle image path. The first
+    /// pass only selects one language; the final pass is always a single-language
+    /// profile so OCR correction, CJK token boxes and TTS language agree.
+    func recognizeImportedImage(image: UIImage, title: String? = nil) async throws -> ReadingDocument {
+        let visionLocales = SupportedTTSLanguage.allCases
+            .filter { $0 != .hindi }
+            .map(\.visionRecognitionLanguage)
+        var visionProbe: ReadingDocument?
+        var lastError: Error = OCRError.noText
+        do {
+            visionProbe = try await recognize(
+                image: image,
+                languages: visionLocales,
+                title: title,
+                paragraphStrategy: .visionLines,
+                languageHint: nil
+            )
+        } catch {
+            lastError = error
+        }
+
+        let visionEvidence = visionProbe.map { LanguageDetector.evidence(for: $0.fullText) }
+        var hindiCandidate: TesseractDocumentCandidate?
+        if ImportedOCRLanguageSelection.shouldRunHindiProbe(vision: visionEvidence),
+           let hindiProfile = KindleLanguageContract.profile(language: "hi") {
+            do {
+                let candidate = try await recognizeKindleWithTesseractCandidate(
+                    image: image,
+                    profile: hindiProfile,
+                    title: title,
+                    paragraphStrategy: .kindleLayout,
+                    verticalColumnHints: []
+                )
+                _ = try validateKindleDocument(candidate.document, profile: hindiProfile, engine: .tesseract)
+                hindiCandidate = candidate
+            } catch {
+                lastError = error
+            }
+        }
+
+        if let hindiCandidate {
+            let hindiEvidence = LanguageDetector.evidence(for: hindiCandidate.document.fullText)
+            if ImportedOCRLanguageSelection.shouldPreferHindi(
+                vision: visionEvidence,
+                hindi: hindiEvidence,
+                hindiMeanConfidence: hindiCandidate.meanConfidence
+            ) {
+                #if DEBUG
+                NSLog("CRDBG Imported OCR selected=hi engine=tesseract confidence=%d chars=%d",
+                      Int(hindiCandidate.meanConfidence.rounded()), hindiEvidence.readableCharacterCount)
+                #endif
+                return hindiCandidate.document
+            }
+        }
+
+        guard let visionProbe,
+              let profile = KindleLanguageContract.profile(language: visionProbe.language) else {
+            throw lastError
+        }
+        do {
+            let document = try await recognizeKindle(
+                image: image,
+                profile: profile,
+                title: title,
+                paragraphStrategy: .kindleLayout
+            )
+            #if DEBUG
+            NSLog("CRDBG Imported OCR selected=%@ engine=profile chars=%d", profile.language, document.fullText.count)
+            #endif
+            return document
+        } catch {
+            // Keep the final geometry single-language even if the stricter
+            // Kindle quality gate rejects it. The multilingual probe is only
+            // the last fail-open value and never the preferred display result.
+            return (try? await recognize(
+                image: image,
+                languages: [profile.visionLocale],
+                title: title,
+                paragraphStrategy: .kindleLayout,
+                languageHint: profile.language
+            )) ?? visionProbe
+        }
+    }
 
     /// 识别图片文字，按行聚合为段落。languages 为 BCP-47（如 ["en-US"]、["zh-Hans","en-US"]）。
     func recognize(
@@ -430,6 +548,22 @@ actor OCRService {
         paragraphStrategy: OCRParagraphStrategy,
         verticalColumnHints: [KindleVerticalColumnHint]
     ) async throws -> ReadingDocument {
+        try await recognizeKindleWithTesseractCandidate(
+            image: image,
+            profile: profile,
+            title: title,
+            paragraphStrategy: paragraphStrategy,
+            verticalColumnHints: verticalColumnHints
+        ).document
+    }
+
+    private func recognizeKindleWithTesseractCandidate(
+        image: UIImage,
+        profile: KindleLanguageProfile,
+        title: String?,
+        paragraphStrategy: OCRParagraphStrategy,
+        verticalColumnHints: [KindleVerticalColumnHint]
+    ) async throws -> TesseractDocumentCandidate {
         guard let png = image.pngData() else { throw OCRError.noCGImage }
         let result = try await KindleTesseractOCRService.shared.recognize(
             imageData: png,
@@ -504,12 +638,15 @@ actor OCRService {
               result.verticalSource ?? "-", result.verticalColumns,
               result.verticalRequiredColumns, result.verticalUnresolvedColumns)
         #endif
-        return makeDocument(
-            image: image,
-            imageData: png,
-            title: title,
-            paraBoxes: paraBoxes,
-            language: profile.language
+        return TesseractDocumentCandidate(
+            document: makeDocument(
+                image: image,
+                imageData: nil,
+                title: title,
+                paraBoxes: paraBoxes,
+                language: profile.language
+            ),
+            meanConfidence: meanConfidence
         )
     }
 
@@ -685,6 +822,7 @@ actor OCRService {
                     return
                 }
                 request.recognitionLanguages = supported
+                request.automaticallyDetectsLanguage = supported.count > 1
             }
 
             let handler = VNImageRequestHandler(cgImage: cgImage, orientation: .up, options: [:])
@@ -750,7 +888,10 @@ actor OCRService {
             sourceKind: .photo,
             language: language,
             paragraphs: paragraphs,
-            imageData: imageData,
+            // OCR always consumed the original lossless pixels above. Encode
+            // only after recognition for display/history; never feed this JPEG
+            // back into either Vision or Tesseract.
+            imageData: imageData ?? image.jpegData(compressionQuality: 0.9),
             imagePixelSize: pixel,
             sourceURL: nil
         )

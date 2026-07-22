@@ -36,6 +36,7 @@ final class ExplainViewModel: ObservableObject {
     private var playbackTitle: String?
     private var playbackChapterTitle: String?
     private var playbackCoverURL: String?
+    var onDocumentFinished: (() -> Void)?
 
     /// 发给后端的解读深度：永远 = 用户在设置里选的 3 档（速览/标准/深入），场景绝不改它（content_type 与 depth 正交）。
     var requestDepth: String { settings.explainDepth }
@@ -48,6 +49,55 @@ final class ExplainViewModel: ObservableObject {
                                  language: language ?? document.language, paragraphs: p, sourceURL: document.sourceURL)
     }
 
+    /// Live WebView sources (WeRead) cannot keep marks/plans from a previous
+    /// canvas page.  Stop the old job, replace its anchor document, then start
+    /// a new page-only explanation when the user had an active explain session.
+    func replaceLiveWebPage(
+        _ p: [ReadingParagraph],
+        language: String? = nil,
+        autoplay: Bool,
+        prefetched: PrefetchedFirstBlock? = nil
+    ) {
+        // The bridge already captured whether playback was active before it
+        // stopped the stale Canvas page.  Re-checking status here would always
+        // turn autoplay back off because `stop()` has necessarily run first.
+        let shouldRestart = autoplay
+        stop()
+        // A WeRead page is an independent explanation document. Never reuse
+        // block 0, marks, or cached narration from the previous Canvas page.
+        prepared.removeAll()
+        preparingBlocks.removeAll()
+        marksByBlock.removeAll()
+        replayBlocks.removeAll()
+        firedMarks.removeAll()
+        section0 = nil
+        jobId = ""
+        totalBlocks = 0
+        currentBlockIndex = -1
+        explanationText = ""
+        anchorCursor = nil
+        completionNotified = false
+        loadWebParagraphs(p, language: language)
+        activeMarks = []
+        scrollTarget = -1
+        if shouldRestart {
+            // Serialize old-request cancellation before the new page starts.
+            // `stop()` performs a best-effort async cancel for ordinary exits;
+            // a page handoff additionally owns this ordering so the old cancel
+            // can never arrive late and cancel the new page's first TTS call.
+            let generation = contentGeneration
+            Task { [weak self] in
+                await TTSService.shared.cancelCurrentRequest()
+                guard let self, self.contentGeneration == generation else { return }
+                if let prefetched {
+                    self.startFromPrefetched(prefetched)
+                } else {
+                    self.start()
+                }
+            }
+        }
+    }
+
     @Published var status: ExplainStatus = .idle
     @Published var stageText: String = ""
     @Published var activeMarks: [ResolvedMark] = []
@@ -57,6 +107,11 @@ final class ExplainViewModel: ObservableObject {
     @Published var isPlaying: Bool = false
     @Published var scrollTarget: Int = -1         // 跟随讲解滚动到的段落（mark 命中时更新）
     @Published var isPreparingNext: Bool = false  // 块间等待下一段处理 → 控制条显示 loading，避免被误以为卡住
+    /// Live paginated readers have finished the current Canvas page, but have
+    /// not yet committed the next page.  `.completed` still represents the
+    /// finished page internally; this flag prevents the UI from presenting it
+    /// as the end of the whole document during the semantic-turn handshake.
+    @Published private(set) var isContinuingLivePage: Bool = false
     @Published private(set) var playbackLanguage: String
 
     /// segment 的有效时长：云端 TTS 的 API duration 常为 0，用最后一个时间戳的 endTime 兜底。
@@ -127,8 +182,14 @@ final class ExplainViewModel: ObservableObject {
     private var forcedExplainLang: String?   // 快道激活时锁定语言（快道+质道同语言，避免开头/后续语言不一致）
     /// 质道 plan 失败标志（402/400/网络）：让 prepareBlock 的 section0 等待循环跳出，避免快道占位后死等挂起。
     private var planFailed = false
+    private var planSettled = false
+    private var completionNotified = false
 
     private var orchestrationTask: Task<Void, Never>?
+    /// A live-page replacement invalidates all plan/block work owned by the
+    /// previous page. QuickRead callbacks and detached prefetches can outlive
+    /// cooperative Task cancellation, so cancellation is not enough by itself.
+    private var contentGeneration: UInt64 = 0
     private var cancellables = Set<AnyCancellable>()
     private(set) var isActive = false
     private var lastNowPlayingCaption: String?
@@ -488,10 +549,13 @@ final class ExplainViewModel: ObservableObject {
         replayBlocks.removeAll()
         preparingBlocks.removeAll()
         isReplayingCached = false
-        idxBase = 0; block0Claimed = false; fastSection = nil; forcedExplainLang = nil; planFailed = false; batchPrevSummary = nil
+        idxBase = 0; block0Claimed = false; fastSection = nil; forcedExplainLang = nil; planFailed = false; planSettled = false; completionNotified = false; batchPrevSummary = nil
         // text/web/EPUB 的 scope 只由快道 setupQuoteScope 设；重试解读前清掉上轮残留，否则 fastLaneEligibleOpening
         // 的 `pdfScopedParagraphs == nil` 守卫失败 → 退化成只讲 rest、永久丢开头段（PDF 翻页 scope 不受影响）。
-        if [.text, .web, .epub].contains(doc.sourceKind) { pdfScopedParagraphs = nil; pdfBatchCursor = nil }
+        if doc.sourceKind == .web || doc.usesNativeTextRendering {
+            pdfScopedParagraphs = nil
+            pdfBatchCursor = nil
+        }
         applyPlaybackMetadata()
         applySpeed()
         status = .planning
@@ -541,8 +605,10 @@ final class ExplainViewModel: ObservableObject {
         fastSection = nil
         forcedExplainLang = nil
         planFailed = false
+        planSettled = true
+        completionNotified = false
         batchPrevSummary = prefetched.previousSummary
-        if [.text, .web, .epub, .kindle].contains(doc.sourceKind) {
+        if doc.sourceKind == .web || doc.sourceKind == .kindle || doc.usesNativeTextRendering {
             pdfScopedParagraphs = nil
             pdfBatchCursor = nil
         }
@@ -582,8 +648,14 @@ final class ExplainViewModel: ObservableObject {
         }
     }
 
+    /// Kindle uses this to avoid spending the shared QuickRead slot on the
+    /// following page before the current page's next block has been prepared.
+    /// WeRead has its own page-prefetch timing in `WebReaderBridge` because a
+    /// mobile page is substantially shorter and must begin preloading earlier.
     func shouldDeferExternalPagePrefetchForCurrentBlock() -> Bool {
-        guard doc.sourceKind == .kindle, isActive, status.isActive else { return false }
+        guard (doc.sourceKind == .kindle || doc.sourceKind == .web),
+              isActive,
+              status.isActive else { return false }
         guard currentBlockIndex >= 0 else { return true }
         let next = currentBlockIndex + 1
         return next < totalBlocks && prepared[next] == nil
@@ -603,7 +675,7 @@ final class ExplainViewModel: ObservableObject {
     /// 快道门控（§5.1）：text/web/EPUB 整页长文首次解读。返回开头 N 段（累计 ~350 字 / ≤2 段）；nil = 不快道。
     private func fastLaneEligibleOpening() -> [ReadingParagraph]? {
         guard pro.isPro else { return nil }                                      // 免费额度按会话计，避免快道被后端误算一次解读
-        guard [.text, .web, .epub].contains(doc.sourceKind) else { return nil }   // photo/PDF 翻页跳过
+        guard doc.sourceKind == .web || doc.usesNativeTextRendering else { return nil }
         guard pdfScopedParagraphs == nil else { return nil }                       // 已设批次范围（PDF 翻页）跳过
         let readable = doc.readableParagraphs
         let totalChars = readable.reduce(0) { $0 + $1.text.count }
@@ -643,18 +715,27 @@ final class ExplainViewModel: ObservableObject {
     /// 快道执行：先 LLM(fast-block0) + TTS 决定 idxBase/scope，再启动质道。
     /// 成功 → 占 block_0 秒开 + 质道吃剩余段（idxBase=1）；失败 → idxBase=0 + 质道吃全量（绝不漏开头）。
     private func runFastLaneThenQuote(opening: [ReadingParagraph]) async {
+        let generation = contentGeneration
         let lang = settings.explainLangOrNil ?? doc.language   // 锁定确定语言（快道+质道同语言，不让 server 对快道默认 en）
-        await MainActor.run { self.forcedExplainLang = lang }
+        await MainActor.run {
+            guard self.contentGeneration == generation else { return }
+            self.forcedExplainLang = lang
+        }
         var fastPB: PreparedBlock?
         if let section = try? await QuickReadService.shared.fastBlock0(
                 title: doc.title, openingParas: opening.map { $0.text },
                 lang: lang, depth: requestDepth, prevSummary: nil, contentType: scenario),
            let pb = try? await prepareFastBlock(section, language: lang) {
-            await MainActor.run { self.fastSection = section }
+            await MainActor.run {
+                guard self.contentGeneration == generation else { return }
+                self.fastSection = section
+            }
             fastPB = pb
         }
         await MainActor.run {
-            guard self.isActive, case .planning = self.status else { return }
+            guard self.contentGeneration == generation,
+                  self.isActive,
+                  case .planning = self.status else { return }
             if let pb = fastPB {
                 self.idxBase = 1
                 self.block0Claimed = true
@@ -673,6 +754,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     func stop() {
+        contentGeneration &+= 1
         orchestrationTask?.cancel()
         fastTask?.cancel()
         finishVoiceSwitchIfNeeded()
@@ -681,8 +763,19 @@ final class ExplainViewModel: ObservableObject {
         clearPagePrefetch()
         preparingBlocks.removeAll()
         isReplayingCached = false
+        isContinuingLivePage = false
         status = .idle
         endAnalyticsExplainSession(result: .cancelled, reason: "closed")
+    }
+
+    /// A live reader could not commit a requested next page (book end,
+    /// rejected action, unavailable WebView, or confirmation timeout).  Only
+    /// now is the page-level completion also the document-level completion.
+    func finishLivePageContinuation() {
+        guard isContinuingLivePage else { return }
+        isContinuingLivePage = false
+        stageText = ""
+        status = .completed
     }
 
     func togglePlayPause() { audio.togglePlayPause() }
@@ -839,18 +932,29 @@ final class ExplainViewModel: ObservableObject {
     // MARK: - Plan
 
     private func runPlan() async {
+        let generation = contentGeneration
         let req = buildPlanRequest()
         do {
             let done = try await QuickReadService.shared.extractPlan(
                 req,
-                onStage: { [weak self] s in Task { @MainActor in self?.stageText = self?.friendlyStage(s) ?? s } },
+                onStage: { [weak self] s in
+                    Task { @MainActor in
+                        guard let self, self.contentGeneration == generation else { return }
+                        self.stageText = self.friendlyStage(s)
+                    }
+                },
                 onBlock0: { [weak self] block0 in
-                    Task { @MainActor in self?.handlePlan(block0) }
+                    Task { @MainActor in
+                        guard let self, self.contentGeneration == generation else { return }
+                        self.handlePlan(block0)
+                    }
                 }
             )
             // 权威总块数取自 done 事件：block0 事件的 total_blocks 后端常发 0 占位（plan 尚未算完总数）。
             // 之前 app 误用 block0 的 0 → max(1,0)=1 → 只播首块就"完成"。对齐扩展：用 done 的值。
             await MainActor.run {
+                guard self.contentGeneration == generation else { return }
+                self.planSettled = true
                 let oldTotal = self.totalBlocks
                 self.debugLog("explain DONE total_blocks=%d (block0 placeholder totalBlocks=%d)", done.total_blocks ?? -1, self.totalBlocks)
                 if let tb = done.total_blocks, self.idxBase + tb > self.totalBlocks {
@@ -865,12 +969,14 @@ final class ExplainViewModel: ObservableObject {
                 if next < self.totalBlocks {
                     self.startBackgroundPrepare(block: next, reason: "plan-done")
                 }
+                self.notifyDocumentFinishedIfReady()
             }
         } catch {
             if case QuickReadError.httpError(402) = error {
                 await ProManager.shared.refresh()
             }
             await MainActor.run {
+                guard self.contentGeneration == generation else { return }
                 self.planFailed = true   // 通知 prepareBlock 的 section0 等待循环跳出（快道占位后不再死等挂起）
                 // server entitlement 超限 → 付费墙（对齐扩展：免费额度用满当付费墙，不当普通错误）
                 if case QuickReadError.httpError(402) = error {
@@ -942,6 +1048,7 @@ final class ExplainViewModel: ObservableObject {
     // MARK: - 块准备与入队
 
     private func prepareAndEnqueue(block idx: Int) async {
+        let generation = contentGeneration
         let startedAt = Date()
         let cachedAtStart = prepared[idx] != nil
         kindlePerfLog("prepare-enqueue begin idx=\(idx) total=\(totalBlocks) cached=\(cachedAtStart ? "Y" : "N")")
@@ -951,18 +1058,26 @@ final class ExplainViewModel: ObservableObject {
             kindlePerfLog("kindleExplainBlockPrefetch fallback idx=\(idx) source=prepare-enqueue")
         }
         do {
-            let pb = try await prepareBlock(idx)
-            await MainActor.run { self.enqueue(pb, idx: idx) }
+            let pb = try await prepareBlock(idx, generation: generation)
+            await MainActor.run {
+                guard self.contentGeneration == generation else { return }
+                self.enqueue(pb, idx: idx)
+            }
+            guard contentGeneration == generation else { return }
             kindlePerfLog("prepare-enqueue ready idx=\(idx) totalMs=\(elapsedMs(since: startedAt)) segs=\(pb.segments.count) text=\(pb.text.count)")
             // 预取下一块
             if idx + 1 < totalBlocks {
                 startBackgroundPrepare(block: idx + 1, reason: "after-enqueue-\(idx)")
             }
         } catch is CancellationError {
-            await MainActor.run { self.isPreparingNext = false }
+            await MainActor.run {
+                guard self.contentGeneration == generation else { return }
+                self.isPreparingNext = false
+            }
         } catch {
             kindlePerfLog("prepare-enqueue error idx=\(idx) totalMs=\(elapsedMs(since: startedAt)) error=\(error.localizedDescription)")
             await MainActor.run {
+                guard self.contentGeneration == generation else { return }
                 self.status = .error(error.localizedDescription)
                 self.isPreparingNext = false
                 self.endAnalyticsExplainSession(
@@ -983,11 +1098,13 @@ final class ExplainViewModel: ObservableObject {
         }
         kindlePerfLog("background-prepare schedule reason=\(reason) idx=\(idx) total=\(totalBlocks)")
         kindlePerfLog("kindleExplainBlockPrefetch start reason=\(reason) idx=\(idx) total=\(totalBlocks)")
+        let generation = contentGeneration
         Task { [weak self] in
             guard let self else { return }
             do {
-                let pb = try await self.prepareBlock(idx, detachedTTS: true)
+                let pb = try await self.prepareBlock(idx, detachedTTS: true, generation: generation)
                 await MainActor.run {
+                    guard self.contentGeneration == generation else { return }
                     if self.prepared[idx] == nil {
                         self.prepared[idx] = pb
                     }
@@ -995,14 +1112,26 @@ final class ExplainViewModel: ObservableObject {
                     self.kindlePerfLog("kindleExplainBlockPrefetch ready reason=\(reason) idx=\(idx) segs=\(pb.segments.count) text=\(pb.text.count)")
                 }
             } catch is CancellationError {
-                await MainActor.run { self.kindlePerfLog("background-prepare cancelled reason=\(reason) idx=\(idx)") }
+                await MainActor.run {
+                    guard self.contentGeneration == generation else { return }
+                    self.kindlePerfLog("background-prepare cancelled reason=\(reason) idx=\(idx)")
+                }
             } catch {
-                await MainActor.run { self.kindlePerfLog("background-prepare miss reason=\(reason) idx=\(idx) error=\(error.localizedDescription)") }
+                await MainActor.run {
+                    guard self.contentGeneration == generation else { return }
+                    self.kindlePerfLog("background-prepare miss reason=\(reason) idx=\(idx) error=\(error.localizedDescription)")
+                }
             }
         }
     }
 
-    private func prepareBlock(_ idx: Int, detachedTTS: Bool = false) async throws -> PreparedBlock {
+    private func prepareBlock(
+        _ idx: Int,
+        detachedTTS: Bool = false,
+        generation expectedGeneration: UInt64? = nil
+    ) async throws -> PreparedBlock {
+        let generation = expectedGeneration ?? contentGeneration
+        guard generation == contentGeneration else { throw CancellationError() }
         let startedAt = Date()
         if let cached = prepared[idx] {
             kindlePerfLog("prepare-block cache-hit idx=\(idx) detached=\(detachedTTS ? "Y" : "N")")
@@ -1012,12 +1141,17 @@ final class ExplainViewModel: ObservableObject {
         let waitStartedAt = Date()
         while preparingBlocks.contains(idx) {
             try await Task.sleep(nanoseconds: 80_000_000)
+            guard generation == contentGeneration else { throw CancellationError() }
             if let cached = prepared[idx] { return cached }
             if !isActive { throw CancellationError() }
         }
         waitedMs = elapsedMs(since: waitStartedAt)
         preparingBlocks.insert(idx)
-        defer { preparingBlocks.remove(idx) }
+        defer {
+            if generation == contentGeneration {
+                preparingBlocks.remove(idx)
+            }
+        }
 
         if let cached = prepared[idx] {
             kindlePerfLog("prepare-block cache-hit-after-wait idx=\(idx) detached=\(detachedTTS ? "Y" : "N") waitedMs=\(waitedMs)")
@@ -1032,7 +1166,10 @@ final class ExplainViewModel: ObservableObject {
         if qIdx <= 0 {
             // 等质道 plan 返回 section0；plan 失败（planFailed）或失活则跳出，避免快道占位后死等挂起。
             // 失败时静默抛 CancellationError——错误/付费墙状态已由 runPlan 的 catch 设置，prepareAndEnqueue 不覆盖。
-            while section0 == nil, isActive, !planFailed { try await Task.sleep(nanoseconds: 200_000_000) }
+            while section0 == nil, isActive, !planFailed {
+                try await Task.sleep(nanoseconds: 200_000_000)
+                guard generation == contentGeneration else { throw CancellationError() }
+            }
             guard let s0 = section0 else { throw CancellationError() }
             section = s0
         } else {
@@ -1040,6 +1177,7 @@ final class ExplainViewModel: ObservableObject {
         }
         let sectionMs = elapsedMs(since: sectionStartedAt)
         let pb = try await prepareSection(section, idx: idx, composeIdx: qIdx, jobId: jobId, language: outputLanguage, detachedTTS: detachedTTS)
+        guard generation == contentGeneration else { throw CancellationError() }
         prepared[idx] = pb
         kindlePerfLog("prepare-block ready idx=\(idx) qIdx=\(qIdx) detached=\(detachedTTS ? "Y" : "N") waitedMs=\(waitedMs) sectionMs=\(sectionMs) totalMs=\(elapsedMs(since: startedAt))")
         return pb
@@ -1163,6 +1301,31 @@ final class ExplainViewModel: ObservableObject {
         }
         status = .completed
         endAnalyticsExplainSession(result: .success, reason: "completed")
+        notifyDocumentFinishedIfReady()
+    }
+
+    /// `block0.total_blocks` can be a placeholder while the SSE plan is still
+    /// running.  Never advance a live paginated reader until the authoritative
+    /// `done` event has settled the final block count; otherwise a short first
+    /// block could flip the page while later blocks from the old page are still
+    /// arriving.
+    private func notifyDocumentFinishedIfReady() {
+        guard planSettled,
+              !completionNotified,
+              case .completed = status,
+              currentBlockIndex + 1 >= totalBlocks,
+              pdfBatchCursor == nil else { return }
+        completionNotified = true
+        if let onDocumentFinished {
+            // Set this before invoking the bridge. SwiftUI may observe the
+            // `.completed` assignment from `onBlockComplete`; the companion
+            // flag makes that same render a continuation state, never a false
+            // whole-document completion flash.
+            isContinuingLivePage = true
+            stageText = AppLocalized("继续讲解…")
+            debugLog("live-page explanation completed; awaiting semantic next-page commit")
+            onDocumentFinished()
+        }
     }
 
     private func enqueueReplayBlock(_ idx: Int) {
@@ -1423,28 +1586,9 @@ final class ExplainViewModel: ObservableObject {
     /// ②过长句（>chunkLimit）再按逗号/分号/顿号二次切——否则中文长句一条字幕就是一大段（对齐扩展 buildLines 的 CHUNK 切分）。
     static func splitSentences(_ text: String) -> [String] {
         let chunkLimit = 24   // 单条字幕上限（中文≈1.5 行）：长句按逗号切到此长度，短小一条一条出
-        let chars = Array(text)
-        guard !chars.isEmpty else { return [] }
-        // ① 按句末标点切句
-        var sentences: [String] = []
-        var start = 0
-        let enders: Set<Character> = ["。", "！", "？", "；", "!", "?", ";", "…", "\n"]
-        for i in 0..<chars.count {
-            var cut = enders.contains(chars[i])
-            if chars[i] == "." {
-                let next = i + 1 < chars.count ? chars[i + 1] : " "
-                if next == " " || next == "\n" { cut = true }
-            }
-            if cut {
-                let s = String(chars[start...i]).trimmingCharacters(in: .whitespacesAndNewlines)
-                if !s.isEmpty { sentences.append(s) }
-                start = i + 1
-            }
-        }
-        if start < chars.count {
-            let s = String(chars[start...]).trimmingCharacters(in: .whitespacesAndNewlines)
-            if !s.isEmpty { sentences.append(s) }
-        }
+        guard !text.isEmpty else { return [] }
+        // ① 与朗读/PDF/Now Playing 共享八语句界（含 Hindi ।/॥）。
+        var sentences = ReadingSentenceContract.segments(text, lineBreakIsBoundary: true)
         if sentences.isEmpty { sentences = [text] }
         // ② 过长句按逗号/分号/顿号二次切到 ≤chunkLimit（字幕条短小、一条一条出）
         var out: [String] = []

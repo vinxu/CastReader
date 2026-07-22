@@ -90,10 +90,10 @@ Dark mode and background playback are supported. Photo text recognition happens 
 ### What’s New
 
 ```text
-• Improved Kindle OCR, highlighting, and page transitions across 8 languages
-• Added in-player voice switching with redesigned controls
-• Improved background playback and page-to-page continuity
-• Fixed access checks and playback stability
+• Added WeRead library sync with highlighting, automatic page turns, continuous read-aloud, and AI explanations
+• Added a Content Inbox for webpages, documents, text, and images shared from other apps
+• Added a localized Pro offer card and expanded 8-language import, OCR, TTS, and highlighting support
+• Improved Kindle pagination, voice switching, background playback, and stability
 ```
 
 ---
@@ -160,10 +160,10 @@ CastReader Pro
 ### 此版本更新
 
 ```text
-• 改进 Kindle 八语 OCR、高亮与翻页衔接
-• 新增播放器内音色切换并重设计控制栏
-• 优化后台播放与跨页连续朗读
-• 修复付费权限检查与播放稳定性问题
+• 新增微信读书书架同步、同步高亮、自动翻页、连续朗读与 AI 解读
+• 新增内容接收箱，可接收其他 App 分享的网页、文档、文字与图片
+• 新增八语 Pro 卡片，并扩展导入、OCR、TTS 与高亮的八语支持
+• 优化 Kindle 翻页、音色切换、后台播放与整体稳定性
 ```
 
 ---
@@ -230,10 +230,10 @@ CastReaderは毎日無料で利用できます。Proでは読み上げとAI解�
 ### 新機能
 
 ```text
-• Kindleの8言語OCR、ハイライト、ページ切り替えを改善
-• 再生画面で音声を切り替えられる新しい操作バー
-• バックグラウンド再生とページ間の連続再生を改善
-• 利用制限の確認と再生安定性を修正
+• WeReadの本棚同期、ハイライト、自動ページ送り、連続読み上げ、AI解説を追加
+• 他のアプリから共有したWebページ、文書、テキスト、画像を保存する受信箱を追加
+• 8言語対応のProカードと、インポート・OCR・TTS・ハイライトの多言語対応を拡張
+• Kindleのページ送り、音声切替、バックグラウンド再生、安定性を改善
 ```
 
 ---
@@ -300,10 +300,10 @@ Compatible con modo oscuro y reproducción en segundo plano. El texto de las fot
 ### Novedades
 
 ```text
-• Mejoras de OCR, resaltado y cambio de página en Kindle para 8 idiomas
-• Cambio de voz desde el reproductor y controles rediseñados
-• Mejor reproducción en segundo plano y continuidad entre páginas
-• Correcciones de acceso y estabilidad de reproducción
+• Sincronización de WeRead con resaltado, cambio automático de página, lectura continua y explicaciones con IA
+• Nueva bandeja para páginas web, documentos, textos e imágenes compartidos desde otras apps
+• Nueva tarjeta Pro localizada y mayor compatibilidad en 8 idiomas para importación, OCR, TTS y resaltado
+• Mejoras de paginación Kindle, cambio de voz, reproducción en segundo plano y estabilidad
 ```
 
 ---
@@ -370,10 +370,10 @@ Mode sombre et lecture en arrière-plan disponibles. Le texte des photos est rec
 ### Nouveautés
 
 ```text
-• OCR, surlignage et changement de page Kindle améliorés dans 8 langues
-• Changement de voix dans le lecteur et commandes repensées
-• Lecture en arrière-plan et enchaînement des pages améliorés
-• Correctifs d’accès et de stabilité de lecture
+• Synchronisation WeRead avec surlignage, pages automatiques, lecture continue et explications IA
+• Nouvelle boîte de réception pour les pages Web, documents, textes et images partagés depuis d’autres apps
+• Nouvelle carte Pro localisée et prise en charge étendue de l’importation, OCR, TTS et du surlignage en 8 langues
+• Pagination Kindle, changement de voix, lecture en arrière-plan et stabilité améliorés
 ```
 
 ---
@@ -440,10 +440,10 @@ Compatível com modo escuro e reprodução em segundo plano. O texto das fotos �
 ### Novidades
 
 ```text
-• OCR, destaque e troca de página do Kindle aprimorados em 8 idiomas
-• Troca de voz no player e controles redesenhados
-• Melhor reprodução em segundo plano e continuidade entre páginas
-• Correções de acesso e estabilidade da reprodução
+• Sincronização do WeRead com destaque, virada automática, leitura contínua e explicações por IA
+• Nova caixa de entrada para páginas, documentos, textos e imagens compartilhados por outros apps
+• Novo cartão Pro localizado e suporte ampliado em 8 idiomas para importação, OCR, TTS e destaque
+• Melhorias na paginação Kindle, troca de voz, reprodução em segundo plano e estabilidade
 ```
 
 ---
@@ -510,10 +510,10 @@ Sono disponibili modalità scura e riproduzione in background. Il testo delle fo
 ### Novità
 
 ```text
-• OCR, evidenziazione e cambio pagina Kindle migliorati in 8 lingue
-• Cambio voce nel player e controlli riprogettati
-• Migliore riproduzione in background e continuità tra le pagine
-• Correzioni di accesso e stabilità della riproduzione
+• Sincronizzazione WeRead con evidenziazione, cambio pagina automatico, lettura continua e spiegazioni IA
+• Nuova casella per pagine Web, documenti, testi e immagini condivisi da altre app
+• Nuova scheda Pro localizzata e supporto esteso in 8 lingue per importazione, OCR, TTS ed evidenziazione
+• Migliorate paginazione Kindle, cambio voce, riproduzione in background e stabilità
 ```
 
 ---
@@ -580,10 +580,10 @@ CastReader का हर दिन मुफ़्त उपयोग करे�
 ### नया क्या है
 
 ```text
-• Kindle OCR, हाइलाइट और पेज बदलना 8 भाषाओं में बेहतर
-• प्लेयर में वॉइस बदलने और नए नियंत्रण जोड़े गए
-• बैकग्राउंड प्लेबैक और पेजों के बीच निरंतरता बेहतर
-• एक्सेस जांच और प्लेबैक स्थिरता के सुधार
+• WeRead लाइब्रेरी सिंक, हाइलाइट, अपने-आप पेज बदलना, लगातार सुनना और AI व्याख्या जोड़ी गई
+• अन्य ऐप से साझा वेब पेज, दस्तावेज़, टेक्स्ट और चित्रों के लिए नया कंटेंट इनबॉक्स
+• स्थानीयकृत Pro कार्ड और आयात, OCR, TTS व हाइलाइट के लिए विस्तृत 8-भाषा समर्थन
+• Kindle पेजिंग, आवाज़ बदलने, बैकग्राउंड प्लेबैक और स्थिरता में सुधार
 ```
 
 ---

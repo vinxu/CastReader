@@ -13,7 +13,7 @@ import Combine
 import UIKit
 
 /// PDF 词级高亮指令：当前句(段)内、跨 segment 拼接的词数组 + 当前词全局索引。
-/// PDFReaderView 据此在句范围内 findString 定位词并画矩形（英文有词时间戳→逐词；中文无→不更新，保留句级淡高亮）。
+/// PDFReaderView 据此在句范围内 findString 定位词并画矩形（当前音频段时间戳质量通过→逐词；否则保留句级淡高亮）。
 struct PDFWordHighlight: Equatable {
     let paragraphIndex: Int
     let words: [String]
@@ -63,12 +63,20 @@ final class ReadAloudViewModel: ObservableObject {
     // .web 源：段落由 WebView extractor 提取后注入；朗读输出经 bridge 驱动 DOM 高亮。
     private var webParagraphs: [ReadingParagraph]? = nil
     private var webLanguage: String? = nil
+    private var preferredLiveWebStartIndex: Int?
+    private struct PendingLiveWebResume {
+        let anchor: WeReadPlaybackResumeAnchor
+        let paragraphIndex: Int
+    }
+    private var pendingLiveWebResume: PendingLiveWebResume?
+    private var isAwaitingLiveWebCarryCompletion = false
+    private var pendingLiveWebCarryStartIndex: Int?
     private var paras: [ReadingParagraph] { webParagraphs ?? document.paragraphs }
     /// 有效朗读语言：.web 源用从正文检测的语言，否则用 document.language。
     private var docLanguage: String { webLanguage ?? document.language }
     @Published var webAudioSegments: [AudioSegment] = []   // 扁平全局顺序（供 bridge 转 JS audioSegments）
     @Published var webHighlight: WebHighlightCmd? = nil     // 当前 DOM 高亮指令（句级/词级）
-    @Published var pdfHighlight: PDFWordHighlight? = nil    // PDF 词级高亮（英文逐词；中文无词时间戳→不更新，保留句级淡高亮）
+    @Published var pdfHighlight: PDFWordHighlight? = nil    // PDF 词级高亮（当前段质量通过才更新，否则保留句级淡高亮）
 
     // 高亮/计时游标
     private var lastWordKey = ""
@@ -101,6 +109,10 @@ final class ReadAloudViewModel: ObservableObject {
     private var playbackChapterTitle: String?
     private var playbackCoverURL: String?
     var onDocumentFinished: (() -> Void)?
+    var onPageBoundaryApproaching: (() -> Void)?
+    private var didSignalPageBoundaryApproaching = false
+    private var weReadSpeechBoundary: WeReadPageSpeechBoundary?
+    var weReadBoundaryTurnLeadSeconds = WeReadContinuousPageHandoffContract.visualTurnLeadSeconds
 
     init(document: ReadingDocument, analyticsContext: AnalyticsContentContext? = nil) {
         self.document = document
@@ -125,9 +137,53 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     var currentTTSCompleteForPageHandoff: Bool {
-        isActive && !isFinished && status.isReady &&
-            audio.currentSegment?.paragraphIndex == currentParagraphIndex &&
-            !audio.moreSegmentsExpected
+        guard isActive, !isFinished, status.isReady,
+              let current = audio.currentSegment,
+              current.paragraphIndex == currentParagraphIndex,
+              segmentsByParagraph[currentParagraphIndex]?.contains(where: { $0.id == current.id }) == true,
+              !audio.moreSegmentsExpected else { return false }
+        return true
+    }
+
+    /// A speculative next-page cache must never bypass the ordinary listen
+    /// quota gate merely because its audio was generated early.
+    var canContinueAcrossLivePageBoundary: Bool {
+        pro.isPro || quota.canStartListen(isPro: pro.isPro)
+    }
+
+    /// Timing of the visual page edge inside one whole natural-sentence audio
+    /// segment. The segment text is the API's processed text, so this uses the
+    /// same immutable sequence that drives sentence highlighting.
+    var currentWeReadBoundaryCue: WeReadBoundaryAudioCue? {
+        guard document.sourceKind == .weread,
+              let boundary = weReadSpeechBoundary,
+              boundary.isCrossPage,
+              let segments = segmentsByParagraph[boundary.paragraphIndex],
+              let mapped = WeReadCrossPageSpeechContract.boundarySegment(
+                segmentTexts: segments.map(\.text),
+                boundaryUTF16Offset: boundary.visibleUTF16Offset
+              ),
+              mapped.sequence >= 0,
+              mapped.sequence < segments.count else { return nil }
+        let segment = segments[mapped.sequence]
+        let duration = audio.currentSegment?.id == segment.id && audio.duration > 0.01
+            ? audio.duration
+            : segment.duration
+        guard duration > 0.01 else { return nil }
+        return WeReadBoundaryAudioCue(
+            segmentID: segment.id,
+            segmentSequence: mapped.sequence,
+            boundaryTime: duration * mapped.fraction,
+            segmentDuration: duration,
+            consumedCursor: boundary.sourceParagraphIndex.flatMap { sourceParagraphIndex in
+                boundary.sourceSpeechEnd.map {
+                    WeReadConsumedTextCursor(
+                        sourceParagraphIndex: sourceParagraphIndex,
+                        sourceUTF16End: $0
+                    )
+                }
+            }
+        )
     }
 
     /// Loading/streaming does not imply the play control must be locked: a
@@ -237,14 +293,181 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     /// .web：注入 WebView extractor 提取的正文段落，准备朗读。
-    func loadWebParagraphs(_ p: [ReadingParagraph], language: String? = nil) {
+    func loadWebParagraphs(
+        _ p: [ReadingParagraph],
+        language: String? = nil,
+        weReadBoundary: WeReadPageSpeechBoundary? = nil
+    ) {
         webParagraphs = p
         if let language { webLanguage = language }
+        weReadSpeechBoundary = weReadBoundary
         if !isActive, currentParagraphIndex < 0 {
             playbackVoiceID = settings.voice(for: docLanguage)
         }
         webAudioSegments = []
         recomputeReadableIndices()
+    }
+
+    func makeWeReadPlaybackResumeAnchor() -> WeReadPlaybackResumeAnchor? {
+        guard document.sourceKind == .weread,
+              let segment = audio.currentSegment,
+              currentParagraphIndex >= 0,
+              currentParagraphIndex < paras.count else { return nil }
+        let duration = audio.duration > 0.01 ? audio.duration : segment.duration
+        let progress = duration > 0.01 ? min(0.98, max(0, audio.currentTime / duration)) : 0
+        return WeReadPlaybackResumeAnchor(
+            segmentText: segment.text,
+            sourceParagraphText: paras[currentParagraphIndex].text,
+            segmentProgress: progress,
+            wasPlaying: audio.isPlaying
+        )
+    }
+
+    /// A WeRead reader page is a live, replaceable surface rather than a
+    /// static article.  Replacing it must cancel the old page's stream and
+    /// clear the player before starting the confirmed new page; otherwise a
+    /// stale queue can speak one more paragraph after a manual page turn.
+    func replaceLiveWebPage(
+        _ p: [ReadingParagraph],
+        language: String? = nil,
+        autoplay: Bool,
+        weReadBoundary: WeReadPageSpeechBoundary? = nil,
+        resumeAnchor: WeReadPlaybackResumeAnchor? = nil
+    ) {
+        generationEpoch &+= 1
+        generationTask?.cancel()
+        generationTask = nil
+        clearPrefetch()
+        Task { await TTSService.shared.cancelCurrentRequest() }
+        audio.moreSegmentsExpected = false
+        audio.clearQueue()
+        webParagraphs = p
+        if let language { webLanguage = language }
+        weReadSpeechBoundary = weReadBoundary
+        let resumedParagraph = resumeAnchor.flatMap {
+            WeReadPlaybackResumeContract.paragraphIndex(in: p, anchor: $0)
+        }
+        preferredLiveWebStartIndex = resumedParagraph
+        isAwaitingLiveWebCarryCompletion = false
+        pendingLiveWebCarryStartIndex = nil
+        pendingLiveWebResume = resumeAnchor.flatMap { anchor in
+            resumedParagraph.map { PendingLiveWebResume(anchor: anchor, paragraphIndex: $0) }
+        }
+        webAudioSegments = []
+        recomputeReadableIndices()
+        currentParagraphIndex = -1
+        processedDisplayText = nil
+        highlightRange = nil
+        webHighlight = nil
+        pdfHighlight = nil
+        photoHighlightWordIndex = nil
+        photoHighlightWordRange = nil
+        isFinished = false
+        didSignalPageBoundaryApproaching = false
+        status = .pending
+        if autoplay, !readableIndices.isEmpty {
+            start()
+        }
+    }
+
+    /// Replace a confirmed WeRead Canvas page while preserving the shared
+    /// AVPlayer queue.  The first paragraph is already appended behind the old
+    /// page's tail; this method transfers text/highlight ownership without
+    /// stopping that tail or restarting the prepared item.
+    @discardableResult
+    func commitContinuousLiveWebPage(
+        _ p: [ReadingParagraph],
+        language: String,
+        preparedSegments: [AudioSegment],
+        weReadBoundary: WeReadPageSpeechBoundary? = nil
+    ) -> Bool {
+        guard !p.isEmpty,
+              !preparedSegments.isEmpty,
+              canContinueAcrossLivePageBoundary else { return false }
+        generationEpoch &+= 1
+        generationTask?.cancel()
+        generationTask = nil
+        clearPrefetch()
+        isAwaitingLiveWebCarryCompletion = false
+        pendingLiveWebCarryStartIndex = nil
+
+        webParagraphs = p
+        webLanguage = language
+        weReadSpeechBoundary = weReadBoundary
+        recomputeReadableIndices()
+        guard let preparedParagraph = preparedSegments.first?.paragraphIndex,
+              readableIndices.contains(preparedParagraph),
+              preparedSegments.allSatisfy({ $0.paragraphIndex == preparedParagraph }) else { return false }
+
+        activate()
+        applyPlaybackMetadata()
+        applySpeed()
+        playbackVoiceID = settings.voice(for: docLanguage)
+        segmentsByParagraph.removeAll(keepingCapacity: true)
+        segmentsByParagraph[preparedParagraph] = preparedSegments
+        webAudioSegments = preparedSegments
+        currentParagraphIndex = preparedParagraph
+        processedDisplayText = preparedSegments.map(\.text).joined()
+        highlightRange = nil
+        webHighlight = nil
+        pdfHighlight = nil
+        photoHighlightWordIndex = nil
+        photoHighlightWordRange = nil
+        photoCursor = 0
+        clearOCRWordAlignment()
+        lastWordKey = ""
+        lastNowPlayingCaption = nil
+        isFinished = false
+        didSignalPageBoundaryApproaching = false
+        audio.moreSegmentsExpected = false
+        status = .ready
+
+        Task { [weak self] in await self?.preloadNext(after: preparedParagraph) }
+        return true
+    }
+
+    /// Move visual/highlight ownership to the confirmed next WeRead page while
+    /// the old page's final natural sentence is still playing. No speculative
+    /// audio is required: when that immutable carry segment completes, normal
+    /// generation begins at the first unconsumed paragraph on the new page.
+    @discardableResult
+    func commitLiveWebPageDuringActiveCarry(
+        _ p: [ReadingParagraph],
+        language: String,
+        carrySegmentID: String,
+        weReadBoundary: WeReadPageSpeechBoundary? = nil
+    ) -> Bool {
+        guard !p.isEmpty,
+              isActive,
+              audio.currentSegment?.id == carrySegmentID else { return false }
+
+        generationEpoch &+= 1
+        generationTask?.cancel()
+        generationTask = nil
+        clearPrefetch()
+        webParagraphs = p
+        webLanguage = language
+        weReadSpeechBoundary = weReadBoundary
+        recomputeReadableIndices()
+        segmentsByParagraph.removeAll(keepingCapacity: true)
+        webAudioSegments = []
+        currentParagraphIndex = -1
+        processedDisplayText = nil
+        highlightRange = nil
+        webHighlight = nil
+        pdfHighlight = nil
+        photoHighlightWordIndex = nil
+        photoHighlightWordRange = nil
+        clearOCRWordAlignment()
+        lastWordKey = ""
+        lastNowPlayingCaption = nil
+        isFinished = false
+        didSignalPageBoundaryApproaching = false
+        isAwaitingLiveWebCarryCompletion = true
+        pendingLiveWebCarryStartIndex = readableIndices.first
+        audio.moreSegmentsExpected = false
+        status = .ready
+        return true
     }
 
     private func setWebHighlight(_ c: WebHighlightCmd) {
@@ -254,18 +477,7 @@ final class ReadAloudViewModel: ObservableObject {
 
     /// 按句末标点切句，返回每句在原文中的字符范围（去句首空白）。
     private func sentenceRanges(_ text: String) -> [Range<Int>] {
-        let chars = Array(text)
-        var ranges: [Range<Int>] = []
-        var start = 0
-        func flush(_ end: Int) {
-            var s = start
-            while s < end, chars[s].isWhitespace || chars[s].isNewline { s += 1 }
-            if s < end { ranges.append(s..<end) }
-            start = end
-        }
-        for i in 0..<chars.count where "。！？!?；;\n".contains(chars[i]) { flush(i + 1) }
-        if start < chars.count { flush(chars.count) }
-        return ranges.isEmpty ? [0..<chars.count] : ranges
+        ReadingSentenceContract.characterRanges(in: text, lineBreakIsBoundary: true)
     }
 
     /// 按字数比例估算当前播放时间对应的句子字符范围（中文无词时间戳时的句级推进）。
@@ -339,6 +551,8 @@ final class ReadAloudViewModel: ObservableObject {
         listenCapRefreshTask?.cancel()
         listenCapRefreshTask = nil
         clearPrefetch()
+        isAwaitingLiveWebCarryCompletion = false
+        pendingLiveWebCarryStartIndex = nil
         Task { await TTSService.shared.cancelCurrentRequest() }
         audio.moreSegmentsExpected = false
         audio.pause()
@@ -377,7 +591,9 @@ final class ReadAloudViewModel: ObservableObject {
         activate()
         applyPlaybackMetadata()
         applySpeed()
-        generate(readableIndices[0])
+        let preferred = preferredLiveWebStartIndex.flatMap { readableIndices.contains($0) ? $0 : nil }
+        preferredLiveWebStartIndex = nil
+        generate(preferred ?? readableIndices[0])
     }
 
     func togglePlayPause() {
@@ -556,6 +772,8 @@ final class ReadAloudViewModel: ObservableObject {
         listenCapRefreshTask?.cancel()
         listenCapRefreshTask = nil
         clearPrefetch()
+        isAwaitingLiveWebCarryCompletion = false
+        pendingLiveWebCarryStartIndex = nil
         Task { await TTSService.shared.cancelCurrentRequest() }
         audio.moreSegmentsExpected = false
         audio.clearBook()
@@ -576,12 +794,16 @@ final class ReadAloudViewModel: ObservableObject {
         autoPlay: Bool = true,
         voiceSwitchID: UUID? = nil
     ) {
+        isAwaitingLiveWebCarryCompletion = false
+        pendingLiveWebCarryStartIndex = nil
         generationEpoch &+= 1
         let epoch = generationEpoch
         let voice = voiceOverride ?? settings.voice(for: docLanguage)
+        if pendingLiveWebResume?.paragraphIndex != index { pendingLiveWebResume = nil }
         playbackVoiceID = voice
         NSLog("CRDBG generate para=%d lang=%@ voice=%@ epoch=%llu web=%@", index, docLanguage, voice, epoch, document.sourceKind.isWebRendered ? "Y" : "N")
         isFinished = false   // 开始播放某段 → 未完成
+        didSignalPageBoundaryApproaching = false
         generationTask?.cancel()
         clearPrefetch()   // 重新生成某段 → 作废旧预取
 
@@ -626,6 +848,7 @@ final class ReadAloudViewModel: ObservableObject {
                 await MainActor.run {
                     guard self.generationEpoch == epoch,
                           self.currentParagraphIndex == index else { return }
+                    self.finishPendingLiveWebResumeIfNeeded(paragraph: index)
                     self.audio.moreSegmentsExpected = false
                     self.status = .ready
                     if let voiceSwitchID, self.activeVoiceSwitchID == voiceSwitchID {
@@ -678,12 +901,44 @@ final class ReadAloudViewModel: ObservableObject {
         let segs = segmentsByParagraph[paragraph] ?? []
         processedDisplayText = segs.map { $0.text }.joined()
         if document.sourceKind.isWebRendered { webAudioSegments.append(segment) }
-        audio.loadSegment(segment, autoPlay: autoPlay)
+        if let pending = pendingLiveWebResume,
+           pending.paragraphIndex == paragraph {
+            guard WeReadPlaybackResumeContract.segmentMatches(segment.text, anchor: pending.anchor) else {
+                status = .streaming
+                return
+            }
+            pendingLiveWebResume = nil
+            audio.loadSegment(segment, autoPlay: false)
+            _ = audio.startQueuedSegment(
+                id: segment.id,
+                progress: pending.anchor.segmentProgress,
+                autoPlay: autoPlay && pending.anchor.wasPlaying
+            )
+            ReaderRunLog.write(
+                "WEREAD playback restored para=\(paragraph) seg=\(segment.segmentIndex) progress=\(String(format: "%.3f", pending.anchor.segmentProgress)) playing=\(autoPlay && pending.anchor.wasPlaying ? "Y" : "N")"
+            )
+        } else {
+            audio.loadSegment(segment, autoPlay: autoPlay)
+        }
         status = .streaming
         if let voiceSwitchID, activeVoiceSwitchID == voiceSwitchID {
             VoiceSwitchStatusCenter.shared.finish(voiceSwitchID)
             activeVoiceSwitchID = nil
         }
+    }
+
+    private func finishPendingLiveWebResumeIfNeeded(paragraph: Int) {
+        guard let pending = pendingLiveWebResume,
+              pending.paragraphIndex == paragraph else { return }
+        pendingLiveWebResume = nil
+        let segments = segmentsByParagraph[paragraph] ?? []
+        guard !segments.isEmpty else { return }
+        for segment in segments {
+            audio.loadSegment(segment, autoPlay: pending.anchor.wasPlaying)
+        }
+        ReaderRunLog.write(
+            "WEREAD playback anchor fallback para=\(paragraph) segs=\(segments.count)"
+        )
     }
 
     private func finishCancelledGenerationIfCurrent(epoch: UInt64, voiceSwitchID: UUID?) {
@@ -843,6 +1098,22 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func advance(allowAccessRefresh: Bool) {
+        if isAwaitingLiveWebCarryCompletion {
+            let startIndex = pendingLiveWebCarryStartIndex
+            isAwaitingLiveWebCarryCompletion = false
+            pendingLiveWebCarryStartIndex = nil
+            commitListen()
+            if let startIndex {
+                ReaderRunLog.write("WEREAD carry completed; continue para=\(startIndex)")
+                generate(startIndex)
+            } else {
+                status = .ready
+                isFinished = true
+                ReaderRunLog.write("WEREAD carry completed; next page fully consumed")
+                onDocumentFinished?()
+            }
+            return
+        }
         // AVPlayer completion notifications can be repeated during queue swaps or
         // interruption recovery. A finished playback generation owns exactly one
         // terminal transition; start/jump/generate explicitly clears isFinished.
@@ -917,6 +1188,36 @@ final class ReadAloudViewModel: ObservableObject {
         accountListen(t)
         updateHighlight(t)
         updateNowPlayingCaption(t)
+        signalPageBoundaryIfNeeded(t)
+    }
+
+    private func signalPageBoundaryIfNeeded(_ time: Double) {
+        guard !didSignalPageBoundaryApproaching,
+              document.sourceKind == .weread,
+              isOnLastReadableParagraph,
+              currentTTSCompleteForPageHandoff,
+              let segment = audio.currentSegment,
+              audio.duration > 0 else { return }
+
+        if let cue = currentWeReadBoundaryCue {
+            guard WeReadCrossPageSpeechContract.shouldRequestTurn(
+                currentSegmentID: segment.id,
+                cue: cue,
+                currentTime: time,
+                playbackRate: audio.playbackRate,
+                leadSeconds: weReadBoundaryTurnLeadSeconds
+            ) else { return }
+            didSignalPageBoundaryApproaching = true
+            onPageBoundaryApproaching?()
+            return
+        }
+
+        guard segmentsByParagraph[currentParagraphIndex]?.last?.id == segment.id else { return }
+        let remaining = max(0, audio.duration - time)
+        let wallClock = remaining / max(0.25, Double(audio.playbackRate))
+        guard wallClock <= WeReadContinuousPageHandoffContract.visualTurnLeadSeconds else { return }
+        didSignalPageBoundaryApproaching = true
+        onPageBoundaryApproaching?()
     }
 
     private func updateNowPlayingCaption(_ t: Double) {
@@ -981,36 +1282,15 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private static func sentenceRanges(in text: String) -> [NSRange] {
-        let ns = text as NSString
-        guard ns.length > 0 else { return [] }
-        let chars = Array(text)
-        var ranges: [NSRange] = []
-        var start = 0
-        func appendRange(end: Int) {
-            guard end > start else { start = end; return }
-            let raw = String(chars[start..<end])
-            let leading = raw.prefix { $0.isWhitespace || $0.isNewline }.count
-            let trailing = raw.reversed().prefix { $0.isWhitespace || $0.isNewline }.count
-            let location = start + leading
-            let length = max(0, end - trailing - location)
-            if length > 0 { ranges.append(NSRange(location: location, length: length)) }
-            start = end
-        }
-        for i in chars.indices {
-            var shouldCut = "。！？!?；;\n".contains(chars[i])
-            if chars[i] == "." {
-                let next = i + 1 < chars.count ? chars[i + 1] : " "
-                shouldCut = next.isWhitespace || next.isNewline
-            }
-            if shouldCut { appendRange(end: i + 1) }
-        }
-        if start < chars.count { appendRange(end: chars.count) }
-        return ranges.isEmpty ? [NSRange(location: 0, length: ns.length)] : ranges
+        ReadingSentenceContract.nsRanges(in: text, lineBreakIsBoundary: true)
     }
 
     private func hasReliableWordHighlight(_ segment: AudioSegment) -> Bool {
-        guard SupportedTTSLanguage(identifier: docLanguage)?.timestampMode == "word" else { return false }
-        return TTSTimestampQuality.hasReliableWordGranularity(text: segment.text, timestamps: segment.timestamps)
+        TTSTimestampQuality.hasReliableWordGranularity(
+            text: segment.text,
+            timestamps: segment.timestamps,
+            duration: segment.duration
+        )
     }
 
     private func wordHighlightSegments(_ segments: [AudioSegment]) -> [AudioSegment] {
@@ -1031,7 +1311,14 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func updateHighlight(_ t: Double) {
-        guard let seg = audio.currentSegment, seg.paragraphIndex == currentParagraphIndex else { return }
+        // A live web page can replace its paragraph array on a resize/page
+        // commit while Combine still has one queued currentTime tick from the
+        // old AVPlayerItem. Never index the replaceable page model until both
+        // the player identity and paragraph bounds belong to the same snapshot.
+        guard let seg = audio.currentSegment,
+              seg.paragraphIndex == currentParagraphIndex,
+              currentParagraphIndex >= 0,
+              currentParagraphIndex < paras.count else { return }
 
         // .web/.docx 源：高亮在 WebView DOM 上，bridge 下发段内 charRange（UTF-16 对齐 JS textContent）。
         if document.sourceKind.isWebRendered {
@@ -1040,7 +1327,7 @@ final class ReadAloudViewModel: ObservableObject {
             let total = (paras[currentParagraphIndex].text as NSString).length
             let base = segs.prefix(segPos).reduce(0) { $0 + ($1.text as NSString).length }
 
-            // 有词时间戳（英文）→ 逐词：下发词数组+索引+segment序号，JS 在 DOM 虚拟全文前向匹配（不靠字符偏移，对齐扩展 highlight-sync）。
+            // 当前音频段有可靠词时间戳 → 逐词：下发词数组+索引+segment序号，JS 在 DOM 虚拟全文前向匹配（不靠字符偏移，对齐扩展 highlight-sync）。
             if hasReliableWordHighlight(seg) {
                 var localIdx = -1
                 for (i, ts) in seg.timestamps.enumerated() {
@@ -1056,15 +1343,25 @@ final class ReadAloudViewModel: ObservableObject {
             let segLen = (seg.text as NSString).length
             let charStart = min(base, total)
             let charEnd = min(base + segLen, total)
-            if charEnd > charStart {
-                setWebHighlight(WebHighlightCmd(paragraphIndex: currentParagraphIndex, charStart: charStart, charEnd: charEnd))
+            if charEnd > charStart || document.sourceKind == .weread {
+                // `processedText` may normalize quotes, whitespace and punctuation,
+                // so accumulated lengths are fallback evidence only.  Send the
+                // immutable segment sequence to the Web bridge, which replays the
+                // extension's formatting-tolerant source-text matching from zero.
+                setWebHighlight(WebHighlightCmd(
+                    paragraphIndex: currentParagraphIndex,
+                    charStart: charStart,
+                    charEnd: charEnd,
+                    segSeq: segPos,
+                    segmentTexts: segs.map(\.text)
+                ))
             }
             return
         }
 
-        // .pdf：句级淡高亮由 PDFReaderView 按 currentParagraphIndex 画；此处额外算「当前词」(英文有词时间戳)，
-        // 发 pdfHighlight 让 PDFReaderView 在句范围内 findString 定位词、画词矩形（中文无词时间戳→不发，仅句级）。
-        if document.sourceKind == .pdf {
+        // .pdf：句级淡高亮由 PDFReaderView 按 currentParagraphIndex 画；当前段质量门通过时额外算「当前词」，
+        // 发 pdfHighlight 让 PDFReaderView 在句范围内 findString 定位词、画词矩形；否则仅保留句级反馈。
+        if document.usesNativePDFRendering {
             let segs = segmentsByParagraph[currentParagraphIndex] ?? []
             guard let segPos = segs.firstIndex(where: { $0.id == seg.id }), hasReliableWordHighlight(seg) else { return }
             var localIdx = -1
@@ -1084,10 +1381,10 @@ final class ReadAloudViewModel: ObservableObject {
         guard let segPos = segs.firstIndex(where: { $0.id == seg.id }) else { return }
         let base = segs.prefix(segPos).reduce(0) { $0 + ($1.text as NSString).length }
 
-        // 对齐扩展：无词时间戳（中文等语言后端不返回）→ 高亮当前整句（整个 segment 文本），随 segment 推进；
-        // 有词时间戳（英文）→ 词级逐字高亮（"老师指读"）。判断依据是「该 segment 是否有词时间戳」，与语言无关。
+        // 对齐扩展：当前段时间戳质量不通过 → 高亮当前整句（整个 segment 文本），随 segment 推进；
+        // 质量门通过 → 词级逐字高亮（"老师指读"），与语言无关。
         if !hasReliableWordHighlight(seg) {
-            if document.sourceKind.isNativeTextRendered {
+            if document.usesNativeTextRendering {
                 let content = contentRange(in: seg.text as NSString)
                 highlightRange = NSRange(location: base + content.location, length: content.length)
             } else if document.sourceKind.isOCRImageRendered {
@@ -1116,7 +1413,7 @@ final class ReadAloudViewModel: ObservableObject {
         let wordKey = "\(seg.id)#\(localIdx)"
         defer { lastWordKey = wordKey }
 
-        if document.sourceKind.isNativeTextRendered {
+        if document.usesNativeTextRendering {
             // 预对齐查表（绝对位置，已含前序 segment 偏移）；对齐失败的词保留上一个高亮、不跳
             ensureWordAligned()
             let gIdx = wordHighlightSegments(segs).prefix(segPos).reduce(0) { $0 + $1.timestamps.count } + localIdx

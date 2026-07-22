@@ -217,6 +217,18 @@ final class ProManager: ObservableObject {
                         productId: product.id
                     )
                 )
+                if isPro {
+                    ProductAnalytics.shared.track(
+                        .entitlementActivated,
+                        context: analyticsContext,
+                        properties: .init(
+                            trigger: analyticsTrigger,
+                            store: "app_store",
+                            productId: product.id,
+                            activationSource: "storekit_verified"
+                        )
+                    )
+                }
                 return isPro
             case .pending:
                 ProductAnalytics.shared.track(

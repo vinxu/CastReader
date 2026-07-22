@@ -129,6 +129,7 @@ struct LibraryView: View {
         case .docx: return "DOCX"
         case .epub: return "EPUB"
         case .kindle: return "Kindle"
+        case .weread: return "微信读书"
         case .photo: return AppLocalized("图片")
         case .text: return AppLocalized("文本")
         }
@@ -203,6 +204,7 @@ private struct HistoryRow: View {
         case .docx: return "DOCX"
         case .epub: return "EPUB"
         case .kindle: return "Kindle"
+        case .weread: return "微信读书"
         case .photo: return AppLocalized("图片")
         case .text: return AppLocalized("文本")
         }

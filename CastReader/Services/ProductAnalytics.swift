@@ -23,8 +23,12 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
     case explainMilestone = "explain_milestone"
     case explainEnd = "explain_end"
     case paywallShown = "paywall_shown"
+    case homeProCardImpression = "home_pro_card_impression"
+    case homeProCardYearlyPurchaseTap = "home_pro_card_yearly_purchase_tap"
+    case homeProCardSecondaryTap = "home_pro_card_secondary_tap"
     case purchaseStart = "purchase_start"
     case purchaseResult = "purchase_result"
+    case entitlementActivated = "entitlement_activated"
 
     var legacyEvent: String {
         switch self {
@@ -41,8 +45,12 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
         case .explainMilestone: return "quickread_video_complete"
         case .explainEnd: return "quickread_pipeline_done"
         case .paywallShown: return "paywall_shown"
+        case .homeProCardImpression: return "home_pro_card_impression"
+        case .homeProCardYearlyPurchaseTap: return "home_pro_card_yearly_purchase_tap"
+        case .homeProCardSecondaryTap: return "home_pro_card_secondary_tap"
         case .purchaseStart: return "checkout_started"
         case .purchaseResult: return "checkout_completed"
+        case .entitlementActivated: return "pro_activated"
         }
     }
 }
@@ -70,8 +78,10 @@ enum AnalyticsContentSource: String, Codable, Sendable {
     case url
     case text
     case clipboard
+    case shareSheet = "share_sheet"
     case history
     case kindle
+    case weread
     case unknown
 }
 
@@ -83,6 +93,7 @@ enum AnalyticsContentFormat: String, Codable, Sendable {
     case text
     case web
     case kindle
+    case weread
     case unknown
 }
 
@@ -114,6 +125,8 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
     var hadMeaningfulReading: Bool?
     var store: String?
     var productId: String?
+    var activationSource: String?
+    var syncState: String?
 
     init(
         launchType: String? = nil,
@@ -142,7 +155,9 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         entitlementState: String? = nil,
         hadMeaningfulReading: Bool? = nil,
         store: String? = nil,
-        productId: String? = nil
+        productId: String? = nil,
+        activationSource: String? = nil,
+        syncState: String? = nil
     ) {
         self.launchType = launchType
         self.contentSource = contentSource
@@ -171,6 +186,8 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         self.hadMeaningfulReading = hadMeaningfulReading
         self.store = store
         self.productId = productId
+        self.activationSource = activationSource
+        self.syncState = syncState
     }
 }
 
@@ -213,7 +230,7 @@ struct AnalyticsContentContext: Equatable, Sendable {
     static func fallback(for document: ReadingDocument, entryPoint: String = "reader_open") -> AnalyticsContentContext {
         AnalyticsContentContext(
             contentSessionId: UUID().uuidString,
-            source: document.sourceKind == .kindle ? .kindle : .unknown,
+            source: document.sourceKind == .kindle ? .kindle : (document.sourceKind == .weread ? .weread : .unknown),
             format: AnalyticsContentFormat(document.sourceKind),
             entryPoint: entryPoint,
             intendedMode: "read",
@@ -227,6 +244,7 @@ extension AnalyticsContentFormat {
         switch sourceKind {
         case .photo: self = .photo
         case .kindle: self = .kindle
+        case .weread: self = .weread
         case .text: self = .text
         case .web: self = .web
         case .docx: self = .docx
@@ -303,8 +321,12 @@ enum AnalyticsSchema {
         .explainMilestone: .init(required: ["milestone", "blocksStarted", "blocksCompleted"], optional: []),
         .explainEnd: .init(required: ["result", "endReason", "blocksStarted", "blocksCompleted", "completionBucket"], optional: ["errorStage", "errorCode"]),
         .paywallShown: .init(required: ["trigger", "entitlementState"], optional: ["hadMeaningfulReading"]),
+        .homeProCardImpression: .init(required: [], optional: []),
+        .homeProCardYearlyPurchaseTap: .init(required: [], optional: []),
+        .homeProCardSecondaryTap: .init(required: [], optional: []),
         .purchaseStart: .init(required: ["store", "productId", "trigger"], optional: []),
         .purchaseResult: .init(required: ["store", "productId", "trigger", "result"], optional: ["errorCode"]),
+        .entitlementActivated: .init(required: ["store", "productId", "trigger", "activationSource"], optional: ["syncState"]),
     ]
 
     private static let forbidden = Set([
@@ -375,7 +397,7 @@ enum AnalyticsEnvelopeFactory {
         return AnalyticsEventEnvelope(
             eventId: eventId,
             eventName: name,
-            eventVersion: 1,
+            eventVersion: 2,
             occurredAt: timestamp,
             environment: client.environment,
             clientPlatform: client.platform,

@@ -6,9 +6,120 @@
 //
 
 import SwiftUI
+import UIKit
+
+@MainActor
+final class CastReaderAppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        supportedInterfaceOrientationsFor window: UIWindow?
+    ) -> UIInterfaceOrientationMask {
+        AppOrientationLock.supportedOrientations
+    }
+}
+
+/// Scene-scoped orientation policy used by reader integrations that cannot
+/// provide a usable landscape layout. WeRead owns this lock only while its
+/// reader is visible; every other CastReader surface keeps the app defaults.
+@MainActor
+enum AppOrientationLock {
+    private struct Request {
+        let orientations: UIInterfaceOrientationMask
+        let order: UInt64
+    }
+
+    private static var requests: [String: Request] = [:]
+    private static var requestOrder: UInt64 = 0
+    private static var applicationRevision: UInt64 = 0
+
+    static var supportedOrientations: UIInterfaceOrientationMask {
+        requests.values.max(by: { $0.order < $1.order })?.orientations
+            ?? defaultOrientations
+    }
+
+    static func lockPortrait(owner: String) {
+        lock(.portrait, owner: owner, reason: "portrait")
+    }
+
+    /// Freeze the interface exactly where the user minimized the reader. This
+    /// avoids an off-screen WKWebView receiving a rotation/reflow while its TTS
+    /// session is owned by Mini Player.
+    static func lockCurrent(owner: String) {
+        lock(currentInterfaceOrientationMask(), owner: owner, reason: "current")
+    }
+
+    static func unlock(owner: String) {
+        guard requests.removeValue(forKey: owner) != nil else { return }
+        applyCurrentPolicy(reason: "unlock", owner: owner)
+    }
+
+    private static var defaultOrientations: UIInterfaceOrientationMask {
+        UIDevice.current.userInterfaceIdiom == .pad ? .all : .allButUpsideDown
+    }
+
+    private static func lock(
+        _ orientations: UIInterfaceOrientationMask,
+        owner: String,
+        reason: String
+    ) {
+        requestOrder &+= 1
+        requests[owner] = Request(orientations: orientations, order: requestOrder)
+        applyCurrentPolicy(reason: reason, owner: owner)
+    }
+
+    private static func currentInterfaceOrientationMask() -> UIInterfaceOrientationMask {
+        let orientation = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first(where: { $0.activationState == .foregroundActive })?
+            .interfaceOrientation
+        switch orientation {
+        case .portrait: return .portrait
+        case .portraitUpsideDown: return .portraitUpsideDown
+        case .landscapeLeft: return .landscapeLeft
+        case .landscapeRight: return .landscapeRight
+        default: return .portrait
+        }
+    }
+
+    private static func applyCurrentPolicy(
+        reason: String,
+        owner: String
+    ) {
+        applicationRevision &+= 1
+        let revision = applicationRevision
+        let orientations = supportedOrientations
+        // Update the delegate policy before asking UIKit to resolve geometry.
+        // Dispatch one run-loop turn so the ReaderHost has an attached scene
+        // even when it was presented while the device was already landscape.
+        DispatchQueue.main.async {
+            // A close/open or Mini Player expand can enqueue two policies in
+            // one render pass. Never let the older geometry request win later.
+            guard revision == applicationRevision else { return }
+            let scenes = UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .filter { $0.activationState != .unattached }
+            for scene in scenes {
+                let root = scene.windows.first(where: \.isKeyWindow)?.rootViewController
+                    ?? scene.windows.first?.rootViewController
+                root?.setNeedsUpdateOfSupportedInterfaceOrientations()
+                scene.requestGeometryUpdate(
+                    UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: orientations)
+                ) { error in
+                    ReaderRunLog.write(
+                        "ORIENTATION \(reason) failed owner=\(owner) error=\(error.localizedDescription)"
+                    )
+                }
+            }
+            ReaderRunLog.write(
+                "ORIENTATION \(reason) owner=\(owner) mask=\(orientations.rawValue)"
+            )
+        }
+    }
+}
 
 @main
 struct CastReaderApp: App {
+    @UIApplicationDelegateAdaptor(CastReaderAppDelegate.self) private var appDelegate
     @StateObject private var visitorService = VisitorService.shared
     @StateObject private var appLanguage = AppLanguageManager.shared
     @State private var showSafariPro = false
@@ -72,7 +183,9 @@ struct CastReaderApp: App {
                 .environment(\.locale, appLanguage.locale)
                 // 深色/浅色跟随系统（AppTheme 已全动态化，见 Utils/AppTheme.swift）
                 .onOpenURL { url in
-                    if url.scheme == "castreader", url.host == "pro" {
+                    if url.scheme == "castreader", url.host == "share-inbox" {
+                        NotificationCenter.default.post(name: .castReaderShareInboxChanged, object: nil)
+                    } else if url.scheme == "castreader", url.host == "pro" {
                         showSafariPro = true
                     } else if url.scheme == "castreader", url.host == "account" {
                         let components = URLComponents(url: url, resolvingAgainstBaseURL: false)

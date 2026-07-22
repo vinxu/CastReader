@@ -19,7 +19,11 @@ final class CaptureFlowViewModel: ObservableObject {
         error = nil
         defer { isProcessing = false }
         do {
-            let doc = try await OCRService.shared.recognize(image: image, languages: Self.visionLanguages())
+            // File/clipboard/share-sheet images do not necessarily pass through
+            // UIImagePickerController, so normalize EXIF orientation here once
+            // before both OCR and display geometry are generated.
+            let normalized = image.fixedOrientation()
+            let doc = try await OCRService.shared.recognizeImportedImage(image: normalized)
             self.document = doc
         } catch {
             self.error = error.localizedDescription
@@ -29,10 +33,5 @@ final class CaptureFlowViewModel: ObservableObject {
     func reset() {
         document = nil
         error = nil
-    }
-
-    /// OCR 候选语言与 TTS 八语目录共用同一来源；Vision 实际不支持的 locale 会在 OCRService 过滤。
-    static func visionLanguages() -> [String] {
-        SupportedTTSLanguage.allCases.map(\.visionRecognitionLanguage)
     }
 }

@@ -64,6 +64,7 @@ final class AppLanguageManager: ObservableObject {
 
     private let defaults: UserDefaults
     private static let defaultsKey = "interfaceLanguage"
+    private static let sharedDefaults = UserDefaults(suiteName: "group.com.same.castreader")
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -71,6 +72,10 @@ final class AppLanguageManager: ObservableObject {
             .flatMap(AppLanguage.init(rawValue:)) ?? .system
         selectedLanguage = restoredLanguage
         localizationBundle = Self.bundle(for: restoredLanguage)
+        // The Share Extension runs in a different process, so `.standard`
+        // cannot carry the user's in-app language choice across the target
+        // boundary. Mirror only this non-sensitive preference into App Group.
+        Self.sharedDefaults?.set(restoredLanguage.rawValue, forKey: Self.defaultsKey)
     }
 
     var locale: Locale { selectedLanguage.locale }
@@ -79,6 +84,7 @@ final class AppLanguageManager: ObservableObject {
         guard selectedLanguage != language else { return }
         localizationBundle = Self.bundle(for: language)
         defaults.set(language.rawValue, forKey: Self.defaultsKey)
+        Self.sharedDefaults?.set(language.rawValue, forKey: Self.defaultsKey)
         selectedLanguage = language
     }
 
@@ -102,6 +108,50 @@ func AppLocalized(_ key: String.LocalizationValue) -> String {
         bundle: language.localizationBundle,
         locale: language.locale
     )
+}
+
+extension ShareInboxRecord {
+    /// Persist semantic fallback intent, not a translated string. Real titles
+    /// remain untouched; generated placeholders follow every in-app language
+    /// change, including records created by the Share Extension.
+    var localizedDisplayTitle: String {
+        let semanticFallback: ShareInboxFallbackTitle?
+        if let fallbackTitle {
+            semanticFallback = fallbackTitle
+        } else {
+            // Records saved before semantic fallbacks were introduced contain
+            // one of these eight already-translated placeholders.
+            switch kind {
+            case .image:
+                semanticFallback = Self.legacyImageTitles.contains(title) ? .image : nil
+            case .text:
+                semanticFallback = Self.legacyTextTitles.contains(title) ? .text : nil
+            case .pdf, .epub, .docx:
+                semanticFallback = Self.legacyDocumentTitles.contains(title) ? .document : nil
+            case .url:
+                semanticFallback = nil
+            }
+        }
+        switch semanticFallback {
+        case .document: return AppLocalized("文档")
+        case .text: return AppLocalized("文本")
+        case .image: return AppLocalized("图片")
+        case nil: return title
+        }
+    }
+
+    private static let legacyDocumentTitles: Set<String> = [
+        "Shared document", "分享的文档", "共有ドキュメント", "Documento compartido",
+        "Document partagé", "Documento compartilhado", "Documento condiviso", "साझा दस्तावेज़",
+    ]
+    private static let legacyTextTitles: Set<String> = [
+        "Shared text", "分享的文本", "共有テキスト", "Texto compartido", "Texte partagé",
+        "Texto compartilhado", "Testo condiviso", "साझा किया गया टेक्स्ट",
+    ]
+    private static let legacyImageTitles: Set<String> = [
+        "Shared image", "分享的图片", "共有画像", "Imagen compartida", "Image partagée",
+        "Imagem compartilhada", "Immagine condivisa", "साझा की गई छवि",
+    ]
 }
 
 extension Notification.Name {

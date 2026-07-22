@@ -9,6 +9,10 @@ import SwiftUI
 
 struct MainTabView: View {
     private static let miniPlayerBottomPadding: CGFloat = 68
+    /// Tab content already stops above the system tab bar. Reserve the portion
+    /// occupied by the floating mini player plus its shadow so the final row in
+    /// every pushed/scrolling screen can move completely above the player.
+    private static let miniPlayerContentInset: CGFloat = 80
 
     @StateObject private var coordinator = PlayerCoordinator()
     @StateObject private var kindleCenter = KindlePlaybackCenter.shared
@@ -18,6 +22,12 @@ struct MainTabView: View {
     @StateObject private var playbackVoicePanel = PlaybackVoicePanelCenter.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: Int
+    @State private var isImportingSharedContent = false
+    @State private var shareInboxItems: [ShareInboxItem] = []
+    @State private var shareInboxUnreadCount = 0
+    @State private var shareInboxErrors: [UUID: String] = [:]
+    @State private var shareInboxMetadataLoadingIDs: Set<UUID> = []
+    @State private var showShareInbox = false
 
     init() {
         _selectedTab = State(initialValue: 0)
@@ -36,7 +46,17 @@ struct MainTabView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             TabView(selection: $selectedTab) {
-                HomeView()
+                HomeView(
+                    shareInboxUnreadCount: shareInboxUnreadCount,
+                    onOpenShareInbox: {
+                        reloadShareInbox(showWhenPending: false)
+                        markShareInboxSeen()
+                        showShareInbox = true
+                    }
+                )
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        miniPlayerContentSpacer
+                    }
                     .tabItem { Label("首页", systemImage: "house.fill") }
                     .tag(0)
                 // 中间占位：被凸起 ➕ 覆盖；万一点到 tab item 也走通用导入并回首页。
@@ -48,6 +68,9 @@ struct MainTabView: View {
                     }
                     .tag(1)
                 VoiceBrowserView(presentation: .tab)
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        miniPlayerContentSpacer
+                    }
                     .tabItem { Label("音色", systemImage: "waveform") }
                     .tag(2)
             }
@@ -104,6 +127,7 @@ struct MainTabView: View {
             // while the user previews or switches voices.
             PlaybackVoicePanelOverlay(center: playbackVoicePanel)
                 .zIndex(100)
+
         }
         .environmentObject(coordinator)
         .environmentObject(importRouter)
@@ -113,7 +137,16 @@ struct MainTabView: View {
         .animation(.spring(response: 0.32, dampingFraction: 0.9), value: importRouter.hideMainChrome)
         .animation(.spring(response: 0.34, dampingFraction: 0.9), value: playbackVoicePanel.isPresented)
         .onChange(of: scenePhase) { phase in
-            if phase == .active { clipboard.check() }   // 进 App / 回前台 → 探测剪贴板
+            if phase == .active {
+                clipboard.check()   // 进 App / 回前台 → 探测剪贴板
+                reloadShareInbox(showWhenPending: false)
+            }
+        }
+        .task {
+            reloadShareInbox(showWhenPending: false)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderShareInboxChanged)) { _ in
+            reloadShareInbox(showWhenPending: true)
         }
         .onChange(of: kindleCenter.isPresented) { isPresented in
             if isPresented { coordinator.close() }
@@ -126,6 +159,16 @@ struct MainTabView: View {
                 onIgnore: { clipboard.consume() }
             )
             .presentationDetents([.height(290)])
+        }
+        .sheet(isPresented: $showShareInbox) {
+            ShareInboxView(
+                items: shareInboxItems,
+                errors: shareInboxErrors,
+                isProcessing: isImportingSharedContent,
+                onRead: { openSharedItem($0, mode: .read) },
+                onExplain: { openSharedItem($0, mode: .explain) },
+                onDelete: deleteSharedItem
+            )
         }
         .sheet(item: voiceClonePromptBinding) { prompt in
             switch prompt {
@@ -151,6 +194,20 @@ struct MainTabView: View {
             get: { Constants.Features.voiceCloningEnabled ? voiceCloneAccess.prompt : nil },
             set: { voiceCloneAccess.prompt = Constants.Features.voiceCloningEnabled ? $0 : nil }
         )
+    }
+
+    @ViewBuilder
+    private var miniPlayerContentSpacer: some View {
+        if reservesMiniPlayerSpace {
+            Color.clear
+                .frame(height: Self.miniPlayerContentInset)
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var reservesMiniPlayerSpace: Bool {
+        !importRouter.hideMainChrome &&
+            (coordinator.showsMiniPlayer || kindleCenter.showsMiniPlayer)
     }
 
     private static let plusTabImage: UIImage = {
@@ -185,7 +242,7 @@ struct MainTabView: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("plusImportButton")
-        .accessibilityLabel(Text("导入内容"))
+        .accessibilityLabel(Text(AppLocalized("导入内容")))
         .offset(y: 4)
     }
 
@@ -235,6 +292,281 @@ struct MainTabView: View {
             }
         }
     }
+
+    private func reloadShareInbox(showWhenPending: Bool) {
+        let pending = ShareInboxStore.pending()
+        shareInboxItems = pending.map {
+            ShareInboxItem(record: $0.record, metadataURL: $0.metadataURL)
+        }
+        shareInboxUnreadCount = ShareInboxStore.unreadCount(in: pending.map(\.record))
+        scheduleShareInboxMetadataHydration()
+        if showWhenPending && !shareInboxItems.isEmpty {
+            showShareInbox = true
+        }
+    }
+
+    private func scheduleShareInboxMetadataHydration() {
+        let candidates = shareInboxItems.filter { item in
+            item.record.kind == .url
+                && item.record.linkMetadataFetchedAt == nil
+                && !shareInboxMetadataLoadingIDs.contains(item.id)
+        }
+        for item in candidates {
+            shareInboxMetadataLoadingIDs.insert(item.id)
+            Task { @MainActor in
+                let metadata: ShareInboxLinkMetadata?
+                if let source = item.record.sourceURL.flatMap(URL.init(string:)) {
+                    metadata = await ShareInboxLinkMetadataLoader.fetch(for: source)
+                } else {
+                    metadata = nil
+                }
+                _ = try? ShareInboxStore.updateLinkMetadata(
+                    for: item.record,
+                    metadataURL: item.metadataURL,
+                    title: metadata?.title,
+                    previewImageData: metadata?.previewImageData
+                )
+                shareInboxMetadataLoadingIDs.remove(item.id)
+                reloadShareInbox(showWhenPending: false)
+            }
+        }
+    }
+
+    private func markShareInboxSeen() {
+        ShareInboxStore.markAllSeen(shareInboxItems.map(\.record))
+        shareInboxUnreadCount = 0
+    }
+
+    private func deleteSharedItem(_ item: ShareInboxItem) {
+        ShareInboxStore.remove(item.record, metadataURL: item.metadataURL)
+        shareInboxErrors[item.id] = nil
+        reloadShareInbox(showWhenPending: false)
+    }
+
+    /// Parsing, OCR, playback and explain stay in the containing app. App Group records remain
+    /// in the content inbox after opening, so users can replay them and failures stay retryable;
+    /// only the explicit Delete action removes the private payload.
+    private func openSharedItem(_ pending: ShareInboxItem, mode: ReaderMode) {
+        guard !isImportingSharedContent else { return }
+        isImportingSharedContent = true
+        let record = pending.record
+        shareInboxErrors[record.id] = nil
+        let format: AnalyticsContentFormat = switch record.kind {
+        case .url: .web
+        case .text: .text
+        case .image: .photo
+        case .pdf: .pdf
+        case .epub: .epub
+        case .docx: .docx
+        }
+        let analyticsContext = ProductAnalytics.shared.beginContentIntent(
+            source: .shareSheet,
+            format: format,
+            entryPoint: "system_share_sheet",
+            intendedMode: mode == .read ? "read" : "explain"
+        )
+
+        func complete(_ document: ReadingDocument?) {
+            guard let document, !document.isEmpty || document.sourceKind.isWebRendered else {
+                ProductAnalytics.shared.contentFailed(analyticsContext, stage: "parse", code: "empty_or_unsupported")
+                shareInboxErrors[record.id] = AppLocalized("内容暂时无法打开，请重试")
+                isImportingSharedContent = false
+                return
+            }
+            isImportingSharedContent = false
+            showShareInbox = false
+            coordinator.open(document, mode: mode, autoplay: true, analyticsContext: analyticsContext)
+        }
+
+        switch record.kind {
+        case .url:
+            complete(record.sourceURL.flatMap(DocumentBuilder.fromWebURL))
+        case .text:
+            guard let url = ShareInboxStore.payloadURL(for: record),
+                  let data = try? Data(contentsOf: url) else { complete(nil); return }
+            let raw = String(data: data, encoding: .utf8) ?? ""
+            let text: String
+            if ["html", "htm"].contains(url.pathExtension.lowercased()),
+               let attributed = try? NSAttributedString(
+                    data: data,
+                    options: [.documentType: NSAttributedString.DocumentType.html,
+                              .characterEncoding: String.Encoding.utf8.rawValue],
+                    documentAttributes: nil
+               ) {
+                text = attributed.string
+            } else {
+                text = raw
+            }
+            complete(DocumentBuilder.fromPlainText(text, title: record.localizedDisplayTitle))
+        case .pdf:
+            guard let url = ShareInboxStore.payloadURL(for: record),
+                  let data = try? Data(contentsOf: url) else { complete(nil); return }
+            Task { @MainActor in
+                let document = await DocumentBuilder.fromPDFWithOCR(
+                    data: data,
+                    title: record.localizedDisplayTitle,
+                    fallbackTitle: record.localizedDisplayTitle
+                )
+                complete(document)
+            }
+        case .docx:
+            guard let url = ShareInboxStore.payloadURL(for: record),
+                  let data = try? Data(contentsOf: url) else { complete(nil); return }
+            let title = DocumentBuilder.docxTitle(data: data) ?? record.localizedDisplayTitle
+            complete(ReadingDocument(title: title, sourceKind: .docx, paragraphs: [], fileData: data))
+        case .epub:
+            guard let url = ShareInboxStore.payloadURL(for: record),
+                  let data = try? Data(contentsOf: url) else { complete(nil); return }
+            Task {
+                let document = await Task.detached(priority: .userInitiated) {
+                    DocumentBuilder.fromEPUB(data: data, title: record.localizedDisplayTitle)
+                }.value
+                await MainActor.run { complete(document) }
+            }
+        case .image:
+            guard let url = ShareInboxStore.payloadURL(for: record),
+                  let data = try? Data(contentsOf: url),
+                  let image = UIImage(data: data) else { complete(nil); return }
+            Task { @MainActor in
+                let capture = CaptureFlowViewModel()
+                await capture.process(image: image)
+                if let document = capture.document {
+                    complete(document)
+                } else {
+                    ProductAnalytics.shared.contentFailed(
+                        analyticsContext,
+                        stage: "ocr",
+                        code: capture.error == nil ? "empty_content" : "recognition_failed"
+                    )
+                    shareInboxErrors[record.id] = AppLocalized("内容暂时无法打开，请重试")
+                    isImportingSharedContent = false
+                }
+            }
+        }
+    }
+}
+
+private struct ShareInboxItem: Identifiable {
+    let record: ShareInboxRecord
+    let metadataURL: URL
+
+    var id: UUID { record.id }
+}
+
+private struct ShareInboxView: View {
+    let items: [ShareInboxItem]
+    let errors: [UUID: String]
+    let isProcessing: Bool
+    let onRead: (ShareInboxItem) -> Void
+    let onExplain: (ShareInboxItem) -> Void
+    let onDelete: (ShareInboxItem) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if items.isEmpty {
+                    ContentUnavailableView(
+                        AppLocalized("接收箱是空的"),
+                        systemImage: "tray",
+                        description: Text(AppLocalized("从其他应用分享网页、文字、文档或图片到 CastReader，内容会保存在这里。"))
+                    )
+                } else {
+                    List(items) { item in
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(alignment: .top, spacing: 12) {
+                                inboxArtwork(for: item.record)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(item.record.localizedDisplayTitle)
+                                        .font(.headline)
+                                        .lineLimit(2)
+                                    if item.record.kind == .url,
+                                       let source = item.record.sourceURL.flatMap(URL.init(string:)),
+                                       let host = source.host?.replacingOccurrences(of: "www.", with: "") {
+                                        Text(host)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    Text(item.record.createdAt, style: .relative)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer(minLength: 0)
+                            }
+
+                            if let error = errors[item.id] {
+                                Label(error, systemImage: "exclamationmark.circle")
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
+                            }
+
+                            HStack(spacing: 10) {
+                                Button(errors[item.id] == nil ? AppLocalized("朗读") : AppLocalized("重试")) {
+                                    onRead(item)
+                                }
+                                .buttonStyle(.borderedProminent)
+                                .disabled(isProcessing)
+
+                                Button(AppLocalized("解读")) { onExplain(item) }
+                                    .buttonStyle(.bordered)
+                                    .disabled(isProcessing)
+
+                                Spacer()
+
+                                Button(role: .destructive) { onDelete(item) } label: {
+                                    Image(systemName: "trash")
+                                }
+                                .disabled(isProcessing)
+                                .accessibilityLabel(Text(AppLocalized("删除")))
+                            }
+                        }
+                        .padding(.vertical, 6)
+                    }
+                }
+            }
+            .navigationTitle(AppLocalized("内容接收箱"))
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(AppLocalized("完成")) { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    @ViewBuilder
+    private func inboxArtwork(for record: ShareInboxRecord) -> some View {
+        if let url = ShareInboxStore.previewImageURL(for: record),
+           let image = UIImage(contentsOfFile: url.path) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 58, height: 58)
+                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+        } else {
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .fill(AppTheme.surfaceVariant)
+                .frame(width: 58, height: 58)
+                .overlay {
+                    Image(systemName: icon(for: record.kind))
+                        .font(.system(size: 21, weight: .medium))
+                        .foregroundStyle(AppTheme.primary)
+                }
+        }
+    }
+
+    private func icon(for kind: ShareInboxKind) -> String {
+        switch kind {
+        case .url: "link"
+        case .text: "text.alignleft"
+        case .image: "photo"
+        case .pdf: "doc.richtext"
+        case .epub: "books.vertical"
+        case .docx: "doc.text"
+        }
+    }
 }
 
 struct SettingsToolbarButton: View {
@@ -244,7 +576,7 @@ struct SettingsToolbarButton: View {
         Button { showSettings = true } label: {
             Image(systemName: "gearshape")
         }
-        .accessibilityLabel(Text("设置"))
+        .accessibilityLabel(Text(AppLocalized("设置")))
         .accessibilityIdentifier("settingsGearButton")
         .sheet(isPresented: $showSettings) { SettingsView() }
     }

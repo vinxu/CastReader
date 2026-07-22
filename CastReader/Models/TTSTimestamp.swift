@@ -83,23 +83,82 @@ struct TTSTimestamp: Codable {
     }
 }
 
-/// Response-level safety gate shared by every reader source. A language may
-/// advertise word timing, but one sparse response must only downgrade that
-/// audio segment to sentence/segment highlighting.
+/// Response-level safety gate shared by every reader source. Highlight
+/// granularity is a property of the actual audio segment, never of a language
+/// allowlist. One malformed/sparse response therefore downgrades only that
+/// segment to sentence highlighting.
 enum TTSTimestampQuality {
-    static func hasReliableWordGranularity(text: String, timestamps: [TTSTimestamp]) -> Bool {
+    static func hasReliableWordGranularity(
+        text: String,
+        timestamps: [TTSTimestamp],
+        duration: Double
+    ) -> Bool {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              duration.isFinite,
+              duration > 0,
               !timestamps.isEmpty else { return false }
-        let sourceWordCount = text.split(whereSeparator: { $0.isWhitespace })
-            .filter { !normalizeCoverageText(String($0)).isEmpty }.count
-        guard sourceWordCount > 0,
-              timestamps.count >= max(1, Int(ceil(Double(sourceWordCount) * 0.75))) else {
+
+        let normalizedReference = normalizeCoverageText(text)
+        let meaningfulTokens = timestamps.compactMap { timestamp -> String? in
+            let token = normalizeCoverageText(timestamp.word)
+            return token.isEmpty ? nil : token
+        }
+        guard !normalizedReference.isEmpty, meaningfulTokens.count >= 2 else {
+            // Chinese/Japanese sentence responses commonly contain exactly
+            // one timestamp whose `word` is the entire sentence.
             return false
         }
-        let reference = normalizeCoverageText(text)
-        let timed = normalizeCoverageText(timestamps.map(\.word).joined(separator: " "))
-        guard !reference.isEmpty, !timed.isEmpty else { return false }
-        return Double(timed.count) / Double(reference.count) >= 0.8
+
+        let rangeTolerance = min(0.5, max(0.15, duration * 0.02))
+        var previousStart = -Double.infinity
+        var previousEnd = -Double.infinity
+        for timestamp in timestamps {
+            let start = timestamp.startTime
+            let end = timestamp.endTime
+            guard start.isFinite,
+                  end.isFinite,
+                  start >= 0,
+                  end > start,
+                  end <= duration + rangeTolerance,
+                  start + 0.001 >= previousStart,
+                  end + 0.001 >= previousEnd else {
+                return false
+            }
+            previousStart = start
+            previousEnd = end
+        }
+
+        let sourceWordCount = text.split(whereSeparator: { $0.isWhitespace })
+            .filter { !normalizeCoverageText(String($0)).isEmpty }.count
+        guard sourceWordCount > 0 else { return false }
+        if sourceWordCount > 1 {
+            // Space-delimited languages: tolerate a small number of tokenizer
+            // merges, but reject phrase/sentence timestamps.
+            guard meaningfulTokens.count >= Int(ceil(Double(sourceWordCount) * 0.75)) else {
+                return false
+            }
+        } else if normalizedReference.count >= 8 {
+            // Compact scripts have no dependable whitespace word count. A
+            // loose density floor rejects sparse phrase timing without
+            // assuming that one Han/Kana grapheme equals one spoken word.
+            let minimumCompactTokens = max(2, Int(ceil(Double(normalizedReference.count) / 6.0)))
+            guard meaningfulTokens.count >= minimumCompactTokens else { return false }
+        }
+
+        // Measure ordered text coverage instead of raw length. This prevents
+        // duplicated or unrelated timestamp words from passing the gate.
+        var cursor = normalizedReference.startIndex
+        var matchedCharacters = 0
+        for token in meaningfulTokens {
+            guard cursor < normalizedReference.endIndex,
+                  let range = normalizedReference.range(
+                    of: token,
+                    range: cursor..<normalizedReference.endIndex
+                  ) else { continue }
+            matchedCharacters += token.count
+            cursor = range.upperBound
+        }
+        return Double(matchedCharacters) / Double(normalizedReference.count) >= 0.8
     }
 
     private static func normalizeCoverageText(_ text: String) -> String {
@@ -109,26 +168,40 @@ enum TTSTimestampQuality {
     }
 }
 
-/// Natural TTS request units shared by every reader source. English and the
-/// production-verified Spanish voices keep paragraph requests for word timing;
-/// segment-timed languages use one natural sentence per request so audio and
-/// the painted sentence own exactly the same text unit. This mirrors Android
-/// `TtsSentenceSegmenter` and the browser extension's sentence contract.
-enum TTSSentenceSegmenter {
-    private static let terminals: Set<Character> = [".", "!", "?", "。", "！", "？", "…", "।", "॥"]
-    private static let closers: Set<Character> = ["\"", "'", "»", "’", "”", ")", "]", "）", "】", "」", "』", "〉", "》"]
+/// Script-neutral sentence boundary contract shared by TTS, native text, OCR,
+/// PDF reflow and Now Playing captions. Keeping the ranges here prevents each
+/// input format from silently losing Japanese/Chinese/Hindi punctuation.
+enum ReadingSentenceContract {
+    private static let terminals: Set<Character> = [
+        ".", "!", "?", ";", "。", "！", "？", "；", "…", "।", "॥"
+    ]
+    private static let closers: Set<Character> = [
+        "\"", "'", "»", "’", "”", ")", "]", "）", "】", "」", "』", "〉", "》"
+    ]
 
-    static func requestUnits(_ text: String, language: String) -> [String] {
-        let normalized = normalizeWhitespace(text, language: language)
-        guard !normalized.isEmpty else { return [] }
-        if SupportedTTSLanguage(identifier: language)?.timestampMode == "word" {
-            return [normalized]
-        }
-        let units = fallbackSentenceSegments(normalized)
-        return units.isEmpty ? [normalized] : units
+    static func segments(_ text: String, lineBreakIsBoundary: Bool = false) -> [String] {
+        stringRanges(in: text, lineBreakIsBoundary: lineBreakIsBoundary).map {
+            String(text[$0]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }.filter { !$0.isEmpty }
     }
 
-    private static func normalizeWhitespace(_ text: String, language: String) -> String {
+    /// Character offsets are used by the DOM bridge, whose paragraph contract
+    /// is expressed in user-visible characters rather than OCR boxes.
+    static func characterRanges(in text: String, lineBreakIsBoundary: Bool = false) -> [Range<Int>] {
+        stringRanges(in: text, lineBreakIsBoundary: lineBreakIsBoundary).map {
+            text.distance(from: text.startIndex, to: $0.lowerBound)
+                ..< text.distance(from: text.startIndex, to: $0.upperBound)
+        }
+    }
+
+    /// PDFKit/NSString consumers require UTF-16 ranges. Derive them from real
+    /// String.Index ranges so emoji and supplementary-plane characters do not
+    /// shift every highlight that follows them.
+    static func nsRanges(in text: String, lineBreakIsBoundary: Bool = false) -> [NSRange] {
+        stringRanges(in: text, lineBreakIsBoundary: lineBreakIsBoundary).map { NSRange($0, in: text) }
+    }
+
+    static func normalizeWhitespace(_ text: String, language: String) -> String {
         let code = SupportedTTSLanguage.canonicalCode(language)
         let characters = Array(text)
         var output = ""
@@ -149,10 +222,8 @@ enum TTSSentenceSegmenter {
             }
             let previous = output.last
             let next = end < characters.count ? characters[end] : nil
-            let removesVisualCJKWrap = (code == "zh" || code == "ja") &&
-                containsLineBreak &&
-                previous.map(isCJKOrKana) == true &&
-                next.map(isCJKOrKana) == true
+            let removesVisualCJKWrap = (code == "zh" || code == "ja") && containsLineBreak &&
+                previous.map(isCJKOrKana) == true && next.map(isCJKOrKana) == true
             if !removesVisualCJKWrap, !output.isEmpty, !output.hasSuffix(" "), next != nil {
                 output.append(" ")
             }
@@ -161,10 +232,11 @@ enum TTSSentenceSegmenter {
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private static func isCJKOrKana(_ character: Character) -> Bool {
+    static func isCJKOrKana(_ character: Character) -> Bool {
         character.unicodeScalars.contains { scalar in
             switch scalar.value {
-            case 0x3400...0x9FFF, 0x3040...0x30FF, 0x31F0...0x31FF:
+            case 0x3400...0x9FFF, 0x3040...0x30FF, 0x31F0...0x31FF,
+                 0x3000...0x303F, 0xFF00...0xFFEF:
                 return true
             default:
                 return false
@@ -172,27 +244,65 @@ enum TTSSentenceSegmenter {
         }
     }
 
-    private static func fallbackSentenceSegments(_ text: String) -> [String] {
-        var result: [String] = []
-        var current = ""
+    private static func stringRanges(
+        in text: String,
+        lineBreakIsBoundary: Bool
+    ) -> [Range<String.Index>] {
+        guard !text.isEmpty else { return [] }
+        var ranges: [Range<String.Index>] = []
+        var start = text.startIndex
+        var cursor = text.startIndex
         var terminalSeen = false
 
-        func flush() {
-            let value = current.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !value.isEmpty { result.append(value) }
-            current = ""
+        func appendRange(endingAt end: String.Index) {
+            var lower = start
+            var upper = end
+            while lower < upper, text[lower].isWhitespace { lower = text.index(after: lower) }
+            while upper > lower {
+                let previous = text.index(before: upper)
+                guard text[previous].isWhitespace else { break }
+                upper = previous
+            }
+            if lower < upper { ranges.append(lower..<upper) }
+            start = end
             terminalSeen = false
         }
 
-        for character in text {
+        while cursor < text.endIndex {
+            let character = text[cursor]
             if terminalSeen, !closers.contains(character), !character.isWhitespace {
-                flush()
+                appendRange(endingAt: cursor)
             }
-            current.append(character)
-            if terminals.contains(character) { terminalSeen = true }
+            let next = text.index(after: cursor)
+            if terminals.contains(character) {
+                if character != "." || next == text.endIndex || text[next].isWhitespace {
+                    terminalSeen = true
+                }
+            } else if lineBreakIsBoundary, (character == "\n" || character == "\r") {
+                terminalSeen = true
+            }
+            cursor = next
         }
-        flush()
-        return result
+        appendRange(endingAt: text.endIndex)
+        return ranges
+    }
+}
+
+/// Natural TTS request units shared by every reader source. Catalog capability
+/// controls request batching only: word-capable profiles may keep a paragraph,
+/// while segment profiles use one natural sentence per request so audio and
+/// the painted sentence own the same text unit. Actual highlight granularity
+/// is still decided independently for every returned AudioSegment above.
+enum TTSSentenceSegmenter {
+
+    static func requestUnits(_ text: String, language: String) -> [String] {
+        let normalized = ReadingSentenceContract.normalizeWhitespace(text, language: language)
+        guard !normalized.isEmpty else { return [] }
+        if SupportedTTSLanguage(identifier: language)?.timestampMode == "word" {
+            return [normalized]
+        }
+        let units = ReadingSentenceContract.segments(normalized)
+        return units.isEmpty ? [normalized] : units
     }
 }
 

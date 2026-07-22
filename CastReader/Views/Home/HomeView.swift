@@ -8,6 +8,7 @@
 //
 
 import SwiftUI
+import StoreKit
 import UIKit
 import UniformTypeIdentifiers
 #if DEBUG
@@ -95,24 +96,39 @@ final class ImportRouter: ObservableObject {
 }
 
 struct HomeView: View {
+    let shareInboxUnreadCount: Int
+    let onOpenShareInbox: () -> Void
+
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @EnvironmentObject private var importRouter: ImportRouter
     @ObservedObject private var history = HistoryStore.shared
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
+    @ObservedObject private var pro = ProManager.shared
+    @ObservedObject private var auth = AuthService.shared
     @StateObject private var captureVM = CaptureFlowViewModel()
     @StateObject private var importVM = ImportViewModel()
     @ObservedObject private var kindleStore = KindleLibraryStore.shared
+
+    init(shareInboxUnreadCount: Int = 0, onOpenShareInbox: @escaping () -> Void = {}) {
+        self.shareInboxUnreadCount = shareInboxUnreadCount
+        self.onOpenShareInbox = onOpenShareInbox
+    }
 
     /// 所有 sheet 合并到单一入口，避免「同一 View 多个 .sheet」互相抢 present。
     private enum HomeSheet: Identifiable {
         case importPanel(ImportPanel)
         case text
         case url
+        case proDetails
+        case loginForAnnualPurchase
 
         var id: String {
             switch self {
             case .importPanel(let panel): return "import-\(panel.id)"
             case .text: return "text"
             case .url: return "url"
+            case .proDetails: return "pro-details"
+            case .loginForAnnualPurchase: return "pro-login"
             }
         }
     }
@@ -126,8 +142,15 @@ struct HomeView: View {
     @State private var imagePickerRequest: ImagePickerRequest?
     @State private var showFileImporter = false
     @State private var notice: String?
+    @State private var isProcessingPDF = false
+    @State private var isLoadingProProducts = false
+    @State private var didAttemptProProductLoad = false
+    @State private var isPurchasingAnnual = false
+    @State private var pendingAnnualPurchaseAfterLogin = false
+    @State private var didTrackHomeProCardImpression = false
 #if DEBUG
     @State private var showKindleProbe = false
+    @State private var showWeReadProbe = false
 #endif
 
     private let scenarioColumns = [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
@@ -139,19 +162,45 @@ struct HomeView: View {
                     if !continueRecords.isEmpty { continueSection }
                     scenarioSection
                     KindleHomeSection(store: kindleStore)
+                    if showsWeReadModule {
+                        WeReadHomeSection()
+                    }
+                    if !pro.isPro { homeProCard }
                 }
                 .padding(20)
             }
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("CastReader")
-            .overlay { if captureVM.isProcessing || importVM.isUploading { processingOverlay } }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: onOpenShareInbox) {
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: shareInboxUnreadCount > 0 ? "tray.full" : "tray")
+                                .font(.system(size: 18, weight: .regular))
+                                .foregroundStyle(AppTheme.foreground)
+                                .frame(width: 30, height: 30)
+                            if shareInboxUnreadCount > 0 {
+                                Circle()
+                                    .fill(AppTheme.primary)
+                                    .frame(width: 8, height: 8)
+                                    .overlay(Circle().stroke(AppTheme.background, lineWidth: 1.5))
+                                    .offset(x: 1, y: 1)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("contentInboxButton")
+                    .accessibilityLabel(Text(AppLocalized("内容接收箱")))
+                }
+            }
+            .overlay { if captureVM.isProcessing || importVM.isUploading || isProcessingPDF { processingOverlay } }
         }
         .navigationViewStyle(.stack)
         // ➕（底部）→ 快速导入面板。默认通用导入，也可在面板里选择场景。
         .onChange(of: importRouter.generalToken) { _ in
             activeSheet = .importPanel(.general)
         }
-        .sheet(item: $activeSheet) { sheet in
+        .sheet(item: $activeSheet, onDismiss: handleHomeSheetDismissed) { sheet in
             switch sheet {
             case .importPanel(let panel):
                 ImportOptionsSheet(panel: panel) { scenario, mode, source in
@@ -173,8 +222,16 @@ struct HomeView: View {
                         notice = AppLocalized("网址无效")
                     }
                 }
+            case .proDetails:
+                PaywallView(
+                    analyticsTrigger: "home_pro_card_secondary",
+                    analyticsSurface: "home_pro_card"
+                )
+            case .loginForAnnualPurchase:
+                LoginView()
             }
         }
+        .task { await loadHomeProProductsIfNeeded() }
 #if DEBUG
         .sheet(isPresented: $showKindleProbe) {
             KindleBackgroundProbeSheet()
@@ -212,10 +269,109 @@ struct HomeView: View {
         } message: { Text(captureVM.error ?? "") }
     }
 
+    // MARK: - 首页 Pro 卡片
+
+    private var homeProCard: some View {
+        let yearly = pro.yearly
+        let loading = isLoadingProProducts || (!didAttemptProProductLoad && yearly == nil)
+        return HomeProUpsellCard(
+            annualDisplayPrice: yearly?.displayPrice,
+            weeklyDisplayPrice: yearly.map { HomeProPricing.weeklyDisplayPrice(for: $0) },
+            isLoadingProducts: loading,
+            isPurchasing: isPurchasingAnnual || pro.purchaseInFlight,
+            onPrimaryAction: handleHomeProPrimaryAction,
+            onShowPlans: { activeSheet = .proDetails }
+        )
+        .onAppear(perform: trackHomeProCardImpressionIfNeeded)
+    }
+
+    @MainActor
+    private func loadHomeProProductsIfNeeded() async {
+        guard !pro.isPro else { return }
+        if pro.yearly != nil {
+            didAttemptProProductLoad = true
+            return
+        }
+        guard !isLoadingProProducts else { return }
+        isLoadingProProducts = true
+        await pro.loadProducts()
+        isLoadingProProducts = false
+        didAttemptProProductLoad = true
+    }
+
+    private func handleHomeProPrimaryAction() {
+        let action = HomeProPurchaseContract.primaryAction(
+            isPro: pro.isPro,
+            hasYearlyProduct: pro.yearly != nil,
+            hasEmailAccount: auth.hasEmailAccount,
+            isLoadingProducts: isLoadingProProducts || (!didAttemptProProductLoad && pro.yearly == nil),
+            isPurchaseInFlight: isPurchasingAnnual || pro.purchaseInFlight
+        )
+        switch action {
+        case .none:
+            break
+        case .requireLogin:
+            pendingAnnualPurchaseAfterLogin = true
+            activeSheet = .loginForAnnualPurchase
+        case .purchaseYearly:
+            purchaseAnnualProduct()
+        case .showPlans:
+            activeSheet = .proDetails
+        }
+    }
+
+    private func handleHomeSheetDismissed() {
+        guard pendingAnnualPurchaseAfterLogin else { return }
+        pendingAnnualPurchaseAfterLogin = false
+        guard auth.hasEmailAccount, !pro.isPro else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            purchaseAnnualProduct()
+        }
+    }
+
+    private func purchaseAnnualProduct() {
+        guard !pro.isPro,
+              !isPurchasingAnnual,
+              !pro.purchaseInFlight,
+              auth.hasEmailAccount,
+              let yearly = pro.yearly else { return }
+        isPurchasingAnnual = true
+        Task { @MainActor in
+            _ = await pro.purchase(yearly, analyticsTrigger: "home_pro_card_yearly")
+            isPurchasingAnnual = false
+        }
+    }
+
+    private func trackHomeProCardImpressionIfNeeded() {
+        guard !didTrackHomeProCardImpression, !pro.isPro else { return }
+        didTrackHomeProCardImpression = true
+        ProductAnalytics.shared.track(
+            .paywallShown,
+            context: AnalyticsEventContext(
+                productArea: .billing,
+                surface: "home_pro_card",
+                entryPoint: "home_pro_card_impression"
+            ),
+            properties: .init(
+                trigger: "home_pro_card_impression",
+                entitlementState: "free",
+                hadMeaningfulReading: ProductAnalytics.shared.hadMeaningfulReading
+            )
+        )
+    }
+
     // MARK: - 继续看
 
+    private var showsWeReadModule: Bool {
+        WeReadAvailability.isAvailable(
+            appLanguage: appLanguage.selectedLanguage,
+            systemLanguageCode: Locale.autoupdatingCurrent.language.languageCode?.identifier,
+            timeZoneIdentifier: TimeZone.autoupdatingCurrent.identifier
+        )
+    }
+
     private var continueRecords: [HistoryRecord] {
-        history.records.filter { $0.sourceKind != .kindle }
+        history.records.filter { HomeContinueContract.includes($0.sourceKind) }
     }
 
     private var continueSection: some View {
@@ -266,6 +422,54 @@ struct HomeView: View {
     }
 
 #if DEBUG
+    private var weReadProbeSection: some View {
+        Button {
+            showWeReadProbe = true
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "desktopcomputer")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(AppTheme.primary)
+                    .frame(width: 44, height: 44)
+                    .background(AppTheme.primary.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 7) {
+                        Text("微信读书 Web 测试")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(AppTheme.foreground)
+                        Text("临时")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(AppTheme.primary)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(AppTheme.primary.opacity(0.10))
+                            .clipShape(Capsule())
+                    }
+                    Text("以电脑端模式测试登录、书架与阅读页")
+                        .font(.caption)
+                        .foregroundColor(AppTheme.mutedForeground)
+                }
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(AppTheme.mutedForeground.opacity(0.7))
+            }
+            .padding(14)
+            .background(AppTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(AppTheme.border.opacity(0.7), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("weReadDesktopProbeButton")
+    }
+
     private var kindleProbeSection: some View {
         Button {
             showKindleProbe = true
@@ -396,11 +600,28 @@ struct HomeView: View {
                 notice = AppLocalized("无法读取图片")
             }
         } else if ext == "pdf" {
-            // PDFKit 原生渲染（保排版）：保留 PDF 字节给 PDFView，按句记录 page+range 供高亮。
-            if let doc = DocumentBuilder.fromPDFNative(url: url) { finishImport(doc) }
-            else {
-                failImport(stage: "parse", code: "pdf_no_text_layer")
-                notice = AppLocalized("无法读取该 PDF（可能是扫描件无文字层，请用「拍摄」）")
+            guard let data = try? Data(contentsOf: url) else {
+                failImport(stage: "file_read", code: "pdf_read_failed")
+                notice = AppLocalized("无法读取该 PDF")
+                return
+            }
+            let title = url.deletingPathExtension().lastPathComponent
+            let scenario = importScenario
+            let mode = importMode
+            isProcessingPDF = true
+            Task {
+                defer { isProcessingPDF = false }
+                let doc = await DocumentBuilder.fromPDFWithOCR(
+                    data: data,
+                    fallbackTitle: title
+                )
+                importScenario = scenario
+                importMode = mode
+                if let doc { finishImport(doc) }
+                else {
+                    failImport(stage: "parse", code: "pdf_parse_or_ocr_failed")
+                    notice = AppLocalized("无法读取该 PDF")
+                }
             }
         } else if ["txt", "text", "md", "markdown"].contains(ext) {
             if let doc = DocumentBuilder.fromTextFile(url: url) { finishImport(doc) }
@@ -2838,12 +3059,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         appendLog("\(logPrefix) key=\(key.prefix(8)) source=\(payload["source"] as? String ?? "?") title=\(title) bytes=\(imageData.count)")
 
         prepareStatus = AppLocalized("Recognizing Kindle text...")
-        var doc = try await OCRService.shared.recognize(
-            image: image,
-            languages: CaptureFlowViewModel.visionLanguages(),
-            title: title,
-            paragraphStrategy: .kindleLayout
-        )
+        var doc = try await OCRService.shared.recognizeImportedImage(image: image.fixedOrientation(), title: title)
         doc.sourceKind = .kindle
         if let url = payload["url"] as? String {
             doc.sourceURL = url

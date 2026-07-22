@@ -26,6 +26,14 @@ struct HistoryRecord: Identifiable, Codable, Equatable {
     var sourceKind: ReadingSourceKind { ReadingSourceKind(rawValue: sourceKindRaw) ?? .text }
 }
 
+/// Home has dedicated rails for Kindle and WeRead, so neither source may also
+/// appear in Continue.  The full local history remains available in Library.
+enum HomeContinueContract {
+    static func includes(_ sourceKind: ReadingSourceKind) -> Bool {
+        sourceKind != .kindle && sourceKind != .weread
+    }
+}
+
 @MainActor
 final class HistoryStore: ObservableObject {
     static let shared = HistoryStore()
@@ -68,7 +76,7 @@ final class HistoryStore: ObservableObject {
     func record(_ doc: ReadingDocument) {
         let payload: Data? = {
             switch doc.sourceKind {
-            case .web: return nil
+            case .web, .weread: return nil
             case .text: return doc.fullText.data(using: .utf8)
             case .photo: return doc.imageData
             case .kindle: return doc.fullText.data(using: .utf8)
@@ -92,6 +100,17 @@ final class HistoryStore: ObservableObject {
         if rec.coverPath == nil {   // 首次记录 → 异步生成封面（+ web 抓取真实标题），best-effort，不阻塞打开
             Task { await generateCover(for: doc) }
         }
+    }
+
+    /// Web/DOCX language is only known after DOM extraction. Persist the final
+    /// eight-language result so history reopen, voice defaults and analytics do
+    /// not fall back to the placeholder English value.
+    func updateDetectedLanguage(documentID: String, language: String) {
+        guard let language = SupportedTTSLanguage(identifier: language)?.rawValue,
+              let index = records.firstIndex(where: { $0.id == documentID }),
+              records[index].language != language else { return }
+        records[index].language = language
+        save()
     }
 
     /// Kindle 书本级历史：点击朗读/解读后写入顶部 Continue。这里保存的是书架 metadata，
@@ -163,7 +182,7 @@ final class HistoryStore: ObservableObject {
         var imageData: Data?
         var title: String?
         switch doc.sourceKind {
-        case .web:   (title, imageData) = await webCover(doc.sourceURL)
+        case .web, .weread:   (title, imageData) = await webCover(doc.sourceURL)
         case .pdf:   if let d = doc.fileData { imageData = await Task.detached { Self.pdfFirstPageJPEG(d) }.value }
         case .photo: imageData = doc.imageData
         case .kindle: imageData = doc.paragraphs.first(where: { $0.type == .image && $0.imageData != nil })?.imageData
@@ -178,7 +197,7 @@ final class HistoryStore: ObservableObject {
         var imageData: Data?
         var title: String?
         switch rec.sourceKind {
-        case .web:   (title, imageData) = await webCover(rec.sourceURL)
+        case .web, .weread:   (title, imageData) = await webCover(rec.sourceURL)
         case .pdf:   if let d = try? Data(contentsOf: payloadURL(rec.id)) { imageData = await Task.detached { Self.pdfFirstPageJPEG(d) }.value }
         case .photo: imageData = try? Data(contentsOf: payloadURL(rec.id))
         case .epub, .docx, .kindle, .text: break
@@ -261,6 +280,10 @@ final class HistoryStore: ObservableObject {
             guard let url = rec.sourceURL else { return nil }
             return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .web, language: rec.language,
                                    paragraphs: [], sourceURL: url)
+        case .weread:
+            guard let url = rec.sourceURL else { return nil }
+            return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .weread, language: rec.language,
+                                   paragraphs: [], sourceURL: url)
         case .text:
             guard let data = try? Data(contentsOf: payloadURL(rec.id)),
                   let text = String(data: data, encoding: .utf8) else { return nil }
@@ -269,9 +292,11 @@ final class HistoryStore: ObservableObject {
                                    language: built.language, paragraphs: built.paragraphs)
         case .pdf:
             guard let data = try? Data(contentsOf: payloadURL(rec.id)) else { return nil }
-            let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("\(rec.id).pdf")
-            try? data.write(to: tmp)
-            guard let built = DocumentBuilder.fromPDFNative(url: tmp, title: rec.title) else { return nil }
+            guard let built = await DocumentBuilder.fromPDFWithOCR(
+                data: data,
+                title: rec.title,
+                fallbackTitle: rec.title
+            ) else { return nil }
             return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .pdf, language: built.language,
                                    paragraphs: built.paragraphs, fileData: data)
         case .docx:

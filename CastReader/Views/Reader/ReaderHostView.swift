@@ -14,6 +14,12 @@ enum ReaderMode: String, CaseIterable, Identifiable {
 }
 
 struct ReaderHostView: View {
+    /// Read/Explain controls must reserve one stable viewport boundary. WeRead
+    /// paginates its Canvas from the WKWebView size; allowing the explanation
+    /// subtitle/status rows to grow this area used to resize the Canvas, which
+    /// was then mistaken for a real page turn and restarted QuickRead.
+    private static let portraitPlaybackBarHeight: CGFloat = 124
+
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @ObservedObject var readVM: ReadAloudViewModel
@@ -29,17 +35,35 @@ struct ReaderHostView: View {
     private var usesCompactPlaybackBar: Bool { verticalSizeClass == .compact }
 
     var body: some View {
-        Group {
+        // Keep one structural path for the reader surface in both orientations.
+        // Putting portrait and landscape in separate `if` branches destroys the
+        // UIViewRepresentable when verticalSizeClass changes. For WeRead that
+        // meant throwing away the live WKWebView, booting a second reader and
+        // leaving the old TTS timer briefly attached to the new page model.
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                header
+                Divider()
+                readerSurface
+                if !usesCompactPlaybackBar {
+                    Divider()
+                    controls
+                }
+            }
+
             if usesCompactPlaybackBar {
-                landscapeBody
-            } else {
-                portraitBody
+                landscapeControls
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 8)
             }
         }
         .background(AppTheme.background.ignoresSafeArea())
         .onAppear { scheduleRefocusBurst(reason: "appear") }
-        .onDisappear { refocusTask?.cancel() }
+        .onDisappear {
+            refocusTask?.cancel()
+        }
         .onPreferenceChange(ReaderSurfaceSizeKey.self) { size in
+            guard coordinator.isReaderPresented else { return }
             guard size.width > 1, size.height > 1 else { return }
             guard abs(size.width - readerSurfaceSize.width) > 2
                     || abs(size.height - readerSurfaceSize.height) > 2 else { return }
@@ -47,8 +71,15 @@ struct ReaderHostView: View {
             scheduleRefocusBurst(reason: "surfaceSize")
         }
         .onChange(of: scenePhase) { phase in
-            guard phase == .active else { return }
+            guard phase == .active, coordinator.isReaderPresented else { return }
             scheduleRefocusBurst(reason: "foreground")
+        }
+        .onChange(of: coordinator.isReaderPresented) { isPresented in
+            if isPresented {
+                scheduleRefocusBurst(reason: "expand")
+            } else {
+                refocusTask?.cancel()
+            }
         }
         .onChange(of: coordinator.mode) { newMode in
             if newMode == .read {
@@ -61,6 +92,7 @@ struct ReaderHostView: View {
             scheduleRefocusBurst(reason: "mode")
         }
         .onChange(of: verticalSizeClass) { _ in
+            guard coordinator.isReaderPresented else { return }
             scheduleRefocusBurst(reason: "orientation")
         }
         // 收起阅读器（minimize）不停播放，由 Mini Player 接管；真正停止只在 Mini Player ✕（coordinator.close）。
@@ -72,38 +104,20 @@ struct ReaderHostView: View {
         }
     }
 
-    private var portraitBody: some View {
-        VStack(spacing: 0) {
-            header
-            Divider()
-            readerSurface
-            Divider()
-            controls
-        }
-    }
-
-    private var landscapeBody: some View {
-        ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                header
-                Divider()
-                readerSurface
-            }
-
-            landscapeControls
-                .padding(.horizontal, 22)
-                .padding(.bottom, 8)
-        }
-    }
-
     private var readerSurface: some View {
-        content
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background {
-                GeometryReader { geo in
-                    Color.clear.preference(key: ReaderSurfaceSizeKey.self, value: geo.size)
+        GeometryReader { geometry in
+            let surfaceSize = geometry.size
+            Group {
+                if surfaceSize.width > 1, surfaceSize.height > 1 {
+                    content(surfaceSize: surfaceSize)
+                } else {
+                    AppTheme.background
                 }
             }
+            .frame(width: surfaceSize.width, height: surfaceSize.height)
+            .preference(key: ReaderSurfaceSizeKey.self, value: surfaceSize)
+        }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .id(document.id)   // 锁定 identity 到文档：切朗读/解读不重建 reader（保住 EPUB 已渲染的 WebView，避免闪白重载）
     }
 
@@ -136,12 +150,23 @@ struct ReaderHostView: View {
     // MARK: 内容
 
     @ViewBuilder
-    private var content: some View {
+    private func content(surfaceSize: CGSize) -> some View {
         switch document.sourceKind {
-        case .web, .docx:
-            WebReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode, refocusToken: refocusToken)
+        case .web, .docx, .weread:
+            WebReaderView(
+                document: document,
+                readVM: readVM,
+                explainVM: explainVM,
+                mode: mode,
+                refocusToken: refocusToken,
+                initialSurfaceSize: surfaceSize
+            )
         case .pdf:
-            PDFReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode, refocusToken: refocusToken)
+            if document.usesNativePDFRendering {
+                PDFReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode, refocusToken: refocusToken)
+            } else {
+                TextReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode, refocusToken: refocusToken)
+            }
         case .photo:
             PhotoReaderCanvas(document: document, readVM: readVM, explainVM: explainVM, mode: mode, refocusToken: refocusToken)
         case .kindle:
@@ -154,13 +179,16 @@ struct ReaderHostView: View {
 
     // MARK: 控制条
 
-    @ViewBuilder
     private var controls: some View {
-        if mode == .read {
-            ReadControlBar(vm: readVM)
-        } else {
-            ExplainControlBar(vm: explainVM)
+        Group {
+            if mode == .read {
+                ReadControlBar(vm: readVM)
+            } else {
+                ExplainControlBar(vm: explainVM)
+            }
         }
+        .frame(height: Self.portraitPlaybackBarHeight)
+        .clipped()
     }
 
     @ViewBuilder
@@ -375,14 +403,22 @@ private struct ReaderLandscapeExplainOverlay: View {
                         .lineLimit(1)
                 }
             case .completed:
-                Button { vm.replay() } label: {
-                    Image(systemName: "arrow.clockwise.circle.fill")
-                        .font(.system(size: 38))
-                        .foregroundColor(AppTheme.primary)
+                if vm.isContinuingLivePage {
+                    ProgressView()
+                        .frame(width: 38, height: 38)
+                    Text(AppLocalized("继续讲解…"))
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                } else {
+                    Button { vm.replay() } label: {
+                        Image(systemName: "arrow.clockwise.circle.fill")
+                            .font(.system(size: 38))
+                            .foregroundColor(AppTheme.primary)
+                    }
+                    Text(AppLocalized("解读完成"))
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
                 }
-                Text(AppLocalized("解读完成"))
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
             }
         }
         .foregroundColor(AppTheme.foreground)
@@ -437,6 +473,7 @@ struct SpeedMenu: View {
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var pro = ProManager.shared
     @ObservedObject private var audio = AudioPlayerService.shared
+    @State private var showSpeedPicker = false
     @State private var showPaywall = false
     var style: SpeedMenuStyle = .capsule
 
@@ -445,12 +482,8 @@ struct SpeedMenu: View {
     }
 
     var body: some View {
-        Menu {
-            ForEach(AudioPlayerService.proSpeedOptions.reversed(), id: \.self) { speed in
-                Button(speedTitle(speed)) {
-                    selectSpeed(speed)
-                }
-            }
+        Button {
+            showSpeedPicker = true
         } label: {
             switch style {
             case .capsule:
@@ -485,28 +518,97 @@ struct SpeedMenu: View {
             }
         }
         .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .accessibilityLabel(Text(AppLocalized("Playback Speed")))
+        .accessibilityValue(Text(String(format: "%.2gx", Double(displayedSpeed))))
+        .popover(isPresented: $showSpeedPicker, attachmentAnchor: .rect(.bounds), arrowEdge: .bottom) {
+            speedPicker
+                .presentationCompactAdaptation(.popover)
+        }
         .sheet(isPresented: $showPaywall) {
             PaywallView(analyticsTrigger: "pro_speed", analyticsSurface: "reader_controls")
         }
     }
 
-    private func speedTitle(_ speed: Float) -> String {
-        var title = String(format: "%.2gx", speed)
-        if abs(speed - displayedSpeed) < 0.01 {
-            title += "  Selected"
+    private var speedPicker: some View {
+        VStack(spacing: 14) {
+            HStack {
+                Text(AppLocalized("Playback Speed"))
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.foreground)
+                Spacer()
+                Button {
+                    showSpeedPicker = false
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(AppTheme.mutedForeground)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(AppLocalized("关闭")))
+            }
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                ForEach(AudioPlayerService.proSpeedOptions, id: \.self) { speed in
+                    Button {
+                        selectSpeed(speed)
+                    } label: {
+                        HStack(spacing: 7) {
+                            Image(systemName: isSelected(speed) ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(isSelected(speed) ? AppTheme.primary : AppTheme.mutedForeground)
+                            Text(String(format: "%.2gx", Double(speed)))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(AppTheme.foreground)
+                            Spacer(minLength: 2)
+                            if requiresPro(speed) {
+                                Text("PRO")
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(AppTheme.primary)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .frame(height: 42)
+                        .background(
+                            isSelected(speed)
+                                ? AppTheme.primary.opacity(0.12)
+                                : AppTheme.surfaceVariant,
+                            in: RoundedRectangle(cornerRadius: 10)
+                        )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(
+                                    isSelected(speed) ? AppTheme.primary.opacity(0.45) : Color.clear,
+                                    lineWidth: 1
+                                )
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(String(format: "%.2gx", Double(speed))))
+                }
+            }
         }
-        if !pro.isPro && Double(speed) > AppSettings.freeMaxSpeed {
-            title += "  Pro"
-        }
-        return title
+        .padding(16)
+        .frame(width: 292)
+        .background(AppTheme.surface)
+    }
+
+    private func isSelected(_ speed: Float) -> Bool {
+        abs(speed - displayedSpeed) < 0.01
+    }
+
+    private func requiresPro(_ speed: Float) -> Bool {
+        !pro.isPro && Double(speed) > AppSettings.freeMaxSpeed
     }
 
     private func selectSpeed(_ speed: Float) {
-        if !pro.isPro && Double(speed) > AppSettings.freeMaxSpeed {
+        if requiresPro(speed) {
+            showSpeedPicker = false
             refreshAccessThenSelectSpeed(speed)
             return
         }
         applySelectedSpeed(speed)
+        showSpeedPicker = false
     }
 
     private func refreshAccessThenSelectSpeed(_ speed: Float) {
@@ -515,6 +617,10 @@ struct SpeedMenu: View {
             if pro.isPro {
                 applySelectedSpeed(speed)
             } else {
+                // Present after the speed popover has completed dismissal;
+                // presenting two modal surfaces in one update loses the tap on
+                // recent iOS versions.
+                try? await Task.sleep(nanoseconds: 220_000_000)
                 showPaywall = true
             }
         }
@@ -524,6 +630,9 @@ struct SpeedMenu: View {
         settings.speed = Double(speed)
         let effective = Float(settings.effectiveSpeed(isPro: pro.isPro))
         audio.setPlaybackRate(effective)
+        ReaderRunLog.write(
+            "SPEED selected=\(String(format: "%.2f", Double(speed))) effective=\(String(format: "%.2f", Double(effective))) playing=\(audio.isPlaying ? "Y" : "N")"
+        )
         #if DEBUG
         NSLog("CRDBG SPEED selected=%.2f effective=%.2f isPlaying=%@",
               Double(speed),

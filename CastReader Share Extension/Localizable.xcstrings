@@ -1,0 +1,89 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "share_detail" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "Save this content to your inbox. Open CastReader to read or explain it." } },
+      "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "将内容保存到接收箱。打开 CastReader 后再选择朗读或解读。" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "このコンテンツを受信箱に保存します。CastReader を開いて、読み上げまたは解説を選べます。" } },
+      "es" : { "stringUnit" : { "state" : "translated", "value" : "Guarda este contenido en tu bandeja. Abre CastReader para leerlo o explicarlo." } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Enregistrez ce contenu dans votre boîte de réception. Ouvrez CastReader pour le lire ou l’expliquer." } },
+      "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Salve este conteúdo na caixa de entrada. Abra o CastReader para ouvir ou explicar." } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Salva questo contenuto nella posta in arrivo. Apri CastReader per leggerlo o spiegarlo." } },
+      "hi" : { "stringUnit" : { "state" : "translated", "value" : "इस सामग्री को इनबॉक्स में सहेजें। इसे पढ़ने या समझाने के लिए CastReader खोलें।" } }
+    } },
+    "share_document" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "Shared document" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分享的文档" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有ドキュメント" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Documento compartido" } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Document partagé" } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Documento compartilhado" } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Documento condiviso" } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "साझा दस्तावेज़" } }
+    } },
+    "share_explain" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "Explain" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "解读" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "解説" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Explicar" } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Expliquer" } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Explicar" } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Spiega" } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "समझाएँ" } }
+    } },
+    "share_failed" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "CastReader could not open this item." } },
+      "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "CastReader 暂时无法打开此内容。" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "この項目を開けませんでした。" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "CastReader no pudo abrir este elemento." } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "CastReader n’a pas pu ouvrir cet élément." } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "O CastReader não conseguiu abrir este item." } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "CastReader non ha potuto aprire questo elemento." } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "CastReader इस आइटम को नहीं खोल सका।" } }
+    } },
+    "share_image" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "Shared image" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分享的图片" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有画像" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Imagen compartida" } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Image partagée" } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Imagem compartilhada" } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Immagine condivisa" } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "साझा की गई छवि" } }
+    } },
+    "share_importing" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "Preparing content…" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在准备内容…" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "コンテンツを準備中…" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Preparando contenido…" } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Préparation du contenu…" } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Preparando conteúdo…" } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Preparazione dei contenuti…" } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "सामग्री तैयार हो रही है…" } }
+    } },
+    "share_read" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "Read aloud" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "朗读" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み上げ" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Leer en voz alta" } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Lire à voix haute" } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ler em voz alta" } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Leggi ad alta voce" } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "ज़ोर से पढ़ें" } }
+    } },
+    "share_done" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "完成" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "完了" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Listo" } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Terminé" } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Concluir" } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Fine" } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "पूर्ण" } }
+    } },
+    "share_saved" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "Saved to your content inbox." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已保存到内容接收箱。" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "コンテンツ受信箱に保存しました。" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Guardado en tu bandeja de contenido." } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Enregistré dans votre boîte de réception de contenu." } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Salvo na caixa de entrada de conteúdo." } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Salvato nella posta in arrivo dei contenuti." } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "कॉन्टेंट इनबॉक्स में सहेजा गया।" } }
+    } },
+    "share_save" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "Add to CastReader" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "加入 CastReader" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "CastReader に追加" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Añadir a CastReader" } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ajouter à CastReader" } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Adicionar ao CastReader" } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Aggiungi a CastReader" } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "CastReader में जोड़ें" } }
+    } },
+    "share_success_title" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "Added to CastReader" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已加入 CastReader" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "CastReader に追加しました" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Añadido a CastReader" } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ajouté à CastReader" } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Adicionado ao CastReader" } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Aggiunto a CastReader" } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "CastReader में जोड़ दिया गया" } }
+    } },
+    "share_text" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "Shared text" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分享的文本" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "共有テキスト" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Texto compartido" } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Texte partagé" } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Texto compartilhado" } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Testo condiviso" } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "साझा किया गया टेक्स्ट" } }
+    } },
+    "share_title" : { "localizations" : {
+      "en" : { "stringUnit" : { "state" : "translated", "value" : "Send to CastReader" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "发送到 CastReader" } },
+      "ja" : { "stringUnit" : { "state" : "translated", "value" : "CastReader に送る" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Enviar a CastReader" } },
+      "fr" : { "stringUnit" : { "state" : "translated", "value" : "Envoyer vers CastReader" } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Enviar para o CastReader" } },
+      "it" : { "stringUnit" : { "state" : "translated", "value" : "Invia a CastReader" } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "CastReader को भेजें" } }
+    } }
+  },
+  "version" : "1.0"
+}

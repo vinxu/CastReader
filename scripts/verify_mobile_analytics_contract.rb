@@ -7,7 +7,7 @@ require "set"
 root = Pathname(__dir__).parent
 android_root = Pathname(ENV.fetch("CASTREADER_ANDROID_ROOT", root.parent.join("CastReader-Android").to_s))
 
-contract_rows = JSON.parse(root.join("docs/analytics/mobile-events-v1.json").read).fetch("events")
+contract_rows = JSON.parse(root.join("docs/analytics/mobile-events-v2.json").read).fetch("events")
 contract = contract_rows.to_h do |event|
   [
     event.fetch("name"),
@@ -45,4 +45,4 @@ end
 abort "iOS analytics event/property contract mismatch" unless swift_definitions == contract
 abort "Android analytics event/property contract mismatch" unless kotlin_definitions == contract
 
-puts "mobile analytics contract verified: JSON=15 iOS=15 Android=15; event names and required/optional properties match"
+puts "mobile analytics contract verified: JSON=19 iOS=19 Android=19; event names and required/optional properties match"
