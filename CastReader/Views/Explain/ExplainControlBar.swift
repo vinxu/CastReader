@@ -10,17 +10,36 @@ import SwiftUI
 
 struct ExplainControlBar: View {
     @ObservedObject var vm: ExplainViewModel
+    let showTOC: (() -> Void)?
+
+    init(vm: ExplainViewModel, showTOC: (() -> Void)? = nil) {
+        self.vm = vm
+        self.showTOC = showTOC
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             subtitleRow
-            HStack(spacing: 14) {
+            HStack(spacing: 0) {
                 controlContent
-                Spacer(minLength: 0)
-                PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
-                if showsSpeedControl {
-                    SpeedMenu()
+                Spacer(minLength: 10)
+                HStack(spacing: 8) {
+                    if let showTOC {
+                        Button(action: showTOC) {
+                            Image(systemName: "list.bullet")
+                                .font(.system(size: 20, weight: .semibold))
+                                .frame(width: 34, height: 36)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text(AppLocalized("目录")))
+                    }
+                    PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
+                    if showsSpeedControl {
+                        SpeedMenu()
+                    }
                 }
+                .fixedSize(horizontal: true, vertical: false)
+                .layoutPriority(1)
             }
         }
         .foregroundColor(AppTheme.foreground)

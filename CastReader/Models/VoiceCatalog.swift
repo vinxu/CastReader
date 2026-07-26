@@ -309,7 +309,7 @@ enum VoiceCatalog {
         .init(code: "zm_098", name: "云瀚", isPro: true, lang: "zh", gender: "male", timestampMode: "segment"),
     ]
 
-    /// 网络目录/缓存尚未到达时也能为八种语言解析正确的默认音色。
+    /// 网络目录/缓存尚未到达时也能为九种语言解析正确的默认音色。
     /// 这里只保留每种新增语言的免费默认音色；完整音色与元数据仍以服务端为准。
     static let multilingualDefaults: [VoiceOption] = SupportedTTSLanguage.allCases
         .filter { $0 != .english && $0 != .chinese }
@@ -329,14 +329,16 @@ enum VoiceCatalog {
 
     static var all: [VoiceOption] {
         guard let catalog = runtime.read() else { return fallbackAll }
-        return catalog.voices.map(option(from:))
+        let remote = catalog.voices.map(option(from:))
+        let remoteLanguages = Set(remote.map { normalizedLanguage($0.lang) })
+        return remote + fallbackAll.filter { !remoteLanguages.contains(normalizedLanguage($0.lang)) }
     }
 
     static var selectableVoices: [VoiceOption] {
         all.filter(\.selectable)
     }
 
-    /// 八语产品顺序就是浏览器展示顺序；没有可选音色的语言不进入选择器。
+    /// 九语产品顺序就是浏览器展示顺序；没有可选音色的远端语言使用静态安全默认。
     /// 离线或首次启动时每种语言都有安全默认，网络目录到达后替换为完整音色元数据。
     static var availableLanguages: [VoiceCatalogLanguageOption] {
         guard let catalog = runtime.read() else {
@@ -356,16 +358,19 @@ enum VoiceCatalog {
         }.mapValues(\.count)
 
         return SupportedTTSLanguage.allCases.compactMap { supported in
-            guard let language = catalog.languages.first(where: {
+            let language = catalog.languages.first(where: {
                 normalizedLanguage($0.code) == supported.rawValue
-            }) else { return nil }
+            })
             let code = supported.rawValue
-            guard let count = counts[code], count > 0 else { return nil }
+            let count = counts[code] ?? fallbackAll.filter {
+                normalizedLanguage($0.lang) == code && $0.selectable
+            }.count
+            guard count > 0 else { return nil }
             return VoiceCatalogLanguageOption(
                 code: code,
-                locale: language.locale,
-                name: language.name,
-                status: language.status,
+                locale: language?.locale ?? supported.localeIdentifier,
+                name: language?.name ?? supported.catalogName,
+                status: language?.status ?? "offline-default",
                 voiceCount: count
             )
         }
@@ -382,11 +387,14 @@ enum VoiceCatalog {
         guard let catalog = runtime.read() else {
             return fallbackAll.filter { normalizedLanguage($0.lang) == normalized }
         }
-        return catalog.voices
+        let remote = catalog.voices
             .filter {
                 normalizedLanguage($0.language) == normalized && $0.selectable
             }
             .map(option(from:))
+        return remote.isEmpty
+            ? fallbackAll.filter { normalizedLanguage($0.lang) == normalized && $0.selectable }
+            : remote
     }
 
     static func option(for code: String) -> VoiceOption? {
@@ -510,7 +518,7 @@ final class VoiceCatalogService: ObservableObject {
     @Published private(set) var source: VoiceCatalogSource = .fallback
     @Published private(set) var isRefreshing = false
 
-    private static let cacheKey = "tts_voice_catalog_v1_cache"
+    private static let cacheKey = "tts_voice_catalog_v2_nine_language_cache"
     private static let minimumRefreshInterval: TimeInterval = 15 * 60
 
     private let session: URLSession

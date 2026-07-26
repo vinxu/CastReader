@@ -103,7 +103,7 @@ final class HistoryStore: ObservableObject {
     }
 
     /// Web/DOCX language is only known after DOM extraction. Persist the final
-    /// eight-language result so history reopen, voice defaults and analytics do
+    /// nine-language result so history reopen, voice defaults and analytics do
     /// not fall back to the placeholder English value.
     func updateDetectedLanguage(documentID: String, language: String) {
         guard let language = SupportedTTSLanguage(identifier: language)?.rawValue,

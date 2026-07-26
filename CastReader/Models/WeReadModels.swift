@@ -8,6 +8,7 @@
 //
 
 import CryptoKit
+import Combine
 import CoreGraphics
 import Foundation
 
@@ -62,6 +63,203 @@ struct WeReadReadingAnchor: Codable, Equatable {
     var pageFingerprint: String
     var progressLabel: String?
     var updatedAt: Date
+}
+
+/// Stable, metadata-only table-of-contents entry captured from the signed-in
+/// WeRead page. `index` is CastReader's display order; `chapterIndex` and
+/// `chapterUID` remain the server-authored navigation identity.
+struct WeReadTOCEntry: Identifiable, Codable, Equatable {
+    let index: Int
+    let chapterIndex: Int
+    let chapterUID: String
+    let title: String
+    let level: Int
+    var active: Bool
+
+    var id: String {
+        chapterUID.isEmpty ? "index:\(chapterIndex)" : "uid:\(chapterUID)"
+    }
+
+    /// Presentation-only DOM rows are not navigation targets. A chapter can
+    /// only be selected after WeRead has supplied its server-authored UID.
+    var isActionable: Bool { !chapterUID.isEmpty }
+
+    init(
+        index: Int,
+        chapterIndex: Int,
+        chapterUID: String,
+        title: String,
+        level: Int = 0,
+        active: Bool = false
+    ) {
+        self.index = max(0, index)
+        self.chapterIndex = chapterIndex
+        self.chapterUID = chapterUID.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.level = max(0, level)
+        self.active = active
+    }
+}
+
+/// Native TOC presentation state. Chapter bodies and WeRead credentials never
+/// leave WKWebView; only title/UID/index metadata is cached so the panel opens
+/// immediately on a later visit and refreshes against the live session.
+@MainActor
+final class WeReadTOCController: ObservableObject {
+    @Published private(set) var entries: [WeReadTOCEntry] = []
+    @Published private(set) var isLoading = false
+    @Published private(set) var isJumping = false
+    @Published private(set) var errorText: String?
+    @Published var isPresented = false
+
+    var onLoad: (() -> Void)?
+    var onSelect: ((WeReadTOCEntry) -> Void)?
+
+    private var bookID = ""
+    private var didLoadCache = false
+
+    init(bookID: String = "") {
+        if !bookID.isEmpty { configure(bookID: bookID) }
+    }
+
+    func configure(bookID: String) {
+        guard self.bookID != bookID || !didLoadCache else { return }
+        self.bookID = bookID
+        didLoadCache = true
+        entries = []
+        isLoading = false
+        isJumping = false
+        errorText = nil
+        isPresented = false
+        guard let data = UserDefaults.standard.data(forKey: cacheKey),
+              let cached = try? JSONDecoder().decode([WeReadTOCEntry].self, from: data) else { return }
+        // Older builds persisted title/index-only DOM rows. Keeping them made
+        // the native sheet look actionable even though no deterministic
+        // chapter route could be constructed.
+        entries = Self.normalized(cached).filter(\.isActionable)
+    }
+
+    func present() {
+        isPresented = true
+        isLoading = true
+        errorText = nil
+        onLoad?()
+    }
+
+    func dismiss() {
+        guard !isJumping else { return }
+        isPresented = false
+    }
+
+    func select(_ entry: WeReadTOCEntry) {
+        // A cached catalog is immediately actionable while the live catalog
+        // refreshes in the background. Only block when there is no stable
+        // entry to select yet, or a prior chapter jump is still in flight.
+        guard !isJumping, entry.isActionable, !entries.isEmpty else {
+            errorText = AppLocalized("正在同步微信读书目录，请稍后重试。")
+            return
+        }
+        if entry.active {
+            isPresented = false
+            return
+        }
+        isPresented = false
+        isJumping = true
+        errorText = nil
+        onSelect?(entry)
+    }
+
+    func receive(
+        _ next: [WeReadTOCEntry],
+        currentChapterUID: String?,
+        currentChapterIndex: Int?
+    ) {
+        let normalized = Self.normalized(next)
+        let stable = normalized.filter(\.isActionable)
+        if !stable.isEmpty {
+            entries = Self.markingCurrent(
+                stable,
+                chapterUID: currentChapterUID,
+                chapterIndex: currentChapterIndex
+            )
+            persist()
+        }
+        isLoading = false
+        errorText = entries.isEmpty ? AppLocalized("正在同步微信读书目录，请稍后重试。") : nil
+    }
+
+    func failLoading(_ message: String? = nil) {
+        isLoading = false
+        errorText = message ?? AppLocalized("暂未找到这本书的目录。")
+    }
+
+    func finishJump(to entry: WeReadTOCEntry) {
+        entries = Self.markingCurrent(
+            entries,
+            chapterUID: entry.chapterUID,
+            chapterIndex: entry.chapterIndex
+        )
+        isJumping = false
+        errorText = nil
+        persist()
+    }
+
+    func failJump(_ message: String? = nil) {
+        isJumping = false
+        isPresented = true
+        errorText = message ?? AppLocalized("跳转失败，请重试。")
+    }
+
+    static func normalized(_ source: [WeReadTOCEntry]) -> [WeReadTOCEntry] {
+        var seen = Set<String>()
+        return source
+            .sorted { lhs, rhs in
+                lhs.index == rhs.index ? lhs.chapterIndex < rhs.chapterIndex : lhs.index < rhs.index
+            }
+            .filter { entry in
+                guard !entry.title.isEmpty else { return false }
+                let key = entry.chapterUID.isEmpty ? "index:\(entry.chapterIndex)" : "uid:\(entry.chapterUID)"
+                return seen.insert(key).inserted
+            }
+            .enumerated()
+            .map { offset, entry in
+                WeReadTOCEntry(
+                    index: offset,
+                    chapterIndex: entry.chapterIndex,
+                    chapterUID: entry.chapterUID,
+                    title: entry.title,
+                    level: entry.level,
+                    active: entry.active
+                )
+            }
+    }
+
+    static func markingCurrent(
+        _ source: [WeReadTOCEntry],
+        chapterUID: String?,
+        chapterIndex: Int?
+    ) -> [WeReadTOCEntry] {
+        let uid = chapterUID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let hasUIDMatch = !uid.isEmpty && source.contains { $0.chapterUID == uid }
+        return source.map { entry in
+            var value = entry
+            value.active = hasUIDMatch
+                ? entry.chapterUID == uid
+                : chapterIndex.map { entry.chapterIndex == $0 } ?? entry.active
+            return value
+        }
+    }
+
+    private var cacheKey: String {
+        let digest = SHA256.hash(data: Data(bookID.utf8))
+        return "castreader.weread.toc." + digest.prefix(12).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func persist() {
+        guard !bookID.isEmpty,
+              let data = try? JSONEncoder().encode(entries) else { return }
+        UserDefaults.standard.set(data, forKey: cacheKey)
+    }
 }
 
 struct WeReadAccountInfo: Codable, Equatable {

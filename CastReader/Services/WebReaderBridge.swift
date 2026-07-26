@@ -38,6 +38,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     var pendingEpubBase64: String?              // 仅 epub：待 JS ready 后交 epub.js 渲染的字节
     private weak var readVM: ReadAloudViewModel?
     private weak var explainVM: ExplainViewModel?
+    private weak var weReadTOCController: WeReadTOCController?
     private var cancellables = Set<AnyCancellable>()
     private var didInit = false
     private var didAutoStart = false
@@ -54,10 +55,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var lastWeReadEvidence: WeReadPageEvidence?
     private var pendingWeReadTurn = false
     private var pendingWeReadManualTurn = false
+    private var pendingWeReadTOCJump = false
+    private var pendingWeReadTOCEntry: WeReadTOCEntry?
     private var pendingWeReadActionID = ""
     private var weReadTurnTimeout: Task<Void, Never>?
     private var weReadManualIntentTimeout: Task<Void, Never>?
     private var weReadManualCommitTask: Task<Void, Never>?
+    private var weReadTOCLoadTimeout: Task<Void, Never>?
+    private var weReadNativeTOCTask: Task<Void, Never>?
+    private var weReadNativeTOCBookID = ""
     private var resumeReadAfterWeReadTurn = false
     private var resumeExplainAfterWeReadTurn = false
     private var pendingWeReadPreview: WeReadPagePreview?
@@ -91,6 +97,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         case loadingRecoveredEntry
     }
     private var weReadEntryRecoveryStage = WeReadEntryRecoveryStage.idle
+    private var lastWeReadMainFrameStatus: Int?
+    private var weReadNetworkRetries = 0
 
     private struct WeReadRefreshState {
         let serial: Int
@@ -182,6 +190,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         self.expectsDynamicWebContent = expectsDynamicWebContent
         self.isWeRead = isWeRead
         self.isWeReadInitialPlaybackPending = isWeRead
+        if isWeRead {
+            // Baseline before WeRead touches the shared website data store.
+            KindleSessionProbe.logCookies(reason: "weread-create")
+        }
     }
 
     // MARK: - 关联 VM + 订阅
@@ -265,6 +277,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             .store(in: &cancellables)
     }
 
+    func attachWeReadTOC(_ controller: WeReadTOCController, bookID: String) {
+        weReadTOCController = controller
+        controller.configure(bookID: bookID)
+        controller.onLoad = { [weak self] in self?.requestWeReadTOC() }
+        controller.onSelect = { [weak self] entry in self?.jumpToWeReadTOCEntry(entry) }
+    }
+
     // MARK: - JS → native
 
     nonisolated func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -296,6 +315,60 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             receiveWeReadPage(msg.payload)
         case "wereadPagePreview":
             receiveWeReadPagePreview(msg.payload)
+        case "wereadTOC":
+            receiveWeReadTOC(msg.payload)
+        case "wereadTOCCatalogRequest":
+            requestNativeWeReadTOC(
+                bookID: (msg.payload["bookID"] as? String) ?? ""
+            )
+        case "wereadTOCError":
+            weReadTOCLoadTimeout?.cancel()
+            weReadTOCLoadTimeout = nil
+            weReadTOCController?.failLoading()
+        case "wereadTOCJumpRejected":
+            failWeReadTOCJump(reason: (msg.payload["reason"] as? String) ?? "javascript-rejected")
+        case "wereadTOCJumpTrace":
+            ReaderRunLog.write(
+                "WEREAD toc jump trace stage=\((msg.payload["stage"] as? String) ?? "unknown") " +
+                "index=\(Int(Self.double(msg.payload["chapterIndex"]) ?? -1)) " +
+                "uid=\((msg.payload["chapterUID"] as? String) ?? "") " +
+                "method=\((msg.payload["method"] as? String) ?? (msg.payload["tag"] as? String) ?? "")"
+            )
+        case "wereadTOCDiagnostic":
+            let stage = (msg.payload["stage"] as? String) ?? "unknown"
+            let rows = Int(Self.double(msg.payload["rows"]) ?? 0)
+            let hrefUIDs = Int(Self.double(msg.payload["hrefUIDs"]) ?? 0)
+            let anchors = Int(Self.double(msg.payload["anchors"]) ?? 0)
+            let status = Int(Self.double(msg.payload["status"]) ?? 0)
+            let chapters = Int(Self.double(msg.payload["chapters"]) ?? 0)
+            let roots = Int(Self.double(msg.payload["roots"]) ?? 0)
+            let bookIDCount = Int(Self.double(msg.payload["bookIDCount"]) ?? 0)
+            let kinds = (msg.payload["bookIDKinds"] as? [String])?.joined(separator: ",") ?? ""
+            let path = (msg.payload["path"] as? String) ?? ""
+            let selector = (msg.payload["selector"] as? String) ?? ""
+            let responseKeys = ((msg.payload["responseKeys"] as? [String]) ?? []).joined(separator: ",")
+            let dataKeys = ((msg.payload["dataKeys"] as? [String]) ?? []).joined(separator: ",")
+            let bodyKeys = ((msg.payload["bodyKeys"] as? [String]) ?? []).joined(separator: ",")
+            let requestSource = (msg.payload["requestSource"] as? String) ?? ""
+            let candidateSource = (msg.payload["candidateSource"] as? String) ?? ""
+            let code = (msg.payload["code"] as? String) ??
+                Self.double(msg.payload["code"]).map { String(format: "%.0f", $0) } ?? ""
+            let message = (msg.payload["message"] as? String) ?? ""
+            let bytes = Int(Self.double(msg.payload["bytes"]) ?? 0)
+            let updatedCount = Int(Self.double(msg.payload["updatedCount"]) ?? 0)
+            let hasUID = (msg.payload["hasChapterUID"] as? Bool) == true ? "Y" : "N"
+            let hasIndex = (msg.payload["hasChapterIndex"] as? Bool) == true ? "Y" : "N"
+            let hasUpdated = (msg.payload["hasUpdated"] as? Bool) == true ? "Y" : "N"
+            let framework = ((msg.payload["appFrameworkKeys"] as? [String]) ??
+                (msg.payload["rowFrameworkKeys"] as? [String]) ?? []).joined(separator: ",")
+            ReaderRunLog.write(
+                "WEREAD toc diagnostic stage=\(stage) rows=\(rows) hrefUIDs=\(hrefUIDs) anchors=\(anchors) " +
+                "status=\(status) chapters=\(chapters) roots=\(roots) ids=\(bookIDCount)[\(kinds)] " +
+                "path=\(path) selector=\(selector) framework=\(framework) code=\(code) bytes=\(bytes) " +
+                "flags=\(hasUID)/\(hasIndex)/\(hasUpdated) keys=\(responseKeys) dataKeys=\(dataKeys) " +
+                "bodyKeys=\(bodyKeys) updated=\(updatedCount) request=\(requestSource) candidate=\(candidateSource) " +
+                "message=\(message)"
+            )
         case "wereadPreviewState":
             let source = (msg.payload["sourceFingerprint"] as? String) ?? ""
             let reason = (msg.payload["reason"] as? String) ?? "unknown"
@@ -388,6 +461,279 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         onRendered(paras)
     }
 
+    private func receiveWeReadTOC(_ payload: [String: Any]) {
+        let raw = payload["entries"] as? [[String: Any]] ?? []
+        let entries = raw.enumerated().compactMap { offset, value -> WeReadTOCEntry? in
+            let title = ((value["title"] as? String) ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !title.isEmpty else { return nil }
+            return WeReadTOCEntry(
+                index: Int(Self.double(value["index"]) ?? Double(offset)),
+                chapterIndex: Int(Self.double(value["chapterIndex"]) ?? Double(offset)),
+                chapterUID: (value["chapterUID"] as? String) ?? "",
+                title: title,
+                level: Int(Self.double(value["level"]) ?? 0)
+            )
+        }
+        let currentUID = payload["currentChapterUID"] as? String
+        let currentIndex = Self.double(payload["currentChapterIndex"]).map(Int.init)
+        weReadTOCLoadTimeout?.cancel()
+        weReadTOCLoadTimeout = nil
+        weReadTOCController?.receive(
+            entries,
+            currentChapterUID: currentUID,
+            currentChapterIndex: currentIndex
+        )
+        ReaderRunLog.write(
+            "WEREAD toc loaded count=\(entries.count) uids=\(entries.filter { !$0.chapterUID.isEmpty }.count) " +
+            "source=\((payload["source"] as? String) ?? "unknown")"
+        )
+    }
+
+    private func requestWeReadTOC() {
+        guard isWeRead, let webView else {
+            weReadTOCController?.failLoading()
+            return
+        }
+        weReadTOCLoadTimeout?.cancel()
+        weReadTOCLoadTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            guard let self, !Task.isCancelled else { return }
+            self.weReadTOCLoadTimeout = nil
+            self.weReadTOCController?.failLoading()
+            ReaderRunLog.write("WEREAD toc load timeout")
+        }
+        webView.evaluateJavaScript(
+            "(()=>{ window.CastReaderWeReadTOC?.load?.(); return true; })()"
+        ) { [weak self] _, error in
+            guard let self, let error else { return }
+            self.weReadTOCLoadTimeout?.cancel()
+            self.weReadTOCLoadTimeout = nil
+            self.weReadTOCController?.failLoading()
+            ReaderRunLog.write("WEREAD toc load bridge-error=\(error.localizedDescription)")
+        }
+    }
+
+    private func requestNativeWeReadTOC(bookID: String) {
+        let cleanBookID = bookID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isWeRead,
+              !cleanBookID.isEmpty,
+              cleanBookID.allSatisfy(\.isNumber),
+              let webView else {
+            weReadTOCController?.failLoading()
+            return
+        }
+        if weReadNativeTOCTask != nil, weReadNativeTOCBookID == cleanBookID {
+            return
+        }
+        weReadNativeTOCTask?.cancel()
+        weReadNativeTOCBookID = cleanBookID
+        let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
+        let userAgent = webView.customUserAgent ?? WeReadWebScripts.desktopUserAgent
+        let referer = webView.url?.absoluteString ?? "https://weread.qq.com/"
+
+        weReadNativeTOCTask = Task { @MainActor [weak self, weak webView] in
+            defer {
+                self?.weReadNativeTOCTask = nil
+                self?.weReadNativeTOCBookID = ""
+            }
+            let cookies = await withCheckedContinuation { continuation in
+                cookieStore.getAllCookies { continuation.resume(returning: $0) }
+            }
+            guard !Task.isCancelled else { return }
+            let sessionCookies = cookies.filter { cookie in
+                let domain = cookie.domain.lowercased()
+                return domain == "weread.qq.com" ||
+                    domain.hasSuffix(".weread.qq.com") ||
+                    domain == "qq.com" ||
+                    domain.hasSuffix(".qq.com")
+            }
+            guard let url = URL(string: "https://i.weread.qq.com/book/chapterInfos") else {
+                self?.weReadTOCController?.failLoading()
+                return
+            }
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.timeoutInterval = 12
+            request.httpBody = try? JSONSerialization.data(
+                withJSONObject: [
+                    "bookIds": [cleanBookID],
+                    "synckeys": [0],
+                    "teenmode": 0
+                ]
+            )
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("application/json, text/plain, */*", forHTTPHeaderField: "Accept")
+            request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
+            request.setValue("https://weread.qq.com", forHTTPHeaderField: "Origin")
+            request.setValue(referer, forHTTPHeaderField: "Referer")
+            let cookieValues = Dictionary(
+                sessionCookies.map { ($0.name.lowercased(), $0.value) },
+                uniquingKeysWith: { first, _ in first }
+            )
+            // Current wrweb-next routes every authenticated API call through
+            // its g4 wrapper, which promotes the login cookies to request
+            // headers. Cookies alone now receive 401 from i.weread.qq.com.
+            request.setValue(
+                cookieValues["wr_vid"] ?? cookieValues["wr_localvid"] ?? "",
+                forHTTPHeaderField: "x-vid"
+            )
+            request.setValue(
+                cookieValues["wr_skey"] ?? "",
+                forHTTPHeaderField: "x-skey"
+            )
+            request.setValue(
+                UUID().uuidString.lowercased(),
+                forHTTPHeaderField: "X-SSR-Request-Id"
+            )
+            if let cookieHeader = HTTPCookie.requestHeaderFields(
+                with: sessionCookies
+            )["Cookie"] {
+                request.setValue(cookieHeader, forHTTPHeaderField: "Cookie")
+            }
+
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                guard !Task.isCancelled else { return }
+                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+                let object = try JSONSerialization.jsonObject(with: data)
+                let root = object as? [String: Any]
+                let first = (root?["data"] as? [[String: Any]])?.first
+                let updatedCount = (first?["updated"] as? [Any])?.count ?? 0
+                ReaderRunLog.write(
+                    "WEREAD toc native response status=\(status) bytes=\(data.count) " +
+                    "cookies=\(sessionCookies.map(\.name).sorted().joined(separator: ",")) " +
+                    "updated=\(updatedCount)"
+                )
+                guard (200..<300).contains(status), updatedCount > 0,
+                      let serialized = String(data: data, encoding: .utf8),
+                      let webView else {
+                    self?.weReadTOCController?.failLoading()
+                    return
+                }
+                let quotedData = try JSONEncoder().encode(serialized)
+                guard let quoted = String(data: quotedData, encoding: .utf8) else {
+                    self?.weReadTOCController?.failLoading()
+                    return
+                }
+                webView.evaluateJavaScript(
+                    "window.CastReaderWeReadTOC?.installNativeCatalog?.(\(quoted))"
+                ) { [weak self] result, error in
+                    if let error {
+                        self?.weReadTOCController?.failLoading()
+                        ReaderRunLog.write(
+                            "WEREAD toc native install error=\(error.localizedDescription)"
+                        )
+                    } else {
+                        ReaderRunLog.write(
+                            "WEREAD toc native install accepted=\((result as? Bool) == true ? "Y" : "N")"
+                        )
+                    }
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                self?.weReadTOCController?.failLoading()
+                ReaderRunLog.write(
+                    "WEREAD toc native request error=\(error.localizedDescription)"
+                )
+            }
+        }
+    }
+
+    private func jumpToWeReadTOCEntry(_ entry: WeReadTOCEntry) {
+        guard isWeRead, didInit, let webView else {
+            weReadTOCController?.failJump()
+            return
+        }
+        guard entry.isActionable else {
+            weReadTOCController?.failJump(
+                AppLocalized("正在同步微信读书目录，请稍后重试。")
+            )
+            ReaderRunLog.write(
+                "WEREAD toc jump rejected reason=missing-authoritative-uid index=\(entry.chapterIndex)"
+            )
+            return
+        }
+        guard !pendingWeReadTOCJump else { return }
+
+        let wasReading = isReadMode && readVM?.isPlaying == true
+        let wasExplaining = !isReadMode &&
+            (explainVM?.isPlaying == true || explainVM?.status.isActive == true)
+
+        weReadManualCommitTask?.cancel()
+        weReadManualCommitTask = nil
+        weReadManualIntentTimeout?.cancel()
+        weReadManualIntentTimeout = nil
+        pendingWeReadTurn = false
+        pendingWeReadManualTurn = true
+        pendingWeReadTOCJump = true
+        pendingWeReadTOCEntry = entry
+        pendingWeReadActionID = "toc-jump:\(entry.chapterUID.isEmpty ? String(entry.chapterIndex) : entry.chapterUID)"
+        resumeReadAfterWeReadTurn = wasReading
+        resumeExplainAfterWeReadTurn = wasExplaining
+        pendingWeReadBoundaryTurn = nil
+        activeWeReadCarry = nil
+        cancelWeReadContinuousHandoff(reason: "toc-jump")
+        invalidateWeReadPreview(reason: "toc-jump")
+        invalidateWeReadExplainPrefetch(reason: "toc-jump")
+        if wasReading { readVM?.stop() }
+        if wasExplaining { explainVM?.stop() }
+        call("clearHighlight")
+        call("clearMarks")
+
+        let payload: [String: Any] = [
+            "index": entry.index,
+            "chapterIndex": entry.chapterIndex,
+            "chapterUID": entry.chapterUID,
+            "title": entry.title,
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: payload),
+              let argument = String(data: data, encoding: .utf8) else {
+            failWeReadTOCJump(reason: "payload-encoding")
+            return
+        }
+        let script = "window.CastReaderWeReadTOC && window.CastReaderWeReadTOC.jump && window.CastReaderWeReadTOC.jump(\(argument))"
+        ReaderRunLog.write(
+            "WEREAD toc jump requested index=\(entry.chapterIndex) uid=\(entry.chapterUID) read=\(wasReading ? "Y" : "N") explain=\(wasExplaining ? "Y" : "N")"
+        )
+        webView.evaluateJavaScript(script) { [weak self] value, error in
+            guard let self else { return }
+            if error != nil || (value as? Bool) != true {
+                self.failWeReadTOCJump(reason: error?.localizedDescription ?? "javascript-returned-false")
+                return
+            }
+            self.weReadTurnTimeout?.cancel()
+            self.weReadTurnTimeout = Task { @MainActor [weak self] in
+                // Chapter selection is one full reader-route navigation. The
+                // transaction completes only after the newly visible Canvas
+                // publishes a different stable page fingerprint.
+                try? await Task.sleep(nanoseconds: 12_000_000_000)
+                guard let self, !Task.isCancelled, self.pendingWeReadTOCJump else { return }
+                self.failWeReadTOCJump(reason: "confirmation-timeout")
+            }
+        }
+    }
+
+    private func failWeReadTOCJump(reason: String) {
+        guard pendingWeReadTOCJump || weReadTOCController?.isJumping == true else { return }
+        let shouldResumeRead = resumeReadAfterWeReadTurn
+        let shouldResumeExplain = resumeExplainAfterWeReadTurn
+        pendingWeReadTOCJump = false
+        pendingWeReadTOCEntry = nil
+        pendingWeReadManualTurn = false
+        pendingWeReadActionID = ""
+        resumeReadAfterWeReadTurn = false
+        resumeExplainAfterWeReadTurn = false
+        weReadTurnTimeout?.cancel()
+        weReadTurnTimeout = nil
+        weReadManualIntentTimeout?.cancel()
+        weReadManualIntentTimeout = nil
+        weReadTOCController?.failJump()
+        if shouldResumeRead, isReadMode { readVM?.start() }
+        if shouldResumeExplain, !isReadMode { explainVM?.start() }
+        ReaderRunLog.write("WEREAD toc jump failed reason=\(reason)")
+    }
+
     /// Commit a canvas page only when the visible-surface fingerprint changed.
     /// This is the iOS counterpart of the extension's page fingerprint gate:
     /// no "tap + keyboard + retry" fallbacks are allowed, so one completion
@@ -423,7 +769,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             canvasEpoch: Int(Self.double(payload["canvasEpoch"]) ?? 0)
         )
         let actionID: String
-        if pendingWeReadTurn {
+        if pendingWeReadTOCJump {
+            actionID = pendingWeReadActionID.isEmpty ? "toc-jump" : pendingWeReadActionID
+        } else if pendingWeReadTurn {
             actionID = pendingWeReadActionID.isEmpty ? "semantic-next" : pendingWeReadActionID
         } else if pendingWeReadManualTurn {
             actionID = "manual-pointer-turn"
@@ -493,7 +841,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         // soon as JS has supplied a stable Canvas snapshot.  Manual A→B→C turns
         // mirror the extension: every candidate replaces the previous one and
         // only the final surface is committed after 600 ms.
-        if prior.isEmpty || pendingWeReadTurn || isRefresh {
+        if prior.isEmpty || pendingWeReadTurn || pendingWeReadTOCJump || isRefresh {
             weReadManualCommitTask?.cancel()
             weReadManualCommitTask = nil
             commitWeReadPage(candidate)
@@ -865,6 +1213,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
     private func commitWeReadPage(_ candidate: WeReadPageCandidate) {
         let refresh = weReadRefreshState
+        let committedTOCEntry = pendingWeReadTOCEntry
         guard candidate.priorFingerprint == lastWeReadFingerprint,
               candidate.fingerprint != lastWeReadFingerprint || refresh != nil else { return }
 
@@ -922,6 +1271,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         lastWeReadEvidence = candidate.evidence
         pendingWeReadTurn = false
         pendingWeReadManualTurn = false
+        pendingWeReadTOCJump = false
+        pendingWeReadTOCEntry = nil
         pendingWeReadActionID = ""
         pendingWeReadBoundaryTurn = nil
         resumeReadAfterWeReadTurn = false
@@ -931,6 +1282,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         weReadManualIntentTimeout?.cancel()
         weReadManualIntentTimeout = nil
         weReadTurnRequestedAt = nil
+        if let committedTOCEntry {
+            weReadTOCController?.finishJump(to: committedTOCEntry)
+            ReaderRunLog.write(
+                "WEREAD toc jump confirmed index=\(committedTOCEntry.chapterIndex) uid=\(committedTOCEntry.chapterUID)"
+            )
+        }
         WeReadLibraryStore.shared.updateProgress(
             bookID: readVM?.document.id ?? "",
             readerURL: candidate.readerURL ?? "",
@@ -1301,6 +1658,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                   fingerprint == self.lastWeReadFingerprint else { return }
             self.weReadInitialPlaybackTask = nil
             self.isWeReadInitialPlaybackPending = false
+            KindleSessionProbe.logCookies(reason: "weread-playback-start")
             self.startAutoPlaybackIfNeeded()
             ReaderRunLog.write(
                 "WEREAD initial surface stable autoplay=\(AppSettings.shared.autoPlay ? "Y" : "N") fingerprint=\(String(fingerprint.prefix(12)))"
@@ -1737,6 +2095,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard isWeRead else { return }
+        // Amazon-session snapshot taken from the WeRead side, written into the
+        // Kindle probe log so both readers share one timeline. Observation only.
+        KindleSessionProbe.logCookies(reason: "weread-didFinish")
         // The layout width was fixed before navigation, so revealing the
         // native reader here can no longer expose a second-width flash. Do not
         // keep an opaque app-side cover up while geometry/TTS indexing runs.
@@ -1787,11 +2148,58 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         handleWeReadNavigationFailure(webView, error: error, phase: "committed")
     }
 
+    /// WeRead's main-frame status. Recorded only — WeRead's entry recovery owns
+    /// every decision, and it must keep owning them because its login session
+    /// cannot survive an outside re-navigation.
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationResponse: WKNavigationResponse,
+        decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
+    ) {
+        if isWeRead,
+           navigationResponse.isForMainFrame,
+           let http = navigationResponse.response as? HTTPURLResponse {
+            lastWeReadMainFrameStatus = http.statusCode
+            ReaderRunLog.write("WEREAD response status=\(http.statusCode) url=\(http.url?.absoluteString ?? "")")
+        }
+        decisionHandler(.allow)
+    }
+
+    private static func isTransientNetworkError(_ code: Int) -> Bool {
+        [NSURLErrorTimedOut, NSURLErrorNotConnectedToInternet, NSURLErrorNetworkConnectionLost,
+         NSURLErrorCannotFindHost, NSURLErrorDNSLookupFailed, NSURLErrorCannotConnectToHost,
+         NSURLErrorInternationalRoamingOff, NSURLErrorDataNotAllowed].contains(code)
+    }
+
     private func handleWeReadNavigationFailure(_ webView: WKWebView, error: Error, phase: String) {
         guard isWeRead else { return }
         let nsError = error as NSError
         guard nsError.code != NSURLErrorCancelled else { return }
-        ReaderRunLog.write("WEREAD navigation failed phase=\(phase) code=\(nsError.code)")
+        if pendingWeReadTOCJump {
+            failWeReadTOCJump(reason: "navigation-\(phase)-\(nsError.code)")
+            return
+        }
+        ReaderRunLog.write("WEREAD navigation failed phase=\(phase) code=\(nsError.code) status=\(lastWeReadMainFrameStatus.map(String.init) ?? "-")")
+
+        // A dropped connection means the page never loaded, so there is no live
+        // login session to protect and retrying the same URL is safe. Sending it
+        // into entry recovery instead would push an offline user through shelf
+        // scanning and a login prompt for what is only a lost connection.
+        if Self.isTransientNetworkError(nsError.code),
+           weReadEntryRecoveryStage == .idle,
+           weReadNetworkRetries < 2,
+           let retryURL = webView.url ?? readVM?.document.sourceURL.flatMap(URL.init(string:)) {
+            weReadNetworkRetries += 1
+            let delay = UInt64(weReadNetworkRetries * 2) * 1_000_000_000
+            ReaderRunLog.write("WEREAD network retry \(weReadNetworkRetries)/2 in \(weReadNetworkRetries * 2)s")
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: delay)
+                guard let self, self.weReadEntryRecoveryStage == .idle else { return }
+                self.webView?.load(URLRequest(url: retryURL))
+            }
+            return
+        }
+        weReadNetworkRetries = 0
         let forceShelf = weReadEntryRecoveryStage == .loadingLocalFallback ||
             weReadEntryRecoveryStage == .loadingRecoveredEntry
         startWeReadEntryRecovery(

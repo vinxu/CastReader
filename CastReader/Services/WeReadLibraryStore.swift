@@ -82,6 +82,9 @@ final class WeReadLibraryStore: ObservableObject {
         // localized fallback so changing CastReader language updates instantly.
         lastError = nil
         save()
+        // Same as the Kindle shelf: pull covers at sync time so Home never shows
+        // empty placeholders while it fetches them one by one.
+        ImageCache.shared.prefetch(books.compactMap(\.coverURL))
     }
 
     func markOpened(_ book: WeReadBook) { update(book.id) { $0.lastOpenedAt = Date() } }

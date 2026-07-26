@@ -16,6 +16,545 @@ enum WeReadWebScripts {
 
     static let desktopUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
+    /// WeRead currently mounts two QR sign-in implementations in the same
+    /// official modal. QuickWxLogin completes inside WeChat's own browser, so
+    /// its cookies cannot return to CastReader's WKWebView after a same-phone
+    /// screenshot scan. Reveal WeRead's own server-polled QR instead, while
+    /// leaving its fetch/XHR, cookies and Vue login handler completely intact.
+    static let serverPolledLoginPresentation = #"""
+    (() => {
+      if (document.getElementById('castreader-weread-server-polled-login')) return;
+      const session = window.__castreaderWeReadLoginSession = {
+        uid: '',
+        otp: '',
+        loginResult: null,
+        lastLogicCode: '',
+        originalFetch: null,
+      };
+      const style = document.createElement('style');
+      style.id = 'castreader-weread-server-polled-login';
+      style.textContent = `
+        .wr_login_modal_wrapper #login_container,
+        .wr_login_modal_wrapper .login_qrcode_container,
+        .wr_login_modal_wrapper .wxlogin-container {
+          display: none !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+        }
+        .wr_login_modal_wrapper .wr_login_modal_qr_wrapper_old {
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          pointer-events: auto !important;
+        }
+      `;
+      (document.head || document.documentElement).appendChild(style);
+
+      const requestURL = input => {
+        try {
+          if (typeof input === 'string') return new URL(input, location.href);
+          if (input && typeof input.url === 'string') return new URL(input.url, location.href);
+        } catch (_) {}
+        return null;
+      };
+      const inspect = (url, value) => {
+        if (!url || !value || typeof value !== 'object') return;
+        if (/\/api\/auth\/getLoginUid(?:[?#]|$)/.test(url.href) && value.uid) {
+          session.uid = String(value.uid);
+        }
+        if (/\/api\/auth\/getLoginInfo(?:[?#]|$)/.test(url.href)) {
+          session.loginResult = value;
+          session.lastLogicCode = String(
+            value.logicCode ||
+            (value.accessToken && value.webLoginVid ? 'SUCCEED' : '')
+          );
+        }
+      };
+
+      // Observation only: the original request and response are returned
+      // untouched to WeRead. The clone records enough in-memory state to
+      // resume the same official QR session after iOS suspends the WebView.
+      if (typeof window.fetch === 'function') {
+        const originalFetch = window.fetch.bind(window);
+        session.originalFetch = originalFetch;
+        window.fetch = async function(...args) {
+          const url = requestURL(args[0]);
+          if (url && /\/api\/auth\/getLoginInfo(?:[?#]|$)/.test(url.href)) {
+            session.otp = String(url.searchParams.get('otp') || '');
+          }
+          const response = await originalFetch(...args);
+          if (url && /\/api\/auth\/getLogin(?:Uid|Info)(?:[?#]|$)/.test(url.href)) {
+            response.clone().json().then(value => inspect(url, value)).catch(() => {});
+          }
+          return response;
+        };
+      }
+    })();
+    """#
+
+    /// Installed at document start so CastReader can resume the *same*
+    /// server-polled QR session after iOS suspends WKWebView while the user
+    /// opens WeChat. WeRead currently renders two QR implementations in the
+    /// same modal: its UID-backed `/web/confirm` QR and a newer WxLogin iframe.
+    /// The iframe owns a separate OAuth redirect session which does not survive
+    /// a same-phone screenshot round trip reliably. Keep WeRead's own resumable
+    /// UID QR visible on iOS so the QR the user scans and the UID we resume are
+    /// guaranteed to describe the same login session. CastReader's native
+    /// bridge holds the one-shot response in memory only while the app is
+    /// backgrounded; it is never persisted or logged.
+    static let loginSessionBridge = #"""
+    (() => {
+      if (window.__castreaderWeReadLoginSessionBridge) return;
+      window.__castreaderWeReadLoginSessionBridge = true;
+
+      const style = document.createElement('style');
+      style.id = 'castreader-weread-resumable-login-style';
+      style.textContent = `
+        #login_container,
+        .login_qrcode_container,
+        .wxlogin-container {
+          display: none !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+        }
+        .wr_login_modal_qr_wrapper_old {
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
+      `;
+      (document.head || document.documentElement).appendChild(style);
+
+      const session = window.__castreaderWeReadLoginSession = {
+        uid: '',
+        loginResult: null,
+        lastLogicCode: '',
+        nativePollActive: false,
+        presentationRequestedAt: 0,
+        presentationAttempts: 0,
+        presentationStrategy: '',
+      };
+      const urlString = input => {
+        try {
+          if (typeof input === 'string') return new URL(input, location.href).href;
+          if (input && typeof input.url === 'string') return new URL(input.url, location.href).href;
+        } catch (_) {}
+        return '';
+      };
+      const inspect = (url, value) => {
+        if (!value || typeof value !== 'object') return;
+        if (/\/api\/auth\/getLoginUid(?:[?#]|$)/.test(url) && value.uid) {
+          session.uid = String(value.uid);
+        }
+        if (/\/api\/auth\/getLoginInfo(?:[?#]|$)/.test(url)) {
+          session.loginResult = value;
+          session.lastLogicCode = String(
+            value.logicCode ||
+            (value.accessToken && value.webLoginVid ? 'SUCCEED' : '')
+          );
+        }
+      };
+
+      if (typeof window.fetch === 'function') {
+        const originalFetch = window.fetch.bind(window);
+        // Keep an unwrapped fetch for foreground recovery. Calling
+        // `window.fetch` from the recovery script would enter this interceptor
+        // again and create another suspended native bridge request.
+        session.originalFetch = originalFetch;
+        window.fetch = async function(...args) {
+          const url = urlString(args[0]);
+          if (/\/api\/auth\/getLoginInfo(?:[?#]|$)/.test(url) &&
+              window.webkit?.messageHandlers?.castReaderWeReadLogin) {
+            const endpoint = new URL(url);
+            const uid = String(endpoint.searchParams.get('uid') || session.uid || '');
+            const otp = String(endpoint.searchParams.get('otp') || '');
+            let requestID = '';
+            try {
+              const headers = new Headers(args[1]?.headers || args[0]?.headers || {});
+              requestID = String(headers.get('X-SSR-Request-Id') || '');
+            } catch (_) {}
+            if (uid) session.uid = uid;
+            session.nativePollActive = true;
+            try {
+              const value = await window.webkit.messageHandlers.castReaderWeReadLogin.postMessage({
+                uid,
+                otp,
+                requestID,
+                cookie: String(document.cookie || ''),
+              });
+              inspect(url, value);
+              return new Response(JSON.stringify(value || {}), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+              });
+            } finally {
+              session.nativePollActive = false;
+            }
+          }
+
+          const response = await originalFetch(...args);
+          if (/\/api\/auth\/getLogin(?:Uid|Info)(?:[?#]|$)/.test(url)) {
+            response.clone().json().then(value => inspect(url, value)).catch(() => {});
+          }
+          return response;
+        };
+      }
+
+      if (typeof XMLHttpRequest === 'function') {
+        const originalOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+          this.__castreaderWeReadLoginURL = urlString(url);
+          this.addEventListener('load', function() {
+            const requestURL = this.__castreaderWeReadLoginURL || '';
+            if (!/\/api\/auth\/getLogin(?:Uid|Info)(?:[?#]|$)/.test(requestURL)) return;
+            try { inspect(requestURL, JSON.parse(this.responseText)); } catch (_) {}
+          }, { once: true });
+          return originalOpen.call(this, method, url, ...rest);
+        };
+      }
+    })();
+    """#
+
+    /// Opens WeRead's own QR-code sign-in dialog through LoginModal's exposed
+    /// `show` contract. A rendered QR is not considered usable until WeRead
+    /// has returned the UID used by its `/api/auth/getLoginInfo` long poll.
+    static let openLoginQRCode = #"""
+    (() => {
+      const clean = value => String(value || '').replace(/\s+/g, ' ').trim();
+      const visible = element => {
+        if (!element) return false;
+        const style = getComputedStyle(element), rect = element.getBoundingClientRect();
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      };
+      const session = window.__castreaderWeReadLoginSession;
+      if (!session) {
+        return { state: 'waiting-bridge', uidPresent: false, vueReady: false };
+      }
+
+      // LoginModal is a Vue 3 component that explicitly exposes:
+      //   show / close / handleLoginSuccess
+      // Calling `show` is the same semantic action used by WeRead itself and
+      // guarantees that getLoginUid + getLoginInfo are started together.
+      const findLoginModal = () => {
+        const roots = [
+          document.querySelector('#__nuxt')?.__vue_app__?._instance,
+          document.querySelector('#__nuxt')?.__vueParentComponent,
+          document.documentElement?.__vueParentComponent,
+        ].filter(Boolean);
+        const queue = roots.slice();
+        const visited = new Set();
+        const enqueueVNode = vnode => {
+          if (!vnode || typeof vnode !== 'object') return;
+          if (vnode.component) queue.push(vnode.component);
+          if (vnode.suspense?.activeBranch) enqueueVNode(vnode.suspense.activeBranch);
+          const children = vnode.children;
+          if (Array.isArray(children)) children.forEach(enqueueVNode);
+          else if (children && typeof children === 'object') {
+            Object.values(children).forEach(value => {
+              if (typeof value === 'function') {
+                try {
+                  const rendered = value();
+                  if (Array.isArray(rendered)) rendered.forEach(enqueueVNode);
+                  else enqueueVNode(rendered);
+                } catch (_) {}
+              } else {
+                enqueueVNode(value);
+              }
+            });
+          }
+        };
+        while (queue.length && visited.size < 5000) {
+          const instance = queue.shift();
+          if (!instance || typeof instance !== 'object' || visited.has(instance)) continue;
+          visited.add(instance);
+          const exposed = instance.exposed;
+          if (typeof exposed?.show === 'function' &&
+              typeof exposed?.close === 'function' &&
+              typeof exposed?.handleLoginSuccess === 'function') {
+            return instance;
+          }
+          if (instance.subTree) enqueueVNode(instance.subTree);
+          if (instance.component) queue.push(instance.component);
+          if (instance.parent && !visited.has(instance.parent)) queue.push(instance.parent);
+        }
+        return null;
+      };
+
+      const preferServerPolledQRCode = () => {
+        // WeRead mounts two sign-in mechanisms in the same modal:
+        //
+        // 1. QuickWxLogin (`.wxlogin-container`) redirects the *browser that
+        //    opened the QR callback*. That works when a desktop is scanned by
+        //    another device, but a same-iPhone screenshot is opened inside
+        //    WeChat, so the callback never returns to this WKWebView.
+        // 2. The underlying `wr_login_modal_qr_img` is backed by
+        //    `/api/auth/getLoginUid` + `/api/auth/getLoginInfo`. It is the
+        //    official cross-device flow and commits wr_vid/wr_skey in the
+        //    original WKWebView after WeChat approves it.
+        //
+        // Keep WeRead's own component and polling alive; only reveal the QR
+        // variant that can complete a screenshot-based same-phone login.
+        let style = document.getElementById('castreader-weread-login-mode');
+        if (!style) {
+          style = document.createElement('style');
+          style.id = 'castreader-weread-login-mode';
+          style.textContent = `
+            .wr_login_modal_wrapper .wxlogin-container,
+            .wr_login_modal_wrapper .login_qrcode_container {
+              display: none !important;
+              visibility: hidden !important;
+              pointer-events: none !important;
+            }
+            .wr_login_modal_wrapper .wr_login_modal_qr_wrapper_old {
+              display: flex !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+              z-index: 10000 !important;
+            }
+          `;
+          (document.head || document.documentElement).appendChild(style);
+        }
+        const qr = document.querySelector('.wr_login_modal_qr_img');
+        return visible(qr);
+      };
+
+      const uidPresent = Boolean(session.uid);
+      const oldQRCode = document.querySelector('.wr_login_modal_qr_img');
+      if (uidPresent && visible(oldQRCode)) {
+        return {
+          state: preferServerPolledQRCode() ? 'visible' : 'preparing',
+          mode: 'server-polled',
+          uidPresent: true,
+          loginUID: String(session.uid),
+          vueReady: true,
+          strategy: session.presentationStrategy || 'unknown',
+        };
+      }
+
+      if (uidPresent) {
+        return {
+          state: 'preparing',
+          mode: 'server-polled',
+          uidPresent: true,
+          loginUID: String(session.uid),
+          vueReady: true,
+          strategy: session.presentationStrategy || 'unknown',
+        };
+      }
+
+      const modalInstance = findLoginModal();
+      const nuxtInstance = document.querySelector('#__nuxt')?.__vue_app__?._instance;
+      // WeRead has changed the homepage login link's generated class more than
+      // once. Prefer the known selector, then fall back to the same visible
+      // semantic control a user would tap. Some versions render "登录" as a
+      // span/div while Vue owns the click on an ancestor; clicking that exact
+      // visible node still bubbles through the official handler.
+      const exactLoginTextNodes = Array.from(document.querySelectorAll('body *')).filter(element =>
+        visible(element) && clean(element.textContent) === '登录'
+      );
+      const textLoginControl = exactLoginTextNodes.map(element =>
+        element.closest('a,button,[role="button"],[tabindex]') || element
+      ).find(visible);
+      const explicit =
+        document.querySelector('.wr_index_page_top_section_header_action_link') ||
+        Array.from(document.querySelectorAll('a,button,[role="button"]')).find(element =>
+          visible(element) && clean(element.textContent) === '登录'
+        ) ||
+        textLoginControl;
+      // Do not require a discoverable Nuxt root for the DOM fallback.
+      // WeRead's current production homepage keeps the visible "登录" action
+      // working while no longer exposing `#__nuxt.__vue_app__` to page
+      // JavaScript. Requiring that private Vue handle made us report
+      // `waiting-vue` forever even though the exact control a user can tap was
+      // already visible. A visible exact-login control is itself sufficient
+      // evidence that its delegated click handler has been mounted.
+      const vueReady = Boolean(modalInstance || visible(explicit));
+      if (!vueReady) {
+        return {
+          state: 'waiting-vue',
+          uidPresent: false,
+          vueReady: false,
+          readyState: document.readyState,
+          exactLoginTextCount: exactLoginTextNodes.length,
+        };
+      }
+
+      const now = Date.now();
+      const requestedAt = Number(session.presentationRequestedAt || 0);
+      if (requestedAt > 0 && now - requestedAt < 6_000) {
+        return {
+          state: 'requesting-uid',
+          uidPresent: false,
+          vueReady: true,
+          strategy: session.presentationStrategy || 'unknown',
+        };
+      }
+
+      // A stale attempt never produced a UID, so it was not a valid QR
+      // session. Close that incomplete modal before starting exactly one new
+      // semantic attempt. This avoids replacing a valid, scannable UID.
+      if (requestedAt > 0) {
+        try { modalInstance?.exposed?.close(); } catch (_) {}
+        session.presentationRequestedAt = 0;
+        session.presentationStrategy = '';
+        return { state: 'resetting-invalid-session', uidPresent: false, vueReady: true };
+      }
+
+      session.presentationRequestedAt = now;
+      session.presentationAttempts = Number(session.presentationAttempts || 0) + 1;
+      if (modalInstance) {
+        session.presentationStrategy = 'vue-exposed-show';
+        modalInstance.exposed.show({
+          langHtml: '使用微信扫一扫登录\n"微信读书"',
+          successCb: null,
+        });
+      } else {
+        // This fallback is allowed only after the real Vue-bound login control
+        // exists. It mirrors a human tap after hydration, not a pre-hydration
+        // DOM click.
+        session.presentationStrategy = 'hydrated-semantic-control';
+        explicit.click();
+      }
+      return {
+        state: 'requesting-uid',
+        uidPresent: false,
+        vueReady: true,
+        strategy: session.presentationStrategy,
+        attempt: session.presentationAttempts,
+        exactLoginTextCount: exactLoginTextNodes.length,
+      };
+    })()
+    """#
+
+    /// Resumes WeRead's official login poll after a same-phone screenshot
+    /// round-trip. iOS may suspend/cancel the page's original 60-second fetch
+    /// while WeChat is in the foreground. We query the same UID once more and
+    /// hand a successful response back to LoginModal.handleLoginSuccess, so
+    /// WeRead itself remains responsible for its store and cookies.
+    static let resumeServerPolledLogin = #"""
+    (async (providedUID, providedNativeResult) => {
+      const session = window.__castreaderWeReadLoginSession;
+      const uid = String(session?.uid || providedUID || '');
+      if (!uid) {
+        return { state: 'missing-session' };
+      }
+      if (session && !session.uid) session.uid = uid;
+
+      const hasCredentials = value => Boolean(
+        value &&
+        typeof value.accessToken === 'string' &&
+        value.accessToken.length > 0 &&
+        value.webLoginVid !== undefined &&
+        value.webLoginVid !== null &&
+        String(value.webLoginVid).length > 0
+      );
+      let result = (
+        providedNativeResult &&
+        typeof providedNativeResult === 'object' &&
+        Object.keys(providedNativeResult).length > 0
+      ) ? providedNativeResult : session?.loginResult;
+      if (session && result) {
+        session.loginResult = result;
+        session.lastLogicCode = String(
+          result?.logicCode || (hasCredentials(result) ? 'SUCCEED' : '')
+        );
+      }
+      if (!hasCredentials(result)) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 12000);
+        try {
+          const endpoint = new URL('/api/auth/getLoginInfo', location.origin);
+          endpoint.searchParams.set('uid', uid);
+          endpoint.searchParams.set('otp', String(session?.otp || ''));
+          const foregroundFetch = (
+            typeof session?.originalFetch === 'function'
+              ? session.originalFetch
+              : window.fetch.bind(window)
+          );
+          const response = await foregroundFetch(endpoint.href, {
+            method: 'GET',
+            credentials: 'include',
+            signal: controller.signal,
+          });
+          result = await response.json();
+          if (session) {
+            session.loginResult = result;
+            session.lastLogicCode = String(
+              result?.logicCode || (hasCredentials(result) ? 'SUCCEED' : '')
+            );
+          }
+        } catch (error) {
+          clearTimeout(timeout);
+          return {
+            state: error?.name === 'AbortError' ? 'poll-timeout' : 'poll-error',
+            logicCode: session?.lastLogicCode || '',
+          };
+        }
+        clearTimeout(timeout);
+      }
+
+      if (!hasCredentials(result)) {
+        return {
+          state: 'pending',
+          logicCode: String(result?.logicCode || session?.lastLogicCode || ''),
+        };
+      }
+
+      // The original modal DOM may have disappeared when WebKit recreated its
+      // content process in the background. Find the still-mounted LoginModal
+      // component from the Vue tree instead of depending on that old DOM.
+      const roots = [
+        document.querySelector('#__nuxt')?.__vue_app__?._instance,
+        document.querySelector('#__nuxt')?.__vueParentComponent,
+        document.querySelector('.wr_login_modal_wrapper')?.__vueParentComponent,
+      ].filter(Boolean);
+      const queue = roots.slice();
+      const visited = new Set();
+      const enqueueVNode = vnode => {
+        if (!vnode || typeof vnode !== 'object') return;
+        if (vnode.component) queue.push(vnode.component);
+        if (vnode.suspense?.activeBranch) enqueueVNode(vnode.suspense.activeBranch);
+        const children = vnode.children;
+        if (Array.isArray(children)) children.forEach(enqueueVNode);
+        else if (children && typeof children === 'object') {
+          Object.values(children).forEach(value => {
+            if (typeof value === 'function') {
+              try {
+                const rendered = value();
+                if (Array.isArray(rendered)) rendered.forEach(enqueueVNode);
+                else enqueueVNode(rendered);
+              } catch (_) {}
+            } else {
+              enqueueVNode(value);
+            }
+          });
+        }
+      };
+      let instance = null;
+      while (queue.length && visited.size < 5000) {
+        const candidate = queue.shift();
+        if (!candidate || typeof candidate !== 'object' || visited.has(candidate)) continue;
+        visited.add(candidate);
+        if (typeof candidate.exposed?.handleLoginSuccess === 'function') {
+          instance = candidate;
+          break;
+        }
+        if (candidate.subTree) enqueueVNode(candidate.subTree);
+        if (candidate.component) queue.push(candidate.component);
+        if (candidate.parent && !visited.has(candidate.parent)) queue.push(candidate.parent);
+      }
+      const handler = instance?.exposed?.handleLoginSuccess;
+      if (typeof handler !== 'function') {
+        return { state: 'missing-handler', logicCode: 'SUCCEED' };
+      }
+      await handler(result);
+      return { state: 'handled', logicCode: 'SUCCEED' };
+    })(
+      typeof loginUID === 'string' ? loginUID : '',
+      typeof nativeLoginResult === 'object' && nativeLoginResult ? nativeLoginResult : null
+    )
+    """#
+
     static let libraryScan = #"""
     (() => {
       const absolute = (u) => { try { return new URL(u, location.href).href; } catch (_) { return ''; } };
@@ -449,6 +988,1077 @@ enum WeReadWebScripts {
       function begin(){observer.observe(document.documentElement,{childList:true,characterData:true,subtree:true});document.addEventListener('pointerdown',manualTurnIntent,true);document.addEventListener('touchstart',manualTurnIntent,true);bootstrapProbe();}
       window.addEventListener('castreader-weread-canvas',e=>schedule(e.detail?.reason||'canvas'));window.addEventListener('resize',()=>{removeHighlight();removeMarks();schedule('resize');});
       if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',begin,{once:true});else begin();post('ready',{site:'weread',bridge:'canvas-geometry-v2'});
+    })();
+    """#
+
+    /// Metadata-only table-of-contents bridge. This follows the production
+    /// WeRead TOC contract:
+    /// 1. Capture the site's own chapter metadata at document start.
+    /// 2. Recover the authoritative catalog from the authenticated `i` API.
+    /// 3. Keep DOM rows as presentation only; never treat an index as identity.
+    /// 4. Execute one reader-route navigation and let native Canvas evidence
+    ///    confirm completion. No Vue/router/click fallback cascade.
+    static let tocBridge = #"""
+    (() => {
+      if (window.__castReaderWeReadTOCV1) return;
+      window.__castReaderWeReadTOCV1 = true;
+
+      const post = (type, payload = {}) => {
+        try { window.webkit?.messageHandlers?.castreader?.postMessage({ type, payload }); } catch (_) {}
+      };
+      const clean = value => String(value ?? '').replace(/\s+/g, ' ').trim();
+      const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+      const originalFetch = typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
+      let chapters = [];
+      let loading = null;
+      let chapterInfosRequest = null;
+      const diagnose = (stage, payload = {}) => post('wereadTOCDiagnostic', { stage, ...payload });
+
+      function normalize(array) {
+        if (!Array.isArray(array)) return [];
+        const seen = new Set();
+        const result = [];
+        for (let position = 0; position < array.length; position++) {
+          const item = array[position];
+          if (!item || typeof item !== 'object') continue;
+          const uid = clean(item.chapterUid ?? item.chapterUID ?? item.uid ?? item.id ?? '');
+          const chapterIndex = number(item.chapterIdx ?? item.chapterIndex ?? item.idx ?? item.index, position);
+          const title = clean(item.title ?? item.chapterTitle ?? item.name ?? item.text ?? `Chapter ${position + 1}`);
+          if (!title || (!uid && !Number.isFinite(chapterIndex))) continue;
+          const key = uid ? `uid:${uid}` : `index:${chapterIndex}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          result.push({
+            index: result.length,
+            chapterIndex,
+            chapterUID: uid,
+            title,
+            level: Math.max(0, number(item.level ?? item.depth ?? item.indent, 0)),
+          });
+        }
+        return result;
+      }
+
+      const uidCount = array => Array.isArray(array)
+        ? array.reduce((count, item) => count + (clean(item?.chapterUID) ? 1 : 0), 0)
+        : 0;
+
+      function mergeCatalog(authoritative, presentation) {
+        if (!Array.isArray(authoritative) || !authoritative.length) return presentation || [];
+        if (!Array.isArray(presentation) || !presentation.length) return authoritative;
+        return authoritative.map((entry, position) => {
+          const visual = presentation.find(item =>
+            (entry.chapterUID && item.chapterUID === entry.chapterUID) ||
+            item.chapterIndex === entry.chapterIndex ||
+            item.index === entry.index
+          ) || presentation[position];
+          if (!visual) return entry;
+          return {
+            ...entry,
+            title: clean(visual.title) || entry.title,
+            level: number(visual.level, entry.level),
+          };
+        });
+      }
+
+      function installCatalog(parsed, source) {
+        if (!Array.isArray(parsed) || !parsed.length) return false;
+        const existingUIDs = uidCount(chapters);
+        const incomingUIDs = uidCount(parsed);
+        // This is the same authority rule as Kindle's cached native TOC:
+        // presentation-only rows may refresh labels, but can never erase the
+        // stable navigation identity captured from the site's own data.
+        if (existingUIDs > 0 && incomingUIDs === 0) {
+          chapters = mergeCatalog(chapters, parsed);
+          publish(`${source}-merged-preserving-uids`);
+          return true;
+        }
+        if (incomingUIDs === 0) {
+          diagnose('catalog-presentation-only', {
+            source,
+            rows: parsed.length,
+          });
+          return false;
+        }
+        chapters = parsed;
+        publish(source);
+        return true;
+      }
+
+      function findChapterArray(value, depth = 0, visited = new Set()) {
+        if (!value || typeof value !== 'object' || depth > 12 || visited.has(value)) return [];
+        visited.add(value);
+        if (Array.isArray(value)) {
+          const direct = normalize(value);
+          if (direct.length && value.some(item => item && typeof item === 'object' &&
+              ('chapterUid' in item || 'chapterUID' in item || 'chapterId' in item ||
+               'chapterIdx' in item || 'chapterIndex' in item || 'chapterTitle' in item))) return direct;
+          for (const item of value) {
+            const nested = findChapterArray(item, depth + 1, visited);
+            if (nested.length) return nested;
+          }
+          return [];
+        }
+        const preferred = ['updated', 'chapters', 'chapterInfos', 'chapterList', 'catalog'];
+        for (const key of preferred) {
+          const nested = findChapterArray(value[key], depth + 1, visited);
+          if (nested.length) return nested;
+        }
+        for (const nestedValue of Object.values(value)) {
+          const nested = findChapterArray(nestedValue, depth + 1, visited);
+          if (nested.length) return nested;
+        }
+        return [];
+      }
+
+      function embeddedCatalog() {
+        const directCandidates = [
+          window.__INITIAL_STATE__?.reader?.chapterInfos,
+          window.__INITIAL_STATE__?.sState?.reader?.chapterInfos,
+          window.__INITIAL_STATE__,
+          window.__NEXT_DATA__,
+          window.__NUXT__,
+          window.__APOLLO_STATE__,
+          document.querySelector('#__NEXT_DATA__')?.textContent,
+        ];
+        for (const candidate of directCandidates) {
+          try {
+            const value = typeof candidate === 'string' ? JSON.parse(candidate) : candidate;
+            const parsed = findChapterArray(value);
+            if (parsed.length) return parsed;
+          } catch (_) {}
+        }
+        for (const script of Array.from(document.scripts || [])) {
+          const source = script.textContent || '';
+          if (!/chapter(?:Uid|UID|Id|Idx|Index)/.test(source)) continue;
+          try {
+            const parsed = findChapterArray(JSON.parse(source));
+            if (parsed.length) return parsed;
+          } catch (_) {}
+          const assignment = source.match(/__INITIAL_STATE__\s*=\s*(\{[\s\S]*\})\s*;?\s*$/);
+          if (!assignment) continue;
+          try {
+            const parsed = findChapterArray(JSON.parse(assignment[1]));
+            if (parsed.length) return parsed;
+          } catch (_) {}
+        }
+        return [];
+      }
+
+      function initialStateCatalog() {
+        const direct = [
+          window.__INITIAL_STATE__?.reader?.chapterInfos,
+          window.__INITIAL_STATE__?.sState?.reader?.chapterInfos,
+        ];
+        for (const candidate of direct) {
+          const parsed = normalize(candidate);
+          if (uidCount(parsed) > 0) {
+            diagnose('initial-state-catalog', {
+              source: 'window',
+              chapters: parsed.length,
+              chapterUIDs: uidCount(parsed),
+            });
+            return parsed;
+          }
+        }
+
+        // The legacy `/web/reader` is a Vue 2 SSR page. Its authoritative
+        // catalog is serialized as `window.__INITIAL_STATE__.reader.chapterInfos`
+        // in an inline script. Vue may consume or replace the global object
+        // during hydration, but the script text remains available. Parse that
+        // exact payload instead of probing unrelated APIs.
+        for (const script of Array.from(document.scripts || [])) {
+          const source = script.textContent || '';
+          const marker = 'window.__INITIAL_STATE__=';
+          const markerIndex = source.indexOf(marker);
+          if (markerIndex < 0) continue;
+          const json = source.slice(markerIndex + marker.length).trim().replace(/;\s*$/, '');
+          try {
+            const state = JSON.parse(json);
+            const parsed = normalize(
+              state?.reader?.chapterInfos ?? state?.sState?.reader?.chapterInfos ?? []
+            );
+            if (uidCount(parsed) > 0) {
+              diagnose('initial-state-catalog', {
+                source: 'inline-script',
+                chapters: parsed.length,
+                chapterUIDs: uidCount(parsed),
+              });
+              return parsed;
+            }
+          } catch (error) {
+            diagnose('initial-state-parse-error', {
+              error: clean(error?.name || 'invalid-json'),
+            });
+          }
+        }
+        return [];
+      }
+
+      function readerState() {
+        return window.__INITIAL_STATE__?.reader || window.__INITIAL_STATE__?.readerState || {};
+      }
+
+      function collectBookIDs(
+        value,
+        depth = 0,
+        visited = new Set(),
+        result = [],
+        path = 'initial'
+      ) {
+        if (!value || typeof value !== 'object' || depth > 5 || visited.has(value)) return result;
+        visited.add(value);
+        if (Array.isArray(value)) {
+          for (const item of value.slice(0, 80)) {
+            collectBookIDs(item, depth + 1, visited, result, `${path}[]`);
+          }
+          return result;
+        }
+        for (const [key, nested] of Object.entries(value)) {
+          if (/^book(?:id|ID)$/i.test(key) &&
+              (typeof nested === 'string' || typeof nested === 'number')) {
+            const candidate = clean(nested);
+            if (candidate && !result.some(item =>
+                item.value === candidate && item.rawType === typeof nested)) {
+              result.push({
+                value: typeof nested === 'number' ? nested : candidate,
+                rawType: typeof nested,
+                source: `${path}.${key}`,
+              });
+            }
+          }
+        }
+        const preferred = ['reader', 'readerState', 'book', 'bookInfo', 'currentBook', 'data', 'props'];
+        for (const key of preferred) {
+          collectBookIDs(value[key], depth + 1, visited, result, `${path}.${key}`);
+        }
+        return result;
+      }
+
+      function chapterMetadata(value, depth = 0, visited = new Set()) {
+        if (!value || typeof value !== 'object' || depth > 5 || visited.has(value)) return null;
+        visited.add(value);
+        if (Array.isArray(value)) {
+          for (const item of value.slice(0, 24)) {
+            const found = chapterMetadata(item, depth + 1, visited);
+            if (found?.chapterUid) return found;
+          }
+          return null;
+        }
+        const uid = clean(value.chapterUid ?? value.chapterUID ?? value.chapterId ?? value.uid ?? '');
+        if (uid) {
+          return {
+            chapterUid: uid,
+            chapterIdx: value.chapterIdx ?? value.chapterIndex ?? value.idx ?? value.index,
+            title: value.title ?? value.chapterTitle ?? value.name ?? value.text,
+            level: value.level ?? value.depth ?? value.indent,
+          };
+        }
+        const preferred = [
+          'chapter', 'item', 'chapterInfo', 'data', 'props', '$props', '$data',
+          '$attrs', 'memoizedProps', 'pendingProps', 'setupState', 'ctx',
+        ];
+        for (const key of preferred) {
+          const found = chapterMetadata(value[key], depth + 1, visited);
+          if (found?.chapterUid) return found;
+        }
+        return null;
+      }
+
+      function frameworkChapter(node) {
+        const candidates = [];
+        const seen = new Set();
+        const add = value => {
+          if (!value || (typeof value !== 'object' && typeof value !== 'function') || seen.has(value)) return;
+          seen.add(value);
+          candidates.push(value);
+        };
+        for (let current = node, depth = 0; current && depth < 3; current = current.parentElement, depth++) {
+          add(current);
+          try { Array.from(current.querySelectorAll?.('*') || []).slice(0, 36).forEach(add); } catch (_) {}
+        }
+        for (const element of candidates) {
+          const roots = [];
+          try {
+            const vue = element.__vue__;
+            if (vue) roots.push(vue.$props, vue.$data, vue.$attrs, vue);
+            const vue3 = element.__vueParentComponent;
+            if (vue3) roots.push(vue3.props, vue3.setupState, vue3.ctx, vue3.vnode?.props);
+            for (const key of Object.keys(element)) {
+              if (/^__reactProps\$|^__reactEventHandlers\$/.test(key)) roots.push(element[key]);
+              if (/^__reactFiber\$|^__reactInternalInstance\$/.test(key)) {
+                let fiber = element[key];
+                for (let depth = 0; fiber && depth < 8; depth++, fiber = fiber.return) {
+                  roots.push(fiber.memoizedProps, fiber.pendingProps);
+                }
+              }
+            }
+          } catch (_) {}
+          for (const root of roots) {
+            const found = chapterMetadata(root);
+            if (found?.chapterUid) return found;
+          }
+        }
+        return null;
+      }
+
+      function currentChapter() {
+        const state = readerState();
+        const nested = state.chapter || state.currentChapter || state.chapterInfo || {};
+        // A WeRead book key is 24 URL-safe characters and is not hexadecimal:
+        // production IDs can contain `g` (for example …823ag017ade).  The old
+        // hex-only expression truncated those IDs and made every constructed
+        // chapter URL invalid for that class of books.
+        const readerToken = clean(location.pathname.match(/\/web\/reader\/([^/?#]+)/)?.[1] || '');
+        const baseLength = readerToken.length > 24 ? 24 : readerToken.length;
+        const urlUID = readerToken.length > baseLength && readerToken[baseLength] === 'k'
+          ? readerToken.slice(baseLength + 1)
+          : '';
+        const uid = clean(
+          state.chapterUid ?? state.currentChapterUid ?? state.chapterId ??
+          nested.chapterUid ?? nested.uid ?? nested.id ?? urlUID
+        );
+        const rawIndex = state.chapterIdx ?? state.currentChapterIdx ?? nested.chapterIdx ?? nested.idx;
+        return { uid, index: rawIndex == null ? null : number(rawIndex, 0) };
+      }
+
+      function currentReaderBookKey() {
+        const token = clean(location.pathname.match(/\/web\/reader\/([^/?#]+)/)?.[1] || '');
+        if (!token) return '';
+        // Canonical WeRead URLs use a 24-character encoded book key followed
+        // by `k<chapterUid>`. Imported legacy records may still open a shorter
+        // numeric reader token; that token is already an actionable base route.
+        return token.length > 24 ? token.slice(0, 24) : token;
+      }
+
+      function domChapters() {
+        const selectors = [
+          '.readerCatalog_list li',
+          '[class*="readerCatalog"] li',
+          '[class*="catalog_list"] li',
+          '[class*="catalogList"] li',
+        ];
+        for (const selector of selectors) {
+          const nodes = Array.from(document.querySelectorAll(selector));
+          if (!nodes.length) continue;
+          const values = nodes.map((node, index) => {
+            const framework = frameworkChapter(node) || {};
+            const href = node.closest?.('a[href]')?.href || node.querySelector?.('a[href]')?.href || '';
+            const hrefUID = clean(
+              href.match(/\/web\/reader\/[A-Za-z0-9_-]{24}k([^/?#]+)/)?.[1] || ''
+            );
+            const vue = node.__vue__ || node.querySelector('*')?.__vue__;
+            const data = {
+              ...(vue?.$attrs || {}),
+              ...(vue?.$props || {}),
+              ...(vue?.$data || {}),
+            };
+            const nested = data.chapter || data.item || {};
+            return {
+              chapterUid: node.dataset?.chapterUid ?? framework.chapterUid ??
+                data.chapterUid ?? nested.chapterUid ?? data.uid ?? nested.uid ?? hrefUID,
+              chapterIdx: node.dataset?.chapterIdx ?? framework.chapterIdx ??
+                data.chapterIdx ?? nested.chapterIdx ?? index,
+              title: clean(framework.title) || clean(node.textContent),
+              level: framework.level ?? data.level ?? nested.level ?? 0,
+            };
+          });
+          const parsed = normalize(values);
+          if (parsed.length) {
+            const first = nodes[0];
+            diagnose('dom-shape', {
+              selector,
+              rows: nodes.length,
+              hrefUIDs: values.filter(item => clean(item.chapterUid)).length,
+              rowDatasetKeys: Object.keys(first?.dataset || {}).slice(0, 12),
+              rowFrameworkKeys: Object.keys(first || {}).filter(key =>
+                /^__vue|^__react/.test(key)
+              ).slice(0, 12),
+              anchors: nodes.filter(node => !!node.querySelector?.('a[href]')).length,
+            });
+            return parsed;
+          }
+        }
+        return [];
+      }
+
+      function publish(source) {
+        const current = currentChapter();
+        post('wereadTOC', {
+          entries: chapters,
+          currentChapterUID: current.uid || null,
+          currentChapterIndex: current.index,
+          source,
+          readerURL: location.href,
+        });
+      }
+
+      function accept(value, source) {
+        const parsed = findChapterArray(value);
+        if (!parsed.length) return false;
+        return installCatalog(parsed, source);
+      }
+
+      function installNativeCatalog(serialized) {
+        try {
+          const value = typeof serialized === 'string' ? JSON.parse(serialized) : serialized;
+          const installed = accept(value, 'native-cookie-session');
+          diagnose('catalog-native-install', {
+            installed,
+            chapters: chapters.length,
+            chapterUIDs: uidCount(chapters),
+          });
+          return installed;
+        } catch (error) {
+          diagnose('catalog-native-install-error', {
+            error: clean(error?.name || 'invalid-json'),
+          });
+          return false;
+        }
+      }
+
+      function rememberChapterInfosRequest(method, url, body, source) {
+        let bodyObject = null;
+        let bodyText = '';
+        try {
+          if (typeof body === 'string') {
+            bodyText = body;
+            bodyObject = JSON.parse(body);
+          } else if (body instanceof URLSearchParams) {
+            bodyText = body.toString();
+            bodyObject = Object.fromEntries(body.entries());
+          } else if (body && typeof body === 'object' &&
+                     !(body instanceof Blob) && !(body instanceof ArrayBuffer)) {
+            bodyObject = body;
+            bodyText = JSON.stringify(body);
+          }
+        } catch (_) {}
+        if (!bodyObject || !Array.isArray(bodyObject.bookIds) || !bodyObject.bookIds.length) return;
+        chapterInfosRequest = {
+          method: clean(method || 'POST').toUpperCase(),
+          url: String(url || 'https://i.weread.qq.com/book/chapterInfos'),
+          bodyText,
+          bodyObject,
+        };
+        diagnose('catalog-request-captured', {
+          requestSource: source,
+          method: chapterInfosRequest.method,
+          bodyKeys: Object.keys(bodyObject).slice(0, 12),
+          bookIDKinds: bodyObject.bookIds.map(value => typeof value),
+          bookIDDigitLengths: bodyObject.bookIds.map(value =>
+            /^\d+$/.test(clean(value)) ? clean(value).length : 0
+          ),
+          synckeyPresent:
+            Object.prototype.hasOwnProperty.call(bodyObject, 'synckey') ||
+            Object.prototype.hasOwnProperty.call(bodyObject, 'synckeys'),
+        });
+      }
+
+      async function inspectResponse(response, source) {
+        try {
+          const data = await response.clone().json();
+          accept(data, source);
+        } catch (_) {}
+      }
+
+      if (originalFetch) {
+        window.fetch = async function(...args) {
+          const requestURL = args[0] instanceof Request ? args[0].url : String(args[0] || '');
+          if (/chapterInfos/i.test(requestURL)) {
+            const method = args[0] instanceof Request
+              ? args[0].method
+              : (args[1]?.method || 'GET');
+            const body = args[1]?.body;
+            if (body != null) {
+              rememberChapterInfosRequest(method, requestURL, body, 'page-fetch');
+            } else if (args[0] instanceof Request) {
+              args[0].clone().text().then(text => {
+                rememberChapterInfosRequest(method, requestURL, text, 'page-fetch-request');
+              }).catch(() => {});
+            }
+          }
+          const response = await originalFetch(...args);
+          if (/chapterInfos/i.test(requestURL)) inspectResponse(response, 'captured-fetch');
+          return response;
+        };
+      }
+
+      const originalOpen = XMLHttpRequest.prototype.open;
+      const originalSend = XMLHttpRequest.prototype.send;
+      XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+        this.__castReaderTOCURL = String(url || '');
+        this.__castReaderTOCMethod = String(method || 'GET');
+        this.addEventListener('load', function() {
+          if (!/chapterInfos/i.test(this.__castReaderTOCURL || '')) return;
+          try { accept(JSON.parse(this.responseText), 'captured-xhr'); } catch (_) {}
+        }, { once: true });
+        return originalOpen.call(this, method, url, ...rest);
+      };
+      XMLHttpRequest.prototype.send = function(body) {
+        if (/chapterInfos/i.test(this.__castReaderTOCURL || '')) {
+          rememberChapterInfosRequest(
+            this.__castReaderTOCMethod,
+            this.__castReaderTOCURL,
+            body,
+            'page-xhr'
+          );
+        }
+        return originalSend.call(this, body);
+      };
+
+      async function requestCatalog(url, method, body, source, candidate = null) {
+        try {
+          const requestMethod = clean(method || 'POST').toUpperCase();
+          const options = {
+            method: requestMethod,
+            credentials: 'include',
+          };
+          if (requestMethod !== 'GET' && requestMethod !== 'HEAD' && body != null) {
+            options.headers = { 'Content-Type': 'application/json' };
+            options.body = typeof body === 'string' ? body : JSON.stringify(body);
+          }
+          const response = await originalFetch(new URL(url, location.origin).href, options);
+          const responseText = await response.text();
+          const data = JSON.parse(responseText);
+          const parsed = findChapterArray(data);
+          const code = data?.errCode ?? data?.errorCode ?? data?.code ?? data?.succ ?? null;
+          const message = clean(data?.errMsg ?? data?.errorMessage ?? data?.message ?? '');
+          const serialized = responseText.slice(0, 300_000);
+          const firstDataItem = Array.isArray(data?.data) ? data.data[0] : null;
+          diagnose('catalog-response', {
+            path: new URL(url, location.origin).pathname,
+            status: response.status,
+            requestSource: source,
+            candidateSource: candidate?.source || '',
+            bookIDKind: candidate
+              ? (/^\d+$/.test(clean(candidate.value)) ? `numeric-${candidate.rawType}` : 'other')
+              : 'captured',
+            responseKeys: Object.keys(data || {}).slice(0, 16),
+            dataKeys: firstDataItem && typeof firstDataItem === 'object'
+              ? Object.keys(firstDataItem).slice(0, 16)
+              : [],
+            updatedCount: Array.isArray(firstDataItem?.updated) ? firstDataItem.updated.length : 0,
+            code: code == null ? '' : String(code),
+            message: message.slice(0, 80),
+            bytes: responseText.length,
+            hasChapterUID: /chapter(?:Uid|UID|Id)/.test(serialized),
+            hasChapterIndex: /chapter(?:Idx|Index)/.test(serialized),
+            hasUpdated: /"updated"\s*:/.test(serialized),
+            chapters: parsed.length,
+          });
+          return parsed.length && installCatalog(parsed, source);
+        } catch (error) {
+          diagnose('catalog-error', {
+            path: (() => {
+              try { return new URL(url, location.origin).pathname; } catch (_) { return ''; }
+            })(),
+            requestSource: source,
+            candidateSource: candidate?.source || '',
+            error: clean(error?.name || 'request-error'),
+          });
+          return false;
+        }
+      }
+
+      async function fetchCatalog() {
+        if (!originalFetch) return false;
+        const state = readerState();
+        const routeBookKey = currentReaderBookKey();
+        const bookIDs = [];
+        const add = (value, source) => {
+          if (value == null || (typeof value !== 'string' && typeof value !== 'number')) return;
+          const cleaned = clean(value);
+          if (!cleaned || bookIDs.some(item =>
+              clean(item.value) === cleaned && item.rawType === typeof value)) return;
+          bookIDs.push({
+            value: typeof value === 'number' ? value : cleaned,
+            rawType: typeof value,
+            source,
+          });
+        };
+        add(state.bookId, 'reader.bookId');
+        add(state.bookID, 'reader.bookID');
+        add(state.bookInfo?.bookId, 'reader.bookInfo.bookId');
+        add(window.__INITIAL_STATE__?.bookId, 'initial.bookId');
+        for (const candidate of collectBookIDs(window.__INITIAL_STATE__)) {
+          add(candidate.value, candidate.source);
+        }
+        add(routeBookKey, 'route-key');
+        diagnose('catalog-probe', {
+          routeBookKeyPresent: !!routeBookKey,
+          initialStatePresent: !!window.__INITIAL_STATE__,
+          readerKeys: Object.keys(state || {}).filter(key =>
+            /book|chapter|reader/i.test(key)
+          ).slice(0, 24),
+          bookIDCount: bookIDs.length,
+          bookIDKinds: bookIDs.map(candidate =>
+            `${candidate.source}:${candidate.rawType}:${
+              /^\d+$/.test(clean(candidate.value))
+                ? 'numeric'
+                : clean(candidate.value) === routeBookKey ? 'route-key' : 'other'
+            }`
+          ),
+        });
+        const numericBookIDs = bookIDs.filter(item => /^\d+$/.test(clean(item.value)));
+        if (numericBookIDs.length &&
+            window.webkit?.messageHandlers?.castreader?.postMessage) {
+          const candidate = numericBookIDs[0];
+          // `i.weread.qq.com` is the chapter metadata authority, but WKWebView
+          // page JavaScript is blocked by its cross-origin boundary. Ask
+          // native to replay the request with this WKWebsiteDataStore's
+          // authenticated cookies, then install the response back into this
+          // same bridge. This preserves one chapter identity authority without
+          // falling back to presentation-only DOM clicks.
+          post('wereadTOCCatalogRequest', {
+            bookID: clean(candidate.value),
+            candidateSource: candidate.source,
+          });
+          diagnose('catalog-native-request', {
+            candidateSource: candidate.source,
+            bookIDKind: `numeric-${candidate.rawType}`,
+          });
+          return false;
+        }
+        for (const candidate of numericBookIDs) {
+          // WeRead's metadata service accepts the numeric book ID as a string.
+          // Never coerce it through Number: IDs can exceed JavaScript's safe
+          // integer range and silently lose the digits required by the API.
+          const found = await requestCatalog(
+            'https://i.weread.qq.com/book/chapterInfos',
+            'POST',
+            { bookIds: [clean(candidate.value)], synckeys: [0], teenmode: 0 },
+            'api:i.weread.qq.com/book/chapterInfos',
+            candidate
+          );
+          if (found) return true;
+        }
+        return false;
+      }
+
+      async function load() {
+        if (uidCount(chapters) > 0) publish('memory');
+        const stateCatalog = initialStateCatalog();
+        if (uidCount(stateCatalog) > 0) {
+          installCatalog(stateCatalog, 'initial-state');
+          return true;
+        }
+        const embedded = embeddedCatalog();
+        if (uidCount(embedded) > 0) {
+          installCatalog(embedded, 'embedded-state');
+          return true;
+        }
+        const liveReader = readerComponent();
+        const liveCatalog = normalize(
+          liveReader?.chapterInfos ?? liveReader?.$data?.chapterInfos ??
+          liveReader?.$props?.chapterInfos ?? liveReader?.book?.chapterInfos ?? []
+        );
+        if (uidCount(liveCatalog) > 0) {
+          installCatalog(liveCatalog, 'reader-component');
+          return true;
+        }
+        const domCatalog = domChapters();
+        // Rendered rows are useful for labels/levels, but cannot make a
+        // clickable catalog until chapterInfos supplies stable UIDs.
+        if (!loading) loading = fetchCatalog().finally(() => { loading = null; });
+        const found = await loading;
+        if (found && domCatalog.length) {
+          chapters = mergeCatalog(chapters, domCatalog);
+          publish('authoritative+dom-presentation');
+        }
+        if (!found && uidCount(chapters) === 0) {
+          post('wereadTOCError', { reason: 'catalog-unavailable' });
+          return false;
+        }
+        return found || uidCount(chapters) > 0;
+      }
+
+      function matchingDOMEntry(entry) {
+        const selectors = [
+          '.readerCatalog_list li',
+          '[class*="readerCatalog"] li',
+          '[class*="catalog_list"] li',
+          '[class*="catalogList"] li',
+        ];
+        for (const selector of selectors) {
+          const nodes = Array.from(document.querySelectorAll(selector));
+          if (!nodes.length) continue;
+          const titleMatch = nodes.find(node => {
+            const label = clean(
+              node.querySelector?.('.readerCatalog_list_item_title_text')?.textContent ??
+              node.querySelector?.('[class*="catalog"][class*="title"]')?.textContent ??
+              node.textContent
+            );
+            return label === clean(entry.title);
+          });
+          if (titleMatch) return titleMatch;
+          const exact = nodes.find((node, index) => {
+            const vue = node.__vue__ || node.querySelector('*')?.__vue__;
+            const data = { ...(vue?.$attrs || {}), ...(vue?.$props || {}), ...(vue?.$data || {}) };
+            const nested = data.chapter || data.item || {};
+            const uid = clean(node.dataset?.chapterUid ?? data.chapterUid ?? nested.chapterUid ?? data.uid ?? nested.uid);
+            return entry.chapterUID ? uid === entry.chapterUID : index === entry.index;
+          });
+          if (exact) return exact;
+          if (nodes[entry.index]) return nodes[entry.index];
+        }
+        return null;
+      }
+
+      function catalogActionTarget(row) {
+        if (!row) return null;
+        if (row.matches?.('.chapterItem_link,[class*="chapterItem_link"]')) return row;
+        return row.querySelector?.(
+          '.chapterItem_link,[class*="chapterItem_link"],[data-chapter-uid],[data-chapter-idx]'
+        ) || row;
+      }
+
+      function chapterPath(entry) {
+        const bookKey = currentReaderBookKey();
+        if (!bookKey) return '';
+        if (entry.index === 0) return `/web/reader/${bookKey}`;
+        return entry.chapterUID ? `/web/reader/${bookKey}k${encodeURIComponent(entry.chapterUID)}` : '';
+      }
+
+      const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+      const canvasEpoch = () => number(window.__castReaderWeReadCanvas?.snapshot?.().epoch, 0);
+      const marker = () => `${location.href}|${canvasEpoch()}`;
+      const trace = (stage, entry, extra = {}) => post('wereadTOCJumpTrace', {
+        stage,
+        index: entry?.index ?? null,
+        chapterIndex: entry?.chapterIndex ?? null,
+        chapterUID: entry?.chapterUID || null,
+        ...extra,
+      });
+      async function waitForNavigation(before, milliseconds = 520) {
+        const deadline = Date.now() + milliseconds;
+        while (Date.now() < deadline) {
+          await delay(80);
+          if (marker() !== before) return true;
+        }
+        return false;
+      }
+
+      function directChapterArray(surface) {
+        if (!surface || (typeof surface !== 'object' && typeof surface !== 'function')) return null;
+        const unwrap = value => {
+          if (Array.isArray(value)) return value;
+          if (Array.isArray(value?.value)) return value.value;
+          return null;
+        };
+        const candidates = [
+          surface.chapterInfos,
+          surface.chapterList,
+          surface.chapters,
+          surface.catalog,
+          surface.book?.chapterInfos,
+          surface.bookInfo?.chapterInfos,
+          surface.reader?.chapterInfos,
+          surface.readerState?.chapterInfos,
+        ];
+        try {
+          for (const key of Object.keys(surface)) {
+            if (!/chapter(?:infos?|list|catalog)|catalog/i.test(key)) continue;
+            candidates.push(surface[key]);
+          }
+        } catch (_) {}
+        for (const candidate of candidates) {
+          const array = unwrap(candidate);
+          if (!array?.length) continue;
+          const parsed = findChapterArray(array);
+          if (parsed.length) return array;
+        }
+        return null;
+      }
+
+      function discoverVueReader() {
+        const roots = [
+          document.querySelector('#__nuxt')?.__vue_app__?._instance,
+          document.querySelector('#__nuxt')?.__vueParentComponent,
+          document.querySelector('#app')?.__vue_app__?._instance,
+          document.querySelector('#app')?.__vueParentComponent,
+          document.documentElement?.__vueParentComponent,
+          document.querySelector('div.readerContent.routerView')?.__vueParentComponent,
+          document.querySelector('.readerContent.routerView')?.__vueParentComponent,
+          document.querySelector('.readerContent')?.__vueParentComponent,
+        ].filter(Boolean);
+        const queue = roots.slice();
+        const visited = new Set();
+        let action = null;
+        let rawCatalog = null;
+        let actionName = '';
+
+        const enqueueVNode = vnode => {
+          if (!vnode || typeof vnode !== 'object') return;
+          if (vnode.component) queue.push(vnode.component);
+          if (vnode.suspense?.activeBranch) enqueueVNode(vnode.suspense.activeBranch);
+          const children = vnode.children;
+          if (Array.isArray(children)) {
+            children.forEach(enqueueVNode);
+          } else if (children && typeof children === 'object') {
+            Object.values(children).forEach(value => {
+              if (typeof value === 'function') {
+                try {
+                  const rendered = value();
+                  if (Array.isArray(rendered)) rendered.forEach(enqueueVNode);
+                  else enqueueVNode(rendered);
+                } catch (_) {}
+              } else {
+                enqueueVNode(value);
+              }
+            });
+          }
+        };
+
+        while (queue.length && visited.size < 6000) {
+          const instance = queue.shift();
+          if (!instance || typeof instance !== 'object' || visited.has(instance)) continue;
+          visited.add(instance);
+          const surfaces = [
+            instance.proxy,
+            instance.exposed,
+            instance.ctx,
+            instance.setupState,
+            instance.data,
+            instance.props,
+          ].filter(value => value && (typeof value === 'object' || typeof value === 'function'));
+          for (const surface of surfaces) {
+            if (!rawCatalog) rawCatalog = directChapterArray(surface);
+            if (!action) {
+              const names = [
+                'changeChapter',
+                'handleChangeChapter',
+                'onChangeChapter',
+                'selectChapter',
+                'handleChapterClick',
+              ];
+              for (const name of names) {
+                if (typeof surface[name] !== 'function') continue;
+                action = surface[name].bind(surface);
+                actionName = name;
+                break;
+              }
+            }
+          }
+          if (action && rawCatalog) break;
+          if (instance.subTree) enqueueVNode(instance.subTree);
+          if (instance.vnode) enqueueVNode(instance.vnode);
+          if (instance.component) queue.push(instance.component);
+          if (instance.parent && !visited.has(instance.parent)) queue.push(instance.parent);
+        }
+
+        if (!action && !rawCatalog) {
+          return { reader: null, visited: visited.size, roots: roots.length };
+        }
+        const reader = {
+          chapterInfos: rawCatalog || [],
+          __castReaderVueActionName: actionName,
+          __castReaderVueVisited: visited.size,
+        };
+        if (action) reader.changeChapter = action;
+        return { reader, visited: visited.size, roots: roots.length };
+      }
+
+      function readerComponent() {
+        const vue3 = discoverVueReader();
+        if (vue3.reader) {
+          diagnose('reader-component-found', {
+            framework: 'vue3-tree',
+            roots: vue3.roots,
+            visited: vue3.visited,
+            action: vue3.reader.__castReaderVueActionName || null,
+            chapters: vue3.reader.chapterInfos?.length || 0,
+            chapterUIDs: normalize(vue3.reader.chapterInfos || [])
+              .filter(item => clean(item.chapterUID)).length,
+          });
+          return vue3.reader;
+        }
+
+        const roots = [
+          document.querySelector('div.readerContent.routerView'),
+          document.querySelector('.readerContent.routerView'),
+          document.querySelector('.readerContent'),
+          document.querySelector('#routerView'),
+          document.querySelector('#app'),
+        ].filter(Boolean);
+        const visited = new Set();
+        for (const root of roots) {
+          const seeds = [root.__vue__, root.__vueParentComponent?.proxy,
+            root.__vueParentComponent?.ctx].filter(Boolean);
+          for (const seed of seeds) {
+            let component = seed;
+            for (let depth = 0; component && depth < 20 && !visited.has(component); depth++) {
+              visited.add(component);
+              if (typeof component.changeChapter === 'function') return component;
+              component = component.$parent || component.parent?.proxy || component.parent?.ctx || null;
+            }
+          }
+        }
+        diagnose('reader-component-missing', {
+          roots: roots.length,
+          vue3TreeRoots: vue3.roots,
+          vue3TreeVisited: vue3.visited,
+          vue2Roots: roots.filter(root => !!root.__vue__).length,
+          vue3Roots: roots.filter(root => !!root.__vueParentComponent).length,
+          appFrameworkKeys: Object.keys(document.querySelector('#app') || {}).filter(key =>
+            /^__vue|^__react/.test(key)
+          ).slice(0, 16),
+        });
+        return null;
+      }
+
+      function componentChapter(component, entry) {
+        const sources = [
+          component?.chapterInfos,
+          component?.$data?.chapterInfos,
+          component?.$props?.chapterInfos,
+          component?.book?.chapterInfos,
+          component?.bookInfo?.chapterInfos,
+        ];
+        for (const source of sources) {
+          if (!Array.isArray(source) || !source.length) continue;
+          const byUID = entry.chapterUID
+            ? source.find(item => clean(item?.chapterUid ?? item?.chapterUID ?? item?.uid) === entry.chapterUID)
+            : null;
+          if (byUID) return byUID;
+          const byChapterIndex = source.find(item =>
+            number(item?.chapterIdx ?? item?.chapterIndex ?? item?.idx, -1) === entry.chapterIndex
+          );
+          if (byChapterIndex) return byChapterIndex;
+          if (source[entry.index]) return source[entry.index];
+        }
+        const rawUID = /^-?\d+$/.test(entry.chapterUID) ? Number(entry.chapterUID) : entry.chapterUID;
+        return {
+          chapterUid: rawUID,
+          chapterIdx: entry.chapterIndex,
+          title: entry.title,
+          level: entry.level,
+        };
+      }
+
+      function frameworkClick(target) {
+        const candidates = [target, ...Array.from(target.querySelectorAll('*'))];
+        for (const node of candidates) {
+          const event = {
+            target: node,
+            currentTarget: node,
+            isTrusted: true,
+            preventDefault() {},
+            stopPropagation() {},
+            stopImmediatePropagation() {},
+          };
+          const vue = node.__vue__;
+          const handlers = [vue?.$listeners?.click, vue?.handleClick, vue?.onClick];
+          const vueHandler = handlers.find(handler => typeof handler === 'function');
+          if (vueHandler) {
+            vueHandler.call(vue, event);
+            return `vue:${node.tagName || 'node'}`;
+          }
+          const vue3 = node.__vueParentComponent;
+          const vue3Handler = vue3?.vnode?.props?.onClick ?? vue3?.props?.onClick;
+          if (typeof vue3Handler === 'function') {
+            vue3Handler.call(vue3, event);
+            return `vue3:${node.tagName || 'node'}`;
+          }
+          const specialKey = Object.keys(node).find(key =>
+            key.startsWith('__reactProps$') || key.startsWith('__reactEventHandlers$')
+          );
+          const reactHandler = specialKey ? node[specialKey]?.onClick : null;
+          if (typeof reactHandler === 'function') {
+            reactHandler(event);
+            return `react:${node.tagName || 'node'}`;
+          }
+          const fiberKey = Object.keys(node).find(key => key.startsWith('__reactFiber$'));
+          let fiber = fiberKey ? node[fiberKey] : null;
+          for (let depth = 0; fiber && depth < 6; depth++, fiber = fiber.return) {
+            const fiberHandler = fiber.memoizedProps?.onClick ?? fiber.pendingProps?.onClick;
+            if (typeof fiberHandler === 'function') {
+              fiberHandler(event);
+              return `react-fiber:${node.tagName || 'node'}`;
+            }
+          }
+        }
+        return '';
+      }
+
+      async function performJump(request) {
+        // Hydrate the authoritative identity before selecting the definitive
+        // entry. A title/index-only row is never a navigation target.
+        await load();
+        const uid = clean(request?.chapterUID);
+        const index = Math.max(0, number(request?.index, 0));
+        const chapterIndex = number(request?.chapterIndex, index);
+        const matched = chapters.find(item => uid && item.chapterUID === uid) ||
+          chapters.find(item => item.chapterIndex === chapterIndex);
+        const authoritativeUID = uid || clean(matched?.chapterUID);
+        if (!authoritativeUID) {
+          post('wereadTOCJumpRejected', { reason: 'chapter-uid-unavailable' });
+          return;
+        }
+        const entry = {
+          ...(matched || {}),
+          index,
+          chapterIndex,
+          chapterUID: authoritativeUID,
+          title: clean(request?.title) || clean(matched?.title),
+        };
+        const row = matchingDOMEntry(entry);
+        if (!row) {
+          post('wereadTOCJumpRejected', { reason: 'chapter-row-unavailable' });
+          return;
+        }
+        // Current WeRead Vue 2 deliberately ignores catalog click events whose
+        // clientX/clientY are zero. `HTMLElement.click()` creates exactly that
+        // zero-coordinate event, which explains the repeated no-op navigation.
+        // Dispatch one real-shaped semantic click to the site's own catalog
+        // handler; do not mix it with route/click/keyboard fallback cascades.
+        const rect = row.getBoundingClientRect();
+        const clientX = Math.max(1, Math.round(rect.left + Math.max(1, rect.width / 2)));
+        const clientY = Math.max(1, Math.round(rect.top + Math.max(1, rect.height / 2)));
+        trace('semantic-catalog-click', entry, {
+          clientX,
+          clientY,
+          rowTitle: clean(
+            row.querySelector?.('.readerCatalog_list_item_title_text')?.textContent ??
+            row.textContent
+          ),
+        });
+        row.dispatchEvent(new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          view: window,
+          clientX,
+          clientY,
+        }));
+      }
+
+      function jump(request) {
+        performJump(request).catch(error => {
+          post('wereadTOCJumpRejected', { reason: `jump-exception:${clean(error?.message || error)}` });
+        });
+        return true;
+      }
+
+      window.CastReaderWeReadTOC = { load, jump, installNativeCatalog };
+      const initial = initialStateCatalog();
+      if (initial.length) {
+        installCatalog(initial, 'initial-state');
+      }
+      // At document start the SSR assignment has not run yet. Probe only
+      // until the inline state appears, then stop permanently.
+      const initialProbeDelays = [0, 40, 100, 180, 320, 560, 900, 1400, 2200];
+      let initialProbeIndex = 0;
+      const probeInitialCatalog = () => {
+        if (uidCount(chapters) > 0) return;
+        const parsed = initialStateCatalog();
+        if (uidCount(parsed) > 0) {
+          installCatalog(parsed, 'initial-state-probe');
+          return;
+        }
+        const delay = initialProbeDelays[initialProbeIndex++];
+        if (delay != null) setTimeout(probeInitialCatalog, delay);
+      };
+      probeInitialCatalog();
     })();
     """#
 }

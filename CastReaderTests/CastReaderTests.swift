@@ -554,11 +554,11 @@ class CastReaderTests: XCTestCase {
         XCTAssertEqual(singleHandler["ok"] as? Bool, false, "单个 click handler 不能冒充 paired pagination actions")
     }
 
-    func testKindleEightLanguageAndPageEvidenceContracts() throws {
+    func testKindleNineLanguageAndPageEvidenceContracts() throws {
         let expected = [
             "en-US":"en", "zh-CN":"zh", "ja-JP":"ja", "es-ES":"es",
-            "fr-FR":"fr", "pt-BR":"pt", "it-IT":"it", "hi-IN":"hi",
-            "pt-PT":"pt", "por":"pt"
+            "fr-FR":"fr", "de-DE":"de", "deu":"de", "ger":"de",
+            "pt-BR":"pt", "it-IT":"it", "hi-IN":"hi", "pt-PT":"pt", "por":"pt"
         ]
         for (input, language) in expected {
             XCTAssertEqual(KindleLanguageContract.profile(language: input)?.language, language)
@@ -567,11 +567,12 @@ class CastReaderTests: XCTestCase {
         XCTAssertEqual(KindleLanguageContract.profile(language: "zh")?.visionLocale, "zh-Hans")
         XCTAssertEqual(KindleLanguageContract.profile(language: "zh")?.tesseractModel, "chi_sim")
         XCTAssertEqual(KindleLanguageContract.profile(language: "hi")?.tesseractModel, "hin")
+        XCTAssertEqual(KindleLanguageContract.profile(language: "de")?.tesseractModel, "deu")
         XCTAssertEqual(
-            ["en", "zh", "ja", "es", "fr", "pt", "it", "hi"].compactMap {
+            ["en", "zh", "ja", "es", "fr", "de", "pt", "it", "hi"].compactMap {
                 KindleLanguageContract.profile(language: $0)?.tesseractModel
             },
-            ["eng", "chi_sim", "jpn", "spa", "fra", "por", "ita", "hin"]
+            ["eng", "chi_sim", "jpn", "spa", "fra", "deu", "por", "ita", "hin"]
         )
         XCTAssertEqual(KindleLanguageContract.profile(language: "ja")?.readingDirection, .rtl)
         XCTAssertFalse(
@@ -983,6 +984,20 @@ class CastReaderTests: XCTestCase {
             duration: 5
         ), "Italian word timing must not be blocked by a language allowlist")
         XCTAssertTrue(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "Deutsche Stimmen markieren jedes gesprochene Wort",
+            timestamps: timestamps(["Deutsche", "Stimmen", "markieren", "jedes", "gesprochene", "Wort"]),
+            duration: 6
+        ), "German word timing must be accepted when the actual segment passes the quality gate")
+        XCTAssertFalse(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "Deutsche Stimmen fallen nur für dieses Segment zurück.",
+            timestamps: [TTSTimestamp(
+                word: "Deutsche Stimmen fallen nur für dieses Segment zurück.",
+                startTime: 0,
+                endTime: 4
+            )],
+            duration: 4
+        ), "A sentence-level German response must not masquerade as one word")
+        XCTAssertTrue(TTSTimestampQuality.hasReliableWordGranularity(
             text: "中文逐词高亮测试",
             timestamps: timestamps(["中文", "逐词", "高亮", "测试"]),
             duration: 4
@@ -1160,8 +1175,8 @@ class CastReaderTests: XCTestCase {
 }
 
 final class LocalizationCatalogTests: XCTestCase {
-    private let appLocales = ["en", "zh-Hans", "ja", "es", "fr", "pt-BR", "it", "hi"]
-    private let translatedLocales = ["en", "zh-Hans", "ja", "es", "fr", "pt-BR", "it", "hi"]
+    private let appLocales = ["en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi"]
+    private let translatedLocales = ["en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi"]
 
     private var repositoryRoot: URL {
         URL(fileURLWithPath: #filePath)
@@ -1192,10 +1207,10 @@ final class LocalizationCatalogTests: XCTestCase {
         }.sorted()
     }
 
-    func testAppLanguagePickerContainsSystemAndAllEightLanguages() {
+    func testAppLanguagePickerContainsSystemAndAllNineLanguages() {
         XCTAssertEqual(
             AppLanguage.allCases.map(\.rawValue),
-            ["system", "en", "zh-Hans", "ja", "es", "fr", "pt-BR", "it", "hi"]
+            ["system", "en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi"]
         )
     }
 
@@ -1366,7 +1381,7 @@ final class LocalizationCatalogTests: XCTestCase {
         XCTAssertEqual(rounded, Decimal(string: "0.67"))
     }
 
-    func testHomeProCardCopyFollowsAllEightRuntimeLanguages() {
+    func testHomeProCardCopyFollowsAllNineRuntimeLanguages() {
         let manager = AppLanguageManager.shared
         let previousLanguage = manager.selectedLanguage
         defer { manager.select(previousLanguage) }
@@ -1374,7 +1389,7 @@ final class LocalizationCatalogTests: XCTestCase {
         for language in AppLanguage.allCases where language != .system {
             manager.select(language)
             let headline = AppLocalized("让每本 Kindle 都开口说话")
-            let benefits = AppLocalized("Kindle 连续朗读 · 100+ 专业音色 · 8 种语言")
+            let benefits = AppLocalized("Kindle 连续朗读 · 100+ 专业音色 · 9 种语言")
             let cta = String(format: AppLocalized("以 %@/年成为 Pro"), "PRICE")
             XCTAssertFalse(headline.isEmpty, "Missing headline for \(language.rawValue)")
             XCTAssertFalse(benefits.isEmpty, "Missing benefits for \(language.rawValue)")
@@ -1417,7 +1432,7 @@ final class LocalizationCatalogTests: XCTestCase {
         )
     }
 
-    func testEightLanguageCatalogIsCompleteAndFormatSafe() throws {
+    func testNineLanguageCatalogIsCompleteAndFormatSafe() throws {
         let root = try catalog(named: "Localizable")
         XCTAssertEqual(root["sourceLanguage"] as? String, "zh-Hans")
         let strings = try XCTUnwrap(root["strings"] as? [String: Any])
@@ -1467,12 +1482,12 @@ final class LocalizationCatalogTests: XCTestCase {
         let root = try catalog(named: "Localizable")
         let strings = try XCTUnwrap(root["strings"] as? [String: Any])
         let expected: [String: [String: String]] = [
-            "首页": ["en": "Home", "zh-Hans": "首页", "ja": "ホーム", "es": "Inicio", "fr": "Accueil", "pt-BR": "Início", "it": "Home", "hi": "होम"],
-            "文库": ["en": "Library", "zh-Hans": "文库", "ja": "ライブラリ", "es": "Biblioteca", "fr": "Bibliothèque", "pt-BR": "Biblioteca", "it": "Libreria", "hi": "लाइब्रेरी"],
-            "设置": ["en": "Settings", "zh-Hans": "设置", "ja": "設定", "es": "Ajustes", "fr": "Réglages", "pt-BR": "Ajustes", "it": "Impostazioni", "hi": "सेटिंग्स"],
-            "朗读": ["en": "Read Aloud", "zh-Hans": "朗读", "ja": "読み上げ", "es": "Leer en voz alta", "fr": "Lire à voix haute", "pt-BR": "Ler em voz alta", "it": "Leggi ad alta voce", "hi": "ज़ोर से पढ़ें"],
-            "解读": ["en": "Explain", "zh-Hans": "解读", "ja": "解説", "es": "Explicar", "fr": "Expliquer", "pt-BR": "Explicar", "it": "Spiega", "hi": "व्याख्या"],
-            "Kindle": ["en": "Kindle", "zh-Hans": "Kindle", "ja": "Kindle", "es": "Kindle", "fr": "Kindle", "pt-BR": "Kindle", "it": "Kindle", "hi": "Kindle"]
+            "首页": ["en": "Home", "zh-Hans": "首页", "ja": "ホーム", "es": "Inicio", "fr": "Accueil", "de": "Start", "pt-BR": "Início", "it": "Home", "hi": "होम"],
+            "文库": ["en": "Library", "zh-Hans": "文库", "ja": "ライブラリ", "es": "Biblioteca", "fr": "Bibliothèque", "de": "Bibliothek", "pt-BR": "Biblioteca", "it": "Libreria", "hi": "लाइब्रेरी"],
+            "设置": ["en": "Settings", "zh-Hans": "设置", "ja": "設定", "es": "Ajustes", "fr": "Réglages", "de": "Einstellungen", "pt-BR": "Ajustes", "it": "Impostazioni", "hi": "सेटिंग्स"],
+            "朗读": ["en": "Read Aloud", "zh-Hans": "朗读", "ja": "読み上げ", "es": "Leer en voz alta", "fr": "Lire à voix haute", "de": "Vorlesen", "pt-BR": "Ler em voz alta", "it": "Leggi ad alta voce", "hi": "ज़ोर से पढ़ें"],
+            "解读": ["en": "Explain", "zh-Hans": "解读", "ja": "解説", "es": "Explicar", "fr": "Expliquer", "de": "Erklären", "pt-BR": "Explicar", "it": "Spiega", "hi": "व्याख्या"],
+            "Kindle": ["en": "Kindle", "zh-Hans": "Kindle", "ja": "Kindle", "es": "Kindle", "fr": "Kindle", "de": "Kindle", "pt-BR": "Kindle", "it": "Kindle", "hi": "Kindle"]
         ]
 
         for (key, locales) in expected {
@@ -1486,7 +1501,7 @@ final class LocalizationCatalogTests: XCTestCase {
         }
     }
 
-    func testProjectDeclaresAllEightKnownRegions() throws {
+    func testProjectDeclaresAllNineKnownRegions() throws {
         let projectURL = repositoryRoot.appendingPathComponent("CastReader.xcodeproj/project.pbxproj")
         guard FileManager.default.fileExists(atPath: projectURL.path) else {
             throw XCTSkip("Project source checks run on the host build machine")
@@ -1607,15 +1622,16 @@ final class LocalizationCatalogTests: XCTestCase {
         XCTAssertEqual(vm.playbackLanguage, "es")
     }
 
-    // MARK: - Unified eight-language import contract
+    // MARK: - Unified nine-language import contract
 
-    func testReadingSentenceContractCoversAllEightLanguages() {
+    func testReadingSentenceContractCoversAllNineLanguages() {
         let samples: [String: String] = [
             "en": "First sentence. Second sentence!",
             "zh": "第一句话。第二句话！",
             "ja": "最初の文です。次の文です！",
             "es": "Primera frase. Segunda frase!",
             "fr": "Première phrase. Deuxième phrase !",
+            "de": "Erster Satz. Zweiter Satz!",
             "pt": "Primeira frase. Segunda frase!",
             "it": "Prima frase. Seconda frase!",
             "hi": "यह पहला वाक्य है। यह दूसरा वाक्य है॥"
@@ -1628,6 +1644,13 @@ final class LocalizationCatalogTests: XCTestCase {
                 "\(language) must preserve both sentence units"
             )
         }
+    }
+
+    func testReadingSentenceContractKeepsGermanAbbreviationsTogether() {
+        XCTAssertEqual(
+            ReadingSentenceContract.segments("Dr. Müller liest z. B. zwei Kapitel. Danach macht er Pause."),
+            ["Dr. Müller liest z. B. zwei Kapitel.", "Danach macht er Pause."]
+        )
     }
 
     func testReadingSentenceContractPreservesJapaneseAndChineseVisualWraps() {
@@ -2207,16 +2230,136 @@ final class LocalizationCatalogTests: XCTestCase {
         XCTAssertFalse(WeReadWebScripts.readerBridge.contains("decodeChapterResponse"))
     }
 
-    func testWeReadUIStringsCoverAllEightRuntimeLanguages() {
+    func testWeReadTOCBridgeUsesStableChapterIdentityAndOneNavigationAction() {
+        XCTAssertTrue(WeReadWebScripts.tocBridge.contains("chapterInfos"))
+        XCTAssertTrue(WeReadWebScripts.tocBridge.contains("chapterUid"))
+        XCTAssertTrue(WeReadWebScripts.tocBridge.contains("chapterIdx"))
+        XCTAssertTrue(WeReadWebScripts.tocBridge.contains("readerCatalog_list"))
+        XCTAssertTrue(WeReadWebScripts.tocBridge.contains("wereadTOCCatalogRequest"))
+        XCTAssertTrue(WeReadWebScripts.tocBridge.contains("installNativeCatalog"))
+        XCTAssertTrue(WeReadWebScripts.tocBridge.contains("native-cookie-session"))
+
+        // Navigation is one semantic click carrying real coordinates, dispatched
+        // at WeRead's own catalog handler. `location.assign` is deliberately not
+        // used: routing around the site's handler reloads the reader document,
+        // and `HTMLElement.click()` produces a zero-coordinate event that current
+        // WeRead Vue 2 ignores outright — that was the repeated no-op navigation.
+        XCTAssertTrue(WeReadWebScripts.tocBridge.contains("dispatchEvent(new MouseEvent"))
+        XCTAssertTrue(WeReadWebScripts.tocBridge.contains("clientX"))
+        XCTAssertFalse(WeReadWebScripts.tocBridge.contains("location.assign"))
+        // Still exactly one mechanism — no keyboard or route fallback cascade.
+        XCTAssertFalse(WeReadWebScripts.tocBridge.contains("KeyboardEvent"))
+        XCTAssertFalse(WeReadWebScripts.tocBridge.contains("HTMLElement.prototype.click"))
+    }
+
+    @MainActor
+    func testWeReadTOCNormalizesDuplicatesAndMarksCurrentChapter() {
+        let raw = [
+            WeReadTOCEntry(index: 4, chapterIndex: 12, chapterUID: "b", title: "第二章"),
+            WeReadTOCEntry(index: 1, chapterIndex: 3, chapterUID: "a", title: "第一章"),
+            WeReadTOCEntry(index: 2, chapterIndex: 3, chapterUID: "a", title: "重复"),
+            WeReadTOCEntry(index: 3, chapterIndex: 9, chapterUID: "", title: "   "),
+        ]
+        let normalized = WeReadTOCController.normalized(raw)
+        XCTAssertEqual(normalized.map(\.chapterUID), ["a", "b"])
+        XCTAssertEqual(normalized.map(\.index), [0, 1])
+
+        let active = WeReadTOCController.markingCurrent(
+            normalized,
+            chapterUID: "b",
+            chapterIndex: 3
+        )
+        XCTAssertFalse(active[0].active)
+        XCTAssertTrue(active[1].active, "UID is authoritative when both identities are present")
+
+        let indexFallback = WeReadTOCController.markingCurrent(
+            normalized,
+            chapterUID: "not-yet-available",
+            chapterIndex: 3
+        )
+        XCTAssertTrue(indexFallback[0].active, "Chapter index must keep the current marker while UID state catches up")
+        XCTAssertFalse(indexFallback[1].active)
+    }
+
+    @MainActor
+    func testWeReadTOCRejectsPresentationOnlyRowsWithoutDowngradingIdentity() {
+        let controller = WeReadTOCController(bookID: "toc-authority-\(UUID().uuidString)")
+        controller.receive(
+            [
+                WeReadTOCEntry(
+                    index: 0,
+                    chapterIndex: 8,
+                    chapterUID: "server-uid-8",
+                    title: "旧标题"
+                )
+            ],
+            currentChapterUID: nil,
+            currentChapterIndex: nil
+        )
+        controller.receive(
+            [
+                WeReadTOCEntry(
+                    index: 0,
+                    chapterIndex: 8,
+                    chapterUID: "",
+                    title: "页面上的新标题"
+                )
+            ],
+            currentChapterUID: nil,
+            currentChapterIndex: 8
+        )
+
+        XCTAssertEqual(controller.entries.first?.chapterUID, "server-uid-8")
+        XCTAssertEqual(controller.entries.first?.title, "旧标题")
+        XCTAssertFalse(controller.entries.first?.active == true)
+        XCTAssertNil(controller.errorText)
+    }
+
+    @MainActor
+    func testWeReadTOCRefusesToNavigateWithoutAuthoritativeChapterUID() {
+        let controller = WeReadTOCController(bookID: "toc-selection-\(UUID().uuidString)")
+        var selected: WeReadTOCEntry?
+        controller.onSelect = { selected = $0 }
+        let presentationOnly = WeReadTOCEntry(
+            index: 0,
+            chapterIndex: 8,
+            chapterUID: "",
+            title: "页面目录文字"
+        )
+
+        controller.receive(
+            [presentationOnly],
+            currentChapterUID: nil,
+            currentChapterIndex: nil
+        )
+        controller.select(presentationOnly)
+
+        XCTAssertTrue(controller.entries.isEmpty)
+        XCTAssertNil(selected)
+        XCTAssertFalse(controller.isJumping)
+        XCTAssertNotNil(controller.errorText)
+    }
+
+    func testWeReadUIStringsCoverAllNineRuntimeLanguages() {
         let keys = [
             "已同步的微信读书书架",
             "绑定微信读书",
             "登录后同步书架与阅读进度",
+            "截图二维码，用微信扫码登录",
+            "截图后打开微信扫一扫，从相册识别二维码。登录后会自动进入书架，供你同步到 CastReader。",
             "正在扫描微信读书书架…（%d）",
+            "检测到 %d 本书",
+            "同步后即可在 CastReader 中朗读和解读。",
             "请先登录微信读书，再点同步。",
             "微信读书书籍链接已失效，请重新登录并同步书架。",
             "微信读书登录已失效，请重新登录后继续。",
-            "书架中没有找到这本书，请重新同步微信读书书架。"
+            "书架中没有找到这本书，请重新同步微信读书书架。",
+            "目录",
+            "正在加载目录…",
+            "正在更新目录…",
+            "正在跳转章节…",
+            "暂未找到这本书的目录。",
+            "跳转失败，请重试。"
         ]
         for language in AppLanguage.allCases where language != .system {
             guard let localization = language.bundleLocalization,

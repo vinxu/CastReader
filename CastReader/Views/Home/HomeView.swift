@@ -169,6 +169,9 @@ struct HomeView: View {
                 }
                 .padding(20)
             }
+            // Inside the NavigationView on purpose — an inset applied outside it
+            // never reaches this ScrollView.
+            .reservesMiniPlayerSpace()
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("CastReader")
             .toolbar {

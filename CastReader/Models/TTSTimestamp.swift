@@ -170,13 +170,18 @@ enum TTSTimestampQuality {
 
 /// Script-neutral sentence boundary contract shared by TTS, native text, OCR,
 /// PDF reflow and Now Playing captions. Keeping the ranges here prevents each
-/// input format from silently losing Japanese/Chinese/Hindi punctuation.
+/// input format from silently losing Japanese/Chinese/Hindi punctuation or
+/// splitting common German abbreviations into fake sentences.
 enum ReadingSentenceContract {
     private static let terminals: Set<Character> = [
         ".", "!", "?", ";", "。", "！", "？", "；", "…", "।", "॥"
     ]
     private static let closers: Set<Character> = [
         "\"", "'", "»", "’", "”", ")", "]", "）", "】", "」", "』", "〉", "》"
+    ]
+    private static let periodAbbreviations: Set<String> = [
+        "abb", "bsp", "bzw", "ca", "dr", "etc", "ggf", "inkl", "kap",
+        "mr", "mrs", "nr", "prof", "s", "sog", "u", "usw", "vgl", "z"
     ]
 
     static func segments(_ text: String, lineBreakIsBoundary: Bool = false) -> [String] {
@@ -268,6 +273,28 @@ enum ReadingSentenceContract {
             terminalSeen = false
         }
 
+        func isAbbreviationPeriod(at index: String.Index) -> Bool {
+            var lower = index
+            while lower > start {
+                let previous = text.index(before: lower)
+                guard text[previous].isLetter else { break }
+                lower = previous
+            }
+            let token = String(text[lower..<index]).lowercased()
+            if periodAbbreviations.contains(token) { return true }
+
+            // Initials and spaced forms such as “z. B.” stay in the same
+            // sentence. The final punctuation still closes the real sentence.
+            if token.count == 1 {
+                var lookahead = text.index(after: index)
+                while lookahead < text.endIndex, text[lookahead].isWhitespace {
+                    lookahead = text.index(after: lookahead)
+                }
+                return lookahead < text.endIndex && text[lookahead].isLetter
+            }
+            return false
+        }
+
         while cursor < text.endIndex {
             let character = text[cursor]
             if terminalSeen, !closers.contains(character), !character.isWhitespace {
@@ -275,7 +302,8 @@ enum ReadingSentenceContract {
             }
             let next = text.index(after: cursor)
             if terminals.contains(character) {
-                if character != "." || next == text.endIndex || text[next].isWhitespace {
+                if character != "." ||
+                    ((next == text.endIndex || text[next].isWhitespace) && !isAbbreviationPeriod(at: cursor)) {
                     terminalSeen = true
                 }
             } else if lineBreakIsBoundary, (character == "\n" || character == "\r") {

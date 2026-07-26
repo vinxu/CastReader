@@ -50,7 +50,7 @@ final class VoiceCatalogTests: XCTestCase {
         XCTAssertFalse(VoiceCatalog.hasRemoteCatalog())
         XCTAssertEqual(VoiceCatalog.voices(for: "en").count, 28)
         XCTAssertEqual(VoiceCatalog.voices(for: "zh").count, 10)
-        XCTAssertEqual(VoiceCatalog.availableLanguages.map(\.code), ["en", "zh", "ja", "es", "fr", "pt", "it", "hi"])
+        XCTAssertEqual(VoiceCatalog.availableLanguages.map(\.code), ["en", "zh", "ja", "es", "fr", "de", "pt", "it", "hi"])
     }
 
     func testSelectableIsTheOnlyPickerVisibilityAuthority() throws {
@@ -70,7 +70,8 @@ final class VoiceCatalogTests: XCTestCase {
         XCTAssertEqual(english.first(where: { $0.code == "af_nova" })?.status, "beta")
         XCTAssertEqual(english.first(where: { $0.code == "af_nova" })?.timestampMode, "word")
         XCTAssertEqual(VoiceCatalog.voices(for: "zh-Hans").map(\.code), ["zf_001"])
-        XCTAssertTrue(VoiceCatalog.voices(for: "ja-JP").isEmpty)
+        XCTAssertEqual(VoiceCatalog.voices(for: "ja-JP").map(\.code), ["jf_alpha"])
+        XCTAssertEqual(VoiceCatalog.voices(for: "de-DE").map(\.code), ["df_mls_19"])
     }
 
     func testSelectableVoiceRemainsVisibleWhenEnabledIsFalse() throws {
@@ -123,13 +124,22 @@ final class VoiceCatalogTests: XCTestCase {
             .allSatisfy { $0.locale == "en-US" })
     }
 
-    func testEightLanguageAuthorityAndOfflineDefaults() {
+    func testNineLanguageAuthorityAndOfflineDefaults() {
         VoiceCatalog.resetForTesting()
         XCTAssertEqual(SupportedTTSLanguage.allCases.map(\.rawValue), [
-            "en", "zh", "ja", "es", "fr", "pt", "it", "hi",
+            "en", "zh", "ja", "es", "fr", "de", "pt", "it", "hi",
         ])
         XCTAssertEqual(SupportedTTSLanguage(identifier: "pt-BR"), .brazilianPortuguese)
         XCTAssertEqual(SupportedTTSLanguage(identifier: "zh_Hans"), .chinese)
+        XCTAssertEqual(SupportedTTSLanguage(identifier: "de_DE"), .german)
+        XCTAssertEqual(SupportedTTSLanguage.german.defaultVoiceID, "df_mls_19")
+        XCTAssertEqual(SupportedTTSLanguage.german.timestampMode, "word")
+        XCTAssertEqual(SupportedTTSLanguage.french.timestampMode, "word")
+        XCTAssertEqual(SupportedTTSLanguage.brazilianPortuguese.timestampMode, "word")
+        XCTAssertEqual(SupportedTTSLanguage.italian.timestampMode, "word")
+        XCTAssertEqual(SupportedTTSLanguage.hindi.timestampMode, "word")
+        XCTAssertEqual(SupportedTTSLanguage.chinese.timestampMode, "segment")
+        XCTAssertEqual(SupportedTTSLanguage.japanese.timestampMode, "segment")
         XCTAssertNil(SupportedTTSLanguage(identifier: "ko-KR"))
 
         for language in SupportedTTSLanguage.allCases {

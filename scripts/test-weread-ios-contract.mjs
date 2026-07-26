@@ -60,11 +60,503 @@ function rawSwiftString(name, useLast = false) {
 
 const canvas = rawSwiftString('canvasIntercept');
 const bridge = rawSwiftString('readerBridge', true);
+const toc = rawSwiftString('tocBridge');
+const loginQR = rawSwiftString('openLoginQRCode');
+const loginSessionBridge = rawSwiftString('loginSessionBridge');
+const resumeServerPolledLogin = rawSwiftString('resumeServerPolledLogin');
 
 // Syntax is verified independently from Swift compilation because WKUserScript
 // only reports malformed JavaScript at runtime.
 new vm.Script(canvas, { filename: 'WeRead.canvasIntercept.js' });
 new vm.Script(bridge, { filename: 'WeRead.readerBridge.js' });
+new vm.Script(toc, { filename: 'WeRead.tocBridge.js' });
+new vm.Script(loginQR, { filename: 'WeRead.openLoginQRCode.js' });
+new vm.Script(loginSessionBridge, { filename: 'WeRead.loginSessionBridge.js' });
+new vm.Script(resumeServerPolledLogin, { filename: 'WeRead.resumeServerPolledLogin.js' });
+
+let loginClickCount = 0;
+let loginShowCount = 0;
+let qrMounted = false;
+const loginControl = {
+  innerText: ' 登录 ',
+  textContent: ' 登录 ',
+  __vueParentComponent: {},
+  getBoundingClientRect() { return { width: 64, height: 32 }; },
+  closest() { return this; },
+  click() { loginClickCount += 1; },
+};
+const loginQRCode = {
+  getBoundingClientRect() { return qrMounted ? { width: 172, height: 172 } : { width: 0, height: 0 }; },
+};
+const loginSession = {
+  uid: '',
+  loginResult: null,
+  lastLogicCode: '',
+  presentationRequestedAt: 0,
+  presentationAttempts: 0,
+  presentationStrategy: '',
+};
+const loginModal = {
+  exposed: {
+    show() {
+      loginShowCount += 1;
+      loginSession.uid = 'server-login-uid';
+      qrMounted = true;
+    },
+    close() {},
+    handleLoginSuccess() {},
+  },
+  subTree: null,
+  parent: null,
+};
+const nuxtRoot = {
+  isMounted: true,
+  exposed: null,
+  subTree: { component: loginModal, children: [] },
+  parent: null,
+};
+const loginContext = {
+  console,
+  getComputedStyle() { return { display: 'block', visibility: 'visible' }; },
+  __castreaderWeReadLoginSession: loginSession,
+  document: {
+    head: { appendChild() {} },
+    documentElement: { appendChild() {} },
+    createElement() { return { id: '', textContent: '' }; },
+    getElementById() { return null; },
+    querySelector(selector) {
+      if (selector === '#__nuxt') return { __vue_app__: { _instance: nuxtRoot } };
+      if (selector === '.wr_index_page_top_section_header_action_link') return loginControl;
+      if (selector === '.wr_login_modal_qr_img') return qrMounted ? loginQRCode : null;
+      return null;
+    },
+    querySelectorAll() { return [loginControl]; },
+  },
+};
+loginContext.window = loginContext;
+const loginResult = vm.runInNewContext(loginQR, loginContext, { filename: 'WeRead.openLoginQRCode.runtime.js' });
+assert.equal(loginResult.state, 'requesting-uid');
+assert.equal(loginResult.strategy, 'vue-exposed-show');
+assert.equal(loginShowCount, 1, 'logged-out WeRead entry must call LoginModal.show exactly once');
+assert.equal(loginClickCount, 0, 'Vue LoginModal.show must be preferred over a synthetic DOM click');
+const repeatedLoginResult = vm.runInNewContext(loginQR, loginContext, { filename: 'WeRead.openLoginQRCode.repeated.js' });
+assert.equal(repeatedLoginResult.state, 'visible');
+assert.equal(repeatedLoginResult.uidPresent, true);
+assert.equal(
+  repeatedLoginResult.loginUID,
+  'server-login-uid',
+  'the issued QR UID must be returned to Swift before the app enters WeChat',
+);
+assert.equal(loginShowCount, 1, 'the same QR login UID must never be replaced by a second presentation');
+assert.equal(loginClickCount, 0);
+
+// Generated homepage classes are not a stable WeRead contract. If Vue's
+// exposed LoginModal cannot be discovered, the exact visible "登录" action is
+// the semantic equivalent of the user's successful manual tap.
+let fallbackClickCount = 0;
+const fallbackLoginControl = {
+  textContent: ' 登录 ',
+  getBoundingClientRect() { return { width: 64, height: 32 }; },
+  closest() { return null; },
+  click() { fallbackClickCount += 1; },
+};
+const fallbackSession = {
+  uid: '',
+  presentationRequestedAt: 0,
+  presentationAttempts: 0,
+  presentationStrategy: '',
+};
+const fallbackContext = {
+  console,
+  getComputedStyle() { return { display: 'block', visibility: 'visible' }; },
+  __castreaderWeReadLoginSession: fallbackSession,
+  document: {
+    head: { appendChild() {} },
+    documentElement: { appendChild() {} },
+    createElement() { return { id: '', textContent: '' }; },
+    getElementById() { return null; },
+    querySelector() { return null; },
+    querySelectorAll(selector) {
+      return selector === 'body *' ? [fallbackLoginControl] : [];
+    },
+    readyState: 'complete',
+  },
+};
+fallbackContext.window = fallbackContext;
+const fallbackResult = vm.runInNewContext(
+  loginQR,
+  fallbackContext,
+  { filename: 'WeRead.openLoginQRCode.semantic-fallback.js' },
+);
+assert.equal(fallbackResult.state, 'requesting-uid');
+assert.equal(fallbackResult.strategy, 'hydrated-semantic-control');
+assert.equal(
+  fallbackClickCount,
+  1,
+  'the visible exact login action must be tapped even when WeRead hides its private Nuxt root',
+);
+
+assert.match(loginQR, /wr_login_modal_qr_wrapper/);
+assert.match(loginQR, /wr_index_page_top_section_header_action_link/);
+assert.match(loginQR, /querySelectorAll\('a,button,\[role="button"\]'\)/);
+assert.match(loginQR, /querySelectorAll\('body \*'\)/);
+assert.match(loginQR, /clean\(element\.textContent\) === '登录'/);
+assert.match(loginQR, /preferServerPolledQRCode/);
+assert.match(loginQR, /wr_login_modal_qr_wrapper_old/);
+assert.match(loginQR, /wxlogin-container/);
+assert.match(loginQR, /server-polled/);
+assert.match(loginQR, /handleLoginSuccess/);
+assert.match(loginQR, /modalInstance\.exposed\.show/);
+assert.match(loginQR, /uidPresent/);
+assert.doesNotMatch(loginQR, /location\.(?:assign|replace)|document\.cookie/);
+assert.match(loginSessionBridge, /getLoginUid/);
+assert.match(loginSessionBridge, /getLoginInfo/);
+assert.match(loginSessionBridge, /#login_container/);
+assert.match(loginSessionBridge, /\.login_qrcode_container/);
+assert.match(loginSessionBridge, /\.wxlogin-container/);
+assert.match(loginSessionBridge, /\.wr_login_modal_qr_wrapper_old/);
+assert.match(resumeServerPolledLogin, /handleLoginSuccess/);
+assert.match(resumeServerPolledLogin, /session\.uid/);
+assert.match(resumeServerPolledLogin, /providedUID/);
+assert.doesNotMatch(resumeServerPolledLogin, /document\.cookie|wr_vid|wr_skey/);
+let recoveredLoginResult = null;
+const recoveryModal = {
+  exposed: {
+    async handleLoginSuccess(result) { recoveredLoginResult = result; },
+  },
+  subTree: null,
+  parent: null,
+};
+const recoveryRoot = {
+  isMounted: true,
+  exposed: null,
+  subTree: { component: recoveryModal, children: [] },
+  parent: null,
+};
+const recoveryContext = {
+  URL,
+  AbortController,
+  setTimeout,
+  clearTimeout,
+  loginUID: 'server-login-uid',
+  location: { origin: 'https://weread.qq.com' },
+  document: {
+    querySelector(selector) {
+      if (selector === '#__nuxt') return { __vue_app__: { _instance: recoveryRoot } };
+      return null;
+    },
+  },
+  async fetch() {
+    return {
+      async json() {
+        return { succeed: true, accessToken: 'token', webLoginVid: 42 };
+      },
+    };
+  },
+};
+recoveryContext.window = recoveryContext;
+const recoveredState = await vm.runInNewContext(
+  resumeServerPolledLogin,
+  recoveryContext,
+  { filename: 'WeRead.resumeServerPolledLogin.runtime.js' },
+);
+assert.equal(recoveredState.state, 'handled');
+assert.equal(recoveredState.logicCode, 'SUCCEED');
+assert.equal(recoveredLoginResult?.accessToken, 'token');
+assert.equal(
+  recoveredLoginResult?.webLoginVid,
+  42,
+  'WeRead login recovery must use its real accessToken/webLoginVid contract',
+);
+assert.match(libraryViewsSource, /if await model\.syncLibrary\(\) \{ dismiss\(\) \}/);
+const loginPollSource =
+  libraryViewsSource.match(/private func startLoginPolling[\s\S]*?private func isShelfURL/)?.[0] || '';
+assert.match(
+  loginPollSource,
+  /guard let result = try\? await self\.evaluate\(WeReadWebScripts\.libraryScan\),\s*!result\.authRequired, result\.authenticated else \{ continue \}/,
+  'login-state polling must match the last submitted WeRead flow',
+);
+assert.match(libraryViewsSource, /@Environment\(\\\.scenePhase\)/);
+assert.match(libraryViewsSource, /model\.resumeAfterExternalLogin\(\)/);
+assert.match(libraryViewsSource, /WeReadWebScripts\.serverPolledLoginPresentation/);
+assert.match(libraryViewsSource, /showsLoginGuide/);
+assert.match(libraryViewsSource, /weReadLoginGuide/);
+assert.match(libraryViewsSource, /WeReadWebScripts\.openLoginQRCode/);
+assert.match(
+  libraryViewsSource,
+  /func webView\(_ webView: WKWebView, didCommit navigation: WKNavigation!\)[\s\S]*?presentLoginQRCodeIfNeeded\(\)/,
+  'QR presentation must begin when WeRead starts painting, not wait for slow didFinish resources',
+);
+assert.doesNotMatch(
+  libraryViewsSource,
+  /addScriptMessageHandler\([\s\S]*castReaderWeReadLogin/,
+  'the official WeRead QR poll must not be intercepted by a native reply bridge',
+);
+const loginPresentationSource =
+  libraryViewsSource.match(/private func presentLoginQRCodeIfNeeded\(\)[\s\S]*?private func isShelfURL/)?.[0] || '';
+assert.match(
+  loginPresentationSource,
+  /evaluateJavaScript\(WeReadWebScripts\.openLoginQRCode\)/,
+  'logged-out binding must semantically open WeRead’s own QR modal',
+);
+assert.match(
+  loginPresentationSource,
+  /Task\.sleep\(for: \.milliseconds\(100\)\)/,
+  'the visible login action must be detected without a perceptible polling delay',
+);
+assert.doesNotMatch(
+  loginPresentationSource,
+  /webView\.load|\.reload\(|location\.(?:assign|replace)/,
+  'automatic QR guidance must preserve the current page document and login UID',
+);
+
+assert.match(toc, /chapterInfos/);
+assert.match(toc, /chapterUid/);
+assert.match(toc, /chapterIdx/);
+assert.match(
+  toc,
+  /window\.__INITIAL_STATE__\?\.reader\?\.chapterInfos/,
+  'legacy WeRead reader TOC identity must come from its Vue SSR state',
+);
+assert.match(
+  toc,
+  /const marker = 'window\.__INITIAL_STATE__='/,
+  'TOC recovery must parse the inline Vue SSR payload after hydration',
+);
+assert.doesNotMatch(
+  toc,
+  /\/web\/book\/chapterInfos|\/web\/book\/bookmarklist/,
+  'empty web deltas and bookmark fallbacks are not chapter identity authorities',
+);
+assert.doesNotMatch(
+  toc,
+  /\{\s*bookIds:[^}]*synckey:\s*0/,
+  'singular synckey returns an empty chapter delta on the production reader',
+);
+assert.match(toc, /readerCatalog_list/);
+assert.match(toc, /dispatchEvent\(new MouseEvent/);
+assert.match(toc, /clientX,\s*clientY/);
+assert.match(
+  toc,
+  /window\.CastReaderWeReadTOC = \{ load, jump, installNativeCatalog \}/,
+);
+assert.doesNotMatch(toc, /KeyboardEvent/);
+assert.match(webReaderSource, /source: WeReadWebScripts\.tocBridge/);
+assert.match(nativeBridgeSource, /pendingWeReadTOCJump/);
+assert.match(nativeBridgeSource, /forHTTPHeaderField: "x-vid"/);
+assert.match(nativeBridgeSource, /forHTTPHeaderField: "x-skey"/);
+assert.match(nativeBridgeSource, /forHTTPHeaderField: "X-SSR-Request-Id"/);
+assert.match(readerHostSource, /WeReadNativeTOCPanel/);
+assert.match(readerHostSource, /Image\(systemName: "list\.bullet"\)/);
+
+// Execute the main-world TOC bridge against representative WeRead states.
+// The contract is deliberately small: authoritative UID catalog -> one
+// coordinate-bearing semantic click on WeRead's own Vue catalog row -> native
+// visible-surface confirmation.
+class MockXHR {
+  addEventListener() {}
+  open() {}
+}
+class MockMouseEvent {
+  constructor(type, options = {}) {
+    this.type = type;
+    Object.assign(this, options);
+  }
+}
+const tocMessages = [];
+const tocClicks = [];
+const tocLocation = {
+  pathname: '/web/reader/8d732e60813ab823ag017adekchapter-b',
+  href: 'https://weread.qq.com/web/reader/8d732e60813ab823ag017adekchapter-b',
+  origin: 'https://weread.qq.com',
+};
+const tocRows = ['第一章', '第二章', '第三章'].map((title, index) => ({
+  dataset: {},
+  textContent: title,
+  querySelector(selector) {
+    return selector.includes('title') ? { textContent: title } : null;
+  },
+  closest() { return null; },
+  getBoundingClientRect() {
+    return { left: 20, top: 40 + index * 30, width: 160, height: 24 };
+  },
+  dispatchEvent(event) {
+    tocClicks.push({ title, event });
+    return true;
+  },
+}));
+const tocContext = {
+  URL,
+  MouseEvent: MockMouseEvent,
+  console,
+  setTimeout,
+  clearTimeout,
+  location: tocLocation,
+  document: {
+    documentElement: {},
+    scripts: [],
+    querySelectorAll(selector) {
+      return selector === '.readerCatalog_list li' ? tocRows : [];
+    },
+    querySelector() { return null; },
+  },
+  XMLHttpRequest: MockXHR,
+  __INITIAL_STATE__: {
+    reader: {
+      bookId: 42,
+      chapterUid: 'chapter-b',
+      chapterIdx: 1,
+      chapterInfos: [
+        { chapterUid: 'chapter-a', chapterIdx: 0, title: '第一章' },
+        { chapterUid: 'chapter-b', chapterIdx: 1, title: '第二章' },
+        { chapterUid: 'chapter-b', chapterIdx: 1, title: '重复章' },
+        { chapterUid: 'chapter-c', chapterIdx: 2, title: '第三章' },
+      ],
+    },
+  },
+  webkit: {
+    messageHandlers: {
+      castreader: { postMessage(message) { tocMessages.push(message); } },
+    },
+  },
+};
+tocContext.window = tocContext;
+vm.runInNewContext(toc, tocContext, { filename: 'WeRead.tocBridge.runtime.js' });
+await tocContext.CastReaderWeReadTOC.load();
+const publishedTOC = tocMessages.filter(message => message.type === 'wereadTOC').at(-1);
+assert.ok(publishedTOC, 'TOC bridge must publish chapter metadata');
+assert.deepEqual(
+  Array.from(publishedTOC.payload.entries, entry => entry.chapterUID),
+  ['chapter-a', 'chapter-b', 'chapter-c'],
+);
+assert.equal(publishedTOC.payload.currentChapterUID, 'chapter-b');
+assert.equal(publishedTOC.payload.currentChapterIndex, 1);
+assert.equal(
+  tocContext.CastReaderWeReadTOC.jump({ index: 2, chapterIndex: 2, chapterUID: 'chapter-c' }),
+  true,
+);
+await new Promise(resolve => setTimeout(resolve, 120));
+assert.equal(tocClicks.length, 1, 'one selection must execute one semantic catalog action');
+assert.equal(tocClicks[0].title, '第三章');
+assert.ok(tocClicks[0].event.clientX > 0);
+assert.ok(tocClicks[0].event.clientY > 0);
+
+// A DOM-only TOC remains presentation, not identity. The legacy native
+// recovery path may install authoritative data, but navigation must still use
+// the site's semantic catalog row instead of constructing a guessed route.
+const apiMessages = [];
+const apiRequests = [];
+const apiFetch = async (url, options) => {
+  apiRequests.push({ url: String(url), options });
+  return {
+    status: 200,
+    async text() {
+      return JSON.stringify({
+        data: [{
+          updated: [
+            { chapterUid: 'uid-0', chapterIdx: 0, title: '序章', level: 1 },
+            { chapterUid: 'uid-9', chapterIdx: 9, title: '第九章', level: 1 },
+          ],
+        }],
+      });
+    },
+  };
+};
+const apiLocation = {
+  pathname: '/web/reader/daa32f90813ab7b21g01721d',
+  href: 'https://weread.qq.com/web/reader/daa32f90813ab7b21g01721d',
+  origin: 'https://weread.qq.com',
+};
+const apiClicks = [];
+const apiRows = ['序章', '第九章'].map((title, index) => ({
+  dataset: {},
+  textContent: title,
+  querySelector(selector) {
+    return selector.includes('title') ? { textContent: title } : null;
+  },
+  closest() { return null; },
+  getBoundingClientRect() {
+    return { left: 10, top: 20 + index * 30, width: 120, height: 24 };
+  },
+  dispatchEvent(event) {
+    apiClicks.push({ title, event });
+    return true;
+  },
+}));
+const apiContext = {
+  URL, URLSearchParams, MouseEvent: MockMouseEvent, console, setTimeout, clearTimeout,
+  fetch: apiFetch,
+  location: apiLocation,
+  document: {
+    documentElement: {},
+    scripts: [],
+    querySelectorAll(selector) {
+      return selector === '.readerCatalog_list li' ? apiRows : [];
+    },
+    querySelector() { return null; },
+  },
+  XMLHttpRequest: MockXHR,
+  __INITIAL_STATE__: { reader: { bookId: '90071992547409931234' } },
+  webkit: {
+    messageHandlers: {
+      castreader: { postMessage(message) { apiMessages.push(message); } },
+    },
+  },
+};
+apiContext.window = apiContext;
+vm.runInNewContext(toc, apiContext, { filename: 'WeRead.tocBridge.api-runtime.js' });
+await apiContext.CastReaderWeReadTOC.load();
+assert.equal(
+  apiRequests.length,
+  0,
+  'WKWebView page JavaScript must not attempt the blocked cross-origin request',
+);
+const nativeRequest = apiMessages.find(message => message.type === 'wereadTOCCatalogRequest');
+assert.equal(
+  nativeRequest?.payload?.bookID,
+  '90071992547409931234',
+  'native catalog recovery must retain every book ID digit',
+);
+assert.equal(
+  apiContext.CastReaderWeReadTOC.installNativeCatalog(JSON.stringify({
+    data: [{
+      updated: [
+        { chapterUid: 'uid-0', chapterIdx: 0, title: '序章', level: 1 },
+        { chapterUid: 'uid-9', chapterIdx: 9, title: '第九章', level: 1 },
+      ],
+    }],
+  })),
+  true,
+);
+const apiCatalog = apiMessages.filter(message => message.type === 'wereadTOC').at(-1);
+assert.deepEqual(
+  Array.from(apiCatalog.payload.entries, entry => entry.chapterUID),
+  ['uid-0', 'uid-9'],
+);
+assert.equal(
+  apiContext.CastReaderWeReadTOC.jump({ index: 1, chapterIndex: 9, chapterUID: 'uid-9' }),
+  true,
+);
+await new Promise(resolve => setTimeout(resolve, 120));
+assert.equal(apiClicks.length, 1);
+assert.equal(apiClicks[0].title, '第九章');
+assert.ok(apiClicks[0].event.clientX > 0 && apiClicks[0].event.clientY > 0);
+
+// UID-less input must fail closed and must not trigger a DOM click, keyboard,
+// router, history or location fallback.
+const rejectedBefore = apiMessages.length;
+assert.equal(
+  apiContext.CastReaderWeReadTOC.jump({ index: 7, chapterIndex: 77, chapterUID: '' }),
+  true,
+);
+await new Promise(resolve => setTimeout(resolve, 120));
+assert.equal(apiClicks.length, 1);
+assert.ok(
+  apiMessages.slice(rejectedBefore).some(message =>
+    message.type === 'wereadTOCJumpRejected' &&
+    message.payload?.reason === 'chapter-uid-unavailable'
+  ),
+);
 
 assert.match(canvas, /CanvasRenderingContext2D\.prototype\.fillText/);
 assert.match(canvas, /CanvasRenderingContext2D\.prototype\.clearRect/);
@@ -83,6 +575,23 @@ assert.match(webReaderSource, /URLQueryItem\(name: "wtheme", value: "white"\)/);
 assert.match(webReaderSource, /httpCookieStore\.setCookie\(cookie\)/);
 assert.match(libraryViewsSource, /updateTheme\(isDark:/);
 assert.match(libraryViewsSource, /WeReadNativeTheme\.prepare/);
+const libraryThemeStart = libraryViewsSource.indexOf('func updateTheme(isDark: Bool)');
+const libraryThemeEnd = libraryViewsSource.indexOf('func loadIfNeeded()', libraryThemeStart);
+assert.ok(
+  libraryThemeStart >= 0 && libraryThemeEnd > libraryThemeStart,
+  'WeRead binding theme lifecycle block missing',
+);
+const libraryThemeUpdate = libraryViewsSource.slice(libraryThemeStart, libraryThemeEnd);
+assert.match(
+  libraryThemeUpdate,
+  /overrideUserInterfaceStyle/,
+  'WeRead binding may update the native WebView appearance without replacing the login document',
+);
+assert.doesNotMatch(
+  libraryThemeUpdate,
+  /webView\.load|\.reload\(|WeReadNativeTheme\.prepare|loginPollingTask\?\.cancel/,
+  'theme changes must never navigate, reload, or cancel the active QR login session',
+);
 assert.match(webReaderSource, /preferredContentMode = \.mobile/);
 assert.doesNotMatch(webReaderSource, /preferredContentMode = \.desktop/);
 assert.doesNotMatch(source, /wr_whiteTheme|wr_darkTheme|dataset\.theme/);
@@ -602,3 +1111,7 @@ const alreadyComplete = speechContext.speechPayloadsForTest([{
 assert.equal(alreadyComplete[0].text, '已经完整结束。', 'must not pull in the next complete sentence');
 
 console.log('WeRead iOS JavaScript contracts passed');
+// Several extracted production bridges intentionally schedule observers and
+// retry timers. The contract assertions above are synchronous; do not keep the
+// standalone test process alive for those browser-lifecycle timers.
+process.exit(0);

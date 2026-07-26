@@ -1587,7 +1587,7 @@ final class ExplainViewModel: ObservableObject {
     static func splitSentences(_ text: String) -> [String] {
         let chunkLimit = 24   // 单条字幕上限（中文≈1.5 行）：长句按逗号切到此长度，短小一条一条出
         guard !text.isEmpty else { return [] }
-        // ① 与朗读/PDF/Now Playing 共享八语句界（含 Hindi ।/॥）。
+        // ① 与朗读/PDF/Now Playing 共享九语句界（含 Hindi ।/॥）。
         var sentences = ReadingSentenceContract.segments(text, lineBreakIsBoundary: true)
         if sentences.isEmpty { sentences = [text] }
         // ② 过长句按逗号/分号/顿号二次切到 ≤chunkLimit（字幕条短小、一条一条出）

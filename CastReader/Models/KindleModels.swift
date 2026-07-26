@@ -129,16 +129,16 @@ enum KindleLanguageContract {
     ]
     private static let aliases: [String: String] = [
         "eng": "en", "zho": "zh", "chi": "zh", "jpn": "ja",
-        "spa": "es", "fra": "fr", "fre": "fr", "por": "pt",
+        "spa": "es", "fra": "fr", "fre": "fr", "deu": "de", "ger": "de", "por": "pt",
         "ita": "it", "hin": "hi"
     ]
     private static let locales: [String: String] = [
         "en": "en-US", "zh": "zh-Hans", "ja": "ja-JP", "es": "es-ES",
-        "fr": "fr-FR", "pt": "pt-BR", "it": "it-IT", "hi": "hi-IN"
+        "fr": "fr-FR", "de": "de-DE", "pt": "pt-BR", "it": "it-IT", "hi": "hi-IN"
     ]
     private static let tesseractModels: [String: String] = [
         "en": "eng", "zh": "chi_sim", "ja": "jpn", "es": "spa",
-        "fr": "fra", "pt": "por", "it": "ita", "hi": "hin"
+        "fr": "fra", "de": "deu", "pt": "por", "it": "ita", "hi": "hin"
     ]
 
     static func normalize(_ value: String?) -> String? {

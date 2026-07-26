@@ -117,6 +117,9 @@ final class KindleLibraryStore: ObservableObject {
         }
         lastError = nil
         save()
+        // Sync is the moment we know the whole shelf; pull the covers now rather
+        // than letting Home fetch them one at a time behind empty placeholders.
+        ImageCache.shared.prefetch(books.compactMap(\.coverURL))
     }
 
     func markOpened(_ book: KindleBook) {
@@ -179,6 +182,21 @@ final class KindleLibraryStore: ObservableObject {
 
     func disconnectAccount() async {
         disconnectLocalCache()
+        await clearAmazonWebsiteData()
+    }
+
+    /// Amazon rejected the session and automatic recovery could not restore it,
+    /// so the account has to be bound again. Unlike a user-initiated disconnect
+    /// this keeps `listeningAnchors`: the shelf is re-scraped after rebinding and
+    /// the anchors are keyed by book id, so reading positions survive a failure
+    /// the user did not ask for.
+    func markSessionExpiredForRebind() async {
+        books.removeAll()
+        hasConnected = false
+        accountLabel = nil
+        accountEmail = nil
+        lastError = nil
+        save()
         await clearAmazonWebsiteData()
     }
 

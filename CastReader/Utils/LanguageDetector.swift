@@ -18,6 +18,7 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
     case japanese = "ja"
     case spanish = "es"
     case french = "fr"
+    case german = "de"
     case brazilianPortuguese = "pt"
     case italian = "it"
     case hindi = "hi"
@@ -31,6 +32,7 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
         case .japanese: return "ja-JP"
         case .spanish: return "es-ES"
         case .french: return "fr-FR"
+        case .german: return "de-DE"
         case .brazilianPortuguese: return "pt-BR"
         case .italian: return "it-IT"
         case .hindi: return "hi-IN"
@@ -44,6 +46,7 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
         case .japanese: return "日本語"
         case .spanish: return "Español"
         case .french: return "Français"
+        case .german: return "Deutsch"
         case .brazilianPortuguese: return "Português (Brasil)"
         case .italian: return "Italiano"
         case .hindi: return "हिन्दी"
@@ -57,6 +60,7 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
         case .japanese: return "Japanese"
         case .spanish: return "Spanish"
         case .french: return "French"
+        case .german: return "German"
         case .brazilianPortuguese: return "Brazilian Portuguese"
         case .italian: return "Italian"
         case .hindi: return "Hindi"
@@ -70,6 +74,7 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
         case .japanese: return "jf_alpha"
         case .spanish: return "ef_dora"
         case .french: return "ff_siwis"
+        case .german: return "df_mls_19"
         case .brazilianPortuguese: return "pf_dora"
         case .italian: return "if_sara"
         case .hindi: return "hf_alpha"
@@ -83,6 +88,7 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
         case .japanese, .hindi: return "Alpha"
         case .spanish, .brazilianPortuguese: return "Dora"
         case .french: return "Siwis"
+        case .german: return "Emilia"
         case .italian: return "Sara"
         }
     }
@@ -90,7 +96,7 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
     /// Production-verified synchronization ceiling. Runtime consumers still
     /// validate every response segment before enabling word highlighting.
     var timestampMode: String {
-        self == .english || self == .spanish ? "word" : "segment"
+        self == .chinese || self == .japanese ? "segment" : "word"
     }
 
     /// Vision 的 OCR locale 与 TTS locale 并不完全相同。简体中文必须使用
@@ -122,8 +128,8 @@ enum LanguageDetector {
         let readableCharacterCount: Int
     }
 
-    /// 返回八语权威目录中的主语言码。CJK/假名/天城文先按脚本确定；
-    /// 拉丁字母语言交给 NaturalLanguage 在英/西/法/葡/意之间判别。
+    /// 返回九语权威目录中的主语言码。CJK/假名/天城文先按脚本确定；
+    /// 拉丁字母语言交给 NaturalLanguage 在英/西/法/德/葡/意之间判别。
     static func detect(_ text: String) -> String {
         evidence(for: text).language
     }
@@ -164,7 +170,7 @@ enum LanguageDetector {
         }
 
         let recognizer = NLLanguageRecognizer()
-        recognizer.languageConstraints = [.english, .spanish, .french, .portuguese, .italian]
+        recognizer.languageConstraints = [.english, .spanish, .french, .german, .portuguese, .italian]
         recognizer.processString(text)
         let hypotheses = recognizer.languageHypotheses(withMaximum: 5)
         let best = hypotheses.compactMap { language, probability -> (String, Double)? in

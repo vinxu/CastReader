@@ -201,12 +201,16 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     func loadIfNeeded() {
         guard !didLoad else { return }
         didLoad = true
+        KindleRunLog.write("KINDLE shelf load reason=first-open sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
+        KindleSessionProbe.logCookies(reason: "shelf-load-first-open")
         webView.load(URLRequest(url: KindleWebScripts.libraryURL))
     }
 
     func loadLibrary() {
         currentReaderBook = nil
         statusText = AppLocalized("打开 Kindle 书架，然后点同步。")
+        KindleRunLog.write("KINDLE shelf load reason=reload sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
+        KindleSessionProbe.logCookies(reason: "shelf-load-reload")
         webView.load(URLRequest(url: KindleWebScripts.libraryURL))
     }
 
@@ -220,7 +224,23 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         return AppLocalized("登录后点同步。")
     }
 
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        let url = webView.url?.absoluteString ?? ""
+        KindleRunLog.write("KINDLE shelf didStart url=\(url)")
+        KindleSessionProbe.logCookies(reason: "shelf-didStart")
+    }
+
+    func webView(_ webView: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation!) {
+        let url = webView.url?.absoluteString ?? ""
+        KindleRunLog.write("KINDLE shelf redirect landing=\(KindleSessionProbe.landingKind(url)) url=\(url)")
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        let finishedURL = webView.url?.absoluteString ?? ""
+        let landing = KindleSessionProbe.landingKind(finishedURL)
+        KindleRunLog.write("KINDLE shelf didFinish landing=\(landing) url=\(finishedURL)")
+        KindleSessionProbe.logCookies(reason: "shelf-didFinish-\(landing)")
+        if landing == "library" { KindleSessionFreshness.markShelfOK() }
         statusText = AppLocalized("如果已经看到 Kindle 书架，请点同步。")
         Task { await refreshPageState() }
     }
@@ -244,6 +264,7 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             for pass in 0..<maxPasses {
                 let payload = try await scrapeCurrentViewport()
                 print("[KindleSync] pass=\(pass) url=\(payload.url ?? "") books=\(payload.books.count) auth=\(payload.authRequired == true) reader=\(payload.isReaderPage == true) signals=\(payload.hasReaderSignals == true)")
+                KindleRunLog.write("KINDLE shelf sync pass=\(pass) landing=\(KindleSessionProbe.landingKind(payload.url ?? "")) books=\(payload.books.count) auth=\(payload.authRequired == true ? "Y" : "N") reader=\(payload.isReaderPage == true ? "Y" : "N") signals=\(payload.hasReaderSignals == true ? "Y" : "N")")
                 sawAuthRequired = sawAuthRequired || payload.authRequired == true
                 sawReaderPage = sawReaderPage || payload.isReaderPage == true
                 sawLibrarySignals = sawLibrarySignals || payload.hasReaderSignals == true || !payload.books.isEmpty
@@ -291,9 +312,16 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                 statusText = AppLocalized("Kindle 书架已同步。")
                 _ = try? await evaluate("window.scrollTo(0, 0);")
             }
+            // The session fingerprint immediately after a sync is the missing
+            // half of the picture: comparing it against the next book open shows
+            // whether visiting the shelf is what refreshes Amazon's reader session.
+            KindleRunLog.write("KINDLE shelf sync done books=\(books.count) auth=\(sawAuthRequired ? "Y" : "N") readerPage=\(sawReaderPage ? "Y" : "N") signals=\(sawLibrarySignals ? "Y" : "N") light=\(lightPass ? "Y" : "N")")
+            KindleSessionProbe.logCookies(reason: "shelf-sync-done")
         } catch {
             statusText = AppLocalized("同步需要处理。")
             errorText = error.localizedDescription
+            KindleRunLog.write("KINDLE shelf sync failed error=\(error.localizedDescription)")
+            KindleSessionProbe.logCookies(reason: "shelf-sync-failed")
         }
     }
 

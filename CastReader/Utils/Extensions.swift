@@ -301,6 +301,46 @@ final class ImageCache {
         try? fileManager.removeItem(at: cacheDirectory)
         try? fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
     }
+
+    func isCached(_ url: String) -> Bool {
+        memoryCache.object(forKey: cacheKey(for: url) as NSString) != nil
+            || fileManager.fileExists(atPath: fileURL(for: url).path)
+    }
+
+    /// Downloads covers that are not on disk yet. Called right after a shelf
+    /// sync, so covers are already local before Home is ever shown instead of
+    /// being fetched one-by-one while the user watches empty placeholders.
+    ///
+    /// The cache lives in `Caches/`, which iOS may purge under storage pressure.
+    /// That is deliberate — it keeps a large shelf from growing unbounded, and a
+    /// purge is self-healing: the next sync re-fetches.
+    nonisolated func prefetch(_ urls: [String], concurrency: Int = 4) {
+        let pending = urls
+            .filter { !$0.isEmpty && !isCached($0) }
+            .compactMap { raw -> (String, URL)? in
+                guard let url = URL(string: raw) else { return nil }
+                return (raw, url)
+            }
+        guard !pending.isEmpty else { return }
+
+        Task.detached(priority: .utility) {
+            await withTaskGroup(of: Void.self) { group in
+                var index = 0
+                func addNext() {
+                    guard index < pending.count else { return }
+                    let (key, url) = pending[index]
+                    index += 1
+                    group.addTask {
+                        guard let (data, _) = try? await URLSession.shared.data(from: url),
+                              let image = UIImage(data: data) else { return }
+                        ImageCache.shared.set(key, image: image, data: data)
+                    }
+                }
+                for _ in 0..<min(concurrency, pending.count) { addNext() }
+                while await group.next() != nil { addNext() }
+            }
+        }
+    }
 }
 
 // MARK: - Cached Async Image

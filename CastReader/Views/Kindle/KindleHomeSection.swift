@@ -47,6 +47,9 @@ struct KindleHomeSection: View {
         .sheet(isPresented: $showConnect) {
             KindleLibraryConnectView()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderKindleRebindRequested)) { _ in
+            showConnect = true
+        }
     }
 
     private var header: some View {
@@ -187,18 +190,14 @@ struct KindleCoverView: View {
     let urlString: String?
 
     var body: some View {
+        // `AsyncImage` keeps no persistent cache: it re-downloads on every
+        // appearance, so returning to Home re-fetched the whole shelf and left
+        // every cover blank until the network came back. `CachedAsyncImage` is
+        // backed by ImageCache (memory + disk), the same one the rest of the app
+        // already uses.
         if let urlString, let url = URL(string: urlString) {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image.resizable().scaledToFill()
-                case .failure:
-                    placeholder
-                case .empty:
-                    placeholder.overlay { ProgressView().scaleEffect(0.75) }
-                @unknown default:
-                    placeholder
-                }
+            CachedAsyncImage(url: url, contentMode: .fill) {
+                placeholder.overlay { ProgressView().scaleEffect(0.75) }
             }
         } else {
             placeholder

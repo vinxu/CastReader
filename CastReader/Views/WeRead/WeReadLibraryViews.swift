@@ -76,6 +76,7 @@ struct WeReadHomeSection: View {
 struct WeReadLibraryConnectView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var model = WeReadLibrarySyncViewModel()
 
     var body: some View {
@@ -84,6 +85,8 @@ struct WeReadLibraryConnectView: View {
                 WeReadWebView(webView: model.webView).ignoresSafeArea(edges: .bottom)
                 if model.showsSyncBar {
                     syncBar
+                } else if model.showsLoginGuide {
+                    loginGuideBar
                 }
             }
             .navigationTitle(AppLocalized("绑定微信读书")).navigationBarTitleDisplayMode(.inline)
@@ -97,8 +100,37 @@ struct WeReadLibraryConnectView: View {
             .onChange(of: colorScheme) { _, scheme in
                 model.updateTheme(isDark: scheme == .dark)
             }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    model.resumeAfterExternalLogin()
+                }
+            }
             .onDisappear { model.stop() }
         }.navigationViewStyle(.stack)
+    }
+
+    private var loginGuideBar: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "qrcode.viewfinder")
+                .font(.title3.weight(.semibold))
+                .foregroundColor(AppTheme.primary)
+                .frame(width: 30, height: 30)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(AppLocalized("截图二维码，用微信扫码登录"))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(AppTheme.foreground)
+                Text(AppLocalized("截图后打开微信扫一扫，从相册识别二维码。登录后会自动进入书架，供你同步到 CastReader。"))
+                    .font(.caption)
+                    .foregroundColor(AppTheme.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+        .padding(.horizontal, 14)
+        .padding(.bottom, 12)
+        .accessibilityIdentifier("weReadLoginGuide")
     }
 
     private var syncBar: some View {
@@ -111,8 +143,14 @@ struct WeReadLibraryConnectView: View {
                                 .foregroundColor(model.availableCount > 0 ? .green : AppTheme.primary)
                         }
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(model.statusText).font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.foreground).lineLimit(2)
-                            Text(model.secondaryStatus).font(.caption).foregroundColor(AppTheme.mutedForeground).lineLimit(1)
+                            Text(model.availableCount > 0
+                                 ? String(format: AppLocalized("检测到 %d 本书"), model.availableCount)
+                                 : model.statusText)
+                                .font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.foreground).lineLimit(2)
+                            Text(model.availableCount > 0
+                                 ? AppLocalized("同步后即可在 CastReader 中朗读和解读。")
+                                 : model.secondaryStatus)
+                                .font(.caption).foregroundColor(AppTheme.mutedForeground).lineLimit(2)
                         }
                         Spacer()
                     }
@@ -217,9 +255,10 @@ private struct WeReadLibraryRow: View {
 struct WeReadCoverView: View {
     let urlString: String?
     var body: some View {
-        if let urlString, let url = URL(string:urlString) {
-            AsyncImage(url:url) { phase in
-                switch phase { case .success(let image): image.resizable().scaledToFill(); case .empty: placeholder.overlay { ProgressView().scaleEffect(0.75) }; default: placeholder }
+        // Same reason as KindleCoverView: AsyncImage has no persistent cache.
+        if let urlString, let url = URL(string: urlString) {
+            CachedAsyncImage(url: url, contentMode: .fill) {
+                placeholder.overlay { ProgressView().scaleEffect(0.75) }
             }
         } else { placeholder }
     }
@@ -233,10 +272,35 @@ struct WeReadWebView: UIViewRepresentable {
 }
 
 @MainActor
+private final class WeReadLoginReplyProxy: NSObject, WKScriptMessageHandlerWithReply {
+    weak var owner: WeReadLibrarySyncViewModel?
+
+    func userContentController(
+        _ userContentController: WKUserContentController,
+        didReceive message: WKScriptMessage,
+        replyHandler: @escaping (Any?, String?) -> Void
+    ) {
+        guard let owner else {
+            replyHandler(nil, "CastReader WeRead login bridge is unavailable.")
+            return
+        }
+        owner.handleNativeLoginPoll(message.body, replyHandler: replyHandler)
+    }
+}
+
+private struct WeReadDeferredLoginRequest {
+    let uid: String
+    let otp: String
+    let requestID: String
+    let cookie: String
+}
+
+@MainActor
 final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigationDelegate {
     @Published var isScanning = false
     @Published var isSyncing = false
     @Published var showsSyncBar = false
+    @Published var showsLoginGuide = false
     @Published var availableCount = 0
     @Published var statusText = AppLocalized("打开微信读书并登录。")
     @Published var errorText: String?
@@ -246,8 +310,17 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     private var pendingBooks: [String: WeReadBook] = [:]
     private var pendingAccount: WeReadAccountInfo?
     private var loginPollingTask: Task<Void, Never>?
+    private var foregroundResumeTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
+    private var loginPresentationTask: Task<Void, Never>?
     private var isDarkMode = false
+    private var pendingLoginUID: String?
+    private var pendingNativeLoginResult: [String: Any]?
+    private var nativeLoginTask: Task<Void, Never>?
+    private var deferredNativeLoginRequest: WeReadDeferredLoginRequest?
+    private var deferredNativeLoginReply: ((Any?, String?) -> Void)?
+    private var shouldResolveNativeLoginInForeground = false
+    private let loginReplyProxy: WeReadLoginReplyProxy
 
     var secondaryStatus: String {
         if availableCount > 0 {
@@ -258,8 +331,18 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     }
 
     override init() {
+        let replyProxy = WeReadLoginReplyProxy()
+        loginReplyProxy = replyProxy
         let config = WKWebViewConfiguration(); config.websiteDataStore = .default(); config.defaultWebpagePreferences.preferredContentMode = .desktop
+        config.userContentController.addUserScript(
+            WKUserScript(
+                source: WeReadWebScripts.serverPolledLoginPresentation,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            )
+        )
         webView = WKWebView(frame:.zero, configuration:config); super.init()
+        replyProxy.owner = self
         webView.customUserAgent = WeReadWebScripts.desktopUserAgent; webView.navigationDelegate = self
     }
 
@@ -267,15 +350,19 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         let changed = isDarkMode != isDark
         isDarkMode = isDark
         webView.overrideUserInterfaceStyle = isDark ? .dark : .light
-        guard changed, didLoad, let currentURL = webView.url else { return }
-        previewTask?.cancel()
-        loginPollingTask?.cancel()
-        loginPollingTask = nil
-        WeReadNativeTheme.prepare(webView, isDark: isDark) { [weak self, weak webView] in
-            guard let self, let webView else { return }
-            self.statusText = AppLocalized("正在打开微信读书书架…")
-            webView.load(URLRequest(url: WeReadNativeTheme.themedURL(currentURL, isDark: isDark)))
-        }
+        guard changed, didLoad else { return }
+
+        // The visible QR code is bound to the exact login UID owned by the
+        // current WeRead document. Reloading for a color-scheme change creates
+        // a second UID while the user is in WeChat scanning the screenshot, so
+        // WeChat can report success although this WKWebView remains signed out.
+        // Keep this document and its polling context intact. The themed URL and
+        // cookie are prepared before the first load; a later appearance change
+        // only affects WebKit's native trait until the user explicitly reopens
+        // the binding flow.
+        #if DEBUG
+        print("[WeReadLogin] theme change applied without navigation; QR session preserved")
+        #endif
     }
 
     func loadIfNeeded() {
@@ -296,11 +383,229 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         previewTask = Task { [weak self] in await self?.handleFinishedPage() }
     }
 
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        // `didFinish` can arrive several seconds after WeRead has already
+        // painted its homepage because analytics/images are still loading.
+        // Start watching for the real visible login action as soon as the main
+        // document begins rendering. The JS contract still requires that exact
+        // control to be visible and preserves an already-issued UID, so this
+        // earlier start cannot create a duplicate QR session.
+        guard !isShelfURL(webView.url) else { return }
+        showsSyncBar = false
+        showsLoginGuide = true
+        startLoginPolling()
+        presentLoginQRCodeIfNeeded()
+    }
+
     func stop() {
         loginPollingTask?.cancel()
         loginPollingTask = nil
+        loginPresentationTask?.cancel()
+        loginPresentationTask = nil
         previewTask?.cancel()
         previewTask = nil
+    }
+
+    func resumeOfficialLoginObservation() {
+        guard didLoad else { return }
+        startLoginPolling()
+        previewTask?.cancel()
+        previewTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(350))
+            await self?.handleFinishedPage()
+        }
+    }
+
+    func preserveLoginSessionBeforeBackground() {
+        shouldResolveNativeLoginInForeground = false
+        Task { [weak self] in
+            await self?.capturePendingLoginUID()
+        }
+    }
+
+    /// The page's original 60-second login request is suspended while the
+    /// user opens WeChat on this same iPhone. Resume that exact server-issued
+    /// UID and pass the successful response through WeRead's own Vue handler.
+    func resumeAfterExternalLogin() {
+        guard didLoad else { return }
+        foregroundResumeTask?.cancel()
+        foregroundResumeTask = Task { [weak self] in
+            guard let self else { return }
+            self.shouldResolveNativeLoginInForeground = true
+            await self.capturePendingLoginUID()
+            guard self.pendingLoginUID != nil else {
+                self.resumeOfficialLoginObservation()
+                return
+            }
+
+            for attempt in 0..<12 {
+                guard !Task.isCancelled else { return }
+                let value = try? await self.webView.callAsyncJavaScript(
+                    "return await \(WeReadWebScripts.resumeServerPolledLogin);",
+                    arguments: [
+                        "loginUID": self.pendingLoginUID ?? "",
+                        "nativeLoginResult": self.pendingNativeLoginResult ?? [:],
+                    ],
+                    in: nil,
+                    contentWorld: .page
+                )
+                let payload = value as? [String: Any]
+                let state = payload?["state"] as? String ?? "unknown"
+                NSLog(
+                    "CRDBG WEREAD login native-resume state=%@ logic=%@ attempt=%d",
+                    state,
+                    payload?["logicCode"] as? String ?? "",
+                    attempt + 1
+                )
+                if state == "handled" {
+                    self.shouldResolveNativeLoginInForeground = false
+                    // The foreground WebView recovery has already handed the
+                    // successful response to WeRead's own Vue handler. Loading
+                    // the shelf destroys the old suspended fetch context, so
+                    // release our in-memory bridge references as well.
+                    self.deferredNativeLoginRequest = nil
+                    self.deferredNativeLoginReply = nil
+                    self.pendingLoginUID = nil
+                    self.pendingNativeLoginResult = nil
+                    self.loginPollingTask?.cancel()
+                    self.loginPollingTask = nil
+                    self.statusText = AppLocalized("登录成功，正在进入书架…")
+                    self.showsLoginGuide = false
+                    self.showsSyncBar = false
+                    self.webView.load(
+                        URLRequest(
+                            url: WeReadNativeTheme.themedURL(
+                                WeReadWebScripts.shelfURL,
+                                isDark: self.isDarkMode
+                            )
+                        )
+                    )
+                    return
+                }
+                try? await Task.sleep(for: .milliseconds(650))
+            }
+        }
+    }
+
+    fileprivate func handleNativeLoginPoll(
+        _ body: Any,
+        replyHandler: @escaping (Any?, String?) -> Void
+    ) {
+        guard
+            let payload = body as? [String: Any],
+            let rawUID = payload["uid"] as? String
+        else {
+            replyHandler(nil, "The WeRead login request did not contain a UID.")
+            return
+        }
+        let uid = rawUID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !uid.isEmpty, uid.count <= 512 else {
+            replyHandler(nil, "The WeRead login UID is invalid.")
+            return
+        }
+        let otp = (payload["otp"] as? String ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let requestID = (payload["requestID"] as? String ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let cookie = payload["cookie"] as? String ?? ""
+        pendingLoginUID = uid
+        if let previousReply = deferredNativeLoginReply,
+           deferredNativeLoginRequest?.uid != uid {
+            previousReply(nil, "A newer WeRead login session replaced this request.")
+        }
+        deferredNativeLoginRequest = WeReadDeferredLoginRequest(
+            uid: uid,
+            otp: otp,
+            requestID: requestID,
+            cookie: cookie
+        )
+        deferredNativeLoginReply = replyHandler
+        NSLog("CRDBG WEREAD login native-poll deferred")
+
+        // The user must leave CastReader to scan the QR code in WeChat. Do not
+        // start the one-shot getLoginInfo request here: iOS suspends/cancels it
+        // in the background and the successful result can be lost. Keep the
+        // page's fetch promise pending, then resolve it after CastReader is
+        // active again.
+        if shouldResolveNativeLoginInForeground {
+            startDeferredNativeLoginPollIfNeeded()
+        }
+    }
+
+    private func startDeferredNativeLoginPollIfNeeded() {
+        guard
+            shouldResolveNativeLoginInForeground,
+            nativeLoginTask == nil,
+            let loginRequest = deferredNativeLoginRequest,
+            let replyHandler = deferredNativeLoginReply
+        else { return }
+
+        deferredNativeLoginRequest = nil
+        deferredNativeLoginReply = nil
+        nativeLoginTask = Task { [weak self] in
+            guard let self else {
+                replyHandler(nil, "The WeRead login session ended.")
+                return
+            }
+            defer { self.nativeLoginTask = nil }
+
+            var components = URLComponents(
+                url: URL(string: "https://weread.qq.com/api/auth/getLoginInfo")!,
+                resolvingAgainstBaseURL: false
+            )!
+            components.queryItems = [
+                URLQueryItem(name: "uid", value: loginRequest.uid),
+                URLQueryItem(name: "otp", value: loginRequest.otp),
+            ]
+            guard let url = components.url else {
+                replyHandler(nil, "The WeRead login URL is invalid.")
+                return
+            }
+
+            var request = URLRequest(url: url)
+            request.timeoutInterval = 65
+            request.setValue(WeReadWebScripts.desktopUserAgent, forHTTPHeaderField: "User-Agent")
+            request.setValue("application/json", forHTTPHeaderField: "Accept")
+            if !loginRequest.requestID.isEmpty, loginRequest.requestID.count <= 512 {
+                request.setValue(loginRequest.requestID, forHTTPHeaderField: "X-SSR-Request-Id")
+            }
+            if !loginRequest.cookie.isEmpty, loginRequest.cookie.count <= 16_384 {
+                request.setValue(loginRequest.cookie, forHTTPHeaderField: "Cookie")
+            }
+            request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                guard
+                    let http = response as? HTTPURLResponse,
+                    (200..<300).contains(http.statusCode),
+                    let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                else {
+                    replyHandler(nil, "WeRead did not return a valid login response.")
+                    return
+                }
+                self.pendingNativeLoginResult = json
+                let succeeded = (json["succeed"] as? Bool) == true
+                let hasToken = !(json["accessToken"] as? String ?? "").isEmpty
+                let hasVID = json["webLoginVid"] != nil && !(json["webLoginVid"] is NSNull)
+                NSLog(
+                    "CRDBG WEREAD login native-poll completed success=%@ credentials=%@",
+                    succeeded ? "Y" : "N",
+                    (hasToken && hasVID) ? "Y" : "N"
+                )
+                replyHandler(json, nil)
+            } catch is CancellationError {
+                replyHandler(nil, "The WeRead login request was cancelled.")
+            } catch {
+                let nsError = error as NSError
+                NSLog(
+                    "CRDBG WEREAD login native-poll failed domain=%@ code=%d",
+                    nsError.domain,
+                    nsError.code
+                )
+                replyHandler(nil, "The WeRead login request failed.")
+            }
+        }
     }
 
     func syncLibrary() async -> Bool {
@@ -317,16 +622,22 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
 
     private func handleFinishedPage() async {
         guard let result = try? await evaluate(WeReadWebScripts.libraryScan) else {
+            showsLoginGuide = true
             startLoginPolling()
+            presentLoginQRCodeIfNeeded()
             return
         }
         if result.authRequired || !result.authenticated {
             resetUnauthenticatedPreview()
             statusText = AppLocalized("请先登录微信读书，登录后会自动进入书架。")
             startLoginPolling()
+            presentLoginQRCodeIfNeeded()
             return
         }
         loginPollingTask?.cancel()
+        loginPresentationTask?.cancel()
+        loginPresentationTask = nil
+        showsLoginGuide = false
         if !isShelfURL(webView.url) {
             showsSyncBar = false
             statusText = AppLocalized("正在打开微信读书书架…")
@@ -353,6 +664,7 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                 resetUnauthenticatedPreview()
                 statusText = AppLocalized("请先登录微信读书，登录后会自动进入书架。")
                 startLoginPolling()
+                presentLoginQRCodeIfNeeded()
                 return
             }
             if let label = result.account { account = WeReadAccountInfo(label: label) }
@@ -373,6 +685,16 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         statusText = String(format: AppLocalized("已找到 %d 本微信读书书籍。"), all.count)
     }
 
+    private func capturePendingLoginUID() async {
+        guard let value = try? await webView.evaluateJavaScript(
+            "String(window.__castreaderWeReadLoginSession?.uid || '')"
+        ),
+        let uid = value as? String,
+        !uid.isEmpty else { return }
+        // In-memory only. Never persist or print WeRead's one-time login UID.
+        pendingLoginUID = uid
+    }
+
     private func startLoginPolling() {
         guard loginPollingTask == nil else { return }
         loginPollingTask = Task { [weak self] in
@@ -384,6 +706,9 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                 guard let result = try? await self.evaluate(WeReadWebScripts.libraryScan),
                       !result.authRequired, result.authenticated else { continue }
                 self.statusText = AppLocalized("登录成功，正在进入书架…")
+                self.loginPresentationTask?.cancel()
+                self.loginPresentationTask = nil
+                self.showsLoginGuide = false
                 if self.isShelfURL(self.webView.url) {
                     self.showsSyncBar = true
                     await self.refreshPreview()
@@ -396,6 +721,58 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         }
     }
 
+    /// Presents WeRead's own UID-backed login modal after its Vue tree has
+    /// hydrated. Repeated observations never replace a valid UID: the JS
+    /// contract returns the existing visible QR as soon as one has been issued.
+    /// This method performs no navigation, so the screenshot, polling request
+    /// and foreground recovery all remain attached to one page document.
+    private func presentLoginQRCodeIfNeeded() {
+        guard showsLoginGuide, loginPresentationTask == nil else { return }
+        loginPresentationTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.loginPresentationTask = nil }
+            for attempt in 0..<160 {
+                guard !Task.isCancelled, self.showsLoginGuide, !self.showsSyncBar else { return }
+                let payload: [String: Any]?
+                do {
+                    let value = try await self.webView.evaluateJavaScript(WeReadWebScripts.openLoginQRCode)
+                    payload = value as? [String: Any]
+                } catch {
+                    payload = nil
+                    if attempt == 0 || attempt.isMultiple(of: 10) {
+                        let nsError = error as NSError
+                        NSLog(
+                            "CRDBG WEREAD login auto-present script-error domain=%@ code=%d",
+                            nsError.domain,
+                            nsError.code
+                        )
+                    }
+                }
+                if attempt == 0 || attempt.isMultiple(of: 10) {
+                    NSLog(
+                        "CRDBG WEREAD login auto-present state=%@ vue=%@ candidates=%@ strategy=%@",
+                        payload?["state"] as? String ?? "no-result",
+                        (payload?["vueReady"] as? Bool) == true ? "Y" : "N",
+                        String(describing: payload?["exactLoginTextCount"] ?? 0),
+                        payload?["strategy"] as? String ?? ""
+                    )
+                }
+                if let uid = payload?["loginUID"] as? String, !uid.isEmpty {
+                    self.pendingLoginUID = uid
+                }
+                if payload?["state"] as? String == "visible",
+                   self.pendingLoginUID != nil {
+                    return
+                }
+                // During initial rendering the login action usually appears
+                // within a few animation frames. A short poll avoids waiting
+                // for WKNavigationDelegate.didFinish while keeping all login
+                // state owned by WeRead's single page document.
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+        }
+    }
+
     private func isShelfURL(_ url: URL?) -> Bool {
         guard let url, url.host?.lowercased().hasSuffix("weread.qq.com") == true else { return false }
         return url.path.lowercased().contains("shelf")
@@ -403,6 +780,7 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
 
     private func resetUnauthenticatedPreview() {
         showsSyncBar = false
+        showsLoginGuide = true
         availableCount = 0
         pendingBooks = [:]
         pendingAccount = nil

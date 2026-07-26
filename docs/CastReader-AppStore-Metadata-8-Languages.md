@@ -85,6 +85,8 @@ CASTREADER PRO
 Use CastReader free every day. Upgrade to Pro for unlimited read-aloud time, unlimited AI explanations, all premium voices, and playback speeds up to 3x.
 
 Dark mode and background playback are supported. Photo text recognition happens on-device and photos are not uploaded. Reading history stays on your device.
+
+Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
 ### What’s New
@@ -155,6 +157,8 @@ CastReader Pro
 每天都可免费使用 CastReader。升级 Pro 可解锁无限朗读时长、无限 AI 解读、全部高级音色，以及最高 3 倍语速。
 
 支持深色模式与后台播放。照片文字在设备端识别，照片不会上传；阅读历史仅保存在本机。
+
+使用条款（EULA）：https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
 ### 此版本更新
@@ -225,6 +229,8 @@ CastReader Pro
 CastReaderは毎日無料で利用できます。Proでは読み上げとAI解説が無制限になり、すべてのプレミアム音声と最大3倍速の再生を利用できます。
 
 ダークモードとバックグラウンド再生に対応。写真の文字認識は端末上で行われ、写真はアップロードされません。読書履歴も端末内に保存されます。
+
+利用規約（EULA）：https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
 ### 新機能
@@ -295,6 +301,8 @@ CASTREADER PRO
 Utiliza CastReader gratis todos los días. Pásate a Pro para disfrutar de lectura y explicaciones con IA ilimitadas, todas las voces premium y velocidades de hasta 3x.
 
 Compatible con modo oscuro y reproducción en segundo plano. El texto de las fotos se reconoce en el dispositivo y las fotos no se suben. El historial de lectura permanece en tu dispositivo.
+
+Términos de uso (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
 ### Novedades
@@ -365,6 +373,8 @@ CASTREADER PRO
 Utilisez CastReader gratuitement chaque jour. Passez à Pro pour profiter de la lecture et des explications IA illimitées, de toutes les voix premium et d’une vitesse allant jusqu’à 3x.
 
 Mode sombre et lecture en arrière-plan disponibles. Le texte des photos est reconnu sur l’appareil et les photos ne sont pas envoyées. L’historique de lecture reste sur votre appareil.
+
+Conditions d’utilisation (EULA) : https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
 ### Nouveautés
@@ -435,6 +445,8 @@ CASTREADER PRO
 Use o CastReader gratuitamente todos os dias. Assine o Pro para ter leitura e explicações com IA ilimitadas, todas as vozes premium e velocidade de reprodução de até 3x.
 
 Compatível com modo escuro e reprodução em segundo plano. O texto das fotos é reconhecido no dispositivo e as fotos não são enviadas. O histórico de leitura fica no seu dispositivo.
+
+Termos de Uso (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
 ### Novidades
@@ -505,6 +517,8 @@ CASTREADER PRO
 Usa CastReader gratuitamente ogni giorno. Passa a Pro per lettura e spiegazioni IA illimitate, tutte le voci premium e velocità di riproduzione fino a 3x.
 
 Sono disponibili modalità scura e riproduzione in background. Il testo delle foto viene riconosciuto sul dispositivo e le foto non vengono caricate. La cronologia di lettura resta sul dispositivo.
+
+Termini di utilizzo (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
 ### Novità
@@ -575,6 +589,8 @@ CASTREADER PRO
 CastReader का हर दिन मुफ़्त उपयोग करें। असीमित रीड-अलाउड, असीमित AI व्याख्या, सभी प्रीमियम आवाज़ें और 3x तक गति के लिए Pro में अपग्रेड करें।
 
 डार्क मोड और बैकग्राउंड प्लेबैक उपलब्ध हैं। फ़ोटो का टेक्स्ट डिवाइस पर पहचाना जाता है और फ़ोटो अपलोड नहीं होतीं। पढ़ने का इतिहास आपके डिवाइस पर रहता है।
+
+उपयोग की शर्तें (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 ```
 
 ### नया क्या है

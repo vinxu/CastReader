@@ -4,7 +4,7 @@ import {
   recognizeVerticalJapanesePage,
 } from './vertical-japanese-ocr.js';
 
-const supportedModels = new Set(['eng', 'chi_sim', 'jpn', 'jpn_vert', 'spa', 'fra', 'por', 'ita', 'hin']);
+const supportedModels = new Set(['eng', 'chi_sim', 'jpn', 'jpn_vert', 'spa', 'fra', 'deu', 'por', 'ita', 'hin']);
 let engine = null;
 let loadedModel = '';
 let engineLoading = Promise.resolve();

@@ -37,7 +37,7 @@ abort "ShareInbox.swift is missing from the app" unless app.source_build_phase.f
 abort "ShareInbox.swift is missing from the extension" unless share.source_build_phase.files_references.any? { |ref| ref.path == "ShareInbox.swift" }
 
 catalog = JSON.parse(File.read(File.join(root, "CastReader Share Extension/Localizable.xcstrings")))
-required_locales = %w[en zh-Hans ja es fr pt-BR it hi]
+required_locales = %w[en zh-Hans ja es fr de pt-BR it hi]
 %w[
   share_title share_detail share_document share_image share_text
   share_save share_importing share_saved share_failed share_success_title
@@ -83,4 +83,4 @@ abort "Share extension still offers non-executable Read/Explain choices" if exte
 abort "Share extension does not close after saving" unless extension_controller.include?("completeRequest(returningItems: nil)")
 abort "Share extension does not read the shared in-app language" unless extension_controller.include?("UserDefaults(suiteName: appGroup)")
 
-puts "Share Extension + durable content inbox contract OK: one-step save, target embedding, retry/delete, unread state, retention cap, and 8 locales."
+puts "Share Extension + durable content inbox contract OK: one-step save, target embedding, retry/delete, unread state, retention cap, and 9 locales."

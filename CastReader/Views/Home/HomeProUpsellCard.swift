@@ -3,7 +3,7 @@
 //  CastReader
 //
 //  Compact home conversion card. The artwork is deliberately text-free so
-//  every visible word can follow the app's eight-language runtime bundle.
+//  every visible word can follow the app's nine-language runtime bundle.
 //
 
 import StoreKit
@@ -88,7 +88,7 @@ struct HomeProUpsellCard: View {
                 .foregroundColor(AppTheme.foreground)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text(AppLocalized("Kindle 连续朗读 · 100+ 专业音色 · 8 种语言"))
+            Text(AppLocalized("Kindle 连续朗读 · 100+ 专业音色 · 9 种语言"))
                 .font(.subheadline)
                 .foregroundColor(AppTheme.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)

@@ -181,6 +181,7 @@ struct WebReaderView: UIViewRepresentable {
     let mode: ReaderMode
     let refocusToken: Int
     let initialSurfaceSize: CGSize
+    @ObservedObject var weReadTOC: WeReadTOCController
 
     func makeCoordinator() -> WebReaderBridge { WebReaderBridge() }
 
@@ -203,6 +204,12 @@ struct WebReaderView: UIViewRepresentable {
             ))
             controller.addUserScript(WKUserScript(
                 source: WeReadWebScripts.readerBridge,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true,
+                in: .page
+            ))
+            controller.addUserScript(WKUserScript(
+                source: WeReadWebScripts.tocBridge,
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true,
                 in: .page
@@ -232,6 +239,12 @@ struct WebReaderView: UIViewRepresentable {
             : CGRect(origin: .zero, size: initialSurfaceSize)
         let webView = WKWebView(frame: initialWebViewFrame, configuration: config)
         if document.sourceKind == .weread {
+#if DEBUG
+            // Keep the development reader inspectable so WeRead DOM/framework
+            // changes can be verified against the live authenticated page.
+            // This has no effect in App Store builds.
+            webView.isInspectable = true
+#endif
             webView.customUserAgent = WeReadWebScripts.desktopUserAgent
             webView.overrideUserInterfaceStyle = colorScheme == .dark ? .dark : .light
             let compact = initialSurfaceSize.width <= WeReadViewportCrop.compactReaderBreakpoint ? "Y" : "N"
@@ -247,6 +260,9 @@ struct WebReaderView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         context.coordinator.configure(expectsDynamicWebContent: document.sourceKind == .web, isWeRead: document.sourceKind == .weread)
         context.coordinator.attach(readVM: readVM, explainVM: explainVM)
+        if document.sourceKind == .weread {
+            context.coordinator.attachWeReadTOC(weReadTOC, bookID: document.id)
+        }
 
         let isDarkMode = colorScheme == .dark
         let loadAction = {

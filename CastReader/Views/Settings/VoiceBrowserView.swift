@@ -131,6 +131,9 @@ struct VoiceBrowserView: View {
                     }
                 }
             }
+            // Inside the NavigationStack on purpose — an inset applied outside it
+            // never reaches this ScrollView.
+            .reservesMiniPlayerSpace()
             .background(AppTheme.background)
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("音色")

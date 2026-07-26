@@ -5,6 +5,7 @@
 
 import Combine
 import AVFoundation
+import CryptoKit
 import SwiftUI
 import UIKit
 import WebKit
@@ -203,9 +204,35 @@ struct KindleBookView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
+            // What a browser gives you and a bare WKWebView does not: proof that
+            // something is happening. Before the first byte arrives there is no
+            // page, so Kindle's own spinner cannot exist yet — measured on device,
+            // Amazon once took 31s to answer, and all the user saw was white.
+            // This only mirrors `estimatedProgress`; it makes no judgement about
+            // when the book is "ready".
+            if model.isNavigating {
+                GeometryReader { proxy in
+                    Capsule()
+                        .fill(AppTheme.primary)
+                        .frame(width: proxy.size.width * max(0.03, model.loadProgress), height: 2.5)
+                        .animation(.easeOut(duration: 0.25), value: model.loadProgress)
+                }
+                .frame(height: 2.5)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .allowsHitTesting(false)
+            }
             preparingStatusOverlay
             if model.isStaleBookEntryError {
                 staleBookRecoveryOverlay
+            }
+            // Topmost: hides both Amazon's sign-in page and the shelf being
+            // loaded to reactivate the session. If recovery fails the cover is
+            // removed so the user can complete a real sign-in.
+            if model.contentCover != nil {
+                authRecoveryOverlay
+            }
+            if model.needsKindleRebind {
+                kindleRebindOverlay
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -215,6 +242,49 @@ struct KindleBookView: View {
                 Color.clear.preference(key: KindleReaderSurfaceSizePreferenceKey.self, value: proxy.size)
             }
         )
+    }
+
+    private var kindleRebindOverlay: some View {
+        ZStack {
+            AppTheme.background
+            VStack(spacing: 14) {
+                Image(systemName: "person.crop.circle.badge.exclamationmark")
+                    .font(.system(size: 30, weight: .semibold))
+                    .foregroundStyle(AppTheme.primary)
+                Text("Kindle 登录已失效")
+                    .font(.headline)
+                Text("需要重新绑定 Amazon 账号才能继续。重新绑定并同步后，书架和听书进度都会回来。")
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.mutedForeground)
+                    .multilineTextAlignment(.center)
+                Button {
+                    model.startKindleRebind()
+                } label: {
+                    Text("重新绑定 Kindle").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppTheme.primary)
+                Button("返回") {
+                    KindlePlaybackCenter.shared.close()
+                }
+            }
+            .padding(22)
+            .frame(maxWidth: 380)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var authRecoveryOverlay: some View {
+        ZStack {
+            AppTheme.background
+            VStack(spacing: 12) {
+                ProgressView().tint(AppTheme.primary)
+                Text(model.contentCover ?? "")
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.mutedForeground)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var staleBookRecoveryOverlay: some View {
@@ -1164,28 +1234,144 @@ private extension View {
     }
 }
 
+extension Notification.Name {
+    /// Posted when the reader has given up on an expired Amazon session and the
+    /// user chose to rebind. Home listens and opens the Kindle connect flow.
+    static let castReaderKindleRebindRequested = Notification.Name("castreader.kindle.rebindRequested")
+}
+
 enum KindleRunLog {
+    #if DEBUG
+    /// One banner per process launch. Without it a relaunch cannot be told apart
+    /// from a long-lived session when the probe log is read hours later, and the
+    /// two have very different implications for an expired Amazon session.
+    private static let launchMarker: Void = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        append("\n===== launch \(formatter.string(from: Date())) =====\n")
+    }()
+    #endif
+
     static func write(_ message: String) {
         #if DEBUG
+        _ = launchMarker
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss"
-        let line = "\(formatter.string(from: Date())) [\(UIApplication.shared.applicationState.debugName)] \(message)\n"
+        append("\(formatter.string(from: Date())) [\(UIApplication.shared.applicationState.debugName)] \(message)\n")
+        #endif
+    }
+
+    #if DEBUG
+    private static func append(_ text: String) {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
         let url = docs.appendingPathComponent("kindle-background-probe.log")
         if !FileManager.default.fileExists(atPath: url.path) {
-            try? Data(line.utf8).write(to: url, options: .atomic)
+            try? Data(text.utf8).write(to: url, options: .atomic)
             return
         }
         guard let handle = try? FileHandle(forWritingTo: url) else { return }
         do {
             try handle.seekToEnd()
-            try handle.write(contentsOf: Data(line.utf8))
+            try handle.write(contentsOf: Data(text.utf8))
             try handle.close()
         } catch {
             try? handle.close()
         }
+    }
+    #endif
+}
+
+/// Read-only diagnostics for the Amazon session behind the Kindle WebViews.
+/// Observation only: nothing here changes navigation, cookies or reader state.
+///
+/// Cookie *values* are never written to the log. Each value is reduced to a
+/// truncated one-way digest, which is enough to see a token rotate or vanish
+/// between a working and a failing book open, and never enough to reconstruct
+/// the credential.
+enum KindleSessionProbe {
+    /// Classifies where a navigation actually landed. Amazon answers an expired
+    /// reader session with a 302 into the OpenID sign-in portal, so the finished
+    /// URL is the only reliable signal that the page on screen is not a book.
+    static func landingKind(_ rawURL: String) -> String {
+        let lower = rawURL.lowercased()
+        if lower.contains("/ap/signin") || lower.contains("/ap/cvf")
+            || lower.contains("authportal") || lower.contains("openid.") {
+            return "auth"
+        }
+        if lower.contains("kindle-library") { return "library" }
+        if lower.contains("read.amazon.") { return "reader" }
+        if lower.isEmpty { return "empty" }
+        return "other"
+    }
+
+    @MainActor
+    static func logCookies(reason: String) {
+        #if DEBUG
+        WKWebsiteDataStore.default().httpCookieStore.getAllCookies { cookies in
+            let amazon = cookies
+                .filter { $0.domain.lowercased().contains("amazon.") }
+                .sorted { $0.name < $1.name }
+            guard !amazon.isEmpty else {
+                KindleRunLog.write("KINDLE cookies reason=\(reason) count=0 total=\(cookies.count)")
+                return
+            }
+            let now = Date()
+            // The all-domain total is logged alongside so a store-wide event
+            // (rather than an Amazon-specific one) is visible as a change here.
+            let described = amazon.map { cookie -> String in
+                let expiry: String
+                if let date = cookie.expiresDate {
+                    expiry = "\(Int(date.timeIntervalSince(now) / 60))m"
+                } else {
+                    expiry = "session"
+                }
+                return "\(cookie.name)|\(cookie.domain)|exp=\(expiry)|v=\(digest(cookie.value))"
+            }
+            KindleRunLog.write(
+                "KINDLE cookies reason=\(reason) count=\(amazon.count) total=\(cookies.count) \(described.joined(separator: " "))"
+            )
+        }
         #endif
+    }
+
+    #if DEBUG
+    private static func digest(_ value: String) -> String {
+        let hash = SHA256.hash(data: Data(value.utf8))
+        let hex = hash.map { String(format: "%02x", $0) }.joined()
+        return String(hex.prefix(8))
+    }
+    #endif
+}
+
+/// Tracks when the reader and the shelf were last known-good, so a failing open
+/// can be read against how stale the Amazon session was at that moment.
+enum KindleSessionFreshness {
+    private static let readerKey = "kindle.probe.lastReaderOK"
+    private static let shelfKey = "kindle.probe.lastShelfOK"
+
+    static func markReaderOK() {
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: readerKey)
+    }
+
+    static func markShelfOK() {
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: shelfKey)
+    }
+
+    static var sinceReaderOK: String { elapsed(readerKey) }
+    static var sinceShelfOK: String { elapsed(shelfKey) }
+
+    /// Minutes since the shelf last loaded successfully; `nil` if never.
+    static var minutesSinceShelfOK: Int? {
+        let raw = UserDefaults.standard.double(forKey: shelfKey)
+        guard raw > 0 else { return nil }
+        return Int((Date().timeIntervalSince1970 - raw) / 60)
+    }
+
+    private static func elapsed(_ key: String) -> String {
+        let raw = UserDefaults.standard.double(forKey: key)
+        guard raw > 0 else { return "never" }
+        return "\(Int((Date().timeIntervalSince1970 - raw) / 60))m"
     }
 }
 
@@ -1332,7 +1518,7 @@ final class KindlePlaybackCenter: ObservableObject {
             KindleRunLog.write("KINDLE audiobook cold continue ignored book=\(String(book.id.prefix(24))) reason=no-live-session")
         }
         isPresented = true
-        old?.stopAll()
+        old?.destroy()
     }
 
     func replaceAfterLibraryRecovery(current: KindleBookViewModel, book: KindleBook) {
@@ -1342,6 +1528,7 @@ final class KindlePlaybackCenter: ObservableObject {
         }
         let next = KindleBookViewModel(book: book, staleRecoveryAlreadyAttempted: true)
         model = next
+        current.destroy()
         AppOrientationLock.unlock(owner: Self.orientationOwner)
         isPresented = true
         KindleRunLog.write("KINDLE stale-entry fresh-reader created book=\(String(book.id.prefix(24)))")
@@ -1372,7 +1559,7 @@ final class KindlePlaybackCenter: ObservableObject {
         model = nil
         isPresented = false
         AppOrientationLock.unlock(owner: Self.orientationOwner)
-        active?.stopAll()
+        active?.destroy()
     }
 
     func clear(ifModel candidate: KindleBookViewModel) {
@@ -1380,6 +1567,7 @@ final class KindlePlaybackCenter: ObservableObject {
         model = nil
         isPresented = false
         AppOrientationLock.unlock(owner: Self.orientationOwner)
+        candidate.destroy()
     }
 }
 
@@ -1565,6 +1753,25 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     @Published private(set) var staleBookRecoveryMessage: String?
     @Published private(set) var staleBookRecoveryProgressText = AppLocalized("正在准备…")
     @Published private(set) var libraryRecoveryWebView: WKWebView?
+    /// Set while the Amazon reader session is being reactivated behind a cover.
+    /// The sign-in page must never be the thing the user is left looking at.
+    /// Only ever set while the Amazon session is being repaired. Normal loading
+    /// is deliberately NOT covered: the reader is an ordinary web page and should
+    /// behave like one. The cover exists for exactly one reason — the user must
+    /// not be left staring at Amazon's sign-in form while we fix it.
+    @Published private(set) var contentCover: String?
+    /// Straight mirrors of the WebView's own loading state — no interpretation.
+    @Published private(set) var isNavigating = false
+    @Published private(set) var loadProgress: Double = 0
+    /// Recovery is exhausted and Amazon still refuses the session: the account
+    /// must be bound again. Surfaced as a native card because a bare Amazon
+    /// sign-in form inside the reader tells the user nothing about what to do.
+    @Published private(set) var needsKindleRebind = false
+    /// One automatic repair per reader session; reset once a book actually
+    /// opens, so a signed-out account cannot spin here.
+    private var authRecoveryAttempted = false
+    private var lastMainFrameStatus: Int?
+    private var authRecoveryTask: Task<Void, Never>?
     private var lastNativeTOCSelectionText: String?
     private var lastNativeTOCSelectionPageKey: String?
     private var nativeTOCTask: Task<Void, Never>?
@@ -2284,15 +2491,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         config.websiteDataStore = .default()
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         let userContentController = WKUserContentController()
+        // Only the metadata bootstrap runs at document start, and only because it
+        // wraps `window.fetch` — it has to be in place before Amazon's own code
+        // captures a reference. It is ~13KB.
+        //
+        // pageCaptureBootstrap (~207KB) deliberately does NOT go here. It installs
+        // no early hooks and guards itself with a version check, so it can be
+        // injected on demand. Measured against a signed-in desktop browser, the
+        // whole Cloud Reader page is 323KB across 7 scripts and loads in ~2s;
+        // injecting another 207KB synchronously before every single navigation —
+        // including the sign-in page and the shelf — was a large part of the 16s
+        // gap between "HTTP 200 arrived" and "didFinish".
         if #available(iOS 14.0, *) {
             userContentController.addUserScript(WKUserScript(
                 source: KindleWebScripts.metadataBootstrap,
-                injectionTime: .atDocumentStart,
-                forMainFrameOnly: true,
-                in: .page
-            ))
-            userContentController.addUserScript(WKUserScript(
-                source: KindleWebScripts.pageCaptureBootstrap,
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true,
                 in: .page
@@ -2303,14 +2515,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true
             ))
-            userContentController.addUserScript(WKUserScript(
-                source: KindleWebScripts.pageCaptureBootstrap,
-                injectionTime: .atDocumentStart,
-                forMainFrameOnly: true
-            ))
         }
         config.userContentController = userContentController
         webView = WKWebView(frame: .zero, configuration: config)
+#if DEBUG
+        // Match the WeRead reader: keep the development Kindle reader inspectable so its
+        // authenticated requests can be compared against the Android client. No effect in
+        // App Store builds.
+        webView.isInspectable = true
+#endif
         webView.customUserAgent = KindleWebScripts.desktopChromeUserAgent
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.scrollView.contentInset = .zero
@@ -2334,9 +2547,45 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 self?.handlePlaybackVoiceWillSwitch(notification)
             }
             .store(in: &cancellables)
+
+        webView.publisher(for: \.isLoading)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] in self?.isNavigating = $0 }
+            .store(in: &cancellables)
+        webView.publisher(for: \.estimatedProgress)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] in self?.loadProgress = $0 }
+            .store(in: &cancellables)
+    }
+
+    /// Explicit teardown — the only correct place for it.
+    ///
+    /// `WKUserContentController` retains its script message handler **strongly**,
+    /// so registering `self` creates view model → webView → configuration →
+    /// userContentController → view model. That cycle means `deinit` can never
+    /// run, which is exactly where the old teardown lived: replaced readers kept
+    /// loading read.amazon.com with their delegates attached, and four of them at
+    /// once turned a 1s redirect into 13s, then 31s, then four timeouts.
+    ///
+    /// Every path that stops owning a reader must call this. Do not move any of
+    /// it back into `deinit`.
+    func destroy() {
+        stopAll()
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "castReaderKindle")
+        webView.configuration.userContentController.removeAllUserScripts()
+        webView.navigationDelegate = nil
+        webView.uiDelegate = nil
+        webView.scrollView.delegate = nil
+        webView.stopLoading()
+        cancellables.removeAll()
+        libraryRecoveryWebView?.stopLoading()
+        libraryRecoveryWebView = nil
+        KindleRunLog.write("KINDLE reader destroyed book=\(Self.keyLog(book.id))")
     }
 
     deinit {
+        // Best effort only. This will not run while the content-controller cycle
+        // above is intact, which is why `destroy()` exists.
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "castReaderKindle")
     }
 
@@ -2637,7 +2886,24 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         let finishedURL = webView.url?.absoluteString ?? ""
-        KindleRunLog.write("KINDLE webview didFinish url=\(finishedURL)")
+        // Observation only: the landing kind is recorded but deliberately does
+        // not gate the existing reader setup, so this probe cannot change how a
+        // failing open behaves while we are still collecting data.
+        let landing = KindleSessionProbe.landingKind(finishedURL)
+        KindleRunLog.write("KINDLE webview didFinish landing=\(landing) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK) url=\(finishedURL)")
+        KindleSessionProbe.logCookies(reason: "book-didFinish-\(landing)")
+        if landing == "reader" {
+            KindleSessionFreshness.markReaderOK()
+            authRecoveryAttempted = false
+            contentCover = nil
+        }
+        // The one case we step in for: Amazon replaced the book with its sign-in
+        // page. Reader setup would otherwise spend 12s failing against a form and
+        // then tell the user the book is ready to play.
+        if landing == "auth" {
+            startAuthRecovery()
+            return
+        }
         if isStaleBookRecovering, finishedURL.contains("kindle-library") {
             readerSetupTask?.cancel()
             readerSetupTask = nil
@@ -2791,6 +3057,90 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
     }
 
+    // MARK: - Amazon 会话恢复（落到登录页时）
+
+    /// Amazon gates `read.amazon.com/?asin=` behind a reader session that only
+    /// its own shelf client reactivates. Measured on device: seven consecutive
+    /// book opens kept landing on the sign-in portal and never self-healed, then
+    /// a single `/kindle-library` load — with no sync and no scraping — made the
+    /// very next open succeed. So: load the shelf, then retry the book.
+    private func startAuthRecovery() {
+        guard contentCover == nil, !needsKindleRebind else { return }
+        guard !authRecoveryAttempted else {
+            contentCover = nil
+            statusText = AppLocalized("Kindle 登录已过期，请重新登录并同步书架。")
+            needsKindleRebind = true
+            KindleRunLog.write("KINDLE auth-recovery exhausted book=\(Self.keyLog(book.id)) needs-rebind")
+            return
+        }
+        authRecoveryAttempted = true
+        contentCover = AppLocalized("正在恢复 Kindle 会话…")
+        statusText = AppLocalized("正在恢复 Kindle 会话…")
+        KindleRunLog.write("KINDLE auth-recovery start book=\(Self.keyLog(book.id)) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
+
+        authRecoveryTask?.cancel()
+        authRecoveryTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let warmed = await self.warmShelfSession()
+            guard !Task.isCancelled else { return }
+            self.authRecoveryTask = nil
+            if warmed {
+                KindleRunLog.write("KINDLE auth-recovery shelf-warmed retrying book=\(Self.keyLog(self.book.id))")
+                self.load(self.book.effectiveReaderURL, reason: "auth-recovery-retry")
+            } else {
+                // The shelf itself is refused, so this is not a stale reader
+                // session — the account is signed out.
+                self.contentCover = nil
+                self.statusText = AppLocalized("Kindle 登录已过期，请重新登录并同步书架。")
+                self.needsKindleRebind = true
+                KindleRunLog.write("KINDLE auth-recovery shelf-failed book=\(Self.keyLog(self.book.id)) needs-rebind")
+            }
+        }
+    }
+
+    /// Clears the dead Amazon session, closes the reader and hands the user to
+    /// the Kindle connect flow. Reading positions are kept so rebinding restores
+    /// where they were.
+    func startKindleRebind() {
+        KindleRunLog.write("KINDLE rebind requested book=\(Self.keyLog(book.id))")
+        needsKindleRebind = false
+        Task { @MainActor in
+            await store.markSessionExpiredForRebind()
+            KindlePlaybackCenter.shared.close()
+            NotificationCenter.default.post(name: .castReaderKindleRebindRequested, object: nil)
+        }
+    }
+
+    /// Loads the shelf purely to reactivate the session. Nothing is scraped —
+    /// the page load itself is the whole mechanism. Uses the shelf-client
+    /// configuration (no desktop reader UA, no reader scripts) because that is
+    /// the client Amazon refreshes the book session for.
+    private func warmShelfSession() async -> Bool {
+        let warmer = makeLibraryRecoveryWebView()
+        libraryRecoveryWebView = warmer
+        defer { libraryRecoveryWebView = nil }
+        warmer.load(URLRequest(url: KindleWebScripts.libraryURL, cachePolicy: .reloadIgnoringLocalCacheData))
+
+        for _ in 0..<60 {   // ~15s
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            if Task.isCancelled { return false }
+            guard !warmer.isLoading else { continue }
+            switch KindleSessionProbe.landingKind(warmer.url?.absoluteString ?? "") {
+            case "library":
+                KindleSessionFreshness.markShelfOK()
+                KindleSessionProbe.logCookies(reason: "auth-recovery-shelf-ok")
+                return true
+            case "auth":
+                KindleRunLog.write("KINDLE auth-recovery shelf landed=auth")
+                return false
+            default:
+                continue
+            }
+        }
+        KindleRunLog.write("KINDLE auth-recovery shelf timeout")
+        return false
+    }
+
     private func makeLibraryRecoveryWebView() -> WKWebView {
         // Keep this configuration aligned with KindleLibrarySyncViewModel. In
         // particular, do not set the desktop reader UA and do not inject reader
@@ -2799,6 +3149,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         config.websiteDataStore = .default()
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         let recovery = WKWebView(frame: .zero, configuration: config)
+#if DEBUG
+        recovery.isInspectable = true
+#endif
         recovery.scrollView.contentInsetAdjustmentBehavior = .never
         recovery.scrollView.contentInset = .zero
         recovery.scrollView.scrollIndicatorInsets = .zero
@@ -2811,14 +3164,63 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         finishKindleSyncDialog(reason: "navigation-start")
         KindleRunLog.write("KINDLE webview didStart url=\(webView.url?.absoluteString ?? "")")
+        // Authoritative "what did we send" snapshot. The pre-load one is empty on
+        // the first open of a launch because the shared cookie store is not
+        // populated until the WebView's network process exists.
+        KindleSessionProbe.logCookies(reason: "book-didStart")
+    }
+
+    /// HTTP status of the main-frame response. An expired session shows up as a
+    /// 302 into the sign-in portal, while a genuine 401/403 means the request was
+    /// rejected outright — worth telling apart before blaming the session.
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationResponse: WKNavigationResponse,
+        decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
+    ) {
+        if navigationResponse.isForMainFrame,
+           let http = navigationResponse.response as? HTTPURLResponse {
+            let url = http.url?.absoluteString ?? ""
+            let landing = KindleSessionProbe.landingKind(url)
+            lastMainFrameStatus = http.statusCode
+            KindleRunLog.write("KINDLE webview response status=\(http.statusCode) landing=\(landing) url=\(url)")
+
+            // Act on the response, not on `didFinish`. Amazon's sign-in page
+            // does not reliably finish loading — measured on device: the response
+            // arrived in 1s and `didFinish` never came at all. Everything else is
+            // left alone; the reader is an ordinary web page.
+            if landing == "auth" {
+                Task { @MainActor [weak self] in self?.startAuthRecovery() }
+            }
+        }
+        decisionHandler(.allow)
+    }
+
+    /// Records each server-side hop. A reader URL that ends on the sign-in portal
+    /// gets there through Amazon's redirect chain, and only these hops show where
+    /// the session is judged stale.
+    func webView(_ webView: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation!) {
+        let url = webView.url?.absoluteString ?? ""
+        KindleRunLog.write("KINDLE webview redirect landing=\(KindleSessionProbe.landingKind(url)) url=\(url)")
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         KindleRunLog.write("KINDLE webview didFail url=\(webView.url?.absoluteString ?? "") error=\(error.localizedDescription)")
+        routeTransportFailure(error, reason: "didFail")
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         KindleRunLog.write("KINDLE webview didFailProvisional url=\(webView.url?.absoluteString ?? "") error=\(error.localizedDescription)")
+        routeTransportFailure(error, reason: "didFailProvisional")
+    }
+
+    /// Recorded for diagnosis only. A failed load is left to the WebView, the
+    /// same as any other web page — inventing app-side retry ladders for it is
+    /// what made this screen complicated in the first place.
+    private func routeTransportFailure(_ error: Error, reason: String) {
+        let code = (error as NSError).code
+        guard code != NSURLErrorCancelled else { return }
+        KindleRunLog.write("KINDLE transport failure \(reason) code=\(code)")
     }
 
     private func schedulePendingContinueListening(reason: String) {
@@ -4559,6 +4961,16 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         readVM?.deactivate()
         explainVM?.deactivate()
         playbackCancellables.removeAll()
+        // A replaced reader used to keep its WKWebView loading read.amazon.com in
+        // the background with its delegate still attached. Four such leftovers
+        // hammering the same host turned a 1s redirect into 13s, then 31s, then
+        // four timeouts — and each one independently started its own session
+        // recovery. Tear the transport down with the view model.
+        authRecoveryTask?.cancel()
+        authRecoveryTask = nil
+        contentCover = nil
+        webView.stopLoading()
+        webView.navigationDelegate = nil
         Task { _ = try? await evaluateJSON("window.__crKindleLiveClear && window.__crKindleLiveClear()") }
     }
 
@@ -9598,12 +10010,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE webview load failed-invalid reason=\(reason) raw=\(Self.keyLog(raw))")
             return
         }
-        KindleRunLog.write("KINDLE webview load reason=\(reason) raw=\(Self.keyLog(raw)) url=\(url.absoluteString) last=\(Self.keyLog(book.lastReadURL ?? ""))")
+        KindleRunLog.write("KINDLE webview load reason=\(reason) raw=\(Self.keyLog(raw)) url=\(url.absoluteString) last=\(Self.keyLog(book.lastReadURL ?? "")) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
+        KindleSessionProbe.logCookies(reason: "book-load-\(reason)")
         webView.load(URLRequest(url: url))
     }
 
+    /// Now the only place the capture bootstrap is injected — it used to run here
+    /// *and* at document start on every navigation, paying the 207KB parse twice.
+    /// Metadata is already installed by the user script, so it is not repeated.
     private func installCaptureScript() {
-        webView.evaluateJavaScript(KindleWebScripts.metadataBootstrap, completionHandler: nil)
         webView.evaluateJavaScript(KindleWebScripts.pageCaptureBootstrap, completionHandler: nil)
     }
 

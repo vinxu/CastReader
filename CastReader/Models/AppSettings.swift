@@ -15,6 +15,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     case japanese = "ja"
     case spanish = "es"
     case french = "fr"
+    case german = "de"
     case brazilianPortuguese = "pt-BR"
     case italian = "it"
     case hindi = "hi"
@@ -33,6 +34,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         case .japanese: return Locale(identifier: "ja_JP")
         case .spanish: return Locale(identifier: "es_ES")
         case .french: return Locale(identifier: "fr_FR")
+        case .german: return Locale(identifier: "de_DE")
         case .brazilianPortuguese: return Locale(identifier: "pt_BR")
         case .italian: return Locale(identifier: "it_IT")
         case .hindi: return Locale(identifier: "hi_IN")
@@ -49,6 +51,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         case .japanese: return "日本語"
         case .spanish: return "Español"
         case .french: return "Français"
+        case .german: return "Deutsch"
         case .brazilianPortuguese: return "Português (Brasil)"
         case .italian: return "Italiano"
         case .hindi: return "हिन्दी"
@@ -120,7 +123,7 @@ extension ShareInboxRecord {
             semanticFallback = fallbackTitle
         } else {
             // Records saved before semantic fallbacks were introduced contain
-            // one of these eight already-translated placeholders.
+            // one of these already-translated placeholders.
             switch kind {
             case .image:
                 semanticFallback = Self.legacyImageTitles.contains(title) ? .image : nil
@@ -142,15 +145,16 @@ extension ShareInboxRecord {
 
     private static let legacyDocumentTitles: Set<String> = [
         "Shared document", "分享的文档", "共有ドキュメント", "Documento compartido",
-        "Document partagé", "Documento compartilhado", "Documento condiviso", "साझा दस्तावेज़",
+        "Document partagé", "Geteiltes Dokument", "Documento compartilhado",
+        "Documento condiviso", "साझा दस्तावेज़",
     ]
     private static let legacyTextTitles: Set<String> = [
         "Shared text", "分享的文本", "共有テキスト", "Texto compartido", "Texte partagé",
-        "Texto compartilhado", "Testo condiviso", "साझा किया गया टेक्स्ट",
+        "Geteilter Text", "Texto compartilhado", "Testo condiviso", "साझा किया गया टेक्स्ट",
     ]
     private static let legacyImageTitles: Set<String> = [
         "Shared image", "分享的图片", "共有画像", "Imagen compartida", "Image partagée",
-        "Imagem compartilhada", "Immagine condivisa", "साझा की गई छवि",
+        "Geteiltes Bild", "Imagem compartilhada", "Immagine condivisa", "साझा की गई छवि",
     ]
 }
 

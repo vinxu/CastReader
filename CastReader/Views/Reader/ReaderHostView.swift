@@ -13,6 +13,131 @@ enum ReaderMode: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+/// Matches Kindle's native TOC sheet so both bound-library readers have the
+/// same hierarchy, active-chapter indicator and loading/error interaction.
+private struct WeReadNativeTOCPanel: View {
+    let entries: [WeReadTOCEntry]
+    let isLoading: Bool
+    let errorText: String?
+    let isLandscape: Bool
+    let close: () -> Void
+    let select: (WeReadTOCEntry) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Text(AppLocalized("目录"))
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(AppTheme.foreground)
+                Spacer()
+                Button(action: close) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(AppTheme.mutedForeground)
+                        .frame(width: 34, height: 34)
+                        .background(AppTheme.surfaceVariant, in: Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, isLandscape ? 18 : 14)
+            .padding(.bottom, 10)
+
+            Divider()
+
+            Group {
+                if isLoading && entries.isEmpty {
+                    VStack(spacing: 12) {
+                        ProgressView().tint(AppTheme.primary)
+                        Text(AppLocalized("正在加载目录…"))
+                            .font(.subheadline)
+                            .foregroundColor(AppTheme.mutedForeground)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let errorText, entries.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "list.bullet.rectangle")
+                            .font(.system(size: 30, weight: .semibold))
+                            .foregroundColor(AppTheme.mutedForeground)
+                        Text(errorText)
+                            .font(.subheadline)
+                            .foregroundColor(AppTheme.mutedForeground)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollViewReader { scrollProxy in
+                        ScrollView {
+                            LazyVStack(spacing: 0) {
+                                ForEach(entries) { entry in
+                                    Button { select(entry) } label: {
+                                        HStack(spacing: 10) {
+                                            RoundedRectangle(cornerRadius: 2)
+                                                .fill(entry.active ? AppTheme.primary : Color.clear)
+                                                .frame(width: 3, height: 24)
+
+                                            Text(entry.title)
+                                                .font(.subheadline.weight(entry.active ? .semibold : .regular))
+                                                .foregroundColor(entry.active ? AppTheme.foreground : AppTheme.foreground.opacity(0.88))
+                                                .lineLimit(2)
+                                                .multilineTextAlignment(.leading)
+
+                                            Spacer(minLength: 8)
+
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(AppTheme.mutedForeground.opacity(0.7))
+                                        }
+                                        .padding(.leading, 16 + CGFloat(min(entry.level, 3)) * 16)
+                                        .padding(.trailing, 16)
+                                        .padding(.vertical, 12)
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(!entry.isActionable)
+                                    .opacity(entry.isActionable ? 1 : 0.48)
+                                    .id(entry.id)
+
+                                    Divider()
+                                        .padding(.leading, 52 + CGFloat(min(entry.level, 3)) * 16)
+                                }
+
+                                if isLoading {
+                                    HStack(spacing: 10) {
+                                        ProgressView().scaleEffect(0.82).tint(AppTheme.primary)
+                                        Text(AppLocalized("正在更新目录…"))
+                                            .font(.footnote)
+                                            .foregroundColor(AppTheme.mutedForeground)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                }
+                            }
+                            .padding(.bottom, isLandscape ? 18 : 26)
+                        }
+                        .onAppear {
+                            if let active = entries.first(where: \.active) {
+                                DispatchQueue.main.async {
+                                    scrollProxy.scrollTo(active.id, anchor: .center)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: isLandscape ? 18 : 24, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: isLandscape ? 18 : 24, style: .continuous)
+                .stroke(AppTheme.border.opacity(0.55), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 12)
+        .padding(isLandscape ? 14 : 0)
+    }
+}
+
 struct ReaderHostView: View {
     /// Read/Explain controls must reserve one stable viewport boundary. WeRead
     /// paginates its Canvas from the WKWebView size; allowing the explanation
@@ -27,6 +152,7 @@ struct ReaderHostView: View {
     @ObservedObject var coordinator: PlayerCoordinator
     let document: ReadingDocument
 
+    @StateObject private var weReadTOC = WeReadTOCController()
     @State private var readerSurfaceSize: CGSize = .zero
     @State private var refocusToken = 0
     @State private var refocusTask: Task<Void, Never>?
@@ -55,6 +181,19 @@ struct ReaderHostView: View {
                 landscapeControls
                     .padding(.horizontal, 22)
                     .padding(.bottom, 8)
+                    .opacity(weReadTOC.isPresented ? 0 : 1)
+                    .allowsHitTesting(!weReadTOC.isPresented && !weReadTOC.isJumping)
+                    .accessibilityHidden(weReadTOC.isPresented || weReadTOC.isJumping)
+            }
+
+            if document.sourceKind == .weread, weReadTOC.isPresented {
+                weReadTOCOverlay
+                    .zIndex(10)
+            }
+
+            if document.sourceKind == .weread, weReadTOC.isJumping {
+                weReadTOCJumpLockOverlay
+                    .zIndex(20)
             }
         }
         .background(AppTheme.background.ignoresSafeArea())
@@ -159,7 +298,8 @@ struct ReaderHostView: View {
                 explainVM: explainVM,
                 mode: mode,
                 refocusToken: refocusToken,
-                initialSurfaceSize: surfaceSize
+                initialSurfaceSize: surfaceSize,
+                weReadTOC: weReadTOC
             )
         case .pdf:
             if document.usesNativePDFRendering {
@@ -182,22 +322,87 @@ struct ReaderHostView: View {
     private var controls: some View {
         Group {
             if mode == .read {
-                ReadControlBar(vm: readVM)
+                ReadControlBar(
+                    vm: readVM,
+                    showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil
+                )
             } else {
-                ExplainControlBar(vm: explainVM)
+                ExplainControlBar(
+                    vm: explainVM,
+                    showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil
+                )
             }
         }
         .frame(height: Self.portraitPlaybackBarHeight)
         .clipped()
+        .opacity(weReadTOC.isPresented ? 0 : 1)
+        .allowsHitTesting(!weReadTOC.isPresented && !weReadTOC.isJumping)
+        .accessibilityHidden(weReadTOC.isPresented || weReadTOC.isJumping)
     }
 
     @ViewBuilder
     private var landscapeControls: some View {
         if mode == .read {
-            ReaderLandscapeReadOverlay(vm: readVM)
+            ReaderLandscapeReadOverlay(
+                vm: readVM,
+                showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil
+            )
         } else {
-            ReaderLandscapeExplainOverlay(vm: explainVM)
+            ReaderLandscapeExplainOverlay(
+                vm: explainVM,
+                showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil
+            )
         }
+    }
+
+    private var weReadTOCOverlay: some View {
+        GeometryReader { proxy in
+            let isLandscape = usesCompactPlaybackBar
+            let panelWidth = isLandscape ? min(420, max(320, proxy.size.width * 0.44)) : proxy.size.width
+            let panelHeight = isLandscape ? proxy.size.height : min(proxy.size.height * 0.72, 620)
+
+            ZStack(alignment: isLandscape ? .trailing : .bottom) {
+                Color.black.opacity(0.28)
+                    .ignoresSafeArea()
+                    .onTapGesture { weReadTOC.dismiss() }
+
+                WeReadNativeTOCPanel(
+                    entries: weReadTOC.entries,
+                    isLoading: weReadTOC.isLoading,
+                    errorText: weReadTOC.errorText,
+                    isLandscape: isLandscape,
+                    close: { weReadTOC.dismiss() },
+                    select: { weReadTOC.select($0) }
+                )
+                .frame(width: panelWidth, height: panelHeight)
+                .padding(.trailing, isLandscape ? 12 : 0)
+                .transition(
+                    isLandscape
+                        ? .move(edge: .trailing).combined(with: .opacity)
+                        : .move(edge: .bottom).combined(with: .opacity)
+                )
+            }
+        }
+    }
+
+    private var weReadTOCJumpLockOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.16)
+                .ignoresSafeArea()
+
+            HStack(spacing: 10) {
+                ProgressView()
+                    .tint(AppTheme.foreground)
+                Text(AppLocalized("正在跳转章节…"))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(AppTheme.foreground)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(.regularMaterial, in: Capsule())
+            .overlay(Capsule().stroke(AppTheme.mutedForeground.opacity(0.16), lineWidth: 0.5))
+        }
+        .allowsHitTesting(true)
     }
 
     private var paywallBinding: Binding<Bool> {
@@ -252,34 +457,60 @@ private struct ReaderSurfaceSizeKey: PreferenceKey {
 
 private struct ReadControlBar: View {
     @ObservedObject var vm: ReadAloudViewModel
+    let showTOC: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: 24) {
-            Button { vm.skipBackward() } label: {
-                Image(systemName: "gobackward.15").font(.system(size: 20))
+        HStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Button { vm.skipBackward() } label: {
+                    Image(systemName: "gobackward.15")
+                        .font(.system(size: 20))
+                        .frame(width: 36, height: 44)
+                }
+                Button { vm.togglePlayPause() } label: {
+                    Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.system(size: 52))
+                        .foregroundColor(AppTheme.primary)
+                }
+                Button { vm.skipForward() } label: {
+                    Image(systemName: "goforward.15")
+                        .font(.system(size: 20))
+                        .frame(width: 36, height: 44)
+                }
             }
-            Button { vm.togglePlayPause() } label: {
-                Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                    .font(.system(size: 52))
-                    .foregroundColor(AppTheme.primary)
+            .fixedSize(horizontal: true, vertical: false)
+
+            Spacer(minLength: 10)
+
+            HStack(spacing: 8) {
+                if let showTOC {
+                    Button(action: showTOC) {
+                        Image(systemName: "list.bullet")
+                            .font(.system(size: 20, weight: .semibold))
+                            .frame(width: 34, height: 36)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(AppLocalized("目录")))
+                }
+                if vm.hasStartedPlayback {
+                    PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
+                }
+                SpeedMenu()
             }
-            Button { vm.skipForward() } label: {
-                Image(systemName: "goforward.15").font(.system(size: 20))
-            }
-            Spacer()
-            if vm.hasStartedPlayback {
-                PlaybackVoiceButton(language: vm.playbackLanguage)
-            }
-            SpeedMenu()
+            // The utility cluster is atomic. Let the middle spacer shrink;
+            // never squeeze the speed value into a vertical stack.
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(1)
         }
         .foregroundColor(AppTheme.foreground)
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 20)
         .padding(.vertical, 12)
     }
 }
 
 private struct ReaderLandscapeReadOverlay: View {
     @ObservedObject var vm: ReadAloudViewModel
+    let showTOC: (() -> Void)?
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 14) {
@@ -305,6 +536,15 @@ private struct ReaderLandscapeReadOverlay: View {
 
             Spacer(minLength: 0)
             HStack(spacing: 12) {
+                if let showTOC {
+                    Button(action: showTOC) {
+                        Image(systemName: "list.bullet")
+                            .font(.system(size: 19, weight: .semibold))
+                            .frame(width: 34, height: 34)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(AppLocalized("目录")))
+                }
                 if vm.hasStartedPlayback {
                     PlaybackVoiceButton(language: vm.playbackLanguage)
                 }
@@ -317,6 +557,7 @@ private struct ReaderLandscapeReadOverlay: View {
 
 private struct ReaderLandscapeExplainOverlay: View {
     @ObservedObject var vm: ExplainViewModel
+    let showTOC: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 8) {
@@ -325,6 +566,15 @@ private struct ReaderLandscapeExplainOverlay: View {
                 controlPill
                 Spacer(minLength: 0)
                 HStack(spacing: 10) {
+                    if let showTOC {
+                        Button(action: showTOC) {
+                            Image(systemName: "list.bullet")
+                                .font(.system(size: 19, weight: .semibold))
+                                .frame(width: 34, height: 34)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text(AppLocalized("目录")))
+                    }
                     PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
                     SpeedMenu()
                 }
@@ -491,9 +741,10 @@ struct SpeedMenu: View {
                     Image(systemName: "speedometer").font(.caption)
                     Text(String(format: "%.2gx", Double(displayedSpeed)))
                         .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .frame(width: 70, height: 36)
                 .background(AppTheme.surfaceVariant)
                 .foregroundColor(AppTheme.foreground)
                 .cornerRadius(8)
@@ -512,12 +763,16 @@ struct SpeedMenu: View {
                     Image(systemName: "speedometer")
                     Text(String(format: "%.2gx", Double(displayedSpeed)))
                         .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
                 .foregroundStyle(AppTheme.foreground)
-                .frame(height: 36)
+                .frame(width: 62, height: 36)
             }
         }
         .buttonStyle(.plain)
+        .fixedSize(horizontal: style != .console, vertical: false)
+        .layoutPriority(style == .console ? 0 : 1)
         .contentShape(Rectangle())
         .accessibilityLabel(Text(AppLocalized("Playback Speed")))
         .accessibilityValue(Text(String(format: "%.2gx", Double(displayedSpeed))))

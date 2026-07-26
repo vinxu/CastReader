@@ -7,12 +7,71 @@
 
 import SwiftUI
 
+/// How far the floating mini player currently reaches up into tab content.
+///
+/// Published from `MainTabView`, which is the only place that can measure both
+/// edges, and consumed by each scrollable screen. It has to be consumed *inside*
+/// the screen, directly on its ScrollView: a `safeAreaInset` applied outside a
+/// `NavigationView`/`NavigationStack` — whether on the tab's root view or on the
+/// TabView itself — never reaches the scroll view inside it. Both earlier
+/// attempts failed for exactly that reason and left the last rows unreachable
+/// under the player.
+@MainActor
+final class BottomOverlayMetrics: ObservableObject {
+    static let shared = BottomOverlayMetrics()
+    @Published private(set) var height: CGFloat = 0
+
+    func update(_ newValue: CGFloat) {
+        guard abs(height - newValue) > 0.5 else { return }
+        height = newValue
+    }
+}
+
+extension View {
+    /// Apply to a scrollable view so its content can clear the mini player.
+    /// Must be inside the screen's navigation container.
+    func reservesMiniPlayerSpace() -> some View {
+        modifier(MiniPlayerSpaceReserver())
+    }
+}
+
+private struct MiniPlayerSpaceReserver: ViewModifier {
+    @ObservedObject private var metrics = BottomOverlayMetrics.shared
+
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear
+                .frame(height: metrics.height)
+                .accessibilityHidden(true)
+        }
+    }
+}
+
+/// Top edge of the floating mini player, in the root coordinate space.
+/// Absent when no player is showing.
+private struct MiniPlayerTopKey: PreferenceKey {
+    static var defaultValue: CGFloat?
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
+        value = nextValue() ?? value
+    }
+}
+
+/// Bottom edge of a tab's content area (i.e. the top of the tab bar), in the
+/// same space. Measured rather than assumed so no tab-bar height constant is
+/// needed.
+private struct TabContentBottomKey: PreferenceKey {
+    static var defaultValue: CGFloat?
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
+        value = nextValue() ?? value
+    }
+}
+
 struct MainTabView: View {
+    /// Where the floating player sits. Purely visual — the space tab content
+    /// gives up for it is measured, not derived from this number, so the two can
+    /// no longer drift apart.
     private static let miniPlayerBottomPadding: CGFloat = 68
-    /// Tab content already stops above the system tab bar. Reserve the portion
-    /// occupied by the floating mini player plus its shadow so the final row in
-    /// every pushed/scrolling screen can move completely above the player.
-    private static let miniPlayerContentInset: CGFloat = 80
+    private static let rootSpace = "mainTabRoot"
 
     @StateObject private var coordinator = PlayerCoordinator()
     @StateObject private var kindleCenter = KindlePlaybackCenter.shared
@@ -22,6 +81,8 @@ struct MainTabView: View {
     @StateObject private var playbackVoicePanel = PlaybackVoicePanelCenter.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var selectedTab: Int
+    @State private var miniPlayerTop: CGFloat?
+    @State private var tabContentBottom: CGFloat?
     @State private var isImportingSharedContent = false
     @State private var shareInboxItems: [ShareInboxItem] = []
     @State private var shareInboxUnreadCount = 0
@@ -54,9 +115,6 @@ struct MainTabView: View {
                         showShareInbox = true
                     }
                 )
-                    .safeAreaInset(edge: .bottom, spacing: 0) {
-                        miniPlayerContentSpacer
-                    }
                     .tabItem { Label("首页", systemImage: "house.fill") }
                     .tag(0)
                 // 中间占位：被凸起 ➕ 覆盖；万一点到 tab item 也走通用导入并回首页。
@@ -68,11 +126,22 @@ struct MainTabView: View {
                     }
                     .tag(1)
                 VoiceBrowserView(presentation: .tab)
-                    .safeAreaInset(edge: .bottom, spacing: 0) {
-                        miniPlayerContentSpacer
-                    }
                     .tabItem { Label("音色", systemImage: "waveform") }
                     .tag(2)
+            }
+            // Zero-height probe: reserves nothing, only reports where a tab's
+            // content actually ends (the top of the tab bar) so the overlap can
+            // be measured instead of guessed. The reservation itself happens
+            // inside each screen — see `reservesMiniPlayerSpace()`.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: TabContentBottomKey.self,
+                        value: proxy.frame(in: .named(Self.rootSpace)).maxY
+                    )
+                }
+                .frame(height: 0)
+                .accessibilityHidden(true)
             }
             .tint(AppTheme.primary)
             .onChange(of: selectedTab) { newTab in
@@ -87,14 +156,18 @@ struct MainTabView: View {
             }
 
             // Mini Player 悬浮在 tab bar 上方（有会话且阅读器收起时）
-            if coordinator.showsMiniPlayer && !importRouter.hideMainChrome {
-                MiniPlayerView(coordinator: coordinator)
-                    .padding(.bottom, Self.miniPlayerBottomPadding)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            } else if kindleCenter.showsMiniPlayer && !importRouter.hideMainChrome {
-                KindleMiniPlayerView(center: kindleCenter)
-                    .padding(.bottom, Self.miniPlayerBottomPadding)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            if !importRouter.hideMainChrome {
+                if coordinator.showsMiniPlayer {
+                    MiniPlayerView(coordinator: coordinator)
+                        .padding(.bottom, Self.miniPlayerBottomPadding)
+                        .background(miniPlayerTopReporter)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else if kindleCenter.showsMiniPlayer {
+                    KindleMiniPlayerView(center: kindleCenter)
+                        .padding(.bottom, Self.miniPlayerBottomPadding)
+                        .background(miniPlayerTopReporter)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
 
             // 阅读器常驻顶层（会话存活期间）：用上移/下移替代 fullScreenCover 的 present/dismiss，
@@ -128,6 +201,15 @@ struct MainTabView: View {
             PlaybackVoicePanelOverlay(center: playbackVoicePanel)
                 .zIndex(100)
 
+        }
+        .coordinateSpace(name: Self.rootSpace)
+        .onPreferenceChange(MiniPlayerTopKey.self) { value in
+            miniPlayerTop = value
+            publishOverlap()
+        }
+        .onPreferenceChange(TabContentBottomKey.self) { value in
+            tabContentBottom = value
+            publishOverlap()
         }
         .environmentObject(coordinator)
         .environmentObject(importRouter)
@@ -196,18 +278,24 @@ struct MainTabView: View {
         )
     }
 
-    @ViewBuilder
-    private var miniPlayerContentSpacer: some View {
-        if reservesMiniPlayerSpace {
-            Color.clear
-                .frame(height: Self.miniPlayerContentInset)
-                .accessibilityHidden(true)
+    private var miniPlayerTopReporter: some View {
+        GeometryReader { proxy in
+            Color.clear.preference(
+                key: MiniPlayerTopKey.self,
+                value: proxy.frame(in: .named(Self.rootSpace)).minY
+            )
         }
     }
 
-    private var reservesMiniPlayerSpace: Bool {
-        !importRouter.hideMainChrome &&
-            (coordinator.showsMiniPlayer || kindleCenter.showsMiniPlayer)
+    /// How far the floating player reaches up into the tab's content area.
+    /// Both edges are measured in the same coordinate space, so this stays
+    /// correct if the player's height, its padding, or the tab bar ever change.
+    private func publishOverlap() {
+        guard let top = miniPlayerTop, let bottom = tabContentBottom else {
+            BottomOverlayMetrics.shared.update(0)
+            return
+        }
+        BottomOverlayMetrics.shared.update(max(0, bottom - top))
     }
 
     private static let plusTabImage: UIImage = {

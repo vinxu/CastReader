@@ -31,7 +31,7 @@
 │  CASTREADER PRO                 │
 │  让每本 Kindle 都开口说话          │
 │  Kindle 连续朗读 · 100+ 专业音色   │
-│  · 8 种语言                       │
+│  · 9 种语言                       │
 │                                 │
 │  US$34.99/年        ← 最醒目价格   │
 │  折合约 US$0.67/周   ← 次要换算     │
@@ -61,24 +61,25 @@
 - 使用 5 本知名英文公版名著的真实英文封面错落排布：`Pride and Prejudice`、`Dracula`、`Frankenstein`、`Moby-Dick`、`Alice’s Adventures in Wonderland`。
 - 封面作为本地图片资源随 App 打包，不依赖运行时网络；封面保持英文书名，不随界面语言切换。
 - 去掉音频波浪、白色耳机以及其他悬浮装饰，保持视觉简洁。
-- 封面以外不得嵌入固定语言文案；所有产品文案仍必须跟随八语言资源切换。
+- 封面以外不得嵌入固定语言文案；所有产品文案仍必须跟随九语言资源切换。
 - 不使用 Amazon Logo、Kindle Logo 或仿制商标图形；正文中可以正常使用文字“Kindle”说明兼容能力。
 - 封面素材采用 Standard Ebooks 提供的英文公版版本，并在入包前降采样到移动端所需尺寸。
 
-## 4. 文案与八语言本地化
+## 4. 文案与九语言本地化
 
 所有可读文案必须进入平台语言资源，不得将中文、价格或货币符号写进图片，也不得在业务代码中写死价格。
 
 | Locale | 主标题 | 权益摘要 | CTA 年度购买 | 次级入口 | 自动续订说明 |
 |---|---|---|---|---|---|
-| `zh-Hans` | 让每本 Kindle 都开口说话 | Kindle 连续朗读 · 100+ 专业音色 · 8 种语言 | 以 %@/年成为 Pro | 月度方案与恢复购买 | 按年自动续订，可随时取消 |
-| `en` | Make every Kindle book speak | Continuous Kindle reading · 100+ professional voices · 8 languages | Become Pro for %@/year | Monthly plan and restore purchases | Renews annually. Cancel anytime. |
-| `ja` | Kindleの本を、声で楽しもう | Kindleを連続朗読 · 100種類以上のプロ音声 · 8言語 | 年額%@でProになる | 月額プランと購入の復元 | 年ごとに自動更新。いつでもキャンセルできます |
-| `es` | Haz que tus libros Kindle cobren voz | Lectura continua de Kindle · Más de 100 voces profesionales · 8 idiomas | Hazte Pro por %@ al año | Plan mensual y restaurar compras | Renovación anual. Cancela cuando quieras. |
-| `fr` | Donnez une voix à vos livres Kindle | Lecture Kindle en continu · Plus de 100 voix professionnelles · 8 langues | Passez Pro pour %@ par an | Forfait mensuel et restaurer les achats | Renouvellement annuel. Annulation à tout moment. |
-| `pt-BR` | Dê voz aos seus livros Kindle | Leitura contínua no Kindle · Mais de 100 vozes profissionais · 8 idiomas | Seja Pro por %@/ano | Plano mensal e restaurar compras | Renovação anual. Cancele quando quiser. |
-| `it` | Dai voce ai tuoi libri Kindle | Lettura Kindle continua · Oltre 100 voci professionali · 8 lingue | Passa a Pro per %@ all’anno | Piano mensile e ripristina acquisti | Rinnovo annuale. Annulla quando vuoi. |
-| `hi` | अपनी Kindle किताबों को आवाज़ दें | लगातार Kindle वाचन · 100+ प्रोफ़ेशनल आवाज़ें · 8 भाषाएँ | %@/वर्ष में Pro बनें | मासिक प्लान और खरीदारी बहाल करें | सालाना नवीनीकरण। कभी भी रद्द करें। |
+| `zh-Hans` | 让每本 Kindle 都开口说话 | Kindle 连续朗读 · 100+ 专业音色 · 9 种语言 | 以 %@/年成为 Pro | 月度方案与恢复购买 | 按年自动续订，可随时取消 |
+| `en` | Make every Kindle book speak | Continuous Kindle reading · 100+ professional voices · 9 languages | Become Pro for %@/year | Monthly plan and restore purchases | Renews annually. Cancel anytime. |
+| `ja` | Kindleの本を、声で楽しもう | Kindleを連続朗読 · 100種類以上のプロ音声 · 9言語 | 年額%@でProになる | 月額プランと購入の復元 | 年ごとに自動更新。いつでもキャンセルできます |
+| `es` | Haz que tus libros Kindle cobren voz | Lectura continua de Kindle · Más de 100 voces profesionales · 9 idiomas | Hazte Pro por %@ al año | Plan mensual y restaurar compras | Renovación anual. Cancela cuando quieras. |
+| `fr` | Donnez une voix à vos livres Kindle | Lecture Kindle en continu · Plus de 100 voix professionnelles · 9 langues | Passez Pro pour %@ par an | Forfait mensuel et restaurer les achats | Renouvellement annuel. Annulation à tout moment. |
+| `de` | Gib jedem Kindle-Buch eine Stimme | Kontinuierliches Kindle-Vorlesen · 100+ professionelle Stimmen · 9 Sprachen | Pro werden für %@/Jahr | Monatsplan und Käufe wiederherstellen | Jährliche Verlängerung. Jederzeit kündbar. |
+| `pt-BR` | Dê voz aos seus livros Kindle | Leitura contínua no Kindle · Mais de 100 vozes profissionais · 9 idiomas | Seja Pro por %@/ano | Plano mensal e restaurar compras | Renovação anual. Cancele quando quiser. |
+| `it` | Dai voce ai tuoi libri Kindle | Lettura Kindle continua · Oltre 100 voci professionali · 9 lingue | Passa a Pro per %@ all’anno | Piano mensile e ripristina acquisti | Rinnovo annuale. Annulla quando vuoi. |
+| `hi` | अपनी Kindle किताबों को आवाज़ दें | लगातार Kindle वाचन · 100+ प्रोफ़ेशनल आवाज़ें · 9 भाषाएँ | %@/वर्ष में Pro बनें | मासिक प्लान और खरीदारी बहाल करें | सालाना नवीनीकरण। कभी भी रद्द करें। |
 
 其他本地化键：
 
@@ -93,8 +94,8 @@
   - `pt-BR`：`Cerca de %@ por semana`
   - `it`：`Circa %@ a settimana`
   - `hi`：`लगभग %@/सप्ताह`
-- 价格加载中：八语本地化“正在加载价格”。
-- 价格不可用：八语本地化“查看 Pro 方案”，点击后进入现有付费墙，不得显示缓存的其他地区价格。
+- 价格加载中：九语本地化“正在加载价格”。
+- 价格不可用：九语本地化“查看 Pro 方案”，点击后进入现有付费墙，不得显示缓存的其他地区价格。
 
 ## 5. 价格与订阅规则
 
