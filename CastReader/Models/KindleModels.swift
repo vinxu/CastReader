@@ -254,8 +254,9 @@ enum KindlePlaybackLifecycleContract {
 }
 
 /// Pure scheduling contract for a gapless Kindle page boundary. OCR and the
-/// next page's first utterance must both be complete before audio is appended;
-/// the visual page turn may then start during the tail of the current item.
+/// next page's first utterance must both be complete before audio is appended.
+/// Kindle may stage its WebView during the old tail, but the held old-page frame
+/// is not released until both the spoken boundary and new surface are ready.
 enum KindleContinuousPageHandoffContract {
     static func shouldArm(
         isReadMode: Bool,
@@ -284,9 +285,17 @@ enum KindleContinuousPageHandoffContract {
 
     static func shouldReleaseAudioGate(
         hasConfirmedVisibleSurface: Bool,
-        textFingerprintMatches: Bool
+        textFingerprintMatches: Bool,
+        visualReleasePresented: Bool
     ) -> Bool {
-        hasConfirmedVisibleSurface && textFingerprintMatches
+        hasConfirmedVisibleSurface && textFingerprintMatches && visualReleasePresented
+    }
+
+    static func shouldReleaseVisualHold(
+        audioBoundaryReached: Bool,
+        hasConfirmedVisibleSurface: Bool
+    ) -> Bool {
+        audioBoundaryReached && hasConfirmedVisibleSurface
     }
 
     /// A continuous handoff may reuse the shared audio queue, but it must never

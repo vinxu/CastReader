@@ -3658,9 +3658,78 @@ enum KindleWebScripts {
     })();
     """
 
+    /// This intentionally stays small because it must run before Amazon's
+    /// renderer creates and revokes its pre-rendered page blobs. The full
+    /// capture/bootstrap payload is installed lazily after navigation, but by
+    /// then these one-shot createObjectURL calls have already happened.
+    static let earlyPageBlobCaptureBootstrap = """
+    (function() {
+      var crKindleEarlyCaptureVersion = 1;
+      if (window.__crKindleEarlyCaptureVersion === crKindleEarlyCaptureVersion) return;
+      window.__crKindleEarlyCaptureVersion = crKindleEarlyCaptureVersion;
+
+      var probe = window.__crKindleProbe = window.__crKindleProbe || {};
+      probe.urlToKey = probe.urlToKey || new Map();
+      probe.keyToLiveUrl = probe.keyToLiveUrl || new Map();
+      probe.heldPageKeys = probe.heldPageKeys || [];
+      probe.earlyCapturedBlobCount = Number(probe.earlyCapturedBlobCount || 0);
+
+      function rememberHeldKey(key) {
+        try {
+          var stable = 'content-' + String(key || '');
+          var order = probe.heldPageKeys || [];
+          probe.heldPageKeys = order;
+          if (order.indexOf(stable) < 0) order.push(stable);
+          if (order.length > 400) probe.heldPageKeys = order.slice(order.length - 400);
+        } catch (_) {}
+      }
+
+      async function contentKey(blob) {
+        try {
+          var size = blob.size || 0;
+          var head = await blob.slice(0, 256).arrayBuffer();
+          var buf = new ArrayBuffer(8 + head.byteLength);
+          var view = new DataView(buf);
+          view.setUint32(0, Math.floor(size / 0x100000000), false);
+          view.setUint32(4, size >>> 0, false);
+          new Uint8Array(buf, 8).set(new Uint8Array(head));
+          var digest = await crypto.subtle.digest('SHA-256', buf);
+          var bytes = new Uint8Array(digest);
+          var hex = '';
+          for (var i = 0; i < 8; i++) hex += bytes[i].toString(16).padStart(2, '0');
+          return hex;
+        } catch (_) {
+          return String(Date.now()) + '-' + Math.floor(Math.random() * 100000);
+        }
+      }
+
+      if (!URL.__crKindleOriginalCreateObjectURL) {
+        URL.__crKindleOriginalCreateObjectURL = URL.createObjectURL.bind(URL);
+      }
+      var originalCreate = URL.__crKindleOriginalCreateObjectURL;
+      URL.createObjectURL = function(obj) {
+        var url = originalCreate(obj);
+        try {
+          if (obj instanceof Blob && obj.type && obj.type.indexOf('image/') === 0) {
+            contentKey(obj).then(function(key) {
+              probe.urlToKey.set(url, key);
+              if (!probe.keyToLiveUrl.has(key)) {
+                probe.keyToLiveUrl.set(key, originalCreate(obj));
+              }
+              rememberHeldKey(key);
+              probe.earlyCapturedBlobCount = Number(probe.earlyCapturedBlobCount || 0) + 1;
+            }).catch(function(){});
+          }
+        } catch (_) {}
+        return url;
+      };
+      window.__crKindleEarlyBlobCaptureReady = true;
+    })();
+    """
+
     static let pageCaptureBootstrap = """
     (function() {
-      var crKindleInstallVersion = 37;
+      var crKindleInstallVersion = 39;
       // OCR keeps the source glyphs lossless. Kindle pages are mostly flat-color
       // text surfaces, so PNG is often no larger than JPEG and avoids destroying
       // CJK punctuation / Devanagari combining marks. 2048px is only a safety cap;
@@ -5968,13 +6037,13 @@ enum KindleWebScripts {
       window.__crKindleCandidateSnapshotsAfterKey = function(afterKey, limit, maxWidth, quality) {
         try {
           afterKey = String(afterKey || window.__crKindleProbe.liveKey || '');
-          limit = Math.max(1, Math.min(8, Number(limit || 4)));
+          limit = Math.max(1, Math.min(12, Number(limit || 12)));
           if (!afterKey) return JSON.stringify({ ok:false, reason:'empty-after-key', pages:[], url:location.href });
 
           var seen = {};
           var pages = [];
           function pushCandidate(c, source, orderIndex) {
-            if (!c || !c.key || seen[c.key]) return;
+            if (pages.length >= limit || !c || !c.key || seen[c.key]) return;
             if (!c.img || !c.img.complete || !(c.img.naturalWidth > 0)) return;
             seen[c.key] = true;
             var shot = draw(c.img, c.key || '', maxWidth || crKindleOcrMaxWidth, quality || crKindleOcrJpegQuality, c.rect, c);
@@ -6000,14 +6069,36 @@ enum KindleWebScripts {
           }
           var heldAfterKey = crKindleHeldKeyForStableKey(afterKey);
           var idx = order.indexOf(heldAfterKey);
+          // An adjacent entry from the same renderer batch is the best cheap
+          // speculation, but never treat it as authoritative. Kindle retains
+          // previous and future batches together, so mirror the extension and
+          // fill a broad recent window. Native code reconciles this cache with
+          // the page key confirmed by the actual React page turn.
           if (idx >= 0) {
-            for (var i = idx + 1; i < order.length && pages.length < limit; i++) {
-              pushCandidate(crKindleHeldCandidateForStableKey(order[i]), 'held-live-after-key', i - idx);
-            }
+            pushCandidate(crKindleHeldCandidateForStableKey(order[idx + 1]), 'held-adjacent-speculation', 1);
+          }
+          for (var i = order.length - 1; i >= 0 && pages.length < limit; i--) {
+            if (order[i] === heldAfterKey) continue;
+            pushCandidate(crKindleHeldCandidateForStableKey(order[i]), 'held-recent-window', i - idx);
+          }
+          // A DOM neighbor can cover a just-mounted page whose Blob hash has not
+          // completed yet. Keep it as the final fallback, not the first guess.
+          if (pages.length < limit) {
+            pushCandidate(nextCandidateAfterKey(afterKey), 'visual-neighbor-fallback', pages.length + 1);
+          }
+          // When the current key is from an older renderer batch, recent-first
+          // may leave unused room even though older held pages still exist.
+          for (var j = 0; j < order.length && pages.length < limit; j++) {
+            if (order[j] === heldAfterKey) continue;
+            pushCandidate(crKindleHeldCandidateForStableKey(order[j]), 'held-window-fill', j - idx);
           }
 
-          var first = nextCandidateAfterKey(afterKey);
-          pushCandidate(first, pages.length ? 'visual-fallback-after-held' : 'next-candidate-after-key', pages.length + 1);
+          var recentStart = Math.max(0, order.length - limit - 1);
+          var diagnosticKeys = order.slice(recentStart);
+          if (idx >= 0 && diagnosticKeys.indexOf(heldAfterKey) < 0) {
+            diagnosticKeys.unshift(heldAfterKey);
+            if (idx + 1 < order.length) diagnosticKeys.splice(1, 0, order[idx + 1]);
+          }
 
           return JSON.stringify({
             ok: pages.length > 0,
@@ -6016,7 +6107,7 @@ enum KindleWebScripts {
             pages: pages,
             heldCount: order.length,
             afterHeldIndex: idx,
-            orderedKeys: order.slice(Math.max(0, idx), idx >= 0 ? Math.min(order.length, idx + limit + 1) : Math.min(order.length, limit + 1)),
+            orderedKeys: diagnosticKeys,
             url: location.href
           });
         } catch (e) {

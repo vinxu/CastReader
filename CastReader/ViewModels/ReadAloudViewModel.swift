@@ -261,6 +261,14 @@ final class ReadAloudViewModel: ObservableObject {
         status = .ready
         if document.sourceKind.isWebRendered { webAudioSegments.append(contentsOf: segments) }
 
+        // The new page owner is installed after the shared AVPlayerItem may
+        // already have started. @Published does not replay a time tick merely
+        // because `isActive` changed, so synchronously catch the visual state up
+        // to the exact player time instead of skipping the first words.
+        let adoptionTime = audio.currentTime
+        updateHighlight(adoptionTime)
+        updateNowPlayingCaption(adoptionTime)
+
         Task { [weak self] in await self?.preloadNext(after: paragraphIndex) }
         return true
     }

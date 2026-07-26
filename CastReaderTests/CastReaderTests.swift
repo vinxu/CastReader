@@ -554,6 +554,225 @@ class CastReaderTests: XCTestCase {
         XCTAssertEqual(singleHandler["ok"] as? Bool, false, "单个 click handler 不能冒充 paired pagination actions")
     }
 
+    @MainActor
+    func testKindleEarlyBlobCaptureRunsBeforePageScriptsAndSurvivesRevoke() async throws {
+        let controller = WKUserContentController()
+        if #available(iOS 14.0, *) {
+            controller.addUserScript(WKUserScript(
+                source: KindleWebScripts.earlyPageBlobCaptureBootstrap,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true,
+                in: .page
+            ))
+        } else {
+            controller.addUserScript(WKUserScript(
+                source: KindleWebScripts.earlyPageBlobCaptureBootstrap,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
+        }
+        let configuration = WKWebViewConfiguration()
+        configuration.userContentController = controller
+        let webView = WKWebView(
+            frame: CGRect(x: 0, y: 0, width: 390, height: 800),
+            configuration: configuration
+        )
+        let window = UIWindow(frame: webView.frame)
+        window.isHidden = false
+        window.addSubview(webView)
+        defer { webView.removeFromSuperview() }
+
+        webView.loadHTMLString(
+            """
+            <!doctype html><html><body>
+            <script>
+              window.fixtureBlobURL = URL.createObjectURL(
+                new Blob([new Uint8Array([137,80,78,71,13,10,26,10,1,2,3,4])], {type:'image/png'})
+              );
+              URL.revokeObjectURL(window.fixtureBlobURL);
+            </script>
+            </body></html>
+            """,
+            baseURL: URL(string: "https://read.amazon.com")
+        )
+
+        var captured: [String: Any]?
+        for _ in 0..<80 {
+            if let raw = try? await webView.evaluateJavaScript(
+                """
+                JSON.stringify({
+                  ready: window.__crKindleEarlyBlobCaptureReady === true,
+                  count: Number(window.__crKindleProbe && window.__crKindleProbe.earlyCapturedBlobCount || 0),
+                  key: String(window.__crKindleProbe && window.__crKindleProbe.urlToKey.get(window.fixtureBlobURL) || ''),
+                  live: String((function() {
+                    var p = window.__crKindleProbe;
+                    var key = p && p.urlToKey.get(window.fixtureBlobURL);
+                    return key && p.keyToLiveUrl.get(key) || '';
+                  })()),
+                  held: Number(window.__crKindleProbe && window.__crKindleProbe.heldPageKeys.length || 0),
+                  heldKey: String(window.__crKindleProbe && window.__crKindleProbe.heldPageKeys[0] || '')
+                })
+                """
+            ) as? String,
+               let data = raw.data(using: .utf8),
+               let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                captured = result
+                if (result["count"] as? Int ?? 0) > 0 { break }
+            }
+            try await Task.sleep(nanoseconds: 25_000_000)
+        }
+
+        let result = try XCTUnwrap(captured)
+        XCTAssertEqual(result["ready"] as? Bool, true)
+        XCTAssertEqual(result["count"] as? Int, 1, "页面内联脚本创建 blob 前必须已安装 hook")
+        XCTAssertEqual((result["key"] as? String)?.count, 16)
+        XCTAssertTrue((result["live"] as? String)?.hasPrefix("blob:") == true)
+        XCTAssertEqual(result["held"] as? Int, 1)
+        XCTAssertEqual(
+            result["heldKey"] as? String,
+            "content-\(result["key"] as? String ?? "")",
+            "候选顺序必须与 stableImageKey 使用同一个 content-* 命名空间"
+        )
+
+        _ = try await webView.evaluateJavaScript(KindleWebScripts.pageCaptureBootstrap)
+        let preserved = try await webView.evaluateJavaScript(
+            """
+            (function() {
+              var p = window.__crKindleProbe;
+              var key = p && p.urlToKey.get(window.fixtureBlobURL);
+              return !!(key && p.keyToLiveUrl.get(key) && p.heldPageKeys.indexOf('content-' + key) >= 0);
+            })()
+            """
+        ) as? Bool
+        XCTAssertEqual(preserved, true, "延迟安装完整脚本时不得丢失早期捕获的页面")
+    }
+
+    @MainActor
+    func testKindlePreloadCapturesBroadHeldWindowWithoutTrustingOneNeighbor() async throws {
+        let controller = WKUserContentController()
+        if #available(iOS 14.0, *) {
+            controller.addUserScript(WKUserScript(
+                source: KindleWebScripts.earlyPageBlobCaptureBootstrap,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true,
+                in: .page
+            ))
+        } else {
+            controller.addUserScript(WKUserScript(
+                source: KindleWebScripts.earlyPageBlobCaptureBootstrap,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
+        }
+        let configuration = WKWebViewConfiguration()
+        configuration.userContentController = controller
+        let webView = WKWebView(
+            frame: CGRect(x: 0, y: 0, width: 390, height: 800),
+            configuration: configuration
+        )
+        let window = UIWindow(frame: webView.frame)
+        window.isHidden = false
+        window.addSubview(webView)
+        defer { webView.removeFromSuperview() }
+
+        webView.loadHTMLString(
+            """
+            <!doctype html><html><head><style>
+              html,body { margin:0; width:390px; min-height:1600px; }
+              img { display:block; width:300px; height:500px; }
+              #next { margin-top:700px; }
+            </style></head><body>
+              <img id="current"><img id="next">
+              <script>
+                function pageBlob(label, color) {
+                  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="1000">' +
+                    '<rect width="600" height="1000" fill="' + color + '"/>' +
+                    '<text x="40" y="100" font-size="52">' + label + '</text></svg>';
+                  return new Blob([svg], {type:'image/svg+xml'});
+                }
+                async function createMapped(label, color) {
+                  var url = URL.createObjectURL(pageBlob(label, color));
+                  for (var i = 0; i < 100; i++) {
+                    if (window.__crKindleProbe.urlToKey.get(url)) return url;
+                    await new Promise(function(resolve) { setTimeout(resolve, 5); });
+                  }
+                  return url;
+                }
+                (async function() {
+                  window.fixtureCurrentURL = await createMapped('CURRENT', '#fff');
+                  window.fixtureStaleURL = await createMapped('STALE', '#fcc');
+                  window.fixtureNextURL = await createMapped('NEXT', '#cfc');
+                  document.getElementById('current').src = window.fixtureCurrentURL;
+                  document.getElementById('next').src = window.fixtureNextURL;
+                  await Promise.all(Array.from(document.images).map(function(img) {
+                    return img.decode ? img.decode().catch(function(){}) : Promise.resolve();
+                  }));
+                  window.fixtureReady = true;
+                })();
+              </script>
+            </body></html>
+            """,
+            baseURL: URL(string: "https://read.amazon.com")
+        )
+
+        var fixture: [String: Any]?
+        for _ in 0..<120 {
+            if let raw = try? await webView.evaluateJavaScript(
+                """
+                JSON.stringify({
+                  ready: window.fixtureReady === true,
+                  current: String(window.__crKindleProbe && window.__crKindleProbe.urlToKey.get(window.fixtureCurrentURL) || ''),
+                  stale: String(window.__crKindleProbe && window.__crKindleProbe.urlToKey.get(window.fixtureStaleURL) || ''),
+                  next: String(window.__crKindleProbe && window.__crKindleProbe.urlToKey.get(window.fixtureNextURL) || ''),
+                  held: (window.__crKindleProbe && window.__crKindleProbe.heldPageKeys || []).slice()
+                })
+                """
+            ) as? String,
+               let data = raw.data(using: .utf8),
+               let result = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                fixture = result
+                if result["ready"] as? Bool == true { break }
+            }
+            try await Task.sleep(nanoseconds: 25_000_000)
+        }
+
+        let state = try XCTUnwrap(fixture)
+        XCTAssertEqual(state["ready"] as? Bool, true)
+        let currentKey = try XCTUnwrap(state["current"] as? String)
+        let staleKey = try XCTUnwrap(state["stale"] as? String)
+        let nextKey = try XCTUnwrap(state["next"] as? String)
+        XCTAssertEqual(
+            state["held"] as? [String],
+            ["content-\(currentKey)", "content-\(staleKey)", "content-\(nextKey)"],
+            "测试前提：Blob 历史顺序故意把无关页放在实际相邻页之前"
+        )
+
+        _ = try await webView.evaluateJavaScript(KindleWebScripts.pageCaptureBootstrap)
+        let candidateScript =
+            """
+            window.__crKindleCandidateSnapshotsAfterKey(
+              'content-\(currentKey)', 2, 640, 0.86
+            )
+            """
+        _ = try await webView.evaluateJavaScript(candidateScript)
+        try await Task.sleep(nanoseconds: 240_000_000)
+        let evaluated = try await webView.evaluateJavaScript(candidateScript) as? String
+        let raw = try XCTUnwrap(evaluated)
+        let data = try XCTUnwrap(raw.data(using: .utf8))
+        let result = try XCTUnwrap(
+            try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        let pages = result["pages"] as? [[String: Any]] ?? []
+        XCTAssertEqual(pages.count, 2)
+        let capturedKeys = Set(pages.compactMap { $0["key"] as? String })
+        XCTAssertEqual(
+            capturedKeys,
+            Set(["content-\(staleKey)", "content-\(nextKey)"]),
+            "预加载必须缓存整个候选窗口，不能把任一 Blob/DOM 相邻关系当成真实翻页顺序"
+        )
+        XCTAssertEqual(pages.first?["source"] as? String, "held-adjacent-speculation")
+    }
+
     func testKindleNineLanguageAndPageEvidenceContracts() throws {
         let expected = [
             "en-US":"en", "zh-CN":"zh", "ja-JP":"ja", "es-ES":"es",
@@ -670,11 +889,30 @@ class CastReaderTests: XCTestCase {
         ))
         XCTAssertTrue(KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
             hasConfirmedVisibleSurface: true,
-            textFingerprintMatches: true
+            textFingerprintMatches: true,
+            visualReleasePresented: true
         ))
         XCTAssertFalse(KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
             hasConfirmedVisibleSurface: true,
-            textFingerprintMatches: false
+            textFingerprintMatches: false,
+            visualReleasePresented: true
+        ))
+        XCTAssertFalse(KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
+            hasConfirmedVisibleSurface: true,
+            textFingerprintMatches: true,
+            visualReleasePresented: false
+        ))
+        XCTAssertFalse(KindleContinuousPageHandoffContract.shouldReleaseVisualHold(
+            audioBoundaryReached: false,
+            hasConfirmedVisibleSurface: true
+        ))
+        XCTAssertFalse(KindleContinuousPageHandoffContract.shouldReleaseVisualHold(
+            audioBoundaryReached: true,
+            hasConfirmedVisibleSurface: false
+        ))
+        XCTAssertTrue(KindleContinuousPageHandoffContract.shouldReleaseVisualHold(
+            audioBoundaryReached: true,
+            hasConfirmedVisibleSurface: true
         ))
         XCTAssertEqual(
             KindleWritingModeContract.infer(from: [CGSize(width: 0.8, height: 0.1), CGSize(width: 0.7, height: 0.12)]),

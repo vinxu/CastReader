@@ -10,6 +10,42 @@ import SwiftUI
 import UIKit
 import WebKit
 
+private struct KindleContinuousReadVisualHold: View {
+    let image: UIImage
+    let highlightRectsNorm: [CGRect]
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .topLeading) {
+                Image(uiImage: image)
+                    .resizable()
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .clipped()
+
+                ForEach(highlightRectsNorm.indices, id: \.self) { index in
+                    let rect = ReadingGeometry
+                        .displayRect(
+                            forNorm: highlightRectsNorm[index],
+                            in: CGRect(origin: .zero, size: proxy.size)
+                        )
+                        .insetBy(dx: -2, dy: -1)
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(Color(red: 242 / 255, green: 101 / 255, blue: 34 / 255, opacity: 0.52))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                                .stroke(
+                                    Color(red: 242 / 255, green: 101 / 255, blue: 34 / 255, opacity: 0.30),
+                                    lineWidth: 1
+                                )
+                        }
+                        .frame(width: max(1, rect.width), height: max(1, rect.height))
+                        .position(x: rect.midX, y: rect.midY)
+                }
+            }
+        }
+    }
+}
+
 struct KindleBookView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var importRouter: ImportRouter
@@ -203,6 +239,14 @@ struct KindleBookView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+            if let image = model.continuousReadVisualHoldImage {
+                KindleContinuousReadVisualHold(
+                    image: image,
+                    highlightRectsNorm: model.continuousReadVisualHoldHighlightRectsNorm
+                )
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
             }
             // What a browser gives you and a bare WKWebView does not: proof that
             // something is happening. Before the first byte arrives there is no
@@ -1763,6 +1807,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// Straight mirrors of the WebView's own loading state — no interpretation.
     @Published private(set) var isNavigating = false
     @Published private(set) var loadProgress: Double = 0
+    /// While Kindle advances its WebView shortly before an audio boundary, keep
+    /// the last visible frame on screen. It is released only after the old page
+    /// has finished speaking and the confirmed new page is ready underneath.
+    @Published private(set) var continuousReadVisualHoldImage: UIImage?
+    /// The held page is a clean Kindle page raster. These OCR-space rectangles
+    /// keep its word highlight live while the underlying WebView stages ahead.
+    @Published private(set) var continuousReadVisualHoldHighlightRectsNorm: [CGRect] = []
     /// Recovery is exhausted and Amazon still refuses the session: the account
     /// must be bound again. Surfaced as a native card because a bare Amazon
     /// sign-in form inside the reader tells the user nothing about what to do.
@@ -1862,6 +1913,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var cachingNextPageAfterKey: String?
     private var cachedNextPage: KindleCachedPage?
     private var cachedPageCandidates: [String: KindleCachedPage] = [:]
+    private var candidateCacheOrder: [String] = []
     private var pageBackStack: [KindleCachedPage] = []
     private var pageForwardStack: [KindleCachedPage] = []
 
@@ -1876,6 +1928,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var continuousReadHandoffSerial = 0
     private var continuousReadOldVMDetached = false
     private var continuousReadAudioCompletedBeforeCommit = false
+    private var continuousReadAudioBoundaryReached = false
+    private var continuousReadAudioGateReleasePresented = false
+    private var continuousReadAudioGateReleaseTask: Task<Void, Never>?
     private var continuousReadTurnFailureCount = 0
     /// Semantic page actions are non-idempotent. Once attempted, visual/cache
     /// staging may retry, but the React paired action may not be sent again.
@@ -2491,18 +2546,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         config.websiteDataStore = .default()
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         let userContentController = WKUserContentController()
-        // Only the metadata bootstrap runs at document start, and only because it
-        // wraps `window.fetch` — it has to be in place before Amazon's own code
-        // captures a reference. It is ~13KB.
-        //
-        // pageCaptureBootstrap (~207KB) deliberately does NOT go here. It installs
-        // no early hooks and guards itself with a version check, so it can be
-        // injected on demand. Measured against a signed-in desktop browser, the
-        // whole Cloud Reader page is 323KB across 7 scripts and loads in ~2s;
-        // injecting another 207KB synchronously before every single navigation —
-        // including the sign-in page and the shelf — was a large part of the 16s
-        // gap between "HTTP 200 arrived" and "didFinish".
+        // These are the only scripts that must run before Amazon's renderer:
+        // metadata wraps fetch, while the small blob hook captures pre-rendered
+        // page images before Kindle revokes their original object URLs. The
+        // ~207KB capture/UI payload stays lazy and installs after navigation.
         if #available(iOS 14.0, *) {
+            userContentController.addUserScript(WKUserScript(
+                source: KindleWebScripts.earlyPageBlobCaptureBootstrap,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true,
+                in: .page
+            ))
             userContentController.addUserScript(WKUserScript(
                 source: KindleWebScripts.metadataBootstrap,
                 injectionTime: .atDocumentStart,
@@ -2510,6 +2564,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 in: .page
             ))
         } else {
+            userContentController.addUserScript(WKUserScript(
+                source: KindleWebScripts.earlyPageBlobCaptureBootstrap,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
             userContentController.addUserScript(WKUserScript(
                 source: KindleWebScripts.metadataBootstrap,
                 injectionTime: .atDocumentStart,
@@ -5274,6 +5333,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard !pageKey.isEmpty else { return }
         cachedPageCandidates[pageKey] = prepared
         cachedNextPage = prepared
+        touchCandidateCacheKey(pageKey)
         pruneCandidateCaches()
     }
 
@@ -5296,6 +5356,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if !targetKey.isEmpty, let prepared = preparedCandidate(forKey: targetKey), prepared.afterKey == afterKey {
             return prepared
         }
+        if let prepared = cachedNextPage,
+           prepared.afterKey == afterKey,
+           !normalizedPageKey(prepared.page.key).isEmpty,
+           normalizedPageKey(prepared.page.key) != afterKey {
+            return prepared
+        }
         return cachedPageCandidates.values.first { prepared in
             prepared.afterKey == afterKey &&
             !normalizedPageKey(prepared.page.key).isEmpty &&
@@ -5308,6 +5374,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard !key.isEmpty else { return }
         cachedStartAudio = audio
         cachedStartAudioCandidates[key] = audio
+        touchCandidateCacheKey(key)
         pruneCandidateCaches()
     }
 
@@ -5401,15 +5468,30 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private func clearPreparedCandidateCaches() {
         cachedNextPage = nil
         cachedPageCandidates.removeAll()
+        candidateCacheOrder.removeAll()
         cachedStartAudio = nil
         cachedStartAudioCandidates.removeAll()
         cachedExplainPrefetch = nil
         cachedExplainPrefetchCandidates.removeAll()
     }
 
-    private func pruneCandidateCaches(limit: Int = 12) {
-        guard cachedPageCandidates.count > limit else { return }
-        let keysToKeep = Set(cachedPageCandidates.keys.suffix(limit))
+    private func touchCandidateCacheKey(_ key: String) {
+        candidateCacheOrder.removeAll { $0 == key }
+        candidateCacheOrder.append(key)
+    }
+
+    private func pruneCandidateCaches(limit: Int = 24) {
+        candidateCacheOrder.removeAll { cachedPageCandidates[$0] == nil }
+        guard candidateCacheOrder.count > limit else { return }
+        let overflow = candidateCacheOrder.count - limit
+        let keysToDrop = candidateCacheOrder.prefix(overflow)
+        candidateCacheOrder.removeFirst(overflow)
+        for key in keysToDrop {
+            cachedPageCandidates[key] = nil
+            cachedStartAudioCandidates[key] = nil
+            cachedExplainPrefetchCandidates[key] = nil
+        }
+        let keysToKeep = Set(candidateCacheOrder)
         cachedPageCandidates = cachedPageCandidates.filter { keysToKeep.contains($0.key) }
         cachedStartAudioCandidates = cachedStartAudioCandidates.filter { keysToKeep.contains($0.key) }
         cachedExplainPrefetchCandidates = cachedExplainPrefetchCandidates.filter { keysToKeep.contains($0.key) }
@@ -7208,6 +7290,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     wordIndex: wordIndex,
                     charRange: nil
                 )
+                if self.refreshContinuousReadVisualHoldHighlight(
+                    document: readVM.document,
+                    paragraphIndex: paragraphIndex,
+                    wordRange: range
+                ) {
+                    return
+                }
                 if range.count > 1 {
                     self.enqueueHighlightWordRange(paragraphIndex: paragraphIndex, range: range)
                 } else {
@@ -7391,19 +7480,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
         continuousReadHandoffSerial += 1
         let serial = continuousReadHandoffSerial
-        let rebased = prefetched.segments.enumerated().map { offset, segment in
-            AudioSegment(
-                paragraphIndex: segment.paragraphIndex,
-                segmentIndex: 700_000_000 + (serial % 100_000) * 1_000 + offset,
-                audioData: segment.audioData,
-                timestamps: segment.timestamps,
-                duration: segment.duration,
-                text: segment.text,
-                isWavFormat: segment.isWavFormat,
-                unprocessedText: segment.unprocessedText,
-                speaker: segment.speaker
-            )
-        }
+        let rebased = continuousReadSegments(prefetched.segments, serial: serial)
         let handoff = KindleContinuousReadHandoff(
             serial: serial,
             oldKey: oldKey,
@@ -7418,6 +7495,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continuousReadHandoff = handoff
         continuousReadOldVMDetached = false
         continuousReadAudioCompletedBeforeCommit = false
+        continuousReadAudioBoundaryReached = false
+        continuousReadAudioGateReleasePresented = false
+        continuousReadAudioGateReleaseTask?.cancel()
+        continuousReadAudioGateReleaseTask = nil
+        continuousReadVisualHoldImage = nil
+        continuousReadVisualHoldHighlightRectsNorm = []
         continuousReadTurnFailureCount = 0
         continuousReadSemanticTurnAttempted = false
         continuousReadConfirmedTargetKey = nil
@@ -7442,10 +7525,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 // then commit the confirmed surface with freshly generated audio.
                 self.beginContinuousReadCommitIfNeeded(serial: serial)
             }
-            return KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
+            let shouldRelease = KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
                 hasConfirmedVisibleSurface: self.continuousReadStagedPage != nil,
-                textFingerprintMatches: fingerprintMatches
+                textFingerprintMatches: fingerprintMatches,
+                visualReleasePresented: self.continuousReadAudioGateReleasePresented
             )
+            if !shouldRelease,
+               self.continuousReadStagedPage != nil,
+               fingerprintMatches {
+                self.scheduleContinuousReadAudioGateRelease(serial: serial)
+            }
+            return shouldRelease
         }
         let appendedAfter = audio.appendPreparedSegmentsForContinuousPlayback(rebased)
         guard appendedAfter == predecessor else {
@@ -7485,6 +7575,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             remainingAudioSeconds: remaining,
             playbackRate: AudioPlayerService.shared.playbackRate
         ) {
+            guard continuousReadTurnTask == nil else { return }
+            let rate = max(0.25, Double(AudioPlayerService.shared.playbackRate))
+            KindleRunLog.write(
+                "KINDLE read continuous tail-threshold serial=\(handoff.serial) " +
+                "remainingMs=\(Int(remaining / rate * 1_000)) leadMs=1400"
+            )
             beginContinuousReadPageTurnIfNeeded(serial: handoff.serial, trigger: "tail-lead")
         }
     }
@@ -7502,6 +7598,23 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         )
         continuousReadTurnTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            if trigger == "tail-lead" {
+                let captured = await self.captureContinuousReadVisualHold(serial: serial)
+                guard self.continuousReadHandoff?.serial == serial else { return }
+                if !captured {
+                    // Without a cover, an early semantic action would expose the
+                    // next page while the previous sentence is still audible.
+                    // Fall back to doing the real turn at the queue boundary.
+                    self.continuousReadTurnTask = nil
+                    KindleRunLog.write(
+                        "KINDLE read continuous visual-turn deferred serial=\(serial) reason=hold-capture-failed"
+                    )
+                    return
+                }
+                // Let SwiftUI publish the held frame before changing Kindle's
+                // underlying page.
+                try? await Task.sleep(nanoseconds: 20_000_000)
+            }
             do {
                 try await self.stageContinuousReadPage(handoff)
             } catch is CancellationError {
@@ -7607,10 +7720,58 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard continuousReadHandoff?.serial == handoff.serial else { throw CancellationError() }
         let prefetchedFingerprint = Self.explainFingerprint(handoff.target.document)
         let stagedFingerprint = Self.explainFingerprint(staged.document)
-        let fingerprintMatches = prefetchedFingerprint == stagedFingerprint
+        var fingerprintMatches = prefetchedFingerprint == stagedFingerprint
+        var resolvedHandoff = handoff
+
+        if !fingerprintMatches {
+            do {
+                let retargeted = try await prepareContinuousReadRetarget(
+                    handoff: handoff,
+                    staged: staged
+                )
+                guard continuousReadHandoff?.serial == handoff.serial else {
+                    throw CancellationError()
+                }
+                resolvedHandoff = retargeted
+                continuousReadHandoff = retargeted
+                fingerprintMatches =
+                    Self.explainFingerprint(retargeted.target.document) == stagedFingerprint
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                KindleRunLog.write(
+                    "KINDLE read continuous retarget-miss serial=\(handoff.serial) " +
+                    "key=\(Self.keyLog(staged.page.key)) error=\(error.localizedDescription)"
+                )
+            }
+        }
+
         continuousReadStagedPage = staged
         continuousReadStagedLiveKey = actualKey
         continuousReadTurnFailureCount = 0
+        releaseContinuousReadVisualHoldIfReady(reason: "staged-after-audio-boundary")
+
+        if resolvedHandoff.target.page.key == staged.page.key,
+           resolvedHandoff.target.page.key != handoff.target.page.key {
+            let audio = AudioPlayerService.shared
+            let wasGated = audio.isQueuedSegmentGated
+            let removed = audio.removePendingSegments(withIDs: handoff.segmentIDs)
+            let appendedAfter = removed
+                ? audio.appendPreparedSegmentsForContinuousPlayback(resolvedHandoff.segments)
+                : nil
+            guard removed, appendedAfter == resolvedHandoff.predecessorSegmentID else {
+                throw KindleBookError.captureFailed("continuous-retarget-queue-changed")
+            }
+            KindleRunLog.write(
+                "KINDLE read continuous retargeted serial=\(handoff.serial) " +
+                "from=\(Self.keyLog(handoff.target.page.key)) to=\(Self.keyLog(staged.page.key)) " +
+                "segs=\(resolvedHandoff.segments.count) gated=\(wasGated ? "Y" : "N")"
+            )
+            if wasGated {
+                audio.nextSegment()
+            }
+        }
+
         KindleRunLog.write(
             "KINDLE read continuous visual-turn ready serial=\(handoff.serial) " +
             "target=\(Self.keyLog(staged.page.key)) actual=\(Self.keyLog(actualKey)) " +
@@ -7635,11 +7796,208 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
     }
 
+    private func captureContinuousReadVisualHold(serial: Int) async -> Bool {
+        guard continuousReadHandoff?.serial == serial,
+              webView.window != nil else { return false }
+
+        let surface = readerSurfaceSize
+        guard surface.width > 40, surface.height > 40 else { return false }
+
+        // Prefer the lossless page raster already used for OCR. Unlike a
+        // WKWebView snapshot it never bakes the last DOM highlight into the held
+        // frame, which lets SwiftUI keep painting one moving word above it.
+        if let page = livePage,
+           normalizedPageKey(page.key) == normalizedPageKey(continuousReadHandoff?.oldKey),
+           let image = UIImage(data: page.imageData) {
+            continuousReadVisualHoldImage = image
+            refreshContinuousReadVisualHoldHighlight()
+            KindleRunLog.write(
+                "KINDLE read continuous visual-hold captured serial=\(serial) " +
+                "source=page-raster image=\(Self.sizeLog(image.size)) " +
+                "highlightRects=\(continuousReadVisualHoldHighlightRectsNorm.count)"
+            )
+            return true
+        }
+
+        let webBounds = webView.bounds
+        guard webBounds.width > 40, webBounds.height > 40 else { return false }
+        let crop = effectiveViewportCrop(forSurfaceSize: surface)
+        let originX = max(0, min(webBounds.width - 1, -crop.offsetX))
+        let originY = max(0, min(webBounds.height - 1, -crop.offsetY))
+        let rect = CGRect(
+            x: originX,
+            y: originY,
+            width: min(surface.width, webBounds.width - originX),
+            height: min(surface.height, webBounds.height - originY)
+        ).integral
+        guard rect.width > 40, rect.height > 40 else { return false }
+
+        // Snapshot fallback: remove the DOM word first so the static frame does
+        // not retain a stale second highlight under the native moving one.
+        _ = try? await evaluateJSON(
+            "window.__crKindleLiveClearWord && window.__crKindleLiveClearWord()"
+        )
+        let configuration = WKSnapshotConfiguration()
+        configuration.rect = rect
+        configuration.snapshotWidth = NSNumber(value: Double(surface.width))
+        let image: UIImage? = await withCheckedContinuation { continuation in
+            webView.takeSnapshot(with: configuration) { image, _ in
+                continuation.resume(returning: image)
+            }
+        }
+        guard continuousReadHandoff?.serial == serial, let image else { return false }
+        continuousReadVisualHoldImage = image
+        refreshContinuousReadVisualHoldHighlight()
+        KindleRunLog.write(
+            "KINDLE read continuous visual-hold captured serial=\(serial) " +
+            "source=web-snapshot rect=\(Self.rectLog(rect)) image=\(Self.sizeLog(image.size)) " +
+            "highlightRects=\(continuousReadVisualHoldHighlightRectsNorm.count)"
+        )
+        return true
+    }
+
+    @discardableResult
+    private func refreshContinuousReadVisualHoldHighlight(
+        document: ReadingDocument? = nil,
+        paragraphIndex: Int? = nil,
+        wordRange: Range<Int>? = nil
+    ) -> Bool {
+        guard continuousReadVisualHoldImage != nil,
+              continuousReadHandoff != nil,
+              let owner = readVM else { return false }
+        let document = document ?? owner.document
+        let paragraphIndex = paragraphIndex ?? owner.currentParagraphIndex
+        let wordRange = wordRange
+            ?? owner.photoHighlightWordRange
+            ?? owner.photoHighlightWordIndex.map { $0..<($0 + 1) }
+        guard paragraphIndex >= 0,
+              let paragraph = document.paragraphs.first(where: { $0.id == paragraphIndex }),
+              let wordRange else {
+            continuousReadVisualHoldHighlightRectsNorm = []
+            return true
+        }
+
+        let lower = max(paragraph.words.startIndex, wordRange.lowerBound)
+        let upper = min(paragraph.words.endIndex, wordRange.upperBound)
+        guard lower < upper else {
+            continuousReadVisualHoldHighlightRectsNorm = []
+            return true
+        }
+        continuousReadVisualHoldHighlightRectsNorm = paragraph.words[lower..<upper].map(\.bboxNorm)
+        return true
+    }
+
+    private func releaseContinuousReadVisualHoldIfReady(reason: String) {
+        guard KindleContinuousPageHandoffContract.shouldReleaseVisualHold(
+            audioBoundaryReached: continuousReadAudioBoundaryReached,
+            hasConfirmedVisibleSurface: continuousReadStagedPage != nil
+        ),
+              continuousReadVisualHoldImage != nil else { return }
+        continuousReadVisualHoldImage = nil
+        continuousReadVisualHoldHighlightRectsNorm = []
+        KindleRunLog.write("KINDLE read continuous visual-hold released reason=\(reason)")
+    }
+
+    /// Reaching the queue boundary and assigning `visualHoldImage = nil` happen
+    /// in the same main-thread turn. If the prepared audio is released in that
+    /// turn as well, AVPlayer can speak several words before SwiftUI has drawn
+    /// the already-staged Kindle page. Hold the concrete queue item for a few
+    /// display frames, then retry the gate after the new surface is visible.
+    private func scheduleContinuousReadAudioGateRelease(serial: Int) {
+        guard continuousReadHandoff?.serial == serial,
+              continuousReadStagedPage != nil,
+              !continuousReadAudioGateReleasePresented,
+              continuousReadAudioGateReleaseTask == nil else { return }
+
+        continuousReadAudioBoundaryReached = true
+        releaseContinuousReadVisualHoldIfReady(reason: "queue-boundary-awaiting-frame")
+        KindleRunLog.write("KINDLE read continuous audio-gate awaiting-frame serial=\(serial)")
+        continuousReadAudioGateReleaseTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 80_000_000)
+            guard let self,
+                  !Task.isCancelled,
+                  self.continuousReadHandoff?.serial == serial,
+                  self.continuousReadStagedPage != nil else { return }
+            self.continuousReadAudioGateReleasePresented = true
+            self.continuousReadAudioGateReleaseTask = nil
+            KindleRunLog.write("KINDLE read continuous audio-gate frame-presented serial=\(serial)")
+            AudioPlayerService.shared.resumeGatedSegmentIfPossible()
+        }
+    }
+
+    private func continuousReadSegments(_ segments: [AudioSegment], serial: Int) -> [AudioSegment] {
+        segments.enumerated().map { offset, segment in
+            AudioSegment(
+                paragraphIndex: segment.paragraphIndex,
+                segmentIndex: 700_000_000 + (serial % 100_000) * 1_000 + offset,
+                audioData: segment.audioData,
+                timestamps: segment.timestamps,
+                duration: segment.duration,
+                text: segment.text,
+                isWavFormat: segment.isWavFormat,
+                unprocessedText: segment.unprocessedText,
+                speaker: segment.speaker
+            )
+        }
+    }
+
+    /// Kindle's retained Blob order is speculative. Once the paired React page
+    /// action confirms the real key, promote that exact OCR page and synthesize
+    /// its first utterance while the old tail is still playing (or held at the
+    /// queue gate). This turns a wrong guess into a late cache hit instead of a
+    /// stop-and-restart fallback.
+    private func prepareContinuousReadRetarget(
+        handoff: KindleContinuousReadHandoff,
+        staged: KindleCachedPage
+    ) async throws -> KindleContinuousReadHandoff {
+        guard continuousReadHandoff?.serial == handoff.serial else {
+            throw CancellationError()
+        }
+        let rebound = KindleCachedPage(
+            afterKey: handoff.oldKey,
+            page: staged.page,
+            document: staged.document,
+            startParagraphIndex: staged.startParagraphIndex
+        )
+        cachePreparedCandidate(rebound)
+        _ = try await ensureReadStartSegmentsPrepared(
+            rebound,
+            epoch: preloadEpoch,
+            reason: "confirmed-page-retarget"
+        )
+        guard continuousReadHandoff?.serial == handoff.serial else {
+            throw CancellationError()
+        }
+
+        let fingerprint = Self.explainFingerprint(rebound.document)
+        let voiceID = AppSettings.shared.voice(for: rebound.document.language)
+        guard let prefetched = startAudioCandidate(
+            pageKey: rebound.page.key,
+            textFingerprint: fingerprint,
+            voiceID: voiceID
+        ), !prefetched.segments.isEmpty else {
+            throw KindleBookError.captureFailed("continuous-retarget-audio-unavailable")
+        }
+        let rebased = continuousReadSegments(prefetched.segments, serial: handoff.serial)
+        return KindleContinuousReadHandoff(
+            serial: handoff.serial,
+            oldKey: handoff.oldKey,
+            target: rebound,
+            previousSnapshot: handoff.previousSnapshot,
+            paragraphIndex: prefetched.paragraphIndex,
+            segments: rebased,
+            segmentIDs: Set(rebased.map(\.id)),
+            predecessorSegmentID: handoff.predecessorSegmentID
+        )
+    }
+
     private func beginContinuousReadCommitIfNeeded(serial: Int) {
         guard continuousReadCommitTask == nil,
               let handoff = continuousReadHandoff,
               handoff.serial == serial else { return }
 
+        continuousReadAudioBoundaryReached = true
+        releaseContinuousReadVisualHoldIfReady(reason: "audio-boundary")
         if !continuousReadOldVMDetached {
             readVM?.detachForContinuousPageHandoff()
             invalidateReadPageSession(reason: "continuous-handoff-\(serial)-detached")
@@ -7694,6 +8052,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continuousReadStagedLiveKey = nil
         continuousReadOldVMDetached = false
         continuousReadAudioCompletedBeforeCommit = false
+        continuousReadAudioBoundaryReached = false
+        continuousReadAudioGateReleasePresented = false
+        continuousReadAudioGateReleaseTask?.cancel()
+        continuousReadAudioGateReleaseTask = nil
+        continuousReadVisualHoldImage = nil
+        continuousReadVisualHoldHighlightRectsNorm = []
         continuousReadTurnFailureCount = 0
         continuousReadSemanticTurnAttempted = false
         continuousReadConfirmedTargetKey = nil
@@ -7796,6 +8160,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 )
                 return
             }
+            KindleRunLog.write(
+                "KINDLE read continuous highlight-synced serial=\(serial) " +
+                "timeMs=\(Int(AudioPlayerService.shared.currentTime * 1_000)) " +
+                "p=\(vm.currentParagraphIndex) w=\(vm.photoHighlightWordIndex ?? -1)"
+            )
             _ = consumeStartAudioCandidate(
                 pageKey: staged.page.key,
                 textFingerprint: Self.explainFingerprint(staged.document),
@@ -7839,6 +8208,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continuousReadStagedLiveKey = nil
         continuousReadOldVMDetached = false
         continuousReadAudioCompletedBeforeCommit = false
+        continuousReadAudioBoundaryReached = false
+        continuousReadAudioGateReleasePresented = false
+        continuousReadAudioGateReleaseTask?.cancel()
+        continuousReadAudioGateReleaseTask = nil
+        continuousReadVisualHoldImage = nil
+        continuousReadVisualHoldHighlightRectsNorm = []
         continuousReadTurnFailureCount = 0
         continuousReadSemanticTurnAttempted = false
         continuousReadConfirmedTargetKey = nil
@@ -9299,7 +9674,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         do {
             guard preloadEpoch == epoch else { return }
-            let captureLimit = mode == .explain ? 1 : 4
+            let captureLimit = mode == .explain ? 1 : 12
             KindleRunLog.write("KINDLE \(mode.rawValue) preload capture-limit after=\(Self.keyLog(afterKey)) limit=\(captureLimit) epoch=\(epoch)")
             let pages = try await captureCandidatePages(afterKey: afterKey, limit: captureLimit)
             guard !Task.isCancelled, preloadEpoch == epoch else { return }
@@ -9307,26 +9682,29 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 throw KindleBookError.noText
             }
 
-            var previousKey = afterKey
             var warmedAudioCount = 0
             var preparedCount = 0
+            var firstPrepared: KindleCachedPage?
             for page in pages {
                 try Task.checkCancellation()
                 guard preloadEpoch == epoch else { return }
-                guard !page.key.isEmpty, page.key != previousKey else {
-                    KindleRunLog.write("KINDLE blob transition source=preload-capture status=repeat old=\(Self.keyLog(previousKey)) expected= actual=\(Self.keyLog(page.key))")
+                guard !page.key.isEmpty, page.key != afterKey else {
+                    KindleRunLog.write("KINDLE blob transition source=preload-capture status=repeat old=\(Self.keyLog(afterKey)) expected= actual=\(Self.keyLog(page.key))")
                     continue
                 }
                 guard !page.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
                 let doc = makeLiveDocument(from: page)
                 guard hasReadableParagraphs(doc) else { continue }
                 let prepared = KindleCachedPage(
-                    afterKey: previousKey,
+                    afterKey: afterKey,
                     page: page,
                     document: doc,
                     startParagraphIndex: firstReadableParagraph(in: doc)
                 )
                 cachePreparedCandidate(prepared)
+                if firstPrepared == nil {
+                    firstPrepared = prepared
+                }
                 if preparedCount == 0 {
                     markExpectedNextBlob(afterKey: afterKey, nextKey: page.key, source: "preload-ready")
                 }
@@ -9345,16 +9723,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     if preparedCount == 1 {
                         startExplainFirstBlockPrefetch(afterKey: prepared.afterKey, pageKey: page.key, document: doc, epoch: epoch)
                     }
-                    previousKey = page.key
                     continue
                 }
                 guard mode == .read else {
                     KindleRunLog.write("KINDLE page preload skip-read-tts mode=\(mode.rawValue) after=\(Self.keyLog(prepared.afterKey)) key=\(Self.keyLog(page.key))")
-                    previousKey = page.key
                     continue
                 }
                 guard warmedAudioCount < 2 else {
-                    previousKey = page.key
                     continue
                 }
                 do {
@@ -9373,10 +9748,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                           error.localizedDescription)
                     #endif
                 }
-                previousKey = page.key
             }
             guard preparedCount > 0 else {
                 throw KindleBookError.noText
+            }
+            // cachePreparedCandidate updates the legacy single-value shortcut
+            // for every candidate. Restore it to the first speculative target;
+            // exact-key reconciliation still uses cachedPageCandidates.
+            if let firstPrepared {
+                cachedNextPage = firstPrepared
             }
             recordNextPagePreloadSuccess(afterKey: afterKey)
         } catch is CancellationError {
@@ -10279,8 +10659,27 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let escapedKey = afterKey
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "'", with: "\\'")
-        let boundedLimit = max(1, min(8, limit))
-        let payload = try await evaluateJSON("window.__crKindleCandidateSnapshotsAfterKey && window.__crKindleCandidateSnapshotsAfterKey('\(escapedKey)', \(boundedLimit), \(Self.ocrCaptureJavaScriptArguments))")
+        let boundedLimit = max(1, min(12, limit))
+        var payload: [String: Any] = [:]
+        for attempt in 0..<3 {
+            let candidatePayload = try await evaluateJSON("window.__crKindleCandidateSnapshotsAfterKey && window.__crKindleCandidateSnapshotsAfterKey('\(escapedKey)', \(boundedLimit), \(Self.ocrCaptureJavaScriptArguments))")
+            let candidateCount = (candidatePayload["pages"] as? [[String: Any]] ?? []).count
+            let heldCount = Self.int(from: candidatePayload["heldCount"]) ?? 0
+            if candidateCount > (payload["pages"] as? [[String: Any]] ?? []).count {
+                payload = candidatePayload
+            }
+            let expectedCount = min(boundedLimit, max(1, heldCount - 1))
+            if candidateCount >= expectedCount || attempt == 2 {
+                if candidateCount >= (payload["pages"] as? [[String: Any]] ?? []).count {
+                    payload = candidatePayload
+                }
+                break
+            }
+            // The early document-start hook owns independent Blob URLs, but the
+            // full capture script creates Image decoders lazily. Give those
+            // held images one run-loop turn before taking the final snapshots.
+            try await Task.sleep(nanoseconds: 180_000_000)
+        }
         let rawPages = payload["pages"] as? [[String: Any]] ?? []
         var pages: [CapturedKindlePage] = []
         var seen = Set<String>()

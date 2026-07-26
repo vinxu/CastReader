@@ -656,6 +656,12 @@ class AudioPlayerService: NSObject, ObservableObject {
         }
 
         currentSegmentIndex = index
+        // `currentTime` still belongs to the AVPlayerItem that just finished.
+        // Publish the new segment only after rebasing its clock, otherwise
+        // page-handoff observers can adopt the new segment with the old item's
+        // terminal time and permanently skip the first highlighted words.
+        currentTime = 0
+        duration = segment.duration
         currentSegment = segment
 
         print("🔊 playSegment[\(index)]: audioData size: \(segment.audioData.count), duration: \(segment.duration)")
