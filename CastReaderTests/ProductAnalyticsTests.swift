@@ -13,6 +13,7 @@ final class ProductAnalyticsTests: XCTestCase {
         let data = try Data(contentsOf: contractURL)
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let events = try XCTUnwrap(object["events"] as? [[String: Any]])
+        XCTAssertEqual(events.count, 22)
         let names = Set(events.compactMap { $0["name"] as? String })
         let legacy = Dictionary(uniqueKeysWithValues: events.compactMap { row -> (String, String)? in
             guard let name = row["name"] as? String,
@@ -31,6 +32,9 @@ final class ProductAnalyticsTests: XCTestCase {
         XCTAssertEqual(purchaseLegacy["pending"], "checkout_error")
         XCTAssertEqual(purchaseLegacy["blocked"], "checkout_error")
         XCTAssertEqual(purchaseLegacy["failed"], "checkout_error")
+        XCTAssertEqual(legacy["review_prompt_eligible"], "rating_prompt_eligible")
+        XCTAssertEqual(legacy["review_request_attempted"], "rating_prompt")
+        XCTAssertEqual(legacy["review_store_link_opened"], "rating_store_link_opened")
     }
 
     func testEveryEventBuildsAValidDualEnvelope() throws {
@@ -73,6 +77,46 @@ final class ProductAnalyticsTests: XCTestCase {
         XCTAssertEqual(pending.event, "checkout_error")
         XCTAssertEqual(blocked.event, "checkout_error")
         XCTAssertEqual(failed.event, "checkout_error")
+    }
+
+    func testReviewEventsRejectAmbiguousTriggerStoreAndResultValues() {
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .reviewRequestAttempted,
+                properties: .init(
+                    result: "success",
+                    trigger: "third_five_minute_read",
+                    store: "app_store"
+                )
+            )
+        )
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .reviewRequestAttempted,
+                properties: .init(
+                    result: "failed",
+                    errorCode: "request_unavailable",
+                    trigger: "third_five_minute_read",
+                    store: "app_store"
+                )
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .reviewRequestAttempted,
+                properties: .init(
+                    result: "shown",
+                    trigger: "third_five_minute_read",
+                    store: "app_store"
+                )
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .reviewStoreLinkOpened,
+                properties: .init(trigger: "third_five_minute_read", store: "app_store")
+            )
+        )
     }
 
     func testQueueRetainsOriginalEventIDAcrossFailureAndRestart() async throws {
@@ -158,7 +202,9 @@ final class ProductAnalyticsTests: XCTestCase {
 
     private func area(for name: AnalyticsEventName) -> AnalyticsProductArea {
         switch name {
-        case .appSessionStart: return .app
+        case .appSessionStart, .reviewPromptEligible, .reviewRequestAttempted,
+             .reviewStoreLinkOpened:
+            return .app
         case .contentIntent, .contentReady, .contentFailed: return .reader
         case .readStart, .readFirstAudio, .readMilestone, .readEnd: return .readAloud
         case .explainStart, .explainFirstBlock, .explainMilestone, .explainEnd: return .explain
@@ -210,6 +256,16 @@ final class ProductAnalyticsTests: XCTestCase {
                 productId: "ai.castreader.pro.monthly",
                 activationSource: "storekit_verified"
             )
+        case .reviewPromptEligible:
+            return .init(trigger: "third_five_minute_read", store: "app_store")
+        case .reviewRequestAttempted:
+            return .init(
+                result: "success",
+                trigger: "third_five_minute_read",
+                store: "app_store"
+            )
+        case .reviewStoreLinkOpened:
+            return .init(trigger: "settings", store: "app_store")
         }
     }
 
@@ -220,6 +276,388 @@ final class ProductAnalyticsTests: XCTestCase {
             store: "app_store",
             productId: "ai.castreader.pro.monthly"
         )
+    }
+}
+
+@MainActor
+final class AppReviewPromptPolicyTests: XCTestCase {
+    private var utcCalendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
+    }
+
+    func testThreeEarlySessionsBecomePendingWhenSeventyTwoHourGateMatures() {
+        let policy = AppReviewPromptPolicy.production
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        var state = AppReviewPromptState()
+
+        policy.recordActiveDay(in: &state, at: start, calendar: utcCalendar)
+        policy.recordActiveDay(
+            in: &state,
+            at: start.addingTimeInterval(24 * 60 * 60),
+            calendar: utcCalendar
+        )
+        for index in 1...3 {
+            XCTAssertFalse(
+                policy.recordFiveMinuteReadSession(
+                    in: &state,
+                    sessionID: "session-\(index)",
+                    at: start.addingTimeInterval(48 * 60 * 60),
+                    version: "1.0",
+                    calendar: utcCalendar
+                )
+            )
+        }
+        XCTAssertNil(state.pendingTrigger)
+
+        let matured = start.addingTimeInterval(72 * 60 * 60)
+        policy.recordActiveDay(in: &state, at: matured, calendar: utcCalendar)
+        XCTAssertTrue(policy.evaluatePending(in: &state, at: matured, version: "1.0"))
+        XCTAssertEqual(state.pendingTrigger, .thirdFiveMinuteRead)
+    }
+
+    func testEvidenceSetsStayBoundedAndSessionsAreDistinct() {
+        let policy = AppReviewPromptPolicy.production
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        var state = AppReviewPromptState()
+
+        for day in 0..<20 {
+            policy.recordActiveDay(
+                in: &state,
+                at: start.addingTimeInterval(Double(day) * 24 * 60 * 60),
+                calendar: utcCalendar
+            )
+        }
+        for id in ["a", "a", "b", "c", "d", "e"] {
+            policy.recordFiveMinuteReadSession(
+                in: &state,
+                sessionID: id,
+                at: start.addingTimeInterval(48 * 60 * 60),
+                version: "1.0",
+                calendar: utcCalendar
+            )
+        }
+
+        XCTAssertEqual(state.activeDayIdentifiers.count, 2)
+        XCTAssertEqual(state.fiveMinuteReadSessionIDs, ["a", "b", "c"])
+    }
+
+    func testReviewPlaybackDeltaRejectsSeeksAndClockAnomalies() {
+        let policy = AppReviewPromptPolicy.production
+        XCTAssertEqual(policy.acceptedPlaybackDelta(1.0), 1.0)
+        XCTAssertEqual(policy.acceptedPlaybackDelta(2.01), 2.01)
+        XCTAssertEqual(policy.acceptedPlaybackDelta(0), 0)
+        XCTAssertEqual(policy.acceptedPlaybackDelta(-1), 0)
+        XCTAssertEqual(policy.acceptedPlaybackDelta(20), 0)
+        XCTAssertEqual(policy.acceptedPlaybackDelta(.infinity), 0)
+    }
+
+    func testFiveMinuteReadProgressSurvivesKindlePageHandoffAndRecordsOnce() {
+        var firstPage = AppReviewReadSessionProgress(
+            sessionID: "kindle-logical-session",
+            playbackSeconds: 298
+        )
+        XCTAssertFalse(firstPage.record(rawPlaybackDelta: 1))
+
+        var secondPage = firstPage
+        XCTAssertTrue(secondPage.record(rawPlaybackDelta: 1))
+        XCTAssertEqual(secondPage.sessionID, "kindle-logical-session")
+        XCTAssertEqual(secondPage.playbackSeconds, 300, accuracy: 0.001)
+        XCTAssertTrue(secondPage.didRecordFiveMinuteMilestone)
+        XCTAssertFalse(secondPage.record(rawPlaybackDelta: 1))
+    }
+
+    func testFallbackAutomaticPageOwnerCarriesKindleAndWeReadButManualTurnDiscards() throws {
+        for sourceKind in [ReadingSourceKind.kindle, .weread] {
+            var firstPage = AppReviewReadSessionProgress(
+                sessionID: "\(sourceKind.rawValue)-fallback-session",
+                playbackSeconds: 298
+            )
+            XCTAssertFalse(firstPage.record(rawPlaybackDelta: 1))
+            let completionToken = AppReviewAutomaticPageContinuation.candidate(
+                firstPage,
+                for: sourceKind
+            )
+            XCTAssertNotNil(completionToken)
+
+            var owner = AppReviewAutomaticPageContinuation()
+            owner.arm(try XCTUnwrap(completionToken))
+            var nextPage = try XCTUnwrap(
+                owner.takeForConfirmedAutomaticCommit(true)
+            )
+            XCTAssertTrue(nextPage.record(rawPlaybackDelta: 1))
+            XCTAssertEqual(nextPage.playbackSeconds, 300, accuracy: 0.001)
+            XCTAssertFalse(nextPage.record(rawPlaybackDelta: 1))
+            XCTAssertNil(owner.pendingProgress, "continuation token must be one-shot")
+        }
+
+        let progress = AppReviewReadSessionProgress(
+            sessionID: "manual-turn-must-reset",
+            playbackSeconds: 299
+        )
+        var manualOwner = AppReviewAutomaticPageContinuation()
+        manualOwner.arm(progress)
+        XCTAssertNil(manualOwner.takeForConfirmedAutomaticCommit(false))
+        XCTAssertNil(manualOwner.takeForConfirmedAutomaticCommit(true))
+        XCTAssertNil(
+            AppReviewAutomaticPageContinuation.candidate(progress, for: .text)
+        )
+    }
+
+    func testWeReadCarryExhaustionQueuesBToCAutomaticContinuation() throws {
+        var completedCarryPage = AppReviewReadSessionProgress(
+            sessionID: "weread-carry-b-to-c",
+            playbackSeconds: 298
+        )
+        XCTAssertFalse(completedCarryPage.record(rawPlaybackDelta: 1))
+
+        var owner = AppReviewAutomaticPageContinuation()
+        owner.arm(try XCTUnwrap(
+            AppReviewAutomaticPageContinuation.candidate(
+                completedCarryPage,
+                for: .weread
+            )
+        ))
+        let queued = owner.takeForConfirmedAutomaticCommit(true)
+        var nextPage = try XCTUnwrap(
+            AppReviewAutomaticPageContinuation.progressForConfirmedCommit(
+                queuedProgress: queued,
+                activeProgress: nil,
+                isConfirmedAutomaticCommit: true,
+                fallbackWillResetActiveProgress: true
+            )
+        )
+
+        XCTAssertTrue(nextPage.record(rawPlaybackDelta: 1))
+        XCTAssertEqual(nextPage.playbackSeconds, 300, accuracy: 0.001)
+    }
+
+    func testWeReadEarlyConfirmedFallbackSnapshotsBeforeStop() throws {
+        var oldPage = AppReviewReadSessionProgress(
+            sessionID: "weread-early-confirmed",
+            playbackSeconds: 298
+        )
+        XCTAssertFalse(oldPage.record(rawPlaybackDelta: 1))
+
+        var emptyOwner = AppReviewAutomaticPageContinuation()
+        let noCompletionTokenYet = emptyOwner.takeForConfirmedAutomaticCommit(true)
+        XCTAssertNil(noCompletionTokenYet)
+        var fallbackPage = try XCTUnwrap(
+            AppReviewAutomaticPageContinuation.progressForConfirmedCommit(
+                queuedProgress: noCompletionTokenYet,
+                activeProgress: oldPage,
+                isConfirmedAutomaticCommit: true,
+                fallbackWillResetActiveProgress: true
+            )
+        )
+        XCTAssertTrue(fallbackPage.record(rawPlaybackDelta: 1))
+        XCTAssertEqual(fallbackPage.playbackSeconds, 300, accuracy: 0.001)
+
+        XCTAssertNil(
+            AppReviewAutomaticPageContinuation.progressForConfirmedCommit(
+                queuedProgress: oldPage,
+                activeProgress: oldPage,
+                isConfirmedAutomaticCommit: false,
+                fallbackWillResetActiveProgress: true
+            ),
+            "manual/TOC commits must never inherit an automatic continuation"
+        )
+    }
+
+    func testKindleViewModelHandoffTransfersLogicalReviewSession() throws {
+        let firstDocument = ReadingDocument(
+            title: "Page 1",
+            sourceKind: .kindle,
+            paragraphs: [ReadingParagraph(id: 0, text: "First page.", type: .paragraph)]
+        )
+        let secondDocument = ReadingDocument(
+            title: "Page 2",
+            sourceKind: .kindle,
+            paragraphs: [ReadingParagraph(id: 0, text: "Second page.", type: .paragraph)]
+        )
+        let expected = AppReviewReadSessionProgress(
+            sessionID: "kindle-logical-session",
+            playbackSeconds: 214
+        )
+        let firstViewModel = ReadAloudViewModel(document: firstDocument)
+        XCTAssertTrue(firstViewModel.inheritAppReviewReadSession(expected))
+        firstViewModel.activate()
+        let handedOff = try XCTUnwrap(firstViewModel.detachForContinuousPageHandoff())
+
+        let secondViewModel = ReadAloudViewModel(document: secondDocument)
+        XCTAssertTrue(secondViewModel.inheritAppReviewReadSession(handedOff))
+        secondViewModel.activate()
+        let transferred = try XCTUnwrap(secondViewModel.detachForContinuousPageHandoff())
+
+        XCTAssertEqual(transferred, expected)
+        AudioPlayerService.shared.onPlaybackComplete = nil
+    }
+
+    func testReviewPresentationGateBlocksStreamingGapsAndHomeProcessing() {
+        XCTAssertTrue(AppReviewPresentationGate.playbackIsQuiescent(
+            isPlaying: false,
+            isBuffering: false,
+            moreSegmentsExpected: false,
+            isWaitingForNextSegment: false
+        ))
+        XCTAssertFalse(AppReviewPresentationGate.playbackIsQuiescent(
+            isPlaying: false,
+            isBuffering: false,
+            moreSegmentsExpected: true,
+            isWaitingForNextSegment: true
+        ))
+        XCTAssertFalse(AppReviewPresentationGate.playbackIsQuiescent(
+            isPlaying: false,
+            isBuffering: true,
+            moreSegmentsExpected: false,
+            isWaitingForNextSegment: false
+        ))
+
+        func gate(homeIsIdle: Bool) -> AppReviewPresentationGate {
+            AppReviewPresentationGate(
+                pending: true,
+                appIsActive: true,
+                isHome: true,
+                playbackIsQuiescent: true,
+                readerIsHidden: true,
+                kindleReaderIsHidden: true,
+                importChromeIsVisible: true,
+                homeIsIdle: homeIsIdle,
+                clipboardSheetIsHidden: true,
+                shareInboxIsHidden: true,
+                voiceCloneSheetIsHidden: true,
+                voicePanelIsHidden: true,
+                onboardingIsHidden: true
+            )
+        }
+
+        XCTAssertTrue(gate(homeIsIdle: true).canStabilize)
+        XCTAssertFalse(gate(homeIsIdle: false).canStabilize)
+    }
+
+    func testVersionCooldownAndRollingYearFrequencyCaps() {
+        let policy = AppReviewPromptPolicy.production
+        let day: TimeInterval = 24 * 60 * 60
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        var state = AppReviewPromptState(
+            firstRecordedAt: start,
+            activeDayIdentifiers: ["2023-11-14", "2023-11-15"],
+            fiveMinuteReadSessionIDs: ["a", "b", "c"]
+        )
+        let firstAttemptAt = start.addingTimeInterval(3 * day)
+
+        XCTAssertTrue(policy.evaluatePending(in: &state, at: firstAttemptAt, version: "1.0"))
+        XCTAssertEqual(
+            policy.consumePendingAttempt(in: &state, at: firstAttemptAt, version: "1.0"),
+            .thirdFiveMinuteRead
+        )
+        XCTAssertFalse(policy.evaluatePending(
+            in: &state,
+            at: firstAttemptAt.addingTimeInterval(365 * day),
+            version: "1.0"
+        ), "同版本永远只允许一次")
+        XCTAssertFalse(policy.evaluatePending(
+            in: &state,
+            at: firstAttemptAt.addingTimeInterval(89 * day),
+            version: "1.1"
+        ))
+
+        let secondAt = firstAttemptAt.addingTimeInterval(90 * day)
+        XCTAssertTrue(policy.evaluatePending(in: &state, at: secondAt, version: "1.1"))
+        XCTAssertNotNil(policy.consumePendingAttempt(in: &state, at: secondAt, version: "1.1"))
+
+        let thirdAt = secondAt.addingTimeInterval(90 * day)
+        XCTAssertTrue(policy.evaluatePending(in: &state, at: thirdAt, version: "1.2"))
+        XCTAssertNotNil(policy.consumePendingAttempt(in: &state, at: thirdAt, version: "1.2"))
+
+        let cappedAt = thirdAt.addingTimeInterval(90 * day)
+        XCTAssertFalse(policy.evaluatePending(in: &state, at: cappedAt, version: "1.3"))
+
+        let rollingWindowPassed = firstAttemptAt.addingTimeInterval(366 * day)
+        XCTAssertTrue(policy.evaluatePending(
+            in: &state,
+            at: rollingWindowPassed,
+            version: "1.3"
+        ))
+        XCTAssertLessThanOrEqual(state.attempts.count, 3)
+    }
+
+    func testManagerPersistsPendingAndCountsAttemptAtStoreKitCall() throws {
+        let suite = "AppReviewPromptTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        var currentDate = start
+        var events: [AnalyticsEventName] = []
+        let manager = AppReviewPromptManager(
+            defaults: defaults,
+            calendar: utcCalendar,
+            now: { currentDate },
+            version: { "1.0" },
+            analyticsRecorder: { name, _, _ in events.append(name) }
+        )
+        manager.recordActiveDay()
+        currentDate = start.addingTimeInterval(24 * 60 * 60)
+        manager.recordActiveDay()
+        currentDate = start.addingTimeInterval(72 * 60 * 60)
+        for index in 1...3 {
+            manager.recordFiveMinuteReadSession(sessionID: "session-\(index)")
+        }
+
+        XCTAssertEqual(manager.pendingTrigger, .thirdFiveMinuteRead)
+        XCTAssertEqual(events, [.reviewPromptEligible])
+        manager.recordActiveDay()
+        manager.recordActiveDay()
+        XCTAssertEqual(
+            events,
+            [.reviewPromptEligible],
+            "pending eligibility must be emitted exactly once"
+        )
+
+        var restoredEvents: [(AnalyticsEventName, AnalyticsProperties)] = []
+        let restored = AppReviewPromptManager(
+            defaults: defaults,
+            calendar: utcCalendar,
+            now: { currentDate },
+            version: { "1.0" },
+            analyticsRecorder: { name, _, properties in
+                restoredEvents.append((name, properties))
+            }
+        )
+        XCTAssertEqual(restored.pendingTrigger, .thirdFiveMinuteRead)
+
+        var requestCalls = 0
+        XCTAssertTrue(restored.performSystemReviewRequest { requestCalls += 1 })
+        XCTAssertEqual(requestCalls, 1)
+        XCTAssertEqual(restored.snapshot.attempts.count, 1)
+        XCTAssertEqual(restoredEvents.map { $0.0 }, [.reviewRequestAttempted])
+        XCTAssertEqual(restoredEvents.first?.1.result, "success")
+        XCTAssertFalse(restored.performSystemReviewRequest { requestCalls += 1 })
+        XCTAssertEqual(requestCalls, 1)
+    }
+
+    func testReviewSettingsStringsCoverAllNineRuntimeLanguages() {
+        let keys = ["支持与反馈", "评价 CastReader", "发送反馈"]
+        for language in AppLanguage.allCases where language != .system {
+            guard let localization = language.bundleLocalization,
+                  let path = Bundle.main.path(forResource: localization, ofType: "lproj"),
+                  let bundle = Bundle(path: path) else {
+                return XCTFail("Missing runtime bundle for \(language.rawValue)")
+            }
+            for key in keys {
+                let value = bundle.localizedString(forKey: key, value: nil, table: nil)
+                XCTAssertFalse(value.isEmpty, "Empty review translation for \(language.rawValue): \(key)")
+                if language != .simplifiedChinese {
+                    XCTAssertNotEqual(
+                        value,
+                        key,
+                        "Missing review translation for \(language.rawValue): \(key)"
+                    )
+                }
+            }
+        }
     }
 }
 

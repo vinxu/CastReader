@@ -53,19 +53,24 @@ class CastReaderUITests: XCTestCase {
     private func launchZh() -> XCUIApplication {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
-        app.launchArguments += ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+        app.launchArguments += [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderSkipLibraryOnboarding",
+        ]
         app.launch()
         return app
     }
 
-    /// 八个正式语言包都必须能独立启动，并显示各自的首页标签。
-    func testLaunchesInAllEightSupportedLanguages() {
+    /// 九个正式语言包都必须能独立启动，并显示各自的首页标签。
+    func testLaunchesInAllNineSupportedLanguages() {
         let configurations: [(language: String, locale: String, home: String)] = [
             ("en", "en_US", "Home"),
             ("zh-Hans", "zh_CN", "首页"),
             ("ja", "ja_JP", "ホーム"),
             ("es", "es_ES", "Inicio"),
             ("fr", "fr_FR", "Accueil"),
+            ("de", "de_DE", "Start"),
             ("pt-BR", "pt_BR", "Início"),
             ("it", "it_IT", "Home"),
             ("hi", "hi_IN", "होम")
@@ -75,7 +80,8 @@ class CastReaderUITests: XCTestCase {
             let app = XCUIApplication()
             app.launchArguments = [
                 "-AppleLanguages", "(\(configuration.language))",
-                "-AppleLocale", configuration.locale
+                "-AppleLocale", configuration.locale,
+                "-CastReaderSkipLibraryOnboarding",
             ]
             app.launch()
             XCTAssertTrue(
@@ -84,6 +90,87 @@ class CastReaderUITests: XCTestCase {
             )
             app.terminate()
         }
+    }
+
+    func testFirstLaunchShowsBoundLibraryOnboarding() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderResetLibraryOnboarding",
+        ]
+        app.launch()
+
+        XCTAssertTrue(app.buttons["libraryOnboardingWeRead"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["libraryOnboardingKindle"].exists)
+        XCTAssertTrue(app.buttons["libraryOnboardingOtherContent"].exists)
+        XCTAssertTrue(app.buttons["libraryOnboardingPostpone"].exists)
+    }
+
+    func testOnboardingOtherContentContinuesIntoExistingImportFlow() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderResetLibraryOnboarding",
+        ]
+        app.launch()
+
+        let other = app.buttons["libraryOnboardingOtherContent"]
+        XCTAssertTrue(other.waitForExistence(timeout: 5))
+        other.tap()
+        XCTAssertTrue(app.buttons["上传文件"].waitForExistence(timeout: 6))
+        XCTAssertTrue(app.buttons["输入网址"].exists)
+    }
+
+    func testOnboardingKindleStartsExistingBindingFlow() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderResetLibraryOnboarding",
+            "-CastReaderForceLibraryOnboardingRebind",
+        ]
+        app.launch()
+
+        let kindle = app.buttons["libraryOnboardingKindle"]
+        XCTAssertTrue(kindle.waitForExistence(timeout: 5))
+        kindle.tap()
+        XCTAssertTrue(app.navigationBars["绑定 Kindle"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 8))
+    }
+
+    func testOnboardingWeReadStartsExistingBindingFlow() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderResetLibraryOnboarding",
+            "-CastReaderForceLibraryOnboardingRebind",
+        ]
+        app.launch()
+
+        let weRead = app.buttons["libraryOnboardingWeRead"]
+        XCTAssertTrue(weRead.waitForExistence(timeout: 5))
+        weRead.tap()
+        XCTAssertTrue(app.navigationBars["绑定微信读书"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 8))
+    }
+
+    func testSettingsCanReopenLibraryOnboardingAfterDismissal() {
+        let app = launchZh()
+        app.tabBars.buttons["音色"].tap()
+        XCTAssertTrue(app.buttons["settingsGearButton"].waitForExistence(timeout: 5))
+        app.buttons["settingsGearButton"].tap()
+        XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 5))
+
+        let reopen = app.buttons["重新打开书库引导"]
+        for _ in 0..<6 where !reopen.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(reopen.isHittable)
+        reopen.tap()
+        XCTAssertTrue(app.buttons["libraryOnboardingWeRead"].waitForExistence(timeout: 6))
     }
 
     func testCanSwitchInterfaceLanguageInsideTheApp() {

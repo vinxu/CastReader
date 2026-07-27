@@ -160,6 +160,27 @@
       "product_area": "billing",
       "required_properties": ["store", "productId", "trigger", "activationSource"],
       "optional_properties": ["syncState"]
+    },
+    {
+      "name": "review_prompt_eligible",
+      "legacy_event": "rating_prompt_eligible",
+      "product_area": "app",
+      "required_properties": ["trigger", "store"],
+      "optional_properties": []
+    },
+    {
+      "name": "review_request_attempted",
+      "legacy_event": "rating_prompt",
+      "product_area": "app",
+      "required_properties": ["trigger", "store", "result"],
+      "optional_properties": ["errorCode"]
+    },
+    {
+      "name": "review_store_link_opened",
+      "legacy_event": "rating_store_link_opened",
+      "product_area": "app",
+      "required_properties": ["trigger", "store"],
+      "optional_properties": []
     }
   ],
   "privacy_forbidden_keys": [

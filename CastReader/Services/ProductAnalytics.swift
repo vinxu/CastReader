@@ -29,6 +29,9 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
     case purchaseStart = "purchase_start"
     case purchaseResult = "purchase_result"
     case entitlementActivated = "entitlement_activated"
+    case reviewPromptEligible = "review_prompt_eligible"
+    case reviewRequestAttempted = "review_request_attempted"
+    case reviewStoreLinkOpened = "review_store_link_opened"
 
     var legacyEvent: String {
         switch self {
@@ -51,6 +54,9 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
         case .purchaseStart: return "checkout_started"
         case .purchaseResult: return "checkout_completed"
         case .entitlementActivated: return "pro_activated"
+        case .reviewPromptEligible: return "rating_prompt_eligible"
+        case .reviewRequestAttempted: return "rating_prompt"
+        case .reviewStoreLinkOpened: return "rating_store_link_opened"
         }
     }
 }
@@ -290,6 +296,7 @@ enum AnalyticsSchemaError: Error, Equatable, LocalizedError {
     case missingProperties([String])
     case unknownProperties([String])
     case forbiddenProperties([String])
+    case invalidPropertyValue(property: String, value: String)
 
     var errorDescription: String? {
         switch self {
@@ -297,6 +304,8 @@ enum AnalyticsSchemaError: Error, Equatable, LocalizedError {
         case .missingProperties(let keys): return "missing properties: \(keys.joined(separator: ","))"
         case .unknownProperties(let keys): return "unknown properties: \(keys.joined(separator: ","))"
         case .forbiddenProperties(let keys): return "forbidden properties: \(keys.joined(separator: ","))"
+        case .invalidPropertyValue(let property, let value):
+            return "invalid \(property): \(value)"
         }
     }
 }
@@ -327,6 +336,9 @@ enum AnalyticsSchema {
         .purchaseStart: .init(required: ["store", "productId", "trigger"], optional: []),
         .purchaseResult: .init(required: ["store", "productId", "trigger", "result"], optional: ["errorCode"]),
         .entitlementActivated: .init(required: ["store", "productId", "trigger", "activationSource"], optional: ["syncState"]),
+        .reviewPromptEligible: .init(required: ["trigger", "store"], optional: []),
+        .reviewRequestAttempted: .init(required: ["trigger", "store", "result"], optional: ["errorCode"]),
+        .reviewStoreLinkOpened: .init(required: ["trigger", "store"], optional: []),
     ]
 
     private static let forbidden = Set([
@@ -351,6 +363,7 @@ enum AnalyticsSchema {
         if !unknown.isEmpty {
             throw AnalyticsSchemaError.unknownProperties(unknown.sorted())
         }
+        try validateReviewValues(name, properties: properties)
     }
 
     static var eventNames: Set<String> { Set(AnalyticsEventName.allCases.map(\.rawValue)) }
@@ -359,6 +372,42 @@ enum AnalyticsSchema {
         let data = try JSONEncoder().encode(properties)
         let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         return Set(object?.keys.map { $0 } ?? [])
+    }
+
+    private static func validateReviewValues(
+        _ name: AnalyticsEventName,
+        properties: AnalyticsProperties
+    ) throws {
+        guard name == .reviewPromptEligible
+                || name == .reviewRequestAttempted
+                || name == .reviewStoreLinkOpened else {
+            return
+        }
+        if properties.store != "app_store" {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "store",
+                value: properties.store ?? "nil"
+            )
+        }
+
+        let expectedTrigger = name == .reviewStoreLinkOpened
+            ? AppReviewTrigger.settings.rawValue
+            : AppReviewTrigger.thirdFiveMinuteRead.rawValue
+        if properties.trigger != expectedTrigger {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "trigger",
+                value: properties.trigger ?? "nil"
+            )
+        }
+
+        if name == .reviewRequestAttempted,
+           properties.result != AnalyticsResult.success.rawValue,
+           properties.result != AnalyticsResult.failed.rawValue {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "result",
+                value: properties.result ?? "nil"
+            )
+        }
     }
 }
 

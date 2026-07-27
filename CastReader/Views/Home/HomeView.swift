@@ -98,6 +98,7 @@ final class ImportRouter: ObservableObject {
 struct HomeView: View {
     let shareInboxUnreadCount: Int
     let onOpenShareInbox: () -> Void
+    let onReviewPresentationBlockedChanged: (Bool) -> Void
 
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @EnvironmentObject private var importRouter: ImportRouter
@@ -108,10 +109,17 @@ struct HomeView: View {
     @StateObject private var captureVM = CaptureFlowViewModel()
     @StateObject private var importVM = ImportViewModel()
     @ObservedObject private var kindleStore = KindleLibraryStore.shared
+    @ObservedObject private var weReadStore = WeReadLibraryStore.shared
+    @ObservedObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
 
-    init(shareInboxUnreadCount: Int = 0, onOpenShareInbox: @escaping () -> Void = {}) {
+    init(
+        shareInboxUnreadCount: Int = 0,
+        onOpenShareInbox: @escaping () -> Void = {},
+        onReviewPresentationBlockedChanged: @escaping (Bool) -> Void = { _ in }
+    ) {
         self.shareInboxUnreadCount = shareInboxUnreadCount
         self.onOpenShareInbox = onOpenShareInbox
+        self.onReviewPresentationBlockedChanged = onReviewPresentationBlockedChanged
     }
 
     /// 所有 sheet 合并到单一入口，避免「同一 View 多个 .sheet」互相抢 present。
@@ -159,6 +167,9 @@ struct HomeView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
+                    if libraryOnboarding.shouldShowReminder {
+                        libraryOnboardingReminder
+                    }
                     if !continueRecords.isEmpty { continueSection }
                     scenarioSection
                     KindleHomeSection(store: kindleStore)
@@ -196,9 +207,19 @@ struct HomeView: View {
                     .accessibilityLabel(Text(AppLocalized("内容接收箱")))
                 }
             }
-            .overlay { if captureVM.isProcessing || importVM.isUploading || isProcessingPDF { processingOverlay } }
+            .overlay { if isProcessingContent { processingOverlay } }
         }
         .navigationViewStyle(.stack)
+        .onAppear {
+            onReviewPresentationBlockedChanged(isProcessingContent)
+        }
+        .onChange(of: isProcessingContent) { isProcessing in
+            onReviewPresentationBlockedChanged(isProcessing)
+        }
+        .onDisappear {
+            // A pushed Home destination is not the stable Home root either.
+            onReviewPresentationBlockedChanged(true)
+        }
         // ➕（底部）→ 快速导入面板。默认通用导入，也可在面板里选择场景。
         .onChange(of: importRouter.generalToken) { _ in
             activeSheet = .importPanel(.general)
@@ -375,6 +396,68 @@ struct HomeView: View {
 
     private var continueRecords: [HistoryRecord] {
         history.records.filter { HomeContinueContract.includes($0.sourceKind) }
+    }
+
+    private var libraryOnboardingReminder: some View {
+        let source = libraryOnboarding.selectedSource
+        let hasBooks: Bool = switch source {
+        case .kindle: !kindleStore.books.isEmpty
+        case .weread: !weReadStore.books.isEmpty
+        case nil: false
+        }
+        let actionTitle: String = switch source {
+        case .kindle:
+            hasBooks ? AppLocalized("打开一本书") : AppLocalized("绑定 Kindle")
+        case .weread:
+            hasBooks ? AppLocalized("打开一本书") : AppLocalized("绑定微信读书")
+        case nil:
+            AppLocalized("继续")
+        }
+
+        return BoundLibraryActivationCard(
+            source: source,
+            playbackProgress: libraryOnboarding.activationPlaybackSeconds
+                / Double(BoundLibraryOnboardingStore.activationSeconds),
+            actionTitle: actionTitle,
+            action: continueLibraryOnboarding
+        )
+    }
+
+    private func continueLibraryOnboarding() {
+        guard let source = libraryOnboarding.selectedSource else {
+            libraryOnboarding.presentChooser()
+            return
+        }
+
+        switch source {
+        case .kindle:
+            if let book = kindleStore.homeBooks.first {
+                KindlePlaybackCenter.shared.open(book: book)
+            } else {
+                NotificationCenter.default.post(name: .castReaderKindleRebindRequested, object: nil)
+            }
+        case .weread:
+            if let book = weReadStore.homeBooks.first {
+                weReadStore.markOpened(book)
+                let document = ReadingDocument(
+                    id: book.id,
+                    title: book.title,
+                    sourceKind: .weread,
+                    language: Constants.TTS.defaultLanguage,
+                    paragraphs: [],
+                    sourceURL: book.effectiveReaderURL
+                )
+                let context = ProductAnalytics.shared.beginContentIntent(
+                    source: .weread,
+                    format: .weread,
+                    entryPoint: libraryOnboarding.analyticsEntryPoint(for: .weread) ?? "weread_library",
+                    intendedMode: "read"
+                )
+                coordinator.open(document, analyticsContext: context)
+            } else {
+                NotificationCenter.default.post(name: .castReaderWeReadRebindRequested, object: nil)
+            }
+        }
     }
 
     private var continueSection: some View {
@@ -701,6 +784,76 @@ struct HomeView: View {
                 Text(importVM.isUploading ? AppLocalized("上传中…") : AppLocalized("识别中…")).foregroundColor(.white).font(.subheadline)
             }
             .padding(24).background(.ultraThinMaterial).cornerRadius(16)
+        }
+    }
+
+    private var isProcessingContent: Bool {
+        captureVM.isProcessing || importVM.isUploading || isProcessingPDF
+    }
+}
+
+private struct BoundLibraryActivationCard: View {
+    let source: BoundLibraryOnboardingSource?
+    let playbackProgress: Double
+    let actionTitle: String
+    let action: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 13) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: iconName)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(AppTheme.primary)
+                    .frame(width: 42, height: 42)
+                    .background(AppTheme.primary.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(AppLocalized("完成首次朗读"))
+                        .font(.headline)
+                        .foregroundStyle(AppTheme.foreground)
+                    Text(AppLocalized("打开一本书，听满 30 秒即可完成设置。"))
+                        .font(.caption)
+                        .foregroundStyle(AppTheme.mutedForeground)
+                }
+                Spacer(minLength: 0)
+            }
+
+            ProgressView(value: min(1, max(0, playbackProgress)))
+                .tint(AppTheme.primary)
+
+            Button(action: action) {
+                HStack {
+                    Text(actionTitle)
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Image(systemName: "arrow.right")
+                        .font(.caption.weight(.bold))
+                }
+                .foregroundStyle(AppTheme.primaryForeground)
+                .padding(.horizontal, 14)
+                .frame(height: 44)
+                .background(AppTheme.primary)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("continueLibraryOnboarding")
+        }
+        .padding(16)
+        .background(AppTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(AppTheme.primary.opacity(0.22), lineWidth: 1)
+        )
+        .accessibilityIdentifier("libraryOnboardingReminder")
+    }
+
+    private var iconName: String {
+        switch source {
+        case .kindle: return "books.vertical.fill"
+        case .weread: return "book.closed.fill"
+        case nil: return "link.circle.fill"
         }
     }
 }

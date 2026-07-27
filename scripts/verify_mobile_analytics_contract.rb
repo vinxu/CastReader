@@ -31,7 +31,7 @@ kotlin = android_root.join("app/src/main/java/com/same/castreader/analytics/Anal
 kotlin_event_section = kotlin.split("enum class AnalyticsProductArea", 2).first
 kotlin_names = kotlin_event_section.scan(/([A-Z_]+)\("([^"]+)"/).to_h
 kotlin_definitions = kotlin.scan(
-  /AnalyticsEventName\.([A-Z_]+)\s+to\s+AnalyticsDefinition\(setOf\(([^)]*)\)(?:,\s*setOf\(([^)]*)\))?\)/
+  /AnalyticsEventName\.([A-Z_]+)\s+to\s+AnalyticsDefinition\(\s*setOf\(([^)]*)\)(?:,\s*setOf\(([^)]*)\))?\s*\)/
 ).to_h do |name, required, optional|
   [
     kotlin_names.fetch(name),
@@ -45,4 +45,5 @@ end
 abort "iOS analytics event/property contract mismatch" unless swift_definitions == contract
 abort "Android analytics event/property contract mismatch" unless kotlin_definitions == contract
 
-puts "mobile analytics contract verified: JSON=19 iOS=19 Android=19; event names and required/optional properties match"
+event_count = contract.length
+puts "mobile analytics contract verified: JSON=#{event_count} iOS=#{swift_definitions.length} Android=#{kotlin_definitions.length}; event names and required/optional properties match"

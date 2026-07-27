@@ -54,6 +54,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var lastWeReadFingerprint = ""
     private var lastWeReadEvidence: WeReadPageEvidence?
     private var pendingWeReadTurn = false
+    private var automaticAppReviewContinuation = AppReviewAutomaticPageContinuation()
+    private var suppressAppReviewContinuationForPendingTurn = false
     private var pendingWeReadManualTurn = false
     private var pendingWeReadTOCJump = false
     private var pendingWeReadTOCEntry: WeReadTOCEntry?
@@ -204,9 +206,27 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         self.explainVM = explainVM
 
         if isWeRead {
-            readVM.onDocumentFinished = { [weak self] in
-                guard self?.isReadMode == true else { return }
-                self?.requestWeReadNextPage()
+            readVM.onAppReviewReadSessionInvalidated = { [weak self] in
+                guard let self else { return }
+                let shouldSuppressPendingTurn =
+                    self.pendingWeReadTurn
+                        || self.automaticAppReviewContinuation.pendingProgress != nil
+                self.automaticAppReviewContinuation.cancel()
+                if shouldSuppressPendingTurn {
+                    self.suppressAppReviewContinuationForPendingTurn = true
+                }
+            }
+            readVM.onDocumentFinished = { [weak self] appReviewContinuation in
+                guard let self else { return }
+                guard self.isReadMode else {
+                    self.automaticAppReviewContinuation.cancel()
+                    return
+                }
+                if let appReviewContinuation {
+                    self.automaticAppReviewContinuation.arm(appReviewContinuation)
+                    self.suppressAppReviewContinuationForPendingTurn = false
+                }
+                self.requestWeReadNextPage()
             }
             readVM.onPageBoundaryApproaching = { [weak self] in
                 self?.handleWeReadPageBoundaryApproaching()
@@ -402,6 +422,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             pendingWeReadActionID = (msg.payload["actionID"] as? String) ?? pendingWeReadActionID
             NSLog("CRDBG WeRead semantic turn requested %@", "\(msg.payload)")
         case "wereadTurnRejected":
+            automaticAppReviewContinuation.cancel()
+            suppressAppReviewContinuationForPendingTurn = false
             pendingWeReadTurn = false
             pendingWeReadManualTurn = false
             pendingWeReadActionID = ""
@@ -662,6 +684,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
         weReadManualCommitTask?.cancel()
         weReadManualCommitTask = nil
+        automaticAppReviewContinuation.cancel()
+        suppressAppReviewContinuationForPendingTurn = true
         weReadManualIntentTimeout?.cancel()
         weReadManualIntentTimeout = nil
         pendingWeReadTurn = false
@@ -721,6 +745,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         pendingWeReadTOCJump = false
         pendingWeReadTOCEntry = nil
         pendingWeReadManualTurn = false
+        suppressAppReviewContinuationForPendingTurn = false
         pendingWeReadActionID = ""
         resumeReadAfterWeReadTurn = false
         resumeExplainAfterWeReadTurn = false
@@ -1249,6 +1274,29 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             $0.sourceFingerprint == candidate.priorFingerprint &&
                 AudioPlayerService.shared.currentSegment?.id == $0.cue.segmentID
         } == true
+        let isConfirmedAutomaticReadCommit =
+            isReadMode
+                && pendingWeReadTurn
+                && candidate.isConfirmedTurn
+                && !suppressAppReviewContinuationForPendingTurn
+        let queuedAppReviewReadSession = automaticAppReviewContinuation
+            .takeForConfirmedAutomaticCommit(isConfirmedAutomaticReadCommit)
+        // When visual confirmation wins the race against natural audio
+        // completion there is no queued callback token yet. Snapshot only when
+        // this commit will take the fallback stop/restart path.
+        let fallbackWillResetActiveProgress =
+            !canCommitContinuously && !canCommitBoundaryCarry
+        let activeFallbackAppReviewReadSession =
+            isConfirmedAutomaticReadCommit && fallbackWillResetActiveProgress
+            ? readVM?.snapshotAppReviewReadSessionForActiveAutomaticPageCommit()
+            : nil
+        let appReviewReadSession = AppReviewAutomaticPageContinuation
+            .progressForConfirmedCommit(
+                queuedProgress: queuedAppReviewReadSession,
+                activeProgress: activeFallbackAppReviewReadSession,
+                isConfirmedAutomaticCommit: isConfirmedAutomaticReadCommit,
+                fallbackWillResetActiveProgress: fallbackWillResetActiveProgress
+            )
         if pendingWeReadTurn, let requestedAt = weReadTurnRequestedAt {
             let measured = max(0.1, min(2.0, Date().timeIntervalSince(requestedAt)))
             observedWeReadTurnLatencySeconds = observedWeReadTurnLatencySeconds * 0.65 + measured * 0.35
@@ -1270,6 +1318,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         lastWeReadFingerprint = candidate.fingerprint
         lastWeReadEvidence = candidate.evidence
         pendingWeReadTurn = false
+        suppressAppReviewContinuationForPendingTurn = false
         pendingWeReadManualTurn = false
         pendingWeReadTOCJump = false
         pendingWeReadTOCEntry = nil
@@ -1298,6 +1347,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
         if didInit {
             if isReadMode {
+                if let appReviewReadSession,
+                   readVM?.inheritAppReviewReadSession(appReviewReadSession) != true {
+                    ReaderRunLog.write(
+                        "WEREAD automatic review session adoption rejected next=\(String(candidate.fingerprint.prefix(12)))"
+                    )
+                }
                 var committedContinuously = false
                 var committedHandoff: WeReadContinuousHandoff?
                 if canCommitContinuously, let continuous {
@@ -1428,6 +1483,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
     private func requestWeReadNextPage() {
         guard isWeRead, didInit else {
+            automaticAppReviewContinuation.cancel()
             if !isReadMode { explainVM?.finishLivePageContinuation() }
             return
         }
@@ -1445,6 +1501,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         weReadTurnRequestedAt = Date()
         ReaderRunLog.write("WEREAD page turn action=semantic-next fingerprint=\(String(lastWeReadFingerprint.prefix(12)))")
         guard let webView else {
+            automaticAppReviewContinuation.cancel()
+            suppressAppReviewContinuationForPendingTurn = false
             pendingWeReadTurn = false
             pendingWeReadBoundaryTurn = nil
             weReadTurnRequestedAt = nil
@@ -1456,6 +1514,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             guard let self else { return }
             if let error { NSLog("CRDBG WeRead nextPage error %@", "\(error)") }
             if (value as? Bool) != true {
+                self.automaticAppReviewContinuation.cancel()
+                self.suppressAppReviewContinuationForPendingTurn = false
                 self.pendingWeReadTurn = false
                 self.pendingWeReadBoundaryTurn = nil
                 self.weReadTurnRequestedAt = nil
@@ -1469,6 +1529,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             self.weReadTurnTimeout = Task { @MainActor [weak self] in
                 try? await Task.sleep(nanoseconds: 4_000_000_000)
                 guard let self, !Task.isCancelled, self.pendingWeReadTurn else { return }
+                self.automaticAppReviewContinuation.cancel()
+                self.suppressAppReviewContinuationForPendingTurn = false
                 self.pendingWeReadTurn = false
                 self.pendingWeReadActionID = ""
                 self.pendingWeReadBoundaryTurn = nil
@@ -1490,6 +1552,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private func prepareForWeReadPageChange(_ payload: [String: Any]) {
         guard isWeRead, didInit else { return }
         let reason = (payload["reason"] as? String) ?? "canvas"
+        if reason == "manual-intent" {
+            automaticAppReviewContinuation.cancel()
+            suppressAppReviewContinuationForPendingTurn = true
+        }
         if reason == "manual-intent", !pendingWeReadTurn {
             armWeReadManualIntent()
         }
@@ -1583,6 +1649,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private func armWeReadManualIntent() {
+        automaticAppReviewContinuation.cancel()
+        suppressAppReviewContinuationForPendingTurn = true
         pendingWeReadManualTurn = true
         weReadManualIntentTimeout?.cancel()
         weReadManualIntentTimeout = Task { @MainActor [weak self] in
@@ -1724,10 +1792,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     /// 切朗读/解读模式：启停 DOM 高亮层。
     func setActive(readMode: Bool) {
         if isWeRead, !readMode, isReadMode {
+            automaticAppReviewContinuation.cancel()
+            suppressAppReviewContinuationForPendingTurn = true
             cancelWeReadContinuousHandoff(reason: "mode-switched")
             invalidateWeReadPreview(reason: "mode-switched-to-explain", preservePrediction: true)
             activeWeReadCarry = nil
         } else if isWeRead, readMode, !isReadMode {
+            suppressAppReviewContinuationForPendingTurn = false
             invalidateWeReadExplainPrefetch(reason: "mode-switched-to-read")
         }
         isReadMode = readMode
@@ -1841,6 +1912,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
     private func beginWeReadRefresh(reason: String, stopPlayback: Bool) {
         guard isWeRead else { return }
+        automaticAppReviewContinuation.cancel()
+        suppressAppReviewContinuationForPendingTurn = true
         if var existing = weReadRefreshState {
             if stopPlayback, !existing.didStopPlayback {
                 existing.didStopPlayback = true

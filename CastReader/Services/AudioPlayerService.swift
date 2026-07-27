@@ -21,6 +21,12 @@ class AudioPlayerService: NSObject, ObservableObject {
     @Published var playbackRate: Float = 1.0
     @Published var currentSegment: AudioSegment?
     @Published var isBuffering = false
+    /// True while a streaming producer has promised additional queue items.
+    /// Published because a temporarily empty queue must still block transient
+    /// UI such as the App Store review request.
+    @Published var moreSegmentsExpected = false
+    /// True after the current queue drains while its producer is still active.
+    @Published private(set) var isWaitingForNextSegment = false
 
     // Book/Chapter info
     @Published var currentBookId: String?
@@ -47,11 +53,6 @@ class AudioPlayerService: NSObject, ObservableObject {
     // 临时文件管理
     private var currentTempFileURL: URL?
 
-    // Track if TTS is still generating more segments
-    // This prevents premature onPlaybackComplete when segments are still loading
-    var moreSegmentsExpected: Bool = false
-    private var waitingForNextSegment: Bool = false
-
     // Callbacks
     var onSegmentComplete: (() -> Void)?
     var onPlaybackComplete: (() -> Void)?
@@ -68,6 +69,15 @@ class AudioPlayerService: NSObject, ObservableObject {
     var progress: Double {
         guard duration > 0 else { return 0 }
         return currentTime / duration
+    }
+
+    var isQuiescentForReviewPrompt: Bool {
+        AppReviewPresentationGate.playbackIsQuiescent(
+            isPlaying: isPlaying,
+            isBuffering: isBuffering,
+            moreSegmentsExpected: moreSegmentsExpected,
+            isWaitingForNextSegment: isWaitingForNextSegment
+        )
     }
 
     /// Last item currently owned by the player queue. Kindle uses this as the
@@ -372,7 +382,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         gatedSegmentIndex = nil
         canStartQueuedSegment = nil
         moreSegmentsExpected = false
-        waitingForNextSegment = false
+        isWaitingForNextSegment = false
     }
 
     private static func cleanCaption(_ caption: String?) -> String? {
@@ -389,19 +399,19 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     func loadSegment(_ segment: AudioSegment, autoPlay: Bool = true) {
-        print("🔊 loadSegment: Adding segment \(segment.segmentIndex) for paragraph \(segment.paragraphIndex), queueCount will be \(segmentsQueue.count + 1), waiting=\(waitingForNextSegment)")
+        print("🔊 loadSegment: Adding segment \(segment.segmentIndex) for paragraph \(segment.paragraphIndex), queueCount will be \(segmentsQueue.count + 1), waiting=\(isWaitingForNextSegment)")
         segmentsQueue.append(segment)
 
         guard !playbackSuspendedByInterruption else {
-            waitingForNextSegment = false
+            isWaitingForNextSegment = false
             print("🔊 loadSegment: Queued while interrupted; waiting for user resume")
             return
         }
 
         // If we were waiting for the next segment, play it now
-        if waitingForNextSegment, autoPlay {
+        if isWaitingForNextSegment, autoPlay {
             print("🔊 loadSegment: Was waiting, now playing segment \(segmentsQueue.count - 1)")
-            waitingForNextSegment = false
+            isWaitingForNextSegment = false
             playSegment(at: segmentsQueue.count - 1)
         }
         // If this is the first segment and we're not playing, start playback
@@ -409,7 +419,7 @@ class AudioPlayerService: NSObject, ObservableObject {
             print("🔊 loadSegment: First segment, starting playback")
             playSegment(at: 0)
         } else {
-            if !autoPlay { waitingForNextSegment = false }
+            if !autoPlay { isWaitingForNextSegment = false }
             print("🔊 loadSegment: Segment queued (autoPlay=\(autoPlay), isPlaying=\(isPlaying), queueCount=\(segmentsQueue.count))")
         }
     }
@@ -447,11 +457,11 @@ class AudioPlayerService: NSObject, ObservableObject {
         print("🔊 appendPreparedSegments: Added \(segments.count) segments after \(predecessor ?? "none")")
 
         guard !playbackSuspendedByInterruption else {
-            waitingForNextSegment = false
+            isWaitingForNextSegment = false
             return predecessor
         }
-        if waitingForNextSegment {
-            waitingForNextSegment = false
+        if isWaitingForNextSegment {
+            isWaitingForNextSegment = false
             playSegment(at: firstAppendedIndex)
         } else if currentSegment == nil, !isPlaying {
             playSegment(at: firstAppendedIndex)
@@ -563,6 +573,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentSegment = nil
         gatedSegmentIndex = nil
         isBuffering = false
+        isWaitingForNextSegment = false
         // Clear Combine subscriptions to prevent stale observers
         cancellables.removeAll()
         // 清理临时文件
@@ -611,7 +622,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         } else if moreSegmentsExpected {
             // TTS is still generating segments, wait for them
             print("🔊 nextSegment: No more segments in queue but TTS still loading, waiting...")
-            waitingForNextSegment = true
+            isWaitingForNextSegment = true
         } else {
             print("🔊 nextSegment: No more segments and TTS complete, calling onPlaybackComplete")
             onPlaybackComplete?()

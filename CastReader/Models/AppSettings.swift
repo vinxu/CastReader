@@ -113,6 +113,208 @@ func AppLocalized(_ key: String.LocalizationValue) -> String {
     )
 }
 
+enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
+    case kindle
+    case weread
+
+    var id: String { rawValue }
+
+    var analyticsSource: AnalyticsContentSource {
+        switch self {
+        case .kindle: return .kindle
+        case .weread: return .weread
+        }
+    }
+
+    var analyticsFormat: AnalyticsContentFormat {
+        switch self {
+        case .kindle: return .kindle
+        case .weread: return .weread
+        }
+    }
+}
+
+/// Versioned first-use state for the mobile activation path:
+///
+/// choose Kindle/WeRead → bind a real shelf → open a book → listen for 30 seconds.
+///
+/// This store intentionally owns no WebView and no credentials. It only
+/// persists semantic progress, leaving both providers' existing login/session
+/// implementations untouched.
+@MainActor
+final class BoundLibraryOnboardingStore: ObservableObject {
+    static let shared = BoundLibraryOnboardingStore()
+    static let activationSeconds = 30
+
+    @Published private(set) var selectedSource: BoundLibraryOnboardingSource?
+    @Published private(set) var hasSeenChooser: Bool
+    @Published private(set) var isActivated: Bool
+    @Published private(set) var isChooserPresented: Bool
+    @Published private(set) var activationPlaybackSeconds: Double
+
+    private let defaults: UserDefaults
+    private var lastPersistedPlaybackBucket: Int
+
+    private enum Key {
+        static let selectedSource = "boundLibraryOnboarding.v1.selectedSource"
+        static let hasSeenChooser = "boundLibraryOnboarding.v1.hasSeenChooser"
+        static let isActivated = "boundLibraryOnboarding.v1.isActivated"
+        static let activationPlaybackSeconds = "boundLibraryOnboarding.v1.activationPlaybackSeconds"
+    }
+
+    init(
+        defaults: UserDefaults = .standard,
+        arguments: [String] = ProcessInfo.processInfo.arguments
+    ) {
+        self.defaults = defaults
+
+        if arguments.contains("-CastReaderResetLibraryOnboarding") {
+            Self.clearPersistedState(in: defaults)
+        }
+
+        let restoredSource = defaults.string(forKey: Key.selectedSource)
+            .flatMap(BoundLibraryOnboardingSource.init(rawValue:))
+        let restoredHasSeenChooser = defaults.bool(forKey: Key.hasSeenChooser)
+        let restoredIsActivated = defaults.bool(forKey: Key.isActivated)
+        let restoredPlaybackSeconds = min(
+            Double(Self.activationSeconds),
+            max(0, defaults.double(forKey: Key.activationPlaybackSeconds))
+        )
+        let skipsChooser = arguments.contains("-CastReaderSkipLibraryOnboarding")
+        selectedSource = restoredSource
+        hasSeenChooser = restoredHasSeenChooser
+        isActivated = restoredIsActivated
+        activationPlaybackSeconds = restoredPlaybackSeconds
+        lastPersistedPlaybackBucket = Int(restoredPlaybackSeconds / 5)
+        isChooserPresented = !skipsChooser && !restoredIsActivated && !restoredHasSeenChooser
+    }
+
+    var shouldShowReminder: Bool {
+        hasSeenChooser && !isActivated
+    }
+
+    func select(_ source: BoundLibraryOnboardingSource) {
+        if selectedSource != nil, selectedSource != source, !isActivated {
+            activationPlaybackSeconds = 0
+            lastPersistedPlaybackBucket = 0
+            defaults.removeObject(forKey: Key.activationPlaybackSeconds)
+        }
+        selectedSource = source
+        hasSeenChooser = true
+        isChooserPresented = false
+        defaults.set(source.rawValue, forKey: Key.selectedSource)
+        defaults.set(true, forKey: Key.hasSeenChooser)
+    }
+
+    func postpone() {
+        hasSeenChooser = true
+        isChooserPresented = false
+        defaults.set(true, forKey: Key.hasSeenChooser)
+    }
+
+    func presentChooser() {
+        isChooserPresented = true
+    }
+
+    func dismissChooser() {
+        isChooserPresented = false
+    }
+
+    /// Keep onboarding attribution on the real reader session, including when
+    /// the user binds now but opens the first book later from the normal shelf.
+    func analyticsEntryPoint(for source: BoundLibraryOnboardingSource) -> String? {
+        guard hasSeenChooser, !isActivated else { return nil }
+        guard selectedSource == nil || selectedSource == source else { return nil }
+        return "library_onboarding"
+    }
+
+    /// Accumulate a player's positive, natural playback tick. Deltas above the
+    /// threshold are rejected as seeks. This lives above an individual
+    /// ReadAloudViewModel because Kindle swaps VMs at page boundaries; a
+    /// 12-second page plus an 18-second page must still complete the same
+    /// 30-second activation.
+    func recordPlayback(source: ReadingSourceKind, seconds: Double) {
+        guard !isActivated, seconds > 0, seconds <= 2.01 else { return }
+        let playbackSource: BoundLibraryOnboardingSource
+        switch source {
+        case .kindle: playbackSource = .kindle
+        case .weread: playbackSource = .weread
+        default: return
+        }
+        guard selectedSource == nil || selectedSource == playbackSource else { return }
+
+        if selectedSource == nil {
+            selectedSource = playbackSource
+            defaults.set(playbackSource.rawValue, forKey: Key.selectedSource)
+        }
+        hasSeenChooser = true
+        defaults.set(true, forKey: Key.hasSeenChooser)
+
+        activationPlaybackSeconds = min(
+            Double(Self.activationSeconds),
+            activationPlaybackSeconds + seconds
+        )
+        let persistenceBucket = Int(activationPlaybackSeconds / 5)
+        if persistenceBucket > lastPersistedPlaybackBucket {
+            lastPersistedPlaybackBucket = persistenceBucket
+            defaults.set(
+                activationPlaybackSeconds,
+                forKey: Key.activationPlaybackSeconds
+            )
+        }
+
+        guard activationPlaybackSeconds >= Double(Self.activationSeconds) else { return }
+        completeActivation(source: playbackSource)
+    }
+
+    /// Deterministic helper for tests and migrations that already hold a trusted
+    /// cumulative playback total.
+    func markActivatedIfNeeded(source: ReadingSourceKind, playbackSeconds: Int) {
+        guard playbackSeconds >= Self.activationSeconds else { return }
+        let playbackSource: BoundLibraryOnboardingSource
+        switch source {
+        case .kindle: playbackSource = .kindle
+        case .weread: playbackSource = .weread
+        default: return
+        }
+        guard selectedSource == nil || selectedSource == playbackSource else { return }
+        activationPlaybackSeconds = Double(Self.activationSeconds)
+        completeActivation(source: playbackSource)
+    }
+
+    private func completeActivation(source: BoundLibraryOnboardingSource) {
+        guard !isActivated else { return }
+        selectedSource = source
+        hasSeenChooser = true
+        isActivated = true
+        isChooserPresented = false
+        activationPlaybackSeconds = Double(Self.activationSeconds)
+        lastPersistedPlaybackBucket = Self.activationSeconds / 5
+        defaults.set(source.rawValue, forKey: Key.selectedSource)
+        defaults.set(true, forKey: Key.hasSeenChooser)
+        defaults.set(true, forKey: Key.isActivated)
+        defaults.set(activationPlaybackSeconds, forKey: Key.activationPlaybackSeconds)
+    }
+
+    /// Available to the DEBUG settings screen and deterministic UI tests.
+    func reset() {
+        Self.clearPersistedState(in: defaults)
+        selectedSource = nil
+        hasSeenChooser = false
+        isActivated = false
+        isChooserPresented = true
+        activationPlaybackSeconds = 0
+        lastPersistedPlaybackBucket = 0
+    }
+
+    private static func clearPersistedState(in defaults: UserDefaults) {
+        defaults.removeObject(forKey: Key.selectedSource)
+        defaults.removeObject(forKey: Key.hasSeenChooser)
+        defaults.removeObject(forKey: Key.isActivated)
+        defaults.removeObject(forKey: Key.activationPlaybackSeconds)
+    }
+}
+
 extension ShareInboxRecord {
     /// Persist semantic fallback intent, not a translated string. Real titles
     /// remain untouched; generated placeholders follow every in-app language

@@ -35,6 +35,72 @@ class CastReaderTests: XCTestCase {
         }
     }
 
+    // MARK: - 绑定书库首次引导
+
+    @MainActor
+    func testBoundLibraryOnboardingIsOneTimeAndVersionedLocally() throws {
+        let suite = "BoundLibraryOnboardingTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let firstLaunch = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        XCTAssertTrue(firstLaunch.isChooserPresented)
+        XCTAssertFalse(firstLaunch.hasSeenChooser)
+        XCTAssertFalse(firstLaunch.isActivated)
+
+        firstLaunch.postpone()
+        XCTAssertFalse(firstLaunch.isChooserPresented)
+        XCTAssertTrue(firstLaunch.shouldShowReminder)
+
+        let nextLaunch = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        XCTAssertFalse(nextLaunch.isChooserPresented, "稍后再说后不应每次冷启动强弹")
+        XCTAssertTrue(nextLaunch.shouldShowReminder, "未激活时首页仍保留轻量完成入口")
+    }
+
+    @MainActor
+    func testBoundLibraryActivationAccumulatesAcrossReaderPagesAndMatchesSource() throws {
+        let suite = "BoundLibraryActivationTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let store = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        store.select(.kindle)
+
+        for _ in 0..<6 {
+            store.recordPlayback(source: .kindle, seconds: 2)
+        }
+        XCTAssertEqual(store.activationPlaybackSeconds, 12, accuracy: 0.001)
+        XCTAssertFalse(store.isActivated, "第一张短页不应单独完成激活")
+
+        for _ in 0..<5 {
+            store.recordPlayback(source: .weread, seconds: 2)
+        }
+        XCTAssertEqual(store.activationPlaybackSeconds, 12, accuracy: 0.001, "不同书库不能混算")
+
+        for _ in 0..<9 {
+            store.recordPlayback(source: .kindle, seconds: 2)
+        }
+        XCTAssertTrue(store.isActivated, "跨 Kindle 页累计到 30 秒必须完成")
+        XCTAssertEqual(store.activationPlaybackSeconds, 30, accuracy: 0.001)
+
+        let relaunched = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        XCTAssertTrue(relaunched.isActivated)
+        XCTAssertFalse(relaunched.isChooserPresented)
+        XCTAssertFalse(relaunched.shouldShowReminder)
+    }
+
+    @MainActor
+    func testBoundLibraryOnboardingRejectsSeekSizedPlaybackJump() throws {
+        let suite = "BoundLibrarySeekTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let store = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        store.select(.weread)
+        store.recordPlayback(source: .weread, seconds: 20)
+        XCTAssertEqual(store.activationPlaybackSeconds, 0, "seek/异常时间跳变不能制造激活")
+    }
+
     // MARK: - 场景化「划重点·批注」content_type 全链路自检（PRD P0）
 
     private func encodedJSON<T: Encodable>(_ v: T) throws -> String {

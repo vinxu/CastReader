@@ -124,6 +124,7 @@ struct CastReaderApp: App {
     @StateObject private var appLanguage = AppLanguageManager.shared
     @State private var showSafariPro = false
     @State private var showSafariAccount = false
+    @State private var pendingSafariLibraryOnboardingReset: Bool?
 
     init() {
         // 简单的内存警告监听
@@ -206,13 +207,28 @@ struct CastReaderApp: App {
                         analyticsSurface: "safari_extension"
                     )
                 }
-                .sheet(isPresented: $showSafariAccount) {
+                .sheet(
+                    isPresented: $showSafariAccount,
+                    onDismiss: presentSafariRequestedLibraryOnboarding
+                ) {
                     if AuthService.shared.isSignedIn {
-                        SettingsView()
+                        SettingsView { reset in
+                            pendingSafariLibraryOnboardingReset = reset
+                        }
                     } else {
                         LoginView()
                     }
                 }
+        }
+    }
+
+    private func presentSafariRequestedLibraryOnboarding() {
+        guard let reset = pendingSafariLibraryOnboardingReset else { return }
+        pendingSafariLibraryOnboardingReset = nil
+        if reset {
+            BoundLibraryOnboardingStore.shared.reset()
+        } else {
+            BoundLibraryOnboardingStore.shared.presentChooser()
         }
     }
 }

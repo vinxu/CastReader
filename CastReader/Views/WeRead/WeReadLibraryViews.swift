@@ -6,9 +6,16 @@
 import SwiftUI
 import WebKit
 
+extension Notification.Name {
+    /// Opens the existing WeRead binding flow without constructing a second
+    /// login WebView. The connect view remains the sole owner of its QR session.
+    static let castReaderWeReadRebindRequested = Notification.Name("castreader.weread.rebindRequested")
+}
+
 struct WeReadHomeSection: View {
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = WeReadLibraryStore.shared
+    @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
     @State private var showConnect = false
 
     var body: some View {
@@ -48,6 +55,9 @@ struct WeReadHomeSection: View {
             }
         }
         .sheet(isPresented: $showConnect) { WeReadLibraryConnectView() }
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderWeReadRebindRequested)) { _ in
+            showConnect = true
+        }
     }
 
     private var connectCard: some View {
@@ -69,7 +79,13 @@ struct WeReadHomeSection: View {
         store.markOpened(book)
         let document = ReadingDocument(id: book.id, title: book.title, sourceKind: .weread,
                                        language: Constants.TTS.defaultLanguage, paragraphs: [], sourceURL: book.effectiveReaderURL)
-        coordinator.open(document, mode: .read, autoplay: false)
+        let context = ProductAnalytics.shared.beginContentIntent(
+            source: .weread,
+            format: .weread,
+            entryPoint: onboarding.analyticsEntryPoint(for: .weread) ?? "weread_library",
+            intendedMode: "read"
+        )
+        coordinator.open(document, mode: .read, autoplay: false, analyticsContext: context)
     }
 }
 
@@ -183,6 +199,7 @@ struct WeReadLibraryConnectView: View {
 struct WeReadLibraryView: View {
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = WeReadLibraryStore.shared
+    @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
     @State private var query = ""
     @State private var sort: WeReadLibrarySort = .recent
     @State private var page = 1
@@ -220,7 +237,21 @@ struct WeReadLibraryView: View {
 
     private func open(_ book: WeReadBook) {
         store.markOpened(book)
-        coordinator.open(ReadingDocument(id: book.id, title: book.title, sourceKind: .weread, language: Constants.TTS.defaultLanguage, paragraphs: [], sourceURL: book.effectiveReaderURL))
+        let document = ReadingDocument(
+            id: book.id,
+            title: book.title,
+            sourceKind: .weread,
+            language: Constants.TTS.defaultLanguage,
+            paragraphs: [],
+            sourceURL: book.effectiveReaderURL
+        )
+        let context = ProductAnalytics.shared.beginContentIntent(
+            source: .weread,
+            format: .weread,
+            entryPoint: onboarding.analyticsEntryPoint(for: .weread) ?? "weread_library",
+            intendedMode: "read"
+        )
+        coordinator.open(document, analyticsContext: context)
     }
 }
 

@@ -8,6 +8,10 @@
 import SwiftUI
 
 struct SettingsView: View {
+    private let onRequestLibraryOnboarding: ((Bool) -> Void)?
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @ObservedObject private var settings = AppSettings.shared
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     @ObservedObject private var pro = ProManager.shared
@@ -15,6 +19,7 @@ struct SettingsView: View {
     @ObservedObject private var auth = AuthService.shared
     @ObservedObject private var kindleStore = KindleLibraryStore.shared
     @ObservedObject private var weReadStore = WeReadLibraryStore.shared
+    @ObservedObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
     @ObservedObject private var voiceCatalog = VoiceCatalogService.shared
     @State private var showPaywall = false
     @State private var showLogin = false
@@ -22,6 +27,10 @@ struct SettingsView: View {
     @State private var showUnbindKindle = false
     @State private var showUnbindWeRead = false
     @State private var showVoiceBrowser = false
+
+    init(onRequestLibraryOnboarding: ((Bool) -> Void)? = nil) {
+        self.onRequestLibraryOnboarding = onRequestLibraryOnboarding
+    }
 
     private var explainLanguages: [(String, String)] {
         [("", AppLocalized("跟随原文"))] + SupportedTTSLanguage.allCases.map {
@@ -42,6 +51,7 @@ struct SettingsView: View {
                 voiceSection
                 explainSection
                 appearanceSection
+                supportSection
                 dataSection
                 #if DEBUG
                 debugSection
@@ -355,10 +365,43 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: 支持与反馈
+
+    private var supportSection: some View {
+        Section("支持与反馈") {
+            Button {
+                openURL(AppReviewPromptManager.appStoreReviewURL) { accepted in
+                    guard accepted else { return }
+                    Task { @MainActor in
+                        AppReviewPromptManager.shared.recordSettingsStoreLinkOpened()
+                    }
+                }
+            } label: {
+                Label("评价 CastReader", systemImage: "star.bubble")
+            }
+            .accessibilityIdentifier("settingsRateCastReader")
+
+            Button {
+                guard let url = URL(
+                    string: "mailto:support@castreader.com?subject=CastReader%20iOS%20Feedback"
+                ) else { return }
+                openURL(url)
+            } label: {
+                Label("发送反馈", systemImage: "envelope")
+            }
+            .accessibilityIdentifier("settingsSendFeedback")
+        }
+    }
+
     // MARK: 数据（历史管理——「清除全部」下沉到此，避免文库列表页误触）
 
     private var dataSection: some View {
         Section {
+            Button {
+                reopenLibraryOnboarding(reset: false)
+            } label: {
+                Label("重新打开书库引导", systemImage: "books.vertical")
+            }
             Button(role: .destructive) { showClearHistory = true } label: {
                 Label("清除全部历史记录", systemImage: "trash")
             }
@@ -375,6 +418,11 @@ struct SettingsView: View {
     private var debugSection: some View {
         Section {
             Toggle("模拟 Pro 解锁", isOn: $pro.debugForcePro)
+            Button {
+                reopenLibraryOnboarding(reset: true)
+            } label: {
+                Label("重置书库首次引导", systemImage: "arrow.counterclockwise")
+            }
         } header: {
             Text("调试")
         } footer: {
@@ -382,6 +430,24 @@ struct SettingsView: View {
         }
     }
     #endif
+
+    private func reopenLibraryOnboarding(reset: Bool) {
+        if let onRequestLibraryOnboarding {
+            onRequestLibraryOnboarding(reset)
+            dismiss()
+            return
+        }
+
+        dismiss()
+        Task { @MainActor in
+            await Task.yield()
+            if reset {
+                libraryOnboarding.reset()
+            } else {
+                libraryOnboarding.presentChooser()
+            }
+        }
+    }
 }
 
 private struct AppLanguagePickerView: View {
