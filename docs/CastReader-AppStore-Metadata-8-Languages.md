@@ -1,5 +1,7 @@
 # CastReader · App Store 八语元数据
 
+> ⚠️ **v2 修订版见 [CastReader-AppStore-Metadata-v2-1.2.15.md](CastReader-AppStore-Metadata-v2-1.2.15.md)**（随 1.2.15 提交：副标题/关键词重构 + 新增 de-DE/zh-Hant/es-MX + 含试用的推广文本）。本文仍是描述正文与 What's New 的基线。
+
 > 适用本地化：English (U.S.)、简体中文、日语、西班牙语（西班牙）、法语、葡萄牙语（巴西）、意大利语、印地语。
 >
 > Apple 当前限制：名称 ≤ 30 字符；副标题 ≤ 30 字符；推广文本 ≤ 170 字符；描述 ≤ 4,000 字符；关键词 ≤ 100 bytes。
@@ -92,10 +94,13 @@ Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/st
 ### What’s New
 
 ```text
-• Added WeRead library sync with highlighting, automatic page turns, continuous read-aloud, and AI explanations
-• Added a Content Inbox for webpages, documents, text, and images shared from other apps
-• Added a localized Pro offer card and expanded 8-language import, OCR, TTS, and highlighting support
-• Improved Kindle pagination, voice switching, background playback, and stability
+• Eligible new subscribers can start monthly or yearly Pro with a 7-day free trial, with clearer pricing and renewal details
+• Added guided library setup to connect Kindle or WeRead and start your first read-aloud faster
+• German is now supported for read-aloud, text recognition and explanations, bringing CastReader to nine languages
+• WeRead now has more reliable sign-in, a native table of contents, and steadier reading and playback
+• Kindle books open substantially faster, and expired Amazon sessions now recover automatically
+• Library covers are cached locally for faster shelves
+• Improved plan and trial visibility before sign-in, mini-player layout, voice switching, and stability
 ```
 
 ---
@@ -164,10 +169,13 @@ CastReader Pro
 ### 此版本更新
 
 ```text
-• 新增微信读书书架同步、同步高亮、自动翻页、连续朗读与 AI 解读
-• 新增内容接收箱，可接收其他 App 分享的网页、文档、文字与图片
-• 新增八语 Pro 卡片，并扩展导入、OCR、TTS 与高亮的八语支持
-• 优化 Kindle 翻页、音色切换、后台播放与整体稳定性
+• 符合资格的新订阅用户可在月付或年付 Pro 中享受 7 天免费试用，价格与续订说明也更清晰
+• 新增书库首次引导，更快连接 Kindle 或微信读书并开始第一次朗读
+• 新增德语朗读、文字识别与解读，CastReader 现已支持九种语言
+• 微信读书登录更稳定，并新增原生目录，阅读与播放更可靠
+• Kindle 打开书籍显著加快，Amazon 登录状态失效时可自动恢复
+• 书架封面改为本地缓存，打开更快
+• 优化登录前的套餐与试用信息展示、迷你播放器布局、音色切换与整体稳定性
 ```
 
 ---
@@ -236,10 +244,13 @@ CastReaderは毎日無料で利用できます。Proでは読み上げとAI解�
 ### 新機能
 
 ```text
-• WeReadの本棚同期、ハイライト、自動ページ送り、連続読み上げ、AI解説を追加
-• 他のアプリから共有したWebページ、文書、テキスト、画像を保存する受信箱を追加
-• 8言語対応のProカードと、インポート・OCR・TTS・ハイライトの多言語対応を拡張
-• Kindleのページ送り、音声切替、バックグラウンド再生、安定性を改善
+• 対象となる新規登録者は月間または年間Proを7日間無料で試せるようになり、料金と更新条件もより明確になりました
+• KindleまたはWeReadに接続し、最初の読み上げをすぐに始められるライブラリ設定ガイドを追加
+• ドイツ語の読み上げ・文字認識・解説に対応し、CastReaderは9言語になりました
+• WeReadのログインを安定化し、ネイティブ目次とより確実な読書・再生を追加
+• Kindleの本を大幅に速く開けるようにし、期限切れのAmazonセッションを自動復旧
+• 本棚の表紙をローカルにキャッシュして表示を高速化
+• ログイン前のプランと無料体験の表示、ミニプレーヤー、音声切替、安定性を改善
 ```
 
 ---
@@ -308,10 +319,13 @@ Términos de uso (EULA): https://www.apple.com/legal/internet-services/itunes/de
 ### Novedades
 
 ```text
-• Sincronización de WeRead con resaltado, cambio automático de página, lectura continua y explicaciones con IA
-• Nueva bandeja para páginas web, documentos, textos e imágenes compartidos desde otras apps
-• Nueva tarjeta Pro localizada y mayor compatibilidad en 8 idiomas para importación, OCR, TTS y resaltado
-• Mejoras de paginación Kindle, cambio de voz, reproducción en segundo plano y estabilidad
+• Los nuevos suscriptores elegibles pueden probar Pro mensual o anual gratis durante 7 días, con precios y renovación más claros
+• Añadimos una configuración guiada de la biblioteca para conectar Kindle o WeRead y empezar antes la primera lectura en voz alta
+• El alemán ya está disponible para lectura en voz alta, reconocimiento de texto y explicaciones; CastReader llega a nueve idiomas
+• WeRead ofrece un inicio de sesión más fiable, índice nativo y lectura y reproducción más estables
+• Los libros Kindle se abren mucho más rápido y las sesiones de Amazon caducadas se recuperan automáticamente
+• Las portadas se guardan en caché local para cargar la biblioteca más rápido
+• Mejor visibilidad de planes y prueba antes de iniciar sesión, minirreproductor, cambio de voz y estabilidad
 ```
 
 ---
@@ -380,10 +394,13 @@ Conditions d’utilisation (EULA) : https://www.apple.com/legal/internet-service
 ### Nouveautés
 
 ```text
-• Synchronisation WeRead avec surlignage, pages automatiques, lecture continue et explications IA
-• Nouvelle boîte de réception pour les pages Web, documents, textes et images partagés depuis d’autres apps
-• Nouvelle carte Pro localisée et prise en charge étendue de l’importation, OCR, TTS et du surlignage en 8 langues
-• Pagination Kindle, changement de voix, lecture en arrière-plan et stabilité améliorés
+• Les nouveaux abonnés éligibles peuvent essayer Pro mensuel ou annuel gratuitement pendant 7 jours, avec des tarifs et conditions de renouvellement plus clairs
+• Ajout d’un guide de configuration de la bibliothèque pour connecter Kindle ou WeRead et commencer plus vite votre première lecture à voix haute
+• L’allemand est désormais pris en charge pour la lecture à voix haute, la reconnaissance de texte et les explications, soit neuf langues
+• WeRead bénéficie d’une connexion plus fiable, d’un sommaire natif et d’une lecture plus stable
+• Les livres Kindle s’ouvrent nettement plus vite et les sessions Amazon expirées se rétablissent automatiquement
+• Les couvertures sont mises en cache localement pour accélérer la bibliothèque
+• Meilleure visibilité des offres et de l’essai avant connexion, mini-lecteur, changement de voix et stabilité
 ```
 
 ---
@@ -452,10 +469,13 @@ Termos de Uso (EULA): https://www.apple.com/legal/internet-services/itunes/dev/s
 ### Novidades
 
 ```text
-• Sincronização do WeRead com destaque, virada automática, leitura contínua e explicações por IA
-• Nova caixa de entrada para páginas, documentos, textos e imagens compartilhados por outros apps
-• Novo cartão Pro localizado e suporte ampliado em 8 idiomas para importação, OCR, TTS e destaque
-• Melhorias na paginação Kindle, troca de voz, reprodução em segundo plano e estabilidade
+• Novos assinantes elegíveis podem testar o Pro mensal ou anual grátis por 7 dias, com preços e renovação mais claros
+• Adicionamos uma configuração guiada da biblioteca para conectar Kindle ou WeRead e iniciar mais rápido a primeira leitura em voz alta
+• Alemão agora é compatível com leitura em voz alta, reconhecimento de texto e explicações, levando o CastReader a nove idiomas
+• WeRead ganhou login mais confiável, sumário nativo e leitura e reprodução mais estáveis
+• Livros Kindle abrem muito mais rápido e sessões expiradas da Amazon se recuperam automaticamente
+• As capas ficam em cache local para carregar a estante mais rápido
+• Melhor visibilidade dos planos e do teste antes do login, mini player, troca de voz e estabilidade
 ```
 
 ---
@@ -524,10 +544,13 @@ Termini di utilizzo (EULA): https://www.apple.com/legal/internet-services/itunes
 ### Novità
 
 ```text
-• Sincronizzazione WeRead con evidenziazione, cambio pagina automatico, lettura continua e spiegazioni IA
-• Nuova casella per pagine Web, documenti, testi e immagini condivisi da altre app
-• Nuova scheda Pro localizzata e supporto esteso in 8 lingue per importazione, OCR, TTS ed evidenziazione
-• Migliorate paginazione Kindle, cambio voce, riproduzione in background e stabilità
+• I nuovi abbonati idonei possono provare Pro mensile o annuale gratis per 7 giorni, con prezzi e rinnovo più chiari
+• Aggiunta una configurazione guidata della libreria per collegare Kindle o WeRead e avviare più rapidamente la prima lettura ad alta voce
+• Ora il tedesco è supportato per lettura ad alta voce, riconoscimento del testo e spiegazioni: CastReader arriva a nove lingue
+• WeRead offre accesso più affidabile, indice nativo, lettura e riproduzione più stabili
+• I libri Kindle si aprono molto più rapidamente e le sessioni Amazon scadute si ripristinano automaticamente
+• Le copertine vengono memorizzate in locale per caricare più rapidamente la libreria
+• Migliorata la visibilità di piani e prova prima dell’accesso, mini player, cambio voce e stabilità
 ```
 
 ---
@@ -596,10 +619,13 @@ CastReader का हर दिन मुफ़्त उपयोग करे�
 ### नया क्या है
 
 ```text
-• WeRead लाइब्रेरी सिंक, हाइलाइट, अपने-आप पेज बदलना, लगातार सुनना और AI व्याख्या जोड़ी गई
-• अन्य ऐप से साझा वेब पेज, दस्तावेज़, टेक्स्ट और चित्रों के लिए नया कंटेंट इनबॉक्स
-• स्थानीयकृत Pro कार्ड और आयात, OCR, TTS व हाइलाइट के लिए विस्तृत 8-भाषा समर्थन
-• Kindle पेजिंग, आवाज़ बदलने, बैकग्राउंड प्लेबैक और स्थिरता में सुधार
+• योग्य नए सदस्य मासिक या वार्षिक Pro को 7 दिन मुफ़्त आज़मा सकते हैं, साथ ही कीमत और नवीनीकरण की जानकारी अब अधिक स्पष्ट है
+• Kindle या WeRead कनेक्ट करने और पहली बार पढ़कर सुनाना जल्दी शुरू करने के लिए निर्देशित लाइब्रेरी सेटअप जोड़ा गया
+• जर्मन में पढ़कर सुनाना, टेक्स्ट पहचान और व्याख्या अब उपलब्ध है—CastReader अब नौ भाषाओं में है
+• WeRead में अधिक भरोसेमंद साइन-इन, नेटिव विषय-सूची और अधिक स्थिर पठन व प्लेबैक
+• Kindle किताबें अब काफ़ी तेज़ खुलती हैं और समाप्त Amazon सत्र अपने आप ठीक हो जाते हैं
+• तेज़ लाइब्रेरी के लिए कवर स्थानीय रूप से सेव होते हैं
+• लॉगिन से पहले प्लान और ट्रायल की जानकारी, मिनी प्लेयर, आवाज़ बदलने और स्थिरता में सुधार
 ```
 
 ---

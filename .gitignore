@@ -12,6 +12,8 @@ xcuserdata/
 .build/
 Packages/
 *.resolved
+!CastReader.xcworkspace/xcshareddata/swiftpm/Package.resolved
+!CastReader.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # CocoaPods
 Pods/

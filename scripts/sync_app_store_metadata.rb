@@ -16,6 +16,7 @@ KEY_ID = ENV.fetch("ASC_KEY_ID", "6QN4G1IJDEP1")
 KEY_PATH = ENV.fetch("ASC_KEY_PATH", File.expand_path("~/.appstoreconnect/private_keys/AuthKey_#{KEY_ID}.p8"))
 BASE_URL = "https://api.appstoreconnect.apple.com"
 LOCALES = %w[en-US zh-Hans ja es-ES fr-FR pt-BR it hi].freeze
+WHATS_NEW_ONLY = ENV["ASC_WHATS_NEW_ONLY"] == "1"
 
 def base64url(value)
   Base64.urlsafe_encode64(value, padding: false)
@@ -72,25 +73,27 @@ end
 
 metadata = parse_metadata(METADATA_PATH)
 
-app_info_localizations = request("Get", "/v1/appInfos/#{APP_INFO_ID}/appInfoLocalizations?limit=50")
-  .fetch("data").to_h { |item| [item.dig("attributes", "locale"), item] }
+unless WHATS_NEW_ONLY
+  app_info_localizations = request("Get", "/v1/appInfos/#{APP_INFO_ID}/appInfoLocalizations?limit=50")
+    .fetch("data").to_h { |item| [item.dig("attributes", "locale"), item] }
 
-metadata.each do |locale, fields|
-  english_urls = locale != "zh-Hans"
-  attributes = {
-    name: fields[:name],
-    subtitle: fields[:subtitle],
-    privacyPolicyUrl: english_urls ? "https://castreader.com/en/privacy-policy" : "https://castreader.com/zh/privacy-policy",
-    privacyChoicesUrl: english_urls ? "https://castreader.com/en/terms-of-service" : "https://castreader.com/zh/terms-of-service"
-  }
-  existing = app_info_localizations[locale]
-  if existing
-    request("Patch", "/v1/appInfoLocalizations/#{existing.fetch("id")}", resource("appInfoLocalizations", id: existing.fetch("id"), attributes: attributes))
-    puts "Updated app info: #{locale}"
-  else
-    relationships = { appInfo: { data: { type: "appInfos", id: APP_INFO_ID } } }
-    request("Post", "/v1/appInfoLocalizations", resource("appInfoLocalizations", attributes: attributes.merge(locale: locale), relationships: relationships))
-    puts "Created app info: #{locale}"
+  metadata.each do |locale, fields|
+    english_urls = locale != "zh-Hans"
+    attributes = {
+      name: fields[:name],
+      subtitle: fields[:subtitle],
+      privacyPolicyUrl: english_urls ? "https://castreader.com/en/privacy-policy" : "https://castreader.com/zh/privacy-policy",
+      privacyChoicesUrl: english_urls ? "https://castreader.com/en/terms-of-service" : "https://castreader.com/zh/terms-of-service"
+    }
+    existing = app_info_localizations[locale]
+    if existing
+      request("Patch", "/v1/appInfoLocalizations/#{existing.fetch("id")}", resource("appInfoLocalizations", id: existing.fetch("id"), attributes: attributes))
+      puts "Updated app info: #{locale}"
+    else
+      relationships = { appInfo: { data: { type: "appInfos", id: APP_INFO_ID } } }
+      request("Post", "/v1/appInfoLocalizations", resource("appInfoLocalizations", attributes: attributes.merge(locale: locale), relationships: relationships))
+      puts "Created app info: #{locale}"
+    end
   end
 end
 
@@ -98,15 +101,19 @@ version_localizations = request("Get", "/v1/appStoreVersions/#{VERSION_ID}/appSt
   .fetch("data").to_h { |item| [item.dig("attributes", "locale"), item] }
 
 metadata.each do |locale, fields|
-  english_urls = locale != "zh-Hans"
-  attributes = {
-    description: fields[:description],
-    keywords: fields[:keywords],
-    marketingUrl: english_urls ? "https://castreader.com/castreader-app" : "https://castreader.com/zh/castreader-app",
-    promotionalText: fields[:promotionalText],
-    supportUrl: english_urls ? "https://castreader.com" : "https://castreader.com/",
-    whatsNew: fields[:whatsNew]
-  }
+  attributes = if WHATS_NEW_ONLY
+    { whatsNew: fields[:whatsNew] }
+  else
+    english_urls = locale != "zh-Hans"
+    {
+      description: fields[:description],
+      keywords: fields[:keywords],
+      marketingUrl: english_urls ? "https://castreader.com/castreader-app" : "https://castreader.com/zh/castreader-app",
+      promotionalText: fields[:promotionalText],
+      supportUrl: english_urls ? "https://castreader.com" : "https://castreader.com/",
+      whatsNew: fields[:whatsNew]
+    }
+  end
   existing = version_localizations[locale]
   if existing
     request("Patch", "/v1/appStoreVersionLocalizations/#{existing.fetch("id")}", resource("appStoreVersionLocalizations", id: existing.fetch("id"), attributes: attributes))
@@ -118,24 +125,26 @@ metadata.each do |locale, fields|
   end
 end
 
-unless BUILD_ID == "-"
+unless BUILD_ID == "-" || WHATS_NEW_ONLY
   build_relationship = { build: { data: { type: "builds", id: BUILD_ID } } }
   request("Patch", "/v1/appStoreVersions/#{VERSION_ID}", resource("appStoreVersions", id: VERSION_ID, relationships: build_relationship))
   puts "Attached build #{BUILD_ID}"
 end
 
-review_response = request("Get", "/v1/appStoreVersions/#{VERSION_ID}/appStoreReviewDetail")
-unless review_response["data"]
-  review_attributes = {
-    contactFirstName: "Vin",
-    contactLastName: "Xu",
-    contactPhone: "+86-13918641416",
-    contactEmail: "328644490@qq.com",
-    demoAccountRequired: false
-  }
-  relationships = { appStoreVersion: { data: { type: "appStoreVersions", id: VERSION_ID } } }
-  request("Post", "/v1/appStoreReviewDetails", resource("appStoreReviewDetails", attributes: review_attributes, relationships: relationships))
-  puts "Created review contact details"
-else
-  puts "Review contact details already present"
+unless WHATS_NEW_ONLY
+  review_response = request("Get", "/v1/appStoreVersions/#{VERSION_ID}/appStoreReviewDetail")
+  unless review_response["data"]
+    review_attributes = {
+      contactFirstName: "Vin",
+      contactLastName: "Xu",
+      contactPhone: "+86-13918641416",
+      contactEmail: "328644490@qq.com",
+      demoAccountRequired: false
+    }
+    relationships = { appStoreVersion: { data: { type: "appStoreVersions", id: VERSION_ID } } }
+    request("Post", "/v1/appStoreReviewDetails", resource("appStoreReviewDetails", attributes: review_attributes, relationships: relationships))
+    puts "Created review contact details"
+  else
+    puts "Review contact details already present"
+  end
 end

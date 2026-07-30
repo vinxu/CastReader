@@ -1,0 +1,197 @@
+{
+  "contractID": "castreader-kindle-storefronts",
+  "schemaVersion": 1,
+  "fallbackStorefrontID": "us",
+  "readerRef": "kwl_kr_iv_rec_1",
+  "paths": {
+    "library": "/kindle-library",
+    "reader": "/"
+  },
+  "storefronts": [
+    {
+      "id": "us",
+      "marketplaceRegion": "US",
+      "canonicalHost": "read.amazon.com",
+      "aliasHosts": [],
+      "displayName": "Amazon.com",
+      "entryEnabled": true
+    },
+    {
+      "id": "uk",
+      "marketplaceRegion": "GB",
+      "canonicalHost": "read.amazon.co.uk",
+      "aliasHosts": [],
+      "displayName": "Amazon.co.uk",
+      "entryEnabled": true
+    },
+    {
+      "id": "ca",
+      "marketplaceRegion": "CA",
+      "canonicalHost": "read.amazon.ca",
+      "aliasHosts": [],
+      "displayName": "Amazon.ca",
+      "entryEnabled": true
+    },
+    {
+      "id": "au",
+      "marketplaceRegion": "AU",
+      "canonicalHost": "read.amazon.com.au",
+      "aliasHosts": [],
+      "displayName": "Amazon.com.au",
+      "entryEnabled": true
+    },
+    {
+      "id": "jp",
+      "marketplaceRegion": "JP",
+      "canonicalHost": "read.amazon.co.jp",
+      "aliasHosts": [],
+      "displayName": "Amazon.co.jp",
+      "entryEnabled": true
+    },
+    {
+      "id": "de",
+      "marketplaceRegion": "DE",
+      "canonicalHost": "lesen.amazon.de",
+      "aliasHosts": [
+        "read.amazon.de"
+      ],
+      "displayName": "Amazon.de",
+      "entryEnabled": true
+    },
+    {
+      "id": "fr",
+      "marketplaceRegion": "FR",
+      "canonicalHost": "lire.amazon.fr",
+      "aliasHosts": [
+        "read.amazon.fr"
+      ],
+      "displayName": "Amazon.fr",
+      "entryEnabled": true
+    },
+    {
+      "id": "it",
+      "marketplaceRegion": "IT",
+      "canonicalHost": "leggi.amazon.it",
+      "aliasHosts": [
+        "read.amazon.it"
+      ],
+      "displayName": "Amazon.it",
+      "entryEnabled": true
+    },
+    {
+      "id": "es",
+      "marketplaceRegion": "ES",
+      "canonicalHost": "leer.amazon.es",
+      "aliasHosts": [
+        "read.amazon.es"
+      ],
+      "displayName": "Amazon.es",
+      "entryEnabled": true
+    },
+    {
+      "id": "in",
+      "marketplaceRegion": "IN",
+      "canonicalHost": "read.amazon.in",
+      "aliasHosts": [],
+      "displayName": "Amazon.in",
+      "entryEnabled": true
+    },
+    {
+      "id": "br",
+      "marketplaceRegion": "BR",
+      "canonicalHost": "ler.amazon.com.br",
+      "aliasHosts": [
+        "read.amazon.com.br"
+      ],
+      "displayName": "Amazon.com.br",
+      "entryEnabled": true
+    },
+    {
+      "id": "mx",
+      "marketplaceRegion": "MX",
+      "canonicalHost": "leer.amazon.com.mx",
+      "aliasHosts": [
+        "read.amazon.com.mx"
+      ],
+      "displayName": "Amazon.com.mx",
+      "entryEnabled": true
+    },
+    {
+      "id": "nl",
+      "marketplaceRegion": "NL",
+      "canonicalHost": "lezen.amazon.nl",
+      "aliasHosts": [
+        "read.amazon.nl"
+      ],
+      "displayName": "Amazon.nl",
+      "entryEnabled": true
+    },
+    {
+      "id": "cn",
+      "marketplaceRegion": "CN",
+      "canonicalHost": "read.amazon.cn",
+      "aliasHosts": [],
+      "displayName": "Amazon.cn",
+      "entryEnabled": false,
+      "entryDisabledReason": "kindle_china_shutdown"
+    }
+  ],
+  "regionToStorefront": {
+    "US": "us",
+    "GB": "uk",
+    "CA": "ca",
+    "AU": "au",
+    "JP": "jp",
+    "DE": "de",
+    "FR": "fr",
+    "IT": "it",
+    "ES": "es",
+    "IN": "in",
+    "BR": "br",
+    "MX": "mx",
+    "NL": "nl"
+  },
+  "languageCandidateOrder": {
+    "en": [
+      "us",
+      "uk",
+      "ca",
+      "au",
+      "in"
+    ],
+    "es": [
+      "es",
+      "mx",
+      "us"
+    ],
+    "pt-BR": [
+      "br",
+      "us"
+    ],
+    "ja": [
+      "jp",
+      "us"
+    ],
+    "de": [
+      "de",
+      "us"
+    ],
+    "fr": [
+      "fr",
+      "ca",
+      "us"
+    ],
+    "it": [
+      "it",
+      "us"
+    ],
+    "hi": [
+      "in",
+      "us"
+    ]
+  },
+  "excludedAppLanguages": [
+    "zh",
+    "zh-Hans"
+  ]
+}

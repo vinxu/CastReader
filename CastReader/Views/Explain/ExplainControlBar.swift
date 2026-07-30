@@ -2,148 +2,269 @@
 //  ExplainControlBar.swift
 //  CastReader
 //
-//  解读控制条：上层字幕（讲解文本，全宽多行，逐句推进），下层控制（播放/暂停 · 段进度 · 倍速）。
-//  字幕独占一行不被按钮挤压，避免截断。
+//  解读控制条：与 Kindle 共用紧凑单行控制台；字幕悬浮在控制台
+//  上方，不参与阅读区域布局。
 //
 
 import SwiftUI
 
+/// Shared Kindle-style single-line caption. The bubble keeps its intrinsic
+/// width while the outer frame controls center/trailing alignment.
+struct ExplainPlaybackCaptionBubble: View {
+    let text: String
+    var foregroundColor: Color = AppTheme.foreground
+    var alignment: Alignment = .center
+    var maxWidth: CGFloat = 620
+    var accessibilityIdentifier = "readerExplainCaption"
+
+    var body: some View {
+        Text(text)
+            .font(.callout.weight(.medium))
+            .foregroundColor(foregroundColor)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background {
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .overlay(Capsule().fill(AppTheme.surface.opacity(0.18)))
+            }
+            .overlay(Capsule().stroke(AppTheme.mutedForeground.opacity(0.18), lineWidth: 0.5))
+            .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
+            .frame(maxWidth: maxWidth, alignment: alignment)
+            .transition(.opacity.combined(with: .move(edge: .bottom)))
+            .accessibilityIdentifier(accessibilityIdentifier)
+    }
+}
+
 struct ExplainControlBar: View {
     @ObservedObject var vm: ExplainViewModel
+    @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let showTOC: (() -> Void)?
+    let previousPage: (() -> Void)?
+    let nextPage: (() -> Void)?
 
-    init(vm: ExplainViewModel, showTOC: (() -> Void)? = nil) {
+    init(
+        vm: ExplainViewModel,
+        showTOC: (() -> Void)? = nil,
+        previousPage: (() -> Void)? = nil,
+        nextPage: (() -> Void)? = nil
+    ) {
         self.vm = vm
         self.showTOC = showTOC
+        self.previousPage = previousPage
+        self.nextPage = nextPage
+    }
+
+    private var stablePresentationState: ReaderExplainPlaybackPresentationState {
+        switch vm.status {
+        case .idle, .planning:
+            return .start
+        case .error:
+            return .retry
+        case .streaming:
+            return vm.isPlaying ? .playing : .paused
+        case .completed:
+            return .replay
+        }
+    }
+
+    private var rawWaiting: Bool {
+        voiceSwitch.progress != nil
+            || vm.isPreparingNext
+            || vm.isContinuingLivePage
+            || statusIsPlanning
+    }
+
+    private var statusIsPlanning: Bool {
+        if case .planning = vm.status { return true }
+        return false
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            subtitleRow
-            HStack(spacing: 0) {
-                controlContent
-                Spacer(minLength: 10)
-                HStack(spacing: 8) {
-                    if let showTOC {
-                        Button(action: showTOC) {
-                            Image(systemName: "list.bullet")
-                                .font(.system(size: 20, weight: .semibold))
-                                .frame(width: 34, height: 36)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Text(AppLocalized("目录")))
-                    }
-                    PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
-                    if showsSpeedControl {
-                        SpeedMenu()
-                    }
+        ReaderDebouncedWaitingPresentation(
+            stablePresentation: stablePresentationState,
+            rawWaiting: rawWaiting,
+            waitingPresentation: .waiting
+        ) { presentationState in
+            ZStack(alignment: .top) {
+                if shouldShowCaption {
+                    ExplainPlaybackCaptionBubble(text: vm.explanationText)
+                        .padding(.horizontal, 18)
+                        .offset(y: ReaderPlaybackBarLayoutContract.explainCaptionOffset)
+                        .allowsHitTesting(false)
+                        .zIndex(1)
+                } else if let errorText {
+                    ExplainPlaybackCaptionBubble(
+                        text: errorText,
+                        foregroundColor: AppTheme.destructive,
+                        accessibilityIdentifier: "readerExplainError"
+                    )
+                    .padding(.horizontal, 18)
+                    .offset(y: ReaderPlaybackBarLayoutContract.explainCaptionOffset)
+                    .allowsHitTesting(false)
+                    .zIndex(1)
                 }
-                .fixedSize(horizontal: true, vertical: false)
-                .layoutPriority(1)
+
+                ReaderPlaybackConsole(
+                    playbackStatus: playbackStatus(for: presentationState),
+                    statusMessage: voiceSwitch.progress?.localizedMessage,
+                    voiceLanguage: vm.playbackLanguage,
+                    showTOC: showTOC
+                ) {
+                    controlCluster(for: presentationState)
+                }
             }
         }
-        .foregroundColor(AppTheme.foreground)
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        // Keep the subtitle slot and the complete bar height invariant across
-        // idle/planning/streaming. In WeRead this view sits next to WKWebView;
-        // an intrinsic-height animation would repaginate the Canvas for every
-        // generated sentence.
-        .frame(height: 124)
+        .frame(height: ReaderPlaybackBarLayoutContract.consoleHeight)
         .animation(.easeInOut(duration: 0.2), value: vm.explanationText)
     }
 
-    // MARK: 字幕（播放中显示讲解文本，全宽 2 行，独立空间不被控制按钮挤）
-
-    @ViewBuilder
-    private var subtitleRow: some View {
-        ZStack(alignment: .topLeading) {
-            if case .streaming = vm.status, !vm.isPreparingNext, !vm.explanationText.isEmpty {
-                Text(vm.explanationText)
-                    .font(.callout)
-                    .foregroundColor(AppTheme.foreground)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .transition(.opacity)
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40, alignment: .topLeading)
-        .clipped()
+    private var shouldShowCaption: Bool {
+        guard !vm.isPreparingNext, !vm.explanationText.isEmpty else { return false }
+        if case .streaming = vm.status { return true }
+        return false
     }
 
-    // MARK: 控制行
+    private var errorText: String? {
+        guard case .error(let message) = vm.status, !message.isEmpty else { return nil }
+        return message
+    }
 
-    @ViewBuilder
-    private var controlContent: some View {
+    private func playbackStatus(
+        for presentationState: ReaderExplainPlaybackPresentationState
+    ) -> String {
+        switch presentationState {
+        case .start: return AppLocalized("开始解读")
+        case .retry: return AppLocalized("重试解读")
+        case .waiting:
+            if case .streaming = vm.status {
+                return AppLocalized("正在准备下一段…")
+            }
+            return AppLocalized("正在准备…")
+        case .playing: return AppLocalized("解读中")
+        case .paused: return AppLocalized("已暂停")
+        case .replay: return AppLocalized("解读完成")
+        }
+    }
+
+    private func statusLabel(
+        for presentationState: ReaderExplainPlaybackPresentationState
+    ) -> String {
+        if presentationState == .waiting {
+            if case .streaming = vm.status {
+                return AppLocalized("正在准备下一段…")
+            }
+            if vm.isContinuingLivePage {
+                return AppLocalized("继续讲解…")
+            }
+        }
         switch vm.status {
         case .idle:
-            startButton(title: AppLocalized("开始解读"), icon: "sparkles")
-        case .error(let msg):
-            VStack(alignment: .leading, spacing: 4) {
-                startButton(title: AppLocalized("重试解读"), icon: "arrow.clockwise")
-                Text(msg).font(.caption2).foregroundColor(AppTheme.destructive).lineLimit(1)
-            }
+            return AppLocalized("开始解读")
+        case .error:
+            return AppLocalized("重试解读")
         case .planning:
-            ProgressView()
-            Text(vm.stageText.isEmpty ? AppLocalized("通读全文…") : vm.stageText)
-                .font(.subheadline)
-                .foregroundColor(AppTheme.mutedForeground)
+            return vm.stageText.isEmpty ? AppLocalized("通读全文…") : vm.stageText
         case .streaming(let block, let total):
             if vm.isPreparingNext {
-                // 块间等待下一段处理：左下角变 loading，避免静默被误以为卡住。
-                ProgressView().frame(width: 44, height: 44)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("正在准备第 \(min(block + 2, total))/\(total) 段…")
-                        .font(.subheadline.weight(.semibold))
-                    Text("讲解生成中，请稍候")
-                        .font(.caption).foregroundColor(AppTheme.mutedForeground)
-                }
-            } else {
-                Button { vm.togglePlayPause() } label: {
-                    Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 44))
-                        .foregroundColor(AppTheme.primary)
-                }
-                Text("讲解中 · 第 \(block + 1)/\(total) 段")
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
+                return "第 \(min(block + 2, total))/\(total) 段…"
             }
+            return "第 \(block + 1)/\(total) 段"
         case .completed:
             if vm.isContinuingLivePage {
-                ProgressView().frame(width: 44, height: 44)
-                Text(AppLocalized("继续讲解…"))
-                    .font(.subheadline.weight(.semibold))
+                return AppLocalized("继续讲解…")
+            }
+            return AppLocalized("解读完成")
+        }
+    }
+
+    private func controlCluster(
+        for presentationState: ReaderExplainPlaybackPresentationState
+    ) -> some View {
+        HStack(spacing: 8) {
+            if let previousPage {
+                ReaderPlaybackPageTurnButton(
+                    direction: .previous,
+                    action: previousPage
+                )
+            }
+            Button {
+                performAction(for: presentationState)
+            } label: {
+                ReaderPrimaryPlaybackButtonContent(
+                    icon: buttonIcon(for: presentationState),
+                    size: ReaderPrimaryPlaybackButtonVisualContract.portraitSize
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(presentationState == .waiting)
+            .accessibilityIdentifier(accessibilityIdentifier(for: presentationState))
+            .accessibilityLabel(Text(statusLabel(for: presentationState)))
+            .accessibilityValue(
+                Text(presentationState == .playing ? "playing" : "paused")
+            )
+
+            if let nextPage {
+                ReaderPlaybackPageTurnButton(
+                    direction: .next,
+                    action: nextPage
+                )
             } else {
-                Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                Text(AppLocalized("解读完成")).font(.subheadline.weight(.semibold))
-                Button { vm.replay() } label: {
-                    Label("重播", systemImage: "arrow.clockwise")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(AppTheme.primary)
-                }
+                statusText(for: presentationState)
             }
         }
     }
 
-    private var showsSpeedControl: Bool {
-        switch vm.status {
-        case .streaming:
-            return true
-        case .completed:
-            return !vm.isContinuingLivePage
-        case .idle, .error, .planning:
-            return false
+    private func performAction(
+        for presentationState: ReaderExplainPlaybackPresentationState
+    ) {
+        switch presentationState {
+        case .start, .retry:
+            vm.start()
+        case .playing, .paused:
+            vm.togglePlayPause()
+        case .replay:
+            vm.replay()
+        case .waiting:
+            break
         }
     }
 
-    private func startButton(title: String, icon: String) -> some View {
-        Button { vm.start() } label: {
-            Label(title, systemImage: icon)
-                .font(.subheadline.weight(.semibold))
-                .padding(.horizontal, 16).padding(.vertical, 10)
-                .background(AppTheme.primary)
-                .foregroundColor(.white)
-                .cornerRadius(12)
+    private func buttonIcon(
+        for presentationState: ReaderExplainPlaybackPresentationState
+    ) -> ReaderPrimaryPlaybackButtonIcon {
+        switch presentationState {
+        case .start: return .sparkles
+        case .playing: return .pause
+        case .paused: return .play
+        case .retry, .replay: return .retry
+        case .waiting: return .loading
         }
+    }
+
+    private func accessibilityIdentifier(
+        for presentationState: ReaderExplainPlaybackPresentationState
+    ) -> String {
+        switch presentationState {
+        case .start, .retry:
+            return "explainStartButton"
+        case .playing, .paused, .waiting:
+            return "explainPlayPauseButton"
+        case .replay:
+            return "explainReplayButton"
+        }
+    }
+
+    private func statusText(
+        for presentationState: ReaderExplainPlaybackPresentationState
+    ) -> some View {
+        Text(statusLabel(for: presentationState))
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(AppTheme.mutedForeground)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .frame(maxWidth: 100, alignment: .leading)
     }
 }

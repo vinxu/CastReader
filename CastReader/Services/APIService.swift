@@ -5,6 +5,12 @@
 
 import Foundation
 
+private func apiDebugLog(_ message: @autoclosure () -> String) {
+    #if DEBUG
+    print(message())
+    #endif
+}
+
 enum APIError: Error, LocalizedError {
     case invalidURL
     case invalidResponse
@@ -69,7 +75,7 @@ actor APIService {
         guard 200..<300 ~= httpResponse.statusCode else {
             // Print error response body for debugging
             if let errorBody = String(data: data, encoding: .utf8) {
-                print("🔴 [API] HTTP \(httpResponse.statusCode) error response: \(errorBody)")
+                apiDebugLog("🔴 [API] HTTP \(httpResponse.statusCode) error response: \(errorBody)")
             }
             throw APIError.httpError(httpResponse.statusCode)
         }
@@ -79,9 +85,9 @@ actor APIService {
         } catch {
             // Debug: print raw response and detailed error
             if let jsonString = String(data: data, encoding: .utf8) {
-                print("🔴 Decoding failed. Raw response: \(String(jsonString.prefix(1500)))")
+                apiDebugLog("🔴 Decoding failed. Raw response: \(String(jsonString.prefix(1500)))")
             }
-            print("🔴 Decoding error details: \(error)")
+            apiDebugLog("🔴 Decoding error details: \(error)")
             throw APIError.decodingError(error)
         }
     }
@@ -125,12 +131,12 @@ actor APIService {
             throw APIError.invalidURL
         }
 
-        print("📤 [API] notifyUpload URL: \(url)")
+        apiDebugLog("📤 [API] notifyUpload URL: \(url)")
         let resolvedVoice = VoiceCatalog.resolvedVoice(
             preferred: voiceId ?? "",
             for: Constants.TTS.defaultLanguage
         )
-        print("📤 [API] notifyUpload params: filename=\(filename), filepath=\(filepath), user_id=\(userId), voice_id=\(resolvedVoice)")
+        apiDebugLog("📤 [API] notifyUpload params: filename=\(filename), filepath=\(filepath), user_id=\(userId), voice_id=\(resolvedVoice)")
 
         // Use multipart/form-data format (same as web)
         let boundary = "Boundary-\(UUID().uuidString)"
@@ -164,7 +170,7 @@ actor APIService {
 
         guard 200..<300 ~= httpResponse.statusCode else {
             if let errorBody = String(data: data, encoding: .utf8) {
-                print("🔴 [API] HTTP \(httpResponse.statusCode) error response: \(errorBody)")
+                apiDebugLog("🔴 [API] HTTP \(httpResponse.statusCode) error response: \(errorBody)")
             }
             throw APIError.httpError(httpResponse.statusCode)
         }
@@ -173,9 +179,9 @@ actor APIService {
             return try decoder.decode(UploadResponse.self, from: data)
         } catch {
             if let jsonString = String(data: data, encoding: .utf8) {
-                print("🔴 [API] Decoding failed. Raw response: \(String(jsonString.prefix(1500)))")
+                apiDebugLog("🔴 [API] Decoding failed. Raw response: \(String(jsonString.prefix(1500)))")
             }
-            print("🔴 [API] Decoding error details: \(error)")
+            apiDebugLog("🔴 [API] Decoding error details: \(error)")
             throw APIError.decodingError(error)
         }
     }
@@ -186,8 +192,8 @@ actor APIService {
             throw APIError.invalidURL
         }
 
-        print("📗 [API] uploadEPUB URL: \(url)")
-        print("📗 [API] uploadEPUB params: filename=\(filename), size=\(fileData.count) bytes, user_id=\(userId)")
+        apiDebugLog("📗 [API] uploadEPUB URL: \(url)")
+        apiDebugLog("📗 [API] uploadEPUB params: filename=\(filename), size=\(fileData.count) bytes, user_id=\(userId)")
 
         // Use multipart/form-data with file binary
         let boundary = "Boundary-\(UUID().uuidString)"
@@ -229,27 +235,27 @@ actor APIService {
             throw APIError.invalidResponse
         }
 
-        print("📗 [API] uploadEPUB response status: \(httpResponse.statusCode)")
+        apiDebugLog("📗 [API] uploadEPUB response status: \(httpResponse.statusCode)")
 
         guard 200..<300 ~= httpResponse.statusCode else {
             if let errorBody = String(data: data, encoding: .utf8) {
-                print("🔴 [API] HTTP \(httpResponse.statusCode) error response: \(errorBody)")
+                apiDebugLog("🔴 [API] HTTP \(httpResponse.statusCode) error response: \(errorBody)")
             }
             throw APIError.httpError(httpResponse.statusCode)
         }
 
         // Debug: print raw response
         if let jsonString = String(data: data, encoding: .utf8) {
-            print("📗 [API] uploadEPUB raw response: \(String(jsonString.prefix(500)))")
+            apiDebugLog("📗 [API] uploadEPUB raw response: \(String(jsonString.prefix(500)))")
         }
 
         do {
             return try decoder.decode(EPUBUploadResponse.self, from: data)
         } catch {
             if let jsonString = String(data: data, encoding: .utf8) {
-                print("🔴 [API] Decoding failed. Raw response: \(String(jsonString.prefix(1500)))")
+                apiDebugLog("🔴 [API] Decoding failed. Raw response: \(String(jsonString.prefix(1500)))")
             }
-            print("🔴 [API] Decoding error details: \(error)")
+            apiDebugLog("🔴 [API] Decoding error details: \(error)")
             throw APIError.decodingError(error)
         }
     }
@@ -297,7 +303,7 @@ actor APIService {
         let inputText = sanitized.count > maxLength ? String(sanitized.prefix(maxLength)) : sanitized
         let ttsRequest = TTSRequest(input: inputText, voice: resolvedVoice, speed: speed, language: canonicalLanguage)
         let bodyData = try JSONEncoder().encode(ttsRequest)
-        NSLog("[TTSRoute] language=%@ voice=%@ clone=%@", canonicalLanguage, resolvedVoice, resolvedVoice.hasPrefix("vc_") ? "Y" : "N")
+        apiDebugLog("[TTSRoute] language=\(canonicalLanguage) voice=\(resolvedVoice) clone=\(resolvedVoice.hasPrefix("vc_") ? "Y" : "N")")
 
         if resolvedVoice.hasPrefix("vc_") {
             return try await requestClonedVoiceTTS(body: bodyData, voiceID: resolvedVoice)
@@ -309,7 +315,7 @@ actor APIService {
             return try await request(url, method: "POST", body: bodyData)
         } catch {
             if let fb = TTSEndpoint.fallbackBase(), let url = URL(string: TTSEndpoint.partlyURL(base: fb)) {
-                print("[TTS] primary node failed (\(primary)) → fallback US: \(fb)")
+                apiDebugLog("[TTS] primary node failed (\(primary)) → fallback US: \(fb)")
                 return try await request(url, method: "POST", body: bodyData)
             }
             throw error

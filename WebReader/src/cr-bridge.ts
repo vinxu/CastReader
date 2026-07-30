@@ -6,8 +6,32 @@ import { hexToRgba } from '@/shared/highlight-palette'
 import mammoth from 'mammoth'
 import ePub from 'epubjs'
 
-type ExtractedPara = { text: string; element: HTMLElement }
-interface CRDeps { extract: () => ExtractedPara[] }
+type ExtractedPara = {
+  text: string
+  element: HTMLElement
+  /** 提取器已给出最终文本（例如 Play Books 的可见区裁剪），不得用 element.textContent 覆盖。 */
+  exactText?: boolean
+  /** text 在 element.textContent 内的起始偏移；高亮字符位置要加上它。 */
+  charOffset?: number
+  /** 跨页断句：补到自然句末的朗读文本。 */
+  speechText?: string
+  /** 跨页裁剪已读前缀用的稳定来源坐标。 */
+  sourceParagraphIndex?: number
+  sourceStart?: number
+  sourceEnd?: number
+}
+interface CRDeps {
+  extract: () => ExtractedPara[]
+  /** Optional site geometry guard for overlay fragments. Google Books uses it
+   * to reject a line that crosses its dynamic page clip. */
+  acceptHighlightRect?: (el: HTMLElement, rect: DOMRect) => boolean
+  /** 每次 rendered 附带的页面级信息（Play Books 的 reason/signature）。 */
+  pageMeta?: () => Record<string, unknown>
+  /** 由站点适配自行触发首次/后续提取（Play Books 靠翻页监听驱动）。 */
+  autoExtract?: boolean
+  /** initBridge 完成后回调，交出 doExtract 供站点适配调用。 */
+  onInstalled?: (api: { extract: (reason?: string) => void }) => void
+}
 
 function dbg(s: string): void { try { console.log('[CRDBG]', s) } catch { /* */ } }
 
@@ -69,8 +93,22 @@ function normalizeWhitespace(el: HTMLElement): void {
 export function initBridge(deps: CRDeps): void {
   const { extract } = deps
   const paraElements = new Map<number, HTMLElement>()
+  // Canonical mapping from the latest extraction. Native can split one exact
+  // source paragraph into multiple TTS paragraphs, so CR.init rebuilds
+  // `paraElements` from this immutable page-local snapshot instead of aliasing
+  // an alias and accidentally pointing the following paragraph at the wrong
+  // DOM node.
+  const extractedParaElements = new Map<number, HTMLElement>()
+  // Play Books 的段落只取可见片段，DOM 里的 element.textContent 还包含前后不可见
+  // 的部分；所有字符偏移都要加上这个基准。其余源恒为 0。
+  const paraOffsets = new Map<number, number>()
   let color = '#FD5F01'
   const markRenderer = createMarkRenderer((i) => paraElements.get(i), color)
+  // Kobo 等分页阅读器会把正文放在同源 iframe 里。Range 的矩形坐标属于它自己的
+  // Document/Window，overlay 也必须放回同一个 Document；同时保留节点引用，确保
+  // iframe 换页或被移除后仍能清掉上一页高亮。
+  const overlayNodes = new Set<HTMLElement>()
+  const overlayDocuments = new Set<Document>()
 
   const post = (type: string, payload: Record<string, unknown> = {}): void => {
     try {
@@ -82,21 +120,41 @@ export function initBridge(deps: CRDeps): void {
 
   // overlay 高亮：清掉旧矩形 div，按 range 各行 rect 画半透明矩形（跳过零宽，避免残留线）。
   function clearOverlay(): void {
-    document.querySelectorAll('.cr-hl-ov').forEach((n) => n.remove())
+    overlayNodes.forEach((node) => {
+      try { node.remove() } catch { /* detached/replaced frame */ }
+    })
+    overlayNodes.clear()
+    // 兼容页面脚本移动/复制 overlay 或旧 bundle 留下的节点；所有曾绘制过的
+    // ownerDocument 都要清理，不能只查 bridge 所在的顶层 document。
+    overlayDocuments.forEach((doc) => {
+      try { doc.querySelectorAll('.cr-hl-ov').forEach((n) => n.remove()) } catch { /* detached frame */ }
+    })
+    overlayDocuments.clear()
   }
-  function paintOverlay(range: Range): number {
+  function paintOverlay(range: Range, el?: HTMLElement): number {
     clearOverlay()
+    const ownerDocument = range.startContainer.ownerDocument || el?.ownerDocument || document
+    const ownerWindow = ownerDocument.defaultView
+    const host = ownerDocument.body || ownerDocument.documentElement
+    if (!ownerWindow || !host) return 0
     const rects = Array.from(range.getClientRects())
-    const sx = window.scrollX, sy = window.scrollY
+    const sx = ownerWindow.scrollX, sy = ownerWindow.scrollY
+    overlayDocuments.add(ownerDocument)
     let n = 0
     rects.forEach((rc) => {
       if (rc.width < 2 || rc.height < 2) return
-      const d = document.createElement('div')
+      if (
+        el &&
+        deps.acceptHighlightRect &&
+        !deps.acceptHighlightRect(el, rc)
+      ) return
+      const d = ownerDocument.createElement('div')
       d.className = 'cr-hl-ov'
       d.style.cssText =
         `position:absolute;left:${rc.left + sx}px;top:${rc.top + sy}px;width:${rc.width}px;height:${rc.height}px;` +
         `background:${hexToRgba(color, 0.34)};pointer-events:none;z-index:2147483000;border-radius:3px;mix-blend-mode:multiply`
-      document.body.appendChild(d)
+      host.appendChild(d)
+      overlayNodes.add(d)
       n++
     })
     return n
@@ -104,7 +162,7 @@ export function initBridge(deps: CRDeps): void {
   function setOverlay(el: HTMLElement, charStart: number, charEnd: number): number {
     const range = charRangeInElement(el, charStart, charEnd)
     if (!range) { clearOverlay(); return 0 }
-    return paintOverlay(range)
+    return paintOverlay(range, el)
   }
 
   // 词级高亮（对齐扩展 highlight-sync）：JS 在段落 textContent 虚拟全文里按词文本前向匹配，
@@ -158,22 +216,51 @@ export function initBridge(deps: CRDeps): void {
     return { ranges, cursor: searchPos }
   }
 
-  function doExtract(): void {
+  function doExtract(reason?: string): void {
     let paras: ExtractedPara[] = []
     try { paras = extract() } catch (e) { post('error', { stage: 'extract', message: String(e) }) }
+    // A page-local mapping and its overlay must have the same lifetime.
+    // Google can rebuild paragraph nodes or replace the reader frame during a
+    // turn; retaining body-level overlays here would leave old-page rectangles
+    // floating above the newly extracted page.
+    clearOverlay()
+    wcPara = -1
+    wcSeg = -1
+    wcRanges = []
+    paraCursor = 0
     paraElements.clear()
-    const out: Array<{ paragraphIndex: number; text: string; type: string }> = []
+    extractedParaElements.clear()
+    paraOffsets.clear()
+    const out: Array<Record<string, unknown>> = []
     paras.forEach((p, i) => {
       const el = p.element
       try { el.setAttribute('data-cr-para', String(i)) } catch { /* */ }
-      normalizeWhitespace(el)   // 折叠段内空白：HTML 源码换行/缩进否则会让 TTS 停顿；charRange 与 textContent 同步
+      // 折叠段内空白：HTML 源码换行/缩进否则会让 TTS 停顿；charRange 与 textContent 同步。
+      // exactText 的提取器已经在自己的坐标系里量过可见区间，再改文本节点会让偏移错位。
+      if (!p.exactText) normalizeWhitespace(el)
       paraElements.set(i, el)
-      const text = (el.textContent || p.text || '').trim()
-      out.push({ paragraphIndex: i, text, type: 'paragraph' })
+      extractedParaElements.set(i, el)
+      paraOffsets.set(i, p.charOffset || 0)
+      const text = p.exactText ? p.text : (el.textContent || p.text || '').trim()
+      const row: Record<string, unknown> = { paragraphIndex: i, text, type: 'paragraph' }
+      if (p.speechText && p.speechText !== text) {
+        row.boundaryUTF16Offset = text.length
+        row.extendedUTF16Length = p.speechText.length
+        row.speechText = p.speechText
+      }
+      if (typeof p.sourceParagraphIndex === 'number') row.sourceParagraphIndex = p.sourceParagraphIndex
+      if (typeof p.sourceStart === 'number') row.sourceUTF16Start = p.sourceStart
+      if (typeof p.sourceEnd === 'number') row.sourceUTF16End = p.sourceEnd
+      out.push(row)
     })
-    post('rendered', { paragraphs: out })
+    const payload: Record<string, unknown> = { paragraphs: out }
+    if (reason) payload.reason = reason
+    if (deps.pageMeta) {
+      try { Object.assign(payload, deps.pageMeta()) } catch { /* */ }
+    }
+    post('rendered', payload)
     ;(window as unknown as { __crLastRendered?: unknown }).__crLastRendered = out
-    log(`extracted ${out.length} paragraphs`)
+    log(`extracted ${out.length} paragraphs${reason ? ' reason=' + reason : ''}`)
   }
 
   const CR = {
@@ -251,22 +338,82 @@ export function initBridge(deps: CRDeps): void {
         showDbg('epub EXC ' + String(e)); post('error', { stage: 'epub', message: String(e) })
       }
     },
-    init(arg: { segments?: Array<{ paragraphIndex: number; text: string }>; color?: string }): void {
+    init(arg: {
+      segments?: Array<{
+        paragraphIndex: number
+        text: string
+        /** Native paragraph may alias a source DOM paragraph after an exact split. */
+        domParagraphIndex?: number
+        /** native 裁掉跨页已读前缀后，可把新文本在原 DOM 中的绝对 UTF-16 起点传回来。 */
+        domCharOffset?: number
+        /** 兼容早期调用方字段名。 */
+        charOffset?: number
+      }>
+      color?: string
+    }): void {
       if (arg.color) { color = arg.color; markRenderer.setColor(color) }
+      const segments = arg.segments || []
+      if (segments.length > 0) {
+        paraElements.clear()
+        paraOffsets.clear()
+      }
+      for (const segment of segments) {
+        const domParagraphIndex =
+          segment.domParagraphIndex ?? segment.paragraphIndex
+        const sourceElement = extractedParaElements.get(domParagraphIndex)
+        if (sourceElement) {
+          paraElements.set(segment.paragraphIndex, sourceElement)
+        }
+        const override = segment.domCharOffset ?? segment.charOffset
+        if (
+          Number.isFinite(override) &&
+          typeof override === 'number' &&
+          override >= 0 &&
+          paraElements.has(segment.paragraphIndex)
+        ) {
+          paraOffsets.set(segment.paragraphIndex, override)
+        }
+      }
+      // offset 变化后旧的前向词游标/Range 缓存失效。
+      wcPara = -1
+      wcSeg = -1
+      paraCursor = 0
+      wcRanges = []
       log(`init segments=${arg.segments?.length ?? 0}`)
     },
-    highlightRange(arg: { paragraphIndex: number; charStart: number; charEnd: number }): void {
+    highlightRange(arg: {
+      paragraphIndex: number
+      charStart: number
+      charEnd: number
+      /** Absolute source-DOM range used while one immutable audio sentence
+       * carries across a visual page boundary. */
+      domCharStart?: number
+      domCharEnd?: number
+    }): void {
       const el = paraElements.get(arg.paragraphIndex)
       const info = 'p' + arg.paragraphIndex + ' ' + arg.charStart + '-' + arg.charEnd
       if (!el) { clearOverlay(); showDbg(info + ' NOEL'); return }
-      const n = setOverlay(el, arg.charStart, arg.charEnd)
+      const base = paraOffsets.get(arg.paragraphIndex) || 0
+      const hasAbsoluteRange =
+        typeof arg.domCharStart === 'number' &&
+        Number.isFinite(arg.domCharStart) &&
+        typeof arg.domCharEnd === 'number' &&
+        Number.isFinite(arg.domCharEnd)
+      const start = hasAbsoluteRange ? (arg.domCharStart as number) : arg.charStart + base
+      const end = hasAbsoluteRange ? (arg.domCharEnd as number) : arg.charEnd + base
+      const n = setOverlay(el, start, end)
       showDbg(info + ' ov=' + n)
     },
     // 词级高亮（英文）：native 下发当前 segment 的词数组 + 词索引，JS 在 DOM 虚拟全文前向匹配定位（不靠字符偏移）。
     highlightWord(arg: { paragraphIndex: number; segSeq: number; words: string[]; wordIndex: number }): void {
       const el = paraElements.get(arg.paragraphIndex)
       if (!el) { clearOverlay(); showDbg('w NOEL'); return }
-      if (arg.paragraphIndex !== wcPara) { wcPara = arg.paragraphIndex; paraCursor = 0; wcSeg = -1 }
+      if (arg.paragraphIndex !== wcPara) {
+        wcPara = arg.paragraphIndex
+        // 可见区裁剪的段落要从可见起点开始前向匹配，否则会命中上一页的同名词。
+        paraCursor = paraOffsets.get(arg.paragraphIndex) || 0
+        wcSeg = -1
+      }
       if (arg.segSeq !== wcSeg) {
         wcSeg = arg.segSeq
         const built = buildWordRanges(el, arg.words || [], paraCursor)
@@ -275,21 +422,29 @@ export function initBridge(deps: CRDeps): void {
       }
       const r = wcRanges[arg.wordIndex]
       if (r && !r.collapsed) {
-        const n = paintOverlay(r)
+        const n = paintOverlay(r, el)
         showDbg('w p' + arg.paragraphIndex + ' s' + arg.segSeq + ' #' + arg.wordIndex + ' ov=' + n)
       } else {
         showDbg('w p' + arg.paragraphIndex + ' #' + arg.wordIndex + ' MISS')
       }
     },
     clearHighlight(): void { clearOverlay(); wcPara = -1; wcSeg = -1; paraCursor = 0 },
+    // Play Books 之类分页阅读器由页面自己控制视口，滚动会破坏分页几何。
+    disableScroll: false,
     setColor(arg: { hex: string }): void { color = arg.hex; markRenderer.setColor(arg.hex) },
     setActive(arg: { active: boolean }): void { if (arg.active) markRenderer.clear(); else clearOverlay() },
     scrollTo(arg: { paragraphIndex: number }): void {
+      if (CR.disableScroll) return
       paraElements.get(arg.paragraphIndex)?.scrollIntoView({ block: 'center', behavior: 'auto' })
     },
     setAutoScroll(_arg: { enabled: boolean }): void { /* M2 */ },
     showMark(arg: { id: string; paragraphIndex: number; charStart: number; charEnd: number; action: string; n?: number; seed: number; weight?: string; role?: string }): void {
-      markRenderer.show(arg)
+      const base = paraOffsets.get(arg.paragraphIndex) || 0
+      markRenderer.show({
+        ...arg,
+        charStart: arg.charStart + base,
+        charEnd: arg.charEnd + base,
+      })
     },
     clearMarks(): void { markRenderer.clear() },
   }
@@ -301,8 +456,11 @@ export function initBridge(deps: CRDeps): void {
     if (el) post('paragraphTapped', { paragraphIndex: Number(el.getAttribute('data-cr-para')) })
   }, true)
 
+  deps.onInstalled?.({ extract: doExtract })
+
   function ready(): void {
     post('ready', { version: 'm1' })
+    if (deps.autoExtract === false) return
     setTimeout(doExtract, 350)
   }
   if (document.readyState === 'loading') {

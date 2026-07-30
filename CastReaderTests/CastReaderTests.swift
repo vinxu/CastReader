@@ -1805,6 +1805,43 @@ final class LocalizationCatalogTests: XCTestCase {
         }
     }
 
+    /// 试用文案是审核红线：任何一种语言缺翻译，该语言用户就会看到中文源串或空承诺。
+    func testFreeTrialCopyIsCompleteInAllNineLanguages() throws {
+        let root = try catalog(named: "Localizable")
+        let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+        let trialKeys = [
+            "%d 天免费试用",
+            "开始 %d 天免费试用",
+            "试用结束后收费",
+            "免费试用 %1$d 天，之后按 %2$@%3$@自动续订。可随时在 App Store 设置中取消。",
+            "免费试用 %1$d 天，之后按 %2$@/年自动续订，可随时取消",
+            "/月", "/年", "/周", "/天"
+        ]
+
+        for key in trialKeys {
+            let entry = try XCTUnwrap(strings[key] as? [String: Any], "缺少试用文案 key: \(key)")
+            let localizations = try XCTUnwrap(entry["localizations"] as? [String: Any])
+            XCTAssertEqual(
+                Set(localizations.keys), Set(translatedLocales),
+                "试用文案 \(key) 未覆盖九种语言"
+            )
+            let sourceSignature = try formatSignature(key)
+            for locale in translatedLocales {
+                let localization = try XCTUnwrap(localizations[locale] as? [String: Any])
+                let unit = try XCTUnwrap(localization["stringUnit"] as? [String: Any])
+                let value = try XCTUnwrap(unit["value"] as? String)
+                XCTAssertFalse(
+                    value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                    "\(locale) 的 \(key) 为空"
+                )
+                XCTAssertEqual(
+                    try formatSignature(value), sourceSignature,
+                    "\(locale) 的 \(key) 占位符与源串不一致，会在运行时崩或错位"
+                )
+            }
+        }
+    }
+
     func testProjectDeclaresAllNineKnownRegions() throws {
         let projectURL = repositoryRoot.appendingPathComponent("CastReader.xcodeproj/project.pbxproj")
         guard FileManager.default.fileExists(atPath: projectURL.path) else {
@@ -2520,7 +2557,9 @@ final class LocalizationCatalogTests: XCTestCase {
         XCTAssertTrue(WeReadWebScripts.canvasIntercept.contains("effectiveArea>=area*.45"))
         XCTAssertTrue(WeReadWebScripts.readerBridge.contains("han/sample.length>=.45"))
         XCTAssertTrue(WeReadWebScripts.readerBridge.contains(".readerFooter_button:last-child"))
-        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("clean(candidate.textContent)==='下一页'"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("label=next?'下一页':'上一页'"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("clean(candidate.textContent)===label"))
+        XCTAssertTrue(WeReadWebScripts.readerBridge.contains("userPage(direction)"))
         XCTAssertTrue(WeReadWebScripts.readerBridge.contains("contentFingerprint"))
         XCTAssertTrue(WeReadWebScripts.readerBridge.contains("resolveSegmentRange"))
         XCTAssertTrue(WeReadWebScripts.readerBridge.contains("computeSourceSpan"))
@@ -2679,6 +2718,390 @@ final class LocalizationCatalogTests: XCTestCase {
                 }
             }
         }
+    }
+}
+
+final class ReaderPlaybackBarLayoutContractTests: XCTestCase {
+    func testCommercialAndWeReadPlayersUsePageControls() {
+        XCTAssertTrue(
+            ReaderPlaybackNavigationContract.usesPageTurns(for: .googleBooks)
+        )
+        XCTAssertTrue(
+            ReaderPlaybackNavigationContract.usesPageTurns(for: .kobo)
+        )
+        XCTAssertTrue(
+            ReaderPlaybackNavigationContract.usesPageTurns(for: .weread)
+        )
+
+        for source in [
+            ReadingSourceKind.web,
+            .docx,
+            .pdf,
+            .photo,
+            .epub,
+            .text,
+            .kindle,
+        ] {
+            XCTAssertFalse(
+                ReaderPlaybackNavigationContract.usesPageTurns(for: source),
+                "\(source) must retain its own playback/navigation controls"
+            )
+        }
+    }
+
+    func testGenericReaderUsesTheSameCompactPortraitGeometryAsKindle() {
+        XCTAssertEqual(ReaderPlaybackBarLayoutContract.portraitHeight, 72)
+        XCTAssertEqual(ReaderPlaybackBarLayoutContract.consoleHeight, 64)
+        XCTAssertEqual(
+            ReaderPlaybackBarLayoutContract.reservedPortraitHeight(for: .read),
+            72
+        )
+        XCTAssertEqual(
+            ReaderPlaybackBarLayoutContract.reservedPortraitHeight(for: .explain),
+            72
+        )
+    }
+
+    func testExplainCaptionDoesNotConsumeReaderViewportHeight() {
+        XCTAssertFalse(ReaderPlaybackBarLayoutContract.explainCaptionConsumesReservedHeight)
+        XCTAssertLessThan(ReaderPlaybackBarLayoutContract.explainCaptionOffset, 0)
+        XCTAssertEqual(
+            ReaderPlaybackBarLayoutContract.portraitHeight
+                - ReaderPlaybackBarLayoutContract.consoleHeight,
+            8,
+            "The caption must overflow above the console instead of adding a subtitle row"
+        )
+    }
+
+    func testPartialLandscapeCapsulesDoNotCropAFullWidthWebBand() {
+        XCTAssertEqual(
+            ReaderPlaybackBarLayoutContract.bottomContentOcclusion(
+                controlsCoverFullWidth: false
+            ),
+            0,
+            "Visible Kobo text outside the compact capsules must remain in the TTS snapshot"
+        )
+        XCTAssertEqual(
+            ReaderPlaybackBarLayoutContract.bottomContentOcclusion(
+                controlsCoverFullWidth: true
+            ),
+            ReaderPlaybackBarLayoutContract.landscapeControlHeight
+        )
+    }
+
+    func testReadControlShowsWaitingAndErrorsInsteadOfFakePausedState() {
+        XCTAssertEqual(
+            ReadPlaybackPresentationContract.resolve(
+                isPlaying: false,
+                isWaitingForPlayableAudio: true,
+                status: .loading
+            ),
+            .waiting
+        )
+        XCTAssertEqual(
+            ReadPlaybackPresentationContract.resolve(
+                isPlaying: false,
+                isWaitingForPlayableAudio: false,
+                status: .error("network")
+            ),
+            .retry
+        )
+        XCTAssertEqual(
+            ReadPlaybackPresentationContract.resolve(
+                isPlaying: false,
+                isWaitingForPlayableAudio: false,
+                status: .ready
+            ),
+            .paused
+        )
+        XCTAssertEqual(
+            ReadPlaybackPresentationContract.resolve(
+                isPlaying: true,
+                isWaitingForPlayableAudio: true,
+                status: .streaming
+            ),
+            .playing
+        )
+    }
+
+    func testShortSegmentWaitingKeepsPreviousStablePresentation() {
+        XCTAssertFalse(
+            ReaderPlaybackWaitingDebounceContract.hasExceededDelay(
+                elapsedMilliseconds: 299
+            )
+        )
+        XCTAssertEqual(
+            ReaderPlaybackWaitingDebounceContract.resolve(
+                rawWaiting: true,
+                waitingHasExceededDelay: false,
+                previousStablePresentation: ReadPlaybackPresentationState.playing,
+                currentStablePresentation: ReadPlaybackPresentationState.paused,
+                waitingPresentation: ReadPlaybackPresentationState.waiting
+            ),
+            .playing,
+            "a normal sub-300ms segment handoff must keep the pause icon and listening status"
+        )
+    }
+
+    func testSustainedWaitingUsesStableOrangeLoadingControl() {
+        XCTAssertTrue(
+            ReaderPlaybackWaitingDebounceContract.hasExceededDelay(
+                elapsedMilliseconds: 300
+            )
+        )
+        XCTAssertEqual(
+            ReaderPlaybackWaitingDebounceContract.resolve(
+                rawWaiting: true,
+                waitingHasExceededDelay: true,
+                previousStablePresentation: ReadPlaybackPresentationState.playing,
+                currentStablePresentation: ReadPlaybackPresentationState.paused,
+                waitingPresentation: ReadPlaybackPresentationState.waiting
+            ),
+            .waiting
+        )
+        XCTAssertTrue(
+            ReaderPrimaryPlaybackButtonVisualContract.keepsPrimaryCircleWhileLoading
+        )
+        XCTAssertEqual(
+            ReaderPrimaryPlaybackButtonVisualContract.portraitSize,
+            52
+        )
+        XCTAssertEqual(
+            ReaderPrimaryPlaybackButtonVisualContract.landscapeSize,
+            44
+        )
+    }
+
+    func testWaitingEndImmediatelyReturnsToCurrentRealState() {
+        XCTAssertEqual(
+            ReaderPlaybackWaitingDebounceContract.resolve(
+                rawWaiting: false,
+                waitingHasExceededDelay: true,
+                previousStablePresentation: ReaderExplainPlaybackPresentationState.playing,
+                currentStablePresentation: ReaderExplainPlaybackPresentationState.paused,
+                waitingPresentation: ReaderExplainPlaybackPresentationState.waiting
+            ),
+            .paused
+        )
+    }
+
+    func testActiveOrPreparingPlaybackContinuesAcrossModeSwitch() {
+        XCTAssertTrue(
+            ReaderModeSwitchPlaybackContract.shouldContinueFromRead(
+                audioIsPlaying: true,
+                viewModelIsPlaying: false,
+                status: .ready
+            )
+        )
+        XCTAssertTrue(
+            ReaderModeSwitchPlaybackContract.shouldContinueFromRead(
+                audioIsPlaying: false,
+                viewModelIsPlaying: false,
+                status: .loading
+            )
+        )
+        XCTAssertFalse(
+            ReaderModeSwitchPlaybackContract.shouldContinueFromRead(
+                audioIsPlaying: false,
+                viewModelIsPlaying: false,
+                status: .ready
+            ),
+            "an explicitly paused Read session must remain paused"
+        )
+        XCTAssertFalse(
+            ReaderModeSwitchPlaybackContract.shouldContinueFromRead(
+                audioIsPlaying: false,
+                viewModelIsPlaying: false,
+                status: .streaming
+            ),
+            "a paused Read session stays streaming after its first response and must remain paused"
+        )
+
+        XCTAssertTrue(
+            ReaderModeSwitchPlaybackContract.shouldContinueFromExplain(
+                audioIsPlaying: false,
+                viewModelIsPlaying: false,
+                status: .planning,
+                isPreparingNext: false
+            )
+        )
+        XCTAssertTrue(
+            ReaderModeSwitchPlaybackContract.shouldContinueFromExplain(
+                audioIsPlaying: false,
+                viewModelIsPlaying: false,
+                status: .streaming(block: 0, total: 2),
+                isPreparingNext: true
+            )
+        )
+        XCTAssertFalse(
+            ReaderModeSwitchPlaybackContract.shouldContinueFromExplain(
+                audioIsPlaying: false,
+                viewModelIsPlaying: false,
+                status: .streaming(block: 0, total: 2),
+                isPreparingNext: false
+            ),
+            "an explicitly paused Explain session must remain paused"
+        )
+    }
+}
+
+final class AudioPlaybackOwnershipTests: XCTestCase {
+    func testReadRecoveryReloadsOnlyCompleteCachedParagraph() {
+        XCTAssertEqual(
+            ReadAloudOwnershipRecoveryPlan.resolve(
+                isReady: true,
+                cachedSegmentCount: 2
+            ),
+            .reloadCachedParagraph
+        )
+        XCTAssertEqual(
+            ReadAloudOwnershipRecoveryPlan.resolve(
+                isReady: false,
+                cachedSegmentCount: 2
+            ),
+            .regenerateParagraph,
+            "a partial streaming paragraph must be regenerated instead of replaying a truncated cache"
+        )
+        XCTAssertEqual(
+            ReadAloudOwnershipRecoveryPlan.resolve(
+                isReady: true,
+                cachedSegmentCount: 0
+            ),
+            .regenerateParagraph
+        )
+    }
+
+    func testExplainRecoveryPrefersPreparedThenReplayThenSafeRestart() {
+        XCTAssertEqual(
+            ExplainOwnershipRecoveryPlan.resolve(
+                currentBlockIndex: 2,
+                hasCurrentPreparedBlock: true,
+                replayBlockCount: 3,
+                statusIsActive: true
+            ),
+            .preparedBlock(index: 2)
+        )
+        XCTAssertEqual(
+            ExplainOwnershipRecoveryPlan.resolve(
+                currentBlockIndex: 7,
+                hasCurrentPreparedBlock: false,
+                replayBlockCount: 3,
+                statusIsActive: true
+            ),
+            .replayBlock(index: 2)
+        )
+        XCTAssertEqual(
+            ExplainOwnershipRecoveryPlan.resolve(
+                currentBlockIndex: -1,
+                hasCurrentPreparedBlock: false,
+                replayBlockCount: 0,
+                statusIsActive: true
+            ),
+            .restartPlanning(reusingStartedSession: true)
+        )
+        XCTAssertEqual(
+            ExplainOwnershipRecoveryPlan.resolve(
+                currentBlockIndex: -1,
+                hasCurrentPreparedBlock: false,
+                replayBlockCount: 0,
+                statusIsActive: false
+            ),
+            .restartPlanning(reusingStartedSession: false)
+        )
+    }
+
+    func testModeSwitchFencesOldQueueFromOwnerAndRemotePlayback() {
+        var state = AudioPlaybackOwnershipState()
+        let read = state.claim(.readAloud)
+        XCTAssertTrue(state.attachQueue(to: read))
+        XCTAssertTrue(state.permitsPlayback(requestedBy: read))
+        XCTAssertFalse(
+            state.permitsPlayback(requestedBy: nil),
+            "an un-tokenized in-app caller must not inherit the active owner"
+        )
+        XCTAssertTrue(state.permitsRemotePlayback)
+
+        let explain = state.claim(.explain)
+        XCTAssertFalse(state.permitsPlayback(requestedBy: read))
+        XCTAssertFalse(state.permitsCallback(from: read))
+        XCTAssertFalse(
+            state.permitsRemotePlayback,
+            "remote commands must not revive the retained Read queue after Explain becomes active"
+        )
+        XCTAssertFalse(state.attachQueue(to: read))
+
+        XCTAssertTrue(state.attachQueue(to: explain))
+        XCTAssertTrue(state.permitsPlayback(requestedBy: explain))
+        XCTAssertTrue(state.permitsCallback(from: explain))
+        XCTAssertTrue(state.permitsRemotePlayback)
+    }
+
+    func testSameOwnerClaimCreatesNewSessionAndRejectsLateCallbacks() {
+        var state = AudioPlaybackOwnershipState()
+        let first = state.claim(.readAloud)
+        XCTAssertTrue(state.attachQueue(to: first))
+
+        let replacement = state.claim(.readAloud)
+        XCTAssertNotEqual(first, replacement)
+        XCTAssertFalse(state.permitsQueueMutation(first))
+        XCTAssertFalse(state.permitsPlayback(requestedBy: first))
+        XCTAssertFalse(state.permitsRemotePlayback)
+
+        XCTAssertTrue(state.attachQueue(to: replacement))
+        XCTAssertTrue(state.permitsPlayback(requestedBy: replacement))
+        XCTAssertFalse(
+            state.permitsCallback(from: first),
+            "an old AVPlayerItem callback must stay fenced after the replacement queue is attached"
+        )
+        XCTAssertTrue(state.permitsCallback(from: replacement))
+    }
+
+    func testContinuousHandoffTransfersQueueToFreshSessionWithoutUnownedGap() throws {
+        var state = AudioPlaybackOwnershipState()
+        let oldPage = state.claim(.readAloud)
+        XCTAssertTrue(state.attachQueue(to: oldPage))
+
+        let nextPage = try XCTUnwrap(state.transferActiveQueue(to: .readAloud))
+        XCTAssertNotEqual(oldPage, nextPage)
+        XCTAssertEqual(state.activeSession, nextPage)
+        XCTAssertEqual(state.queueSession, nextPage)
+        XCTAssertFalse(state.permitsPlayback(requestedBy: oldPage))
+        XCTAssertFalse(state.permitsCallback(from: oldPage))
+        XCTAssertTrue(state.permitsPlayback(requestedBy: nextPage))
+        XCTAssertTrue(state.permitsCallback(from: nextPage))
+    }
+
+    func testReleasedSessionCannotBeRestartedByRemoteCommand() {
+        var state = AudioPlaybackOwnershipState()
+        let explain = state.claim(.explain)
+        XCTAssertTrue(state.attachQueue(to: explain))
+
+        state.release(explain)
+
+        XCTAssertFalse(state.permitsPlayback(requestedBy: explain))
+        XCTAssertFalse(state.permitsRemotePlayback)
+    }
+}
+
+final class TTSEndpointSecurityTests: XCTestCase {
+    func testLegacyPlaintextUSRouteIsUpgradedToHTTPS() {
+        XCTAssertEqual(
+            TTSEndpoint.normalizedSecureBase("http://api.castreader.ai:8123"),
+            "https://api.castreader.ai"
+        )
+    }
+
+    func testHTTPSRoutesAreAcceptedAndTrailingSlashIsRemoved() {
+        XCTAssertEqual(
+            TTSEndpoint.normalizedSecureBase(" https://example.com:8443/ "),
+            "https://example.com:8443"
+        )
+    }
+
+    func testUnknownPlaintextAndMalformedRoutesAreRejected() {
+        XCTAssertNil(TTSEndpoint.normalizedSecureBase("http://example.com:8123"))
+        XCTAssertNil(TTSEndpoint.normalizedSecureBase("not a URL"))
+        XCTAssertNil(TTSEndpoint.normalizedSecureBase(""))
     }
 }
 

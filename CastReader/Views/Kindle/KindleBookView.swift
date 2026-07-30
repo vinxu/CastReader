@@ -548,7 +548,7 @@ struct KindleBookView: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
                     .background(.regularMaterial, in: Capsule())
-                    .offset(y: -42)
+                    .offset(y: ReaderPlaybackBarLayoutContract.explainCaptionOffset)
                     .allowsHitTesting(false)
             }
         }
@@ -556,7 +556,7 @@ struct KindleBookView: View {
         // Kindle viewport height. A fixed single-line console prevents React
         // from reconciling the reader surface when playback begins.
         .frame(maxWidth: .infinity)
-        .frame(height: 72)
+        .frame(height: ReaderPlaybackBarLayoutContract.portraitHeight)
         .background(.regularMaterial)
     }
 
@@ -831,7 +831,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
                 .kindleLandscapePill()
         } else {
             fullWidthBody
-                .frame(height: 64)
+                .frame(height: ReaderPlaybackBarLayoutContract.consoleHeight)
         }
     }
 
@@ -966,7 +966,7 @@ private struct KindleExplainPlaybackBar: View {
                     maxWidth: 620
                 )
                 .padding(.horizontal, 18)
-                .offset(y: -42)
+                .offset(y: ReaderPlaybackBarLayoutContract.explainCaptionOffset)
                 .allowsHitTesting(false)
                 .zIndex(1)
             }
@@ -1066,22 +1066,11 @@ private struct KindleExplainCaption: View {
     @ViewBuilder
     var body: some View {
         if shouldShowCaption {
-            Text(vm.explanationText)
-                .font(.callout.weight(.medium))
-                .foregroundColor(AppTheme.foreground)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background {
-                    Capsule()
-                        .fill(.ultraThinMaterial)
-                        .overlay(Capsule().fill(AppTheme.surface.opacity(0.18)))
-                }
-                .overlay(Capsule().stroke(AppTheme.mutedForeground.opacity(0.18), lineWidth: 0.5))
-                .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
-                .frame(maxWidth: maxWidth, alignment: alignment)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            ExplainPlaybackCaptionBubble(
+                text: vm.explanationText,
+                alignment: alignment,
+                maxWidth: maxWidth
+            )
         }
     }
 
@@ -1301,7 +1290,15 @@ enum KindleRunLog {
         _ = launchMarker
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss"
-        append("\(formatter.string(from: Date())) [\(UIApplication.shared.applicationState.debugName)] \(message)\n")
+        let stateName: String
+        if Thread.isMainThread {
+            stateName = MainActor.assumeIsolated {
+                UIApplication.shared.applicationState.debugName
+            }
+        } else {
+            stateName = "off-main"
+        }
+        append("\(formatter.string(from: Date())) [\(stateName)] \(message)\n")
         #endif
     }
 
@@ -1338,15 +1335,25 @@ enum KindleSessionProbe {
     /// reader session with a 302 into the OpenID sign-in portal, so the finished
     /// URL is the only reliable signal that the page on screen is not a book.
     static func landingKind(_ rawURL: String) -> String {
-        let lower = rawURL.lowercased()
-        if lower.contains("/ap/signin") || lower.contains("/ap/cvf")
-            || lower.contains("authportal") || lower.contains("openid.") {
+        guard !rawURL.isEmpty else { return "empty" }
+        guard let url = URL(string: rawURL) else { return "other" }
+
+        let path = url.path.lowercased()
+        if KindleStorefrontNavigationPolicy.isSafeAmazonAuthenticationURL(url) {
             return "auth"
         }
-        if lower.contains("kindle-library") { return "library" }
-        if lower.contains("read.amazon.") { return "reader" }
-        if lower.isEmpty { return "empty" }
+
+        guard KindleStorefront.matches(url: url) else { return "other" }
+        if path.contains("kindle-library") { return "library" }
+        if KindleBookValidator.containsASIN(rawURL)
+            || KindleBookValidator.isKindleReaderPath(rawURL) {
+            return "reader"
+        }
         return "other"
+    }
+
+    static func driftDomain(for rawURL: String) -> String? {
+        KindleDomainDriftSentinel.registrableDomainIfNeeded(rawURL: rawURL)
     }
 
     @MainActor
@@ -1354,7 +1361,7 @@ enum KindleSessionProbe {
         #if DEBUG
         WKWebsiteDataStore.default().httpCookieStore.getAllCookies { cookies in
             let amazon = cookies
-                .filter { $0.domain.lowercased().contains("amazon.") }
+                .filter { KindleStorefront.isAmazonWebsiteDataDomain($0.domain) }
                 .sorted { $0.name < $1.name }
             guard !amazon.isEmpty else {
                 KindleRunLog.write("KINDLE cookies reason=\(reason) count=0 total=\(cookies.count)")
@@ -1874,6 +1881,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private let store = KindleLibraryStore.shared
     private let analyticsContext: AnalyticsContentContext
     private var analyticsContentReadyTracked = false
+    private var analyticsReportedDriftDomains = Set<String>()
+    private var storefrontHandoffInFlight = false
     /// Preserve native Kindle glyph pixels for OCR. The JavaScript capture uses
     /// lossless PNG; this cap only protects against abnormally large renderer images.
     private static let ocrCaptureMaxWidth = 2048
@@ -2538,14 +2547,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     init(book: KindleBook, staleRecoveryAlreadyAttempted: Bool = false) {
-        self.book = book
+        var resolvedBook = book
+        if KindleStorefront.entry(id: resolvedBook.storefrontID) == nil {
+            resolvedBook.storefrontID = KindleStorefront.entry(url: URL(string: book.readerURL))?.id
+                ?? KindleLibraryStore.shared.boundStorefrontID
+        }
+        self.book = resolvedBook
         let analyticsEntryPoint = BoundLibraryOnboardingStore.shared
             .analyticsEntryPoint(for: .kindle) ?? "kindle_library"
         self.analyticsContext = ProductAnalytics.shared.beginContentIntent(
             source: .kindle,
             format: .kindle,
             entryPoint: analyticsEntryPoint,
-            intendedMode: "read"
+            intendedMode: "read",
+            storefront: resolvedBook.storefrontID
         )
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
@@ -2557,25 +2572,33 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         // ~207KB capture/UI payload stays lazy and installs after navigation.
         if #available(iOS 14.0, *) {
             userContentController.addUserScript(WKUserScript(
-                source: KindleWebScripts.earlyPageBlobCaptureBootstrap,
+                source: KindleWebScripts.restrictedToKnownStorefronts(
+                    KindleWebScripts.earlyPageBlobCaptureBootstrap
+                ),
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true,
                 in: .page
             ))
             userContentController.addUserScript(WKUserScript(
-                source: KindleWebScripts.metadataBootstrap,
+                source: KindleWebScripts.restrictedToKnownStorefronts(
+                    KindleWebScripts.metadataBootstrap
+                ),
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true,
                 in: .page
             ))
         } else {
             userContentController.addUserScript(WKUserScript(
-                source: KindleWebScripts.earlyPageBlobCaptureBootstrap,
+                source: KindleWebScripts.restrictedToKnownStorefronts(
+                    KindleWebScripts.earlyPageBlobCaptureBootstrap
+                ),
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true
             ))
             userContentController.addUserScript(WKUserScript(
-                source: KindleWebScripts.metadataBootstrap,
+                source: KindleWebScripts.restrictedToKnownStorefronts(
+                    KindleWebScripts.metadataBootstrap
+                ),
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true
             ))
@@ -2597,7 +2620,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         super.init()
         staleBookRecoveryAttempted = staleRecoveryAlreadyAttempted
-        nativeTOCEntries = Self.loadCachedNativeTOCEntries(for: book)
+        nativeTOCEntries = Self.loadCachedNativeTOCEntries(for: resolvedBook)
         if !nativeTOCEntries.isEmpty {
             KindleRunLog.write("KINDLE native toc cache restored entries=\(nativeTOCEntries.count)")
         }
@@ -2812,6 +2835,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func isSameBook(as candidate: KindleBook) -> Bool {
+        let lhsStorefront = book.storefrontID
+            ?? KindleStorefront.storefront(url: URL(string: book.readerURL))?.id
+        let rhsStorefront = candidate.storefrontID
+            ?? KindleStorefront.storefront(url: URL(string: candidate.readerURL))?.id
+        if let lhsStorefront, let rhsStorefront, lhsStorefront != rhsStorefront {
+            return false
+        }
         if book.id == candidate.id { return true }
         if let lhs = book.asin?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
            let rhs = candidate.asin?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
@@ -2829,6 +2859,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         book.coverURL = latest.coverURL ?? book.coverURL
         book.readerURL = latest.readerURL.isEmpty ? book.readerURL : latest.readerURL
         book.progressLabel = latest.progressLabel.isEmpty ? book.progressLabel : latest.progressLabel
+        book.storefrontID = latest.storefrontID ?? book.storefrontID
         book.lastOpenedAt = latest.lastOpenedAt ?? book.lastOpenedAt
         book.lastSyncedAt = max(book.lastSyncedAt, latest.lastSyncedAt)
         book.lastReadPageKey = latest.lastReadPageKey ?? book.lastReadPageKey
@@ -2950,13 +2981,40 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         let finishedURL = webView.url?.absoluteString ?? ""
-        // Observation only: the landing kind is recorded but deliberately does
-        // not gate the existing reader setup, so this probe cannot change how a
-        // failing open behaves while we are still collecting data.
         let landing = KindleSessionProbe.landingKind(finishedURL)
         KindleRunLog.write("KINDLE webview didFinish landing=\(landing) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK) url=\(finishedURL)")
+        let expected = KindleStorefront.entry(id: analyticsContext.storefront)
+            ?? store.boundStorefront
+        if let finishedDestination = webView.url,
+           !KindleStorefrontNavigationPolicy.allowsMainFrame(
+               finishedDestination,
+               expectedStorefrontID: expected.id
+           ) {
+            rejectUnexpectedMainFrameDestination(
+                finishedDestination,
+                expected: expected
+            )
+            return
+        }
+        if let driftDomain = KindleSessionProbe.driftDomain(for: finishedURL) {
+            KindleRunLog.write("KINDLE storefront drift domain=\(driftDomain)")
+            if analyticsReportedDriftDomains.insert(driftDomain).inserted {
+                ProductAnalytics.shared.contentFailed(
+                    analyticsContext,
+                    stage: "storefront_resolution",
+                    code: "unknown_host:\(driftDomain)"
+                )
+            }
+        }
         KindleSessionProbe.logCookies(reason: "book-didFinish-\(landing)")
         if landing == "reader" {
+            if let observed = KindleStorefront.storefront(rawURL: finishedURL) {
+                guard observed.entryEnabled, observed.id == expected.id else {
+                    handoffUnexpectedStorefront(observed, expected: expected)
+                    return
+                }
+                book.storefrontID = expected.id
+            }
             KindleSessionFreshness.markReaderOK()
             authRecoveryAttempted = false
             contentCover = nil
@@ -2968,7 +3026,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             startAuthRecovery()
             return
         }
-        if isStaleBookRecovering, finishedURL.contains("kindle-library") {
+        if isStaleBookRecovering, landing == "library" {
             readerSetupTask?.cancel()
             readerSetupTask = nil
             statusText = AppLocalized("正在同步 Kindle 书架…")
@@ -3027,20 +3085,52 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let script = """
         (function() {
           function norm(v) { return String(v || '').replace(/\\s+/g, ' ').trim().toLowerCase(); }
+          function visible(el) {
+            try {
+              var style = getComputedStyle(el);
+              var rect = el.getBoundingClientRect();
+              return style.display !== 'none' && style.visibility !== 'hidden' &&
+                rect.width > 4 && rect.height > 4;
+            } catch (_) { return false; }
+          }
+          function structure(el) {
+            try {
+              return norm([
+                el.id || '',
+                typeof el.className === 'string' ? el.className : '',
+                el.getAttribute && (el.getAttribute('data-testid') || ''),
+                el.getAttribute && (el.getAttribute('data-test') || ''),
+                el.getAttribute && (el.getAttribute('data-action') || ''),
+                el.getAttribute && (el.getAttribute('href') || '')
+              ].join(' '));
+            } catch (_) { return ''; }
+          }
+          function errorText(value) {
+            return /something went wrong|please try to open this book|algo (?:salió mal|ha salido mal)|abre este libro desde la biblioteca|algo deu errado|abra este livro (?:na|pela) biblioteca|問題が発生しました|ライブラリから.*(?:開|開き)|etwas ist schiefgelaufen|buch.*bibliothek.*öffnen|(?:une erreur s'est produite|un problème est survenu)|livre.*bibliothèque.*ouvrir|qualcosa è andato storto|libro.*libreria.*apri|कुछ गलत हो गया|किताब.*लाइब्रेरी.*खोल/i.test(value);
+          }
+          function libraryActionText(value) {
+            return /back to library|return to library|volver a la biblioteca|voltar (?:para|à) (?:a )?biblioteca|ライブラリに戻|zurück zur bibliothek|retour à la bibliothèque|torna alla libreria|लाइब्रेरी (?:पर|में) वापस/i.test(value);
+          }
           var bodyText = norm(document.body && document.body.innerText);
-          var exact = bodyText.indexOf('please try to open this book from the library again') >= 0;
-          var title = bodyText.indexOf('oops') >= 0 && bodyText.indexOf('something went wrong') >= 0;
-          var nodes = Array.prototype.slice.call(document.querySelectorAll('[role="dialog"], [aria-modal="true"], button, a'));
-          var back = nodes.some(function(el) {
-            var t = norm((el.innerText || '') + ' ' + (el.getAttribute && el.getAttribute('aria-label') || ''));
-            return t.indexOf('back to library') >= 0 || t.indexOf('return to library') >= 0;
+          var nodes = Array.prototype.slice.call(document.querySelectorAll(
+            '[role="dialog"],[aria-modal="true"],[data-testid*="error" i],[class*="error" i],button,a'
+          )).filter(visible);
+          var libraryAction = nodes.some(function(el) {
+            var text = norm((el.innerText || '') + ' ' + (el.getAttribute && el.getAttribute('aria-label') || ''));
+            var token = structure(el);
+            return libraryActionText(text) ||
+              /kindle-library|back.*library|library.*back|return.*library/.test(token);
           });
-          var dialog = nodes.some(function(el) {
-            if (!(el.matches && el.matches('[role="dialog"], [aria-modal="true"]'))) return false;
-            var t = norm(el.innerText);
-            return t.indexOf('something went wrong') >= 0 || t.indexOf('open this book from the library') >= 0;
+          var errorSurface = nodes.some(function(el) {
+            var token = structure(el);
+            if (!/(?:^|[-_\\s])(error|failure|failed|oops)(?:$|[-_\\s])/.test(token) &&
+                !(el.matches && el.matches('[role="dialog"],[aria-modal="true"]'))) {
+              return false;
+            }
+            return errorText(norm(el.innerText || el.textContent || '')) ||
+              /(?:^|[-_\\s])(error|failure|failed|oops)(?:$|[-_\\s])/.test(token);
           });
-          return !!(exact || dialog || (title && back));
+          return !!(errorText(bodyText) || (errorSurface && libraryAction));
         })();
         """
         do {
@@ -3162,6 +3252,69 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
     }
 
+    /// A reader session and its analytics context both belong to one
+    /// marketplace. If Amazon lands this WebView on another recognized site,
+    /// close the old session and hand the user to a clean rebind flow instead
+    /// of silently mutating only the in-memory book.
+    private func handoffUnexpectedStorefront(
+        _ observed: KindleStorefront,
+        expected: KindleStorefront
+    ) {
+        guard !storefrontHandoffInFlight else { return }
+        storefrontHandoffInFlight = true
+        let supported = observed.entryEnabled
+        ProductAnalytics.shared.contentFailed(
+            analyticsContext,
+            stage: "storefront_resolution",
+            code: supported
+                ? "cross_storefront:\(observed.id)"
+                : "unsupported_storefront:\(observed.id)"
+        )
+        KindleRunLog.write(
+            "KINDLE storefront handoff expected=\(expected.id) observed=\(observed.id) " +
+            "supported=\(supported ? "Y" : "N")"
+        )
+        if supported {
+            store.switchStorefront(to: observed.id)
+        }
+        KindlePlaybackCenter.shared.clear(ifModel: self)
+        NotificationCenter.default.post(
+            name: .castReaderKindleRebindRequested,
+            object: supported ? observed.id : expected.id
+        )
+    }
+
+    /// Unknown, insecure and non-Amazon main-frame destinations receive the
+    /// same atomic handoff as a recognized cross-storefront redirect, but never
+    /// change the user's bound marketplace. Only a sanitized registrable domain
+    /// is emitted to analytics.
+    private func rejectUnexpectedMainFrameDestination(
+        _ url: URL?,
+        expected: KindleStorefront
+    ) {
+        if let observed = KindleStorefront.storefront(url: url) {
+            handoffUnexpectedStorefront(observed, expected: expected)
+            return
+        }
+        guard !storefrontHandoffInFlight else { return }
+        storefrontHandoffInFlight = true
+        let domain = KindleStorefront.registrableDomain(for: url?.host)
+            ?? "invalid_destination"
+        ProductAnalytics.shared.contentFailed(
+            analyticsContext,
+            stage: "storefront_resolution",
+            code: "blocked_destination:\(domain)"
+        )
+        KindleRunLog.write(
+            "KINDLE storefront navigation blocked expected=\(expected.id) domain=\(domain)"
+        )
+        KindlePlaybackCenter.shared.clear(ifModel: self)
+        NotificationCenter.default.post(
+            name: .castReaderKindleRebindRequested,
+            object: expected.id
+        )
+    }
+
     /// Clears the dead Amazon session, closes the reader and hands the user to
     /// the Kindle connect flow. Reading positions are kept so rebinding restores
     /// where they were.
@@ -3169,9 +3322,16 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         KindleRunLog.write("KINDLE rebind requested book=\(Self.keyLog(book.id))")
         needsKindleRebind = false
         Task { @MainActor in
+            if let storefrontID = book.storefrontID,
+               storefrontID != store.boundStorefrontID {
+                store.switchStorefront(to: storefrontID)
+            }
             await store.markSessionExpiredForRebind()
             KindlePlaybackCenter.shared.close()
-            NotificationCenter.default.post(name: .castReaderKindleRebindRequested, object: nil)
+            NotificationCenter.default.post(
+                name: .castReaderKindleRebindRequested,
+                object: book.storefrontID
+            )
         }
     }
 
@@ -3183,7 +3343,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let warmer = makeLibraryRecoveryWebView()
         libraryRecoveryWebView = warmer
         defer { libraryRecoveryWebView = nil }
-        warmer.load(URLRequest(url: KindleWebScripts.libraryURL, cachePolicy: .reloadIgnoringLocalCacheData))
+        let storefront = KindleStorefront.entry(id: book.storefrontID) ?? store.boundStorefront
+        KindleRunLog.write("KINDLE auth-recovery shelf storefront=\(storefront.id)")
+        warmer.load(URLRequest(
+            url: KindleWebScripts.libraryURL(for: storefront),
+            cachePolicy: .reloadIgnoringLocalCacheData
+        ))
 
         for _ in 0..<60 {   // ~15s
             try? await Task.sleep(nanoseconds: 250_000_000)
@@ -3225,6 +3390,29 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return recovery
     }
 
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        guard navigationAction.targetFrame?.isMainFrame == true,
+              let destination = navigationAction.request.url else {
+            decisionHandler(.allow)
+            return
+        }
+        let expected = KindleStorefront.entry(id: analyticsContext.storefront)
+            ?? store.boundStorefront
+        guard KindleStorefrontNavigationPolicy.allowsMainFrame(
+            destination,
+            expectedStorefrontID: expected.id
+        ) else {
+            decisionHandler(.cancel)
+            rejectUnexpectedMainFrameDestination(destination, expected: expected)
+            return
+        }
+        decisionHandler(.allow)
+    }
+
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         finishKindleSyncDialog(reason: "navigation-start")
         KindleRunLog.write("KINDLE webview didStart url=\(webView.url?.absoluteString ?? "")")
@@ -3248,6 +3436,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             let landing = KindleSessionProbe.landingKind(url)
             lastMainFrameStatus = http.statusCode
             KindleRunLog.write("KINDLE webview response status=\(http.statusCode) landing=\(landing) url=\(url)")
+
+            let expected = KindleStorefront.entry(id: analyticsContext.storefront)
+                ?? store.boundStorefront
+            if !KindleStorefrontNavigationPolicy.allowsMainFrame(
+                http.url,
+                expectedStorefrontID: expected.id
+            ) {
+                decisionHandler(.cancel)
+                rejectUnexpectedMainFrameDestination(http.url, expected: expected)
+                return
+            }
 
             // Act on the response, not on `didFinish`. Amazon's sign-in page
             // does not reliably finish loading — measured on device: the response
@@ -5592,7 +5791,6 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if isPreparing {
             isPreparing = false
         }
-        Task { await TTSService.shared.cancelCurrentRequest() }
         KindleRunLog.write("KINDLE page turn cancel in-flight processing reason=\(reason) epoch=\(preloadEpoch)")
     }
 
@@ -8069,7 +8267,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 statusText = AppLocalized("下一页已缓存，但 Kindle 页面同步失败，已暂停。")
                 continuousReadCommitTask = nil
                 cancelContinuousReadHandoff(reason: "commit-page-sync-failed")
-                AudioPlayerService.shared.clearQueue()
+                _ = AudioPlayerService.shared.clearActiveQueueForCoordinator(owner: .readAloud)
                 KindleRunLog.write("KINDLE read continuous commit failed serial=\(serial) error=\(error.localizedDescription)")
                 return
             }
@@ -8160,7 +8358,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 targetDocumentID: queuedDocument.id
             )
             guard canAdoptPrefetchedAudio, ownerCanAdopt else {
-                AudioPlayerService.shared.clearQueue()
+                _ = AudioPlayerService.shared.clearActiveQueueForCoordinator(owner: .readAloud)
                 _ = consumeStartAudioCandidate(
                     pageKey: staged.page.key,
                     textFingerprint: stagedFingerprint,
@@ -8189,7 +8387,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 // The prepared item may have ended while the visual surface was
                 // committing. Restart the confirmed current page from its first
                 // prepared utterance instead of pausing or advancing again.
-                AudioPlayerService.shared.clearQueue()
+                _ = AudioPlayerService.shared.clearActiveQueueForCoordinator(owner: .readAloud)
                 let restarted = startReadPlayback(
                     document: queuedDocument,
                     startHint: start,
@@ -8227,7 +8425,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             }
         } catch {
             statusText = AppLocalized("下一页播放衔接失败，请点击播放继续。")
-            AudioPlayerService.shared.clearQueue()
+            _ = AudioPlayerService.shared.clearActiveQueueForCoordinator(owner: .readAloud)
             KindleRunLog.write("KINDLE read continuous adoption failed serial=\(serial) error=\(error.localizedDescription)")
         }
     }
@@ -10194,12 +10392,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 // the visible pixels, then resume the exact item.
                 let audio = AudioPlayerService.shared
                 let shouldResume = audio.isPlaying
-                audio.pause()
+                _ = audio.pauseActivePlaybackForCoordinator(owner: .readAloud)
                 await refocusPlaybackPosition(reason: "highlight-recovery")
                 if shouldResume,
                    audio.currentBookId == book.id,
                    readVM != nil {
-                    audio.play()
+                    _ = audio.playActivePlaybackForCoordinator(owner: .readAloud)
                 }
                 KindleRunLog.write("KINDLE read segment highlight recovered p=\(paragraphIndex) resumed=\(shouldResume ? "Y" : "N")")
             } else {
@@ -10445,11 +10643,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private func load(_ raw: String, reason: String) {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed) ?? trimmed
-        guard let url = URL(string: trimmed) ?? URL(string: encoded) ?? URL(string: KindleWebScripts.libraryURL.absoluteString) else {
+        let storefront = KindleStorefront.entry(id: book.storefrontID) ?? store.boundStorefront
+        guard let url = URL(string: trimmed) ?? URL(string: encoded),
+              KindleStorefrontNavigationPolicy.allows(
+                url,
+                expectedStorefrontID: storefront.id
+              ) else {
             KindleRunLog.write("KINDLE webview load failed-invalid reason=\(reason) raw=\(Self.keyLog(raw))")
+            webView.load(URLRequest(url: KindleWebScripts.libraryURL(for: storefront)))
             return
         }
-        KindleRunLog.write("KINDLE webview load reason=\(reason) raw=\(Self.keyLog(raw)) url=\(url.absoluteString) last=\(Self.keyLog(book.lastReadURL ?? "")) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
+        KindleRunLog.write("KINDLE webview load reason=\(reason) storefront=\(storefront.id) raw=\(Self.keyLog(raw)) url=\(url.absoluteString) last=\(Self.keyLog(book.lastReadURL ?? "")) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
         KindleSessionProbe.logCookies(reason: "book-load-\(reason)")
         webView.load(URLRequest(url: url))
     }
@@ -10458,11 +10662,19 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// *and* at document start on every navigation, paying the 207KB parse twice.
     /// Metadata is already installed by the user script, so it is not repeated.
     private func installCaptureScript() {
-        webView.evaluateJavaScript(KindleWebScripts.pageCaptureBootstrap, completionHandler: nil)
+        guard KindleStorefront.matches(url: webView.url) else { return }
+        webView.evaluateJavaScript(
+            KindleWebScripts.restrictedToKnownStorefronts(KindleWebScripts.pageCaptureBootstrap),
+            completionHandler: nil
+        )
     }
 
     @discardableResult
     private func ensureCaptureScriptInstalled(reason: String) async throws -> [String: Any] {
+        guard KindleStorefront.matches(url: webView.url) else {
+            KindleRunLog.write("KINDLE script install blocked unknown-origin reason=\(reason)")
+            throw KindleBookError.invalidPayload
+        }
         let script = """
         (function() {
           try {

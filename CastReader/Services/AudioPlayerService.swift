@@ -11,6 +11,105 @@ import Combine
 import MediaPlayer
 import UIKit
 
+enum AudioPlaybackOwner: String, Equatable, Sendable {
+    case readAloud
+    case explain
+    case kindleBackgroundProbe
+}
+
+struct AudioPlaybackSessionToken: Equatable, Hashable, Sendable {
+    let owner: AudioPlaybackOwner
+    let generation: UInt64
+}
+
+struct AudioPlaybackResumeHandle: Equatable, Sendable {
+    fileprivate let session: AudioPlaybackSessionToken?
+    fileprivate let segmentID: String
+    fileprivate let bookID: String?
+}
+
+/// A streaming TTS producer can finish just after the last audio item has
+/// already drained. In that ordering the player is waiting for an item that
+/// will never arrive, so producer completion must resolve the paragraph exactly
+/// once instead of leaving the UI silently paused.
+enum StreamingQueueDrainContract {
+    static func shouldCompletePlayback(
+        producerFinishedSuccessfully: Bool,
+        isWaitingForNextSegment: Bool,
+        moreSegmentsExpected: Bool,
+        currentSegmentIndex: Int,
+        queueCount: Int
+    ) -> Bool {
+        producerFinishedSuccessfully
+            && isWaitingForNextSegment
+            && !moreSegmentsExpected
+            && queueCount > 0
+            && currentSegmentIndex >= queueCount - 1
+    }
+}
+
+/// Pure ownership state used by the player and unit tests. A queue can only be
+/// controlled when it belongs to the currently active mode session. Claiming a
+/// new session deliberately leaves the old queue attached to its old token so a
+/// remote command or a late AVPlayer callback cannot revive it.
+struct AudioPlaybackOwnershipState: Equatable {
+    private(set) var activeSession: AudioPlaybackSessionToken?
+    private(set) var queueSession: AudioPlaybackSessionToken?
+    private var nextGeneration: UInt64 = 0
+
+    mutating func claim(_ owner: AudioPlaybackOwner) -> AudioPlaybackSessionToken {
+        nextGeneration &+= 1
+        let token = AudioPlaybackSessionToken(owner: owner, generation: nextGeneration)
+        activeSession = token
+        return token
+    }
+
+    mutating func release(_ token: AudioPlaybackSessionToken) {
+        guard activeSession == token else { return }
+        activeSession = nil
+    }
+
+    mutating func transferActiveQueue(
+        to owner: AudioPlaybackOwner
+    ) -> AudioPlaybackSessionToken? {
+        guard activeSession != nil, activeSession == queueSession else { return nil }
+        nextGeneration &+= 1
+        let token = AudioPlaybackSessionToken(owner: owner, generation: nextGeneration)
+        activeSession = token
+        queueSession = token
+        return token
+    }
+
+    func permitsQueueMutation(_ token: AudioPlaybackSessionToken?) -> Bool {
+        activeSession == token
+    }
+
+    @discardableResult
+    mutating func attachQueue(to token: AudioPlaybackSessionToken?) -> Bool {
+        guard permitsQueueMutation(token) else { return false }
+        queueSession = token
+        return true
+    }
+
+    func permitsPlayback(requestedBy token: AudioPlaybackSessionToken?) -> Bool {
+        activeSession == token && queueSession == token
+    }
+
+    /// Lock-screen commands are allowed to target the one active queue without
+    /// knowing its private token. A released queue deliberately fails because
+    /// `activeSession != queueSession`.
+    var permitsRemotePlayback: Bool {
+        activeSession == queueSession
+    }
+
+    /// AVFoundation callbacks carry the session that installed their item. They
+    /// must match both sides of ownership, even after a newer queue has already
+    /// been attached for the same mode.
+    func permitsCallback(from token: AudioPlaybackSessionToken?) -> Bool {
+        queueSession == token && permitsPlayback(requestedBy: token)
+    }
+}
+
 class AudioPlayerService: NSObject, ObservableObject {
     static let shared = AudioPlayerService()
 
@@ -24,7 +123,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// True while a streaming producer has promised additional queue items.
     /// Published because a temporarily empty queue must still block transient
     /// UI such as the App Store review request.
-    @Published var moreSegmentsExpected = false
+    @Published private(set) var moreSegmentsExpected = false
     /// True after the current queue drains while its producer is still active.
     @Published private(set) var isWaitingForNextSegment = false
 
@@ -35,13 +134,21 @@ class AudioPlayerService: NSObject, ObservableObject {
     @Published var currentCoverUrl: String?
     @Published var currentCaption: String?
     private var currentCoverImage: UIImage?   // 本地封面（Now Playing artwork）
+    private var artworkLoadKey: String?
 
     // MARK: - Private Properties
     private var player: AVPlayer?
     private var playerItem: AVPlayerItem?
+    /// Session that installed the current AVPlayerItem. Unlike the queue token,
+    /// this also identifies callbacks already enqueued by AVFoundation. A
+    /// seamless page handoff transfers it explicitly; an ordinary mode claim
+    /// leaves it unchanged so late callbacks remain fenced.
+    private var playerItemSession: AudioPlaybackSessionToken?
+    private var reportedPlaybackFailureItemID: ObjectIdentifier?
     private var timeObserver: Any?
     private var cancellables = Set<AnyCancellable>()
     private var playerStateCancellable: AnyCancellable?
+    private var playerItemReadinessWorkItem: DispatchWorkItem?
     private var wasInterrupted = false
     private var playbackSuspendedByInterruption = false
 
@@ -49,6 +156,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     private var segmentsQueue: [AudioSegment] = []
     private var currentSegmentIndex = 0
     private var gatedSegmentIndex: Int?
+    private var playbackOwnership = AudioPlaybackOwnershipState()
 
     // 临时文件管理
     private var currentTempFileURL: URL?
@@ -56,6 +164,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     // Callbacks
     var onSegmentComplete: (() -> Void)?
     var onPlaybackComplete: (() -> Void)?
+    var onPlaybackError: ((String) -> Void)?
     /// Optional queue-boundary gate. Kindle uses it to ensure the semantic page
     /// turn and visible-surface confirmation finish before prepared next-page
     /// audio is allowed to start. Other readers leave it nil.
@@ -94,11 +203,222 @@ class AudioPlayerService: NSObject, ObservableObject {
         !segmentsQueue.isEmpty
     }
 
+    /// Whether Play can make audible progress without waiting for a new TTS
+    /// response. `currentSegment` deliberately survives item completion, so
+    /// its mere presence does not mean the drained queue can resume.
+    var hasPlayableAudio: Bool {
+        guard !segmentsQueue.isEmpty else { return false }
+        if currentSegment == nil { return true }
+        if currentSegmentIndex < segmentsQueue.count - 1 { return true }
+        guard playerItem != nil else { return true }
+        if isBuffering { return false }
+        guard duration > 0.01 else { return true }
+        return currentTime + 0.15 < duration
+    }
+
     /// True only when `canStartQueuedSegment` has held a concrete queue item.
     /// This is narrower than `isBuffering`, which can also describe AVPlayer
     /// loading and therefore must not be used as a page-boundary ownership flag.
     var isQueuedSegmentGated: Bool {
         gatedSegmentIndex != nil
+    }
+
+    var activePlaybackSession: AudioPlaybackSessionToken? {
+        playbackOwnership.activeSession
+    }
+
+    /// Claiming always creates a fresh generation, even for the same owner. This
+    /// fences callbacks from an older VM instance as well as Read/Explain mode
+    /// switches.
+    @discardableResult
+    func claimPlaybackSession(owner: AudioPlaybackOwner) -> AudioPlaybackSessionToken {
+        suspendQueueForOwnershipChange()
+        let token = playbackOwnership.claim(owner)
+        ReaderRunLog.write(
+            "AUDIO session claimed owner=\(owner.rawValue) gen=\(token.generation)"
+        )
+        return token
+    }
+
+    func releasePlaybackSession(_ token: AudioPlaybackSessionToken) {
+        guard playbackOwnership.activeSession == token else { return }
+        suspendQueueForOwnershipChange()
+        playbackOwnership.release(token)
+        ReaderRunLog.write(
+            "AUDIO session released owner=\(token.owner.rawValue) gen=\(token.generation)"
+        )
+    }
+
+    /// Seamless Kindle page handoff is the one intentional cross-VM transfer:
+    /// the already-playing queue stays audible, but receives a fresh session so
+    /// callbacks held by the detached VM can no longer control it.
+    func transferActiveQueueSession(
+        to owner: AudioPlaybackOwner
+    ) -> AudioPlaybackSessionToken? {
+        guard let token = playbackOwnership.transferActiveQueue(to: owner) else {
+            return nil
+        }
+        if playerItem != nil {
+            playerItemSession = token
+        }
+        return token
+    }
+
+    func isPlaybackSessionActive(_ token: AudioPlaybackSessionToken) -> Bool {
+        playbackOwnership.activeSession == token
+    }
+
+    func isQueueOwned(by token: AudioPlaybackSessionToken) -> Bool {
+        playbackOwnership.queueSession == token
+    }
+
+    func canControlPlayback(session token: AudioPlaybackSessionToken) -> Bool {
+        playbackOwnership.permitsPlayback(requestedBy: token)
+    }
+
+    /// Narrow escape hatch for a page coordinator that is part of a known
+    /// reader mode but does not own the VM's private token. The owner check keeps
+    /// a late Read callback from touching Explain (and vice versa).
+    private func activeSessionForCoordinator(
+        owner: AudioPlaybackOwner
+    ) -> AudioPlaybackSessionToken? {
+        guard let token = playbackOwnership.activeSession,
+              token.owner == owner else {
+            return nil
+        }
+        return token
+    }
+
+    private func activeCoordinatorSession(
+        owner: AudioPlaybackOwner
+    ) -> AudioPlaybackSessionToken? {
+        guard let token = activeSessionForCoordinator(owner: owner),
+              playbackOwnership.permitsPlayback(requestedBy: token) else {
+            return nil
+        }
+        return token
+    }
+
+    @discardableResult
+    func clearActiveQueueForCoordinator(owner: AudioPlaybackOwner) -> Bool {
+        guard let token = activeSessionForCoordinator(owner: owner) else { return false }
+        return clearQueue(session: token)
+    }
+
+    @discardableResult
+    func pauseActivePlaybackForCoordinator(owner: AudioPlaybackOwner) -> Bool {
+        guard let token = activeCoordinatorSession(owner: owner) else { return false }
+        return pause(session: token)
+    }
+
+    @discardableResult
+    func playActivePlaybackForCoordinator(owner: AudioPlaybackOwner) -> Bool {
+        guard let token = activeCoordinatorSession(owner: owner) else { return false }
+        return play(session: token)
+    }
+
+    /// Voice samples use a separate AVPlayer, so they temporarily suspend the
+    /// active content item. The handle binds resumption to the exact ownership
+    /// generation and segment; a mode switch invalidates it automatically.
+    func suspendActivePlaybackForVoicePreview() -> AudioPlaybackResumeHandle? {
+        let session = playbackOwnership.activeSession
+        guard playbackOwnership.permitsPlayback(requestedBy: session),
+              isPlaying,
+              let segmentID = currentSegment?.id,
+              pause(session: session) else {
+            return nil
+        }
+        return AudioPlaybackResumeHandle(
+            session: session,
+            segmentID: segmentID,
+            bookID: currentBookId
+        )
+    }
+
+    @discardableResult
+    func resumePlaybackAfterVoicePreview(
+        _ handle: AudioPlaybackResumeHandle
+    ) -> Bool {
+        guard playbackOwnership.activeSession == handle.session,
+              playbackOwnership.queueSession == handle.session,
+              currentSegment?.id == handle.segmentID,
+              currentBookId == handle.bookID,
+              !isPlaying else {
+            return false
+        }
+        return play(session: handle.session)
+    }
+
+    private func currentItemCanPublishPlaybackState() -> Bool {
+        playbackOwnership.permitsCallback(from: playerItemSession)
+    }
+
+    @discardableResult
+    func setMoreSegmentsExpected(
+        _ expected: Bool,
+        session token: AudioPlaybackSessionToken
+    ) -> Bool {
+        guard playbackOwnership.permitsQueueMutation(token) else { return false }
+        if moreSegmentsExpected != expected {
+            ReaderRunLog.write(
+                "AUDIO producer expected=\(expected ? "Y" : "N") " +
+                "owner=\(token.owner.rawValue) gen=\(token.generation) " +
+                "segment=\(currentSegment?.id ?? "nil")"
+            )
+        }
+        moreSegmentsExpected = expected
+        if !expected, isWaitingForNextSegment {
+            // Cancellation/error/queue replacement paths use this setter. They
+            // intentionally do not advance playback, but their abandoned
+            // producer must no longer leave a fake loading state behind.
+            isWaitingForNextSegment = false
+            isBuffering = false
+        }
+        return true
+    }
+
+    /// Close a successful streaming producer. If its final queued item already
+    /// ended, resolve the terminal callback on the next main-loop turn. Keeping
+    /// `isWaitingForNextSegment` set until then lets a last-moment segment win
+    /// the race and start normally without a duplicate completion callback.
+    @discardableResult
+    func finishStreamingProducer(
+        session token: AudioPlaybackSessionToken
+    ) -> Bool {
+        guard playbackOwnership.permitsQueueMutation(token) else { return false }
+        moreSegmentsExpected = false
+        guard StreamingQueueDrainContract.shouldCompletePlayback(
+            producerFinishedSuccessfully: true,
+            isWaitingForNextSegment: isWaitingForNextSegment,
+            moreSegmentsExpected: moreSegmentsExpected,
+            currentSegmentIndex: currentSegmentIndex,
+            queueCount: segmentsQueue.count
+        ) else { return true }
+
+        let terminalSegmentID = currentSegment?.id
+        ReaderRunLog.write(
+            "AUDIO producer finished after queue drained segment=\(terminalSegmentID ?? "nil")"
+        )
+        DispatchQueue.main.async { [weak self] in
+            guard let self,
+                  self.playbackOwnership.permitsCallback(from: token),
+                  self.currentSegment?.id == terminalSegmentID,
+                  StreamingQueueDrainContract.shouldCompletePlayback(
+                      producerFinishedSuccessfully: true,
+                      isWaitingForNextSegment:
+                          self.isWaitingForNextSegment,
+                      moreSegmentsExpected: self.moreSegmentsExpected,
+                      currentSegmentIndex: self.currentSegmentIndex,
+                      queueCount: self.segmentsQueue.count
+                  ) else { return }
+            self.isWaitingForNextSegment = false
+            self.isBuffering = false
+            ReaderRunLog.write(
+                "AUDIO resolved drained streaming producer segment=\(terminalSegmentID ?? "nil")"
+            )
+            self.onPlaybackComplete?()
+        }
+        return true
     }
 
     // MARK: - Initialization
@@ -156,8 +476,11 @@ class AudioPlayerService: NSObject, ObservableObject {
                 guard let self else { return }
                 self.wasInterrupted = true
                 self.playbackSuspendedByInterruption = true
+                ReaderRunLog.write(
+                    "AUDIO interruption began segment=\(self.currentSegment?.id ?? "nil")"
+                )
                 print("🔇 Audio interrupted - pausing")
-                self.pause()
+                self.pauseRegardlessOfOwnership()
             }
 
         case .ended:
@@ -171,6 +494,9 @@ class AudioPlayerService: NSObject, ObservableObject {
                     print("❌ Failed to reactivate audio session: \(error)")
                 }
                 self.wasInterrupted = false
+                ReaderRunLog.write(
+                    "AUDIO interruption ended segment=\(self.currentSegment?.id ?? "nil")"
+                )
                 self.syncPlaybackStateFromPlayer(reason: "interruption-ended")
             }
 
@@ -189,8 +515,11 @@ class AudioPlayerService: NSObject, ObservableObject {
         switch reason {
         case .oldDeviceUnavailable:
             DispatchQueue.main.async { [weak self] in
+                ReaderRunLog.write(
+                    "AUDIO route removed segment=\(self?.currentSegment?.id ?? "nil")"
+                )
                 print("🎧 Audio route changed (headphones removed) - pausing")
-                self?.pause()
+                self?.pauseRegardlessOfOwnership()
             }
         default:
             break
@@ -207,52 +536,68 @@ class AudioPlayerService: NSObject, ObservableObject {
         // Play command
         commandCenter.playCommand.isEnabled = true
         commandCenter.playCommand.addTarget { [weak self] _ in
-            self?.play()
-            return .success
+            guard let self else { return .commandFailed }
+            return self.play(session: self.playbackOwnership.activeSession)
+                ? .success
+                : .commandFailed
         }
 
         // Pause command
         commandCenter.pauseCommand.isEnabled = true
         commandCenter.pauseCommand.addTarget { [weak self] _ in
-            self?.pause()
-            return .success
+            guard let self else { return .commandFailed }
+            return self.pause(session: self.playbackOwnership.activeSession)
+                ? .success
+                : .commandFailed
         }
 
         // Toggle play/pause
         commandCenter.togglePlayPauseCommand.isEnabled = true
         commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
-            self?.togglePlayPause()
-            return .success
+            guard let self else { return .commandFailed }
+            return self.togglePlayPause(session: self.playbackOwnership.activeSession)
+                ? .success
+                : .commandFailed
         }
 
         // Skip forward
         commandCenter.skipForwardCommand.isEnabled = true
         commandCenter.skipForwardCommand.preferredIntervals = [15]
         commandCenter.skipForwardCommand.addTarget { [weak self] _ in
-            self?.skipForward(seconds: 15)
-            return .success
+            guard let self else { return .commandFailed }
+            return self.skipForward(
+                seconds: 15,
+                session: self.playbackOwnership.activeSession
+            ) ? .success : .commandFailed
         }
 
         // Skip backward
         commandCenter.skipBackwardCommand.isEnabled = true
         commandCenter.skipBackwardCommand.preferredIntervals = [15]
         commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
-            self?.skipBackward(seconds: 15)
-            return .success
+            guard let self else { return .commandFailed }
+            return self.skipBackward(
+                seconds: 15,
+                session: self.playbackOwnership.activeSession
+            ) ? .success : .commandFailed
         }
 
         // Next track (next segment)
         commandCenter.nextTrackCommand.isEnabled = true
         commandCenter.nextTrackCommand.addTarget { [weak self] _ in
-            self?.nextSegment()
-            return .success
+            guard let self else { return .commandFailed }
+            return self.nextSegment(session: self.playbackOwnership.activeSession)
+                ? .success
+                : .commandFailed
         }
 
         // Previous track (previous segment)
         commandCenter.previousTrackCommand.isEnabled = true
         commandCenter.previousTrackCommand.addTarget { [weak self] _ in
-            self?.previousSegment()
-            return .success
+            guard let self else { return .commandFailed }
+            return self.previousSegment(session: self.playbackOwnership.activeSession)
+                ? .success
+                : .commandFailed
         }
 
         // Change playback position (scrubbing)
@@ -262,8 +607,12 @@ class AudioPlayerService: NSObject, ObservableObject {
                   let positionEvent = event as? MPChangePlaybackPositionCommandEvent else {
                 return .commandFailed
             }
-            self.seek(to: positionEvent.positionTime)
-            return .success
+            return self.seek(
+                to: positionEvent.positionTime,
+                session: self.playbackOwnership.activeSession
+            )
+                ? .success
+                : .commandFailed
         }
     }
 
@@ -298,12 +647,26 @@ class AudioPlayerService: NSObject, ObservableObject {
         if let image = currentCoverImage {
             nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
-        } else if let coverUrlString = currentCoverUrl,
-                  let encoded = coverUrlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-                  let coverUrl = URL(string: encoded) {
-            loadArtwork(from: coverUrl) { artwork in
-                if let artwork = artwork { nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork }
+        } else if let coverUrlString = currentCoverUrl?
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
+                  !coverUrlString.isEmpty {
+            if let image = ImageCache.shared.get(coverUrlString) {
+                currentCoverImage = image
+                nowPlayingInfo[MPMediaItemPropertyArtwork] =
+                    MPMediaItemArtwork(boundsSize: image.size) { _ in image }
                 MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+            } else {
+                MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+                let requestKey = "\(currentBookId ?? "")|\(coverUrlString)"
+                if artworkLoadKey != requestKey,
+                   let coverUrl = Self.makeArtworkURL(coverUrlString) {
+                    artworkLoadKey = requestKey
+                    loadArtwork(
+                        from: coverUrl,
+                        sourceURL: coverUrlString,
+                        requestKey: requestKey
+                    )
+                }
             }
         } else {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
@@ -318,20 +681,40 @@ class AudioPlayerService: NSObject, ObservableObject {
         return UIImage(contentsOfFile: url.path)
     }
 
-    private func loadArtwork(from url: URL, completion: @escaping (MPMediaItemArtwork?) -> Void) {
+    private static func makeArtworkURL(_ raw: String) -> URL? {
+        URL(string: raw)
+            ?? raw.addingPercentEncoding(
+                withAllowedCharacters: .urlQueryAllowed
+            ).flatMap(URL.init(string:))
+    }
+
+    private func loadArtwork(
+        from url: URL,
+        sourceURL: String,
+        requestKey: String
+    ) {
         URLSession.shared.dataTask(with: url) { data, _, error in
             guard let data = data, error == nil,
                   let image = UIImage(data: data) else {
                 DispatchQueue.main.async {
-                    completion(nil)
+                    if self.artworkLoadKey == requestKey {
+                        self.artworkLoadKey = nil
+                    }
                 }
                 return
             }
-
-            let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+            ImageCache.shared.set(sourceURL, image: image, data: data)
             DispatchQueue.main.async {
+                let currentCoverURL = self.currentCoverUrl?
+                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                guard self.artworkLoadKey == requestKey,
+                      "\(self.currentBookId ?? "")|\(currentCoverURL)"
+                        == requestKey else {
+                    return
+                }
                 self.currentCoverImage = image
-                completion(artwork)
+                self.artworkLoadKey = nil
+                self.updateNowPlayingInfo()
             }
         }.resume()
     }
@@ -351,6 +734,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentChapterTitle = chapterTitle
         currentCoverUrl = coverUrl
         currentCoverImage = Self.localCoverImage(forID: id)   // 本地封面（锁屏/控制中心 artwork）
+        artworkLoadKey = nil
     }
 
     func setNowPlayingCaption(_ caption: String?) {
@@ -360,7 +744,10 @@ class AudioPlayerService: NSObject, ObservableObject {
         updateNowPlayingInfo()
     }
 
-    func clearBook() {
+    @discardableResult
+    func clearBook(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        let effectiveSession = token
+        guard playbackOwnership.permitsQueueMutation(effectiveSession) else { return false }
         stop()
         currentBookId = nil
         currentBookTitle = nil
@@ -368,13 +755,19 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentCoverUrl = nil
         currentCaption = nil
         currentCoverImage = nil
+        artworkLoadKey = nil
         segmentsQueue.removeAll()
         currentSegmentIndex = 0
         canStartQueuedSegment = nil
+        _ = playbackOwnership.attachQueue(to: effectiveSession)
         clearNowPlayingInfo()
+        return true
     }
 
-    func clearQueue() {
+    @discardableResult
+    func clearQueue(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        let effectiveSession = token
+        guard playbackOwnership.permitsQueueMutation(effectiveSession) else { return false }
         print("🔊 clearQueue: Stopping and clearing \(segmentsQueue.count) segments")
         stop()
         segmentsQueue.removeAll()
@@ -383,6 +776,8 @@ class AudioPlayerService: NSObject, ObservableObject {
         canStartQueuedSegment = nil
         moreSegmentsExpected = false
         isWaitingForNextSegment = false
+        _ = playbackOwnership.attachQueue(to: effectiveSession)
+        return true
     }
 
     private static func cleanCaption(_ caption: String?) -> String? {
@@ -398,14 +793,31 @@ class AudioPlayerService: NSObject, ObservableObject {
         return String(cleaned.prefix(maxCount)).trimmingCharacters(in: .whitespacesAndNewlines) + "…"
     }
 
-    func loadSegment(_ segment: AudioSegment, autoPlay: Bool = true) {
+    @discardableResult
+    func loadSegment(
+        _ segment: AudioSegment,
+        autoPlay: Bool = true,
+        session token: AudioPlaybackSessionToken? = nil
+    ) -> Bool {
+        let effectiveSession = token
+        guard playbackOwnership.permitsQueueMutation(effectiveSession) else { return false }
+        if segmentsQueue.isEmpty {
+            guard playbackOwnership.attachQueue(to: effectiveSession) else { return false }
+        } else {
+            guard playbackOwnership.queueSession == effectiveSession else { return false }
+        }
         print("🔊 loadSegment: Adding segment \(segment.segmentIndex) for paragraph \(segment.paragraphIndex), queueCount will be \(segmentsQueue.count + 1), waiting=\(isWaitingForNextSegment)")
+        ReaderRunLog.write(
+            "AUDIO enqueue segment=\(segment.id) queue=\(segmentsQueue.count + 1) " +
+            "waiting=\(isWaitingForNextSegment ? "Y" : "N") " +
+            "auto=\(autoPlay ? "Y" : "N")"
+        )
         segmentsQueue.append(segment)
 
         guard !playbackSuspendedByInterruption else {
             isWaitingForNextSegment = false
             print("🔊 loadSegment: Queued while interrupted; waiting for user resume")
-            return
+            return true
         }
 
         // If we were waiting for the next segment, play it now
@@ -422,26 +834,36 @@ class AudioPlayerService: NSObject, ObservableObject {
             if !autoPlay { isWaitingForNextSegment = false }
             print("🔊 loadSegment: Segment queued (autoPlay=\(autoPlay), isPlaying=\(isPlaying), queueCount=\(segmentsQueue.count))")
         }
+        return true
     }
 
-    func loadSegments(_ segments: [AudioSegment]) {
+    @discardableResult
+    func loadSegments(
+        _ segments: [AudioSegment],
+        autoPlay: Bool = true,
+        session token: AudioPlaybackSessionToken? = nil
+    ) -> Bool {
+        let effectiveSession = token
+        guard playbackOwnership.permitsQueueMutation(effectiveSession) else { return false }
         print("🔊 loadSegments: Received \(segments.count) segments")
 
         // Clear existing queue and stop current playback
         stop()
         segmentsQueue.removeAll()
         currentSegmentIndex = 0
+        _ = playbackOwnership.attachQueue(to: effectiveSession)
 
         // Add new segments
         segmentsQueue.append(contentsOf: segments)
 
         // Start playback from the first segment
-        if !segmentsQueue.isEmpty {
+        if !segmentsQueue.isEmpty, autoPlay {
             print("🔊 loadSegments: Starting playSegment(at: 0)")
             playSegment(at: 0)
         } else {
             print("🔴 loadSegments: No segments to play!")
         }
+        return true
     }
 
     /// Append fully prepared audio behind the current queue without stopping or
@@ -449,7 +871,23 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// `loadSegments`, whose replace-and-start semantics are correct for jumps
     /// but would create an audible page-boundary gap for Kindle.
     @discardableResult
-    func appendPreparedSegmentsForContinuousPlayback(_ segments: [AudioSegment]) -> String? {
+    func appendPreparedSegmentsForContinuousPlayback(
+        _ segments: [AudioSegment],
+        session token: AudioPlaybackSessionToken? = nil
+    ) -> String? {
+        let effectiveSession: AudioPlaybackSessionToken?
+        if let token {
+            effectiveSession = token
+        } else if let coordinator = activeCoordinatorSession(owner: .readAloud) {
+            // WebReaderBridge/KindleBookView are page coordinators for the
+            // currently active Read VM. Nil is intentionally accepted only for
+            // this narrow, owner-checked seamless-handoff operation.
+            effectiveSession = coordinator
+        } else {
+            effectiveSession = nil
+        }
+        guard playbackOwnership.permitsQueueMutation(effectiveSession),
+              playbackOwnership.queueSession == effectiveSession else { return nil }
         guard !segments.isEmpty else { return segmentsQueue.last?.id }
         let predecessor = segmentsQueue.last?.id
         let firstAppendedIndex = segmentsQueue.count
@@ -474,6 +912,10 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// Returns false when one of the requested ids is already the current item.
     @discardableResult
     func removePendingSegments(withIDs ids: Set<String>) -> Bool {
+        if let active = playbackOwnership.activeSession,
+           active.owner != .readAloud {
+            return false
+        }
         guard !ids.isEmpty, !segmentsQueue.isEmpty else { return true }
         let currentID = currentSegment?.id
         let currentWasRequested = currentID.map(ids.contains) ?? false
@@ -497,7 +939,21 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     /// Retry a queue item previously held by `canStartQueuedSegment`. If the
     /// gate is still closed this remains a no-op and keeps buffering state.
-    func resumeGatedSegmentIfPossible() {
+    func resumeGatedSegmentIfPossible(session token: AudioPlaybackSessionToken? = nil) {
+        let effectiveSession: AudioPlaybackSessionToken?
+        if let token {
+            effectiveSession = token
+        } else if playbackOwnership.activeSession != nil {
+            guard let coordinator = activeCoordinatorSession(owner: .readAloud) else {
+                return
+            }
+            effectiveSession = coordinator
+        } else {
+            effectiveSession = nil
+        }
+        guard playbackOwnership.permitsPlayback(
+            requestedBy: effectiveSession
+        ) else { return }
         guard let index = gatedSegmentIndex else { return }
         playSegment(at: index)
     }
@@ -510,8 +966,13 @@ class AudioPlayerService: NSObject, ObservableObject {
     func startQueuedSegment(
         id: String,
         progress: Double,
-        autoPlay: Bool
+        autoPlay: Bool,
+        session token: AudioPlaybackSessionToken? = nil
     ) -> Bool {
+        let effectiveSession = token
+        guard playbackOwnership.permitsPlayback(requestedBy: effectiveSession) else {
+            return false
+        }
         guard let index = segmentsQueue.firstIndex(where: { $0.id == id }) else { return false }
         playSegment(
             at: index,
@@ -521,17 +982,23 @@ class AudioPlayerService: NSObject, ObservableObject {
         return true
     }
 
-    func play() {
+    @discardableResult
+    func play(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        guard playbackOwnership.permitsPlayback(requestedBy: token) else {
+            return false
+        }
         guard let player else {
             guard !segmentsQueue.isEmpty else {
                 isPlaying = false
                 updateNowPlayingInfo()
-                return
+                return false
             }
             playbackSuspendedByInterruption = false
             let index = segmentsQueue.indices.contains(currentSegmentIndex) ? currentSegmentIndex : 0
-            playSegment(at: index)
-            return
+            return playSegment(at: index)
+        }
+        guard currentItemCanPublishPlaybackState() else {
+            return false
         }
         playbackSuspendedByInterruption = false
         do {
@@ -542,19 +1009,42 @@ class AudioPlayerService: NSObject, ObservableObject {
         player.playImmediately(atRate: playbackRate)
         isPlaying = true
         updateNowPlayingInfo()
+        return true
     }
 
-    func pause() {
+    private func pauseRegardlessOfOwnership() {
         player?.pause()
         isPlaying = false
         updateNowPlayingInfo()
     }
 
-    func togglePlayPause() {
+    /// Retain the queue for an explicit recovery/replay decision, but drop all
+    /// producer-transient state owned by the outgoing session. Otherwise a
+    /// cancelled stream can leave the next mode permanently "buffering".
+    private func suspendQueueForOwnershipChange() {
+        pauseRegardlessOfOwnership()
+        moreSegmentsExpected = false
+        isWaitingForNextSegment = false
+        isBuffering = false
+        gatedSegmentIndex = nil
+    }
+
+    @discardableResult
+    func pause(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        guard playbackOwnership.permitsPlayback(requestedBy: token) else { return false }
+        pauseRegardlessOfOwnership()
+        return true
+    }
+
+    @discardableResult
+    func togglePlayPause(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        guard playbackOwnership.permitsPlayback(requestedBy: token) else {
+            return false
+        }
         if isPlaying {
-            pause()
+            return pause(session: token)
         } else {
-            play()
+            return play(session: token)
         }
     }
 
@@ -564,8 +1054,11 @@ class AudioPlayerService: NSObject, ObservableObject {
         player?.pause()
         player = nil
         playerItem = nil
+        playerItemSession = nil
         playerStateCancellable?.cancel()
         playerStateCancellable = nil
+        playerItemReadinessWorkItem?.cancel()
+        playerItemReadinessWorkItem = nil
         playbackSuspendedByInterruption = false
         isPlaying = false
         currentTime = 0
@@ -584,16 +1077,26 @@ class AudioPlayerService: NSObject, ObservableObject {
         print("🔊 stop(): Playback stopped, currentSegment is now nil")
     }
 
-    func seek(to time: Double) {
+    @discardableResult
+    func seek(
+        to time: Double,
+        session token: AudioPlaybackSessionToken? = nil
+    ) -> Bool {
+        guard playbackOwnership.permitsPlayback(requestedBy: token) else { return false }
         let cmTime = CMTime(seconds: time, preferredTimescale: 600)
         player?.seek(to: cmTime)
         currentTime = time
         updateNowPlayingElapsedTime()
+        return true
     }
 
-    func seekToProgress(_ progress: Double) {
+    @discardableResult
+    func seekToProgress(
+        _ progress: Double,
+        session token: AudioPlaybackSessionToken? = nil
+    ) -> Bool {
         let time = duration * progress
-        seek(to: time)
+        return seek(to: time, session: token)
     }
 
     func setPlaybackRate(_ rate: Float) {
@@ -604,49 +1107,92 @@ class AudioPlayerService: NSObject, ObservableObject {
         updateNowPlayingInfo()
     }
 
-    func skipForward(seconds: Double = 15) {
+    @discardableResult
+    func skipForward(
+        seconds: Double = 15,
+        session token: AudioPlaybackSessionToken? = nil
+    ) -> Bool {
         let newTime = min(currentTime + seconds, duration)
-        seek(to: newTime)
+        return seek(to: newTime, session: token)
     }
 
-    func skipBackward(seconds: Double = 15) {
+    @discardableResult
+    func skipBackward(
+        seconds: Double = 15,
+        session token: AudioPlaybackSessionToken? = nil
+    ) -> Bool {
         let newTime = max(currentTime - seconds, 0)
-        seek(to: newTime)
+        return seek(to: newTime, session: token)
     }
 
-    func nextSegment() {
+    @discardableResult
+    func nextSegment(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        let effectiveSession: AudioPlaybackSessionToken?
+        if let token {
+            effectiveSession = token
+        } else if playbackOwnership.activeSession != nil {
+            guard let coordinator = activeCoordinatorSession(owner: .readAloud) else {
+                return false
+            }
+            effectiveSession = coordinator
+        } else {
+            effectiveSession = nil
+        }
+        guard playbackOwnership.permitsPlayback(
+            requestedBy: effectiveSession
+        ) else { return false }
         print("🔊 nextSegment: currentIndex=\(currentSegmentIndex), queueCount=\(segmentsQueue.count), moreExpected=\(moreSegmentsExpected)")
         if currentSegmentIndex < segmentsQueue.count - 1 {
             print("🔊 nextSegment: Playing next segment at index \(currentSegmentIndex + 1)")
-            playSegment(at: currentSegmentIndex + 1)
+            ReaderRunLog.write(
+                "AUDIO advance segment from=\(currentSegment?.id ?? "nil") " +
+                "to=\(segmentsQueue[currentSegmentIndex + 1].id)"
+            )
+            return playSegment(at: currentSegmentIndex + 1)
         } else if moreSegmentsExpected {
             // TTS is still generating segments, wait for them
             print("🔊 nextSegment: No more segments in queue but TTS still loading, waiting...")
             isWaitingForNextSegment = true
+            isBuffering = true
+            ReaderRunLog.write(
+                "AUDIO queue drained while producer active segment=\(currentSegment?.id ?? "nil")"
+            )
         } else {
             print("🔊 nextSegment: No more segments and TTS complete, calling onPlaybackComplete")
+            ReaderRunLog.write(
+                "AUDIO queue complete segment=\(currentSegment?.id ?? "nil") " +
+                "queue=\(segmentsQueue.count)"
+            )
             onPlaybackComplete?()
         }
+        return true
     }
 
-    func previousSegment() {
+    @discardableResult
+    func previousSegment(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        guard playbackOwnership.permitsPlayback(requestedBy: token) else { return false }
         if currentSegmentIndex > 0 {
-            playSegment(at: currentSegmentIndex - 1)
+            return playSegment(at: currentSegmentIndex - 1)
         } else {
-            seek(to: 0)
+            return seek(to: 0, session: token)
         }
     }
 
     // MARK: - Private Methods
 
+    @discardableResult
     private func playSegment(
         at index: Int,
         initialProgress: Double? = nil,
         autoPlayWhenReady: Bool = true
-    ) {
+    ) -> Bool {
+        let expectedSession = playbackOwnership.queueSession
+        guard playbackOwnership.permitsPlayback(requestedBy: expectedSession) else {
+            return false
+        }
         guard index >= 0 && index < segmentsQueue.count else {
             print("🔴 playSegment: index \(index) out of range (queue size: \(segmentsQueue.count))")
-            return
+            return false
         }
 
         let segment = segmentsQueue[index]
@@ -656,7 +1202,7 @@ class AudioPlayerService: NSObject, ObservableObject {
             isBuffering = true
             updateNowPlayingInfo()
             print("🔊 playSegment[\(index)]: Held by queue-boundary gate")
-            return
+            return false
         }
         gatedSegmentIndex = nil
         isBuffering = false
@@ -674,6 +1220,10 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentTime = 0
         duration = segment.duration
         currentSegment = segment
+        ReaderRunLog.write(
+            "AUDIO stage segment=\(segment.id) index=\(index)/\(segmentsQueue.count) " +
+            "duration=\(String(format: "%.2f", segment.duration))"
+        )
 
         print("🔊 playSegment[\(index)]: audioData size: \(segment.audioData.count), duration: \(segment.duration)")
 
@@ -689,17 +1239,29 @@ class AudioPlayerService: NSObject, ObservableObject {
             playAudio(
                 from: tempURL,
                 initialProgress: initialProgress,
-                autoPlayWhenReady: autoPlayWhenReady
+                autoPlayWhenReady: autoPlayWhenReady,
+                expectedSession: expectedSession
             )
+            return true
         } catch {
+            let message = error.localizedDescription
+            ReaderRunLog.write(
+                "AUDIO failed to stage segment=\(segment.id) error=\(message)"
+            )
             print("🔴 playSegment[\(index)]: Failed to write audio data: \(error)")
+            isBuffering = false
+            isPlaying = false
+            updateNowPlayingInfo()
+            onPlaybackError?(message)
+            return false
         }
     }
 
     private func playAudio(
         from url: URL,
         initialProgress: Double? = nil,
-        autoPlayWhenReady: Bool = true
+        autoPlayWhenReady: Bool = true,
+        expectedSession: AudioPlaybackSessionToken?
     ) {
         removeTimeObserver()
 
@@ -713,6 +1275,10 @@ class AudioPlayerService: NSObject, ObservableObject {
         let asset = AVURLAsset(url: url)
         playerItem = AVPlayerItem(asset: asset)
         playerItem?.audioTimePitchAlgorithm = .timeDomain
+        playerItemSession = expectedSession
+        reportedPlaybackFailureItemID = nil
+        playerItemReadinessWorkItem?.cancel()
+        playerItemReadinessWorkItem = nil
 
         // Create or update player
         if player == nil {
@@ -725,14 +1291,22 @@ class AudioPlayerService: NSObject, ObservableObject {
         isBuffering = true
 
         // Observe player item status
-        playerItem?.publisher(for: \.status)
+        guard let observedItem = playerItem else { return }
+        observedItem.publisher(for: \.status)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] status in
+            .sink { [weak self, weak observedItem] status in
                 guard let self = self else { return }
+                guard let observedItem,
+                      observedItem === self.playerItem,
+                      self.currentItemCanPublishPlaybackState() else {
+                    return
+                }
                 switch status {
                 case .readyToPlay:
+                    self.playerItemReadinessWorkItem?.cancel()
+                    self.playerItemReadinessWorkItem = nil
                     self.isBuffering = false
-                    let seconds = self.playerItem?.duration.seconds ?? 0
+                    let seconds = observedItem.duration.seconds
                     // Check for valid duration (not NaN or infinite)
                     if seconds.isFinite && seconds > 0 {
                         self.duration = seconds
@@ -749,7 +1323,9 @@ class AudioPlayerService: NSObject, ObservableObject {
                         let target = CMTime(seconds: targetSeconds, preferredTimescale: 600)
                         let expectedItem = self.playerItem
                         self.player?.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self, weak expectedItem] _ in
-                            guard let self, expectedItem === self.playerItem else { return }
+                            guard let self,
+                                  expectedItem === self.playerItem,
+                                  self.currentItemCanPublishPlaybackState() else { return }
                             self.currentTime = targetSeconds
                             if autoPlayWhenReady {
                                 self.player?.playImmediately(atRate: self.playbackRate)
@@ -770,15 +1346,47 @@ class AudioPlayerService: NSObject, ObservableObject {
                         self.isPlaying = false
                         self.updateNowPlayingInfo()
                     }
+                    ReaderRunLog.write(
+                        "AUDIO ready segment=\(self.currentSegment?.id ?? "nil") " +
+                        "duration=\(String(format: "%.2f", seconds)) " +
+                        "auto=\(autoPlayWhenReady ? "Y" : "N")"
+                    )
                     print("Audio ready to play, duration: \(seconds)")
                 case .failed:
-                    self.isBuffering = false
-                    print("Player item failed: \(self.playerItem?.error?.localizedDescription ?? "Unknown error")")
+                    self.playerItemReadinessWorkItem?.cancel()
+                    self.playerItemReadinessWorkItem = nil
+                    let message =
+                        observedItem.error?.localizedDescription
+                            ?? "Unknown audio error"
+                    self.reportPlaybackFailure(
+                        for: observedItem,
+                        message: message
+                    )
                 default:
                     break
                 }
             }
             .store(in: &cancellables)
+
+        let readinessItemID = ObjectIdentifier(observedItem)
+        let readinessWorkItem = DispatchWorkItem { [weak self, weak observedItem] in
+            guard let self,
+                  let observedItem,
+                  observedItem === self.playerItem,
+                  ObjectIdentifier(observedItem) == readinessItemID,
+                  observedItem.status == .unknown,
+                  self.currentItemCanPublishPlaybackState() else { return }
+            self.playerItemReadinessWorkItem = nil
+            self.reportPlaybackFailure(
+                for: observedItem,
+                message: AppLocalized("音频准备超时，请重试")
+            )
+        }
+        playerItemReadinessWorkItem = readinessWorkItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + 12,
+            execute: readinessWorkItem
+        )
 
         // Add time observer
         addTimeObserver()
@@ -790,6 +1398,12 @@ class AudioPlayerService: NSObject, ObservableObject {
             name: .AVPlayerItemDidPlayToEndTime,
             object: playerItem
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(playerFailedToPlayToEnd),
+            name: .AVPlayerItemFailedToPlayToEndTime,
+            object: playerItem
+        )
     }
 
     private var lastNowPlayingUpdateTime: Double = 0
@@ -797,7 +1411,8 @@ class AudioPlayerService: NSObject, ObservableObject {
     private func addTimeObserver() {
         let interval = CMTime(seconds: 0.05, preferredTimescale: 600) // 50ms updates for smooth highlighting
         timeObserver = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-            guard let self = self else { return }
+            guard let self = self,
+                  self.currentItemCanPublishPlaybackState() else { return }
             self.currentTime = time.seconds
 
             // Update Now Playing info every second for lock screen progress
@@ -833,6 +1448,16 @@ class AudioPlayerService: NSObject, ObservableObject {
             }
             return
         }
+        guard currentItemCanPublishPlaybackState() else {
+            return
+        }
+        let waiting = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
+        if waiting {
+            isBuffering = true
+        } else if playerItem?.status == .readyToPlay
+                    || playerItem?.status == .failed {
+            isBuffering = false
+        }
         let actuallyPlaying = player.timeControlStatus == .playing && player.rate > 0
         guard actuallyPlaying != isPlaying else {
             updateNowPlayingElapsedTime()
@@ -847,22 +1472,127 @@ class AudioPlayerService: NSObject, ObservableObject {
               player.timeControlStatus.rawValue,
               wasInterrupted ? "Y" : "N")
         #endif
+        ReaderRunLog.write(
+            "AUDIO state reason=\(reason) " +
+            "actual=\(actuallyPlaying ? "playing" : "paused") " +
+            "waiting=\(waiting ? "Y" : "N") " +
+            "rate=\(String(format: "%.2f", player.rate)) " +
+            "segment=\(currentSegment?.id ?? "nil")"
+        )
         isPlaying = actuallyPlaying
         updateNowPlayingInfo()
     }
 
     private func removeTimeObserver() {
+        playerItemReadinessWorkItem?.cancel()
+        playerItemReadinessWorkItem = nil
         if let observer = timeObserver {
             player?.removeTimeObserver(observer)
             timeObserver = nil
         }
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+        NotificationCenter.default.removeObserver(
+            self,
+            name: .AVPlayerItemFailedToPlayToEndTime,
+            object: playerItem
+        )
     }
 
-    @objc private func playerDidFinishPlaying() {
+    @objc private func playerDidFinishPlaying(_ notification: Notification) {
+        guard let finishedItem = notification.object as? AVPlayerItem else {
+            return
+        }
+        let itemID = ObjectIdentifier(finishedItem)
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.handlePlayerDidFinishPlaying(itemID: itemID)
+            }
+            return
+        }
+        handlePlayerDidFinishPlaying(itemID: itemID)
+    }
+
+    private func handlePlayerDidFinishPlaying(itemID: ObjectIdentifier) {
+        guard let currentItem = playerItem,
+              ObjectIdentifier(currentItem) == itemID,
+              currentItemCanPublishPlaybackState() else {
+            // A replaced item may publish its terminal notification after the
+            // next segment has started. Stale callbacks have no authority to
+            // pause or otherwise mutate the new current item.
+            return
+        }
+        let finishedSession = playerItemSession
         print("🔊 playerDidFinishPlaying: Segment finished, currentIndex=\(currentSegmentIndex)")
+        ReaderRunLog.write(
+            "AUDIO item finished segment=\(currentSegment?.id ?? "nil") " +
+            "index=\(currentSegmentIndex)/\(segmentsQueue.count)"
+        )
         onSegmentComplete?()
-        nextSegment()
+        guard let currentItemAfterCallback = playerItem,
+              ObjectIdentifier(currentItemAfterCallback) == itemID,
+              playbackOwnership.permitsCallback(from: finishedSession) else {
+            return
+        }
+        _ = nextSegment(session: finishedSession)
+    }
+
+    @objc private func playerFailedToPlayToEnd(_ notification: Notification) {
+        guard let failedItem = notification.object as? AVPlayerItem else {
+            return
+        }
+        let itemID = ObjectIdentifier(failedItem)
+        let message =
+            (notification.userInfo?[
+                AVPlayerItemFailedToPlayToEndTimeErrorKey
+            ] as? Error)?.localizedDescription
+                ?? failedItem.error?.localizedDescription
+                ?? "Unknown audio error"
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { [weak self] in
+                self?.handlePlayerFailedToPlayToEnd(
+                    itemID: itemID,
+                    message: message
+                )
+            }
+            return
+        }
+        handlePlayerFailedToPlayToEnd(
+            itemID: itemID,
+            message: message
+        )
+    }
+
+    private func handlePlayerFailedToPlayToEnd(
+        itemID: ObjectIdentifier,
+        message: String
+    ) {
+        guard let currentItem = playerItem,
+              ObjectIdentifier(currentItem) == itemID,
+              currentItemCanPublishPlaybackState() else {
+            return
+        }
+        reportPlaybackFailure(for: currentItem, message: message)
+    }
+
+    private func reportPlaybackFailure(
+        for item: AVPlayerItem,
+        message: String
+    ) {
+        let itemID = ObjectIdentifier(item)
+        guard reportedPlaybackFailureItemID != itemID else { return }
+        reportedPlaybackFailureItemID = itemID
+        playerItemReadinessWorkItem?.cancel()
+        playerItemReadinessWorkItem = nil
+        player?.pause()
+        isBuffering = false
+        isPlaying = false
+        ReaderRunLog.write(
+            "AUDIO player item failed segment=\(currentSegment?.id ?? "nil") " +
+            "error=\(message)"
+        )
+        print("Player item failed: \(message)")
+        updateNowPlayingInfo()
+        onPlaybackError?(message)
     }
 }
 

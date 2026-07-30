@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CastReader — 文档阅读器</title>
+    <style>
+      /* 主题变量:浅色默认 + 跟随系统深色。reader 的 shell/工具栏/上传卡片用这些变量;
+         文档纸张(.cr-pdf-page / .cr-doc-article)保持忠实白纸,不随主题反色。 */
+      :root {
+        --cr-bg: #f4f4f7; --cr-fg: #1c1c22; --cr-dim: #6b6b76;
+        --cr-card: #ffffff; --cr-toolbar: rgba(255,255,255,.92); --cr-border: #e4e4ea;
+        --cr-btn-bg: #ececf1; --cr-btn-fg: #3a3a44; --cr-btn-border: #d9d9e1;
+        --cr-dash: #c8c8d2; --cr-scrim: rgba(0,0,0,.40);
+        --cr-stop-bg: #fbeae6; --cr-stop-fg: #c0432a; --cr-stop-border: #f0c4ba;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --cr-bg: #0e0e16; --cr-fg: #e8e8ef; --cr-dim: #9a9aac;
+          --cr-card: #15151f; --cr-toolbar: rgba(16,16,24,.92); --cr-border: #23232f;
+          --cr-btn-bg: #23232f; --cr-btn-fg: #cfcfe0; --cr-btn-border: #33333f;
+          --cr-dash: #3a3a4a; --cr-scrim: rgba(0,0,0,.55);
+          --cr-stop-bg: #2a2030; --cr-stop-fg: #ffb4a0; --cr-stop-border: #5a3a3a;
+        }
+      }
+      html, body { margin: 0; padding: 0; background: var(--cr-bg); color: var(--cr-fg);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+      * { box-sizing: border-box; }
+      @keyframes cr-spin { to { transform: rotate(360deg); } }
+    </style>
+    <script type="module" crossorigin src="/chunks/reader-Db-flTWq.js"></script>
+    <link rel="modulepreload" crossorigin href="/chunks/webextension-api-CtVjzsOJ.js">
+    <link rel="modulepreload" crossorigin href="/chunks/constants-D8bfdZWb.js">
+    <link rel="modulepreload" crossorigin href="/chunks/kindle-language-BJgUKStR.js">
+    <link rel="modulepreload" crossorigin href="/chunks/speed-CBKNvZ0y.js">
+    <link rel="modulepreload" crossorigin href="/chunks/visible-text-block-extractor-D4b_JN_y.js">
+    <link rel="modulepreload" crossorigin href="/chunks/google-docs-CiywYMUL.js">
+    <link rel="modulepreload" crossorigin href="/chunks/extraction-pipeline-XoQB3Nr3.js">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

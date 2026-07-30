@@ -41912,27 +41912,39 @@ var __CRWeb = (() => {
     return d;
   }
   function createMarkRenderer(getParaEl, initialColor) {
-    let svg = null;
+    const svgs = /* @__PURE__ */ new Map();
     let color = initialColor;
     const shown = /* @__PURE__ */ new Set();
-    function ensureSvg() {
-      if (svg && svg.isConnected) return svg;
-      const el = document.createElementNS(SVG_NS, "svg");
+    function ensureSvg(doc) {
+      const root2 = doc.documentElement;
+      const body = doc.body;
+      const host = body || root2;
+      if (!host) return null;
+      const width = Math.max((root2 == null ? void 0 : root2.scrollWidth) || 0, (body == null ? void 0 : body.scrollWidth) || 0, 1);
+      const height = Math.max((root2 == null ? void 0 : root2.scrollHeight) || 0, (body == null ? void 0 : body.scrollHeight) || 0, 1);
+      const existing = svgs.get(doc);
+      if (existing && existing.isConnected) {
+        existing.style.width = `${width}px`;
+        existing.style.height = `${height}px`;
+        return existing;
+      }
+      const el = doc.createElementNS(SVG_NS, "svg");
       el.style.position = "absolute";
       el.style.left = "0";
       el.style.top = "0";
-      el.style.width = `${document.documentElement.scrollWidth}px`;
-      el.style.height = `${document.documentElement.scrollHeight}px`;
+      el.style.width = `${width}px`;
+      el.style.height = `${height}px`;
       el.style.pointerEvents = "none";
       el.style.zIndex = "2147483646";
       el.setAttribute("data-cr-marks", "1");
-      document.body.appendChild(el);
-      svg = el;
+      host.appendChild(el);
+      svgs.set(doc, el);
       return el;
     }
     function charRange(el, start, end) {
       var _a, _b;
-      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      const doc = el.ownerDocument;
+      const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT);
       let offset = 0;
       let startNode = null;
       let startOff = 0;
@@ -41953,7 +41965,7 @@ var __CRWeb = (() => {
         offset += len;
       }
       if (!startNode || !endNode) return null;
-      const r = document.createRange();
+      const r = doc.createRange();
       try {
         r.setStart(startNode, Math.max(0, startOff));
         r.setEnd(endNode, Math.max(0, endOff));
@@ -41964,7 +41976,7 @@ var __CRWeb = (() => {
     }
     function appendPath(s, d, strokeWidth, opacity) {
       var _a, _b;
-      const path5 = document.createElementNS(SVG_NS, "path");
+      const path5 = s.ownerDocument.createElementNS(SVG_NS, "path");
       path5.setAttribute("d", d);
       path5.setAttribute("stroke", color);
       path5.setAttribute("stroke-width", String(strokeWidth));
@@ -41979,7 +41991,11 @@ var __CRWeb = (() => {
         path5.style.strokeDashoffset = String(len);
         void path5.getBoundingClientRect();
         path5.style.transition = `stroke-dashoffset 700ms ${MARK_EASE}`;
-        requestAnimationFrame(() => {
+        const ownerWindow = s.ownerDocument.defaultView;
+        if (ownerWindow) ownerWindow.requestAnimationFrame(() => {
+          path5.style.strokeDashoffset = "0";
+        });
+        else requestAnimationFrame(() => {
           path5.style.strokeDashoffset = "0";
         });
       } catch (e) {
@@ -41987,19 +42003,23 @@ var __CRWeb = (() => {
     }
     function show(m) {
       if (shown.has(m.id)) return;
-      shown.add(m.id);
       const el = getParaEl(m.paragraphIndex);
       if (!el) return;
       const range2 = charRange(el, m.charStart, m.charEnd);
       if (!range2) return;
       const rects = Array.from(range2.getClientRects());
       if (!rects.length) return;
-      const s = ensureSvg();
+      const ownerDocument = el.ownerDocument;
+      const ownerWindow = ownerDocument.defaultView;
+      if (!ownerWindow) return;
+      const s = ensureSvg(ownerDocument);
+      if (!s) return;
       const rng = mulberry32(m.seed >>> 0);
-      const sx = window.scrollX;
-      const sy = window.scrollY;
+      const sx = ownerWindow.scrollX;
+      const sy = ownerWindow.scrollY;
       const lineRects = rects.filter((rc) => rc.width >= 2 && rc.height >= 2);
       if (!lineRects.length) return;
+      shown.add(m.id);
       const last2 = lineRects[lineRects.length - 1];
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       lineRects.forEach((rc) => {
@@ -42054,10 +42074,13 @@ var __CRWeb = (() => {
     }
     function clear() {
       shown.clear();
-      if (svg) {
-        svg.remove();
-        svg = null;
-      }
+      svgs.forEach((svg) => {
+        try {
+          svg.remove();
+        } catch (e) {
+        }
+      });
+      svgs.clear();
     }
     function setColor(hex) {
       color = hex;
@@ -52469,33 +52492,58 @@ var __CRWeb = (() => {
     }
   }
   function initBridge(deps) {
+    var _a;
     const { extract: extract2 } = deps;
     const paraElements = /* @__PURE__ */ new Map();
+    const extractedParaElements = /* @__PURE__ */ new Map();
+    const paraOffsets = /* @__PURE__ */ new Map();
     let color = "#FD5F01";
     const markRenderer = createMarkRenderer((i) => paraElements.get(i), color);
+    const overlayNodes = /* @__PURE__ */ new Set();
+    const overlayDocuments = /* @__PURE__ */ new Set();
     const post = (type2, payload = {}) => {
-      var _a, _b, _c;
+      var _a2, _b, _c;
       try {
         ;
-        (_c = (_b = (_a = window.webkit) == null ? void 0 : _a.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({ type: type2, payload });
+        (_c = (_b = (_a2 = window.webkit) == null ? void 0 : _a2.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({ type: type2, payload });
       } catch (e) {
       }
     };
     const log = (message) => post("log", { message });
     function clearOverlay() {
-      document.querySelectorAll(".cr-hl-ov").forEach((n) => n.remove());
+      overlayNodes.forEach((node) => {
+        try {
+          node.remove();
+        } catch (e) {
+        }
+      });
+      overlayNodes.clear();
+      overlayDocuments.forEach((doc) => {
+        try {
+          doc.querySelectorAll(".cr-hl-ov").forEach((n) => n.remove());
+        } catch (e) {
+        }
+      });
+      overlayDocuments.clear();
     }
-    function paintOverlay(range2) {
+    function paintOverlay(range2, el) {
       clearOverlay();
+      const ownerDocument = range2.startContainer.ownerDocument || (el == null ? void 0 : el.ownerDocument) || document;
+      const ownerWindow = ownerDocument.defaultView;
+      const host = ownerDocument.body || ownerDocument.documentElement;
+      if (!ownerWindow || !host) return 0;
       const rects = Array.from(range2.getClientRects());
-      const sx = window.scrollX, sy = window.scrollY;
+      const sx = ownerWindow.scrollX, sy = ownerWindow.scrollY;
+      overlayDocuments.add(ownerDocument);
       let n = 0;
       rects.forEach((rc) => {
         if (rc.width < 2 || rc.height < 2) return;
-        const d = document.createElement("div");
+        if (el && deps.acceptHighlightRect && !deps.acceptHighlightRect(el, rc)) return;
+        const d = ownerDocument.createElement("div");
         d.className = "cr-hl-ov";
         d.style.cssText = `position:absolute;left:${rc.left + sx}px;top:${rc.top + sy}px;width:${rc.width}px;height:${rc.height}px;background:${hexToRgba(color, 0.34)};pointer-events:none;z-index:2147483000;border-radius:3px;mix-blend-mode:multiply`;
-        document.body.appendChild(d);
+        host.appendChild(d);
+        overlayNodes.add(d);
         n++;
       });
       return n;
@@ -52506,7 +52554,7 @@ var __CRWeb = (() => {
         clearOverlay();
         return 0;
       }
-      return paintOverlay(range2);
+      return paintOverlay(range2, el);
     }
     let wcPara = -1, wcSeg = -1, wcRanges = [], paraCursor = 0;
     function findWordPos(text, lower, word, from) {
@@ -52562,14 +52610,21 @@ var __CRWeb = (() => {
       }
       return { ranges, cursor: searchPos };
     }
-    function doExtract() {
+    function doExtract(reason) {
       let paras = [];
       try {
         paras = extract2();
       } catch (e) {
         post("error", { stage: "extract", message: String(e) });
       }
+      clearOverlay();
+      wcPara = -1;
+      wcSeg = -1;
+      wcRanges = [];
+      paraCursor = 0;
       paraElements.clear();
+      extractedParaElements.clear();
+      paraOffsets.clear();
       const out = [];
       paras.forEach((p, i) => {
         const el = p.element;
@@ -52577,14 +52632,33 @@ var __CRWeb = (() => {
           el.setAttribute("data-cr-para", String(i));
         } catch (e) {
         }
-        normalizeWhitespace(el);
+        if (!p.exactText) normalizeWhitespace(el);
         paraElements.set(i, el);
-        const text = (el.textContent || p.text || "").trim();
-        out.push({ paragraphIndex: i, text, type: "paragraph" });
+        extractedParaElements.set(i, el);
+        paraOffsets.set(i, p.charOffset || 0);
+        const text = p.exactText ? p.text : (el.textContent || p.text || "").trim();
+        const row = { paragraphIndex: i, text, type: "paragraph" };
+        if (p.speechText && p.speechText !== text) {
+          row.boundaryUTF16Offset = text.length;
+          row.extendedUTF16Length = p.speechText.length;
+          row.speechText = p.speechText;
+        }
+        if (typeof p.sourceParagraphIndex === "number") row.sourceParagraphIndex = p.sourceParagraphIndex;
+        if (typeof p.sourceStart === "number") row.sourceUTF16Start = p.sourceStart;
+        if (typeof p.sourceEnd === "number") row.sourceUTF16End = p.sourceEnd;
+        out.push(row);
       });
-      post("rendered", { paragraphs: out });
+      const payload = { paragraphs: out };
+      if (reason) payload.reason = reason;
+      if (deps.pageMeta) {
+        try {
+          Object.assign(payload, deps.pageMeta());
+        } catch (e) {
+        }
+      }
+      post("rendered", payload);
       window.__crLastRendered = out;
-      log(`extracted ${out.length} paragraphs`);
+      log(`extracted ${out.length} paragraphs${reason ? " reason=" + reason : ""}`);
     }
     const CR = {
       version: "m1",
@@ -52635,13 +52709,13 @@ var __CRWeb = (() => {
             const loadFn = book.load.bind(book);
             return Promise.all(items.map(
               (it) => it.load(loadFn).then((c) => {
-                var _a, _b;
+                var _a2, _b;
                 const el = c;
-                return ((_a = el.body) == null ? void 0 : _a.innerHTML) || ((_b = el.documentElement) == null ? void 0 : _b.innerHTML) || el.innerHTML || "";
+                return ((_a2 = el.body) == null ? void 0 : _a2.innerHTML) || ((_b = el.documentElement) == null ? void 0 : _b.innerHTML) || el.innerHTML || "";
               }).catch(() => "").then((html) => {
-                var _a;
+                var _a2;
                 try {
-                  (_a = it.unload) == null ? void 0 : _a.call(it);
+                  (_a2 = it.unload) == null ? void 0 : _a2.call(it);
                 } catch (e) {
                 }
                 return html;
@@ -52667,12 +52741,32 @@ var __CRWeb = (() => {
         }
       },
       init(arg) {
-        var _a, _b;
+        var _a2, _b, _c, _d;
         if (arg.color) {
           color = arg.color;
           markRenderer.setColor(color);
         }
-        log(`init segments=${(_b = (_a = arg.segments) == null ? void 0 : _a.length) != null ? _b : 0}`);
+        const segments = arg.segments || [];
+        if (segments.length > 0) {
+          paraElements.clear();
+          paraOffsets.clear();
+        }
+        for (const segment of segments) {
+          const domParagraphIndex = (_a2 = segment.domParagraphIndex) != null ? _a2 : segment.paragraphIndex;
+          const sourceElement = extractedParaElements.get(domParagraphIndex);
+          if (sourceElement) {
+            paraElements.set(segment.paragraphIndex, sourceElement);
+          }
+          const override = (_b = segment.domCharOffset) != null ? _b : segment.charOffset;
+          if (Number.isFinite(override) && typeof override === "number" && override >= 0 && paraElements.has(segment.paragraphIndex)) {
+            paraOffsets.set(segment.paragraphIndex, override);
+          }
+        }
+        wcPara = -1;
+        wcSeg = -1;
+        paraCursor = 0;
+        wcRanges = [];
+        log(`init segments=${(_d = (_c = arg.segments) == null ? void 0 : _c.length) != null ? _d : 0}`);
       },
       highlightRange(arg) {
         const el = paraElements.get(arg.paragraphIndex);
@@ -52682,7 +52776,11 @@ var __CRWeb = (() => {
           showDbg(info + " NOEL");
           return;
         }
-        const n = setOverlay(el, arg.charStart, arg.charEnd);
+        const base = paraOffsets.get(arg.paragraphIndex) || 0;
+        const hasAbsoluteRange = typeof arg.domCharStart === "number" && Number.isFinite(arg.domCharStart) && typeof arg.domCharEnd === "number" && Number.isFinite(arg.domCharEnd);
+        const start = hasAbsoluteRange ? arg.domCharStart : arg.charStart + base;
+        const end = hasAbsoluteRange ? arg.domCharEnd : arg.charEnd + base;
+        const n = setOverlay(el, start, end);
         showDbg(info + " ov=" + n);
       },
       // 词级高亮（英文）：native 下发当前 segment 的词数组 + 词索引，JS 在 DOM 虚拟全文前向匹配定位（不靠字符偏移）。
@@ -52695,7 +52793,7 @@ var __CRWeb = (() => {
         }
         if (arg.paragraphIndex !== wcPara) {
           wcPara = arg.paragraphIndex;
-          paraCursor = 0;
+          paraCursor = paraOffsets.get(arg.paragraphIndex) || 0;
           wcSeg = -1;
         }
         if (arg.segSeq !== wcSeg) {
@@ -52706,7 +52804,7 @@ var __CRWeb = (() => {
         }
         const r = wcRanges[arg.wordIndex];
         if (r && !r.collapsed) {
-          const n = paintOverlay(r);
+          const n = paintOverlay(r, el);
           showDbg("w p" + arg.paragraphIndex + " s" + arg.segSeq + " #" + arg.wordIndex + " ov=" + n);
         } else {
           showDbg("w p" + arg.paragraphIndex + " #" + arg.wordIndex + " MISS");
@@ -52718,6 +52816,8 @@ var __CRWeb = (() => {
         wcSeg = -1;
         paraCursor = 0;
       },
+      // Play Books 之类分页阅读器由页面自己控制视口，滚动会破坏分页几何。
+      disableScroll: false,
       setColor(arg) {
         color = arg.hex;
         markRenderer.setColor(arg.hex);
@@ -52727,13 +52827,18 @@ var __CRWeb = (() => {
         else clearOverlay();
       },
       scrollTo(arg) {
-        var _a;
-        (_a = paraElements.get(arg.paragraphIndex)) == null ? void 0 : _a.scrollIntoView({ block: "center", behavior: "auto" });
+        var _a2;
+        if (CR.disableScroll) return;
+        (_a2 = paraElements.get(arg.paragraphIndex)) == null ? void 0 : _a2.scrollIntoView({ block: "center", behavior: "auto" });
       },
       setAutoScroll(_arg) {
       },
       showMark(arg) {
-        markRenderer.show(arg);
+        const base = paraOffsets.get(arg.paragraphIndex) || 0;
+        markRenderer.show(__spreadProps(__spreadValues({}, arg), {
+          charStart: arg.charStart + base,
+          charEnd: arg.charEnd + base
+        }));
       },
       clearMarks() {
         markRenderer.clear();
@@ -52741,13 +52846,15 @@ var __CRWeb = (() => {
     };
     window.CR = CR;
     document.addEventListener("click", (e) => {
-      var _a;
+      var _a2;
       const t = e.target;
-      const el = (_a = t == null ? void 0 : t.closest) == null ? void 0 : _a.call(t, "[data-cr-para]");
+      const el = (_a2 = t == null ? void 0 : t.closest) == null ? void 0 : _a2.call(t, "[data-cr-para]");
       if (el) post("paragraphTapped", { paragraphIndex: Number(el.getAttribute("data-cr-para")) });
     }, true);
+    (_a = deps.onInstalled) == null ? void 0 : _a.call(deps, { extract: doExtract });
     function ready() {
       post("ready", { version: "m1" });
+      if (deps.autoExtract === false) return;
       setTimeout(doExtract, 350);
     }
     if (document.readyState === "loading") {
@@ -52755,6 +52862,3774 @@ var __CRWeb = (() => {
     } else {
       ready();
     }
+  }
+
+  // src/play-books.ts
+  var READER_PATH_SEGMENT = /(?:^|\/)books\/reader(?:\/|$)/;
+  var PAGE_SEL = "reader-rendered-page";
+  var SEGMENT_SEL = ".gb-segment";
+  var MIN_PARA_CHARS = 2;
+  var MAX_SENTENCE_LOOKAHEAD = 260;
+  var FRAME_SESSION_PROPERTY = "__castreaderGBFrameSessionID";
+  var PAGE_EDGE_GUARD_CLASS = "cr-gb-page-edge-guard";
+  var COMPLETE_BLOCK_FRAGMENT_RATIO = 0.98;
+  var COMPLETE_BLOCK_FRAGMENT_TOLERANCE = 0.5;
+  function playBooksFrameSessionID() {
+    const target = window;
+    if (target[FRAME_SESSION_PROPERTY]) return target[FRAME_SESSION_PROPERTY];
+    let token = "";
+    try {
+      const cryptoObject = globalThis.crypto;
+      if (typeof (cryptoObject == null ? void 0 : cryptoObject.randomUUID) === "function") {
+        token = cryptoObject.randomUUID();
+      } else if (cryptoObject == null ? void 0 : cryptoObject.getRandomValues) {
+        const words = new Uint32Array(4);
+        cryptoObject.getRandomValues(words);
+        token = Array.from(words, (word) => word.toString(36)).join("-");
+      }
+    } catch (e) {
+    }
+    if (!token) {
+      token = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    }
+    const id = `gbf-${token}`;
+    try {
+      Object.defineProperty(target, FRAME_SESSION_PROPERTY, {
+        value: id,
+        writable: false,
+        configurable: false
+      });
+    } catch (e) {
+      target[FRAME_SESSION_PROPERTY] = id;
+    }
+    return id;
+  }
+  function isPlayBooksReaderFrame() {
+    return location.hostname === "books.googleusercontent.com" && READER_PATH_SEGMENT.test(location.pathname);
+  }
+  function isPlayBooksShell() {
+    return location.hostname === "play.google.com";
+  }
+  function isGoogleRelayOrigin(origin) {
+    return /^https:\/\/([a-z0-9-]+\.)*(google\.com|googleusercontent\.com)$/.test(origin);
+  }
+  function isPlayBooksRelayContainer() {
+    if (isPlayBooksShell()) return true;
+    if (isPlayBooksReaderFrame() || window === window.top) return false;
+    const host = location.hostname;
+    if (host === "books.googleusercontent.com" || host === "books.google.com") {
+      return true;
+    }
+    if (location.protocol === "about:") {
+      try {
+        const referrer = new URL(document.referrer);
+        if (referrer.hostname === "play.google.com" && referrer.pathname.indexOf("/books") >= 0) {
+          return true;
+        }
+      } catch (e) {
+      }
+      try {
+        return window.parent.location.hostname === "play.google.com" && window.parent.location.pathname.indexOf("/books") >= 0;
+      } catch (e) {
+      }
+    }
+    return false;
+  }
+  function intersect(a, b) {
+    const left = Math.max(a.left, b.left);
+    const top = Math.max(a.top, b.top);
+    const right = Math.min(a.right, b.right);
+    const bottom = Math.min(a.bottom, b.bottom);
+    if (right <= left || bottom <= top) return null;
+    return { left, top, right, bottom };
+  }
+  function viewportRect() {
+    return { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+  }
+  function pickVisiblePages(pages) {
+    if (pages.length === 0) return [];
+    const vp = viewportRect();
+    const minArea = (vp.right - vp.left) * (vp.bottom - vp.top) * 0.05;
+    const cands = [];
+    for (const page of pages) {
+      const r = page.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) continue;
+      const hit = intersect(r, vp);
+      if (!hit) continue;
+      const area = (hit.right - hit.left) * (hit.bottom - hit.top);
+      if (area < minArea) continue;
+      if (area / (r.width * r.height) < 0.5) continue;
+      cands.push({ el: page, left: r.left });
+    }
+    if (cands.length === 0) {
+      let best = null;
+      let bestArea = -1;
+      for (const page of pages) {
+        const r = page.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0) continue;
+        const hit = intersect(r, vp);
+        const area = hit ? (hit.right - hit.left) * (hit.bottom - hit.top) : 0;
+        if (area > bestArea) {
+          bestArea = area;
+          best = page;
+        }
+      }
+      return best ? [best] : [];
+    }
+    cands.sort((a, b) => a.left - b.left);
+    return cands.map((c) => c.el);
+  }
+  function paragraphNodes(page) {
+    const tries = [
+      `${SEGMENT_SEL} > p`,
+      `${SEGMENT_SEL} p`,
+      "p"
+    ];
+    for (const sel of tries) {
+      const found = Array.from(page.querySelectorAll(sel));
+      const leaves = found.filter((el) => !el.querySelector("p"));
+      if (leaves.length > 0) return leaves;
+    }
+    return [];
+  }
+  function textBoundaryAt(el, index) {
+    var _a, _b;
+    const doc = el.ownerDocument;
+    const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let offset = 0;
+    let node;
+    while (node = walker.nextNode()) {
+      const len = (_b = (_a = node.textContent) == null ? void 0 : _a.length) != null ? _b : 0;
+      if (index <= offset + len) return { node, offset: Math.max(0, index - offset) };
+      offset += len;
+    }
+    return null;
+  }
+  function textRange(el, start, end) {
+    if (start < 0 || end <= start) return null;
+    const textLength = (el.textContent || "").length;
+    if (end > textLength) return null;
+    const startBoundary = textBoundaryAt(el, start);
+    const endBoundary = textBoundaryAt(el, end);
+    if (!startBoundary || !endBoundary) return null;
+    const range2 = el.ownerDocument.createRange();
+    try {
+      range2.setStart(startBoundary.node, startBoundary.offset);
+      range2.setEnd(endBoundary.node, endBoundary.offset);
+    } catch (e) {
+      return null;
+    }
+    return range2;
+  }
+  function writingModeFor(el) {
+    var _a;
+    try {
+      const style = (_a = el.ownerDocument.defaultView) == null ? void 0 : _a.getComputedStyle(el);
+      return (style == null ? void 0 : style.writingMode) || (style == null ? void 0 : style.webkitWritingMode) || "horizontal-tb";
+    } catch (e) {
+      return "horizontal-tb";
+    }
+  }
+  function isVerticalWritingMode(writingMode) {
+    return /^(vertical|sideways)/i.test(writingMode);
+  }
+  function rectHasCompleteBlockCoverage(rect, clip, writingMode) {
+    const hit = intersect(rect, clip);
+    if (!hit) return false;
+    const vertical = isVerticalWritingMode(writingMode);
+    const full = vertical ? Math.max(0, rect.right - rect.left) : Math.max(0, rect.bottom - rect.top);
+    const visible = vertical ? Math.max(0, hit.right - hit.left) : Math.max(0, hit.bottom - hit.top);
+    if (full <= 0 || visible <= 0) return false;
+    return visible + COMPLETE_BLOCK_FRAGMENT_TOLERANCE >= full * COMPLETE_BLOCK_FRAGMENT_RATIO;
+  }
+  function rangeHasCompleteBlockFragment(range2, clip, writingMode) {
+    if (!range2) return false;
+    const rects = range2.getClientRects();
+    for (let i = 0; i < rects.length; i++) {
+      const r = rects[i];
+      if (r.width <= 0 || r.height <= 0) continue;
+      if (rectHasCompleteBlockCoverage(r, clip, writingMode)) return true;
+    }
+    return false;
+  }
+  function alignStartToCodePoint(text, index) {
+    if (index <= 0 || index >= text.length) return index;
+    const current = text.charCodeAt(index);
+    const previous = text.charCodeAt(index - 1);
+    return current >= 56320 && current <= 57343 && previous >= 55296 && previous <= 56319 ? index - 1 : index;
+  }
+  function alignEndToCodePoint(text, index) {
+    if (index <= 0 || index >= text.length) return index;
+    const current = text.charCodeAt(index);
+    const previous = text.charCodeAt(index - 1);
+    return current >= 56320 && current <= 57343 && previous >= 55296 && previous <= 56319 ? index + 1 : index;
+  }
+  function visibleCharRange(el, clip) {
+    const text = el.textContent || "";
+    if (text.length === 0) return null;
+    const writingMode = writingModeFor(el);
+    if (!rangeHasCompleteBlockFragment(
+      textRange(el, 0, text.length),
+      clip,
+      writingMode
+    )) return null;
+    let low = 1;
+    let high = text.length;
+    let firstPrefixEnd = text.length;
+    while (low <= high) {
+      const mid = low + (high - low >> 1);
+      if (rangeHasCompleteBlockFragment(
+        textRange(el, 0, mid),
+        clip,
+        writingMode
+      )) {
+        firstPrefixEnd = mid;
+        high = mid - 1;
+      } else {
+        low = mid + 1;
+      }
+    }
+    low = 0;
+    high = text.length - 1;
+    let lastSuffixStart = 0;
+    while (low <= high) {
+      const mid = low + (high - low >> 1);
+      if (rangeHasCompleteBlockFragment(
+        textRange(el, mid, text.length),
+        clip,
+        writingMode
+      )) {
+        lastSuffixStart = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    const start = alignStartToCodePoint(text, Math.max(0, firstPrefixEnd - 1));
+    const end = alignEndToCodePoint(text, Math.min(text.length, lastSuffixStart + 1));
+    return end > start ? { start, end } : null;
+  }
+  function visibleCharRanges(el, clip) {
+    const text = el.textContent || "";
+    if (text.length === 0) return [];
+    const writingMode = writingModeFor(el);
+    const ranges = [];
+    const hasVisibleFragment = (start, end) => rangeHasCompleteBlockFragment(
+      textRange(el, start, end),
+      clip,
+      writingMode
+    );
+    const isFullyVisible = (start, end) => {
+      const range2 = textRange(el, start, end);
+      if (!range2) return false;
+      const rects = range2.getClientRects();
+      let sawRect = false;
+      for (let index = 0; index < rects.length; index++) {
+        const rect = rects[index];
+        if (rect.width <= 0 || rect.height <= 0) continue;
+        sawRect = true;
+        const hit = intersect(rect, clip);
+        if (!hit) return false;
+        const blockComplete = rectHasCompleteBlockCoverage(
+          rect,
+          clip,
+          writingMode
+        );
+        if (!blockComplete) return false;
+        if (hit.left > rect.left + 0.5 || hit.right + 0.5 < rect.right || hit.top > rect.top + 0.5 || hit.bottom + 0.5 < rect.bottom) return false;
+      }
+      return sawRect;
+    };
+    const append = (start, end) => {
+      const alignedStart = alignStartToCodePoint(text, start);
+      const alignedEnd = alignEndToCodePoint(text, end);
+      if (alignedEnd <= alignedStart) return;
+      const prior = ranges[ranges.length - 1];
+      if (prior && alignedStart <= prior.end) {
+        prior.end = Math.max(prior.end, alignedEnd);
+        return;
+      }
+      ranges.push({ start: alignedStart, end: alignedEnd });
+    };
+    const visit = (start, end) => {
+      if (end <= start || !hasVisibleFragment(start, end)) return;
+      if (isFullyVisible(start, end)) {
+        append(start, end);
+        return;
+      }
+      if (end - start <= 16) {
+        let cursor = start;
+        while (cursor < end) {
+          const next = alignEndToCodePoint(text, cursor + 1);
+          if (isFullyVisible(cursor, Math.min(end, next))) {
+            append(cursor, Math.min(end, next));
+          }
+          cursor = Math.max(cursor + 1, next);
+        }
+        return;
+      }
+      let middle = start + (end - start >> 1);
+      middle = alignEndToCodePoint(text, middle);
+      if (middle <= start || middle >= end) middle = start + 1;
+      visit(start, middle);
+      visit(middle, end);
+    };
+    visit(0, text.length);
+    const merged = [];
+    for (const range2 of ranges) {
+      const prior = merged[merged.length - 1];
+      const gap = prior ? text.slice(prior.end, range2.start) : "";
+      if (prior && gap.length <= 8 && /^\s*$/.test(gap)) {
+        prior.end = range2.end;
+      } else {
+        merged.push(__spreadValues({}, range2));
+      }
+    }
+    return merged.filter((range2) => {
+      const partial2 = range2.start > 0 || range2.end < text.length;
+      if (!partial2 || range2.end - range2.start > 18) return true;
+      const domRange = textRange(el, range2.start, range2.end);
+      if (!domRange) return false;
+      const rects = domRange.getClientRects();
+      if (rects.length === 0) return false;
+      let inlineStart = Number.POSITIVE_INFINITY;
+      let inlineEnd = Number.NEGATIVE_INFINITY;
+      for (let index = 0; index < rects.length; index++) {
+        const rect = rects[index];
+        if (rect.width <= 0 || rect.height <= 0) continue;
+        if (isVerticalWritingMode(writingMode)) {
+          inlineStart = Math.min(inlineStart, rect.top);
+          inlineEnd = Math.max(inlineEnd, rect.bottom);
+        } else {
+          inlineStart = Math.min(inlineStart, rect.left);
+          inlineEnd = Math.max(inlineEnd, rect.right);
+        }
+      }
+      if (!Number.isFinite(inlineStart) || !Number.isFinite(inlineEnd)) {
+        return false;
+      }
+      const clipStart = isVerticalWritingMode(writingMode) ? clip.top : clip.left;
+      const clipEnd = isVerticalWritingMode(writingMode) ? clip.bottom : clip.right;
+      const edgeTolerance = 8;
+      return inlineStart > clipStart + edgeTolerance && inlineEnd < clipEnd - edgeTolerance;
+    });
+  }
+  var SENTENCE_ENDERS = "\u3002\uFF01\uFF1F\uFF1B\u2026!?;.\u0964\u0965";
+  var TRAILING = `\u201D"'\u2019\u300D\u300F\uFF09)\u3011\u300B\u3009]`;
+  function endsAtSentence(text) {
+    for (let i = text.length - 1; i >= 0; i--) {
+      const ch = text[i];
+      if (/\s/.test(ch) || TRAILING.indexOf(ch) >= 0) continue;
+      return SENTENCE_ENDERS.indexOf(ch) >= 0;
+    }
+    return true;
+  }
+  function extendToSentenceEnd(full, visibleEnd) {
+    if (visibleEnd >= full.length) return visibleEnd;
+    const limit = Math.min(full.length, visibleEnd + MAX_SENTENCE_LOOKAHEAD);
+    for (let i = visibleEnd; i < limit; i++) {
+      if (SENTENCE_ENDERS.indexOf(full[i]) >= 0) {
+        let end = i + 1;
+        while (end < full.length && TRAILING.indexOf(full[end]) >= 0) end++;
+        return end;
+      }
+    }
+    return visibleEnd;
+  }
+  function normalizedIdentityText(text) {
+    const normalized = text.replace(/\s+/g, " ").trim();
+    return `${normalized.length}:${normalized.slice(0, 96)}:${normalized.slice(-96)}`;
+  }
+  function logicalAttributes(el) {
+    const out = [];
+    for (const attr of Array.from(el.attributes)) {
+      const name = attr.name.toLowerCase();
+      if (name.indexOf("data-cr-") === 0) continue;
+      const logicalData = name.indexOf("data-") === 0 && /(id|key|index|chapter|segment|spine|para)/.test(name);
+      if (name === "id" || name === "class" || logicalData) {
+        out.push(`${name}=${attr.value}`);
+      }
+    }
+    return out.sort().join("&");
+  }
+  function stableHash32(value) {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i++) {
+      hash ^= value.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+  function sourceID(el) {
+    const segment = el.closest(SEGMENT_SEL);
+    const scope = segment || el.parentElement || el;
+    const paragraphs = Array.from(scope.querySelectorAll("p")).filter((p) => !p.querySelector("p"));
+    const ordinal = Math.max(0, paragraphs.indexOf(el));
+    const segmentIdentity = [
+      logicalAttributes(scope),
+      normalizedIdentityText(scope.textContent || "")
+    ].join("|");
+    const paragraphIdentity = [
+      ordinal,
+      logicalAttributes(el),
+      normalizedIdentityText(el.textContent || "")
+    ].join("|");
+    return stableHash32(`segment:${segmentIdentity}\u241Fparagraph:${paragraphIdentity}`) || 1;
+  }
+  function currentPlayBooksPageClips() {
+    const pages = pickVisiblePages(Array.from(document.querySelectorAll(PAGE_SEL)));
+    const vp = viewportRect();
+    return pages.flatMap((page) => {
+      const pr = page.getBoundingClientRect();
+      const clip = intersect(
+        { left: pr.left, top: pr.top, right: pr.right, bottom: pr.bottom },
+        vp
+      );
+      return clip ? [{ page, clip }] : [];
+    });
+  }
+  function clearPlayBooksPageEdgeGuards() {
+    document.querySelectorAll(`.${PAGE_EDGE_GUARD_CLASS}`).forEach((node) => {
+      node.remove();
+    });
+  }
+  function opaquePageBackground(page) {
+    let element = page;
+    while (element) {
+      try {
+        const style = getComputedStyle(element);
+        if (style.backgroundImage && style.backgroundImage !== "none") return null;
+        const color = style.backgroundColor;
+        const rgb = color.match(/^rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+(?:\s*,\s*([\d.]+))?\s*\)$/i);
+        if (rgb && (rgb[1] === void 0 || Number(rgb[1]) >= 0.999)) {
+          return color;
+        }
+      } catch (e) {
+        return null;
+      }
+      element = element.parentElement;
+    }
+    return null;
+  }
+  function refreshPlayBooksPageEdgeGuards(pageClips) {
+    clearPlayBooksPageEdgeGuards();
+    const seen = /* @__PURE__ */ new Set();
+    for (const { page, clip } of pageClips) {
+      const background = opaquePageBackground(page);
+      if (!background) continue;
+      for (const el of paragraphNodes(page)) {
+        const fullRange = textRange(el, 0, (el.textContent || "").length);
+        if (!fullRange) continue;
+        const writingMode = writingModeFor(el);
+        const vertical = isVerticalWritingMode(writingMode);
+        for (const rect of Array.from(fullRange.getClientRects())) {
+          if (rect.width <= 0 || rect.height <= 0) continue;
+          const hit = intersect(rect, clip);
+          if (!hit || rectHasCompleteBlockCoverage(rect, clip, writingMode)) continue;
+          const crossesLeadingEdge = vertical ? rect.left < clip.left && rect.right > clip.left : rect.top < clip.top && rect.bottom > clip.top;
+          const crossesTrailingEdge = vertical ? rect.left < clip.right && rect.right > clip.right : rect.top < clip.bottom && rect.bottom > clip.bottom;
+          if (!crossesLeadingEdge && !crossesTrailingEdge) continue;
+          const guardRect = vertical ? {
+            left: crossesLeadingEdge ? clip.left : Math.max(rect.left, clip.left),
+            right: crossesLeadingEdge ? Math.min(rect.right, clip.right) : clip.right,
+            top: clip.top,
+            bottom: clip.bottom
+          } : {
+            left: clip.left,
+            right: clip.right,
+            top: crossesLeadingEdge ? clip.top : Math.max(rect.top, clip.top),
+            bottom: crossesLeadingEdge ? Math.min(rect.bottom, clip.bottom) : clip.bottom
+          };
+          const width = guardRect.right - guardRect.left;
+          const height = guardRect.bottom - guardRect.top;
+          if (width <= 0 || height <= 0) continue;
+          const key = [
+            Math.round(guardRect.left * 2),
+            Math.round(guardRect.top * 2),
+            Math.round(guardRect.right * 2),
+            Math.round(guardRect.bottom * 2)
+          ].join(":");
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const guard = document.createElement("div");
+          guard.className = PAGE_EDGE_GUARD_CLASS;
+          guard.setAttribute("aria-hidden", "true");
+          guard.style.cssText = `position:fixed;left:${guardRect.left}px;top:${guardRect.top}px;width:${width}px;height:${height}px;background:${background};pointer-events:none;z-index:2147483646`;
+          document.body.appendChild(guard);
+        }
+      }
+    }
+  }
+  function acceptPlayBooksHighlightRect(el, rect) {
+    const page = el.closest(PAGE_SEL);
+    if (!page) return false;
+    const visiblePages = pickVisiblePages(
+      Array.from(document.querySelectorAll(PAGE_SEL))
+    );
+    if (!visiblePages.includes(page)) return false;
+    const pageRect = page.getBoundingClientRect();
+    const clip = intersect(
+      {
+        left: pageRect.left,
+        top: pageRect.top,
+        right: pageRect.right,
+        bottom: pageRect.bottom
+      },
+      viewportRect()
+    );
+    return !!clip && rectHasCompleteBlockCoverage(
+      rect,
+      clip,
+      writingModeFor(el)
+    );
+  }
+  function extractPlayBooksParagraphsFromClips(pageClips) {
+    const out = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const { page, clip } of pageClips) {
+      for (const el of paragraphNodes(page)) {
+        const full = el.textContent || "";
+        if (full.trim().length < MIN_PARA_CHARS) continue;
+        const range2 = visibleCharRange(el, clip);
+        if (!range2) continue;
+        const raw = full.slice(range2.start, range2.end);
+        const withoutLeading = raw.trimStart();
+        const leadingUTF16 = raw.length - withoutLeading.length;
+        const text = withoutLeading.trimEnd();
+        if (text.length < MIN_PARA_CHARS) continue;
+        const sourceStart = range2.start + leadingUTF16;
+        const sourceEnd = sourceStart + text.length;
+        const id = sourceID(el);
+        const key = `${id}:${sourceStart}:${sourceEnd}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({
+          text,
+          element: el,
+          exactText: true,
+          charOffset: sourceStart,
+          sourceParagraphIndex: id,
+          sourceStart,
+          sourceEnd
+        });
+      }
+    }
+    const tail = out[out.length - 1];
+    if (tail && !endsAtSentence(tail.text)) {
+      const full = tail.element.textContent || "";
+      const extendedEnd = extendToSentenceEnd(full, tail.sourceEnd);
+      if (extendedEnd > tail.sourceEnd) {
+        tail.speechText = full.slice(tail.sourceStart, extendedEnd).trimEnd();
+      }
+    }
+    return out;
+  }
+  function extractPlayBooksParagraphs() {
+    const pageClips = currentPlayBooksPageClips();
+    refreshPlayBooksPageEdgeGuards(pageClips);
+    return extractPlayBooksParagraphsFromClips(pageClips);
+  }
+  function shiftedClip(value, dx, dy) {
+    return {
+      page: value.page,
+      clip: {
+        left: value.clip.left + dx,
+        right: value.clip.right + dx,
+        top: value.clip.top + dy,
+        bottom: value.clip.bottom + dy
+      }
+    };
+  }
+  function isForwardPreview(current, candidate) {
+    const tail = current[current.length - 1];
+    const head = candidate[0];
+    if (!tail || !head) return false;
+    if (tail.sourceParagraphIndex === head.sourceParagraphIndex) {
+      return head.sourceStart >= tail.sourceEnd - 2;
+    }
+    const position = tail.element.compareDocumentPosition(head.element);
+    return (position & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+  }
+  function previewAdvanceRank(current, candidate) {
+    const tail = current[current.length - 1];
+    const head = candidate[0];
+    if (!tail || !head) return Number.MAX_SAFE_INTEGER;
+    if (tail.sourceParagraphIndex === head.sourceParagraphIndex) {
+      return Math.max(0, head.sourceStart - tail.sourceEnd);
+    }
+    let hops = 1;
+    let node = tail.element;
+    while (node && node !== head.element && hops < 1e3) {
+      node = node.nextElementSibling;
+      hops++;
+    }
+    return hops * 1e6 + head.sourceStart;
+  }
+  function candidateFingerprint(paras) {
+    const value = paras.map((p) => [
+      p.sourceParagraphIndex,
+      p.sourceStart,
+      p.sourceEnd,
+      p.text
+    ].join(":")).join("\u241E");
+    return stableHash32(value).toString(16).padStart(8, "0");
+  }
+  function sourceSpeechEnd(para) {
+    if (!para.speechText) return para.sourceEnd;
+    return Math.min(
+      (para.element.textContent || "").length,
+      para.sourceStart + para.speechText.length
+    );
+  }
+  function skipSentenceBoundary(text, cursor) {
+    let start = alignEndToCodePoint(text, Math.max(0, Math.min(text.length, cursor)));
+    while (start < text.length) {
+      const ch = text[start];
+      if (!/\s/.test(ch) && TRAILING.indexOf(ch) < 0) break;
+      start++;
+    }
+    return alignEndToCodePoint(text, start);
+  }
+  function nextNaturalSentenceRange(text, cursor) {
+    const start = skipSentenceBoundary(text, cursor);
+    if (text.slice(start).trim().length < MIN_PARA_CHARS) return null;
+    const limit = Math.min(text.length, start + MAX_SENTENCE_LOOKAHEAD);
+    for (let i = start; i < limit; i++) {
+      if (SENTENCE_ENDERS.indexOf(text[i]) < 0) continue;
+      let end = i + 1;
+      while (end < text.length && TRAILING.indexOf(text[end]) >= 0) end++;
+      return { start, end: alignEndToCodePoint(text, end) };
+    }
+    let paragraphEnd = text.length;
+    while (paragraphEnd > start && /\s/.test(text[paragraphEnd - 1])) paragraphEnd--;
+    if (paragraphEnd > start && paragraphEnd - start <= MAX_SENTENCE_LOOKAHEAD) {
+      return { start, end: alignEndToCodePoint(text, paragraphEnd) };
+    }
+    return null;
+  }
+  function extractPlayBooksNextSpeechPreview() {
+    const current = extractPlayBooksParagraphs();
+    const tail = current[current.length - 1];
+    if (!tail) return null;
+    const segment = tail.element.closest(SEGMENT_SEL);
+    if (!segment) return null;
+    const leafParagraphs = (candidate) => Array.from(candidate.querySelectorAll("p")).filter((el) => !el.querySelector("p"));
+    const previewFrom = (paragraphs2, firstIndex, firstCursor) => {
+      for (let index = firstIndex; index < paragraphs2.length; index++) {
+        const element = paragraphs2[index];
+        const full = element.textContent || "";
+        const cursor = index === firstIndex ? firstCursor : 0;
+        const readableStart = skipSentenceBoundary(full, cursor);
+        if (full.slice(readableStart).trim().length < MIN_PARA_CHARS) continue;
+        const range2 = nextNaturalSentenceRange(full, cursor);
+        if (!range2) return { preview: null, blocked: true };
+        const text = full.slice(range2.start, range2.end);
+        if (text.trim().length < MIN_PARA_CHARS) {
+          return { preview: null, blocked: true };
+        }
+        const sourceParagraphIndex = sourceID(element);
+        const value = [
+          sourceParagraphIndex,
+          range2.start,
+          range2.end,
+          text
+        ].join(":");
+        return {
+          preview: {
+            text,
+            exactText: true,
+            sourceParagraphIndex,
+            sourceStart: range2.start,
+            sourceEnd: range2.end,
+            contentFingerprint: stableHash32(value).toString(16).padStart(8, "0")
+          },
+          blocked: false
+        };
+      }
+      return { preview: null, blocked: false };
+    };
+    const paragraphs = leafParagraphs(segment);
+    const tailIndex = paragraphs.indexOf(tail.element);
+    if (tailIndex < 0) return null;
+    const sameSegment = previewFrom(
+      paragraphs,
+      tailIndex,
+      sourceSpeechEnd(tail)
+    );
+    if (sameSegment.preview || sameSegment.blocked) {
+      return sameSegment.preview;
+    }
+    const allSegments = Array.from(
+      document.querySelectorAll(`${PAGE_SEL} ${SEGMENT_SEL}`)
+    );
+    const currentIndex = allSegments.indexOf(segment);
+    if (currentIndex < 0) return null;
+    const seenSourceHeads = /* @__PURE__ */ new Set();
+    const currentHead = paragraphs[0];
+    if (currentHead) seenSourceHeads.add(sourceID(currentHead));
+    for (let index = currentIndex + 1; index < allSegments.length; index++) {
+      const candidateParagraphs = leafParagraphs(allSegments[index]);
+      const head = candidateParagraphs[0];
+      if (!head) continue;
+      const headID = sourceID(head);
+      if (seenSourceHeads.has(headID)) continue;
+      seenSourceHeads.add(headID);
+      const result2 = previewFrom(candidateParagraphs, 0, 0);
+      if (result2.preview || result2.blocked) return result2.preview;
+    }
+    return null;
+  }
+  function extractPlayBooksNextPagePreview() {
+    const currentClips = currentPlayBooksPageClips();
+    const current = extractPlayBooksParagraphsFromClips(currentClips);
+    if (currentClips.length === 0 || current.length === 0) return null;
+    const vp = viewportRect();
+    const viewportWidth = Math.max(1, vp.right - vp.left);
+    const viewportHeight = Math.max(1, vp.bottom - vp.top);
+    const firstSegment = currentClips[0].page.querySelector(SEGMENT_SEL);
+    const style = firstSegment ? (firstSegment.ownerDocument.defaultView || window).getComputedStyle(firstSegment) : null;
+    const columnWidth = style ? Number.parseFloat(style.columnWidth) : Number.NaN;
+    const columnGap = style ? Number.parseFloat(style.columnGap) : Number.NaN;
+    const horizontalStep = Number.isFinite(columnWidth) && columnWidth > 0 ? columnWidth + (Number.isFinite(columnGap) ? Math.max(0, columnGap) : 0) : viewportWidth;
+    const candidateClips = [
+      currentClips.map((value) => shiftedClip(value, horizontalStep, 0)),
+      currentClips.map((value) => shiftedClip(value, 0, viewportHeight)),
+      // RTL / vertical Japanese layouts can advance towards the visual left.
+      currentClips.map((value) => shiftedClip(value, -horizontalStep, 0)),
+      currentClips.map((value) => shiftedClip(value, 0, -viewportHeight))
+    ];
+    const visibleSet = new Set(currentClips.map((value) => value.page));
+    const maxNearX = viewportWidth * 1.75;
+    const maxNearY = viewportHeight * 1.75;
+    for (const page of Array.from(document.querySelectorAll(PAGE_SEL))) {
+      if (visibleSet.has(page)) continue;
+      const r = page.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) continue;
+      const horizontalDistance = r.left >= vp.right ? r.left - vp.right : r.right <= vp.left ? vp.left - r.right : 0;
+      const verticalDistance = r.top >= vp.bottom ? r.top - vp.bottom : r.bottom <= vp.top ? vp.top - r.bottom : 0;
+      if (horizontalDistance > maxNearX || verticalDistance > maxNearY) continue;
+      candidateClips.push([{
+        page,
+        clip: { left: r.left, top: r.top, right: r.right, bottom: r.bottom }
+      }]);
+    }
+    const currentKey = candidateFingerprint(current);
+    const candidates = candidateClips.map((clips) => extractPlayBooksParagraphsFromClips(clips)).filter(
+      (paras) => paras.length > 0 && candidateFingerprint(paras) !== currentKey && isForwardPreview(current, paras)
+    ).sort(
+      (left, right) => previewAdvanceRank(current, left) - previewAdvanceRank(current, right)
+    );
+    const paragraphs = candidates[0];
+    return (paragraphs == null ? void 0 : paragraphs.length) ? { paragraphs, contentFingerprint: candidateFingerprint(paragraphs) } : null;
+  }
+  function clickablePageButton(direction) {
+    const selectors = direction === "next" ? [
+      'button[aria-label="Next Page"]',
+      'button[aria-label*="next page" i]',
+      '[role="button"][aria-label*="next page" i]',
+      '[aria-label*="\u6B21\u306E\u30DA\u30FC\u30B8"]',
+      '[aria-label*="\u4E0B\u4E00\u9875"]',
+      '[aria-label*="\u4E0B\u4E00\u9801"]',
+      ".next-page-button",
+      "#next-page"
+    ] : [
+      'button[aria-label="Previous Page"]',
+      'button[aria-label*="previous page" i]',
+      'button[aria-label*="prev page" i]',
+      '[role="button"][aria-label*="previous page" i]',
+      '[aria-label*="\u524D\u306E\u30DA\u30FC\u30B8"]',
+      '[aria-label*="\u4E0A\u4E00\u9875"]',
+      '[aria-label*="\u4E0A\u4E00\u9801"]',
+      ".previous-page-button",
+      ".prev-page-button",
+      "#previous-page",
+      "#prev-page"
+    ];
+    for (const sel of selectors) {
+      const el = document.querySelector(sel);
+      if (!(el instanceof HTMLElement)) continue;
+      if (el.getAttribute("aria-disabled") === "true") continue;
+      if (el instanceof HTMLButtonElement && el.disabled) continue;
+      const style = (el.ownerDocument.defaultView || window).getComputedStyle(el);
+      if (style.display === "none" || style.visibility === "hidden") continue;
+      const rect = el.getBoundingClientRect();
+      if (!intersect(
+        { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+        viewportRect()
+      )) continue;
+      return el;
+    }
+    return null;
+  }
+  function turnPlayBooksPage(direction, method) {
+    if (method === "button") {
+      const button = clickablePageButton(direction);
+      if (!button) return "none";
+      button.click();
+      return "button";
+    }
+    if (method === "key") {
+      const key = direction === "next" ? "ArrowRight" : "ArrowLeft";
+      const code = direction === "next" ? 39 : 37;
+      const target = document.activeElement instanceof HTMLElement ? document.activeElement : document.body;
+      const opts = { key, code: key, keyCode: code, which: code, bubbles: true, cancelable: true };
+      try {
+        target.dispatchEvent(new KeyboardEvent("keydown", opts));
+        target.dispatchEvent(new KeyboardEvent("keyup", opts));
+      } catch (e) {
+        return "none";
+      }
+      return "key";
+    }
+    if (method === "hotspot") {
+      const x = direction === "next" ? window.innerWidth * 0.9 : window.innerWidth * 0.1;
+      const y = window.innerHeight * 0.5;
+      const hit = document.elementFromPoint(x, y);
+      if (!(hit instanceof HTMLElement)) return "none";
+      const common = { bubbles: true, cancelable: true, clientX: x, clientY: y, view: window };
+      try {
+        hit.dispatchEvent(new MouseEvent("mousedown", common));
+        hit.dispatchEvent(new MouseEvent("mouseup", common));
+        hit.dispatchEvent(new MouseEvent("click", common));
+      } catch (e) {
+        return "none";
+      }
+      return "hotspot";
+    }
+    return "none";
+  }
+  function playBooksSignature() {
+    const pages = pickVisiblePages(Array.from(document.querySelectorAll(PAGE_SEL)));
+    if (pages.length === 0) return "";
+    const parts = [];
+    for (const page of pages) {
+      const r = page.getBoundingClientRect();
+      const segment = page.querySelector(SEGMENT_SEL);
+      const sr = segment ? segment.getBoundingClientRect() : null;
+      const text = page.textContent || "";
+      parts.push(
+        [
+          Math.round(r.left),
+          Math.round(r.top),
+          Math.round(r.width),
+          Math.round(r.height),
+          sr ? Math.round(sr.top) : 0,
+          sr ? Math.round(sr.left) : 0,
+          text.length,
+          text.slice(0, 48).replace(/\s+/g, " ")
+        ].join(",")
+      );
+    }
+    return parts.join("|");
+  }
+  var AUTO_TURN_TOMBSTONE_TTL_MS = 3e4;
+  function protocolID(prefix) {
+    try {
+      if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return `${prefix}-${crypto.randomUUID()}`;
+      }
+    } catch (e) {
+    }
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  }
+  function recordArg(arg) {
+    return arg && typeof arg === "object" ? arg : {};
+  }
+  function nonemptyString(value) {
+    return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+  }
+  function nonemptyOpaqueString(value) {
+    return typeof value === "string" && value.trim().length > 0 ? value : null;
+  }
+  function announceTurnOwner(metadata) {
+    if (window === window.parent) return;
+    try {
+      window.parent.postMessage({
+        __castreaderGB: 1,
+        kind: "turn-owner",
+        arg: metadata
+      }, "*");
+    } catch (e) {
+    }
+  }
+  function installPlayBooksReader(post, requestExtract, frameSessionID = playBooksFrameSessionID()) {
+    const postForFrame = (type2, payload = {}) => {
+      post(type2, __spreadProps(__spreadValues({}, payload), { frameSessionID }));
+    };
+    const STABILITY_POLL_MS = 180;
+    const MIN_STABLE_MS = 420;
+    let committedSignature = playBooksSignature();
+    let observedSignature = committedSignature;
+    let pendingAuto = false;
+    let pendingAutoMetadata = null;
+    let lateAutoTurn = null;
+    let settleTimer = null;
+    let turnConfirmationTimer = null;
+    let lastManualIntentAt = 0;
+    let pendingManualIntent = false;
+    let manualIntentExpiresAt = 0;
+    let manualIntentBaseline = "";
+    let manualIntentMetadata = null;
+    let pendingTurnMethod = null;
+    let pendingTurnBaseline = "";
+    let changeReasonInFlight = null;
+    let changeBaseline = "";
+    let changeMetadata = null;
+    let settleCandidate = "";
+    let settleCandidateSince = 0;
+    let settleStableSamples = 0;
+    let manualSwipeActive = false;
+    let previewTimer = null;
+    let lastPreviewToken = "";
+    let lastGeometryPreviewMissToken = "";
+    let lastSpeechPreviewToken = "";
+    const clearPageVisuals = () => {
+      var _a, _b;
+      const bridge = window.CR;
+      try {
+        (_a = bridge == null ? void 0 : bridge.clearHighlight) == null ? void 0 : _a.call(bridge, {});
+      } catch (e) {
+      }
+      try {
+        (_b = bridge == null ? void 0 : bridge.clearMarks) == null ? void 0 : _b.call(bridge, {});
+      } catch (e) {
+      }
+      clearPlayBooksPageEdgeGuards();
+    };
+    let preferredMethod = null;
+    const scheduleNextPagePreview = (attempt = 0) => {
+      if (previewTimer) clearTimeout(previewTimer);
+      previewTimer = setTimeout(() => {
+        previewTimer = null;
+        if (pendingAuto || pendingManualIntent || manualSwipeActive || changeReasonInFlight !== null) return;
+        const sourceSignature = committedSignature || playBooksSignature();
+        if (!sourceSignature) return;
+        const preview = extractPlayBooksNextPagePreview();
+        if (!preview || preview.paragraphs.length === 0) {
+          if (sourceSignature !== lastGeometryPreviewMissToken) {
+            lastGeometryPreviewMissToken = sourceSignature;
+            postForFrame("googleBooksPreviewDiagnostic", {
+              event: "geometry-miss",
+              sourceSignature,
+              attempt
+            });
+          }
+          const speechPreview = extractPlayBooksNextSpeechPreview();
+          if (speechPreview) {
+            const speechToken = `${sourceSignature}|${speechPreview.contentFingerprint}`;
+            if (speechToken !== lastSpeechPreviewToken) {
+              lastSpeechPreviewToken = speechToken;
+              postForFrame("googleBooksSpeechPreview", {
+                sourceSignature,
+                originFrameSessionID: frameSessionID,
+                exactText: true,
+                sourceParagraphIndex: speechPreview.sourceParagraphIndex,
+                sourceUTF16Start: speechPreview.sourceStart,
+                sourceUTF16End: speechPreview.sourceEnd,
+                text: speechPreview.text,
+                contentFingerprint: speechPreview.contentFingerprint
+              });
+              postForFrame("googleBooksPreviewDiagnostic", {
+                event: "source-preview",
+                sourceSignature,
+                sourceParagraphIndex: speechPreview.sourceParagraphIndex,
+                sourceUTF16Start: speechPreview.sourceStart,
+                sourceUTF16End: speechPreview.sourceEnd,
+                contentFingerprint: speechPreview.contentFingerprint
+              });
+            }
+          }
+          scheduleNextPagePreview(attempt + 1);
+          return;
+        }
+        const token = `${sourceSignature}|${preview.contentFingerprint}`;
+        if (token === lastPreviewToken) return;
+        lastPreviewToken = token;
+        const paragraphs = preview.paragraphs.map((p, paragraphIndex) => {
+          const row = {
+            paragraphIndex,
+            text: p.text,
+            type: "paragraph",
+            sourceParagraphIndex: p.sourceParagraphIndex,
+            sourceUTF16Start: p.sourceStart,
+            sourceUTF16End: p.sourceEnd
+          };
+          if (p.speechText && p.speechText !== p.text) {
+            row.boundaryUTF16Offset = p.text.length;
+            row.extendedUTF16Length = p.speechText.length;
+            row.speechText = p.speechText;
+          }
+          return row;
+        });
+        postForFrame("googleBooksPagePreview", {
+          sourceSignature,
+          contentFingerprint: preview.contentFingerprint,
+          paragraphs
+        });
+      }, attempt === 0 ? 120 : attempt <= 6 ? 320 : 1e3);
+    };
+    const clearManualIntent = () => {
+      pendingManualIntent = false;
+      manualIntentExpiresAt = 0;
+      manualIntentBaseline = "";
+      manualIntentMetadata = null;
+      manualSwipeActive = false;
+    };
+    const clearAutoTurn = () => {
+      pendingAuto = false;
+      pendingAutoMetadata = null;
+      pendingTurnMethod = null;
+      pendingTurnBaseline = "";
+      if (turnConfirmationTimer) clearTimeout(turnConfirmationTimer);
+      turnConfirmationTimer = null;
+    };
+    const clearSettledChange = (reason) => {
+      if (changeReasonInFlight === reason) changeReasonInFlight = null;
+      changeBaseline = "";
+      changeMetadata = null;
+      settleCandidate = "";
+      settleCandidateSince = 0;
+      settleStableSamples = 0;
+    };
+    const liveLateAutoTurn = () => {
+      if (lateAutoTurn && Date.now() <= lateAutoTurn.expiresAt) return lateAutoTurn;
+      lateAutoTurn = null;
+      return null;
+    };
+    const automaticMetadata = (arg, fallbackBaseline) => {
+      const value = recordArg(arg);
+      return {
+        turnID: nonemptyString(value.turnID) || protocolID("auto"),
+        baselineSignature: nonemptyOpaqueString(value.baselineSignature) || fallbackBaseline,
+        originFrameSessionID: nonemptyString(value.originFrameSessionID) || frameSessionID
+      };
+    };
+    const manualMetadata = (arg, fallbackBaseline) => {
+      const value = recordArg(arg);
+      const manualIntentID = nonemptyString(value.manualIntentID);
+      if (!manualIntentID) return null;
+      return {
+        manualIntentID,
+        baselineSignature: nonemptyOpaqueString(value.baselineSignature) || fallbackBaseline,
+        originFrameSessionID: nonemptyString(value.originFrameSessionID) || frameSessionID
+      };
+    };
+    const payloadFor = (metadata) => metadata ? __spreadValues({}, metadata) : {};
+    const rememberLateAutoTurn = (metadata, detectionBaselineSignature) => {
+      if (!metadata) return;
+      lateAutoTurn = {
+        metadata,
+        detectionBaselineSignature,
+        expiresAt: Date.now() + AUTO_TURN_TOMBSTONE_TTL_MS
+      };
+    };
+    const commit = (reason, attempt = 0, forceExtract = false) => {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleCandidate = playBooksSignature();
+      settleCandidateSince = Date.now();
+      settleStableSamples = 1;
+      const verifyStable = () => {
+        settleTimer = setTimeout(() => {
+          settleTimer = null;
+          const current = playBooksSignature();
+          if (current !== settleCandidate) {
+            observedSignature = current || observedSignature;
+            settleCandidate = current;
+            settleCandidateSince = Date.now();
+            settleStableSamples = 1;
+            verifyStable();
+            return;
+          }
+          settleStableSamples += 1;
+          if (settleStableSamples < 2 || Date.now() - settleCandidateSince < MIN_STABLE_MS) {
+            verifyStable();
+            return;
+          }
+          if (reason === "manual" && manualSwipeActive) {
+            verifyStable();
+            return;
+          }
+          if (extractPlayBooksParagraphs().length === 0 && attempt < 6) {
+            settleCandidateSince = Date.now();
+            settleStableSamples = 1;
+            commit(reason, attempt + 1, forceExtract);
+            return;
+          }
+          const finalSignature = current;
+          const returnedToBaseline = changeBaseline.length > 0 && finalSignature === changeBaseline;
+          if (returnedToBaseline && !forceExtract) {
+            if (reason === "manual") {
+              postForFrame("googleBooksPageChanging", __spreadValues({
+                reason: "manual",
+                phase: "cancelled",
+                signature: finalSignature,
+                baselineSignature: changeBaseline
+              }, payloadFor(changeMetadata || manualIntentMetadata)));
+              clearManualIntent();
+            } else if (reason === "auto") {
+              const failedMethod = pendingTurnMethod || "none";
+              const failedMetadata = changeMetadata || pendingAutoMetadata;
+              clearAutoTurn();
+              postForFrame("googleBooksTurnFailed", __spreadValues({
+                method: failedMethod,
+                reason: "returned-to-baseline",
+                lateEligible: false
+              }, payloadFor(failedMetadata)));
+            }
+            observedSignature = finalSignature || observedSignature;
+            clearSettledChange(reason);
+            return;
+          }
+          const committedMetadata = changeMetadata || (reason === "auto" ? pendingAutoMetadata : null) || (reason === "manual" ? manualIntentMetadata : null);
+          if (reason === "auto") {
+            if (pendingTurnMethod) preferredMethod = pendingTurnMethod;
+            clearAutoTurn();
+          } else if (reason === "manual") {
+            clearManualIntent();
+          }
+          committedSignature = finalSignature || committedSignature;
+          observedSignature = finalSignature || observedSignature;
+          if (!forceExtract) {
+            postForFrame("googleBooksPageChanging", __spreadValues({
+              reason,
+              phase: "changed",
+              signature: finalSignature,
+              baselineSignature: changeBaseline
+            }, payloadFor(committedMetadata)));
+          }
+          requestExtract(reason, payloadFor(committedMetadata));
+          clearSettledChange(reason);
+          scheduleNextPagePreview();
+        }, STABILITY_POLL_MS);
+      };
+      verifyStable();
+    };
+    const methodAvailable = (method, direction) => {
+      if (method === "button") return clickablePageButton(direction) !== null;
+      if (method === "key") return true;
+      if (method === "hotspot") {
+        const x = direction === "next" ? window.innerWidth * 0.9 : window.innerWidth * 0.1;
+        return document.elementFromPoint(x, window.innerHeight * 0.5) instanceof HTMLElement;
+      }
+      return false;
+    };
+    const attemptTurn = (direction, arg) => {
+      if (pendingAuto) return false;
+      const visualBaseline = playBooksSignature() || committedSignature;
+      const metadata = automaticMetadata(arg, visualBaseline);
+      const coarsePointer = (() => {
+        try {
+          return window.matchMedia("(pointer: coarse)").matches;
+        } catch (e) {
+          return false;
+        }
+      })();
+      const candidates = [
+        ...preferredMethod ? [preferredMethod] : [],
+        "button",
+        coarsePointer ? "hotspot" : "key"
+      ];
+      const method = candidates.find(
+        (candidate, index) => candidates.indexOf(candidate) === index && methodAvailable(candidate, direction)
+      ) || "none";
+      if (method === "none") {
+        postForFrame("googleBooksTurnFailed", __spreadValues({
+          method,
+          lateEligible: false
+        }, metadata));
+        return false;
+      }
+      pendingAuto = true;
+      pendingAutoMetadata = metadata;
+      lateAutoTurn = null;
+      clearManualIntent();
+      pendingTurnBaseline = visualBaseline;
+      announceTurnOwner(metadata);
+      clearPageVisuals();
+      pendingTurnMethod = turnPlayBooksPage(direction, method);
+      if (pendingTurnMethod === "none") {
+        clearAutoTurn();
+        postForFrame("googleBooksTurnFailed", __spreadValues({
+          method,
+          lateEligible: false
+        }, metadata));
+        return false;
+      }
+      postForFrame("googleBooksTurnRequested", __spreadValues({
+        method: pendingTurnMethod,
+        attempt: 1
+      }, metadata));
+      if (turnConfirmationTimer) clearTimeout(turnConfirmationTimer);
+      turnConfirmationTimer = setTimeout(() => {
+        turnConfirmationTimer = null;
+        if (!pendingAuto) return;
+        if (playBooksSignature() !== pendingTurnBaseline) return;
+        const failedMethod = pendingTurnMethod || method;
+        const failedMetadata = pendingAutoMetadata;
+        const failedBaseline = pendingTurnBaseline;
+        rememberLateAutoTurn(failedMetadata, failedBaseline);
+        clearAutoTurn();
+        postForFrame("googleBooksTurnFailed", __spreadValues({
+          method: failedMethod,
+          lateEligible: true
+        }, payloadFor(failedMetadata)));
+      }, 5200);
+      return true;
+    };
+    const attemptManualTurn = (direction) => {
+      if (pendingAuto || pendingManualIntent) return false;
+      const coarsePointer = (() => {
+        try {
+          return window.matchMedia("(pointer: coarse)").matches;
+        } catch (e) {
+          return false;
+        }
+      })();
+      const candidates = [
+        ...preferredMethod ? [preferredMethod] : [],
+        "button",
+        coarsePointer ? "hotspot" : "key"
+      ];
+      const method = candidates.find(
+        (candidate, index) => candidates.indexOf(candidate) === index && methodAvailable(candidate, direction)
+      ) || "none";
+      if (method === "none") return false;
+      if (!postManualIntent("native-control", direction)) return false;
+      changeReasonInFlight = "manual";
+      changeBaseline = manualIntentBaseline || committedSignature;
+      changeMetadata = manualIntentMetadata;
+      const performed = turnPlayBooksPage(direction, method);
+      if (performed === "none") {
+        commit("manual");
+        return false;
+      }
+      return true;
+    };
+    const api = {
+      nextPage(arg) {
+        return attemptTurn("next", arg);
+      },
+      prevPage(arg) {
+        return attemptTurn("prev", arg);
+      },
+      userPage(arg) {
+        const direction = recordArg(arg).direction;
+        if (direction !== "next" && direction !== "prev") return false;
+        return attemptManualTurn(direction);
+      },
+      refresh(arg) {
+        var _a;
+        const fallbackBaseline = committedSignature || playBooksSignature();
+        const automatic = nonemptyString(recordArg(arg).turnID) ? automaticMetadata(arg, fallbackBaseline) : null;
+        const manual = manualMetadata(arg, fallbackBaseline);
+        if (automatic) {
+          changeReasonInFlight = "auto";
+          changeBaseline = ((_a = liveLateAutoTurn()) == null ? void 0 : _a.detectionBaselineSignature) || fallbackBaseline;
+          changeMetadata = automatic;
+          commit("auto", 0, true);
+        } else if (manual) {
+          changeReasonInFlight = "manual";
+          changeBaseline = manual.baselineSignature;
+          changeMetadata = manual;
+          commit("manual", 0, true);
+        } else {
+          commit("refresh", 0, true);
+        }
+      },
+      retargetTurnBaseline(arg) {
+        const value = recordArg(arg);
+        const turnID = nonemptyString(value.turnID);
+        const baseline = nonemptyOpaqueString(value.detectionBaselineSignature);
+        if (!turnID || !baseline) return;
+        if ((pendingAutoMetadata == null ? void 0 : pendingAutoMetadata.turnID) === turnID) {
+          pendingTurnBaseline = baseline;
+          if (changeReasonInFlight === "auto" && (changeMetadata == null ? void 0 : changeMetadata.turnID) === turnID) {
+            changeBaseline = baseline;
+          }
+        }
+        const late = liveLateAutoTurn();
+        if ((late == null ? void 0 : late.metadata.turnID) === turnID) {
+          late.detectionBaselineSignature = baseline;
+          late.expiresAt = Date.now() + AUTO_TURN_TOMBSTONE_TTL_MS;
+        }
+      },
+      completeTurn(arg) {
+        const turnID = nonemptyString(recordArg(arg).turnID);
+        if (turnID && (lateAutoTurn == null ? void 0 : lateAutoTurn.metadata.turnID) === turnID) lateAutoTurn = null;
+      }
+    };
+    ;
+    window.CastReaderGoogleBooks = api;
+    function postManualIntent(intent, direction) {
+      const now = Date.now();
+      if (now - lastManualIntentAt < 350) return pendingManualIntent;
+      lastManualIntentAt = now;
+      if (pendingAuto) {
+        clearAutoTurn();
+      }
+      if (changeReasonInFlight && changeReasonInFlight !== "manual") {
+        if (settleTimer) clearTimeout(settleTimer);
+        settleTimer = null;
+        clearSettledChange(changeReasonInFlight);
+        observedSignature = playBooksSignature() || observedSignature;
+      }
+      pendingManualIntent = true;
+      manualIntentExpiresAt = now + 2400;
+      manualIntentBaseline = committedSignature || playBooksSignature();
+      manualIntentMetadata = {
+        manualIntentID: protocolID("manual"),
+        baselineSignature: manualIntentBaseline,
+        originFrameSessionID: frameSessionID
+      };
+      announceTurnOwner(manualIntentMetadata);
+      clearPageVisuals();
+      postForFrame("googleBooksPageChanging", __spreadValues({
+        reason: "manual",
+        phase: "intent",
+        intent,
+        direction,
+        baselineSignature: manualIntentBaseline
+      }, manualIntentMetadata));
+      return true;
+    }
+    function beginManualSwipe(direction) {
+      if (manualSwipeActive) return;
+      if (postManualIntent("swipe", direction)) manualSwipeActive = true;
+    }
+    function finishManualSwipe() {
+      if (!manualSwipeActive) return;
+      manualSwipeActive = false;
+      if (!pendingManualIntent) return;
+      if (changeReasonInFlight === null) {
+        changeReasonInFlight = "manual";
+        changeBaseline = manualIntentBaseline || committedSignature;
+        changeMetadata = manualIntentMetadata;
+      }
+      commit("manual");
+    }
+    let touchOrigin = null;
+    window.addEventListener("touchstart", (event) => {
+      if (!event.isTrusted || event.touches.length !== 1) {
+        touchOrigin = null;
+        return;
+      }
+      const touch = event.touches[0];
+      touchOrigin = { x: touch.clientX, y: touch.clientY, intentPosted: false };
+    }, { capture: true, passive: true });
+    const detectManualSwipe = (touch) => {
+      const origin = touchOrigin;
+      if (!origin || origin.intentPosted) return;
+      const dx = touch.clientX - origin.x;
+      const dy = touch.clientY - origin.y;
+      const threshold = Math.max(44, window.innerWidth * 0.11);
+      if (Math.abs(dx) < threshold || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+      beginManualSwipe(dx < 0 ? "next" : "prev");
+      origin.intentPosted = manualSwipeActive;
+    };
+    window.addEventListener("touchmove", (event) => {
+      if (!event.isTrusted || event.touches.length !== 1) return;
+      detectManualSwipe(event.touches[0]);
+    }, { capture: true, passive: true });
+    window.addEventListener("touchend", (event) => {
+      if (event.isTrusted && touchOrigin && event.changedTouches.length === 1) {
+        detectManualSwipe(event.changedTouches[0]);
+      }
+      touchOrigin = null;
+      finishManualSwipe();
+    }, { capture: true, passive: true });
+    window.addEventListener("touchcancel", () => {
+      touchOrigin = null;
+      finishManualSwipe();
+    }, { capture: true, passive: true });
+    window.addEventListener("click", (event) => {
+      if (!event.isTrusted) return;
+      const edge = Math.min(72, Math.max(42, window.innerWidth * 0.16));
+      const target = event.target instanceof Element ? event.target : null;
+      const interactive = target == null ? void 0 : target.closest('a,button,input,textarea,select,[contenteditable="true"]');
+      const label = interactive ? [
+        interactive.getAttribute("aria-label") || "",
+        interactive.getAttribute("class") || "",
+        interactive.id || ""
+      ].join(" ") : "";
+      const pagerControl = /(next|prev|previous|次のページ|下一页|下一頁|前のページ|上一页|上一頁)/i.test(label);
+      if (!pagerControl && event.clientX > edge && event.clientX < window.innerWidth - edge) return;
+      if (interactive) {
+        if (!pagerControl) return;
+      }
+      const previousControl = /(prev|previous|前のページ|上一页|上一頁)/i.test(label);
+      postManualIntent("edge-click", previousControl || event.clientX < edge ? "prev" : "next");
+    }, true);
+    window.addEventListener("keydown", (event) => {
+      if (!event.isTrusted || event.repeat) return;
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      if ((target == null ? void 0 : target.isContentEditable) || target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+      const directions = {
+        ArrowRight: "next",
+        PageDown: "next",
+        ArrowLeft: "prev",
+        PageUp: "prev"
+      };
+      const direction = directions[event.key];
+      if (direction) postManualIntent("page-key", direction);
+    }, true);
+    setInterval(() => {
+      const signature = playBooksSignature();
+      if (!signature || signature === observedSignature) return;
+      observedSignature = signature;
+      const isFirstGeometryChange = changeReasonInFlight === null;
+      const hasFreshManualIntent = pendingManualIntent && Date.now() <= manualIntentExpiresAt;
+      const late = liveLateAutoTurn();
+      const isLateAutomaticDeparture = !!late && signature !== late.detectionBaselineSignature;
+      const reason = changeReasonInFlight || (pendingAuto ? "auto" : hasFreshManualIntent ? "manual" : isLateAutomaticDeparture ? "auto" : "refresh");
+      changeReasonInFlight = reason;
+      if (isFirstGeometryChange) {
+        clearPageVisuals();
+        changeBaseline = reason === "auto" ? pendingTurnBaseline || (late == null ? void 0 : late.detectionBaselineSignature) || committedSignature : reason === "manual" ? manualIntentBaseline || committedSignature : committedSignature;
+        changeMetadata = reason === "auto" ? pendingAutoMetadata || (late == null ? void 0 : late.metadata) || null : reason === "manual" ? manualIntentMetadata : null;
+      }
+      commit(reason);
+    }, 250);
+    let waited = 0;
+    const boot = setInterval(() => {
+      waited += 200;
+      if (document.querySelector(`${PAGE_SEL} ${SEGMENT_SEL}`) || waited >= 15e3) {
+        clearInterval(boot);
+        committedSignature = playBooksSignature();
+        observedSignature = committedSignature;
+        requestExtract("initial");
+        scheduleNextPagePreview();
+      }
+    }, 200);
+  }
+  function installPlayBooksRelay() {
+    const FNS = [
+      "init",
+      "extract",
+      "highlightRange",
+      "highlightWord",
+      "clearHighlight",
+      "setColor",
+      "setActive",
+      "scrollTo",
+      "setAutoScroll",
+      "showMark",
+      "clearMarks",
+      "gbNextPage",
+      "gbPrevPage",
+      "gbManualPage",
+      "gbRefresh",
+      "gbRetargetTurnBaseline",
+      "gbCompleteTurn"
+    ];
+    let turnContext = null;
+    const protocolArg = (arg) => {
+      const value = recordArg(arg);
+      const hasIdentity = !!nonemptyString(value.turnID) || !!nonemptyString(value.manualIntentID);
+      return hasIdentity && !!nonemptyString(value.baselineSignature) && !!nonemptyString(value.originFrameSessionID) ? value : null;
+    };
+    const liveTurnContext = () => {
+      if (turnContext && Date.now() <= turnContext.expiresAt) return turnContext;
+      turnContext = null;
+      return null;
+    };
+    const sameProtocolID = (left, right) => {
+      const leftID = nonemptyString(left.turnID) || nonemptyString(left.manualIntentID);
+      const rightID = nonemptyString(right.turnID) || nonemptyString(right.manualIntentID);
+      return !!leftID && leftID === rightID;
+    };
+    const rememberOutboundContext = (fn, arg) => {
+      if (fn === "gbCompleteTurn") {
+        const value2 = recordArg(arg);
+        if (turnContext && sameProtocolID(value2, turnContext.arg)) {
+          turnContext = null;
+        }
+        return;
+      }
+      const value = protocolArg(arg);
+      if ((fn === "gbNextPage" || fn === "gbPrevPage") && value) {
+        turnContext = {
+          arg: value,
+          ownerSource: null,
+          inherited: false,
+          expiresAt: Date.now() + AUTO_TURN_TOMBSTONE_TTL_MS
+        };
+      }
+    };
+    const forwardToChildren = (message) => {
+      let count = 0;
+      try {
+        count = window.frames.length;
+      } catch (e) {
+        return;
+      }
+      for (let i = 0; i < count; i++) {
+        try {
+          window.frames[i].postMessage(message, "*");
+        } catch (e) {
+        }
+      }
+    };
+    const relay = (fn, arg) => {
+      rememberOutboundContext(fn, arg);
+      forwardToChildren({ __castreaderGB: 1, fn, arg });
+    };
+    const CR = {};
+    FNS.forEach((fn) => {
+      CR[fn] = (arg) => relay(fn, arg === void 0 ? {} : arg);
+    });
+    window.CR = CR;
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      if (!data || data.__castreaderGB !== 1) return;
+      if (!isGoogleRelayOrigin(event.origin)) return;
+      const source = event.source;
+      if (data.kind === "turn-owner") {
+        const value = protocolArg(data.arg);
+        if (!value || !source) return;
+        turnContext = {
+          arg: value,
+          ownerSource: source,
+          inherited: false,
+          expiresAt: Date.now() + AUTO_TURN_TOMBSTONE_TTL_MS
+        };
+        if (window !== window.parent) {
+          try {
+            window.parent.postMessage(data, "*");
+          } catch (e) {
+          }
+        }
+        return;
+      }
+      if (data.kind === "turn-context") {
+        const value = protocolArg(data.arg);
+        if (!value) return;
+        turnContext = {
+          arg: value,
+          ownerSource: null,
+          inherited: true,
+          expiresAt: Date.now() + AUTO_TURN_TOMBSTONE_TTL_MS
+        };
+        return;
+      }
+      if (data.kind === "reader-ready" || data.kind === "relay-ready") {
+        const context = liveTurnContext();
+        if (!context || !source) return;
+        if (!context.inherited && context.ownerSource !== source) return;
+        if (data.kind === "relay-ready") {
+          try {
+            source.postMessage({
+              __castreaderGB: 1,
+              kind: "turn-context",
+              arg: context.arg
+            }, "*");
+          } catch (e) {
+          }
+          return;
+        }
+        const targetID = nonemptyString(data.frameSessionID);
+        if (!targetID) return;
+        try {
+          source.postMessage({
+            __castreaderGB: 1,
+            fn: "gbRefresh",
+            arg: __spreadProps(__spreadValues({}, context.arg), {
+              __gbFrameSessionID: targetID
+            })
+          }, "*");
+        } catch (e) {
+        }
+        return;
+      }
+      if (typeof data.fn !== "string") return;
+      rememberOutboundContext(data.fn, data.arg);
+      forwardToChildren(data);
+    });
+    if (window !== window.parent) {
+      try {
+        window.parent.postMessage({
+          __castreaderGB: 1,
+          kind: "relay-ready"
+        }, "*");
+      } catch (e) {
+      }
+    }
+    if (window === window.top) {
+      let lastHref = "";
+      setInterval(() => {
+        var _a, _b, _c;
+        const href = location.href;
+        if (href === lastHref) return;
+        lastHref = href;
+        try {
+          ;
+          (_c = (_b = (_a = window.webkit) == null ? void 0 : _a.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({
+            type: "googleBooksLocation",
+            payload: { href }
+          });
+        } catch (e) {
+        }
+      }, 1500);
+    }
+  }
+  function relayTargetID(arg) {
+    if (!arg || typeof arg !== "object") return null;
+    const value = arg.__gbFrameSessionID;
+    return typeof value === "string" && value.length > 0 ? value : null;
+  }
+  function playBooksRelayTargetsFrame(fn, arg, frameSessionID) {
+    const targetID = relayTargetID(arg);
+    if (targetID) return targetID === frameSessionID;
+    if (fn === "gbNextPage" || fn === "gbPrevPage" || fn === "gbManualPage") return false;
+    return true;
+  }
+  function installPlayBooksRelayReceiver(frameSessionID = playBooksFrameSessionID()) {
+    window.addEventListener("message", (event) => {
+      var _a, _b, _c, _d;
+      const data = event.data;
+      if (!data || data.__castreaderGB !== 1 || typeof data.fn !== "string") return;
+      if (!isGoogleRelayOrigin(event.origin)) return;
+      if (!playBooksRelayTargetsFrame(data.fn, data.arg, frameSessionID)) return;
+      const target = window;
+      const fn = data.fn;
+      if (fn === "gbNextPage" || fn === "gbPrevPage" || fn === "gbManualPage" || fn === "gbRefresh" || fn === "gbRetargetTurnBaseline" || fn === "gbCompleteTurn") {
+        const method = fn === "gbNextPage" ? "nextPage" : fn === "gbPrevPage" ? "prevPage" : fn === "gbManualPage" ? "userPage" : fn === "gbRefresh" ? "refresh" : fn === "gbRetargetTurnBaseline" ? "retargetTurnBaseline" : "completeTurn";
+        (_b = (_a = target.CastReaderGoogleBooks) == null ? void 0 : _a[method]) == null ? void 0 : _b.call(_a, data.arg);
+        return;
+      }
+      (_d = (_c = target.CR) == null ? void 0 : _c[fn]) == null ? void 0 : _d.call(_c, data.arg);
+    });
+    if (window !== window.parent) {
+      try {
+        window.parent.postMessage({
+          __castreaderGB: 1,
+          kind: "reader-ready",
+          frameSessionID
+        }, "*");
+      } catch (e) {
+      }
+    }
+  }
+
+  // src/kobo.ts
+  var KOBO_HOST = "readnow.kobo.com";
+  var MIN_PARA_CHARS2 = 2;
+  var MIN_FRAME_TEXT_CHARS = 2;
+  var FRAME_SESSION_PROPERTY2 = "__castreaderKoboFrameSessionID";
+  var TYPOGRAPHY_STYLE_ID = "castreader-kobo-typography";
+  var KOBO_ADAPTER_VERSION = "2026-07-30-landscape-v3";
+  var COMPLETE_BLOCK_FRAGMENT_RATIO2 = 0.98;
+  var COMPLETE_BLOCK_FRAGMENT_TOLERANCE2 = 0.5;
+  var AUTO_TURN_TOMBSTONE_TTL_MS2 = 3e4;
+  var REFLOW_MIN_STABLE_MS = 1250;
+  var REFLOW_MIN_STABLE_SAMPLES = 5;
+  var INITIAL_LAYOUT_MIN_STABLE_MS = 800;
+  var MAX_TRANSIENT_PARTIAL_CHARS = 18;
+  var MAX_CONSECUTIVE_SHORT_PARTIALS = 2;
+  var PARAGRAPH_SELECTOR = [
+    "h1.element-title",
+    "h2.element-title",
+    "h3.element-title",
+    ".text p",
+    '[id$="-text"] p',
+    'section[role="doc-chapter"] p',
+    'section[role="doc-part"] p',
+    "body p"
+  ].join(",");
+  var koboSemanticTransport = null;
+  var koboSemanticTransportPromise = null;
+  var koboSemanticTransportFailure = "not-discovered";
+  var koboNativeBottomOcclusion = 0;
+  function koboReaderModuleURLs() {
+    const values2 = [];
+    try {
+      document.querySelectorAll('script[type="module"][src]').forEach((node) => {
+        const src = node.src;
+        if (src) values2.push(src);
+      });
+    } catch (e) {
+    }
+    const seen = /* @__PURE__ */ new Set();
+    return values2.filter((raw) => {
+      try {
+        const url = new URL(raw, location.href);
+        return url.origin === location.origin && /\.m?js(?:[?#]|$)/i.test(url.href);
+      } catch (e) {
+        return false;
+      }
+    }).map((raw) => new URL(raw, location.href).href).filter((url) => {
+      if (seen.has(url)) return false;
+      seen.add(url);
+      return true;
+    }).sort((left, right) => {
+      const leftIndex = /\/index\./i.test(left) ? 0 : 1;
+      const rightIndex = /\/index\./i.test(right) ? 0 : 1;
+      return leftIndex - rightIndex;
+    });
+  }
+  function koboServiceGetters(module2) {
+    const explicit = module2.ai;
+    const output = [];
+    const seen = /* @__PURE__ */ new Set();
+    const consider = (value, trustedAlias) => {
+      if (typeof value !== "function" || seen.has(value)) return;
+      seen.add(value);
+      let source = "";
+      try {
+        source = Function.prototype.toString.call(value);
+      } catch (e) {
+      }
+      if (!trustedAlias && !source.includes("UNKNOWN_SERVICE")) return;
+      output.push(value);
+    };
+    consider(explicit, true);
+    Object.values(module2).forEach((value) => consider(value, value === explicit));
+    return output;
+  }
+  function readerChannelFrom(value) {
+    var _a;
+    if (!value || typeof value !== "object") return null;
+    const config = value;
+    const messageBus = config.MESSAGE_BUS;
+    if (!messageBus || typeof messageBus !== "object") return null;
+    const channels = messageBus.CHANNEL;
+    if (!channels || typeof channels !== "object") return null;
+    return (_a = channels.READER) != null ? _a : null;
+  }
+  async function prepareKoboSemanticTransport() {
+    if ((koboSemanticTransport == null ? void 0 : koboSemanticTransport.kind) === "ur-engine") return true;
+    if (koboSemanticTransportPromise) return koboSemanticTransportPromise;
+    koboSemanticTransportPromise = (async () => {
+      const moduleURLs = koboReaderModuleURLs();
+      if (moduleURLs.length === 0) {
+        if (koboSemanticTransport) return true;
+        koboSemanticTransportFailure = "reader-module-not-loaded";
+        return false;
+      }
+      const registries = [];
+      for (const url of moduleURLs) {
+        try {
+          const imported = await import(url);
+          for (const getService of koboServiceGetters(imported)) {
+            registries.push({
+              getService,
+              moduleLabel: new URL(url).pathname.split("/").pop() || "index"
+            });
+          }
+        } catch (e) {
+        }
+      }
+      for (const registry of registries) {
+        try {
+          const rawService = registry.getService("UR/engine");
+          if (!rawService || typeof rawService !== "object") continue;
+          const rawAPI = rawService.api;
+          if (!rawAPI || typeof rawAPI !== "object") continue;
+          const api = rawAPI;
+          const hasDirectionalTurn = typeof api.turnRight === "function" && typeof api.turnLeft === "function";
+          const hasExactProgressTurn = typeof api.getCurrentReadingRange === "function" && typeof api.goToPageByBookPercentage === "function";
+          if (!hasDirectionalTurn && !hasExactProgressTurn) continue;
+          koboSemanticTransport = {
+            kind: "ur-engine",
+            service: rawService,
+            moduleLabel: registry.moduleLabel
+          };
+          koboSemanticTransportFailure = "";
+          return true;
+        } catch (e) {
+        }
+      }
+      if ((koboSemanticTransport == null ? void 0 : koboSemanticTransport.kind) === "message-bus") return true;
+      for (const registry of registries) {
+        try {
+          const rawBus = registry.getService("messageBus");
+          const rawLocalConfig = registry.getService("localConfig");
+          if (!rawBus || typeof rawBus !== "object" || typeof rawBus.publish !== "function" || !rawLocalConfig || typeof rawLocalConfig !== "object" || typeof rawLocalConfig.getLocalConfig !== "function") continue;
+          const readerChannel = readerChannelFrom(
+            rawLocalConfig.getLocalConfig()
+          );
+          if (readerChannel === null || readerChannel === void 0) continue;
+          koboSemanticTransport = {
+            kind: "message-bus",
+            bus: rawBus,
+            readerChannel,
+            moduleLabel: registry.moduleLabel
+          };
+          koboSemanticTransportFailure = "";
+          return true;
+        } catch (e) {
+        }
+      }
+      koboSemanticTransportFailure = "service-registry-not-found";
+      return false;
+    })().finally(() => {
+      koboSemanticTransportPromise = null;
+    });
+    return koboSemanticTransportPromise;
+  }
+  function koboURReaderIsRTL(api) {
+    try {
+      const bookView = api.bookView;
+      const readingOrderView = bookView == null ? void 0 : bookView.readingOrderView;
+      const bookContext = readingOrderView == null ? void 0 : readingOrderView.bookContext;
+      const isRTL = bookContext == null ? void 0 : bookContext.isRTL;
+      if (typeof isRTL === "function") {
+        const value = isRTL.call(bookContext);
+        if (typeof value === "boolean") return value;
+      }
+    } catch (e) {
+    }
+    const visibleFrame = currentKoboFrameClips()[0];
+    return documentDirection((visibleFrame == null ? void 0 : visibleFrame.doc) || document) === "rtl";
+  }
+  function currentKoboURAPI(transport) {
+    try {
+      const raw = transport.service.api;
+      return raw && typeof raw === "object" ? raw : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function exactPageTargetFromRange(value, direction) {
+    var _a, _b;
+    if (!value || typeof value !== "object") return null;
+    const range2 = value;
+    const pages = Number(range2.pagesOfBook);
+    const currentPercentage = Number(range2.percentageOfBook);
+    if (!Number.isInteger(pages) || pages <= 1 || !Number.isFinite(currentPercentage) || currentPercentage < 0 || currentPercentage > 1) return null;
+    const begin = Number((_a = range2.begin) == null ? void 0 : _a.pageIndexInBook);
+    const end = Number((_b = range2.end) == null ? void 0 : _b.pageIndexInBook);
+    const hasBegin = Number.isInteger(begin) && begin >= 0 && begin < pages;
+    const hasEnd = Number.isInteger(end) && end >= 0 && end < pages;
+    if (hasBegin && hasEnd && begin !== end) return null;
+    const currentPage = hasBegin ? begin : hasEnd ? end : Math.floor((pages - 1) * currentPercentage);
+    const targetPage = currentPage + (direction === "next" ? 1 : -1);
+    if (targetPage < 0 || targetPage >= pages) return null;
+    const targetPercentage = (targetPage + 1) / pages;
+    return {
+      currentPage,
+      targetPage,
+      pagesOfBook: pages,
+      currentPercentage,
+      targetPercentage
+    };
+  }
+  function exactPageTargetFromAPI(api, direction) {
+    if (typeof api.getCurrentReadingRange !== "function" || typeof api.goToPageByBookPercentage !== "function") return null;
+    try {
+      return exactPageTargetFromRange(
+        api.getCurrentReadingRange.call(api),
+        direction
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+  function koboSemanticTransportReady(direction = "next") {
+    const transport = koboSemanticTransport;
+    if (!transport) return false;
+    if (transport.kind === "ur-engine") {
+      const api = currentKoboURAPI(transport);
+      if (!api) return false;
+      if (exactPageTargetFromAPI(api, direction)) return true;
+      const rtl = koboURReaderIsRTL(api);
+      const turn = direction === "next" ? rtl ? api.turnLeft : api.turnRight : rtl ? api.turnRight : api.turnLeft;
+      return typeof turn === "function";
+    }
+    if (direction !== "next") return false;
+    try {
+      return transport.bus.hasSubscribers ? transport.bus.hasSubscribers(
+        transport.readerChannel,
+        "rx.navigate.page.next"
+      ) : true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function koboSemanticTransportStatus() {
+    if (koboSemanticTransport) {
+      return `ready:${koboSemanticTransport.kind}:` + koboSemanticTransport.moduleLabel;
+    }
+    if (koboSemanticTransportPromise) return "loading";
+    return koboSemanticTransportFailure;
+  }
+  function invokeKoboSemanticPageTurn(direction) {
+    const transport = koboSemanticTransport;
+    if (!transport || !koboSemanticTransportReady(direction)) {
+      return { accepted: false };
+    }
+    try {
+      let result2;
+      if (transport.kind === "ur-engine") {
+        const api = currentKoboURAPI(transport);
+        if (!api) return { accepted: false };
+        const exactTarget = exactPageTargetFromAPI(api, direction);
+        if (exactTarget && typeof api.goToPageByBookPercentage === "function") {
+          result2 = api.goToPageByBookPercentage.call(
+            api,
+            exactTarget.targetPercentage
+          );
+          return {
+            accepted: true,
+            completion: Promise.resolve(result2).then(() => void 0),
+            details: {
+              transport: "ur-progress",
+              currentPage: exactTarget.currentPage + 1,
+              targetPage: exactTarget.targetPage + 1,
+              pagesOfBook: exactTarget.pagesOfBook,
+              currentPercentage: exactTarget.currentPercentage,
+              targetPercentage: exactTarget.targetPercentage
+            }
+          };
+        } else {
+          const rtl = koboURReaderIsRTL(api);
+          const turn = direction === "next" ? rtl ? api.turnLeft : api.turnRight : rtl ? api.turnRight : api.turnLeft;
+          if (typeof turn !== "function") return { accepted: false };
+          result2 = turn.call(api);
+        }
+      } else {
+        if (direction !== "next") return { accepted: false };
+        result2 = transport.bus.publish(
+          transport.readerChannel,
+          "rx.navigate.page.next",
+          void 0
+        );
+      }
+      return {
+        accepted: true,
+        completion: Promise.resolve(result2).then(() => void 0),
+        details: {
+          transport: transport.kind === "ur-engine" ? "ur-directional" : "legacy-message-bus"
+        }
+      };
+    } catch (e) {
+      koboSemanticTransportFailure = "semantic-call-failed";
+      return { accepted: false };
+    }
+  }
+  function intersect2(a, b) {
+    const left = Math.max(a.left, b.left);
+    const top = Math.max(a.top, b.top);
+    const right = Math.min(a.right, b.right);
+    const bottom = Math.min(a.bottom, b.bottom);
+    if (right <= left || bottom <= top) return null;
+    return { left, top, right, bottom };
+  }
+  function rectArea(rect) {
+    return Math.max(0, rect.right - rect.left) * Math.max(0, rect.bottom - rect.top);
+  }
+  function topViewport() {
+    const visual = window.visualViewport;
+    if (visual && visual.width > 1 && visual.height > 1) {
+      const bottom = visual.offsetTop + visual.height;
+      const occlusion2 = Math.min(
+        Math.max(0, koboNativeBottomOcclusion),
+        Math.max(0, visual.height - 1)
+      );
+      return {
+        left: visual.offsetLeft,
+        top: visual.offsetTop,
+        right: visual.offsetLeft + visual.width,
+        bottom: bottom - occlusion2
+      };
+    }
+    const height = Math.max(1, window.innerHeight);
+    const occlusion = Math.min(
+      Math.max(0, koboNativeBottomOcclusion),
+      Math.max(0, height - 1)
+    );
+    return {
+      left: 0,
+      top: 0,
+      right: Math.max(1, window.innerWidth),
+      bottom: height - occlusion
+    };
+  }
+  function viewportSizeKey() {
+    const visual = window.visualViewport;
+    return [
+      rounded(window.innerWidth),
+      rounded(window.innerHeight),
+      rounded((visual == null ? void 0 : visual.width) || 0),
+      rounded((visual == null ? void 0 : visual.height) || 0),
+      rounded((visual == null ? void 0 : visual.offsetLeft) || 0),
+      rounded((visual == null ? void 0 : visual.offsetTop) || 0),
+      rounded(koboNativeBottomOcclusion)
+    ].join("x");
+  }
+  function normalizeIdentityText(text) {
+    const value = text.replace(/\s+/g, " ").trim();
+    return `${value.length}:${value.slice(0, 96)}:${value.slice(-96)}`;
+  }
+  function stableHash322(value) {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index++) {
+      hash ^= value.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+  function logicalAttributes2(element) {
+    const values2 = [];
+    for (const attribute of Array.from(element.attributes)) {
+      const name = attribute.name.toLowerCase();
+      if (name.indexOf("data-cr-") === 0 || name === "style") continue;
+      const logicalData = name.indexOf("data-") === 0 && /(id|key|index|chapter|spine|para|content|page)/.test(name);
+      if (name === "id" || name === "class" || name === "role" || name === "epub:type" || logicalData) {
+        values2.push(`${name}=${attribute.value}`);
+      }
+    }
+    return values2.sort().join("&");
+  }
+  function isHTMLElementNode(node) {
+    return node.nodeType === 1 && typeof node.getBoundingClientRect === "function";
+  }
+  function paragraphNodes2(doc) {
+    const nodes = Array.from(doc.querySelectorAll(PARAGRAPH_SELECTOR)).filter(isHTMLElementNode);
+    const out = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const node of nodes) {
+      if (seen.has(node)) continue;
+      if (node.tagName.toLowerCase() === "p" && node.querySelector("p")) continue;
+      seen.add(node);
+      out.push(node);
+    }
+    return out;
+  }
+  function documentHasReadableContent(doc) {
+    if (!doc.body) return false;
+    if ((doc.body.textContent || "").trim().length < MIN_FRAME_TEXT_CHARS) return false;
+    return paragraphNodes2(doc).some(
+      (element) => (element.textContent || "").trim().length >= MIN_PARA_CHARS2
+    );
+  }
+  function koboReaderFailureCode() {
+    var _a, _b;
+    const text = (((_a = document.body) == null ? void 0 : _a.innerText) || ((_b = document.body) == null ? void 0 : _b.textContent) || "").slice(0, 24e3);
+    if (/user has no active session/i.test(text) || /["']?MissingSession["']?/i.test(text) || /service\/session-service/i.test(text)) {
+      return "missing-session";
+    }
+    return null;
+  }
+  function ensureKoboChapterTypography() {
+    let changed = false;
+    const frames = Array.from(document.querySelectorAll("iframe")).filter(
+      (node) => node.tagName.toLowerCase() === "iframe"
+    );
+    for (const iframe of frames) {
+      try {
+        const doc = iframe.contentDocument;
+        if (!(doc == null ? void 0 : doc.documentElement) || doc.getElementById(TYPOGRAPHY_STYLE_ID)) {
+          continue;
+        }
+        const style = doc.createElement("style");
+        style.id = TYPOGRAPHY_STYLE_ID;
+        style.textContent = `
+        html, body {
+          -webkit-text-size-adjust: 100% !important;
+          text-size-adjust: 100% !important;
+        }
+      `;
+        (doc.head || doc.documentElement).appendChild(style);
+        changed = true;
+      } catch (e) {
+      }
+    }
+    return changed;
+  }
+  function ownerStyle(element) {
+    var _a;
+    try {
+      return ((_a = element.ownerDocument.defaultView) == null ? void 0 : _a.getComputedStyle(element)) || null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function writingModeFor2(element) {
+    const style = ownerStyle(element);
+    return (style == null ? void 0 : style.writingMode) || (style == null ? void 0 : style.webkitWritingMode) || "horizontal-tb";
+  }
+  function isVerticalWritingMode2(mode) {
+    return /^(vertical|sideways)/i.test(mode);
+  }
+  function rectHasCompleteBlockCoverage2(rect, clip, writingMode) {
+    const hit = intersect2(rect, clip);
+    if (!hit) return false;
+    const vertical = isVerticalWritingMode2(writingMode);
+    const full = vertical ? Math.max(0, rect.right - rect.left) : Math.max(0, rect.bottom - rect.top);
+    const visible = vertical ? Math.max(0, hit.right - hit.left) : Math.max(0, hit.bottom - hit.top);
+    return full > 0 && visible > 0 && visible + COMPLETE_BLOCK_FRAGMENT_TOLERANCE2 >= full * COMPLETE_BLOCK_FRAGMENT_RATIO2;
+  }
+  function frameClip(iframe, doc, frameIndex) {
+    var _a, _b;
+    let style;
+    try {
+      style = getComputedStyle(iframe);
+    } catch (e) {
+      return null;
+    }
+    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") <= 0.01) return null;
+    const rect = iframe.getBoundingClientRect();
+    if (rect.width <= 1 || rect.height <= 1) return null;
+    const hit = intersect2(
+      {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom
+      },
+      topViewport()
+    );
+    if (!hit) return null;
+    const layoutWidth = Math.max(1, iframe.offsetWidth || rect.width);
+    const layoutHeight = Math.max(1, iframe.offsetHeight || rect.height);
+    const scaleX = rect.width / layoutWidth;
+    const scaleY = rect.height / layoutHeight;
+    const contentLeft = rect.left + iframe.clientLeft * scaleX;
+    const contentTop = rect.top + iframe.clientTop * scaleY;
+    const innerWidth = Math.max(
+      1,
+      ((_a = iframe.contentWindow) == null ? void 0 : _a.innerWidth) || iframe.clientWidth || layoutWidth
+    );
+    const innerHeight = Math.max(
+      1,
+      ((_b = iframe.contentWindow) == null ? void 0 : _b.innerHeight) || iframe.clientHeight || layoutHeight
+    );
+    const mapped = {
+      left: Math.max(0, (hit.left - contentLeft) / scaleX),
+      top: Math.max(0, (hit.top - contentTop) / scaleY),
+      right: Math.min(innerWidth, (hit.right - contentLeft) / scaleX),
+      bottom: Math.min(innerHeight, (hit.bottom - contentTop) / scaleY)
+    };
+    if (mapped.right <= mapped.left || mapped.bottom <= mapped.top) return null;
+    return {
+      iframe,
+      doc,
+      frameIndex,
+      outerRect: rect,
+      clip: mapped,
+      scaleX,
+      scaleY,
+      visibleArea: rectArea(hit)
+    };
+  }
+  function allAccessibleFrames() {
+    const result2 = [];
+    const frames = Array.from(document.querySelectorAll("iframe")).filter((node) => node instanceof HTMLIFrameElement);
+    frames.forEach((iframe, frameIndex) => {
+      try {
+        const doc = iframe.contentDocument;
+        if (!doc || !documentHasReadableContent(doc)) return;
+        result2.push({ iframe, doc, frameIndex });
+      } catch (e) {
+      }
+    });
+    return result2;
+  }
+  function currentKoboFrameClips() {
+    const candidates = allAccessibleFrames().map(({ iframe, doc, frameIndex }) => frameClip(iframe, doc, frameIndex)).filter((value) => value !== null);
+    if (candidates.length === 0) return [];
+    const maxArea = Math.max(...candidates.map((value) => value.visibleArea));
+    const viewportArea = rectArea(topViewport());
+    const meaningful = candidates.filter(
+      (value) => value.visibleArea >= Math.max(900, viewportArea * 0.0125) && value.visibleArea >= maxArea * 0.18
+    );
+    const selected = meaningful.length > 0 ? meaningful : [candidates.reduce(
+      (best, value) => value.visibleArea > best.visibleArea ? value : best
+    )];
+    const direction = (() => {
+      try {
+        return getComputedStyle(document.documentElement).direction || getComputedStyle(document.body).direction || "ltr";
+      } catch (e) {
+        return "ltr";
+      }
+    })();
+    selected.sort((left, right) => {
+      if (Math.abs(left.outerRect.top - right.outerRect.top) > 40) {
+        return left.outerRect.top - right.outerRect.top;
+      }
+      return direction === "rtl" ? right.outerRect.left - left.outerRect.left : left.outerRect.left - right.outerRect.left;
+    });
+    return selected;
+  }
+  function rounded(value) {
+    return Math.round(Number.isFinite(value) ? value : 0);
+  }
+  function koboGeometryKey() {
+    const frames = currentKoboFrameClips();
+    const frameKeys = frames.map((frame) => {
+      var _a, _b;
+      const bodyStyle = frame.doc.body ? ownerStyle(frame.doc.body) : null;
+      const rootStyle = ownerStyle(frame.doc.documentElement);
+      const innerWidth = ((_a = frame.iframe.contentWindow) == null ? void 0 : _a.innerWidth) || frame.iframe.clientWidth || 0;
+      const innerHeight = ((_b = frame.iframe.contentWindow) == null ? void 0 : _b.innerHeight) || frame.iframe.clientHeight || 0;
+      return [
+        frame.frameIndex,
+        rounded(frame.outerRect.left),
+        rounded(frame.outerRect.top),
+        rounded(frame.outerRect.width),
+        rounded(frame.outerRect.height),
+        rounded(frame.clip.left),
+        rounded(frame.clip.top),
+        rounded(frame.clip.right),
+        rounded(frame.clip.bottom),
+        rounded(innerWidth),
+        rounded(innerHeight),
+        (bodyStyle == null ? void 0 : bodyStyle.columnWidth) || "-",
+        (bodyStyle == null ? void 0 : bodyStyle.columnGap) || "-",
+        (rootStyle == null ? void 0 : rootStyle.writingMode) || "-"
+      ].join(",");
+    });
+    return `${viewportSizeKey()}|${frameKeys.join(";")}`;
+  }
+  function koboLayoutDiagnostic() {
+    const viewport = topViewport();
+    const visual = window.visualViewport;
+    const frames = currentKoboFrameClips();
+    const frame = frames[0];
+    const anchor = frame ? paragraphNodes2(frame.doc)[0] : null;
+    const style = anchor ? ownerStyle(anchor) : null;
+    const bodyStyle = (frame == null ? void 0 : frame.doc.body) ? ownerStyle(frame.doc.body) : null;
+    const rootStyle = frame ? ownerStyle(frame.doc.documentElement) : null;
+    let bottomOccluder = 0;
+    const shellNodes = Array.from(document.querySelectorAll("body *")).slice(0, 1200);
+    for (const node of shellNodes) {
+      const element = node;
+      let computed;
+      try {
+        computed = getComputedStyle(element);
+      } catch (e) {
+        continue;
+      }
+      if (computed.position !== "fixed" && computed.position !== "sticky") continue;
+      const rect = element.getBoundingClientRect();
+      const viewportWidth = viewport.right - viewport.left;
+      if (rect.width < viewportWidth * 0.35 || rect.height < 8 || rect.bottom < viewport.bottom - 2 || rect.top >= viewport.bottom) continue;
+      bottomOccluder = Math.max(
+        bottomOccluder,
+        viewport.bottom - Math.max(viewport.top, rect.top)
+      );
+    }
+    return [
+      `layout=${rounded(window.innerWidth)}x${rounded(window.innerHeight)}`,
+      `visual=${rounded((visual == null ? void 0 : visual.width) || 0)}x${rounded((visual == null ? void 0 : visual.height) || 0)}@${rounded((visual == null ? void 0 : visual.offsetLeft) || 0)},${rounded((visual == null ? void 0 : visual.offsetTop) || 0)}`,
+      frame ? `iframe=${rounded(frame.outerRect.left)},${rounded(frame.outerRect.top)},${rounded(frame.outerRect.width)}x${rounded(frame.outerRect.height)}` : "iframe=none",
+      frame ? `clip=${rounded(frame.clip.left)},${rounded(frame.clip.top)}-${rounded(frame.clip.right)},${rounded(frame.clip.bottom)}` : "clip=none",
+      `font=${(style == null ? void 0 : style.fontSize) || "-"} line=${(style == null ? void 0 : style.lineHeight) || "-"}`,
+      `column=${(bodyStyle == null ? void 0 : bodyStyle.columnWidth) || "-"} gap=${(bodyStyle == null ? void 0 : bodyStyle.columnGap) || "-"}`,
+      `textAdjust=${(rootStyle == null ? void 0 : rootStyle.webkitTextSizeAdjust) || (rootStyle == null ? void 0 : rootStyle.getPropertyValue("-webkit-text-size-adjust")) || "-"}`,
+      `bottomFixed=${rounded(bottomOccluder)}`,
+      `nativeBottom=${rounded(koboNativeBottomOcclusion)}`
+    ].join(" ");
+  }
+  function chapterIdentity(element) {
+    var _a, _b;
+    const scope = element.closest(
+      'section[role="doc-chapter"],section[role="doc-part"],section[epub\\:type],article'
+    ) || element.ownerDocument.body || element;
+    const spans = Array.from(scope.querySelectorAll(".koboSpan[id]")).filter(isHTMLElementNode);
+    const firstSpan = ((_a = spans[0]) == null ? void 0 : _a.id) || "";
+    const lastSpan = ((_b = spans[spans.length - 1]) == null ? void 0 : _b.id) || "";
+    const heading = scope.querySelector(
+      "h1.element-title,h2.element-title,h3.element-title,h1,h2,h3"
+    );
+    return [
+      logicalAttributes2(scope),
+      `span=${firstSpan}..${lastSpan}`,
+      `heading=${normalizeIdentityText((heading == null ? void 0 : heading.textContent) || "")}`
+    ].join("|");
+  }
+  function paragraphSourceID(element, paragraphOrdinal) {
+    var _a, _b;
+    const spans = Array.from(element.querySelectorAll(".koboSpan[id]")).filter(isHTMLElementNode);
+    const firstSpan = ((_a = spans[0]) == null ? void 0 : _a.id) || "";
+    const lastSpan = ((_b = spans[spans.length - 1]) == null ? void 0 : _b.id) || "";
+    const identity2 = [
+      "kobo",
+      chapterIdentity(element),
+      `ordinal=${paragraphOrdinal}`,
+      `spans=${firstSpan}..${lastSpan}`,
+      logicalAttributes2(element),
+      normalizeIdentityText(element.textContent || "")
+    ].join("\u241F");
+    return stableHash322(identity2) || 1;
+  }
+  var SENTENCE_TRAILING = `\u201D"'\u2019\u300D\u300F\uFF09)\u3011\u300B\u3009]`;
+  function trimVisibleRange(full, start, end) {
+    const raw = full.slice(start, end);
+    const withoutLeading = raw.trimStart();
+    const leadingUTF16 = raw.length - withoutLeading.length;
+    const text = withoutLeading.trimEnd();
+    if (text.length < MIN_PARA_CHARS2) return null;
+    const trimmedStart = start + leadingUTF16;
+    return {
+      text,
+      start: trimmedStart,
+      end: trimmedStart + text.length
+    };
+  }
+  function koboParagraphSnapshotQuality(paragraphs) {
+    var _a, _b;
+    let consecutiveShortPartials = 0;
+    let shortPartialCount = 0;
+    for (const paragraph of paragraphs) {
+      const sourceLength = (_b = (_a = paragraph.element.textContent) == null ? void 0 : _a.length) != null ? _b : paragraph.sourceEnd;
+      const isPartial = paragraph.sourceStart > 0 || paragraph.sourceEnd < sourceLength;
+      const isShort = paragraph.text.trim().length <= MAX_TRANSIENT_PARTIAL_CHARS;
+      if (isPartial && isShort) {
+        consecutiveShortPartials++;
+        shortPartialCount++;
+        if (consecutiveShortPartials > MAX_CONSECUTIVE_SHORT_PARTIALS) {
+          return {
+            ok: false,
+            reason: "consecutive-short-partial-slices"
+          };
+        }
+      } else {
+        consecutiveShortPartials = 0;
+      }
+    }
+    if (paragraphs.length >= 6 && shortPartialCount >= 4 && shortPartialCount * 2 >= paragraphs.length) {
+      return { ok: false, reason: "short-partial-slice-ratio" };
+    }
+    return { ok: true, reason: "ok" };
+  }
+  function extractKoboParagraphsFromClips(clips) {
+    const output = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const frame of clips) {
+      const nodes = paragraphNodes2(frame.doc);
+      nodes.forEach((element, paragraphOrdinal) => {
+        const full = element.textContent || "";
+        if (full.trim().length < MIN_PARA_CHARS2) return;
+        const id = paragraphSourceID(element, paragraphOrdinal);
+        visibleCharRanges(element, frame.clip).forEach((range2) => {
+          const trimmed = trimVisibleRange(full, range2.start, range2.end);
+          if (!trimmed) return;
+          const key = `${id}:${trimmed.start}:${trimmed.end}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          output.push({
+            text: trimmed.text,
+            element,
+            exactText: true,
+            charOffset: trimmed.start,
+            sourceParagraphIndex: id,
+            sourceStart: trimmed.start,
+            sourceEnd: trimmed.end,
+            frameIndex: frame.frameIndex,
+            paragraphOrdinal
+          });
+        });
+      });
+    }
+    return koboParagraphSnapshotQuality(output).ok ? output : [];
+  }
+  function extractKoboParagraphs() {
+    return extractKoboParagraphsFromClips(currentKoboFrameClips());
+  }
+  function acceptKoboHighlightRect(element, rect) {
+    const clip = currentKoboFrameClips().find(
+      (value) => value.doc === element.ownerDocument
+    );
+    return !!clip && rectHasCompleteBlockCoverage2(
+      rect,
+      clip.clip,
+      writingModeFor2(element)
+    );
+  }
+  function contentFingerprint(paragraphs) {
+    if (paragraphs.length === 0) return "";
+    const source = paragraphs.map((paragraph) => [
+      paragraph.sourceParagraphIndex,
+      paragraph.sourceStart,
+      paragraph.sourceEnd,
+      paragraph.text
+    ].join(":")).join("\u241E");
+    return `kcf-${stableHash322(source).toString(36)}-${source.length.toString(36)}`;
+  }
+  function koboSignature() {
+    const paragraphs = extractKoboParagraphs();
+    if (paragraphs.length === 0) return "";
+    const source = paragraphs.map((paragraph) => [
+      paragraph.sourceParagraphIndex,
+      paragraph.sourceStart,
+      paragraph.sourceEnd
+    ].join(":")).join("|");
+    return `kpg-${stableHash322(source).toString(36)}-${paragraphs.length}`;
+  }
+  function shiftedClip2(frame, dx, dy) {
+    return __spreadProps(__spreadValues({}, frame), {
+      clip: {
+        left: frame.clip.left + dx,
+        right: frame.clip.right + dx,
+        top: frame.clip.top + dy,
+        bottom: frame.clip.bottom + dy
+      }
+    });
+  }
+  function isForwardPreview2(current, candidate) {
+    var _a, _b;
+    const tail = current[current.length - 1];
+    const head = candidate[0];
+    if (!tail || !head) return false;
+    if (tail.sourceParagraphIndex === head.sourceParagraphIndex) {
+      return head.sourceStart >= tail.sourceEnd - 2;
+    }
+    if (typeof tail.frameIndex === "number" && typeof head.frameIndex === "number" && tail.frameIndex !== head.frameIndex) {
+      return head.frameIndex > tail.frameIndex;
+    }
+    return ((_a = head.paragraphOrdinal) != null ? _a : -1) > ((_b = tail.paragraphOrdinal) != null ? _b : -1);
+  }
+  function pageAdvanceVectors(frame, anchor) {
+    const mode = writingModeFor2(anchor);
+    const style = ownerStyle(frame.doc.body);
+    const direction = (style == null ? void 0 : style.direction) || "ltr";
+    const width = Math.max(1, frame.clip.right - frame.clip.left);
+    const height = Math.max(1, frame.clip.bottom - frame.clip.top);
+    const columnGap = (() => {
+      const value = Number.parseFloat((style == null ? void 0 : style.columnGap) || "");
+      return Number.isFinite(value) ? value : 0;
+    })();
+    if (isVerticalWritingMode2(mode)) {
+      const forward2 = /-rl$/i.test(mode) ? -1 : 1;
+      return [
+        { dx: forward2 * (width + columnGap), dy: 0 },
+        { dx: -forward2 * (width + columnGap), dy: 0 }
+      ];
+    }
+    const forward = direction === "rtl" ? -1 : 1;
+    return [
+      { dx: forward * (width + columnGap), dy: 0 },
+      { dx: 0, dy: height },
+      { dx: -forward * (width + columnGap), dy: 0 }
+    ];
+  }
+  function extractKoboNextPagePreview() {
+    var _a;
+    const frames = currentKoboFrameClips();
+    const current = extractKoboParagraphsFromClips(frames);
+    const anchor = (_a = current[0]) == null ? void 0 : _a.element;
+    if (frames.length === 0 || current.length === 0 || !anchor) return null;
+    for (const vector of pageAdvanceVectors(frames[0], anchor)) {
+      const candidate = extractKoboParagraphsFromClips(
+        frames.map((frame) => shiftedClip2(frame, vector.dx, vector.dy))
+      );
+      if (!isForwardPreview2(current, candidate)) continue;
+      const fingerprint = contentFingerprint(candidate);
+      if (fingerprint) return { paragraphs: candidate, contentFingerprint: fingerprint };
+    }
+    return null;
+  }
+  function firstSentenceAfter(element, sourceParagraphIndex, start) {
+    const full = element.textContent || "";
+    let sourceStart = Math.max(0, Math.min(start, full.length));
+    while (sourceStart < full.length && /\s/.test(full[sourceStart])) sourceStart++;
+    if (sourceStart >= full.length) return null;
+    let sourceEnd = extendToSentenceEnd(full, Math.min(full.length, sourceStart + 1));
+    if (sourceEnd <= sourceStart + 1) {
+      sourceEnd = Math.min(full.length, sourceStart + 260);
+    }
+    while (sourceEnd < full.length && SENTENCE_TRAILING.indexOf(full[sourceEnd]) >= 0) {
+      sourceEnd++;
+    }
+    const raw = full.slice(sourceStart, sourceEnd);
+    const text = raw.trimEnd();
+    sourceEnd = sourceStart + text.length;
+    if (text.length < MIN_PARA_CHARS2) return null;
+    const fingerprintSource = `${sourceParagraphIndex}:${sourceStart}:${sourceEnd}:${text}`;
+    return {
+      text,
+      exactText: true,
+      sourceParagraphIndex,
+      sourceStart,
+      sourceEnd,
+      contentFingerprint: `ksf-${stableHash322(fingerprintSource).toString(36)}-${text.length}`
+    };
+  }
+  function extractKoboNextSpeechPreview() {
+    var _a;
+    const current = extractKoboParagraphs();
+    const tail = current[current.length - 1];
+    if (!tail) return null;
+    const spokenTailEnd = tail.sourceEnd;
+    const sameParagraph = firstSentenceAfter(
+      tail.element,
+      tail.sourceParagraphIndex,
+      spokenTailEnd
+    );
+    if (sameParagraph) return sameParagraph;
+    const frames = allAccessibleFrames();
+    const currentFramePosition = frames.findIndex(
+      (frame) => frame.doc === tail.element.ownerDocument
+    );
+    if (currentFramePosition < 0) return null;
+    const tailOrdinal = (_a = tail.paragraphOrdinal) != null ? _a : paragraphNodes2(frames[currentFramePosition].doc).indexOf(tail.element);
+    for (let framePosition = currentFramePosition; framePosition <= Math.min(frames.length - 1, currentFramePosition + 1); framePosition++) {
+      const nodes = paragraphNodes2(frames[framePosition].doc);
+      const startOrdinal = framePosition === currentFramePosition ? tailOrdinal + 1 : 0;
+      for (let ordinal = startOrdinal; ordinal < nodes.length; ordinal++) {
+        const element = nodes[ordinal];
+        const sourceParagraphIndex = paragraphSourceID(element, ordinal);
+        const preview = firstSentenceAfter(element, sourceParagraphIndex, 0);
+        if (preview) return preview;
+      }
+    }
+    return null;
+  }
+  function isKoboReaderMainFrame() {
+    return window === window.top && location.hostname.toLowerCase() === KOBO_HOST;
+  }
+  function isKoboReaderDescendantFrame() {
+    var _a;
+    if (window === window.top) return false;
+    try {
+      return ((_a = window.top) == null ? void 0 : _a.location.hostname.toLowerCase()) === KOBO_HOST;
+    } catch (e) {
+      try {
+        return new URL(document.referrer).hostname.toLowerCase() === KOBO_HOST;
+      } catch (e2) {
+        return false;
+      }
+    }
+  }
+  function koboFrameSessionID() {
+    const target = window;
+    if (target[FRAME_SESSION_PROPERTY2]) return target[FRAME_SESSION_PROPERTY2];
+    let token = "";
+    try {
+      if (typeof (crypto == null ? void 0 : crypto.randomUUID) === "function") {
+        token = crypto.randomUUID();
+      } else if (crypto == null ? void 0 : crypto.getRandomValues) {
+        const words = new Uint32Array(4);
+        crypto.getRandomValues(words);
+        token = Array.from(words, (word) => word.toString(36)).join("-");
+      }
+    } catch (e) {
+    }
+    if (!token) {
+      token = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    }
+    const id = `kbf-${token}`;
+    try {
+      Object.defineProperty(target, FRAME_SESSION_PROPERTY2, {
+        value: id,
+        writable: false,
+        configurable: false
+      });
+    } catch (e) {
+      target[FRAME_SESSION_PROPERTY2] = id;
+    }
+    return id;
+  }
+  function elementIsEnabled(element) {
+    const disabled = element.getAttribute("aria-disabled") === "true" || element.hasAttribute("disabled");
+    return !disabled;
+  }
+  function elementIsVisiblyPresented(element) {
+    const style = ownerStyle(element);
+    if ((style == null ? void 0 : style.display) === "none" || (style == null ? void 0 : style.visibility) === "hidden" || Number((style == null ? void 0 : style.opacity) || "1") <= 0.01) return false;
+    const rect = element.getBoundingClientRect();
+    return rect.width >= 4 && rect.height >= 4;
+  }
+  var NEXT_PAGE_LABEL = /(next[\s_-]*page|page[\s_-]*next|next\b(?![\s_-]*chapter)|nächste seite|seite weiter|page suivante|página siguiente|siguiente página|pagina successiva|prossima pagina|próxima página|página seguinte|volgende pagina|następna strona|次のページ|下一页|下一頁|다음 페이지)/i;
+  var PREVIOUS_PAGE_LABEL = /(prev(?:ious)?[\s_-]*page|page[\s_-]*prev|previous\b(?![\s_-]*chapter)|vorherige seite|seite zurück|page précédente|página anterior|pagina precedente|página anterior|vorige pagina|poprzednia strona|前のページ|上一页|上一頁|이전 페이지)/i;
+  var CHAPTER_LABEL = /(next|prev|previous|下一|上一|次の|前の).{0,12}(chapter|chapitre|kapitel|capítulo|capitolo|章)/i;
+  function controlLabel(element) {
+    return [
+      element.getAttribute("aria-label") || "",
+      element.getAttribute("title") || "",
+      element.getAttribute("data-testid") || "",
+      element.getAttribute("data-qa") || "",
+      element.id || "",
+      element.className || "",
+      element.textContent || ""
+    ].join(" ").replace(/\s+/g, " ").trim();
+  }
+  function koboControlRoots() {
+    const roots = [];
+    const seen = /* @__PURE__ */ new Set();
+    const visit = (root2, label) => {
+      if (seen.has(root2) || roots.length >= 64) return;
+      seen.add(root2);
+      roots.push({ root: root2, label });
+      let iframes = [];
+      try {
+        iframes = Array.from(root2.querySelectorAll("iframe")).slice(0, 32);
+      } catch (e) {
+      }
+      iframes.forEach((node, index) => {
+        try {
+          const doc = node.contentDocument;
+          if (doc) visit(doc, `${label}/frame:${index}`);
+        } catch (e) {
+        }
+      });
+      let elements = [];
+      try {
+        elements = Array.from(root2.querySelectorAll("*")).slice(0, 2500);
+      } catch (e) {
+      }
+      elements.forEach((element) => {
+        if (element.shadowRoot) {
+          visit(
+            element.shadowRoot,
+            `${label}/shadow:${element.tagName.toLowerCase()}`
+          );
+        }
+      });
+    };
+    visit(document, "main");
+    return roots;
+  }
+  function findKoboPageControl(direction) {
+    const matcher2 = direction === "next" ? NEXT_PAGE_LABEL : PREVIOUS_PAGE_LABEL;
+    const roots = koboControlRoots();
+    const matches = [];
+    let candidateCount = 0;
+    for (const entry of roots) {
+      let candidates = [];
+      try {
+        candidates = Array.from(entry.root.querySelectorAll(
+          'button,[role="button"],[aria-label],[title],[data-testid],[data-qa]'
+        ));
+      } catch (e) {
+        continue;
+      }
+      candidateCount += candidates.length;
+      for (const node of candidates) {
+        if (!isHTMLElementNode(node)) continue;
+        const element = node;
+        const label = controlLabel(element);
+        if (!label || CHAPTER_LABEL.test(label) || !matcher2.test(label)) continue;
+        if (!elementIsEnabled(element)) continue;
+        const visible = elementIsVisiblyPresented(element);
+        const aria = element.getAttribute("aria-label") || "";
+        const explicitPageLabel = /(next|prev(?:ious)?)[\s_-]*page/i.test(aria);
+        const score = (visible ? 1e3 : 0) + (explicitPageLabel ? 500 : 0) + (element.tagName.toLowerCase() === "button" ? 120 : 0) + (element.getAttribute("role") === "button" ? 60 : 0);
+        matches.push({
+          element,
+          rootLabel: entry.label,
+          label,
+          visible,
+          score
+        });
+      }
+    }
+    matches.sort((left, right) => right.score - left.score);
+    const best = matches[0];
+    return best ? __spreadProps(__spreadValues({}, best), {
+      rootCount: roots.length,
+      candidateCount
+    }) : null;
+  }
+  function clickableKoboPageButton(direction) {
+    var _a;
+    return ((_a = findKoboPageControl(direction)) == null ? void 0 : _a.element) || null;
+  }
+  var KOBO_FOOTER_SLIDER_SELECTOR = [
+    '[data-test-id="reader-footerBar-slider"]',
+    '[data-testid="reader-footerBar-slider"]'
+  ].join(",");
+  var KOBO_FOOTER_SLIDER_BAR_SELECTOR = [
+    '[data-test-id="reader-footerBar-slider-bar"]',
+    '[data-testid="reader-footerBar-slider-bar"]'
+  ].join(",");
+  var KOBO_FOOTER_PAGE_NUMBER_SELECTOR = [
+    '[data-test-id="reader-footerBar-pageNumber"]',
+    '[data-testid="reader-footerBar-pageNumber"]'
+  ].join(",");
+  function exactPageTargetFromFooterLabel(root2, direction) {
+    var _a;
+    let label = null;
+    try {
+      label = root2.querySelector(KOBO_FOOTER_PAGE_NUMBER_SELECTOR);
+    } catch (e) {
+      return null;
+    }
+    const values2 = ((_a = ((label == null ? void 0 : label.textContent) || "").match(/\d[\d,]*/g)) == null ? void 0 : _a.map((value) => Number(value.replace(/,/g, "")))) || [];
+    if (values2.length !== 2) return null;
+    const [pageNumber, pages] = values2;
+    if (!Number.isInteger(pageNumber) || !Number.isInteger(pages) || pages <= 1 || pageNumber < 1 || pageNumber > pages) return null;
+    const currentPage = pageNumber - 1;
+    const targetPage = currentPage + (direction === "next" ? 1 : -1);
+    if (targetPage < 0 || targetPage >= pages) return null;
+    return {
+      currentPage,
+      targetPage,
+      pagesOfBook: pages,
+      currentPercentage: pageNumber / pages,
+      targetPercentage: (targetPage + 1) / pages
+    };
+  }
+  function currentURPageTarget(direction) {
+    const transport = koboSemanticTransport;
+    if (!transport || transport.kind !== "ur-engine") return null;
+    const api = currentKoboURAPI(transport);
+    if (!api) return null;
+    const target = exactPageTargetFromAPI(api, direction);
+    return target ? { api, target } : null;
+  }
+  function findKoboProgressSliderTarget(direction) {
+    const urTarget = currentURPageTarget(direction);
+    const candidates = [];
+    for (const entry of koboControlRoots()) {
+      let sliders = [];
+      try {
+        sliders = Array.from(
+          entry.root.querySelectorAll(KOBO_FOOTER_SLIDER_SELECTOR)
+        );
+      } catch (e) {
+        continue;
+      }
+      for (const node of sliders) {
+        if (!isHTMLElementNode(node) || !elementIsEnabled(node)) continue;
+        const barNode = node.querySelector(KOBO_FOOTER_SLIDER_BAR_SELECTOR);
+        if (!isHTMLElementNode(barNode)) continue;
+        const rect = barNode.getBoundingClientRect();
+        if (!Number.isFinite(rect.left) || !Number.isFinite(rect.width) || rect.width <= 1) continue;
+        const ownerWindow = node.ownerDocument.defaultView;
+        if (!ownerWindow) continue;
+        const pageTarget = (urTarget == null ? void 0 : urTarget.target) || exactPageTargetFromFooterLabel(entry.root, direction);
+        if (!pageTarget) continue;
+        const rtl = urTarget ? koboURReaderIsRTL(urTarget.api) : documentDirection(node.ownerDocument) === "rtl";
+        const progressX = rect.width * pageTarget.targetPercentage;
+        const clientX = rtl ? rect.right - progressX : rect.left + progressX;
+        const clientY = rect.top + Math.max(0, rect.height / 2);
+        candidates.push(__spreadProps(__spreadValues({}, pageTarget), {
+          root: node,
+          bar: barNode,
+          ownerWindow,
+          rootLabel: entry.label,
+          clientX,
+          clientY,
+          barWidth: rect.width,
+          rtl,
+          targetSource: urTarget ? "ur-range" : "page-label"
+        }));
+      }
+    }
+    candidates.sort((left, right) => right.barWidth - left.barWidth);
+    return candidates[0] || null;
+  }
+  function koboProgressSliderReady(direction = "next") {
+    return findKoboProgressSliderTarget(direction) !== null;
+  }
+  function invokeKoboProgressSliderTurn(direction) {
+    const target = findKoboProgressSliderTarget(direction);
+    if (!target) return { accepted: false };
+    try {
+      target.root.dispatchEvent(new target.ownerWindow.MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        clientX: target.clientX,
+        clientY: target.clientY,
+        view: target.ownerWindow
+      }));
+      return {
+        accepted: true,
+        details: {
+          transport: "footer-progress",
+          root: target.rootLabel,
+          currentPage: target.currentPage + 1,
+          targetPage: target.targetPage + 1,
+          pagesOfBook: target.pagesOfBook,
+          currentPercentage: target.currentPercentage,
+          targetPercentage: target.targetPercentage,
+          targetSource: target.targetSource,
+          clientX: Math.round(target.clientX * 10) / 10,
+          barWidth: Math.round(target.barWidth * 10) / 10,
+          rtl: target.rtl
+        }
+      };
+    } catch (e) {
+      return { accepted: false };
+    }
+  }
+  function documentDirection(doc = document) {
+    var _a, _b;
+    const explicit = doc.documentElement.getAttribute("dir") || ((_a = doc.body) == null ? void 0 : _a.getAttribute("dir")) || "";
+    if (explicit.toLowerCase() === "rtl") return "rtl";
+    try {
+      const style = (_b = doc.defaultView) == null ? void 0 : _b.getComputedStyle(doc.documentElement);
+      return (style == null ? void 0 : style.direction) === "rtl" ? "rtl" : "ltr";
+    } catch (e) {
+      return "ltr";
+    }
+  }
+  function keyForDirection(direction) {
+    const rtl = documentDirection() === "rtl";
+    const forwardRight = direction === "next" ? !rtl : rtl;
+    return forwardRight ? { key: "ArrowRight", code: 39 } : { key: "ArrowLeft", code: 37 };
+  }
+  function hotspotPoint(direction) {
+    const rtl = documentDirection() === "rtl";
+    const forwardRight = direction === "next" ? !rtl : rtl;
+    return {
+      x: window.innerWidth * (forwardRight ? 0.9 : 0.1),
+      y: window.innerHeight * 0.5
+    };
+  }
+  function turnKoboPage(direction, method) {
+    if (method === "slider") {
+      return invokeKoboProgressSliderTurn(direction).accepted ? "slider" : "none";
+    }
+    if (method === "button") {
+      const control = findKoboPageControl(direction);
+      if (!control) return "none";
+      control.element.click();
+      return "button";
+    }
+    if (method === "key") {
+      const { key, code } = keyForDirection(direction);
+      const options = {
+        key,
+        code: key,
+        keyCode: code,
+        which: code,
+        bubbles: true,
+        cancelable: true
+      };
+      try {
+        document.dispatchEvent(
+          new KeyboardEvent("keydown", options)
+        );
+        document.dispatchEvent(
+          new KeyboardEvent("keyup", options)
+        );
+        return "key";
+      } catch (e) {
+        return "none";
+      }
+    }
+    if (method === "hotspot") {
+      const { x, y } = hotspotPoint(direction);
+      const target = document.elementFromPoint(x, y);
+      if (!target) return "none";
+      const options = {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+        view: window
+      };
+      try {
+        target.dispatchEvent(new MouseEvent("mousedown", options));
+        target.dispatchEvent(new MouseEvent("mouseup", options));
+        target.dispatchEvent(new MouseEvent("click", options));
+        return "hotspot";
+      } catch (e) {
+        return "none";
+      }
+    }
+    return "none";
+  }
+  function protocolID2(prefix) {
+    try {
+      if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return `${prefix}-${crypto.randomUUID()}`;
+      }
+    } catch (e) {
+    }
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  }
+  function recordArg2(arg) {
+    return arg && typeof arg === "object" ? arg : {};
+  }
+  function nonemptyString2(value) {
+    return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+  }
+  function nonemptyOpaqueString2(value) {
+    return typeof value === "string" && value.trim().length > 0 ? value : null;
+  }
+  function layoutFailureCode() {
+    const frames = Array.from(document.querySelectorAll("iframe")).filter((node) => node instanceof HTMLIFrameElement);
+    let hasVisualBookSurface = false;
+    for (const frame of frames) {
+      try {
+        const doc = frame.contentDocument;
+        if (!(doc == null ? void 0 : doc.body)) continue;
+        if (doc.querySelector("canvas,svg,img,object,embed")) {
+          hasVisualBookSurface = true;
+        }
+      } catch (e) {
+      }
+    }
+    return hasVisualBookSurface ? "fixed-layout-unsupported" : "reader-content-unavailable";
+  }
+  function installKoboReader(post, requestExtract, frameSessionID = koboFrameSessionID()) {
+    var _a;
+    const postForFrame = (type2, payload = {}) => {
+      post(type2, __spreadProps(__spreadValues({ source: "kobo" }, payload), { frameSessionID }));
+    };
+    const STABILITY_POLL_MS = 180;
+    const MIN_STABLE_MS = 420;
+    const TURN_CONFIRMATION_MS = 5200;
+    postForFrame("log", {
+      message: `adapter version=${KOBO_ADAPTER_VERSION}`
+    });
+    let committedSignature = koboSignature();
+    let observedSignature = committedSignature;
+    let pendingAuto = false;
+    let pendingAutoMetadata = null;
+    let pendingTurnMethod = null;
+    let pendingTurnBaseline = "";
+    let lateAutoTurn = null;
+    let preferredMethod = null;
+    let turnConfirmationTimer = null;
+    let settleTimer = null;
+    let changeReasonInFlight = null;
+    let changeBaseline = "";
+    let changeMetadata = null;
+    let settleCandidate = "";
+    let settleGeometryCandidate = "";
+    let settleCandidateSince = 0;
+    let settleStableSamples = 0;
+    let pendingManualIntent = false;
+    let manualIntentExpiresAt = 0;
+    let manualIntentBaseline = "";
+    let manualIntentMetadata = null;
+    let manualIntentKind = "";
+    let manualSwipeActive = false;
+    let lastManualIntentAt = 0;
+    let previewTimer = null;
+    let lastPreviewToken = "";
+    let lastGeometryPreviewMissToken = "";
+    let lastSpeechPreviewToken = "";
+    let layoutRefreshActive = false;
+    let layoutRefreshQuietUntil = 0;
+    let lastViewportSizeKey = viewportSizeKey();
+    let hasPublishedInitialPage = false;
+    let bootCandidate = "";
+    let bootGeometryCandidate = "";
+    let bootCandidateSince = 0;
+    const installedListenerDocuments = /* @__PURE__ */ new WeakSet();
+    let semanticTransportLoggedStatus = "";
+    let reportedReaderFailureCode = "";
+    const reportReaderFailureIfPresent = () => {
+      const code = koboReaderFailureCode();
+      if (!code) return false;
+      if (reportedReaderFailureCode !== code) {
+        reportedReaderFailureCode = code;
+        postForFrame("log", {
+          message: `reader failure detected code=${code}`
+        });
+        postForFrame("error", {
+          stage: "kobo-reader-session",
+          code,
+          message: "Kobo reader session is temporarily unavailable."
+        });
+      }
+      return true;
+    };
+    const warmSemanticTransport = () => {
+      void prepareKoboSemanticTransport().then((ready) => {
+        if (!ready) return;
+        const status = koboSemanticTransportStatus();
+        if (status === semanticTransportLoggedStatus) return;
+        semanticTransportLoggedStatus = status;
+        postForFrame("log", {
+          message: `semantic page transport ${status}`
+        });
+      });
+    };
+    warmSemanticTransport();
+    setTimeout(warmSemanticTransport, 800);
+    setTimeout(warmSemanticTransport, 2400);
+    setTimeout(warmSemanticTransport, 5e3);
+    setTimeout(warmSemanticTransport, 9e3);
+    setTimeout(warmSemanticTransport, 14e3);
+    const clearPageVisuals = () => {
+      var _a2, _b;
+      const bridge2 = window.CR;
+      try {
+        (_a2 = bridge2 == null ? void 0 : bridge2.clearHighlight) == null ? void 0 : _a2.call(bridge2, {});
+      } catch (e) {
+      }
+      try {
+        (_b = bridge2 == null ? void 0 : bridge2.clearMarks) == null ? void 0 : _b.call(bridge2, {});
+      } catch (e) {
+      }
+    };
+    const payloadFor = (metadata) => metadata ? __spreadValues({}, metadata) : {};
+    const liveLateAutoTurn = () => {
+      if (lateAutoTurn && Date.now() <= lateAutoTurn.expiresAt) return lateAutoTurn;
+      lateAutoTurn = null;
+      return null;
+    };
+    const clearAutoTurn = () => {
+      pendingAuto = false;
+      pendingAutoMetadata = null;
+      pendingTurnMethod = null;
+      pendingTurnBaseline = "";
+      if (turnConfirmationTimer) clearTimeout(turnConfirmationTimer);
+      turnConfirmationTimer = null;
+    };
+    const clearManualIntent = () => {
+      pendingManualIntent = false;
+      manualIntentExpiresAt = 0;
+      manualIntentBaseline = "";
+      manualIntentMetadata = null;
+      manualIntentKind = "";
+      manualSwipeActive = false;
+    };
+    const clearSettledChange = (reason) => {
+      if (changeReasonInFlight === reason) changeReasonInFlight = null;
+      changeBaseline = "";
+      changeMetadata = null;
+      settleCandidate = "";
+      settleGeometryCandidate = "";
+      settleCandidateSince = 0;
+      settleStableSamples = 0;
+    };
+    const automaticMetadata = (arg, fallbackBaseline) => {
+      const value = recordArg2(arg);
+      return {
+        turnID: nonemptyString2(value.turnID) || protocolID2("auto"),
+        baselineSignature: nonemptyOpaqueString2(value.baselineSignature) || fallbackBaseline,
+        originFrameSessionID: nonemptyString2(value.originFrameSessionID) || frameSessionID
+      };
+    };
+    const manualMetadata = (arg, fallbackBaseline) => {
+      const value = recordArg2(arg);
+      const manualIntentID = nonemptyString2(value.manualIntentID);
+      if (!manualIntentID) return null;
+      return {
+        manualIntentID,
+        baselineSignature: nonemptyOpaqueString2(value.baselineSignature) || fallbackBaseline,
+        originFrameSessionID: nonemptyString2(value.originFrameSessionID) || frameSessionID
+      };
+    };
+    const scheduleNextPagePreview = (attempt = 0) => {
+      if (previewTimer) clearTimeout(previewTimer);
+      previewTimer = setTimeout(() => {
+        previewTimer = null;
+        if (pendingAuto || pendingManualIntent || manualSwipeActive || changeReasonInFlight !== null) {
+          scheduleNextPagePreview(Math.min(attempt + 1, 8));
+          return;
+        }
+        const sourceSignature = committedSignature || koboSignature();
+        if (!sourceSignature) {
+          scheduleNextPagePreview(Math.min(attempt + 1, 8));
+          return;
+        }
+        const preview = extractKoboNextPagePreview();
+        if (preview == null ? void 0 : preview.paragraphs.length) {
+          const token = `${sourceSignature}|${preview.contentFingerprint}`;
+          if (token !== lastPreviewToken) {
+            lastPreviewToken = token;
+            const paragraphs = preview.paragraphs.map(
+              (paragraph, paragraphIndex) => {
+                const row = {
+                  paragraphIndex,
+                  text: paragraph.text,
+                  type: "paragraph",
+                  sourceParagraphIndex: paragraph.sourceParagraphIndex,
+                  sourceUTF16Start: paragraph.sourceStart,
+                  sourceUTF16End: paragraph.sourceEnd
+                };
+                if (paragraph.speechText && paragraph.speechText !== paragraph.text) {
+                  row.boundaryUTF16Offset = paragraph.text.length;
+                  row.extendedUTF16Length = paragraph.speechText.length;
+                  row.speechText = paragraph.speechText;
+                }
+                return row;
+              }
+            );
+            postForFrame("googleBooksPagePreview", {
+              sourceSignature,
+              contentFingerprint: preview.contentFingerprint,
+              paragraphs
+            });
+          }
+        } else {
+          if (sourceSignature !== lastGeometryPreviewMissToken) {
+            lastGeometryPreviewMissToken = sourceSignature;
+            postForFrame("googleBooksPreviewDiagnostic", {
+              event: "geometry-miss",
+              sourceSignature,
+              attempt
+            });
+          }
+          const speech = extractKoboNextSpeechPreview();
+          if (speech) {
+            const token = `${sourceSignature}|${speech.contentFingerprint}`;
+            if (token !== lastSpeechPreviewToken) {
+              lastSpeechPreviewToken = token;
+              postForFrame("googleBooksSpeechPreview", {
+                sourceSignature,
+                originFrameSessionID: frameSessionID,
+                exactText: true,
+                sourceParagraphIndex: speech.sourceParagraphIndex,
+                sourceUTF16Start: speech.sourceStart,
+                sourceUTF16End: speech.sourceEnd,
+                text: speech.text,
+                contentFingerprint: speech.contentFingerprint
+              });
+              postForFrame("googleBooksPreviewDiagnostic", {
+                event: "source-preview",
+                sourceSignature,
+                sourceParagraphIndex: speech.sourceParagraphIndex,
+                sourceUTF16Start: speech.sourceStart,
+                sourceUTF16End: speech.sourceEnd,
+                contentFingerprint: speech.contentFingerprint
+              });
+            }
+          }
+        }
+        scheduleNextPagePreview(attempt < 6 ? attempt + 1 : 7);
+      }, attempt === 0 ? 120 : attempt <= 6 ? 360 : 1100);
+    };
+    const beginSettlement = (reason, attempt = 0, forceExtract = false) => {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleCandidate = koboSignature();
+      settleGeometryCandidate = koboGeometryKey();
+      settleCandidateSince = Date.now();
+      settleStableSamples = 1;
+      const verify = () => {
+        settleTimer = setTimeout(() => {
+          settleTimer = null;
+          const current = koboSignature();
+          const currentGeometry = koboGeometryKey();
+          if (current !== settleCandidate || currentGeometry !== settleGeometryCandidate) {
+            if (current) observedSignature = current;
+            settleCandidate = current;
+            settleGeometryCandidate = currentGeometry;
+            settleCandidateSince = Date.now();
+            settleStableSamples = 1;
+            verify();
+            return;
+          }
+          settleStableSamples++;
+          const isLayoutRefresh = layoutRefreshActive;
+          const requiredSamples = isLayoutRefresh ? REFLOW_MIN_STABLE_SAMPLES : 2;
+          const requiredStableMS = isLayoutRefresh ? REFLOW_MIN_STABLE_MS : MIN_STABLE_MS;
+          if (settleStableSamples < requiredSamples || Date.now() - settleCandidateSince < requiredStableMS || isLayoutRefresh && Date.now() < layoutRefreshQuietUntil || reason === "manual" && manualSwipeActive) {
+            verify();
+            return;
+          }
+          const paragraphs = extractKoboParagraphs();
+          if (paragraphs.length === 0 && attempt < 8) {
+            beginSettlement(reason, attempt + 1, forceExtract);
+            return;
+          }
+          if (paragraphs.length === 0) {
+            const metadata = changeMetadata || (reason === "auto" ? pendingAutoMetadata : manualIntentMetadata);
+            if (reason === "auto") {
+              const method = pendingTurnMethod || "none";
+              clearAutoTurn();
+              postForFrame("googleBooksTurnFailed", __spreadValues({
+                method,
+                reason: "stable-page-empty",
+                lateEligible: false
+              }, payloadFor(metadata)));
+            } else if (reason === "manual") {
+              postForFrame("googleBooksPageChanging", __spreadValues({
+                reason: "manual",
+                phase: "cancelled",
+                signature: current,
+                baselineSignature: changeBaseline
+              }, payloadFor(metadata)));
+              clearManualIntent();
+            }
+            postForFrame("error", {
+              stage: "kobo-page-extract",
+              code: layoutFailureCode(),
+              message: "Kobo changed page but no readable reflowable text was available."
+            });
+            clearSettledChange(reason);
+            return;
+          }
+          const finalSignature = current;
+          const returnedToBaseline = changeBaseline.length > 0 && finalSignature === changeBaseline;
+          if (returnedToBaseline && !forceExtract) {
+            if (reason === "manual") {
+              postForFrame("googleBooksPageChanging", __spreadValues({
+                reason: "manual",
+                phase: "cancelled",
+                signature: finalSignature,
+                baselineSignature: changeBaseline
+              }, payloadFor(changeMetadata || manualIntentMetadata)));
+              clearManualIntent();
+            } else if (reason === "auto") {
+              const method = pendingTurnMethod || "none";
+              const metadata = changeMetadata || pendingAutoMetadata;
+              clearAutoTurn();
+              postForFrame("googleBooksTurnFailed", __spreadValues({
+                method,
+                reason: "returned-to-baseline",
+                lateEligible: false
+              }, payloadFor(metadata)));
+            }
+            if (finalSignature) observedSignature = finalSignature;
+            clearSettledChange(reason);
+            return;
+          }
+          const committedMetadata = changeMetadata || (reason === "auto" ? pendingAutoMetadata : null) || (reason === "manual" ? manualIntentMetadata : null);
+          if (reason === "auto") {
+            if (pendingTurnMethod) preferredMethod = pendingTurnMethod;
+            clearAutoTurn();
+          } else if (reason === "manual") {
+            clearManualIntent();
+          }
+          if (finalSignature) {
+            committedSignature = finalSignature;
+            observedSignature = finalSignature;
+          }
+          if (!forceExtract) {
+            postForFrame("googleBooksPageChanging", __spreadValues({
+              reason,
+              phase: "changed",
+              signature: finalSignature,
+              baselineSignature: changeBaseline
+            }, payloadFor(committedMetadata)));
+          }
+          requestExtract(reason, payloadFor(committedMetadata));
+          layoutRefreshActive = false;
+          clearSettledChange(reason);
+          scheduleNextPagePreview();
+        }, STABILITY_POLL_MS);
+      };
+      verify();
+    };
+    const beginLayoutRefresh = (source) => {
+      const now = Date.now();
+      layoutRefreshActive = true;
+      layoutRefreshQuietUntil = Math.max(
+        layoutRefreshQuietUntil,
+        now + REFLOW_MIN_STABLE_MS
+      );
+      lastViewportSizeKey = viewportSizeKey();
+      if (!hasPublishedInitialPage) return;
+      if (pendingAuto || manualSwipeActive || pendingManualIntent && manualIntentKind !== "detected") return;
+      if (pendingManualIntent && manualIntentKind === "detected") {
+        const metadata = manualIntentMetadata;
+        postForFrame("googleBooksPageChanging", __spreadValues({
+          reason: "manual",
+          phase: "cancelled",
+          signature: koboSignature(),
+          baselineSignature: manualIntentBaseline
+        }, payloadFor(metadata)));
+        clearManualIntent();
+      }
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = null;
+      if (changeReasonInFlight && changeReasonInFlight !== "refresh") {
+        clearSettledChange(changeReasonInFlight);
+      }
+      changeReasonInFlight = "refresh";
+      changeBaseline = committedSignature;
+      changeMetadata = null;
+      clearPageVisuals();
+      postForFrame("log", {
+        message: `layout refresh source=${source} viewport=${viewportSizeKey()} geometry=${koboGeometryKey().slice(0, 180)}`
+      });
+      beginSettlement("refresh", 0, true);
+    };
+    const methodAvailable = (method, direction) => {
+      if (method === "semantic") {
+        return koboSemanticTransportReady(direction);
+      }
+      if (method === "slider") {
+        return koboProgressSliderReady(direction);
+      }
+      if (method === "button") return clickableKoboPageButton(direction) !== null;
+      if (method === "key") return false;
+      if (method === "hotspot") {
+        const point = hotspotPoint(direction);
+        return document.elementFromPoint(point.x, point.y) !== null;
+      }
+      return false;
+    };
+    const attemptTurn = (direction, arg) => {
+      var _a2;
+      if (pendingAuto) return false;
+      const visualBaseline = koboSignature() || committedSignature;
+      const metadata = automaticMetadata(arg, visualBaseline);
+      const remembered = preferredMethod ? [preferredMethod] : [];
+      const candidates = [
+        "semantic",
+        "slider",
+        ...remembered,
+        "button"
+      ];
+      const method = candidates.find(
+        (candidate, index) => candidates.indexOf(candidate) === index && methodAvailable(candidate, direction)
+      ) || "none";
+      if (method === "none") {
+        postForFrame("log", {
+          message: `turn control missing direction=${direction} semantic=${koboSemanticTransportStatus()} slider=${koboProgressSliderReady(direction) ? "ready" : "missing"} roots=${koboControlRoots().length}`
+        });
+        postForFrame("googleBooksTurnFailed", __spreadValues({
+          method,
+          lateEligible: false
+        }, metadata));
+        return false;
+      }
+      pendingAuto = true;
+      pendingAutoMetadata = metadata;
+      lateAutoTurn = null;
+      clearManualIntent();
+      pendingTurnBaseline = visualBaseline;
+      pendingTurnMethod = method;
+      const armTurnConfirmation = () => {
+        if (turnConfirmationTimer) clearTimeout(turnConfirmationTimer);
+        turnConfirmationTimer = setTimeout(() => {
+          turnConfirmationTimer = null;
+          if (!pendingAuto || koboSignature() !== pendingTurnBaseline) return;
+          const failedMethod = pendingTurnMethod || method;
+          const failedMetadata = pendingAutoMetadata;
+          const failedBaseline = pendingTurnBaseline;
+          if (failedMetadata) {
+            lateAutoTurn = {
+              metadata: failedMetadata,
+              detectionBaselineSignature: failedBaseline,
+              expiresAt: Date.now() + AUTO_TURN_TOMBSTONE_TTL_MS2
+            };
+          }
+          clearAutoTurn();
+          postForFrame("googleBooksTurnFailed", __spreadValues({
+            method: failedMethod,
+            lateEligible: true
+          }, payloadFor(failedMetadata)));
+        }, TURN_CONFIRMATION_MS);
+      };
+      if (method === "slider") {
+        const invocation = invokeKoboProgressSliderTurn(direction);
+        if (!invocation.accepted) {
+          clearAutoTurn();
+          postForFrame("log", {
+            message: `progress slider rejected direction=${direction}`
+          });
+          postForFrame("googleBooksTurnFailed", __spreadValues({
+            method,
+            lateEligible: false
+          }, metadata));
+          return false;
+        }
+        postForFrame("googleBooksTurnRequested", __spreadValues(__spreadValues({
+          method,
+          attempt: 1
+        }, invocation.details || {}), metadata));
+        armTurnConfirmation();
+        return true;
+      }
+      if (method === "semantic") {
+        const invocation = invokeKoboSemanticPageTurn(direction);
+        if (!invocation.accepted) {
+          clearAutoTurn();
+          postForFrame("log", {
+            message: `semantic turn rejected direction=${direction} status=${koboSemanticTransportStatus()}`
+          });
+          postForFrame("googleBooksTurnFailed", __spreadValues({
+            method,
+            lateEligible: false
+          }, metadata));
+          return false;
+        }
+        postForFrame("googleBooksTurnRequested", __spreadValues(__spreadValues({
+          method,
+          attempt: 1,
+          transport: koboSemanticTransportStatus()
+        }, invocation.details || {}), metadata));
+        armTurnConfirmation();
+        void ((_a2 = invocation.completion) == null ? void 0 : _a2.catch(() => {
+          if (!pendingAuto || (pendingAutoMetadata == null ? void 0 : pendingAutoMetadata.turnID) !== metadata.turnID || koboSignature() !== pendingTurnBaseline) return;
+          clearAutoTurn();
+          koboSemanticTransportFailure = "semantic-promise-rejected";
+          koboSemanticTransport = null;
+          warmSemanticTransport();
+          postForFrame("log", {
+            message: `semantic turn promise rejected direction=${direction} status=${koboSemanticTransportStatus()}`
+          });
+          postForFrame("googleBooksTurnFailed", __spreadValues({
+            method,
+            lateEligible: false
+          }, metadata));
+        }));
+        return true;
+      }
+      pendingTurnMethod = turnKoboPage(direction, method);
+      if (pendingTurnMethod === "none") {
+        clearAutoTurn();
+        postForFrame("googleBooksTurnFailed", __spreadValues({
+          method,
+          lateEligible: false
+        }, metadata));
+        return false;
+      }
+      const clickedControl = findKoboPageControl(direction);
+      if (clickedControl) {
+        postForFrame("log", {
+          message: `turn click root=${clickedControl.rootLabel} visible=${clickedControl.visible ? "Y" : "N"} roots=${clickedControl.rootCount} candidates=${clickedControl.candidateCount} label=${clickedControl.label.slice(0, 120)}`
+        });
+      }
+      postForFrame("googleBooksTurnRequested", __spreadValues({
+        method: pendingTurnMethod,
+        attempt: 1
+      }, metadata));
+      armTurnConfirmation();
+      return true;
+    };
+    const attemptManualTurn = (direction) => {
+      var _a2;
+      if (pendingAuto || pendingManualIntent) return false;
+      const remembered = preferredMethod ? [preferredMethod] : [];
+      const candidates = [
+        "semantic",
+        "slider",
+        ...remembered,
+        "button"
+      ];
+      const method = candidates.find(
+        (candidate, index) => candidates.indexOf(candidate) === index && methodAvailable(candidate, direction)
+      ) || "none";
+      if (method === "none") return false;
+      if (!postManualIntent("native-control", direction)) return false;
+      changeReasonInFlight = "manual";
+      changeBaseline = manualIntentBaseline || committedSignature;
+      changeMetadata = manualIntentMetadata;
+      const intentID = manualIntentMetadata == null ? void 0 : manualIntentMetadata.manualIntentID;
+      if (method === "slider") {
+        const invocation = invokeKoboProgressSliderTurn(direction);
+        if (!invocation.accepted) {
+          beginSettlement("manual");
+          return false;
+        }
+        return true;
+      }
+      if (method === "semantic") {
+        const invocation = invokeKoboSemanticPageTurn(direction);
+        if (!invocation.accepted) {
+          beginSettlement("manual");
+          return false;
+        }
+        void ((_a2 = invocation.completion) == null ? void 0 : _a2.catch(() => {
+          if (pendingManualIntent && (manualIntentMetadata == null ? void 0 : manualIntentMetadata.manualIntentID) === intentID) {
+            beginSettlement("manual");
+          }
+        }));
+        return true;
+      }
+      const performed = turnKoboPage(direction, method);
+      if (performed === "none") {
+        beginSettlement("manual");
+        return false;
+      }
+      return true;
+    };
+    function postManualIntent(intent, direction, allowDebounce = true) {
+      const now = Date.now();
+      if (allowDebounce && now - lastManualIntentAt < 350) {
+        return pendingManualIntent;
+      }
+      lastManualIntentAt = now;
+      if (pendingAuto) clearAutoTurn();
+      if (changeReasonInFlight && changeReasonInFlight !== "manual") {
+        if (settleTimer) clearTimeout(settleTimer);
+        settleTimer = null;
+        clearSettledChange(changeReasonInFlight);
+        observedSignature = koboSignature() || observedSignature;
+      }
+      pendingManualIntent = true;
+      manualIntentExpiresAt = now + 2600;
+      manualIntentBaseline = committedSignature || observedSignature || koboSignature();
+      manualIntentMetadata = {
+        manualIntentID: protocolID2("manual"),
+        baselineSignature: manualIntentBaseline,
+        originFrameSessionID: frameSessionID
+      };
+      manualIntentKind = intent;
+      clearPageVisuals();
+      postForFrame("googleBooksPageChanging", __spreadValues({
+        reason: "manual",
+        phase: "intent",
+        intent,
+        direction,
+        baselineSignature: manualIntentBaseline
+      }, manualIntentMetadata));
+      return true;
+    }
+    function beginManualSwipe(direction) {
+      if (manualSwipeActive) return;
+      if (postManualIntent("swipe", direction)) manualSwipeActive = true;
+    }
+    function finishManualSwipe() {
+      if (!manualSwipeActive) return;
+      manualSwipeActive = false;
+      if (!pendingManualIntent) return;
+      if (changeReasonInFlight === null) {
+        changeReasonInFlight = "manual";
+        changeBaseline = manualIntentBaseline || committedSignature;
+        changeMetadata = manualIntentMetadata;
+      }
+      beginSettlement("manual");
+    }
+    const api = {
+      nextPage(arg) {
+        return attemptTurn("next", arg);
+      },
+      prevPage(arg) {
+        return attemptTurn("prev", arg);
+      },
+      userPage(arg) {
+        const direction = recordArg2(arg).direction;
+        if (direction !== "next" && direction !== "prev") return false;
+        return attemptManualTurn(direction);
+      },
+      refresh(arg) {
+        var _a2;
+        const fallbackBaseline = committedSignature || koboSignature();
+        const automatic = nonemptyString2(recordArg2(arg).turnID) ? automaticMetadata(arg, fallbackBaseline) : null;
+        const manual = manualMetadata(arg, fallbackBaseline);
+        if (automatic) {
+          changeReasonInFlight = "auto";
+          changeBaseline = ((_a2 = liveLateAutoTurn()) == null ? void 0 : _a2.detectionBaselineSignature) || fallbackBaseline;
+          changeMetadata = automatic;
+          beginSettlement("auto", 0, true);
+        } else if (manual) {
+          changeReasonInFlight = "manual";
+          changeBaseline = manual.baselineSignature;
+          changeMetadata = manual;
+          beginSettlement("manual", 0, true);
+        } else {
+          changeReasonInFlight = "refresh";
+          changeBaseline = fallbackBaseline;
+          changeMetadata = null;
+          beginSettlement("refresh", 0, true);
+        }
+      },
+      relayout(arg) {
+        const value = recordArg2(arg);
+        const bottomOcclusion = Number(value.bottomOcclusion);
+        if (Number.isFinite(bottomOcclusion)) {
+          koboNativeBottomOcclusion = Math.max(0, bottomOcclusion);
+        }
+        beginLayoutRefresh(
+          nonemptyString2(value.reason) || "native-surface"
+        );
+        return true;
+      },
+      retargetTurnBaseline(arg) {
+        const value = recordArg2(arg);
+        const turnID = nonemptyString2(value.turnID);
+        const baseline = nonemptyOpaqueString2(value.detectionBaselineSignature);
+        if (!turnID || !baseline) return;
+        if ((pendingAutoMetadata == null ? void 0 : pendingAutoMetadata.turnID) === turnID) {
+          pendingTurnBaseline = baseline;
+          if (changeReasonInFlight === "auto" && (changeMetadata == null ? void 0 : changeMetadata.turnID) === turnID) {
+            changeBaseline = baseline;
+          }
+        }
+        const late = liveLateAutoTurn();
+        if ((late == null ? void 0 : late.metadata.turnID) === turnID) {
+          late.detectionBaselineSignature = baseline;
+          late.expiresAt = Date.now() + AUTO_TURN_TOMBSTONE_TTL_MS2;
+        }
+      },
+      completeTurn(arg) {
+        const turnID = nonemptyString2(recordArg2(arg).turnID);
+        if (turnID && (lateAutoTurn == null ? void 0 : lateAutoTurn.metadata.turnID) === turnID) {
+          lateAutoTurn = null;
+        }
+      }
+    };
+    ;
+    window.CastReaderGoogleBooks = api;
+    window.CastReaderKobo = api;
+    const bridge = window.CR;
+    if (bridge) {
+      Object.assign(bridge, {
+        gbNextPage: api.nextPage,
+        gbPrevPage: api.prevPage,
+        gbManualPage: api.userPage,
+        gbRefresh: api.refresh,
+        gbRelayout: api.relayout,
+        gbRetargetTurnBaseline: api.retargetTurnBaseline,
+        gbCompleteTurn: api.completeTurn
+      });
+    }
+    let touchOrigin = null;
+    const physicalSwipeDirection = (dx, doc) => {
+      const movingTowardLeft = dx < 0;
+      const physicalNext = documentDirection(doc) === "rtl" ? !movingTowardLeft : movingTowardLeft;
+      return physicalNext ? "next" : "prev";
+    };
+    const installManualListeners = (doc) => {
+      if (installedListenerDocuments.has(doc)) return;
+      installedListenerDocuments.add(doc);
+      const view = doc.defaultView;
+      if (!view) return;
+      doc.addEventListener("touchstart", (rawEvent) => {
+        const event = rawEvent;
+        if (!event.isTrusted || event.touches.length !== 1) {
+          touchOrigin = null;
+          return;
+        }
+        const touch = event.touches[0];
+        touchOrigin = {
+          x: touch.clientX,
+          y: touch.clientY,
+          intentPosted: false,
+          doc
+        };
+      }, { capture: true, passive: true });
+      const detectSwipe = (touch) => {
+        const origin = touchOrigin;
+        if (!origin || origin.doc !== doc || origin.intentPosted) return;
+        const dx = touch.clientX - origin.x;
+        const dy = touch.clientY - origin.y;
+        const threshold = Math.max(44, (view.innerWidth || window.innerWidth) * 0.11);
+        if (Math.abs(dx) < threshold || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+        beginManualSwipe(physicalSwipeDirection(dx, doc));
+        origin.intentPosted = manualSwipeActive;
+      };
+      doc.addEventListener("touchmove", (rawEvent) => {
+        const event = rawEvent;
+        if (!event.isTrusted || event.touches.length !== 1) return;
+        detectSwipe(event.touches[0]);
+      }, { capture: true, passive: true });
+      doc.addEventListener("touchend", (rawEvent) => {
+        const event = rawEvent;
+        if (event.isTrusted && (touchOrigin == null ? void 0 : touchOrigin.doc) === doc && event.changedTouches.length === 1) {
+          detectSwipe(event.changedTouches[0]);
+        }
+        touchOrigin = null;
+        finishManualSwipe();
+      }, { capture: true, passive: true });
+      doc.addEventListener("touchcancel", () => {
+        touchOrigin = null;
+        finishManualSwipe();
+      }, { capture: true, passive: true });
+      doc.addEventListener("click", (rawEvent) => {
+        const event = rawEvent;
+        if (!event.isTrusted) return;
+        const width = view.innerWidth || window.innerWidth;
+        const edge = Math.min(72, Math.max(42, width * 0.16));
+        const target = event.target;
+        const interactive = target == null ? void 0 : target.closest(
+          'a,button,input,textarea,select,[role="button"],[contenteditable="true"]'
+        );
+        const label = interactive ? controlLabel(interactive) : "";
+        const nextControl = NEXT_PAGE_LABEL.test(label) && !CHAPTER_LABEL.test(label);
+        const previousControl = PREVIOUS_PAGE_LABEL.test(label) && !CHAPTER_LABEL.test(label);
+        if (!nextControl && !previousControl && event.clientX > edge && event.clientX < width - edge) return;
+        if (interactive && !nextControl && !previousControl) return;
+        const rtl = documentDirection(doc) === "rtl";
+        const physicalLeft = event.clientX < edge;
+        const direction = previousControl ? "prev" : nextControl ? "next" : physicalLeft === rtl ? "next" : "prev";
+        postManualIntent("edge-click", direction);
+      }, true);
+      doc.addEventListener("keydown", (rawEvent) => {
+        const event = rawEvent;
+        if (!event.isTrusted || event.repeat) return;
+        const target = event.target;
+        if ((target == null ? void 0 : target.isContentEditable) || (target == null ? void 0 : target.tagName) === "INPUT" || (target == null ? void 0 : target.tagName) === "TEXTAREA") return;
+        const rtl = documentDirection(doc) === "rtl";
+        const directions = {
+          ArrowRight: rtl ? "prev" : "next",
+          PageDown: "next",
+          ArrowLeft: rtl ? "next" : "prev",
+          PageUp: "prev"
+        };
+        const direction = directions[event.key];
+        if (direction) postManualIntent("page-key", direction);
+      }, true);
+    };
+    const refreshFrameListeners = () => {
+      installManualListeners(document);
+      for (const frame of allAccessibleFrames()) {
+        installManualListeners(frame.doc);
+      }
+    };
+    refreshFrameListeners();
+    const observeViewportChange = (source) => {
+      const key = viewportSizeKey();
+      if (key === lastViewportSizeKey && source === "poll") return;
+      lastViewportSizeKey = key;
+      beginLayoutRefresh(source);
+    };
+    window.addEventListener(
+      "resize",
+      () => observeViewportChange("window-resize"),
+      { passive: true }
+    );
+    window.addEventListener(
+      "orientationchange",
+      () => observeViewportChange("orientationchange"),
+      { passive: true }
+    );
+    (_a = window.visualViewport) == null ? void 0 : _a.addEventListener(
+      "resize",
+      () => observeViewportChange("visual-viewport-resize"),
+      { passive: true }
+    );
+    setInterval(() => {
+      observeViewportChange("poll");
+      if (reportReaderFailureIfPresent()) return;
+      if (ensureKoboChapterTypography()) return;
+      refreshFrameListeners();
+      const signature = koboSignature();
+      if (!signature || signature === observedSignature) return;
+      observedSignature = signature;
+      const firstGeometryChange = changeReasonInFlight === null;
+      const freshManualIntent = pendingManualIntent && Date.now() <= manualIntentExpiresAt;
+      const late = liveLateAutoTurn();
+      const lateAutomaticDeparture = !!late && signature !== late.detectionBaselineSignature;
+      if (firstGeometryChange && !pendingAuto && !freshManualIntent && !lateAutomaticDeparture && !layoutRefreshActive) {
+        postManualIntent("detected", "next", false);
+      }
+      const reason = changeReasonInFlight || (pendingAuto ? "auto" : layoutRefreshActive ? "refresh" : pendingManualIntent ? "manual" : lateAutomaticDeparture ? "auto" : "refresh");
+      changeReasonInFlight = reason;
+      if (firstGeometryChange) {
+        clearPageVisuals();
+        changeBaseline = reason === "auto" ? pendingTurnBaseline || (late == null ? void 0 : late.detectionBaselineSignature) || committedSignature : reason === "manual" ? manualIntentBaseline || committedSignature : committedSignature;
+        changeMetadata = reason === "auto" ? pendingAutoMetadata || (late == null ? void 0 : late.metadata) || null : reason === "manual" ? manualIntentMetadata : null;
+      }
+      beginSettlement(reason);
+    }, 250);
+    let waited = 0;
+    const boot = setInterval(() => {
+      waited += 200;
+      if (reportReaderFailureIfPresent()) {
+        clearInterval(boot);
+        return;
+      }
+      if (ensureKoboChapterTypography()) return;
+      refreshFrameListeners();
+      const paragraphs = extractKoboParagraphs();
+      if (paragraphs.length > 0) {
+        const signature = koboSignature();
+        const geometry = koboGeometryKey();
+        if (signature !== bootCandidate || geometry !== bootGeometryCandidate) {
+          bootCandidate = signature;
+          bootGeometryCandidate = geometry;
+          bootCandidateSince = Date.now();
+          return;
+        }
+        if (Date.now() - bootCandidateSince < INITIAL_LAYOUT_MIN_STABLE_MS || Date.now() < layoutRefreshQuietUntil) return;
+        clearInterval(boot);
+        committedSignature = signature;
+        observedSignature = signature;
+        hasPublishedInitialPage = true;
+        layoutRefreshActive = false;
+        postForFrame("log", { message: koboLayoutDiagnostic() });
+        requestExtract("initial");
+        scheduleNextPagePreview();
+        return;
+      }
+      if (waited < 15e3) return;
+      clearInterval(boot);
+      hasPublishedInitialPage = true;
+      layoutRefreshActive = false;
+      postForFrame("log", { message: koboLayoutDiagnostic() });
+      requestExtract("initial");
+      const code = layoutFailureCode();
+      postForFrame("error", {
+        stage: "kobo-reader-layout",
+        code,
+        message: code === "fixed-layout-unsupported" ? "This fixed-layout Kobo book is not supported yet." : "Kobo reader content did not become available."
+      });
+    }, 200);
   }
 
   // src/entry.ts
@@ -52804,5 +56679,85 @@ var __CRWeb = (() => {
     }
     return (r || []).map((p) => ({ text: p.text, element: p.element }));
   }
-  initBridge({ extract });
+  function bootPlayBooks() {
+    if (isPlayBooksRelayContainer()) {
+      installPlayBooksRelay();
+      return true;
+    }
+    if (!isPlayBooksReaderFrame()) return false;
+    const frameSessionID = playBooksFrameSessionID();
+    installPlayBooksRelayReceiver(frameSessionID);
+    let pendingReason = "initial";
+    let pendingPageMetadata = {};
+    initBridge({
+      extract: () => extractPlayBooksParagraphs(),
+      acceptHighlightRect: acceptPlayBooksHighlightRect,
+      autoExtract: false,
+      pageMeta: () => __spreadValues({
+        source: "google-books",
+        reason: pendingReason,
+        signature: playBooksSignature(),
+        frameSessionID
+      }, pendingPageMetadata),
+      onInstalled: ({ extract: doExtract }) => {
+        const CR = window.CR;
+        if (CR) CR.disableScroll = true;
+        const post = (type2, payload = {}) => {
+          var _a, _b, _c;
+          try {
+            ;
+            (_c = (_b = (_a = window.webkit) == null ? void 0 : _a.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({ type: type2, payload });
+          } catch (e) {
+          }
+        };
+        installPlayBooksReader(post, (reason, metadata = {}) => {
+          pendingReason = reason;
+          pendingPageMetadata = metadata;
+          doExtract(reason);
+          pendingPageMetadata = {};
+        }, frameSessionID);
+      }
+    });
+    return true;
+  }
+  function bootKobo() {
+    if (isKoboReaderDescendantFrame()) return true;
+    if (!isKoboReaderMainFrame()) return false;
+    const frameSessionID = koboFrameSessionID();
+    let pendingReason = "initial";
+    let pendingPageMetadata = {};
+    initBridge({
+      extract: () => extractKoboParagraphs(),
+      acceptHighlightRect: acceptKoboHighlightRect,
+      autoExtract: false,
+      pageMeta: () => __spreadValues({
+        source: "kobo",
+        reason: pendingReason,
+        signature: koboSignature(),
+        frameSessionID
+      }, pendingPageMetadata),
+      onInstalled: ({ extract: doExtract }) => {
+        const CR = window.CR;
+        if (CR) CR.disableScroll = true;
+        const post = (type2, payload = {}) => {
+          var _a, _b, _c;
+          try {
+            ;
+            (_c = (_b = (_a = window.webkit) == null ? void 0 : _a.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({ type: type2, payload });
+          } catch (e) {
+          }
+        };
+        installKoboReader(post, (reason, metadata = {}) => {
+          pendingReason = reason;
+          pendingPageMetadata = metadata;
+          doExtract(reason);
+          pendingPageMetadata = {};
+        }, frameSessionID);
+      }
+    });
+    return true;
+  }
+  if (!bootKobo() && !bootPlayBooks()) {
+    initBridge({ extract });
+  }
 })();

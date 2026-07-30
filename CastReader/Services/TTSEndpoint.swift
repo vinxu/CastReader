@@ -12,7 +12,8 @@ import Foundation
 enum TTSEndpoint {
     /// 硬编码默认（与扩展 config/tts-endpoints.json 一致；CN 实例轮换时远程配置会覆盖）。
     static let cnDefault = "https://uu122431-80b4-9c6a8f65.bjb1.seetacloud.com:8443"
-    static let usDefault = "http://api.castreader.ai:8123"
+    static let usDefault = "https://api.castreader.ai"
+    private static let legacyUSDefault = "http://api.castreader.ai:8123"
 
     static let remoteConfigURL = "https://castreader-config-1323065328.cos.accelerate.myqcloud.com/tts-endpoints.json"
     private static let cacheKey = "tts_endpoints_v1"
@@ -30,10 +31,28 @@ enum TTSEndpoint {
     /// 当前端点（远程配置缓存优先，否则默认）。
     static func endpoints() -> (cn: String, us: String) {
         if let d = UserDefaults.standard.dictionary(forKey: cacheKey) as? [String: String],
-           let cn = d["cn_url"], let us = d["us_url"], !cn.isEmpty, !us.isEmpty {
+           let cn = d["cn_url"].flatMap(normalizedSecureBase),
+           let us = d["us_url"].flatMap(normalizedSecureBase) {
             return (cn, us)
         }
         return (cnDefault, usDefault)
+    }
+
+    /// Accept only HTTPS endpoint bases. The public route configuration still
+    /// contains the historical plaintext US origin, so upgrade it locally
+    /// instead of allowing cached configuration to weaken transport security.
+    static func normalizedSecureBase(_ rawValue: String) -> String? {
+        var raw = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        while raw.hasSuffix("/") { raw.removeLast() }
+        if raw == legacyUSDefault {
+            return usDefault
+        }
+        guard let components = URLComponents(string: raw),
+              components.scheme?.lowercased() == "https",
+              components.host?.isEmpty == false else {
+            return nil
+        }
+        return raw
     }
 
     /// 主用节点：大陆→CN，否则→US。
@@ -59,8 +78,10 @@ enum TTSEndpoint {
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
             if let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let cn = obj["cn_url"] as? String, let us = obj["us_url"] as? String,
-               !cn.isEmpty, !us.isEmpty {
+               let rawCN = obj["cn_url"] as? String,
+               let rawUS = obj["us_url"] as? String,
+               let cn = normalizedSecureBase(rawCN),
+               let us = normalizedSecureBase(rawUS) {
                 UserDefaults.standard.set(["cn_url": cn, "us_url": us], forKey: cacheKey)
                 UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: cacheTimeKey)
             }

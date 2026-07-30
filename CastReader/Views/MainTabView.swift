@@ -238,6 +238,7 @@ struct MainTabView: View {
         .onChange(of: scenePhase) { phase in
             if phase == .active {
                 reviewPrompt.recordActiveDay()
+                ResumeReminderManager.shared.appBecameActive()   // 取消待发召回 + 时机成熟则请求通知权限
                 if !libraryOnboarding.isChooserPresented {
                     clipboard.check()   // 进 App / 回前台 → 探测剪贴板
                 }
@@ -454,6 +455,34 @@ struct MainTabView: View {
                 )
             } else {
                 NotificationCenter.default.post(name: .castReaderWeReadRebindRequested, object: nil)
+            }
+        case .googleBooks:
+            if !forcesLibraryOnboardingRebind,
+               let book = GoogleBooksLibraryStore.shared.homeBooks.first {
+                GoogleBooksReaderLauncher.open(
+                    book,
+                    using: coordinator,
+                    onboarding: libraryOnboarding
+                )
+            } else {
+                NotificationCenter.default.post(
+                    name: .castReaderGoogleBooksRebindRequested,
+                    object: nil
+                )
+            }
+        case .kobo:
+            if !forcesLibraryOnboardingRebind,
+               let book = KoboLibraryStore.shared.homeBooks.first {
+                KoboReaderLauncher.open(
+                    book,
+                    using: coordinator,
+                    onboarding: libraryOnboarding
+                )
+            } else {
+                NotificationCenter.default.post(
+                    name: .castReaderKoboRebindRequested,
+                    object: nil
+                )
             }
         }
     }
@@ -740,9 +769,9 @@ private struct BoundLibraryOnboardingView: View {
         if appLanguage.selectedLanguage == .simplifiedChinese
             || (appLanguage.selectedLanguage == .system
                 && Locale.autoupdatingCurrent.language.languageCode?.identifier == "zh") {
-            return [.weread, .kindle]
+            return [.kindle, .weread, .googleBooks, .kobo]
         }
-        return [.kindle, .weread]
+        return [.kindle, .googleBooks, .kobo, .weread]
     }
 
     var body: some View {
@@ -822,10 +851,45 @@ private struct BoundLibraryOnboardingView: View {
         }
     }
 
+    private func symbol(for source: BoundLibraryOnboardingSource) -> String {
+        switch source {
+        case .kindle: return "books.vertical.fill"
+        case .weread: return "book.closed.fill"
+        case .googleBooks: return "book.pages"
+        case .kobo: return "book.closed.fill"
+        }
+    }
+
+    private func title(for source: BoundLibraryOnboardingSource) -> String {
+        switch source {
+        case .kindle: return AppLocalized("绑定 Kindle")
+        case .weread: return AppLocalized("绑定微信读书")
+        case .googleBooks: return AppLocalized("绑定 Google Play 图书")
+        case .kobo: return AppLocalized("绑定 Kobo")
+        }
+    }
+
+    private func subtitle(for source: BoundLibraryOnboardingSource) -> String {
+        switch source {
+        case .kindle: return AppLocalized("登录后同步书架")
+        case .weread, .googleBooks, .kobo:
+            return AppLocalized("登录后同步书架与阅读进度")
+        }
+    }
+
+    private func identifier(for source: BoundLibraryOnboardingSource) -> String {
+        switch source {
+        case .kindle: return "libraryOnboardingKindle"
+        case .weread: return "libraryOnboardingWeRead"
+        case .googleBooks: return "libraryOnboardingGoogleBooks"
+        case .kobo: return "libraryOnboardingKobo"
+        }
+    }
+
     private func sourceButton(_ source: BoundLibraryOnboardingSource) -> some View {
         Button { onSelect(source) } label: {
             HStack(spacing: 15) {
-                Image(systemName: source == .kindle ? "books.vertical.fill" : "book.closed.fill")
+                Image(systemName: symbol(for: source))
                     .font(.system(size: 23, weight: .semibold))
                     .foregroundStyle(AppTheme.primary)
                     .frame(width: 50, height: 50)
@@ -833,17 +897,13 @@ private struct BoundLibraryOnboardingView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(source == .kindle ? AppLocalized("绑定 Kindle") : AppLocalized("绑定微信读书"))
+                    Text(title(for: source))
                         .font(.headline)
                         .foregroundStyle(AppTheme.foreground)
-                    Text(
-                        source == .kindle
-                            ? AppLocalized("登录后同步书架")
-                            : AppLocalized("登录后同步书架与阅读进度")
-                    )
-                    .font(.caption)
-                    .foregroundStyle(AppTheme.mutedForeground)
-                    .fixedSize(horizontal: false, vertical: true)
+                    Text(subtitle(for: source))
+                        .font(.caption)
+                        .foregroundStyle(AppTheme.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 4)
@@ -861,9 +921,7 @@ private struct BoundLibraryOnboardingView: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityIdentifier(
-            source == .kindle ? "libraryOnboardingKindle" : "libraryOnboardingWeRead"
-        )
+        .accessibilityIdentifier(identifier(for: source))
     }
 }
 

@@ -13,7 +13,7 @@ import SwiftUI
 
 struct KindleBook: Identifiable, Codable, Equatable {
     enum CodingKeys: String, CodingKey {
-        case id, asin, title, author, coverURL, readerURL, progressLabel, language, languageSource
+        case id, asin, title, author, coverURL, readerURL, progressLabel, storefrontID, language, languageSource
         case kindleWritingMode, kindleReadingDirection, kindlePageProgressionDirection
         case lastOpenedAt, lastSyncedAt, lastReadPageKey, lastReadURL
     }
@@ -25,6 +25,9 @@ struct KindleBook: Identifiable, Codable, Equatable {
     var coverURL: String?
     var readerURL: String
     var progressLabel: String
+    /// Amazon marketplace that owns this book. Legacy records are migrated from
+    /// their reader URL host by KindleLibraryStore.
+    var storefrontID: String? = nil
     var language: String? = nil
     /// `nil` means a legacy/unverified value and must not become the OCR authority.
     var languageSource: String? = nil
@@ -871,6 +874,25 @@ enum KindleBookValidator {
     private static let blockedTitlePhrases = [
         "download", "app store", "kindle app", "learn more", "read on any device",
         "help", "support", "settings", "notebook", "privacy", "terms",
+        "descargar", "tienda de aplicaciones", "aplicación kindle", "más información",
+        "leer en cualquier dispositivo", "ayuda", "soporte", "configuración", "cuaderno",
+        "privacidad", "términos",
+        "baixar", "loja de aplicativos", "aplicativo kindle", "saiba mais",
+        "leia em qualquer dispositivo", "ajuda", "suporte", "configurações", "caderno",
+        "privacidade", "termos",
+        "ダウンロード", "アプリストア", "kindleアプリ", "詳細", "どの端末でも読む",
+        "ヘルプ", "サポート", "設定", "ノートブック", "プライバシー", "規約",
+        "herunterladen", "app-store", "kindle-app", "mehr erfahren",
+        "auf jedem gerät lesen", "hilfe", "einstellungen", "notizbuch",
+        "datenschutz", "bedingungen",
+        "télécharger", "application kindle", "en savoir plus",
+        "lire sur n’importe quel appareil", "aide", "assistance", "paramètres",
+        "carnet", "confidentialité", "conditions",
+        "scarica", "app kindle", "ulteriori informazioni",
+        "leggi su qualsiasi dispositivo", "aiuto", "impostazioni", "taccuino",
+        "termini",
+        "डाउनलोड", "ऐप स्टोर", "किंडल ऐप", "और जानें", "किसी भी डिवाइस पर पढ़ें",
+        "सहायता", "समर्थन", "सेटिंग", "नोटबुक", "गोपनीयता", "शर्तें",
         "下载", "应用商店", "了解更多", "任何设备", "帮助", "支持", "设置", "笔记"
     ]
 
@@ -926,52 +948,88 @@ enum KindleBookValidator {
 
     static func isKindleReaderPath(_ raw: String) -> Bool {
         guard let url = URL(string: raw) else { return false }
-        let host = url.host?.lowercased() ?? ""
-        guard host.contains("read.amazon.") else { return false }
+        guard KindleStorefront.matches(url: url) else { return false }
         return url.path.lowercased().contains("/reader/")
     }
 
     static func repairedReaderURL(for book: KindleBook, preferLastRead: Bool) -> String? {
+        let explicitStorefront = KindleStorefront.entry(id: book.storefrontID)
+        let fallbackStorefront = explicitStorefront ?? .us
         let candidates = preferLastRead ? [book.lastReadURL, Optional(book.readerURL)] : [Optional(book.readerURL), book.lastReadURL]
         for candidate in candidates {
-            if let usable = usableReaderURL(candidate, fallbackASIN: book.asin ?? book.id) {
+            if let usable = usableReaderURL(
+                candidate,
+                fallbackASIN: book.asin ?? book.id,
+                storefront: explicitStorefront
+            ) {
                 return usable
             }
         }
         if let asin = asinValue(in: book.asin) ?? asinValue(in: book.id) {
-            return canonicalReaderURL(asin: asin)
+            return canonicalReaderURL(asin: asin, storefront: fallbackStorefront)
         }
         return nil
     }
 
-    static func usableReaderURL(_ raw: String?, fallbackASIN: String? = nil) -> String? {
+    static func usableReaderURL(
+        _ raw: String?,
+        fallbackASIN: String? = nil,
+        storefront explicitStorefront: KindleStorefront? = nil
+    ) -> String? {
         guard let raw else { return nil }
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
+        if URL(string: trimmed)?.host == nil,
+           let asin = asinValue(in: trimmed) {
+            return canonicalReaderURL(
+                asin: asin,
+                storefront: explicitStorefront ?? .us
+            )
+        }
+
+        guard let url = URL(string: trimmed),
+              let urlStorefront = KindleStorefront.entry(url: url) else {
+            return nil
+        }
+        let targetStorefront = explicitStorefront ?? urlStorefront
+
         if isBareKindleRoot(trimmed), let asin = asinValue(in: fallbackASIN) {
-            return canonicalReaderURL(asin: asin)
+            return canonicalReaderURL(asin: asin, storefront: targetStorefront)
         }
 
         if let asin = asinValue(in: trimmed) {
-            return canonicalReaderURL(asin: asin)
+            return canonicalReaderURL(asin: asin, storefront: targetStorefront)
         }
 
         if isKindleReaderPath(trimmed) {
-            return trimmed
+            guard var components = URLComponents(
+                url: url,
+                resolvingAgainstBaseURL: false
+            ) else {
+                return nil
+            }
+            components.scheme = "https"
+            components.host = targetStorefront.canonicalHost
+            components.user = nil
+            components.password = nil
+            components.port = nil
+            return components.url?.absoluteString
         }
 
         return nil
     }
 
-    static func canonicalReaderURL(asin: String) -> String {
-        "https://read.amazon.com/?asin=\(asin.uppercased())&ref_=kwl_kr_iv_rec_1"
+    static func canonicalReaderURL(
+        asin: String,
+        storefront: KindleStorefront = .us
+    ) -> String {
+        storefront.readerURL(asin: asin).absoluteString
     }
 
     private static func isBareKindleRoot(_ raw: String) -> Bool {
         guard let url = URL(string: raw) else { return false }
-        let host = url.host?.lowercased() ?? ""
-        guard host.contains("read.amazon.") else { return false }
+        guard KindleStorefront.matches(url: url) else { return false }
         let path = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         return path.isEmpty && (url.query?.isEmpty ?? true)
     }

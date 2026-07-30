@@ -19,41 +19,39 @@ struct WeReadHomeSection: View {
     @State private var showConnect = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(AppLocalized("微信读书")).font(.headline).foregroundColor(AppTheme.foreground)
-                    Text(AppLocalized("已同步的微信读书书架")).font(.caption).foregroundColor(AppTheme.mutedForeground)
-                }
-                Spacer()
-                if !store.needsConnection {
-                    NavigationLink(destination: WeReadLibraryView()) {
-                        Text(AppLocalized("查看全部")).font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.primary)
-                    }
-                }
-            }
-
-            if store.needsConnection {
-                Button { showConnect = true } label: { connectCard }.buttonStyle(.plain)
-                    .accessibilityIdentifier("connectWeReadButton")
-            } else if store.homeBooks.isEmpty {
-                HStack(spacing: 12) {
-                    Image(systemName: "arrow.clockwise").foregroundColor(AppTheme.primary)
-                    Text(AppLocalized("还没有同步书籍")).font(.subheadline).foregroundColor(AppTheme.foreground)
-                    Spacer()
-                    Button(AppLocalized("同步")) { showConnect = true }.font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.primary)
-                }
-                .padding(14).background(AppTheme.surface).cornerRadius(16)
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 14) {
-                        ForEach(store.homeBooks) { book in
-                            Button { open(book) } label: { WeReadBookRailCard(book: book) }.buttonStyle(.plain)
+        Group {
+            if !store.needsConnection && !store.homeBooks.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(AppLocalized("微信读书")).font(.headline).foregroundColor(AppTheme.foreground)
+                            Text(AppLocalized("已同步的微信读书书架")).font(.caption).foregroundColor(AppTheme.mutedForeground)
                         }
-                    }.padding(.vertical, 4).padding(.horizontal, 2)
-                }.padding(.horizontal, -2)
+                        Spacer()
+                        NavigationLink(destination: WeReadLibraryView()) {
+                            Text(AppLocalized("查看全部")).font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.primary)
+                        }
+                        .accessibilityIdentifier("homeShelfViewAll.weread")
+                    }
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 14) {
+                            ForEach(store.homeBooks) { book in
+                                Button { open(book) } label: { WeReadBookRailCard(book: book) }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("homeShelfBook.weread.\(book.id)")
+                            }
+                        }
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 2)
+                    }
+                    .padding(.horizontal, -2)
+                }
+                .accessibilityIdentifier("homeShelfSection.weread")
             }
         }
+        // Keep receiving first-use rebind notifications when Home has no
+        // visible WeRead shelf.
         .sheet(isPresented: $showConnect) { WeReadLibraryConnectView() }
         .onReceive(NotificationCenter.default.publisher(for: .castReaderWeReadRebindRequested)) { _ in
             showConnect = true
@@ -77,8 +75,15 @@ struct WeReadHomeSection: View {
 
     private func open(_ book: WeReadBook) {
         store.markOpened(book)
-        let document = ReadingDocument(id: book.id, title: book.title, sourceKind: .weread,
-                                       language: Constants.TTS.defaultLanguage, paragraphs: [], sourceURL: book.effectiveReaderURL)
+        let document = ReadingDocument(
+            id: book.id,
+            title: book.title,
+            sourceKind: .weread,
+            language: Constants.TTS.defaultLanguage,
+            paragraphs: [],
+            sourceURL: book.effectiveReaderURL,
+            coverURL: book.coverURL
+        )
         let context = ProductAnalytics.shared.beginContentIntent(
             source: .weread,
             format: .weread,
@@ -243,7 +248,8 @@ struct WeReadLibraryView: View {
             sourceKind: .weread,
             language: Constants.TTS.defaultLanguage,
             paragraphs: [],
-            sourceURL: book.effectiveReaderURL
+            sourceURL: book.effectiveReaderURL,
+            coverURL: book.coverURL
         )
         let context = ProductAnalytics.shared.beginContentIntent(
             source: .weread,

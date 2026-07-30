@@ -31,8 +31,15 @@ final class ProManager: ObservableObject {
     #if DEBUG
     /// 仅 DEBUG：模拟 Pro 解锁开关（设置→调试可切换）。默认 true 保持开发期全解锁（方便反复测朗读/解读）；
     /// **关闭后 isPro 走真实内购/服务端权益**，用于本地测试付费流程与跨平台继承。发布构建不含此开关。
-    @Published var debugForcePro = (UserDefaults.standard.object(forKey: "debug_force_pro") as? Bool ?? true) {
+    /// `-CastReaderDisableDebugPro` 可在启动时强制关闭，供 UI 测试与商店素材采集走真实的免费用户视角
+    /// （UserDefaults 启动参数覆盖不了这里：`-debug_force_pro NO` 会被当成字符串，`as? Bool` 取不到）。
+    @Published var debugForcePro = ProManager.initialDebugForcePro() {
         didSet { UserDefaults.standard.set(debugForcePro, forKey: "debug_force_pro") }
+    }
+
+    private static func initialDebugForcePro() -> Bool {
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderDisableDebugPro") { return false }
+        return UserDefaults.standard.object(forKey: "debug_force_pro") as? Bool ?? true
     }
     #endif
 
@@ -117,6 +124,55 @@ final class ProManager: ObservableObject {
     var monthly: Product? { products.first { $0.id == Self.monthlyID } }
     var yearly: Product? { products.first { $0.id == Self.yearlyID } }
 
+    // MARK: - 免费试用资格
+
+    /// 当前 Apple ID 仍可享受首购优惠的产品 id。
+    /// 同一订阅组内试用只能用一次，所以这是**每个 Apple ID 一次性**的资格，必须按 StoreKit 的判断展示，
+    /// 不能对所有人无条件写「7 天免费试用」——老用户看到却拿不到，会被 Apple 以 3.1.2 误导性订阅文案拒审。
+    @Published private(set) var introOfferEligibleIDs: Set<String> = []
+
+    /// 该产品是否应对当前用户展示免费试用（既有 offer，又还有资格）。
+    func showsFreeTrial(for product: Product) -> Bool {
+        introOfferEligibleIDs.contains(product.id) && Self.freeTrialDays(for: product) != nil
+    }
+
+    /// 首购优惠里的免费试用天数；不是免费试用（如首期折扣）或没有 offer 时返回 nil。
+    nonisolated static func freeTrialDays(for product: Product) -> Int? {
+        guard let offer = product.subscription?.introductoryOffer, offer.paymentMode == .freeTrial else { return nil }
+        let period = offer.period
+        let perUnit: Int
+        switch period.unit {
+        case .day: perUnit = 1
+        case .week: perUnit = 7
+        case .month: perUnit = 30
+        case .year: perUnit = 365
+        @unknown default: return nil
+        }
+        let days = period.value * perUnit * offer.periodCount
+        return days > 0 ? days : nil
+    }
+
+    #if DEBUG
+    /// 仅测试：直接注入资格集合，确定性验证「无资格 → 不得承诺试用」的门控
+    /// （StoreKitTest 的 buyProduct 在本仓库测试宿主下抛 notEntitled，无法用真实购买驱动翻转）。
+    func setIntroOfferEligibilityForTesting(_ ids: Set<String>) {
+        introOfferEligibleIDs = ids
+    }
+    #endif
+
+    /// 刷新首购资格。fail-open：查询抛错时按「无试用」展示，宁可少承诺也不能多承诺。
+    func refreshIntroOfferEligibility() async {
+        var eligible: Set<String> = []
+        for product in products {
+            guard let subscription = product.subscription,
+                  Self.freeTrialDays(for: product) != nil else { continue }
+            if await subscription.isEligibleForIntroOffer {
+                eligible.insert(product.id)
+            }
+        }
+        introOfferEligibleIDs = eligible
+    }
+
     // MARK: - 加载与刷新
 
     func loadProducts() async {
@@ -124,6 +180,7 @@ final class ProManager: ObservableObject {
             let loaded = try await Product.products(for: Self.productIDs)
             // 按价格排序（月在前）
             products = loaded.sorted { $0.price < $1.price }
+            await refreshIntroOfferEligibility()
         } catch {
             // fail-open：拉取失败保持空列表，UI 显示占位
             print("⚠️ [Pro] loadProducts failed: \(error)")
@@ -150,6 +207,7 @@ final class ProManager: ObservableObject {
             }
         }
         setStoreKitLocalPro(active, reason: "refresh-entitlements")
+        await refreshIntroOfferEligibility()
         if active,
            AuthService.shared.normalizedEmail != nil,
            let latestSignedTransaction {

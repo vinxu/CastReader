@@ -19,6 +19,8 @@ private func dyn(_ light: UInt32, _ dark: UInt32) -> Color {
 enum AppTheme {
     // MARK: - Primary Colors (Brand) —— 品牌橙明暗通用（深色略提亮以保对比）
     static let primary = dyn(0xFD5F01, 0xFD6A14)            // #FD5F01
+    /// 品牌色作为浅色背景上的普通/小号文字时需要更高对比度。
+    static let primaryText = dyn(0xC44700, 0xFF8A40)
     static let primaryForeground = Color.white             // 橙底白字，两模式一致
     static let primaryLight = dyn(0xFF8A40, 0xFF9A55)      // #FF8A40
     static let primaryDark = dyn(0xD94E00, 0xFF7A2E)      // #D94E00

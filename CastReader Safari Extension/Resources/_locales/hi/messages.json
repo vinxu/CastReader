@@ -1,0 +1,266 @@
+{
+  "extName": {
+    "message": "CastReader — ज़ोर से पढ़ें + AI समझाएँ"
+  },
+  "extDescription": {
+    "message": "सिंक हाइलाइट के साथ सुनें और AI व्याख्या पाएँ। Kindle, PDF, लेख और किताबें। 9 भाषाओं में AI आवाज़ें।"
+  },
+  "quickreadBtn": {
+    "message": "त्वरित सार"
+  },
+  "quickreadBtnExit": {
+    "message": "सार से बाहर निकलें"
+  },
+  "quickreadPreparing": {
+    "message": "सार तैयार हो रहा है"
+  },
+  "quickreadError": {
+    "message": "सार में त्रुटि"
+  },
+  "quickreadStageExtract": {
+    "message": "मुख्य बिंदु निकाले जा रहे हैं"
+  },
+  "quickreadStageTts": {
+    "message": "आवाज़ तैयार हो रही है"
+  },
+  "quickreadStageRefine": {
+    "message": "लय व्यवस्थित की जा रही है"
+  },
+  "quickreadStageReady": {
+    "message": "चलाने के लिए तैयार…"
+  },
+  "quickreadFailed": {
+    "message": "विफल: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "बंद करें"
+  },
+  "quickreadCancel": {
+    "message": "रद्द करें"
+  },
+  "quickreadDone": {
+    "message": "पूरा हुआ"
+  },
+  "quickreadHint": {
+    "message": "लगभग 25-45 सेकंड लगेंगे। कृपया प्रतीक्षा करें"
+  },
+  "quickreadQueued": {
+    "message": "कतार में ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "आज की मुफ़्त AI व्याख्याएँ पूरी हो गईं। कल फिर उपलब्ध होंगी।"
+  },
+  "quickreadRateLimitTitle": {
+    "message": "आज की मुफ़्त AI व्याख्याएँ पूरी हो गईं"
+  },
+  "quickreadRateLimitBody": {
+    "message": "दैनिक मुफ़्त सीमा पूरी हो गई है। असीमित AI व्याख्या के लिए Pro लें। मुफ़्त कोटा कल रीसेट होगा।"
+  },
+  "quickreadUpgrade": {
+    "message": "Pro लें"
+  },
+  "accountNotSignedIn": {
+    "message": "साइन इन नहीं है"
+  },
+  "enableProMode": {
+    "message": "Pro सक्रिय करें"
+  },
+  "listenRateLimitTitle": {
+    "message": "आज के 20 मुफ़्त पढ़ने के मिनट पूरे हो गए"
+  },
+  "listenRateLimitBody": {
+    "message": "आज के 20 मुफ़्त मिनट पूरे हो गए हैं। असीमित पढ़ने के लिए Pro लें। मुफ़्त कोटा कल रीसेट होगा।"
+  },
+  "quickreadQuotaTip": {
+    "message": "व्याख्या · आज $n$/$max$ शेष",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "व्याख्या · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "दस्तावेज़ पढ़ें"
+  },
+  "readerDrop": {
+    "message": "चित्र / PDF / Word / TXT यहाँ छोड़ें"
+  },
+  "readerDropOver": {
+    "message": "अपलोड करने के लिए छोड़ें"
+  },
+  "readerSub": {
+    "message": "मूल लेआउट बदले बिना फ़ाइल पर ज़ोर से पढ़ना और AI सार"
+  },
+  "readerOr": {
+    "message": "या"
+  },
+  "readerPick": {
+    "message": "फ़ाइल चुनें"
+  },
+  "readerRendering": {
+    "message": "दस्तावेज़ तैयार हो रहा है…"
+  },
+  "readerListen": {
+    "message": "▶ सुनें"
+  },
+  "readerPause": {
+    "message": "⏸ रोकें"
+  },
+  "readerResume": {
+    "message": "▶ जारी रखें"
+  },
+  "readerStop": {
+    "message": "■ बंद करें"
+  },
+  "readerExplain": {
+    "message": "✦ समझाएँ"
+  },
+  "readerExplainHint": {
+    "message": "पहले पढ़ना बंद करें"
+  },
+  "readerNewFile": {
+    "message": "नई फ़ाइल"
+  },
+  "readerSpeed": {
+    "message": "गति"
+  },
+  "readerUnsupported": {
+    "message": "यह फ़ाइल प्रकार समर्थित नहीं है"
+  },
+  "readerFailed": {
+    "message": "प्रोसेसिंग विफल हुई"
+  },
+  "readerEmpty": {
+    "message": "इस दस्तावेज़ में पढ़ने योग्य टेक्स्ट नहीं मिला"
+  },
+  "readerQuotaLeft": {
+    "message": "आज शेष"
+  },
+  "readerQuotaBlocked": {
+    "message": "आज के 10 मुफ़्त सार पूरे हो गए। कल फिर उपलब्ध होंगे"
+  },
+  "readerPartial": {
+    "message": "आपकी वर्तमान जगह वाला भाग समझाया गया। नीचे स्क्रॉल करके अगले भाग के लिए फिर से समझाएँ दबाएँ"
+  },
+  "readerTooLarge": {
+    "message": "फ़ाइल बहुत बड़ी है (7 MB से अधिक)। छोटी फ़ाइल चुनें।"
+  },
+  "readerContinue": {
+    "message": "आगे समझाएँ ✦"
+  },
+  "readerSettings": {
+    "message": "सेटिंग्स"
+  },
+  "readerExplainLang": {
+    "message": "इस भाषा में समझाएँ"
+  },
+  "readerDocumentLang": {
+    "message": "दस्तावेज़ की भाषा"
+  },
+  "readerDocumentLangAuto": {
+    "message": "स्वतः (ब्राउज़र की भाषा)"
+  },
+  "readerDocumentLangHint": {
+    "message": "चित्रों और स्कैन किए गए PDF के बेहतर OCR के लिए सही भाषा चुनें।"
+  },
+  "readerVoiceEn": {
+    "message": "अंग्रेज़ी आवाज़"
+  },
+  "readerVoiceZh": {
+    "message": "चीनी आवाज़"
+  },
+  "readerVoices": {
+    "message": "आवाज़ें"
+  },
+  "readerBrowseVoices": {
+    "message": "आवाज़ें खोजें"
+  },
+  "readerLangAuto": {
+    "message": "स्वतः (इंटरफ़ेस भाषा)"
+  },
+  "readerLangFollow": {
+    "message": "दस्तावेज़ के अनुसार"
+  },
+  "readerPreparing": {
+    "message": "आवाज़ तैयार हो रही है…"
+  },
+  "readerEncrypted": {
+    "message": "यह PDF पासवर्ड से सुरक्षित है"
+  },
+  "readerCorrupt": {
+    "message": "यह फ़ाइल खराब या पढ़ने योग्य नहीं लगती"
+  },
+  "readerTimeout": {
+    "message": "खोलने में बहुत समय लगा; फ़ाइल बहुत जटिल हो सकती है"
+  },
+  "inboxTitle": {
+    "message": "सामग्री इनबॉक्स"
+  },
+  "inboxSubtitle": {
+    "message": "वेबपेज या चुना हुआ टेक्स्ट सहेजें और जब चाहें उसे पढ़ें या समझाएँ।"
+  },
+  "inboxEmpty": {
+    "message": "इनबॉक्स खाली है"
+  },
+  "inboxEmptyDescription": {
+    "message": "किसी पेज या चुने हुए टेक्स्ट पर राइट-क्लिक करके उसे CastReader में सहेजें।"
+  },
+  "inboxSaveSelection": {
+    "message": "चुना हुआ टेक्स्ट CastReader में सहेजें"
+  },
+  "inboxSavePage": {
+    "message": "पेज CastReader में सहेजें"
+  },
+  "inboxOpen": {
+    "message": "सामग्री इनबॉक्स खोलें"
+  },
+  "inboxSharedText": {
+    "message": "चुना हुआ टेक्स्ट"
+  },
+  "inboxOpenFailed": {
+    "message": "यह सामग्री नहीं खुल सकी। फिर से कोशिश करें।"
+  },
+  "inboxRetry": {
+    "message": "फिर से कोशिश करें"
+  },
+  "inboxRead": {
+    "message": "ज़ोर से पढ़ें"
+  },
+  "inboxExplain": {
+    "message": "समझाएँ"
+  },
+  "inboxDelete": {
+    "message": "हटाएँ"
+  },
+  "inboxLink": {
+    "message": "लिंक"
+  },
+  "inboxText": {
+    "message": "टेक्स्ट"
+  },
+  "edgeExtName": {
+    "message": "CastReader — ज़ोर से पढ़ें + AI समझाएँ"
+  },
+  "edgeExtDescription": {
+    "message": "लेख, PDF और Kindle किताबें सिंक हाइलाइट व AI व्याख्या के साथ सुनें।"
+  },
+  "toggleSiteVisibility": {
+    "message": "इस साइट पर CastReader दिखाएँ / छिपाएँ"
+  }
+}

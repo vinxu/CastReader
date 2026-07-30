@@ -35,6 +35,16 @@ final class ProductAnalyticsTests: XCTestCase {
         XCTAssertEqual(legacy["review_prompt_eligible"], "rating_prompt_eligible")
         XCTAssertEqual(legacy["review_request_attempted"], "rating_prompt")
         XCTAssertEqual(legacy["review_store_link_opened"], "rating_store_link_opened")
+
+        let storefrontEvents: Set<String> = [
+            "content_intent", "content_ready", "content_failed",
+            "read_start", "read_first_audio", "read_milestone", "read_end",
+            "explain_start", "explain_first_block", "explain_milestone", "explain_end",
+        ]
+        for row in events where storefrontEvents.contains(row["name"] as? String ?? "") {
+            let optional = Set(row["optional_properties"] as? [String] ?? [])
+            XCTAssertTrue(optional.contains("storefront"), "\(row["name"] ?? "") must carry storefront")
+        }
     }
 
     func testEveryEventBuildsAValidDualEnvelope() throws {
@@ -64,6 +74,65 @@ final class ProductAnalyticsTests: XCTestCase {
         ) { error in
             XCTAssertEqual(error as? AnalyticsSchemaError, .unknownProperties(["language"]))
         }
+    }
+
+    func testKindleEventsRequireAndValidateCanonicalStorefrontDimension() {
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .contentIntent,
+                properties: .init(
+                    contentSource: AnalyticsContentSource.kindle.rawValue,
+                    contentFormat: AnalyticsContentFormat.kindle.rawValue,
+                    intendedMode: "read",
+                    storefront: "es"
+                )
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .contentIntent,
+                properties: .init(
+                    contentSource: AnalyticsContentSource.kindle.rawValue,
+                    contentFormat: AnalyticsContentFormat.kindle.rawValue,
+                    intendedMode: "read"
+                )
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? AnalyticsSchemaError,
+                .invalidPropertyValue(property: "storefront", value: "nil")
+            )
+        }
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .readFirstAudio,
+                properties: .init(
+                    latencyMs: 100,
+                    language: "en",
+                    voiceId: "af_heart",
+                    storefront: "US"
+                )
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? AnalyticsSchemaError,
+                .invalidPropertyValue(property: "storefront", value: "US")
+            )
+        }
+    }
+
+    func testKindleFallbackContextInfersStorefrontFromDocumentURL() {
+        let document = ReadingDocument(
+            title: "Spanish Kindle",
+            sourceKind: .kindle,
+            paragraphs: [],
+            sourceURL: "https://leer.amazon.es/?asin=B012345678"
+        )
+
+        XCTAssertEqual(
+            AnalyticsContentContext.fallback(for: document).storefront,
+            "es"
+        )
     }
 
     func testPurchaseResultUsesOutcomeSpecificLegacyEvent() throws {

@@ -24,12 +24,36 @@ final class KindleLibraryRecoveryService {
         defer { isRecovering = false }
 
         do {
+            let storefront = KindleStorefront.entry(id: book.storefrontID)
+                ?? KindleStorefront.entry(rawURL: book.lastReadURL)
+                ?? KindleStorefront.entry(rawURL: book.readerURL)
+                ?? KindleLibraryStore.shared.boundStorefront
             onProgress(AppLocalized("正在打开 Kindle 书架…"))
-            webView.load(URLRequest(url: KindleWebScripts.libraryURL, cachePolicy: .reloadIgnoringLocalCacheData))
+            KindleRunLog.write("KINDLE library auto-recovery storefront=\(storefront.id)")
+            webView.load(URLRequest(
+                url: KindleWebScripts.libraryURL(for: storefront),
+                cachePolicy: .reloadIgnoringLocalCacheData
+            ))
             for _ in 0..<40 {
                 try Task.checkCancellation()
-                if !webView.isLoading,
-                   webView.url?.absoluteString.contains("kindle-library") == true {
+                if !webView.isLoading {
+                    switch Self.landingKind(webView.url, expectedStorefront: storefront) {
+                    case .library:
+                        break
+                    case .auth:
+                        KindleRunLog.write(
+                            "KINDLE library auto-recovery landing=auth storefront=\(storefront.id)"
+                        )
+                        return .signInRequired
+                    case .otherStorefront:
+                        KindleRunLog.write(
+                            "KINDLE library auto-recovery landing=other-storefront expected=\(storefront.id)"
+                        )
+                        return .notFound
+                    case .reader, .other, .empty:
+                        try? await Task.sleep(nanoseconds: 250_000_000)
+                        continue
+                    }
                     break
                 }
                 try? await Task.sleep(nanoseconds: 250_000_000)
@@ -40,10 +64,21 @@ final class KindleLibraryRecoveryService {
             var initialPayload: RecoveryPayload?
             onProgress(AppLocalized("正在等待 Kindle 书架加载…"))
             for readinessAttempt in 0..<24 {
-                let payload = try await scrape(webView)
+                let payload = try await scrape(webView, expectedStorefront: storefront)
                 let rowCount = payload.books?.count ?? 0
-                KindleRunLog.write("KINDLE library auto-recovery readiness=\(readinessAttempt) rows=\(rowCount) signals=\(payload.hasReaderSignals == true ? "Y" : "N") auth=\(payload.authRequired == true ? "Y" : "N") ua=\(Self.logKey(payload.userAgent ?? ""))")
-                if rowCount > 0 || payload.authRequired == true {
+                KindleRunLog.write(
+                    "KINDLE library auto-recovery readiness=\(readinessAttempt) " +
+                    "landing=\(payload.landing.rawValue) storefront=\(payload.storefrontID ?? "-") " +
+                    "rows=\(rowCount) signals=\(payload.hasReaderSignals == true ? "Y" : "N") " +
+                    "auth=\(payload.authRequired == true ? "Y" : "N") ua=\(Self.logKey(payload.userAgent ?? ""))"
+                )
+                if payload.landing == .auth || payload.authRequired == true {
+                    return .signInRequired
+                }
+                if payload.landing == .otherStorefront {
+                    return .notFound
+                }
+                if rowCount > 0 {
                     initialPayload = payload
                     break
                 }
@@ -58,10 +93,21 @@ final class KindleLibraryRecoveryService {
                 if pass == 0, let initialPayload {
                     payload = initialPayload
                 } else {
-                    payload = try await scrape(webView)
+                    payload = try await scrape(webView, expectedStorefront: storefront)
                 }
-                authRequired = authRequired || payload.authRequired == true
-                recoveredBooks.append(contentsOf: (payload.books ?? []).compactMap(\.book))
+                authRequired = authRequired
+                    || payload.authRequired == true
+                    || payload.landing == .auth
+                if payload.landing == .otherStorefront {
+                    KindleRunLog.write(
+                        "KINDLE library auto-recovery scan-abort landing=other-storefront expected=\(storefront.id)"
+                    )
+                    return .notFound
+                }
+                let ingressStorefrontID = payload.storefrontID ?? storefront.id
+                recoveredBooks.append(contentsOf: (payload.books ?? []).compactMap {
+                    $0.book(storefrontID: ingressStorefrontID)
+                })
                 let uniqueCount = Set(recoveredBooks.map(\.id)).count
                 idlePasses = uniqueCount == before ? idlePasses + 1 : 0
                 let matched = matchingBook(book, in: recoveredBooks) != nil
@@ -90,7 +136,10 @@ final class KindleLibraryRecoveryService {
         }
     }
 
-    private func scrape(_ webView: WKWebView) async throws -> RecoveryPayload {
+    private func scrape(
+        _ webView: WKWebView,
+        expectedStorefront: KindleStorefront
+    ) async throws -> RecoveryPayload {
         // `scrapeLibrary` already returns a JSON string. Keep this identical to the
         // proven manual sync path; serializing that string again creates double JSON.
         let value = try await evaluate(KindleWebScripts.scrapeLibrary, in: webView)
@@ -121,11 +170,17 @@ final class KindleLibraryRecoveryService {
                 languageSource: Self.string(row["languageSource"] ?? row["language_source"])
             )
         }
+        let payloadURL = Self.string(object["url"])
+        let actualURL = payloadURL.flatMap(URL.init(string:)) ?? webView.url
+        let landing = Self.landingKind(actualURL, expectedStorefront: expectedStorefront)
+        let actualStorefrontID = KindleStorefront.storefront(url: actualURL)?.id
         return RecoveryPayload(
             books: books,
             authRequired: object["authRequired"] as? Bool,
             hasReaderSignals: object["hasReaderSignals"] as? Bool,
-            userAgent: Self.string(object["userAgent"])
+            userAgent: Self.string(object["userAgent"]),
+            storefrontID: actualStorefrontID == expectedStorefront.id ? actualStorefrontID : nil,
+            landing: landing
         )
     }
 
@@ -347,9 +402,52 @@ final class KindleLibraryRecoveryService {
     private static let readerReadinessProbe = """
     (function() {
       function norm(v) { return String(v || '').replace(/\\s+/g, ' ').trim().toLowerCase(); }
+      function visible(el) {
+        try {
+          var style = getComputedStyle(el);
+          var rect = el.getBoundingClientRect();
+          return style.display !== 'none' && style.visibility !== 'hidden' &&
+            rect.width > 4 && rect.height > 4;
+        } catch (_) { return false; }
+      }
+      function structure(el) {
+        try {
+          return norm([
+            el.id || '',
+            typeof el.className === 'string' ? el.className : '',
+            el.getAttribute && (el.getAttribute('data-testid') || ''),
+            el.getAttribute && (el.getAttribute('data-test') || ''),
+            el.getAttribute && (el.getAttribute('data-action') || ''),
+            el.getAttribute && (el.getAttribute('href') || '')
+          ].join(' '));
+        } catch (_) { return ''; }
+      }
+      function errorText(value) {
+        return /something went wrong|please try to open this book|algo (?:salió mal|ha salido mal)|abre este libro desde la biblioteca|algo deu errado|abra este livro (?:na|pela) biblioteca|問題が発生しました|ライブラリから.*(?:開|開き)|etwas ist schiefgelaufen|buch.*bibliothek.*öffnen|(?:une erreur s'est produite|un problème est survenu)|livre.*bibliothèque.*ouvrir|qualcosa è andato storto|libro.*libreria.*apri|कुछ गलत हो गया|किताब.*लाइब्रेरी.*खोल/i.test(value);
+      }
+      function libraryActionText(value) {
+        return /back to library|return to library|volver a la biblioteca|voltar (?:para|à) (?:a )?biblioteca|ライブラリに戻|zurück zur bibliothek|retour à la bibliothèque|torna alla libreria|लाइब्रेरी (?:पर|में) वापस/i.test(value);
+      }
       var body = norm(document.body && document.body.innerText);
-      var stale = body.indexOf('please try to open this book from the library again') >= 0 ||
-        (body.indexOf('something went wrong') >= 0 && body.indexOf('back to library') >= 0);
+      var errorNodes = Array.from(document.querySelectorAll(
+        '[role="dialog"],[aria-modal="true"],[data-testid*="error" i],[class*="error" i],button,a'
+      )).filter(visible);
+      var libraryAction = errorNodes.some(function(el) {
+        var text = norm((el.innerText || '') + ' ' + (el.getAttribute && el.getAttribute('aria-label') || ''));
+        var token = structure(el);
+        return libraryActionText(text) ||
+          /kindle-library|back.*library|library.*back|return.*library/.test(token);
+      });
+      var errorSurface = errorNodes.some(function(el) {
+        var token = structure(el);
+        if (!/(?:^|[-_\\s])(error|failure|failed|oops)(?:$|[-_\\s])/.test(token) &&
+            !(el.matches && el.matches('[role="dialog"],[aria-modal="true"]'))) {
+          return false;
+        }
+        return errorText(norm(el.innerText || el.textContent || '')) ||
+          /(?:^|[-_\\s])(error|failure|failed|oops)(?:$|[-_\\s])/.test(token);
+      });
+      var stale = errorText(body) || (errorSurface && libraryAction);
       var blobs = Array.from(document.images || []).filter(function(img) {
         return String(img.currentSrc || img.src || '').indexOf('blob:') === 0 && Number(img.naturalWidth || 0) > 80;
       }).length;
@@ -382,11 +480,113 @@ final class KindleLibraryRecoveryService {
         String(value.prefix(24))
     }
 
+    fileprivate enum LandingKind: String {
+        case library
+        case auth
+        case reader
+        case otherStorefront = "other-storefront"
+        case other
+        case empty
+    }
+
+    private static func landingKind(
+        _ url: URL?,
+        expectedStorefront: KindleStorefront
+    ) -> LandingKind {
+        guard let url else { return .empty }
+        guard url.scheme?.lowercased() == "https",
+              url.user == nil,
+              url.password == nil,
+              url.port == nil || url.port == 443 else {
+            return .other
+        }
+
+        let host = url.host?.lowercased() ?? ""
+        let path = normalizedPath(url.path)
+        if isAmazonAuthLanding(host: host, path: path, url: url) {
+            return .auth
+        }
+
+        guard let actualStorefront = KindleStorefront.storefront(url: url) else {
+            return .other
+        }
+        guard actualStorefront.id == expectedStorefront.id else {
+            return .otherStorefront
+        }
+        if path == normalizedPath(expectedStorefront.libraryURL.path) {
+            return .library
+        }
+        if hasReaderASINQuery(url, normalizedPath: path)
+            || KindleBookValidator.isKindleReaderPath(url.absoluteString) {
+            return .reader
+        }
+        return .other
+    }
+
+    private static func hasReaderASINQuery(
+        _ url: URL,
+        normalizedPath: String
+    ) -> Bool {
+        guard normalizedPath == "/",
+              let components = URLComponents(
+                url: url,
+                resolvingAgainstBaseURL: false
+              ),
+              let asin = components.queryItems?.first(where: {
+                  $0.name.caseInsensitiveCompare("asin") == .orderedSame
+              })?.value else {
+            return false
+        }
+        return KindleBookValidator.asinValue(in: asin) != nil
+    }
+
+    private static func isAmazonAuthLanding(
+        host: String,
+        path: String,
+        url: URL
+    ) -> Bool {
+        guard KindleStorefront.isAmazonWebsiteDataDomain(host) else { return false }
+        if path == "/ap/signin" || path.hasPrefix("/ap/signin/")
+            || path == "/ap/cvf" || path.hasPrefix("/ap/cvf/") {
+            return true
+        }
+        if host.split(separator: ".").contains(where: {
+            String($0).caseInsensitiveCompare("authportal") == .orderedSame
+        }) {
+            return true
+        }
+        guard path.hasPrefix("/ap/"),
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return false
+        }
+        return components.queryItems?.contains(where: {
+            $0.name.lowercased().hasPrefix("openid.")
+        }) == true
+    }
+
+    private static func normalizedPath(_ raw: String) -> String {
+        var path = raw.lowercased()
+        while path.count > 1, path.hasSuffix("/") {
+            path.removeLast()
+        }
+        return path.isEmpty ? "/" : path
+    }
+
     private func matchingBook(_ target: KindleBook, in books: [KindleBook]) -> KindleBook? {
+        let targetStorefrontID = KindleStorefront.storefront(id: target.storefrontID)?.id
+            ?? KindleStorefront.storefront(rawURL: target.lastReadURL)?.id
+            ?? KindleStorefront.storefront(rawURL: target.readerURL)?.id
         let targetASIN = KindleBookValidator.asinValue(in: target.asin)
             ?? KindleBookValidator.asinValue(in: target.id)
             ?? KindleBookValidator.asinValue(in: target.readerURL)
         return books.first { candidate in
+            let candidateStorefrontID = KindleStorefront.storefront(id: candidate.storefrontID)?.id
+                ?? KindleStorefront.storefront(rawURL: candidate.lastReadURL)?.id
+                ?? KindleStorefront.storefront(rawURL: candidate.readerURL)?.id
+            if let targetStorefrontID, let candidateStorefrontID,
+               targetStorefrontID != candidateStorefrontID {
+                return false
+            }
             if candidate.id == target.id { return true }
             guard let targetASIN else { return false }
             let candidateASIN = KindleBookValidator.asinValue(in: candidate.asin)
@@ -410,6 +610,8 @@ private struct RecoveryPayload {
     let authRequired: Bool?
     let hasReaderSignals: Bool?
     let userAgent: String?
+    let storefrontID: String?
+    let landing: KindleLibraryRecoveryService.LandingKind
 }
 
 private struct RecoveryScrapedBook {
@@ -423,15 +625,16 @@ private struct RecoveryScrapedBook {
     let language: String?
     let languageSource: String?
 
-    var book: KindleBook? {
+    func book(storefrontID: String) -> KindleBook? {
         let resolvedID = id?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let resolvedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let resolvedURL = readerURL?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !resolvedID.isEmpty, !resolvedTitle.isEmpty, !resolvedURL.isEmpty else { return nil }
         return KindleBook(
             id: resolvedID, asin: asin, title: resolvedTitle, author: author ?? "", coverURL: coverURL,
-            readerURL: resolvedURL, progressLabel: progressLabel ?? "", language: language,
-            languageSource: languageSource, lastOpenedAt: nil,
+            readerURL: resolvedURL, progressLabel: progressLabel ?? "",
+            storefrontID: KindleStorefront.storefront(rawURL: resolvedURL)?.id ?? storefrontID,
+            language: language, languageSource: languageSource, lastOpenedAt: nil,
             lastSyncedAt: Date(), lastReadPageKey: nil, lastReadURL: nil
         )
     }

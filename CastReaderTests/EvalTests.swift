@@ -303,9 +303,25 @@ final class EvalTests: XCTestCase {
 
         let pIdx = vm.dbgPrefetchedIndex
         let segs = vm.dbgPrefetchedSegments
-        print("[EVAL][P] generate段0完成后 自动预取 prefetchedIndex=\(String(describing: pIdx)) segs=\(segs.count)")
-        guard !segs.isEmpty else { return XCTFail("[P] generate 后未自动预取（网络/节点问题，或链路未触发 → 段间仍有 gap）") }
-        XCTAssertEqual(pIdx, readable[1], "[P] generate 完当前段后应自动预取下一可朗读段")
+        let promoted = vm.dbgSegments(for: readable[1])
+        let cacheIsReady = pIdx == readable[1]
+            && !segs.isEmpty
+            && segs.first?.paragraphIndex == readable[1]
+        // On a fast response or slow simulator, paragraph 0 can finish while
+        // this test is awaiting the prefetch task. In that valid path the cache
+        // has already been atomically promoted, so `dbgPrefetchedIndex` is nil.
+        let cacheWasConsumed = vm.currentParagraphIndex == readable[1]
+            && !promoted.isEmpty
+            && promoted.first?.paragraphIndex == readable[1]
+        print(
+            "[EVAL][P] generate段0完成后 自动预取 "
+                + "prefetchedIndex=\(String(describing: pIdx)) segs=\(segs.count) "
+                + "current=\(vm.currentParagraphIndex) promoted=\(promoted.count)"
+        )
+        XCTAssertTrue(
+            cacheIsReady || cacheWasConsumed,
+            "[P] generate 后既没有下一段预取缓存，也没有已转正的预取音频"
+        )
     }
 
     // MARK: - PH 照片中文高亮（无词时间戳 → 按 segment 进度线性推进 OCR 词；离线确定性）

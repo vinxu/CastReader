@@ -110,6 +110,8 @@ struct HomeView: View {
     @StateObject private var importVM = ImportViewModel()
     @ObservedObject private var kindleStore = KindleLibraryStore.shared
     @ObservedObject private var weReadStore = WeReadLibraryStore.shared
+    @ObservedObject private var googleBooksStore = GoogleBooksLibraryStore.shared
+    @ObservedObject private var koboStore = KoboLibraryStore.shared
     @ObservedObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
 
     init(
@@ -127,6 +129,7 @@ struct HomeView: View {
         case importPanel(ImportPanel)
         case text
         case url
+        case librarySources
         case proDetails
         case loginForAnnualPurchase
 
@@ -135,6 +138,7 @@ struct HomeView: View {
             case .importPanel(let panel): return "import-\(panel.id)"
             case .text: return "text"
             case .url: return "url"
+            case .librarySources: return "library-sources"
             case .proDetails: return "pro-details"
             case .loginForAnnualPurchase: return "pro-login"
             }
@@ -172,7 +176,12 @@ struct HomeView: View {
                     }
                     if !continueRecords.isEmpty { continueSection }
                     scenarioSection
+                    if !hasShelfBooks && !libraryOnboarding.shouldShowReminder {
+                        librarySourcesEmptyCard
+                    }
                     KindleHomeSection(store: kindleStore)
+                    GoogleBooksHomeSection()
+                    KoboHomeSection()
                     if showsWeReadModule {
                         WeReadHomeSection()
                     }
@@ -186,7 +195,19 @@ struct HomeView: View {
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("CastReader")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        activeSheet = .librarySources
+                    } label: {
+                        Image(systemName: "books.vertical.fill")
+                            .font(.system(size: 18, weight: .regular))
+                            .foregroundStyle(AppTheme.foreground)
+                            .frame(width: 30, height: 30)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("homeShelfSourcesButton")
+                    .accessibilityLabel(Text(AppLocalized("管理书架来源")))
+
                     Button(action: onOpenShareInbox) {
                         ZStack(alignment: .topTrailing) {
                             Image(systemName: shareInboxUnreadCount > 0 ? "tray.full" : "tray")
@@ -212,6 +233,9 @@ struct HomeView: View {
         .navigationViewStyle(.stack)
         .onAppear {
             onReviewPresentationBlockedChanged(isProcessingContent)
+            #if DEBUG
+            handleCaptureLaunchTextIfNeeded()
+            #endif
         }
         .onChange(of: isProcessingContent) { isProcessing in
             onReviewPresentationBlockedChanged(isProcessing)
@@ -246,6 +270,8 @@ struct HomeView: View {
                         notice = AppLocalized("网址无效")
                     }
                 }
+            case .librarySources:
+                LibrarySourcesSheet()
             case .proDetails:
                 PaywallView(
                     analyticsTrigger: "home_pro_card_secondary",
@@ -301,6 +327,7 @@ struct HomeView: View {
         return HomeProUpsellCard(
             annualDisplayPrice: yearly?.displayPrice,
             weeklyDisplayPrice: yearly.map { HomeProPricing.weeklyDisplayPrice(for: $0) },
+            trialDays: yearly.flatMap { pro.showsFreeTrial(for: $0) ? ProManager.freeTrialDays(for: $0) : nil },
             isLoadingProducts: loading,
             isPurchasing: isPurchasingAnnual || pro.purchaseInFlight,
             onPrimaryAction: handleHomeProPrimaryAction,
@@ -394,6 +421,67 @@ struct HomeView: View {
         )
     }
 
+    private var hasShelfBooks: Bool {
+        !kindleStore.boundBooks.isEmpty
+            || !googleBooksStore.books.isEmpty
+            || !koboStore.books.isEmpty
+            || (showsWeReadModule && !weReadStore.books.isEmpty)
+    }
+
+    private var hasConnectedShelf: Bool {
+        !kindleStore.needsConnection
+            || !googleBooksStore.needsConnection
+            || !koboStore.needsConnection
+            || (showsWeReadModule && !weReadStore.needsConnection)
+    }
+
+    private var librarySourcesEmptyCard: some View {
+        Button {
+            activeSheet = .librarySources
+        } label: {
+            HStack(alignment: .center, spacing: 14) {
+                Image(systemName: "books.vertical.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundColor(AppTheme.primary)
+                    .frame(width: 48, height: 48)
+                    .background(
+                        AppTheme.primary.opacity(0.12),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(
+                        hasConnectedShelf
+                            ? AppLocalized("同步你的电子书书架")
+                            : AppLocalized("连接你的电子书书架")
+                    )
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(AppTheme.foreground)
+
+                    Text(AppLocalized("登录后同步书架与阅读进度"))
+                        .font(.caption)
+                        .foregroundColor(AppTheme.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(AppTheme.mutedForeground)
+            }
+            .padding(14)
+            .background(AppTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(AppTheme.border.opacity(0.7), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("shelfSourcesButton")
+    }
+
     private var continueRecords: [HistoryRecord] {
         history.records.filter { HomeContinueContract.includes($0.sourceKind) }
     }
@@ -401,8 +489,10 @@ struct HomeView: View {
     private var libraryOnboardingReminder: some View {
         let source = libraryOnboarding.selectedSource
         let hasBooks: Bool = switch source {
-        case .kindle: !kindleStore.books.isEmpty
+        case .kindle: !kindleStore.boundBooks.isEmpty
         case .weread: !weReadStore.books.isEmpty
+        case .googleBooks: !googleBooksStore.books.isEmpty
+        case .kobo: !koboStore.books.isEmpty
         case nil: false
         }
         let actionTitle: String = switch source {
@@ -410,6 +500,10 @@ struct HomeView: View {
             hasBooks ? AppLocalized("打开一本书") : AppLocalized("绑定 Kindle")
         case .weread:
             hasBooks ? AppLocalized("打开一本书") : AppLocalized("绑定微信读书")
+        case .googleBooks:
+            hasBooks ? AppLocalized("打开一本书") : AppLocalized("绑定 Google Play 图书")
+        case .kobo:
+            hasBooks ? AppLocalized("打开一本书") : AppLocalized("绑定 Kobo")
         case nil:
             AppLocalized("继续")
         }
@@ -456,6 +550,32 @@ struct HomeView: View {
                 coordinator.open(document, analyticsContext: context)
             } else {
                 NotificationCenter.default.post(name: .castReaderWeReadRebindRequested, object: nil)
+            }
+        case .googleBooks:
+            if let book = googleBooksStore.homeBooks.first {
+                GoogleBooksReaderLauncher.open(
+                    book,
+                    using: coordinator,
+                    onboarding: libraryOnboarding
+                )
+            } else {
+                NotificationCenter.default.post(
+                    name: .castReaderGoogleBooksRebindRequested,
+                    object: nil
+                )
+            }
+        case .kobo:
+            if let book = koboStore.homeBooks.first {
+                KoboReaderLauncher.open(
+                    book,
+                    using: coordinator,
+                    onboarding: libraryOnboarding
+                )
+            } else {
+                NotificationCenter.default.post(
+                    name: .castReaderKoboRebindRequested,
+                    object: nil
+                )
             }
         }
     }
@@ -616,6 +736,25 @@ struct HomeView: View {
         case .text:         DispatchQueue.main.async { activeSheet = .text }
         }
     }
+
+    #if DEBUG
+    /// 商店素材采集：`-CastReaderCaptureTextB64 <base64(utf8)>` 启动时直接以纯文本打开阅读器。
+    /// 走与文本面板完全相同的 fromPlainText → finishImport 路径；存在的意义是绕开
+    /// XCUITest 的 typeText（丢非 ASCII 字符）与剪贴板导入（触发系统「允许粘贴」弹窗会烂在录屏里）。
+    private func handleCaptureLaunchTextIfNeeded() {
+        struct Once { static var done = false }
+        guard !Once.done,
+              let b64 = UserDefaults.standard.string(forKey: "CastReaderCaptureTextB64"),
+              let data = Data(base64Encoded: b64),
+              let text = String(data: data, encoding: .utf8),
+              !text.isEmpty else { return }
+        Once.done = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            let doc = DocumentBuilder.fromPlainText(text, title: "")
+            if !doc.isEmpty { finishImport(doc) }
+        }
+    }
+    #endif
 
     /// 落地：打开方式与场景正交。场景只注入 ExplainVM，朗读/解读由用户在入口选择。
     private func finishImport(_ doc: ReadingDocument) {
@@ -853,6 +992,8 @@ private struct BoundLibraryActivationCard: View {
         switch source {
         case .kindle: return "books.vertical.fill"
         case .weread: return "book.closed.fill"
+        case .googleBooks: return "book.pages"
+        case .kobo: return "book.closed.fill"
         case nil: return "link.circle.fill"
         }
     }
@@ -920,6 +1061,9 @@ private struct ImportOptionsSheet: View {
                         depthPicker
                     }
                     sourceList
+                    if panel.fixedScenario == nil {
+                        librarySourcesLink
+                    }
                 }
                 .padding(20)
             }
@@ -1045,6 +1189,48 @@ private struct ImportOptionsSheet: View {
                     onPick(activeScenario, selectedMode, source)
                 }
             }
+        }
+    }
+
+    private var librarySourcesLink: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(AppLocalized("书架来源"))
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(AppTheme.foreground)
+
+            NavigationLink(destination: LibrarySourcesView()) {
+                HStack(spacing: 14) {
+                    Image(systemName: "books.vertical.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(AppTheme.primary)
+                        .frame(width: 44, height: 44)
+                        .background(
+                            AppTheme.primary.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        )
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(AppLocalized("连接阅读平台"))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(AppTheme.foreground)
+                        Text(AppLocalized("登录后同步书架与阅读进度"))
+                            .font(.caption)
+                            .foregroundColor(AppTheme.mutedForeground)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(AppTheme.mutedForeground)
+                }
+                .padding(14)
+                .background(AppTheme.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(AppTheme.border.opacity(0.7), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("librarySourcesImportButton")
         }
     }
 }
@@ -1318,7 +1504,10 @@ private struct KindleBackgroundProbeSheet: View {
                         .font(.caption2)
                         .foregroundColor(AppTheme.mutedForeground)
                         .lineLimit(1)
-                    TextField("https://read.amazon.com/kindle-library", text: $model.urlString)
+                    TextField(
+                        KindleLibraryStore.shared.boundStorefront.libraryURL.absoluteString,
+                        text: $model.urlString
+                    )
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .keyboardType(.URL)
@@ -1821,7 +2010,7 @@ private struct KindleSourceDiscovery {
 
 @MainActor
 private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
-    @Published var urlString = "https://read.amazon.com/kindle-library"
+    @Published var urlString = KindleLibraryStore.shared.boundStorefront.libraryURL.absoluteString
     @Published var loadToken = 0
     @Published var isRunning = false
     @Published var logLines: [String] = []
@@ -1842,6 +2031,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
     weak var webView: WKWebView?
 
     private let audio = AudioPlayerService.shared
+    private var audioSessionToken: AudioPlaybackSessionToken?
     private let settings = AppSettings.shared
     private var timer: DispatchSourceTimer?
     private var audioPlayer: AVAudioPlayer?
@@ -3038,6 +3228,48 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
     })();
     """
 
+    @discardableResult
+    private func claimOwnedAudioSession() -> AudioPlaybackSessionToken {
+        if let token = audioSessionToken,
+           audio.isPlaybackSessionActive(token) {
+            return token
+        }
+        let token = audio.claimPlaybackSession(owner: .kindleBackgroundProbe)
+        audioSessionToken = token
+        return token
+    }
+
+    private var ownsAudioSession: Bool {
+        guard let token = audioSessionToken else { return false }
+        return audio.isPlaybackSessionActive(token)
+    }
+
+    private func setOwnedMoreSegmentsExpected(_ expected: Bool) {
+        guard let token = audioSessionToken else { return }
+        _ = audio.setMoreSegmentsExpected(expected, session: token)
+    }
+
+    private func clearOwnedAudioQueue() {
+        guard let token = audioSessionToken else { return }
+        _ = audio.clearQueue(session: token)
+    }
+
+    private func clearOwnedAudioBook() {
+        guard let token = audioSessionToken else { return }
+        _ = audio.clearBook(session: token)
+    }
+
+    private func loadOwnedAudioSegment(_ segment: AudioSegment) {
+        guard let token = audioSessionToken else { return }
+        _ = audio.loadSegment(segment, session: token)
+    }
+
+    private func releaseOwnedAudioSession() {
+        guard let token = audioSessionToken else { return }
+        audio.releasePlaybackSession(token)
+        audioSessionToken = nil
+    }
+
     override init() {
         super.init()
         NotificationCenter.default.addObserver(
@@ -3344,9 +3576,10 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         appendLog("KINDLE continuous START")
         installProbeIfNeeded()
 
-        audio.clearQueue()
+        _ = claimOwnedAudioSession()
+        clearOwnedAudioQueue()
         audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: ProManager.shared.isPro)))
-        audio.moreSegmentsExpected = true
+        setOwnedMoreSegmentsExpected(true)
         audio.setBook(
             id: "kindle-\(urlString.hashValue)",
             title: "Kindle",
@@ -3394,11 +3627,13 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         resetContinuousReadState(keepAudio: false)
         continuousReadPageKeys.removeAll()
         continuousLastReadSourceReason = ""
-        audio.moreSegmentsExpected = false
-        audio.onPlaybackComplete = nil
-        Task { await TTSService.shared.cancelCurrentRequest() }
-        audio.clearQueue()
-        audio.clearBook()
+        setOwnedMoreSegmentsExpected(false)
+        if ownsAudioSession {
+            audio.onPlaybackComplete = nil
+        }
+        clearOwnedAudioQueue()
+        clearOwnedAudioBook()
+        releaseOwnedAudioSession()
         webView?.evaluateJavaScript("window.__crBgProbeClearOCRHighlight && window.__crBgProbeClearOCRHighlight()")
         webView?.evaluateJavaScript("window.__crBgProbeClearOCRMarks && window.__crBgProbeClearOCRMarks()")
     }
@@ -3504,8 +3739,8 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         guard isContinuousReadActive(runID) else { return }
         do {
             if clearQueue {
-                audio.clearQueue()
-                audio.moreSegmentsExpected = true
+                clearOwnedAudioQueue()
+                setOwnedMoreSegmentsExpected(true)
             }
             continuousSegmentsByPageParagraph.removeAll()
             continuousSegmentPageKeys.removeAll()
@@ -3551,13 +3786,17 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
                     language: page.document.language
                 ) { [weak self] segment in
                     await MainActor.run {
-                        self?.appendContinuousSegment(segment, pageKey: page.key)
+                        self?.appendContinuousSegment(
+                            segment,
+                            pageKey: page.key,
+                            runID: runID
+                        )
                     }
                 }
             }
 
             guard !Task.isCancelled, isContinuousReadActive(runID) else { return }
-            audio.moreSegmentsExpected = true
+            setOwnedMoreSegmentsExpected(true)
             continuousReadPageKeys.insert(page.key)
             continuousStatus = AppLocalized("Reading Kindle page...")
             let segmentCount = continuousSegmentsByPageParagraph[page.key]?.values.flatMap { $0 }.count ?? 0
@@ -3565,7 +3804,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             scheduleContinuousReadPrefetch(after: page.key, runID: runID)
         } catch {
             guard isContinuousReadActive(runID) else { return }
-            audio.moreSegmentsExpected = false
+            setOwnedMoreSegmentsExpected(false)
             continuousStatus = AppLocalized("Kindle read failed: \(error.localizedDescription)")
             appendLog("KINDLE continuous error \(error.localizedDescription)")
             setContinuousIssue(
@@ -3577,12 +3816,16 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         }
     }
 
-    private func appendContinuousSegment(_ segment: AudioSegment, pageKey: String) {
-        guard isContinuousReading else { return }
+    private func appendContinuousSegment(
+        _ segment: AudioSegment,
+        pageKey: String,
+        runID: UUID
+    ) {
+        guard isContinuousReadActive(runID) else { return }
         continuousSegmentsByPageParagraph[pageKey, default: [:]][segment.paragraphIndex, default: []].append(segment)
         continuousSegmentPageKeys[segmentSignature(segment)] = pageKey
         continuousAlignCache.removeValue(forKey: alignCacheKey(pageKey: pageKey, paragraphIndex: segment.paragraphIndex))
-        audio.loadSegment(segment)
+        loadOwnedAudioSegment(segment)
         appendLog("KINDLE continuous segment key=\(pageKey.prefix(8)) p=\(segment.paragraphIndex) s=\(segment.segmentIndex) ts=\(segment.timestamps.count) dur=\(String(format: "%.2f", segment.duration))")
     }
 
@@ -3658,7 +3901,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             : (activeContinuousPage?.key ?? "")
         guard !anchorKey.isEmpty else {
             continuousStatus = AppLocalized("Kindle page state is not ready.")
-            audio.moreSegmentsExpected = false
+            setOwnedMoreSegmentsExpected(false)
             setContinuousIssue(
                 kind: .sourceNotReady,
                 title: AppLocalized("Kindle page is not ready"),
@@ -3672,12 +3915,12 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         if continuousReadPrefetchTask != nil {
             continuousPendingReadPrefetch = (anchorKey, runID)
             continuousStatus = AppLocalized("Preparing more Kindle pages...")
-            audio.moreSegmentsExpected = true
+            setOwnedMoreSegmentsExpected(true)
             appendLog("KINDLE read queue drained while prefetch active after=\(anchorKey.prefix(8))")
             return
         }
         continuousStatus = AppLocalized("Loading more Kindle pages...")
-        audio.moreSegmentsExpected = true
+        setOwnedMoreSegmentsExpected(true)
         let prepared = await prefetchLivePagesAfter(
             anchorKey,
             limit: continuousReadPrefetchTarget,
@@ -3685,7 +3928,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         )
         guard isContinuousReadActive(runID) else { return }
         if prepared <= 0 {
-            audio.moreSegmentsExpected = false
+            setOwnedMoreSegmentsExpected(false)
             continuousStatus = AppLocalized("Waiting for Kindle to load more pages.")
             setSourceBlockedIssue(mode: .read, reason: continuousLastReadSourceReason.isEmpty ? "no-candidates" : continuousLastReadSourceReason)
         } else {
@@ -3706,7 +3949,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
 
     private func startContinuousReadPrefetch(after pageKey: String, runID: UUID) {
         guard isContinuousReadActive(runID), !pageKey.isEmpty else { return }
-        audio.moreSegmentsExpected = true
+        setOwnedMoreSegmentsExpected(true)
         continuousReadPrefetchTask = Task { [weak self] in
             guard let self else { return }
             _ = await self.prefetchLivePagesAfter(pageKey, limit: self.continuousReadPrefetchTarget, runID: runID)
@@ -3735,7 +3978,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             let discovery = await discoverSourceCandidates(after: pageKey, targetAhead: limit, mode: .read, runID: runID)
             let candidates = discovery.candidates
             guard !candidates.isEmpty else {
-                audio.moreSegmentsExpected = false
+                setOwnedMoreSegmentsExpected(false)
                 continuousLastReadSourceReason = discovery.reason
                 appendLog("KINDLE read prefetch empty after=\(pageKey.prefix(8)) reason=\(discovery.reason)")
                 return preparedCount
@@ -3749,19 +3992,23 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
                     let page = try await captureLivePage(key: key, shouldCache: true)
                     guard isContinuousReadActive(runID), !Task.isCancelled else { return preparedCount }
                     continuousPreparedPages[page.key] = page
-                    try await enqueuePreparedPage(page, reason: "live-prefetch")
+                    try await enqueuePreparedPage(
+                        page,
+                        reason: "live-prefetch",
+                        runID: runID
+                    )
                     preparedCount += 1
                     continuousLastReadSourceReason = ""
                     clearContinuousIssue()
                 }
             }
-            audio.moreSegmentsExpected = false
+            setOwnedMoreSegmentsExpected(false)
             appendLog("KINDLE read prefetch filled after=\(pageKey.prefix(8)) count=\(preparedCount)")
             return preparedCount
         } catch {
             guard isContinuousReadActive(runID) else { return preparedCount }
             appendLog("KINDLE live prefetch error \(error.localizedDescription)")
-            audio.moreSegmentsExpected = false
+            setOwnedMoreSegmentsExpected(false)
             setContinuousIssue(
                 kind: .pageFailed,
                 title: AppLocalized("Kindle page preparation failed"),
@@ -3982,7 +4229,12 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         }
     }
 
-    private func enqueuePreparedPage(_ page: CapturedPage, reason: String) async throws {
+    private func enqueuePreparedPage(
+        _ page: CapturedPage,
+        reason: String,
+        runID: UUID
+    ) async throws {
+        guard isContinuousReadActive(runID), !Task.isCancelled else { return }
         let readable = page.document.readableParagraphs
         guard !readable.isEmpty else {
             appendLog("KINDLE enqueue skip empty key=\(page.key.prefix(8)) reason=\(reason)")
@@ -3991,7 +4243,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         continuousReadPageKeys.insert(page.key)
         appendLog("KINDLE enqueue page reason=\(reason) key=\(page.key.prefix(8)) paras=\(readable.count)")
         for paragraph in readable {
-            guard !Task.isCancelled, isContinuousReading else { return }
+            guard !Task.isCancelled, isContinuousReadActive(runID) else { return }
             let text = SpeechTextSanitizer.sanitizedForTTS(paragraph.text)
             guard SpeechTextSanitizer.containsSpeakableContent(text) else { continue }
             try await TTSService.shared.generateTTSForParagraph(
@@ -4002,7 +4254,11 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
                 language: page.document.language
             ) { [weak self] segment in
                 await MainActor.run {
-                    self?.appendContinuousSegment(segment, pageKey: page.key)
+                    self?.appendContinuousSegment(
+                        segment,
+                        pageKey: page.key,
+                        runID: runID
+                    )
                 }
             }
         }
@@ -4315,9 +4571,10 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         appendLog("KINDLE continuous EXPLAIN start")
         installProbeIfNeeded()
 
-        audio.clearQueue()
+        _ = claimOwnedAudioSession()
+        clearOwnedAudioQueue()
         audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: ProManager.shared.isPro)))
-        audio.moreSegmentsExpected = true
+        setOwnedMoreSegmentsExpected(true)
         audio.setBook(id: "kindle-explain-\(urlString.hashValue)", title: "Kindle", chapterTitle: AppLocalized("解读"), coverUrl: nil)
         audio.onPlaybackComplete = { [weak self] in
             Task { @MainActor in
@@ -4379,12 +4636,14 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         nativePlaybackParagraphIndex = -1
         nativePlaybackWordIndex = nil
         nativePlaybackMarks = []
-        audio.moreSegmentsExpected = false
-        audio.onPlaybackComplete = nil
-        audio.onSegmentComplete = nil
-        Task { await TTSService.shared.cancelCurrentRequest() }
-        audio.clearQueue()
-        audio.clearBook()
+        setOwnedMoreSegmentsExpected(false)
+        if ownsAudioSession {
+            audio.onPlaybackComplete = nil
+            audio.onSegmentComplete = nil
+        }
+        clearOwnedAudioQueue()
+        clearOwnedAudioBook()
+        releaseOwnedAudioSession()
         webView?.evaluateJavaScript("window.__crBgProbeClearOCRHighlight && window.__crBgProbeClearOCRHighlight()")
         webView?.evaluateJavaScript("window.__crBgProbeClearOCRMarks && window.__crBgProbeClearOCRMarks()")
     }
@@ -4393,8 +4652,8 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         guard isContinuousExplainActive(runID) else { return }
         do {
             if clearQueue {
-                audio.clearQueue()
-                audio.moreSegmentsExpected = true
+                clearOwnedAudioQueue()
+                setOwnedMoreSegmentsExpected(true)
                 continuousExplainBlocks.removeAll()
                 continuousFiredMarkKeys.removeAll()
                 continuousPreparedPages.removeAll()
@@ -4428,7 +4687,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             continuousStatus = AppLocalized("Explaining Kindle page...")
         } catch {
             guard isContinuousExplainActive(runID) else { return }
-            audio.moreSegmentsExpected = false
+            setOwnedMoreSegmentsExpected(false)
             continuousStatus = AppLocalized("Kindle explain failed: \(error.localizedDescription)")
             appendLog("KINDLE explain error \(error.localizedDescription)")
         }
@@ -4487,7 +4746,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             continuousExplainBlocks[block.audioIndex] = block
             for segment in block.segments {
                 continuousSegmentPageKeys[segmentSignature(segment)] = page.key
-                audio.loadSegment(segment)
+                loadOwnedAudioSegment(segment)
             }
             appendLog("KINDLE explain block=\(blockIndex) audio=\(block.audioIndex) key=\(page.key.prefix(8)) segs=\(block.segments.count) marks=\(block.marks.count) dur=\(String(format: "%.2f", block.duration))")
         }
@@ -4517,7 +4776,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             : (activeContinuousPage?.key ?? "")
         guard !anchorKey.isEmpty else {
             continuousStatus = AppLocalized("Kindle page state is not ready.")
-            audio.moreSegmentsExpected = false
+            setOwnedMoreSegmentsExpected(false)
             setContinuousIssue(
                 kind: .sourceNotReady,
                 title: AppLocalized("Kindle page is not ready"),
@@ -4531,12 +4790,12 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         if continuousPrefetchTask != nil {
             continuousPendingPrefetch = (anchorKey, runID)
             continuousStatus = AppLocalized("Preparing more Kindle pages...")
-            audio.moreSegmentsExpected = true
+            setOwnedMoreSegmentsExpected(true)
             appendLog("KINDLE explain queue drained while prefetch active after=\(anchorKey.prefix(8))")
             return
         }
         continuousStatus = AppLocalized("Loading more Kindle pages...")
-        audio.moreSegmentsExpected = true
+        setOwnedMoreSegmentsExpected(true)
         let prepared = await prefetchExplainPagesAfter(
             anchorKey,
             targetAhead: continuousExplainPrefetchTarget,
@@ -4544,7 +4803,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
         )
         guard isContinuousExplainActive(runID) else { return }
         if prepared <= 0 {
-            audio.moreSegmentsExpected = false
+            setOwnedMoreSegmentsExpected(false)
             continuousStatus = AppLocalized("Waiting for Kindle to load more pages.")
             setSourceBlockedIssue(mode: .explain, reason: continuousLastExplainSourceReason.isEmpty ? "no-candidates" : continuousLastExplainSourceReason)
         } else {
@@ -4660,7 +4919,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             appendLog("KINDLE explain prefetch skip free-user after=\(pageKey.prefix(8))")
             return
         }
-        audio.moreSegmentsExpected = true
+        setOwnedMoreSegmentsExpected(true)
         continuousPrefetchTask = Task { [weak self] in
             guard let self else { return }
             _ = await self.prefetchExplainPagesAfter(
@@ -4694,7 +4953,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             guard isContinuousExplainActive(runID), !Task.isCancelled else { return preparedCount }
             let candidates = discovery.candidates
             guard !candidates.isEmpty else {
-                audio.moreSegmentsExpected = false
+                setOwnedMoreSegmentsExpected(false)
                 continuousLastExplainSourceReason = discovery.reason
                 appendLog("KINDLE explain prefetch empty after=\(pageKey.prefix(8)) reason=\(discovery.reason)")
                 return preparedCount
@@ -4731,7 +4990,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
                     }
                 }
             }
-            audio.moreSegmentsExpected = false
+            setOwnedMoreSegmentsExpected(false)
             if preparedCount == 0 {
                 appendLog("KINDLE explain prefetch no readable candidate after=\(pageKey.prefix(8))")
             } else {
@@ -4740,7 +4999,7 @@ private final class KindleBackgroundProbeModel: NSObject, ObservableObject {
             return preparedCount
         } catch {
             guard isContinuousExplainActive(runID) else { return preparedCount }
-            audio.moreSegmentsExpected = false
+            setOwnedMoreSegmentsExpected(false)
             appendLog("KINDLE explain prefetch error \(error.localizedDescription)")
             setContinuousIssue(
                 kind: .pageFailed,

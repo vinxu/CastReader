@@ -15,6 +15,31 @@ struct MarkHit: Equatable {
 
 enum MarkAnchoring {
 
+    /// Mark matching is intentionally expressed in Swift `Character` offsets,
+    /// while DOM Range uses UTF-16 code units. Convert at the rendering
+    /// boundary so emoji/non-BMP text does not shift every later annotation.
+    static func utf16Range(
+        fromCharacterRange range: Range<Int>,
+        in text: String
+    ) -> Range<Int>? {
+        guard range.lowerBound >= 0,
+              range.upperBound >= range.lowerBound,
+              range.upperBound <= text.count,
+              let lower = text.index(
+                text.startIndex,
+                offsetBy: range.lowerBound,
+                limitedBy: text.endIndex
+              ),
+              let upper = text.index(
+                text.startIndex,
+                offsetBy: range.upperBound,
+                limitedBy: text.endIndex
+              ) else { return nil }
+        let start = text[..<lower].utf16.count
+        let end = text[..<upper].utf16.count
+        return start..<max(start, end)
+    }
+
     /// 在文档中定位 markText。先在 near 段落附近找，再放宽到全文。
     static func locate(markText raw: String, in document: ReadingDocument, near: Int?) -> MarkHit? {
         let query = normalize(Array(strippingDecorations(raw))).norm

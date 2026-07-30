@@ -15,6 +15,8 @@ enum ReadingSourceKind: String, Equatable, Codable {
     case photo   // 拍摄/选图，带 Vision OCR 的词级 bbox
     case kindle  // Kindle Cloud Reader：多页渲染图 + Vision OCR 词级 bbox
     case weread  // 微信读书：实时 Canvas/DOM bridge（不 OCR、不保存章节正文）
+    case googleBooks = "google_books"  // Google Play 图书：跨源阅读帧的实时 DOM bridge（不 OCR、不保存正文）
+    case kobo    // Kobo Web Reader：同源章节 iframe + CSS columns 的实时 DOM bridge
     case text    // 上传文件 / 文本输入，重排纯文本
     case web     // 网址：WKWebView 直接加载网页 DOM，高亮/标注经 JS bridge（保留原排版）
     case docx    // 本地 DOCX：WKWebView 内 mammoth.js 转 HTML 渲染（不上传后端），复用 web 的高亮/标注/提取链路
@@ -25,7 +27,16 @@ enum ReadingSourceKind: String, Equatable, Codable {
 extension ReadingSourceKind {
     /// WKWebView 渲染的源（网页 / 本地 DOCX）：正文提取在 DOM、高亮/标注经 WebReaderBridge 驱动。
     /// 注意：EPUB 已改为原生解析渲染（走 TextReaderView），不在此列。
-    var isWebRendered: Bool { self == .web || self == .docx || self == .weread }
+    var isWebRendered: Bool {
+        self == .web || self == .docx || self == .weread
+            || self == .googleBooks || self == .kobo
+    }
+
+    /// 绑定书库里的「实时网页阅读器」：页面归第三方所有，CastReader 只在其 DOM 上
+    /// 做高亮/标注，并按页驱动 TTS —— 一页读完再翻页，而不是一次拿整本。
+    var isLiveWebLibrary: Bool {
+        self == .weread || self == .googleBooks || self == .kobo
+    }
 
     /// 原生文本渲染源（重排文本 / EPUB）：走 TextReaderView，朗读词/句高亮统一用 processedDisplayText 内字符范围。
     var isNativeTextRendered: Bool { self == .text || self == .epub }
@@ -115,6 +126,7 @@ struct ReadingDocument: Identifiable, Equatable {
     var imageData: Data? = nil           // 仅 photo（JPEG）
     var imagePixelSize: CGSize? = nil    // 仅 photo，原图像素尺寸
     var sourceURL: String? = nil         // 上传得到的 COS URL；纯拍摄为 synthetic
+    var coverURL: String? = nil          // 绑定书库封面；Mini Player / 锁屏共用
     var fileData: Data? = nil            // 仅 docx：原始文件字节，交 WebView 内 mammoth 本地渲染
     var createdAt: Date = Date()
 
@@ -126,6 +138,7 @@ struct ReadingDocument: Identifiable, Equatable {
          imageData: Data? = nil,
          imagePixelSize: CGSize? = nil,
          sourceURL: String? = nil,
+         coverURL: String? = nil,
          fileData: Data? = nil,
          createdAt: Date = Date()) {
         self.id = id
@@ -136,6 +149,7 @@ struct ReadingDocument: Identifiable, Equatable {
         self.imageData = imageData
         self.imagePixelSize = imagePixelSize
         self.sourceURL = sourceURL
+        self.coverURL = coverURL
         self.fileData = fileData
         self.createdAt = createdAt
     }

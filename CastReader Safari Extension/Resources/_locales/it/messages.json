@@ -1,0 +1,266 @@
+{
+  "extName": {
+    "message": "CastReader — Leggi ad alta voce + IA"
+  },
+  "extDescription": {
+    "message": "Ascolta Kindle, PDF, articoli e libri con testo evidenziato e spiegazione IA. Voci naturali in 9 lingue."
+  },
+  "quickreadBtn": {
+    "message": "Panoramica rapida"
+  },
+  "quickreadBtnExit": {
+    "message": "Esci dalla panoramica"
+  },
+  "quickreadPreparing": {
+    "message": "Creazione della panoramica"
+  },
+  "quickreadError": {
+    "message": "Errore della panoramica"
+  },
+  "quickreadStageExtract": {
+    "message": "Estrazione dei punti chiave"
+  },
+  "quickreadStageTts": {
+    "message": "Creazione della narrazione"
+  },
+  "quickreadStageRefine": {
+    "message": "Regolazione del ritmo"
+  },
+  "quickreadStageReady": {
+    "message": "Pronto per la riproduzione…"
+  },
+  "quickreadFailed": {
+    "message": "Operazione non riuscita: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "Chiudi"
+  },
+  "quickreadCancel": {
+    "message": "Annulla"
+  },
+  "quickreadDone": {
+    "message": "Fatto"
+  },
+  "quickreadHint": {
+    "message": "Servono circa 25-45 secondi. Attendi"
+  },
+  "quickreadQueued": {
+    "message": "In coda ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "Hai esaurito le spiegazioni IA gratuite di oggi. Si ripristinano domani."
+  },
+  "quickreadRateLimitTitle": {
+    "message": "Hai esaurito le spiegazioni IA gratuite di oggi"
+  },
+  "quickreadRateLimitBody": {
+    "message": "Hai raggiunto il limite gratuito giornaliero. Passa a Pro per spiegazioni IA illimitate. La quota gratuita si ripristina domani."
+  },
+  "quickreadUpgrade": {
+    "message": "Passa a Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "Accesso non effettuato"
+  },
+  "enableProMode": {
+    "message": "Attiva Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "Hai usato i 20 minuti gratuiti di oggi"
+  },
+  "listenRateLimitBody": {
+    "message": "Hai usato i 20 minuti gratuiti di oggi. Passa a Pro per ascoltare senza limiti. La quota gratuita si ripristina domani."
+  },
+  "quickreadQuotaTip": {
+    "message": "Spiega · $n$/$max$ rimaste oggi",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "Spiega · Pro ∞"
+  },
+  "readerUploadTitle": {
+    "message": "Leggi un documento"
+  },
+  "readerDrop": {
+    "message": "Trascina qui un'immagine / PDF / Word / TXT"
+  },
+  "readerDropOver": {
+    "message": "Rilascia per caricare"
+  },
+  "readerSub": {
+    "message": "Lettura ad alta voce e panoramica IA sul file originale, senza alterare il layout"
+  },
+  "readerOr": {
+    "message": "oppure"
+  },
+  "readerPick": {
+    "message": "Scegli file"
+  },
+  "readerRendering": {
+    "message": "Elaborazione del documento…"
+  },
+  "readerListen": {
+    "message": "▶ Ascolta"
+  },
+  "readerPause": {
+    "message": "⏸ Pausa"
+  },
+  "readerResume": {
+    "message": "▶ Riprendi"
+  },
+  "readerStop": {
+    "message": "■ Interrompi"
+  },
+  "readerExplain": {
+    "message": "✦ Spiega"
+  },
+  "readerExplainHint": {
+    "message": "Prima interrompi la lettura"
+  },
+  "readerNewFile": {
+    "message": "Nuovo file"
+  },
+  "readerSpeed": {
+    "message": "Velocità"
+  },
+  "readerUnsupported": {
+    "message": "Tipo di file non supportato"
+  },
+  "readerFailed": {
+    "message": "Elaborazione non riuscita"
+  },
+  "readerEmpty": {
+    "message": "Nessun testo leggibile trovato in questo documento"
+  },
+  "readerQuotaLeft": {
+    "message": "rimaste oggi"
+  },
+  "readerQuotaBlocked": {
+    "message": "Hai esaurito le 10 panoramiche gratuite di oggi. Si ripristinano domani"
+  },
+  "readerPartial": {
+    "message": "È stata spiegata la sezione nella posizione attuale. Scorri e premi di nuovo Spiega per continuare"
+  },
+  "readerTooLarge": {
+    "message": "File troppo grande (oltre 7 MB). Usa un file più piccolo."
+  },
+  "readerContinue": {
+    "message": "Continua ✦"
+  },
+  "readerSettings": {
+    "message": "Impostazioni"
+  },
+  "readerExplainLang": {
+    "message": "Spiega in"
+  },
+  "readerDocumentLang": {
+    "message": "Lingua del documento"
+  },
+  "readerDocumentLangAuto": {
+    "message": "Automatico (lingua del browser)"
+  },
+  "readerDocumentLangHint": {
+    "message": "Per immagini e PDF scansionati, scegli la lingua per un OCR più accurato."
+  },
+  "readerVoiceEn": {
+    "message": "Voce inglese"
+  },
+  "readerVoiceZh": {
+    "message": "Voce cinese"
+  },
+  "readerVoices": {
+    "message": "Voci"
+  },
+  "readerBrowseVoices": {
+    "message": "Sfoglia le voci"
+  },
+  "readerLangAuto": {
+    "message": "Automatico (lingua dell'interfaccia)"
+  },
+  "readerLangFollow": {
+    "message": "Segui il documento"
+  },
+  "readerPreparing": {
+    "message": "Preparazione della narrazione…"
+  },
+  "readerEncrypted": {
+    "message": "Questo PDF è protetto da password"
+  },
+  "readerCorrupt": {
+    "message": "Il file sembra danneggiato o illeggibile"
+  },
+  "readerTimeout": {
+    "message": "L'apertura ha richiesto troppo tempo; il file potrebbe essere troppo complesso"
+  },
+  "inboxTitle": {
+    "message": "Raccolta contenuti"
+  },
+  "inboxSubtitle": {
+    "message": "Salva pagine web o testo selezionato, poi ascoltali o spiegali quando vuoi."
+  },
+  "inboxEmpty": {
+    "message": "La raccolta è vuota"
+  },
+  "inboxEmptyDescription": {
+    "message": "Fai clic destro su una pagina o sul testo selezionato e salvalo in CastReader."
+  },
+  "inboxSaveSelection": {
+    "message": "Salva il testo selezionato in CastReader"
+  },
+  "inboxSavePage": {
+    "message": "Salva la pagina in CastReader"
+  },
+  "inboxOpen": {
+    "message": "Apri raccolta contenuti"
+  },
+  "inboxSharedText": {
+    "message": "Testo selezionato"
+  },
+  "inboxOpenFailed": {
+    "message": "Impossibile aprire questo contenuto. Riprova."
+  },
+  "inboxRetry": {
+    "message": "Riprova"
+  },
+  "inboxRead": {
+    "message": "Leggi ad alta voce"
+  },
+  "inboxExplain": {
+    "message": "Spiega"
+  },
+  "inboxDelete": {
+    "message": "Elimina"
+  },
+  "inboxLink": {
+    "message": "Link"
+  },
+  "inboxText": {
+    "message": "Testo"
+  },
+  "edgeExtName": {
+    "message": "CastReader — Lettura ad alta voce + IA"
+  },
+  "edgeExtDescription": {
+    "message": "Ascolta articoli, PDF e libri Kindle con evidenziazione sincronizzata e spiegazioni IA."
+  },
+  "toggleSiteVisibility": {
+    "message": "Mostra / nascondi CastReader su questo sito"
+  }
+}

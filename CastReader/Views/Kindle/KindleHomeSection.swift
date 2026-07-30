@@ -15,35 +15,53 @@ struct KindleHomeSection: View {
     }
 
     private var orderedHomeBooks: [KindleBook] {
-        let storeByID = Dictionary(uniqueKeysWithValues: store.books.map { ($0.id, $0) })
+        let activeStoreBooks = store.boundBooks
+        let storeByID = Dictionary(uniqueKeysWithValues: activeStoreBooks.map { ($0.id, $0) })
         var seen = Set<String>()
         var result: [KindleBook] = []
 
         for record in history.records where record.sourceKind == .kindle {
             let book = storeByID[record.id] ?? history.kindleBook(for: record)
-            guard let book, seen.insert(book.id).inserted else { continue }
+            guard let book,
+                  belongsToBoundStorefront(book),
+                  seen.insert(book.id).inserted else { continue }
             result.append(book)
         }
 
-        for book in store.homeBooks where seen.insert(book.id).inserted {
+        for book in activeStoreBooks where seen.insert(book.id).inserted {
             result.append(book)
         }
 
-        return Array(result.prefix(8))
+        return Array(
+            result
+                .sorted {
+                    ($0.lastOpenedAt ?? $0.lastSyncedAt)
+                        > ($1.lastOpenedAt ?? $1.lastSyncedAt)
+                }
+                .prefix(8)
+        )
+    }
+
+    private func belongsToBoundStorefront(_ book: KindleBook) -> Bool {
+        let storefrontID = book.storefrontID
+            ?? KindleStorefront.storefront(rawURL: book.lastReadURL)?.id
+            ?? KindleStorefront.storefront(rawURL: book.readerURL)?.id
+            ?? KindleStorefront.us.id
+        return storefrontID == store.boundStorefrontID
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            header
-
-            if store.needsConnection {
-                connectCard
-            } else if orderedHomeBooks.isEmpty {
-                emptySyncedCard
-            } else {
-                bookRail
+        Group {
+            if !store.needsConnection && !orderedHomeBooks.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    header
+                    bookRail
+                }
+                .accessibilityIdentifier("homeShelfSection.kindle")
             }
         }
+        // Keep the section mounted even while it renders no card. The
+        // first-use flow opens this existing connection sheet by notification.
         .sheet(isPresented: $showConnect) {
             KindleLibraryConnectView()
         }
@@ -58,69 +76,18 @@ struct KindleHomeSection: View {
                 Text("Kindle")
                     .font(.headline)
                     .foregroundColor(AppTheme.foreground)
-                Text("已同步的 Kindle 书架")
+                Text("\(store.boundStorefront.flag) \(store.boundStorefront.displayName)")
                     .font(.caption)
                     .foregroundColor(AppTheme.mutedForeground)
             }
             Spacer()
-            if !store.needsConnection {
-                NavigationLink(destination: KindleLibraryView()) {
-                    Text("查看全部")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(AppTheme.primary)
-                }
-            }
-        }
-    }
-
-    private var connectCard: some View {
-        Button { showConnect = true } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "books.vertical")
-                    .font(.system(size: 22, weight: .semibold))
+            NavigationLink(destination: KindleLibraryView()) {
+                Text("查看全部")
+                    .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.primary)
-                    .frame(width: 48, height: 48)
-                    .background(AppTheme.primary.opacity(0.12))
-                    .cornerRadius(12)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("绑定 Kindle")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(AppTheme.foreground)
-                    Text("登录后同步书架")
-                        .font(.caption)
-                        .foregroundColor(AppTheme.mutedForeground)
-                }
-
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(AppTheme.mutedForeground)
             }
-            .padding(14)
-            .background(AppTheme.surface)
-            .cornerRadius(16)
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppTheme.border.opacity(0.7), lineWidth: 1))
+            .accessibilityIdentifier("homeShelfViewAll.kindle")
         }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("connectKindleButton")
-    }
-
-    private var emptySyncedCard: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "arrow.clockwise")
-                .foregroundColor(AppTheme.primary)
-            Text("还没有同步书籍")
-                .font(.subheadline)
-                .foregroundColor(AppTheme.foreground)
-            Spacer()
-            Button("同步") { showConnect = true }
-                .font(.subheadline.weight(.semibold))
-                .foregroundColor(AppTheme.primary)
-        }
-        .padding(14)
-        .background(AppTheme.surface)
-        .cornerRadius(16)
     }
 
     private var bookRail: some View {
@@ -136,6 +103,7 @@ struct KindleHomeSection: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("homeShelfBook.kindle.\(book.id)")
                 }
             }
             .padding(.vertical, 4)

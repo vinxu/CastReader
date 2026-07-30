@@ -20,7 +20,11 @@
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "CR_PRO_MONTHLY",
-          "introductoryOffer" : null,
+          "introductoryOffer" : {
+            "internalID" : "CR_PRO_MONTHLY_INTRO",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
           "localizations" : [
             {
               "description" : "无限朗读与解读、全部高级音色、3x 语速",
@@ -41,7 +45,11 @@
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "CR_PRO_YEARLY",
-          "introductoryOffer" : null,
+          "introductoryOffer" : {
+            "internalID" : "CR_PRO_YEARLY_INTRO",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
           "localizations" : [
             {
               "description" : "无限朗读与解读、全部高级音色、3x 语速（年付更省）",

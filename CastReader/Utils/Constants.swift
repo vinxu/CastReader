@@ -14,7 +14,10 @@ enum Constants {
 
     enum API {
         static let baseURL = "https://api.castreader.ai"
-        static let readerServiceURL = "http://api.castreader.ai:8123"
+        /// The reader service is exposed through the same TLS reverse proxy as
+        /// TTS. Never send document metadata or uploads to the legacy plaintext
+        /// `:8123` origin.
+        static let readerServiceURL = baseURL
 
         // Library
         static let documents = "\(readerServiceURL)/documents"

@@ -13,6 +13,243 @@ enum ReaderMode: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+enum ReaderPlaybackNavigationContract {
+    static func usesPageTurns(for sourceKind: ReadingSourceKind) -> Bool {
+        switch sourceKind {
+        case .weread, .googleBooks, .kobo:
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+/// Shared portrait playback geometry for Kindle and every generic reader.
+/// Captions deliberately paint outside this reserved area so a changing
+/// sentence never resizes a WebView/PDF surface or triggers repagination.
+enum ReaderPlaybackBarLayoutContract {
+    static let portraitHeight: CGFloat = 72
+    static let consoleHeight: CGFloat = 64
+    static let landscapeControlHeight: CGFloat = 68
+    static let explainCaptionOffset: CGFloat = -42
+    static let explainCaptionConsumesReservedHeight = false
+
+    static func reservedPortraitHeight(for mode: ReaderMode) -> CGFloat {
+        switch mode {
+        case .read, .explain:
+            return portraitHeight
+        }
+    }
+
+    /// The Web adapter's scalar occlusion can only describe a full-width
+    /// bottom band. Compact landscape capsules leave most of that band
+    /// readable, so they must report zero until the bridge supports exact
+    /// occlusion rectangles.
+    static func bottomContentOcclusion(
+        controlsCoverFullWidth: Bool
+    ) -> CGFloat {
+        controlsCoverFullWidth ? landscapeControlHeight : 0
+    }
+}
+
+enum ReadPlaybackPresentationState: Equatable {
+    case playing
+    case waiting
+    case retry
+    case paused
+}
+
+enum ReadPlaybackPresentationContract {
+    static func resolve(
+        isPlaying: Bool,
+        isWaitingForPlayableAudio: Bool,
+        status: TTSStatus
+    ) -> ReadPlaybackPresentationState {
+        if isPlaying { return .playing }
+        if isWaitingForPlayableAudio { return .waiting }
+        if case .error = status { return .retry }
+        return .paused
+    }
+}
+
+enum ReaderExplainPlaybackPresentationState: Equatable {
+    case start
+    case playing
+    case paused
+    case retry
+    case replay
+    case waiting
+}
+
+/// Short AVPlayer/TTS staging gaps are normal between streamed segments. Keep
+/// the last stable control state for 300ms so those gaps do not flash the play
+/// button or status copy. A sustained wait then becomes an explicit spinner.
+enum ReaderPlaybackWaitingDebounceContract {
+    static let delayMilliseconds: UInt64 = 300
+    static let delayNanoseconds = delayMilliseconds * 1_000_000
+
+    static func hasExceededDelay(elapsedMilliseconds: UInt64) -> Bool {
+        elapsedMilliseconds >= delayMilliseconds
+    }
+
+    static func resolve<Presentation: Equatable>(
+        rawWaiting: Bool,
+        waitingHasExceededDelay: Bool,
+        previousStablePresentation: Presentation,
+        currentStablePresentation: Presentation,
+        waitingPresentation: Presentation
+    ) -> Presentation {
+        guard rawWaiting else { return currentStablePresentation }
+        return waitingHasExceededDelay
+            ? waitingPresentation
+            : previousStablePresentation
+    }
+}
+
+enum ReaderPrimaryPlaybackButtonIcon: Equatable {
+    case play
+    case pause
+    case retry
+    case sparkles
+    case loading
+}
+
+enum ReaderPrimaryPlaybackButtonVisualContract {
+    static let portraitSize: CGFloat = 52
+    static let landscapeSize: CGFloat = 44
+    static let keepsPrimaryCircleWhileLoading = true
+}
+
+/// One stable orange control shell for Read and Explain. Loading only swaps the
+/// white glyph inside the circle, so changing playback state never removes or
+/// resizes the user's visual anchor.
+struct ReaderPrimaryPlaybackButtonContent: View {
+    let icon: ReaderPrimaryPlaybackButtonIcon
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(AppTheme.primary)
+
+            switch icon {
+            case .loading:
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(.white)
+                    .scaleEffect(size >= ReaderPrimaryPlaybackButtonVisualContract.portraitSize ? 1 : 0.86)
+            case .play:
+                Image(systemName: "play.fill")
+                    .offset(x: size * 0.035)
+            case .pause:
+                Image(systemName: "pause.fill")
+            case .retry:
+                Image(systemName: "arrow.clockwise")
+            case .sparkles:
+                Image(systemName: "sparkles")
+            }
+        }
+        .font(.system(size: size * 0.34, weight: .bold))
+        .foregroundStyle(Color.white)
+        .frame(width: size, height: size)
+        .contentShape(Circle())
+    }
+}
+
+/// SwiftUI adapter for the pure waiting contract above. While `rawWaiting`
+/// remains true it deliberately refuses to accept transient `.paused` values
+/// caused by `isPlaying` dropping at a segment boundary.
+struct ReaderDebouncedWaitingPresentation<Presentation: Equatable, Content: View>: View {
+    let stablePresentation: Presentation
+    let rawWaiting: Bool
+    let waitingPresentation: Presentation
+    let content: (Presentation) -> Content
+
+    @State private var previousStablePresentation: Presentation
+    @State private var waitingHasExceededDelay = false
+
+    init(
+        stablePresentation: Presentation,
+        rawWaiting: Bool,
+        waitingPresentation: Presentation,
+        @ViewBuilder content: @escaping (Presentation) -> Content
+    ) {
+        self.stablePresentation = stablePresentation
+        self.rawWaiting = rawWaiting
+        self.waitingPresentation = waitingPresentation
+        self.content = content
+        _previousStablePresentation = State(initialValue: stablePresentation)
+    }
+
+    var body: some View {
+        content(displayedPresentation)
+            .onAppear {
+                if !rawWaiting {
+                    previousStablePresentation = stablePresentation
+                }
+            }
+            .onChange(of: stablePresentation) { newValue in
+                guard !rawWaiting else { return }
+                previousStablePresentation = newValue
+            }
+            .onChange(of: rawWaiting) { isWaiting in
+                if !isWaiting {
+                    waitingHasExceededDelay = false
+                    previousStablePresentation = stablePresentation
+                }
+            }
+            .task(id: rawWaiting) {
+                guard rawWaiting else {
+                    waitingHasExceededDelay = false
+                    return
+                }
+                waitingHasExceededDelay = false
+                try? await Task.sleep(
+                    nanoseconds: ReaderPlaybackWaitingDebounceContract.delayNanoseconds
+                )
+                guard !Task.isCancelled else { return }
+                waitingHasExceededDelay = true
+            }
+    }
+
+    private var displayedPresentation: Presentation {
+        ReaderPlaybackWaitingDebounceContract.resolve(
+            rawWaiting: rawWaiting,
+            waitingHasExceededDelay: waitingHasExceededDelay,
+            previousStablePresentation: previousStablePresentation,
+            currentStablePresentation: stablePresentation,
+            waitingPresentation: waitingPresentation
+        )
+    }
+}
+
+enum ReaderModeSwitchPlaybackContract {
+    static func shouldContinueFromRead(
+        audioIsPlaying: Bool,
+        viewModelIsPlaying: Bool,
+        status: TTSStatus
+    ) -> Bool {
+        audioIsPlaying || viewModelIsPlaying || status.isLoading
+    }
+
+    static func shouldContinueFromExplain(
+        audioIsPlaying: Bool,
+        viewModelIsPlaying: Bool,
+        status: ExplainStatus,
+        isPreparingNext: Bool
+    ) -> Bool {
+        if audioIsPlaying || viewModelIsPlaying { return true }
+        switch status {
+        case .planning:
+            return true
+        case .streaming:
+            return isPreparingNext
+        case .idle, .completed, .error:
+            return false
+        }
+    }
+}
+
 /// Matches Kindle's native TOC sheet so both bound-library readers have the
 /// same hierarchy, active-chapter indicator and loading/error interaction.
 private struct WeReadNativeTOCPanel: View {
@@ -139,12 +376,6 @@ private struct WeReadNativeTOCPanel: View {
 }
 
 struct ReaderHostView: View {
-    /// Read/Explain controls must reserve one stable viewport boundary. WeRead
-    /// paginates its Canvas from the WKWebView size; allowing the explanation
-    /// subtitle/status rows to grow this area used to resize the Canvas, which
-    /// was then mistaken for a real page turn and restarted QuickRead.
-    private static let portraitPlaybackBarHeight: CGFloat = 124
-
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @ObservedObject var readVM: ReadAloudViewModel
@@ -152,10 +383,19 @@ struct ReaderHostView: View {
     @ObservedObject var coordinator: PlayerCoordinator
     let document: ReadingDocument
 
+    @ObservedObject private var googleBooksStore = GoogleBooksLibraryStore.shared
+    @ObservedObject private var koboStore = KoboLibraryStore.shared
     @StateObject private var weReadTOC = WeReadTOCController()
+    @StateObject private var liveWebPageTurn = LiveWebPageTurnController()
     @State private var readerSurfaceSize: CGSize = .zero
     @State private var refocusToken = 0
     @State private var refocusTask: Task<Void, Never>?
+    @State private var pendingModeSwitch: PendingReaderModeSwitch?
+
+    private struct PendingReaderModeSwitch {
+        let target: ReaderMode
+        let shouldContinuePlayback: Bool
+    }
 
     private var mode: ReaderMode { coordinator.mode }
     private var usesCompactPlaybackBar: Bool { verticalSizeClass == .compact }
@@ -195,6 +435,18 @@ struct ReaderHostView: View {
                 weReadTOCJumpLockOverlay
                     .zIndex(20)
             }
+
+            if document.sourceKind == .googleBooks,
+               let message = googleBooksStore.lastError {
+                googleBooksRecoveryOverlay(message: message)
+                    .zIndex(30)
+            }
+
+            if document.sourceKind == .kobo,
+               let message = koboStore.lastError {
+                koboRecoveryOverlay(message: message)
+                    .zIndex(30)
+            }
         }
         .background(AppTheme.background.ignoresSafeArea())
         .onAppear { scheduleRefocusBurst(reason: "appear") }
@@ -202,11 +454,15 @@ struct ReaderHostView: View {
             refocusTask?.cancel()
         }
         .onPreferenceChange(ReaderSurfaceSizeKey.self) { size in
-            guard coordinator.isReaderPresented else { return }
             guard size.width > 1, size.height > 1 else { return }
             guard abs(size.width - readerSurfaceSize.width) > 2
                     || abs(size.height - readerSurfaceSize.height) > 2 else { return }
+            // ReaderHost is kept alive off-screen while minimized. Its first
+            // valid geometry preference can therefore arrive just before
+            // `isReaderPresented` flips to true. Always cache that geometry;
+            // only the visible reader needs an immediate refocus burst.
             readerSurfaceSize = size
+            guard coordinator.isReaderPresented else { return }
             scheduleRefocusBurst(reason: "surfaceSize")
         }
         .onChange(of: scenePhase) { phase in
@@ -221,12 +477,30 @@ struct ReaderHostView: View {
             }
         }
         .onChange(of: coordinator.mode) { newMode in
+            let shouldContinuePlayback: Bool
+            if pendingModeSwitch?.target == newMode {
+                shouldContinuePlayback =
+                    pendingModeSwitch?.shouldContinuePlayback == true
+            } else {
+                shouldContinuePlayback =
+                    shouldContinuePlaybackFromOutgoingMode(entering: newMode)
+            }
+            pendingModeSwitch = nil
+            ReaderRunLog.write(
+                "HOST mode switch target=\(newMode.rawValue) " +
+                "continue=\(shouldContinuePlayback ? "Y" : "N")"
+            )
             if newMode == .read {
                 explainVM.deactivate()
                 readVM.activate()       // 切回朗读：重新接管音频回调（onPlaybackComplete）
+                if shouldContinuePlayback {
+                    readVM.ensurePlaying()
+                }
             } else {
                 readVM.deactivate()
-                explainVM.activate()    // 切到解读：接管音频回调
+                explainVM.activateAfterModeSwitch(
+                    autoplay: shouldContinuePlayback
+                )
             }
             scheduleRefocusBurst(reason: "mode")
         }
@@ -274,11 +548,12 @@ struct ReaderHostView: View {
                 .lineLimit(1)
                 .foregroundColor(AppTheme.foreground)
             Spacer(minLength: 8)
-            Picker("", selection: $coordinator.mode) {
+            Picker("", selection: modeSelection) {
                 ForEach(ReaderMode.allCases) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
             }
             .pickerStyle(.segmented)
             .frame(width: 140)
+            .accessibilityIdentifier("readerModePicker")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, usesCompactPlaybackBar ? 6 : 10)
@@ -286,12 +561,56 @@ struct ReaderHostView: View {
         .background(.regularMaterial)
     }
 
+    /// Capture playback intent in the Picker setter, before either SwiftUI's
+    /// `updateUIView` or this view's `onChange` can deactivate the outgoing VM.
+    /// Kindle preserves an active narration across mode switches; generic
+    /// readers must follow the same contract.
+    private var modeSelection: Binding<ReaderMode> {
+        Binding(
+            get: { coordinator.mode },
+            set: { newMode in
+                guard newMode != coordinator.mode else { return }
+                pendingModeSwitch = PendingReaderModeSwitch(
+                    target: newMode,
+                    shouldContinuePlayback:
+                        shouldContinuePlaybackFromOutgoingMode(
+                            entering: newMode
+                        )
+                )
+                coordinator.mode = newMode
+            }
+        )
+    }
+
+    private func shouldContinuePlaybackFromOutgoingMode(
+        entering newMode: ReaderMode
+    ) -> Bool {
+        let audioIsPlaying = AudioPlayerService.shared.isPlaying
+        switch newMode {
+        case .explain:
+            guard readVM.isActive else { return false }
+            return ReaderModeSwitchPlaybackContract.shouldContinueFromRead(
+                audioIsPlaying: audioIsPlaying,
+                viewModelIsPlaying: readVM.isPlaying,
+                status: readVM.status
+            )
+        case .read:
+            guard explainVM.isActive else { return false }
+            return ReaderModeSwitchPlaybackContract.shouldContinueFromExplain(
+                audioIsPlaying: audioIsPlaying,
+                viewModelIsPlaying: explainVM.isPlaying,
+                status: explainVM.status,
+                isPreparingNext: explainVM.isPreparingNext
+            )
+        }
+    }
+
     // MARK: 内容
 
     @ViewBuilder
     private func content(surfaceSize: CGSize) -> some View {
         switch document.sourceKind {
-        case .web, .docx, .weread:
+        case .web, .docx, .weread, .googleBooks, .kobo:
             WebReaderView(
                 document: document,
                 readVM: readVM,
@@ -299,7 +618,18 @@ struct ReaderHostView: View {
                 mode: mode,
                 refocusToken: refocusToken,
                 initialSurfaceSize: surfaceSize,
-                weReadTOC: weReadTOC
+                // The compact landscape controls are two local capsules, not
+                // a full-width bottom bar. `bottomContentOcclusion` describes
+                // only a full-width covered band; reporting 68pt here made
+                // Kobo discard visible text across the entire bottom of both
+                // columns, so playback reached its (truncated) snapshot end
+                // and turned while words were still visible on screen.
+                bottomContentOcclusion:
+                    ReaderPlaybackBarLayoutContract.bottomContentOcclusion(
+                        controlsCoverFullWidth: false
+                    ),
+                weReadTOC: weReadTOC,
+                pageTurnController: liveWebPageTurn
             )
         case .pdf:
             if document.usesNativePDFRendering {
@@ -324,17 +654,26 @@ struct ReaderHostView: View {
             if mode == .read {
                 ReadControlBar(
                     vm: readVM,
-                    showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil
+                    showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil,
+                    previousPage: pageTurnAction(.previous),
+                    nextPage: pageTurnAction(.next)
                 )
             } else {
                 ExplainControlBar(
                     vm: explainVM,
-                    showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil
+                    showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil,
+                    previousPage: pageTurnAction(.previous),
+                    nextPage: pageTurnAction(.next)
                 )
             }
         }
-        .frame(height: Self.portraitPlaybackBarHeight)
-        .clipped()
+        // Keep the same fixed 72pt boundary as Kindle in every state. Explain
+        // captions overflow upward as a visual overlay and never take layout
+        // space, so WeRead/Google Books do not repaginate sentence by sentence.
+        .frame(height: ReaderPlaybackBarLayoutContract.reservedPortraitHeight(for: mode))
+        .background(.regularMaterial)
+        .zIndex(1)
+        .accessibilityIdentifier("readerPlaybackBar")
         .opacity(weReadTOC.isPresented ? 0 : 1)
         .allowsHitTesting(!weReadTOC.isPresented && !weReadTOC.isJumping)
         .accessibilityHidden(weReadTOC.isPresented || weReadTOC.isJumping)
@@ -345,13 +684,34 @@ struct ReaderHostView: View {
         if mode == .read {
             ReaderLandscapeReadOverlay(
                 vm: readVM,
-                showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil
+                showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil,
+                previousPage: pageTurnAction(.previous),
+                nextPage: pageTurnAction(.next)
             )
         } else {
             ReaderLandscapeExplainOverlay(
                 vm: explainVM,
-                showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil
+                showTOC: document.sourceKind == .weread ? { weReadTOC.present() } : nil,
+                previousPage: pageTurnAction(.previous),
+                nextPage: pageTurnAction(.next)
             )
+        }
+    }
+
+    private func pageTurnAction(
+        _ direction: LiveWebPageTurnDirection
+    ) -> (() -> Void)? {
+        guard ReaderPlaybackNavigationContract.usesPageTurns(
+            for: document.sourceKind
+        ) else {
+            return nil
+        }
+        return {
+            ReaderRunLog.write(
+                "HOST page button direction=\(direction.rawValue) " +
+                "source=\(document.sourceKind.rawValue) mode=\(mode.rawValue)"
+            )
+            liveWebPageTurn.turn(direction)
         }
     }
 
@@ -405,6 +765,152 @@ struct ReaderHostView: View {
         .allowsHitTesting(true)
     }
 
+    private func googleBooksRecoveryOverlay(message: String) -> some View {
+        ZStack {
+            Color.black.opacity(0.34)
+                .ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                Image(systemName: "person.crop.circle.badge.exclamationmark")
+                    .font(.system(size: 38, weight: .semibold))
+                    .foregroundColor(AppTheme.primary)
+
+                Text(AppLocalized("Google Play 图书"))
+                    .font(.headline)
+                    .foregroundColor(AppTheme.foreground)
+
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundColor(AppTheme.mutedForeground)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button {
+                    rebindGoogleBooks()
+                } label: {
+                    Text(AppLocalized("重新登录"))
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppTheme.primary)
+                .accessibilityIdentifier("googleBooksReaderRebindButton")
+
+                Button {
+                    closeGoogleBooksReader()
+                } label: {
+                    Text(AppLocalized("关闭"))
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.bordered)
+                .tint(AppTheme.mutedForeground)
+                .accessibilityIdentifier("googleBooksReaderExitButton")
+            }
+            .padding(20)
+            .frame(maxWidth: 340)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(AppTheme.border.opacity(0.55), lineWidth: 1)
+            )
+            .padding(.horizontal, 24)
+        }
+        .allowsHitTesting(true)
+        .accessibilityIdentifier("googleBooksReaderRecoveryOverlay")
+    }
+
+    private func rebindGoogleBooks() {
+        googleBooksStore.clearError()
+        // The Home shelf owns the one canonical binding sheet. Notify it before
+        // closing this session so SwiftUI can present that flow immediately.
+        NotificationCenter.default.post(
+            name: .castReaderGoogleBooksRebindRequested,
+            object: nil
+        )
+        coordinator.close()
+    }
+
+    private func closeGoogleBooksReader() {
+        googleBooksStore.clearError()
+        coordinator.close()
+    }
+
+    private func koboRecoveryOverlay(message: String) -> some View {
+        ZStack {
+            Color.black.opacity(0.34).ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                Image(systemName: "person.crop.circle.badge.exclamationmark")
+                    .font(.system(size: 38, weight: .semibold))
+                    .foregroundColor(AppTheme.primary)
+                Text("Kobo")
+                    .font(.headline)
+                    .foregroundColor(AppTheme.foreground)
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundColor(AppTheme.mutedForeground)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    koboStore.clearError()
+                    liveWebPageTurn.retryReader()
+                } label: {
+                    Text(AppLocalized("重试打开"))
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppTheme.primary)
+                .accessibilityIdentifier("koboReaderRetryButton")
+                Button {
+                    koboStore.clearError()
+                    NotificationCenter.default.post(
+                        name: .castReaderKoboRebindRequested,
+                        object: nil
+                    )
+                    coordinator.close()
+                } label: {
+                    Text(AppLocalized("重新登录"))
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.bordered)
+                .tint(AppTheme.mutedForeground)
+                .accessibilityIdentifier("koboReaderRebindButton")
+                Button {
+                    koboStore.clearError()
+                    coordinator.close()
+                } label: {
+                    Text(AppLocalized("关闭"))
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.bordered)
+                .tint(AppTheme.mutedForeground)
+                .accessibilityIdentifier("koboReaderExitButton")
+            }
+            .padding(20)
+            .frame(maxWidth: 340)
+            .background(
+                .regularMaterial,
+                in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(AppTheme.border.opacity(0.55), lineWidth: 1)
+            )
+            .padding(.horizontal, 24)
+        }
+        .allowsHitTesting(true)
+        .accessibilityIdentifier("koboReaderRecoveryOverlay")
+    }
+
     private var paywallBinding: Binding<Bool> {
         Binding(
             get: { readVM.showPaywall || explainVM.showPaywall },
@@ -453,119 +959,312 @@ private struct ReaderSurfaceSizeKey: PreferenceKey {
     }
 }
 
+/// Kindle-style one-line console used by the generic Read and Explain bars.
+/// The left playback area and right utility area receive equal width so the
+/// control deck stays visually stable as voice/status availability changes.
+struct ReaderPlaybackConsole<PlaybackControls: View>: View {
+    let playbackStatus: String
+    let statusMessage: String?
+    let voiceLanguage: String?
+    let showTOC: (() -> Void)?
+    let playbackControls: PlaybackControls
+
+    init(
+        playbackStatus: String,
+        statusMessage: String? = nil,
+        voiceLanguage: String?,
+        showTOC: (() -> Void)?,
+        @ViewBuilder playbackControls: () -> PlaybackControls
+    ) {
+        self.playbackStatus = playbackStatus
+        self.statusMessage = statusMessage
+        self.voiceLanguage = voiceLanguage
+        self.showTOC = showTOC
+        self.playbackControls = playbackControls()
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            playbackControls
+                .frame(maxWidth: .infinity)
+                .layoutPriority(1)
+
+            if let statusMessage, !statusMessage.isEmpty {
+                Text(statusMessage)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(AppTheme.mutedForeground)
+                    .lineLimit(1)
+                    .frame(maxWidth: 72)
+            }
+
+            Divider().frame(height: 30)
+
+            utilityCluster
+                .frame(maxWidth: .infinity)
+                .layoutPriority(1)
+        }
+        .padding(.horizontal, 8)
+        .frame(maxWidth: .infinity)
+        .frame(height: ReaderPlaybackBarLayoutContract.consoleHeight)
+        .foregroundStyle(AppTheme.foreground)
+        .accessibilityElement(children: .contain)
+        .accessibilityValue(Text(playbackStatus))
+    }
+
+    private var utilityCluster: some View {
+        HStack(spacing: 8) {
+            if let showTOC {
+                Button(action: showTOC) {
+                    Image(systemName: "list.bullet")
+                        .font(.system(size: 20, weight: .semibold))
+                        .frame(width: 36, height: 36)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(AppLocalized("目录")))
+            }
+
+            voiceControl
+            SpeedMenu(style: .compact)
+        }
+    }
+
+    @ViewBuilder
+    private var voiceControl: some View {
+        if let voiceLanguage, !voiceLanguage.isEmpty {
+            PlaybackVoiceButton(
+                language: voiceLanguage,
+                size: 32,
+                showsLabel: false
+            )
+        } else {
+            ZStack {
+                Circle()
+                    .stroke(AppTheme.mutedForeground.opacity(0.55), lineWidth: 1.5)
+                Image(systemName: "waveform")
+                    .font(.system(size: 14))
+                    .foregroundStyle(AppTheme.mutedForeground.opacity(0.55))
+            }
+            .frame(width: 28, height: 28)
+            .frame(width: 32, height: 32)
+            .accessibilityHidden(true)
+        }
+    }
+}
+
+struct ReaderPlaybackPageTurnButton: View {
+    let direction: LiveWebPageTurnDirection
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(
+                systemName: direction == .previous
+                    ? "chevron.left"
+                    : "chevron.right"
+            )
+            .font(.system(size: 20, weight: .semibold))
+            .frame(width: 36, height: 44)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(
+            direction == .previous
+                ? "readerPreviousPageButton"
+                : "readerNextPageButton"
+        )
+        .accessibilityLabel(
+            Text(
+                direction == .previous
+                    ? AppLocalized("上一页")
+                    : AppLocalized("下一页")
+            )
+        )
+    }
+}
+
 // MARK: - 朗读控制条
 
 private struct ReadControlBar: View {
     @ObservedObject var vm: ReadAloudViewModel
+    @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let showTOC: (() -> Void)?
+    let previousPage: (() -> Void)?
+    let nextPage: (() -> Void)?
+
+    private var stablePresentationState: ReadPlaybackPresentationState {
+        ReadPlaybackPresentationContract.resolve(
+            isPlaying: vm.isPlaying,
+            isWaitingForPlayableAudio: false,
+            status: vm.status
+        )
+    }
+
+    private var rawWaiting: Bool {
+        !vm.isPlaying && (vm.isWaitingForPlayableAudio || vm.isBuffering)
+    }
 
     var body: some View {
-        HStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Button { vm.skipBackward() } label: {
-                    Image(systemName: "gobackward.15")
-                        .font(.system(size: 20))
-                        .frame(width: 36, height: 44)
-                }
-                Button { vm.togglePlayPause() } label: {
-                    Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 52))
-                        .foregroundColor(AppTheme.primary)
-                }
-                Button { vm.skipForward() } label: {
-                    Image(systemName: "goforward.15")
-                        .font(.system(size: 20))
-                        .frame(width: 36, height: 44)
-                }
-            }
-            .fixedSize(horizontal: true, vertical: false)
-
-            Spacer(minLength: 10)
-
-            HStack(spacing: 8) {
-                if let showTOC {
-                    Button(action: showTOC) {
-                        Image(systemName: "list.bullet")
-                            .font(.system(size: 20, weight: .semibold))
-                            .frame(width: 34, height: 36)
+        ReaderDebouncedWaitingPresentation(
+            stablePresentation: stablePresentationState,
+            rawWaiting: rawWaiting,
+            waitingPresentation: .waiting
+        ) { presentationState in
+            ReaderPlaybackConsole(
+                playbackStatus: playbackStatus(for: presentationState),
+                statusMessage: voiceSwitch.progress?.localizedMessage,
+                voiceLanguage: vm.hasStartedPlayback ? vm.playbackLanguage : nil,
+                showTOC: showTOC
+            ) {
+                HStack(spacing: 10) {
+                    if let previousPage {
+                        ReaderPlaybackPageTurnButton(
+                            direction: .previous,
+                            action: previousPage
+                        )
+                    } else {
+                        Button { vm.skipBackward() } label: {
+                            Image(systemName: "gobackward.15")
+                                .font(.system(size: 20))
+                                .frame(width: 36, height: 44)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    Button {
+                        guard presentationState != .waiting else { return }
+                        vm.togglePlayPause()
+                    } label: {
+                        ReaderPrimaryPlaybackButtonContent(
+                            icon: playButtonIcon(for: presentationState),
+                            size: ReaderPrimaryPlaybackButtonVisualContract.portraitSize
+                        )
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(Text(AppLocalized("目录")))
+                    .disabled(presentationState == .waiting)
+                    .accessibilityIdentifier("readPlayPauseButton")
+                    .accessibilityLabel(Text(playbackStatus(for: presentationState)))
+                    .accessibilityValue(Text(presentationState == .playing ? "playing" : "paused"))
+                    if let nextPage {
+                        ReaderPlaybackPageTurnButton(
+                            direction: .next,
+                            action: nextPage
+                        )
+                    } else {
+                        Button { vm.skipForward() } label: {
+                            Image(systemName: "goforward.15")
+                                .font(.system(size: 20))
+                                .frame(width: 36, height: 44)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                if vm.hasStartedPlayback {
-                    PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
-                }
-                SpeedMenu()
+                .fixedSize(horizontal: true, vertical: false)
             }
-            // The utility cluster is atomic. Let the middle spacer shrink;
-            // never squeeze the speed value into a vertical stack.
-            .fixedSize(horizontal: true, vertical: false)
-            .layoutPriority(1)
         }
-        .foregroundColor(AppTheme.foreground)
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+    }
+
+    private func playbackStatus(
+        for presentationState: ReadPlaybackPresentationState
+    ) -> String {
+        if voiceSwitch.progress != nil {
+            return AppLocalized("正在准备…")
+        }
+        switch presentationState {
+        case .playing:
+            return AppLocalized("朗读中")
+        case .waiting:
+            return AppLocalized("正在准备下一段…")
+        case .retry:
+            return AppLocalized("重试朗读")
+        case .paused:
+            return AppLocalized("已暂停")
+        }
+    }
+
+    private func playButtonIcon(
+        for presentationState: ReadPlaybackPresentationState
+    ) -> ReaderPrimaryPlaybackButtonIcon {
+        switch presentationState {
+        case .playing:
+            return .pause
+        case .retry:
+            return .retry
+        case .waiting:
+            return .loading
+        case .paused:
+            return .play
+        }
     }
 }
 
 private struct ReaderLandscapeReadOverlay: View {
     @ObservedObject var vm: ReadAloudViewModel
     let showTOC: (() -> Void)?
+    let previousPage: (() -> Void)?
+    let nextPage: (() -> Void)?
+
+    private var stablePresentationState: ReadPlaybackPresentationState {
+        ReadPlaybackPresentationContract.resolve(
+            isPlaying: vm.isPlaying,
+            isWaitingForPlayableAudio: false,
+            status: vm.status
+        )
+    }
+
+    private var rawWaiting: Bool {
+        !vm.isPlaying && (vm.isWaitingForPlayableAudio || vm.isBuffering)
+    }
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 14) {
-            HStack(spacing: 18) {
-                Button { vm.skipBackward() } label: {
-                    Image(systemName: "gobackward.15")
-                        .font(.system(size: 19))
-                        .frame(width: 36, height: 36)
-                }
-                Button { vm.togglePlayPause() } label: {
-                    Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 44))
-                        .foregroundColor(AppTheme.primary)
-                }
-                Button { vm.skipForward() } label: {
-                    Image(systemName: "goforward.15")
-                        .font(.system(size: 19))
-                        .frame(width: 36, height: 36)
-                }
-            }
-            .foregroundColor(AppTheme.foreground)
-            .readerLandscapePill()
-
-            Spacer(minLength: 0)
-            HStack(spacing: 12) {
-                if let showTOC {
-                    Button(action: showTOC) {
-                        Image(systemName: "list.bullet")
-                            .font(.system(size: 19, weight: .semibold))
-                            .frame(width: 34, height: 34)
+        ReaderDebouncedWaitingPresentation(
+            stablePresentation: stablePresentationState,
+            rawWaiting: rawWaiting,
+            waitingPresentation: .waiting
+        ) { presentationState in
+            HStack(alignment: .bottom, spacing: 14) {
+                HStack(spacing: 18) {
+                    if let previousPage {
+                        ReaderPlaybackPageTurnButton(
+                            direction: .previous,
+                            action: previousPage
+                        )
+                    } else {
+                        Button { vm.skipBackward() } label: {
+                            Image(systemName: "gobackward.15")
+                                .font(.system(size: 19))
+                                .frame(width: 36, height: 36)
+                        }
+                    }
+                    Button {
+                        guard presentationState != .waiting else { return }
+                        vm.togglePlayPause()
+                    } label: {
+                        ReaderPrimaryPlaybackButtonContent(
+                            icon: playButtonIcon(for: presentationState),
+                            size: ReaderPrimaryPlaybackButtonVisualContract.landscapeSize
+                        )
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(Text(AppLocalized("目录")))
+                    .disabled(presentationState == .waiting)
+                    .accessibilityIdentifier("readPlayPauseButton")
+                    .accessibilityLabel(Text(playbackStatus(for: presentationState)))
+                    .accessibilityValue(Text(presentationState == .playing ? "playing" : "paused"))
+                    if let nextPage {
+                        ReaderPlaybackPageTurnButton(
+                            direction: .next,
+                            action: nextPage
+                        )
+                    } else {
+                        Button { vm.skipForward() } label: {
+                            Image(systemName: "goforward.15")
+                                .font(.system(size: 19))
+                                .frame(width: 36, height: 36)
+                        }
+                    }
                 }
-                if vm.hasStartedPlayback {
-                    PlaybackVoiceButton(language: vm.playbackLanguage)
-                }
-                SpeedMenu()
-            }
-            .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
-        }
-    }
-}
+                .foregroundColor(AppTheme.foreground)
+                .readerLandscapePill()
 
-private struct ReaderLandscapeExplainOverlay: View {
-    @ObservedObject var vm: ExplainViewModel
-    let showTOC: (() -> Void)?
-
-    var body: some View {
-        VStack(spacing: 8) {
-            caption
-            HStack(alignment: .bottom, spacing: 14) {
-                controlPill
                 Spacer(minLength: 0)
-                HStack(spacing: 10) {
+                HStack(spacing: 12) {
                     if let showTOC {
                         Button(action: showTOC) {
                             Image(systemName: "list.bullet")
@@ -575,10 +1274,93 @@ private struct ReaderLandscapeExplainOverlay: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel(Text(AppLocalized("目录")))
                     }
-                    PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
+                    if vm.hasStartedPlayback {
+                        PlaybackVoiceButton(language: vm.playbackLanguage)
+                    }
                     SpeedMenu()
                 }
+                .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
+            }
+        }
+    }
+
+    private func playbackStatus(
+        for presentationState: ReadPlaybackPresentationState
+    ) -> String {
+        switch presentationState {
+        case .playing: return AppLocalized("朗读中")
+        case .waiting: return AppLocalized("正在准备下一段…")
+        case .retry: return AppLocalized("重试朗读")
+        case .paused: return AppLocalized("已暂停")
+        }
+    }
+
+    private func playButtonIcon(
+        for presentationState: ReadPlaybackPresentationState
+    ) -> ReaderPrimaryPlaybackButtonIcon {
+        switch presentationState {
+        case .playing: return .pause
+        case .waiting: return .loading
+        case .retry: return .retry
+        case .paused: return .play
+        }
+    }
+}
+
+private struct ReaderLandscapeExplainOverlay: View {
+    @ObservedObject var vm: ExplainViewModel
+    let showTOC: (() -> Void)?
+    let previousPage: (() -> Void)?
+    let nextPage: (() -> Void)?
+
+    private var stablePresentationState: ReaderExplainPlaybackPresentationState {
+        switch vm.status {
+        case .idle, .planning:
+            return .start
+        case .error:
+            return .retry
+        case .streaming:
+            return vm.isPlaying ? .playing : .paused
+        case .completed:
+            return .replay
+        }
+    }
+
+    private var rawWaiting: Bool {
+        vm.isPreparingNext || vm.isContinuingLivePage || statusIsPlanning
+    }
+
+    private var statusIsPlanning: Bool {
+        if case .planning = vm.status { return true }
+        return false
+    }
+
+    var body: some View {
+        ReaderDebouncedWaitingPresentation(
+            stablePresentation: stablePresentationState,
+            rawWaiting: rawWaiting,
+            waitingPresentation: .waiting
+        ) { presentationState in
+            VStack(spacing: 8) {
+                caption
+                HStack(alignment: .bottom, spacing: 14) {
+                    controlPill(for: presentationState)
+                    Spacer(minLength: 0)
+                    HStack(spacing: 10) {
+                        if let showTOC {
+                            Button(action: showTOC) {
+                                Image(systemName: "list.bullet")
+                                    .font(.system(size: 19, weight: .semibold))
+                                    .frame(width: 34, height: 34)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(Text(AppLocalized("目录")))
+                        }
+                        PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
+                        SpeedMenu()
+                    }
                     .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
+                }
             }
         }
     }
@@ -607,72 +1389,115 @@ private struct ReaderLandscapeExplainOverlay: View {
         return false
     }
 
-    @ViewBuilder
-    private var controlPill: some View {
+    private func controlPill(
+        for presentationState: ReaderExplainPlaybackPresentationState
+    ) -> some View {
         HStack(spacing: 14) {
-            switch vm.status {
-            case .idle:
-                Button { vm.start() } label: {
-                    Image(systemName: "sparkles.circle.fill")
-                        .font(.system(size: 42))
-                        .foregroundColor(AppTheme.primary)
-                }
-                Text(AppLocalized("开始解读"))
+            if let previousPage {
+                ReaderPlaybackPageTurnButton(
+                    direction: .previous,
+                    action: previousPage
+                )
+            }
+            Button {
+                performExplainAction(for: presentationState)
+            } label: {
+                ReaderPrimaryPlaybackButtonContent(
+                    icon: explainButtonIcon(for: presentationState),
+                    size: ReaderPrimaryPlaybackButtonVisualContract.landscapeSize
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(presentationState == .waiting)
+            .accessibilityIdentifier(
+                explainAccessibilityIdentifier(for: presentationState)
+            )
+            .accessibilityLabel(Text(explainStatusLabel(for: presentationState)))
+            .accessibilityValue(
+                Text(presentationState == .playing ? "playing" : "paused")
+            )
+
+            if let nextPage {
+                ReaderPlaybackPageTurnButton(
+                    direction: .next,
+                    action: nextPage
+                )
+            } else {
+                Text(explainStatusLabel(for: presentationState))
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
-            case .error:
-                Button { vm.start() } label: {
-                    Image(systemName: "arrow.clockwise.circle.fill")
-                        .font(.system(size: 38))
-                        .foregroundColor(AppTheme.primary)
-                }
-                Text(AppLocalized("重试解读"))
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-            case .planning:
-                ProgressView()
-                    .frame(width: 38, height: 38)
-                Text(vm.stageText.isEmpty ? AppLocalized("通读全文…") : vm.stageText)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-            case .streaming(let block, let total):
-                if vm.isPreparingNext {
-                    ProgressView()
-                        .frame(width: 38, height: 38)
-                    Text(AppLocalized("正在准备下一段…"))
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                } else {
-                    Button { vm.togglePlayPause() } label: {
-                        Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                            .font(.system(size: 44))
-                            .foregroundColor(AppTheme.primary)
-                    }
-                    Text("Explaining · block \(block + 1)/\(total)")
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                }
-            case .completed:
-                if vm.isContinuingLivePage {
-                    ProgressView()
-                        .frame(width: 38, height: 38)
-                    Text(AppLocalized("继续讲解…"))
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                } else {
-                    Button { vm.replay() } label: {
-                        Image(systemName: "arrow.clockwise.circle.fill")
-                            .font(.system(size: 38))
-                            .foregroundColor(AppTheme.primary)
-                    }
-                    Text(AppLocalized("解读完成"))
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                }
             }
         }
         .foregroundColor(AppTheme.foreground)
         .readerLandscapePill()
+    }
+
+    private func performExplainAction(
+        for presentationState: ReaderExplainPlaybackPresentationState
+    ) {
+        switch presentationState {
+        case .start, .retry:
+            vm.start()
+        case .playing, .paused:
+            vm.togglePlayPause()
+        case .replay:
+            vm.replay()
+        case .waiting:
+            break
+        }
+    }
+
+    private func explainButtonIcon(
+        for presentationState: ReaderExplainPlaybackPresentationState
+    ) -> ReaderPrimaryPlaybackButtonIcon {
+        switch presentationState {
+        case .start: return .sparkles
+        case .playing: return .pause
+        case .paused: return .play
+        case .retry, .replay: return .retry
+        case .waiting: return .loading
+        }
+    }
+
+    private func explainAccessibilityIdentifier(
+        for presentationState: ReaderExplainPlaybackPresentationState
+    ) -> String {
+        switch presentationState {
+        case .start, .retry:
+            return "explainStartButton"
+        case .playing, .paused, .waiting:
+            return "explainPlayPauseButton"
+        case .replay:
+            return "explainReplayButton"
+        }
+    }
+
+    private func explainStatusLabel(
+        for presentationState: ReaderExplainPlaybackPresentationState
+    ) -> String {
+        if presentationState == .waiting {
+            if case .streaming = vm.status {
+                return AppLocalized("正在准备下一段…")
+            }
+            if vm.isContinuingLivePage {
+                return AppLocalized("继续讲解…")
+            }
+            return vm.stageText.isEmpty
+                ? AppLocalized("通读全文…")
+                : vm.stageText
+        }
+        switch vm.status {
+        case .idle:
+            return AppLocalized("开始解读")
+        case .error:
+            return AppLocalized("重试解读")
+        case .planning:
+            return AppLocalized("开始解读")
+        case .streaming(let block, let total):
+            return "Explaining · block \(block + 1)/\(total)"
+        case .completed:
+            return AppLocalized("解读完成")
+        }
     }
 }
 

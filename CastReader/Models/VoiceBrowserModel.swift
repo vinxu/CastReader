@@ -223,31 +223,21 @@ final class VoiceSamplePlayer: ObservableObject {
 final class VoicePreviewPlaybackCoordinator {
     static let shared = VoicePreviewPlaybackCoordinator()
 
-    private var suspendedSegmentID: String?
-    private var suspendedBookID: String?
+    private var resumeHandle: AudioPlaybackResumeHandle?
 
     func begin() {
-        guard suspendedSegmentID == nil else { return }
+        guard resumeHandle == nil else { return }
         let audio = AudioPlayerService.shared
-        guard audio.isPlaying, let segment = audio.currentSegment else { return }
-        suspendedSegmentID = segment.id
-        suspendedBookID = audio.currentBookId
-        audio.pause()
-        NSLog("[VoicePreview] suspended content segment=%@ book=%@", segment.id, audio.currentBookId ?? "-")
+        guard let handle = audio.suspendActivePlaybackForVoicePreview() else { return }
+        resumeHandle = handle
+        NSLog("[VoicePreview] suspended owned content")
     }
 
     func end() {
-        defer {
-            suspendedSegmentID = nil
-            suspendedBookID = nil
-        }
-        guard let segmentID = suspendedSegmentID else { return }
-        let audio = AudioPlayerService.shared
-        guard !audio.isPlaying,
-              audio.currentSegment?.id == segmentID,
-              audio.currentBookId == suspendedBookID else { return }
-        audio.play()
-        NSLog("[VoicePreview] resumed content segment=%@", segmentID)
+        defer { resumeHandle = nil }
+        guard let handle = resumeHandle else { return }
+        let resumed = AudioPlayerService.shared.resumePlaybackAfterVoicePreview(handle)
+        NSLog("[VoicePreview] resume owned content=%@", resumed ? "Y" : "N")
     }
 
     /// A real voice selection supersedes the temporary preview. Return whether
@@ -255,9 +245,8 @@ final class VoicePreviewPlaybackCoordinator {
     /// without briefly resuming the old voice first.
     @discardableResult
     func cancelForVoiceSwitch() -> Bool {
-        let shouldResume = suspendedSegmentID != nil
-        suspendedSegmentID = nil
-        suspendedBookID = nil
+        let shouldResume = resumeHandle != nil
+        resumeHandle = nil
         return shouldResume
     }
 }

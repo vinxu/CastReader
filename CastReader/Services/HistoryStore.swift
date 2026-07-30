@@ -30,7 +30,10 @@ struct HistoryRecord: Identifiable, Codable, Equatable {
 /// appear in Continue.  The full local history remains available in Library.
 enum HomeContinueContract {
     static func includes(_ sourceKind: ReadingSourceKind) -> Bool {
-        sourceKind != .kindle && sourceKind != .weread
+        sourceKind != .kindle
+            && sourceKind != .weread
+            && sourceKind != .googleBooks
+            && sourceKind != .kobo
     }
 }
 
@@ -42,14 +45,28 @@ final class HistoryStore: ObservableObject {
 
     private let dir: URL
     private let indexURL: URL
+    private let performsCoverWork: Bool
 
-    private init() {
+    private convenience init() {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        dir = docs.appendingPathComponent("History", isDirectory: true)
+        self.init(
+            directory: docs.appendingPathComponent("History", isDirectory: true),
+            performsCoverWork: true
+        )
+    }
+
+    /// An isolated directory keeps HistoryStore contract tests away from the
+    /// app's real Documents/History data. Cover work defaults off so tests do
+    /// not launch unrelated metadata requests.
+    init(directory: URL, performsCoverWork: Bool = false) {
+        dir = directory
         indexURL = dir.appendingPathComponent("index.json")
+        self.performsCoverWork = performsCoverWork
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         load()
-        Task { await backfillCovers() }   // 给升级前的旧记录补封面 + web 真实标题（best-effort）
+        if performsCoverWork {
+            Task { await backfillCovers() }   // 给升级前的旧记录补封面 + web 真实标题（best-effort）
+        }
     }
 
     private func payloadURL(_ id: String) -> URL { dir.appendingPathComponent("\(id).payload") }
@@ -76,7 +93,7 @@ final class HistoryStore: ObservableObject {
     func record(_ doc: ReadingDocument) {
         let payload: Data? = {
             switch doc.sourceKind {
-            case .web, .weread: return nil
+            case .web, .weread, .googleBooks, .kobo: return nil
             case .text: return doc.fullText.data(using: .utf8)
             case .photo: return doc.imageData
             case .kindle: return doc.fullText.data(using: .utf8)
@@ -97,7 +114,7 @@ final class HistoryStore: ObservableObject {
         records.insert(rec, at: 0)
         save()
 
-        if rec.coverPath == nil {   // 首次记录 → 异步生成封面（+ web 抓取真实标题），best-effort，不阻塞打开
+        if performsCoverWork, rec.coverPath == nil {   // 首次记录 → 异步生成封面（+ web 抓取真实标题），best-effort，不阻塞打开
             Task { await generateCover(for: doc) }
         }
     }
@@ -110,6 +127,18 @@ final class HistoryStore: ObservableObject {
               let index = records.firstIndex(where: { $0.id == documentID }),
               records[index].language != language else { return }
         records[index].language = language
+        save()
+    }
+
+    /// Live web readers update their location without creating a new document.
+    /// Persist that address on the existing stable book record so Library opens
+    /// the latest page rather than the URL captured when the reader was created.
+    func updateSourceURL(documentID: String, sourceURL: String) {
+        let trimmed = sourceURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              let index = records.firstIndex(where: { $0.id == documentID }),
+              records[index].sourceURL != trimmed else { return }
+        records[index].sourceURL = trimmed
         save()
     }
 
@@ -138,7 +167,7 @@ final class HistoryStore: ObservableObject {
         records.insert(rec, at: 0)
         save()
 
-        if rec.coverPath == nil || rec.coverPath == "" {
+        if performsCoverWork, rec.coverPath == nil || rec.coverPath == "" {
             Task { await generateCoverFromURL(book.coverURL, id: book.id) }
         }
     }
@@ -155,6 +184,19 @@ final class HistoryStore: ObservableObject {
         records.removeAll { $0.id == id }
         try? FileManager.default.removeItem(at: payloadURL(id))
         try? FileManager.default.removeItem(at: coverFileURL(id))
+        save()
+    }
+
+    /// Removes one library source without touching History records or payloads
+    /// owned by any other reader channel.
+    func deleteAll(sourceKind: ReadingSourceKind) {
+        let removed = records.filter { $0.sourceKind == sourceKind }
+        guard !removed.isEmpty else { return }
+        for record in removed {
+            try? FileManager.default.removeItem(at: payloadURL(record.id))
+            try? FileManager.default.removeItem(at: coverFileURL(record.id))
+        }
+        records.removeAll { $0.sourceKind == sourceKind }
         save()
     }
 
@@ -181,8 +223,17 @@ final class HistoryStore: ObservableObject {
     private func generateCover(for doc: ReadingDocument) async {
         var imageData: Data?
         var title: String?
+        if let coverURL = Self.makeURL(doc.coverURL) {
+            imageData = try? await URLSession.shared.data(from: coverURL).0
+            // A temporary CDN/network failure is not proof that this book has
+            // no cover. Keep coverPath nil so opening it again can retry.
+            guard imageData != nil else { return }
+            finishCover(id: doc.id, imageData: imageData, title: nil)
+            return
+        }
         switch doc.sourceKind {
-        case .web, .weread:   (title, imageData) = await webCover(doc.sourceURL)
+        case .web, .weread, .googleBooks, .kobo:
+            (title, imageData) = await webCover(doc.sourceURL)
         case .pdf:   if let d = doc.fileData { imageData = await Task.detached { Self.pdfFirstPageJPEG(d) }.value }
         case .photo: imageData = doc.imageData
         case .kindle: imageData = doc.paragraphs.first(where: { $0.type == .image && $0.imageData != nil })?.imageData
@@ -197,7 +248,8 @@ final class HistoryStore: ObservableObject {
         var imageData: Data?
         var title: String?
         switch rec.sourceKind {
-        case .web, .weread:   (title, imageData) = await webCover(rec.sourceURL)
+        case .web, .weread, .googleBooks, .kobo:
+            (title, imageData) = await webCover(rec.sourceURL)
         case .pdf:   if let d = try? Data(contentsOf: payloadURL(rec.id)) { imageData = await Task.detached { Self.pdfFirstPageJPEG(d) }.value }
         case .photo: imageData = try? Data(contentsOf: payloadURL(rec.id))
         case .epub, .docx, .kindle, .text: break
@@ -220,6 +272,7 @@ final class HistoryStore: ObservableObject {
             return
         }
         let imageData = try? await URLSession.shared.data(from: url).0
+        guard imageData != nil else { return }
         finishCover(id: id, imageData: imageData, title: nil)
     }
 
@@ -281,9 +334,57 @@ final class HistoryStore: ObservableObject {
             return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .web, language: rec.language,
                                    paragraphs: [], sourceURL: url)
         case .weread:
-            guard let url = rec.sourceURL else { return nil }
-            return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .weread, language: rec.language,
-                                   paragraphs: [], sourceURL: url)
+            let latestBook = WeReadLibraryStore.shared.book(for: rec.id)
+            guard let url = latestBook?.effectiveReaderURL ?? rec.sourceURL else {
+                return nil
+            }
+            return ReadingDocument(
+                id: rec.id,
+                title: latestBook?.title ?? rec.title,
+                sourceKind: .weread,
+                language: rec.language,
+                paragraphs: [],
+                sourceURL: url,
+                coverURL: latestBook?.coverURL
+            )
+        case .googleBooks:
+            let store = GoogleBooksLibraryStore.shared
+            let latestBook = store.book(for: rec.id)
+            guard let url = latestBook?.effectiveReaderURL ?? rec.sourceURL else { return nil }
+            if let latestBook {
+                store.markOpened(latestBook)
+            } else {
+                store.clearError()
+            }
+            return ReadingDocument(
+                id: rec.id,
+                title: latestBook?.title ?? rec.title,
+                sourceKind: .googleBooks,
+                language: rec.language,
+                paragraphs: [],
+                sourceURL: url,
+                coverURL: latestBook?.coverURL
+            )
+        case .kobo:
+            let store = KoboLibraryStore.shared
+            let latestBook = store.book(for: rec.id)
+            guard let url = latestBook?.effectiveReaderURL ?? rec.sourceURL else {
+                return nil
+            }
+            if let latestBook {
+                store.markOpened(latestBook)
+            } else {
+                store.clearError()
+            }
+            return ReadingDocument(
+                id: rec.id,
+                title: latestBook?.title ?? rec.title,
+                sourceKind: .kobo,
+                language: rec.language,
+                paragraphs: [],
+                sourceURL: url,
+                coverURL: latestBook?.coverURL
+            )
         case .text:
             guard let data = try? Data(contentsOf: payloadURL(rec.id)),
                   let text = String(data: data, encoding: .utf8) else { return nil }

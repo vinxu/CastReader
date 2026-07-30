@@ -10,6 +10,12 @@ import Foundation
 import UIKit
 import AVFoundation
 
+private func ttsDebugLog(_ message: @autoclosure () -> String) {
+    #if DEBUG
+    print(message())
+    #endif
+}
+
 // MARK: - TTS Error
 
 enum TTSError: Error {
@@ -42,9 +48,10 @@ actor TTSService {
         language: String = Constants.TTS.defaultLanguage,
         onSegmentReady: @escaping (AudioSegment) async -> Void
     ) async throws {
+        try Task.checkCancellation()
         let sanitized = SpeechTextSanitizer.sanitizedForTTS(text)
         guard SpeechTextSanitizer.containsSpeakableContent(sanitized) else {
-            print("[TTSService] ⏭️ Skip non-speakable paragraph \(paragraphIndex): \(text.prefix(30))")
+            ttsDebugLog("[TTSService] ⏭️ Skip non-speakable paragraph \(paragraphIndex): \(text.prefix(30))")
             return
         }
         let requestId = UUID()
@@ -53,7 +60,7 @@ actor TTSService {
             preferred: voice ?? "",
             for: language
         )
-        print("[TTSService] ☁️ Cloud TTS for: \(sanitized.prefix(30))...")
+        ttsDebugLog("[TTSService] ☁️ Cloud TTS for: \(sanitized.prefix(30))...")
         try await generateCloudTTS(
             requestId: requestId,
             paragraphIndex: paragraphIndex,
@@ -154,7 +161,7 @@ actor TTSService {
             }
 
             do {
-                print("[TTSService] 📊 Cloud TTS request #\(segmentIndex): \(remainingText.prefix(50))...")
+                ttsDebugLog("[TTSService] 📊 Cloud TTS request #\(segmentIndex): \(remainingText.prefix(50))...")
 
                 let response = try await APIService.shared.generateTTS(
                     text: remainingText,
@@ -163,16 +170,17 @@ actor TTSService {
                     language: language
                 )
 
+                try Task.checkCancellation()
                 guard currentRequestId == requestId else {
                     throw TTSError.cancelled
                 }
 
-                print("[TTSService] 📊 Cloud TTS response #\(segmentIndex):")
-                print("[TTSService] 📊 - Input text length: \(remainingText.count) chars")
-                print("[TTSService] 📊 - Processed text: \(response.processedText?.prefix(100) ?? "nil")...")
-                print("[TTSService] 📊 - Unprocessed text: \(response.unprocessedText?.prefix(100) ?? "nil")...")
-                print("[TTSService] 📊 - Duration: \(response.safeDuration)s")
-                print("[TTSService] 📊 - Timestamps count: \(response.safeTimestamps.count)")
+                ttsDebugLog("[TTSService] 📊 Cloud TTS response #\(segmentIndex):")
+                ttsDebugLog("[TTSService] 📊 - Input text length: \(remainingText.count) chars")
+                ttsDebugLog("[TTSService] 📊 - Processed text: \(response.processedText?.prefix(100) ?? "nil")...")
+                ttsDebugLog("[TTSService] 📊 - Unprocessed text: \(response.unprocessedText?.prefix(100) ?? "nil")...")
+                ttsDebugLog("[TTSService] 📊 - Duration: \(response.safeDuration)s")
+                ttsDebugLog("[TTSService] 📊 - Timestamps count: \(response.safeTimestamps.count)")
 
                 guard let audioData = Data(base64Encoded: response.audio) else {
                     throw TTSError.generationFailed("Failed to decode audio data")
@@ -200,14 +208,16 @@ actor TTSService {
                 // 词时间戳不合成：朗读对齐扩展，无词时间戳语言走句子级高亮。
                 let segment = ensureDuration(rawSegment)
 
+                try Task.checkCancellation()
                 await onSegmentReady(segment)
+                try Task.checkCancellation()
                 segmentIndex += 1
 
                 if let unprocessed = response.unprocessedText, !unprocessed.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     remainingText = SpeechTextSanitizer.sanitizedForTTS(unprocessed)
-                    print("[TTSService] 📊 More text to process, continuing with segment #\(segmentIndex)")
+                    ttsDebugLog("[TTSService] 📊 More text to process, continuing with segment #\(segmentIndex)")
                 } else {
-                    print("[TTSService] 📊 All text processed for paragraph \(paragraphIndex)")
+                    ttsDebugLog("[TTSService] 📊 All text processed for paragraph \(paragraphIndex)")
                     break
                 }
 
@@ -216,7 +226,7 @@ actor TTSService {
             } catch let error as TTSError {
                 throw error
             } catch {
-                print("[TTSService] Cloud TTS failed: \(error)")
+                ttsDebugLog("[TTSService] Cloud TTS failed: \(error)")
                 throw TTSError.generationFailed(error.localizedDescription)
             }
           }

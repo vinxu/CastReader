@@ -54,29 +54,43 @@ export function createMarkRenderer(
   getParaEl: (i: number) => HTMLElement | undefined,
   initialColor: string,
 ): MarkRenderer {
-  let svg: SVGSVGElement | null = null
+  // 分页商业阅读器常把正文放在同源 iframe。每个 ownerDocument 使用自己的 SVG，
+  // 否则 iframe 内 Range 的 viewport 坐标会被错误画到顶层页面。
+  const svgs = new Map<Document, SVGSVGElement>()
   let color = initialColor
   const shown = new Set<string>()
 
-  function ensureSvg(): SVGSVGElement {
-    if (svg && svg.isConnected) return svg
-    const el = document.createElementNS(SVG_NS, 'svg')
+  function ensureSvg(doc: Document): SVGSVGElement | null {
+    const root = doc.documentElement
+    const body = doc.body
+    const host = body || root
+    if (!host) return null
+    const width = Math.max(root?.scrollWidth || 0, body?.scrollWidth || 0, 1)
+    const height = Math.max(root?.scrollHeight || 0, body?.scrollHeight || 0, 1)
+    const existing = svgs.get(doc)
+    if (existing && existing.isConnected) {
+      existing.style.width = `${width}px`
+      existing.style.height = `${height}px`
+      return existing
+    }
+    const el = doc.createElementNS(SVG_NS, 'svg')
     el.style.position = 'absolute'
     el.style.left = '0'
     el.style.top = '0'
-    el.style.width = `${document.documentElement.scrollWidth}px`
-    el.style.height = `${document.documentElement.scrollHeight}px`
+    el.style.width = `${width}px`
+    el.style.height = `${height}px`
     el.style.pointerEvents = 'none'
     el.style.zIndex = '2147483646'
     el.setAttribute('data-cr-marks', '1')
-    document.body.appendChild(el)
-    svg = el
+    host.appendChild(el)
+    svgs.set(doc, el)
     return el
   }
 
   // 在 element 的 textContent 第 [start,end) 字符建 Range（按 text node 累积偏移）。
   function charRange(el: HTMLElement, start: number, end: number): Range | null {
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+    const doc = el.ownerDocument
+    const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT)
     let offset = 0
     let startNode: Node | null = null
     let startOff = 0
@@ -90,13 +104,13 @@ export function createMarkRenderer(
       offset += len
     }
     if (!startNode || !endNode) return null
-    const r = document.createRange()
+    const r = doc.createRange()
     try { r.setStart(startNode, Math.max(0, startOff)); r.setEnd(endNode, Math.max(0, endOff)) } catch { return null }
     return r
   }
 
   function appendPath(s: SVGSVGElement, d: string, strokeWidth: number, opacity: number): void {
-    const path = document.createElementNS(SVG_NS, 'path')
+    const path = s.ownerDocument.createElementNS(SVG_NS, 'path')
     path.setAttribute('d', d)
     path.setAttribute('stroke', color)
     path.setAttribute('stroke-width', String(strokeWidth))
@@ -112,13 +126,14 @@ export function createMarkRenderer(
       void path.getBoundingClientRect()   // 强制 reflow：让初始 dashoffset=len（落笔起点）先落地，
       // 否则 WebKit 把 len→0 合并成一帧、跳过落笔过渡（与 native MarkInkView 首帧问题同源）。
       path.style.transition = `stroke-dashoffset 700ms ${MARK_EASE}`
-      requestAnimationFrame(() => { path.style.strokeDashoffset = '0' })
+      const ownerWindow = s.ownerDocument.defaultView
+      if (ownerWindow) ownerWindow.requestAnimationFrame(() => { path.style.strokeDashoffset = '0' })
+      else requestAnimationFrame(() => { path.style.strokeDashoffset = '0' })
     } catch { /* getTotalLength 不可用时直接显示 */ }
   }
 
   function show(m: MarkData): void {
     if (shown.has(m.id)) return
-    shown.add(m.id)
     const el = getParaEl(m.paragraphIndex)
     if (!el) return
     const range = charRange(el, m.charStart, m.charEnd)
@@ -126,15 +141,20 @@ export function createMarkRenderer(
     const rects = Array.from(range.getClientRects())
     if (!rects.length) return
 
-    const s = ensureSvg()
+    const ownerDocument = el.ownerDocument
+    const ownerWindow = ownerDocument.defaultView
+    if (!ownerWindow) return
+    const s = ensureSvg(ownerDocument)
+    if (!s) return
     const rng = mulberry32(m.seed >>> 0)
-    const sx = window.scrollX
-    const sy = window.scrollY
+    const sx = ownerWindow.scrollX
+    const sy = ownerWindow.scrollY
 
     // 跨行词组/句子：getClientRects 每行返回一个 rect。下划线/删除线/荧光笔要逐行画，
     // 否则只画第一行、换行处就断了。末尾符号用最后一行右端，圈用所有行并集 bbox 圈住整段。
     const lineRects = rects.filter((rc) => rc.width >= 2 && rc.height >= 2)
     if (!lineRects.length) return
+    shown.add(m.id)
     const last = lineRects[lineRects.length - 1]
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     lineRects.forEach((rc) => {
@@ -191,7 +211,10 @@ export function createMarkRenderer(
 
   function clear(): void {
     shown.clear()
-    if (svg) { svg.remove(); svg = null }
+    svgs.forEach((svg) => {
+      try { svg.remove() } catch { /* detached/replaced frame */ }
+    })
+    svgs.clear()
   }
 
   function setColor(hex: string): void { color = hex }

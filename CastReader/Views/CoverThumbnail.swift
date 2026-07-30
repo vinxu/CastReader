@@ -58,6 +58,8 @@ struct CoverThumbnail: View {
         case .epub: return "book"
         case .kindle: return "book.pages"
         case .weread: return "book.closed"
+        case .googleBooks: return "book.pages.fill"
+        case .kobo: return "book.closed.fill"
         case .photo: return "photo"
         case .text: return "text.alignleft"
         }

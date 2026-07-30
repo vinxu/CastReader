@@ -1,0 +1,266 @@
+{
+  "extName": {
+    "message": "CastReader — 文字转语音·朗读 + AI 解读"
+  },
+  "extDescription": {
+    "message": "两大功能:朗读(段落高亮跟读+自动翻页)+ AI 解读(原页面智能批注导读)。微信读书/Kindle/公号/PDF,更多高级真人语音。"
+  },
+  "quickreadBtn": {
+    "message": "速览"
+  },
+  "quickreadBtnExit": {
+    "message": "退出速览"
+  },
+  "quickreadPreparing": {
+    "message": "速览 生成中"
+  },
+  "quickreadError": {
+    "message": "速览 出错"
+  },
+  "quickreadStageExtract": {
+    "message": "提取重点"
+  },
+  "quickreadStageTts": {
+    "message": "生成配音"
+  },
+  "quickreadStageRefine": {
+    "message": "编排节奏"
+  },
+  "quickreadStageReady": {
+    "message": "准备播放…"
+  },
+  "quickreadFailed": {
+    "message": "失败: $msg$",
+    "placeholders": {
+      "msg": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadClose": {
+    "message": "关闭"
+  },
+  "quickreadCancel": {
+    "message": "取消"
+  },
+  "quickreadDone": {
+    "message": "完成"
+  },
+  "quickreadHint": {
+    "message": "约 25-45 秒，请稍候"
+  },
+  "quickreadQueued": {
+    "message": "排队中 ($pos$)",
+    "placeholders": {
+      "pos": {
+        "content": "$1"
+      }
+    }
+  },
+  "quickreadRateLimit": {
+    "message": "今日免费解读已用完，明天恢复"
+  },
+  "quickreadRateLimitTitle": {
+    "message": "今日免费解读已用完"
+  },
+  "quickreadRateLimitBody": {
+    "message": "今日免费 3 次已用完，升级 Pro 解读无限。免费额度明天恢复。"
+  },
+  "quickreadUpgrade": {
+    "message": "升级 Pro"
+  },
+  "accountNotSignedIn": {
+    "message": "未登录"
+  },
+  "enableProMode": {
+    "message": "开启 Pro"
+  },
+  "listenRateLimitTitle": {
+    "message": "今日 20 分钟免费朗读已用完"
+  },
+  "listenRateLimitBody": {
+    "message": "今日 20 分钟免费朗读已用完，升级 Pro 朗读无限。免费额度明天恢复。"
+  },
+  "quickreadQuotaTip": {
+    "message": "解读 · 今日剩余 $n$/$max$ 次",
+    "placeholders": {
+      "n": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "quickreadQuotaPro": {
+    "message": "解读 · Pro 无限"
+  },
+  "readerUploadTitle": {
+    "message": "朗读 / 解读文档"
+  },
+  "readerDrop": {
+    "message": "把图片 / PDF / Word / TXT 拖到这里"
+  },
+  "readerDropOver": {
+    "message": "松手上传"
+  },
+  "readerSub": {
+    "message": "在原文件上朗读 + AI 解读，不改版式"
+  },
+  "readerOr": {
+    "message": "或"
+  },
+  "readerPick": {
+    "message": "选择文件"
+  },
+  "readerRendering": {
+    "message": "正在渲染文档…"
+  },
+  "readerListen": {
+    "message": "▶ 朗读"
+  },
+  "readerPause": {
+    "message": "⏸ 暂停"
+  },
+  "readerResume": {
+    "message": "▶ 继续"
+  },
+  "readerStop": {
+    "message": "■ 停止"
+  },
+  "readerExplain": {
+    "message": "✦ 解读"
+  },
+  "readerExplainHint": {
+    "message": "先停止朗读，再开始解读"
+  },
+  "readerNewFile": {
+    "message": "换文件"
+  },
+  "readerSpeed": {
+    "message": "语速"
+  },
+  "readerUnsupported": {
+    "message": "暂不支持这个文件类型"
+  },
+  "readerFailed": {
+    "message": "处理失败"
+  },
+  "readerEmpty": {
+    "message": "这个文档里没找到可朗读的文字"
+  },
+  "readerQuotaLeft": {
+    "message": "今日剩"
+  },
+  "readerQuotaBlocked": {
+    "message": "今日 10 次免费解读已用完，明天恢复"
+  },
+  "readerPartial": {
+    "message": "已解读当前位置的一段，往下滚动可继续解读下一段"
+  },
+  "readerTooLarge": {
+    "message": "文件过大(超过 7 MB),请换更小的文件。"
+  },
+  "readerContinue": {
+    "message": "继续解读 ↓"
+  },
+  "readerSettings": {
+    "message": "设置"
+  },
+  "readerExplainLang": {
+    "message": "解读语言"
+  },
+  "readerDocumentLang": {
+    "message": "文档语言"
+  },
+  "readerDocumentLangAuto": {
+    "message": "自动（浏览器语言）"
+  },
+  "readerDocumentLangHint": {
+    "message": "图片和扫描版 PDF 选择正确语言，可获得更准确的 OCR。"
+  },
+  "readerVoiceEn": {
+    "message": "英文音色"
+  },
+  "readerVoiceZh": {
+    "message": "中文音色"
+  },
+  "readerVoices": {
+    "message": "音色"
+  },
+  "readerBrowseVoices": {
+    "message": "浏览音色"
+  },
+  "readerLangAuto": {
+    "message": "自动(界面语言)"
+  },
+  "readerLangFollow": {
+    "message": "跟随原文"
+  },
+  "readerPreparing": {
+    "message": "正在准备朗读…"
+  },
+  "readerEncrypted": {
+    "message": "这个 PDF 有密码保护，无法打开"
+  },
+  "readerCorrupt": {
+    "message": "这个文件似乎已损坏或无法读取"
+  },
+  "readerTimeout": {
+    "message": "打开超时，文件可能过于复杂"
+  },
+  "inboxTitle": {
+    "message": "内容接收箱"
+  },
+  "inboxSubtitle": {
+    "message": "先保存网页或选中文字，需要时再选择朗读或解读。"
+  },
+  "inboxEmpty": {
+    "message": "接收箱是空的"
+  },
+  "inboxEmptyDescription": {
+    "message": "右键点击网页或选中的文字，将它保存到 CastReader。"
+  },
+  "inboxSaveSelection": {
+    "message": "将选中文字保存到 CastReader 接收箱"
+  },
+  "inboxSavePage": {
+    "message": "将网页保存到 CastReader 接收箱"
+  },
+  "inboxOpen": {
+    "message": "打开内容接收箱"
+  },
+  "inboxSharedText": {
+    "message": "选中的文字"
+  },
+  "inboxOpenFailed": {
+    "message": "内容暂时无法打开，请重试。"
+  },
+  "inboxRetry": {
+    "message": "重试"
+  },
+  "inboxRead": {
+    "message": "朗读"
+  },
+  "inboxExplain": {
+    "message": "解读"
+  },
+  "inboxDelete": {
+    "message": "删除"
+  },
+  "inboxLink": {
+    "message": "网页"
+  },
+  "inboxText": {
+    "message": "文字"
+  },
+  "edgeExtName": {
+    "message": "CastReader — 文字转语音·朗读 + AI 解读"
+  },
+  "edgeExtDescription": {
+    "message": "同步高亮朗读文章、PDF 和 Kindle 书籍，并用 AI 解读重点。"
+  },
+  "toggleSiteVisibility": {
+    "message": "在此网站显示 / 隐藏 CastReader"
+  }
+}

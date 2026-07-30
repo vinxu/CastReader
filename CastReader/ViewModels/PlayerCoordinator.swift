@@ -56,16 +56,43 @@ final class PlayerCoordinator: ObservableObject {
                 )
             }
             ProductAnalytics.shared.contentReady(analyticsContext, document: document)
-            let explainVM = ExplainViewModel(document: document, analyticsContext: analyticsContext)
+            let readVM = ReadAloudViewModel(
+                document: document,
+                analyticsContext: analyticsContext
+            )
+            let explainVM = ExplainViewModel(
+                document: document,
+                analyticsContext: analyticsContext
+            )
             explainVM.scenario = scenario
+            readVM.configurePlaybackMetadata(
+                id: document.id,
+                title: document.title,
+                coverURL: document.coverURL
+            )
+            explainVM.configurePlaybackMetadata(
+                id: document.id,
+                title: document.title,
+                coverURL: document.coverURL
+            )
             session = Session(id: document.id,
                               document: document,
                               analyticsContext: analyticsContext,
-                              readVM: ReadAloudViewModel(document: document, analyticsContext: analyticsContext),
+                              readVM: readVM,
                               explainVM: explainVM)
         } else if let scenario {
             session?.explainVM.scenario = scenario   // 同文档以场景重新进入：更新场景信号
         }
+        session?.readVM.configurePlaybackMetadata(
+            id: document.id,
+            title: document.title,
+            coverURL: document.coverURL
+        )
+        session?.explainVM.configurePlaybackMetadata(
+            id: document.id,
+            title: document.title,
+            coverURL: document.coverURL
+        )
         self.mode = mode
         updateOrientationForExpandedReader(document)
         isReaderPresented = true

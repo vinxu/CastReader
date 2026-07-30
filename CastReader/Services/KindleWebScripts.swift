@@ -2,19 +2,189 @@
 //  KindleWebScripts.swift
 //  CastReader
 //
-//  JavaScript helpers for read.amazon.com. Keep selectors broad because Amazon
+//  JavaScript helpers for every supported Kindle storefront. Keep selectors broad because Amazon
 //  changes Cloud Reader markup often.
 //
 
 import Foundation
 
 enum KindleWebScripts {
-    static let libraryURL = URL(string: "https://read.amazon.com/kindle-library")!
+    static func libraryURL(for storefront: KindleStorefront) -> URL {
+        storefront.libraryURL
+    }
+
+    /// WKUserScript has no host allow-list. Guard document-start hooks in page
+    /// world so Amazon auth pages and unrelated redirect targets are untouched.
+    static func restrictedToKnownStorefronts(_ source: String) -> String {
+        """
+        (function() {
+          var __crAllowedKindleHosts = \(KindleStorefront.javaScriptHostArray);
+          var __crHost = String(location.hostname || '').toLowerCase();
+          if (__crHost.endsWith('.')) __crHost = __crHost.slice(0, -1);
+          if (!__crHost || __crHost.endsWith('.') ||
+              location.protocol !== 'https:' ||
+              (location.port && location.port !== '443') ||
+              location.username || location.password ||
+              __crAllowedKindleHosts.indexOf(__crHost) < 0) return;
+          \(source)
+        })();
+        """
+    }
     static let mobileChromeUserAgent = "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
     static let desktopChromeUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 
+    /// Kindle localizes visible labels per marketplace. These helpers deliberately
+    /// score stable DOM semantics first (`data-*`, id/class, role, geometry).
+    /// Text in CastReader's eight non-Chinese app languages is only a fallback.
+    private static let uiSemanticHelpers = """
+      function crKindleUINorm(value) {
+        try {
+          value = String(value || '').normalize('NFKC');
+        } catch (_) {
+          value = String(value || '');
+        }
+        return value.replace(/\\s+/g, ' ').trim().toLowerCase();
+      }
+      function crKindleUIStructure(el) {
+        if (!el) return '';
+        try {
+          return crKindleUINorm([
+            String(el.tagName || ''),
+            el.id || '',
+            typeof el.className === 'string' ? el.className : '',
+            el.getAttribute && (el.getAttribute('role') || ''),
+            el.getAttribute && (el.getAttribute('part') || ''),
+            el.getAttribute && (el.getAttribute('name') || ''),
+            el.getAttribute && (el.getAttribute('data-testid') || ''),
+            el.getAttribute && (el.getAttribute('data-test') || ''),
+            el.getAttribute && (el.getAttribute('data-action') || ''),
+            el.getAttribute && (el.getAttribute('data-command') || ''),
+            el.getAttribute && (el.getAttribute('data-ref') || ''),
+            el.getAttribute && (el.getAttribute('data-location') || ''),
+            el.getAttribute && (el.getAttribute('data-position') || '')
+          ].join(' '));
+        } catch (_) { return ''; }
+      }
+      function crKindleUIText(el) {
+        if (!el) return '';
+        try {
+          return crKindleUINorm([
+            el.getAttribute && (el.getAttribute('aria-label') || ''),
+            el.getAttribute && (el.getAttribute('title') || ''),
+            el.innerText || el.textContent || ''
+          ].join(' '));
+        } catch (_) { return ''; }
+      }
+      function crKindleUITextMatches(kind, raw) {
+        var text = crKindleUINorm(raw);
+        if (!text) return false;
+        switch (kind) {
+        case 'next':
+          return /(?:^|\\s)(?:next(?: page)?|forward|siguiente|página siguiente|próxima página|pagina seguinte|seguinte|次のページ|次へ|nächste seite|weiter|page suivante|suivant|pagina successiva|avanti|अगला पृष्ठ|अगला)(?:$|\\s)/i.test(text);
+        case 'previous':
+          return /(?:^|\\s)(?:previous(?: page)?|prev|back|anterior|página anterior|pagina anterior|前のページ|前へ|vorherige seite|zurück|page précédente|précédent|pagina precedente|indietro|पिछला पृष्ठ|पिछला)(?:$|\\s)/i.test(text);
+        case 'settings':
+          return /(?:font|display|appearance|reading settings?|text settings?|fuente|visualización|apariencia|configuración de lectura|fonte|aparência|configurações de leitura|フォント|表示|読書設定|schrift|anzeige|leseeinstellungen|police|affichage|paramètres de lecture|carattere|visualizzazione|impostazioni di lettura|फ़ॉन्ट|प्रदर्शन|पठन सेटिंग)/i.test(text);
+        case 'font-size':
+          return /(?:font size|preferred font size|tamaño de fuente|tamanho da fonte|フォントサイズ|schriftgröße|taille de police|dimensione carattere|फ़ॉन्ट आकार)/i.test(text);
+        case 'single-column':
+          return /(?:single column|one column|una columna|columna única|uma coluna|coluna única|1列|一列|単一列|eine spalte|einzelne spalte|une colonne|colonna singola|एक कॉलम)/i.test(text);
+        case 'narrow':
+          return /(?:^|\\s)(?:narrow|estrecho|estreita|狭い|schmal|étroit|stretto|संकीर्ण)(?:$|\\s)/i.test(text);
+        case 'toc':
+          return /(?:table of contents|contents|go to|chapter|índice|contenido|capítulo|ir a|sumário|capítulo|ir para|目次|章|移動|inhaltsverzeichnis|kapitel|gehe zu|table des matières|sommaire|chapitre|indice|sommario|capitolo|विषय सूची|अध्याय)/i.test(text);
+        case 'close':
+          return /^(?:close|done|dismiss|cerrar|listo|hecho|fechar|concluído|閉じる|完了|schließen|fertig|fermer|terminé|chiudi|fatto|बंद|पूर्ण)$/i.test(text);
+        case 'yes':
+          return /^(?:yes|ok|go|continue|sí|aceptar|continuar|ir|sim|continuar|ir|はい|移動|続行|ja|ok|weiter|los|oui|continuer|aller|sì|continua|vai|हाँ|ठीक|जारी रखें|जाएं)$/i.test(text);
+        case 'no':
+          return /^(?:no|cancel|stay|cancelar|quedarse|não|cancelar|ficar|いいえ|キャンセル|このまま|nein|abbrechen|bleiben|non|annuler|rester|no|annulla|resta|नहीं|रद्द|यहीं रहें)$/i.test(text);
+        case 'location':
+          return /(?:location|page|position|ubicación|posición|página|localização|posição|página|位置|ページ|position|seite|emplacement|page|posizione|pagina|स्थान|पृष्ठ)/i.test(text);
+        case 'sync-dialog':
+          return /(?:most recent (?:page|location) read|furthest (?:page|location) read|ubicación (?:leída )?más reciente|posición (?:leída )?más reciente|página (?:leída )?más reciente|última (?:página|posición) leída|localização (?:lida )?mais recente|posição (?:lida )?mais recente|página lida mais recentemente|última página lida|最後に読んだ(?:ページ|位置)|最も遠い(?:ページ|位置)|前回読んだ(?:ページ|位置)|最新の(?:ページ|位置)|zuletzt gelesene (?:seite|position)|letzte leseposition|am weitesten gelesene (?:seite|position)|page (?:lue )?la plus récente|emplacement (?:lu )?le plus récent|dernière (?:page|position) (?:de lecture|lue)|pagina (?:letta )?più recente|posizione (?:letta )?più recente|ultima (?:pagina|posizione) letta|सबसे हाल में पढ़ा (?:गया )?(?:पृष्ठ|स्थान)|हाल ही में पढ़ा (?:गया )?(?:पृष्ठ|स्थान)|अंतिम पठन स्थान|सबसे आगे पढ़ा (?:गया )?(?:पृष्ठ|स्थान))/i.test(text);
+        default:
+          return false;
+        }
+      }
+      function crKindleUIStructureScore(el, kind) {
+        if (!el) return 0;
+        var token = crKindleUIStructure(el);
+        var role = crKindleUINorm(el.getAttribute && (el.getAttribute('role') || ''));
+        var score = 0;
+        if (kind === 'next' && /(?:^|[-_\\s])(next|forward|chevron[-_\\s]?right|page[-_\\s]?right)(?:$|[-_\\s])/.test(token)) score += 180;
+        if (kind === 'previous' && /(?:^|[-_\\s])(previous|prev|back|chevron[-_\\s]?left|page[-_\\s]?left)(?:$|[-_\\s])/.test(token)) score += 180;
+        if (kind === 'settings' && /setting|preference|appearance|display|font|typograph|reader[-_\\s]?option/.test(token)) score += 170;
+        if (kind === 'font-size' && /font[-_\\s]*size|text[-_\\s]*size|typograph.*size/.test(token)) score += 180;
+        if (kind === 'single-column' && /single.*column|one.*column|column.*single|layout.*one/.test(token)) score += 180;
+        if (kind === 'narrow' && /narrow|compact.*margin|margin.*compact|small.*margin|width.*narrow/.test(token)) score += 180;
+        if (kind === 'toc' && /(?:^|[-_\\s])toc(?:$|[-_\\s])|table.*content|content.*list|chapter.*list|navigation.*list|go[-_\\s]?to/.test(token)) score += 180;
+        if (kind === 'close' && /close|dismiss|dialog.*cancel|modal.*cancel|done/.test(token)) score += 180;
+        if (kind === 'yes' && /confirm|accept|positive|continue|go[-_\\s]?to|sync.*yes|primary/.test(token)) score += 160;
+        if (kind === 'no' && /reject|decline|negative|cancel|stay|sync.*no|secondary/.test(token)) score += 160;
+        if (kind === 'location' && /location|position|progress|page[-_\\s]?(?:number|index)/.test(token)) score += 170;
+        if (kind === 'sync-dialog' && /whisper|sync.*dialog|position.*dialog|location.*dialog|furthest.*read|recent.*read/.test(token)) score += 190;
+        if ((kind === 'next' || kind === 'previous' || kind === 'settings' || kind === 'close' || kind === 'yes' || kind === 'no') &&
+            /button|menuitem|option/.test(role + ' ' + token)) score += 12;
+        if (kind === 'toc' && /navigation|tree|menu/.test(role)) score += 28;
+        if (kind === 'sync-dialog' && role === 'dialog') score += 35;
+        if ((kind === 'next' || kind === 'previous') && score < 100) {
+          try {
+            var rect = el.getBoundingClientRect();
+            var parentToken = crKindleUIStructure(el.parentElement) + ' ' + crKindleUIStructure(el.parentElement && el.parentElement.parentElement);
+            var edgeControl = /pagination|page[-_\\s]?control|reader[-_\\s]?(?:control|nav)|chevron/.test(parentToken + ' ' + token);
+            var viewportWidth = innerWidth || document.documentElement.clientWidth || 0;
+            if (edgeControl && rect.width >= 18 && rect.height >= 18) {
+              if (kind === 'previous' && rect.left <= Math.max(96, viewportWidth * 0.18)) score += 120;
+              if (kind === 'next' && rect.right >= viewportWidth - Math.max(96, viewportWidth * 0.18)) score += 120;
+            }
+          } catch (_) {}
+        }
+        return score;
+      }
+      function crKindleUISemanticScore(el, kind) {
+        var structural = crKindleUIStructureScore(el, kind);
+        var text = crKindleUIText(el);
+        if (crKindleUITextMatches(kind, text)) structural += 45;
+        return structural;
+      }
+      function crKindleUIIsVisible(el) {
+        if (!el || !el.getBoundingClientRect) return false;
+        try {
+          var rect = el.getBoundingClientRect();
+          var style = getComputedStyle(el);
+          return style.display !== 'none' && style.visibility !== 'hidden' &&
+            Number(style.opacity || 1) > 0 && rect.width > 2 && rect.height > 2;
+        } catch (_) { return false; }
+      }
+      function crKindleUIFind(kind, root, selector) {
+        root = root || document;
+        selector = selector || 'button,[role="button"],[role="option"],[role="radio"],[role="menuitem"],ion-button,ion-item,[data-testid],[data-action],[aria-label],[title]';
+        var nodes = [];
+        try { nodes = Array.from(root.querySelectorAll(selector)); } catch (_) {}
+        return nodes.map(function(el) {
+          return { el:el, score:crKindleUISemanticScore(el, kind) };
+        }).filter(function(item) {
+          return item.score >= 45 && crKindleUIIsVisible(item.el);
+        }).sort(function(a, b) {
+          return b.score - a.score;
+        })[0] || null;
+      }
+      function crKindleUINormalizeDigits(value) {
+        var sets = ['０１２３４５６７８９','०१२३४५६७८९','٠١٢٣٤٥٦٧٨٩','۰۱۲۳۴۵۶۷۸۹'];
+        return String(value || '').replace(/[０-９०-९٠-٩۰-۹]/g, function(ch) {
+          for (var i = 0; i < sets.length; i++) {
+            var index = sets[i].indexOf(ch);
+            if (index >= 0) return String(index);
+          }
+          return ch;
+        });
+      }
+    """
+
     static let readerLayoutProbe = """
     (function() {
+      \(uiSemanticHelpers)
       function count(sel) {
         try { return document.querySelectorAll(sel).length; } catch (_) { return -1; }
       }
@@ -36,10 +206,17 @@ enum KindleWebScripts {
       try {
         Array.from(document.querySelectorAll('button,[role="button"],[aria-label],[title]')).slice(0, 240).forEach(function(el) {
           var label = textOf(el);
-          if (/next|previous|prev|page|forward|back|上一|下一|前一|后一/i.test(label)) {
+          var nextScore = crKindleUISemanticScore(el, 'next');
+          var previousScore = crKindleUISemanticScore(el, 'previous');
+          if (Math.max(nextScore, previousScore) >= 45) {
             var r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
             controls.push({
               label:label.slice(0, 140),
+              semantic:nextScore > previousScore ? 'next' : 'previous',
+              structuralScore:Math.max(
+                crKindleUIStructureScore(el, 'next'),
+                crKindleUIStructureScore(el, 'previous')
+              ),
               left:r ? Math.round(r.left) : 0,
               top:r ? Math.round(r.top) : 0,
               width:r ? Math.round(r.width) : 0,
@@ -65,6 +242,7 @@ enum KindleWebScripts {
 
     static let applyReaderPreferences = """
     (function() {
+      \(uiSemanticHelpers)
       window.__crKindlePrefs = window.__crKindlePrefs || { applied:false, attempts:0 };
       window.__crKindlePrefs.attempts += 1;
 
@@ -126,25 +304,33 @@ enum KindleWebScripts {
       function findSettingsButton() {
         var exact = Array.from(document.querySelectorAll('button,[role="button"],ion-button,span,div')).filter(isVisible);
         for (var i = 0; i < exact.length; i++) {
-          var label = labelOf(exact[i]);
-          if (/^(aa|Aa)$/.test(label) || /^Aa$/.test((exact[i].innerText || '').trim())) return exact[i];
+          var glyph = String(exact[i].innerText || exact[i].textContent || '').replace(/\\s+/g, '').trim();
+          if (/^aa$/i.test(glyph) && glyph.length === 2) return exact[i];
         }
-        var fuzzy = Array.from(document.querySelectorAll('button,[role="button"],ion-button,[aria-label],[title]')).filter(isVisible);
-        for (var j = 0; j < fuzzy.length; j++) {
-          var l = labelOf(fuzzy[j]).toLowerCase();
-          if (/font|display|appearance|reading setting|text setting/.test(l) && !/font size|preferred font size/.test(l)) {
-            return fuzzy[j];
-          }
+        var semantic = crKindleUIFind(
+          'settings',
+          document,
+          'button,[role="button"],ion-button,[data-testid],[data-action],[aria-label],[title]'
+        );
+        if (semantic && crKindleUISemanticScore(semantic.el, 'font-size') < semantic.score) {
+          return semantic.el;
         }
         return null;
       }
       function findFontSizeRange() {
         var nodes = Array.from(document.querySelectorAll('ion-range,[role="slider"],input[type="range"]')).filter(isVisible);
-        for (var i = 0; i < nodes.length; i++) {
-          var label = labelOf(nodes[i]).toLowerCase();
-          if (/font size|preferred font size|字号|字体大小/.test(label)) return nodes[i];
-        }
-        return null;
+        var ranked = nodes.map(function(el) {
+          return { el:el, score:crKindleUISemanticScore(el, 'font-size') };
+        }).sort(function(a, b) { return b.score - a.score; });
+        if (ranked.length && ranked[0].score >= 45) return ranked[0].el;
+        // A single visible range inside the already-open settings surface is a
+        // stable structural fallback even when Amazon strips every label.
+        return nodes.length === 1 ? nodes[0] : null;
+      }
+      function findReaderOption(kind) {
+        var selector = 'button,[role="button"],[role="radio"],[role="option"],ion-button,ion-item,[aria-checked],[aria-selected],[data-testid],[data-action]';
+        var match = crKindleUIFind(kind, document, selector);
+        return match ? match.el : null;
       }
       function setRangeValue(range, desiredRatio) {
         if (!range) return { ok:false, reason:'range-not-found' };
@@ -186,13 +372,25 @@ enum KindleWebScripts {
       function settingsMenuOpen() {
         var menus = Array.from(document.querySelectorAll('ion-menu,[aria-label="menu"],[role="menu"],[role="dialog"],.popover-content,.modal-wrapper'));
         for (var i = 0; i < menus.length; i++) {
-          var text = String(menus[i].innerText || menus[i].textContent || '');
-          if (isVisible(menus[i]) && /Font/i.test(text) && /Layout/i.test(text) && /Margin/i.test(text)) return true;
+          if (!isVisible(menus[i])) continue;
+          var semanticScore = crKindleUIStructureScore(menus[i], 'settings');
+          var controls = menus[i].querySelectorAll('ion-range,[role="slider"],input[type="range"],[role="radio"],[aria-checked],ion-segment-button').length;
+          if (semanticScore >= 100 || controls >= 2 ||
+              (controls >= 1 && crKindleUITextMatches('settings', crKindleUIText(menus[i])))) {
+            return true;
+          }
         }
-        return !!(findExactAria('Single Column') && findExactAria('Narrow'));
+        var settingsButton = findSettingsButton();
+        return !!(settingsButton &&
+          String(settingsButton.getAttribute && settingsButton.getAttribute('aria-expanded') || '').toLowerCase() === 'true');
       }
       function closeSettingsMenu() {
-        var close = findExactAria('Close') || findExactAria('Done');
+        var closeMatch = crKindleUIFind(
+          'close',
+          document,
+          'button,[role="button"],ion-button,[data-testid],[data-action],[part],[aria-label],[title]'
+        );
+        var close = closeMatch && closeMatch.el;
         if (clickElement(close)) return 'close-button';
         try {
           document.dispatchEvent(new KeyboardEvent('keydown', { key:'Escape', code:'Escape', keyCode:27, which:27, bubbles:true, cancelable:true }));
@@ -202,8 +400,8 @@ enum KindleWebScripts {
         return '';
       }
 
-      var hasNext = !!document.querySelector('button[aria-label="Next page"],button[title="Next page"]');
-      var hasPrev = !!document.querySelector('button[aria-label="Previous page"],button[title="Previous page"]');
+      var hasNext = !!crKindleUIFind('next', document);
+      var hasPrev = !!crKindleUIFind('previous', document);
       var menuWasOpen = settingsMenuOpen();
       if (!menuWasOpen) {
         var aaButton = findSettingsButton();
@@ -220,8 +418,8 @@ enum KindleWebScripts {
         });
       }
 
-      var single = findExactAria('Single Column');
-      var narrow = findExactAria('Narrow');
+      var single = findReaderOption('single-column');
+      var narrow = findReaderOption('narrow');
       var singleClicked = clickElement(single);
       var narrowClicked = clickElement(narrow);
       var fontSize = { ok:false, reason:'not-forced' };
@@ -280,9 +478,9 @@ enum KindleWebScripts {
       }
       function normalizeLanguage(value) {
         var primary = String(value || '').trim().toLowerCase().replace(/_/g, '-').split('-')[0];
-        var aliases = { eng:'en', zho:'zh', chi:'zh', jpn:'ja', spa:'es', fra:'fr', fre:'fr', por:'pt', ita:'it', hin:'hi' };
+        var aliases = { eng:'en', zho:'zh', chi:'zh', jpn:'ja', spa:'es', fra:'fr', fre:'fr', deu:'de', ger:'de', por:'pt', ita:'it', hin:'hi' };
         primary = aliases[primary] || primary;
-        return /^(?:en|zh|ja|es|fr|pt|it|hi)$/.test(primary) ? primary : null;
+        return /^(?:en|zh|ja|es|fr|de|pt|it|hi)$/.test(primary) ? primary : null;
       }
       function direction(value) {
         if (/rtl|right[-_ ]?to[-_ ]?left|horizontal-rl|vertical-rl/i.test(value || '')) return 'rtl';
@@ -508,22 +706,62 @@ enum KindleWebScripts {
 
     static let scrapeLibrary = """
     (function() {
+      var kindleHosts = \(KindleStorefront.javaScriptHostArray);
+      var canonicalHostByAlias = \(KindleStorefront.javaScriptCanonicalHostMap);
+      function normalizedKindleHost(host) {
+        host = String(host || '').toLowerCase();
+        if (host.endsWith('.')) host = host.slice(0, -1);
+        if (!host || host.endsWith('.')) return '';
+        return host;
+      }
+      function isKindleHost(host) {
+        host = normalizedKindleHost(host);
+        return kindleHosts.indexOf(host) >= 0;
+      }
+      function secureKindleURL(raw) {
+        try {
+          var url = new URL(raw, location.href);
+          if (url.protocol !== 'https:' || url.username || url.password) return null;
+          if (url.port && url.port !== '443') return null;
+          return isKindleHost(url.hostname) ? url : null;
+        } catch (_) {
+          return null;
+        }
+      }
       function text(el) { return (el && (el.innerText || el.textContent) || '').replace(/\\s+/g, ' ').trim(); }
       function attr(el, name) { try { return el ? (el.getAttribute(name) || '') : ''; } catch (e) { return ''; } }
+      function normalizedDigits(value) {
+        var sets = ['０１２３４５６７８９','०१२३४५६७८९','٠١٢٣٤٥٦٧٨٩','۰۱۲۳۴۵۶۷۸۹'];
+        return String(value || '').replace(/[０-９०-९٠-٩۰-۹]/g, function(ch) {
+          for (var i = 0; i < sets.length; i++) {
+            var index = sets[i].indexOf(ch);
+            if (index >= 0) return String(index);
+          }
+          return ch;
+        });
+      }
       function abs(url) {
         if (!url) return '';
         try { return new URL(url, location.href).href; } catch (e) { return url || ''; }
       }
       function readerURLForASIN(asin) {
-        return 'https://read.amazon.com/?asin=' + encodeURIComponent(String(asin || '').toUpperCase()) + '&ref_=kwl_kr_iv_rec_1';
+        var currentHost = normalizedKindleHost(location.hostname);
+        var canonicalHost = canonicalHostByAlias[currentHost] || '';
+        var normalizedASIN = String(asin || '').trim().toUpperCase();
+        if (!canonicalHost || !/^[A-Z0-9]{10}$/.test(normalizedASIN)) return '';
+        var url = new URL('https://' + canonicalHost + '/');
+        url.searchParams.set('asin', normalizedASIN);
+        url.searchParams.set('ref_', '\(KindleStorefront.readerReferenceValue)');
+        return url.href;
       }
       function bareKindleRoot(href) {
         href = abs(href);
         if (!href) return false;
         try {
-          var u = new URL(href, location.href);
+          var u = secureKindleURL(href);
+          if (!u) return false;
           var path = String(u.pathname || '').replace(/^\\/+|\\/+$/g, '');
-          return /read\\.amazon\\./i.test(u.host || '') && !path && !u.search && !u.hash;
+          return !path && !u.search && !u.hash;
         } catch (e) {
           return false;
         }
@@ -544,6 +782,75 @@ enum KindleWebScripts {
         } catch (e) {
           return false;
         }
+      }
+      function hasExplicitEmptyShelfSignal() {
+        try {
+          var activeSearch = Array.from(document.querySelectorAll('input[type="search"], input[role="searchbox"]'))
+            .some(function(input) { return visible(input) && String(input.value || '').trim().length > 0; });
+          if (activeSearch) return false;
+        } catch (_) {}
+        // An empty result is destructive evidence: it may clear a previously
+        // cached shelf. Accept only normalized, complete empty-state copy.
+        // Substring matching is deliberately forbidden because help text such
+        // as "If your library is empty, ..." is not shelf state.
+        var emptyCopies = [
+          'your library is empty',
+          'no books in your library',
+          'you do not have any books',
+          "you don't have any books",
+          'tu biblioteca está vacía',
+          'no hay libros en tu biblioteca',
+          'no tienes libros',
+          'sua biblioteca está vazia',
+          'não há livros na sua biblioteca',
+          'nenhum livro na sua biblioteca',
+          'ライブラリに本がありません',
+          'ライブラリは空',
+          '本はありません',
+          'deine bibliothek ist leer',
+          'ihre bibliothek ist leer',
+          'keine bücher in deiner bibliothek',
+          'keine bücher in ihrer bibliothek',
+          'votre bibliothèque est vide',
+          'aucun livre dans votre bibliothèque',
+          "vous n'avez aucun livre",
+          'la tua libreria è vuota',
+          'la tua biblioteca è vuota',
+          'nessun libro nella tua libreria',
+          'non hai libri',
+          'आपकी लाइब्रेरी खाली है',
+          'आपकी लाइब्रेरी में कोई किताब नहीं',
+          'आपकी लाइब्रेरी में कोई पुस्तक नहीं',
+          'कोई पुस्तक नहीं'
+        ];
+        function normalizedEmptyCopy(value) {
+          value = String(value || '');
+          try { value = value.normalize('NFKC'); } catch (_) {}
+          return value
+            .replace(/[’‘]/g, "'")
+            .replace(/\\s+/g, ' ')
+            .trim()
+            .toLowerCase()
+            .replace(/[\\s.!?。！？…।]+$/g, '')
+            .trim();
+        }
+        var selectors = [
+          '[data-testid*="empty" i]', '[data-test*="empty" i]',
+          '[data-automation-id*="empty" i]', '[class*="empty-state" i]',
+          '[class*="emptyState"]', '[id*="empty" i]',
+          '[role="status"]', '[role="alert"]',
+          'main h1', 'main h2', 'main h3', 'main p'
+        ];
+        var nodes = [];
+        selectors.forEach(function(selector) {
+          try { nodes = nodes.concat(Array.from(document.querySelectorAll(selector))); } catch (_) {}
+        });
+        return nodes.some(function(node) {
+          if (!visible(node)) return false;
+          var value = normalizedEmptyCopy(text(node));
+          return value.length > 0 && value.length < 300 &&
+            emptyCopies.indexOf(value) >= 0;
+        });
       }
       function asinFrom(raw) {
         raw = String(raw || '');
@@ -578,18 +885,18 @@ enum KindleWebScripts {
         href = abs(href);
         if (!href) return false;
         try {
-          var u = new URL(href, location.href);
+          var u = secureKindleURL(href);
+          if (!u) return false;
           var path = (u.pathname || '').toLowerCase();
-          if (!/read\\.amazon\\./i.test(u.host || '')) return false;
           if (/kindle-library|landing|help|support|settings|notebook|privacy|terms|download|appstore|app-store/.test(path)) return false;
           return !!u.search.match(/[?&]asin=[A-Z0-9]{10}/i) || /\\/reader\\//i.test(path);
         } catch (e) {
-          return /[?&]asin=[A-Z0-9]{10}/i.test(href) || /\\/reader\\//i.test(href);
+          return false;
         }
       }
       function badTitle(raw) {
         var v = String(raw || '').toLowerCase();
-        return /download|app store|kindle app|learn more|read on any device|help|support|settings|notebook|privacy|terms|下载|应用商店|了解更多|任何设备|帮助|支持|设置|笔记/.test(v);
+        return /download|app store|kindle app|learn more|read on any device|help|support|settings|notebook|privacy|terms|descargar|tienda de aplicaciones|más información|ayuda|configuración|privacidad|términos|baixar|loja de aplicativos|saiba mais|ajuda|configurações|privacidade|termos|ダウンロード|アプリストア|詳細|ヘルプ|設定|プライバシー|規約|herunterladen|app-store|mehr erfahren|hilfe|einstellungen|datenschutz|bedingungen|télécharger|en savoir plus|aide|paramètres|confidentialité|conditions|scarica|ulteriori informazioni|aiuto|impostazioni|privacy|termini|डाउनलोड|ऐप स्टोर|और जानें|सहायता|सेटिंग|गोपनीयता|शर्तें|下载|应用商店|了解更多|任何设备|帮助|支持|设置|笔记/.test(v);
       }
       function nearestCard(a) {
         var node = a;
@@ -617,7 +924,7 @@ enum KindleWebScripts {
             if (v && v.length < 180) return v;
           } catch (e) {}
         }
-        if (labelled) return labelled.replace(/Kindle Edition|ebook|book/ig, '').trim();
+        if (labelled) return labelled.trim();
         var raw = text(card).split(/\\n|\\u2022|\\|/)[0] || text(a);
         return raw.slice(0, 160).trim();
       }
@@ -626,30 +933,41 @@ enum KindleWebScripts {
         for (var i = 0; i < selectors.length; i++) {
           try {
             var v = text(card.querySelector(selectors[i]));
-            if (v && v !== title && v.length < 120) return v.replace(/^by\\s+/i, '').trim();
+            if (v && v !== title && v.length < 120) {
+              return v.replace(/^(?:by|por|de|par|von|di|著者|作者|लेखक|द्वारा)\\s*[:：]?\\s*/i, '').trim();
+            }
           } catch (e) {}
         }
         var lines = text(card).split(/\\n|\\u2022|\\|/).map(function(s) { return s.trim(); }).filter(Boolean);
         for (var j = 0; j < lines.length; j++) {
           var line = lines[j];
           if (line === title) continue;
-          if (/^by\\s+/i.test(line)) return line.replace(/^by\\s+/i, '').trim();
+          if (/^(?:by|por|de|par|von|di|著者|作者|लेखक|द्वारा)\\s*[:：]?\\s*/i.test(line)) {
+            return line.replace(/^(?:by|por|de|par|von|di|著者|作者|लेखक|द्वारा)\\s*[:：]?\\s*/i, '').trim();
+          }
         }
         return '';
             }
             function progressFrom(card) {
-              var raw = text(card);
-              var m = raw.match(/(\\d{1,3}\\s*%|Page\\s+\\d+[^\\n,;]*|Location\\s+\\d+[^\\n,;]*|Last\\s+read[^\\n,;]*)/i);
+              var structural = card && card.querySelector && card.querySelector('[data-progress],[data-percentage],[data-location],[data-position],[aria-valuenow],[role="progressbar"]');
+              if (structural) {
+                var direct = attr(structural, 'data-progress') || attr(structural, 'data-percentage') ||
+                  attr(structural, 'data-location') || attr(structural, 'data-position') ||
+                  attr(structural, 'aria-valuetext') || attr(structural, 'aria-valuenow') || text(structural);
+                if (direct) return String(direct).replace(/\\s+/g, ' ').trim();
+              }
+              var raw = normalizedDigits(text(card));
+              var m = raw.match(/(\\d{1,3}\\s*%|(?:Page|Location|Last\\s+read|Página|Ubicación|Posición|Última\\s+lectura|Localização|Posição|Última\\s+leitura|ページ|位置|最終閲覧|Seite|Position|Zuletzt\\s+gelesen|Page|Emplacement|Dernière\\s+lecture|Pagina|Posizione|Ultima\\s+lettura|पृष्ठ|स्थान|अंतिम\\s+पठन)\\s*[:#-]?\\s*\\d+[^\\n,;]*)/i);
               return m ? m[1].replace(/\\s+/g, ' ').trim() : '';
             }
             function languageFrom(card) {
               var nodes = [card].concat(Array.from((card && card.querySelectorAll) ? card.querySelectorAll('[lang],[data-language],[data-language-code],[data-book-language],[data-locale]') : []));
-              var aliases = { eng:'en', zho:'zh', chi:'zh', jpn:'ja', spa:'es', fra:'fr', fre:'fr', por:'pt', ita:'it', hin:'hi' };
+              var aliases = { eng:'en', zho:'zh', chi:'zh', jpn:'ja', spa:'es', fra:'fr', fre:'fr', deu:'de', ger:'de', por:'pt', ita:'it', hin:'hi' };
               for (var i = 0; i < nodes.length; i++) {
                 var raw = attr(nodes[i], 'data-book-language') || attr(nodes[i], 'data-language-code') || attr(nodes[i], 'data-language') || attr(nodes[i], 'data-locale') || attr(nodes[i], 'lang');
                 var primary = String(raw || '').trim().toLowerCase().replace(/_/g, '-').split('-')[0];
                 primary = aliases[primary] || primary;
-                if (/^(?:en|zh|ja|es|fr|pt|it|hi)$/.test(primary)) return primary;
+                if (/^(?:en|zh|ja|es|fr|de|pt|it|hi)$/.test(primary)) return primary;
               }
               return '';
             }
@@ -662,9 +980,11 @@ enum KindleWebScripts {
                 if (emailMatch) email = emailMatch[0];
               } catch (e) {}
               var selectors = [
+                '[data-testid*=account i]',
+                '[data-test*=account i]',
+                '[data-nav-role=signin]',
                 '#nav-link-accountList-nav-line-1',
                 '#nav-link-accountList .nav-line-1',
-                '[data-nav-role=signin] .nav-line-1',
                 '[aria-label*=Account]',
                 '[aria-label*=account]',
                 '[href*=account] span',
@@ -673,8 +993,8 @@ enum KindleWebScripts {
               for (var i = 0; i < selectors.length && !label; i++) {
                 try {
                   var el = document.querySelector(selectors[i]);
-                  var v = text(el).replace(/^Hello,?\\s*/i, '').replace(/^Hi,?\\s*/i, '').trim();
-                  if (v && !/sign\\s*in|account|lists?|returns?|orders?/i.test(v) && v.length < 80) label = v;
+                  var v = text(el).replace(/^(?:Hello|Hi|Hola|Olá|こんにちは|Hallo|Bonjour|Ciao|नमस्ते),?\\s*/i, '').trim();
+                  if (v && !/sign\\s*in|account|lists?|returns?|orders?|iniciar sesión|cuenta|entrar|conta|anmelden|konto|connexion|compte|accedi|account|ログイン|アカウント|साइन इन|खाता/i.test(v) && v.length < 80) label = v;
                 } catch (e) {}
               }
               return { label: label, email: email };
@@ -683,7 +1003,7 @@ enum KindleWebScripts {
               var links = Array.from(document.querySelectorAll('a[href*="asin="], a[href*="/reader/"]'));
         var hits = links.filter(function(a) {
           var href = attr(a, 'href');
-          return isReaderHref(href) || !!asinFrom(href) || !!attr(a, 'data-asin');
+          return isReaderHref(href) || !!attr(a, 'data-asin');
         });
         Array.from(document.querySelectorAll('[data-asin]')).forEach(function(card) {
           var label = (attr(card, 'data-asin') + ' ' + attr(card, 'aria-label') + ' ' + attr(card, 'class')).toLowerCase();
@@ -710,12 +1030,12 @@ enum KindleWebScripts {
         var card = nearestCard(a);
         var img = card.querySelector('img') || a.querySelector('img');
         var asin = attr(card, 'data-asin') || attr(a, 'data-asin') || asinFrom(href) || asinFrom(nodeSignature(card)) || asinFrom(text(card));
-        if (asin && (!href || bareKindleRoot(href) || (!isReaderHref(href) && !asinFrom(href)))) href = readerURLForASIN(asin);
+        if (asin && !isReaderHref(href)) href = readerURLForASIN(asin);
         var title = titleFrom(card, a, img);
         if (!title || title.length < 2) return;
         if (badTitle(title) || badTitle(text(a))) return;
-        if (!asinFrom(asin) && !asinFrom(href) && !isReaderHref(href)) return;
-        if (href && !isReaderHref(href) && !asinFrom(href)) return;
+        if (!asinFrom(asin) && !isReaderHref(href)) return;
+        if (!isReaderHref(href)) return;
         var id = asin || href || title;
         if (!id || seen[id]) return;
         seen[id] = true;
@@ -736,11 +1056,16 @@ enum KindleWebScripts {
       var signin = Array.from(document.querySelectorAll('input[type=email], input[name=email], input[type=password], #ap_email, #ap_password')).some(visible);
       var hasReaderSignals = books.length > 0 || candidateLinks().length > 0;
             var readerPage = /[?&]asin=[A-Z0-9]{10}/i.test(location.search) || /\\/reader\\//i.test(location.pathname);
+            var pageReady = document.readyState === 'complete';
+            var hasEmptyShelfSignal = pageReady && !signin && !readerPage &&
+              !hasReaderSignals && hasExplicitEmptyShelfSignal();
             return JSON.stringify({
               ok: true,
               loggedIn: books.length > 0,
               authRequired: signin,
               hasReaderSignals: hasReaderSignals,
+              hasEmptyShelfSignal: hasEmptyShelfSignal,
+              pageReady: pageReady,
               isReaderPage: readerPage,
               account: accountInfo(),
               url: location.href,
@@ -785,6 +1110,7 @@ enum KindleWebScripts {
 
     static let tocProbe = """
     (function() {
+      \(uiSemanticHelpers)
       window.__crKindleTocProbe = window.__crKindleTocProbe || { nodes: [], entries: [], openedAt: 0 };
       var probe = window.__crKindleTocProbe;
       function now() { return Date.now ? Date.now() : new Date().getTime(); }
@@ -905,8 +1231,16 @@ enum KindleWebScripts {
       function badEntryText(text) {
         var v = String(text || '').toLowerCase();
         if (!v || v.length < 2 || v.length > 180) return true;
-        return /^(kindle library|search|aa|bookmark|more|previous page|next page|page \\d+|read aloud|explain|close|done|font|layout|margin|page color|side panel close)$/i.test(text) ||
-          /preferred font|single column|two columns|narrow|medium|wide|time left|page in book|reading progress/i.test(text);
+        if (/^(kindle library|search|aa|bookmark|more|previous page|next page|page \\d+|read aloud|explain|close|done|font|layout|margin|page color|side panel close)$/i.test(text) ||
+            /preferred font|single column|two columns|narrow|medium|wide|time left|page in book|reading progress/i.test(text)) {
+          return true;
+        }
+        return crKindleUITextMatches('next', text) ||
+          crKindleUITextMatches('previous', text) ||
+          crKindleUITextMatches('close', text) ||
+          crKindleUITextMatches('settings', text) ||
+          crKindleUITextMatches('single-column', text) ||
+          crKindleUITextMatches('narrow', text);
       }
       function nodePath(el) {
         try {
@@ -969,12 +1303,16 @@ enum KindleWebScripts {
             seen.add(el);
             return true;
           }).map(function(el) {
-            return { el:el, label:labelOf(el), rect:rectOf(el) };
+            return {
+              el:el,
+              label:labelOf(el),
+              rect:rectOf(el),
+              score:crKindleUISemanticScore(el, 'close')
+            };
           }).filter(function(item) {
-            return /side panel close|close|done|关闭|完成/.test(item.label.toLowerCase()) &&
-              !/kindle library/.test(item.label.toLowerCase());
+            return item.score >= 45 && !/kindle library/.test(item.label.toLowerCase());
           }).sort(function(a, b) {
-            return a.rect.top - b.rect.top || b.rect.left - a.rect.left;
+            return b.score - a.score || a.rect.top - b.rect.top || b.rect.left - a.rect.left;
           })[0];
           var clicked = close ? clickElement(close.el) : false;
           if (!clicked) {
@@ -1001,10 +1339,16 @@ enum KindleWebScripts {
         if (tag === 'ion-item' || tag === 'li') score += 24;
         if (role === 'button' || role === 'menuitem' || role === 'listitem') score += 18;
         if (node && node.getAttribute && node.getAttribute('href')) score += 16;
+        if (node && node.getAttribute && (
+            node.getAttribute('data-location') ||
+            node.getAttribute('data-position') ||
+            node.getAttribute('data-cfi') ||
+            node.getAttribute('data-section') ||
+            node.getAttribute('data-chapter'))) score += 24;
         if (activeState(el)) score += 10;
         score += Math.min(20, Math.max(0, rect.width / 30));
         score += Math.min(10, Math.max(0, rect.height / 10));
-        if (/^chapter\\s+\\d+/i.test(text)) score += 8;
+        if (crKindleUITextMatches('toc', text)) score += 8;
         return score;
       }
       function installTocMonitor() {
@@ -1016,7 +1360,7 @@ enum KindleWebScripts {
             var node = clickableEntryNode(event.target);
             var label = labelOf(node).slice(0, 180);
             var lowerLabel = label.toLowerCase();
-            if (/side panel close|\\bclose\\b|\\bdone\\b|关闭|完成/.test(lowerLabel) &&
+            if (crKindleUISemanticScore(node, 'close') >= 45 &&
                 !/kindle library/.test(lowerLabel)) {
               setTimeout(function() {
                 postNative('toc-close', {
@@ -1083,9 +1427,14 @@ enum KindleWebScripts {
           var label = labelOf(el).toLowerCase();
           var txt = textOf(el).toLowerCase();
           var r = rectOf(el);
-          var looksLikeOverlay = /dialog|menu|navigation|toc|contents|chapter|go to|location|cover|beginning|section/.test(label + ' ' + txt);
+          var semanticScore = crKindleUISemanticScore(el, 'toc');
+          var structuralEntries = el.querySelectorAll(
+            'a[href],[role="treeitem"],[role="listitem"],[role="menuitem"],ion-item,li,[data-location],[data-cfi],[data-section],[data-chapter]'
+          ).length;
+          var looksLikeOverlay = semanticScore >= 45 ||
+            /dialog|menu|navigation|toc|contents|chapter|go to|location|cover|beginning|section/.test(label + ' ' + txt);
           var largePanel = r.width > Math.min(260, (innerWidth || 0) * 0.35) && r.height > Math.min(260, (innerHeight || 0) * 0.35);
-          if (looksLikeOverlay || largePanel) containers.push(el);
+          if (looksLikeOverlay || (largePanel && structuralEntries >= 2)) containers.push(el);
         });
         return containers;
       }
@@ -1177,16 +1526,19 @@ enum KindleWebScripts {
           var label = labelOf(el);
           var lower = label.toLowerCase();
           var r = rectOf(el);
-          var score = 0;
+          var score = crKindleUISemanticScore(el, 'toc');
           var isExplicit = explicit.indexOf(el) >= 0;
           if (isExplicit) score += 160;
           if (/table of contents|contents|toc|go to|goto|chapter|navigation|menu/.test(lower)) score += 120;
           if (/list|outline|目录|章节|内容/.test(lower)) score += 80;
+          if (/list|outline|navigation|tree/.test(crKindleUIStructure(el))) score += 80;
           if (String(el.getAttribute && (el.getAttribute('aria-label') || '')).toLowerCase() === 'table of contents') score += 220;
           if (visible(el)) score += 20;
           else if (score > 0) score -= 18;
           if (r.top < 150 && r.width >= 24 && r.width <= 90 && r.height >= 24 && r.height <= 90) score += 18;
           if (/kindle library|search|aa|bookmark|previous page|next page|page \\d+|read aloud|explain/.test(lower)) score -= 160;
+          if (crKindleUISemanticScore(el, 'next') >= 45 ||
+              crKindleUISemanticScore(el, 'previous') >= 45) score -= 220;
           return { el: el, score: score, label: label, rect: r };
         }).filter(function(item) { return item.score > 0; }).sort(function(a, b) {
           return b.score - a.score || a.rect.left - b.rect.left;
@@ -1201,7 +1553,9 @@ enum KindleWebScripts {
             item.rect.width <= 90 &&
             item.rect.height >= 28 &&
             item.rect.height <= 90 &&
-            !/kindle library|search|aa|bookmark|previous page|next page/.test(item.label.toLowerCase());
+            !/kindle library|search|aa|bookmark|previous page|next page/.test(item.label.toLowerCase()) &&
+            crKindleUISemanticScore(item.el, 'next') < 45 &&
+            crKindleUISemanticScore(item.el, 'previous') < 45;
         }).sort(function(a, b) { return a.rect.left - b.rect.left; });
         return topButtons.map(function(item) {
           return { el: item.el, score: 10, label: item.label, rect: item.rect };
@@ -1352,6 +1706,7 @@ enum KindleWebScripts {
 
     static let closeTOCOverlay = """
     (function() {
+      \(uiSemanticHelpers)
       function norm(value) { return String(value || '').replace(/\\s+/g, ' ').trim(); }
       function visible(el) {
         if (!el) return false;
@@ -1432,7 +1787,15 @@ enum KindleWebScripts {
             if (!visible(el)) return;
             var text = textOf(el);
             var label = labelOf(el);
-            if (/chapter\\s+\\d+|table of contents|contents|go to|location|cover|beginning|section/i.test(text + ' ' + label)) {
+            var r = rectOf(el);
+            var entryCount = el.querySelectorAll(
+              'a[href],[role="treeitem"],[role="listitem"],[role="menuitem"],ion-item,li,[data-location],[data-cfi],[data-section],[data-chapter]'
+            ).length;
+            var largePanel = r.width > Math.min(260, (innerWidth || 0) * 0.35) &&
+              r.height > Math.min(260, (innerHeight || 0) * 0.35);
+            if (crKindleUISemanticScore(el, 'toc') >= 45 ||
+                /chapter\\s+\\d+|table of contents|contents|go to|location|cover|beginning|section/i.test(text + ' ' + label) ||
+                (largePanel && entryCount >= 2)) {
               containers.push({ label:label.slice(0, 160), text:text.slice(0, 220), rect:rectOf(el) });
             }
           });
@@ -1458,13 +1821,18 @@ enum KindleWebScripts {
         seen.add(el);
         return true;
       }).map(function(el) {
-        return { el:el, label:labelOf(el), rect:rectOf(el), explicit:explicit.indexOf(el) >= 0 };
+        return {
+          el:el,
+          label:labelOf(el),
+          rect:rectOf(el),
+          explicit:explicit.indexOf(el) >= 0,
+          score:crKindleUISemanticScore(el, 'close')
+        };
       }).filter(function(item) {
-        return /side panel close|close|done|关闭|完成/.test(item.label.toLowerCase()) &&
-          !/kindle library/.test(item.label.toLowerCase());
+        return item.score >= 45 && !/kindle library/.test(item.label.toLowerCase());
       }).sort(function(a, b) {
         if (a.explicit !== b.explicit) return a.explicit ? -1 : 1;
-        return a.rect.top - b.rect.top || b.rect.left - a.rect.left;
+        return b.score - a.score || a.rect.top - b.rect.top || b.rect.left - a.rect.left;
       })[0];
       var clicked = close ? clickElement(close.el) : false;
       var escaped = false;
@@ -1488,7 +1856,16 @@ enum KindleWebScripts {
 
     static let styleNativeTOCSheet = """
     (function() {
+      \(uiSemanticHelpers)
       try {
+        Array.from(document.querySelectorAll(
+          'button,[role="button"],ion-button,[data-testid],[data-action],[aria-label],[title]'
+        )).forEach(function(el) {
+          if (crKindleUISemanticScore(el, 'next') >= 45 ||
+              crKindleUISemanticScore(el, 'previous') >= 45) {
+            el.setAttribute('data-cr-native-toc-page-control', '1');
+          }
+        });
         var id = '__cr_castreader_native_toc_sheet';
         var style = document.getElementById(id);
         if (!style) {
@@ -1510,7 +1887,8 @@ enum KindleWebScripts {
           'html[data-cr-native-toc-open="1"] button[aria-label="Previous page"],',
           'html[data-cr-native-toc-open="1"] button[aria-label="Next page"],',
           'html[data-cr-native-toc-open="1"] [title="Previous page"],',
-          'html[data-cr-native-toc-open="1"] [title="Next page"]{',
+          'html[data-cr-native-toc-open="1"] [title="Next page"],',
+          'html[data-cr-native-toc-open="1"] [data-cr-native-toc-page-control="1"]{',
           'visibility:hidden!important;pointer-events:none!important;',
           '}',
           '[data-cr-toc-sheet="root"]{',
@@ -1591,8 +1969,16 @@ enum KindleWebScripts {
         function badEntryText(text) {
           var v = String(text || '').toLowerCase();
           if (!v || v.length < 2 || v.length > 180) return true;
-          return /^(kindle library|search|aa|bookmark|more|previous page|next page|page \\d+|read aloud|explain|close|done|font|layout|margin|page color|side panel close)$/i.test(text) ||
-            /preferred font|single column|two columns|narrow|medium|wide|time left|page in book|reading progress/i.test(text);
+          if (/^(kindle library|search|aa|bookmark|more|previous page|next page|page \\d+|read aloud|explain|close|done|font|layout|margin|page color|side panel close)$/i.test(text) ||
+              /preferred font|single column|two columns|narrow|medium|wide|time left|page in book|reading progress/i.test(text)) {
+            return true;
+          }
+          return crKindleUITextMatches('next', text) ||
+            crKindleUITextMatches('previous', text) ||
+            crKindleUITextMatches('close', text) ||
+            crKindleUITextMatches('settings', text) ||
+            crKindleUITextMatches('single-column', text) ||
+            crKindleUITextMatches('narrow', text);
         }
         function looksLikeEntry(el) {
           if (!visible(el)) return false;
@@ -1601,6 +1987,10 @@ enum KindleWebScripts {
           var r = rectOf(el);
           if (r.width < 24 || r.height < 16) return false;
           var label = labelOf(el).toLowerCase();
+          if (el.matches && el.matches(
+              '[data-location],[data-position],[data-cfi],[data-section],[data-chapter],[role="treeitem"],[role="listitem"],[role="menuitem"]'
+          )) return true;
+          if (crKindleUIStructureScore(el, 'toc') >= 45) return true;
           if (/chapter|contents|section|author|note|part|prologue|epilogue|toc-item|toc|目录|章节/.test(label + ' ' + t.toLowerCase())) return true;
           return false;
         }
@@ -1803,6 +2193,7 @@ enum KindleWebScripts {
 
     static let padNativeTOCScrollArea = """
     (function() {
+      \(uiSemanticHelpers)
       try {
         var id = '__cr_castreader_native_toc_padding';
         var style = document.getElementById(id);
@@ -1898,6 +2289,15 @@ enum KindleWebScripts {
           if (!t || t.length < 2 || t.length > 180) return false;
           var hay = (labelOf(el) + ' ' + t).toLowerCase();
           if (/^(kindle library|search|aa|bookmark|more|previous page|next page|read aloud|explain|close|font|layout|margin)$/i.test(t)) return false;
+          if (crKindleUITextMatches('next', t) ||
+              crKindleUITextMatches('previous', t) ||
+              crKindleUITextMatches('close', t) ||
+              crKindleUITextMatches('settings', t)) return false;
+          if (el.matches && el.matches(
+              '[data-location],[data-position],[data-cfi],[data-section],[data-chapter],[role="treeitem"],[role="listitem"],[role="menuitem"]'
+          )) return true;
+          if (crKindleUIStructureScore(el, 'toc') >= 45) return true;
+          if (crKindleUITextMatches('toc', t)) return true;
           return /chapter|contents|author|note|part|prologue|epilogue|目录|章节/.test(hay);
         }
         function shadowQueryAll(root, selector) {
@@ -2188,6 +2588,7 @@ enum KindleWebScripts {
 
     static let nativeTOCScanStep = """
     (function(reset) {
+      \(uiSemanticHelpers)
       window.__crKindleNativeTOCScan = window.__crKindleNativeTOCScan || {
         entries: [],
         byKey: {},
@@ -2306,8 +2707,16 @@ enum KindleWebScripts {
       function badEntryText(text) {
         var v = String(text || '').toLowerCase();
         if (!v || v.length < 2 || v.length > 180) return true;
-        return /^(kindle library|search|aa|bookmark|more|previous page|next page|page \\d+|read aloud|explain|close|done|font|layout|margin|page color|side panel close)$/i.test(text) ||
-          /preferred font|single column|two columns|narrow|medium|wide|time left|page in book|reading progress/i.test(text);
+        if (/^(kindle library|search|aa|bookmark|more|previous page|next page|page \\d+|read aloud|explain|close|done|font|layout|margin|page color|side panel close)$/i.test(text) ||
+            /preferred font|single column|two columns|narrow|medium|wide|time left|page in book|reading progress/i.test(text)) {
+          return true;
+        }
+        return crKindleUITextMatches('next', text) ||
+          crKindleUITextMatches('previous', text) ||
+          crKindleUITextMatches('close', text) ||
+          crKindleUITextMatches('settings', text) ||
+          crKindleUITextMatches('single-column', text) ||
+          crKindleUITextMatches('narrow', text);
       }
       function clickableEntryNode(el) {
         try { return el && el.closest && el.closest('a[href],button,[role="button"],[role="menuitem"],ion-button,ion-item,li') || el; } catch (_) { return el; }
@@ -2399,7 +2808,10 @@ enum KindleWebScripts {
             if (tag === 'button' || tag === 'ion-button') score += 220;
             if (tag === 'ion-item') score += 170;
             if (/button|menuitem|listitem|link/.test(role)) score += 120;
-            if (/chapter|contents|section|part|note|prologue|epilogue/i.test(label)) score += 40;
+            if (attrOf(item, 'data-location') || attrOf(item, 'data-position') ||
+                attrOf(item, 'data-cfi') || attrOf(item, 'data-section') ||
+                attrOf(item, 'data-chapter')) score += 180;
+            if (crKindleUITextMatches('toc', label)) score += 40;
             candidates.push({ el:item, score:score, href:href, role:role, tag:tag, reason:reason, label:label.slice(0, 120) });
           } catch (_) {}
         }
@@ -2437,7 +2849,12 @@ enum KindleWebScripts {
             var node = clickableEntryNode(el);
             var text = textOf(node);
             if (badEntryText(text)) return;
-            if (/chapter\\s+\\d+|contents|cover|author|prologue|epilogue|note|appendix|part\\s+\\d+|section\\s+\\d+/i.test(text)) {
+            var structural = crKindleUIStructureScore(el, 'toc') >= 45 ||
+              !!(el.matches && el.matches(
+                '[data-location],[data-position],[data-cfi],[data-section],[data-chapter],[role="treeitem"],[role="listitem"],[role="menuitem"]'
+              ));
+            if (structural || crKindleUITextMatches('toc', text) ||
+                /cover|author|prologue|epilogue|note|appendix|part\\s+\\d+|section\\s+\\d+/i.test(text)) {
               count += 1;
             }
           });
@@ -2457,13 +2874,17 @@ enum KindleWebScripts {
           var txt = textOf(el).toLowerCase();
           var label = labelOf(el).toLowerCase();
           var r = rectOf(el);
-          var looksLikeTOC = /chapter\\s+\\d+|table of contents|contents|go to|location|cover|beginning|section/.test(txt + ' ' + label);
+          var semanticScore = crKindleUISemanticScore(el, 'toc');
+          var looksLikeTOC = semanticScore >= 45 ||
+            /chapter\\s+\\d+|table of contents|contents|go to|location|cover|beginning|section/.test(txt + ' ' + label);
           var scrollable = scroll && ((scroll.scrollHeight || 0) - (scroll.clientHeight || 0)) > 8;
           var large = r.height > Math.min(220, (innerHeight || 0) * 0.30) && r.width > Math.min(220, (innerWidth || 0) * 0.30);
           var entryCount = entryLikeCount(el);
           if (looksLikeTOC || entryCount >= 3 || (scrollable && large)) {
             var scrollRange = scroll ? Math.max(0, (scroll.scrollHeight || 0) - (scroll.clientHeight || 0)) : 0;
-            var score = entryCount * 10000 + (looksLikeTOC ? 5000 : 0) + (scrollable ? 1200 : 0) + (large ? 300 : 0) + Math.min(999, scrollRange);
+            var score = entryCount * 10000 + (looksLikeTOC ? 5000 : 0) +
+              semanticScore * 10 + (scrollable ? 1200 : 0) +
+              (large ? 300 : 0) + Math.min(999, scrollRange);
             containers.push({ host:el, scroll:scroll || el, label:label, rect:r, score:score, entryCount:entryCount });
           }
         });
@@ -2626,6 +3047,7 @@ enum KindleWebScripts {
 
     static let nativeTOCJumpStep = """
     (function(targetIndex, targetText, targetPath, targetHref, reset, cachedEntries) {
+      \(uiSemanticHelpers)
       window.__crKindleNativeTOCJump = window.__crKindleNativeTOCJump || {
         stable: 0,
         lastScrollTop: -1,
@@ -2814,7 +3236,10 @@ enum KindleWebScripts {
             if (attrOf(item, 'part') === 'native' || /item-native/.test(attrOf(item, 'class'))) score += 240;
             if (tag === 'ion-item') score += 170;
             if (/button|menuitem|listitem|link/.test(role)) score += 120;
-            if (/chapter|contents|section|part|note|prologue|epilogue/i.test(label)) score += 40;
+            if (attrOf(item, 'data-location') || attrOf(item, 'data-position') ||
+                attrOf(item, 'data-cfi') || attrOf(item, 'data-section') ||
+                attrOf(item, 'data-chapter')) score += 180;
+            if (crKindleUITextMatches('toc', label)) score += 40;
             candidates.push({ el:item, score:score, href:href, role:role, tag:tag, reason:reason, label:label.slice(0, 120) });
           } catch (_) {}
         }
@@ -3043,8 +3468,16 @@ enum KindleWebScripts {
       function badEntryText(text) {
         var v = String(text || '').toLowerCase();
         if (!v || v.length < 2 || v.length > 180) return true;
-        return /^(kindle library|search|aa|bookmark|more|previous page|next page|page \\d+|read aloud|explain|close|done|font|layout|margin|page color|side panel close)$/i.test(text) ||
-          /preferred font|single column|two columns|narrow|medium|wide|time left|page in book|reading progress/i.test(text);
+        if (/^(kindle library|search|aa|bookmark|more|previous page|next page|page \\d+|read aloud|explain|close|done|font|layout|margin|page color|side panel close)$/i.test(text) ||
+            /preferred font|single column|two columns|narrow|medium|wide|time left|page in book|reading progress/i.test(text)) {
+          return true;
+        }
+        return crKindleUITextMatches('next', text) ||
+          crKindleUITextMatches('previous', text) ||
+          crKindleUITextMatches('close', text) ||
+          crKindleUITextMatches('settings', text) ||
+          crKindleUITextMatches('single-column', text) ||
+          crKindleUITextMatches('narrow', text);
       }
       function findContainers() {
         var selectors = [
@@ -3058,11 +3491,20 @@ enum KindleWebScripts {
           var scroll = scrollNodeFor(el);
           var txt = textOf(el).toLowerCase();
           var label = labelOf(el).toLowerCase();
-          var looksLikeTOC = /chapter\\s+\\d+|table of contents|contents|go to|location|cover|beginning|section/.test(txt + ' ' + label);
+          var structuralEntries = el.querySelectorAll(
+            '[data-location],[data-position],[data-cfi],[data-section],[data-chapter],[role="treeitem"],[role="listitem"],[role="menuitem"],a[href],ion-item,li'
+          ).length;
+          var looksLikeTOC = crKindleUISemanticScore(el, 'toc') >= 45 ||
+            /chapter\\s+\\d+|table of contents|contents|go to|location|cover|beginning|section/.test(txt + ' ' + label);
           var scrollable = scroll && ((scroll.scrollHeight || 0) - (scroll.clientHeight || 0)) > 8;
-          if (looksLikeTOC || scrollable) containers.push({ host:el, scroll:scroll || el, label:label });
+          if (looksLikeTOC || (scrollable && structuralEntries >= 2)) {
+            containers.push({ host:el, scroll:scroll || el, label:label, entryCount:structuralEntries });
+          }
         });
         containers.sort(function(a, b) {
+          if (Number(b.entryCount || 0) !== Number(a.entryCount || 0)) {
+            return Number(b.entryCount || 0) - Number(a.entryCount || 0);
+          }
           var as = Math.max(0, (a.scroll.scrollHeight || 0) - (a.scroll.clientHeight || 0));
           var bs = Math.max(0, (b.scroll.scrollHeight || 0) - (b.scroll.clientHeight || 0));
           if (bs !== as) return bs - as;
@@ -3221,7 +3663,8 @@ enum KindleWebScripts {
 
     static let pageModeLockBootstrap = """
     (function() {
-      var crKindlePageModeLockVersion = 6;
+      \(uiSemanticHelpers)
+      var crKindlePageModeLockVersion = 7;
       window.__crKindleProbe = window.__crKindleProbe || {};
       window.__crKindleProbe.pageModeLocked = !!window.__crKindleProbe.pageModeLocked;
       window.__crKindleProbe.programmaticScrollUntil = Number(window.__crKindleProbe.programmaticScrollUntil || 0);
@@ -3334,7 +3777,8 @@ enum KindleWebScripts {
                 var toolbarLike = /toolbar|header|footer|scrubber|progress|control|pagination|reader-menu|reader-header|reader-footer/.test(nodeLabel);
                 var compactBand = r.height <= Math.min(150, Math.max(80, (innerHeight || 0) * 0.22)) && r.width >= (innerWidth || 0) * 0.35;
                 if ((nearEdge && compactBand) || toolbarLike) best = node;
-                if (/previous page|next page/.test(label)) best = el;
+                if (crKindleUISemanticScore(el, 'previous') >= 45 ||
+                    crKindleUISemanticScore(el, 'next') >= 45) best = el;
               }
             } catch (_) {}
             return best || el;
@@ -3348,6 +3792,7 @@ enum KindleWebScripts {
           function hidePageTurnControl(el) {
             try {
               if (!el) return;
+              el.setAttribute('data-cr-kindle-page-turn-control', '1');
               var target = chromeTarget(el);
               target.classList.remove(hiddenClass);
               target.style.opacity = '0';
@@ -3374,7 +3819,8 @@ enum KindleWebScripts {
           Array.from(document.querySelectorAll('button,[role="button"],ion-button,ion-range,[aria-label],[title]')).forEach(function(el) {
             if (!visible(el)) return;
             var label = textOf(el).toLowerCase();
-            if (/previous page|next page/.test(label)) {
+            if (crKindleUISemanticScore(el, 'previous') >= 45 ||
+                crKindleUISemanticScore(el, 'next') >= 45) {
               hidePageTurnControl(el);
             } else if (/^(kindle library|search|aa|bookmark)$/.test(label)
               || /kindle library|page \\d+|time left|reading progress|bookmark|search/.test(label)) {
@@ -3431,7 +3877,8 @@ enum KindleWebScripts {
             'html.cr-kindle-page-mode-locked button[aria-label="Previous page"],',
             'html.cr-kindle-page-mode-locked button[aria-label="Next page"],',
             'html.cr-kindle-page-mode-locked button[title="Previous page"],',
-            'html.cr-kindle-page-mode-locked button[title="Next page"] {',
+            'html.cr-kindle-page-mode-locked button[title="Next page"],',
+            'html.cr-kindle-page-mode-locked [data-cr-kindle-page-turn-control="1"] {',
             '  opacity: 0 !important;',
             '  visibility: visible !important;',
             '  pointer-events: none !important;',
@@ -3501,6 +3948,7 @@ enum KindleWebScripts {
               el.getAttribute && (el.getAttribute('title') || ''),
               (el.innerText || '').slice(0, 120)
             ].join(' ').toLowerCase();
+            if (crKindleUISemanticScore(el, 'toc') >= 45) return true;
             if (/toc|table.of.contents|contents|chapter|section|location|go to|goto|navigation|nav-|menu|listitem|kg-bookmark|kindle library/.test(label)) return true;
           }
         } catch (_) {}
@@ -3573,8 +4021,16 @@ enum KindleWebScripts {
 
           var chevron = document.querySelector(dir === 'left' ? '#kr-chevron-left' : '#kr-chevron-right')
             || document.querySelector(dir === 'left' ? 'button[aria-label="Previous page"],button[title="Previous page"]' : 'button[aria-label="Next page"],button[title="Next page"]');
+          if (!chevron) {
+            var semanticControl = crKindleUIFind(
+              dir === 'left' ? 'previous' : 'next',
+              document,
+              'button,[role="button"],ion-button,[data-testid],[data-action],[aria-label],[title]'
+            );
+            chevron = semanticControl && semanticControl.el;
+          }
           var chevronEnabled = !!chevron && !chevron.disabled && String(chevron.getAttribute && chevron.getAttribute('aria-disabled') || '').toLowerCase() !== 'true';
-          var chevronVisible = crKindlePageControlVisible(chevron);
+          var chevronVisible = crKindleNativeControlVisible(chevron);
           if (chevronEnabled) {
             try { chevron.click(); } catch (_) {
               try { chevron.dispatchEvent(new MouseEvent('click', { bubbles:true, cancelable:true })); } catch (_) {}
@@ -3729,7 +4185,8 @@ enum KindleWebScripts {
 
     static let pageCaptureBootstrap = """
     (function() {
-      var crKindleInstallVersion = 39;
+      \(uiSemanticHelpers)
+      var crKindleInstallVersion = 40;
       // OCR keeps the source glyphs lossless. Kindle pages are mostly flat-color
       // text surfaces, so PNG is often no larger than JPEG and avoids destroying
       // CJK punctuation / Devanagari combining marks. 2048px is only a safety cap;
@@ -3816,9 +4273,18 @@ enum KindleWebScripts {
             var el = nodes[i];
             if (!crKindleVisibleElement(el)) continue;
             var text = crKindleSyncDialogText(el);
-            if (/most\\s+recent\\s+(page|location)\\s+read/i.test(text) ||
-                (/most\\s+recent\\s+location/i.test(text) && /location\\s+\\d+/i.test(text)) ||
-                (/最近.*(阅读页|阅读位置)/.test(text) && /位置\\s*\\d+/.test(text))) {
+            var structuralLocations = el.querySelectorAll(
+              '[data-location],[data-position],[data-page],[data-page-number],[data-progress-location],[aria-valuenow]'
+            ).length;
+            var actionCount = el.querySelectorAll(
+              'button,[role="button"],ion-button,[data-action],[data-testid]'
+            ).length;
+            var structuralScore = crKindleUIStructureScore(el, 'sync-dialog');
+            var role = crKindleUINorm(el.getAttribute && (el.getAttribute('role') || ''));
+            if (structuralScore >= 190 ||
+                ((role === 'dialog' || String(el.getAttribute && el.getAttribute('aria-modal') || '') === 'true') &&
+                  structuralLocations >= 2 && actionCount >= 2) ||
+                crKindleUITextMatches('sync-dialog', text)) {
               return { element:el, text:text };
             }
           }
@@ -3832,8 +4298,11 @@ enum KindleWebScripts {
           roots.forEach(function(root) {
             Array.from(root.querySelectorAll('button,[role="button"],ion-button')).forEach(function(button) {
               if (button.__crKindleSyncObserved) return;
-              var label = crKindleSyncDialogText(button).toLowerCase();
-              var choice = /^(yes|ok|go|continue|是|确定|前往|继续)$/.test(label) ? 'yes' : (/^(no|cancel|stay|否|取消|留在当前页)$/.test(label) ? 'no' : '');
+              var yesScore = crKindleUISemanticScore(button, 'yes');
+              var noScore = crKindleUISemanticScore(button, 'no');
+              var choice = '';
+              if (yesScore >= 45 && yesScore >= noScore + 20) choice = 'yes';
+              if (noScore >= 45 && noScore >= yesScore + 20) choice = 'no';
               if (!choice) return;
               button.__crKindleSyncObserved = true;
               button.addEventListener('click', function() {
@@ -3848,6 +4317,40 @@ enum KindleWebScripts {
           });
         } catch (_) {}
       }
+      function crKindleSyncDialogLocations(candidate) {
+        var locations = [];
+        var roots = [candidate.element];
+        try { if (candidate.element.shadowRoot) roots.push(candidate.element.shadowRoot); } catch (_) {}
+        roots.forEach(function(root) {
+          try {
+            Array.from(root.querySelectorAll(
+              '[data-location],[data-position],[data-page],[data-page-number],[data-progress-location],[aria-valuenow]'
+            )).forEach(function(el) {
+              if (locations.length >= 4) return;
+              var raw = [
+                el.getAttribute('data-location') || '',
+                el.getAttribute('data-position') || '',
+                el.getAttribute('data-page') || '',
+                el.getAttribute('data-page-number') || '',
+                el.getAttribute('data-progress-location') || '',
+                el.getAttribute('aria-valuenow') || ''
+              ].join(' ');
+              var normalized = crKindleUINormalizeDigits(raw);
+              var match = normalized.match(/\\d+/);
+              if (match) locations.push(Number(match[0] || 0));
+            });
+          } catch (_) {}
+        });
+        if (locations.length < 2) {
+          var normalizedText = crKindleUINormalizeDigits(candidate.text);
+          var regex = /(?:location|position|page|ubicación|posición|página|localização|posição|página|位置|ページ|seite|emplacement|posizione|pagina|स्थान|पृष्ठ)\\s*(?:n[º°.]?\\s*)?[:#-]?\\s*(\\d+)/ig;
+          var match;
+          while ((match = regex.exec(normalizedText)) !== null && locations.length < 4) {
+            locations.push(Number(match[1] || 0));
+          }
+        }
+        return locations;
+      }
       function crKindleCheckSyncDialog() {
         try {
           var candidate = crKindleSyncDialogCandidate();
@@ -3859,12 +4362,7 @@ enum KindleWebScripts {
             }
             return;
           }
-          var locations = [];
-          var regex = /(?:location|位置)\\s*(\\d+)/ig;
-          var match;
-          while ((match = regex.exec(candidate.text)) !== null && locations.length < 3) {
-            locations.push(Number(match[1] || 0));
-          }
+          var locations = crKindleSyncDialogLocations(candidate);
           var localLocation = locations.length > 0 ? locations[0] : 0;
           var cloudLocation = locations.length > 1 ? locations[1] : 0;
           var signature = String(localLocation) + '|' + String(cloudLocation);
@@ -3997,7 +4495,8 @@ enum KindleWebScripts {
                 var toolbarLike = /toolbar|header|footer|scrubber|progress|control|pagination|reader-menu|reader-header|reader-footer/.test(nodeLabel);
                 var compactBand = r.height <= Math.min(150, Math.max(80, (innerHeight || 0) * 0.22)) && r.width >= (innerWidth || 0) * 0.35;
                 if ((nearEdge && compactBand) || toolbarLike) best = node;
-                if (/previous page|next page/.test(label)) best = el;
+                if (crKindleUISemanticScore(el, 'previous') >= 45 ||
+                    crKindleUISemanticScore(el, 'next') >= 45) best = el;
               }
             } catch (_) {}
             return best || el;
@@ -4011,6 +4510,7 @@ enum KindleWebScripts {
           function hidePageTurnControl(el) {
             try {
               if (!el) return;
+              el.setAttribute('data-cr-kindle-page-turn-control', '1');
               var target = chromeTarget(el);
               target.classList.remove(hiddenClass);
               target.style.opacity = '0';
@@ -4037,7 +4537,8 @@ enum KindleWebScripts {
           Array.from(document.querySelectorAll('button,[role="button"],ion-button,ion-range,[aria-label],[title]')).forEach(function(el) {
             if (!visible(el)) return;
             var label = textOf(el).toLowerCase();
-            if (/previous page|next page/.test(label)) {
+            if (crKindleUISemanticScore(el, 'previous') >= 45 ||
+                crKindleUISemanticScore(el, 'next') >= 45) {
               hidePageTurnControl(el);
             } else if (/^(kindle library|search|aa|bookmark)$/.test(label)
               || /kindle library|page \\d+|time left|reading progress|bookmark|search/.test(label)) {
@@ -4093,7 +4594,8 @@ enum KindleWebScripts {
             'html.cr-kindle-page-mode-locked button[aria-label="Previous page"],',
             'html.cr-kindle-page-mode-locked button[aria-label="Next page"],',
             'html.cr-kindle-page-mode-locked button[title="Previous page"],',
-            'html.cr-kindle-page-mode-locked button[title="Next page"] {',
+            'html.cr-kindle-page-mode-locked button[title="Next page"],',
+            'html.cr-kindle-page-mode-locked [data-cr-kindle-page-turn-control="1"] {',
             '  opacity: 0 !important;',
             '  visibility: visible !important;',
             '  pointer-events: none !important;',
@@ -4155,6 +4657,7 @@ enum KindleWebScripts {
               el.getAttribute && (el.getAttribute('title') || ''),
               (el.innerText || '').slice(0, 120)
             ].join(' ').toLowerCase();
+            if (crKindleUISemanticScore(el, 'toc') >= 45) return true;
             if (/toc|table.of.contents|contents|chapter|section|location|go to|goto|navigation|nav-|menu|listitem|kg-bookmark|kindle library/.test(label)) return true;
           }
         } catch (_) {}
@@ -4336,6 +4839,14 @@ enum KindleWebScripts {
           // to an edge tap; Swift still verifies the real visible page changed.
           var chevron = document.querySelector(dir === 'left' ? '#kr-chevron-left' : '#kr-chevron-right')
             || document.querySelector(dir === 'left' ? 'button[aria-label="Previous page"],button[title="Previous page"]' : 'button[aria-label="Next page"],button[title="Next page"]');
+          if (!chevron) {
+            var semanticControl = crKindleUIFind(
+              dir === 'left' ? 'previous' : 'next',
+              document,
+              'button,[role="button"],ion-button,[data-testid],[data-action],[aria-label],[title]'
+            );
+            chevron = semanticControl && semanticControl.el;
+          }
           var chevronEnabled = !!chevron && !chevron.disabled && String(chevron.getAttribute && chevron.getAttribute('aria-disabled') || '').toLowerCase() !== 'true';
           var chevronVisible = crKindlePageControlVisible(chevron);
           if (chevronEnabled) {
@@ -4460,6 +4971,21 @@ enum KindleWebScripts {
             add(node.closest && node.closest('button,[role="button"],ion-button'));
             add(node.parentElement); add(node.previousElementSibling); add(node.nextElementSibling);
           });
+        });
+        ['previous', 'next'].forEach(function(kind) {
+          var match = crKindleUIFind(
+            kind,
+            document,
+            'button,[role="button"],ion-button,[data-testid],[data-action],[data-command],[aria-label],[title]'
+          );
+          if (!match) return;
+          var node = match.el;
+          add(node);
+          Array.from(node.querySelectorAll('*')).forEach(add);
+          add(node.closest && node.closest('button,[role="button"],ion-button'));
+          add(node.parentElement);
+          add(node.previousElementSibling);
+          add(node.nextElementSibling);
         });
         for (var i = 0; i < nodes.length; i++) {
           var match = crKindlePaginationFromFiber(crKindleReactFiberForNode(nodes[i]));

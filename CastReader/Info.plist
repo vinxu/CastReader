@@ -35,16 +35,6 @@
 	<dict>
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
 		<true/>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>api.castreader.ai</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>拍下书本、文档或屏幕上的文字，CastReader 在本机识别后即可为你朗读（边读边高亮跟随），或生成 AI 讲解并在原文上做手写标注。照片仅在设备上识别，不会上传。</string>

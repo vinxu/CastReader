@@ -92,6 +92,55 @@ class CastReaderUITests: XCTestCase {
         }
     }
 
+    /// 新增书架来源流程必须在九种语言与明暗两种外观下都能进入，
+    /// 并完整呈现四个平台。使用稳定的 accessibility id，不依赖翻译文本。
+    func testShelfSourcesInAllLanguagesAndAppearances() {
+        let configurations: [(language: String, locale: String)] = [
+            ("en", "en_US"),
+            ("zh-Hans", "zh_CN"),
+            ("ja", "ja_JP"),
+            ("es", "es_ES"),
+            ("fr", "fr_FR"),
+            ("de", "de_DE"),
+            ("pt-BR", "pt_BR"),
+            ("it", "it_IT"),
+            ("hi", "hi_IN"),
+        ]
+
+        for appearance in ["Light", "Dark"] {
+            for configuration in configurations {
+                let app = XCUIApplication()
+                app.launchArguments = [
+                    "-AppleLanguages", "(\(configuration.language))",
+                    "-AppleLocale", configuration.locale,
+                    "-AppleInterfaceStyle", appearance,
+                    "-CastReaderSkipLibraryOnboarding",
+                ]
+                app.launch()
+
+                let sources = app.buttons["homeShelfSourcesButton"]
+                XCTAssertTrue(
+                    sources.waitForExistence(timeout: 5),
+                    "Missing shelf-source entry for \(configuration.language), \(appearance)"
+                )
+                sources.tap()
+                XCTAssertTrue(
+                    app.descendants(matching: .any)["shelfSourcesScreen"]
+                        .waitForExistence(timeout: 5),
+                    "Shelf-source screen failed for \(configuration.language), \(appearance)"
+                )
+                for source in ["kindle", "weread", "google_books", "kobo"] {
+                    XCTAssertTrue(
+                        app.buttons["shelfSourcePrimaryAction.\(source)"]
+                            .waitForExistence(timeout: 2),
+                        "Missing \(source) for \(configuration.language), \(appearance)"
+                    )
+                }
+                app.terminate()
+            }
+        }
+    }
+
     func testFirstLaunchShowsBoundLibraryOnboarding() {
         let app = XCUIApplication()
         app.launchArguments = [
@@ -101,8 +150,13 @@ class CastReaderUITests: XCTestCase {
         ]
         app.launch()
 
-        XCTAssertTrue(app.buttons["libraryOnboardingWeRead"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["libraryOnboardingKindle"].exists)
+        let kindle = app.buttons["libraryOnboardingKindle"]
+        let weRead = app.buttons["libraryOnboardingWeRead"]
+        XCTAssertTrue(kindle.waitForExistence(timeout: 5))
+        XCTAssertTrue(weRead.exists)
+        XCTAssertLessThan(kindle.frame.minY, weRead.frame.minY, "中文首次绑定页应把 Kindle 放在首位")
+        XCTAssertTrue(app.buttons["libraryOnboardingGoogleBooks"].exists)
+        XCTAssertTrue(app.buttons["libraryOnboardingKobo"].exists)
         XCTAssertTrue(app.buttons["libraryOnboardingOtherContent"].exists)
         XCTAssertTrue(app.buttons["libraryOnboardingPostpone"].exists)
     }
@@ -157,6 +211,172 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 8))
     }
 
+    func testOnboardingGooglePlayBooksStartsExistingBindingFlow() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderResetLibraryOnboarding",
+            "-CastReaderForceLibraryOnboardingRebind",
+        ]
+        app.launch()
+
+        let googleBooks = app.buttons["libraryOnboardingGoogleBooks"]
+        XCTAssertTrue(googleBooks.waitForExistence(timeout: 5))
+        googleBooks.tap()
+        XCTAssertTrue(app.navigationBars["绑定 Google Play 图书"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 8))
+        XCTAssertTrue(
+            waitForEither(
+                app.buttons["googleBooksSignInButton"],
+                app.buttons["syncGoogleBooksLibraryButton"],
+                timeout: 8
+            ),
+            "绑定页必须暴露登录或同步原生控制"
+        )
+    }
+
+    /// Opt-in live-account gate. The test drives every native step and waits
+    /// while a human completes Google's password/2FA/passkey UI in the shared
+    /// WKWebView. It is deliberately skipped in ordinary CI:
+    ///
+    ///   CASTREADER_GOOGLE_BOOKS_LIVE_LOGIN=1 xcodebuild test ... \
+    ///     -only-testing:CastReaderUITests/CastReaderUITests/testGoogleBooksLiveLoginAndSync
+    func testGoogleBooksLiveLoginAndSync() throws {
+        guard ProcessInfo.processInfo.environment["CASTREADER_GOOGLE_BOOKS_LIVE_LOGIN"] == "1" else {
+            throw XCTSkip("Set CASTREADER_GOOGLE_BOOKS_LIVE_LOGIN=1 for the live Google account gate")
+        }
+
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderResetLibraryOnboarding",
+            "-CastReaderForceLibraryOnboardingRebind",
+            "-CastReaderGoogleBooksLiveLoginGate",
+        ]
+        app.launch()
+
+        let googleBooks = app.buttons["libraryOnboardingGoogleBooks"]
+        XCTAssertTrue(googleBooks.waitForExistence(timeout: 8))
+        googleBooks.tap()
+        let bindingTitle = app.navigationBars["绑定 Google Play 图书"]
+        XCTAssertTrue(bindingTitle.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 10))
+
+        // The DEBUG hook opens the exact production sign-in URL immediately.
+        // A human completes password/2FA/passkey in the real WKWebView. Once
+        // the real shelf is complete, the app performs the same sync operation
+        // as the native button and dismisses this sheet.
+        XCTAssertTrue(
+            waitForDisappearance(bindingTitle, timeout: 10 * 60),
+            "Google login or library scan did not sync within ten minutes"
+        )
+        XCTAssertTrue(
+            app.tabBars.buttons["首页"].waitForExistence(timeout: 15),
+            "Google Books sync completed but the app did not return home"
+        )
+    }
+
+    /// Opt-in, end-to-end Google Play Books reader gate. This test deliberately
+    /// depends on the persistent account/shelf established by
+    /// `testGoogleBooksLiveLoginAndSync`; it never injects a fake page or TTS
+    /// response. Ordinary CI skips it:
+    ///
+    ///   CASTREADER_GOOGLE_BOOKS_LIVE_READER=1 xcodebuild test ... \
+    ///     -only-testing:CastReaderUITests/CastReaderUITests/testGoogleBooksLiveReaderReadSwipeAndExplain
+    func testGoogleBooksLiveReaderReadSwipeAndExplain() throws {
+        guard ProcessInfo.processInfo.environment["CASTREADER_GOOGLE_BOOKS_LIVE_READER"] == "1" else {
+            throw XCTSkip("Set CASTREADER_GOOGLE_BOOKS_LIVE_READER=1 for the live Google Books reader gate")
+        }
+
+        let volumeID = "b_40EQAAQBAJ"
+        let exactReaderURL =
+            "https://play.google.com/books/reader?id=b_40EQAAQBAJ&pg=GBS.PP1.w.1.1.9_250"
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderGoogleBooksLiveTestURL", exactReaderURL,
+        ]
+        app.launch()
+
+        XCTAssertTrue(app.tabBars.buttons["首页"].waitForExistence(timeout: 15), "首页未就绪")
+        guard let shelfEntry = googleBooksShelfEntry(in: app, volumeID: volumeID) else {
+            XCTFail("已绑定的 Google Play 图书书架里没有指定验收书 \(volumeID)")
+            return
+        }
+        shelfEntry.tap()
+
+        let webView = app.webViews["googleBooksReaderWebView"]
+        XCTAssertTrue(webView.waitForExistence(timeout: 45), "指定 Google Play 图书没有进入阅读器")
+        XCTAssertTrue(
+            app.segmentedControls["readerModePicker"].waitForExistence(timeout: 20),
+            "阅读器缺少朗读/解读模式切换"
+        )
+
+        // Give the real cross-origin reader frame time to publish its first
+        // stable rendered page before asking the cloud TTS pipeline to start.
+        RunLoop.current.run(until: Date().addingTimeInterval(5))
+        let readButton = app.buttons["readPlayPauseButton"]
+        XCTAssertTrue(readButton.waitForExistence(timeout: 20), "朗读控制没有出现")
+        readButton.tap()
+        XCTAssertTrue(
+            waitForAccessibilityValue("playing", on: readButton, timeout: 150),
+            "真实 Google Books 页面未能生成并播放朗读音频"
+        )
+        keepScreenshot(of: app, named: "GoogleBooks-01-read-playing")
+
+        // A real touch gesture must suspend the old page immediately and then
+        // restart on the newly committed page. Observing both states prevents a
+        // no-op swipe or continuously playing stale queue from passing the gate.
+        webView.swipeLeft()
+        XCTAssertTrue(
+            waitForAccessibilityValue("paused", on: readButton, timeout: 15),
+            "手动滑页没有停止旧页朗读"
+        )
+        XCTAssertTrue(
+            waitForAccessibilityValue("playing", on: readButton, timeout: 180),
+            "手动滑页后没有在新页恢复朗读"
+        )
+        keepScreenshot(of: app, named: "GoogleBooks-02-manual-page-resumed")
+
+        let modePicker = app.segmentedControls["readerModePicker"]
+        let explainSegment = modePicker.buttons["解读"]
+        XCTAssertTrue(explainSegment.waitForExistence(timeout: 10), "缺少解读模式")
+        explainSegment.tap()
+
+        // Active Read playback must carry its intent across the mode switch,
+        // matching Kindle. No second tap on a tiny start icon is required.
+        let explainPlayback = app.buttons["explainPlayPauseButton"]
+        XCTAssertTrue(
+            explainPlayback.waitForExistence(timeout: 240),
+            "真实页面未能完成解读规划并进入可播放状态"
+        )
+        XCTAssertTrue(
+            waitForAccessibilityValue("playing", on: explainPlayback, timeout: 150),
+            "解读音频没有开始播放"
+        )
+        keepScreenshot(of: app, named: "GoogleBooks-03-explain-playing")
+    }
+
+    /// 四个绑定书库入口必须同时在场：少一个就是路由或本地化回归。
+    func testOnboardingOffersAllFourBoundLibraries() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderResetLibraryOnboarding",
+        ]
+        app.launch()
+
+        XCTAssertTrue(app.buttons["libraryOnboardingKindle"].waitForExistence(timeout: 6))
+        XCTAssertTrue(app.buttons["libraryOnboardingWeRead"].exists)
+        XCTAssertTrue(app.buttons["libraryOnboardingGoogleBooks"].exists)
+        XCTAssertTrue(app.buttons["libraryOnboardingKobo"].exists)
+    }
+
     func testSettingsCanReopenLibraryOnboardingAfterDismissal() {
         let app = launchZh()
         app.tabBars.buttons["音色"].tap()
@@ -175,6 +395,10 @@ class CastReaderUITests: XCTestCase {
 
     func testCanSwitchInterfaceLanguageInsideTheApp() {
         let app = launchZh()
+        // 齿轮只在「音色」Tab 的工具栏上（见 VoiceBrowserView）。冷启动停在首页时
+        // 直接点会找不到元素——之前能过只是因为模拟器恢复了上一次选中的 Tab。
+        app.tabBars.buttons["音色"].tap()
+        XCTAssertTrue(app.buttons["settingsGearButton"].waitForExistence(timeout: 5))
         app.buttons["settingsGearButton"].tap()
         XCTAssertTrue(app.buttons["settingsLanguageLink"].waitForExistence(timeout: 5))
         app.buttons["settingsLanguageLink"].tap()
@@ -187,18 +411,40 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["语言"].waitForExistence(timeout: 5))
     }
 
-    /// 首页渲染横向场景 chips，并把 Kindle 作为独立内容源展示。
-    func testHomeShowsScenarioChipsAndKindle() {
+    /// 首页只展示内容与一个统一书架入口，不再平铺未连接的平台卡片。
+    func testHomeShowsScenarioChipsAndUnifiedShelfSources() {
         let app = launchZh()
         XCTAssertTrue(app.staticTexts["解读场景"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            app.buttons["homeShelfSourcesButton"].waitForExistence(timeout: 5),
+            "首页右上角应始终显示书架来源入口"
+        )
         for id in ["scenario-paper", "scenario-book", "scenario-report", "scenario-contract", "scenario-study", "scenario-manual"] {
             XCTAssertTrue(app.buttons[id].exists, "缺场景 chip: \(id)")
         }
-        XCTAssertTrue(app.staticTexts["Kindle"].exists)
-        XCTAssertTrue(app.buttons["connectKindleButton"].exists)
+        let unifiedEmptyCTA = app.buttons["shelfSourcesButton"]
+        let connectedSections = [
+            "homeShelfSection.kindle",
+            "homeShelfSection.weread",
+            "homeShelfSection.google_books",
+            "homeShelfSection.kobo",
+        ].map { app.descendants(matching: .any)[$0] }
+        XCTAssertTrue(
+            unifiedEmptyCTA.waitForExistence(timeout: 3)
+                || connectedSections.contains(where: \.exists),
+            "首页应显示统一书架入口或已连接且有内容的书架"
+        )
+        for legacyID in [
+            "connectKindleButton",
+            "connectWeReadButton",
+            "connectGoogleBooksButton",
+            "connectKoboButton",
+        ] {
+            XCTAssertFalse(app.buttons[legacyID].exists, "首页不应再平铺未连接平台：\(legacyID)")
+        }
     }
 
-    /// 底部中间 ➕ 保持原行为，弹出快速导入面板。
+    /// 底部中间 ➕ 保持导入能力，同时提供统一的阅读平台连接入口。
     func testPlusOpensImportSheet() {
         let app = launchZh()
         let plus = app.buttons["plusImportButton"]
@@ -206,6 +452,21 @@ class CastReaderUITests: XCTestCase {
         plus.tap()
         XCTAssertTrue(app.buttons["上传文件"].waitForExistence(timeout: 5), "➕ 未弹出导入方式")
         XCTAssertTrue(app.buttons["输入网址"].exists)
+        XCTAssertTrue(app.buttons["librarySourcesImportButton"].exists)
+    }
+
+    /// 统一书架来源页承载所有商业阅读平台，新增平台不再挤占首页。
+    func testShelfSourcesOffersAllFourPlatforms() {
+        let app = launchZh()
+        openShelfSources(in: app)
+
+        for source in ["kindle", "weread", "google_books", "kobo"] {
+            XCTAssertTrue(
+                app.descendants(matching: .any)["shelfSourceRow.\(source)"]
+                    .waitForExistence(timeout: 5),
+                "统一书架来源页缺少平台：\(source)"
+            )
+        }
     }
 
     /// 首页和中间 ➕ 保持不变，只把右侧 Settings 替换成 Voice。
@@ -231,12 +492,10 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.buttons["输入网址"].waitForExistence(timeout: 5), "场景 Menu 未弹来源选择")
     }
 
-    /// Kindle 模块未登录时点击「绑定 Kindle」，进入 Amazon 登录 / 同步 WebView。
+    /// 从统一书架来源页连接 Kindle，进入现有 Amazon 登录 / 同步 WebView。
     func testKindleConnectOpensWebView() {
         let app = launchZh()
-        let connect = app.buttons["connectKindleButton"]
-        XCTAssertTrue(connect.waitForExistence(timeout: 5))
-        connect.tap()
+        openKindleBinding(in: app)
         XCTAssertTrue(app.navigationBars["绑定 Kindle"].waitForExistence(timeout: 8))
         XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 8), "绑定 Kindle 未打开 WebView")
     }
@@ -250,9 +509,7 @@ class CastReaderUITests: XCTestCase {
         }
 
         let app = launchZh()
-        let connect = app.buttons["connectKindleButton"]
-        XCTAssertTrue(connect.waitForExistence(timeout: 5))
-        connect.tap()
+        openKindleBinding(in: app)
         XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 10))
 
         let web = app.webViews.firstMatch
@@ -305,5 +562,266 @@ class CastReaderUITests: XCTestCase {
         }
         let returnKey = app.keyboards.buttons["Return"]
         if returnKey.exists { returnKey.tap() }
+    }
+
+    /// 书架来源是首页右上角常驻入口，不受账号绑定或首页是否已有书影响。
+    private func openShelfSources(in app: XCUIApplication) {
+        let sources = app.buttons["homeShelfSourcesButton"]
+        XCTAssertTrue(sources.waitForExistence(timeout: 5), "首页右上角缺少书架来源入口")
+        XCTAssertTrue(sources.isHittable, "首页右上角书架来源入口不可点击")
+        sources.tap()
+
+        XCTAssertTrue(
+            app.descendants(matching: .any)["shelfSourcesScreen"]
+                .waitForExistence(timeout: 5),
+            "没有进入统一书架来源页"
+        )
+    }
+
+    private func openKindleBinding(in app: XCUIApplication) {
+        openShelfSources(in: app)
+        let action = app.buttons["shelfSourcePrimaryAction.kindle"]
+        XCTAssertTrue(action.waitForExistence(timeout: 5), "Kindle 连接/同步入口不存在")
+        action.tap()
+    }
+
+    /// Prefer the stable home-rail id. If this volume is not among the eight
+    /// recent cards, enter the adjacent full-shelf view and page through its
+    /// real rows instead of weakening the assertion to "open any book".
+    private func googleBooksShelfEntry(
+        in app: XCUIApplication,
+        volumeID: String
+    ) -> XCUIElement? {
+        let homeEntry = app.buttons["homeShelfBook.google_books.\(volumeID)"]
+        for _ in 0..<14 {
+            if homeEntry.exists, homeEntry.isHittable { return homeEntry }
+            if visibleStaticText("Google Play 图书", in: app) != nil { break }
+            app.swipeUp()
+        }
+        if homeEntry.exists, homeEntry.isHittable { return homeEntry }
+
+        guard let header = visibleStaticText("Google Play 图书", in: app) else { return nil }
+        let seeAll = app.buttons.matching(identifier: "查看全部").allElementsBoundByIndex
+            .filter { $0.exists && $0.isHittable }
+            .min { lhs, rhs in
+                abs(lhs.frame.midY - header.frame.midY) < abs(rhs.frame.midY - header.frame.midY)
+            }
+        guard let seeAll else { return nil }
+        seeAll.tap()
+        guard app.navigationBars["Google Play 图书书架"].waitForExistence(timeout: 15) else {
+            return nil
+        }
+
+        let fullShelfEntry = app.buttons["googleBooksBook.\(volumeID)"]
+        for _ in 0..<10 {
+            for _ in 0..<28 {
+                if fullShelfEntry.exists, fullShelfEntry.isHittable { return fullShelfEntry }
+                app.swipeUp()
+            }
+            let loadMore = app.buttons["加载更多"]
+            guard loadMore.exists, loadMore.isHittable else { return nil }
+            loadMore.tap()
+            RunLoop.current.run(until: Date().addingTimeInterval(1))
+        }
+        return fullShelfEntry.exists && fullShelfEntry.isHittable ? fullShelfEntry : nil
+    }
+
+    private func visibleStaticText(
+        _ identifier: String,
+        in app: XCUIApplication
+    ) -> XCUIElement? {
+        app.staticTexts.matching(identifier: identifier).allElementsBoundByIndex
+            .first { $0.exists && $0.isHittable }
+    }
+
+    private func waitForAccessibilityValue(
+        _ expected: String,
+        on element: XCUIElement,
+        timeout: TimeInterval
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if element.exists, (element.value as? String) == expected { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+        } while Date() < deadline
+        return element.exists && (element.value as? String) == expected
+    }
+
+    private func waitForEither(
+        _ first: XCUIElement,
+        _ second: XCUIElement,
+        timeout: TimeInterval
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if first.exists || second.exists { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+        } while Date() < deadline
+        return first.exists || second.exists
+    }
+
+    private func waitForDisappearance(
+        _ element: XCUIElement,
+        timeout: TimeInterval
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if !element.exists { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+        } while Date() < deadline
+        return !element.exists
+    }
+
+    private func keepScreenshot(of app: XCUIApplication, named name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+}
+
+// MARK: - App Store 素材采集
+
+/// 商店截图 / App Preview 的可复现采集器。
+///
+/// 默认跳过——只有显式设置 `CASTREADER_CAPTURE=1` 时才运行，避免拖慢常规测试。
+/// 配套外部录屏：`xcrun simctl io <udid> recordVideo`，所以这里的节奏刻意留了停顿，
+/// 让「词级高亮跟读」这个真正的差异点在成片里看得清。
+final class AppStoreCaptureUITests: XCTestCase {
+
+    /// 用于演示的公有领域文本（梭罗《瓦尔登湖》节选），避免采集素材时触碰任何真实用户内容或版权文本。
+    private let demoText = """
+    I went to the woods because I wished to live deliberately, to front only the \
+    essential facts of life, and see if I could not learn what it had to teach, and not, \
+    when I came to die, discover that I had not lived. I did not wish to live what was not \
+    life, living is so dear; nor did I wish to practise resignation, unless it was quite \
+    necessary. I wanted to live deep and suck out all the marrow of life, to live so \
+    sturdily and Spartan-like as to put to rout all that was not life, to cut a broad \
+    swath and shave close, to drive life into a corner, and reduce it to its lowest terms.
+    """
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        try XCTSkipUnless(
+            ProcessInfo.processInfo.environment["CASTREADER_CAPTURE"] == "1",
+            "仅在采集商店素材时运行：CASTREADER_CAPTURE=1"
+        )
+    }
+
+    private func launchForCapture() -> XCUIApplication {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-CastReaderSkipLibraryOnboarding",
+        ]
+        app.launch()
+        return app
+    }
+
+    /// confirmationDialog / sheet 里的按钮层级不固定，逐个容器找第一个可点的。
+    private func firstHittable(in app: XCUIApplication, label: String, timeout: TimeInterval = 10) -> XCUIElement? {
+        let candidates = [app.buttons[label], app.sheets.buttons[label], app.scrollViews.buttons[label]]
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            for candidate in candidates where candidate.exists && candidate.isHittable {
+                return candidate
+            }
+            Thread.sleep(forTimeInterval: 0.4)
+        }
+        return nil
+    }
+
+    private func snapshot(_ app: XCUIApplication, _ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    /// 首页 → 粘贴文本 → 朗读，全程停在关键画面上供录屏抓取。
+    func testCaptureReadAloudHeroFlow() throws {
+        let app = launchForCapture()
+        XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 15), "首页未就绪")
+        Thread.sleep(forTimeInterval: 2)
+        snapshot(app, "01-home")
+
+        let plus = app.buttons["plusImportButton"]
+        XCTAssertTrue(plus.waitForExistence(timeout: 10))
+        plus.tap()
+
+        // 导入方式是 confirmationDialog，按钮可能挂在 app 或 sheet 下，两处都找。
+        let pasteText = firstHittable(in: app, label: "Paste Text")
+        XCTAssertNotNil(pasteText, "导入方式里没有「Paste Text」")
+        pasteText?.tap()
+        Thread.sleep(forTimeInterval: 1)
+        snapshot(app, "02-import")
+
+        let editor = app.textViews.firstMatch
+        XCTAssertTrue(editor.waitForExistence(timeout: 10), "文本输入框未出现")
+        editor.tap()
+        editor.typeText(demoText)
+
+        let start = firstHittable(in: app, label: "Start")
+        XCTAssertNotNil(start, "没有「Start」按钮")
+        start?.tap()
+
+        // 阅读器就绪。此时还是暂停态，正文是未生成的灰字。
+        let play = app.buttons["play.circle.fill"]
+        XCTAssertTrue(play.waitForExistence(timeout: 25), "阅读器没出现播放按钮")
+        Thread.sleep(forTimeInterval: 1)
+        snapshot(app, "03-reader-ready")
+
+        play.tap()
+
+        // TTS 走云端，首音可能要等几秒。播放按钮翻成暂停 = 真的播起来了。
+        // 这条断言是这个采集器的意义所在：没播起来就没有词级高亮，录出来只是一张静止的文字页。
+        let pause = app.buttons["pause.circle.fill"]
+        XCTAssertTrue(
+            pause.waitForExistence(timeout: 45),
+            "TTS 未开始播放——录到的画面没有词级高亮，不能拿去做 App Preview"
+        )
+
+        // 播放中途取帧——这段是 App Preview 的主镜头：高亮逐词推进 + 自动滚动。
+        // 停留时间要短于音频总长，否则截到的是「已读完」的静止页面。
+        Thread.sleep(forTimeInterval: 8)
+        snapshot(app, "04-word-highlight")
+        Thread.sleep(forTimeInterval: 10)
+        snapshot(app, "05-word-highlight-later")
+        XCTAssertTrue(pause.exists, "主镜头还没录完音频就停了，演示文本太短")
+        Thread.sleep(forTimeInterval: 8)
+    }
+
+    /// 付费页：验证 7 天免费试用文案在真机 UI 上的最终呈现，同时产出商店可用的订阅页截图。
+    ///
+    /// DEBUG 构建默认 `debugForcePro = true`（开发期全解锁），那样首页 Pro 卡片和付费墙都不会出现，
+    /// 所以这里必须显式关掉，才能看到真实的免费用户视角。
+    func testCapturePaywallWithFreeTrial() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderDisableDebugPro",
+        ]
+        app.launch()
+        XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 15))
+
+        // Pro 卡片在首页最底部，需要滚动到可见才能截图。
+        let plans = app.buttons["homeProPlansButton"]
+        XCTAssertTrue(plans.waitForExistence(timeout: 20), "免费用户视角下首页应出现 Pro 卡片")
+        for _ in 0..<8 where !plans.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(plans.isHittable, "Pro 卡片没能滚到可见区域")
+        Thread.sleep(forTimeInterval: 3)
+        snapshot(app, "05-home-pro-card-trial")
+
+        plans.tap()
+
+        Thread.sleep(forTimeInterval: 5)
+        snapshot(app, "06-paywall-free-trial")
     }
 }

@@ -108,6 +108,107 @@ final class WebReaderEvalTests: XCTestCase {
         XCTAssertEqual(svgPaths, lineCount, "下划线 path 数应=视觉行数（跨行逐行画；修复前只画第一行 path=1 → 换行处断）")
     }
 
+    /// Kobo 类阅读器把正文放在同源 iframe。桥接层持有的段落节点被 adopt 到
+    /// iframe 后，高亮与 marks 必须跟随节点的 ownerDocument，且跨文档清理。
+    func testOverlayAndMarksFollowRangeOwnerDocument() async throws {
+        let js = try XCTUnwrap(WebReaderView.loadBundleJS(), "WebAssets/bundle.js 未打进 app bundle")
+        let controller = WKUserContentController()
+        controller.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        let config = WKWebViewConfiguration()
+        config.userContentController = controller
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 800), configuration: config)
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 800))
+        window.isHidden = false
+        window.addSubview(webView)
+        defer { webView.removeFromSuperview() }
+
+        let html = """
+        <!doctype html><html><head><meta charset="utf-8">
+        <style>body{font:18px/1.6 -apple-system;padding:12px}p{margin:12px 0}</style></head><body>
+        <article>
+          <p id="foreign-target">Kobo iframe paragraph used to verify that sentence highlighting and explanation marks stay inside the reader document.</p>
+          <p id="main-target">Main document paragraph used to verify that switching pages clears overlays from every previously rendered document.</p>
+          <p>Additional body paragraph keeps generic extraction stable inside a realistic article fixture.</p>
+        </article>
+        </body></html>
+        """
+        webView.loadHTMLString(html, baseURL: URL(string: "https://castreader.local/cross-document"))
+
+        var ready = false
+        for _ in 0..<50 {
+            if await webView.jsBool(
+                "typeof window.CR !== 'undefined' && " +
+                "(window.__crLastRendered||[]).length >= 2 && " +
+                "document.getElementById('foreign-target').hasAttribute('data-cr-para') && " +
+                "document.getElementById('main-target').hasAttribute('data-cr-para')"
+            ) {
+                ready = true
+                break
+            }
+            try? await Task.sleep(nanoseconds: 200_000_000)
+        }
+        XCTAssertTrue(ready, "[CrossDoc] bridge/段落映射未就绪")
+
+        await webView.jsRun("""
+        window.__foreignPara = Number(document.getElementById('foreign-target').getAttribute('data-cr-para'));
+        window.__mainPara = Number(document.getElementById('main-target').getAttribute('data-cr-para'));
+        var frame = document.createElement('iframe');
+        frame.id = 'reader-frame';
+        frame.style.cssText = 'display:block;width:360px;height:220px;border:0';
+        frame.srcdoc = '<!doctype html><html><head><style>body{font:18px/1.6 -apple-system;padding:12px}</style></head><body></body></html>';
+        document.body.appendChild(frame);
+        """)
+
+        var frameReady = false
+        for _ in 0..<30 {
+            if await webView.jsBool(
+                "!!(document.getElementById('reader-frame') && " +
+                "document.getElementById('reader-frame').contentDocument && " +
+                "document.getElementById('reader-frame').contentDocument.body)"
+            ) {
+                frameReady = true
+                break
+            }
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        XCTAssertTrue(frameReady, "[CrossDoc] 同源 iframe 未就绪")
+
+        // appendChild 会 adopt 同一个 HTMLElement；bridge Map 仍持有它，但 ownerDocument 已变化。
+        await webView.jsRun("""
+        document.getElementById('reader-frame').contentDocument.body.appendChild(
+          document.getElementById('foreign-target')
+        );
+        """)
+
+        await webView.jsRun("window.CR.highlightRange({paragraphIndex:window.__foreignPara,charStart:0,charEnd:12})")
+        let firstTopOverlays = await webView.jsInt("document.querySelectorAll('.cr-hl-ov').length")
+        let firstFrameOverlays = await webView.jsInt("document.getElementById('reader-frame').contentDocument.querySelectorAll('.cr-hl-ov').length")
+        XCTAssertEqual(firstTopOverlays, 0, "[CrossDoc] iframe Range 被错误画到顶层 document")
+        XCTAssertGreaterThan(firstFrameOverlays, 0, "[CrossDoc] iframe 内未生成高亮")
+
+        // 切回顶层段落时，应主动删除 iframe 里的上一句高亮。
+        await webView.jsRun("window.CR.highlightRange({paragraphIndex:window.__mainPara,charStart:0,charEnd:12})")
+        let switchedTopOverlays = await webView.jsInt("document.querySelectorAll('.cr-hl-ov').length")
+        let switchedFrameOverlays = await webView.jsInt("document.getElementById('reader-frame').contentDocument.querySelectorAll('.cr-hl-ov').length")
+        XCTAssertGreaterThan(switchedTopOverlays, 0, "[CrossDoc] 顶层高亮未生成")
+        XCTAssertEqual(switchedFrameOverlays, 0, "[CrossDoc] 切页后 iframe 上一页高亮未清除")
+
+        await webView.jsRun("window.CR.clearMarks()")
+        await webView.jsRun("window.CR.showMark({id:'foreign-mark',paragraphIndex:window.__foreignPara,charStart:0,charEnd:24,action:'underline',seed:101})")
+        await webView.jsRun("window.CR.showMark({id:'main-mark',paragraphIndex:window.__mainPara,charStart:0,charEnd:24,action:'underline',seed:102})")
+        let topMarkPaths = await webView.jsInt("document.querySelectorAll('svg[data-cr-marks] path').length")
+        let frameMarkPaths = await webView.jsInt("document.getElementById('reader-frame').contentDocument.querySelectorAll('svg[data-cr-marks] path').length")
+        XCTAssertGreaterThan(topMarkPaths, 0, "[CrossDoc] 顶层 document 缺少独立 mark SVG")
+        XCTAssertGreaterThan(frameMarkPaths, 0, "[CrossDoc] iframe document 缺少独立 mark SVG")
+
+        await webView.jsRun("window.CR.clearHighlight(); window.CR.clearMarks()")
+        let leftovers = await webView.jsInt("""
+        document.querySelectorAll('.cr-hl-ov,svg[data-cr-marks]').length +
+        document.getElementById('reader-frame').contentDocument.querySelectorAll('.cr-hl-ov,svg[data-cr-marks]').length
+        """)
+        XCTAssertEqual(leftovers, 0, "[CrossDoc] clear 后跨 document 仍有 overlay/mark 残留")
+    }
+
     /// DOCX 本地渲染端到端：空页注入 bundle → CR.renderDocx(最小 DOCX base64) → mammoth 转 HTML → Visual Zone 提取。
     func testDocxRender() async throws {
         let js = try XCTUnwrap(WebReaderView.loadBundleJS(), "WebAssets/bundle.js 未打进 app bundle")

@@ -116,6 +116,8 @@ func AppLocalized(_ key: String.LocalizationValue) -> String {
 enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
     case kindle
     case weread
+    case googleBooks = "google_books"
+    case kobo
 
     var id: String { rawValue }
 
@@ -123,6 +125,8 @@ enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
         switch self {
         case .kindle: return .kindle
         case .weread: return .weread
+        case .googleBooks: return .googleBooks
+        case .kobo: return .kobo
         }
     }
 
@@ -130,6 +134,17 @@ enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
         switch self {
         case .kindle: return .kindle
         case .weread: return .weread
+        case .googleBooks: return .googleBooks
+        case .kobo: return .kobo
+        }
+    }
+
+    var readingSourceKind: ReadingSourceKind {
+        switch self {
+        case .kindle: return .kindle
+        case .weread: return .weread
+        case .googleBooks: return .googleBooks
+        case .kobo: return .kobo
         }
     }
 }
@@ -239,6 +254,8 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         switch source {
         case .kindle: playbackSource = .kindle
         case .weread: playbackSource = .weread
+        case .googleBooks: playbackSource = .googleBooks
+        case .kobo: playbackSource = .kobo
         default: return
         }
         guard selectedSource == nil || selectedSource == playbackSource else { return }
@@ -275,6 +292,8 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         switch source {
         case .kindle: playbackSource = .kindle
         case .weread: playbackSource = .weread
+        case .googleBooks: playbackSource = .googleBooks
+        case .kobo: playbackSource = .kobo
         default: return
         }
         guard selectedSource == nil || selectedSource == playbackSource else { return }

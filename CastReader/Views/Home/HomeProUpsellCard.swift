@@ -32,6 +32,29 @@ enum HomeProPurchaseContract {
     }
 }
 
+/// 首页 Pro 卡片的试用文案。抽成纯函数便于单测——试用承诺是审核红线，不能只靠人眼看 View。
+enum HomeProTrialCopy {
+    /// 主按钮：有试用资格先讲试用，没有资格才讲年费。
+    static func primaryTitle(trialDays: Int?, annualDisplayPrice: String) -> String {
+        if let trialDays {
+            return String(format: AppLocalized("开始 %d 天免费试用"), trialDays)
+        }
+        return String(format: AppLocalized("以 %@/年成为 Pro"), annualDisplayPrice)
+    }
+
+    /// 底部续订说明。Apple 3.1.2 要求在购买点同时明示试用时长、到期价格、自动续订与可取消。
+    static func renewalNotice(trialDays: Int?, annualDisplayPrice: String?) -> String {
+        guard let trialDays, let annualDisplayPrice else {
+            return AppLocalized("按年自动续订，可随时取消")
+        }
+        return String(
+            format: AppLocalized("免费试用 %1$d 天，之后按 %2$@/年自动续订，可随时取消"),
+            trialDays,
+            annualDisplayPrice
+        )
+    }
+}
+
 enum HomeProPricing {
     static func weeklyPrice(from yearlyPrice: Decimal) -> Decimal {
         yearlyPrice / Decimal(52)
@@ -45,6 +68,8 @@ enum HomeProPricing {
 struct HomeProUpsellCard: View {
     let annualDisplayPrice: String?
     let weeklyDisplayPrice: String?
+    /// 当前 Apple ID 仍可享受的免费试用天数；没有资格（含已用过试用的老用户）时为 nil。
+    var trialDays: Int? = nil
     let isLoadingProducts: Bool
     let isPurchasing: Bool
     let onPrimaryAction: () -> Void
@@ -69,7 +94,11 @@ struct HomeProUpsellCard: View {
         guard let annualDisplayPrice else {
             return isLoadingProducts ? AppLocalized("正在加载价格") : AppLocalized("查看 Pro 方案")
         }
-        return String(format: AppLocalized("以 %@/年成为 Pro"), annualDisplayPrice)
+        return HomeProTrialCopy.primaryTitle(trialDays: trialDays, annualDisplayPrice: annualDisplayPrice)
+    }
+
+    private var renewalNoticeText: String {
+        HomeProTrialCopy.renewalNotice(trialDays: trialDays, annualDisplayPrice: annualDisplayPrice)
     }
 
     var body: some View {
@@ -139,7 +168,7 @@ struct HomeProUpsellCard: View {
             .disabled(isPurchasing)
             .accessibilityIdentifier("homeProPlansButton")
 
-            Text(AppLocalized("按年自动续订，可随时取消"))
+            Text(renewalNoticeText)
                 .font(.caption2)
                 .foregroundColor(AppTheme.mutedForeground)
                 .frame(maxWidth: .infinity)

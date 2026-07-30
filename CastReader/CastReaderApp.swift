@@ -175,6 +175,8 @@ struct CastReaderApp: App {
         ) { _ in
             Task { @MainActor in ProductAnalytics.shared.didEnterBackground() }
         }
+
+        ResumeReminderManager.shared.start()   // 「继续听」召回：进后台调度、回前台取消
     }
 
     var body: some Scene {

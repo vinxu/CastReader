@@ -1,0 +1,162 @@
+{
+  "contractID": "castreader-kindle-storefront-test-cases",
+  "schemaVersion": 1,
+  "expectedStorefrontCount": 14,
+  "expectedRecognizedHostCount": 21,
+  "expectedEntryEnabledStorefrontCount": 13,
+  "positiveHostCases": [
+    {
+      "input": "read.amazon.com",
+      "expectedStorefrontID": "us"
+    },
+    {
+      "input": "READ.AMAZON.COM",
+      "expectedStorefrontID": "us"
+    },
+    {
+      "input": "read.amazon.com.",
+      "expectedStorefrontID": "us"
+    },
+    {
+      "input": "leer.amazon.es",
+      "expectedStorefrontID": "es"
+    },
+    {
+      "input": "LEER.AMAZON.ES.",
+      "expectedStorefrontID": "es"
+    },
+    {
+      "input": "read.amazon.es",
+      "expectedStorefrontID": "es"
+    },
+    {
+      "input": "lesen.amazon.de",
+      "expectedStorefrontID": "de"
+    },
+    {
+      "input": "read.amazon.de",
+      "expectedStorefrontID": "de"
+    },
+    {
+      "input": "lire.amazon.fr",
+      "expectedStorefrontID": "fr"
+    },
+    {
+      "input": "read.amazon.fr",
+      "expectedStorefrontID": "fr"
+    },
+    {
+      "input": "leggi.amazon.it",
+      "expectedStorefrontID": "it"
+    },
+    {
+      "input": "read.amazon.it",
+      "expectedStorefrontID": "it"
+    },
+    {
+      "input": "ler.amazon.com.br",
+      "expectedStorefrontID": "br"
+    },
+    {
+      "input": "read.amazon.com.br",
+      "expectedStorefrontID": "br"
+    },
+    {
+      "input": "leer.amazon.com.mx",
+      "expectedStorefrontID": "mx"
+    },
+    {
+      "input": "read.amazon.com.mx",
+      "expectedStorefrontID": "mx"
+    },
+    {
+      "input": "lezen.amazon.nl",
+      "expectedStorefrontID": "nl"
+    },
+    {
+      "input": "read.amazon.nl",
+      "expectedStorefrontID": "nl"
+    },
+    {
+      "input": "READ.AMAZON.CO.UK.",
+      "expectedStorefrontID": "uk"
+    },
+    {
+      "input": "read.amazon.cn",
+      "expectedStorefrontID": "cn"
+    }
+  ],
+  "securityNegativeHosts": [
+    "",
+    "amazon.com",
+    "www.amazon.com",
+    "read.amazon",
+    "read.amazon.",
+    "read.amazon.phish.com",
+    "read.amazon.com.phish.example",
+    "read.amazon.co.uk.phish.example",
+    "fooread.amazon.com",
+    "reader.amazon.com",
+    "foo.read.amazon.com",
+    "leer.amazon.es.phish.example",
+    "foo.leer.amazon.es",
+    "ler.amazon.com.br.phish.example",
+    "foo.ler.amazon.com.br",
+    "read-amazon.com",
+    "read.amazon.com:443",
+    "https://read.amazon.com",
+    " read.amazon.com",
+    "read.amazon.com ",
+    "read.amazοn.com"
+  ],
+  "positiveURLCases": [
+    {
+      "input": "https://read.amazon.com/kindle-library",
+      "expectedStorefrontID": "us"
+    },
+    {
+      "input": "https://leer.amazon.es/?asin=B012345678",
+      "expectedStorefrontID": "es"
+    },
+    {
+      "input": "https://read.amazon.es/?asin=B012345678",
+      "expectedStorefrontID": "es"
+    },
+    {
+      "input": "https://ler.amazon.com.br:443/?asin=B012345678",
+      "expectedStorefrontID": "br"
+    },
+    {
+      "input": "https://lesen.amazon.de/kindle-library",
+      "expectedStorefrontID": "de"
+    },
+    {
+      "input": "https://lire.amazon.fr/?asin=B012345678",
+      "expectedStorefrontID": "fr"
+    },
+    {
+      "input": "https://leggi.amazon.it/?asin=B012345678",
+      "expectedStorefrontID": "it"
+    },
+    {
+      "input": "https://leer.amazon.com.mx/?asin=B012345678",
+      "expectedStorefrontID": "mx"
+    },
+    {
+      "input": "https://lezen.amazon.nl/?asin=B012345678",
+      "expectedStorefrontID": "nl"
+    }
+  ],
+  "securityNegativeURLs": [
+    "http://read.amazon.com/kindle-library",
+    "javascript:location.href='https://read.amazon.com'",
+    "data:text/html,read.amazon.com",
+    "file:///read.amazon.com/kindle-library",
+    "https://read.amazon.phish.com/kindle-library",
+    "https://read.amazon.com.evil.example/kindle-library",
+    "https://read.amazon.com@evil.example/kindle-library",
+    "https://evil.example/?next=https://read.amazon.com/kindle-library",
+    "https://read.amazon.com:444/kindle-library",
+    "https://www.amazon.com/kindle-library"
+  ]
+}

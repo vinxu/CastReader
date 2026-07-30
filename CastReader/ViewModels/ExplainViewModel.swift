@@ -9,6 +9,28 @@
 import Foundation
 import Combine
 
+enum ExplainOwnershipRecoveryPlan: Equatable {
+    case preparedBlock(index: Int)
+    case replayBlock(index: Int)
+    case restartPlanning(reusingStartedSession: Bool)
+
+    static func resolve(
+        currentBlockIndex: Int,
+        hasCurrentPreparedBlock: Bool,
+        replayBlockCount: Int,
+        statusIsActive: Bool
+    ) -> Self {
+        if currentBlockIndex >= 0, hasCurrentPreparedBlock {
+            return .preparedBlock(index: currentBlockIndex)
+        }
+        if replayBlockCount > 0 {
+            let index = min(max(0, currentBlockIndex), replayBlockCount - 1)
+            return .replayBlock(index: index)
+        }
+        return .restartPlanning(reusingStartedSession: statusIsActive)
+    }
+}
+
 /// 已锚定、可绘制的标注（charRange 为段落文本的 Character 偏移）。
 struct ResolvedMark: Identifiable, Equatable {
     let id: UUID
@@ -49,6 +71,63 @@ final class ExplainViewModel: ObservableObject {
                                  language: language ?? document.language, paragraphs: p, sourceURL: document.sourceURL)
     }
 
+    /// WebKit DOM Range consumes UTF-16 offsets, but `ResolvedMark` deliberately
+    /// stays in document-level `Character` coordinates for native text/photo
+    /// renderers. Convert against the current live page at the bridge boundary.
+    func webUTF16Range(for mark: ResolvedMark) -> Range<Int>? {
+        guard mark.paragraphIndex >= 0,
+              mark.paragraphIndex < doc.paragraphs.count else { return nil }
+        return MarkAnchoring.utf16Range(
+            fromCharacterRange: mark.charRange,
+            in: doc.paragraphs[mark.paragraphIndex].text
+        )
+    }
+
+    /// Update the page-local explanation source while Read owns the shared
+    /// player. This invalidates old plans/marks but deliberately avoids
+    /// `stop()`, `audio.clearBook()`, and global TTS cancellation.
+    func stageInactiveLiveWebPage(
+        _ p: [ReadingParagraph],
+        language: String? = nil
+    ) {
+        guard !isActive else { return }
+        contentGeneration &+= 1
+        accessRefreshRequestID &+= 1
+        liveWebTurnIntentSuspended = false
+        accessRefreshTask?.cancel()
+        accessRefreshTask = nil
+        orchestrationTask?.cancel()
+        orchestrationTask = nil
+        fastTask?.cancel()
+        fastTask = nil
+        clearPagePrefetch()
+        prepared.removeAll()
+        preparingBlocks.removeAll()
+        marksByBlock.removeAll()
+        replayBlocks.removeAll()
+        firedMarks.removeAll()
+        section0 = nil
+        fastSection = nil
+        jobId = ""
+        totalBlocks = 0
+        currentBlockIndex = -1
+        explanationText = ""
+        anchorCursor = nil
+        completionNotified = false
+        isPreparingNext = false
+        isContinuingLivePage = false
+        isReplayingCached = false
+        loadWebParagraphs(p, language: language)
+        activeMarks = []
+        scrollTarget = -1
+        stageText = ""
+        status = .idle
+    }
+
+    var stagedLiveWebParagraphTexts: [String] {
+        doc.paragraphs.map(\.text)
+    }
+
     /// Live WebView sources (WeRead) cannot keep marks/plans from a previous
     /// canvas page.  Stop the old job, replace its anchor document, then start
     /// a new page-only explanation when the user had an active explain session.
@@ -81,19 +160,10 @@ final class ExplainViewModel: ObservableObject {
         activeMarks = []
         scrollTarget = -1
         if shouldRestart {
-            // Serialize old-request cancellation before the new page starts.
-            // `stop()` performs a best-effort async cancel for ordinary exits;
-            // a page handoff additionally owns this ordering so the old cancel
-            // can never arrive late and cancel the new page's first TTS call.
-            let generation = contentGeneration
-            Task { [weak self] in
-                await TTSService.shared.cancelCurrentRequest()
-                guard let self, self.contentGeneration == generation else { return }
-                if let prefetched {
-                    self.startFromPrefetched(prefetched)
-                } else {
-                    self.start()
-                }
+            if let prefetched {
+                startFromPrefetched(prefetched)
+            } else {
+                start()
             }
         }
     }
@@ -124,6 +194,7 @@ final class ExplainViewModel: ObservableObject {
     private let settings = AppSettings.shared
     private let pro = ProManager.shared
     private let quota = QuotaManager.shared
+    private var audioSessionToken: AudioPlaybackSessionToken?
 
     fileprivate struct PreparedBlock {
         let segments: [AudioSegment]
@@ -186,13 +257,66 @@ final class ExplainViewModel: ObservableObject {
     private var completionNotified = false
 
     private var orchestrationTask: Task<Void, Never>?
+    /// Membership refresh is part of a pending Start action. It must be owned
+    /// by the same live-page generation; otherwise a late refresh can activate
+    /// Explain after the user switched modes or replaced the page.
+    private var accessRefreshTask: Task<Void, Never>?
+    private var accessRefreshRequestID: UInt64 = 0
+    /// Batch/page prefetch can include another TTS request. Keep the task so a
+    /// page replacement can cancel it instead of merely ignoring its late
+    /// result after it has already contended for the shared TTS service.
+    private var pagePrefetchTask: Task<Void, Never>?
     /// A live-page replacement invalidates all plan/block work owned by the
     /// previous page. QuickRead callbacks and detached prefetches can outlive
     /// cooperative Task cancellation, so cancellation is not enough by itself.
     private var contentGeneration: UInt64 = 0
+    private var liveWebTurnIntentSuspended = false
     private var cancellables = Set<AnyCancellable>()
     private(set) var isActive = false
     private var lastNowPlayingCaption: String?
+
+    private var ownsAudioQueue: Bool {
+        guard isActive, let token = audioSessionToken else { return false }
+        return audio.isPlaybackSessionActive(token)
+            && audio.isQueueOwned(by: token)
+            && audio.canControlPlayback(session: token)
+    }
+
+    @discardableResult
+    private func ensureAudioSessionClaim() -> AudioPlaybackSessionToken? {
+        guard isActive else { return nil }
+        if let token = audioSessionToken,
+           audio.isPlaybackSessionActive(token) {
+            return token
+        }
+        let token = audio.claimPlaybackSession(owner: .explain)
+        audioSessionToken = token
+        isPlaying = false
+        return token
+    }
+
+    private func setMoreSegmentsExpected(_ expected: Bool) {
+        guard let token = audioSessionToken else { return }
+        _ = audio.setMoreSegmentsExpected(expected, session: token)
+    }
+
+    private func installAudioCompletionCallback() {
+        audio.onPlaybackComplete = { [weak self] in
+            guard let self, self.ownsAudioQueue else { return }
+            self.onBlockComplete()
+        }
+        audio.onPlaybackError = { [weak self] _ in
+            guard let self, self.ownsAudioQueue else { return }
+            self.isPreparingNext = false
+            self.status = .error(AppLocalized("音频播放失败，请重试"))
+            self.endAnalyticsExplainSession(
+                result: .failed,
+                reason: "audio_playback_failed",
+                errorStage: "player",
+                errorCode: "player_item_failed"
+            )
+        }
+    }
     private var analyticsExplainSessionId: String?
     private var analyticsExplainStartedAt: Date?
     private var analyticsFirstBlockTracked = false
@@ -225,6 +349,71 @@ final class ExplainViewModel: ObservableObject {
         }
     }
 
+    /// Preserve a user-started explanation across a confirmed manual page
+    /// turn, while keeping an explicitly paused narration paused.
+    var shouldResumeAfterManualLivePageTurn: Bool {
+        if accessRefreshTask != nil { return true }
+        guard isActive else { return false }
+        if ownsAudioQueue, audio.isPlaying { return true }
+        guard ownsAudioQueue else {
+            switch status {
+            case .planning, .streaming:
+                return true
+            case .idle, .error, .completed:
+                return false
+            }
+        }
+        switch status {
+        case .planning:
+            return true
+        case .streaming:
+            return audio.currentSegment == nil || isPreparingNext
+        case .idle, .error, .completed:
+            return false
+        }
+    }
+
+    /// Freeze future block auto-start while Google is deciding whether a
+    /// gesture actually changed the page. Generation/planning stays alive, so
+    /// a cancelled edge swipe preserves work, marks, position, and quota.
+    func suspendForLiveWebTurnIntent() {
+        guard document.sourceKind.isLiveWebLibrary else { return }
+        cancelPendingAccessRefreshForLiveWebTurn()
+        liveWebTurnIntentSuspended = true
+        guard isActive else { return }
+        if let token = audioSessionToken {
+            _ = audio.pause(session: token)
+        }
+    }
+
+    func cancelPendingAccessRefreshForLiveWebTurn() {
+        guard document.sourceKind.isLiveWebLibrary else { return }
+        accessRefreshRequestID &+= 1
+        accessRefreshTask?.cancel()
+        accessRefreshTask = nil
+        if stageText == AppLocalized("正在同步会员状态…") {
+            stageText = ""
+        }
+    }
+
+    func resumeAfterCancelledLiveWebTurnIntent() {
+        guard liveWebTurnIntentSuspended else { return }
+        liveWebTurnIntentSuspended = false
+        guard isActive else {
+            start()
+            return
+        }
+        guard ownsAudioQueue else {
+            recoverPlaybackAfterOwnershipChange()
+            return
+        }
+        if audio.currentSegment != nil || audio.hasQueuedSegments {
+            if let token = audioSessionToken {
+                _ = audio.play(session: token)
+            }
+        }
+    }
+
     func configurePlaybackMetadata(id: String, title: String, coverURL: String?, chapterTitle: String? = nil) {
         playbackBookID = id
         playbackTitle = title
@@ -243,6 +432,8 @@ final class ExplainViewModel: ObservableObject {
 
     deinit {
         orchestrationTask?.cancel()
+        accessRefreshTask?.cancel()
+        pagePrefetchTask?.cancel()
         voiceSwitchTask?.cancel()
     }
 
@@ -313,7 +504,7 @@ final class ExplainViewModel: ObservableObject {
               let original = prepared[currentBlockIndex] else { return }
 
         let blockIndex = currentBlockIndex
-        let shouldAutoPlay = audio.isPlaying
+        let shouldAutoPlay = ownsAudioQueue && audio.isPlaying
         let previewHadSuspendedPlayback = VoicePreviewPlaybackCoordinator.shared.cancelForVoiceSwitch()
         VoiceSamplePlayer.shared.stop(resumeSuspendedPlayback: false)
         VoiceClonePreviewPlayer.shared.stop(resumeSuspendedPlayback: false)
@@ -338,12 +529,17 @@ final class ExplainViewModel: ObservableObject {
             to: newVoiceID
         )
         activeVoiceSwitchID = switchID
+        guard let session = ensureAudioSessionClaim() else {
+            VoiceSwitchStatusCenter.shared.finish(switchID)
+            activeVoiceSwitchID = nil
+            return
+        }
 
         // Stop voice A immediately. The narration text/marks remain cached;
         // only the current block audio and its timing are regenerated.
-        audio.pause()
-        audio.clearQueue()
-        audio.moreSegmentsExpected = true
+        _ = audio.pause(session: session)
+        _ = audio.clearQueue(session: session)
+        _ = audio.setMoreSegmentsExpected(true, session: session)
         isPreparingNext = true
 
         voiceSwitchTask = Task { [weak self] in
@@ -358,30 +554,38 @@ final class ExplainViewModel: ObservableObject {
                 try Task.checkCancellation()
                 guard self.activeVoiceSwitchID == switchID,
                       self.currentBlockIndex == blockIndex,
-                      self.isActive else { return }
+                      self.isActive,
+                      self.audioSessionToken == session,
+                      self.audio.isPlaybackSessionActive(session) else { return }
                 self.installVoiceSwitchedBlock(
                     rebuilt,
                     replacing: original,
                     blockIndex: blockIndex,
-                    autoPlay: resumeAfterSwitch
+                    autoPlay: resumeAfterSwitch,
+                    session: session
                 )
                 VoiceSwitchStatusCenter.shared.finish(switchID)
                 self.activeVoiceSwitchID = nil
             } catch is CancellationError {
-                guard self.activeVoiceSwitchID == switchID else { return }
-                self.audio.moreSegmentsExpected = false
+                guard self.activeVoiceSwitchID == switchID,
+                      self.audioSessionToken == session,
+                      self.audio.isPlaybackSessionActive(session) else { return }
+                _ = self.audio.setMoreSegmentsExpected(false, session: session)
                 self.isPreparingNext = false
                 VoiceSwitchStatusCenter.shared.finish(switchID)
                 self.activeVoiceSwitchID = nil
             } catch {
-                guard self.activeVoiceSwitchID == switchID else { return }
+                guard self.activeVoiceSwitchID == switchID,
+                      self.audioSessionToken == session,
+                      self.audio.isPlaybackSessionActive(session) else { return }
                 // A network failure must not strand the player. Restore the
                 // cached old block and preserve whether the user was playing.
                 self.installVoiceSwitchedBlock(
                     original,
                     replacing: original,
                     blockIndex: blockIndex,
-                    autoPlay: resumeAfterSwitch
+                    autoPlay: resumeAfterSwitch,
+                    session: session
                 )
                 VoiceSwitchStatusCenter.shared.finish(switchID)
                 self.activeVoiceSwitchID = nil
@@ -472,8 +676,11 @@ final class ExplainViewModel: ObservableObject {
         _ block: PreparedBlock,
         replacing original: PreparedBlock,
         blockIndex: Int,
-        autoPlay: Bool
+        autoPlay: Bool,
+        session: AudioPlaybackSessionToken
     ) {
+        guard audioSessionToken == session,
+              audio.isPlaybackSessionActive(session) else { return }
         prepared[blockIndex] = block
         if let replayIndex = replayBlocks.lastIndex(where: { $0.text == original.text }) {
             replayBlocks[replayIndex] = block
@@ -484,12 +691,16 @@ final class ExplainViewModel: ObservableObject {
         updateNowPlayingCaption(explanationText)
         status = .streaming(block: blockIndex, total: totalBlocks)
         isPreparingNext = false
-        audio.clearQueue()
-        audio.moreSegmentsExpected = true
+        _ = audio.clearQueue(session: session)
+        _ = audio.setMoreSegmentsExpected(true, session: session)
         for segment in block.segments {
-            audio.loadSegment(segment, autoPlay: autoPlay)
+            audio.loadSegment(
+                segment,
+                autoPlay: autoPlay && !liveWebTurnIntentSuspended,
+                session: session
+            )
         }
-        audio.moreSegmentsExpected = false
+        _ = audio.setMoreSegmentsExpected(false, session: session)
     }
 
     private func finishVoiceSwitchIfNeeded() {
@@ -502,18 +713,63 @@ final class ExplainViewModel: ObservableObject {
     }
 
     func activate() {
-        isActive = true
-        audio.onPlaybackComplete = { [weak self] in self?.onBlockComplete() }
+        if !isActive { isActive = true }
+        _ = ensureAudioSessionClaim()
+        installAudioCompletionCallback()
+    }
+
+    /// Generic readers mirror Kindle's mode-switch contract: if the outgoing
+    /// narration was active or preparing, entering Explain immediately starts
+    /// or restores it. A non-autoplay switch remains idle/actionable.
+    func activateAfterModeSwitch(autoplay: Bool) {
+        liveWebTurnIntentSuspended = false
+        activate()
+        ReaderRunLog.write(
+            "EXPLAIN mode activation autoplay=\(autoplay ? "Y" : "N") " +
+            "status=\(statusLogValue) paras=\(doc.readableParagraphs.count)"
+        )
+        if autoplay {
+            if case .completed = status {
+                replay()
+            } else {
+                recoverPlaybackAfterOwnershipChange()
+            }
+        } else if case .planning = status {
+            // `deactivate()` cancels planning work. Never leave a spinner whose
+            // task no longer exists when the user later returns while paused.
+            status = .idle
+            stageText = ""
+        }
     }
 
     func deactivate() {
-        endAnalyticsExplainSession(result: .cancelled, reason: "mode_switched")
+        // The quota/membership refresh happens before `activate()`. Invalidate
+        // it even when Explain has not acquired playback ownership yet, or a
+        // late refresh can start Explain after the user switched back to Read.
+        let wasRefreshingAccess = accessRefreshTask != nil
+        accessRefreshRequestID &+= 1
+        accessRefreshTask?.cancel()
+        accessRefreshTask = nil
+        if wasRefreshingAccess {
+            stageText = ""
+        }
+        let wasActive = isActive
         isActive = false
+        if let token = audioSessionToken {
+            audio.releasePlaybackSession(token)
+        }
+        audioSessionToken = nil
+        guard wasActive else { return }
+        endAnalyticsExplainSession(result: .cancelled, reason: "mode_switched")
+        contentGeneration &+= 1
+        liveWebTurnIntentSuspended = false
         orchestrationTask?.cancel()
+        orchestrationTask = nil
+        fastTask?.cancel()
+        fastTask = nil
+        preparingBlocks.removeAll()
         isPreparingNext = false
         clearPagePrefetch()
-        audio.moreSegmentsExpected = false
-        audio.pause()
         audio.setNowPlayingCaption(nil)
         lastNowPlayingCaption = nil
         finishVoiceSwitchIfNeeded()
@@ -525,7 +781,16 @@ final class ExplainViewModel: ObservableObject {
         start(allowAccessRefresh: true)
     }
 
-    private func start(allowAccessRefresh: Bool) {
+    private func start(
+        allowAccessRefresh: Bool,
+        reusingStartedSession: Bool = false
+    ) {
+        liveWebTurnIntentSuspended = false
+        ReaderRunLog.write(
+            "EXPLAIN start requested status=\(statusLogValue) " +
+            "reuse=\(reusingStartedSession ? "Y" : "N") " +
+            "paras=\(doc.readableParagraphs.count)"
+        )
         guard status == .idle || isErrorState else { return }
         // 提交 LLM 前预校验：内容太短，LLM 没东西可讲 → 直接引导朗读，不发请求白等重试、也不消耗额度（而非无脑提交）。
         let contentChars = doc.readableParagraphs.reduce(0) { $0 + $1.text.trimmingCharacters(in: .whitespacesAndNewlines).count }
@@ -533,7 +798,9 @@ final class ExplainViewModel: ObservableObject {
             status = .error(AppLocalized("内容太短，无法解读，试试朗读"))
             return
         }
-        guard pro.isPro || quota.canStartExplain(isPro: pro.isPro) else {
+        guard reusingStartedSession
+                || pro.isPro
+                || quota.canStartExplain(isPro: pro.isPro) else {
             if allowAccessRefresh {
                 refreshAccessThenRetryStart()
                 return
@@ -541,9 +808,13 @@ final class ExplainViewModel: ObservableObject {
             showPaywall = true
             return
         }
+        beginFreshContentGeneration()
+        let generation = contentGeneration
         beginAnalyticsExplainSession()
         setOutputLanguage(settings.explainLangOrNil ?? doc.language)
-        quota.noteExplainStarted(isPro: pro.isPro)
+        if !reusingStartedSession {
+            quota.noteExplainStarted(isPro: pro.isPro)
+        }
         activate()
         activeMarks = []           // 开始新解读：清上一轮残留 mark（对齐 Android startExplain；之后跨批累积不再清）
         replayBlocks.removeAll()
@@ -560,14 +831,21 @@ final class ExplainViewModel: ObservableObject {
         applySpeed()
         status = .planning
         stageText = AppLocalized("通读全文…")
+        ReaderRunLog.write(
+            "EXPLAIN planning started reuse=\(reusingStartedSession ? "Y" : "N")"
+        )
 
         // 快道（Fast-Lane）：text/web/EPUB 整页长文 → 先一次轻量 LLM 直出 block_0 秒开，质道吃剩余段顺延 block_1+。
         // 快道先 LLM+TTS 决定 idxBase/scope 再启动质道（失败则质道吃全量、绝不漏开头）。门控不过 → 原单路质道。
         if let opening = fastLaneEligibleOpening() {
-            fastTask = Task { [weak self] in await self?.runFastLaneThenQuote(opening: opening) }
+            fastTask = Task { [weak self] in
+                await self?.runFastLaneThenQuote(opening: opening, generation: generation)
+            }
         } else {
             setupBatchScopeIfLarge()   // EPUB/长文：解读分批，避免整本一次 extract-plan → 后端 400
-            orchestrationTask = Task { [weak self] in await self?.runPlan() }
+            orchestrationTask = Task { [weak self] in
+                await self?.runPlan(generation: generation)
+            }
         }
     }
 
@@ -590,6 +868,7 @@ final class ExplainViewModel: ObservableObject {
             showPaywall = true
             return
         }
+        beginFreshContentGeneration()
         beginAnalyticsExplainSession()
         quota.noteExplainStarted(isPro: pro.isPro)
         activate()
@@ -634,10 +913,18 @@ final class ExplainViewModel: ObservableObject {
 
     private func refreshAccessThenRetryStart(prefetched: PrefetchedFirstBlock? = nil) {
         stageText = AppLocalized("正在同步会员状态…")
-        Task { [weak self] in
+        accessRefreshTask?.cancel()
+        accessRefreshRequestID &+= 1
+        let requestID = accessRefreshRequestID
+        let generation = contentGeneration
+        accessRefreshTask = Task { [weak self] in
             await ProManager.shared.refresh()
             await MainActor.run {
-                guard let self else { return }
+                guard let self,
+                      !Task.isCancelled,
+                      self.contentGeneration == generation,
+                      self.accessRefreshRequestID == requestID else { return }
+                self.accessRefreshTask = nil
                 self.stageText = ""
                 if let prefetched {
                     self.startFromPrefetched(prefetched, allowAccessRefresh: false)
@@ -646,6 +933,23 @@ final class ExplainViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    /// Establish a token before scheduling any asynchronous work. Passing this
+    /// token into task entry points is essential: a Task can be cancelled
+    /// before its closure first runs, and capturing `contentGeneration` inside
+    /// that late-starting closure would otherwise capture the *new* page token
+    /// and revive stale work.
+    private func beginFreshContentGeneration() {
+        contentGeneration &+= 1
+        accessRefreshRequestID &+= 1
+        accessRefreshTask?.cancel()
+        accessRefreshTask = nil
+        orchestrationTask?.cancel()
+        orchestrationTask = nil
+        fastTask?.cancel()
+        fastTask = nil
+        clearPagePrefetch()
     }
 
     /// Kindle uses this to avoid spending the shared QuickRead slot on the
@@ -714,8 +1018,11 @@ final class ExplainViewModel: ObservableObject {
 
     /// 快道执行：先 LLM(fast-block0) + TTS 决定 idxBase/scope，再启动质道。
     /// 成功 → 占 block_0 秒开 + 质道吃剩余段（idxBase=1）；失败 → idxBase=0 + 质道吃全量（绝不漏开头）。
-    private func runFastLaneThenQuote(opening: [ReadingParagraph]) async {
-        let generation = contentGeneration
+    private func runFastLaneThenQuote(
+        opening: [ReadingParagraph],
+        generation: UInt64
+    ) async {
+        guard generation == contentGeneration, !Task.isCancelled else { return }
         let lang = settings.explainLangOrNil ?? doc.language   // 锁定确定语言（快道+质道同语言，不让 server 对快道默认 en）
         await MainActor.run {
             guard self.contentGeneration == generation else { return }
@@ -749,17 +1056,27 @@ final class ExplainViewModel: ObservableObject {
                 self.setupBatchScopeIfLarge()                  // 快道失败兜底：质道吃全量
                 self.debugLog("fastlane failed -> quote full")
             }
-            self.orchestrationTask = Task { [weak self] in await self?.runPlan() }
+            self.orchestrationTask = Task { [weak self] in
+                await self?.runPlan(generation: generation)
+            }
         }
     }
 
     func stop() {
         contentGeneration &+= 1
+        accessRefreshRequestID &+= 1
+        liveWebTurnIntentSuspended = false
+        accessRefreshTask?.cancel()
+        accessRefreshTask = nil
         orchestrationTask?.cancel()
+        orchestrationTask = nil
         fastTask?.cancel()
+        fastTask = nil
         finishVoiceSwitchIfNeeded()
-        Task { await TTSService.shared.cancelCurrentRequest() }
-        audio.clearBook()
+        if let token = audioSessionToken {
+            _ = audio.setMoreSegmentsExpected(false, session: token)
+            _ = audio.clearBook(session: token)
+        }
         clearPagePrefetch()
         preparingBlocks.removeAll()
         isReplayingCached = false
@@ -778,17 +1095,109 @@ final class ExplainViewModel: ObservableObject {
         status = .completed
     }
 
-    func togglePlayPause() { audio.togglePlayPause() }
+    func togglePlayPause() {
+        liveWebTurnIntentSuspended = false
+        guard ownsAudioQueue,
+              audio.currentSegment != nil || audio.hasQueuedSegments else {
+            recoverPlaybackAfterOwnershipChange()
+            return
+        }
+        if let token = audioSessionToken {
+            _ = audio.togglePlayPause(session: token)
+        }
+    }
+
+    private var statusLogValue: String {
+        switch status {
+        case .idle:
+            return "idle"
+        case .planning:
+            return "planning"
+        case .streaming(let block, let total):
+            return "streaming-\(block + 1)-of-\(total)"
+        case .completed:
+            return "completed"
+        case .error:
+            return "error"
+        }
+    }
+
+    private func recoverPlaybackAfterOwnershipChange() {
+        guard isActive else {
+            start()
+            return
+        }
+        guard let session = ensureAudioSessionClaim() else { return }
+        let plan = ExplainOwnershipRecoveryPlan.resolve(
+            currentBlockIndex: currentBlockIndex,
+            hasCurrentPreparedBlock: prepared[currentBlockIndex] != nil,
+            replayBlockCount: replayBlocks.count,
+            statusIsActive: status.isActive
+        )
+        switch plan {
+        case .preparedBlock(let index):
+            guard let block = prepared[index] else { return }
+            installCachedBlockAfterOwnershipChange(
+                block,
+                blockIndex: index,
+                session: session
+            )
+        case .replayBlock(let index):
+            isReplayingCached = true
+            installCachedBlockAfterOwnershipChange(
+                replayBlocks[index],
+                blockIndex: index,
+                session: session
+            )
+        case .restartPlanning(let reusingStartedSession):
+            // A mode switch can cancel planning before block 0 exists. Reset
+            // the stale planning state so the control stays actionable, but do
+            // not charge the same Explain session twice.
+            status = .idle
+            stageText = ""
+            start(
+                allowAccessRefresh: true,
+                reusingStartedSession: reusingStartedSession
+            )
+        }
+    }
+
+    private func installCachedBlockAfterOwnershipChange(
+        _ block: PreparedBlock,
+        blockIndex: Int,
+        session: AudioPlaybackSessionToken
+    ) {
+        guard isActive,
+              audioSessionToken == session,
+              audio.isPlaybackSessionActive(session) else { return }
+        _ = audio.clearQueue(session: session)
+        currentBlockIndex = blockIndex
+        prepared[blockIndex] = block
+        marksByBlock[blockIndex] = block.marks
+        explanationText = block.sentences.first ?? block.text
+        updateNowPlayingCaption(explanationText)
+        status = .streaming(block: blockIndex, total: max(totalBlocks, blockIndex + 1))
+        isPreparingNext = false
+        _ = audio.setMoreSegmentsExpected(true, session: session)
+        for segment in block.segments {
+            _ = audio.loadSegment(
+                segment,
+                autoPlay: !liveWebTurnIntentSuspended,
+                session: session
+            )
+        }
+        _ = audio.setMoreSegmentsExpected(false, session: session)
+    }
 
     /// 重新播放已解读完的内容：复用缓存块（不重新调后端 LLM、不耗额度），从第一块重头播。
     func replay() {
+        liveWebTurnIntentSuspended = false
         if replayBlocks.isEmpty {
             // 兼容旧会话/短文：若还没形成完整轨道，就把当前批缓存作为兜底；全新会话则普通开始。
             let current = prepared.keys.sorted().compactMap { prepared[$0] }
             if !current.isEmpty { replayBlocks = current } else { start(); return }
         }
-        orchestrationTask?.cancel()
-        fastTask?.cancel()
+        beginFreshContentGeneration()
         beginAnalyticsExplainSession()
         activate()
         isReplayingCached = true
@@ -823,15 +1232,16 @@ final class ExplainViewModel: ObservableObject {
                 contentSource: analyticsContext.source.rawValue,
                 contentFormat: AnalyticsContentFormat(document.sourceKind).rawValue,
                 language: doc.language,
-                scenario: analyticsScenario
+                scenario: analyticsScenario,
+                storefront: analyticsContext.storefront
             )
         )
     }
 
     private func handleAnalyticsPlaybackState(_ playing: Bool) {
-        isPlaying = playing
-        guard playing,
-              isActive,
+        let ownedPlaying = playing && ownsAudioQueue
+        isPlaying = ownedPlaying
+        guard ownedPlaying,
               analyticsExplainSessionId != nil,
               currentBlockIndex >= 0,
               audio.currentSegment != nil else { return }
@@ -843,7 +1253,11 @@ final class ExplainViewModel: ObservableObject {
             ProductAnalytics.shared.track(
                 .explainFirstBlock,
                 context: analyticsEventContext,
-                properties: .init(latencyMs: latency, scenario: analyticsScenario)
+                properties: .init(
+                    latencyMs: latency,
+                    scenario: analyticsScenario,
+                    storefront: analyticsContext.storefront
+                )
             )
         }
         if currentBlockIndex >= 1, !analyticsSecondBlockStarted {
@@ -854,7 +1268,8 @@ final class ExplainViewModel: ObservableObject {
                 properties: .init(
                     milestone: "second_block_started",
                     blocksStarted: analyticsBlocksStarted.count,
-                    blocksCompleted: analyticsBlocksCompleted.count
+                    blocksCompleted: analyticsBlocksCompleted.count,
+                    storefront: analyticsContext.storefront
                 )
             )
         }
@@ -872,7 +1287,8 @@ final class ExplainViewModel: ObservableObject {
                 properties: .init(
                     milestone: "first_block_completed",
                     blocksStarted: analyticsBlocksStarted.count,
-                    blocksCompleted: analyticsBlocksCompleted.count
+                    blocksCompleted: analyticsBlocksCompleted.count,
+                    storefront: analyticsContext.storefront
                 )
             )
         }
@@ -898,7 +1314,8 @@ final class ExplainViewModel: ObservableObject {
                 ),
                 endReason: reason,
                 blocksStarted: analyticsBlocksStarted.count,
-                blocksCompleted: analyticsBlocksCompleted.count
+                blocksCompleted: analyticsBlocksCompleted.count,
+                storefront: analyticsContext.storefront
             )
         )
         analyticsExplainSessionId = nil
@@ -931,8 +1348,8 @@ final class ExplainViewModel: ObservableObject {
 
     // MARK: - Plan
 
-    private func runPlan() async {
-        let generation = contentGeneration
+    private func runPlan(generation: UInt64) async {
+        guard generation == contentGeneration, !Task.isCancelled else { return }
         let req = buildPlanRequest()
         do {
             let done = try await QuickReadService.shared.extractPlan(
@@ -946,7 +1363,7 @@ final class ExplainViewModel: ObservableObject {
                 onBlock0: { [weak self] block0 in
                     Task { @MainActor in
                         guard let self, self.contentGeneration == generation else { return }
-                        self.handlePlan(block0)
+                        self.handlePlan(block0, generation: generation)
                     }
                 }
             )
@@ -962,7 +1379,13 @@ final class ExplainViewModel: ObservableObject {
                     self.kindlePerfLog("plan-done total-update old=\(oldTotal) new=\(self.totalBlocks) current=\(self.currentBlockIndex)")
                     // done 晚于首块播完到达时会误判 .completed → 在此续播下一块。
                     if case .completed = self.status, self.currentBlockIndex + 1 < self.totalBlocks {
-                        Task { await self.prepareAndEnqueue(block: self.currentBlockIndex + 1) }
+                        let next = self.currentBlockIndex + 1
+                        self.orchestrationTask = Task { [weak self] in
+                            await self?.prepareAndEnqueue(
+                                block: next,
+                                generation: generation
+                            )
+                        }
                     }
                 }
                 let next = max(0, self.currentBlockIndex + 1)
@@ -1022,7 +1445,8 @@ final class ExplainViewModel: ObservableObject {
         }
     }
 
-    private func handlePlan(_ plan: PlanBlock0) {
+    private func handlePlan(_ plan: PlanBlock0, generation: UInt64) {
+        guard generation == contentGeneration else { return }
         jobId = plan.job_id
         totalBlocks = idxBase + max(1, plan.total_blocks)   // 快道占 idxBase 块 + 质道块
         // 快道激活（forcedExplainLang != nil）时它优先：block_0 已用此语言朗读，质道必须跟随，不能被
@@ -1035,7 +1459,9 @@ final class ExplainViewModel: ObservableObject {
         if !block0Claimed {
             // 快道没占（idxBase=0 / 快道失败）→ 质道占 block_0
             block0Claimed = true
-            Task { await self.prepareAndEnqueue(block: 0) }
+            orchestrationTask = Task { [weak self] in
+                await self?.prepareAndEnqueue(block: 0, generation: generation)
+            }
             if totalBlocks > 1 {
                 startBackgroundPrepare(block: 1, reason: "plan-block0")
             }
@@ -1047,8 +1473,8 @@ final class ExplainViewModel: ObservableObject {
 
     // MARK: - 块准备与入队
 
-    private func prepareAndEnqueue(block idx: Int) async {
-        let generation = contentGeneration
+    private func prepareAndEnqueue(block idx: Int, generation: UInt64) async {
+        guard generation == contentGeneration, !Task.isCancelled else { return }
         let startedAt = Date()
         let cachedAtStart = prepared[idx] != nil
         kindlePerfLog("prepare-enqueue begin idx=\(idx) total=\(totalBlocks) cached=\(cachedAtStart ? "Y" : "N")")
@@ -1247,11 +1673,12 @@ final class ExplainViewModel: ObservableObject {
     }
 
     private func enqueue(_ pb: PreparedBlock, idx: Int) {
+        guard let session = ensureAudioSessionClaim() else { return }
         prepared[idx] = pb   // 缓存每块（含 block 0），供 replay 复用、不重新 TTS/调后端
         if !isReplayingCached {
             replayBlocks.append(pb)
         }
-        audio.clearQueue()
+        _ = audio.clearQueue(session: session)
         currentBlockIndex = idx
         explanationText = pb.sentences.first ?? pb.text
         updateNowPlayingCaption(explanationText)
@@ -1260,9 +1687,15 @@ final class ExplainViewModel: ObservableObject {
                  idx, totalBlocks, pb.marks.count, pb.text.count, pb.segments.count)
         status = .streaming(block: idx, total: totalBlocks)
         isPreparingNext = false
-        audio.moreSegmentsExpected = true
-        for seg in pb.segments { audio.loadSegment(seg) }
-        audio.moreSegmentsExpected = false
+        _ = audio.setMoreSegmentsExpected(true, session: session)
+        for seg in pb.segments {
+            _ = audio.loadSegment(
+                seg,
+                autoPlay: !liveWebTurnIntentSuspended,
+                session: session
+            )
+        }
+        _ = audio.setMoreSegmentsExpected(false, session: session)
         // PDF 连续解读：当前页一开始播就后台预取下一页首块，切页时秒接（消除页间 gap）。
         if !isReplayingCached { prefetchNextPage() }
     }
@@ -1291,7 +1724,10 @@ final class ExplainViewModel: ObservableObject {
                 kindlePerfLog("kindleExplainBlockPrefetch await current=\(currentBlockIndex) next=\(next)")
                 isPreparingNext = true
             }
-            Task { await prepareAndEnqueue(block: next) }
+            let generation = contentGeneration
+            orchestrationTask = Task { [weak self] in
+                await self?.prepareAndEnqueue(block: next, generation: generation)
+            }
             return
         }
         // 当前批讲解播完 → 自动推进下一批续播，直到全书末尾（听完整本）。
@@ -1347,6 +1783,13 @@ final class ExplainViewModel: ObservableObject {
             return
         }
         let prevSummary = makeBatchContinuitySummary()
+        let prefetchedForBatch = prefetchedBatch.flatMap {
+            $0.startIndex == start ? $0 : nil
+        }
+        // A new batch reuses the same user session, but none of the previous
+        // batch's delayed block tasks may write into its page-local block keys.
+        beginFreshContentGeneration()
+        let generation = contentGeneration
         batchPrevSummary = prevSummary
         debugLog("advanceBatch start=%d paras=%d chars=%d prevSummary=%d prefetched=%@",
                  start, batch.paras.count, batch.paras.reduce(0) { $0 + $1.text.count },
@@ -1364,8 +1807,7 @@ final class ExplainViewModel: ObservableObject {
         scrollTarget = -1
 
         // 命中批间预取 → 已规划好（跳过 extract-plan「通读」那段 gap）；block0 TTS 在此生成（此刻 TTS 空闲、不冲突）。
-        if let pf = prefetchedBatch, pf.startIndex == start {
-            prefetchedBatch = nil
+        if let pf = prefetchedForBatch {
             jobId = pf.jobId
             totalBlocks = pf.totalBlocks
             setOutputLanguage(pf.outputLanguage)
@@ -1378,14 +1820,12 @@ final class ExplainViewModel: ObservableObject {
                 isPreparingNext = false
                 enqueue(pb0, idx: 0)
                 if totalBlocks > 1 {
-                    Task { [weak self] in
-                        if let pb1 = try? await self?.prepareBlock(1) {
-                            await MainActor.run { self?.prepared[1] = pb1 }
-                        }
-                    }
+                    startBackgroundPrepare(block: 1, reason: "batch-prefetched-block0")
                 }
             } else {
-                orchestrationTask = Task { [weak self] in await self?.prepareAndEnqueue(block: 0) }
+                orchestrationTask = Task { [weak self] in
+                    await self?.prepareAndEnqueue(block: 0, generation: generation)
+                }
             }
             return
         }
@@ -1396,7 +1836,9 @@ final class ExplainViewModel: ObservableObject {
         isPreparingNext = true
         stageText = AppLocalized("继续讲解…")
         status = .planning
-        orchestrationTask = Task { [weak self] in await self?.runPlan() }
+        orchestrationTask = Task { [weak self] in
+            await self?.runPlan(generation: generation)
+        }
     }
 
     // MARK: - 页间预取（连续解读：当前页播放时后台预规划 + 预生成下一页首块，切页秒接）
@@ -1413,7 +1855,12 @@ final class ExplainViewModel: ObservableObject {
     private var prefetchedBatch: BatchPlan?
     private var prefetchingBatchStart: Int?
 
-    private func clearPagePrefetch() { prefetchedBatch = nil; prefetchingBatchStart = nil }
+    private func clearPagePrefetch() {
+        pagePrefetchTask?.cancel()
+        pagePrefetchTask = nil
+        prefetchedBatch = nil
+        prefetchingBatchStart = nil
+    }
 
     /// 后台预规划下一批：倒数第二块播起先 plan，最后一块播起再生成下一批 block0 TTS，切批时直接播放。
     private func prefetchNextPage() {
@@ -1428,12 +1875,16 @@ final class ExplainViewModel: ObservableObject {
                   currentBlockIndex >= max(0, totalBlocks - 1),
                   prefetchingBatchStart == nil else { return }
             prefetchingBatchStart = start
-            Task { [weak self] in
+            let generation = contentGeneration
+            pagePrefetchTask = Task { [weak self] in
                 guard let self else { return }
+                guard generation == self.contentGeneration, !Task.isCancelled else { return }
                 do {
                     let pb0 = try await self.prepareSection(existing.section0, idx: 0, composeIdx: 0,
                                                             jobId: existing.jobId, language: existing.outputLanguage)
                     await MainActor.run {
+                        guard generation == self.contentGeneration,
+                              !Task.isCancelled else { return }
                         if self.prefetchedBatch?.startIndex == start {
                             self.prefetchedBatch = BatchPlan(startIndex: existing.startIndex,
                                                              jobId: existing.jobId,
@@ -1446,9 +1897,14 @@ final class ExplainViewModel: ObservableObject {
                                           start, pb0.marks.count, pb0.text.count)
                         }
                         if self.prefetchingBatchStart == start { self.prefetchingBatchStart = nil }
+                        self.pagePrefetchTask = nil
                     }
                 } catch {
-                    await MainActor.run { if self.prefetchingBatchStart == start { self.prefetchingBatchStart = nil } }
+                    await MainActor.run {
+                        guard generation == self.contentGeneration else { return }
+                        if self.prefetchingBatchStart == start { self.prefetchingBatchStart = nil }
+                        self.pagePrefetchTask = nil
+                    }
                 }
             }
             return
@@ -1457,21 +1913,28 @@ final class ExplainViewModel: ObservableObject {
         guard prefetchedBatch == nil, prefetchingBatchStart == nil else { return }
         guard currentBlockIndex >= max(0, totalBlocks - 2) else { return }
         prefetchingBatchStart = start
-        Task { [weak self] in
+        let generation = contentGeneration
+        pagePrefetchTask = Task { [weak self] in
             guard let self else { return }
+            guard generation == self.contentGeneration, !Task.isCancelled else { return }
             do {
                 let plan = try await self.planBatch(startIndex: start, paras: batch.paras, prevSummary: prevSummary)
+                guard generation == self.contentGeneration,
+                      !Task.isCancelled else { return }
                 if self.prefetchingBatchStart == start {
                     self.prefetchedBatch = plan
                     self.debugLog("prefetchBatch PLAN start=%d total=%d prevSummary=%d",
                                   start, plan.totalBlocks, plan.prevSummary?.count ?? 0)
                 }
                 self.prefetchingBatchStart = nil
+                self.pagePrefetchTask = nil
                 if self.currentBlockIndex >= max(0, self.totalBlocks - 1) {
                     self.prefetchNextPage()
                 }
             } catch {
+                guard generation == self.contentGeneration else { return }
                 if self.prefetchingBatchStart == start { self.prefetchingBatchStart = nil }
+                self.pagePrefetchTask = nil
             }
         }
     }
@@ -1541,7 +2004,7 @@ final class ExplainViewModel: ObservableObject {
     // MARK: - marks 触发（块时间线）
 
     private func onTick(_ t: Double) {
-        guard isActive else { return }
+        guard ownsAudioQueue else { return }
         guard let seg = audio.currentSegment, seg.paragraphIndex == currentBlockIndex else { return }
         let segs = prepared[currentBlockIndex]?.segments ?? marksContextSegments
         let priorDuration = segs.prefix(while: { $0.id != seg.id }).reduce(0) { $0 + effectiveDuration($1) }

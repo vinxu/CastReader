@@ -11,6 +11,32 @@ import Foundation
 import SwiftUI
 import WebKit
 
+enum LiveWebPageTurnDirection: String {
+    case previous = "prev"
+    case next
+}
+
+/// Keeps the SwiftUI playback bar independent from the WKWebView lifecycle.
+/// The representable attaches its current coordinator once the reader exists;
+/// page buttons can then drive the same manual-turn transaction as a gesture
+/// inside the commercial reader.
+@MainActor
+final class LiveWebPageTurnController: ObservableObject {
+    private weak var bridge: WebReaderBridge?
+
+    fileprivate func attach(_ bridge: WebReaderBridge) {
+        self.bridge = bridge
+    }
+
+    func turn(_ direction: LiveWebPageTurnDirection) {
+        bridge?.requestUserPageTurn(direction)
+    }
+
+    func retryReader() {
+        bridge?.retryLiveWebReader()
+    }
+}
+
 /// WeRead's legacy desktop reader chooses its complete Canvas/CSS palette from
 /// browser-local state during boot.  Set that state before navigation rather
 /// than repainting individual DOM colors after the Canvas is already rasterized.
@@ -53,6 +79,7 @@ enum WeReadNativeTheme {
 final class WebReaderContainerView: UIView {
     let webView: WKWebView
     let isWeRead: Bool
+    let isKobo: Bool
     private let loadingCover = UIView()
     private var lastSurfaceSize: CGSize = .zero
     private var lastReportedViewport: (left: Double, right: Double)?
@@ -61,11 +88,13 @@ final class WebReaderContainerView: UIView {
     init(
         webView: WKWebView,
         isWeRead: Bool,
+        isKobo: Bool,
         initialSurfaceSize: CGSize,
         loadAction: @escaping () -> Void
     ) {
         self.webView = webView
         self.isWeRead = isWeRead
+        self.isKobo = isKobo
         self.lastAppliedWeReadStyle = webView.overrideUserInterfaceStyle
         lastSurfaceSize = initialSurfaceSize
         super.init(frame: CGRect(origin: .zero, size: initialSurfaceSize))
@@ -81,6 +110,16 @@ final class WebReaderContainerView: UIView {
             loadingCover.backgroundColor = backgroundColor
             loadingCover.isUserInteractionEnabled = false
             loadingCover.frame = CGRect(origin: .zero, size: initialSurfaceSize)
+        } else if isKobo {
+            backgroundColor = .systemBackground
+            loadingCover.backgroundColor = backgroundColor
+            // Kobo is still repaginating while this cover is visible. Block
+            // touches so a swipe cannot race the atomic reflow transaction.
+            loadingCover.isUserInteractionEnabled = true
+            loadingCover.frame = CGRect(
+                origin: .zero,
+                size: initialSurfaceSize
+            )
         }
 
         // Navigation starts only after both native frames have their final
@@ -105,7 +144,15 @@ final class WebReaderContainerView: UIView {
             }
             if loadingCover.superview != nil { loadingCover.frame = bounds }
         } else {
+            let surfaceChanged =
+                abs(lastSurfaceSize.width - bounds.width) > 2 ||
+                abs(lastSurfaceSize.height - bounds.height) > 2
+            if surfaceChanged {
+                lastSurfaceSize = bounds.size
+                if isKobo { showLiveWebLoadingCover() }
+            }
             webView.frame = bounds
+            if loadingCover.superview != nil { loadingCover.frame = bounds }
         }
     }
 
@@ -138,6 +185,11 @@ final class WebReaderContainerView: UIView {
 
     func showWeReadLoadingCover() {
         guard isWeRead else { return }
+        showLiveWebLoadingCover()
+    }
+
+    func showLiveWebLoadingCover() {
+        guard isWeRead || isKobo else { return }
         loadingCover.backgroundColor = backgroundColor
         if loadingCover.superview == nil { addSubview(loadingCover) }
         loadingCover.frame = bounds
@@ -146,6 +198,11 @@ final class WebReaderContainerView: UIView {
 
     func finishWeReadSurfaceTransition() {
         guard isWeRead else { return }
+        finishLiveWebSurfaceTransition()
+    }
+
+    func finishLiveWebSurfaceTransition() {
+        guard isWeRead || isKobo else { return }
         // Never gate visibility on an optional DOM measurement. Navigation and
         // Canvas stability can complete without a viewport report (for example
         // a title/cover page), and the old two-signal gate could stay white.
@@ -181,11 +238,14 @@ struct WebReaderView: UIViewRepresentable {
     let mode: ReaderMode
     let refocusToken: Int
     let initialSurfaceSize: CGSize
+    let bottomContentOcclusion: CGFloat
     @ObservedObject var weReadTOC: WeReadTOCController
+    @ObservedObject var pageTurnController: LiveWebPageTurnController
 
     func makeCoordinator() -> WebReaderBridge { WebReaderBridge() }
 
     func makeUIView(context: Context) -> WebReaderContainerView {
+        let livePlatform = LiveWebPlatformID(sourceKind: document.sourceKind)
         let controller = WKUserContentController()
         if document.sourceKind == .weread {
             controller.add(context.coordinator, contentWorld: .page, name: WebReaderBridge.handlerName)
@@ -214,6 +274,38 @@ struct WebReaderView: UIViewRepresentable {
                 forMainFrameOnly: true,
                 in: .page
             ))
+        } else if document.sourceKind == .googleBooks {
+            // Play 图书的正文在跨源 iframe（books.googleusercontent.com）里，
+            // 所以 bundle 必须注入**所有帧**：顶层壳装 CR 转发，阅读帧装真正的桥。
+            controller.addUserScript(WKUserScript(
+                source: GoogleBooksWebScripts.readerShellPrelude,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
+            if let js = Self.loadBundleJS() {
+                controller.addUserScript(WKUserScript(
+                    source: js,
+                    injectionTime: .atDocumentEnd,
+                    forMainFrameOnly: false
+                ))
+            }
+        } else if document.sourceKind == .kobo {
+            // Kobo keeps reflowable chapter DOM in same-origin srcdoc iframes.
+            // The main-frame adapter owns extraction and reaches into those
+            // documents directly; injecting into each preloaded chapter would
+            // let several frames compete for native playback ownership.
+            controller.addUserScript(WKUserScript(
+                source: KoboWebScripts.readerShellPrelude,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
+            if let js = Self.loadBundleJS() {
+                controller.addUserScript(WKUserScript(
+                    source: js,
+                    injectionTime: .atDocumentEnd,
+                    forMainFrameOnly: true
+                ))
+            }
         } else if let js = Self.loadBundleJS() {
             controller.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         }
@@ -221,6 +313,11 @@ struct WebReaderView: UIViewRepresentable {
         let config = WKWebViewConfiguration()
         config.userContentController = controller
         config.allowsInlineMediaPlayback = true
+        if let livePlatform {
+            // 登录态与阅读态共用同一个 website data store（绑定流程在那里登录）。
+            config.websiteDataStore = livePlatform.websiteDataStore
+            config.defaultWebpagePreferences.preferredContentMode = .mobile
+        }
         if document.sourceKind == .weread {
             config.websiteDataStore = .default()
             // Desktop identity and viewport sizing are separate concerns.
@@ -253,13 +350,36 @@ struct WebReaderView: UIViewRepresentable {
                 "WEREAD viewport create frame=\(Int(openingCrop.offsetX)),0,\(Int(initialSurfaceSize.width * openingCrop.widthScale)),\(Int(initialSurfaceSize.height)) cssCompact=\(compact) pagePadding=\(Int(WeReadViewportCrop.compactPageHorizontalPadding))"
             )
         }
+        if let livePlatform {
+#if DEBUG
+            webView.isInspectable = true
+#endif
+            // Each platform owns its browser identity. The shared mobile
+            // content mode keeps the CSS viewport equal to the native surface;
+            // pageZoom remains 1 so the painted page also occupies it exactly.
+            webView.customUserAgent = livePlatform.userAgent
+            webView.pageZoom = livePlatform.pageZoom
+            webView.accessibilityIdentifier =
+                livePlatform.accessibilityIdentifier
+            ReaderRunLog.write(
+                "\(livePlatform.logPrefix) viewport create " +
+                "surface=\(Int(initialSurfaceSize.width))x\(Int(initialSurfaceSize.height)) " +
+                "pageZoom=\(String(format: "%.2f", Double(livePlatform.pageZoom)))"
+            )
+        }
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.backgroundColor = .clear
         webView.isOpaque = false
         context.coordinator.webView = webView
         webView.navigationDelegate = context.coordinator
-        context.coordinator.configure(expectsDynamicWebContent: document.sourceKind == .web, isWeRead: document.sourceKind == .weread)
+        context.coordinator.configure(
+            expectsDynamicWebContent: document.sourceKind == .web,
+            isWeRead: document.sourceKind == .weread,
+            livePlatform: livePlatform,
+            bookID: document.id
+        )
         context.coordinator.attach(readVM: readVM, explainVM: explainVM)
+        pageTurnController.attach(context.coordinator)
         if document.sourceKind == .weread {
             context.coordinator.attachWeReadTOC(weReadTOC, bookID: document.id)
         }
@@ -267,7 +387,11 @@ struct WebReaderView: UIViewRepresentable {
         let isDarkMode = colorScheme == .dark
         let loadAction = {
             // 网址源：直接加载网页（保留原排版）。
-            if (document.sourceKind == .web || document.sourceKind == .weread),
+            if (
+                document.sourceKind == .web
+                    || document.sourceKind == .weread
+                    || document.sourceKind.isLiveWebLibrary
+            ),
                let urlStr = document.sourceURL,
                let url = URL(string: urlStr) {
                 if document.sourceKind == .weread {
@@ -291,6 +415,7 @@ struct WebReaderView: UIViewRepresentable {
         let container = WebReaderContainerView(
             webView: webView,
             isWeRead: isWeRead,
+            isKobo: document.sourceKind == .kobo,
             initialSurfaceSize: initialSurfaceSize,
             loadAction: loadAction
         )
@@ -303,12 +428,23 @@ struct WebReaderView: UIViewRepresentable {
         context.coordinator.onWeReadSurfaceStable = { [weak container] in
             container?.finishWeReadSurfaceTransition()
         }
+        context.coordinator.onLiveWebNeedsLoadingCover = {
+            [weak container] in
+            container?.showLiveWebLoadingCover()
+        }
+        context.coordinator.onLiveWebSurfaceStable = { [weak container] in
+            container?.finishLiveWebSurfaceTransition()
+        }
         return container
     }
 
     func updateUIView(_ container: WebReaderContainerView, context: Context) {
         let isApplicationActive = scenePhase == .active
         context.coordinator.applicationActivityChanged(isActive: isApplicationActive)
+        context.coordinator.updateLiveWebViewport(
+            surfaceSize: initialSurfaceSize,
+            bottomOcclusion: bottomContentOcclusion
+        )
 
         // SwiftUI can transiently republish a different colorScheme while the
         // scene is resigning active. Treating that inactive snapshot as a real

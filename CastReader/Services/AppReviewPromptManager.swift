@@ -64,7 +64,7 @@ struct AppReviewAutomaticPageContinuation: Equatable, Sendable {
         for sourceKind: ReadingSourceKind
     ) -> AppReviewReadSessionProgress? {
         switch sourceKind {
-        case .kindle, .weread:
+        case .kindle, .weread, .googleBooks, .kobo:
             return progress
         case .photo, .text, .web, .docx, .pdf, .epub:
             return nil

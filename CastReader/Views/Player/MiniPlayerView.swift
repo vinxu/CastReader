@@ -66,7 +66,7 @@ private struct MiniPlayerBar: View {
         if isFinished {
             if isExplain { explainVM.replay() } else { readVM.start() }
         } else if isExplain {
-            audio.togglePlayPause()        // 解读次数已在 start 计扣，暂停/恢复不涉及额度
+            explainVM.togglePlayPause()    // VM validates/rebuilds its owned queue after a mode handoff
         } else {
             readVM.togglePlayPause()       // 朗读按时长计 → 经 VM 补额度闸门，防暂停后绕过
         }
@@ -143,11 +143,16 @@ private struct MiniPlayerBar: View {
         }
         guard let raw = audio.currentCoverUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
               !raw.isEmpty else { return nil }
+        if let cached = ImageCache.shared.get(raw) {
+            return cached
+        }
         let url = URL(string: raw)
             ?? raw.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed).flatMap(URL.init(string:))
         guard let url else { return nil }
         guard let data = try? await URLSession.shared.data(from: url).0 else { return nil }
-        return UIImage(data: data)
+        guard let image = UIImage(data: data) else { return nil }
+        ImageCache.shared.set(raw, image: image, data: data)
+        return image
     }
 
     private var icon: some View {

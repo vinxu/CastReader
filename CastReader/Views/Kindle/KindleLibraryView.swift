@@ -22,6 +22,10 @@ struct KindleLibraryView: View {
         Array(filteredBooks.prefix(page * pageSize))
     }
 
+    private var hasSearchQuery: Bool {
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -59,24 +63,41 @@ struct KindleLibraryView: View {
     }
 
     private var controls: some View {
-        HStack {
-            Picker("排序", selection: $sort) {
-                ForEach(KindleLibrarySort.allCases) { item in
-                    Text(item.label).tag(item)
-                }
-            }
-            .pickerStyle(.segmented)
-
-            Button {
-                showConnect = true
-            } label: {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 15, weight: .semibold))
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "globe")
                     .foregroundColor(AppTheme.primary)
-                    .frame(width: 36, height: 36)
-                    .background(AppTheme.primary.opacity(0.12), in: Circle())
+                Text("\(store.boundStorefront.flag) \(store.boundStorefront.displayName)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(AppTheme.foreground)
+                Spacer()
+                Button("同步") {
+                    showConnect = true
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(AppTheme.primary)
+                .accessibilityIdentifier("kindleLibraryStorefrontSyncButton")
             }
-            .accessibilityLabel(Text("同步 Kindle 书架"))
+
+            HStack {
+                Picker("排序", selection: $sort) {
+                    ForEach(KindleLibrarySort.allCases) { item in
+                        Text(item.label).tag(item)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Button {
+                    showConnect = true
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(AppTheme.primary)
+                        .frame(width: 36, height: 36)
+                        .background(AppTheme.primary.opacity(0.12), in: Circle())
+                }
+                .accessibilityLabel(Text("同步 Kindle 书架"))
+            }
         }
     }
 
@@ -91,25 +112,87 @@ struct KindleLibraryView: View {
         }
     }
 
+    @ViewBuilder
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: store.needsConnection ? "books.vertical" : "magnifyingglass")
-                .font(.system(size: 32, weight: .semibold))
+        if hasSearchQuery {
+            VStack(spacing: 12) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 32, weight: .semibold))
+                    .foregroundColor(AppTheme.primary)
+                Text("没有匹配的书籍")
+                    .font(.headline)
+                    .foregroundColor(AppTheme.foreground)
+                Text("试试其他书名、作者或 ASIN。")
+                    .font(.subheadline)
+                    .foregroundColor(AppTheme.mutedForeground)
+                    .multilineTextAlignment(.center)
+                Button("清除搜索") {
+                    query = ""
+                }
+                .font(.subheadline.weight(.semibold))
                 .foregroundColor(AppTheme.primary)
-            Text(LocalizedStringKey(store.needsConnection ? "绑定 Kindle" : "没有匹配的书籍"))
-                .font(.headline)
-                .foregroundColor(AppTheme.foreground)
-            Button(LocalizedStringKey(store.needsConnection ? "登录" : "刷新")) {
-                showConnect = true
             }
-            .font(.subheadline.weight(.semibold))
-            .foregroundColor(.white)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 10)
-            .background(AppTheme.primary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 50)
+            .accessibilityIdentifier("kindleLibrarySearchEmptyState")
+        } else if store.needsConnection {
+            VStack(spacing: 12) {
+                Image(systemName: "books.vertical")
+                    .font(.system(size: 32, weight: .semibold))
+                    .foregroundColor(AppTheme.primary)
+                Text("绑定 Kindle")
+                    .font(.headline)
+                    .foregroundColor(AppTheme.foreground)
+                Text("\(store.boundStorefront.flag) \(store.boundStorefront.displayName)")
+                    .font(.subheadline)
+                    .foregroundColor(AppTheme.mutedForeground)
+                Button("登录") {
+                    showConnect = true
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .background(AppTheme.primary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 50)
+            .accessibilityIdentifier("kindleLibraryConnectEmptyState")
+        } else {
+            VStack(spacing: 12) {
+                Image(systemName: "books.vertical")
+                    .font(.system(size: 32, weight: .semibold))
+                    .foregroundColor(AppTheme.primary)
+                Text("当前站点的书架是空的")
+                    .font(.headline)
+                    .foregroundColor(AppTheme.foreground)
+                Text("\(store.boundStorefront.flag) \(store.boundStorefront.displayName)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(AppTheme.foreground)
+                Text("你的书可能在其他亚马逊站点，也可以重新同步当前书架。")
+                    .font(.subheadline)
+                    .foregroundColor(AppTheme.mutedForeground)
+                    .multilineTextAlignment(.center)
+
+                HStack(spacing: 10) {
+                    Button("同步") {
+                        showConnect = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(AppTheme.primary)
+
+                    Button("换站") {
+                        showConnect = true
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(AppTheme.primary)
+                }
+                .font(.subheadline.weight(.semibold))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 50)
+            .accessibilityIdentifier("kindleLibraryStorefrontEmptyState")
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 50)
     }
 
     private var loadMoreButton: some View {

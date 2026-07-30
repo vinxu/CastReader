@@ -119,17 +119,21 @@ struct ProUpsellContent: View {
         .alert("恢复购买", isPresented: $showRestoreAlert) {
             Button("好", role: .cancel) {}
         } message: { Text(restoreMessage) }
-        .onAppear { Task { await reloadProducts(); await pro.refresh() } }
-        .onChange(of: pro.products.map(\.id)) { ids in
-            if selectedProductID == nil || !ids.contains(selectedProductID ?? "") {
-                selectedProductID = pro.products.first(where: { $0.subscription?.subscriptionPeriod.unit == .year })?.id
-                    ?? pro.products.first?.id
-            }
-        }
+        .onAppear { Task { await reloadProducts(); syncDefaultSelection(); await pro.refresh() } }
+        .onChange(of: pro.products.map(\.id)) { _ in syncDefaultSelection() }
         .task {
             if pro.isCrossPlatformPro { onPurchased() }
         }
         .onChange(of: pro.isCrossPlatformPro) { isPro in if isPro { onPurchased() } }
+    }
+
+    /// 默认选中年付。必须在 onAppear 也调一次：产品已缓存时 `onChange` 不会触发，
+    /// 选择留在 nil 会让购买按钮一直是禁用的灰色状态，试用文案也不显示。
+    private func syncDefaultSelection() {
+        let ids = pro.products.map(\.id)
+        guard selectedProductID == nil || !ids.contains(selectedProductID ?? "") else { return }
+        selectedProductID = pro.products.first { $0.subscription?.subscriptionPeriod.unit == .year }?.id
+            ?? pro.products.first?.id
     }
 
     /// 加载产品；加载后仍为空标记 loadFailed，供付费墙显示「重试」而非永久转圈。
@@ -266,19 +270,9 @@ struct ProUpsellContent: View {
                     ProgressView("加载订阅…")
                 }
             }
-        } else if !auth.hasEmailAccount {
-            Button { showLogin = true } label: {
-                HStack {
-                    Image(systemName: "person.crop.circle.badge.checkmark")
-                    Text("登录邮箱后购买 Pro").fontWeight(.semibold)
-                }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(AppTheme.primary)
-                .foregroundColor(.white)
-                .cornerRadius(14)
-            }
         } else {
+            // 套餐与试用文案对未登录用户同样可见——把价格和「7 天免费试用」藏在登录之后，
+            // 等于这个试用没上线。登录门槛只保留在「购买」这个动作上。
             VStack(spacing: 12) {
                 ForEach(pro.products, id: \.id) { product in
                     Button {
@@ -288,9 +282,21 @@ struct ProUpsellContent: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(product.displayName).fontWeight(.semibold)
                                 Text(periodText(product)).font(.caption).opacity(0.85)
+                                if let days = trialDays(product) {
+                                    Text(String(format: AppLocalized("%d 天免费试用"), days))
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundColor(AppTheme.primary)
+                                }
                             }
                             Spacer()
-                            Text(product.displayPrice).fontWeight(.bold)
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text(product.displayPrice).fontWeight(.bold)
+                                if trialDays(product) != nil {
+                                    Text(AppLocalized("试用结束后收费"))
+                                        .font(.caption2)
+                                        .foregroundColor(AppTheme.mutedForeground)
+                                }
+                            }
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
@@ -304,13 +310,15 @@ struct ProUpsellContent: View {
                     .disabled(busy)
                 }
                 Button {
+                    guard auth.hasEmailAccount else { showLogin = true; return }
                     guard let product = pro.products.first(where: { $0.id == selectedProductID }) else { return }
                     busy = true
                     Task { _ = await pro.purchase(product, analyticsTrigger: analyticsTrigger); busy = false }
                 } label: {
                     HStack {
                         if busy { ProgressView().tint(.white) }
-                        Text("升级到 CastReader Pro").fontWeight(.bold)
+                        if !auth.hasEmailAccount { Image(systemName: "person.crop.circle.badge.checkmark") }
+                        Text(primaryCTATitle).fontWeight(.bold)
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -318,7 +326,60 @@ struct ProUpsellContent: View {
                 .buttonStyle(.borderedProminent)
                 .tint(AppTheme.primary)
                 .disabled(busy || selectedProductID == nil)
+
+                if !auth.hasEmailAccount {
+                    Text("购买前需要登录邮箱，用于跨设备同步 Pro。")
+                        .font(.caption2)
+                        .foregroundColor(AppTheme.mutedForeground)
+                        .multilineTextAlignment(.center)
+                }
+
+                if let disclosure = trialDisclosure {
+                    Text(disclosure)
+                        .font(.caption2)
+                        .foregroundColor(AppTheme.mutedForeground)
+                        .multilineTextAlignment(.center)
+                }
             }
+        }
+    }
+
+    private var selectedProduct: Product? {
+        pro.products.first { $0.id == selectedProductID }
+    }
+
+    /// 有资格才显示试用天数；没资格的老用户走原有价格文案。
+    private func trialDays(_ product: Product) -> Int? {
+        guard pro.showsFreeTrial(for: product) else { return nil }
+        return ProManager.freeTrialDays(for: product)
+    }
+
+    private var primaryCTATitle: String {
+        guard let product = selectedProduct, let days = trialDays(product) else {
+            return AppLocalized("升级到 CastReader Pro")
+        }
+        return String(format: AppLocalized("开始 %d 天免费试用"), days)
+    }
+
+    /// Apple 3.1.2：试用必须在购买点明示「试用时长 + 到期价格 + 自动续订 + 可取消」。
+    private var trialDisclosure: String? {
+        guard let product = selectedProduct, let days = trialDays(product) else { return nil }
+        return String(
+            format: AppLocalized("免费试用 %1$d 天，之后按 %2$@%3$@自动续订。可随时在 App Store 设置中取消。"),
+            days,
+            product.displayPrice,
+            perPeriodSuffix(product)
+        )
+    }
+
+    /// 「/月」「/年」后缀，拼在价格后面构成“$34.99/年”。
+    private func perPeriodSuffix(_ p: Product) -> String {
+        switch p.subscription?.subscriptionPeriod.unit {
+        case .month: return AppLocalized("/月")
+        case .year: return AppLocalized("/年")
+        case .week: return AppLocalized("/周")
+        case .day: return AppLocalized("/天")
+        default: return ""
         }
     }
 

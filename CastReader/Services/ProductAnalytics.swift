@@ -88,6 +88,8 @@ enum AnalyticsContentSource: String, Codable, Sendable {
     case history
     case kindle
     case weread
+    case googleBooks = "google_books"
+    case kobo
     case unknown
 }
 
@@ -100,6 +102,8 @@ enum AnalyticsContentFormat: String, Codable, Sendable {
     case web
     case kindle
     case weread
+    case googleBooks = "google_books"
+    case kobo
     case unknown
 }
 
@@ -114,6 +118,7 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
     var result: String?
     var errorStage: String?
     var errorCode: String?
+    var storefront: String?
     var language: String?
     var voiceId: String?
     var speed: Double?
@@ -163,7 +168,8 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         store: String? = nil,
         productId: String? = nil,
         activationSource: String? = nil,
-        syncState: String? = nil
+        syncState: String? = nil,
+        storefront: String? = nil
     ) {
         self.launchType = launchType
         self.contentSource = contentSource
@@ -175,6 +181,7 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         self.result = result
         self.errorStage = errorStage
         self.errorCode = errorCode
+        self.storefront = storefront
         self.language = language
         self.voiceId = voiceId
         self.speed = speed
@@ -231,17 +238,36 @@ struct AnalyticsContentContext: Equatable, Sendable {
     let format: AnalyticsContentFormat
     let entryPoint: String
     let intendedMode: String
+    let storefront: String?
     let startedAt: Date
 
     static func fallback(for document: ReadingDocument, entryPoint: String = "reader_open") -> AnalyticsContentContext {
-        AnalyticsContentContext(
+        let storefront = document.sourceKind == .kindle
+            ? KindleStorefront.entry(rawURL: document.sourceURL)?.id
+            : nil
+        return AnalyticsContentContext(
             contentSessionId: UUID().uuidString,
-            source: document.sourceKind == .kindle ? .kindle : (document.sourceKind == .weread ? .weread : .unknown),
+            source: AnalyticsContentSource(boundLibrary: document.sourceKind),
             format: AnalyticsContentFormat(document.sourceKind),
             entryPoint: entryPoint,
             intendedMode: "read",
+            storefront: storefront,
             startedAt: Date()
         )
+    }
+}
+
+extension AnalyticsContentSource {
+    /// 绑定书库来源之外一律 unknown：
+    /// 自带内容的来源由具体导入入口决定，不能从 sourceKind 反推。
+    init(boundLibrary sourceKind: ReadingSourceKind) {
+        switch sourceKind {
+        case .kindle: self = .kindle
+        case .weread: self = .weread
+        case .googleBooks: self = .googleBooks
+        case .kobo: self = .kobo
+        default: self = .unknown
+        }
     }
 }
 
@@ -251,6 +277,8 @@ extension AnalyticsContentFormat {
         case .photo: self = .photo
         case .kindle: self = .kindle
         case .weread: self = .weread
+        case .googleBooks: self = .googleBooks
+        case .kobo: self = .kobo
         case .text: self = .text
         case .web: self = .web
         case .docx: self = .docx
@@ -318,17 +346,17 @@ enum AnalyticsSchema {
 
     private static let definitions: [AnalyticsEventName: Definition] = [
         .appSessionStart: .init(required: ["launchType"], optional: []),
-        .contentIntent: .init(required: ["contentSource", "contentFormat"], optional: ["intendedMode"]),
-        .contentReady: .init(required: ["contentSource", "contentFormat", "lengthBucket", "paragraphCountBucket"], optional: ["latencyMs"]),
-        .contentFailed: .init(required: ["contentSource", "contentFormat", "result", "errorStage", "errorCode"], optional: ["latencyMs"]),
-        .readStart: .init(required: ["contentSource", "contentFormat", "language", "voiceId", "speed", "resume"], optional: []),
-        .readFirstAudio: .init(required: ["latencyMs", "language", "voiceId"], optional: []),
-        .readMilestone: .init(required: ["milestoneSeconds", "playbackSeconds"], optional: ["completionBucket"]),
-        .readEnd: .init(required: ["result", "endReason", "playbackSeconds", "completionBucket"], optional: ["errorStage", "errorCode"]),
-        .explainStart: .init(required: ["contentSource", "contentFormat", "language", "scenario"], optional: []),
-        .explainFirstBlock: .init(required: ["latencyMs", "scenario"], optional: []),
-        .explainMilestone: .init(required: ["milestone", "blocksStarted", "blocksCompleted"], optional: []),
-        .explainEnd: .init(required: ["result", "endReason", "blocksStarted", "blocksCompleted", "completionBucket"], optional: ["errorStage", "errorCode"]),
+        .contentIntent: .init(required: ["contentSource", "contentFormat"], optional: ["intendedMode", "storefront"]),
+        .contentReady: .init(required: ["contentSource", "contentFormat", "lengthBucket", "paragraphCountBucket"], optional: ["latencyMs", "storefront"]),
+        .contentFailed: .init(required: ["contentSource", "contentFormat", "result", "errorStage", "errorCode"], optional: ["latencyMs", "storefront"]),
+        .readStart: .init(required: ["contentSource", "contentFormat", "language", "voiceId", "speed", "resume"], optional: ["storefront"]),
+        .readFirstAudio: .init(required: ["latencyMs", "language", "voiceId"], optional: ["storefront"]),
+        .readMilestone: .init(required: ["milestoneSeconds", "playbackSeconds"], optional: ["completionBucket", "storefront"]),
+        .readEnd: .init(required: ["result", "endReason", "playbackSeconds", "completionBucket"], optional: ["errorStage", "errorCode", "storefront"]),
+        .explainStart: .init(required: ["contentSource", "contentFormat", "language", "scenario"], optional: ["storefront"]),
+        .explainFirstBlock: .init(required: ["latencyMs", "scenario"], optional: ["storefront"]),
+        .explainMilestone: .init(required: ["milestone", "blocksStarted", "blocksCompleted"], optional: ["storefront"]),
+        .explainEnd: .init(required: ["result", "endReason", "blocksStarted", "blocksCompleted", "completionBucket"], optional: ["errorStage", "errorCode", "storefront"]),
         .paywallShown: .init(required: ["trigger", "entitlementState"], optional: ["hadMeaningfulReading"]),
         .homeProCardImpression: .init(required: [], optional: []),
         .homeProCardYearlyPurchaseTap: .init(required: [], optional: []),
@@ -363,7 +391,7 @@ enum AnalyticsSchema {
         if !unknown.isEmpty {
             throw AnalyticsSchemaError.unknownProperties(unknown.sorted())
         }
-        try validateReviewValues(name, properties: properties)
+        try validateConstrainedValues(name, properties: properties)
     }
 
     static var eventNames: Set<String> { Set(AnalyticsEventName.allCases.map(\.rawValue)) }
@@ -374,10 +402,24 @@ enum AnalyticsSchema {
         return Set(object?.keys.map { $0 } ?? [])
     }
 
-    private static func validateReviewValues(
+    private static func validateConstrainedValues(
         _ name: AnalyticsEventName,
         properties: AnalyticsProperties
     ) throws {
+        if let storefront = properties.storefront,
+           KindleStorefront.storefront(id: storefront)?.id != storefront {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "storefront",
+                value: storefront
+            )
+        }
+        if properties.contentSource == AnalyticsContentSource.kindle.rawValue,
+           properties.storefront == nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "storefront",
+                value: "nil"
+            )
+        }
         guard name == .reviewPromptEligible
                 || name == .reviewRequestAttempted
                 || name == .reviewStoreLinkOpened else {
@@ -701,7 +743,8 @@ final class ProductAnalytics {
         source: AnalyticsContentSource,
         format: AnalyticsContentFormat,
         entryPoint: String,
-        intendedMode: String
+        intendedMode: String,
+        storefront: String? = nil
     ) -> AnalyticsContentContext {
         let context = AnalyticsContentContext(
             contentSessionId: UUID().uuidString,
@@ -709,6 +752,7 @@ final class ProductAnalytics {
             format: format,
             entryPoint: entryPoint,
             intendedMode: intendedMode,
+            storefront: storefront,
             startedAt: Date()
         )
         track(
@@ -722,7 +766,8 @@ final class ProductAnalytics {
             properties: .init(
                 contentSource: source.rawValue,
                 contentFormat: format.rawValue,
-                intendedMode: intendedMode
+                intendedMode: intendedMode,
+                storefront: storefront
             )
         )
         return context
@@ -742,7 +787,8 @@ final class ProductAnalytics {
                 contentFormat: AnalyticsContentFormat(document.sourceKind).rawValue,
                 lengthBucket: Self.lengthBucket(document.fullText.count),
                 paragraphCountBucket: Self.paragraphBucket(document.readableParagraphs.count),
-                latencyMs: max(0, Int(Date().timeIntervalSince(content.startedAt) * 1000))
+                latencyMs: max(0, Int(Date().timeIntervalSince(content.startedAt) * 1000)),
+                storefront: content.storefront
             )
         )
     }
@@ -766,7 +812,8 @@ final class ProductAnalytics {
                 latencyMs: max(0, Int(Date().timeIntervalSince(content.startedAt) * 1000)),
                 result: AnalyticsResult.failed.rawValue,
                 errorStage: stage,
-                errorCode: code
+                errorCode: code,
+                storefront: content.storefront
             )
         )
     }

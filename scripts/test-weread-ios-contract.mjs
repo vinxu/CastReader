@@ -662,9 +662,14 @@ assert.match(bridge, /formattingMatch/);
 assert.match(bridge, /manualTurnIntent/);
 assert.match(bridge, /document\.addEventListener\('pointerdown',manualTurnIntent,true\)/);
 assert.match(bridge, /\.renderTarget_pager_button_right/);
+assert.match(bridge, /\.renderTarget_pager_button_left/);
 assert.match(bridge, /\.readerFooter_button:last-child/);
-assert.match(bridge, /clean\(candidate\.textContent\)==='下一页'/);
-assert.match(bridge, /clearHighlight\(\);clearMarks\(\);const id=/);
+assert.match(bridge, /\.readerFooter_button:first-child/);
+assert.match(bridge, /function pageButton\(direction\)/);
+assert.match(bridge, /userPage\(direction\)/);
+assert.match(bridge, /intent:'native-control'/);
+assert.match(bridge, /reason:'manual-intent'/);
+assert.match(bridge, /clearHighlight\(\);clearMarks\(\);const canvasEpoch=/);
 assert.match(bridge, /z-index:4;pointer-events:none;overflow:hidden/);
 // Explain marks must use the same deterministic hand-drawn SVG contract as
 // Kindle. CSS boxes/system-font numbers look static and replay on every Canvas
@@ -720,8 +725,12 @@ assert.match(explainVMSource, /contentGeneration &\+= 1/);
 assert.match(explainVMSource, /guard generation == contentGeneration else \{ throw CancellationError\(\) \}/);
 assert.match(explainVMSource, /prepared\.removeAll\(\)[\s\S]*loadWebParagraphs\(p, language: language\)/);
 assert.match(explainVMSource, /if let prefetched \{[\s\S]*startFromPrefetched\(prefetched\)/);
-assert.match(readerHostSource, /portraitPlaybackBarHeight: CGFloat = 124/);
-assert.match(readerHostSource, /\.frame\(height: Self\.portraitPlaybackBarHeight\)/);
+assert.match(readerHostSource, /static let portraitHeight: CGFloat = 72/);
+assert.match(readerHostSource, /static let consoleHeight: CGFloat = 64/);
+assert.match(
+  readerHostSource,
+  /\.frame\(height: ReaderPlaybackBarLayoutContract\.reservedPortraitHeight\(for: mode\)\)/,
+);
 assert.match(appSource, /supportedInterfaceOrientationsFor/);
 assert.match(appSource, /requestGeometryUpdate/);
 assert.match(appSource, /static func lockCurrent/);

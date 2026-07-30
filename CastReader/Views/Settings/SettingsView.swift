@@ -19,13 +19,13 @@ struct SettingsView: View {
     @ObservedObject private var auth = AuthService.shared
     @ObservedObject private var kindleStore = KindleLibraryStore.shared
     @ObservedObject private var weReadStore = WeReadLibraryStore.shared
+    @ObservedObject private var googleBooksStore = GoogleBooksLibraryStore.shared
+    @ObservedObject private var koboStore = KoboLibraryStore.shared
     @ObservedObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
     @ObservedObject private var voiceCatalog = VoiceCatalogService.shared
     @State private var showPaywall = false
     @State private var showLogin = false
     @State private var showClearHistory = false
-    @State private var showUnbindKindle = false
-    @State private var showUnbindWeRead = false
     @State private var showVoiceBrowser = false
 
     init(onRequestLibraryOnboarding: ((Bool) -> Void)? = nil) {
@@ -67,25 +67,6 @@ struct SettingsView: View {
                 Button("清除全部", role: .destructive) { HistoryStore.shared.clearAll() }
                 Button("取消", role: .cancel) {}
             } message: { Text("将删除文库中全部本地历史，此操作不可撤销。") }
-            .alert("解绑 Kindle？", isPresented: $showUnbindKindle) {
-                Button("解绑", role: .destructive) {
-                    Task { @MainActor in
-                        KindlePlaybackCenter.shared.close()
-                        await kindleStore.disconnectAccount()
-                    }
-                }
-                Button("取消", role: .cancel) {}
-            } message: {
-                Text("将清除本机 Kindle 书架缓存和 read.amazon.com 登录状态。首页 Kindle 模块会回到绑定 Kindle，需要重新登录和同步。")
-            }
-            .alert(AppLocalized("解除微信读书绑定？"), isPresented: $showUnbindWeRead) {
-                Button(AppLocalized("解除绑定"), role: .destructive) {
-                    Task { @MainActor in await weReadStore.disconnectAccount() }
-                }
-                Button(AppLocalized("取消"), role: .cancel) {}
-            } message: {
-                Text(AppLocalized("将清除本机微信读书书架、阅读进度和登录状态，不会影响微信读书账号或书籍。"))
-            }
         }
         .navigationViewStyle(.stack)
     }
@@ -154,53 +135,50 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: 已绑定服务
+    // MARK: 书架来源
 
-    @ViewBuilder
     private var connectedServicesSection: some View {
-        if kindleStore.hasConnected || WeReadAvailability.current || weReadStore.hasConnected {
-            Section {
-                if kindleStore.hasConnected {
-                    HStack(spacing: 12) {
-                        Image(systemName: "books.vertical.fill")
-                            .foregroundColor(AppTheme.primary)
-                            .frame(width: 34, height: 34)
-                            .background(AppTheme.primary.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Kindle").font(.headline)
-                            Text(kindleStore.boundAccountDisplayName)
-                                .font(.caption).foregroundColor(AppTheme.mutedForeground).lineLimit(1)
-                        }
-                        Spacer()
+        Section {
+            NavigationLink {
+                LibrarySourcesView()
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "books.vertical.fill")
+                        .foregroundColor(AppTheme.primary)
+                        .frame(width: 34, height: 34)
+                        .background(
+                            AppTheme.primary.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        )
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(AppLocalized("书架来源"))
+                            .font(.headline)
+                        Text(AppLocalized("管理书架来源"))
+                            .font(.caption)
+                            .foregroundColor(AppTheme.mutedForeground)
                     }
-                    Button(role: .destructive) { showUnbindKindle = true } label: { Text("解绑 Kindle") }
-                }
-
-                if WeReadAvailability.current || weReadStore.hasConnected {
-                    HStack(spacing: 12) {
-                        Image(systemName: "book.closed.fill")
-                            .foregroundColor(AppTheme.primary)
-                            .frame(width: 34, height: 34)
-                            .background(AppTheme.primary.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(AppLocalized("微信读书")).font(.headline)
-                            Text(weReadStore.hasConnected
-                                 ? (weReadStore.accountLabel ?? AppLocalized("微信读书账号"))
-                                 : AppLocalized("未绑定"))
-                                .font(.caption).foregroundColor(AppTheme.mutedForeground).lineLimit(1)
-                        }
-                        Spacer()
-                    }
-                    Button(role: .destructive) { showUnbindWeRead = true } label: {
-                        Text(AppLocalized("解除微信读书登录"))
+                    Spacer()
+                    if connectedShelfSourceCount > 0 {
+                        Text("\(connectedShelfSourceCount)")
+                            .foregroundColor(AppTheme.mutedForeground)
                     }
                 }
-            } header: {
-                Text(AppLocalized("内容服务"))
-            } footer: {
-                Text(AppLocalized("解除绑定只清除本机 CastReader 的登录状态和书架缓存，不会影响原平台账号或书籍。"))
             }
+            .accessibilityIdentifier("settingsShelfSourcesLink")
+        } header: {
+            Text(AppLocalized("内容服务"))
+        } footer: {
+            Text(AppLocalized("登录后同步书架与阅读进度"))
         }
+    }
+
+    private var connectedShelfSourceCount: Int {
+        [
+            !kindleStore.needsConnection,
+            !weReadStore.needsConnection,
+            !googleBooksStore.needsConnection,
+            !koboStore.needsConnection,
+        ].filter { $0 }.count
     }
 
     // MARK: Pro

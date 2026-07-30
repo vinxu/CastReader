@@ -219,6 +219,16 @@ Constants.API.webURL           = https://castreader.ai                # 账号 /
 
 高亮与分页契约见 `docs/WeRead-iOS-Highlight-Pagination-Contract.md`；契约测试 `scripts/test-weread-ios-contract.mjs`（node 直接跑）。
 
+### Google Play 图书（`Services/GoogleBooks*`、`Models/GoogleBooksModels.swift`、`Views/GoogleBooks/`、`WebReader/src/play-books.ts`）
+
+第三个绑定书库，**复用 `.web` 渲染路径**（`WebReaderView` + `bundle.js` + `WebReaderBridge`），不 OCR、不存正文、不存凭据。方案全文见 `docs/GooglePlayBooks-iOS适配方案.md`（动之前先读）。三条铁律：
+
+- **正文在跨源 iframe**（`books.googleusercontent.com/books/reader/frame`），主帧 `play.google.com` **只有阅读器 UI**。所以 bundle 用 `forMainFrameOnly: false` 注入所有帧；主帧只装 `window.CR` 转发壳（postMessage → 子帧），**绝不在主帧提取正文**。native 的 `evaluateJavaScript` 只到主帧，靠这层转发才能驱动子帧高亮。
+- **`<p>.textContent` 是整章不是当前页**：Google 把整个 `.gb-segment` 渲进 `reader-rendered-page` 再裁剪分页。必须用 `visibleCharRange()` 的二分查找求可见字符区间，直接读 textContent 会一页读完整章。
+- **翻页只认可见区指纹**（`playBooksSignature()`：几何 + segment 位移 + 文本头尾），确认超时**不重试**（重试点击会跳页）。跨页断句复用微信读书已验证的 `WeReadCrossPageSpeechContract`。
+
+登录必须设完整 Mobile Safari UA（`GoogleBooksWebScripts.mobileSafariUserAgent`）——WKWebView 默认 UA 缺 `Version/… Safari/…`，Google 判为「不安全的浏览器」拒绝登录。
+
 ### 网页 / DOCX（`Views/Reader/WebReaderView.swift` + `Services/WebReaderBridge.swift`）
 
 - `WebReaderView` 加载 URL 或本地渲染文件，注入 `WebAssets/bundle.js`（扩展同源的 DOM 高亮/标注 JS）。DOCX 在 WebView 内用 mammoth.js 转 HTML（**不上传后端**）。

@@ -227,4 +227,67 @@ final class PaymentTests: XCTestCase {
         XCTAssertFalse(ProManager.shared.storeKitPro, "订阅失效 → storeKitPro=false")
         XCTAssertFalse(ProManager.shared.isPro, "失效后 isPro=false（已关模拟解锁）")
     }
+
+    // MARK: 8. 首购免费试用
+
+    func testBothProductsOfferSevenDayFreeTrial() async throws {
+        let products = try await Product.products(for: ProManager.productIDs)
+        XCTAssertEqual(products.count, 2)
+        for product in products {
+            let offer = try XCTUnwrap(product.subscription?.introductoryOffer, "\(product.id) 缺少首购优惠")
+            XCTAssertEqual(offer.paymentMode, .freeTrial, "\(product.id) 应为免费试用而非首期折扣")
+            XCTAssertEqual(ProManager.freeTrialDays(for: product), 7, "\(product.id) 应为 7 天试用")
+        }
+    }
+
+    /// 试用资格是每个 Apple ID 在订阅组内一次性的。资格用掉后仍显示「免费试用」属于 3.1.2
+    /// 误导性订阅文案，所以锁死门控：产品即便配置了 offer，只要不在资格集合里就不得承诺试用。
+    ///
+    /// 「购买 → isEligibleForIntroOffer 翻 false」是 Apple 的行为，不在这里复测
+    /// （真实购买弹窗会挂起测试运行、SKTestSession.buyProduct 在本宿主下抛 notEntitled）；
+    /// 这里用注入的资格集合确定性覆盖我们自己的分支。
+    @MainActor
+    func testFreeTrialGateRequiresBothOfferAndEligibility() async throws {
+        session.clearTransactions()
+        let pro = ProManager.shared
+        await pro.loadProducts()
+        let yearly = try XCTUnwrap(pro.yearly)
+        XCTAssertNotNil(yearly.subscription?.introductoryOffer, "本地配置应带 7 天试用 offer")
+
+        pro.setIntroOfferEligibilityForTesting([ProManager.yearlyID, ProManager.monthlyID])
+        XCTAssertTrue(pro.showsFreeTrial(for: yearly), "有 offer 且有资格 → 展示试用")
+
+        pro.setIntroOfferEligibilityForTesting([])
+        XCTAssertFalse(pro.showsFreeTrial(for: yearly), "资格已消耗 → 不得继续承诺试用")
+
+        // 真实刷新（未购买的干净会话）应恢复资格——顺带覆盖 refreshIntroOfferEligibility 主路径。
+        await pro.refreshIntroOfferEligibility()
+        XCTAssertTrue(pro.showsFreeTrial(for: yearly), "干净会话刷新后应重新可试用")
+    }
+
+    /// 没有试用资格时，付费入口必须退回纯价格文案，不能出现空的试用天数。
+    ///
+    /// 断言刻意做成语言无关的：测试宿主的 locale 不固定，写死任何一种语言的字面值都会假失败。
+    /// 这里验的是分支选择和占位符填充是否正确，而不是某种语言的译文。
+    func testHomeCardCopySwitchesBetweenTrialAndPrice() {
+        let trialTitle = HomeProTrialCopy.primaryTitle(trialDays: 7, annualDisplayPrice: "$34.99")
+        let priceTitle = HomeProTrialCopy.primaryTitle(trialDays: nil, annualDisplayPrice: "$34.99")
+        XCTAssertTrue(trialTitle.contains("7"), "有试用资格时主按钮必须写明天数：\(trialTitle)")
+        XCTAssertFalse(trialTitle.contains("$34.99"), "有试用资格时主按钮不该先喊价格：\(trialTitle)")
+        XCTAssertTrue(priceTitle.contains("$34.99"), "无试用资格时主按钮必须给价格：\(priceTitle)")
+        XCTAssertNotEqual(trialTitle, priceTitle)
+
+        // Apple 3.1.2：有试用就必须同时讲清试用时长与到期价格。
+        let trialNotice = HomeProTrialCopy.renewalNotice(trialDays: 7, annualDisplayPrice: "$34.99")
+        XCTAssertTrue(trialNotice.contains("7"), "续订说明缺试用时长：\(trialNotice)")
+        XCTAssertTrue(trialNotice.contains("$34.99"), "续订说明缺到期价格：\(trialNotice)")
+
+        let plainNotice = HomeProTrialCopy.renewalNotice(trialDays: nil, annualDisplayPrice: "$34.99")
+        XCTAssertFalse(plainNotice.contains("7"), "没有试用资格却出现试用天数：\(plainNotice)")
+        XCTAssertEqual(
+            HomeProTrialCopy.renewalNotice(trialDays: 7, annualDisplayPrice: nil),
+            plainNotice,
+            "拿不到价格时不能只承诺试用而不说到期价格"
+        )
+    }
 }

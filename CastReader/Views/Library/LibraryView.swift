@@ -17,7 +17,10 @@ struct LibraryView: View {
     @State private var selectedKind: ReadingSourceKind? = nil   // nil = 全部
 
     // 类型筛选固定展示顺序（只展示实际出现过的类型）。
-    private static let kindOrder: [ReadingSourceKind] = [.web, .pdf, .docx, .epub, .kindle, .photo, .text]
+    static let kindOrder: [ReadingSourceKind] = [
+        .web, .pdf, .docx, .epub, .kindle, .weread, .googleBooks, .kobo,
+        .photo, .text,
+    ]
 
     private var availableKinds: [ReadingSourceKind] {
         let present = Set(history.records.map { $0.sourceKind })
@@ -42,6 +45,15 @@ struct LibraryView: View {
             .navigationTitle("文库")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索标题或网址")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    NavigationLink(destination: LibrarySourcesView()) {
+                        Image(systemName: "books.vertical")
+                    }
+                    .accessibilityLabel(AppLocalized("管理书架来源"))
+                    .accessibilityIdentifier("librarySourcesToolbarButton")
+                }
+            }
     }
 
     @ViewBuilder
@@ -130,6 +142,8 @@ struct LibraryView: View {
         case .epub: return "EPUB"
         case .kindle: return "Kindle"
         case .weread: return "微信读书"
+        case .googleBooks: return "Google Play"
+        case .kobo: return "Kobo"
         case .photo: return AppLocalized("图片")
         case .text: return AppLocalized("文本")
         }
@@ -205,6 +219,8 @@ private struct HistoryRow: View {
         case .epub: return "EPUB"
         case .kindle: return "Kindle"
         case .weread: return "微信读书"
+        case .googleBooks: return "Google Play"
+        case .kobo: return "Kobo"
         case .photo: return AppLocalized("图片")
         case .text: return AppLocalized("文本")
         }

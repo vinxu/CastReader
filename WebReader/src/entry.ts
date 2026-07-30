@@ -5,6 +5,26 @@
 import { extractZones, readAllExtract, visibleTextBlockExtract } from '@/extractors/visible-text-block-extractor'
 import { weixinExtractor } from '@/extractors/weixin'
 import { initBridge } from './cr-bridge'
+import {
+  acceptPlayBooksHighlightRect,
+  extractPlayBooksParagraphs,
+  installPlayBooksReader,
+  installPlayBooksRelay,
+  installPlayBooksRelayReceiver,
+  isPlayBooksReaderFrame,
+  isPlayBooksRelayContainer,
+  playBooksFrameSessionID,
+  playBooksSignature,
+} from './play-books'
+import {
+  acceptKoboHighlightRect,
+  extractKoboParagraphs,
+  installKoboReader,
+  isKoboReaderDescendantFrame,
+  isKoboReaderMainFrame,
+  koboFrameSessionID,
+  koboSignature,
+} from './kobo'
 
 type Para = { text: string; element: HTMLElement }
 
@@ -43,4 +63,108 @@ function extract(): Para[] {
   return (r || []).map((p) => ({ text: p.text, element: p.element }))
 }
 
-initBridge({ extract })
+/**
+ * Google Play Books：正文在跨源 iframe 里，顶层壳没有任何可读内容。
+ * - 顶层壳：只装 CR 转发（native 的 evaluateJavaScript 只到主帧），绝不提取，
+ *   否则会把阅读器 UI 当正文读出来。
+ * - 阅读帧：站点专用提取 + 翻页/手动翻页监听驱动 rendered。
+ */
+function bootPlayBooks(): boolean {
+  if (isPlayBooksRelayContainer()) {
+    installPlayBooksRelay()
+    return true
+  }
+  if (!isPlayBooksReaderFrame()) return false
+
+  const frameSessionID = playBooksFrameSessionID()
+  installPlayBooksRelayReceiver(frameSessionID)
+  let pendingReason = 'initial'
+  let pendingPageMetadata: Record<string, unknown> = {}
+  initBridge({
+    extract: () => extractPlayBooksParagraphs() as unknown as Para[],
+    acceptHighlightRect: acceptPlayBooksHighlightRect,
+    autoExtract: false,
+    pageMeta: () => ({
+      source: 'google-books',
+      reason: pendingReason,
+      signature: playBooksSignature(),
+      frameSessionID,
+      ...pendingPageMetadata,
+    }),
+    onInstalled: ({ extract: doExtract }) => {
+      const CR = (window as unknown as { CR?: { disableScroll?: boolean } }).CR
+      if (CR) CR.disableScroll = true
+      const post = (type: string, payload: Record<string, unknown> = {}): void => {
+        try {
+          ;(window as unknown as {
+            webkit?: { messageHandlers?: Record<string, { postMessage: (m: unknown) => void }> }
+          }).webkit?.messageHandlers?.castreader?.postMessage({ type, payload })
+        } catch { /* */ }
+      }
+      installPlayBooksReader(post, (reason, metadata = {}) => {
+        pendingReason = reason
+        pendingPageMetadata = metadata
+        doExtract(reason)
+        pendingPageMetadata = {}
+      }, frameSessionID)
+    },
+  })
+  return true
+}
+
+/**
+ * Kobo: the shell owns one bridge and reads the same-origin srcdoc chapter
+ * frames directly.  Never install a competing bridge inside each preloaded
+ * chapter frame: those frames are a future-content buffer, not independent
+ * current pages.
+ */
+function bootKobo(): boolean {
+  if (isKoboReaderDescendantFrame()) return true
+  if (!isKoboReaderMainFrame()) return false
+
+  const frameSessionID = koboFrameSessionID()
+  let pendingReason = 'initial'
+  let pendingPageMetadata: Record<string, unknown> = {}
+  initBridge({
+    extract: () => extractKoboParagraphs() as unknown as Para[],
+    acceptHighlightRect: acceptKoboHighlightRect,
+    autoExtract: false,
+    pageMeta: () => ({
+      source: 'kobo',
+      reason: pendingReason,
+      signature: koboSignature(),
+      frameSessionID,
+      ...pendingPageMetadata,
+    }),
+    onInstalled: ({ extract: doExtract }) => {
+      const CR = (window as unknown as { CR?: { disableScroll?: boolean } }).CR
+      if (CR) CR.disableScroll = true
+      const post = (
+        type: string,
+        payload: Record<string, unknown> = {}
+      ): void => {
+        try {
+          ;(window as unknown as {
+            webkit?: {
+              messageHandlers?: Record<
+                string,
+                { postMessage: (message: unknown) => void }
+              >
+            }
+          }).webkit?.messageHandlers?.castreader?.postMessage({ type, payload })
+        } catch { /* */ }
+      }
+      installKoboReader(post, (reason, metadata = {}) => {
+        pendingReason = reason
+        pendingPageMetadata = metadata
+        doExtract(reason)
+        pendingPageMetadata = {}
+      }, frameSessionID)
+    },
+  })
+  return true
+}
+
+if (!bootKobo() && !bootPlayBooks()) {
+  initBridge({ extract })
+}
