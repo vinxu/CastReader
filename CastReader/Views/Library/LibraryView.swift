@@ -144,6 +144,7 @@ struct LibraryView: View {
         case .weread: return "微信读书"
         case .googleBooks: return "Google Play"
         case .kobo: return "Kobo"
+        case .oreilly: return "O’Reilly"
         case .photo: return AppLocalized("图片")
         case .text: return AppLocalized("文本")
         }
@@ -221,6 +222,7 @@ private struct HistoryRow: View {
         case .weread: return "微信读书"
         case .googleBooks: return "Google Play"
         case .kobo: return "Kobo"
+        case .oreilly: return "O’Reilly"
         case .photo: return AppLocalized("图片")
         case .text: return AppLocalized("文本")
         }

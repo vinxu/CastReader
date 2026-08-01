@@ -3142,15 +3142,60 @@
     },
     "Kobo" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kobo" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Kobo" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Kobo" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Kobo" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "Kobo" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Kobo" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Kobo" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Kobo" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Kobo" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo"
+          }
+        }
       }
     },
     "Kobo 书架已加载" : {
@@ -3271,15 +3316,60 @@
     },
     "Kobo 内容暂时无法打开，请重试。" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kobo-Inhalte können vorübergehend nicht geöffnet werden. Bitte versuche es erneut." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Kobo content is temporarily unavailable. Please try again." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "El contenido de Kobo no está disponible temporalmente. Inténtalo de nuevo." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Le contenu Kobo est temporairement indisponible. Réessayez." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "Kobo सामग्री अभी उपलब्ध नहीं है। फिर कोशिश करें।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Il contenuto Kobo non è temporaneamente disponibile. Riprova." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Kobo のコンテンツを一時的に開けません。もう一度お試しください。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "O conteúdo da Kobo está temporariamente indisponível. Tente novamente." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Kobo 内容暂时无法打开，请重试。" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo-Inhalte können vorübergehend nicht geöffnet werden. Bitte versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo content is temporarily unavailable. Please try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El contenido de Kobo no está disponible temporalmente. Inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le contenu Kobo est temporairement indisponible. Réessayez."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo सामग्री अभी उपलब्ध नहीं है। फिर कोशिश करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il contenuto Kobo non è temporaneamente disponibile. Riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo のコンテンツを一時的に開けません。もう一度お試しください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O conteúdo da Kobo está temporariamente indisponível. Tente novamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo 内容暂时无法打开，请重试。"
+          }
+        }
       }
     },
     "Kobo 登录已过期，请重新绑定 Kobo。" : {
@@ -3342,28 +3432,582 @@
     },
     "Kobo 阅读会话暂时失效。请重试打开；仍失败时再重新登录 Kobo。" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die Kobo-Lesesitzung ist vorübergehend ungültig. Öffne das Buch erneut; melde dich erst wieder bei Kobo an, wenn der Fehler bleibt." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your Kobo reading session is temporarily unavailable. Try opening the book again; sign in to Kobo again only if it still fails." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "La sesión de lectura de Kobo no está disponible temporalmente. Intenta abrir el libro de nuevo; vuelve a iniciar sesión en Kobo solo si sigue fallando." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "La session de lecture Kobo est temporairement indisponible. Essayez de rouvrir le livre ; reconnectez-vous à Kobo seulement si le problème persiste." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "आपका Kobo रीडिंग सत्र अभी उपलब्ध नहीं है। किताब दोबारा खोलें; समस्या बनी रहे तभी Kobo में फिर साइन इन करें।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "La sessione di lettura Kobo non è temporaneamente disponibile. Prova a riaprire il libro; accedi di nuovo a Kobo solo se il problema persiste." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Kobo の読書セッションを一時的に利用できません。もう一度本を開き、解決しない場合のみ Kobo に再ログインしてください。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "A sessão de leitura da Kobo está temporariamente indisponível. Tente abrir o livro novamente; entre na Kobo de novo apenas se o problema continuar." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Kobo 阅读会话暂时失效。请重试打开；仍失败时再重新登录 Kobo。" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Kobo-Lesesitzung ist vorübergehend ungültig. Öffne das Buch erneut; melde dich erst wieder bei Kobo an, wenn der Fehler bleibt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Kobo reading session is temporarily unavailable. Try opening the book again; sign in to Kobo again only if it still fails."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sesión de lectura de Kobo no está disponible temporalmente. Intenta abrir el libro de nuevo; vuelve a iniciar sesión en Kobo solo si sigue fallando."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La session de lecture Kobo est temporairement indisponible. Essayez de rouvrir le livre ; reconnectez-vous à Kobo seulement si le problème persiste."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपका Kobo रीडिंग सत्र अभी उपलब्ध नहीं है। किताब दोबारा खोलें; समस्या बनी रहे तभी Kobo में फिर साइन इन करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sessione di lettura Kobo non è temporaneamente disponibile. Prova a riaprire il libro; accedi di nuovo a Kobo solo se il problema persiste."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo の読書セッションを一時的に利用できません。もう一度本を開き、解決しない場合のみ Kobo に再ログインしてください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A sessão de leitura da Kobo está temporariamente indisponível. Tente abrir o livro novamente; entre na Kobo de novo apenas se o problema continuar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kobo 阅读会话暂时失效。请重试打开；仍失败时再重新登录 Kobo。"
+          }
+        }
+      }
+    },
+    "O’Reilly" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly"
+          }
+        }
+      }
+    },
+    "O’Reilly Learning" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly Learning"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly Learning"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly Learning"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly Learning"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly Learning"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly Learning"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly Learning"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly Learning"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly Learning"
+          }
+        }
+      }
+    },
+    "O’Reilly 个人账户" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privates O’Reilly-Konto"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personal O’Reilly account"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuenta personal de O’Reilly"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compte O’Reilly personnel"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "व्यक्तिगत O’Reilly खाता"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account O’Reilly personale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly 個人アカウント"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conta pessoal da O’Reilly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly 个人账户"
+          }
+        }
+      }
+    },
+    "O’Reilly 机构账户没有传统书架，CastReader 会同步你实际打开过的书。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Institutionelle O’Reilly-Konten haben kein klassisches Bücherregal. CastReader synchronisiert die Bücher, die Sie tatsächlich geöffnet haben."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Institutional O’Reilly accounts do not have a traditional bookshelf. CastReader syncs books you have actually opened."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las cuentas institucionales de O’Reilly no tienen una estantería tradicional. CastReader sincroniza los libros que hayas abierto."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les comptes institutionnels O’Reilly ne disposent pas d’une bibliothèque classique. CastReader synchronise les livres que vous avez réellement ouverts."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly के संस्थागत खातों में पारंपरिक बुकशेल्फ़ नहीं होती। CastReader उन किताबों को सिंक करता है जिन्हें आपने वास्तव में खोला है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gli account istituzionali O’Reilly non hanno una libreria tradizionale. CastReader sincronizza i libri che hai effettivamente aperto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly の機関アカウントには従来型の本棚がありません。CastReader は実際に開いた本を同期します。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As contas institucionais da O’Reilly não têm uma estante tradicional. O CastReader sincroniza os livros que você realmente abriu."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly 机构账户没有传统书架，CastReader 会同步你实际打开过的书。"
+          }
+        }
+      }
+    },
+    "O’Reilly 登录已失效" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly-Anmeldung abgelaufen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly sign-in expired"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sesión de O’Reilly caducó"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La connexion à O’Reilly a expiré"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly साइन-इन की समय-सीमा समाप्त हो गई"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso a O’Reilly scaduto"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly のログイン期限が切れました"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O acesso à O’Reilly expirou"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly 登录已失效"
+          }
+        }
+      }
+    },
+    "O’Reilly 登录已过期，请重新绑定 O’Reilly。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die O’Reilly-Anmeldung ist abgelaufen. Verbinden Sie O’Reilly erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your O’Reilly sign-in has expired. Reconnect O’Reilly."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu sesión de O’Reilly ha caducado. Vuelve a conectar O’Reilly."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre connexion O’Reilly a expiré. Reconnectez O’Reilly."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपका O’Reilly साइन-इन समाप्त हो गया है। O’Reilly को फिर से कनेक्ट करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’accesso a O’Reilly è scaduto. Ricollega O’Reilly."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly のログイン期限が切れました。O’Reilly を再接続してください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seu login na O’Reilly expirou. Reconecte a O’Reilly."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly 登录已过期，请重新绑定 O’Reilly。"
+          }
+        }
+      }
+    },
+    "O’Reilly 阅读历史已加载" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly-Leseverlauf geladen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly reading history loaded"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de lectura de O’Reilly cargado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historique de lecture O’Reilly chargé"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly का पढ़ने का इतिहास लोड हो गया"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cronologia di lettura O’Reilly caricata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly の読書履歴を読み込みました"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Histórico de leitura da O’Reilly carregado"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly 阅读历史已加载"
+          }
+        }
+      }
+    },
+    "O’Reilly 阅读历史已同步" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly-Leseverlauf synchronisiert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly reading history synced"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de lectura de O’Reilly sincronizado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historique de lecture O’Reilly synchronisé"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly का पढ़ने का इतिहास सिंक हो गया"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cronologia di lettura O’Reilly sincronizzata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly の読書履歴を同期しました"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Histórico de leitura da O’Reilly sincronizado"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly 阅读历史已同步"
+          }
+        }
       }
     },
     "paused" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pausiert" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Paused" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "En pausa" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "En pause" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "रुका हुआ" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "In pausa" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "一時停止中" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Pausado" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已暂停" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausiert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En pausa"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En pause"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "रुका हुआ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In pausa"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一時停止中"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausado"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已暂停"
+          }
+        }
       }
     },
     "PDF / TXT / 图片 / EPUB" : {
@@ -3543,15 +4187,60 @@
     },
     "playing" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wird wiedergegeben" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Playing" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Reproduciendo" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Lecture en cours" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "चल रहा है" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Riproduzione in corso" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "再生中" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Reproduzindo" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在播放" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird wiedergegeben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproduciendo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lecture en cours"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "चल रहा है"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riproduzione in corso"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再生中"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproduzindo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在播放"
+          }
+        }
       }
     },
     "PRO" : {
@@ -6047,6 +6736,122 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用 Google 继续"
+          }
+        }
+      }
+    },
+    "使用 O’Reilly 个人账户" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privates O’Reilly-Konto verwenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use a personal O’Reilly account"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar una cuenta personal de O’Reilly"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utiliser un compte O’Reilly personnel"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "व्यक्तिगत O’Reilly खाते का उपयोग करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa un account O’Reilly personale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly 個人アカウントを使用"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar uma conta pessoal da O’Reilly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 O’Reilly 个人账户"
+          }
+        }
+      }
+    },
+    "使用机构访问链接" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Institutionellen Zugangslink verwenden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use an institutional access link"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar un enlace de acceso institucional"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utiliser un lien d’accès institutionnel"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "संस्थागत एक्सेस लिंक का उपयोग करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa un link di accesso istituzionale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "機関アクセスリンクを使用"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar um link de acesso institucional"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用机构访问链接"
           }
         }
       }
@@ -10062,6 +10867,64 @@
         }
       }
     },
+    "同步 O’Reilly 阅读历史" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly-Leseverlauf synchronisieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync O’Reilly reading history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizar el historial de lectura de O’Reilly"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchroniser l’historique de lecture O’Reilly"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly का पढ़ने का इतिहास सिंक करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizza la cronologia di lettura O’Reilly"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly の読書履歴を同期"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizar o histórico de leitura da O’Reilly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步 O’Reilly 阅读历史"
+          }
+        }
+      }
+    },
     "同步你的电子书书架" : {
       "localizations" : {
         "de" : {
@@ -10290,6 +11153,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "图片"
+          }
+        }
+      }
+    },
+    "在 O’Reilly 打开过的书会在重新同步后显示在这里。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In O’Reilly geöffnete Bücher werden nach der nächsten Synchronisierung hier angezeigt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Books you open in O’Reilly will appear here after you sync again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los libros que abras en O’Reilly aparecerán aquí después de volver a sincronizar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les livres ouverts dans O’Reilly apparaîtront ici après la prochaine synchronisation."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly में खोली गई किताबें दोबारा सिंक करने के बाद यहाँ दिखाई देंगी।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I libri aperti in O’Reilly verranno visualizzati qui dopo la nuova sincronizzazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly で開いた本は、再同期するとここに表示されます。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Os livros que você abrir na O’Reilly aparecerão aqui após uma nova sincronização."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 O’Reilly 打开过的书会在重新同步后显示在这里。"
           }
         }
       }
@@ -11106,6 +12027,64 @@
         }
       }
     },
+    "学校或图书馆" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schule oder Bibliothek"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "School or library"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escuela o biblioteca"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "École ou bibliothèque"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "स्कूल या लाइब्रेरी"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scuola o biblioteca"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学校または図書館"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escola ou biblioteca"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学校或图书馆"
+          }
+        }
+      }
+    },
     "完成" : {
       "localizations" : {
         "de" : {
@@ -11166,15 +12145,60 @@
     },
     "完成绑定" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verknüpfung abschließen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Finish Connecting" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Completar vinculación" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Terminer la connexion" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "कनेक्शन पूरा करें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Completa il collegamento" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "連携を完了" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Concluir conexão" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "完成绑定" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verknüpfung abschließen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish Connecting"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completar vinculación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminer la connexion"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कनेक्शन पूरा करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa il collegamento"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連携を完了"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Concluir conexão"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成绑定"
+          }
+        }
       }
     },
     "完成首次朗读" : {
@@ -12454,6 +13478,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已同步的 Kobo 书架"
+          }
+        }
+      }
+    },
+    "已同步的 O’Reilly 阅读历史" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronisierter O’Reilly-Leseverlauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synced O’Reilly reading history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de lectura de O’Reilly sincronizado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historique de lecture O’Reilly synchronisé"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सिंक किया गया O’Reilly पढ़ने का इतिहास"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cronologia di lettura O’Reilly sincronizzata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期済みの O’Reilly 読書履歴"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Histórico de leitura da O’Reilly sincronizado"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已同步的 O’Reilly 阅读历史"
           }
         }
       }
@@ -14839,6 +15921,64 @@
         }
       }
     },
+    "当前页面没有找到 O’Reilly 阅读历史中的书籍。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf dieser Seite wurden keine Bücher aus dem O’Reilly-Leseverlauf gefunden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No books from your O’Reilly reading history were found on this page."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se encontraron libros de tu historial de lectura de O’Reilly en esta página."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun livre de votre historique de lecture O’Reilly n’a été trouvé sur cette page."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "इस पेज पर O’Reilly के पढ़ने के इतिहास की कोई किताब नहीं मिली।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In questa pagina non sono stati trovati libri della cronologia di lettura O’Reilly."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このページには O’Reilly の読書履歴にある本が見つかりませんでした。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhum livro do seu histórico de leitura da O’Reilly foi encontrado nesta página."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前页面没有找到 O’Reilly 阅读历史中的书籍。"
+          }
+        }
+      }
+    },
     "当前页面没有找到微信读书书籍。" : {
       "localizations" : {
         "de" : {
@@ -16169,6 +17309,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "打开一本书"
+          }
+        }
+      }
+    },
+    "打开书籍后会自动返回并更新阅读历史。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach dem Öffnen eines Buchs kehrst du automatisch zurück und der Leseverlauf wird aktualisiert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After you open a book, we’ll return automatically and update your reading history."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Después de abrir un libro, volverás automáticamente y se actualizará tu historial de lectura."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Après avoir ouvert un livre, vous reviendrez automatiquement et votre historique de lecture sera mis à jour."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "किताब खोलने के बाद आप अपने-आप वापस आ जाएंगे और पढ़ने का इतिहास अपडेट हो जाएगा।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dopo aver aperto un libro, tornerai automaticamente qui e la cronologia di lettura verrà aggiornata."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "書籍を開くと自動的に戻り、読書履歴が更新されます。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Depois de abrir um livro, você voltará automaticamente e o histórico de leitura será atualizado."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开书籍后会自动返回并更新阅读历史。"
           }
         }
       }
@@ -18090,6 +19288,64 @@
         }
       }
     },
+    "支持个人订阅，也支持学校、公司和图书馆提供的机构访问。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Persönliche Abos und institutionelle Zugänge über Schulen, Unternehmen und Bibliotheken werden unterstützt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supports personal subscriptions and institutional access provided by schools, companies, and libraries."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compatible con suscripciones personales y con el acceso institucional de escuelas, empresas y bibliotecas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compatible avec les abonnements personnels et les accès institutionnels fournis par les écoles, les entreprises et les bibliothèques."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "व्यक्तिगत सदस्यता और स्कूलों, कंपनियों व लाइब्रेरी द्वारा दिए गए संस्थागत एक्सेस का समर्थन करता है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supporta gli abbonamenti personali e l’accesso istituzionale fornito da scuole, aziende e biblioteche."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "個人サブスクリプションのほか、学校・企業・図書館が提供する機関アクセスにも対応しています。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compatível com assinaturas pessoais e com o acesso institucional oferecido por escolas, empresas e bibliotecas."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "支持个人订阅，也支持学校、公司和图书馆提供的机构访问。"
+          }
+        }
+      }
+    },
     "收藏" : {
       "localizations" : {
         "de" : {
@@ -19714,6 +20970,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "暂无收藏的音色"
+          }
+        }
+      }
+    },
+    "暂无阅读历史" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Leseverlauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No reading history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay historial de lectura"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun historique de lecture"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पढ़ने का कोई इतिहास नहीं"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna cronologia di lettura"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "読書履歴はありません"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhum histórico de leitura"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无阅读历史"
           }
         }
       }
@@ -22624,6 +23938,64 @@
         }
       }
     },
+    "正在同步 O’Reilly 阅读历史…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly-Leseverlauf wird synchronisiert …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Syncing O’Reilly reading history…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizando el historial de lectura de O’Reilly…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronisation de l’historique de lecture O’Reilly…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly का पढ़ने का इतिहास सिंक हो रहा है…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizzazione della cronologia di lettura O’Reilly…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly の読書履歴を同期中…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizando o histórico de leitura da O’Reilly…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在同步 O’Reilly 阅读历史…"
+          }
+        }
+      }
+    },
     "正在同步会员状态…" : {
       "localizations" : {
         "de" : {
@@ -22974,6 +24346,64 @@
         }
       }
     },
+    "正在恢复之前使用的登录会话。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die zuvor verwendete Anmeldesitzung wird wiederhergestellt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restoring the previous sign-in session."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurando la sesión de inicio de sesión anterior."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restauration de la session de connexion précédente."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पहले इस्तेमाल किए गए साइन-इन सेशन को बहाल किया जा रहा है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristino della sessione di accesso precedente."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前回使用したログインセッションを復元しています。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurando a sessão de login usada anteriormente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在恢复之前使用的登录会话。"
+          }
+        }
+      }
+    },
     "正在打开 Google Play 图书…" : {
       "localizations" : {
         "de" : {
@@ -23144,6 +24574,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在打开 Kobo…"
+          }
+        }
+      }
+    },
+    "正在打开 O’Reilly 阅读历史…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly-Leseverlauf wird geöffnet …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opening O’Reilly reading history…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abriendo el historial de lectura de O’Reilly…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouverture de l’historique de lecture O’Reilly…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly का पढ़ने का इतिहास खोला जा रहा है…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apertura della cronologia di lettura O’Reilly…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly の読書履歴を開いています…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrindo o histórico de leitura da O’Reilly…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在打开 O’Reilly 阅读历史…"
           }
         }
       }
@@ -23325,15 +24813,60 @@
     },
     "正在扫描 Google Play 图书书架…" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Google Play Bücher-Bibliothek wird durchsucht …" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scanning your Google Play Books library…" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Buscando en tu biblioteca de Google Play Libros…" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Analyse de votre bibliothèque Google Play Livres…" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "आपकी Google Play Books लाइब्रेरी स्कैन की जा रही है…" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Scansione della raccolta Google Play Libri…" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Google Play ブックスのライブラリをスキャン中…" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Verificando sua biblioteca do Google Play Livros…" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在扫描 Google Play 图书书架…" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google Play Bücher-Bibliothek wird durchsucht …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scanning your Google Play Books library…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscando en tu biblioteca de Google Play Libros…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analyse de votre bibliothèque Google Play Livres…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपकी Google Play Books लाइब्रेरी स्कैन की जा रही है…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scansione della raccolta Google Play Libri…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Google Play ブックスのライブラリをスキャン中…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificando sua biblioteca do Google Play Livros…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在扫描 Google Play 图书书架…"
+          }
+        }
       }
     },
     "正在扫描 Google Play 图书书架…（%d）" : {
@@ -23743,17 +25276,178 @@
         }
       }
     },
+    "正在查找你最近阅读的书。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zuletzt gelesene Bücher werden gesucht."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for your recently read books."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscando los libros que has leído recientemente."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherche de vos livres lus récemment."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "हाल में पढ़ी गई किताबें खोजी जा रही हैं।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricerca dei libri letti di recente."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近読んだ本を検索しています。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Procurando os livros que você leu recentemente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在查找你最近阅读的书。"
+          }
+        }
+      }
+    },
     "正在检测书架中的书籍，请稍候。" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bücher in deiner Bibliothek werden gesucht. Bitte warten." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking for books in your library. Please wait." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Buscando libros en tu biblioteca. Espera un momento." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Recherche des livres dans votre bibliothèque. Veuillez patienter." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "आपकी लाइब्रेरी में किताबें ढूँढी जा रही हैं। कृपया प्रतीक्षा करें।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Ricerca dei libri nella tua libreria. Attendi." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "本棚の書籍を確認しています。しばらくお待ちください。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Procurando livros na sua biblioteca. Aguarde." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在检测书架中的书籍，请稍候。" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bücher in deiner Bibliothek werden gesucht. Bitte warten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking for books in your library. Please wait."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscando libros en tu biblioteca. Espera un momento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherche des livres dans votre bibliothèque. Veuillez patienter."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपकी लाइब्रेरी में किताबें ढूँढी जा रही हैं। कृपया प्रतीक्षा करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricerca dei libri nella tua libreria. Attendi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本棚の書籍を確認しています。しばらくお待ちください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Procurando livros na sua biblioteca. Aguarde."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在检测书架中的书籍，请稍候。"
+          }
+        }
+      }
+    },
+    "正在确认 O’Reilly 登录…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly-Anmeldung wird bestätigt …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirming O’Reilly sign-in…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmando el inicio de sesión en O’Reilly…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmation de la connexion O’Reilly…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly साइन-इन की पुष्टि की जा रही है…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica dell’accesso a O’Reilly…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly のログインを確認しています…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmando o login na O’Reilly…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在确认 O’Reilly 登录…"
+          }
+        }
       }
     },
     "正在等待 Kindle 书架加载…" : {
@@ -23874,15 +25568,60 @@
     },
     "正在等待书架内容完整加载，请勿关闭此页面。" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die Bibliothek wird vollständig geladen. Bitte diese Seite nicht schließen." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waiting for the full library to load. Please keep this page open." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Esperando a que se cargue toda la biblioteca. No cierres esta página." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Chargement complet de la bibliothèque en cours. Ne fermez pas cette page." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "पूरी लाइब्रेरी लोड होने की प्रतीक्षा हो रही है। कृपया यह पेज खुला रखें।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Attendi il caricamento completo della libreria. Non chiudere questa pagina." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "本棚全体の読み込みを待っています。このページを閉じないでください。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Aguardando o carregamento completo da biblioteca. Mantenha esta página aberta." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在等待书架内容完整加载，请勿关闭此页面。" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Bibliothek wird vollständig geladen. Bitte diese Seite nicht schließen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for the full library to load. Please keep this page open."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando a que se cargue toda la biblioteca. No cierres esta página."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chargement complet de la bibliothèque en cours. Ne fermez pas cette page."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पूरी लाइब्रेरी लोड होने की प्रतीक्षा हो रही है। कृपया यह पेज खुला रखें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attendi il caricamento completo della libreria. Non chiudere questa pagina."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本棚全体の読み込みを待っています。このページを閉じないでください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aguardando o carregamento completo da biblioteca. Mantenha esta página aberta."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在等待书架内容完整加载，请勿关闭此页面。"
+          }
+        }
       }
     },
     "正在等待书架完整加载，请稍候。" : {
@@ -23939,6 +25678,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在等待书架完整加载，请稍候。"
+          }
+        }
+      }
+    },
+    "正在等待书目完整加载，请稍候。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die vollständige Bücherliste wird geladen. Bitte warten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for the complete book list to load."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando a que se cargue la lista completa de libros."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chargement de la liste complète des livres. Veuillez patienter."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पूरी किताबों की सूची लोड होने तक प्रतीक्षा करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attendi il caricamento dell’elenco completo dei libri."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "書籍リストがすべて読み込まれるまでお待ちください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aguarde o carregamento da lista completa de livros."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在等待书目完整加载，请稍候。"
           }
         }
       }
@@ -26325,6 +28122,64 @@
         }
       }
     },
+    "登录完成后会自动进入阅读历史。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach der Anmeldung wird der Leseverlauf automatisch geöffnet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your reading history will open automatically after you sign in."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El historial de lectura se abrirá automáticamente al iniciar sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’historique de lecture s’ouvrira automatiquement après la connexion."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "साइन इन पूरा होने के बाद पढ़ने का इतिहास अपने आप खुल जाएगा।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La cronologia di lettura si aprirà automaticamente dopo l’accesso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログインが完了すると、読書履歴が自動的に開きます。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O histórico de leitura será aberto automaticamente após o login."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录完成后会自动进入阅读历史。"
+          }
+        }
+      }
+    },
     "登录成功，正在进入书架…" : {
       "localizations" : {
         "de" : {
@@ -26379,6 +28234,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "登录成功，正在进入书架…"
+          }
+        }
+      }
+    },
+    "登录成功，正在进入阅读历史…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anmeldung erfolgreich. Leseverlauf wird geöffnet …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign-in successful. Opening reading history…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicio de sesión correcto. Abriendo el historial de lectura…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connexion réussie. Ouverture de l’historique de lecture…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "साइन-इन सफल रहा। पढ़ने का इतिहास खोला जा रहा है…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso riuscito. Apertura della cronologia di lettura…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログインしました。読書履歴を開いています…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Login concluído. Abrindo o histórico de leitura…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录成功，正在进入阅读历史…"
           }
         }
       }
@@ -26558,6 +28471,122 @@
         }
       }
     },
+    "登录页面会使用完整空间，CastReader 不会保存密码。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Anmeldeseite nutzt den gesamten Bildschirm. CastReader speichert Ihr Passwort nicht."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The sign-in page uses the full screen. CastReader does not store your password."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La página de inicio de sesión usa toda la pantalla. CastReader no guarda tu contraseña."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La page de connexion utilise tout l’écran. CastReader n’enregistre pas votre mot de passe."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "साइन-इन पेज पूरी स्क्रीन का उपयोग करेगा। CastReader आपका पासवर्ड सेव नहीं करता।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La pagina di accesso utilizza tutto lo schermo. CastReader non salva la tua password."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログインページは画面全体に表示されます。CastReader がパスワードを保存することはありません。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A página de login usa a tela inteira. O CastReader não salva sua senha."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录页面会使用完整空间，CastReader 不会保存密码。"
+          }
+        }
+      }
+    },
+    "登录页面会使用完整空间，完成后自动读取阅读历史。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Anmeldeseite nutzt den gesamten Bildschirm. Anschließend wird der Leseverlauf automatisch geladen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The sign-in page uses the full screen. Your reading history will load automatically when you finish."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La página de inicio de sesión usa toda la pantalla. Al terminar, el historial de lectura se cargará automáticamente."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La page de connexion utilise tout l’écran. Une fois terminé, l’historique de lecture sera chargé automatiquement."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "साइन-इन पेज पूरी स्क्रीन का उपयोग करेगा। पूरा होने पर पढ़ने का इतिहास अपने आप लोड हो जाएगा।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La pagina di accesso utilizza tutto lo schermo. Al termine, la cronologia di lettura verrà caricata automaticamente."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログインページは画面全体に表示されます。完了すると読書履歴が自動的に読み込まれます。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A página de login usa a tela inteira. Ao concluir, o histórico de leitura será carregado automaticamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录页面会使用完整空间，完成后自动读取阅读历史。"
+          }
+        }
+      }
+    },
     "登录页面会使用完整空间，完成后自动返回书架。" : {
       "localizations" : {
         "de" : {
@@ -26612,6 +28641,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "登录页面会使用完整空间，完成后自动返回书架。"
+          }
+        }
+      }
+    },
+    "登录页面会使用完整空间，完成后自动进入阅读历史。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Anmeldeseite nutzt den gesamten Bildschirm. Anschließend wird der Leseverlauf automatisch geöffnet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The sign-in page uses the full screen. You’ll be taken to your reading history when you finish."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La página de inicio de sesión usa toda la pantalla. Al terminar, accederás automáticamente al historial de lectura."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La page de connexion utilise tout l’écran. Une fois terminé, l’historique de lecture s’ouvrira automatiquement."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "साइन-इन पेज पूरी स्क्रीन का उपयोग करेगा। पूरा होने पर पढ़ने का इतिहास अपने आप खुल जाएगा।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La pagina di accesso utilizza tutto lo schermo. Al termine, la cronologia di lettura si aprirà automaticamente."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログインページは画面全体に表示されます。完了すると読書履歴が自動的に開きます。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A página de login usa a tela inteira. Ao concluir, o histórico de leitura será aberto automaticamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录页面会使用完整空间，完成后自动进入阅读历史。"
           }
         }
       }
@@ -27314,6 +29401,64 @@
         }
       }
     },
+    "粘贴图书馆提供的 O’Reilly 或 EZproxy 登录链接。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge den von deiner Bibliothek bereitgestellten O’Reilly- oder EZproxy-Anmeldelink ein."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste the O’Reilly or EZproxy sign-in link provided by your library."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pega el enlace de inicio de sesión de O’Reilly o EZproxy proporcionado por tu biblioteca."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collez le lien de connexion O’Reilly ou EZproxy fourni par votre bibliothèque."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपनी लाइब्रेरी द्वारा दिया गया O’Reilly या EZproxy साइन-इन लिंक पेस्ट करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incolla il link di accesso O’Reilly o EZproxy fornito dalla biblioteca."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "図書館から提供された O’Reilly または EZproxy のログインリンクを貼り付けます。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cole o link de login do O’Reilly ou EZproxy fornecido pela sua biblioteca."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粘贴图书馆提供的 O’Reilly 或 EZproxy 登录链接。"
+          }
+        }
+      }
+    },
     "系统 OCR 不支持语言：%@" : {
       "localizations" : {
         "de" : {
@@ -27600,6 +29745,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "绑定 Kobo"
+          }
+        }
+      }
+    },
+    "绑定 O’Reilly" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly verbinden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect O’Reilly"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectar O’Reilly"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecter O’Reilly"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly कनेक्ट करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collega O’Reilly"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly を接続"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectar à O’Reilly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "绑定 O’Reilly"
           }
         }
       }
@@ -29002,7 +31205,6 @@
       }
     },
     "解绑 Kindle？" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -29934,7 +32136,6 @@
       }
     },
     "解除 Google Play 图书绑定？" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -30052,7 +32253,6 @@
       }
     },
     "解除 Kobo 绑定？" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -30106,6 +32306,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "解除 Kobo 绑定？"
+          }
+        }
+      }
+    },
+    "解除 O’Reilly 绑定？" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly-Verknüpfung aufheben?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlink O’Reilly?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Desvincular O’Reilly?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dissocier O’Reilly ?"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly को अनलिंक करें?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scollegare O’Reilly?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly の連携を解除しますか？"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desvincular a O’Reilly?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解除 O’Reilly 绑定？"
           }
         }
       }
@@ -30170,7 +32428,6 @@
       }
     },
     "解除微信读书绑定？" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -31683,6 +33940,122 @@
         }
       }
     },
+    "请先在 O’Reilly 打开一本书，再返回同步阅读历史。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne zuerst ein Buch in O’Reilly und kehre dann zurück, um den Leseverlauf zu synchronisieren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open a book in O’Reilly first, then return to sync your reading history."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primero abre un libro en O’Reilly y luego vuelve para sincronizar tu historial de lectura."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrez d’abord un livre dans O’Reilly, puis revenez pour synchroniser votre historique de lecture."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पहले O’Reilly में कोई किताब खोलें, फिर पढ़ने का इतिहास सिंक करने के लिए वापस आएँ।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri prima un libro in O’Reilly, poi torna qui per sincronizzare la cronologia di lettura."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先に O’Reilly で書籍を開き、戻って読書履歴を同期してください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abra primeiro um livro no O’Reilly e depois volte para sincronizar o histórico de leitura."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先在 O’Reilly 打开一本书，再返回同步阅读历史。"
+          }
+        }
+      }
+    },
+    "请先登录 O’Reilly 并进入你的阅读历史。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Melden Sie sich zuerst bei O’Reilly an und öffnen Sie Ihren Leseverlauf."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to O’Reilly and open your reading history first."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primero inicia sesión en O’Reilly y abre tu historial de lectura."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connectez-vous d’abord à O’Reilly et ouvrez votre historique de lecture."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पहले O’Reilly में साइन इन करें और अपना पढ़ने का इतिहास खोलें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prima accedi a O’Reilly e apri la cronologia di lettura."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "まず O’Reilly にログインして、読書履歴を開いてください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primeiro, faça login na O’Reilly e abra seu histórico de leitura."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先登录 O’Reilly 并进入你的阅读历史。"
+          }
+        }
+      }
+    },
     "请先登录以使用声音克隆" : {
       "localizations" : {
         "de" : {
@@ -32090,6 +34463,64 @@
         }
       }
     },
+    "请完成 O’Reilly 登录" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly-Anmeldung abschließen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete O’Reilly sign-in"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa el inicio de sesión en O’Reilly"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminez la connexion à O’Reilly"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly साइन-इन पूरा करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa l’accesso a O’Reilly"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly のログインを完了してください"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conclua o login na O’Reilly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请完成 O’Reilly 登录"
+          }
+        }
+      }
+    },
     "请滚动 Kindle 书架后再点同步。" : {
       "localizations" : {
         "de" : {
@@ -32260,6 +34691,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请登录 Amazon Kindle，然后点同步。"
+          }
+        }
+      }
+    },
+    "请登录 O’Reilly 个人账户" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim privaten O’Reilly-Konto anmelden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to your personal O’Reilly account"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia sesión en tu cuenta personal de O’Reilly"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connectez-vous à votre compte O’Reilly personnel"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपने व्यक्तिगत O’Reilly खाते में साइन इन करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accedi al tuo account O’Reilly personale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly 個人アカウントにログインしてください"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faça login na sua conta pessoal da O’Reilly"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请登录 O’Reilly 个人账户"
           }
         }
       }
@@ -32492,6 +34981,180 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请至少录制 3 秒"
+          }
+        }
+      }
+    },
+    "请选择个人账户，或学校、公司、图书馆提供的机构访问。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wählen Sie ein persönliches Konto oder einen institutionellen Zugang Ihrer Schule, Ihres Unternehmens oder Ihrer Bibliothek."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a personal account or institutional access provided by your school, company, or library."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige una cuenta personal o el acceso institucional de tu escuela, empresa o biblioteca."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez un compte personnel ou l’accès institutionnel fourni par votre école, votre entreprise ou votre bibliothèque."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "व्यक्तिगत खाता या अपने स्कूल, कंपनी अथवा लाइब्रेरी द्वारा दिया गया संस्थागत एक्सेस चुनें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli un account personale o l’accesso istituzionale fornito dalla tua scuola, azienda o biblioteca."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "個人アカウント、または学校・企業・図書館が提供する機関アクセスを選択してください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha uma conta pessoal ou o acesso institucional oferecido pela sua escola, empresa ou biblioteca."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请选择个人账户，或学校、公司、图书馆提供的机构访问。"
+          }
+        }
+      }
+    },
+    "请选择你的学校、公司或图书馆" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wählen Sie Ihre Schule, Ihr Unternehmen oder Ihre Bibliothek"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose your school, company, or library"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige tu escuela, empresa o biblioteca"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez votre école, votre entreprise ou votre bibliothèque"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपना स्कूल, कंपनी या लाइब्रेरी चुनें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli la tua scuola, azienda o biblioteca"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学校、企業、または図書館を選択してください"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha sua escola, empresa ou biblioteca"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请选择你的学校、公司或图书馆"
+          }
+        }
+      }
+    },
+    "请重新选择个人账户或机构访问。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wählen Sie erneut ein persönliches Konto oder einen institutionellen Zugang."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose a personal account or institutional access again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuelve a elegir una cuenta personal o el acceso institucional."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez de nouveau un compte personnel ou un accès institutionnel."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "व्यक्तिगत खाता या संस्थागत एक्सेस फिर से चुनें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli di nuovo un account personale o l’accesso istituzionale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "個人アカウントまたは機関アクセスをもう一度選択してください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha novamente uma conta pessoal ou o acesso institucional."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请重新选择个人账户或机构访问。"
           }
         }
       }
@@ -33428,6 +36091,64 @@
         }
       }
     },
+    "这个链接不是有效的 O’Reilly 机构访问地址。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Link ist keine gültige O’Reilly-Adresse für institutionellen Zugang."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is not a valid O’Reilly institutional access URL."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este enlace no es una dirección válida de acceso institucional de O’Reilly."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce lien n’est pas une adresse d’accès institutionnel O’Reilly valide."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "यह मान्य O’Reilly संस्थागत एक्सेस पता नहीं है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo link non è un indirizzo valido per l’accesso istituzionale a O’Reilly."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このリンクは有効な O’Reilly 機関アクセスアドレスではありません。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este link não é um endereço válido de acesso institucional do O’Reilly."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这个链接不是有效的 O’Reilly 机构访问地址。"
+          }
+        }
+      }
+    },
     "这个声音已不存在，请重新创建" : {
       "localizations" : {
         "de" : {
@@ -33540,6 +36261,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "连接"
+          }
+        }
+      }
+    },
+    "连接 O’Reilly Learning" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit O’Reilly Learning verbinden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to O’Reilly Learning"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectar con O’Reilly Learning"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se connecter à O’Reilly Learning"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly Learning से कनेक्ट करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegati a O’Reilly Learning"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O’Reilly Learning に接続"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectar à O’Reilly Learning"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接 O’Reilly Learning"
           }
         }
       }
@@ -34184,6 +36963,64 @@
         }
       }
     },
+    "通过学校或图书馆访问" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Über Schule oder Bibliothek zugreifen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Access through a school or library"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acceder mediante una escuela o biblioteca"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accéder via une école ou une bibliothèque"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "स्कूल या लाइब्रेरी के ज़रिए एक्सेस करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accedi tramite una scuola o una biblioteca"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "学校または図書館経由でアクセス"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acessar por uma escola ou biblioteca"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通过学校或图书馆访问"
+          }
+        }
+      }
+    },
     "速览" : {
       "localizations" : {
         "de" : {
@@ -34768,28 +37605,118 @@
     },
     "重试打开" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erneut öffnen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Try Opening Again" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Volver a abrir" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Rouvrir" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "फिर खोलें" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Apri di nuovo" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "もう一度開く" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Abrir novamente" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重试打开" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Opening Again"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volver a abrir"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rouvrir"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "फिर खोलें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri di nuovo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もう一度開く"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir novamente"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试打开"
+          }
+        }
       }
     },
     "重试朗读" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vorlesen erneut versuchen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Retry Read Aloud" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Reintentar lectura en voz alta" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Réessayer la lecture à voix haute" } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "ज़ोर से पढ़ना फिर आज़माएँ" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Riprova la lettura ad alta voce" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み上げを再試行" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Tentar leitura em voz alta novamente" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重试朗读" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorlesen erneut versuchen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry Read Aloud"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reintentar lectura en voz alta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réessayer la lecture à voix haute"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ज़ोर से पढ़ना फिर आज़माएँ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riprova la lettura ad alta voce"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "読み上げを再試行"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tentar leitura em voz alta novamente"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试朗读"
+          }
+        }
       }
     },
     "重试解读" : {
@@ -34846,6 +37773,122 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重试解读"
+          }
+        }
+      }
+    },
+    "阅读历史" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leseverlauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de lectura"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historique de lecture"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पढ़ने का इतिहास"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cronologia di lettura"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "読書履歴"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Histórico de leitura"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "阅读历史"
+          }
+        }
+      }
+    },
+    "阅读历史仍在加载，请稍后重试。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Leseverlauf wird noch geladen. Bitte versuchen Sie es später erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading history is still loading. Please try again later."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El historial de lectura sigue cargándose. Inténtalo de nuevo más tarde."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’historique de lecture est toujours en cours de chargement. Réessayez plus tard."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पढ़ने का इतिहास अभी भी लोड हो रहा है। कृपया बाद में फिर कोशिश करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La cronologia di lettura è ancora in fase di caricamento. Riprova più tardi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "読書履歴を読み込み中です。しばらくしてからもう一度お試しください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O histórico de leitura ainda está carregando. Tente novamente mais tarde."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "阅读历史仍在加载，请稍后重试。"
           }
         }
       }
@@ -35142,41 +38185,234 @@
     },
     "音频准备超时，请重试" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die Audiovorbereitung hat zu lange gedauert. Bitte versuche es erneut." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Audio preparation timed out. Please try again." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se agotó el tiempo de preparación del audio. Inténtalo de nuevo." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "La préparation audio a expiré. Réessayez." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "ऑडियो तैयार होने में बहुत समय लगा। फिर कोशिश करें।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "La preparazione dell'audio è scaduta. Riprova." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "音声の準備がタイムアウトしました。もう一度お試しください。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "A preparação do áudio expirou. Tente novamente." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "音频准备超时，请重试" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Audiovorbereitung hat zu lange gedauert. Bitte versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio preparation timed out. Please try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se agotó el tiempo de preparación del audio. Inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La préparation audio a expiré. Réessayez."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ऑडियो तैयार होने में बहुत समय लगा। फिर कोशिश करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La preparazione dell'audio è scaduta. Riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音声の準備がタイムアウトしました。もう一度お試しください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A preparação do áudio expirou. Tente novamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音频准备超时，请重试"
+          }
+        }
       }
     },
     "音频播放失败，请重试" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die Audiowiedergabe ist fehlgeschlagen. Bitte versuche es erneut." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Audio playback failed. Please try again." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pudo reproducir el audio. Inténtalo de nuevo." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "La lecture audio a échoué. Réessayez." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "ऑडियो चल नहीं सका। फिर कोशिश करें।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "La riproduzione audio non è riuscita. Riprova." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "音声を再生できませんでした。もう一度お試しください。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Não foi possível reproduzir o áudio. Tente novamente." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "音频播放失败，请重试" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Audiowiedergabe ist fehlgeschlagen. Bitte versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio playback failed. Please try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo reproducir el audio. Inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La lecture audio a échoué. Réessayez."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ऑडियो चल नहीं सका। फिर कोशिश करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La riproduzione audio non è riuscita. Riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音声を再生できませんでした。もう一度お試しください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível reproduzir o áudio. Tente novamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音频播放失败，请重试"
+          }
+        }
       }
     },
     "音频队列已中断，请重试" : {
       "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die Audiowarteschlange wurde unterbrochen. Bitte versuche es erneut." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The audio queue was interrupted. Please try again." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "La cola de audio se interrumpió. Inténtalo de nuevo." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "La file audio a été interrompue. Réessayez." } },
-        "hi" : { "stringUnit" : { "state" : "translated", "value" : "ऑडियो कतार रुक गई। फिर कोशिश करें।" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "La coda audio è stata interrotta. Riprova." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "音声キューが中断されました。もう一度お試しください。" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "A fila de áudio foi interrompida. Tente novamente." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "音频队列已中断，请重试" } }
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Audiowarteschlange wurde unterbrochen. Bitte versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The audio queue was interrupted. Please try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La cola de audio se interrumpió. Inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La file audio a été interrompue. Réessayez."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ऑडियो कतार रुक गई। फिर कोशिश करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La coda audio è stata interrotta. Riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音声キューが中断されました。もう一度お試しください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A fila de áudio foi interrompida. Tente novamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音频队列已中断，请重试"
+          }
+        }
+      }
+    },
+    "页面会异步加载，请稍候，完成前不会显示 0 本。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Seite wird im Hintergrund geladen. Bitte warten Sie; „0 Bücher“ wird erst nach Abschluss angezeigt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The page loads in the background. Please wait; 0 books will not appear until loading is complete."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La página se carga en segundo plano. Espera; no se mostrarán 0 libros hasta que termine."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La page se charge en arrière-plan. Veuillez patienter ; 0 livre ne sera affiché qu’une fois le chargement terminé."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पेज बैकग्राउंड में लोड हो रहा है। कृपया प्रतीक्षा करें; पूरा होने से पहले 0 किताबें नहीं दिखाई जाएँगी।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La pagina viene caricata in background. Attendi: “0 libri” verrà mostrato solo al termine."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ページはバックグラウンドで読み込まれます。完了するまで「0 冊」とは表示されません。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A página é carregada em segundo plano. Aguarde; “0 livros” só será exibido após a conclusão."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "页面会异步加载，请稍候，完成前不会显示 0 本。"
+          }
+        }
       }
     },
     "首页" : {

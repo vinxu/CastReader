@@ -386,15 +386,16 @@ final class ReadAloudViewModel: ObservableObject {
         return reviewSession
     }
 
-    /// A Kindle automatic visual page turn installs a fresh page-local VM, but
-    /// it is still one user-initiated reading session for review eligibility.
+    /// An automatic visual page turn may replace/reset page-local playback
+    /// state, but it is still one user-initiated session for review eligibility.
     /// Manual navigation never calls this method and therefore starts fresh.
     @discardableResult
     func inheritAppReviewReadSession(_ progress: AppReviewReadSessionProgress) -> Bool {
         guard document.sourceKind == .kindle
                 || document.sourceKind == .weread
                 || document.sourceKind == .googleBooks
-                || document.sourceKind == .kobo,
+                || document.sourceKind == .kobo
+                || document.sourceKind == .oreilly,
               !progress.sessionID.isEmpty,
               analyticsReadSessionId == nil else { return false }
         appReviewReadSession = progress

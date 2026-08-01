@@ -25,6 +25,14 @@ import {
   koboFrameSessionID,
   koboSignature,
 } from './kobo'
+import {
+  acceptOReillyHighlightRect,
+  extractOReillyParagraphs,
+  installOReillyReader,
+  isOReillyReaderMainFrame,
+  oReillyFrameSessionID,
+  oReillySignature,
+} from './oreilly'
 
 type Para = { text: string; element: HTMLElement }
 
@@ -165,6 +173,59 @@ function bootKobo(): boolean {
   return true
 }
 
-if (!bootKobo() && !bootPlayBooks()) {
+/**
+ * O'Reilly renders a semantic chapter directly in the top document and scrolls
+ * it continuously. The adapter maps one unobscured viewport to the shared
+ * page-turn protocol, so native Read/Explain remains single-sourced.
+ */
+function bootOReilly(): boolean {
+  if (!isOReillyReaderMainFrame()) return false
+
+  const frameSessionID = oReillyFrameSessionID()
+  let pendingReason = 'initial'
+  let pendingPageMetadata: Record<string, unknown> = {}
+  initBridge({
+    extract: () => extractOReillyParagraphs() as unknown as Para[],
+    acceptHighlightRect: acceptOReillyHighlightRect,
+    autoExtract: false,
+    pageMeta: () => ({
+      source: 'oreilly',
+      reason: pendingReason,
+      signature: oReillySignature(),
+      frameSessionID,
+      ...pendingPageMetadata,
+    }),
+    onInstalled: ({ extract: doExtract }) => {
+      const CR = (window as unknown as {
+        CR?: { disableScroll?: boolean }
+      }).CR
+      if (CR) CR.disableScroll = true
+      const post = (
+        type: string,
+        payload: Record<string, unknown> = {}
+      ): void => {
+        try {
+          ;(window as unknown as {
+            webkit?: {
+              messageHandlers?: Record<
+                string,
+                { postMessage: (message: unknown) => void }
+              >
+            }
+          }).webkit?.messageHandlers?.castreader?.postMessage({ type, payload })
+        } catch { /* */ }
+      }
+      installOReillyReader(post, (reason, metadata = {}) => {
+        pendingReason = reason
+        pendingPageMetadata = metadata
+        doExtract(reason)
+        pendingPageMetadata = {}
+      }, frameSessionID)
+    },
+  })
+  return true
+}
+
+if (!bootOReilly() && !bootKobo() && !bootPlayBooks()) {
   initBridge({ extract })
 }

@@ -112,6 +112,7 @@ struct HomeView: View {
     @ObservedObject private var weReadStore = WeReadLibraryStore.shared
     @ObservedObject private var googleBooksStore = GoogleBooksLibraryStore.shared
     @ObservedObject private var koboStore = KoboLibraryStore.shared
+    @ObservedObject private var oreillyStore = OReillyLibraryStore.shared
     @ObservedObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
 
     init(
@@ -182,6 +183,7 @@ struct HomeView: View {
                     KindleHomeSection(store: kindleStore)
                     GoogleBooksHomeSection()
                     KoboHomeSection()
+                    OReillyHomeSection()
                     if showsWeReadModule {
                         WeReadHomeSection()
                     }
@@ -425,6 +427,7 @@ struct HomeView: View {
         !kindleStore.boundBooks.isEmpty
             || !googleBooksStore.books.isEmpty
             || !koboStore.books.isEmpty
+            || !oreillyStore.books.isEmpty
             || (showsWeReadModule && !weReadStore.books.isEmpty)
     }
 
@@ -432,6 +435,7 @@ struct HomeView: View {
         !kindleStore.needsConnection
             || !googleBooksStore.needsConnection
             || !koboStore.needsConnection
+            || !oreillyStore.needsConnection
             || (showsWeReadModule && !weReadStore.needsConnection)
     }
 
@@ -493,6 +497,7 @@ struct HomeView: View {
         case .weread: !weReadStore.books.isEmpty
         case .googleBooks: !googleBooksStore.books.isEmpty
         case .kobo: !koboStore.books.isEmpty
+        case .oreilly: !oreillyStore.books.isEmpty
         case nil: false
         }
         let actionTitle: String = switch source {
@@ -504,6 +509,10 @@ struct HomeView: View {
             hasBooks ? AppLocalized("打开一本书") : AppLocalized("绑定 Google Play 图书")
         case .kobo:
             hasBooks ? AppLocalized("打开一本书") : AppLocalized("绑定 Kobo")
+        case .oreilly:
+            hasBooks
+                ? AppLocalized("打开一本书")
+                : AppLocalized("绑定 O’Reilly")
         case nil:
             AppLocalized("继续")
         }
@@ -574,6 +583,19 @@ struct HomeView: View {
             } else {
                 NotificationCenter.default.post(
                     name: .castReaderKoboRebindRequested,
+                    object: nil
+                )
+            }
+        case .oreilly:
+            if let book = oreillyStore.homeBooks.first {
+                OReillyReaderLauncher.open(
+                    book,
+                    using: coordinator,
+                    onboarding: libraryOnboarding
+                )
+            } else {
+                NotificationCenter.default.post(
+                    name: .castReaderOReillyRebindRequested,
                     object: nil
                 )
             }
@@ -994,6 +1016,7 @@ private struct BoundLibraryActivationCard: View {
         case .weread: return "book.closed.fill"
         case .googleBooks: return "book.pages"
         case .kobo: return "book.closed.fill"
+        case .oreilly: return "text.book.closed.fill"
         case nil: return "link.circle.fill"
         }
     }

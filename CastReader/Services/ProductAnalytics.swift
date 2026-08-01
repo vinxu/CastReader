@@ -90,6 +90,7 @@ enum AnalyticsContentSource: String, Codable, Sendable {
     case weread
     case googleBooks = "google_books"
     case kobo
+    case oreilly
     case unknown
 }
 
@@ -104,6 +105,7 @@ enum AnalyticsContentFormat: String, Codable, Sendable {
     case weread
     case googleBooks = "google_books"
     case kobo
+    case oreilly
     case unknown
 }
 
@@ -266,6 +268,7 @@ extension AnalyticsContentSource {
         case .weread: self = .weread
         case .googleBooks: self = .googleBooks
         case .kobo: self = .kobo
+        case .oreilly: self = .oreilly
         default: self = .unknown
         }
     }
@@ -279,6 +282,7 @@ extension AnalyticsContentFormat {
         case .weread: self = .weread
         case .googleBooks: self = .googleBooks
         case .kobo: self = .kobo
+        case .oreilly: self = .oreilly
         case .text: self = .text
         case .web: self = .web
         case .docx: self = .docx

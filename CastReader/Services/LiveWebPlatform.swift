@@ -13,11 +13,13 @@ import WebKit
 enum LiveWebPlatformID: String, Equatable {
     case googleBooks = "google-books"
     case kobo
+    case oreilly
 
     init?(sourceKind: ReadingSourceKind) {
         switch sourceKind {
         case .googleBooks: self = .googleBooks
         case .kobo: self = .kobo
+        case .oreilly: self = .oreilly
         default: return nil
         }
     }
@@ -26,6 +28,7 @@ enum LiveWebPlatformID: String, Equatable {
         switch self {
         case .googleBooks: return "GBOOKS"
         case .kobo: return "KOBO"
+        case .oreilly: return "OREILLY"
         }
     }
 
@@ -33,7 +36,14 @@ enum LiveWebPlatformID: String, Equatable {
         switch self {
         case .googleBooks: return "googleBooksReaderWebView"
         case .kobo: return "koboReaderWebView"
+        case .oreilly: return "oreillyReaderWebView"
         }
+    }
+
+    var wireSource: String { rawValue }
+
+    func acceptsPayloadSource(_ source: String?) -> Bool {
+        source == wireSource
     }
 
     var userAgent: String {
@@ -45,6 +55,11 @@ enum LiveWebPlatformID: String, Equatable {
             // the desktop shell. preferredContentMode remains `.mobile`, so
             // the CSS viewport is still the iPhone's real width.
             return GoogleBooksWebScripts.desktopSafariUserAgent
+        case .oreilly:
+            // O'Reilly has a responsive mobile chapter reader. Keep the CSS
+            // viewport equal to the native surface so visible-line geometry
+            // and the one-viewport "visual page" contract stay identical.
+            return GoogleBooksWebScripts.mobileSafariUserAgent
         }
     }
 
@@ -60,12 +75,32 @@ enum LiveWebPlatformID: String, Equatable {
         CommercialWebSession.websiteDataStore
     }
 
+    /// These adapters derive their visual page from the native surface and
+    /// need an explicit relayout after rotation or bottom-occlusion changes.
+    var needsViewportRelayout: Bool {
+        switch self {
+        case .googleBooks: return false
+        case .kobo, .oreilly: return true
+        }
+    }
+
+    var supportsReaderRetry: Bool {
+        switch self {
+        case .googleBooks: return false
+        case .kobo, .oreilly: return true
+        }
+    }
+
     func allowsMainFrameNavigation(_ url: URL?) -> Bool {
         switch self {
         case .googleBooks:
             return GoogleBooksWebAccessPolicy.allowsMainFrameNavigation(url)
         case .kobo:
             return KoboBookValidator.usableReaderURL(url?.absoluteString) != nil
+        case .oreilly:
+            return OReillyBookValidator.usableReaderURL(
+                url?.absoluteString
+            ) != nil
         }
     }
 
@@ -93,6 +128,22 @@ enum LiveWebPlatformID: String, Equatable {
                 return false
             }
             return true
+        case .oreilly:
+            guard let type,
+                  Self.pagedReaderMessageTypes.contains(type),
+                  frame.isMainFrame,
+                  frame.securityScheme
+                    .trimmingCharacters(in: CharacterSet(charactersIn: ":"))
+                    .lowercased() == "https",
+                  frame.securityPort == 0 || frame.securityPort == 443,
+                  OReillyWebAccessPolicy.isAllowedReaderHost(
+                    frame.securityHost.lowercased()
+                  ),
+                  let raw = frame.requestURL,
+                  allowsMainFrameNavigation(URL(string: raw)) else {
+                return false
+            }
+            return true
         }
     }
 
@@ -101,6 +152,7 @@ enum LiveWebPlatformID: String, Equatable {
         switch self {
         case .googleBooks: GoogleBooksLibraryStore.shared.clearError()
         case .kobo: KoboLibraryStore.shared.clearError()
+        case .oreilly: OReillyLibraryStore.shared.clearError()
         }
     }
 
@@ -109,6 +161,7 @@ enum LiveWebPlatformID: String, Equatable {
         switch self {
         case .googleBooks: GoogleBooksLibraryStore.shared.reportError(message)
         case .kobo: KoboLibraryStore.shared.reportError(message)
+        case .oreilly: OReillyLibraryStore.shared.reportError(message)
         }
     }
 
@@ -125,6 +178,11 @@ enum LiveWebPlatformID: String, Equatable {
                 bookID: bookID,
                 failedURL: failedURL
             )
+        case .oreilly:
+            return OReillyLibraryStore.shared.localRecoveryURL(
+                bookID: bookID,
+                failedURL: failedURL
+            )
         }
     }
 
@@ -135,6 +193,10 @@ enum LiveWebPlatformID: String, Equatable {
             return GoogleBooksLibraryStore.shared.book(for: bookID)?.readerURL
         case .kobo:
             return KoboLibraryStore.shared.canonicalReaderURL(for: bookID)
+        case .oreilly:
+            return OReillyLibraryStore.shared.canonicalReaderURL(
+                for: bookID
+            )
         }
     }
 
@@ -143,7 +205,13 @@ enum LiveWebPlatformID: String, Equatable {
         bookID: String,
         readerURL: String,
         fingerprint: String,
-        progressLabel: String?
+        progressLabel: String?,
+        scrollOffset: Double? = nil,
+        scrollMaximum: Double? = nil,
+        scrollRatio: Double? = nil,
+        sourceParagraphIndex: Int? = nil,
+        sourceUTF16Start: Int? = nil,
+        sourceUTF16End: Int? = nil
     ) {
         switch self {
         case .googleBooks:
@@ -159,6 +227,19 @@ enum LiveWebPlatformID: String, Equatable {
                 readerURL: readerURL,
                 fingerprint: fingerprint,
                 progressLabel: progressLabel
+            )
+        case .oreilly:
+            OReillyLibraryStore.shared.updateProgress(
+                bookID: bookID,
+                readerURL: readerURL,
+                fingerprint: fingerprint,
+                progressLabel: progressLabel,
+                scrollOffset: scrollOffset,
+                scrollMaximum: scrollMaximum,
+                scrollRatio: scrollRatio,
+                sourceParagraphIndex: sourceParagraphIndex,
+                sourceUTF16Start: sourceUTF16Start,
+                sourceUTF16End: sourceUTF16End
             )
         }
     }

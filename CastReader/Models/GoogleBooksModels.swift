@@ -580,7 +580,9 @@ enum GoogleBooksPageTurnContract {
     /// the dedicated Play Books reader adapter is allowed to drive paging.
     static func isReaderPagePayload(_ payload: [String: Any]) -> Bool {
         guard let source = payload["source"] as? String else { return false }
-        return source == "google-books" || source == "kobo"
+        return source == "google-books"
+            || source == "kobo"
+            || source == "oreilly"
     }
 
     static func frameSessionID(from payload: [String: Any]) -> String? {

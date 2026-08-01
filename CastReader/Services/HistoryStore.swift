@@ -34,6 +34,7 @@ enum HomeContinueContract {
             && sourceKind != .weread
             && sourceKind != .googleBooks
             && sourceKind != .kobo
+            && sourceKind != .oreilly
     }
 }
 
@@ -93,7 +94,7 @@ final class HistoryStore: ObservableObject {
     func record(_ doc: ReadingDocument) {
         let payload: Data? = {
             switch doc.sourceKind {
-            case .web, .weread, .googleBooks, .kobo: return nil
+            case .web, .weread, .googleBooks, .kobo, .oreilly: return nil
             case .text: return doc.fullText.data(using: .utf8)
             case .photo: return doc.imageData
             case .kindle: return doc.fullText.data(using: .utf8)
@@ -232,7 +233,7 @@ final class HistoryStore: ObservableObject {
             return
         }
         switch doc.sourceKind {
-        case .web, .weread, .googleBooks, .kobo:
+        case .web, .weread, .googleBooks, .kobo, .oreilly:
             (title, imageData) = await webCover(doc.sourceURL)
         case .pdf:   if let d = doc.fileData { imageData = await Task.detached { Self.pdfFirstPageJPEG(d) }.value }
         case .photo: imageData = doc.imageData
@@ -248,7 +249,7 @@ final class HistoryStore: ObservableObject {
         var imageData: Data?
         var title: String?
         switch rec.sourceKind {
-        case .web, .weread, .googleBooks, .kobo:
+        case .web, .weread, .googleBooks, .kobo, .oreilly:
             (title, imageData) = await webCover(rec.sourceURL)
         case .pdf:   if let d = try? Data(contentsOf: payloadURL(rec.id)) { imageData = await Task.detached { Self.pdfFirstPageJPEG(d) }.value }
         case .photo: imageData = try? Data(contentsOf: payloadURL(rec.id))
@@ -380,6 +381,26 @@ final class HistoryStore: ObservableObject {
                 id: rec.id,
                 title: latestBook?.title ?? rec.title,
                 sourceKind: .kobo,
+                language: rec.language,
+                paragraphs: [],
+                sourceURL: url,
+                coverURL: latestBook?.coverURL
+            )
+        case .oreilly:
+            let store = OReillyLibraryStore.shared
+            let latestBook = store.book(for: rec.id)
+            guard let url = latestBook?.effectiveReaderURL ?? rec.sourceURL else {
+                return nil
+            }
+            if let latestBook {
+                store.markOpened(latestBook)
+            } else {
+                store.clearError()
+            }
+            return ReadingDocument(
+                id: rec.id,
+                title: latestBook?.title ?? rec.title,
+                sourceKind: .oreilly,
                 language: rec.language,
                 paragraphs: [],
                 sourceURL: url,

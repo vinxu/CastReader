@@ -57,6 +57,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     /// of the proven paginated-DOM engine while Kobo migrates onto it.
     private var livePlatform: LiveWebPlatformID?
     private var liveBookID = ""
+    /// O'Reilly chapter navigation may change slug/path/hash, but it must never
+    /// escape the exact host and content ID proven by the bound shelf item.
+    private var oreillyBoundReaderHost: String?
+    private var oreillyBoundContentID: String?
     private var isGoogleBooks = false
     private var liveWebSurfaceSize: CGSize = .zero
     private var liveWebBottomOcclusion: CGFloat = 0
@@ -393,12 +397,24 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         expectsDynamicWebContent: Bool,
         isWeRead: Bool = false,
         livePlatform: LiveWebPlatformID? = nil,
-        bookID: String = ""
+        bookID: String = "",
+        readerURL: String? = nil
     ) {
         self.expectsDynamicWebContent = expectsDynamicWebContent
         self.isWeRead = isWeRead
         self.livePlatform = livePlatform
         self.liveBookID = bookID
+        self.oreillyBoundReaderHost = nil
+        self.oreillyBoundContentID = nil
+        if livePlatform == .oreilly,
+           let usable = OReillyBookValidator.usableReaderURL(readerURL),
+           let url = URL(string: usable),
+           let host = url.host?.lowercased(),
+           let contentID = OReillyBookValidator.contentID(from: url),
+           bookID == OReillyBookValidator.stableID(contentID: contentID) {
+            self.oreillyBoundReaderHost = host
+            self.oreillyBoundContentID = contentID
+        }
         self.koboSessionRecoveryAttempts = 0
         self.koboSessionRecoveryTask?.cancel()
         self.koboSessionRecoveryTask = nil
@@ -410,6 +426,36 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             // Baseline before WeRead touches the shared website data store.
             KindleSessionProbe.logCookies(reason: "weread-create")
         }
+    }
+
+    private func allowsLiveMainFrameNavigation(_ url: URL?) -> Bool {
+        guard let livePlatform,
+              livePlatform.allowsMainFrameNavigation(url) else {
+            return false
+        }
+        guard livePlatform == .oreilly else { return true }
+        guard let url,
+              let expectedHost = oreillyBoundReaderHost,
+              let expectedContentID = oreillyBoundContentID,
+              url.host?.lowercased() == expectedHost,
+              OReillyBookValidator.contentID(from: url)
+                == expectedContentID else {
+            return false
+        }
+        return true
+    }
+
+    private func allowsBoundOReillyFrame(
+        _ frame: GoogleBooksScriptMessageFrame
+    ) -> Bool {
+        guard livePlatform == .oreilly else { return true }
+        guard frame.isMainFrame,
+              frame.securityHost.lowercased() == oreillyBoundReaderHost,
+              let raw = frame.requestURL,
+              allowsLiveMainFrameNavigation(URL(string: raw)) else {
+            return false
+        }
+        return true
     }
 
     /// SwiftUI's geometry value is the authoritative native reader surface.
@@ -436,16 +482,18 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         liveWebSurfaceSize = surfaceSize
         liveWebBottomOcclusion = occlusion
         hasLiveWebViewport = true
-        if hadViewport, livePlatform == .kobo {
+        if hadViewport, livePlatform?.needsViewportRelayout == true {
             onLiveWebNeedsLoadingCover?()
         }
         sendLiveWebViewport(reason: "surface-size")
     }
 
     private func sendLiveWebViewport(reason: String) {
-        guard livePlatform == .kobo, hasLiveWebViewport else { return }
+        guard let livePlatform,
+              livePlatform.needsViewportRelayout,
+              hasLiveWebViewport else { return }
         ReaderRunLog.write(
-            "KOBO viewport update reason=\(reason) " +
+            "\(livePlatform.logPrefix) viewport update reason=\(reason) " +
             "surface=\(Int(liveWebSurfaceSize.width))x" +
             "\(Int(liveWebSurfaceSize.height)) " +
             "bottom=\(Int(liveWebBottomOcclusion))"
@@ -496,9 +544,21 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     func retryLiveWebReader() {
-        guard livePlatform == .kobo else { return }
-        koboSessionRecoveryAttempts = 0
-        beginKoboSessionRecovery(reason: "user-retry")
+        guard let livePlatform,
+              livePlatform.supportsReaderRetry,
+              let webView else { return }
+        livePlatform.clearReaderError()
+        onLiveWebNeedsLoadingCover?()
+        if livePlatform == .kobo {
+            koboSessionRecoveryAttempts = 0
+            beginKoboSessionRecovery(reason: "user-retry")
+        } else {
+            invalidateGoogleBooksLivePage(
+                reason: "user-retry",
+                clearConsumedCursor: false
+            )
+            webView.reloadFromOrigin()
+        }
     }
 
     private func requestWeReadUserPage(
@@ -774,6 +834,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 )
                 return
             }
+            if !self.allowsBoundOReillyFrame(frame) {
+                ReaderRunLog.write(
+                    "OREILLY ignored bridge event outside bound book " +
+                    "host=\(frame.securityHost.lowercased()) " +
+                    "type=\(messageType ?? "")"
+                )
+                return
+            }
             self.handle(body)
         }
     }
@@ -784,6 +852,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         case "ready":
             print("[WebReader] ✅ JS ready: \(msg.payload)")
             sendLiveWebViewport(reason: "bridge-ready")
+            restoreOReillyReadingAnchorIfPossible()
             if let b64 = pendingDocxBase64 {
                 pendingDocxBase64 = nil
                 NSLog("CRDBG docx render base64Len=%d", b64.count)
@@ -843,7 +912,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             guard acceptsActiveGoogleBooksFrameEvent(msg.payload) else { return }
             receiveGoogleBooksPreviewDiagnostic(msg.payload)
         case "googleBooksLocation":
-            recordGoogleBooksLocation((msg.payload["href"] as? String) ?? "")
+            guard acceptsActiveGoogleBooksFrameEvent(msg.payload) else { return }
+            recordGoogleBooksLocation(
+                (msg.payload["href"] as? String) ?? "",
+                fingerprint:
+                    (msg.payload["signature"] as? String)
+                        ?? lastGoogleBooksSignature,
+                payload: msg.payload
+            )
         case "wereadPage":
             receiveWeReadPage(msg.payload)
         case "wereadPagePreview":
@@ -3761,6 +3837,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private func receiveGoogleBooksPage(_ payload: [String: Any]) {
+        guard livePlatform?.acceptsPayloadSource(
+            payload["source"] as? String
+        ) == true else {
+            ReaderRunLog.write(
+                "\(livePlatform?.logPrefix ?? "LIVEWEB") ignored mismatched payload source"
+            )
+            return
+        }
         var reason = GoogleBooksPageEventReason(rawValue: (payload["reason"] as? String) ?? "")
             ?? .refresh
         let signature = (payload["signature"] as? String) ?? ""
@@ -4020,7 +4104,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             googleBooksReadinessRetries = 0
             googleBooksAwaitingReaderRecovery = false
             googleBooksNetworkRetries = 0
-            if livePlatform == .kobo {
+            if livePlatform?.needsViewportRelayout == true {
                 koboSessionRecoveryAttempts = 0
                 koboSessionRecoveryTask?.cancel()
                 koboSessionRecoveryTask = nil
@@ -4330,7 +4414,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         googleBooksReadinessRetries = 0
         googleBooksAwaitingReaderRecovery = false
         googleBooksNetworkRetries = 0
-        if livePlatform == .kobo {
+        if livePlatform?.needsViewportRelayout == true {
             koboSessionRecoveryAttempts = 0
             koboSessionRecoveryTask?.cancel()
             koboSessionRecoveryTask = nil
@@ -5375,13 +5459,78 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     /// Play 图书是 SPA，翻页只改 URL 的 pg 参数 —— 地址本身就是可续读的进度锚。
-    private func recordGoogleBooksLocation(_ href: String) {
-        guard let livePlatform, !href.isEmpty, let readVM else { return }
+    private func recordGoogleBooksLocation(
+        _ href: String,
+        fingerprint: String,
+        payload: [String: Any]
+    ) {
+        guard let livePlatform,
+              !href.isEmpty,
+              !fingerprint.isEmpty,
+              let readVM,
+              allowsLiveMainFrameNavigation(URL(string: href)) else {
+            return
+        }
         livePlatform.updateProgress(
             bookID: readVM.document.id,
             readerURL: href,
-            fingerprint: lastGoogleBooksSignature,
-            progressLabel: nil
+            fingerprint: fingerprint,
+            progressLabel: nil,
+            scrollOffset: Self.double(payload["scrollOffset"]),
+            scrollMaximum: Self.double(payload["scrollMaximum"]),
+            scrollRatio: Self.double(payload["scrollRatio"]),
+            sourceParagraphIndex:
+                Self.exactNonnegativeInteger(
+                    payload["sourceParagraphIndex"]
+                ),
+            sourceUTF16Start:
+                Self.exactNonnegativeInteger(
+                    payload["sourceUTF16Start"]
+                ),
+            sourceUTF16End:
+                Self.exactNonnegativeInteger(
+                    payload["sourceUTF16End"]
+                )
+        )
+    }
+
+    private func restoreOReillyReadingAnchorIfPossible() {
+        guard livePlatform == .oreilly,
+              let readVM,
+              let anchor = OReillyLibraryStore.shared.anchor(
+                  for: readVM.document.id
+              ),
+              allowsLiveMainFrameNavigation(URL(string: anchor.readerURL))
+        else {
+            return
+        }
+        var payload: [String: Any] = [
+            "expectedHref": anchor.readerURL,
+            "pageFingerprint": anchor.pageFingerprint,
+        ]
+        if let value = anchor.scrollOffset {
+            payload["scrollOffset"] = value
+        }
+        if let value = anchor.scrollMaximum {
+            payload["scrollMaximum"] = value
+        }
+        if let value = anchor.scrollRatio {
+            payload["scrollRatio"] = value
+        }
+        if let value = anchor.sourceParagraphIndex {
+            payload["sourceParagraphIndex"] = value
+        }
+        if let value = anchor.sourceUTF16Start {
+            payload["sourceUTF16Start"] = value
+        }
+        if let value = anchor.sourceUTF16End {
+            payload["sourceUTF16End"] = value
+        }
+        call("gbRestoreAnchor", payload)
+        ReaderRunLog.write(
+            "OREILLY requested in-chapter anchor restore " +
+                "source=\(anchor.sourceParagraphIndex ?? -1):" +
+                "\(anchor.sourceUTF16Start ?? -1)"
         )
     }
 
@@ -5989,7 +6138,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             decisionHandler(.allow)
             return
         }
-        guard livePlatform.allowsMainFrameNavigation(
+        guard allowsLiveMainFrameNavigation(
             navigationAction.request.url
         ) else {
             decisionHandler(.cancel)
@@ -6004,7 +6153,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         if let livePlatform {
-            if livePlatform.allowsMainFrameNavigation(webView.url) {
+            if allowsLiveMainFrameNavigation(webView.url) {
                 googleBooksNetworkRetries = 0
                 if (!didInit || googleBooksAwaitingReaderRecovery),
                    googleBooksReadinessTask == nil,
@@ -6111,9 +6260,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         decidePolicyFor navigationResponse: WKNavigationResponse,
         decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
     ) {
-        if let livePlatform,
+        if livePlatform != nil,
            navigationResponse.isForMainFrame,
-           !livePlatform.allowsMainFrameNavigation(navigationResponse.response.url) {
+           !allowsLiveMainFrameNavigation(navigationResponse.response.url) {
             decisionHandler(.cancel)
             rejectGoogleBooksMainFrameNavigation(
                 navigationResponse.response.url,
@@ -6152,6 +6301,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         switch livePlatform {
         case .kobo:
             return AppLocalized("Kobo 登录已过期，请重新绑定 Kobo。")
+        case .oreilly:
+            return AppLocalized("O’Reilly 登录已过期，请重新绑定 O’Reilly。")
         case .googleBooks, .none:
             return AppLocalized("Google 登录已过期，请重新绑定 Google Play 图书。")
         }
@@ -6398,6 +6549,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
 
     private func acceptsActiveGoogleBooksFrameEvent(_ payload: [String: Any]) -> Bool {
         guard isGoogleBooks,
+              livePlatform?.acceptsPayloadSource(
+                  payload["source"] as? String
+              ) == true,
               let activeGoogleBooksFrameSessionID,
               GoogleBooksPageTurnContract.frameSessionID(from: payload)
                 == activeGoogleBooksFrameSessionID else {

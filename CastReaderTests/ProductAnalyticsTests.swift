@@ -437,8 +437,14 @@ final class AppReviewPromptPolicyTests: XCTestCase {
         XCTAssertFalse(secondPage.record(rawPlaybackDelta: 1))
     }
 
-    func testFallbackAutomaticPageOwnerCarriesKindleAndWeReadButManualTurnDiscards() throws {
-        for sourceKind in [ReadingSourceKind.kindle, .weread] {
+    func testFallbackAutomaticPageOwnerCarriesPagedLibrariesButManualTurnDiscards() throws {
+        for sourceKind in [
+            ReadingSourceKind.kindle,
+            .weread,
+            .googleBooks,
+            .kobo,
+            .oreilly
+        ] {
             var firstPage = AppReviewReadSessionProgress(
                 sessionID: "\(sourceKind.rawValue)-fallback-session",
                 playbackSeconds: 298
@@ -535,6 +541,13 @@ final class AppReviewPromptPolicyTests: XCTestCase {
     }
 
     func testKindleViewModelHandoffTransfersLogicalReviewSession() throws {
+        defer {
+            AudioPlayerService.shared.onPlaybackComplete = nil
+            if let token = AudioPlayerService.shared.activePlaybackSession {
+                _ = AudioPlayerService.shared.clearQueue(session: token)
+                AudioPlayerService.shared.releasePlaybackSession(token)
+            }
+        }
         let firstDocument = ReadingDocument(
             title: "Page 1",
             sourceKind: .kindle,
@@ -552,15 +565,24 @@ final class AppReviewPromptPolicyTests: XCTestCase {
         let firstViewModel = ReadAloudViewModel(document: firstDocument)
         XCTAssertTrue(firstViewModel.inheritAppReviewReadSession(expected))
         firstViewModel.activate()
+        XCTAssertTrue(
+            AudioPlayerService.shared.clearActiveQueueForCoordinator(
+                owner: .readAloud
+            )
+        )
         let handedOff = try XCTUnwrap(firstViewModel.detachForContinuousPageHandoff())
 
         let secondViewModel = ReadAloudViewModel(document: secondDocument)
         XCTAssertTrue(secondViewModel.inheritAppReviewReadSession(handedOff))
         secondViewModel.activate()
+        XCTAssertTrue(
+            AudioPlayerService.shared.clearActiveQueueForCoordinator(
+                owner: .readAloud
+            )
+        )
         let transferred = try XCTUnwrap(secondViewModel.detachForContinuousPageHandoff())
 
         XCTAssertEqual(transferred, expected)
-        AudioPlayerService.shared.onPlaybackComplete = nil
     }
 
     func testReviewPresentationGateBlocksStreamingGapsAndHomeProcessing() {

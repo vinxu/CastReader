@@ -21177,11 +21177,11 @@ var __CRWeb = (() => {
         return elements([element(tagName, attributes, { fresh: true })]);
       }
       function elements(elementStyles) {
-        return new HtmlPath(elementStyles.map(function(elementStyle) {
-          if (_3.isString(elementStyle)) {
-            return element(elementStyle);
+        return new HtmlPath(elementStyles.map(function(elementStyle2) {
+          if (_3.isString(elementStyle2)) {
+            return element(elementStyle2);
           } else {
-            return elementStyle;
+            return elementStyle2;
           }
         }));
       }
@@ -39964,7 +39964,7 @@ var __CRWeb = (() => {
   function extractWithFlags(flags, customRoot, customExcludes) {
     var _a, _b;
     if (!document.body) return [];
-    const contentRoot = customRoot || findContentRoot();
+    const contentRoot2 = customRoot || findContentRoot();
     const lang = detectLang();
     const walkerFilter = {
       acceptNode(node) {
@@ -39991,7 +39991,7 @@ var __CRWeb = (() => {
         return NodeFilter.FILTER_ACCEPT;
       }
     };
-    const walker = _pageHasShadowContent ? new ShadowAwareTreeWalker(contentRoot, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, walkerFilter) : document.createTreeWalker(contentRoot, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, walkerFilter);
+    const walker = _pageHasShadowContent ? new ShadowAwareTreeWalker(contentRoot2, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, walkerFilter) : document.createTreeWalker(contentRoot2, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, walkerFilter);
     const blockMap = /* @__PURE__ */ new Map();
     const elementVisitOrder = /* @__PURE__ */ new Map();
     let visitCounter = 0;
@@ -40026,7 +40026,7 @@ var __CRWeb = (() => {
       consecutiveBrs = 0;
       lastBlockAncestor = blockAncestor;
     }
-    const preElements = _pageHasShadowContent ? deepQuerySelectorAll(contentRoot, "pre") : contentRoot.querySelectorAll("pre");
+    const preElements = _pageHasShadowContent ? deepQuerySelectorAll(contentRoot2, "pre") : contentRoot2.querySelectorAll("pre");
     for (const pre of preElements) {
       const el = pre;
       const text = (_b = el.textContent) == null ? void 0 : _b.trim();
@@ -53783,7 +53783,7 @@ var __CRWeb = (() => {
     let lastPreviewToken = "";
     let lastGeometryPreviewMissToken = "";
     let lastSpeechPreviewToken = "";
-    const clearPageVisuals = () => {
+    const clearPageVisuals2 = () => {
       var _a, _b;
       const bridge = window.CR;
       try {
@@ -53896,7 +53896,7 @@ var __CRWeb = (() => {
       lateAutoTurn = null;
       return null;
     };
-    const automaticMetadata = (arg, fallbackBaseline) => {
+    const automaticMetadata2 = (arg, fallbackBaseline) => {
       const value = recordArg(arg);
       return {
         turnID: nonemptyString(value.turnID) || protocolID("auto"),
@@ -53904,7 +53904,7 @@ var __CRWeb = (() => {
         originFrameSessionID: nonemptyString(value.originFrameSessionID) || frameSessionID
       };
     };
-    const manualMetadata = (arg, fallbackBaseline) => {
+    const manualMetadata2 = (arg, fallbackBaseline) => {
       const value = recordArg(arg);
       const manualIntentID = nonemptyString(value.manualIntentID);
       if (!manualIntentID) return null;
@@ -54016,7 +54016,7 @@ var __CRWeb = (() => {
     const attemptTurn = (direction, arg) => {
       if (pendingAuto) return false;
       const visualBaseline = playBooksSignature() || committedSignature;
-      const metadata = automaticMetadata(arg, visualBaseline);
+      const metadata = automaticMetadata2(arg, visualBaseline);
       const coarsePointer = (() => {
         try {
           return window.matchMedia("(pointer: coarse)").matches;
@@ -54045,7 +54045,7 @@ var __CRWeb = (() => {
       clearManualIntent();
       pendingTurnBaseline = visualBaseline;
       announceTurnOwner(metadata);
-      clearPageVisuals();
+      clearPageVisuals2();
       pendingTurnMethod = turnPlayBooksPage(direction, method);
       if (pendingTurnMethod === "none") {
         clearAutoTurn();
@@ -54120,8 +54120,8 @@ var __CRWeb = (() => {
       refresh(arg) {
         var _a;
         const fallbackBaseline = committedSignature || playBooksSignature();
-        const automatic = nonemptyString(recordArg(arg).turnID) ? automaticMetadata(arg, fallbackBaseline) : null;
-        const manual = manualMetadata(arg, fallbackBaseline);
+        const automatic = nonemptyString(recordArg(arg).turnID) ? automaticMetadata2(arg, fallbackBaseline) : null;
+        const manual = manualMetadata2(arg, fallbackBaseline);
         if (automatic) {
           changeReasonInFlight = "auto";
           changeBaseline = ((_a = liveLateAutoTurn()) == null ? void 0 : _a.detectionBaselineSignature) || fallbackBaseline;
@@ -54201,7 +54201,7 @@ var __CRWeb = (() => {
         originFrameSessionID: frameSessionID
       };
       announceTurnOwner(manualIntentMetadata);
-      clearPageVisuals();
+      clearPageVisuals2();
       postForFrame("googleBooksPageChanging", __spreadValues({
         reason: "manual",
         phase: "intent",
@@ -54302,7 +54302,7 @@ var __CRWeb = (() => {
       const reason = changeReasonInFlight || (pendingAuto ? "auto" : hasFreshManualIntent ? "manual" : isLateAutomaticDeparture ? "auto" : "refresh");
       changeReasonInFlight = reason;
       if (isFirstGeometryChange) {
-        clearPageVisuals();
+        clearPageVisuals2();
         changeBaseline = reason === "auto" ? pendingTurnBaseline || (late == null ? void 0 : late.detectionBaselineSignature) || committedSignature : reason === "manual" ? manualIntentBaseline || committedSignature : committedSignature;
         changeMetadata = reason === "auto" ? pendingAutoMetadata || (late == null ? void 0 : late.metadata) || null : reason === "manual" ? manualIntentMetadata : null;
       }
@@ -55857,7 +55857,7 @@ var __CRWeb = (() => {
     setTimeout(warmSemanticTransport, 5e3);
     setTimeout(warmSemanticTransport, 9e3);
     setTimeout(warmSemanticTransport, 14e3);
-    const clearPageVisuals = () => {
+    const clearPageVisuals2 = () => {
       var _a2, _b;
       const bridge2 = window.CR;
       try {
@@ -55900,7 +55900,7 @@ var __CRWeb = (() => {
       settleCandidateSince = 0;
       settleStableSamples = 0;
     };
-    const automaticMetadata = (arg, fallbackBaseline) => {
+    const automaticMetadata2 = (arg, fallbackBaseline) => {
       const value = recordArg2(arg);
       return {
         turnID: nonemptyString2(value.turnID) || protocolID2("auto"),
@@ -55908,7 +55908,7 @@ var __CRWeb = (() => {
         originFrameSessionID: nonemptyString2(value.originFrameSessionID) || frameSessionID
       };
     };
-    const manualMetadata = (arg, fallbackBaseline) => {
+    const manualMetadata2 = (arg, fallbackBaseline) => {
       const value = recordArg2(arg);
       const manualIntentID = nonemptyString2(value.manualIntentID);
       if (!manualIntentID) return null;
@@ -56138,7 +56138,7 @@ var __CRWeb = (() => {
       changeReasonInFlight = "refresh";
       changeBaseline = committedSignature;
       changeMetadata = null;
-      clearPageVisuals();
+      clearPageVisuals2();
       postForFrame("log", {
         message: `layout refresh source=${source} viewport=${viewportSizeKey()} geometry=${koboGeometryKey().slice(0, 180)}`
       });
@@ -56163,7 +56163,7 @@ var __CRWeb = (() => {
       var _a2;
       if (pendingAuto) return false;
       const visualBaseline = koboSignature() || committedSignature;
-      const metadata = automaticMetadata(arg, visualBaseline);
+      const metadata = automaticMetadata2(arg, visualBaseline);
       const remembered = preferredMethod ? [preferredMethod] : [];
       const candidates = [
         "semantic",
@@ -56358,7 +56358,7 @@ var __CRWeb = (() => {
         originFrameSessionID: frameSessionID
       };
       manualIntentKind = intent;
-      clearPageVisuals();
+      clearPageVisuals2();
       postForFrame("googleBooksPageChanging", __spreadValues({
         reason: "manual",
         phase: "intent",
@@ -56398,8 +56398,8 @@ var __CRWeb = (() => {
       refresh(arg) {
         var _a2;
         const fallbackBaseline = committedSignature || koboSignature();
-        const automatic = nonemptyString2(recordArg2(arg).turnID) ? automaticMetadata(arg, fallbackBaseline) : null;
-        const manual = manualMetadata(arg, fallbackBaseline);
+        const automatic = nonemptyString2(recordArg2(arg).turnID) ? automaticMetadata2(arg, fallbackBaseline) : null;
+        const manual = manualMetadata2(arg, fallbackBaseline);
         if (automatic) {
           changeReasonInFlight = "auto";
           changeBaseline = ((_a2 = liveLateAutoTurn()) == null ? void 0 : _a2.detectionBaselineSignature) || fallbackBaseline;
@@ -56619,7 +56619,7 @@ var __CRWeb = (() => {
       const reason = changeReasonInFlight || (pendingAuto ? "auto" : layoutRefreshActive ? "refresh" : pendingManualIntent ? "manual" : lateAutomaticDeparture ? "auto" : "refresh");
       changeReasonInFlight = reason;
       if (firstGeometryChange) {
-        clearPageVisuals();
+        clearPageVisuals2();
         changeBaseline = reason === "auto" ? pendingTurnBaseline || (late == null ? void 0 : late.detectionBaselineSignature) || committedSignature : reason === "manual" ? manualIntentBaseline || committedSignature : committedSignature;
         changeMetadata = reason === "auto" ? pendingAutoMetadata || (late == null ? void 0 : late.metadata) || null : reason === "manual" ? manualIntentMetadata : null;
       }
@@ -56668,6 +56668,1619 @@ var __CRWeb = (() => {
         message: code === "fixed-layout-unsupported" ? "This fixed-layout Kobo book is not supported yet." : "Kobo reader content did not become available."
       });
     }, 200);
+  }
+
+  // src/oreilly.ts
+  var OREILLY_DIRECT_HOST = "learning.oreilly.com";
+  var OREILLY_PROXY_HOST_PREFIX = "learning-oreilly-com.";
+  var OREILLY_READER_PATH = /^\/library\/view\/[^/]+\/[^/]+(?:\/|$)/i;
+  var CONTENT_ROOT_SELECTOR = "#sbo-rt-content";
+  var BOTTOM_INSET_ATTRIBUTE = "data-castreader-oreilly-bottom-inset";
+  var FRAME_SESSION_PROPERTY3 = "__castreaderOReillyFrameSessionID";
+  var PENDING_CHAPTER_TURN_KEY = "__castreaderOReillyPendingChapterTurnV1";
+  var ADAPTER_VERSION = "2026-07-30-anchor-v2";
+  var MIN_TEXT_CHARS = 2;
+  var COMPLETE_RECT_TOLERANCE = 0.75;
+  var SETTLE_POLL_MS = 140;
+  var SETTLE_STABLE_MS = 380;
+  var SETTLE_STABLE_SAMPLES = 3;
+  var TURN_TIMEOUT_MS = 6500;
+  var MANUAL_INTENT_DEBOUNCE_MS = 280;
+  var CHAPTER_TURN_MAX_AGE_MS = 2e4;
+  var MAX_SENTENCE_PREVIEW_CHARS = 260;
+  var READABLE_SELECTOR = [
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "p",
+    "li",
+    "blockquote",
+    "pre",
+    "figcaption",
+    "dt",
+    "dd",
+    "caption",
+    "th",
+    "td"
+  ].join(",");
+  var EXCLUDED_ANCESTOR_SELECTOR = [
+    "nav",
+    "aside",
+    "header",
+    "footer",
+    "button",
+    '[role="navigation"]',
+    '[role="button"]',
+    '[role="banner"]',
+    '[role="complementary"]',
+    '[aria-hidden="true"]',
+    "[hidden]",
+    "[inert]",
+    '[data-testid="statusBar"]'
+  ].join(",");
+  var oreillyNativeBottomOcclusion = 0;
+  var activeSourceCursor = null;
+  function stableHash323(value) {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index++) {
+      hash ^= value.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+  function protocolID3(prefix) {
+    try {
+      if (typeof (crypto == null ? void 0 : crypto.randomUUID) === "function") {
+        return `${prefix}-${crypto.randomUUID()}`;
+      }
+    } catch (e) {
+    }
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  }
+  function recordArg3(value) {
+    return value && typeof value === "object" ? value : {};
+  }
+  function nonemptyString3(value) {
+    return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+  }
+  function nonemptyOpaqueString3(value) {
+    return typeof value === "string" && value.trim().length > 0 ? value : null;
+  }
+  function finiteNumber(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+  }
+  function urlFrom(value) {
+    try {
+      return value instanceof URL ? value : new URL(value);
+    } catch (e) {
+      return null;
+    }
+  }
+  function parseOReillyRestoreAnchor(value) {
+    const input = recordArg3(value);
+    const expectedHref = nonemptyString3(input.expectedHref);
+    const expected = expectedHref ? urlFrom(expectedHref) : null;
+    const current = urlFrom(location.href);
+    if (!expectedHref || !expected || !current || !isSameOReillyChapterIdentity(expected, current)) return null;
+    const rawParagraphIndex = finiteNumber(input.sourceParagraphIndex);
+    const sourceParagraphIndex = rawParagraphIndex !== null && Number.isSafeInteger(rawParagraphIndex) && rawParagraphIndex >= 0 ? rawParagraphIndex : null;
+    const rawSourceStart = finiteNumber(input.sourceUTF16Start);
+    const sourceUTF16Start = rawSourceStart !== null && Number.isSafeInteger(rawSourceStart) && rawSourceStart >= 0 ? rawSourceStart : null;
+    const rawOffset = finiteNumber(input.scrollOffset);
+    const scrollOffset = rawOffset !== null && rawOffset >= 0 ? rawOffset : null;
+    const rawMaximum = finiteNumber(input.scrollMaximum);
+    const scrollMaximum = rawMaximum !== null && rawMaximum > 0 ? rawMaximum : null;
+    const rawRatio = finiteNumber(input.scrollRatio);
+    const scrollRatio = rawRatio !== null && rawRatio >= 0 && rawRatio <= 1 ? rawRatio : null;
+    if ((sourceParagraphIndex === null || sourceUTF16Start === null) && scrollRatio === null && scrollOffset === null) return null;
+    return {
+      expectedHref: expected.href,
+      scrollOffset,
+      scrollMaximum,
+      scrollRatio,
+      sourceParagraphIndex,
+      sourceUTF16Start
+    };
+  }
+  function trustedOReillyHost(hostname) {
+    const host = hostname.toLowerCase();
+    if (host === OREILLY_DIRECT_HOST) return true;
+    if (!host.startsWith(OREILLY_PROXY_HOST_PREFIX)) return false;
+    const suffix = host.slice(OREILLY_PROXY_HOST_PREFIX.length);
+    const labels = suffix.split(".");
+    if (labels.length < 3) return false;
+    const safeDNSLabel = (label) => label.length >= 1 && label.length <= 63 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label);
+    if (!labels.every(safeDNSLabel)) return false;
+    return labels.slice(0, -2).some((label) => label.includes("proxy"));
+  }
+  function oReillyBookID(value = location.href) {
+    const url = urlFrom(value);
+    if (!url) return null;
+    const match = url.pathname.match(
+      /^\/library\/view\/[^/]+\/([^/]+)(?:\/|$)/i
+    );
+    if (!match) return null;
+    try {
+      const id = decodeURIComponent(match[1]).trim();
+      return id.length > 0 ? id : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function isTrustedOReillyReaderURL(value = location.href) {
+    const url = urlFrom(value);
+    if (!url) return false;
+    return url.protocol === "https:" && trustedOReillyHost(url.hostname) && OREILLY_READER_PATH.test(url.pathname) && oReillyBookID(url) !== null;
+  }
+  function isSameOReillyChapterIdentity(leftValue, rightValue) {
+    const left = urlFrom(leftValue);
+    const right = urlFrom(rightValue);
+    if (!left || !right || !isTrustedOReillyReaderURL(left) || !isTrustedOReillyReaderURL(right)) return false;
+    return left.origin === right.origin && left.pathname === right.pathname && oReillyBookID(left) === oReillyBookID(right);
+  }
+  function isTrustedOReillyChapterURL(currentValue, targetValue) {
+    const current = urlFrom(currentValue);
+    const target = urlFrom(targetValue);
+    if (!current || !target || !isTrustedOReillyReaderURL(current) || !isTrustedOReillyReaderURL(target)) return false;
+    return current.origin === target.origin && oReillyBookID(current) === oReillyBookID(target) && (current.pathname !== target.pathname || current.search !== target.search || current.hash !== target.hash);
+  }
+  function isOReillyReaderMainFrame() {
+    return window === window.top && isTrustedOReillyReaderURL();
+  }
+  function oReillyFrameSessionID() {
+    const target = window;
+    if (target[FRAME_SESSION_PROPERTY3]) {
+      return target[FRAME_SESSION_PROPERTY3];
+    }
+    const id = `orf-${protocolID3("frame")}`;
+    try {
+      Object.defineProperty(target, FRAME_SESSION_PROPERTY3, {
+        value: id,
+        writable: false,
+        configurable: false
+      });
+    } catch (e) {
+      target[FRAME_SESSION_PROPERTY3] = id;
+    }
+    return id;
+  }
+  function setOReillyNativeBottomOcclusion(value) {
+    var _a;
+    if (!Number.isFinite(value)) return;
+    const viewportHeight = Math.max(
+      1,
+      ((_a = window.visualViewport) == null ? void 0 : _a.height) || window.innerHeight || 1
+    );
+    oreillyNativeBottomOcclusion = Math.max(
+      0,
+      Math.min(value, viewportHeight - 1)
+    );
+    const root2 = contentRoot();
+    if (root2) ensureBottomScrollInset(root2);
+  }
+  function contentRoot() {
+    const node = document.querySelector(CONTENT_ROOT_SELECTOR);
+    return node instanceof HTMLElement ? node : null;
+  }
+  function ensureBottomScrollInset(root2) {
+    let inset = root2.querySelector(
+      `:scope > [${BOTTOM_INSET_ATTRIBUTE}]`
+    );
+    if (!(inset instanceof HTMLElement)) {
+      inset = document.createElement("div");
+      inset.setAttribute(BOTTOM_INSET_ATTRIBUTE, "true");
+      inset.setAttribute("aria-hidden", "true");
+      inset.style.cssText = [
+        "display:block",
+        "width:1px",
+        "min-width:1px",
+        "pointer-events:none",
+        "user-select:none",
+        "overflow:hidden"
+      ].join(";");
+      root2.appendChild(inset);
+    }
+    inset.style.height = `${Math.ceil(oreillyNativeBottomOcclusion)}px`;
+  }
+  function elementStyle(element) {
+    var _a;
+    try {
+      return ((_a = element.ownerDocument.defaultView) == null ? void 0 : _a.getComputedStyle(element)) || null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function elementIsRendered(element) {
+    if (element.closest(EXCLUDED_ANCESTOR_SELECTOR)) return false;
+    let node = element;
+    while (node) {
+      const style = elementStyle(node);
+      if ((style == null ? void 0 : style.display) === "none" || (style == null ? void 0 : style.visibility) === "hidden" || Number((style == null ? void 0 : style.opacity) || "1") <= 0.01) return false;
+      node = node.parentElement;
+    }
+    const rects = element.getClientRects();
+    return Array.from(rects).some((rect) => rect.width > 0 && rect.height > 0);
+  }
+  function hasReadableDescendant(element) {
+    for (const child of Array.from(element.children)) {
+      if (child.matches(READABLE_SELECTOR) || child.querySelector(READABLE_SELECTOR)) return true;
+    }
+    return false;
+  }
+  function readableEntries(root2) {
+    return Array.from(root2.querySelectorAll(READABLE_SELECTOR)).map((node, sourceOrdinal) => node instanceof HTMLElement ? { element: node, sourceOrdinal } : null).filter((entry) => entry !== null).filter(({ element }) => {
+      const text = element.textContent || "";
+      if (text.trim().length < MIN_TEXT_CHARS) return false;
+      if (!elementIsRendered(element)) return false;
+      const style = elementStyle(element);
+      if ((style == null ? void 0 : style.position) === "fixed" || (style == null ? void 0 : style.position) === "sticky") {
+        return false;
+      }
+      if (hasReadableDescendant(element)) return false;
+      return true;
+    });
+  }
+  function fixedTopOcclusion(root2) {
+    let bottom = 0;
+    const candidates = Array.from(document.querySelectorAll(
+      'header,[role="banner"],[data-testid*="header" i]'
+    ));
+    for (const candidate of candidates) {
+      if (!(candidate instanceof HTMLElement) || root2.contains(candidate)) continue;
+      const style = elementStyle(candidate);
+      if ((style == null ? void 0 : style.position) !== "fixed" && (style == null ? void 0 : style.position) !== "sticky") continue;
+      if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") <= 0.01) continue;
+      const rect = candidate.getBoundingClientRect();
+      if (rect.width < window.innerWidth * 0.35 || rect.height <= 0 || rect.top > 2 || rect.bottom <= 0 || rect.bottom >= window.innerHeight * 0.5) continue;
+      bottom = Math.max(bottom, rect.bottom);
+    }
+    return bottom;
+  }
+  function oReillyViewportClip() {
+    var _a, _b;
+    const root2 = contentRoot();
+    if (!root2) return null;
+    ensureBottomScrollInset(root2);
+    const viewportWidth = Math.max(
+      1,
+      ((_a = window.visualViewport) == null ? void 0 : _a.width) || window.innerWidth || 1
+    );
+    const viewportHeight = Math.max(
+      1,
+      ((_b = window.visualViewport) == null ? void 0 : _b.height) || window.innerHeight || 1
+    );
+    const rootRect = root2.getBoundingClientRect();
+    const left = Math.max(0, rootRect.left);
+    const right = Math.min(viewportWidth, rootRect.right);
+    const top = Math.max(0, fixedTopOcclusion(root2));
+    const bottom = Math.min(
+      viewportHeight,
+      viewportHeight - oreillyNativeBottomOcclusion
+    );
+    if (right <= left || bottom <= top) return null;
+    return { left, top, right, bottom };
+  }
+  function textBoundaryAt2(element, index) {
+    var _a;
+    const walker = element.ownerDocument.createTreeWalker(
+      element,
+      NodeFilter.SHOW_TEXT
+    );
+    let offset = 0;
+    let node;
+    while (node = walker.nextNode()) {
+      const length = ((_a = node.textContent) == null ? void 0 : _a.length) || 0;
+      if (index <= offset + length) {
+        return { node, offset: Math.max(0, index - offset) };
+      }
+      offset += length;
+    }
+    return null;
+  }
+  function textRange2(element, start, end) {
+    const length = (element.textContent || "").length;
+    if (start < 0 || end <= start || end > length) return null;
+    const startBoundary = textBoundaryAt2(element, start);
+    const endBoundary = textBoundaryAt2(element, end);
+    if (!startBoundary || !endBoundary) return null;
+    const range2 = element.ownerDocument.createRange();
+    try {
+      range2.setStart(startBoundary.node, startBoundary.offset);
+      range2.setEnd(endBoundary.node, endBoundary.offset);
+    } catch (e) {
+      return null;
+    }
+    return range2;
+  }
+  function alignStartToCodePoint2(text, index) {
+    if (index > 0 && index < text.length && text.charCodeAt(index) >= 56320 && text.charCodeAt(index) <= 57343) return index - 1;
+    return index;
+  }
+  function alignEndToCodePoint2(text, index) {
+    if (index > 0 && index < text.length && text.charCodeAt(index - 1) >= 55296 && text.charCodeAt(index - 1) <= 56319) return index + 1;
+    return index;
+  }
+  function rectFullyInsideClip(rect, clip) {
+    if (rect.width <= 0 || rect.height <= 0) return false;
+    return rect.left + COMPLETE_RECT_TOLERANCE >= clip.left && rect.right <= clip.right + COMPLETE_RECT_TOLERANCE && rect.top + COMPLETE_RECT_TOLERANCE >= clip.top && rect.bottom <= clip.bottom + COMPLETE_RECT_TOLERANCE;
+  }
+  function rangeHasCompleteFragment(range2, clip) {
+    if (!range2) return false;
+    for (const rect of Array.from(range2.getClientRects())) {
+      if (rectFullyInsideClip(rect, clip)) return true;
+    }
+    return false;
+  }
+  function rangeIsFullyVisible(range2, clip) {
+    if (!range2) return false;
+    let sawRect = false;
+    for (const rect of Array.from(range2.getClientRects())) {
+      if (rect.width <= 0 || rect.height <= 0) continue;
+      sawRect = true;
+      if (!rectFullyInsideClip(rect, clip)) return false;
+    }
+    return sawRect;
+  }
+  function oReillyVisibleCharRanges(element, clip) {
+    const text = element.textContent || "";
+    if (!text) return [];
+    const ranges = [];
+    const append = (start, end) => {
+      const alignedStart = alignStartToCodePoint2(text, start);
+      const alignedEnd = alignEndToCodePoint2(text, end);
+      if (alignedEnd <= alignedStart) return;
+      const prior = ranges[ranges.length - 1];
+      if (prior && alignedStart <= prior.end) {
+        prior.end = Math.max(prior.end, alignedEnd);
+      } else {
+        ranges.push({ start: alignedStart, end: alignedEnd });
+      }
+    };
+    const visit = (start, end) => {
+      if (end <= start) return;
+      const range2 = textRange2(element, start, end);
+      if (!rangeHasCompleteFragment(range2, clip)) return;
+      if (rangeIsFullyVisible(range2, clip)) {
+        append(start, end);
+        return;
+      }
+      if (end - start <= 16) {
+        let cursor = start;
+        while (cursor < end) {
+          const next = Math.min(
+            end,
+            Math.max(
+              cursor + 1,
+              alignEndToCodePoint2(text, cursor + 1)
+            )
+          );
+          if (rangeIsFullyVisible(
+            textRange2(element, cursor, next),
+            clip
+          )) append(cursor, next);
+          cursor = next;
+        }
+        return;
+      }
+      let middle = alignEndToCodePoint2(
+        text,
+        start + (end - start >> 1)
+      );
+      if (middle <= start || middle >= end) middle = start + 1;
+      visit(start, middle);
+      visit(middle, end);
+    };
+    visit(0, text.length);
+    const merged = [];
+    for (const range2 of ranges) {
+      const prior = merged[merged.length - 1];
+      const gap = prior ? text.slice(prior.end, range2.start) : "";
+      if (prior && gap.length <= 8 && /^\s*$/.test(gap)) {
+        prior.end = range2.end;
+      } else {
+        merged.push(__spreadValues({}, range2));
+      }
+    }
+    return merged;
+  }
+  function normalizedIdentityText2(text) {
+    const normalized = text.replace(/\s+/g, " ").trim();
+    return [
+      normalized.length,
+      normalized.slice(0, 80),
+      normalized.slice(-80)
+    ].join(":");
+  }
+  function elementLogicalIdentity(element, ordinal) {
+    const explicit = [
+      element.id,
+      element.getAttribute("data-testid") || "",
+      element.getAttribute("data-id") || "",
+      element.getAttribute("data-key") || ""
+    ].filter(Boolean).join("|");
+    return explicit || [
+      element.tagName.toLowerCase(),
+      ordinal,
+      normalizedIdentityText2(element.textContent || "")
+    ].join("|");
+  }
+  function chapterIdentity2() {
+    const id = oReillyBookID() || "unknown";
+    return `${id}|${location.pathname}`;
+  }
+  function sourceID2(element, ordinal) {
+    return stableHash323(
+      `${chapterIdentity2()}|${elementLogicalIdentity(element, ordinal)}`
+    ) & 2147483647;
+  }
+  function trimmedSourceSlice(full, start, end) {
+    const raw = full.slice(start, end);
+    const withoutLeading = raw.trimStart();
+    const leading = raw.length - withoutLeading.length;
+    const text = withoutLeading.trimEnd();
+    if (text.length < MIN_TEXT_CHARS) return null;
+    const sourceStart = start + leading;
+    return {
+      text,
+      start: sourceStart,
+      end: sourceStart + text.length
+    };
+  }
+  function extractOReillyParagraphsInClip(clip) {
+    const root2 = contentRoot();
+    if (!root2) return [];
+    const entries = readableEntries(root2);
+    const output = [];
+    const seen = /* @__PURE__ */ new Set();
+    entries.forEach(({ element, sourceOrdinal }) => {
+      const rect = element.getBoundingClientRect();
+      if (rect.right <= clip.left || rect.left >= clip.right || rect.bottom <= clip.top || rect.top >= clip.bottom) return;
+      const full = element.textContent || "";
+      const id = sourceID2(element, sourceOrdinal);
+      for (const range2 of oReillyVisibleCharRanges(element, clip)) {
+        const slice2 = trimmedSourceSlice(full, range2.start, range2.end);
+        if (!slice2) continue;
+        const key = `${id}:${slice2.start}:${slice2.end}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        output.push({
+          text: slice2.text,
+          element,
+          exactText: true,
+          charOffset: slice2.start,
+          sourceParagraphIndex: id,
+          sourceStart: slice2.start,
+          sourceEnd: slice2.end
+        });
+      }
+    });
+    return output;
+  }
+  function sourceRelationship(cursor, paragraph) {
+    const root2 = contentRoot();
+    if (!root2 || !cursor.element.isConnected || !root2.contains(cursor.element) || !paragraph.element.isConnected || !root2.contains(paragraph.element)) return null;
+    if (cursor.element === paragraph.element && cursor.sourceParagraphIndex === paragraph.sourceParagraphIndex) return 0;
+    const relationship = cursor.element.compareDocumentPosition(
+      paragraph.element
+    );
+    if (relationship & Node.DOCUMENT_POSITION_FOLLOWING) return 1;
+    if (relationship & Node.DOCUMENT_POSITION_PRECEDING) return -1;
+    return null;
+  }
+  function trimParagraphToRange(paragraph, start, end) {
+    const full = paragraph.element.textContent || "";
+    const slice2 = trimmedSourceSlice(full, start, end);
+    if (!slice2) return null;
+    return __spreadProps(__spreadValues({}, paragraph), {
+      text: slice2.text,
+      charOffset: slice2.start,
+      sourceStart: slice2.start,
+      sourceEnd: slice2.end
+    });
+  }
+  function paragraphsAfterCursor(paragraphs, cursor) {
+    const output = [];
+    for (const paragraph of paragraphs) {
+      const relationship = sourceRelationship(cursor, paragraph);
+      if (relationship === null) return paragraphs;
+      if (relationship < 0) continue;
+      if (relationship > 0) {
+        output.push(paragraph);
+        continue;
+      }
+      if (paragraph.sourceEnd <= cursor.offset) continue;
+      const trimmed = trimParagraphToRange(
+        paragraph,
+        Math.max(paragraph.sourceStart, cursor.offset),
+        paragraph.sourceEnd
+      );
+      if (trimmed) output.push(trimmed);
+    }
+    return output;
+  }
+  function paragraphsBeforeCursor(paragraphs, cursor) {
+    const output = [];
+    for (const paragraph of paragraphs) {
+      const relationship = sourceRelationship(cursor, paragraph);
+      if (relationship === null) return paragraphs;
+      if (relationship > 0) continue;
+      if (relationship < 0) {
+        output.push(paragraph);
+        continue;
+      }
+      if (paragraph.sourceStart >= cursor.offset) continue;
+      const trimmed = trimParagraphToRange(
+        paragraph,
+        paragraph.sourceStart,
+        Math.min(paragraph.sourceEnd, cursor.offset)
+      );
+      if (trimmed) output.push(trimmed);
+    }
+    return output;
+  }
+  function paragraphsApplyingCursor(paragraphs, cursor = activeSourceCursor) {
+    if (!cursor) return paragraphs;
+    return cursor.direction === "next" ? paragraphsAfterCursor(paragraphs, cursor) : paragraphsBeforeCursor(paragraphs, cursor);
+  }
+  function extractOReillyParagraphs() {
+    const clip = oReillyViewportClip();
+    return clip ? paragraphsApplyingCursor(extractOReillyParagraphsInClip(clip)) : [];
+  }
+  function acceptOReillyHighlightRect(element, rect) {
+    const root2 = contentRoot();
+    const clip = oReillyViewportClip();
+    if (!root2 || !clip || !root2.contains(element)) return false;
+    return rect.width > 0 && rect.height > 0 && rect.left + COMPLETE_RECT_TOLERANCE >= clip.left && rect.right <= clip.right + COMPLETE_RECT_TOLERANCE && rect.top + COMPLETE_RECT_TOLERANCE >= clip.top && rect.bottom <= clip.bottom + COMPLETE_RECT_TOLERANCE;
+  }
+  function paragraphFingerprint(paragraphs) {
+    if (paragraphs.length === 0) return "";
+    const value = paragraphs.map((paragraph) => [
+      paragraph.sourceParagraphIndex,
+      paragraph.sourceStart,
+      paragraph.sourceEnd,
+      normalizedIdentityText2(paragraph.text)
+    ].join(":")).join("|");
+    return `orfp-${stableHash323(`${chapterIdentity2()}|${value}`).toString(36)}-${paragraphs.length}`;
+  }
+  function oReillySignature() {
+    const paragraphs = extractOReillyParagraphs();
+    const fingerprint = paragraphFingerprint(paragraphs);
+    return fingerprint ? `orpg-${stableHash323(`${chapterIdentity2()}|${fingerprint}`).toString(36)}-${paragraphs.length}` : "";
+  }
+  function lineOverlap(paragraphs) {
+    const tail = paragraphs[paragraphs.length - 1];
+    if (!tail) return 28;
+    const style = elementStyle(tail.element);
+    const lineHeight = Number.parseFloat((style == null ? void 0 : style.lineHeight) || "");
+    const fontSize = Number.parseFloat((style == null ? void 0 : style.fontSize) || "");
+    const estimated = Number.isFinite(lineHeight) ? lineHeight : Number.isFinite(fontSize) ? fontSize * 1.4 : 28;
+    return Math.max(20, Math.min(72, estimated * 1.25));
+  }
+  function visualPageStep() {
+    const clip = oReillyViewportClip();
+    if (!clip) return Math.max(120, window.innerHeight * 0.7);
+    const height = clip.bottom - clip.top;
+    return Math.max(120, height - lineOverlap(extractOReillyParagraphs()));
+  }
+  function shiftedClip3(clip, dy) {
+    return {
+      left: clip.left,
+      right: clip.right,
+      top: clip.top + dy,
+      bottom: clip.bottom + dy
+    };
+  }
+  function isForwardPreview3(current, candidate) {
+    const tail = current[current.length - 1];
+    const head = candidate[0];
+    if (!tail || !head) return false;
+    if (tail.sourceParagraphIndex === head.sourceParagraphIndex) {
+      return head.sourceEnd > tail.sourceEnd;
+    }
+    const relationship = tail.element.compareDocumentPosition(head.element);
+    return (relationship & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+  }
+  function extractOReillyNextPagePreview() {
+    const clip = oReillyViewportClip();
+    if (!clip) return null;
+    const current = paragraphsApplyingCursor(
+      extractOReillyParagraphsInClip(clip)
+    );
+    if (current.length === 0) return null;
+    const step = visualPageStep();
+    const tail = current[current.length - 1];
+    const previewCursor = {
+      direction: "next",
+      element: tail.element,
+      sourceParagraphIndex: tail.sourceParagraphIndex,
+      offset: tail.sourceEnd
+    };
+    const candidate = paragraphsAfterCursor(
+      extractOReillyParagraphsInClip(shiftedClip3(clip, step)),
+      previewCursor
+    );
+    if (!isForwardPreview3(current, candidate)) return null;
+    const contentFingerprint2 = paragraphFingerprint(candidate);
+    return contentFingerprint2 ? { paragraphs: candidate, contentFingerprint: contentFingerprint2 } : null;
+  }
+  function nextSentenceAfter(element, sourceParagraphIndex, start) {
+    const full = element.textContent || "";
+    let sourceStart = Math.max(0, Math.min(start, full.length));
+    while (sourceStart < full.length && /\s/.test(full[sourceStart])) {
+      sourceStart++;
+    }
+    if (sourceStart >= full.length) return null;
+    let sourceEnd = extendToSentenceEnd(
+      full,
+      Math.min(full.length, sourceStart + 1)
+    );
+    if (sourceEnd <= sourceStart + 1) {
+      sourceEnd = Math.min(
+        full.length,
+        sourceStart + MAX_SENTENCE_PREVIEW_CHARS
+      );
+    }
+    const raw = full.slice(sourceStart, sourceEnd);
+    const text = raw.trimEnd();
+    sourceEnd = sourceStart + text.length;
+    if (text.length < MIN_TEXT_CHARS) return null;
+    const fingerprintSource = `${chapterIdentity2()}:${sourceParagraphIndex}:${sourceStart}:${sourceEnd}:${text}`;
+    return {
+      text,
+      exactText: true,
+      sourceParagraphIndex,
+      sourceStart,
+      sourceEnd,
+      // The native bounded-speech preload contract accepts an eight-character
+      // lowercase hexadecimal digest. Keep the source coordinates and exact text
+      // in the hash input, but use the shared wire representation so O'Reilly's
+      // sentence fallback can actually enter the native preparation pipeline.
+      contentFingerprint: stableHash323(fingerprintSource).toString(16).padStart(8, "0")
+    };
+  }
+  function extractOReillyNextSpeechPreview() {
+    const root2 = contentRoot();
+    const current = extractOReillyParagraphs();
+    const tail = current[current.length - 1];
+    if (!root2 || !tail) return null;
+    const sameElement = nextSentenceAfter(
+      tail.element,
+      tail.sourceParagraphIndex,
+      tail.sourceEnd
+    );
+    if (sameElement) return sameElement;
+    const entries = readableEntries(root2);
+    const tailPosition = entries.findIndex(
+      (entry) => entry.element === tail.element
+    );
+    if (tailPosition < 0) return null;
+    for (let position = tailPosition + 1; position < entries.length; position++) {
+      const { element, sourceOrdinal } = entries[position];
+      const preview = nextSentenceAfter(
+        element,
+        sourceID2(element, sourceOrdinal),
+        0
+      );
+      if (preview) return preview;
+    }
+    return null;
+  }
+  function scrollableAncestor(root2) {
+    let node = root2.parentElement;
+    while (node && node !== document.body && node !== document.documentElement) {
+      const style = elementStyle(node);
+      const overflow = (style == null ? void 0 : style.overflowY) || "";
+      if (/(auto|scroll|overlay)/.test(overflow) && node.scrollHeight > node.clientHeight + 2) return node;
+      node = node.parentElement;
+    }
+    return null;
+  }
+  function scrollSurface() {
+    const root2 = contentRoot();
+    const container = root2 ? scrollableAncestor(root2) : null;
+    if (container) {
+      return {
+        position: () => container.scrollTop,
+        maximum: () => Math.max(0, container.scrollHeight - container.clientHeight),
+        scrollTo: (position) => {
+          const top = Math.max(0, Math.min(position, container.scrollHeight));
+          try {
+            container.scrollTo({ top, behavior: "auto" });
+          } catch (e) {
+            container.scrollTop = top;
+          }
+        }
+      };
+    }
+    const scrolling = document.scrollingElement || document.documentElement || document.body;
+    return {
+      position: () => {
+        var _a;
+        return window.scrollY || scrolling.scrollTop || document.documentElement.scrollTop || ((_a = document.body) == null ? void 0 : _a.scrollTop) || 0;
+      },
+      maximum: () => {
+        var _a;
+        return Math.max(
+          0,
+          scrolling.scrollHeight - (((_a = window.visualViewport) == null ? void 0 : _a.height) || window.innerHeight)
+        );
+      },
+      scrollTo: (position) => {
+        const top = Math.max(0, Math.min(position, scrolling.scrollHeight));
+        try {
+          window.scrollTo({ top, left: window.scrollX, behavior: "auto" });
+        } catch (e) {
+          scrolling.scrollTop = top;
+        }
+      }
+    };
+  }
+  function oReillyContentMaximumPosition() {
+    const surface = scrollSurface();
+    const current = surface.position();
+    const clip = oReillyViewportClip();
+    const root2 = contentRoot();
+    if (!clip || !root2) return surface.maximum();
+    const entries = readableEntries(root2);
+    let contentBottom = Number.NEGATIVE_INFINITY;
+    for (const { element } of entries) {
+      for (const rect of Array.from(element.getClientRects())) {
+        if (rect.width <= 0 || rect.height <= 0) continue;
+        contentBottom = Math.max(contentBottom, rect.bottom);
+      }
+    }
+    if (!Number.isFinite(contentBottom)) return surface.maximum();
+    return Math.max(
+      0,
+      Math.min(
+        surface.maximum(),
+        current + contentBottom - clip.bottom
+      )
+    );
+  }
+  function oReillyContentMinimumPosition() {
+    const surface = scrollSurface();
+    const current = surface.position();
+    const clip = oReillyViewportClip();
+    const root2 = contentRoot();
+    if (!clip || !root2) return 0;
+    const entries = readableEntries(root2);
+    let contentTop = Number.POSITIVE_INFINITY;
+    for (const { element } of entries) {
+      for (const rect of Array.from(element.getClientRects())) {
+        if (rect.width <= 0 || rect.height <= 0 || rect.right <= clip.left || rect.left >= clip.right) continue;
+        contentTop = Math.min(contentTop, rect.top);
+      }
+    }
+    if (!Number.isFinite(contentTop)) return 0;
+    return Math.max(
+      0,
+      Math.min(
+        surface.maximum(),
+        current + contentTop - clip.top
+      )
+    );
+  }
+  function oReillySourceAnchorPosition(anchor) {
+    if (anchor.sourceParagraphIndex === null || anchor.sourceUTF16Start === null) return null;
+    const root2 = contentRoot();
+    const clip = oReillyViewportClip();
+    if (!root2 || !clip) return null;
+    const entry = readableEntries(root2).find(
+      ({ element, sourceOrdinal }) => sourceID2(element, sourceOrdinal) === anchor.sourceParagraphIndex
+    );
+    if (!entry) return null;
+    const text = entry.element.textContent || "";
+    if (!text) return null;
+    let sourceStart = Math.max(
+      0,
+      Math.min(anchor.sourceUTF16Start, Math.max(0, text.length - 1))
+    );
+    sourceStart = alignStartToCodePoint2(text, sourceStart);
+    while (sourceStart < text.length && /\s/.test(text[sourceStart])) {
+      sourceStart = alignEndToCodePoint2(text, sourceStart + 1);
+    }
+    if (sourceStart >= text.length) return null;
+    const sourceEnd = Math.min(
+      text.length,
+      Math.max(
+        sourceStart + 1,
+        alignEndToCodePoint2(text, sourceStart + 1)
+      )
+    );
+    const range2 = textRange2(entry.element, sourceStart, sourceEnd);
+    const rect = range2 ? Array.from(range2.getClientRects()).find((candidate) => candidate.width > 0 && candidate.height > 0 && candidate.right > clip.left && candidate.left < clip.right) : null;
+    if (!rect) return null;
+    const surface = scrollSurface();
+    return Math.max(
+      0,
+      Math.min(
+        surface.maximum(),
+        surface.position() + rect.top - clip.top
+      )
+    );
+  }
+  function oReillyFallbackAnchorPosition(anchor) {
+    const surface = scrollSurface();
+    const maximum = surface.maximum();
+    if (anchor.scrollRatio !== null) {
+      return maximum * anchor.scrollRatio;
+    }
+    if (anchor.scrollOffset !== null && anchor.scrollMaximum !== null) {
+      return maximum * Math.max(
+        0,
+        Math.min(1, anchor.scrollOffset / anchor.scrollMaximum)
+      );
+    }
+    return anchor.scrollOffset === null ? null : Math.max(0, Math.min(maximum, anchor.scrollOffset));
+  }
+  function applyOReillyRestoreAnchor(anchor) {
+    var _a;
+    const current = urlFrom(location.href);
+    if (!current || !isSameOReillyChapterIdentity(current, anchor.expectedHref) || !contentRoot()) {
+      return false;
+    }
+    const target = (_a = oReillySourceAnchorPosition(anchor)) != null ? _a : oReillyFallbackAnchorPosition(anchor);
+    if (target === null || !Number.isFinite(target)) return false;
+    scrollSurface().scrollTo(target);
+    return true;
+  }
+  function positionOReillyChapterEntry(direction) {
+    const surface = scrollSurface();
+    const target = direction === "prev" ? oReillyContentMaximumPosition() : oReillyContentMinimumPosition();
+    surface.scrollTo(target);
+    return target;
+  }
+  function chapterContentFingerprint() {
+    const root2 = contentRoot();
+    if (!root2) return "";
+    const text = (root2.textContent || "").replace(/\s+/g, " ").trim();
+    if (!text) return "";
+    const middle = Math.max(0, (text.length >> 1) - 256);
+    const sample2 = [
+      text.length,
+      text.slice(0, 512),
+      text.slice(middle, middle + 512),
+      text.slice(-512)
+    ].join("|");
+    return `orch-${stableHash323(sample2).toString(36)}-${text.length}`;
+  }
+  function trustedChapterLink(direction) {
+    const currentBookID = oReillyBookID();
+    if (!currentBookID) return null;
+    const testID = direction === "next" ? "statusBarNext" : "statusBarPrevious";
+    const selectors = [
+      `[data-testid="${testID}"] a[href]`,
+      `a[data-testid="${testID}"][href]`,
+      `nav[data-testid="statusBar"] [data-testid="${testID}"] a[href]`
+    ];
+    const candidates = [];
+    for (const selector of selectors) {
+      document.querySelectorAll(selector).forEach((node) => {
+        if (node instanceof HTMLAnchorElement && !candidates.includes(node)) {
+          candidates.push(node);
+        }
+      });
+    }
+    return candidates.find((anchor) => {
+      const target = urlFrom(anchor.href);
+      if (!target || !isTrustedOReillyChapterURL(location.href, target) || oReillyBookID(target) !== currentBookID) return false;
+      const style = elementStyle(anchor);
+      return !(anchor.getAttribute("aria-disabled") === "true" || anchor.hasAttribute("disabled") || (style == null ? void 0 : style.display) === "none" || (style == null ? void 0 : style.visibility) === "hidden");
+    }) || null;
+  }
+  function clearPageVisuals() {
+    var _a, _b;
+    const bridge = window.CR;
+    try {
+      (_a = bridge == null ? void 0 : bridge.clearHighlight) == null ? void 0 : _a.call(bridge, {});
+    } catch (e) {
+    }
+    try {
+      (_b = bridge == null ? void 0 : bridge.clearMarks) == null ? void 0 : _b.call(bridge, {});
+    } catch (e) {
+    }
+  }
+  function storePendingChapterTurn(value) {
+    try {
+      sessionStorage.setItem(PENDING_CHAPTER_TURN_KEY, JSON.stringify(value));
+    } catch (e) {
+    }
+  }
+  function clearPendingChapterTurn() {
+    try {
+      sessionStorage.removeItem(PENDING_CHAPTER_TURN_KEY);
+    } catch (e) {
+    }
+  }
+  function consumePendingChapterTurn() {
+    try {
+      const raw = sessionStorage.getItem(PENDING_CHAPTER_TURN_KEY);
+      sessionStorage.removeItem(PENDING_CHAPTER_TURN_KEY);
+      if (!raw) return null;
+      const value = JSON.parse(raw);
+      if ((value == null ? void 0 : value.version) !== 1 || value.bookID !== oReillyBookID() || Date.now() - Number(value.createdAt) > CHAPTER_TURN_MAX_AGE_MS || value.reason !== "auto" && value.reason !== "manual" || value.direction !== "next" && value.direction !== "prev" || !value.metadata) return null;
+      return value;
+    } catch (e) {
+      return null;
+    }
+  }
+  function automaticMetadata(arg, fallbackBaseline, frameSessionID) {
+    const value = recordArg3(arg);
+    return {
+      turnID: nonemptyString3(value.turnID) || protocolID3("auto"),
+      baselineSignature: nonemptyOpaqueString3(value.baselineSignature) || fallbackBaseline,
+      originFrameSessionID: nonemptyString3(value.originFrameSessionID) || frameSessionID
+    };
+  }
+  function manualMetadata(arg, fallbackBaseline, frameSessionID) {
+    const value = recordArg3(arg);
+    return {
+      manualIntentID: nonemptyString3(value.manualIntentID) || protocolID3("manual"),
+      baselineSignature: nonemptyOpaqueString3(value.baselineSignature) || fallbackBaseline,
+      originFrameSessionID: nonemptyString3(value.originFrameSessionID) || frameSessionID
+    };
+  }
+  function performVisualTurn(direction, beforeChapterClick) {
+    const surface = scrollSurface();
+    const current = surface.position();
+    const contentMinimum = Math.min(
+      current,
+      oReillyContentMinimumPosition()
+    );
+    const contentMaximum = Math.max(
+      current,
+      oReillyContentMaximumPosition()
+    );
+    const step = visualPageStep();
+    const target = direction === "next" ? Math.min(contentMaximum, current + step) : Math.max(contentMinimum, current - step);
+    if (Math.abs(target - current) > 2) {
+      surface.scrollTo(target);
+      return { accepted: true, method: "scroll" };
+    }
+    const link = trustedChapterLink(direction);
+    if (!link) return { accepted: false, method: "none" };
+    const targetHref = link.href;
+    beforeChapterClick == null ? void 0 : beforeChapterClick(link);
+    link.click();
+    return { accepted: true, method: "chapter", targetHref };
+  }
+  function installOReillyReader(post, requestExtract, frameSessionID = oReillyFrameSessionID()) {
+    var _a;
+    const postForFrame = (type2, payload = {}) => {
+      post(type2, __spreadProps(__spreadValues({
+        source: "oreilly"
+      }, payload), {
+        frameSessionID
+      }));
+    };
+    postForFrame("log", {
+      message: `adapter version=${ADAPTER_VERSION}`
+    });
+    const restoredChapterTurn = consumePendingChapterTurn();
+    activeSourceCursor = null;
+    let committedSignature = "";
+    let observedSignature = "";
+    let pendingChange = null;
+    let settleTimer = null;
+    let settleSignature = "";
+    let settleSince = 0;
+    let settleSamples = 0;
+    let suppressManualUntil = 0;
+    let lastManualIntentAt = 0;
+    let lastScrollPosition = scrollSurface().position();
+    let previewTimer = null;
+    let lastPreviewToken = "";
+    let lastSpeechPreviewToken = "";
+    let hasPublishedInitialPage = false;
+    let committedParagraphs = [];
+    let pendingRestoreAnchor = null;
+    let protectedRestoreAnchor = null;
+    let restoreProtectionUntil = 0;
+    const payloadFor = (metadata) => metadata ? __spreadValues({}, metadata) : {};
+    const cancelRestoreProtection = () => {
+      pendingRestoreAnchor = null;
+      protectedRestoreAnchor = null;
+      restoreProtectionUntil = 0;
+    };
+    const applyRestoreAnchor = (anchor) => {
+      suppressManualUntil = Math.max(suppressManualUntil, Date.now() + 900);
+      const applied = applyOReillyRestoreAnchor(anchor);
+      if (applied) {
+        lastScrollPosition = scrollSurface().position();
+      }
+      return applied;
+    };
+    const installCursorForTurn = (direction) => {
+      const paragraphs = committedParagraphs.length > 0 ? committedParagraphs : extractOReillyParagraphs();
+      const boundary = direction === "next" ? paragraphs[paragraphs.length - 1] : paragraphs[0];
+      activeSourceCursor = boundary ? {
+        direction,
+        element: boundary.element,
+        sourceParagraphIndex: boundary.sourceParagraphIndex,
+        offset: direction === "next" ? boundary.sourceEnd : boundary.sourceStart
+      } : null;
+    };
+    const postLocation = (signature) => {
+      const surface = scrollSurface();
+      const position = surface.position();
+      const maximum = surface.maximum();
+      const paragraphs = extractOReillyParagraphs();
+      const head = paragraphs[0];
+      const tail = paragraphs[paragraphs.length - 1];
+      postForFrame("googleBooksLocation", {
+        href: location.href,
+        signature,
+        scrollOffset: Math.max(0, Math.round(position)),
+        scrollMaximum: Math.max(0, Math.round(maximum)),
+        scrollRatio: maximum > 0 ? Math.max(0, Math.min(1, position / maximum)) : 0,
+        sourceParagraphIndex: head == null ? void 0 : head.sourceParagraphIndex,
+        sourceUTF16Start: head == null ? void 0 : head.sourceStart,
+        sourceUTF16End: tail == null ? void 0 : tail.sourceEnd
+      });
+    };
+    const schedulePreview = () => {
+      if (previewTimer) clearTimeout(previewTimer);
+      previewTimer = setTimeout(() => {
+        previewTimer = null;
+        if (pendingChange) return;
+        const sourceSignature = committedSignature || oReillySignature();
+        if (!sourceSignature) return;
+        const preview = extractOReillyNextPagePreview();
+        if (preview == null ? void 0 : preview.paragraphs.length) {
+          const token2 = `${sourceSignature}|${preview.contentFingerprint}`;
+          if (token2 === lastPreviewToken) return;
+          lastPreviewToken = token2;
+          postForFrame("googleBooksPagePreview", {
+            sourceSignature,
+            contentFingerprint: preview.contentFingerprint,
+            paragraphs: preview.paragraphs.map((paragraph, paragraphIndex) => ({
+              paragraphIndex,
+              text: paragraph.text,
+              type: "paragraph",
+              sourceParagraphIndex: paragraph.sourceParagraphIndex,
+              sourceUTF16Start: paragraph.sourceStart,
+              sourceUTF16End: paragraph.sourceEnd
+            }))
+          });
+          return;
+        }
+        const speech = extractOReillyNextSpeechPreview();
+        if (!speech) return;
+        const token = `${sourceSignature}|${speech.contentFingerprint}`;
+        if (token === lastSpeechPreviewToken) return;
+        lastSpeechPreviewToken = token;
+        postForFrame("googleBooksSpeechPreview", {
+          sourceSignature,
+          originFrameSessionID: frameSessionID,
+          exactText: true,
+          sourceParagraphIndex: speech.sourceParagraphIndex,
+          sourceUTF16Start: speech.sourceStart,
+          sourceUTF16End: speech.sourceEnd,
+          text: speech.text,
+          contentFingerprint: speech.contentFingerprint
+        });
+      }, 160);
+    };
+    const finishChange = (signature) => {
+      const change = pendingChange;
+      if (!change) return;
+      clearPageVisuals();
+      committedSignature = signature;
+      observedSignature = signature;
+      committedParagraphs = extractOReillyParagraphs();
+      pendingChange = null;
+      if (change.method === "chapter") clearPendingChapterTurn();
+      postForFrame("googleBooksPageChanging", __spreadValues({
+        reason: change.reason,
+        phase: "changed",
+        signature,
+        baselineSignature: change.baselineSignature
+      }, payloadFor(change.metadata)));
+      requestExtract(change.reason, payloadFor(change.metadata));
+      postLocation(signature);
+      schedulePreview();
+    };
+    const failChange = (reason) => {
+      var _a2;
+      const change = pendingChange;
+      if (!change) return;
+      pendingChange = null;
+      activeSourceCursor = (_a2 = change.priorSourceCursor) != null ? _a2 : null;
+      if (change.method === "chapter" || change.chapterTargetHref) {
+        clearPendingChapterTurn();
+      }
+      if (change.reason === "auto") {
+        postForFrame("googleBooksTurnFailed", __spreadValues({
+          method: change.method || "scroll",
+          reason,
+          lateEligible: false
+        }, payloadFor(change.metadata)));
+      } else if (change.reason === "manual") {
+        postForFrame("googleBooksPageChanging", __spreadValues({
+          reason: "manual",
+          phase: "cancelled",
+          signature: oReillySignature(),
+          baselineSignature: change.baselineSignature
+        }, payloadFor(change.metadata)));
+      }
+    };
+    const chapterNavigationReady = (change) => {
+      if (change.method !== "chapter") return true;
+      const current = urlFrom(location.href);
+      const start = change.startHref ? urlFrom(change.startHref) : null;
+      const target = change.chapterTargetHref ? urlFrom(change.chapterTargetHref) : null;
+      if (!current || !target || !isTrustedOReillyReaderURL(current) || current.origin !== target.origin || oReillyBookID(current) !== oReillyBookID(target) || start && current.href === start.href) return false;
+      const fingerprint = chapterContentFingerprint();
+      if (!fingerprint) return false;
+      return contentRoot() !== change.chapterBaselineRoot || fingerprint !== change.chapterBaselineContentFingerprint;
+    };
+    const beginSettlement = (forceCommit = false) => {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleSignature = oReillySignature();
+      settleSince = Date.now();
+      settleSamples = 1;
+      const verify = () => {
+        settleTimer = setTimeout(() => {
+          settleTimer = null;
+          const change = pendingChange;
+          if (!change) return;
+          if (change.method === "chapter") {
+            if (!chapterNavigationReady(change)) {
+              if (Date.now() - change.startedAt > TURN_TIMEOUT_MS) {
+                failChange("chapter-navigation-unchanged");
+                return;
+              }
+              verify();
+              return;
+            }
+            activeSourceCursor = null;
+            const before2 = scrollSurface().position();
+            const target = positionOReillyChapterEntry(
+              change.direction || "next"
+            );
+            const after2 = scrollSurface().position();
+            lastScrollPosition = after2;
+            suppressManualUntil = Date.now() + 500;
+            if (!change.chapterEntryPositionApplied || Math.abs(after2 - before2) > 1 || Math.abs(after2 - target) > 2) {
+              change.chapterEntryPositionApplied = true;
+              settleSignature = "";
+              settleSince = Date.now();
+              settleSamples = 0;
+              verify();
+              return;
+            }
+          }
+          const signature = oReillySignature();
+          if (signature !== settleSignature) {
+            settleSignature = signature;
+            settleSince = Date.now();
+            settleSamples = 1;
+            if (signature) observedSignature = signature;
+            verify();
+            return;
+          }
+          settleSamples++;
+          if (!signature || settleSamples < SETTLE_STABLE_SAMPLES || Date.now() - settleSince < SETTLE_STABLE_MS) {
+            if (Date.now() - change.startedAt > TURN_TIMEOUT_MS) {
+              failChange(signature ? "page-unchanged" : "page-empty");
+              return;
+            }
+            verify();
+            return;
+          }
+          if (signature === change.baselineSignature && !forceCommit && change.reason !== "refresh") {
+            if (Date.now() - change.startedAt > TURN_TIMEOUT_MS) {
+              failChange("page-unchanged");
+              return;
+            }
+            verify();
+            return;
+          }
+          finishChange(signature);
+        }, SETTLE_POLL_MS);
+      };
+      verify();
+    };
+    const announceManualIntent = (direction, intent, arg) => {
+      const now = Date.now();
+      if (!hasPublishedInitialPage || !committedSignature) return false;
+      if ((pendingChange == null ? void 0 : pendingChange.reason) === "manual") return true;
+      if (pendingChange) return false;
+      if (now - lastManualIntentAt < MANUAL_INTENT_DEBOUNCE_MS) return false;
+      lastManualIntentAt = now;
+      const baseline = committedSignature || oReillySignature();
+      const metadata = manualMetadata(arg, baseline, frameSessionID);
+      const priorSourceCursor = activeSourceCursor;
+      pendingChange = {
+        reason: "manual",
+        baselineSignature: baseline,
+        metadata,
+        direction,
+        priorSourceCursor,
+        startedAt: now
+      };
+      if (intent === "native-control" || intent === "page-key") {
+        installCursorForTurn(direction);
+      } else {
+        activeSourceCursor = null;
+      }
+      clearPageVisuals();
+      postForFrame("googleBooksPageChanging", __spreadValues({
+        reason: "manual",
+        phase: "intent",
+        intent,
+        direction,
+        baselineSignature: baseline
+      }, metadata));
+      return true;
+    };
+    const automaticTurn = (direction, arg) => {
+      if (pendingChange || !hasPublishedInitialPage) return false;
+      cancelRestoreProtection();
+      const baseline = committedSignature || oReillySignature();
+      if (!baseline) return false;
+      const metadata = automaticMetadata(arg, baseline, frameSessionID);
+      const priorSourceCursor = activeSourceCursor;
+      pendingChange = {
+        reason: "auto",
+        baselineSignature: baseline,
+        metadata,
+        direction,
+        priorSourceCursor,
+        startedAt: Date.now()
+      };
+      installCursorForTurn(direction);
+      suppressManualUntil = Date.now() + 1200;
+      pendingChange.startHref = location.href;
+      pendingChange.chapterBaselineContentFingerprint = chapterContentFingerprint();
+      pendingChange.chapterBaselineRoot = contentRoot();
+      clearPageVisuals();
+      const result2 = performVisualTurn(direction, (link) => {
+        if (pendingChange) pendingChange.chapterTargetHref = link.href;
+        storePendingChapterTurn({
+          version: 1,
+          bookID: oReillyBookID() || "",
+          reason: "auto",
+          direction,
+          baselineSignature: baseline,
+          metadata,
+          createdAt: Date.now()
+        });
+      });
+      if (!result2.accepted) {
+        failChange("turn-control-missing");
+        return false;
+      }
+      if (pendingChange) {
+        pendingChange.method = result2.method;
+        if (result2.method === "chapter") {
+          pendingChange.chapterTargetHref = pendingChange.chapterTargetHref || result2.targetHref;
+        }
+      }
+      postForFrame("googleBooksTurnRequested", __spreadValues({
+        method: result2.method,
+        direction,
+        attempt: 1
+      }, metadata));
+      beginSettlement();
+      return true;
+    };
+    const manualTurn = (direction, arg) => {
+      if (!announceManualIntent(direction, "native-control", arg)) return false;
+      cancelRestoreProtection();
+      const change = pendingChange;
+      if (!change || change.reason !== "manual" || !change.metadata) return false;
+      suppressManualUntil = Date.now() + 1200;
+      change.startHref = location.href;
+      change.chapterBaselineContentFingerprint = chapterContentFingerprint();
+      change.chapterBaselineRoot = contentRoot();
+      const result2 = performVisualTurn(direction, (link) => {
+        change.chapterTargetHref = link.href;
+        storePendingChapterTurn({
+          version: 1,
+          bookID: oReillyBookID() || "",
+          reason: "manual",
+          direction,
+          baselineSignature: change.baselineSignature,
+          metadata: change.metadata,
+          createdAt: Date.now()
+        });
+      });
+      if (!result2.accepted) {
+        failChange("turn-control-missing");
+        return false;
+      }
+      change.method = result2.method;
+      if (result2.method === "chapter") {
+        change.chapterTargetHref = change.chapterTargetHref || result2.targetHref;
+      }
+      beginSettlement();
+      return true;
+    };
+    const api = {
+      nextPage(arg) {
+        return automaticTurn("next", arg);
+      },
+      prevPage(arg) {
+        return automaticTurn("prev", arg);
+      },
+      userPage(arg) {
+        const value = recordArg3(arg);
+        const direction = value.direction;
+        if (direction !== "next" && direction !== "prev") return false;
+        return manualTurn(direction, arg);
+      },
+      restoreAnchor(arg) {
+        if (restoredChapterTurn || pendingChange) return false;
+        const anchor = parseOReillyRestoreAnchor(arg);
+        if (!anchor) return false;
+        activeSourceCursor = null;
+        pendingRestoreAnchor = anchor;
+        const applied = applyRestoreAnchor(anchor);
+        if (!applied || !hasPublishedInitialPage) return true;
+        pendingRestoreAnchor = null;
+        protectedRestoreAnchor = anchor;
+        restoreProtectionUntil = Date.now() + 1800;
+        const baseline = committedSignature || oReillySignature();
+        pendingChange = {
+          reason: "refresh",
+          baselineSignature: baseline,
+          metadata: null,
+          priorSourceCursor: activeSourceCursor,
+          startedAt: Date.now()
+        };
+        clearPageVisuals();
+        beginSettlement(true);
+        return true;
+      },
+      refresh(arg) {
+        if (pendingChange || !hasPublishedInitialPage) return;
+        const baseline = committedSignature || oReillySignature();
+        const value = recordArg3(arg);
+        const turnID = nonemptyString3(value.turnID);
+        const manualIntentID = nonemptyString3(value.manualIntentID);
+        const reason = turnID ? "auto" : manualIntentID ? "manual" : "refresh";
+        const metadata = turnID ? automaticMetadata(arg, baseline, frameSessionID) : manualIntentID ? manualMetadata(arg, baseline, frameSessionID) : null;
+        pendingChange = {
+          reason,
+          baselineSignature: baseline,
+          metadata,
+          priorSourceCursor: activeSourceCursor,
+          startedAt: Date.now()
+        };
+        clearPageVisuals();
+        beginSettlement(true);
+      },
+      relayout(arg) {
+        const value = recordArg3(arg);
+        const bottomOcclusion = Number(value.bottomOcclusion);
+        if (Number.isFinite(bottomOcclusion)) {
+          setOReillyNativeBottomOcclusion(bottomOcclusion);
+        }
+        if (!hasPublishedInitialPage) return true;
+        if (pendingChange) return true;
+        const baseline = committedSignature || oReillySignature();
+        pendingChange = {
+          reason: "refresh",
+          baselineSignature: baseline,
+          metadata: null,
+          priorSourceCursor: activeSourceCursor,
+          startedAt: Date.now()
+        };
+        clearPageVisuals();
+        beginSettlement(true);
+        return true;
+      },
+      retargetTurnBaseline(arg) {
+        var _a2;
+        const value = recordArg3(arg);
+        const turnID = nonemptyString3(value.turnID);
+        const baseline = nonemptyOpaqueString3(value.detectionBaselineSignature);
+        if (!turnID || !baseline || (pendingChange == null ? void 0 : pendingChange.reason) !== "auto" || ((_a2 = pendingChange.metadata) == null ? void 0 : _a2.turnID) !== turnID) return;
+        pendingChange.baselineSignature = baseline;
+      },
+      completeTurn(_arg) {
+      }
+    };
+    window.CastReaderGoogleBooks = api;
+    window.CastReaderOReilly = api;
+    const bridge = window.CR;
+    if (bridge) {
+      Object.assign(bridge, {
+        gbNextPage: api.nextPage,
+        gbPrevPage: api.prevPage,
+        gbManualPage: api.userPage,
+        gbRestoreAnchor: api.restoreAnchor,
+        gbRefresh: api.refresh,
+        gbRelayout: api.relayout,
+        gbRetargetTurnBaseline: api.retargetTurnBaseline,
+        gbCompleteTurn: api.completeTurn
+      });
+    }
+    const directionFromPosition = (position) => position >= lastScrollPosition ? "next" : "prev";
+    const beginDetectedManualScroll = (intent, forcedDirection) => {
+      const position = scrollSurface().position();
+      if (!hasPublishedInitialPage) {
+        lastScrollPosition = position;
+        return;
+      }
+      const positionChanged = Math.abs(position - lastScrollPosition) > 1;
+      if (!forcedDirection && !positionChanged) {
+        lastScrollPosition = position;
+        if ((pendingChange == null ? void 0 : pendingChange.reason) === "manual") beginSettlement();
+        return;
+      }
+      const direction = forcedDirection || directionFromPosition(position);
+      if (!pendingChange && Date.now() >= suppressManualUntil) {
+        announceManualIntent(direction, intent);
+      }
+      lastScrollPosition = position;
+      if ((pendingChange == null ? void 0 : pendingChange.reason) === "manual") beginSettlement();
+    };
+    let touchStart = null;
+    document.addEventListener("touchstart", (event) => {
+      if (event.isTrusted) cancelRestoreProtection();
+      if (!event.isTrusted || event.touches.length !== 1) {
+        touchStart = null;
+        return;
+      }
+      touchStart = {
+        x: event.touches[0].clientX,
+        y: event.touches[0].clientY
+      };
+    }, { capture: true, passive: true });
+    document.addEventListener("touchmove", (event) => {
+      if (!event.isTrusted || event.touches.length !== 1 || !touchStart) return;
+      const touch = event.touches[0];
+      const dx = touch.clientX - touchStart.x;
+      const dy = touch.clientY - touchStart.y;
+      if (Math.abs(dy) < 12 || Math.abs(dy) < Math.abs(dx) * 0.8) return;
+      beginDetectedManualScroll("touch", dy < 0 ? "next" : "prev");
+      touchStart = null;
+    }, { capture: true, passive: true });
+    document.addEventListener("touchend", () => {
+      touchStart = null;
+      if ((pendingChange == null ? void 0 : pendingChange.reason) === "manual") beginSettlement();
+    }, { capture: true, passive: true });
+    document.addEventListener("touchcancel", () => {
+      touchStart = null;
+      if ((pendingChange == null ? void 0 : pendingChange.reason) === "manual") beginSettlement();
+    }, { capture: true, passive: true });
+    document.addEventListener("wheel", (event) => {
+      if (!event.isTrusted || Math.abs(event.deltaY) < 1) return;
+      cancelRestoreProtection();
+      const direction = event.deltaY >= 0 ? "next" : "prev";
+      if (!pendingChange && Date.now() >= suppressManualUntil) {
+        announceManualIntent(direction, "wheel");
+      }
+    }, { capture: true, passive: true });
+    document.addEventListener("keydown", (event) => {
+      if (!event.isTrusted || event.repeat) return;
+      const target = event.target;
+      if ((target == null ? void 0 : target.isContentEditable) || (target == null ? void 0 : target.tagName) === "INPUT" || (target == null ? void 0 : target.tagName) === "TEXTAREA") return;
+      const directions = {
+        ArrowDown: "next",
+        PageDown: "next",
+        " ": event.shiftKey ? "prev" : "next",
+        ArrowUp: "prev",
+        PageUp: "prev"
+      };
+      const direction = directions[event.key];
+      if (direction) cancelRestoreProtection();
+      if (direction && !pendingChange && Date.now() >= suppressManualUntil) {
+        if (announceManualIntent(direction, "page-key")) beginSettlement();
+      }
+    }, true);
+    document.addEventListener("scroll", () => {
+      beginDetectedManualScroll("scroll");
+    }, { capture: true, passive: true });
+    window.addEventListener("scroll", () => {
+      beginDetectedManualScroll("scroll");
+    }, { passive: true });
+    const beginRelayout = () => {
+      api.relayout({ reason: "viewport-change" });
+    };
+    window.addEventListener("resize", beginRelayout, { passive: true });
+    window.addEventListener("orientationchange", beginRelayout, { passive: true });
+    (_a = window.visualViewport) == null ? void 0 : _a.addEventListener(
+      "resize",
+      beginRelayout,
+      { passive: true }
+    );
+    let waited = 0;
+    let bootCandidate = "";
+    let bootCandidateSince = 0;
+    const boot = setInterval(() => {
+      waited += 160;
+      if (restoredChapterTurn && contentRoot() && chapterContentFingerprint()) {
+        positionOReillyChapterEntry(restoredChapterTurn.direction);
+        lastScrollPosition = scrollSurface().position();
+      } else if (pendingRestoreAnchor) {
+        applyRestoreAnchor(pendingRestoreAnchor);
+      }
+      const paragraphs = extractOReillyParagraphs();
+      const signature = paragraphs.length > 0 ? oReillySignature() : "";
+      if (signature && signature !== bootCandidate) {
+        bootCandidate = signature;
+        bootCandidateSince = Date.now();
+        return;
+      }
+      if (signature && Date.now() - bootCandidateSince >= SETTLE_STABLE_MS) {
+        clearInterval(boot);
+        committedSignature = signature;
+        observedSignature = signature;
+        committedParagraphs = paragraphs;
+        hasPublishedInitialPage = true;
+        if (pendingRestoreAnchor) {
+          protectedRestoreAnchor = pendingRestoreAnchor;
+          pendingRestoreAnchor = null;
+          restoreProtectionUntil = Date.now() + 1800;
+          suppressManualUntil = Math.max(
+            suppressManualUntil,
+            restoreProtectionUntil
+          );
+        }
+        if (restoredChapterTurn) {
+          clearPageVisuals();
+          postForFrame("googleBooksPageChanging", __spreadValues({
+            reason: restoredChapterTurn.reason,
+            phase: "changed",
+            signature,
+            baselineSignature: restoredChapterTurn.baselineSignature
+          }, restoredChapterTurn.metadata));
+          requestExtract(
+            restoredChapterTurn.reason,
+            payloadFor(restoredChapterTurn.metadata)
+          );
+        } else {
+          requestExtract("initial");
+        }
+        postLocation(signature);
+        schedulePreview();
+        return;
+      }
+      if (waited < 15e3) return;
+      clearInterval(boot);
+      hasPublishedInitialPage = true;
+      requestExtract("initial");
+      postForFrame("error", {
+        stage: "oreilly-reader-layout",
+        code: "reader-content-unavailable",
+        message: "O\u2019Reilly reader content did not become available."
+      });
+    }, 160);
+    setInterval(() => {
+      const now = Date.now();
+      if (protectedRestoreAnchor && now < restoreProtectionUntil) {
+        if (applyRestoreAnchor(protectedRestoreAnchor)) {
+          const restoredSignature = oReillySignature();
+          if (restoredSignature) observedSignature = restoredSignature;
+          return;
+        }
+      } else if (protectedRestoreAnchor && now >= restoreProtectionUntil) {
+        protectedRestoreAnchor = null;
+        restoreProtectionUntil = 0;
+      }
+      const signature = oReillySignature();
+      if (!signature || signature === observedSignature) return;
+      observedSignature = signature;
+      if (pendingChange) {
+        beginSettlement();
+        return;
+      }
+      if (Date.now() < suppressManualUntil) return;
+      const position = scrollSurface().position();
+      if (Math.abs(position - lastScrollPosition) > 1) {
+        beginDetectedManualScroll("scroll");
+      } else {
+        api.relayout({ reason: "content-reflow" });
+      }
+    }, 240);
   }
 
   // src/entry.ts
@@ -56795,7 +58408,43 @@ var __CRWeb = (() => {
     });
     return true;
   }
-  if (!bootKobo() && !bootPlayBooks()) {
+  function bootOReilly() {
+    if (!isOReillyReaderMainFrame()) return false;
+    const frameSessionID = oReillyFrameSessionID();
+    let pendingReason = "initial";
+    let pendingPageMetadata = {};
+    initBridge({
+      extract: () => extractOReillyParagraphs(),
+      acceptHighlightRect: acceptOReillyHighlightRect,
+      autoExtract: false,
+      pageMeta: () => __spreadValues({
+        source: "oreilly",
+        reason: pendingReason,
+        signature: oReillySignature(),
+        frameSessionID
+      }, pendingPageMetadata),
+      onInstalled: ({ extract: doExtract }) => {
+        const CR = window.CR;
+        if (CR) CR.disableScroll = true;
+        const post = (type2, payload = {}) => {
+          var _a, _b, _c;
+          try {
+            ;
+            (_c = (_b = (_a = window.webkit) == null ? void 0 : _a.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({ type: type2, payload });
+          } catch (e) {
+          }
+        };
+        installOReillyReader(post, (reason, metadata = {}) => {
+          pendingReason = reason;
+          pendingPageMetadata = metadata;
+          doExtract(reason);
+          pendingPageMetadata = {};
+        }, frameSessionID);
+      }
+    });
+    return true;
+  }
+  if (!bootOReilly() && !bootKobo() && !bootPlayBooks()) {
     initBridge({ extract });
   }
 })();

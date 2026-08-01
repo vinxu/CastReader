@@ -338,7 +338,7 @@ final class VoiceCatalogTests: XCTestCase {
         )
         XCTAssertEqual(
             VoiceBrowserLanguage.defaultLanguage(preferredLanguages: ["de-DE"]),
-            "en"
+            "de"
         )
         XCTAssertEqual(
             VoiceBrowserLanguage.defaultLanguage(
@@ -374,7 +374,7 @@ final class VoiceCatalogTests: XCTestCase {
         XCTAssertEqual(defaults.string(forKey: "voice_browser_language_v1"), "en")
     }
 
-    func testAvailableLanguagesAreCatalogDrivenAndCountSelectableVoices() throws {
+    func testAvailableLanguagesKeepNineLanguageFallbacksAndCountSelectableVoices() throws {
         defer { VoiceCatalog.resetForTesting() }
         let data = """
         {
@@ -393,8 +393,12 @@ final class VoiceCatalogTests: XCTestCase {
         """.data(using: .utf8)!
         try VoiceCatalog.install(TTSVoiceCatalogDocument.decodeServerResponse(from: data))
 
-        XCTAssertEqual(VoiceCatalog.availableLanguages.map(\.code), ["en", "ja"])
+        XCTAssertEqual(
+            VoiceCatalog.availableLanguages.map(\.code),
+            ["en", "zh", "ja", "es", "fr", "de", "pt", "it", "hi"]
+        )
         XCTAssertEqual(VoiceCatalog.languageOption(for: "en-GB")?.voiceCount, 2)
+        XCTAssertEqual(VoiceCatalog.languageOption(for: "zh-Hans")?.voiceCount, 10)
         XCTAssertEqual(VoiceCatalog.languageOption(for: "ja-JP")?.voiceCount, 1)
         let japanese = try XCTUnwrap(VoiceCatalog.languageOption(for: "ja"))
         XCTAssertTrue(VoiceBrowserLanguage.matchesSearch(

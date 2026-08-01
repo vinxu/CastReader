@@ -289,13 +289,15 @@ struct WebReaderView: UIViewRepresentable {
                     forMainFrameOnly: false
                 ))
             }
-        } else if document.sourceKind == .kobo {
-            // Kobo keeps reflowable chapter DOM in same-origin srcdoc iframes.
-            // The main-frame adapter owns extraction and reaches into those
-            // documents directly; injecting into each preloaded chapter would
-            // let several frames compete for native playback ownership.
+        } else if document.sourceKind == .kobo
+                    || document.sourceKind == .oreilly {
+            // Kobo owns same-origin chapter iframes; O'Reilly owns one
+            // top-level semantic chapter DOM. Both adapters must have exactly
+            // one main-frame bridge owner.
             controller.addUserScript(WKUserScript(
-                source: KoboWebScripts.readerShellPrelude,
+                source: document.sourceKind == .kobo
+                    ? KoboWebScripts.readerShellPrelude
+                    : OReillyWebScripts.readerShellPrelude,
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true
             ))
@@ -376,7 +378,8 @@ struct WebReaderView: UIViewRepresentable {
             expectsDynamicWebContent: document.sourceKind == .web,
             isWeRead: document.sourceKind == .weread,
             livePlatform: livePlatform,
-            bookID: document.id
+            bookID: document.id,
+            readerURL: document.sourceURL
         )
         context.coordinator.attach(readVM: readVM, explainVM: explainVM)
         pageTurnController.attach(context.coordinator)
@@ -415,7 +418,8 @@ struct WebReaderView: UIViewRepresentable {
         let container = WebReaderContainerView(
             webView: webView,
             isWeRead: isWeRead,
-            isKobo: document.sourceKind == .kobo,
+            isKobo: document.sourceKind == .kobo
+                || document.sourceKind == .oreilly,
             initialSurfaceSize: initialSurfaceSize,
             loadAction: loadAction
         )

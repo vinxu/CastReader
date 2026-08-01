@@ -17,7 +17,8 @@ Skill 路径：`/Users/xuxuheng/.codex/skills/submit-castreader-ios-to-app-store
 - Workspace / Scheme：`CastReader.xcworkspace` / `CastReader`
 - Team：`KQW6UNZE8J`
 - 八语：`en-US`、`zh-Hans`、`ja`、`es-ES`、`fr-FR`、`pt-BR`、`it`、`hi`
-- 文案源：`docs/CastReader-AppStore-Metadata-8-Languages.md`
+- 当前文案源：`docs/CastReader-AppStore-Metadata-11-Languages-1.2.15.md`
+  （旧版 `CastReader-AppStore-Metadata-8-Languages.md` 仅作历史基线）
 - API Key 安全路径：`/Users/xuxuheng/.appstoreconnect/private_keys/AuthKey_6QN4G1IJDEP1.p8`
 
 ## 完成链路

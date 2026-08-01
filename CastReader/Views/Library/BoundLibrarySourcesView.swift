@@ -31,6 +31,7 @@ struct LibrarySourcesView: View {
     @ObservedObject private var weReadStore = WeReadLibraryStore.shared
     @ObservedObject private var googleBooksStore = GoogleBooksLibraryStore.shared
     @ObservedObject private var koboStore = KoboLibraryStore.shared
+    @ObservedObject private var oreillyStore = OReillyLibraryStore.shared
 
     @State private var activeConnection: BoundLibraryOnboardingSource?
     @State private var pendingDisconnect: BoundLibraryOnboardingSource?
@@ -241,9 +242,9 @@ struct LibrarySourcesView: View {
             ? Locale.autoupdatingCurrent.language.languageCode?.identifier
             : selected.rawValue
         if languageCode?.lowercased().hasPrefix("zh") == true {
-            return [.kindle, .weread, .googleBooks, .kobo]
+            return [.kindle, .weread, .googleBooks, .kobo, .oreilly]
         }
-        return [.kindle, .googleBooks, .kobo, .weread]
+        return [.kindle, .googleBooks, .kobo, .oreilly, .weread]
     }
 
     private var connectedSources: [BoundLibraryOnboardingSource] {
@@ -260,6 +261,7 @@ struct LibrarySourcesView: View {
         case .weread: return !weReadStore.needsConnection
         case .googleBooks: return !googleBooksStore.needsConnection
         case .kobo: return !koboStore.needsConnection
+        case .oreilly: return !oreillyStore.needsConnection
         }
     }
 
@@ -269,6 +271,7 @@ struct LibrarySourcesView: View {
         case .weread: return weReadStore.books.count
         case .googleBooks: return googleBooksStore.books.count
         case .kobo: return koboStore.books.count
+        case .oreilly: return oreillyStore.books.count
         }
     }
 
@@ -278,6 +281,7 @@ struct LibrarySourcesView: View {
         case .weread: return AppLocalized("微信读书")
         case .googleBooks: return AppLocalized("Google Play 图书")
         case .kobo: return "Kobo"
+        case .oreilly: return "O’Reilly Learning"
         }
     }
 
@@ -287,6 +291,7 @@ struct LibrarySourcesView: View {
         case .weread: return "book.closed.fill"
         case .googleBooks: return "book.pages.fill"
         case .kobo: return "book.closed.fill"
+        case .oreilly: return "text.book.closed.fill"
         }
     }
 
@@ -300,6 +305,8 @@ struct LibrarySourcesView: View {
             return googleBooksStore.accountLabel ?? AppLocalized("已登录")
         case .kobo:
             return koboStore.accountLabel ?? AppLocalized("已登录")
+        case .oreilly:
+            return oreillyStore.accountLabel ?? AppLocalized("已登录")
         }
     }
 
@@ -310,6 +317,7 @@ struct LibrarySourcesView: View {
         case .weread: value = weReadStore.lastError
         case .googleBooks: value = googleBooksStore.lastError
         case .kobo: value = koboStore.lastError
+        case .oreilly: value = oreillyStore.lastError
         }
         let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed?.isEmpty == false ? trimmed : nil
@@ -322,6 +330,7 @@ struct LibrarySourcesView: View {
         case .weread: WeReadLibraryView()
         case .googleBooks: GoogleBooksLibraryView()
         case .kobo: KoboLibraryView()
+        case .oreilly: OReillyLibraryView()
         }
     }
 
@@ -332,6 +341,7 @@ struct LibrarySourcesView: View {
         case .weread: WeReadLibraryConnectView()
         case .googleBooks: GoogleBooksLibraryConnectView()
         case .kobo: KoboLibraryConnectView()
+        case .oreilly: OReillyLibraryConnectView()
         }
     }
 
@@ -348,13 +358,15 @@ struct LibrarySourcesView: View {
             return AppLocalized("解除 Google Play 图书绑定？")
         case .kobo:
             return AppLocalized("解除 Kobo 绑定？")
+        case .oreilly:
+            return AppLocalized("解除 O’Reilly 绑定？")
         }
     }
 
     private var disconnectMessage: String {
         guard let source = pendingDisconnect else { return "" }
         switch source {
-        case .googleBooks, .kobo:
+        case .googleBooks, .kobo, .oreilly:
             return AppLocalized("只清除 CastReader 中对应平台的书架和阅读进度；共享网页登录状态会保留。")
         case .kindle, .weread:
             return AppLocalized("解除绑定只会清除 CastReader 中对应平台的本地数据，不会影响原平台账号或书籍。")
@@ -374,6 +386,8 @@ struct LibrarySourcesView: View {
                 await googleBooksStore.disconnectAccount()
             case .kobo:
                 await koboStore.disconnectAccount()
+            case .oreilly:
+                await oreillyStore.disconnectAccount()
             }
         }
     }

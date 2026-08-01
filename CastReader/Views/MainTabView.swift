@@ -484,6 +484,20 @@ struct MainTabView: View {
                     object: nil
                 )
             }
+        case .oreilly:
+            if !forcesLibraryOnboardingRebind,
+               let book = OReillyLibraryStore.shared.homeBooks.first {
+                OReillyReaderLauncher.open(
+                    book,
+                    using: coordinator,
+                    onboarding: libraryOnboarding
+                )
+            } else {
+                NotificationCenter.default.post(
+                    name: .castReaderOReillyRebindRequested,
+                    object: nil
+                )
+            }
         }
     }
 
@@ -769,9 +783,9 @@ private struct BoundLibraryOnboardingView: View {
         if appLanguage.selectedLanguage == .simplifiedChinese
             || (appLanguage.selectedLanguage == .system
                 && Locale.autoupdatingCurrent.language.languageCode?.identifier == "zh") {
-            return [.kindle, .weread, .googleBooks, .kobo]
+            return [.kindle, .weread, .googleBooks, .kobo, .oreilly]
         }
-        return [.kindle, .googleBooks, .kobo, .weread]
+        return [.kindle, .googleBooks, .kobo, .oreilly, .weread]
     }
 
     var body: some View {
@@ -857,6 +871,7 @@ private struct BoundLibraryOnboardingView: View {
         case .weread: return "book.closed.fill"
         case .googleBooks: return "book.pages"
         case .kobo: return "book.closed.fill"
+        case .oreilly: return "text.book.closed.fill"
         }
     }
 
@@ -866,13 +881,14 @@ private struct BoundLibraryOnboardingView: View {
         case .weread: return AppLocalized("绑定微信读书")
         case .googleBooks: return AppLocalized("绑定 Google Play 图书")
         case .kobo: return AppLocalized("绑定 Kobo")
+        case .oreilly: return AppLocalized("绑定 O’Reilly")
         }
     }
 
     private func subtitle(for source: BoundLibraryOnboardingSource) -> String {
         switch source {
         case .kindle: return AppLocalized("登录后同步书架")
-        case .weread, .googleBooks, .kobo:
+        case .weread, .googleBooks, .kobo, .oreilly:
             return AppLocalized("登录后同步书架与阅读进度")
         }
     }
@@ -883,6 +899,7 @@ private struct BoundLibraryOnboardingView: View {
         case .weread: return "libraryOnboardingWeRead"
         case .googleBooks: return "libraryOnboardingGoogleBooks"
         case .kobo: return "libraryOnboardingKobo"
+        case .oreilly: return "libraryOnboardingOReilly"
         }
     }
 

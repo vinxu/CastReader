@@ -118,6 +118,7 @@ enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
     case weread
     case googleBooks = "google_books"
     case kobo
+    case oreilly
 
     var id: String { rawValue }
 
@@ -127,6 +128,7 @@ enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
         case .weread: return .weread
         case .googleBooks: return .googleBooks
         case .kobo: return .kobo
+        case .oreilly: return .oreilly
         }
     }
 
@@ -136,6 +138,7 @@ enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
         case .weread: return .weread
         case .googleBooks: return .googleBooks
         case .kobo: return .kobo
+        case .oreilly: return .oreilly
         }
     }
 
@@ -145,6 +148,7 @@ enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
         case .weread: return .weread
         case .googleBooks: return .googleBooks
         case .kobo: return .kobo
+        case .oreilly: return .oreilly
         }
     }
 }
@@ -256,6 +260,7 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         case .weread: playbackSource = .weread
         case .googleBooks: playbackSource = .googleBooks
         case .kobo: playbackSource = .kobo
+        case .oreilly: playbackSource = .oreilly
         default: return
         }
         guard selectedSource == nil || selectedSource == playbackSource else { return }
@@ -294,6 +299,7 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         case .weread: playbackSource = .weread
         case .googleBooks: playbackSource = .googleBooks
         case .kobo: playbackSource = .kobo
+        case .oreilly: playbackSource = .oreilly
         default: return
         }
         guard selectedSource == nil || selectedSource == playbackSource else { return }

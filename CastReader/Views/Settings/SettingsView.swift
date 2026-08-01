@@ -21,6 +21,7 @@ struct SettingsView: View {
     @ObservedObject private var weReadStore = WeReadLibraryStore.shared
     @ObservedObject private var googleBooksStore = GoogleBooksLibraryStore.shared
     @ObservedObject private var koboStore = KoboLibraryStore.shared
+    @ObservedObject private var oreillyStore = OReillyLibraryStore.shared
     @ObservedObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
     @ObservedObject private var voiceCatalog = VoiceCatalogService.shared
     @State private var showPaywall = false
@@ -178,6 +179,7 @@ struct SettingsView: View {
             !weReadStore.needsConnection,
             !googleBooksStore.needsConnection,
             !koboStore.needsConnection,
+            !oreillyStore.needsConnection,
         ].filter { $0 }.count
     }
 

@@ -17,6 +17,7 @@ enum ReadingSourceKind: String, Equatable, Codable {
     case weread  // 微信读书：实时 Canvas/DOM bridge（不 OCR、不保存章节正文）
     case googleBooks = "google_books"  // Google Play 图书：跨源阅读帧的实时 DOM bridge（不 OCR、不保存正文）
     case kobo    // Kobo Web Reader：同源章节 iframe + CSS columns 的实时 DOM bridge
+    case oreilly // O’Reilly Learning：顶层语义 DOM 的长章节，以当前可见视口为视觉页
     case text    // 上传文件 / 文本输入，重排纯文本
     case web     // 网址：WKWebView 直接加载网页 DOM，高亮/标注经 JS bridge（保留原排版）
     case docx    // 本地 DOCX：WKWebView 内 mammoth.js 转 HTML 渲染（不上传后端），复用 web 的高亮/标注/提取链路
@@ -29,13 +30,14 @@ extension ReadingSourceKind {
     /// 注意：EPUB 已改为原生解析渲染（走 TextReaderView），不在此列。
     var isWebRendered: Bool {
         self == .web || self == .docx || self == .weread
-            || self == .googleBooks || self == .kobo
+            || self == .googleBooks || self == .kobo || self == .oreilly
     }
 
     /// 绑定书库里的「实时网页阅读器」：页面归第三方所有，CastReader 只在其 DOM 上
     /// 做高亮/标注，并按页驱动 TTS —— 一页读完再翻页，而不是一次拿整本。
     var isLiveWebLibrary: Bool {
         self == .weread || self == .googleBooks || self == .kobo
+            || self == .oreilly
     }
 
     /// 原生文本渲染源（重排文本 / EPUB）：走 TextReaderView，朗读词/句高亮统一用 processedDisplayText 内字符范围。

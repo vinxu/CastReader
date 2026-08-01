@@ -16,7 +16,7 @@ enum ReaderMode: String, CaseIterable, Identifiable {
 enum ReaderPlaybackNavigationContract {
     static func usesPageTurns(for sourceKind: ReadingSourceKind) -> Bool {
         switch sourceKind {
-        case .weread, .googleBooks, .kobo:
+        case .weread, .googleBooks, .kobo, .oreilly:
             return true
         default:
             return false
@@ -385,6 +385,7 @@ struct ReaderHostView: View {
 
     @ObservedObject private var googleBooksStore = GoogleBooksLibraryStore.shared
     @ObservedObject private var koboStore = KoboLibraryStore.shared
+    @ObservedObject private var oreillyStore = OReillyLibraryStore.shared
     @StateObject private var weReadTOC = WeReadTOCController()
     @StateObject private var liveWebPageTurn = LiveWebPageTurnController()
     @State private var readerSurfaceSize: CGSize = .zero
@@ -445,6 +446,12 @@ struct ReaderHostView: View {
             if document.sourceKind == .kobo,
                let message = koboStore.lastError {
                 koboRecoveryOverlay(message: message)
+                    .zIndex(30)
+            }
+
+            if document.sourceKind == .oreilly,
+               let message = oreillyStore.lastError {
+                oreillyRecoveryOverlay(message: message)
                     .zIndex(30)
             }
         }
@@ -610,7 +617,7 @@ struct ReaderHostView: View {
     @ViewBuilder
     private func content(surfaceSize: CGSize) -> some View {
         switch document.sourceKind {
-        case .web, .docx, .weread, .googleBooks, .kobo:
+        case .web, .docx, .weread, .googleBooks, .kobo, .oreilly:
             WebReaderView(
                 document: document,
                 readVM: readVM,
@@ -909,6 +916,79 @@ struct ReaderHostView: View {
         }
         .allowsHitTesting(true)
         .accessibilityIdentifier("koboReaderRecoveryOverlay")
+    }
+
+    private func oreillyRecoveryOverlay(message: String) -> some View {
+        ZStack {
+            Color.black.opacity(0.34).ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                Image(systemName: "person.crop.circle.badge.exclamationmark")
+                    .font(.system(size: 38, weight: .semibold))
+                    .foregroundColor(AppTheme.primary)
+                Text("O’Reilly")
+                    .font(.headline)
+                    .foregroundColor(AppTheme.foreground)
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundColor(AppTheme.mutedForeground)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    oreillyStore.clearError()
+                    liveWebPageTurn.retryReader()
+                } label: {
+                    Text(AppLocalized("重试打开"))
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppTheme.primary)
+                .accessibilityIdentifier("oreillyReaderRetryButton")
+                Button {
+                    oreillyStore.clearError()
+                    NotificationCenter.default.post(
+                        name: .castReaderOReillyRebindRequested,
+                        object: nil
+                    )
+                    coordinator.close()
+                } label: {
+                    Text(AppLocalized("重新登录"))
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.bordered)
+                .tint(AppTheme.mutedForeground)
+                .accessibilityIdentifier("oreillyReaderRebindButton")
+                Button {
+                    oreillyStore.clearError()
+                    coordinator.close()
+                } label: {
+                    Text(AppLocalized("关闭"))
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.bordered)
+                .tint(AppTheme.mutedForeground)
+                .accessibilityIdentifier("oreillyReaderExitButton")
+            }
+            .padding(20)
+            .frame(maxWidth: 340)
+            .background(
+                .regularMaterial,
+                in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(AppTheme.border.opacity(0.55), lineWidth: 1)
+            )
+            .padding(.horizontal, 24)
+        }
+        .allowsHitTesting(true)
+        .accessibilityIdentifier("oreillyReaderRecoveryOverlay")
     }
 
     private var paywallBinding: Binding<Bool> {

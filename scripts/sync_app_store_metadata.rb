@@ -8,14 +8,16 @@ require "openssl"
 require "uri"
 
 APP_ID = "6757636395"
-VERSION_ID = ARGV.fetch(0)
-BUILD_ID = ARGV.fetch(1)
-METADATA_PATH = ARGV.fetch(2, File.expand_path("../docs/CastReader-AppStore-Metadata-8-Languages.md", __dir__))
-APP_INFO_ID = ARGV.fetch(3)
+VALIDATE_ONLY = ENV["ASC_VALIDATE_ONLY"] == "1"
+DEFAULT_METADATA_PATH = File.expand_path("../docs/CastReader-AppStore-Metadata-11-Languages-1.2.15.md", __dir__)
+VERSION_ID = VALIDATE_ONLY ? ARGV.fetch(0, "-") : ARGV.fetch(0)
+BUILD_ID = VALIDATE_ONLY ? ARGV.fetch(1, "-") : ARGV.fetch(1)
+METADATA_PATH = ENV.fetch("ASC_METADATA_PATH", ARGV.fetch(2, DEFAULT_METADATA_PATH))
+APP_INFO_ID = VALIDATE_ONLY ? ARGV.fetch(3, "-") : ARGV.fetch(3)
 KEY_ID = ENV.fetch("ASC_KEY_ID", "6QN4G1IJDEP1")
 KEY_PATH = ENV.fetch("ASC_KEY_PATH", File.expand_path("~/.appstoreconnect/private_keys/AuthKey_#{KEY_ID}.p8"))
 BASE_URL = "https://api.appstoreconnect.apple.com"
-LOCALES = %w[en-US zh-Hans ja es-ES fr-FR pt-BR it hi].freeze
+LOCALES = %w[en-US zh-Hans ja es-ES fr-FR pt-BR it hi de-DE zh-Hant es-MX].freeze
 WHATS_NEW_ONLY = ENV["ASC_WHATS_NEW_ONLY"] == "1"
 
 def base64url(value)
@@ -52,15 +54,68 @@ def request(method, path, payload = nil)
 end
 
 def parse_metadata(path)
-  sections = File.read(path).scan(/^## .*?— `([^`]+)`\n(.*?)(?=^## |\z)/m).to_h
+  matches = File.read(path).scan(/^## .*?— `([^`]+)`\n(.*?)(?=^## |\z)/m)
+  locale_counts = matches.each_with_object(Hash.new(0)) { |(locale, _body), counts| counts[locale] += 1 }
+  duplicates = locale_counts.select { |_locale, count| count > 1 }.keys
+  unexpected = locale_counts.keys - LOCALES
+  missing = LOCALES - locale_counts.keys
+
+  errors = []
+  errors << "duplicate locales: #{duplicates.join(', ')}" unless duplicates.empty?
+  errors << "unexpected locales: #{unexpected.join(', ')}" unless unexpected.empty?
+  errors << "missing locales: #{missing.join(', ')}" unless missing.empty?
+  abort "Invalid metadata locale set (#{errors.join('; ')})" unless errors.empty?
+
+  sections = matches.to_h
   LOCALES.to_h do |locale|
     blocks = sections.fetch(locale).scan(/```text\n(.*?)\n```/m).flatten
     abort "Expected six metadata fields for #{locale}, found #{blocks.length}" unless blocks.length == 6
     [locale, {
-      name: blocks[0], subtitle: blocks[1], promotionalText: blocks[2], keywords: blocks[3],
-      description: blocks[4], whatsNew: blocks[5]
+      name: blocks[0].strip, subtitle: blocks[1].strip, promotionalText: blocks[2].strip, keywords: blocks[3].strip,
+      description: blocks[4].strip, whatsNew: blocks[5].strip
     }]
   end
+end
+
+def character_count(value)
+  value.each_grapheme_cluster.count
+end
+
+def validate_metadata(metadata)
+  errors = []
+  single_line_limits = { name: 30, subtitle: 30, promotionalText: 170, keywords: nil }
+  multiline_limits = { description: 4_000, whatsNew: 4_000 }
+
+  metadata.each do |locale, fields|
+    fields.each do |field, value|
+      errors << "#{locale} #{field} is empty" if value.empty?
+    end
+
+    single_line_limits.each do |field, limit|
+      value = fields.fetch(field)
+      errors << "#{locale} #{field} must be one line" if value.include?("\n")
+      next unless limit
+
+      count = character_count(value)
+      errors << "#{locale} #{field} is #{count} characters (limit #{limit})" if count > limit
+    end
+
+    keyword_bytes = fields.fetch(:keywords).bytesize
+    errors << "#{locale} keywords are #{keyword_bytes} UTF-8 bytes (limit 100)" if keyword_bytes > 100
+
+    multiline_limits.each do |field, limit|
+      count = character_count(fields.fetch(field))
+      errors << "#{locale} #{field} is #{count} characters (limit #{limit})" if count > limit
+    end
+  end
+
+  abort "Metadata validation failed:\n- #{errors.join("\n- ")}" unless errors.empty?
+
+  puts "Validated #{metadata.length} locales from #{METADATA_PATH}"
+end
+
+def chinese_locale?(locale)
+  %w[zh-Hans zh-Hant].include?(locale)
 end
 
 def resource(type, id: nil, attributes: nil, relationships: nil)
@@ -72,13 +127,15 @@ def resource(type, id: nil, attributes: nil, relationships: nil)
 end
 
 metadata = parse_metadata(METADATA_PATH)
+validate_metadata(metadata)
+exit 0 if VALIDATE_ONLY
 
 unless WHATS_NEW_ONLY
   app_info_localizations = request("Get", "/v1/appInfos/#{APP_INFO_ID}/appInfoLocalizations?limit=50")
     .fetch("data").to_h { |item| [item.dig("attributes", "locale"), item] }
 
   metadata.each do |locale, fields|
-    english_urls = locale != "zh-Hans"
+    english_urls = !chinese_locale?(locale)
     attributes = {
       name: fields[:name],
       subtitle: fields[:subtitle],
@@ -104,7 +161,7 @@ metadata.each do |locale, fields|
   attributes = if WHATS_NEW_ONLY
     { whatsNew: fields[:whatsNew] }
   else
-    english_urls = locale != "zh-Hans"
+    english_urls = !chinese_locale?(locale)
     {
       description: fields[:description],
       keywords: fields[:keywords],
