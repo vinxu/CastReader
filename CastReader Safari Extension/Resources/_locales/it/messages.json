@@ -1,4 +1,10 @@
 {
+  "name": {
+    "message": "CastReader – Lettura e spiegazione IA"
+  },
+  "description": {
+    "message": "Ascolta pagine web, PDF e Kindle con testo sincronizzato e spiegazioni IA in 9 lingue."
+  },
   "extName": {
     "message": "CastReader — Leggi ad alta voce + IA"
   },

@@ -1,4 +1,10 @@
 {
+  "name": {
+    "message": "CastReader – 朗读与 AI 解读"
+  },
+  "description": {
+    "message": "朗读网页、PDF 与 Kindle，支持同步高亮和 AI 解读，覆盖 9 种语言。"
+  },
   "extName": {
     "message": "CastReader — 文字转语音·朗读 + AI 解读"
   },
