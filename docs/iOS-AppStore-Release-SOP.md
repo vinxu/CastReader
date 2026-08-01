@@ -16,7 +16,10 @@ Skill 路径：`/Users/xuxuheng/.codex/skills/submit-castreader-ios-to-app-store
 - Bundle ID：`com.same.castreader`
 - Workspace / Scheme：`CastReader.xcworkspace` / `CastReader`
 - Team：`KQW6UNZE8J`
-- 八语：`en-US`、`zh-Hans`、`ja`、`es-ES`、`fr-FR`、`pt-BR`、`it`、`hi`
+- App 运行时 9 种语言：英语、简体中文、日语、西班牙语、法语、德语、
+  巴西葡萄牙语、意大利语、印地语
+- App Store 元数据 11 个 locale：`en-US`、`zh-Hans`、`ja`、`es-ES`、
+  `fr-FR`、`pt-BR`、`it`、`hi`、`de-DE`、`zh-Hant`、`es-MX`
 - 当前文案源：`docs/CastReader-AppStore-Metadata-11-Languages-1.2.15.md`
   （旧版 `CastReader-AppStore-Metadata-8-Languages.md` 仅作历史基线）
 - API Key 安全路径：`/Users/xuxuheng/.appstoreconnect/private_keys/AuthKey_6QN4G1IJDEP1.p8`
