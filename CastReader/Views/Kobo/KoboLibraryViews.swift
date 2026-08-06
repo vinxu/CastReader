@@ -59,7 +59,6 @@ struct KoboHomeSection: View {
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = KoboLibraryStore.shared
     @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
-    @State private var showConnect = false
 
     var body: some View {
         Group {
@@ -78,7 +77,7 @@ struct KoboHomeSection: View {
                         NavigationLink(destination: KoboLibraryView()) {
                             Text(AppLocalized("查看全部"))
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundColor(AppTheme.primaryText)
+                                .foregroundColor(AppTheme.primary)
                         }
                         .accessibilityIdentifier("homeShelfViewAll.kobo")
                     }
@@ -102,16 +101,6 @@ struct KoboHomeSection: View {
                 }
                 .accessibilityIdentifier("homeShelfSection.kobo")
             }
-        }
-        // Keep the notification/sheet owner alive while the visual section is
-        // absent from Home.
-        .sheet(isPresented: $showConnect) { KoboLibraryConnectView() }
-        .onReceive(
-            NotificationCenter.default.publisher(
-                for: .castReaderKoboRebindRequested
-            )
-        ) { _ in
-            showConnect = true
         }
     }
 
@@ -264,7 +253,23 @@ struct KoboCoverView: View {
 
 struct KoboLibraryConnectView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var model = KoboLibrarySyncViewModel()
+    @StateObject private var model: KoboLibrarySyncViewModel
+
+    init(
+        analyticsSession: AnalyticsLibraryConnectionSession? = nil,
+        entryTapAlreadyTracked: Bool = false
+    ) {
+        let session = analyticsSession ?? AnalyticsLibraryConnectionSession(
+            source: .kobo,
+            entryPoint: "kobo_connect"
+        )
+        _model = StateObject(
+            wrappedValue: KoboLibrarySyncViewModel(
+                analyticsSession: session,
+                entryTapAlreadyTracked: entryTapAlreadyTracked
+            )
+        )
+    }
 
     var body: some View {
         NavigationView {
@@ -289,8 +294,11 @@ struct KoboLibraryConnectView: View {
                     Button(AppLocalized("关闭")) { dismiss() }
                 }
             }
-            .onAppear { model.loadIfNeeded() }
-            .onDisappear { model.stop() }
+            .onAppear {
+                model.recordConnectionPresented()
+                model.loadIfNeeded()
+            }
+            .onDisappear { model.closeConnection() }
         }
         .navigationViewStyle(.stack)
     }
@@ -418,12 +426,30 @@ final class KoboLibrarySyncViewModel:
     private var workTask: Task<Void, Never>?
     private var probeGeneration = 0
     private var isScanningShelf = false
+    private let connectionAnalytics: AnalyticsLibraryConnectionRecorder
 
-    override init() {
+    override convenience init() {
+        self.init(
+            analyticsSession: AnalyticsLibraryConnectionSession(
+                source: .kobo,
+                entryPoint: "kobo_connect"
+            ),
+            entryTapAlreadyTracked: false
+        )
+    }
+
+    init(
+        analyticsSession: AnalyticsLibraryConnectionSession,
+        entryTapAlreadyTracked: Bool
+    ) {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = KoboWebSession.websiteDataStore
         configuration.defaultWebpagePreferences.preferredContentMode = .mobile
         webView = WKWebView(frame: .zero, configuration: configuration)
+        connectionAnalytics = AnalyticsLibraryConnectionRecorder(
+            session: analyticsSession,
+            entryTapAlreadyTracked: entryTapAlreadyTracked
+        )
         super.init()
         webView.customUserAgent = GoogleBooksWebScripts.mobileSafariUserAgent
         webView.navigationDelegate = self
@@ -431,6 +457,13 @@ final class KoboLibrarySyncViewModel:
 #if DEBUG
         webView.isInspectable = true
 #endif
+    }
+
+    func recordConnectionPresented() { connectionAnalytics.presented() }
+
+    func closeConnection() {
+        connectionAnalytics.close()
+        stop()
     }
 
     func loadIfNeeded() {
@@ -450,6 +483,7 @@ final class KoboLibrarySyncViewModel:
 
     func openSignIn() {
         guard !isWorking else { return }
+        connectionAnalytics.record(.loginStarted, result: .started)
         errorText = nil
         isWorking = true
         webView.evaluateJavaScript(
@@ -493,6 +527,7 @@ final class KoboLibrarySyncViewModel:
 
     func commitShelf() {
         guard canSync, let account = pendingAccount else { return }
+        connectionAnalytics.record(.syncStarted, result: .started)
         isWorking = true
         store.mergeScrapedBooks(
             Array(pendingBooks.values),
@@ -501,6 +536,11 @@ final class KoboLibrarySyncViewModel:
         isWorking = false
         if let error = store.lastError {
             errorText = error
+            connectionAnalytics.record(
+                .failed,
+                result: .failed,
+                errorCode: "local_commit_failed"
+            )
         } else {
             didSync = true
             canSync = false
@@ -508,6 +548,11 @@ final class KoboLibrarySyncViewModel:
             detailText = String(
                 format: AppLocalized("已同步 %d 本书。"),
                 store.books.count
+            )
+            connectionAnalytics.record(
+                .syncCompleted,
+                result: .success,
+                bookCount: store.books.count
             )
         }
     }
@@ -728,6 +773,7 @@ final class KoboLibrarySyncViewModel:
         }
 
         isSignedIn = true
+        connectionAnalytics.record(.loginSucceeded, result: .success)
         isCredentialPage = false
         statusText = AppLocalized("正在同步 Kobo 书架…")
         detailText = AppLocalized("正在等待书架完整加载，请稍候。")
@@ -809,6 +855,11 @@ final class KoboLibrarySyncViewModel:
         isWorking = false
         canSync = false
         errorText = AppLocalized("书架仍在加载，请稍后重试。")
+        connectionAnalytics.record(
+            .failed,
+            result: .failed,
+            errorCode: "sync_snapshot_unavailable"
+        )
     }
 
     private func evaluate(_ script: String) async -> Any? {

@@ -144,6 +144,41 @@ final class PaymentTests: XCTestCase {
         XCTAssertFalse(q.canStartExplain(isPro: false), "免费解读次数耗尽 → 不可解读")
     }
 
+    @MainActor
+    func testServerExplainQuotaProjectionDecrementsOnlyAfterPlanIsAccepted() async throws {
+        let q = QuotaManager.shared
+        q.resetForTesting()
+        q.applyServerStatus(ProStatusDTO(
+            pro: false,
+            plan: nil,
+            account: nil,
+            freeRemaining: 1,
+            freeMax: 3,
+            listenSeconds: 0,
+            listenLimit: 1200,
+            listenRemaining: 1200
+        ))
+
+        q.noteExplainStarted(isPro: false)
+        XCTAssertEqual(q.explainRemaining, 1, "请求尚未被服务端接受时不能提前扣缓存额度")
+
+        q.noteExplainAcceptedByServer(isPro: false)
+        XCTAssertEqual(q.explainRemaining, 0, "服务端接受 plan 后应立即更新本地额度投影")
+        XCTAssertFalse(q.canStartExplain(isPro: false))
+
+        q.applyServerStatus(ProStatusDTO(
+            pro: false,
+            plan: nil,
+            account: nil,
+            freeRemaining: 1,
+            freeMax: 3,
+            listenSeconds: 0,
+            listenLimit: 1200,
+            listenRemaining: 1200
+        ))
+        XCTAssertEqual(q.explainRemaining, 0, "较早发出的状态请求晚到时，不能把已消费额度恢复为可用")
+    }
+
     // MARK: 3. 购买解锁 Pro
 
     @MainActor

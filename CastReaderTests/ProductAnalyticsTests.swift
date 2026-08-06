@@ -13,7 +13,7 @@ final class ProductAnalyticsTests: XCTestCase {
         let data = try Data(contentsOf: contractURL)
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let events = try XCTUnwrap(object["events"] as? [[String: Any]])
-        XCTAssertEqual(events.count, 22)
+        XCTAssertEqual(events.count, 25)
         let names = Set(events.compactMap { $0["name"] as? String })
         let legacy = Dictionary(uniqueKeysWithValues: events.compactMap { row -> (String, String)? in
             guard let name = row["name"] as? String,
@@ -45,6 +45,28 @@ final class ProductAnalyticsTests: XCTestCase {
             let optional = Set(row["optional_properties"] as? [String] ?? [])
             XCTAssertTrue(optional.contains("storefront"), "\(row["name"] ?? "") must carry storefront")
         }
+
+        let domains = try XCTUnwrap(object["value_domains"] as? [String: [String]])
+        XCTAssertEqual(
+            Set(domains["contentSource"] ?? []),
+            Set(AnalyticsContentSource.allCases.map(\.rawValue))
+        )
+        XCTAssertEqual(
+            Set(domains["contentFormat"] ?? []),
+            Set(AnalyticsContentFormat.allCases.map(\.rawValue))
+        )
+        XCTAssertEqual(
+            Set(domains["librarySource"] ?? []),
+            Set(AnalyticsLibrarySource.allCases.map(\.rawValue))
+        )
+        XCTAssertEqual(
+            Set(domains["libraryConnectionStage"] ?? []),
+            Set(AnalyticsLibraryConnectionStage.allCases.map(\.rawValue))
+        )
+        XCTAssertEqual(
+            Set(domains["contentInputStage"] ?? []),
+            Set(AnalyticsContentInputStage.allCases.map(\.rawValue))
+        )
     }
 
     func testEveryEventBuildsAValidDualEnvelope() throws {
@@ -73,6 +95,27 @@ final class ProductAnalyticsTests: XCTestCase {
             )
         ) { error in
             XCTAssertEqual(error as? AnalyticsSchemaError, .unknownProperties(["language"]))
+        }
+    }
+
+    func testHomeProCardImpressionIsNotAPaywallExposure() {
+        XCTAssertEqual(
+            AnalyticsEventName.homeProCardImpression.rawValue,
+            "home_pro_card_impression"
+        )
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .homeProCardImpression,
+                properties: .init()
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(.paywallShown, properties: .init())
+        ) { error in
+            XCTAssertEqual(
+                error as? AnalyticsSchemaError,
+                .missingProperties(["entitlementState", "trigger"])
+            )
         }
     }
 
@@ -119,6 +162,121 @@ final class ProductAnalyticsTests: XCTestCase {
                 .invalidPropertyValue(property: "storefront", value: "US")
             )
         }
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .contentIntent,
+                properties: .init(
+                    contentSource: AnalyticsContentSource.googleBooks.rawValue,
+                    contentFormat: AnalyticsContentFormat.googleBooks.rawValue,
+                    intendedMode: "read",
+                    storefront: "us"
+                )
+            )
+        )
+    }
+
+    func testLibraryConnectionAndContentInputStateMachines() throws {
+        let bindSessionId = "33333333-3333-4333-8333-333333333333"
+        for (stage, result) in [
+            (AnalyticsLibraryConnectionStage.entryTapped, AnalyticsResult.started),
+            (.connectionPresented, .success),
+            (.loginStarted, .started),
+            (.loginSucceeded, .success),
+            (.syncStarted, .started),
+            (.syncCompleted, .success),
+            (.cancelled, .cancelled),
+        ] {
+            XCTAssertNoThrow(
+                try AnalyticsSchema.validate(
+                    .libraryConnection,
+                    properties: .init(
+                        source: AnalyticsLibrarySource.googleBooks.rawValue,
+                        bindSessionId: bindSessionId,
+                        stage: stage.rawValue,
+                        durationMs: 10,
+                        result: result.rawValue,
+                        bookCountBucket: stage == .syncCompleted ? "6_20" : nil
+                    )
+                )
+            )
+        }
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .libraryConnection,
+                properties: .init(
+                    source: "google_books",
+                    bindSessionId: bindSessionId,
+                    stage: "failed",
+                    durationMs: 20,
+                    result: "failed",
+                    errorCode: "navigation_failed"
+                )
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .libraryConnection,
+                properties: .init(
+                    source: "google_books",
+                    bindSessionId: bindSessionId,
+                    stage: "sync_completed",
+                    result: "started"
+                )
+            )
+        )
+
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .contentInputStage,
+                properties: .init(
+                    stage: "processing_started",
+                    contentSource: "file",
+                    contentFormat: "pdf",
+                    intendedMode: "read",
+                    durationMs: 1,
+                    result: "started"
+                )
+            )
+        )
+    }
+
+    func testDistributionVariantSeparatesAppStoreTestFlightAndInternalBuilds() {
+        XCTAssertEqual(
+            ProductAnalytics.clientVariant(
+                isDebug: false,
+                isSimulator: false,
+                receiptLastPathComponent: "receipt",
+                hasEmbeddedProvisioningProfile: false
+            ),
+            "app_store"
+        )
+        XCTAssertEqual(
+            ProductAnalytics.clientVariant(
+                isDebug: false,
+                isSimulator: false,
+                receiptLastPathComponent: "sandboxReceipt",
+                hasEmbeddedProvisioningProfile: false
+            ),
+            "testflight"
+        )
+        XCTAssertEqual(
+            ProductAnalytics.clientVariant(
+                isDebug: false,
+                isSimulator: false,
+                receiptLastPathComponent: nil,
+                hasEmbeddedProvisioningProfile: true
+            ),
+            "internal"
+        )
+        XCTAssertEqual(
+            ProductAnalytics.clientVariant(
+                isDebug: true,
+                isSimulator: false,
+                receiptLastPathComponent: nil,
+                hasEmbeddedProvisioningProfile: true
+            ),
+            "internal_debug"
+        )
     }
 
     func testKindleFallbackContextInfersStorefrontFromDocumentURL() {
@@ -149,6 +307,22 @@ final class ProductAnalyticsTests: XCTestCase {
     }
 
     func testReviewEventsRejectAmbiguousTriggerStoreAndResultValues() {
+        for trigger in [
+            "first_read_completed",
+            "library_connected",
+            "third_five_minute_read",
+        ] {
+            XCTAssertNoThrow(
+                try AnalyticsSchema.validate(
+                    .reviewRequestAttempted,
+                    properties: .init(
+                        result: "success",
+                        trigger: trigger,
+                        store: "app_store"
+                    )
+                )
+            )
+        }
         XCTAssertNoThrow(
             try AnalyticsSchema.validate(
                 .reviewRequestAttempted,
@@ -222,6 +396,28 @@ final class ProductAnalyticsTests: XCTestCase {
         XCTAssertEqual(count, 1)
     }
 
+    func testServerRejectionMovesEventIntoBoundedDeadLetterWithReason() async throws {
+        let store = TestQueueStore()
+        let deadLetters = TestDeadLetterStore()
+        let event = try makeEnvelope(name: .appSessionStart)
+        let transport = RejectingTestTransport(reason: "invalid_property_value:contentSource")
+        let pipeline = AnalyticsPipeline(
+            store: store,
+            transport: transport,
+            deadLetterStore: deadLetters,
+            maxDeadLetterSize: 1
+        )
+        await pipeline.enqueue(event)
+        await pipeline.flush()
+
+        let queued = await pipeline.queuedEvents()
+        XCTAssertTrue(queued.isEmpty)
+        let rejected = await pipeline.rejectedEvents()
+        XCTAssertEqual(rejected.count, 1)
+        XCTAssertEqual(rejected.first?.eventId, fixedEventId)
+        XCTAssertEqual(rejected.first?.reason, "invalid_property_value:contentSource")
+    }
+
     func testCompletionBuckets() {
         XCTAssertEqual(ProductAnalytics.completionBucket(completed: 0, total: 10), "none")
         XCTAssertEqual(ProductAnalytics.completionBucket(completed: 2, total: 10), "lt_25")
@@ -271,10 +467,12 @@ final class ProductAnalyticsTests: XCTestCase {
 
     private func area(for name: AnalyticsEventName) -> AnalyticsProductArea {
         switch name {
-        case .appSessionStart, .reviewPromptEligible, .reviewRequestAttempted,
+        case .appSessionStart, .onboardingStep, .reviewPromptEligible, .reviewRequestAttempted,
              .reviewStoreLinkOpened:
             return .app
-        case .contentIntent, .contentReady, .contentFailed: return .reader
+        case .libraryConnection, .contentInputStage, .contentIntent, .contentReady,
+             .contentFailed:
+            return .reader
         case .readStart, .readFirstAudio, .readMilestone, .readEnd: return .readAloud
         case .explainStart, .explainFirstBlock, .explainMilestone, .explainEnd: return .explain
         case .paywallShown, .homeProCardImpression, .homeProCardYearlyPurchaseTap,
@@ -288,6 +486,25 @@ final class ProductAnalyticsTests: XCTestCase {
         switch name {
         case .appSessionStart:
             return .init(launchType: "cold")
+        case .onboardingStep:
+            return .init(step: "value", source: "kindle", result: "shown")
+        case .libraryConnection:
+            return .init(
+                source: "google_books",
+                bindSessionId: "33333333-3333-4333-8333-333333333333",
+                stage: "connection_presented",
+                durationMs: 20,
+                result: "success"
+            )
+        case .contentInputStage:
+            return .init(
+                stage: "processing_started",
+                contentSource: "file",
+                contentFormat: "pdf",
+                intendedMode: "read",
+                durationMs: 1,
+                result: "started"
+            )
         case .contentIntent:
             return .init(contentSource: "file", contentFormat: "pdf", intendedMode: "read")
         case .contentReady:
@@ -354,6 +571,51 @@ final class AppReviewPromptPolicyTests: XCTestCase {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         return calendar
+    }
+
+    func testFirstPositiveOutcomeBecomesPendingImmediatelyAndOnlyOnce() {
+        let policy = AppReviewPromptPolicy.production
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        var state = AppReviewPromptState()
+
+        XCTAssertTrue(
+            policy.recordPositiveOutcome(
+                in: &state,
+                trigger: .firstReadCompleted,
+                at: now,
+                version: "1.0",
+                calendar: utcCalendar
+            )
+        )
+        XCTAssertEqual(state.pendingTrigger, .firstReadCompleted)
+        XCTAssertFalse(
+            policy.recordPositiveOutcome(
+                in: &state,
+                trigger: .libraryConnected,
+                at: now,
+                version: "1.0",
+                calendar: utcCalendar
+            ),
+            "a second positive event must not replace the pending first one"
+        )
+        XCTAssertEqual(
+            policy.consumePendingAttempt(
+                in: &state,
+                at: now,
+                version: "1.0"
+            ),
+            .firstReadCompleted
+        )
+        XCTAssertFalse(
+            policy.recordPositiveOutcome(
+                in: &state,
+                trigger: .libraryConnected,
+                at: now.addingTimeInterval(1),
+                version: "1.0",
+                calendar: utcCalendar
+            ),
+            "the same version may call StoreKit at most once"
+        )
     }
 
     func testThreeEarlySessionsBecomePendingWhenSeventyTwoHourGateMatures() {
@@ -585,6 +847,114 @@ final class AppReviewPromptPolicyTests: XCTestCase {
         XCTAssertEqual(transferred, expected)
     }
 
+    func testKindleAnalyticsCoordinatorKeepsOneSessionAcrossPagesAndEndsOnce() throws {
+        let coordinator = ReadAnalyticsSessionCoordinator()
+        let firstPageOwner = UUID()
+        let secondPageOwner = UUID()
+        let startedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        var startCount = 0
+        var endCount = 0
+
+        if coordinator.begin(ownerID: firstPageOwner, at: startedAt) {
+            startCount += 1
+        }
+        let originalSessionID = try XCTUnwrap(coordinator.sessionID)
+        XCTAssertEqual(
+            coordinator.markFirstAudio(ownerID: firstPageOwner),
+            startedAt
+        )
+        _ = coordinator.accountPlayback(
+            ownerID: firstPageOwner,
+            segmentID: "page-1",
+            position: 0
+        )
+        for second in 1...29 {
+            _ = coordinator.accountPlayback(
+                ownerID: firstPageOwner,
+                segmentID: "page-1",
+                position: Double(second)
+            )
+        }
+
+        // The next visual page claims the existing session. It must not emit a
+        // second read_start and its time/milestones continue from page one.
+        XCTAssertFalse(
+            coordinator.begin(
+                ownerID: secondPageOwner,
+                at: startedAt.addingTimeInterval(29)
+            )
+        )
+        XCTAssertTrue(coordinator.isOwned(by: firstPageOwner))
+        XCTAssertFalse(coordinator.isOwned(by: secondPageOwner))
+        coordinator.seedPlaybackCursor(
+            ownerID: firstPageOwner,
+            segmentID: "page-2",
+            position: 0
+        )
+        XCTAssertTrue(coordinator.claimExisting(ownerID: secondPageOwner))
+        if coordinator.begin(ownerID: secondPageOwner, at: startedAt.addingTimeInterval(29)) {
+            startCount += 1
+        }
+        XCTAssertEqual(coordinator.sessionID, originalSessionID)
+        XCTAssertNil(
+            coordinator.markFirstAudio(ownerID: secondPageOwner),
+            "page handoff must not emit a second read_first_audio"
+        )
+        _ = coordinator.accountPlayback(
+            ownerID: secondPageOwner,
+            segmentID: "page-2",
+            position: 0
+        )
+        for second in 1...276 {
+            _ = coordinator.accountPlayback(
+                ownerID: secondPageOwner,
+                segmentID: "page-2",
+                position: Double(second)
+            )
+        }
+
+        let active = try XCTUnwrap(coordinator.activeSnapshot)
+        XCTAssertEqual(active.sessionID, originalSessionID)
+        XCTAssertEqual(active.playbackSeconds, 305, accuracy: 0.001)
+        XCTAssertEqual(active.milestones, Set([30, 180, 300]))
+        XCTAssertEqual(startCount, 1)
+
+        // A late close/cancel from the retired page is ignored. The current
+        // owner ends exactly once; repeated terminal callbacks are idempotent.
+        XCTAssertNil(coordinator.end(ownerID: firstPageOwner))
+        if coordinator.end(ownerID: secondPageOwner) != nil {
+            endCount += 1
+        }
+        if coordinator.end(ownerID: secondPageOwner) != nil {
+            endCount += 1
+        }
+        XCTAssertEqual(endCount, 1)
+        XCTAssertNil(coordinator.sessionID)
+    }
+
+    func testKindleTerminalProgressRequiresExplicitEndEvidence() {
+        XCTAssertTrue(KindleTurnContract.isTerminalProgress("100%"))
+        XCTAssertTrue(KindleTurnContract.isTerminalProgress("Page 12 of 12"))
+        XCTAssertTrue(KindleTurnContract.isTerminalProgress("第 １２ / １２ 页"))
+        XCTAssertFalse(KindleTurnContract.isTerminalProgress("99%"))
+        XCTAssertFalse(KindleTurnContract.isTerminalProgress("Page 11 of 12"))
+        XCTAssertFalse(KindleTurnContract.isTerminalProgress(nil))
+
+        XCTAssertFalse(
+            KindleTurnContract.isTerminalPage(
+                liveProgress: "99%",
+                storedProgress: "100%"
+            ),
+            "a live non-terminal value must override stale persisted progress"
+        )
+        XCTAssertTrue(
+            KindleTurnContract.isTerminalPage(
+                liveProgress: nil,
+                storedProgress: "Location 400 of 400"
+            )
+        )
+    }
+
     func testReviewPresentationGateBlocksStreamingGapsAndHomeProcessing() {
         XCTAssertTrue(AppReviewPresentationGate.playbackIsQuiescent(
             isPlaying: false,
@@ -766,6 +1136,40 @@ private final class TestQueueStore: AnalyticsQueueStore, @unchecked Sendable {
         lock.lock()
         self.events = events
         lock.unlock()
+    }
+}
+
+private final class TestDeadLetterStore: AnalyticsDeadLetterStore, @unchecked Sendable {
+    private let lock = NSLock()
+    private var records: [AnalyticsDeadLetterRecord] = []
+
+    func load() -> [AnalyticsDeadLetterRecord] {
+        lock.lock()
+        defer { lock.unlock() }
+        return records
+    }
+
+    func save(_ records: [AnalyticsDeadLetterRecord]) {
+        lock.lock()
+        self.records = records
+        lock.unlock()
+    }
+}
+
+private actor RejectingTestTransport: AnalyticsTransport {
+    let reason: String
+
+    init(reason: String) {
+        self.reason = reason
+    }
+
+    func send(_ events: [AnalyticsEventEnvelope]) async throws -> AnalyticsTransportResult {
+        let ids = Set(events.map(\.eventId))
+        return AnalyticsTransportResult(
+            acceptedEventIds: [],
+            rejectedEventIds: ids,
+            rejectionReasons: Dictionary(uniqueKeysWithValues: ids.map { ($0, reason) })
+        )
     }
 }
 

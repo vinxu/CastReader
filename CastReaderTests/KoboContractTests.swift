@@ -800,7 +800,7 @@ final class KoboLibraryScanWebTests: XCTestCase {
               <main>
                 <article role="listitem" data-testid="book-card">
                   <picture>
-                    <source srcset="https://cdn.kobo.example/two-tickets@2x.jpg 2x">
+                    <source data-srcset="https://cdn.kobo.example/two-tickets@2x.jpg 2x">
                     <img alt="Two Tickets"
                          src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP"
                          data-src="https://cdn.kobo.example/two-tickets.jpg">

@@ -1,0 +1,58 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Continue in ${applicationName}" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "In ${applicationName} fortsetzen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue in ${applicationName}" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continuar en ${applicationName}" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuer dans ${applicationName}" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} में जारी रखें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua in ${applicationName}" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName}で続きを開く" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar no ${applicationName}" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在${applicationName}中继续" } }
+      }
+    },
+    "Explain with ${applicationName}" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mit ${applicationName} erklären" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Explain with ${applicationName}" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Explicar con ${applicationName}" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Expliquer avec ${applicationName}" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} से समझाएँ" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Spiega con ${applicationName}" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName}で解説" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Explicar com o ${applicationName}" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用${applicationName}解读" } }
+      }
+    },
+    "Keep reading with ${applicationName}" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mit ${applicationName} weiterlesen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep reading with ${applicationName}" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Seguir leyendo con ${applicationName}" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuer à lire avec ${applicationName}" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} से पढ़ना जारी रखें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua a leggere con ${applicationName}" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName}で読書を続ける" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar lendo com o ${applicationName}" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用${applicationName}继续阅读" } }
+      }
+    },
+    "Read with ${applicationName}" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mit ${applicationName} vorlesen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Read with ${applicationName}" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Leer con ${applicationName}" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Lire avec ${applicationName}" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName} से पढ़ें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Leggi con ${applicationName}" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "${applicationName}で読み上げ" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ler com o ${applicationName}" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用${applicationName}朗读" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

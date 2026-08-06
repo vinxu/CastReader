@@ -55,6 +55,11 @@ enum AppTheme {
     static let destructive = dyn(0xDC3545, 0xFF5A6A)
     static let destructiveForeground = Color.white
 
+    // MARK: - Semantic Status Colors
+    /// Positive completion/connection state. Keep it distinct from brand
+    /// orange, which can read as a warning when paired with a status icon.
+    static let success = dyn(0x147A42, 0x52D486)
+
     // MARK: - Reader Specific Colors （基于动态 primary/foreground 的透明度叠加，自动适配明暗）
     static let readerHighlightBackground = primary.opacity(0.15)   // 当前段背景
     static let readerActiveWord = primary.opacity(0.50)            // 播放词高亮

@@ -39,3 +39,6 @@ LocalPackages/
 
 # Secrets (build-time injected)
 Secrets.xcconfig
+
+# Local Apple Ads automation output
+reports/apple-ads/

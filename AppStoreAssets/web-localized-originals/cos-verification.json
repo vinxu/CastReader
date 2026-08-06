@@ -1,0 +1,458 @@
+{
+  "checkedAt": "2026-08-02T15:40:20.845Z",
+  "total": 45,
+  "passed": 45,
+  "failed": 0,
+  "results": [
+    {
+      "locale": "en-US",
+      "scene": "kindle",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/en-US/kindle.png",
+      "expectedBytes": 3340294,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 3340294,
+      "passed": true
+    },
+    {
+      "locale": "en-US",
+      "scene": "read-aloud",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/en-US/read-aloud.png",
+      "expectedBytes": 763799,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 763799,
+      "passed": true
+    },
+    {
+      "locale": "en-US",
+      "scene": "explain",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/en-US/explain.png",
+      "expectedBytes": 976535,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 976535,
+      "passed": true
+    },
+    {
+      "locale": "en-US",
+      "scene": "import",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/en-US/import.png",
+      "expectedBytes": 451438,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 451438,
+      "passed": true
+    },
+    {
+      "locale": "en-US",
+      "scene": "voices",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/en-US/voices.png",
+      "expectedBytes": 1372200,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 1372200,
+      "passed": true
+    },
+    {
+      "locale": "pt-BR",
+      "scene": "kindle",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/pt-BR/kindle.png",
+      "expectedBytes": 3335144,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 3335144,
+      "passed": true
+    },
+    {
+      "locale": "pt-BR",
+      "scene": "read-aloud",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/pt-BR/read-aloud.png",
+      "expectedBytes": 777543,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 777543,
+      "passed": true
+    },
+    {
+      "locale": "pt-BR",
+      "scene": "explain",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/pt-BR/explain.png",
+      "expectedBytes": 963759,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 963759,
+      "passed": true
+    },
+    {
+      "locale": "pt-BR",
+      "scene": "import",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/pt-BR/import.png",
+      "expectedBytes": 555271,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 555271,
+      "passed": true
+    },
+    {
+      "locale": "pt-BR",
+      "scene": "voices",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/pt-BR/voices.png",
+      "expectedBytes": 1312148,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 1312148,
+      "passed": true
+    },
+    {
+      "locale": "ja-JP",
+      "scene": "kindle",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/ja-JP/kindle.png",
+      "expectedBytes": 3945290,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 3945290,
+      "passed": true
+    },
+    {
+      "locale": "ja-JP",
+      "scene": "read-aloud",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/ja-JP/read-aloud.png",
+      "expectedBytes": 772178,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 772178,
+      "passed": true
+    },
+    {
+      "locale": "ja-JP",
+      "scene": "explain",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/ja-JP/explain.png",
+      "expectedBytes": 959624,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 959624,
+      "passed": true
+    },
+    {
+      "locale": "ja-JP",
+      "scene": "import",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/ja-JP/import.png",
+      "expectedBytes": 727059,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 727059,
+      "passed": true
+    },
+    {
+      "locale": "ja-JP",
+      "scene": "voices",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/ja-JP/voices.png",
+      "expectedBytes": 1315695,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 1315695,
+      "passed": true
+    },
+    {
+      "locale": "it-IT",
+      "scene": "kindle",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/it-IT/kindle.png",
+      "expectedBytes": 3431934,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 3431934,
+      "passed": true
+    },
+    {
+      "locale": "it-IT",
+      "scene": "read-aloud",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/it-IT/read-aloud.png",
+      "expectedBytes": 679564,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 679564,
+      "passed": true
+    },
+    {
+      "locale": "it-IT",
+      "scene": "explain",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/it-IT/explain.png",
+      "expectedBytes": 939507,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 939507,
+      "passed": true
+    },
+    {
+      "locale": "it-IT",
+      "scene": "import",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/it-IT/import.png",
+      "expectedBytes": 467809,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 467809,
+      "passed": true
+    },
+    {
+      "locale": "it-IT",
+      "scene": "voices",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/it-IT/voices.png",
+      "expectedBytes": 1301127,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 1301127,
+      "passed": true
+    },
+    {
+      "locale": "es-ES",
+      "scene": "kindle",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/es-ES/kindle.png",
+      "expectedBytes": 3409760,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 3409760,
+      "passed": true
+    },
+    {
+      "locale": "es-ES",
+      "scene": "read-aloud",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/es-ES/read-aloud.png",
+      "expectedBytes": 788279,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 788279,
+      "passed": true
+    },
+    {
+      "locale": "es-ES",
+      "scene": "explain",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/es-ES/explain.png",
+      "expectedBytes": 962197,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 962197,
+      "passed": true
+    },
+    {
+      "locale": "es-ES",
+      "scene": "import",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/es-ES/import.png",
+      "expectedBytes": 483884,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 483884,
+      "passed": true
+    },
+    {
+      "locale": "es-ES",
+      "scene": "voices",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/es-ES/voices.png",
+      "expectedBytes": 1340769,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 1340769,
+      "passed": true
+    },
+    {
+      "locale": "zh-Hans",
+      "scene": "kindle",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/zh-Hans/kindle.png",
+      "expectedBytes": 3178796,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 3178796,
+      "passed": true
+    },
+    {
+      "locale": "zh-Hans",
+      "scene": "read-aloud",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/zh-Hans/read-aloud.png",
+      "expectedBytes": 724318,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 724318,
+      "passed": true
+    },
+    {
+      "locale": "zh-Hans",
+      "scene": "explain",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/zh-Hans/explain.png",
+      "expectedBytes": 952825,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 952825,
+      "passed": true
+    },
+    {
+      "locale": "zh-Hans",
+      "scene": "import",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/zh-Hans/import.png",
+      "expectedBytes": 481038,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 481038,
+      "passed": true
+    },
+    {
+      "locale": "zh-Hans",
+      "scene": "voices",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/zh-Hans/voices.png",
+      "expectedBytes": 1334874,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 1334874,
+      "passed": true
+    },
+    {
+      "locale": "fr-FR",
+      "scene": "kindle",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/fr-FR/kindle.png",
+      "expectedBytes": 3220770,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 3220770,
+      "passed": true
+    },
+    {
+      "locale": "fr-FR",
+      "scene": "read-aloud",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/fr-FR/read-aloud.png",
+      "expectedBytes": 727578,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 727578,
+      "passed": true
+    },
+    {
+      "locale": "fr-FR",
+      "scene": "explain",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/fr-FR/explain.png",
+      "expectedBytes": 887352,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 887352,
+      "passed": true
+    },
+    {
+      "locale": "fr-FR",
+      "scene": "import",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/fr-FR/import.png",
+      "expectedBytes": 484358,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 484358,
+      "passed": true
+    },
+    {
+      "locale": "fr-FR",
+      "scene": "voices",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/fr-FR/voices.png",
+      "expectedBytes": 1292667,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 1292667,
+      "passed": true
+    },
+    {
+      "locale": "de-DE",
+      "scene": "kindle",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/de-DE/kindle.png",
+      "expectedBytes": 3178255,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 3178255,
+      "passed": true
+    },
+    {
+      "locale": "de-DE",
+      "scene": "read-aloud",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/de-DE/read-aloud.png",
+      "expectedBytes": 718634,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 718634,
+      "passed": true
+    },
+    {
+      "locale": "de-DE",
+      "scene": "explain",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/de-DE/explain.png",
+      "expectedBytes": 888878,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 888878,
+      "passed": true
+    },
+    {
+      "locale": "de-DE",
+      "scene": "import",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/de-DE/import.png",
+      "expectedBytes": 472027,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 472027,
+      "passed": true
+    },
+    {
+      "locale": "de-DE",
+      "scene": "voices",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/de-DE/voices.png",
+      "expectedBytes": 1309612,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 1309612,
+      "passed": true
+    },
+    {
+      "locale": "hi-IN",
+      "scene": "kindle",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/hi-IN/kindle.png",
+      "expectedBytes": 3737596,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 3737596,
+      "passed": true
+    },
+    {
+      "locale": "hi-IN",
+      "scene": "read-aloud",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/hi-IN/read-aloud.png",
+      "expectedBytes": 733859,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 733859,
+      "passed": true
+    },
+    {
+      "locale": "hi-IN",
+      "scene": "explain",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/hi-IN/explain.png",
+      "expectedBytes": 951627,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 951627,
+      "passed": true
+    },
+    {
+      "locale": "hi-IN",
+      "scene": "import",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/hi-IN/import.png",
+      "expectedBytes": 445712,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 445712,
+      "passed": true
+    },
+    {
+      "locale": "hi-IN",
+      "scene": "voices",
+      "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/hi-IN/voices.png",
+      "expectedBytes": 1178716,
+      "status": 200,
+      "contentType": "image/png",
+      "contentLength": 1178716,
+      "passed": true
+    }
+  ]
+}

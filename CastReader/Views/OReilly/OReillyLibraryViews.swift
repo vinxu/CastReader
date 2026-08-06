@@ -62,7 +62,6 @@ struct OReillyHomeSection: View {
     @ObservedObject private var store = OReillyLibraryStore.shared
     @ObservedObject private var onboarding =
         BoundLibraryOnboardingStore.shared
-    @State private var showConnect = false
 
     var body: some View {
         Group {
@@ -81,7 +80,7 @@ struct OReillyHomeSection: View {
                         NavigationLink(destination: OReillyLibraryView()) {
                             Text(AppLocalized("查看全部"))
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundColor(AppTheme.primaryText)
+                                .foregroundColor(AppTheme.primary)
                         }
                         .accessibilityIdentifier("homeShelfViewAll.oreilly")
                     }
@@ -105,16 +104,6 @@ struct OReillyHomeSection: View {
                 }
                 .accessibilityIdentifier("homeShelfSection.oreilly")
             }
-        }
-        .sheet(isPresented: $showConnect) {
-            OReillyLibraryConnectView()
-        }
-        .onReceive(
-            NotificationCenter.default.publisher(
-                for: .castReaderOReillyRebindRequested
-            )
-        ) { _ in
-            showConnect = true
         }
     }
 
@@ -289,10 +278,26 @@ struct OReillyCoverView: View {
 
 struct OReillyLibraryConnectView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var model = OReillyLibrarySyncViewModel()
+    @StateObject private var model: OReillyLibrarySyncViewModel
     @State private var showsInstitutionOptions = false
     @State private var institutionAccessLink = ""
     @State private var institutionAccessLinkError: String?
+
+    init(
+        analyticsSession: AnalyticsLibraryConnectionSession? = nil,
+        entryTapAlreadyTracked: Bool = false
+    ) {
+        let session = analyticsSession ?? AnalyticsLibraryConnectionSession(
+            source: .oreilly,
+            entryPoint: "oreilly_connect"
+        )
+        _model = StateObject(
+            wrappedValue: OReillyLibrarySyncViewModel(
+                analyticsSession: session,
+                entryTapAlreadyTracked: entryTapAlreadyTracked
+            )
+        )
+    }
 
     var body: some View {
         NavigationView {
@@ -359,8 +364,11 @@ struct OReillyLibraryConnectView: View {
                     .accessibilityIdentifier("oreillyLoginMethodMenu")
                 }
             }
-            .onAppear { model.loadIfNeeded() }
-            .onDisappear { model.stop() }
+            .onAppear {
+                model.recordConnectionPresented()
+                model.loadIfNeeded()
+            }
+            .onDisappear { model.closeConnection() }
             .sheet(isPresented: $showsInstitutionOptions) {
                 institutionOptions
             }
@@ -699,12 +707,30 @@ final class OReillyLibrarySyncViewModel:
     private var probeGeneration = 0
     private var isScanningShelf = false
     private var redirectedHistoryHosts: Set<String> = []
+    private let connectionAnalytics: AnalyticsLibraryConnectionRecorder
 
-    override init() {
+    override convenience init() {
+        self.init(
+            analyticsSession: AnalyticsLibraryConnectionSession(
+                source: .oreilly,
+                entryPoint: "oreilly_connect"
+            ),
+            entryTapAlreadyTracked: false
+        )
+    }
+
+    init(
+        analyticsSession: AnalyticsLibraryConnectionSession,
+        entryTapAlreadyTracked: Bool
+    ) {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = OReillyWebSession.websiteDataStore
         configuration.defaultWebpagePreferences.preferredContentMode = .mobile
         webView = WKWebView(frame: .zero, configuration: configuration)
+        connectionAnalytics = AnalyticsLibraryConnectionRecorder(
+            session: analyticsSession,
+            entryTapAlreadyTracked: entryTapAlreadyTracked
+        )
         super.init()
         webView.customUserAgent = GoogleBooksWebScripts.mobileSafariUserAgent
         webView.navigationDelegate = self
@@ -712,6 +738,13 @@ final class OReillyLibrarySyncViewModel:
 #if DEBUG
         webView.isInspectable = true
 #endif
+    }
+
+    func recordConnectionPresented() { connectionAnalytics.presented() }
+
+    func closeConnection() {
+        connectionAnalytics.close()
+        stop()
     }
 
     func loadIfNeeded() {
@@ -837,6 +870,7 @@ final class OReillyLibrarySyncViewModel:
 
     func commitShelf() {
         guard canSync, let account = pendingAccount else { return }
+        connectionAnalytics.record(.syncStarted, result: .started)
         isWorking = true
         store.mergeScrapedBooks(
             Array(pendingBooks.values),
@@ -845,6 +879,11 @@ final class OReillyLibrarySyncViewModel:
         isWorking = false
         if let error = store.lastError {
             errorText = error
+            connectionAnalytics.record(
+                .failed,
+                result: .failed,
+                errorCode: "local_commit_failed"
+            )
         } else {
             didSync = true
             canSync = false
@@ -853,6 +892,11 @@ final class OReillyLibrarySyncViewModel:
             detailText = String(
                 format: AppLocalized("已同步 %d 本书。"),
                 store.books.count
+            )
+            connectionAnalytics.record(
+                .syncCompleted,
+                result: .success,
+                bookCount: store.books.count
             )
         }
     }
@@ -1015,6 +1059,7 @@ final class OReillyLibrarySyncViewModel:
         url: URL,
         status: String
     ) {
+        connectionAnalytics.record(.loginStarted, result: .started)
         probeGeneration += 1
         workTask?.cancel()
         workTask = nil
@@ -1281,6 +1326,7 @@ final class OReillyLibrarySyncViewModel:
         }
 
         isSignedIn = true
+        connectionAnalytics.record(.loginSucceeded, result: .success)
         isCredentialPage = false
         statusText = AppLocalized("正在同步 O’Reilly 阅读历史…")
         detailText = AppLocalized("正在等待书目完整加载，请稍候。")
@@ -1387,6 +1433,11 @@ final class OReillyLibrarySyncViewModel:
         isWorking = false
         canSync = false
         errorText = AppLocalized("阅读历史仍在加载，请稍后重试。")
+        connectionAnalytics.record(
+            .failed,
+            result: .failed,
+            errorCode: "sync_snapshot_unavailable"
+        )
     }
 
     private func evaluate(_ script: String) async -> Any? {

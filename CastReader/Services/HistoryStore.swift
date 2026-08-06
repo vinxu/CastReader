@@ -10,6 +10,7 @@
 import SwiftUI
 import UIKit
 import PDFKit
+import WidgetKit
 
 /// 一条历史记录（元数据）。原始数据另存 payload 文件。
 struct HistoryRecord: Identifiable, Codable, Equatable {
@@ -35,6 +36,24 @@ enum HomeContinueContract {
             && sourceKind != .googleBooks
             && sourceKind != .kobo
             && sourceKind != .oreilly
+    }
+}
+
+enum SystemContinueContract {
+    /// An explicit entity ID is authoritative. If it has gone stale, routing
+    /// must fail to the import surface instead of silently opening a different
+    /// recent document. Only an omitted ID means "use the latest".
+    static func record(
+        in records: [HistoryRecord],
+        itemID: String?
+    ) -> HistoryRecord? {
+        let eligible = records.filter {
+            HomeContinueContract.includes($0.sourceKind)
+        }
+        if let itemID {
+            return eligible.first { $0.id == itemID }
+        }
+        return eligible.first
     }
 }
 
@@ -66,6 +85,7 @@ final class HistoryStore: ObservableObject {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         load()
         if performsCoverWork {
+            syncContinueSnapshots()
             Task { await backfillCovers() }   // 给升级前的旧记录补封面 + web 真实标题（best-effort）
         }
     }
@@ -88,6 +108,25 @@ final class HistoryStore: ObservableObject {
 
     private func save() {
         if let data = try? JSONEncoder().encode(records) { try? data.write(to: indexURL) }
+        if performsCoverWork { syncContinueSnapshots() }
+    }
+
+    /// Widgets and App Intents only need a tiny, privacy-preserving projection
+    /// of recent local history. Original documents remain in the app's private
+    /// Documents directory and are reopened by the containing app.
+    private func syncContinueSnapshots() {
+        let snapshots = records
+            .filter { HomeContinueContract.includes($0.sourceKind) }
+            .map {
+                ContinueSnapshot(
+                    id: $0.id,
+                    title: $0.title,
+                    sourceKind: $0.sourceKindRaw,
+                    updatedAt: $0.lastOpenedAt
+                )
+            }
+        ContinueSnapshotStore.shared.replace(with: snapshots)
+        WidgetCenter.shared.reloadTimelines(ofKind: "CastReaderContinueWidget")
     }
 
     /// 记录一次打开：新文档新增、已存在则更新时间并置顶。原始数据存 payload 供重开（web 仅记 URL）。

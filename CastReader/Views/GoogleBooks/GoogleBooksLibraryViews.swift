@@ -22,7 +22,6 @@ struct GoogleBooksHomeSection: View {
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = GoogleBooksLibraryStore.shared
     @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
-    @State private var showConnect = false
 
     var body: some View {
         Group {
@@ -41,7 +40,7 @@ struct GoogleBooksHomeSection: View {
                         NavigationLink(destination: GoogleBooksLibraryView()) {
                             Text(AppLocalized("查看全部"))
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundColor(AppTheme.primaryText)
+                                .foregroundColor(AppTheme.primary)
                         }
                         .accessibilityIdentifier("homeShelfViewAll.google_books")
                     }
@@ -63,12 +62,6 @@ struct GoogleBooksHomeSection: View {
                 }
                 .accessibilityIdentifier("homeShelfSection.google_books")
             }
-        }
-        // The section remains mounted so first-use rebind notifications still
-        // reach the single owner of the Google connection sheet.
-        .sheet(isPresented: $showConnect) { GoogleBooksLibraryConnectView() }
-        .onReceive(NotificationCenter.default.publisher(for: .castReaderGoogleBooksRebindRequested)) { _ in
-            showConnect = true
         }
     }
 
@@ -158,7 +151,23 @@ enum GoogleBooksReaderLauncher {
 
 struct GoogleBooksLibraryConnectView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var model = GoogleBooksLibrarySyncViewModel()
+    @StateObject private var model: GoogleBooksLibrarySyncViewModel
+
+    init(
+        analyticsSession: AnalyticsLibraryConnectionSession? = nil,
+        entryTapAlreadyTracked: Bool = false
+    ) {
+        let session = analyticsSession ?? AnalyticsLibraryConnectionSession(
+            source: .googleBooks,
+            entryPoint: "google_books_connect"
+        )
+        _model = StateObject(
+            wrappedValue: GoogleBooksLibrarySyncViewModel(
+                analyticsSession: session,
+                entryTapAlreadyTracked: entryTapAlreadyTracked
+            )
+        )
+    }
 
     var body: some View {
         NavigationView {
@@ -189,8 +198,11 @@ struct GoogleBooksLibraryConnectView: View {
                     Button(AppLocalized("关闭")) { dismiss() }
                 }
             }
-            .onAppear { model.loadIfNeeded() }
-            .onDisappear { model.stop() }
+            .onAppear {
+                model.recordConnectionPresented()
+                model.loadIfNeeded()
+            }
+            .onDisappear { model.closeConnection() }
             .onChange(of: model.liveLoginGateDidSync) { _, didSync in
                 if didSync { dismiss() }
             }
@@ -562,6 +574,13 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
     /// Only a settled scan can be committed. `pendingAccount` becomes complete
     /// on early virtual-list passes too, so it is not sufficient on its own.
     private var hasStableShelfSnapshot = false
+    private let analyticsSession: AnalyticsLibraryConnectionSession
+    private let entryTapAlreadyTracked: Bool
+    private var recordedAnalyticsStages = Set<String>()
+    /// A bind attempt has exactly one terminal analytics event. Recoverable UI
+    /// retries can continue, but they must not append a second terminal state
+    /// to the same `bind_session_id`.
+    private var didRecordConnectionTerminal = false
 
     var showsSyncBar: Bool {
         GoogleBooksBindingFlowContract.showsSyncBar(for: bindingPhase)
@@ -597,7 +616,26 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
             requestLoader: { webView, request in webView.load(request) },
             signInURLResolver: { webView in
                 await Self.currentPageSignInURL(in: webView)
-            }
+            },
+            analyticsSession: AnalyticsLibraryConnectionSession(
+                source: .googleBooks,
+                entryPoint: "google_books_connect"
+            ),
+            entryTapAlreadyTracked: false
+        )
+    }
+
+    convenience init(
+        analyticsSession: AnalyticsLibraryConnectionSession,
+        entryTapAlreadyTracked: Bool
+    ) {
+        self.init(
+            requestLoader: { webView, request in webView.load(request) },
+            signInURLResolver: { webView in
+                await Self.currentPageSignInURL(in: webView)
+            },
+            analyticsSession: analyticsSession,
+            entryTapAlreadyTracked: entryTapAlreadyTracked
         )
     }
 
@@ -605,7 +643,12 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
     /// testable without requiring a live Google account.
     init(
         requestLoader: @escaping (WKWebView, URLRequest) -> WKNavigation?,
-        signInURLResolver: @escaping (WKWebView) async -> URL?
+        signInURLResolver: @escaping (WKWebView) async -> URL?,
+        analyticsSession: AnalyticsLibraryConnectionSession = AnalyticsLibraryConnectionSession(
+            source: .googleBooks,
+            entryPoint: "google_books_connect"
+        ),
+        entryTapAlreadyTracked: Bool = false
     ) {
         let config = WKWebViewConfiguration()
         // 与阅读器共用同一个 data store：这里登录一次，阅读器就是已登录状态。
@@ -614,6 +657,8 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
         webView = WKWebView(frame: .zero, configuration: config)
         self.requestLoader = requestLoader
         self.signInURLResolver = signInURLResolver
+        self.analyticsSession = analyticsSession
+        self.entryTapAlreadyTracked = entryTapAlreadyTracked
         super.init()
         // Google 会用 UA 判定「不安全的浏览器」并拒绝登录 —— 必须是完整 Mobile Safari UA。
         webView.customUserAgent = GoogleBooksWebScripts.mobileSafariUserAgent
@@ -640,8 +685,23 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
         webView.load(URLRequest(url: GoogleBooksWebScripts.homeURL))
     }
 
+    func recordConnectionPresented() {
+        if !entryTapAlreadyTracked {
+            recordConnectionStage(.entryTapped, result: .started)
+        }
+        recordConnectionStage(.connectionPresented, result: .success)
+    }
+
+    func closeConnection() {
+        if !didRecordConnectionTerminal {
+            recordConnectionStage(.cancelled, result: .cancelled)
+        }
+        stop()
+    }
+
     func openSignIn() {
         guard bindingPhase == .needsSignIn, !isStartingSignIn else { return }
+        recordConnectionStage(.loginStarted, result: .started)
         stop()
         webView.stopLoading()
         store.clearError()
@@ -879,13 +939,26 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
 
     func syncLibrary() async -> Bool {
         guard !isSyncing else { return false }
+        recordConnectionStage(.syncStarted, result: .started)
         if !canSyncLibrary { await refreshPreview() }
-        guard canSyncLibrary else { return false }
+        guard canSyncLibrary else {
+            recordConnectionStage(
+                .failed,
+                result: .failed,
+                errorCode: "sync_snapshot_unavailable"
+            )
+            return false
+        }
         isSyncing = true
         errorText = nil
         defer { isSyncing = false }
         store.mergeScrapedBooks(Array(pendingBooks.values), account: pendingAccount)
         statusText = String(format: AppLocalized("已同步 %d 本 Google Play 图书。"), pendingBooks.count)
+        recordConnectionStage(
+            .syncCompleted,
+            result: .success,
+            bookCount: pendingBooks.count
+        )
         return true
     }
 
@@ -929,6 +1002,7 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
             startLoginPolling()
             return
         }
+        recordConnectionStage(.loginSucceeded, result: .success)
         loginPollingTask?.cancel()
         loginPollingTask = nil
         activeSignInNavigation = nil
@@ -1037,6 +1111,7 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
                     return
                 }
                 guard !result.authRequired, result.authenticated else { continue }
+                self.recordConnectionStage(.loginSucceeded, result: .success)
                 self.statusText = AppLocalized("登录成功，正在进入书架…")
                 self.bindingPhase = .scanning
                 await self.refreshPreview()
@@ -1064,6 +1139,11 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
     }
 
     private func recordNavigationError() {
+        recordConnectionStage(
+            .failed,
+            result: .failed,
+            errorCode: "navigation_failed"
+        )
         cancelFlowTasks()
         errorText = AppLocalized("网络连接失败，请重试。")
         if isCredentialFlowVisible {
@@ -1095,6 +1175,7 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
         hasStableShelfSnapshot = false
         bindingPhase = .awaitingShelf
         statusText = AppLocalized("登录成功，正在进入书架…")
+        recordConnectionStage(.loginSucceeded, result: .success)
         shelfRecoveryTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(350))
             guard let self, !Task.isCancelled else { return }
@@ -1135,6 +1216,30 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
         didEnterCredentialFlow = true
         errorText = nil
         bindingPhase = .signingIn
+    }
+
+    private func recordConnectionStage(
+        _ stage: AnalyticsLibraryConnectionStage,
+        result: AnalyticsResult,
+        errorCode: String? = nil,
+        bookCount: Int? = nil
+    ) {
+        guard !didRecordConnectionTerminal else { return }
+        let key = "\(stage.rawValue):\(result.rawValue):\(errorCode ?? "-")"
+        guard recordedAnalyticsStages.insert(key).inserted else { return }
+        if stage == .syncCompleted || stage == .failed || stage == .cancelled {
+            didRecordConnectionTerminal = true
+        }
+        let session = analyticsSession
+        Task { @MainActor in
+            ProductAnalytics.shared.trackLibraryConnection(
+                session,
+                stage: stage,
+                result: result,
+                errorCode: errorCode,
+                bookCount: bookCount
+            )
+        }
     }
 
     private func synchronizeCredentialState(for url: URL?) {

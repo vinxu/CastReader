@@ -31,6 +31,173 @@ struct PDFWordHighlight: Equatable {
     let wordIndex: Int
 }
 
+/// One user-initiated read can cross several page-local Kindle documents.
+/// Keep its analytics clock/counters outside any single ReadAloudViewModel so
+/// replacing the visual page owner does not manufacture read_end/read_start
+/// pairs or reset long-listen milestones.
+struct ReadAnalyticsLogicalSessionSnapshot: Equatable, Sendable {
+    let sessionID: String
+    let startedAt: Date
+    let firstAudioTracked: Bool
+    let playbackSeconds: Double
+    let milestones: Set<Int>
+    let lastSegmentID: String?
+    let lastPosition: Double?
+}
+
+struct ReadAnalyticsPlaybackUpdate: Equatable, Sendable {
+    let rawPlaybackDelta: Double?
+    let playbackSeconds: Double
+    let newlyReachedMilestones: [Int]
+}
+
+/// Main-thread custody for one logical read analytics session.
+///
+/// Each page VM has a unique owner ID. A confirmed page replacement claims the
+/// same coordinator; terminal calls from the retired VM are then ignored. This
+/// makes start/end exactly-once even when SwiftUI keeps an old page VM alive for
+/// another run-loop turn during an audio-queue handoff.
+@MainActor
+final class ReadAnalyticsSessionCoordinator {
+    private var session: ReadAnalyticsLogicalSessionSnapshot?
+    private var ownerID: UUID?
+
+    var sessionID: String? { session?.sessionID }
+    var activeSnapshot: ReadAnalyticsLogicalSessionSnapshot? { session }
+
+    /// Returns true only when a new logical session was created. Claiming an
+    /// existing Kindle session for its next page intentionally returns false.
+    @discardableResult
+    func begin(ownerID: UUID, at date: Date = Date()) -> Bool {
+        guard session == nil else { return false }
+        self.ownerID = ownerID
+        session = ReadAnalyticsLogicalSessionSnapshot(
+            sessionID: UUID().uuidString,
+            startedAt: date,
+            firstAudioTracked: false,
+            playbackSeconds: 0,
+            milestones: [],
+            lastSegmentID: nil,
+            lastPosition: nil
+        )
+        return true
+    }
+
+    func isOwned(by candidate: UUID) -> Bool {
+        session != nil && ownerID == candidate
+    }
+
+    /// Moves custody without creating a session or emitting read_start. Used
+    /// after a confirmed automatic visual-page commit, including the slower
+    /// path where the next page may still need entitlement refresh/TTS.
+    @discardableResult
+    func claimExisting(ownerID candidate: UUID) -> Bool {
+        guard session != nil else { return false }
+        ownerID = candidate
+        return true
+    }
+
+    /// Returns the logical start date exactly once, for first-audio latency.
+    func markFirstAudio(ownerID candidate: UUID) -> Date? {
+        guard ownerID == candidate, let current = session,
+              !current.firstAudioTracked else { return nil }
+        session = ReadAnalyticsLogicalSessionSnapshot(
+            sessionID: current.sessionID,
+            startedAt: current.startedAt,
+            firstAudioTracked: true,
+            playbackSeconds: current.playbackSeconds,
+            milestones: current.milestones,
+            lastSegmentID: current.lastSegmentID,
+            lastPosition: current.lastPosition
+        )
+        return current.startedAt
+    }
+
+    func resetPlaybackCursor(ownerID candidate: UUID) {
+        guard ownerID == candidate, let current = session else { return }
+        session = ReadAnalyticsLogicalSessionSnapshot(
+            sessionID: current.sessionID,
+            startedAt: current.startedAt,
+            firstAudioTracked: current.firstAudioTracked,
+            playbackSeconds: current.playbackSeconds,
+            milestones: current.milestones,
+            lastSegmentID: nil,
+            lastPosition: nil
+        )
+    }
+
+    /// Records the exact queue position at a visual-owner boundary without
+    /// adding playback time. If the same AVPlayer item starts before the next
+    /// page VM adopts it, the next tick can account for that handoff interval
+    /// instead of silently dropping it.
+    func seedPlaybackCursor(
+        ownerID candidate: UUID,
+        segmentID: String,
+        position: Double
+    ) {
+        guard ownerID == candidate, let current = session else { return }
+        session = ReadAnalyticsLogicalSessionSnapshot(
+            sessionID: current.sessionID,
+            startedAt: current.startedAt,
+            firstAudioTracked: current.firstAudioTracked,
+            playbackSeconds: current.playbackSeconds,
+            milestones: current.milestones,
+            lastSegmentID: segmentID,
+            lastPosition: max(0, position)
+        )
+    }
+
+    func accountPlayback(
+        ownerID candidate: UUID,
+        segmentID: String,
+        position: Double,
+        milestoneSeconds: [Int] = [30, 180, 300, 600, 1800]
+    ) -> ReadAnalyticsPlaybackUpdate? {
+        guard ownerID == candidate, let current = session else { return nil }
+
+        var playbackSeconds = current.playbackSeconds
+        var rawDelta: Double?
+        if current.lastSegmentID == segmentID,
+           let previous = current.lastPosition,
+           position >= previous {
+            let delta = position - previous
+            rawDelta = delta
+            playbackSeconds += min(2.0, delta)
+        }
+
+        var milestones = current.milestones
+        let newlyReached = milestoneSeconds.filter {
+            playbackSeconds >= Double($0) && !milestones.contains($0)
+        }
+        milestones.formUnion(newlyReached)
+        session = ReadAnalyticsLogicalSessionSnapshot(
+            sessionID: current.sessionID,
+            startedAt: current.startedAt,
+            firstAudioTracked: current.firstAudioTracked,
+            playbackSeconds: playbackSeconds,
+            milestones: milestones,
+            lastSegmentID: segmentID,
+            lastPosition: position
+        )
+        return ReadAnalyticsPlaybackUpdate(
+            rawPlaybackDelta: rawDelta,
+            playbackSeconds: playbackSeconds,
+            newlyReachedMilestones: newlyReached
+        )
+    }
+
+    /// Ends only for the current page owner. Repeated cancellation/close calls,
+    /// or a late callback from a retired page VM, therefore cannot duplicate
+    /// read_end.
+    @discardableResult
+    func end(ownerID candidate: UUID) -> ReadAnalyticsLogicalSessionSnapshot? {
+        guard ownerID == candidate, let ended = session else { return nil }
+        session = nil
+        ownerID = nil
+        return ended
+    }
+}
+
 @MainActor
 final class ReadAloudViewModel: ObservableObject {
 
@@ -54,6 +221,8 @@ final class ReadAloudViewModel: ObservableObject {
     private let settings = AppSettings.shared
     private let pro = ProManager.shared
     private let quota = QuotaManager.shared
+    private let analyticsSessionCoordinator: ReadAnalyticsSessionCoordinator
+    private let analyticsSessionOwnerID = UUID()
     private var audioSessionToken: AudioPlaybackSessionToken?
 
     private var segmentsByParagraph: [Int: [AudioSegment]] = [:]
@@ -85,6 +254,7 @@ final class ReadAloudViewModel: ObservableObject {
     // .web 源：段落由 WebView extractor 提取后注入；朗读输出经 bridge 驱动 DOM 高亮。
     private var webParagraphs: [ReadingParagraph]? = nil
     private var webLanguage: String? = nil
+    private var deferredWebAutoplay = DeferredAutoplayGate()
     private var preferredLiveWebStartIndex: Int?
     private struct PendingLiveWebResume {
         let anchor: WeReadPlaybackResumeAnchor
@@ -176,13 +346,9 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     // 产品分析会话只使用播放器真实推进时间；跳读造成的大跨度 currentTime 不计入里程碑。
-    private var analyticsReadSessionId: String?
-    private var analyticsReadStartedAt: Date?
-    private var analyticsFirstAudioTracked = false
-    private var analyticsPlaybackSeconds: Double = 0
-    private var analyticsMilestones = Set<Int>()
-    private var analyticsLastSegmentId: String?
-    private var analyticsLastPosition: Double?
+    private var analyticsReadSessionId: String? {
+        analyticsSessionCoordinator.sessionID
+    }
     private var appReviewReadSession = AppReviewReadSessionProgress()
     private var preserveAppReviewSessionOnNextAnalyticsBegin = false
 
@@ -200,9 +366,15 @@ final class ReadAloudViewModel: ObservableObject {
     private var weReadSpeechBoundary: WeReadPageSpeechBoundary?
     var weReadBoundaryTurnLeadSeconds = WeReadContinuousPageHandoffContract.visualTurnLeadSeconds
 
-    init(document: ReadingDocument, analyticsContext: AnalyticsContentContext? = nil) {
+    init(
+        document: ReadingDocument,
+        analyticsContext: AnalyticsContentContext? = nil,
+        analyticsSessionCoordinator: ReadAnalyticsSessionCoordinator? = nil
+    ) {
         self.document = document
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
+        self.analyticsSessionCoordinator = analyticsSessionCoordinator
+            ?? ReadAnalyticsSessionCoordinator()
         self.playbackVoiceID = AppSettings.shared.voice(for: document.language)
         recomputeReadableIndices()
         bind()
@@ -365,17 +537,30 @@ final class ReadAloudViewModel: ObservableObject {
     /// playing queued item, so calling the normal `deactivate()` here would
     /// introduce exactly the pause this handoff is designed to remove.
     @discardableResult
-    func detachForContinuousPageHandoff() -> AppReviewReadSessionProgress? {
+    func detachForContinuousPageHandoff(
+        nextSegmentID: String? = nil
+    ) -> AppReviewReadSessionProgress? {
         guard ownsAudioQueue else { return nil }
         invalidateAccessRetry()
         let reviewSession = appReviewReadSession
         generationEpoch &+= 1
         commitListen()
-        endAnalyticsReadSession(
-            result: .success,
-            reason: "kindle_page_handoff",
-            preserveAppReviewReadSession: true
-        )
+        // This is a visual/page-owner transition, not the end of listening.
+        // The shared Kindle coordinator remains open and the next page VM will
+        // claim it when adopting the already queued audio.
+        if let nextSegmentID {
+            analyticsSessionCoordinator.seedPlaybackCursor(
+                ownerID: analyticsSessionOwnerID,
+                segmentID: nextSegmentID,
+                position: 0
+            )
+        } else if let segment = audio.currentSegment {
+            analyticsSessionCoordinator.seedPlaybackCursor(
+                ownerID: analyticsSessionOwnerID,
+                segmentID: segment.id,
+                position: audio.currentTime
+            )
+        }
         isActive = false
         audioSessionToken = nil
         generationTask?.cancel()
@@ -397,7 +582,8 @@ final class ReadAloudViewModel: ObservableObject {
                 || document.sourceKind == .kobo
                 || document.sourceKind == .oreilly,
               !progress.sessionID.isEmpty,
-              analyticsReadSessionId == nil else { return false }
+              !analyticsSessionCoordinator.isOwned(by: analyticsSessionOwnerID)
+        else { return false }
         appReviewReadSession = progress
         preserveAppReviewSessionOnNextAnalyticsBegin = true
         return true
@@ -410,10 +596,20 @@ final class ReadAloudViewModel: ObservableObject {
     /// be revived through this path.
     func snapshotAppReviewReadSessionForActiveAutomaticPageCommit()
         -> AppReviewReadSessionProgress? {
-        guard analyticsReadSessionId != nil else { return nil }
+        guard analyticsSessionCoordinator.isOwned(by: analyticsSessionOwnerID)
+        else { return nil }
         return AppReviewAutomaticPageContinuation.candidate(
             appReviewReadSession,
             for: document.sourceKind
+        )
+    }
+
+    /// Claims an already-open logical session after Kindle has confirmed the
+    /// next visual page. This emits neither read_start nor read_end.
+    @discardableResult
+    func claimLogicalAnalyticsSessionForPageHandoff() -> Bool {
+        analyticsSessionCoordinator.claimExisting(
+            ownerID: analyticsSessionOwnerID
         )
     }
 
@@ -522,6 +718,19 @@ final class ReadAloudViewModel: ObservableObject {
         }
         webAudioSegments = []
         recomputeReadableIndices()
+        if deferredWebAutoplay.contentBecameReady(isReady: !readableIndices.isEmpty) {
+            ensurePlaying()
+        }
+    }
+
+    /// Explicit system/clipboard actions must start even when the user's
+    /// general "Auto Play" setting is off. If WebKit already extracted the
+    /// article this resumes immediately; otherwise the request is consumed by
+    /// `loadWebParagraphs` exactly once.
+    func requestAutoplayWhenWebReady() {
+        if deferredWebAutoplay.request(isReady: !readableIndices.isEmpty) {
+            ensurePlaying()
+        }
     }
 
     /// Keep the non-owning mode aligned with a newly committed live WebView
@@ -865,6 +1074,7 @@ final class ReadAloudViewModel: ObservableObject {
             }
             status = .pending
             showPaywall = true
+            endAnalyticsReadSession(result: .blocked, reason: "listen_quota")
             return
         }
         invalidateAccessRetry()
@@ -1006,6 +1216,7 @@ final class ReadAloudViewModel: ObservableObject {
             }
             status = .pending
             showPaywall = true
+            endAnalyticsReadSession(result: .blocked, reason: "listen_quota")
             return
         }
         invalidateAccessRetry()
@@ -1039,6 +1250,7 @@ final class ReadAloudViewModel: ObservableObject {
             }
             status = .pending
             showPaywall = true
+            endAnalyticsReadSession(result: .blocked, reason: "listen_quota")
             return
         }
 
@@ -1114,6 +1326,10 @@ final class ReadAloudViewModel: ObservableObject {
                 }
             } else {
                 self.showPaywall = true
+                self.endAnalyticsReadSession(
+                    result: .blocked,
+                    reason: "listen_quota"
+                )
             }
         }
     }
@@ -1646,7 +1862,12 @@ final class ReadAloudViewModel: ObservableObject {
                     appReviewReadSession,
                     for: document.sourceKind
                 )
-                endAnalyticsReadSession(result: .success, reason: "completed")
+                if document.sourceKind != .kindle {
+                    endAnalyticsReadSession(result: .success, reason: "completed")
+                }
+                AppReviewPromptManager.shared.recordPositiveOutcome(
+                    .firstReadCompleted
+                )
                 onDocumentFinished?(automaticPageContinuation)
             }
             return
@@ -1685,7 +1906,16 @@ final class ReadAloudViewModel: ObservableObject {
                 appReviewReadSession,
                 for: document.sourceKind
             )
-            endAnalyticsReadSession(result: .success, reason: "completed")
+            // A Kindle OCR document is one visual page, not one user reading
+            // session. KindleBookViewModel either transfers this still-open
+            // coordinator to the confirmed next page or terminates it if the
+            // page advance truly fails/ends.
+            if document.sourceKind != .kindle {
+                endAnalyticsReadSession(result: .success, reason: "completed")
+            }
+            AppReviewPromptManager.shared.recordPositiveOutcome(
+                .firstReadCompleted
+            )
             onDocumentFinished?(automaticPageContinuation)
             return
         }
@@ -2244,20 +2474,16 @@ final class ReadAloudViewModel: ObservableObject {
     // MARK: - Product analytics
 
     private func beginAnalyticsReadSessionIfNeeded(resume: Bool) {
-        guard analyticsReadSessionId == nil else { return }
+        let startedNewSession = analyticsSessionCoordinator.begin(
+            ownerID: analyticsSessionOwnerID
+        )
+        guard startedNewSession else { return }
         if preserveAppReviewSessionOnNextAnalyticsBegin {
             preserveAppReviewSessionOnNextAnalyticsBegin = false
         } else {
             appReviewReadSession = AppReviewReadSessionProgress()
             onAppReviewReadSessionInvalidated?()
         }
-        analyticsReadSessionId = UUID().uuidString
-        analyticsReadStartedAt = Date()
-        analyticsFirstAudioTracked = false
-        analyticsPlaybackSeconds = 0
-        analyticsMilestones.removeAll()
-        analyticsLastSegmentId = nil
-        analyticsLastPosition = nil
         let voice = settings.voice(for: docLanguage)
         ProductAnalytics.shared.track(
             .readStart,
@@ -2268,7 +2494,7 @@ final class ReadAloudViewModel: ObservableObject {
                 language: docLanguage,
                 voiceId: voice,
                 speed: settings.effectiveSpeed(isPro: pro.isPro),
-                resume: resume || analyticsContext.entryPoint == "history_resume",
+                resume: resume || analyticsContext.source == .history,
                 storefront: analyticsContext.storefront
             )
         )
@@ -2278,15 +2504,16 @@ final class ReadAloudViewModel: ObservableObject {
         let ownedPlaying = playing && ownsAudioQueue
         isPlaying = ownedPlaying
         guard ownedPlaying else {
-            analyticsLastSegmentId = nil
-            analyticsLastPosition = nil
+            analyticsSessionCoordinator.resetPlaybackCursor(
+                ownerID: analyticsSessionOwnerID
+            )
             return
         }
-        guard !analyticsFirstAudioTracked,
-              analyticsReadSessionId != nil,
-              audio.currentSegment != nil else { return }
-        analyticsFirstAudioTracked = true
-        let latency = max(0, Int(Date().timeIntervalSince(analyticsReadStartedAt ?? Date()) * 1000))
+        guard audio.currentSegment != nil,
+              let startedAt = analyticsSessionCoordinator.markFirstAudio(
+                ownerID: analyticsSessionOwnerID
+              ) else { return }
+        let latency = max(0, Int(Date().timeIntervalSince(startedAt) * 1000))
         ProductAnalytics.shared.track(
             .readFirstAudio,
             context: analyticsEventContext,
@@ -2302,17 +2529,13 @@ final class ReadAloudViewModel: ObservableObject {
     private func accountAnalyticsPlayback(_ currentTime: Double) {
         guard ownsAudioQueue,
               audio.isPlaying,
-              analyticsReadSessionId != nil,
               let segment = audio.currentSegment else { return }
-        if analyticsLastSegmentId == segment.id,
-           let previous = analyticsLastPosition,
-           currentTime >= previous {
-            let rawPlaybackDelta = currentTime - previous
-            // Preserve the existing analytics cap, but give onboarding the raw
-            // delta so a manual seek is rejected instead of becoming two fake
-            // seconds of activation.
-            let playbackDelta = min(2.0, rawPlaybackDelta)
-            analyticsPlaybackSeconds += playbackDelta
+        guard let update = analyticsSessionCoordinator.accountPlayback(
+            ownerID: analyticsSessionOwnerID,
+            segmentID: segment.id,
+            position: currentTime
+        ) else { return }
+        if let rawPlaybackDelta = update.rawPlaybackDelta {
             if appReviewReadSession.record(rawPlaybackDelta: rawPlaybackDelta) {
                 AppReviewPromptManager.shared.recordFiveMinuteReadSession(
                     sessionID: appReviewReadSession.sessionID
@@ -2328,19 +2551,15 @@ final class ReadAloudViewModel: ObservableObject {
                 seconds: rawPlaybackDelta
             )
         }
-        analyticsLastSegmentId = segment.id
-        analyticsLastPosition = currentTime
 
-        for milestone in [30, 180, 300, 600, 1800]
-        where analyticsPlaybackSeconds >= Double(milestone) && !analyticsMilestones.contains(milestone) {
-            analyticsMilestones.insert(milestone)
+        for milestone in update.newlyReachedMilestones {
             if milestone >= 300 { ProductAnalytics.shared.noteMeaningfulReadReached() }
             ProductAnalytics.shared.track(
                 .readMilestone,
                 context: analyticsEventContext,
                 properties: .init(
                     milestoneSeconds: milestone,
-                    playbackSeconds: Int(analyticsPlaybackSeconds),
+                    playbackSeconds: Int(update.playbackSeconds),
                     completionBucket: analyticsCompletionBucket,
                     storefront: analyticsContext.storefront
                 )
@@ -2348,47 +2567,64 @@ final class ReadAloudViewModel: ObservableObject {
         }
     }
 
+    @discardableResult
+    func finishLogicalAnalyticsSession(
+        result: AnalyticsResult,
+        reason: String,
+        errorStage: String? = nil,
+        errorCode: String? = nil
+    ) -> Bool {
+        endAnalyticsReadSession(
+            result: result,
+            reason: reason,
+            errorStage: errorStage,
+            errorCode: errorCode
+        )
+    }
+
+    @discardableResult
     private func endAnalyticsReadSession(
         result: AnalyticsResult,
         reason: String,
         errorStage: String? = nil,
         errorCode: String? = nil,
         preserveAppReviewReadSession: Bool = false
-    ) {
-        if analyticsReadSessionId != nil {
-            ProductAnalytics.shared.track(
-                .readEnd,
-                context: analyticsEventContext,
-                properties: .init(
-                    result: result.rawValue,
-                    errorStage: errorStage,
-                    errorCode: errorCode,
-                    playbackSeconds: Int(analyticsPlaybackSeconds),
-                    completionBucket: analyticsCompletionBucket,
-                    endReason: reason,
-                    storefront: analyticsContext.storefront
-                )
+    ) -> Bool {
+        guard let ended = analyticsSessionCoordinator.end(
+            ownerID: analyticsSessionOwnerID
+        ) else { return false }
+        ProductAnalytics.shared.track(
+            .readEnd,
+            context: analyticsEventContext(readSessionID: ended.sessionID),
+            properties: .init(
+                result: result.rawValue,
+                errorStage: errorStage,
+                errorCode: errorCode,
+                playbackSeconds: Int(ended.playbackSeconds),
+                completionBucket: analyticsCompletionBucket,
+                endReason: reason,
+                storefront: analyticsContext.storefront
             )
-        }
-        analyticsReadSessionId = nil
-        analyticsReadStartedAt = nil
-        analyticsFirstAudioTracked = false
-        analyticsLastSegmentId = nil
-        analyticsLastPosition = nil
+        )
         if !preserveAppReviewReadSession {
             appReviewReadSession = AppReviewReadSessionProgress()
             preserveAppReviewSessionOnNextAnalyticsBegin = false
             onAppReviewReadSessionInvalidated?()
         }
+        return true
     }
 
     private var analyticsEventContext: AnalyticsEventContext {
+        analyticsEventContext(readSessionID: analyticsReadSessionId)
+    }
+
+    private func analyticsEventContext(readSessionID: String?) -> AnalyticsEventContext {
         AnalyticsEventContext(
             productArea: .readAloud,
             surface: document.sourceKind == .kindle ? "kindle_reader" : "reader",
             entryPoint: analyticsContext.entryPoint,
             contentSessionId: analyticsContext.contentSessionId,
-            readSessionId: analyticsReadSessionId
+            readSessionId: readSessionID
         )
     }
 

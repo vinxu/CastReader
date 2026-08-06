@@ -312,6 +312,255 @@ struct KindleStorefront: Codable, Identifiable, Equatable, Hashable, Sendable {
     }
 }
 
+/// Stable, injectable environment signals for first-use storefront ranking.
+/// Keeping Foundation's live Locale/TimeZone values outside the scorer makes
+/// recommendation behavior deterministic in tests and across view redraws.
+struct KindleStorefrontRecommendationContext: Equatable, Sendable {
+    let regionCode: String?
+    let preferredLanguages: [String]
+    let appLanguageCode: String?
+    let timeZoneIdentifier: String?
+    let secondsFromGMT: Int?
+
+    init(
+        regionCode: String?,
+        preferredLanguages: [String],
+        appLanguageCode: String?,
+        timeZoneIdentifier: String?,
+        secondsFromGMT: Int?
+    ) {
+        self.regionCode = regionCode
+        self.preferredLanguages = preferredLanguages
+        self.appLanguageCode = appLanguageCode
+        self.timeZoneIdentifier = timeZoneIdentifier
+        self.secondsFromGMT = secondsFromGMT
+    }
+
+    init(
+        locale: Locale,
+        preferredLanguages: [String],
+        appLanguageCode: String?,
+        timeZone: TimeZone,
+        date: Date = Date()
+    ) {
+        self.init(
+            regionCode: locale.region?.identifier,
+            preferredLanguages: preferredLanguages,
+            appLanguageCode: appLanguageCode,
+            timeZoneIdentifier: timeZone.identifier,
+            secondsFromGMT: timeZone.secondsFromGMT(for: date)
+        )
+    }
+}
+
+struct KindleStorefrontRecommendation: Equatable, Sendable {
+    let recommended: KindleStorefront
+    let candidates: [KindleStorefront]
+}
+
+/// Combines independent locale signals instead of assuming that interface
+/// language alone identifies the marketplace where a Kindle account buys books.
+/// An established or explicitly persisted binding remains authoritative; the
+/// default `.us` placeholder on a fresh install must not be passed as one.
+enum KindleStorefrontRecommender {
+    static func recommend(
+        context: KindleStorefrontRecommendationContext,
+        authoritativeBoundStorefrontID: String? = nil
+    ) -> KindleStorefrontRecommendation {
+        let selectable = KindleStorefront.selectable
+        let catalogOrder = Dictionary(
+            uniqueKeysWithValues: selectable.enumerated().map { ($1.id, $0) }
+        )
+        var scores = Dictionary(uniqueKeysWithValues: selectable.map { ($0.id, 0) })
+
+        func add(_ storefrontID: String?, _ score: Int) {
+            guard let storefront = KindleStorefront.entry(id: storefrontID) else { return }
+            scores[storefront.id, default: 0] += score
+        }
+
+        // Device region is the clearest non-account signal.
+        add(storefrontID(forRegionCode: context.regionCode), 10_000)
+
+        // A user-selected interface language is intentional, while an explicit
+        // region subtag (for example en-GB or es-MX) is stronger than its base
+        // language's generic candidate list.
+        add(languageRegionStorefrontID(context.appLanguageCode), 5_000)
+        addLanguageOrder(context.appLanguageCode, baseScore: 2_400, add: add)
+
+        // Preferred languages retain their order. Multiple signals may reinforce
+        // the same storefront, which is useful for bilingual users living abroad.
+        for (index, language) in context.preferredLanguages.enumerated() {
+            let decay = min(index, 8)
+            add(languageRegionStorefrontID(language), 4_200 - decay * 260)
+            addLanguageOrder(
+                language,
+                baseScore: 1_800 - decay * 160,
+                add: add
+            )
+        }
+
+        // IANA city identifiers are considerably safer than offsets. Offsets are
+        // deliberately weak and only break ties or provide a last-resort hint.
+        for (index, id) in storefrontIDs(forTimeZoneIdentifier: context.timeZoneIdentifier).enumerated() {
+            add(id, 1_400 - index * 80)
+        }
+        for (index, id) in storefrontIDs(forSecondsFromGMT: context.secondsFromGMT).enumerated() {
+            add(id, 360 - index * 20)
+        }
+
+        let ranked = selectable.sorted { lhs, rhs in
+            let lhsScore = scores[lhs.id, default: 0]
+            let rhsScore = scores[rhs.id, default: 0]
+            if lhsScore != rhsScore { return lhsScore > rhsScore }
+            return catalogOrder[lhs.id, default: .max]
+                < catalogOrder[rhs.id, default: .max]
+        }
+
+        var candidates: [KindleStorefront] = []
+        if let bound = KindleStorefront.entry(id: authoritativeBoundStorefrontID) {
+            candidates.append(bound)
+        }
+        candidates.append(contentsOf: ranked)
+
+        var seen = Set<String>()
+        candidates = candidates.filter { seen.insert($0.id).inserted }
+        let recommended = candidates.first ?? KindleStorefront.us
+        return KindleStorefrontRecommendation(
+            recommended: recommended,
+            candidates: candidates
+        )
+    }
+
+    private static func addLanguageOrder(
+        _ languageCode: String?,
+        baseScore: Int,
+        add: (String?, Int) -> Void
+    ) {
+        guard baseScore > 0 else { return }
+        let ids = KindleStorefront.orderedCandidates(
+            deviceRegion: nil,
+            languageCode: languageCode
+        ).map(\.id)
+        let preferredCount = preferredCandidateCount(for: languageCode)
+        for (index, id) in ids.prefix(preferredCount).enumerated() {
+            add(id, max(80, baseScore - index * 180))
+        }
+    }
+
+    /// `orderedCandidates` intentionally appends the full catalog. This count
+    /// limits scoring to the language-specific prefix without duplicating the
+    /// shared contract in the UI or the recommendation engine.
+    private static func preferredCandidateCount(for languageCode: String?) -> Int {
+        switch normalizedLanguageCode(languageCode) {
+        case "en": return 5
+        case "es": return 3
+        case "pt-BR", "ja", "de", "fr", "it", "hi": return 2
+        default: return 0
+        }
+    }
+
+    private static func normalizedLanguageCode(_ raw: String?) -> String {
+        let normalized = raw?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "_", with: "-")
+            .lowercased() ?? ""
+        if normalized == "pt" || normalized.hasPrefix("pt-") {
+            return "pt-BR"
+        }
+        return normalized.split(separator: "-").first.map(String.init) ?? ""
+    }
+
+    private static func storefrontID(forRegionCode raw: String?) -> String? {
+        guard let raw else { return nil }
+        let region = raw.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let mapping: [String: String] = [
+            "US": "us", "GB": "uk", "UK": "uk", "CA": "ca", "AU": "au",
+            "JP": "jp", "DE": "de", "FR": "fr", "IT": "it", "ES": "es",
+            "IN": "in", "BR": "br", "MX": "mx", "NL": "nl",
+        ]
+        return mapping[region]
+    }
+
+    private static func languageRegionStorefrontID(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let parts = raw
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "_", with: "-")
+            .split(separator: "-")
+            .map(String.init)
+        guard parts.count > 1 else { return nil }
+        // Script subtags have four letters; region subtags have two letters or
+        // three digits. Only an explicit region is evidence.
+        let region = parts.dropFirst().first { part in
+            (part.count == 2 && part.allSatisfy(\.isLetter))
+                || (part.count == 3 && part.allSatisfy(\.isNumber))
+        }
+        return storefrontID(forRegionCode: region)
+    }
+
+    private static func storefrontIDs(forTimeZoneIdentifier raw: String?) -> [String] {
+        guard let raw else { return [] }
+        let identifier = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !identifier.isEmpty else { return [] }
+
+        if identifier.hasPrefix("australia/") { return ["au"] }
+        if identifier.hasPrefix("us/") { return ["us"] }
+        if identifier.hasPrefix("canada/") { return ["ca"] }
+        if identifier.hasPrefix("mexico/") { return ["mx"] }
+        if identifier.hasPrefix("brazil/") { return ["br"] }
+
+        // Kindle China is closed. For Chinese-speaking East Asian time zones,
+        // keep the enabled global storefront first, then surface the two nearby
+        // English/Japanese catalogs instead of falling back to US/UK/CA solely
+        // because that is the static catalog order.
+        let eastAsiaFallbackZones: Set<String> = [
+            "asia/shanghai", "asia/hong_kong", "asia/taipei",
+            "asia/singapore", "asia/macau", "asia/macao",
+        ]
+        if eastAsiaFallbackZones.contains(identifier) {
+            return ["us", "jp", "au"]
+        }
+
+        let exact: [String: String] = [
+            "asia/tokyo": "jp", "japan": "jp",
+            "asia/kolkata": "in", "asia/calcutta": "in",
+            "europe/london": "uk", "europe/belfast": "uk", "gb": "uk", "gb-eire": "uk",
+            "europe/berlin": "de", "europe/busingen": "de",
+            "europe/paris": "fr", "europe/monaco": "fr",
+            "europe/rome": "it", "europe/san_marino": "it", "europe/vatican": "it",
+            "europe/madrid": "es", "europe/ceuta": "es", "atlantic/canary": "es",
+            "europe/amsterdam": "nl",
+            "america/sao_paulo": "br", "america/bahia": "br", "america/belem": "br",
+            "america/fortaleza": "br", "america/manaus": "br", "america/recife": "br",
+            "america/rio_branco": "br",
+            "america/mexico_city": "mx", "america/cancun": "mx", "america/chihuahua": "mx",
+            "america/monterrey": "mx", "america/tijuana": "mx", "america/merida": "mx",
+            "america/toronto": "ca", "america/vancouver": "ca", "america/edmonton": "ca",
+            "america/winnipeg": "ca", "america/halifax": "ca", "america/st_johns": "ca",
+            "america/new_york": "us", "america/chicago": "us", "america/denver": "us",
+            "america/los_angeles": "us", "america/phoenix": "us", "america/anchorage": "us",
+            "pacific/honolulu": "us",
+        ]
+        return exact[identifier].map { [$0] } ?? []
+    }
+
+    private static func storefrontIDs(forSecondsFromGMT seconds: Int?) -> [String] {
+        guard let seconds else { return [] }
+        switch seconds {
+        case 19_800: return ["in"]
+        case 32_400: return ["jp"]
+        case 34_200, 37_800, 36_000, 39_600: return ["au"]
+        case -12_600: return ["ca"]
+        case -10_800, -7_200: return ["br"]
+        case 0: return ["uk"]
+        case 3_600, 7_200: return ["de", "fr", "it", "es", "nl"]
+        case -28_800, -25_200, -21_600, -18_000, -14_400:
+            return ["us", "ca", "mx"]
+        default: return []
+        }
+    }
+}
+
 enum KindleStorefrontMigration {
     /// One precedence rule for every legacy migration path. The shelf URL is
     /// the book's stable ownership signal; `lastReadURL` may have been rewritten

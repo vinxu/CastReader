@@ -23,6 +23,9 @@ final class QuotaManager: ObservableObject {
     // 服务端额度（可用时优先；nil 则用本地计数）
     @Published private(set) var serverListenRemaining: Double? = nil
     @Published private(set) var serverExplainRemaining: Int? = nil
+    /// Prevents an older in-flight status response from undoing a locally
+    /// observed server consumption during the same quota day.
+    private var serverExplainProjectionCeiling: Int? = nil
 
     private let d = UserDefaults.standard
     private var day: String = ""
@@ -40,6 +43,9 @@ final class QuotaManager: ObservableObject {
             day = today
             listenSeconds = 0
             explainCount = 0
+            serverListenRemaining = nil
+            serverExplainRemaining = nil
+            serverExplainProjectionCeiling = nil
             persist()
         }
     }
@@ -64,9 +70,13 @@ final class QuotaManager: ObservableObject {
 
     /// 用服务端 /api/pro/status 回填额度。
     func applyServerStatus(_ s: ProStatusDTO) {
+        rollIfNewDay()
         if let r = s.listenRemaining { serverListenRemaining = Double(max(0, r)) }
         if let sec = s.listenSeconds { listenSeconds = Double(max(0, sec)) }
-        if let fr = s.freeRemaining { serverExplainRemaining = max(0, fr) }
+        if let fr = s.freeRemaining {
+            let reported = max(0, fr)
+            serverExplainRemaining = min(reported, serverExplainProjectionCeiling ?? reported)
+        }
     }
 
     // MARK: 计数
@@ -96,6 +106,16 @@ final class QuotaManager: ObservableObject {
         persist()
     }
 
+    /// 服务端已经接受本次 extract-plan 后，同步递减内存中的服务端额度投影。
+    /// 只更新客户端缓存，不会再次请求服务端消费；失败请求不会调用这里。
+    func noteExplainAcceptedByServer(isPro: Bool) {
+        rollIfNewDay()
+        guard !isPro, let remaining = serverExplainRemaining else { return }
+        let projected = max(0, remaining - 1)
+        serverExplainRemaining = projected
+        serverExplainProjectionCeiling = min(projected, serverExplainProjectionCeiling ?? projected)
+    }
+
     // MARK: 持久化
 
     private func persist() {
@@ -120,6 +140,7 @@ final class QuotaManager: ObservableObject {
         explainCount = 0
         serverListenRemaining = nil
         serverExplainRemaining = nil
+        serverExplainProjectionCeiling = nil
         day = Self.localDay()
         persist()
     }

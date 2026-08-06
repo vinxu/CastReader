@@ -1,0 +1,447 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-02T15:13:10.295Z",
+  "note": "Raw, unprocessed iPhone screenshots supplied by the user. No App Store marketing headline or composite frame.",
+  "sourceRoot": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals",
+  "remoteBaseKey": "web-localized-screenshots/2026-08-02",
+  "dimensions": {
+    "pixelWidth": 1290,
+    "pixelHeight": 2796
+  },
+  "localeAliases": {
+    "en": "en-US",
+    "pt": "pt-BR",
+    "ja": "ja-JP",
+    "it": "it-IT",
+    "es": "es-ES",
+    "zh": "zh-Hans",
+    "fr": "fr-FR",
+    "de": "de-DE",
+    "hi": "hi-IN"
+  },
+  "locales": {
+    "en-US": {
+      "kindle": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/en-US/kindle.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/en-US/kindle.png",
+        "bytes": 3340294,
+        "sha256": "d112f407727c338d1767a04f5fb9af7c7eb9e9074e8daf507566fdce10773383",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/en-US/kindle.png"
+      },
+      "read-aloud": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/en-US/read-aloud.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/en-US/read-aloud.png",
+        "bytes": 763799,
+        "sha256": "330488ea063ccd9f27568a5ae3d96a8788ea49cd1723a84ea0f786071f2d8c74",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/en-US/read-aloud.png"
+      },
+      "explain": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/en-US/explain.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/en-US/explain.png",
+        "bytes": 976535,
+        "sha256": "d7c36c2634fad774cef9283c32981c9222b02edcd9763d8944d648caab06033a",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/en-US/explain.png"
+      },
+      "import": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/en-US/import.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/en-US/import.png",
+        "bytes": 451438,
+        "sha256": "240a5843d555a92b4157f706095699b95a16e6fe7fa314ab4c2820a2d5713904",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/en-US/import.png"
+      },
+      "voices": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/en-US/voices.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/en-US/voices.png",
+        "bytes": 1372200,
+        "sha256": "48bcca514f15e26247b063971bbce5bac9d59fc5055b35db3a28e19ad7180401",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/en-US/voices.png"
+      }
+    },
+    "pt-BR": {
+      "kindle": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/pt-BR/kindle.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/pt-BR/kindle.png",
+        "bytes": 3335144,
+        "sha256": "10c88c49736c1c62a787d51707d491780145b71b9c26e5138ec3e5c00df98687",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/pt-BR/kindle.png"
+      },
+      "read-aloud": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/pt-BR/read-aloud.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/pt-BR/read-aloud.png",
+        "bytes": 777543,
+        "sha256": "4c4279716e23a9f6783454fdb06717ebecd287df693d66cc60fd026f8c92064c",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/pt-BR/read-aloud.png"
+      },
+      "explain": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/pt-BR/explain.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/pt-BR/explain.png",
+        "bytes": 963759,
+        "sha256": "36843d2c2ba714d2fff877558beb982dabbcb64595120baac7723cd90a8349cc",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/pt-BR/explain.png"
+      },
+      "import": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/pt-BR/import.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/pt-BR/import.png",
+        "bytes": 555271,
+        "sha256": "e13016b16dc74ac2de5342390d777c5a7e5199808f04574789189f17a3d21632",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/pt-BR/import.png"
+      },
+      "voices": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/pt-BR/voices.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/pt-BR/voices.png",
+        "bytes": 1312148,
+        "sha256": "0dace7fe28a9d6135241170cd2ff5259508be5c3d403075ad69ed874d046bfce",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/pt-BR/voices.png"
+      }
+    },
+    "ja-JP": {
+      "kindle": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/ja-JP/kindle.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/ja-JP/kindle.png",
+        "bytes": 3945290,
+        "sha256": "af54d5a56512b8e7ee1e862ab4a6b17afdce2309e74f5627c19f5dcbc63ab975",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/ja-JP/kindle.png"
+      },
+      "read-aloud": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/ja-JP/read-aloud.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/ja-JP/read-aloud.png",
+        "bytes": 772178,
+        "sha256": "f936814cc20e3531d140535a1d1aff530c78792aae08d4a54eb9b0472ee7a6d1",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/ja-JP/read-aloud.png"
+      },
+      "explain": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/ja-JP/explain.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/ja-JP/explain.png",
+        "bytes": 959624,
+        "sha256": "3ee70552194eaf46e199e68224ddb9177811e5f3064c171d64532ee8e4512776",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/ja-JP/explain.png"
+      },
+      "import": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/ja-JP/import.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/ja-JP/import.png",
+        "bytes": 727059,
+        "sha256": "484690b26b6534c70fe27e68cb4b354ff0eb13752b8833a1e15682cc0c0119b1",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/ja-JP/import.png"
+      },
+      "voices": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/ja-JP/voices.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/ja-JP/voices.png",
+        "bytes": 1315695,
+        "sha256": "21a4eb2db18449b281234b805124cc7a0877ef6719703b1f1b55a287a8cc06d5",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/ja-JP/voices.png"
+      }
+    },
+    "it-IT": {
+      "kindle": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/it-IT/kindle.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/it-IT/kindle.png",
+        "bytes": 3431934,
+        "sha256": "c71430f2bb9d14dfaa9b5a1e435888dec26c192a495ff30b6f701f272e36ed77",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/it-IT/kindle.png"
+      },
+      "read-aloud": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/it-IT/read-aloud.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/it-IT/read-aloud.png",
+        "bytes": 679564,
+        "sha256": "37f5c01153a7e448c9748421aecec5586f4240a8497ce7673af18333314d79f8",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/it-IT/read-aloud.png"
+      },
+      "explain": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/it-IT/explain.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/it-IT/explain.png",
+        "bytes": 939507,
+        "sha256": "31af6f481173b1eec3dcd2dceaf9d011f8489acc3357f8f8a7b05889b8dd2bb9",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/it-IT/explain.png"
+      },
+      "import": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/it-IT/import.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/it-IT/import.png",
+        "bytes": 467809,
+        "sha256": "c679add044edd690ca1013a969e95455b59f5e63af827ce34240e34759cf501d",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/it-IT/import.png"
+      },
+      "voices": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/it-IT/voices.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/it-IT/voices.png",
+        "bytes": 1301127,
+        "sha256": "f7349c4973d464649cc78ca45aab6ba36e6d834bf1719d37cc140bb946e07ad8",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/it-IT/voices.png"
+      }
+    },
+    "es-ES": {
+      "kindle": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/es-ES/kindle.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/es-ES/kindle.png",
+        "bytes": 3409760,
+        "sha256": "2441242fdc1baa90d9b3d1ed32965e83478d72b76f041ed52686c63f0e24081a",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/es-ES/kindle.png"
+      },
+      "read-aloud": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/es-ES/read-aloud.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/es-ES/read-aloud.png",
+        "bytes": 788279,
+        "sha256": "d42c62c7e76489bfce46ca03af62b420eb5c39fa77d11f1012405fef94b1d61d",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/es-ES/read-aloud.png"
+      },
+      "explain": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/es-ES/explain.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/es-ES/explain.png",
+        "bytes": 962197,
+        "sha256": "914d2a7641da1ac26e640f1dd5450885a1265a34e0298ac006755afb0c5432d5",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/es-ES/explain.png"
+      },
+      "import": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/es-ES/import.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/es-ES/import.png",
+        "bytes": 483884,
+        "sha256": "2056f6c961d45009c650eedf525abbd2beb43116c1ab1177c415f33683882fcf",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/es-ES/import.png"
+      },
+      "voices": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/es-ES/voices.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/es-ES/voices.png",
+        "bytes": 1340769,
+        "sha256": "8121a95ea495d61df3aac172b5cba6cfbd232b031e3a37636df25bfe1b8cf4c4",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/es-ES/voices.png"
+      }
+    },
+    "zh-Hans": {
+      "kindle": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/zh-Hans/kindle.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/zh-Hans/kindle.png",
+        "bytes": 3178796,
+        "sha256": "4ae3add82ca0d56ba5dad886e36ce142f7a988eb79206dc681095f8655bdfde4",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/zh-Hans/kindle.png"
+      },
+      "read-aloud": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/zh-Hans/read-aloud.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/zh-Hans/read-aloud.png",
+        "bytes": 724318,
+        "sha256": "660bdb83a9a0ff7002ae433fe953d9d0096cd8e1a4eefe81e009fae67b95928b",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/zh-Hans/read-aloud.png"
+      },
+      "explain": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/zh-Hans/explain.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/zh-Hans/explain.png",
+        "bytes": 952825,
+        "sha256": "2565b81c9d565bc9b60d7a0935cf227f46c4c6af3abdfad0d4ac6acca928069f",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/zh-Hans/explain.png"
+      },
+      "import": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/zh-Hans/import.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/zh-Hans/import.png",
+        "bytes": 481038,
+        "sha256": "489c1ffa7c1af6b55ec9afd35f6b73cc398dfeb7813cb6e2e24bd9f59e2f731a",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/zh-Hans/import.png"
+      },
+      "voices": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/zh-Hans/voices.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/zh-Hans/voices.png",
+        "bytes": 1334874,
+        "sha256": "66996f0564c2881703378e187ee049e4150917609607a4ea3d009c427bb6b20a",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/zh-Hans/voices.png"
+      }
+    },
+    "fr-FR": {
+      "kindle": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/fr-FR/kindle.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/fr-FR/kindle.png",
+        "bytes": 3220770,
+        "sha256": "627683263c9008bd859177de70a3f98e86c3f76371930981cbf7b7c80db4e032",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/fr-FR/kindle.png"
+      },
+      "read-aloud": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/fr-FR/read-aloud.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/fr-FR/read-aloud.png",
+        "bytes": 727578,
+        "sha256": "822f1f920ab6e280f1db8b95b81fcf93262dbeb73abb54cb48d57b5a6ecf8747",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/fr-FR/read-aloud.png"
+      },
+      "explain": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/fr-FR/explain.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/fr-FR/explain.png",
+        "bytes": 887352,
+        "sha256": "e635d83b541f6a0a9eaa7d775a558235806c7ef5e498726b28f3228eda4f76ec",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/fr-FR/explain.png"
+      },
+      "import": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/fr-FR/import.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/fr-FR/import.png",
+        "bytes": 484358,
+        "sha256": "de0653d9d08153cfdef3ab72bfc020dc826d63be61fc1c302e0de1feea3b303b",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/fr-FR/import.png"
+      },
+      "voices": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/fr-FR/voices.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/fr-FR/voices.png",
+        "bytes": 1292667,
+        "sha256": "e542745c031d4420a91deb394e50ae5c2c07a64ea2fe07a3294de92e4e9c2861",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/fr-FR/voices.png"
+      }
+    },
+    "de-DE": {
+      "kindle": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/de-DE/kindle.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/de-DE/kindle.png",
+        "bytes": 3178255,
+        "sha256": "069959fc90fc74401a8eab9f10b2ee5210459ce7c9966b39b4fc2a3baefc4592",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/de-DE/kindle.png"
+      },
+      "read-aloud": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/de-DE/read-aloud.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/de-DE/read-aloud.png",
+        "bytes": 718634,
+        "sha256": "ef4320b3eb0eb21af6bdc9cbb250e3404cc4b487d4fbdd661160ce8171b54954",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/de-DE/read-aloud.png"
+      },
+      "explain": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/de-DE/explain.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/de-DE/explain.png",
+        "bytes": 888878,
+        "sha256": "eb5d93a954d20ef994bb38645f6d33904bb01e831caf31dc6233b8ae8be515c0",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/de-DE/explain.png"
+      },
+      "import": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/de-DE/import.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/de-DE/import.png",
+        "bytes": 472027,
+        "sha256": "b92ee7b2898bee103ead464359bfc0b59a9e12ab97bb6be8fecc22ff03e1e9d5",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/de-DE/import.png"
+      },
+      "voices": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/de-DE/voices.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/de-DE/voices.png",
+        "bytes": 1309612,
+        "sha256": "182072bc5e2f79846743086307fc1779adb58e03daecabdc3daa3e4edd0ff599",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/de-DE/voices.png"
+      }
+    },
+    "hi-IN": {
+      "kindle": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/hi-IN/kindle.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/hi-IN/kindle.png",
+        "bytes": 3737596,
+        "sha256": "80a6a21726996a7db3bf98edf74c9aae7d8de30ea0f024b53edd4bfd8d4a26a3",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/hi-IN/kindle.png"
+      },
+      "read-aloud": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/hi-IN/read-aloud.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/hi-IN/read-aloud.png",
+        "bytes": 733859,
+        "sha256": "f5f1841510211cb51b66a384f226332147cb48d0d119e8941236813f77048ee5",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/hi-IN/read-aloud.png"
+      },
+      "explain": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/hi-IN/explain.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/hi-IN/explain.png",
+        "bytes": 951627,
+        "sha256": "d93630ab57dee21ba3502e7bb19eaff69db05b739a076f9e5bb86236cfd67ab2",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/hi-IN/explain.png"
+      },
+      "import": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/hi-IN/import.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/hi-IN/import.png",
+        "bytes": 445712,
+        "sha256": "3ed9ab249e414ad1212cc4ec93fdd3e3b4edf8be45d97f2219cf892c0f047986",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/hi-IN/import.png"
+      },
+      "voices": {
+        "localPath": "/Users/xuxuheng/Documents/CastReader/AppStoreAssets/web-localized-originals/hi-IN/voices.png",
+        "repoRelativePath": "AppStoreAssets/web-localized-originals/hi-IN/voices.png",
+        "bytes": 1178716,
+        "sha256": "5ca0125ffb69996e3421526f361a63f7ed7f51e50bd33aebe58882e82789cac4",
+        "pixelWidth": 1290,
+        "pixelHeight": 2796,
+        "url": "https://ai-reader-1323065328.cos.accelerate.myqcloud.com/user/507cefae-35b3-4b01-8dc9-98355d836d87/web-localized-screenshots/2026-08-02/hi-IN/voices.png"
+      }
+    }
+  }
+}

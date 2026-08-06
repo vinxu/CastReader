@@ -16,7 +16,6 @@ struct WeReadHomeSection: View {
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var store = WeReadLibraryStore.shared
     @ObservedObject private var onboarding = BoundLibraryOnboardingStore.shared
-    @State private var showConnect = false
 
     var body: some View {
         Group {
@@ -49,12 +48,6 @@ struct WeReadHomeSection: View {
                 }
                 .accessibilityIdentifier("homeShelfSection.weread")
             }
-        }
-        // Keep receiving first-use rebind notifications when Home has no
-        // visible WeRead shelf.
-        .sheet(isPresented: $showConnect) { WeReadLibraryConnectView() }
-        .onReceive(NotificationCenter.default.publisher(for: .castReaderWeReadRebindRequested)) { _ in
-            showConnect = true
         }
     }
 
@@ -98,7 +91,23 @@ struct WeReadLibraryConnectView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var model = WeReadLibrarySyncViewModel()
+    @StateObject private var model: WeReadLibrarySyncViewModel
+
+    init(
+        analyticsSession: AnalyticsLibraryConnectionSession? = nil,
+        entryTapAlreadyTracked: Bool = false
+    ) {
+        let session = analyticsSession ?? AnalyticsLibraryConnectionSession(
+            source: .weread,
+            entryPoint: "weread_connect"
+        )
+        _model = StateObject(
+            wrappedValue: WeReadLibrarySyncViewModel(
+                analyticsSession: session,
+                entryTapAlreadyTracked: entryTapAlreadyTracked
+            )
+        )
+    }
 
     var body: some View {
         NavigationView {
@@ -115,6 +124,7 @@ struct WeReadLibraryConnectView: View {
                 ToolbarItem(placement: .cancellationAction) { Button(AppLocalized("关闭")) { dismiss() } }
             }
             .onAppear {
+                model.recordConnectionPresented()
                 model.updateTheme(isDark: colorScheme == .dark)
                 model.loadIfNeeded()
             }
@@ -126,7 +136,7 @@ struct WeReadLibraryConnectView: View {
                     model.resumeAfterExternalLogin()
                 }
             }
-            .onDisappear { model.stop() }
+            .onDisappear { model.closeConnection() }
         }.navigationViewStyle(.stack)
     }
 
@@ -358,6 +368,7 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     private var deferredNativeLoginReply: ((Any?, String?) -> Void)?
     private var shouldResolveNativeLoginInForeground = false
     private let loginReplyProxy: WeReadLoginReplyProxy
+    private let connectionAnalytics: AnalyticsLibraryConnectionRecorder
 
     var secondaryStatus: String {
         if availableCount > 0 {
@@ -367,9 +378,26 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         return String(format: AppLocalized("已在本机同步 %d 本书。"), store.books.count)
     }
 
-    override init() {
+    override convenience init() {
+        self.init(
+            analyticsSession: AnalyticsLibraryConnectionSession(
+                source: .weread,
+                entryPoint: "weread_connect"
+            ),
+            entryTapAlreadyTracked: false
+        )
+    }
+
+    init(
+        analyticsSession: AnalyticsLibraryConnectionSession,
+        entryTapAlreadyTracked: Bool
+    ) {
         let replyProxy = WeReadLoginReplyProxy()
         loginReplyProxy = replyProxy
+        connectionAnalytics = AnalyticsLibraryConnectionRecorder(
+            session: analyticsSession,
+            entryTapAlreadyTracked: entryTapAlreadyTracked
+        )
         let config = WKWebViewConfiguration(); config.websiteDataStore = .default(); config.defaultWebpagePreferences.preferredContentMode = .desktop
         config.userContentController.addUserScript(
             WKUserScript(
@@ -381,6 +409,15 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         webView = WKWebView(frame:.zero, configuration:config); super.init()
         replyProxy.owner = self
         webView.customUserAgent = WeReadWebScripts.desktopUserAgent; webView.navigationDelegate = self
+    }
+
+    func recordConnectionPresented() {
+        connectionAnalytics.presented()
+    }
+
+    func closeConnection() {
+        connectionAnalytics.close()
+        stop()
     }
 
     func updateTheme(isDark: Bool) {
@@ -405,6 +442,7 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     func loadIfNeeded() {
         guard !didLoad else { return }
         didLoad = true
+        connectionAnalytics.record(.loginStarted, result: .started)
         // Always begin at the desktop home page.  Opening /web/shelf with a
         // cleared session renders WeRead's empty shell and hides the login
         // affordance outside the phone viewport.
@@ -647,13 +685,26 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
 
     func syncLibrary() async -> Bool {
         guard !isSyncing else { return false }
+        connectionAnalytics.record(.syncStarted, result: .started)
         if pendingBooks.isEmpty { await refreshPreview() }
-        guard !pendingBooks.isEmpty else { return false }
+        guard !pendingBooks.isEmpty else {
+            connectionAnalytics.record(
+                .failed,
+                result: .failed,
+                errorCode: "sync_snapshot_unavailable"
+            )
+            return false
+        }
         isSyncing = true
         errorText = nil
         defer { isSyncing = false }
         store.mergeScrapedBooks(Array(pendingBooks.values), account: pendingAccount)
         statusText = String(format: AppLocalized("已同步 %d 本微信读书书籍。"), pendingBooks.count)
+        connectionAnalytics.record(
+            .syncCompleted,
+            result: .success,
+            bookCount: pendingBooks.count
+        )
         return true
     }
 
@@ -671,6 +722,7 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             presentLoginQRCodeIfNeeded()
             return
         }
+        connectionAnalytics.record(.loginSucceeded, result: .success)
         loginPollingTask?.cancel()
         loginPresentationTask?.cancel()
         loginPresentationTask = nil

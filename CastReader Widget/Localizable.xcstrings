@@ -1,0 +1,253 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Continue ${item} in ${mode} mode" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "${item} im Modus ${mode} fortsetzen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue ${item} in ${mode} mode" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continuar ${item} en modo ${mode}" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuer ${item} en mode ${mode}" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "${item} को ${mode} मोड में जारी रखें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua ${item} in modalità ${mode}" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "${item}を${mode}モードで続ける" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar ${item} no modo ${mode}" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "以${mode}模式继续${item}" } }
+      }
+    },
+    "Continue in CastReader" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "In CastReader fortsetzen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue in CastReader" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continuar en CastReader" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuer dans CastReader" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "CastReader में जारी रखें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua in CastReader" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "CastReaderで続きを開く" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar no CastReader" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 CastReader 中继续" } }
+      }
+    },
+    "Continue the latest item, or choose a recent CastReader item." : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Setze den letzten Inhalt fort oder wähle einen kürzlich verwendeten CastReader-Inhalt." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue the latest item, or choose a recent CastReader item." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continúa el último elemento o elige uno reciente de CastReader." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Reprenez le dernier élément ou choisissez un élément CastReader récent." } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "सबसे हाल की सामग्री जारी रखें या CastReader की हाल की सामग्री चुनें।" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua l’ultimo elemento o scegline uno recente di CastReader." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最新の項目を続けるか、CastReaderの最近の項目を選びます。" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continue o item mais recente ou escolha um item recente do CastReader." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续最近的内容，或选择一个最近使用的 CastReader 内容。" } }
+      }
+    },
+    "Explain" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erklären" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Explain" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Explicar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Expliquer" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "समझाएँ" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Spiega" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "解説" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Explicar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "解读" } }
+      }
+    },
+    "Mode" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Modus" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mode" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Modo" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Mode" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "मोड" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Modalità" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "モード" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Modo" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "模式" } }
+      }
+    },
+    "Read Aloud" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vorlesen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Read Aloud" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Leer en voz alta" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Lire à voix haute" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "ज़ोर से पढ़ें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Leggi ad alta voce" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み上げ" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ler em voz alta" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "朗读" } }
+      }
+    },
+    "Reading Item" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Leseinhalt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reading Item" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Elemento de lectura" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Élément de lecture" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "पढ़ने की सामग्री" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Contenuto da leggere" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読書項目" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Item de leitura" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "阅读内容" } }
+      }
+    },
+    "Reading Mode" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Lesemodus" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reading Mode" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Modo de lectura" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Mode de lecture" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "पढ़ने का मोड" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Modalità di lettura" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み方" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Modo de leitura" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "阅读模式" } }
+      }
+    },
+    "Recent Item" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Letzter Inhalt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Recent Item" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Elemento reciente" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Élément récent" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "हाल की सामग्री" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Elemento recente" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最近の項目" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Item recente" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最近内容" } }
+      }
+    },
+    "widget_continue" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fortsetzen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continuar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuer" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "जारी रखें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "続ける" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续" } }
+      }
+    },
+    "widget_description" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Setze aktuelle Inhalte mit Vorlesen oder Erklären fort." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Resume recent content with Read Aloud or Explain." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Retoma contenido reciente con Leer en voz alta o Explicar." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Reprenez un contenu récent avec Lire à voix haute ou Expliquer." } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "हाल की सामग्री को ज़ोर से पढ़ें या समझाएँ।" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Riprendi i contenuti recenti con Leggi ad alta voce o Spiega." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最近のコンテンツを読み上げまたは解説で再開します。" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Retome conteúdos recentes com Ler em voz alta ou Explicar." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用朗读或解读继续最近的内容。" } }
+      }
+    },
+    "widget_empty_message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Importiere Text, eine Datei oder ein Foto." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import text, a file, or a photo to get started." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Importa texto, un archivo o una foto para empezar." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Importez du texte, un fichier ou une photo pour commencer." } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "शुरू करने के लिए टेक्स्ट, फ़ाइल या फ़ोटो आयात करें।" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Importa testo, un file o una foto per iniziare." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "テキスト、ファイル、写真を読み込んで始めましょう。" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Importe texto, arquivo ou foto para começar." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入文本、文件或照片即可开始。" } }
+      }
+    },
+    "widget_empty_title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nichts fortzusetzen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Nothing to continue" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nada que continuar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Rien à reprendre" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "जारी रखने के लिए कुछ नहीं" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nulla da continuare" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "続きから読める項目はありません" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Nada para continuar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无可继续的内容" } }
+      }
+    },
+    "widget_explain" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erklären" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Explain" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Explicar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Expliquer" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "समझाएँ" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Spiega" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "解説" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Explicar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "解读" } }
+      }
+    },
+    "widget_import" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Inhalt importieren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import content" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Importar contenido" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Importer du contenu" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "सामग्री आयात करें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Importa contenuto" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コンテンツを読み込む" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Importar conteúdo" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入内容" } }
+      }
+    },
+    "widget_name" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Weiterlesen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue Reading" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Seguir leyendo" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Reprendre la lecture" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "पढ़ना जारी रखें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua a leggere" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読書を続ける" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar lendo" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续阅读" } }
+      }
+    },
+    "widget_placeholder_title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Lernnotizen für diese Woche" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This Week’s Study Notes" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Apuntes de estudio de esta semana" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Notes d’étude de la semaine" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "इस सप्ताह के अध्ययन नोट्स" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Appunti di studio della settimana" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "今週の学習ノート" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Notas de estudo desta semana" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "本周学习笔记" } }
+      }
+    },
+    "widget_read_aloud" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vorlesen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Read Aloud" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Leer en voz alta" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Lire à voix haute" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "ज़ोर से पढ़ें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Leggi ad alta voce" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "読み上げ" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ler em voz alta" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "朗读" } }
+      }
+    },
+    "widget_recent" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zuletzt geöffnet" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Recently opened" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Abierto recientemente" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ouvert récemment" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "हाल ही में खोला गया" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Aperto di recente" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最近開いた項目" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Aberto recentemente" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最近打开" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

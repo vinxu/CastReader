@@ -29,6 +29,8 @@ final class KindleLibraryStore: ObservableObject {
     private let accountEmailKey = "kindle.library.account.email.v1"
     private let listeningAnchorsKey = "kindle.listening.anchors.v1"
     private let boundStorefrontKey = "kindle.library.bound-storefront.v1"
+    private let authoritativeStorefrontKey = "kindle.library.bound-storefront-authoritative.v1"
+    private var hasAuthoritativeStorefrontBinding = false
 
     private init() {
         load()
@@ -54,10 +56,20 @@ final class KindleLibraryStore: ObservableObject {
         let language = selected == .system
             ? Locale.autoupdatingCurrent.language.languageCode?.identifier
             : selected.rawValue
-        return KindleStorefront.orderedCandidates(
-            deviceRegion: Locale.autoupdatingCurrent.region?.identifier,
-            appLanguage: language
+        let context = KindleStorefrontRecommendationContext(
+            locale: .autoupdatingCurrent,
+            preferredLanguages: Locale.preferredLanguages,
+            appLanguageCode: language,
+            timeZone: .autoupdatingCurrent
         )
+        return KindleStorefrontRecommender.recommend(
+            context: context,
+            authoritativeBoundStorefrontID: hasAuthoritativeStorefrontBinding
+                || hasConnected
+                || !boundBooks.isEmpty
+                ? boundStorefrontID
+                : nil
+        ).candidates
     }
 
     var needsConnection: Bool {
@@ -143,10 +155,12 @@ final class KindleLibraryStore: ObservableObject {
                 existingByID[incoming.id] = incoming
             }
         }
+        let wasConnected = hasConnected
         books = Array(existingByID.values).sorted {
             ($0.lastOpenedAt ?? $0.lastSyncedAt) > ($1.lastOpenedAt ?? $1.lastSyncedAt)
         }
         hasConnected = true
+        hasAuthoritativeStorefrontBinding = true
         if let account {
             setAccount(account)
         } else if accountLabel == nil && accountEmail == nil {
@@ -154,6 +168,12 @@ final class KindleLibraryStore: ObservableObject {
         }
         lastError = nil
         save()
+        if !wasConnected {
+            NotificationCenter.default.post(
+                name: .castReaderLibraryConnectedForReview,
+                object: nil
+            )
+        }
         // Sync is the moment we know the whole shelf; pull the covers now rather
         // than letting Home fetch them one at a time behind empty placeholders.
         ImageCache.shared.prefetch(books.compactMap(\.coverURL))
@@ -178,8 +198,10 @@ final class KindleLibraryStore: ObservableObject {
     /// Keeping this state distinct from "not signed in" lets Home surface the
     /// storefront recovery path instead of sending the user through login again.
     func markConnectedWithEmptyShelf(account: KindleAccountInfo? = nil) {
+        let wasConnected = hasConnected
         books.removeAll()
         hasConnected = true
+        hasAuthoritativeStorefrontBinding = true
         if let account {
             setAccount(account)
         } else if accountLabel == nil && accountEmail == nil {
@@ -187,6 +209,12 @@ final class KindleLibraryStore: ObservableObject {
         }
         lastError = nil
         save()
+        if !wasConnected {
+            NotificationCenter.default.post(
+                name: .castReaderLibraryConnectedForReview,
+                object: nil
+            )
+        }
     }
 
     func markOpened(_ book: KindleBook) {
@@ -242,8 +270,12 @@ final class KindleLibraryStore: ObservableObject {
     /// sessions are domain-isolated and may legitimately coexist.
     func switchStorefront(to storefrontID: String, resetShelf: Bool = true) {
         guard let storefront = KindleStorefront.storefront(id: storefrontID),
-              storefront.isSelectable,
-              storefront.id != boundStorefrontID else { return }
+              storefront.isSelectable else { return }
+        hasAuthoritativeStorefrontBinding = true
+        guard storefront.id != boundStorefrontID else {
+            save()
+            return
+        }
         boundStorefrontID = storefront.id
         if resetShelf {
             books.removeAll()
@@ -259,6 +291,7 @@ final class KindleLibraryStore: ObservableObject {
     func disconnectLocalCache() {
         books.removeAll()
         hasConnected = false
+        hasAuthoritativeStorefrontBinding = false
         accountLabel = nil
         accountEmail = nil
         listeningAnchors.removeAll()
@@ -311,19 +344,32 @@ final class KindleLibraryStore: ObservableObject {
         let persisted = defaults.string(forKey: boundStorefrontKey)
             .flatMap { KindleStorefront.storefront(id: $0) }
             .flatMap { $0.isSelectable ? $0 : nil }
+        let persistedIsAuthoritative = defaults.bool(forKey: authoritativeStorefrontKey)
+            || hasConnected
+            || !decoded.isEmpty
         let inferredID = KindleStorefront.inferredID(from: decoded)
         let inferred = KindleStorefront.storefront(id: inferredID)
             .flatMap { $0.isSelectable ? $0 : nil }
-        let hasLegacyState = defaults.object(forKey: booksKey) != nil
-            || defaults.object(forKey: connectedKey) != nil
-        let suggested = KindleStorefront.suggested(
-            deviceRegion: Locale.autoupdatingCurrent.region?.identifier,
-            appLanguage: AppLanguageManager.shared.selectedLanguage == .system
-                ? Locale.autoupdatingCurrent.language.languageCode?.identifier
-                : AppLanguageManager.shared.selectedLanguage.rawValue
+        let selectedLanguage = AppLanguageManager.shared.selectedLanguage
+        let language = selectedLanguage == .system
+            ? Locale.autoupdatingCurrent.language.languageCode?.identifier
+            : selectedLanguage.rawValue
+        let recommendationContext = KindleStorefrontRecommendationContext(
+            locale: .autoupdatingCurrent,
+            preferredLanguages: Locale.preferredLanguages,
+            appLanguageCode: language,
+            timeZone: .autoupdatingCurrent
         )
-        let resolved = persisted ?? inferred ?? (hasLegacyState ? .us : suggested)
+        let suggested = KindleStorefrontRecommender.recommend(
+            context: recommendationContext
+        ).recommended
+        let resolved = (persistedIsAuthoritative ? persisted : nil)
+            ?? inferred
+            ?? suggested
         boundStorefrontID = resolved.id
+        hasAuthoritativeStorefrontBinding = persistedIsAuthoritative
+            && persisted != nil
+            || inferred != nil
 
         var migrated = decoded
         for index in migrated.indices where migrated[index].storefrontID == nil {
@@ -333,8 +379,10 @@ final class KindleLibraryStore: ObservableObject {
                 ?? resolved.id
         }
         books = sanitized(migrated).filter { $0.storefrontID == boundStorefrontID }
-        if persisted == nil {
-            KindleRunLog.write("KINDLE storefront migration id=\(resolved.id) source=\(inferred == nil ? (hasLegacyState ? "legacy-default" : "suggested") : "books")")
+        if persisted == nil || !persistedIsAuthoritative {
+            KindleRunLog.write(
+                "KINDLE storefront migration id=\(resolved.id) source=\(inferred == nil ? "suggested" : "books")"
+            )
         }
         if !hasPersistedConnectionState {
             hasConnected = !books.isEmpty
@@ -354,6 +402,7 @@ final class KindleLibraryStore: ObservableObject {
         defaults.set(accountLabel, forKey: accountLabelKey)
         defaults.set(accountEmail, forKey: accountEmailKey)
         defaults.set(boundStorefrontID, forKey: boundStorefrontKey)
+        defaults.set(hasAuthoritativeStorefrontBinding, forKey: authoritativeStorefrontKey)
         if let anchorData = try? JSONEncoder.kindle.encode(listeningAnchors) {
             defaults.set(anchorData, forKey: listeningAnchorsKey)
         }

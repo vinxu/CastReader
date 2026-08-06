@@ -48,5 +48,5 @@ response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
   http.request(request)
 end
 
-puts JSON.pretty_generate(JSON.parse(response.body)) unless response.body.empty?
+puts JSON.pretty_generate(JSON.parse(response.body)) unless response.body.nil? || response.body.empty?
 exit(response.is_a?(Net::HTTPSuccess) ? 0 : 1)

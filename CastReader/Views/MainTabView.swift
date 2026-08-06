@@ -75,9 +75,15 @@ struct MainTabView: View {
     private static let rootSpace = "mainTabRoot"
 
     private enum LibraryOnboardingPostDismissAction {
-        case source(BoundLibraryOnboardingSource)
-        case otherContent
+        case kindleBook(KindleBook)
         case restoreClipboard
+    }
+
+    private struct LibraryConnectionRoute: Identifiable, Equatable {
+        let source: BoundLibraryOnboardingSource
+        let analyticsSession: AnalyticsLibraryConnectionSession
+
+        var id: String { analyticsSession.bindSessionId }
     }
 
     @StateObject private var coordinator = PlayerCoordinator()
@@ -88,6 +94,7 @@ struct MainTabView: View {
     @StateObject private var playbackVoicePanel = PlaybackVoicePanelCenter.shared
     @StateObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
     @StateObject private var reviewPrompt = AppReviewPromptManager.shared
+    @StateObject private var studyBoostRouter = StudyBoostRouter.shared
     @ObservedObject private var audioPlayer = AudioPlayerService.shared
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.requestReview) private var requestReview
@@ -102,6 +109,10 @@ struct MainTabView: View {
     @State private var showShareInbox = false
     @State private var pendingLibraryOnboardingAction: LibraryOnboardingPostDismissAction?
     @State private var reviewRequestTask: Task<Void, Never>?
+    @State private var systemActionTask: Task<Void, Never>?
+    @State private var libraryConnectionPresentationTask: Task<Void, Never>?
+    @State private var activeLibraryConnection: LibraryConnectionRoute?
+    @State private var pendingLibraryConnection: LibraryConnectionRoute?
     @State private var homeBlocksReviewPresentation = false
 
     init() {
@@ -130,6 +141,12 @@ struct MainTabView: View {
                     },
                     onReviewPresentationBlockedChanged: {
                         homeBlocksReviewPresentation = $0
+                    },
+                    onRequestLibraryConnection: {
+                        requestLibraryConnection(
+                            $0,
+                            entryPoint: "library_onboarding_reminder"
+                        )
                     }
                 )
                     .tabItem { Label("首页", systemImage: "house.fill") }
@@ -218,6 +235,14 @@ struct MainTabView: View {
             PlaybackVoicePanelOverlay(center: playbackVoicePanel)
                 .zIndex(100)
 
+            if studyBoostRouter.isPresented {
+                StudyBoostView(
+                    onStartStudy: startStudyBoostImport,
+                    onClose: studyBoostRouter.dismiss
+                )
+                .zIndex(200)
+            }
+
         }
         .coordinateSpace(name: Self.rootSpace)
         .onPreferenceChange(MiniPlayerTopKey.self) { value in
@@ -235,11 +260,13 @@ struct MainTabView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: kindleCenter.showsMiniPlayer)
         .animation(.spring(response: 0.32, dampingFraction: 0.9), value: importRouter.hideMainChrome)
         .animation(.spring(response: 0.34, dampingFraction: 0.9), value: playbackVoicePanel.isPresented)
+        .animation(.spring(response: 0.38, dampingFraction: 0.9), value: studyBoostRouter.isPresented)
         .onChange(of: scenePhase) { phase in
             if phase == .active {
                 reviewPrompt.recordActiveDay()
                 ResumeReminderManager.shared.appBecameActive()   // 取消待发召回 + 时机成熟则请求通知权限
-                if !libraryOnboarding.isChooserPresented {
+                let routedSystemAction = routePendingSystemActionIfAvailable()
+                if !routedSystemAction && !libraryOnboarding.isChooserPresented {
                     clipboard.check()   // 进 App / 回前台 → 探测剪贴板
                 }
                 reloadShareInbox(showWhenPending: false)
@@ -248,6 +275,7 @@ struct MainTabView: View {
         .task {
             reviewPrompt.recordActiveDay()
             reloadShareInbox(showWhenPending: false)
+            routePendingSystemActionIfAvailable()
             restartReviewRequestMonitor()
         }
         .onChange(of: reviewOpportunityState) {
@@ -256,9 +284,43 @@ struct MainTabView: View {
         .onDisappear {
             reviewRequestTask?.cancel()
             reviewRequestTask = nil
+            systemActionTask?.cancel()
+            systemActionTask = nil
+            libraryConnectionPresentationTask?.cancel()
+            libraryConnectionPresentationTask = nil
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderSystemActionPending)) { _ in
+            Task { @MainActor in
+                routePendingSystemActionIfAvailable()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .castReaderShareInboxChanged)) { _ in
             reloadShareInbox(showWhenPending: true)
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: .castReaderLibraryConnectedForReview
+            )
+        ) { _ in
+            reviewPrompt.recordPositiveOutcome(.libraryConnected)
+        }
+        // Legacy reader recovery paths still post these notifications. MainTab
+        // is the stable presentation owner; invisible Home sections no longer
+        // race to present their own sheets.
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderKindleRebindRequested)) { _ in
+            requestLibraryConnection(.kindle, entryPoint: "reader_reconnect")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderWeReadRebindRequested)) { _ in
+            requestLibraryConnection(.weread, entryPoint: "reader_reconnect")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderGoogleBooksRebindRequested)) { _ in
+            requestLibraryConnection(.googleBooks, entryPoint: "reader_reconnect")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderKoboRebindRequested)) { _ in
+            requestLibraryConnection(.kobo, entryPoint: "reader_reconnect")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .castReaderOReillyRebindRequested)) { _ in
+            requestLibraryConnection(.oreilly, entryPoint: "reader_reconnect")
         }
         .onChange(of: kindleCenter.isPresented) { isPresented in
             if isPresented { coordinator.close() }
@@ -299,14 +361,20 @@ struct MainTabView: View {
                 }
             }
         }
+        .sheet(
+            item: $activeLibraryConnection,
+            onDismiss: presentPendingLibraryConnectionWhenReady
+        ) { route in
+            libraryConnectionView(for: route)
+        }
         .fullScreenCover(
             isPresented: libraryOnboardingPresentation,
             onDismiss: handleLibraryOnboardingDismissal
         ) {
-            BoundLibraryOnboardingView(
-                onSelect: handleLibraryOnboardingSelection,
-                onUseOtherContent: handleLibraryOnboardingAlternative,
-                onPostpone: handleLibraryOnboardingPostpone
+            KindleFirstLaunchFlowView(
+                onboarding: libraryOnboarding,
+                onSkip: handleLibraryOnboardingPostpone,
+                onStartBook: handleKindleOnboardingStartBook
             )
             .interactiveDismissDisabled()
         }
@@ -334,13 +402,144 @@ struct MainTabView: View {
             readerIsHidden: !coordinator.isReaderPresented,
             kindleReaderIsHidden: !kindleCenter.isPresented,
             importChromeIsVisible: !importRouter.hideMainChrome,
-            homeIsIdle: !homeBlocksReviewPresentation,
+            homeIsIdle: !homeBlocksReviewPresentation
+                && !studyBoostRouter.isPresented
+                && activeLibraryConnection == nil
+                && pendingLibraryConnection == nil,
             clipboardSheetIsHidden: clipboard.detected == nil,
             shareInboxIsHidden: !showShareInbox,
             voiceCloneSheetIsHidden: voiceCloneAccess.prompt == nil,
             voicePanelIsHidden: !playbackVoicePanel.isPresented,
             onboardingIsHidden: !libraryOnboarding.isChooserPresented
         )
+    }
+
+    private func startStudyBoostImport() {
+        playbackVoicePanel.dismiss()
+        if coordinator.isReaderPresented { coordinator.minimize() }
+        if kindleCenter.isPresented { kindleCenter.minimize() }
+        selectedTab = 0
+        studyBoostRouter.dismiss()
+        DispatchQueue.main.async {
+            importRouter.openStudyBoostImport()
+        }
+    }
+
+    /// App Intents and widgets can run before the containing app has built its
+    /// view hierarchy. They persist one action in the App Group; MainTab owns
+    /// the only consumer because it also owns PlayerCoordinator and import UI.
+    @discardableResult
+    private func routePendingSystemActionIfAvailable() -> Bool {
+        guard scenePhase == .active,
+              systemActionTask == nil,
+              let action = SystemActionStore.shared.takePending() else {
+            return false
+        }
+
+        selectedTab = 0
+        playbackVoicePanel.dismiss()
+        studyBoostRouter.dismiss()
+        showShareInbox = false
+        clipboard.consume()
+        if libraryOnboarding.isChooserPresented {
+            pendingLibraryOnboardingAction = nil
+            libraryOnboarding.postpone()
+        }
+
+        systemActionTask = Task { @MainActor in
+            await handleSystemAction(action)
+            systemActionTask = nil
+            routePendingSystemActionIfAvailable()
+        }
+        return true
+    }
+
+    private func handleSystemAction(_ action: SystemAction) async {
+        switch action {
+        case .openImport:
+            openQuickImportFromSystemAction()
+
+        case .read(let input, let intentMode):
+            let value = input.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !value.isEmpty else {
+                openQuickImportFromSystemAction()
+                return
+            }
+
+            let mode = intentMode.readerMode
+            let isWebURL: Bool = {
+                guard let url = URL(string: value),
+                      let scheme = url.scheme?.lowercased(),
+                      ["http", "https"].contains(scheme),
+                      url.host != nil else { return false }
+                return true
+            }()
+            let analyticsContext = ProductAnalytics.shared.beginContentIntent(
+                source: .system,
+                format: isWebURL ? .web : .text,
+                entryPoint: "app_intent_read",
+                intendedMode: mode == .read ? "read" : "explain"
+            )
+            let document = isWebURL
+                ? DocumentBuilder.fromWebURL(value)
+                : DocumentBuilder.fromPlainText(value, title: AppLocalized("快捷指令文本"))
+            guard let document,
+                  !document.isEmpty || document.sourceKind.isWebRendered else {
+                ProductAnalytics.shared.contentFailed(
+                    analyticsContext,
+                    stage: "parse",
+                    code: "empty_or_invalid_system_input"
+                )
+                openQuickImportFromSystemAction()
+                return
+            }
+            coordinator.open(
+                document,
+                mode: mode,
+                autoplay: true,
+                analyticsContext: analyticsContext
+            )
+
+        case .continueReading(let itemID, let intentMode):
+            guard let record = SystemContinueContract.record(
+                in: HistoryStore.shared.records,
+                itemID: itemID
+            ) else {
+                openQuickImportFromSystemAction()
+                return
+            }
+
+            let mode = intentMode.readerMode
+            let analyticsContext = ProductAnalytics.shared.beginContentIntent(
+                source: .history,
+                format: AnalyticsContentFormat(record.sourceKind),
+                entryPoint: "app_intent_continue",
+                intendedMode: mode == .read ? "read" : "explain"
+            )
+            guard let document = await HistoryStore.shared.reopen(record) else {
+                ProductAnalytics.shared.contentFailed(
+                    analyticsContext,
+                    stage: "reopen",
+                    code: "missing_history_payload"
+                )
+                openQuickImportFromSystemAction()
+                return
+            }
+            coordinator.open(
+                document,
+                mode: mode,
+                autoplay: true,
+                analyticsContext: analyticsContext
+            )
+        }
+    }
+
+    private func openQuickImportFromSystemAction() {
+        if coordinator.isReaderPresented { coordinator.minimize() }
+        if kindleCenter.isPresented { kindleCenter.minimize() }
+        DispatchQueue.main.async {
+            importRouter.openQuickImport()
+        }
     }
 
     /// Pending is deliberately separated from presentation. The monitor starts
@@ -390,16 +589,8 @@ struct MainTabView: View {
         return root.presentedViewController != nil
     }
 
-    private func handleLibraryOnboardingSelection(_ source: BoundLibraryOnboardingSource) {
-        // The real book open owns the content session. Do not create an orphan
-        // content_intent merely for tapping a source choice.
-        pendingLibraryOnboardingAction = .source(source)
-        libraryOnboarding.select(source)
-    }
-
-    private func handleLibraryOnboardingAlternative() {
-        pendingLibraryOnboardingAction = .otherContent
-        libraryOnboarding.postpone()
+    private func handleKindleOnboardingStartBook(_ book: KindleBook) {
+        pendingLibraryOnboardingAction = .kindleBook(book)
     }
 
     private func handleLibraryOnboardingPostpone() {
@@ -408,105 +599,120 @@ struct MainTabView: View {
     }
 
     private func handleLibraryOnboardingDismissal() {
+        defer { presentPendingLibraryConnectionWhenReady() }
         guard let action = pendingLibraryOnboardingAction else { return }
         pendingLibraryOnboardingAction = nil
         switch action {
-        case .source(let source):
-            routeLibraryOnboarding(to: source)
-        case .otherContent:
+        case .kindleBook(let book):
             selectedTab = 0
-            importRouter.openQuickImport()
+            KindlePlaybackCenter.shared.open(
+                book: book,
+                intent: .autoplayRead(requestID: UUID())
+            )
         case .restoreClipboard:
             clipboard.check()
         }
     }
 
-    private func routeLibraryOnboarding(to source: BoundLibraryOnboardingSource) {
+    /// Route every library connection request through one always-mounted root.
+    /// A pending slot deliberately separates the tap from UIKit presentation:
+    /// dismissing the full-screen onboarding and presenting a sheet in the same
+    /// run-loop otherwise produces the intermittent no-op reported in 1.2.15.
+    private func requestLibraryConnection(
+        _ source: BoundLibraryOnboardingSource,
+        entryPoint: String
+    ) {
         selectedTab = 0
-        switch source {
-        case .kindle:
-            if !forcesLibraryOnboardingRebind,
-               let book = KindleLibraryStore.shared.homeBooks.first {
-                KindlePlaybackCenter.shared.open(book: book)
-            } else {
-                NotificationCenter.default.post(name: .castReaderKindleRebindRequested, object: nil)
+        if let superseded = pendingLibraryConnection {
+            ProductAnalytics.shared.trackLibraryConnection(
+                superseded.analyticsSession,
+                stage: .cancelled,
+                result: .cancelled
+            )
+        }
+        let session = ProductAnalytics.shared.beginLibraryConnection(
+            source: source.analyticsLibrarySource,
+            entryPoint: entryPoint
+        )
+        pendingLibraryConnection = LibraryConnectionRoute(
+            source: source,
+            analyticsSession: session
+        )
+        presentPendingLibraryConnectionWhenReady()
+    }
+
+    private func presentPendingLibraryConnectionWhenReady() {
+        guard activeLibraryConnection == nil,
+              pendingLibraryConnection != nil else { return }
+        libraryConnectionPresentationTask?.cancel()
+        libraryConnectionPresentationTask = Task { @MainActor in
+            while !Task.isCancelled, pendingLibraryConnection != nil {
+                if canPresentPendingLibraryConnection {
+                    // Require a short, continuously clear window. A sheet's
+                    // state can change one run-loop before UIKit actually
+                    // installs/removes its presented controller.
+                    do {
+                        try await Task.sleep(nanoseconds: 200_000_000)
+                    } catch {
+                        return
+                    }
+                    guard !Task.isCancelled,
+                          canPresentPendingLibraryConnection,
+                          let route = pendingLibraryConnection else { continue }
+                    pendingLibraryConnection = nil
+                    activeLibraryConnection = route
+                    libraryConnectionPresentationTask = nil
+                    return
+                }
+                do {
+                    try await Task.sleep(nanoseconds: 100_000_000)
+                } catch {
+                    return
+                }
             }
-        case .weread:
-            if !forcesLibraryOnboardingRebind,
-               let book = WeReadLibraryStore.shared.homeBooks.first {
-                WeReadLibraryStore.shared.markOpened(book)
-                let context = ProductAnalytics.shared.beginContentIntent(
-                    source: .weread,
-                    format: .weread,
-                    entryPoint: libraryOnboarding.analyticsEntryPoint(for: .weread) ?? "weread_library",
-                    intendedMode: "read"
-                )
-                coordinator.open(
-                    ReadingDocument(
-                        id: book.id,
-                        title: book.title,
-                        sourceKind: .weread,
-                        language: Constants.TTS.defaultLanguage,
-                        paragraphs: [],
-                        sourceURL: book.effectiveReaderURL
-                    ),
-                    mode: .read,
-                    analyticsContext: context
-                )
-            } else {
-                NotificationCenter.default.post(name: .castReaderWeReadRebindRequested, object: nil)
-            }
-        case .googleBooks:
-            if !forcesLibraryOnboardingRebind,
-               let book = GoogleBooksLibraryStore.shared.homeBooks.first {
-                GoogleBooksReaderLauncher.open(
-                    book,
-                    using: coordinator,
-                    onboarding: libraryOnboarding
-                )
-            } else {
-                NotificationCenter.default.post(
-                    name: .castReaderGoogleBooksRebindRequested,
-                    object: nil
-                )
-            }
-        case .kobo:
-            if !forcesLibraryOnboardingRebind,
-               let book = KoboLibraryStore.shared.homeBooks.first {
-                KoboReaderLauncher.open(
-                    book,
-                    using: coordinator,
-                    onboarding: libraryOnboarding
-                )
-            } else {
-                NotificationCenter.default.post(
-                    name: .castReaderKoboRebindRequested,
-                    object: nil
-                )
-            }
-        case .oreilly:
-            if !forcesLibraryOnboardingRebind,
-               let book = OReillyLibraryStore.shared.homeBooks.first {
-                OReillyReaderLauncher.open(
-                    book,
-                    using: coordinator,
-                    onboarding: libraryOnboarding
-                )
-            } else {
-                NotificationCenter.default.post(
-                    name: .castReaderOReillyRebindRequested,
-                    object: nil
-                )
-            }
+            libraryConnectionPresentationTask = nil
         }
     }
 
-    private var forcesLibraryOnboardingRebind: Bool {
-        #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("-CastReaderForceLibraryOnboardingRebind")
-        #else
-        false
-        #endif
+    private var canPresentPendingLibraryConnection: Bool {
+        !libraryOnboarding.isChooserPresented
+            && clipboard.detected == nil
+            && !showShareInbox
+            && voiceCloneAccess.prompt == nil
+            && !hasBlockingSystemPresentation
+    }
+
+    @ViewBuilder
+    private func libraryConnectionView(
+        for route: LibraryConnectionRoute
+    ) -> some View {
+        switch route.source {
+        case .kindle:
+            KindleLibraryConnectView(
+                analyticsSession: route.analyticsSession,
+                entryTapAlreadyTracked: true
+            )
+        case .weread:
+            WeReadLibraryConnectView(
+                analyticsSession: route.analyticsSession,
+                entryTapAlreadyTracked: true
+            )
+        case .googleBooks:
+            GoogleBooksLibraryConnectView(
+                analyticsSession: route.analyticsSession,
+                entryTapAlreadyTracked: true
+            )
+        case .kobo:
+            KoboLibraryConnectView(
+                analyticsSession: route.analyticsSession,
+                entryTapAlreadyTracked: true
+            )
+        case .oreilly:
+            OReillyLibraryConnectView(
+                analyticsSession: route.analyticsSession,
+                entryTapAlreadyTracked: true
+            )
+        }
     }
 
     private var voiceClonePromptBinding: Binding<VoiceCloneAccessCoordinator.Prompt?> {
@@ -772,176 +978,6 @@ struct MainTabView: View {
     }
 }
 
-private struct BoundLibraryOnboardingView: View {
-    let onSelect: (BoundLibraryOnboardingSource) -> Void
-    let onUseOtherContent: () -> Void
-    let onPostpone: () -> Void
-
-    @ObservedObject private var appLanguage = AppLanguageManager.shared
-
-    private var orderedSources: [BoundLibraryOnboardingSource] {
-        if appLanguage.selectedLanguage == .simplifiedChinese
-            || (appLanguage.selectedLanguage == .system
-                && Locale.autoupdatingCurrent.language.languageCode?.identifier == "zh") {
-            return [.kindle, .weread, .googleBooks, .kobo, .oreilly]
-        }
-        return [.kindle, .googleBooks, .kobo, .oreilly, .weread]
-    }
-
-    var body: some View {
-        ZStack {
-            AppTheme.background.ignoresSafeArea()
-
-            ScrollView {
-                VStack(spacing: 24) {
-                    brandMark
-                    header
-
-                    VStack(spacing: 12) {
-                        ForEach(orderedSources) { source in
-                            sourceButton(source)
-                        }
-                    }
-
-                    Button(action: onUseOtherContent) {
-                        Label(
-                            AppLocalized("暂时不绑定，先读网页或文件"),
-                            systemImage: "doc.text.image"
-                        )
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(AppTheme.primary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 13)
-                        .background(AppTheme.primary.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("libraryOnboardingOtherContent")
-
-                    Text(AppLocalized("CastReader 不保存你的密码或整本正文。"))
-                        .font(.caption)
-                        .foregroundStyle(AppTheme.mutedForeground)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Button(AppLocalized("稍后再说"), action: onPostpone)
-                        .font(.subheadline)
-                        .foregroundStyle(AppTheme.mutedForeground)
-                        .accessibilityIdentifier("libraryOnboardingPostpone")
-                }
-                .frame(maxWidth: 560)
-                .padding(.horizontal, 22)
-                .padding(.top, 36)
-                .padding(.bottom, 30)
-                .frame(maxWidth: .infinity)
-            }
-        }
-        .accessibilityIdentifier("boundLibraryOnboarding")
-    }
-
-    private var brandMark: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(AppTheme.primary)
-                .frame(width: 74, height: 74)
-                .shadow(color: AppTheme.primary.opacity(0.25), radius: 18, y: 8)
-            Image(systemName: "waveform")
-                .font(.system(size: 32, weight: .bold))
-                .foregroundStyle(.white)
-        }
-    }
-
-    private var header: some View {
-        VStack(spacing: 10) {
-            Text(AppLocalized("先连接你常用的书库"))
-                .font(.system(size: 30, weight: .bold, design: .rounded))
-                .foregroundStyle(AppTheme.foreground)
-                .multilineTextAlignment(.center)
-            Text(AppLocalized("你主要在哪里读书？绑定后打开一本书，让 CastReader 朗读 30 秒。"))
-                .font(.body)
-                .foregroundStyle(AppTheme.mutedForeground)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    private func symbol(for source: BoundLibraryOnboardingSource) -> String {
-        switch source {
-        case .kindle: return "books.vertical.fill"
-        case .weread: return "book.closed.fill"
-        case .googleBooks: return "book.pages"
-        case .kobo: return "book.closed.fill"
-        case .oreilly: return "text.book.closed.fill"
-        }
-    }
-
-    private func title(for source: BoundLibraryOnboardingSource) -> String {
-        switch source {
-        case .kindle: return AppLocalized("绑定 Kindle")
-        case .weread: return AppLocalized("绑定微信读书")
-        case .googleBooks: return AppLocalized("绑定 Google Play 图书")
-        case .kobo: return AppLocalized("绑定 Kobo")
-        case .oreilly: return AppLocalized("绑定 O’Reilly")
-        }
-    }
-
-    private func subtitle(for source: BoundLibraryOnboardingSource) -> String {
-        switch source {
-        case .kindle: return AppLocalized("登录后同步书架")
-        case .weread, .googleBooks, .kobo, .oreilly:
-            return AppLocalized("登录后同步书架与阅读进度")
-        }
-    }
-
-    private func identifier(for source: BoundLibraryOnboardingSource) -> String {
-        switch source {
-        case .kindle: return "libraryOnboardingKindle"
-        case .weread: return "libraryOnboardingWeRead"
-        case .googleBooks: return "libraryOnboardingGoogleBooks"
-        case .kobo: return "libraryOnboardingKobo"
-        case .oreilly: return "libraryOnboardingOReilly"
-        }
-    }
-
-    private func sourceButton(_ source: BoundLibraryOnboardingSource) -> some View {
-        Button { onSelect(source) } label: {
-            HStack(spacing: 15) {
-                Image(systemName: symbol(for: source))
-                    .font(.system(size: 23, weight: .semibold))
-                    .foregroundStyle(AppTheme.primary)
-                    .frame(width: 50, height: 50)
-                    .background(AppTheme.primary.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title(for: source))
-                        .font(.headline)
-                        .foregroundStyle(AppTheme.foreground)
-                    Text(subtitle(for: source))
-                        .font(.caption)
-                        .foregroundStyle(AppTheme.mutedForeground)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 4)
-                Image(systemName: "arrow.right")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(AppTheme.primary)
-            }
-            .padding(15)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(AppTheme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(AppTheme.border.opacity(0.8), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier(identifier(for: source))
-    }
-}
-
 private struct ShareInboxItem: Identifiable {
     let record: ShareInboxRecord
     let metadataURL: URL
@@ -1089,6 +1125,27 @@ struct SettingsToolbarButton: View {
             BoundLibraryOnboardingStore.shared.reset()
         } else {
             BoundLibraryOnboardingStore.shared.presentChooser()
+        }
+    }
+}
+
+private extension CastReaderIntentMode {
+    var readerMode: ReaderMode {
+        switch self {
+        case .read: .read
+        case .explain: .explain
+        }
+    }
+}
+
+private extension BoundLibraryOnboardingSource {
+    var analyticsLibrarySource: AnalyticsLibrarySource {
+        switch self {
+        case .kindle: .kindle
+        case .weread: .weread
+        case .googleBooks: .googleBooks
+        case .kobo: .kobo
+        case .oreilly: .oreilly
         }
     }
 }

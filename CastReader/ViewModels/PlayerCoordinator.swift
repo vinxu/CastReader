@@ -9,6 +9,29 @@
 
 import SwiftUI
 
+/// One-shot gate used by WebView-backed readers whose paragraphs arrive after
+/// `PlayerCoordinator.open`. A second explicit request remains meaningful after
+/// the first one was consumed (for example, tapping Continue again while the
+/// same article is paused).
+struct DeferredAutoplayGate: Equatable {
+    private(set) var isPending = false
+
+    mutating func request(isReady: Bool) -> Bool {
+        isPending = true
+        return consumeIfReady(isReady)
+    }
+
+    mutating func contentBecameReady(isReady: Bool) -> Bool {
+        consumeIfReady(isReady)
+    }
+
+    private mutating func consumeIfReady(_ isReady: Bool) -> Bool {
+        guard isPending, isReady else { return false }
+        isPending = false
+        return true
+    }
+}
+
 @MainActor
 final class PlayerCoordinator: ObservableObject {
     private static let orientationOwner = "document-player"
@@ -100,7 +123,13 @@ final class PlayerCoordinator: ObservableObject {
         if autoplay, let s = session {
             // web/docx/epub 源段落由 WebView 异步提取，autoplay 交给 WebReaderBridge.onRendered 段落就绪后按 mode 启动；
             // 此处立即 start 会用空段落请求后端（解读 HTTP 400 / 朗读无内容）。
-            if !document.sourceKind.isWebRendered {
+            if document.sourceKind.isWebRendered {
+                if mode == .read {
+                    s.readVM.requestAutoplayWhenWebReady()
+                } else {
+                    s.explainVM.requestAutoplayWhenWebReady()
+                }
+            } else {
                 if mode == .read { s.readVM.start() } else { s.explainVM.start() }
             }
         }

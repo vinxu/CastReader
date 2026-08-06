@@ -64,6 +64,36 @@ enum QuickReadError: Error, LocalizedError {
     }
 }
 
+enum QuickReadSSEErrorMapper {
+    static func map(payload: Data) -> QuickReadError {
+        guard let root = try? JSONSerialization.jsonObject(with: payload) as? [String: Any] else {
+            return .serverError("unknown")
+        }
+
+        let nested = root["error"] as? [String: Any]
+        let containers = [root, nested].compactMap { $0 }
+        let statusKeys = ["code", "status", "statusCode", "http_status", "httpStatus"]
+        for container in containers {
+            for key in statusKeys {
+                if numericStatus(container[key]) == 402 {
+                    return .httpError(402)
+                }
+            }
+        }
+
+        let message = containers.compactMap { $0["message"] as? String }.first ?? "unknown"
+        return .serverError(message)
+    }
+
+    private static func numericStatus(_ value: Any?) -> Int? {
+        if let number = value as? NSNumber { return number.intValue }
+        if let string = value as? String {
+            return Int(string.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        return nil
+    }
+}
+
 actor QuickReadService {
     static let shared = QuickReadService()
     private init() {}
@@ -316,9 +346,9 @@ actor QuickReadService {
                 onDone(d)
             }
         case "error":
-            let msg = (try? decoder.decode([String: String].self, from: payload))?["message"] ?? "unknown"
-            debugLog("SSE error=\(msg)")
-            throw QuickReadError.serverError(msg)
+            let mapped = QuickReadSSEErrorMapper.map(payload: payload)
+            debugLog("SSE error=\(mapped.localizedDescription)")
+            throw mapped
         default:
             break   // 未知事件忽略
         }

@@ -65,10 +65,23 @@ final class ExplainViewModel: ObservableObject {
 
     // .web 源：用 WebView extractor 提取的段落构成讲解/锚定文档（原始 document.paragraphs 为空）。
     private var webDoc: ReadingDocument? = nil
+    private var deferredWebAutoplay = DeferredAutoplayGate()
     private var doc: ReadingDocument { webDoc ?? document }
     func loadWebParagraphs(_ p: [ReadingParagraph], language: String? = nil) {
         webDoc = ReadingDocument(id: document.id, title: document.title, sourceKind: .web,
                                  language: language ?? document.language, paragraphs: p, sourceURL: document.sourceURL)
+        if deferredWebAutoplay.contentBecameReady(isReady: !doc.readableParagraphs.isEmpty) {
+            ensurePlaying()
+        }
+    }
+
+    /// Defers an explicit Explain request until WebKit has supplied anchorable
+    /// paragraphs, while remaining useful for a second request on the same,
+    /// already-loaded document.
+    func requestAutoplayWhenWebReady() {
+        if deferredWebAutoplay.request(isReady: !doc.readableParagraphs.isEmpty) {
+            ensurePlaying()
+        }
     }
 
     /// WebKit DOM Range consumes UTF-16 offsets, but `ResolvedMark` deliberately
@@ -249,6 +262,7 @@ final class ExplainViewModel: ObservableObject {
     private var idxBase = 0
     private var fastSection: QuickreadSection?
     private var block0Claimed = false
+    private var didProjectServerExplainConsumption = false
     private var fastTask: Task<Void, Never>?
     private var forcedExplainLang: String?   // 快道激活时锁定语言（快道+质道同语言，避免开头/后续语言不一致）
     /// 质道 plan 失败标志（402/400/网络）：让 prepareBlock 的 section0 等待循环跳出，避免快道占位后死等挂起。
@@ -813,6 +827,7 @@ final class ExplainViewModel: ObservableObject {
         beginAnalyticsExplainSession()
         setOutputLanguage(settings.explainLangOrNil ?? doc.language)
         if !reusingStartedSession {
+            didProjectServerExplainConsumption = false
             quota.noteExplainStarted(isPro: pro.isPro)
         }
         activate()
@@ -1104,6 +1119,29 @@ final class ExplainViewModel: ObservableObject {
         }
         if let token = audioSessionToken {
             _ = audio.togglePlayPause(session: token)
+        }
+    }
+
+    /// Idempotent external resume entry point, symmetric with Read Aloud's
+    /// `ensurePlaying`. It never pauses an active explanation and reuses cached
+    /// audio when possible.
+    func ensurePlaying() {
+        liveWebTurnIntentSuspended = false
+        if ownsAudioQueue, audio.isPlaying { return }
+
+        switch status {
+        case .idle, .error:
+            start()
+        case .completed:
+            replay()
+        case .planning, .streaming:
+            if ownsAudioQueue,
+               audio.currentSegment != nil || audio.hasQueuedSegments,
+               let token = audioSessionToken {
+                _ = audio.play(session: token)
+            } else if !ownsAudioQueue {
+                recoverPlaybackAfterOwnershipChange()
+            }
         }
     }
 
@@ -1447,6 +1485,10 @@ final class ExplainViewModel: ObservableObject {
 
     private func handlePlan(_ plan: PlanBlock0, generation: UInt64) {
         guard generation == contentGeneration else { return }
+        if !didProjectServerExplainConsumption {
+            quota.noteExplainAcceptedByServer(isPro: pro.isPro)
+            didProjectServerExplainConsumption = true
+        }
         jobId = plan.job_id
         totalBlocks = idxBase + max(1, plan.total_blocks)   // 快道占 idxBase 块 + 质道块
         // 快道激活（forcedExplainLang != nil）时它优先：block_0 已用此语言朗读，质道必须跟随，不能被

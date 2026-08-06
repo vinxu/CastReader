@@ -411,9 +411,8 @@ enum KindleReadPageCompletionContract {
 enum KindleForwardProgress: Equatable { case forward, backward, unchanged, unverifiable }
 
 enum KindleTurnContract {
-    static func progressNumber(_ label: String?) -> Int? {
-        guard let label else { return nil }
-        let scalars = label.precomposedStringWithCompatibilityMapping.unicodeScalars.map { scalar -> String in
+    private static func asciiDigitNormalized(_ label: String) -> String {
+        label.precomposedStringWithCompatibilityMapping.unicodeScalars.map { scalar -> String in
             let value = Int(scalar.value)
             let zero: Int?
             switch value {
@@ -425,8 +424,53 @@ enum KindleTurnContract {
             }
             return zero.map { String(value - $0) } ?? String(scalar)
         }.joined()
+    }
+
+    static func progressNumber(_ label: String?) -> Int? {
+        guard let label else { return nil }
+        let scalars = asciiDigitNormalized(label)
         guard let range = scalars.range(of: #"\d+"#, options: .regularExpression) else { return nil }
         return Int(scalars[range])
+    }
+
+    /// A failed forward action is a successful reading completion only when
+    /// Kindle itself exposes explicit terminal progress. A repeated pixel or a
+    /// no-op semantic action alone is not enough evidence: those also occur on
+    /// transient renderer failures and must remain navigation failures.
+    static func isTerminalProgress(_ label: String?) -> Bool {
+        guard let label else { return false }
+        let normalized = asciiDigitNormalized(label)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else { return false }
+
+        if normalized.contains("%"), let percent = progressNumber(normalized) {
+            return percent >= 100
+        }
+
+        let expression = try? NSRegularExpression(
+            pattern: #"(\d+)\s*(?:of|/)\s*(\d+)"#,
+            options: [.caseInsensitive]
+        )
+        let whole = NSRange(normalized.startIndex..<normalized.endIndex, in: normalized)
+        guard let match = expression?.firstMatch(in: normalized, range: whole),
+              match.numberOfRanges >= 3,
+              let currentRange = Range(match.range(at: 1), in: normalized),
+              let totalRange = Range(match.range(at: 2), in: normalized),
+              let current = Int(normalized[currentRange]),
+              let total = Int(normalized[totalRange]),
+              total > 0 else { return false }
+        return current >= total
+    }
+
+    /// Prefer the progress captured from the visible page. Persisted shelf
+    /// progress is only a fallback when that live surface did not expose one,
+    /// avoiding a stale historical "100%" from misclassifying a real failure.
+    static func isTerminalPage(liveProgress: String?, storedProgress: String?) -> Bool {
+        if let liveProgress,
+           !liveProgress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return isTerminalProgress(liveProgress)
+        }
+        return isTerminalProgress(storedProgress)
     }
 
     static func progress(beforeLocation: Int?, afterLocation: Int?, beforeRenderer: Int?, afterRenderer: Int?) -> KindleForwardProgress {

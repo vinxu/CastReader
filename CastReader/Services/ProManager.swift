@@ -256,12 +256,17 @@ final class ProManager: ObservableObject {
             case .success(let verification):
                 // verified / unverified 都要 finish，否则已扣费的交易会反复回到队列；
                 // 权益以 refresh 后的 currentEntitlements 为准（unverified 不计权益，安全）。
+                let transactionEnvironment: String
                 if case .verified(let t) = verification {
                     debugTransaction("purchase verified", t)
+                    transactionEnvironment = Self.analyticsEnvironment(for: t)
                     await t.finish()
                 } else if case .unverified(let t, _) = verification {
                     debugTransaction("purchase unverified", t)
+                    transactionEnvironment = Self.analyticsEnvironment(for: t)
                     await t.finish()
+                } else {
+                    transactionEnvironment = "unknown"
                 }
                 await refresh()
                 ProductAnalytics.shared.track(
@@ -272,7 +277,8 @@ final class ProManager: ObservableObject {
                         errorCode: isPro ? nil : "entitlement_not_active",
                         trigger: analyticsTrigger,
                         store: "app_store",
-                        productId: product.id
+                        productId: product.id,
+                        transactionEnvironment: transactionEnvironment
                     )
                 )
                 if isPro {
@@ -283,7 +289,8 @@ final class ProManager: ObservableObject {
                             trigger: analyticsTrigger,
                             store: "app_store",
                             productId: product.id,
-                            activationSource: "storekit_verified"
+                            activationSource: "storekit_verified",
+                            transactionEnvironment: transactionEnvironment
                         )
                     )
                 }
@@ -395,6 +402,13 @@ final class ProManager: ObservableObject {
         #if DEBUG
         print("[Pro] \(label) product=\(transaction.productID) tx=\(Self.redact("\(transaction.id)")) original=\(Self.redact("\(transaction.originalID)")) appAccount=\(Self.redact(transaction.appAccountToken?.uuidString)) expires=\(transaction.expirationDate?.description ?? "nil") revoked=\(transaction.revocationDate == nil ? "N" : "Y")")
         #endif
+    }
+
+    nonisolated private static func analyticsEnvironment(for transaction: Transaction) -> String {
+        let value = transaction.environment.rawValue.lowercased()
+        return ["production", "sandbox", "xcode"].contains(value)
+            ? value
+            : "unknown"
     }
 
     private func debugLog(_ message: String) {

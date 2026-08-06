@@ -20,6 +20,18 @@
     "surface",
     "properties"
   ],
+  "value_domains": {
+    "clientVariant": ["app_store", "testflight", "internal", "internal_debug", "simulator", "google_play"],
+    "contentSource": ["camera", "photo_library", "file", "url", "text", "clipboard", "share_sheet", "system", "history", "kindle", "weread", "google_books", "kobo", "oreilly", "unknown"],
+    "contentFormat": ["photo", "pdf", "epub", "docx", "text", "web", "kindle", "weread", "google_books", "kobo", "oreilly", "unknown"],
+    "storefront": ["us", "uk", "ca", "au", "jp", "de", "fr", "it", "es", "in", "br", "mx", "nl", "se", "tr", "ae", "sg", "pl", "eg", "sa"],
+    "librarySource": ["kindle", "weread", "google_books", "kobo", "oreilly"],
+    "libraryConnectionStage": ["entry_tapped", "connection_presented", "login_started", "login_succeeded", "sync_started", "sync_completed", "cancelled", "failed"],
+    "contentInputStage": ["source_opened", "input_confirmed", "processing_started", "processing_completed", "cancelled", "failed"],
+    "flowResult": ["started", "success", "cancelled", "failed"],
+    "bookCountBucket": ["none", "1", "2_5", "6_20", "21_50", "51_plus", "unknown"],
+    "transactionEnvironment": ["production", "sandbox", "xcode", "unknown"]
+  },
   "events": [
     {
       "name": "app_session_start",
@@ -27,6 +39,27 @@
       "product_area": "app",
       "required_properties": ["launchType"],
       "optional_properties": []
+    },
+    {
+      "name": "onboarding_step",
+      "legacy_event": "onboarding_step",
+      "product_area": "app",
+      "required_properties": ["step", "result", "source"],
+      "optional_properties": []
+    },
+    {
+      "name": "library_connection",
+      "legacy_event": "library_connection",
+      "product_area": "reader",
+      "required_properties": ["bindSessionId", "source", "stage", "result"],
+      "optional_properties": ["errorCode", "durationMs", "bookCountBucket"]
+    },
+    {
+      "name": "content_input_stage",
+      "legacy_event": "content_input_stage",
+      "product_area": "reader",
+      "required_properties": ["contentSource", "contentFormat", "stage", "result"],
+      "optional_properties": ["intendedMode", "durationMs", "errorCode", "storefront"]
     },
     {
       "name": "content_intent",
@@ -138,7 +171,7 @@
       "legacy_event": "checkout_started",
       "product_area": "billing",
       "required_properties": ["store", "productId", "trigger"],
-      "optional_properties": []
+      "optional_properties": ["transactionEnvironment"]
     },
     {
       "name": "purchase_result",
@@ -152,14 +185,14 @@
       },
       "product_area": "billing",
       "required_properties": ["store", "productId", "trigger", "result"],
-      "optional_properties": ["errorCode"]
+      "optional_properties": ["errorCode", "transactionEnvironment"]
     },
     {
       "name": "entitlement_activated",
       "legacy_event": "pro_activated",
       "product_area": "billing",
       "required_properties": ["store", "productId", "trigger", "activationSource"],
-      "optional_properties": ["syncState"]
+      "optional_properties": ["syncState", "transactionEnvironment"]
     },
     {
       "name": "review_prompt_eligible",

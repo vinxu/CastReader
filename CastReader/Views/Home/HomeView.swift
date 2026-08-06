@@ -91,14 +91,17 @@ enum ImportSource: String, Identifiable, CaseIterable {
 /// ➕ 只负责打开快速导入面板；真正的来源选择与 present 仍在 HomeView。
 final class ImportRouter: ObservableObject {
     @Published var generalToken = 0
+    @Published var studyBoostToken = 0
     @Published var hideMainChrome = false
     func openQuickImport() { generalToken += 1 }
+    func openStudyBoostImport() { studyBoostToken += 1 }
 }
 
 struct HomeView: View {
     let shareInboxUnreadCount: Int
     let onOpenShareInbox: () -> Void
     let onReviewPresentationBlockedChanged: (Bool) -> Void
+    let onRequestLibraryConnection: (BoundLibraryOnboardingSource) -> Void
 
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @EnvironmentObject private var importRouter: ImportRouter
@@ -118,11 +121,13 @@ struct HomeView: View {
     init(
         shareInboxUnreadCount: Int = 0,
         onOpenShareInbox: @escaping () -> Void = {},
-        onReviewPresentationBlockedChanged: @escaping (Bool) -> Void = { _ in }
+        onReviewPresentationBlockedChanged: @escaping (Bool) -> Void = { _ in },
+        onRequestLibraryConnection: @escaping (BoundLibraryOnboardingSource) -> Void
     ) {
         self.shareInboxUnreadCount = shareInboxUnreadCount
         self.onOpenShareInbox = onOpenShareInbox
         self.onReviewPresentationBlockedChanged = onReviewPresentationBlockedChanged
+        self.onRequestLibraryConnection = onRequestLibraryConnection
     }
 
     /// 所有 sheet 合并到单一入口，避免「同一 View 多个 .sheet」互相抢 present。
@@ -150,6 +155,9 @@ struct HomeView: View {
     @State private var importScenario: String?      // 本次导入要附加的场景 content_type（nil = 通用）
     @State private var importMode: ReaderMode = .read
     @State private var importAnalyticsContext: AnalyticsContentContext?
+    /// The import options sheet must close before the concrete picker/sheet is
+    /// presented. Its dismissal is a transition, not a user cancellation.
+    @State private var isTransitioningToImportDestination = false
     @State private var activeSheet: HomeSheet?
 
     @State private var imagePickerRequest: ImagePickerRequest?
@@ -250,6 +258,9 @@ struct HomeView: View {
         .onChange(of: importRouter.generalToken) { _ in
             activeSheet = .importPanel(.general)
         }
+        .onChange(of: importRouter.studyBoostToken) { _ in
+            activeSheet = .importPanel(.scenario(.study))
+        }
         .sheet(item: $activeSheet, onDismiss: handleHomeSheetDismissed) { sheet in
             switch sheet {
             case .importPanel(let panel):
@@ -259,6 +270,7 @@ struct HomeView: View {
             case .text:
                 TextInputSheet { title, text in
                     activeSheet = nil
+                    confirmImport(format: .text)
                     let doc = DocumentBuilder.fromPlainText(text, title: title)
                     if !doc.isEmpty { finishImport(doc) }
                     else { failImport(stage: "parse", code: "empty_content") }
@@ -266,6 +278,7 @@ struct HomeView: View {
             case .url:
                 URLInputSheet { urlString in
                     activeSheet = nil
+                    confirmImport(format: .web)
                     if let doc = makeWebDocument(urlString) { finishImport(doc) }
                     else {
                         failImport(stage: "validation", code: "invalid_url")
@@ -294,6 +307,7 @@ struct HomeView: View {
                 sourceType: request.sourceType,
                 onImage: { image in
                     imagePickerRequest = nil
+                    confirmImport(format: .photo)
                     Task {
                         await captureVM.process(image: image)
                         if let doc = captureVM.document {
@@ -304,13 +318,19 @@ struct HomeView: View {
                         }
                     }
                 },
-                onCancel: { imagePickerRequest = nil }
+                onCancel: {
+                    imagePickerRequest = nil
+                    cancelImport()
+                }
             )
             .ignoresSafeArea()
         }
         .fileImporter(isPresented: $showFileImporter, allowedContentTypes: supportedTypes, allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let url = urls.first {
+                confirmImport(format: analyticsFormat(for: url))
                 handleImportedFile(url)
+            } else {
+                cancelImport()
             }
         }
         .alert("提示", isPresented: Binding(get: { notice != nil }, set: { if !$0 { notice = nil } })) {
@@ -374,11 +394,20 @@ struct HomeView: View {
     }
 
     private func handleHomeSheetDismissed() {
-        guard pendingAnnualPurchaseAfterLogin else { return }
-        pendingAnnualPurchaseAfterLogin = false
-        guard auth.hasEmailAccount, !pro.isPro else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            purchaseAnnualProduct()
+        if isTransitioningToImportDestination {
+            isTransitioningToImportDestination = false
+        } else if importAnalyticsContext != nil {
+            // Covers both the Cancel button and interactive swipe dismissal on
+            // the text / URL input sheets.
+            cancelImport()
+        }
+
+        if pendingAnnualPurchaseAfterLogin {
+            pendingAnnualPurchaseAfterLogin = false
+            guard auth.hasEmailAccount, !pro.isPro else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                purchaseAnnualProduct()
+            }
         }
     }
 
@@ -399,17 +428,13 @@ struct HomeView: View {
         guard !didTrackHomeProCardImpression, !pro.isPro else { return }
         didTrackHomeProCardImpression = true
         ProductAnalytics.shared.track(
-            .paywallShown,
+            .homeProCardImpression,
             context: AnalyticsEventContext(
                 productArea: .billing,
                 surface: "home_pro_card",
                 entryPoint: "home_pro_card_impression"
             ),
-            properties: .init(
-                trigger: "home_pro_card_impression",
-                entitlementState: "free",
-                hadMeaningfulReading: ProductAnalytics.shared.hadMeaningfulReading
-            )
+            properties: .init()
         )
     }
 
@@ -527,6 +552,10 @@ struct HomeView: View {
     }
 
     private func continueLibraryOnboarding() {
+        if libraryOnboarding.shouldResumeDeferredKindleFlow {
+            libraryOnboarding.presentChooser()
+            return
+        }
         guard let source = libraryOnboarding.selectedSource else {
             libraryOnboarding.presentChooser()
             return
@@ -537,7 +566,7 @@ struct HomeView: View {
             if let book = kindleStore.homeBooks.first {
                 KindlePlaybackCenter.shared.open(book: book)
             } else {
-                NotificationCenter.default.post(name: .castReaderKindleRebindRequested, object: nil)
+                onRequestLibraryConnection(.kindle)
             }
         case .weread:
             if let book = weReadStore.homeBooks.first {
@@ -558,7 +587,7 @@ struct HomeView: View {
                 )
                 coordinator.open(document, analyticsContext: context)
             } else {
-                NotificationCenter.default.post(name: .castReaderWeReadRebindRequested, object: nil)
+                onRequestLibraryConnection(.weread)
             }
         case .googleBooks:
             if let book = googleBooksStore.homeBooks.first {
@@ -568,10 +597,7 @@ struct HomeView: View {
                     onboarding: libraryOnboarding
                 )
             } else {
-                NotificationCenter.default.post(
-                    name: .castReaderGoogleBooksRebindRequested,
-                    object: nil
-                )
+                onRequestLibraryConnection(.googleBooks)
             }
         case .kobo:
             if let book = koboStore.homeBooks.first {
@@ -581,10 +607,7 @@ struct HomeView: View {
                     onboarding: libraryOnboarding
                 )
             } else {
-                NotificationCenter.default.post(
-                    name: .castReaderKoboRebindRequested,
-                    object: nil
-                )
+                onRequestLibraryConnection(.kobo)
             }
         case .oreilly:
             if let book = oreillyStore.homeBooks.first {
@@ -594,10 +617,7 @@ struct HomeView: View {
                     onboarding: libraryOnboarding
                 )
             } else {
-                NotificationCenter.default.post(
-                    name: .castReaderOReillyRebindRequested,
-                    object: nil
-                )
+                onRequestLibraryConnection(.oreilly)
             }
         }
     }
@@ -736,12 +756,13 @@ struct HomeView: View {
     private func beginImport(_ src: ImportSource, scenario: ExplainContentType?, mode: ReaderMode) {
         importScenario = scenario?.rawValue
         importMode = mode
-        importAnalyticsContext = ProductAnalytics.shared.beginContentIntent(
+        importAnalyticsContext = ProductAnalytics.shared.trackContentSourceOpened(
             source: src.analyticsSource,
             format: src.analyticsFormat,
             entryPoint: scenario == nil ? "quick_import" : "scenario_import",
             intendedMode: mode == .read ? "read" : "explain"
         )
+        isTransitioningToImportDestination = true
         activeSheet = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
             trigger(src)
@@ -791,15 +812,37 @@ struct HomeView: View {
             scenario: scenario,
             analyticsContext: analyticsContext
         )
-        importScenario = nil
-        importMode = .read
-        importAnalyticsContext = nil
+        if scenario == ExplainContentType.study.rawValue {
+            StudyBoostStore.shared.recordStudySession()
+        }
+        resetImportState()
     }
 
     private func failImport(stage: String, code: String) {
         guard let context = importAnalyticsContext else { return }
         ProductAnalytics.shared.contentFailed(context, stage: stage, code: code)
+        resetImportState()
+    }
+
+    private func confirmImport(format: AnalyticsContentFormat) {
+        guard let context = importAnalyticsContext else { return }
+        importAnalyticsContext = ProductAnalytics.shared.confirmContentIntent(
+            context,
+            format: format
+        )
+    }
+
+    private func cancelImport() {
+        guard let context = importAnalyticsContext else { return }
+        ProductAnalytics.shared.trackContentInputCancelled(context)
+        resetImportState()
+    }
+
+    private func resetImportState() {
+        importScenario = nil
+        importMode = .read
         importAnalyticsContext = nil
+        isTransitioningToImportDestination = false
     }
 
     private func reopen(_ rec: HistoryRecord) {
@@ -917,12 +960,33 @@ struct HomeView: View {
                 try FileManager.default.copyItem(at: url, to: tmp)
                 Task {
                     await importVM.uploadFile(tmp)
-                    notice = importVM.error ?? AppLocalized("已上传，处理完成后在「文库」查看")
+                    if let error = importVM.error {
+                        failImport(stage: "upload", code: "backend_upload_failed")
+                        notice = error
+                    } else {
+                        if let context = importAnalyticsContext {
+                            ProductAnalytics.shared.contentInputCompleted(context)
+                        }
+                        resetImportState()
+                        notice = AppLocalized("已上传，处理完成后在「文库」查看")
+                    }
                 }
             } catch {
                 failImport(stage: "file_read", code: "copy_failed")
                 notice = String(format: AppLocalized("无法读取文件：%@"), error.localizedDescription)
             }
+        }
+    }
+
+    private func analyticsFormat(for url: URL) -> AnalyticsContentFormat {
+        switch url.pathExtension.lowercased() {
+        case "png", "jpg", "jpeg", "heic", "heif", "webp", "gif", "tiff":
+            return .photo
+        case "pdf": return .pdf
+        case "epub": return .epub
+        case "docx": return .docx
+        case "txt", "text", "md", "markdown": return .text
+        default: return .unknown
         }
     }
 
@@ -1007,7 +1071,6 @@ private struct BoundLibraryActivationCard: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(AppTheme.primary.opacity(0.22), lineWidth: 1)
         )
-        .accessibilityIdentifier("libraryOnboardingReminder")
     }
 
     private var iconName: String {
@@ -1090,6 +1153,7 @@ private struct ImportOptionsSheet: View {
                 }
                 .padding(20)
             }
+            .accessibilityIdentifier("importOptions.\(panel.id)")
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle(LocalizedStringKey(panel.fixedScenario == nil ? "快速导入" : "选择来源"))
             .navigationBarTitleDisplayMode(.inline)

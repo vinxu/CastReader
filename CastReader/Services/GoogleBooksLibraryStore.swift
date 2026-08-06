@@ -160,6 +160,7 @@ final class GoogleBooksLibraryStore: ObservableObject {
             let retainedIDs = Set(merged.keys)
             anchors = anchors.filter { retainedIDs.contains($0.key) }
         }
+        let wasConnected = hasConnected
         books = merged.values.sorted { ($0.lastOpenedAt ?? $0.lastSyncedAt) > ($1.lastOpenedAt ?? $1.lastSyncedAt) }
         hasConnected = true
         if let label = account?.label?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty {
@@ -167,6 +168,12 @@ final class GoogleBooksLibraryStore: ObservableObject {
         }
         lastError = nil
         save()
+        if !wasConnected {
+            NotificationCenter.default.post(
+                name: .castReaderLibraryConnectedForReview,
+                object: nil
+            )
+        }
         // 与 Kindle/微信读书书架一致：同步时就把封面拉下来，首页不出现空占位。
         ImageCache.shared.prefetch(books.compactMap(\.coverURL))
     }

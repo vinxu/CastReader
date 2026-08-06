@@ -9,8 +9,16 @@ import Combine
 import Foundation
 
 enum AppReviewTrigger: String, Codable, Sendable {
+    case firstReadCompleted = "first_read_completed"
+    case libraryConnected = "library_connected"
     case thirdFiveMinuteRead = "third_five_minute_read"
     case settings
+}
+
+extension Notification.Name {
+    static let castReaderLibraryConnectedForReview = Notification.Name(
+        "castreader.review.libraryConnected"
+    )
 }
 
 struct AppReviewAttempt: Codable, Equatable, Sendable {
@@ -247,6 +255,30 @@ struct AppReviewPromptPolicy: Sendable {
         return evaluatePending(in: &state, at: date, version: version)
     }
 
+    /// A first, observable success is a better review moment than an arbitrary
+    /// age/session threshold. It becomes pending immediately, while the main UI
+    /// still owns the safety gate that waits until readers and sheets are gone.
+    @discardableResult
+    func recordPositiveOutcome(
+        in state: inout AppReviewPromptState,
+        trigger: AppReviewTrigger,
+        at date: Date,
+        version: String,
+        calendar: Calendar
+    ) -> Bool {
+        guard trigger == .firstReadCompleted || trigger == .libraryConnected else {
+            return false
+        }
+        _ = recordActiveDay(in: &state, at: date, calendar: calendar)
+        _ = compact(&state, at: date)
+        guard state.pendingTrigger == nil,
+              frequencyAllowsAttempt(state, at: date, version: version) else {
+            return false
+        }
+        state.pendingTrigger = trigger
+        return true
+    }
+
     /// Re-evaluates after an active-day/time boundary as well as after a read.
     /// This lets three early qualifying sessions become pending once the 72-hour
     /// gate matures, without requiring an artificial fourth five-minute read.
@@ -447,7 +479,24 @@ final class AppReviewPromptManager: ObservableObject {
         if becameEligible { recordEligibleEvent() }
     }
 
-    private func recordEligibleEvent() {
+    func recordPositiveOutcome(_ trigger: AppReviewTrigger) {
+        let date = now()
+        let becameEligible = policy.recordPositiveOutcome(
+            in: &state,
+            trigger: trigger,
+            at: date,
+            version: version(),
+            calendar: calendar
+        )
+        pendingTrigger = state.pendingTrigger
+        persist()
+
+        if becameEligible { recordEligibleEvent(trigger: trigger) }
+    }
+
+    private func recordEligibleEvent(
+        trigger: AppReviewTrigger = .thirdFiveMinuteRead
+    ) {
         analyticsRecorder(
             .reviewPromptEligible,
             AnalyticsEventContext(
@@ -456,7 +505,7 @@ final class AppReviewPromptManager: ObservableObject {
                 entryPoint: nil
             ),
             AnalyticsProperties(
-                trigger: AppReviewTrigger.thirdFiveMinuteRead.rawValue,
+                trigger: trigger.rawValue,
                 store: "app_store"
             )
         )

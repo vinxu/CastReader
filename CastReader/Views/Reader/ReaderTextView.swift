@@ -101,6 +101,10 @@ struct ReaderTextView: UIViewRepresentable {
     var isCurrent: Bool = true
     var fontSize: CGFloat = 18
     var highlightColor: UIColor = UIColor(red: 253/255, green: 95/255, blue: 1/255, alpha: 0.5)
+    /// The normal reader owns scrolling at the paragraph level. The compact
+    /// onboarding sample opts into an internal viewport so longer locales keep
+    /// the active word visible without making the first screen unbounded.
+    var autoScrollsHighlight: Bool = false
     /// 暴露底层 textview（供解读 mark 定位）。布局完成后回调。
     var onReady: ((ReaderUITextView) -> Void)? = nil
 
@@ -109,10 +113,19 @@ struct ReaderTextView: UIViewRepresentable {
     }
 
     func updateUIView(_ tv: ReaderUITextView, context: Context) {
+        tv.isScrollEnabled = autoScrollsHighlight
         tv.attributedText = buildAttributedString()
         tv.invalidateIntrinsicContentSize()
         tv.setNeedsLayout()
         tv.layoutIfNeeded()
+        if autoScrollsHighlight,
+           let highlightRange,
+           highlightRange.location != NSNotFound,
+           highlightRange.length > 0 {
+            DispatchQueue.main.async {
+                tv.scrollRangeToVisible(highlightRange)
+            }
+        }
         onReady?(tv)
     }
 

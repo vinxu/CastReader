@@ -1,0 +1,37 @@
+<svg viewBox="0 0 720 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 价值页插画：Kindle 高亮行 → 化作声音。橙面 #FF6500 / 黑线 #1C1B1A / 设备白面 -->
+  <!-- 左：Kindle 设备 -->
+  <rect x="64" y="56" width="216" height="300" rx="22" fill="#FFFDF9" stroke="#1C1B1A" stroke-width="7"/>
+  <line x1="100" y1="112" x2="230" y2="112" stroke="#1C1B1A" stroke-width="7" stroke-linecap="round"/>
+  <line x1="100" y1="142" x2="244" y2="142" stroke="#1C1B1A" stroke-width="7" stroke-linecap="round"/>
+  <!-- 高亮行（词级高亮母题） -->
+  <rect x="92" y="156" width="136" height="32" rx="9" fill="#FF6500"/>
+  <line x1="104" y1="172" x2="216" y2="172" stroke="#1C1B1A" stroke-width="7" stroke-linecap="round"/>
+  <line x1="100" y1="202" x2="238" y2="202" stroke="#1C1B1A" stroke-width="7" stroke-linecap="round"/>
+  <line x1="100" y1="232" x2="192" y2="232" stroke="#1C1B1A" stroke-width="7" stroke-linecap="round"/>
+  <line x1="100" y1="262" x2="226" y2="262" stroke="#1C1B1A" stroke-width="7" stroke-linecap="round"/>
+  <line x1="100" y1="292" x2="206" y2="292" stroke="#1C1B1A" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- 中：高亮行飞出的轨迹（点线弧 + 词块渐远） -->
+  <path d="M 252 168 C 322 90, 402 82, 458 146" stroke="#1C1B1A" stroke-width="6"
+        stroke-linecap="round" stroke-dasharray="0.1 19" fill="none"/>
+  <rect x="296" y="104" width="46" height="18" rx="9" fill="#FF6500" transform="rotate(-9 319 113)"/>
+  <rect x="362" y="88" width="34" height="16" rx="8" fill="#FF6500" transform="rotate(3 379 96)"/>
+  <rect x="412" y="102" width="24" height="14" rx="7" fill="#FF6500" transform="rotate(13 424 109)"/>
+
+  <!-- 右：有声读物（橙色圆面 + 耳机线稿 + 声波） -->
+  <circle cx="545" cy="228" r="104" fill="#FF6500" stroke="#1C1B1A" stroke-width="7"/>
+  <path d="M 471 226 A 74 74 0 0 1 619 226" stroke="#1C1B1A" stroke-width="9"
+        stroke-linecap="round" fill="none"/>
+  <rect x="455" y="218" width="26" height="54" rx="13" fill="#1C1B1A"/>
+  <rect x="609" y="218" width="26" height="54" rx="13" fill="#1C1B1A"/>
+  <line x1="519" y1="228" x2="519" y2="262" stroke="#1C1B1A" stroke-width="10" stroke-linecap="round"/>
+  <line x1="545" y1="212" x2="545" y2="278" stroke="#1C1B1A" stroke-width="10" stroke-linecap="round"/>
+  <line x1="571" y1="222" x2="571" y2="268" stroke="#1C1B1A" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- 外溢声波 -->
+  <path d="M 672 196 A 33 33 0 0 1 672 260" stroke="#1C1B1A" stroke-width="6"
+        stroke-linecap="round" fill="none"/>
+  <path d="M 694 178 A 56 56 0 0 1 694 278" stroke="#1C1B1A" stroke-width="6"
+        stroke-linecap="round" fill="none"/>
+</svg>

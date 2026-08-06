@@ -35,6 +35,142 @@ class CastReaderTests: XCTestCase {
         }
     }
 
+    // MARK: - App Intents / Widget system integration
+
+    func testSystemActionParsesPublicDeepLinks() throws {
+        XCTAssertEqual(
+            SystemAction.from(url: try XCTUnwrap(URL(
+                string: "castreader://import"
+            ))),
+            .openImport
+        )
+        XCTAssertEqual(
+            SystemAction.from(url: try XCTUnwrap(URL(
+                string: "castreader://continue?item=history-42&mode=explain"
+            ))),
+            .continueReading(itemID: "history-42", mode: .explain)
+        )
+        XCTAssertEqual(
+            SystemAction.from(url: try XCTUnwrap(URL(
+                string: "castreader://read?input=https%3A%2F%2Fexample.com%2Farticle&mode=explain"
+            ))),
+            .read(input: "https://example.com/article", mode: .explain)
+        )
+        XCTAssertNil(SystemAction.from(url: try XCTUnwrap(URL(
+            string: "castreader://read?mode=read"
+        ))))
+        XCTAssertNil(SystemAction.from(url: try XCTUnwrap(URL(
+            string: "https://castreader.com/read?input=hello"
+        ))))
+    }
+
+    func testSystemActionStoreIsLastWriteWinsAndOneShot() throws {
+        let suite = "SystemActionStoreTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = SystemActionStore(defaults: defaults)
+
+        XCTAssertTrue(store.enqueue(.openImport))
+        XCTAssertTrue(store.enqueue(.continueReading(itemID: "newest", mode: .read)))
+        XCTAssertEqual(
+            store.takePending(),
+            .continueReading(itemID: "newest", mode: .read)
+        )
+        XCTAssertNil(store.takePending(), "pending command must execute at most once")
+    }
+
+    func testContinueSnapshotStoreNormalizesHomeEligibleItems() throws {
+        let suite = "ContinueSnapshotStoreTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = ContinueSnapshotStore(defaults: defaults)
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        var snapshots = (0..<10).map { index in
+            ContinueSnapshot(
+                id: "item-\(index)",
+                title: "Item \(index)",
+                sourceKind: index == 0 ? "kindle" : "text",
+                updatedAt: now.addingTimeInterval(Double(index))
+            )
+        }
+        snapshots.append(ContinueSnapshot(
+            id: "item-5",
+            title: "Older duplicate",
+            sourceKind: "text",
+            updatedAt: now.addingTimeInterval(-100)
+        ))
+
+        store.replace(with: snapshots)
+        let result = store.snapshots()
+
+        XCTAssertEqual(result.count, 8)
+        XCTAssertFalse(result.contains { $0.sourceKind == "kindle" })
+        XCTAssertEqual(result.first?.id, "item-9")
+        XCTAssertEqual(result.first(where: { $0.id == "item-5" })?.title, "Item 5")
+        XCTAssertEqual(Set(result.map(\.id)).count, result.count)
+    }
+
+    func testSystemContinueSelectionNeverSubstitutesForStaleExplicitID() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let records = [
+            HistoryRecord(
+                id: "latest",
+                title: "Latest",
+                sourceKindRaw: ReadingSourceKind.text.rawValue,
+                sourceURL: nil,
+                language: "en",
+                createdAt: now,
+                lastOpenedAt: now,
+                coverPath: nil
+            ),
+            HistoryRecord(
+                id: "older",
+                title: "Older",
+                sourceKindRaw: ReadingSourceKind.web.rawValue,
+                sourceURL: "https://example.com",
+                language: "en",
+                createdAt: now.addingTimeInterval(-100),
+                lastOpenedAt: now.addingTimeInterval(-100),
+                coverPath: nil
+            ),
+            HistoryRecord(
+                id: "kindle",
+                title: "Connected library",
+                sourceKindRaw: ReadingSourceKind.kindle.rawValue,
+                sourceURL: nil,
+                language: "en",
+                createdAt: now,
+                lastOpenedAt: now,
+                coverPath: nil
+            )
+        ]
+
+        XCTAssertEqual(SystemContinueContract.record(in: records, itemID: nil)?.id, "latest")
+        XCTAssertEqual(SystemContinueContract.record(in: records, itemID: "older")?.id, "older")
+        XCTAssertNil(SystemContinueContract.record(in: records, itemID: "missing"))
+        XCTAssertNil(SystemContinueContract.record(in: records, itemID: "kindle"))
+    }
+
+    func testDeferredAutoplayGateConsumesEachRequestExactlyOnce() {
+        var gate = DeferredAutoplayGate()
+
+        XCTAssertFalse(gate.request(isReady: false))
+        XCTAssertTrue(gate.isPending)
+        XCTAssertTrue(gate.contentBecameReady(isReady: true))
+        XCTAssertFalse(gate.contentBecameReady(isReady: true))
+        XCTAssertFalse(gate.isPending)
+
+        XCTAssertTrue(gate.request(isReady: true), "a later Continue tap remains actionable")
+        XCTAssertFalse(gate.contentBecameReady(isReady: true))
+    }
+
+    func testExplainShortcutAlwaysBuildsExplainAction() {
+        XCTAssertEqual(
+            ExplainWithCastReaderIntent(input: "A difficult paragraph").systemAction,
+            .read(input: "A difficult paragraph", mode: .explain)
+        )
+    }
+
     // MARK: - 绑定书库首次引导
 
     @MainActor
@@ -99,6 +235,155 @@ class CastReaderTests: XCTestCase {
         store.select(.weread)
         store.recordPlayback(source: .weread, seconds: 20)
         XCTAssertEqual(store.activationPlaybackSeconds, 0, "seek/异常时间跳变不能制造激活")
+    }
+
+    @MainActor
+    func testBoundLibraryOnboardingV3ResumesTheExactDeferredStep() throws {
+        let suite = "BoundLibraryV3ResumeTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let firstLaunch = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        XCTAssertEqual(firstLaunch.phase, .sample)
+        XCTAssertFalse(firstLaunch.hasCompletedSample)
+
+        firstLaunch.completeSample()
+        XCTAssertEqual(firstLaunch.phase, .storefront)
+        XCTAssertTrue(firstLaunch.hasCompletedSample)
+
+        firstLaunch.postpone()
+        XCTAssertEqual(firstLaunch.phase, .postponed)
+        XCTAssertFalse(firstLaunch.isChooserPresented)
+
+        let relaunched = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        XCTAssertEqual(relaunched.phase, .postponed)
+        XCTAssertFalse(relaunched.isChooserPresented)
+        relaunched.presentChooser()
+        XCTAssertEqual(relaunched.phase, .storefront, "恢复时不应让用户重听已完成的示例")
+    }
+
+    @MainActor
+    func testBoundLibraryOnboardingV3PersistsRecommendedBookUntilRealPlayback() throws {
+        let suite = "BoundLibraryV3BookTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let store = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        store.completeSample()
+        store.confirmKindleStorefront()
+        store.beginKindleScan()
+        store.prepareFirstListen(bookID: "book-ready")
+        XCTAssertEqual(store.phase, .firstListen)
+        XCTAssertEqual(store.recommendedBookID, "book-ready")
+
+        store.startFirstListen(bookID: "book-ready")
+        XCTAssertFalse(store.isChooserPresented)
+        XCTAssertFalse(store.isActivated, "点书只负责开播，不能代替真实 30 秒激活")
+
+        let relaunched = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        XCTAssertEqual(relaunched.phase, .firstListen)
+        XCTAssertEqual(relaunched.recommendedBookID, "book-ready")
+        XCTAssertTrue(relaunched.isChooserPresented)
+
+        for _ in 0..<15 {
+            relaunched.recordPlayback(source: .kindle, seconds: 2)
+        }
+        XCTAssertTrue(relaunched.isActivated)
+        XCTAssertEqual(relaunched.phase, .activated)
+        XCTAssertNil(relaunched.recommendedBookID)
+    }
+
+    @MainActor
+    func testBoundLibraryOnboardingV1DismissalMigratesWithoutForcingV3() throws {
+        let suite = "BoundLibraryV1MigrationTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(true, forKey: "boundLibraryOnboarding.v1.hasSeenChooser")
+        defaults.set("kindle", forKey: "boundLibraryOnboarding.v1.selectedSource")
+
+        let migrated = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        XCTAssertEqual(migrated.phase, .postponed)
+        XCTAssertFalse(migrated.isChooserPresented)
+        XCTAssertTrue(migrated.shouldResumeDeferredKindleFlow)
+    }
+
+    @MainActor
+    func testActivatedUserCanReplayOnboardingWithoutLosingActivation() throws {
+        let suite = "BoundLibraryReplayTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let store = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        store.markActivatedIfNeeded(source: .kindle, playbackSeconds: 30)
+        XCTAssertTrue(store.isActivated)
+
+        store.presentChooser()
+        XCTAssertTrue(store.isChooserPresented)
+        XCTAssertEqual(store.phase, .sample)
+        store.completeSample()
+        XCTAssertEqual(store.phase, .storefront)
+        store.confirmKindleStorefront()
+        XCTAssertEqual(store.phase, .login)
+        XCTAssertTrue(store.isActivated, "重新体验引导不应清空已获得的激活")
+    }
+
+    @MainActor
+    func testKindleConfirmationResetsPlaybackFromAnotherProvider() throws {
+        let suite = "BoundLibrarySourceSwitchTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let store = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        store.select(.weread)
+        for _ in 0..<5 { store.recordPlayback(source: .weread, seconds: 2) }
+        XCTAssertEqual(store.activationPlaybackSeconds, 10, accuracy: 0.001)
+
+        store.presentChooser()
+        store.confirmKindleStorefront()
+        XCTAssertEqual(store.selectedSource, .kindle)
+        XCTAssertEqual(store.activationPlaybackSeconds, 0, accuracy: 0.001)
+    }
+
+    func testKindleOnboardingRecommendationPrefersListeningAnchorThenRecentBook() {
+        var anchored = kindleBook(
+            id: "B000000001",
+            asin: "B000000001",
+            title: "Anchored",
+            url: "https://read.amazon.com/?asin=B000000001"
+        )
+        anchored.storefrontID = "us"
+        anchored.lastOpenedAt = Date(timeIntervalSince1970: 10)
+
+        var recent = kindleBook(
+            id: "B000000002",
+            asin: "B000000002",
+            title: "Recent",
+            url: "https://read.amazon.com/?asin=B000000002"
+        )
+        recent.storefrontID = "us"
+        recent.lastOpenedAt = Date(timeIntervalSince1970: 20)
+
+        var wrongStore = kindleBook(
+            id: "B000000003",
+            asin: "B000000003",
+            title: "Wrong storefront",
+            url: "https://leer.amazon.es/?asin=B000000003"
+        )
+        wrongStore.storefrontID = "es"
+        wrongStore.lastOpenedAt = Date(timeIntervalSince1970: 30)
+
+        let recommendation = KindleOnboardingBookRecommendation.choose(
+            from: [wrongStore, recent, anchored],
+            expectedStorefrontID: "us",
+            hasListeningAnchor: { $0 == anchored.id }
+        )
+        XCTAssertEqual(recommendation?.id, anchored.id)
+
+        let withoutAnchor = KindleOnboardingBookRecommendation.choose(
+            from: [wrongStore, anchored, recent],
+            expectedStorefrontID: "us"
+        )
+        XCTAssertEqual(withoutAnchor?.id, recent.id)
     }
 
     // MARK: - 场景化「划重点·批注」content_type 全链路自检（PRD P0）
@@ -1489,7 +1774,11 @@ final class LocalizationCatalogTests: XCTestCase {
     }
 
     private func catalog(named name: String) throws -> [String: Any] {
-        let url = repositoryRoot.appendingPathComponent("CastReader/\(name).xcstrings")
+        try catalog(relativePath: "CastReader/\(name).xcstrings")
+    }
+
+    private func catalog(relativePath: String) throws -> [String: Any] {
+        let url = repositoryRoot.appendingPathComponent(relativePath)
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw XCTSkip("Source catalog checks run on the host build machine")
         }
@@ -1508,6 +1797,15 @@ final class LocalizationCatalogTests: XCTestCase {
             if "fFeEgGaA".contains(scalar) { return "float" }
             if scalar == "@" { return "object" }
             return scalar
+        }.sorted()
+    }
+
+    private func templateTokens(_ value: String) throws -> [String] {
+        let regex = try NSRegularExpression(pattern: #"\$\{([^}]+)\}"#)
+        let range = NSRange(value.startIndex..<value.endIndex, in: value)
+        return regex.matches(in: value, range: range).compactMap { match in
+            guard let tokenRange = Range(match.range(at: 1), in: value) else { return nil }
+            return String(value[tokenRange])
         }.sorted()
     }
 
@@ -1736,6 +2034,53 @@ final class LocalizationCatalogTests: XCTestCase {
         )
     }
 
+    func testBlockedKindleModeSwitchPreservesCurrentPlaybackAndRequestsTargetPaywall() {
+        let blocked = KindleModeSwitchAccessContract.resolve(
+            requestedMode: .explain,
+            hasAccess: false
+        )
+
+        XCTAssertFalse(blocked.shouldStopCurrentPlayback)
+        XCTAssertFalse(blocked.shouldApplyRequestedMode)
+        XCTAssertEqual(blocked.paywallMode, .explain)
+        XCTAssertEqual(
+            KindlePaywallPresentationContract.analyticsTrigger(
+                requestedMode: blocked.paywallMode,
+                currentMode: .read
+            ),
+            "explain_quota",
+            "被拦截时当前模式仍是朗读，但付费墙必须归因到目标解读模式"
+        )
+
+        let allowed = KindleModeSwitchAccessContract.resolve(
+            requestedMode: .explain,
+            hasAccess: true
+        )
+        XCTAssertTrue(allowed.shouldStopCurrentPlayback)
+        XCTAssertTrue(allowed.shouldApplyRequestedMode)
+        XCTAssertNil(allowed.paywallMode)
+    }
+
+    func testQuickReadStructuredSSE402MapsToQuotaError() {
+        let numericPayload = Data(#"{"code":402,"message":"quota exhausted"}"#.utf8)
+        guard case .httpError(402) = QuickReadSSEErrorMapper.map(payload: numericPayload) else {
+            return XCTFail("numeric SSE 402 must map to the paywall error path")
+        }
+
+        let nestedStringPayload = Data(#"{"error":{"status":"402","message":"quota exhausted"}}"#.utf8)
+        guard case .httpError(402) = QuickReadSSEErrorMapper.map(payload: nestedStringPayload) else {
+            return XCTFail("nested string SSE 402 must map to the paywall error path")
+        }
+    }
+
+    func testQuickReadOrdinarySSEErrorRemainsAServiceError() {
+        let payload = Data(#"{"code":503,"message":"temporarily unavailable"}"#.utf8)
+        guard case .serverError(let message) = QuickReadSSEErrorMapper.map(payload: payload) else {
+            return XCTFail("non-quota SSE errors must not open the paywall")
+        }
+        XCTAssertEqual(message, "temporarily unavailable")
+    }
+
     func testNineLanguageCatalogIsCompleteAndFormatSafe() throws {
         let root = try catalog(named: "Localizable")
         XCTAssertEqual(root["sourceLanguage"] as? String, "zh-Hans")
@@ -1763,6 +2108,51 @@ final class LocalizationCatalogTests: XCTestCase {
         }
     }
 
+    /// `AppLocalized` is an explicit runtime lookup, so Xcode's normal string
+    /// extraction does not guarantee that every literal key exists in the
+    /// catalog. Keep static literals covered while deliberately ignoring
+    /// interpolated/dynamic keys and the intentionally empty catalog key.
+    func testEveryStaticAppLocalizedLiteralExistsInCatalog() throws {
+        let root = try catalog(named: "Localizable")
+        let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+        let sourceRoot = repositoryRoot.appendingPathComponent("CastReader")
+        guard let enumerator = FileManager.default.enumerator(
+            at: sourceRoot,
+            includingPropertiesForKeys: [.isRegularFileKey]
+        ) else {
+            throw XCTSkip("Source coverage checks run on the host build machine")
+        }
+
+        let regex = try NSRegularExpression(
+            pattern: #"AppLocalized\s*\(\s*"([^"\\]*)""#
+        )
+        var missing: [String: Set<String>] = [:]
+
+        for case let fileURL as URL in enumerator where fileURL.pathExtension == "swift" {
+            let source = try String(contentsOf: fileURL, encoding: .utf8)
+            let sourceRange = NSRange(source.startIndex..<source.endIndex, in: source)
+            for match in regex.matches(in: source, range: sourceRange) {
+                guard let keyRange = Range(match.range(at: 1), in: source) else { continue }
+                let key = String(source[keyRange])
+                guard !key.isEmpty, strings[key] == nil else { continue }
+                let relativePath = fileURL.path.replacingOccurrences(
+                    of: repositoryRoot.path + "/",
+                    with: ""
+                )
+                missing[key, default: []].insert(relativePath)
+            }
+        }
+
+        let report = missing
+            .sorted { $0.key < $1.key }
+            .map { key, files in "\(key) [\(files.sorted().joined(separator: ", "))]" }
+            .joined(separator: "\n")
+        XCTAssertTrue(
+            missing.isEmpty,
+            "Static AppLocalized literals missing from Localizable.xcstrings:\n\(report)"
+        )
+    }
+
     func testInfoPlistCatalogCoversAllAppLocales() throws {
         let root = try catalog(named: "InfoPlist")
         let strings = try XCTUnwrap(root["strings"] as? [String: Any])
@@ -1778,7 +2168,82 @@ final class LocalizationCatalogTests: XCTestCase {
                 let unit = try XCTUnwrap(localization["stringUnit"] as? [String: Any])
                 let value = try XCTUnwrap(unit["value"] as? String)
                 XCTAssertFalse(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, "Empty \(locale): \(key)")
+                XCTAssertEqual(unit["state"] as? String, "translated", "Untranslated \(locale): \(key)")
             }
+        }
+    }
+
+    func testAuxiliaryCatalogsCoverAllNineLanguagesAndPreserveTemplates() throws {
+        let paths = [
+            "CastReader/AppShortcuts.xcstrings",
+            "CastReader Share Extension/Localizable.xcstrings",
+            "CastReader Widget/Localizable.xcstrings"
+        ]
+
+        for path in paths {
+            let root = try catalog(relativePath: path)
+            let sourceLanguage = try XCTUnwrap(root["sourceLanguage"] as? String)
+            let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+            for (key, rawEntry) in strings where !key.isEmpty {
+                let entry = try XCTUnwrap(rawEntry as? [String: Any], "Invalid entry: \(path): \(key)")
+                let localizations = try XCTUnwrap(
+                    entry["localizations"] as? [String: Any],
+                    "No localizations: \(path): \(key)"
+                )
+                XCTAssertEqual(
+                    Set(localizations.keys),
+                    Set(appLocales),
+                    "Wrong locale coverage: \(path): \(key)"
+                )
+                let sourceLocalization = try XCTUnwrap(localizations[sourceLanguage] as? [String: Any])
+                let sourceUnit = try XCTUnwrap(sourceLocalization["stringUnit"] as? [String: Any])
+                let sourceValue = try XCTUnwrap(sourceUnit["value"] as? String)
+                let sourceFormat = try formatSignature(sourceValue)
+                let sourceTemplates = try templateTokens(sourceValue)
+
+                for locale in appLocales {
+                    let localization = try XCTUnwrap(localizations[locale] as? [String: Any])
+                    let unit = try XCTUnwrap(localization["stringUnit"] as? [String: Any])
+                    let value = try XCTUnwrap(unit["value"] as? String)
+                    XCTAssertFalse(
+                        value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                        "Empty \(locale): \(path): \(key)"
+                    )
+                    XCTAssertEqual(
+                        unit["state"] as? String,
+                        "translated",
+                        "Untranslated \(locale): \(path): \(key)"
+                    )
+                    XCTAssertEqual(
+                        try formatSignature(value),
+                        sourceFormat,
+                        "Format mismatch \(locale): \(path): \(key)"
+                    )
+                    XCTAssertEqual(
+                        try templateTokens(value),
+                        sourceTemplates,
+                        "Template mismatch \(locale): \(path): \(key)"
+                    )
+                }
+            }
+        }
+    }
+
+    func testShareExtensionGermanCopyDoesNotFallBackToEnglish() throws {
+        let root = try catalog(relativePath: "CastReader Share Extension/Localizable.xcstrings")
+        let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+        for (key, rawEntry) in strings {
+            let entry = try XCTUnwrap(rawEntry as? [String: Any])
+            let localizations = try XCTUnwrap(entry["localizations"] as? [String: Any])
+            let english = try XCTUnwrap(localizations["en"] as? [String: Any])
+            let german = try XCTUnwrap(localizations["de"] as? [String: Any])
+            let englishUnit = try XCTUnwrap(english["stringUnit"] as? [String: Any])
+            let germanUnit = try XCTUnwrap(german["stringUnit"] as? [String: Any])
+            XCTAssertNotEqual(
+                germanUnit["value"] as? String,
+                englishUnit["value"] as? String,
+                "German Share Extension copy falls back to English: \(key)"
+            )
         }
     }
 
@@ -3102,6 +3567,139 @@ final class TTSEndpointSecurityTests: XCTestCase {
         XCTAssertNil(TTSEndpoint.normalizedSecureBase("http://example.com:8123"))
         XCTAssertNil(TTSEndpoint.normalizedSecureBase("not a URL"))
         XCTAssertNil(TTSEndpoint.normalizedSecureBase(""))
+    }
+}
+
+@MainActor
+final class StudyBoostTests: XCTestCase {
+    private func campaignCalendar() -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
+    }
+
+    private func date(
+        _ month: Int,
+        _ day: Int,
+        year: Int = 2026,
+        hour: Int = 12,
+        calendar: Calendar
+    ) -> Date {
+        calendar.date(
+            from: DateComponents(
+                timeZone: calendar.timeZone,
+                year: year,
+                month: month,
+                day: day,
+                hour: hour
+            )
+        )!
+    }
+
+    func testStudyDeepLinkMatchesOnlyStudyRoute() {
+        XCTAssertTrue(StudyBoostDeepLink.matches(URL(string: "castreader://study")!))
+        XCTAssertTrue(StudyBoostDeepLink.matches(URL(string: "CASTREADER://STUDY/?source=app-store")!))
+        XCTAssertFalse(StudyBoostDeepLink.matches(URL(string: "https://castreader.com/study")!))
+        XCTAssertFalse(StudyBoostDeepLink.matches(URL(string: "castreader://pro")!))
+        XCTAssertFalse(StudyBoostDeepLink.matches(URL(string: "castreader://study/other")!))
+    }
+
+    func testStudyCampaignUsesInclusiveSeptember15Boundary() {
+        let calendar = campaignCalendar()
+        XCTAssertEqual(
+            StudyBoostCampaign.phase(
+                at: date(8, 17, hour: 23, calendar: calendar),
+                completedDays: 0,
+                calendar: calendar
+            ),
+            .upcoming
+        )
+        XCTAssertEqual(
+            StudyBoostCampaign.phase(
+                at: date(8, 18, hour: 0, calendar: calendar),
+                completedDays: 0,
+                calendar: calendar
+            ),
+            .active
+        )
+        XCTAssertEqual(
+            StudyBoostCampaign.phase(
+                at: date(9, 15, hour: 23, calendar: calendar),
+                completedDays: 0,
+                calendar: calendar
+            ),
+            .active
+        )
+        XCTAssertEqual(
+            StudyBoostCampaign.phase(
+                at: date(9, 16, hour: 0, calendar: calendar),
+                completedDays: 0,
+                calendar: calendar
+            ),
+            .ended
+        )
+    }
+
+    func testStudyDaysAreUniqueWindowedAndPersistent() throws {
+        let suite = "StudyBoostTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let calendar = campaignCalendar()
+        let store = StudyBoostStore(
+            defaults: defaults,
+            calendar: calendar,
+            now: { self.date(8, 18, calendar: calendar) }
+        )
+
+        XCTAssertFalse(store.recordStudySession(at: date(8, 17, calendar: calendar)))
+        XCTAssertTrue(store.recordStudySession(at: date(8, 18, calendar: calendar)))
+        XCTAssertFalse(store.recordStudySession(at: date(8, 18, hour: 22, calendar: calendar)))
+        XCTAssertTrue(store.recordStudySession(at: date(8, 19, calendar: calendar)))
+        XCTAssertFalse(store.recordStudySession(at: date(9, 16, hour: 0, calendar: calendar)))
+        XCTAssertEqual(store.completedDays, 2)
+
+        let restored = StudyBoostStore(
+            defaults: defaults,
+            calendar: calendar,
+            now: { self.date(8, 19, calendar: calendar) }
+        )
+        XCTAssertEqual(restored.completedDays, 2)
+        XCTAssertTrue(restored.isTodayComplete)
+    }
+
+    func testSevenUniqueStudyDaysCompleteChallenge() throws {
+        let suite = "StudyBoostGoalTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let calendar = campaignCalendar()
+        let store = StudyBoostStore(
+            defaults: defaults,
+            calendar: calendar,
+            now: { self.date(8, 24, calendar: calendar) }
+        )
+
+        for day in 18...24 {
+            XCTAssertTrue(store.recordStudySession(at: date(8, day, calendar: calendar)))
+        }
+        XCTAssertEqual(store.completedDays, StudyBoostCampaign.goalDays)
+        XCTAssertEqual(store.progress, 1, accuracy: 0.001)
+        XCTAssertEqual(store.phase, .completed)
+    }
+
+    func testStudyBoostCopyCoversExactlyNineProductLanguages() {
+        let productLanguages = AppLanguage.allCases.filter { $0 != .system }.map(\.rawValue).sorted()
+        XCTAssertEqual(StudyBoostCopy.supportedLanguages.map(\.rawValue).sorted(), productLanguages)
+        XCTAssertEqual(productLanguages.count, 9)
+
+        for language in StudyBoostCopy.supportedLanguages {
+            let copy = StudyBoostCopy.localized(for: language, locale: language.locale)
+            let strings = Mirror(reflecting: copy).children.compactMap { $0.value as? String }
+            XCTAssertEqual(strings.count, 21, "\(language.rawValue) 文案字段数量异常")
+            XCTAssertTrue(
+                strings.allSatisfy { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
+                "\(language.rawValue) 存在空白活动文案"
+            )
+        }
     }
 }
 

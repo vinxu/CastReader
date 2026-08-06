@@ -38,6 +38,31 @@ class CastReaderUITests: XCTestCase {
         // Use XCTAssert and related functions to verify your tests produce the correct results.
     }
 
+    func testStudyBoostCTAOpensFixedStudyImportFlow() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderOpenStudyBoost",
+        ]
+        app.launch()
+
+        XCTAssertTrue(
+            app.descendants(matching: .any)["studyBoostView"].waitForExistence(timeout: 6)
+        )
+        let start = app.buttons["studyBoostStartButton"]
+        XCTAssertTrue(start.exists)
+        start.tap()
+
+        XCTAssertTrue(
+            app.descendants(matching: .any)["importOptions.study"].waitForExistence(timeout: 6),
+            "Study Boost CTA must open the fixed Study scenario import panel"
+        )
+        XCTAssertTrue(app.buttons["Upload File"].exists)
+        XCTAssertTrue(app.buttons["Take Photo"].exists)
+    }
+
     func testLaunchPerformance() throws {
         if #available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 7.0, *) {
             // This measures how long it takes to launch your application.
@@ -59,7 +84,22 @@ class CastReaderUITests: XCTestCase {
             "-CastReaderSkipLibraryOnboarding",
         ]
         app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
         return app
+    }
+
+    /// A simulator can retain the one-time universal-link confirmation across
+    /// app reinstalls. It is SpringBoard-owned and unrelated to onboarding, so
+    /// clear it before asserting the app surface.
+    private func dismissSelfOpenSystemAlertIfPresent() {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        for label in ["Open", "打开"] {
+            let button = springboard.alerts.buttons[label]
+            if button.waitForExistence(timeout: 0.4) {
+                button.tap()
+                return
+            }
+        }
     }
 
     /// 九个正式语言包都必须能独立启动，并显示各自的首页标签。
@@ -93,7 +133,7 @@ class CastReaderUITests: XCTestCase {
     }
 
     /// 新增书架来源流程必须在九种语言与明暗两种外观下都能进入，
-    /// 并完整呈现四个平台。使用稳定的 accessibility id，不依赖翻译文本。
+    /// 并完整呈现五个平台。使用稳定的 accessibility id，不依赖翻译文本。
     func testShelfSourcesInAllLanguagesAndAppearances() {
         let configurations: [(language: String, locale: String)] = [
             ("en", "en_US"),
@@ -129,7 +169,7 @@ class CastReaderUITests: XCTestCase {
                         .waitForExistence(timeout: 5),
                     "Shelf-source screen failed for \(configuration.language), \(appearance)"
                 )
-                for source in ["kindle", "weread", "google_books", "kobo"] {
+                for source in ["kindle", "weread", "google_books", "kobo", "oreilly"] {
                     XCTAssertTrue(
                         app.buttons["shelfSourcePrimaryAction.\(source)"]
                             .waitForExistence(timeout: 2),
@@ -141,27 +181,163 @@ class CastReaderUITests: XCTestCase {
         }
     }
 
+    /// 首启流程必须跟随系统外观，不能为维持旧稿效果而强制浅色。
+    func testFirstLaunchFollowsSystemAppearance() {
+        let expectedAppearance = UITraitCollection.current.userInterfaceStyle == .dark
+            ? "dark"
+            : "light"
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-CastReaderResetLibraryOnboarding",
+            "-CastReaderForceLibraryOnboardingRebind",
+            "-boundLibraryOnboarding.v1.isActivated", "NO",
+            "-boundLibraryOnboarding.v1.hasSeenChooser", "NO",
+            "-boundLibraryOnboarding.v3.phase", "sample",
+            "-boundLibraryOnboarding.v3.resumePhase", "sample",
+            "-boundLibraryOnboarding.v3.hasCompletedSample", "NO",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        let onboarding = app.descendants(matching: .any)["boundLibraryOnboarding"]
+        XCTAssertTrue(
+            onboarding.waitForExistence(timeout: 6),
+            "First-launch onboarding did not appear in \(expectedAppearance) mode"
+        )
+        XCTAssertEqual(
+            onboarding.value as? String,
+            expectedAppearance,
+            "First-launch onboarding must inherit the system appearance"
+        )
+    }
+
     func testFirstLaunchShowsBoundLibraryOnboarding() {
         let app = XCUIApplication()
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "-CastReaderResetLibraryOnboarding",
+            "-CastReaderForceLibraryOnboardingRebind",
+            // UserDefaults can survive a preceding UI-test process on the
+            // shared simulator. Pin the argument domain to the value step so
+            // this test verifies a real first launch instead of a restored
+            // login/scan phase.
+            "-boundLibraryOnboarding.v1.isActivated", "NO",
+            "-boundLibraryOnboarding.v1.hasSeenChooser", "NO",
+            "-boundLibraryOnboarding.v3.phase", "sample",
+            "-boundLibraryOnboarding.v3.resumePhase", "sample",
+            "-boundLibraryOnboarding.v3.hasCompletedSample", "NO",
         ]
         app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
 
-        let kindle = app.buttons["libraryOnboardingKindle"]
-        let weRead = app.buttons["libraryOnboardingWeRead"]
-        XCTAssertTrue(kindle.waitForExistence(timeout: 5))
-        XCTAssertTrue(weRead.exists)
-        XCTAssertLessThan(kindle.frame.minY, weRead.frame.minY, "中文首次绑定页应把 Kindle 放在首位")
-        XCTAssertTrue(app.buttons["libraryOnboardingGoogleBooks"].exists)
-        XCTAssertTrue(app.buttons["libraryOnboardingKobo"].exists)
-        XCTAssertTrue(app.buttons["libraryOnboardingOtherContent"].exists)
-        XCTAssertTrue(app.buttons["libraryOnboardingPostpone"].exists)
+        let connect = app.buttons["kindleOnboarding.sample.start"]
+        XCTAssertTrue(
+            connect.waitForExistence(timeout: 6),
+            "首启必须稳定落在价值页，不能恢复到上一次 UI 测试的登录或扫描阶段"
+        )
+        let sampleTitle = app.staticTexts["kindleOnboarding.sample.title"]
+        XCTAssertTrue(
+            sampleTitle.waitForExistence(timeout: 2),
+            "首启价值页必须直接说明 Kindle 书可变成有声书"
+        )
+        XCTAssertEqual(sampleTitle.label, "把你的 Kindle 书变成有声书")
+        XCTAssertLessThan(
+            sampleTitle.frame.height,
+            connect.frame.height,
+            "首启标题必须缩放为单行，不能挤压中部插画与底部操作"
+        )
+        XCTAssertFalse(
+            app.staticTexts["0 · 价值页"].exists,
+            "首屏顶部不应出现内部步骤名或价值页标签"
+        )
+        let noKindle = app.buttons["kindleOnboarding.sample.skip"]
+        XCTAssertTrue(connect.exists, "价值页缺少连接 Kindle 主 CTA")
+        XCTAssertTrue(noKindle.exists, "价值页缺少没有 Kindle 的次 CTA")
+        XCTAssertGreaterThan(
+            noKindle.frame.maxY,
+            app.frame.height * 0.82,
+            "价值页按钮组必须贴近页面底部"
+        )
+
+        connect.tap()
+
+        let storefront = app.buttons["kindleOnboarding.storefront.continue"]
+        let firstListen = app.buttons["kindleOnboarding.firstListen.start"]
+        XCTAssertTrue(
+            waitForEither(
+                storefront,
+                firstListen,
+                timeout: 6
+            ),
+            "连接 Kindle 后必须进入选站；已绑定用户可以直接进入首听"
+        )
+
+        if firstListen.exists {
+            XCTAssertTrue(
+                app.buttons["kindleOnboarding.firstListen.start"].exists,
+                "已绑定用户直接进入首听时必须保留一键开始入口"
+            )
+            let connectionStatus = app.descendants(matching: .any)[
+                "kindleOnboarding.firstListen.connectionStatus"
+            ]
+            XCTAssertTrue(
+                connectionStatus.waitForExistence(timeout: 2),
+                "首听页必须明确显示 Kindle 已连接"
+            )
+            XCTAssertEqual(connectionStatus.value as? String, "success")
+            XCTAssertFalse(
+                app.buttons["kindleOnboarding.firstListen.changeBook"].exists,
+                "书籍候选已直接平铺，不应再出现旧的换书入口"
+            )
+            return
+        }
+
+        let storefrontTitle = app.staticTexts["你在哪个亚马逊买书？"]
+        XCTAssertTrue(
+            storefrontTitle.exists,
+            "选站页标题必须把唯一决策说清楚"
+        )
+        XCTAssertLessThan(
+            storefrontTitle.frame.height,
+            56,
+            "常规中文标题应根据可用宽度缩放为单行，而不是被固定窄宽提前换行"
+        )
+        XCTAssertTrue(app.buttons["kindleOnboarding.storefront.continue"].exists)
+        let postpone = app.buttons["kindleOnboarding.storefront.postpone"]
+        XCTAssertTrue(postpone.exists)
+        XCTAssertGreaterThan(
+            postpone.frame.maxY,
+            app.frame.height * 0.82,
+            "选站页按钮组必须贴近页面底部"
+        )
+
+        let expectedStorefrontIDs = [
+            "us", "uk", "ca", "au", "jp", "de", "fr",
+            "it", "es", "in", "br", "mx", "nl",
+        ]
+        for storefrontID in expectedStorefrontIDs {
+            XCTAssertTrue(
+                app.buttons[
+                    "kindleOnboarding.storefront.option.\(storefrontID)"
+                ].exists,
+                "选站页必须完整提供可用 Kindle 站点：\(storefrontID)"
+            )
+        }
+        XCTAssertFalse(
+            app.buttons["kindleOnboarding.storefront.option.cn"].exists,
+            "已关闭的 Amazon.cn 仅用于历史链接识别，不能作为登录目的地"
+        )
+
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Kindle onboarding storefront"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
     }
 
-    func testOnboardingOtherContentContinuesIntoExistingImportFlow() {
+    func testOnboardingCanBeDeferredWithoutAContentDecision() {
         let app = XCUIApplication()
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
@@ -169,12 +345,12 @@ class CastReaderUITests: XCTestCase {
             "-CastReaderResetLibraryOnboarding",
         ]
         app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
 
-        let other = app.buttons["libraryOnboardingOtherContent"]
-        XCTAssertTrue(other.waitForExistence(timeout: 5))
-        other.tap()
-        XCTAssertTrue(app.buttons["上传文件"].waitForExistence(timeout: 6))
-        XCTAssertTrue(app.buttons["输入网址"].exists)
+        let skip = app.buttons["kindleOnboarding.sample.skip"]
+        XCTAssertTrue(skip.waitForExistence(timeout: 5))
+        skip.tap()
+        XCTAssertTrue(app.tabBars.buttons["首页"].waitForExistence(timeout: 6))
     }
 
     func testOnboardingKindleStartsExistingBindingFlow() {
@@ -184,27 +360,34 @@ class CastReaderUITests: XCTestCase {
             "-AppleLocale", "zh_CN",
             "-CastReaderResetLibraryOnboarding",
             "-CastReaderForceLibraryOnboardingRebind",
+            "-CastReaderOnboardingSampleInstant",
         ]
         app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
 
-        let kindle = app.buttons["libraryOnboardingKindle"]
-        XCTAssertTrue(kindle.waitForExistence(timeout: 5))
-        kindle.tap()
-        XCTAssertTrue(app.navigationBars["绑定 Kindle"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 8))
+        let start = app.buttons["kindleOnboarding.sample.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        start.tap()
+        let connect = app.buttons["kindleOnboarding.storefront.continue"]
+        XCTAssertTrue(connect.waitForExistence(timeout: 6))
+        connect.tap()
+        XCTAssertTrue(
+            app.webViews.firstMatch.waitForExistence(timeout: 8),
+            "连接站点后必须进入 Amazon 官方 Web 登录页"
+        )
+        let postpone = app.buttons["kindleOnboarding.login.postpone"]
+        XCTAssertTrue(postpone.waitForExistence(timeout: 4))
+        XCTAssertGreaterThan(
+            postpone.frame.maxY,
+            app.frame.height * 0.82,
+            "登录页稍后入口必须贴近页面底部"
+        )
     }
 
     func testOnboardingWeReadStartsExistingBindingFlow() {
-        let app = XCUIApplication()
-        app.launchArguments = [
-            "-AppleLanguages", "(zh-Hans)",
-            "-AppleLocale", "zh_CN",
-            "-CastReaderResetLibraryOnboarding",
-            "-CastReaderForceLibraryOnboardingRebind",
-        ]
-        app.launch()
-
-        let weRead = app.buttons["libraryOnboardingWeRead"]
+        let app = launchZh()
+        app.buttons["homeShelfSourcesButton"].tap()
+        let weRead = app.buttons["shelfSourcePrimaryAction.weread"]
         XCTAssertTrue(weRead.waitForExistence(timeout: 5))
         weRead.tap()
         XCTAssertTrue(app.navigationBars["绑定微信读书"].waitForExistence(timeout: 8))
@@ -212,16 +395,9 @@ class CastReaderUITests: XCTestCase {
     }
 
     func testOnboardingGooglePlayBooksStartsExistingBindingFlow() {
-        let app = XCUIApplication()
-        app.launchArguments = [
-            "-AppleLanguages", "(zh-Hans)",
-            "-AppleLocale", "zh_CN",
-            "-CastReaderResetLibraryOnboarding",
-            "-CastReaderForceLibraryOnboardingRebind",
-        ]
-        app.launch()
-
-        let googleBooks = app.buttons["libraryOnboardingGoogleBooks"]
+        let app = launchZh()
+        app.buttons["homeShelfSourcesButton"].tap()
+        let googleBooks = app.buttons["shelfSourcePrimaryAction.google_books"]
         XCTAssertTrue(googleBooks.waitForExistence(timeout: 5))
         googleBooks.tap()
         XCTAssertTrue(app.navigationBars["绑定 Google Play 图书"].waitForExistence(timeout: 8))
@@ -234,6 +410,87 @@ class CastReaderUITests: XCTestCase {
             ),
             "绑定页必须暴露登录或同步原生控制"
         )
+    }
+
+    /// A postponed first-use reminder must route from the always-mounted app
+    /// root. This is the production path that 1.2.15 lost when the selected
+    /// provider had no shelf rows and its conditional Home section was empty.
+    func testDeferredGoogleReminderPresentsAfterOnboardingCoverDismissal() {
+        UIPasteboard.general.items = []
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-boundLibraryOnboarding.v1.selectedSource", "google_books",
+            "-boundLibraryOnboarding.v1.hasSeenChooser", "YES",
+            "-boundLibraryOnboarding.v1.isActivated", "NO",
+            "-boundLibraryOnboarding.v3.phase", "sample",
+            "-boundLibraryOnboarding.v3.resumePhase", "sample",
+            "-boundLibraryOnboarding.v3.hasCompletedSample", "NO",
+            "-googlebooks.library.connected.v1", "NO",
+            "-googlebooks.library.books.v1", "",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        let postpone = app.buttons["kindleOnboarding.sample.skip"]
+        XCTAssertTrue(postpone.waitForExistence(timeout: 8))
+        postpone.tap()
+
+        let continueButton = app.buttons["continueLibraryOnboarding"]
+        XCTAssertTrue(continueButton.waitForExistence(timeout: 8))
+        continueButton.tap()
+        XCTAssertTrue(
+            app.navigationBars["绑定 Google Play 图书"].waitForExistence(timeout: 10),
+            "Google binding must wait for the onboarding full-screen cover to finish dismissing"
+        )
+        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 8))
+    }
+
+    func testDeferredLibraryReminderDirectlyRoutesEveryProvider() {
+        let providers: [(source: String, title: String, booksKey: String, connectedKey: String)] = [
+            ("google_books", "绑定 Google Play 图书", "googlebooks.library.books.v1", "googlebooks.library.connected.v1"),
+            ("weread", "绑定微信读书", "weread.library.books.v1", "weread.library.connected.v1"),
+            ("kobo", "绑定 Kobo", "kobo.library.books.v1", "kobo.library.connected.v1"),
+            ("oreilly", "绑定 O’Reilly", "oreilly.library.books.v1", "oreilly.library.connected.v1"),
+        ]
+
+        for provider in providers {
+            let app = XCUIApplication()
+            app.launchArguments = [
+                "-AppleLanguages", "(zh-Hans)",
+                "-AppleLocale", "zh_CN",
+                "-CastReaderSkipLibraryOnboarding",
+                "-boundLibraryOnboarding.v1.selectedSource", provider.source,
+                "-boundLibraryOnboarding.v1.hasSeenChooser", "YES",
+                "-boundLibraryOnboarding.v1.isActivated", "NO",
+                "-boundLibraryOnboarding.v3.phase", "postponed",
+                "-boundLibraryOnboarding.v3.resumePhase", "firstListen",
+                "-boundLibraryOnboarding.v3.hasCompletedSample", "YES",
+                "-\(provider.connectedKey)", "NO",
+                "-\(provider.booksKey)", "",
+            ]
+            app.launch()
+            dismissSelfOpenSystemAlertIfPresent()
+
+            let continueButton = app.buttons["continueLibraryOnboarding"]
+            XCTAssertTrue(
+                continueButton.waitForExistence(timeout: 8),
+                "\(provider.source) should expose the deferred activation action"
+            )
+            continueButton.tap()
+            XCTAssertTrue(
+                app.navigationBars[provider.title].waitForExistence(timeout: 10),
+                "\(provider.source) must present its binding flow directly from MainTab"
+            )
+            if provider.source == "google_books" {
+                XCTAssertTrue(
+                    app.webViews.firstMatch.waitForExistence(timeout: 8),
+                    "Google Play Books binding must contain its real web login surface"
+                )
+            }
+            app.terminate()
+        }
     }
 
     /// Opt-in live-account gate. The test drives every native step and waits
@@ -251,13 +508,14 @@ class CastReaderUITests: XCTestCase {
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
-            "-CastReaderResetLibraryOnboarding",
+            "-CastReaderSkipLibraryOnboarding",
             "-CastReaderForceLibraryOnboardingRebind",
             "-CastReaderGoogleBooksLiveLoginGate",
         ]
         app.launch()
-
-        let googleBooks = app.buttons["libraryOnboardingGoogleBooks"]
+        dismissSelfOpenSystemAlertIfPresent()
+        app.buttons["homeShelfSourcesButton"].tap()
+        let googleBooks = app.buttons["shelfSourcePrimaryAction.google_books"]
         XCTAssertTrue(googleBooks.waitForExistence(timeout: 8))
         googleBooks.tap()
         let bindingTitle = app.navigationBars["绑定 Google Play 图书"]
@@ -361,20 +619,14 @@ class CastReaderUITests: XCTestCase {
         keepScreenshot(of: app, named: "GoogleBooks-03-explain-playing")
     }
 
-    /// 四个绑定书库入口必须同时在场：少一个就是路由或本地化回归。
+    /// 统一书架页仍必须提供其他书库；首启本身只保留一条 Kindle 路径。
     func testOnboardingOffersAllFourBoundLibraries() {
-        let app = XCUIApplication()
-        app.launchArguments = [
-            "-AppleLanguages", "(zh-Hans)",
-            "-AppleLocale", "zh_CN",
-            "-CastReaderResetLibraryOnboarding",
-        ]
-        app.launch()
-
-        XCTAssertTrue(app.buttons["libraryOnboardingKindle"].waitForExistence(timeout: 6))
-        XCTAssertTrue(app.buttons["libraryOnboardingWeRead"].exists)
-        XCTAssertTrue(app.buttons["libraryOnboardingGoogleBooks"].exists)
-        XCTAssertTrue(app.buttons["libraryOnboardingKobo"].exists)
+        let app = launchZh()
+        app.buttons["homeShelfSourcesButton"].tap()
+        XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.kindle"].waitForExistence(timeout: 6))
+        XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.weread"].exists)
+        XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.google_books"].exists)
+        XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.kobo"].exists)
     }
 
     func testSettingsCanReopenLibraryOnboardingAfterDismissal() {
@@ -390,7 +642,10 @@ class CastReaderUITests: XCTestCase {
         }
         XCTAssertTrue(reopen.isHittable)
         reopen.tap()
-        XCTAssertTrue(app.buttons["libraryOnboardingWeRead"].waitForExistence(timeout: 6))
+        XCTAssertTrue(
+            app.descendants(matching: .any)["boundLibraryOnboarding"]
+                .waitForExistence(timeout: 6)
+        )
     }
 
     func testCanSwitchInterfaceLanguageInsideTheApp() {

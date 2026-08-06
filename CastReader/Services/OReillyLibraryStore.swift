@@ -207,6 +207,7 @@ final class OReillyLibraryStore: ObservableObject {
             anchors = anchors.filter { retainedIDs.contains($0.key) }
         }
 
+        let wasConnected = hasConnected
         books = merged.values.sorted {
             ($0.lastOpenedAt ?? $0.lastSyncedAt)
                 > ($1.lastOpenedAt ?? $1.lastSyncedAt)
@@ -218,6 +219,12 @@ final class OReillyLibraryStore: ObservableObject {
         }
         lastError = nil
         save()
+        if !wasConnected {
+            NotificationCenter.default.post(
+                name: .castReaderLibraryConnectedForReview,
+                object: nil
+            )
+        }
         ImageCache.shared.prefetch(books.compactMap(\.coverURL))
     }
 

@@ -8,7 +8,6 @@ import SwiftUI
 struct KindleHomeSection: View {
     @ObservedObject var store: KindleLibraryStore
     @ObservedObject private var history = HistoryStore.shared
-    @State private var showConnect = false
 
     private var recentKindleBookIDs: Set<String> {
         Set(history.records.compactMap { $0.sourceKind == .kindle ? $0.id : nil })
@@ -59,14 +58,6 @@ struct KindleHomeSection: View {
                 }
                 .accessibilityIdentifier("homeShelfSection.kindle")
             }
-        }
-        // Keep the section mounted even while it renders no card. The
-        // first-use flow opens this existing connection sheet by notification.
-        .sheet(isPresented: $showConnect) {
-            KindleLibraryConnectView()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .castReaderKindleRebindRequested)) { _ in
-            showConnect = true
         }
     }
 

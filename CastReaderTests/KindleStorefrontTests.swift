@@ -333,6 +333,124 @@ final class KindleStorefrontTests: XCTestCase {
         )
     }
 
+    func testDynamicRecommendationIgnoresFreshUSPlaceholderButPreservesRealBinding() {
+        let japanContext = KindleStorefrontRecommendationContext(
+            regionCode: "JP",
+            preferredLanguages: ["ja-JP", "en-US"],
+            appLanguageCode: "ja",
+            timeZoneIdentifier: "Asia/Tokyo",
+            secondsFromGMT: 9 * 60 * 60
+        )
+
+        let fresh = KindleStorefrontRecommender.recommend(
+            context: japanContext,
+            authoritativeBoundStorefrontID: nil
+        )
+        XCTAssertEqual(fresh.recommended.id, "jp")
+        XCTAssertEqual(fresh.candidates.first?.id, "jp")
+        XCTAssertEqual(Set(fresh.candidates.map(\.id)).count, fresh.candidates.count)
+        XCTAssertEqual(fresh.candidates.count, KindleStorefront.selectable.count)
+        XCTAssertFalse(fresh.candidates.contains { !$0.entryEnabled })
+
+        let alreadyBound = KindleStorefrontRecommender.recommend(
+            context: japanContext,
+            authoritativeBoundStorefrontID: "us"
+        )
+        XCTAssertEqual(
+            alreadyBound.recommended.id,
+            "us",
+            "a real account binding remains authoritative even after locale changes"
+        )
+        XCTAssertEqual(alreadyBound.candidates.first?.id, "us")
+        XCTAssertEqual(
+            alreadyBound.candidates.filter { $0.id == "us" }.count,
+            1,
+            "prepending the bound site must not duplicate it in the dynamic ranking"
+        )
+    }
+
+    func testDynamicRecommendationCombinesLanguageRegionAndTimeZoneEvidence() {
+        let mexicanSpanish = KindleStorefrontRecommendationContext(
+            regionCode: nil,
+            preferredLanguages: ["es-MX", "es-ES", "en-US"],
+            appLanguageCode: "es",
+            timeZoneIdentifier: "America/Mexico_City",
+            secondsFromGMT: -6 * 60 * 60
+        )
+        XCTAssertEqual(
+            KindleStorefrontRecommender.recommend(context: mexicanSpanish)
+                .recommended.id,
+            "mx"
+        )
+
+        let residentInSpain = KindleStorefrontRecommendationContext(
+            regionCode: "ES",
+            preferredLanguages: ["es-MX", "en-US"],
+            appLanguageCode: "es",
+            timeZoneIdentifier: "America/Mexico_City",
+            secondsFromGMT: -6 * 60 * 60
+        )
+        XCTAssertEqual(
+            KindleStorefrontRecommender.recommend(context: residentInSpain)
+                .recommended.id,
+            "es",
+            "Locale.region must outrank weaker language and time-zone hints"
+        )
+
+        let offsetOnly = KindleStorefrontRecommendationContext(
+            regionCode: nil,
+            preferredLanguages: [],
+            appLanguageCode: "zh-Hans",
+            timeZoneIdentifier: nil,
+            secondsFromGMT: 5 * 60 * 60 + 30 * 60
+        )
+        XCTAssertEqual(
+            KindleStorefrontRecommender.recommend(context: offsetOnly)
+                .recommended.id,
+            "in",
+            "secondsFromGMT remains a deterministic last-resort signal"
+        )
+    }
+
+    func testRecommendationContextReadsLocaleAndTimeZoneWithoutGlobalState() throws {
+        let london = try XCTUnwrap(TimeZone(identifier: "Europe/London"))
+        let winter = Date(timeIntervalSince1970: 1_767_225_600) // 2026-01-01 UTC
+        let context = KindleStorefrontRecommendationContext(
+            locale: Locale(identifier: "en_GB"),
+            preferredLanguages: ["en-GB", "en-US"],
+            appLanguageCode: "en",
+            timeZone: london,
+            date: winter
+        )
+
+        XCTAssertEqual(context.regionCode, "GB")
+        XCTAssertEqual(context.timeZoneIdentifier, "Europe/London")
+        XCTAssertEqual(context.secondsFromGMT, 0)
+        XCTAssertEqual(
+            KindleStorefrontRecommender.recommend(context: context)
+                .recommended.id,
+            "uk"
+        )
+    }
+
+    func testChinaEnvironmentUsesEnabledEastAsiaFallbacksInsteadOfCatalogOrder() {
+        let context = KindleStorefrontRecommendationContext(
+            regionCode: "CN",
+            preferredLanguages: ["zh-Hans-CN"],
+            appLanguageCode: "zh-Hans",
+            timeZoneIdentifier: "Asia/Shanghai",
+            secondsFromGMT: 8 * 60 * 60
+        )
+        let result = KindleStorefrontRecommender.recommend(context: context)
+
+        XCTAssertEqual(Array(result.candidates.prefix(3).map(\.id)), ["us", "jp", "au"])
+        XCTAssertFalse(
+            result.candidates.contains { $0.id == "cn" },
+            "Amazon.cn remains recognition-only and must never become an onboarding destination"
+        )
+        XCTAssertEqual(Set(result.candidates.map(\.id)).count, result.candidates.count)
+    }
+
     func testChinaIsRecognitionOnlyAndNeverSuggested() {
         let china = KindleStorefront.storefront(id: "cn")
         XCTAssertEqual(china?.canonicalHost, "read.amazon.cn")

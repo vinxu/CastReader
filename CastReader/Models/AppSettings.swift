@@ -153,6 +153,25 @@ enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
     }
 }
 
+enum BoundLibraryOnboardingPhase: String, Equatable {
+    case sample
+    case storefront
+    case login
+    case scan
+    case firstListen
+    case postponed
+    case activated
+
+    var isActiveFlow: Bool {
+        switch self {
+        case .sample, .storefront, .login, .scan, .firstListen:
+            return true
+        case .postponed, .activated:
+            return false
+        }
+    }
+}
+
 /// Versioned first-use state for the mobile activation path:
 ///
 /// choose Kindle/WeRead → bind a real shelf → open a book → listen for 30 seconds.
@@ -170,15 +189,23 @@ final class BoundLibraryOnboardingStore: ObservableObject {
     @Published private(set) var isActivated: Bool
     @Published private(set) var isChooserPresented: Bool
     @Published private(set) var activationPlaybackSeconds: Double
+    @Published private(set) var phase: BoundLibraryOnboardingPhase
+    @Published private(set) var hasCompletedSample: Bool
+    @Published private(set) var recommendedBookID: String?
 
     private let defaults: UserDefaults
     private var lastPersistedPlaybackBucket: Int
+    private var resumePhase: BoundLibraryOnboardingPhase
 
     private enum Key {
         static let selectedSource = "boundLibraryOnboarding.v1.selectedSource"
         static let hasSeenChooser = "boundLibraryOnboarding.v1.hasSeenChooser"
         static let isActivated = "boundLibraryOnboarding.v1.isActivated"
         static let activationPlaybackSeconds = "boundLibraryOnboarding.v1.activationPlaybackSeconds"
+        static let phase = "boundLibraryOnboarding.v3.phase"
+        static let resumePhase = "boundLibraryOnboarding.v3.resumePhase"
+        static let hasCompletedSample = "boundLibraryOnboarding.v3.hasCompletedSample"
+        static let recommendedBookID = "boundLibraryOnboarding.v3.recommendedBookID"
     }
 
     init(
@@ -195,6 +222,10 @@ final class BoundLibraryOnboardingStore: ObservableObject {
             .flatMap(BoundLibraryOnboardingSource.init(rawValue:))
         let restoredHasSeenChooser = defaults.bool(forKey: Key.hasSeenChooser)
         let restoredIsActivated = defaults.bool(forKey: Key.isActivated)
+        let restoredPhase = defaults.string(forKey: Key.phase)
+            .flatMap(BoundLibraryOnboardingPhase.init(rawValue:))
+        let restoredResumePhase = defaults.string(forKey: Key.resumePhase)
+            .flatMap(BoundLibraryOnboardingPhase.init(rawValue:))
         let restoredPlaybackSeconds = min(
             Double(Self.activationSeconds),
             max(0, defaults.double(forKey: Key.activationPlaybackSeconds))
@@ -205,38 +236,151 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         isActivated = restoredIsActivated
         activationPlaybackSeconds = restoredPlaybackSeconds
         lastPersistedPlaybackBucket = Int(restoredPlaybackSeconds / 5)
-        isChooserPresented = !skipsChooser && !restoredIsActivated && !restoredHasSeenChooser
+        hasCompletedSample = defaults.bool(forKey: Key.hasCompletedSample)
+        recommendedBookID = defaults.string(forKey: Key.recommendedBookID)
+
+        let initialPhase: BoundLibraryOnboardingPhase
+        let initialResumePhase: BoundLibraryOnboardingPhase
+        if restoredIsActivated {
+            initialPhase = .activated
+            initialResumePhase = .firstListen
+        } else if let restoredPhase {
+            initialPhase = restoredPhase
+            initialResumePhase = restoredResumePhase?.isActiveFlow == true
+                ? restoredResumePhase!
+                : (restoredPhase.isActiveFlow ? restoredPhase : .sample)
+        } else if restoredHasSeenChooser {
+            // v1 users who already dismissed the chooser must not be forced
+            // through a new full-screen flow after upgrading.
+            initialPhase = .postponed
+            initialResumePhase = .storefront
+        } else {
+            initialPhase = .sample
+            initialResumePhase = .sample
+        }
+
+        phase = initialPhase
+        resumePhase = initialResumePhase
+        isChooserPresented = !skipsChooser
+            && !restoredIsActivated
+            && initialPhase.isActiveFlow
     }
 
     var shouldShowReminder: Bool {
         hasSeenChooser && !isActivated
     }
 
+    /// Home must reopen the persisted v3 step instead of routing a deferred
+    /// Kindle user through the legacy one-shot connection notification.
+    var shouldResumeDeferredKindleFlow: Bool {
+        !isActivated
+            && phase == .postponed
+            && resumePhase.isActiveFlow
+            && selectedSource == .kindle
+    }
+
     func select(_ source: BoundLibraryOnboardingSource) {
         if selectedSource != nil, selectedSource != source, !isActivated {
-            activationPlaybackSeconds = 0
-            lastPersistedPlaybackBucket = 0
-            defaults.removeObject(forKey: Key.activationPlaybackSeconds)
+            resetActivationProgress()
         }
         selectedSource = source
         hasSeenChooser = true
         isChooserPresented = false
+        phase = .postponed
+        resumePhase = .firstListen
         defaults.set(source.rawValue, forKey: Key.selectedSource)
         defaults.set(true, forKey: Key.hasSeenChooser)
+        persistFlowState()
     }
 
     func postpone() {
+        if phase.isActiveFlow {
+            resumePhase = phase
+        }
         hasSeenChooser = true
         isChooserPresented = false
+        phase = .postponed
         defaults.set(true, forKey: Key.hasSeenChooser)
+        persistFlowState()
     }
 
     func presentChooser() {
+        if phase == .postponed {
+            phase = resumePhase.isActiveFlow ? resumePhase : (hasCompletedSample ? .storefront : .sample)
+        } else if phase == .activated {
+            // Production Settings intentionally offers “重新打开书库引导”. Keep the
+            // earned activation, but allow this explicitly presented replay to
+            // advance through the informational/connection steps.
+            phase = hasCompletedSample ? .storefront : .sample
+        }
         isChooserPresented = true
+        persistFlowState()
     }
 
     func dismissChooser() {
         isChooserPresented = false
+    }
+
+    func completeSample() {
+        guard canAdvancePresentedFlow else { return }
+        hasCompletedSample = true
+        transition(to: .storefront)
+    }
+
+    func showStorefrontConfirmation() {
+        guard canAdvancePresentedFlow else { return }
+        transition(to: .storefront)
+    }
+
+    func restartSample() {
+        guard canAdvancePresentedFlow else { return }
+        transition(to: .sample)
+    }
+
+    func confirmKindleStorefront() {
+        guard canAdvancePresentedFlow else { return }
+        if selectedSource != nil, selectedSource != .kindle, !isActivated {
+            resetActivationProgress()
+        }
+        selectedSource = .kindle
+        hasSeenChooser = true
+        defaults.set(BoundLibraryOnboardingSource.kindle.rawValue, forKey: Key.selectedSource)
+        defaults.set(true, forKey: Key.hasSeenChooser)
+        transition(to: .login)
+    }
+
+    func beginKindleScan() {
+        guard canAdvancePresentedFlow else { return }
+        transition(to: .scan)
+    }
+
+    func requireKindleLogin() {
+        guard canAdvancePresentedFlow else { return }
+        transition(to: .login)
+    }
+
+    func prepareFirstListen(bookID: String) {
+        guard canAdvancePresentedFlow else { return }
+        recommendedBookID = bookID
+        transition(to: .firstListen)
+    }
+
+    /// Dismisses the onboarding before MainTab presents the real Kindle reader.
+    /// Activation still completes only through natural Kindle playback ticks.
+    func startFirstListen(bookID: String) {
+        guard !isActivated else {
+            isChooserPresented = false
+            return
+        }
+        selectedSource = .kindle
+        hasSeenChooser = true
+        recommendedBookID = bookID
+        phase = .firstListen
+        resumePhase = .firstListen
+        isChooserPresented = false
+        defaults.set(BoundLibraryOnboardingSource.kindle.rawValue, forKey: Key.selectedSource)
+        defaults.set(true, forKey: Key.hasSeenChooser)
+        persistFlowState()
     }
 
     /// Keep onboarding attribution on the real reader session, including when
@@ -313,12 +457,16 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         hasSeenChooser = true
         isActivated = true
         isChooserPresented = false
+        phase = .activated
+        resumePhase = .firstListen
+        recommendedBookID = nil
         activationPlaybackSeconds = Double(Self.activationSeconds)
         lastPersistedPlaybackBucket = Self.activationSeconds / 5
         defaults.set(source.rawValue, forKey: Key.selectedSource)
         defaults.set(true, forKey: Key.hasSeenChooser)
         defaults.set(true, forKey: Key.isActivated)
         defaults.set(activationPlaybackSeconds, forKey: Key.activationPlaybackSeconds)
+        persistFlowState()
     }
 
     /// Available to the DEBUG settings screen and deterministic UI tests.
@@ -329,7 +477,37 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         isActivated = false
         isChooserPresented = true
         activationPlaybackSeconds = 0
+        phase = .sample
+        resumePhase = .sample
+        hasCompletedSample = false
+        recommendedBookID = nil
         lastPersistedPlaybackBucket = 0
+    }
+
+    private func transition(to nextPhase: BoundLibraryOnboardingPhase) {
+        phase = nextPhase
+        if nextPhase.isActiveFlow {
+            resumePhase = nextPhase
+        }
+        isChooserPresented = nextPhase.isActiveFlow
+        persistFlowState()
+    }
+
+    private var canAdvancePresentedFlow: Bool {
+        !isActivated || isChooserPresented
+    }
+
+    private func resetActivationProgress() {
+        activationPlaybackSeconds = 0
+        lastPersistedPlaybackBucket = 0
+        defaults.removeObject(forKey: Key.activationPlaybackSeconds)
+    }
+
+    private func persistFlowState() {
+        defaults.set(phase.rawValue, forKey: Key.phase)
+        defaults.set(resumePhase.rawValue, forKey: Key.resumePhase)
+        defaults.set(hasCompletedSample, forKey: Key.hasCompletedSample)
+        defaults.set(recommendedBookID, forKey: Key.recommendedBookID)
     }
 
     private static func clearPersistedState(in defaults: UserDefaults) {
@@ -337,6 +515,10 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         defaults.removeObject(forKey: Key.hasSeenChooser)
         defaults.removeObject(forKey: Key.isActivated)
         defaults.removeObject(forKey: Key.activationPlaybackSeconds)
+        defaults.removeObject(forKey: Key.phase)
+        defaults.removeObject(forKey: Key.resumePhase)
+        defaults.removeObject(forKey: Key.hasCompletedSample)
+        defaults.removeObject(forKey: Key.recommendedBookID)
     }
 }
 

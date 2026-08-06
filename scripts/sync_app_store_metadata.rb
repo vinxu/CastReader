@@ -19,6 +19,7 @@ KEY_PATH = ENV.fetch("ASC_KEY_PATH", File.expand_path("~/.appstoreconnect/privat
 BASE_URL = "https://api.appstoreconnect.apple.com"
 LOCALES = %w[en-US zh-Hans ja es-ES fr-FR pt-BR it hi de-DE zh-Hant es-MX].freeze
 WHATS_NEW_ONLY = ENV["ASC_WHATS_NEW_ONLY"] == "1"
+WHATS_NEW_PATH = ENV["ASC_WHATS_NEW_PATH"]
 
 def base64url(value)
   Base64.urlsafe_encode64(value, padding: false)
@@ -77,6 +78,40 @@ def parse_metadata(path)
   end
 end
 
+class DuplicateKeyHash < Hash
+  attr_reader :duplicate_keys
+
+  def initialize
+    super
+    @duplicate_keys = []
+  end
+
+  def []=(key, value)
+    @duplicate_keys << key if key?(key)
+    super
+  end
+end
+
+def parse_whats_new(path)
+  values = JSON.parse(File.read(path), object_class: DuplicateKeyHash)
+  abort "What's New source must be a JSON object" unless values.is_a?(DuplicateKeyHash)
+
+  duplicates = values.duplicate_keys.uniq
+  unexpected = values.keys - LOCALES
+  missing = LOCALES - values.keys
+  errors = []
+  errors << "duplicate locales: #{duplicates.join(', ')}" unless duplicates.empty?
+  errors << "unexpected locales: #{unexpected.join(', ')}" unless unexpected.empty?
+  errors << "missing locales: #{missing.join(', ')}" unless missing.empty?
+  abort "Invalid What's New locale set (#{errors.join('; ')})" unless errors.empty?
+
+  LOCALES.to_h do |locale|
+    value = values.fetch(locale)
+    abort "What's New for #{locale} must be a string" unless value.is_a?(String)
+    [locale, { whatsNew: value.strip }]
+  end
+end
+
 def character_count(value)
   value.each_grapheme_cluster.count
 end
@@ -114,6 +149,19 @@ def validate_metadata(metadata)
   puts "Validated #{metadata.length} locales from #{METADATA_PATH}"
 end
 
+def validate_whats_new(metadata, path)
+  errors = []
+  metadata.each do |locale, fields|
+    value = fields.fetch(:whatsNew)
+    errors << "#{locale} whatsNew is empty" if value.empty?
+    count = character_count(value)
+    errors << "#{locale} whatsNew is #{count} characters (limit 4000)" if count > 4_000
+  end
+  abort "What's New validation failed:\n- #{errors.join("\n- ")}" unless errors.empty?
+
+  puts "Validated #{metadata.length} What's New locales from #{path}"
+end
+
 def chinese_locale?(locale)
   %w[zh-Hans zh-Hant].include?(locale)
 end
@@ -126,8 +174,28 @@ def resource(type, id: nil, attributes: nil, relationships: nil)
   { data: data }
 end
 
-metadata = parse_metadata(METADATA_PATH)
-validate_metadata(metadata)
+def attributes_match?(resource_data, desired)
+  desired.all? do |key, value|
+    resource_data.dig("attributes", key.to_s) == value
+  end
+end
+
+if WHATS_NEW_ONLY
+  abort "ASC_WHATS_NEW_PATH is required when ASC_WHATS_NEW_ONLY=1" if WHATS_NEW_PATH.nil? || WHATS_NEW_PATH.empty?
+
+  metadata = parse_whats_new(WHATS_NEW_PATH)
+  validate_whats_new(metadata, WHATS_NEW_PATH)
+else
+  metadata = parse_metadata(METADATA_PATH)
+  if WHATS_NEW_PATH && !WHATS_NEW_PATH.empty?
+    overrides = parse_whats_new(WHATS_NEW_PATH)
+    metadata.each do |locale, fields|
+      fields[:whatsNew] = overrides.fetch(locale).fetch(:whatsNew)
+    end
+  end
+  validate_metadata(metadata)
+  validate_whats_new(metadata, WHATS_NEW_PATH) if WHATS_NEW_PATH && !WHATS_NEW_PATH.empty?
+end
 exit 0 if VALIDATE_ONLY
 
 unless WHATS_NEW_ONLY
@@ -144,8 +212,12 @@ unless WHATS_NEW_ONLY
     }
     existing = app_info_localizations[locale]
     if existing
-      request("Patch", "/v1/appInfoLocalizations/#{existing.fetch("id")}", resource("appInfoLocalizations", id: existing.fetch("id"), attributes: attributes))
-      puts "Updated app info: #{locale}"
+      if attributes_match?(existing, attributes)
+        puts "Unchanged app info: #{locale}"
+      else
+        request("Patch", "/v1/appInfoLocalizations/#{existing.fetch("id")}", resource("appInfoLocalizations", id: existing.fetch("id"), attributes: attributes))
+        puts "Updated app info: #{locale}"
+      end
     else
       relationships = { appInfo: { data: { type: "appInfos", id: APP_INFO_ID } } }
       request("Post", "/v1/appInfoLocalizations", resource("appInfoLocalizations", attributes: attributes.merge(locale: locale), relationships: relationships))
@@ -173,8 +245,12 @@ metadata.each do |locale, fields|
   end
   existing = version_localizations[locale]
   if existing
-    request("Patch", "/v1/appStoreVersionLocalizations/#{existing.fetch("id")}", resource("appStoreVersionLocalizations", id: existing.fetch("id"), attributes: attributes))
-    puts "Updated version metadata: #{locale}"
+    if attributes_match?(existing, attributes)
+      puts "Unchanged version metadata: #{locale}"
+    else
+      request("Patch", "/v1/appStoreVersionLocalizations/#{existing.fetch("id")}", resource("appStoreVersionLocalizations", id: existing.fetch("id"), attributes: attributes))
+      puts "Updated version metadata: #{locale}"
+    end
   else
     relationships = { appStoreVersion: { data: { type: "appStoreVersions", id: VERSION_ID } } }
     request("Post", "/v1/appStoreVersionLocalizations", resource("appStoreVersionLocalizations", attributes: attributes.merge(locale: locale), relationships: relationships))

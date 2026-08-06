@@ -11,6 +11,9 @@ import Foundation
 
 enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
     case appSessionStart = "app_session_start"
+    case onboardingStep = "onboarding_step"
+    case libraryConnection = "library_connection"
+    case contentInputStage = "content_input_stage"
     case contentIntent = "content_intent"
     case contentReady = "content_ready"
     case contentFailed = "content_failed"
@@ -36,6 +39,9 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
     var legacyEvent: String {
         switch self {
         case .appSessionStart: return "session_start"
+        case .onboardingStep: return "onboarding_step"
+        case .libraryConnection: return "library_connection"
+        case .contentInputStage: return "content_input_stage"
         case .contentIntent: return "feature_use"
         case .contentReady: return "reader_file_loaded"
         case .contentFailed: return "reader_file_error"
@@ -70,6 +76,7 @@ enum AnalyticsProductArea: String, Codable, Sendable {
 }
 
 enum AnalyticsResult: String, Codable, Sendable {
+    case started
     case success
     case cancelled
     case blocked
@@ -77,7 +84,35 @@ enum AnalyticsResult: String, Codable, Sendable {
     case pending
 }
 
-enum AnalyticsContentSource: String, Codable, Sendable {
+enum AnalyticsLibrarySource: String, Codable, CaseIterable, Sendable {
+    case kindle
+    case weread
+    case googleBooks = "google_books"
+    case kobo
+    case oreilly
+}
+
+enum AnalyticsLibraryConnectionStage: String, Codable, CaseIterable, Sendable {
+    case entryTapped = "entry_tapped"
+    case connectionPresented = "connection_presented"
+    case loginStarted = "login_started"
+    case loginSucceeded = "login_succeeded"
+    case syncStarted = "sync_started"
+    case syncCompleted = "sync_completed"
+    case cancelled
+    case failed
+}
+
+enum AnalyticsContentInputStage: String, Codable, CaseIterable, Sendable {
+    case sourceOpened = "source_opened"
+    case inputConfirmed = "input_confirmed"
+    case processingStarted = "processing_started"
+    case processingCompleted = "processing_completed"
+    case cancelled
+    case failed
+}
+
+enum AnalyticsContentSource: String, Codable, CaseIterable, Sendable {
     case camera
     case photoLibrary = "photo_library"
     case file
@@ -85,6 +120,7 @@ enum AnalyticsContentSource: String, Codable, Sendable {
     case text
     case clipboard
     case shareSheet = "share_sheet"
+    case system
     case history
     case kindle
     case weread
@@ -94,7 +130,7 @@ enum AnalyticsContentSource: String, Codable, Sendable {
     case unknown
 }
 
-enum AnalyticsContentFormat: String, Codable, Sendable {
+enum AnalyticsContentFormat: String, Codable, CaseIterable, Sendable {
     case photo
     case pdf
     case epub
@@ -111,12 +147,17 @@ enum AnalyticsContentFormat: String, Codable, Sendable {
 
 struct AnalyticsProperties: Codable, Equatable, Sendable {
     var launchType: String?
+    var step: String?
+    var source: String?
+    var bindSessionId: String?
+    var stage: String?
     var contentSource: String?
     var contentFormat: String?
     var intendedMode: String?
     var lengthBucket: String?
     var paragraphCountBucket: String?
     var latencyMs: Int?
+    var durationMs: Int?
     var result: String?
     var errorStage: String?
     var errorCode: String?
@@ -140,15 +181,22 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
     var productId: String?
     var activationSource: String?
     var syncState: String?
+    var bookCountBucket: String?
+    var transactionEnvironment: String?
 
     init(
         launchType: String? = nil,
+        step: String? = nil,
+        source: String? = nil,
+        bindSessionId: String? = nil,
+        stage: String? = nil,
         contentSource: String? = nil,
         contentFormat: String? = nil,
         intendedMode: String? = nil,
         lengthBucket: String? = nil,
         paragraphCountBucket: String? = nil,
         latencyMs: Int? = nil,
+        durationMs: Int? = nil,
         result: String? = nil,
         errorStage: String? = nil,
         errorCode: String? = nil,
@@ -171,15 +219,22 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         productId: String? = nil,
         activationSource: String? = nil,
         syncState: String? = nil,
+        bookCountBucket: String? = nil,
+        transactionEnvironment: String? = nil,
         storefront: String? = nil
     ) {
         self.launchType = launchType
+        self.step = step
+        self.source = source
+        self.bindSessionId = bindSessionId
+        self.stage = stage
         self.contentSource = contentSource
         self.contentFormat = contentFormat
         self.intendedMode = intendedMode
         self.lengthBucket = lengthBucket
         self.paragraphCountBucket = paragraphCountBucket
         self.latencyMs = latencyMs
+        self.durationMs = durationMs
         self.result = result
         self.errorStage = errorStage
         self.errorCode = errorCode
@@ -203,6 +258,101 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         self.productId = productId
         self.activationSource = activationSource
         self.syncState = syncState
+        self.bookCountBucket = bookCountBucket
+        self.transactionEnvironment = transactionEnvironment
+    }
+}
+
+struct AnalyticsLibraryConnectionSession: Equatable, Sendable {
+    let bindSessionId: String
+    let source: AnalyticsLibrarySource
+    let entryPoint: String
+    let startedAt: Date
+
+    init(
+        bindSessionId: String = UUID().uuidString,
+        source: AnalyticsLibrarySource,
+        entryPoint: String,
+        startedAt: Date = Date()
+    ) {
+        self.bindSessionId = bindSessionId
+        self.source = source
+        self.entryPoint = entryPoint
+        self.startedAt = startedAt
+    }
+}
+
+/// Reusable, privacy-safe lifecycle recorder for every bound-library UI.
+/// It deliberately owns no account, URL, title, or credential data.
+final class AnalyticsLibraryConnectionRecorder: @unchecked Sendable {
+    let session: AnalyticsLibraryConnectionSession
+
+    private let lock = NSLock()
+    private var entryTapAlreadyTracked: Bool
+    private var terminalRecorded = false
+    private var recordedKeys = Set<String>()
+
+    init(
+        session: AnalyticsLibraryConnectionSession,
+        entryTapAlreadyTracked: Bool
+    ) {
+        self.session = session
+        self.entryTapAlreadyTracked = entryTapAlreadyTracked
+    }
+
+    func presented() {
+        lock.lock()
+        let shouldRecordEntryTap = !entryTapAlreadyTracked
+        entryTapAlreadyTracked = true
+        lock.unlock()
+        if shouldRecordEntryTap {
+            record(
+                .entryTapped,
+                result: .started,
+                occurredAt: session.startedAt
+            )
+        }
+        record(.connectionPresented, result: .success, occurredAt: Date())
+    }
+
+    func record(
+        _ stage: AnalyticsLibraryConnectionStage,
+        result: AnalyticsResult,
+        errorCode: String? = nil,
+        bookCount: Int? = nil,
+        occurredAt: Date = Date()
+    ) {
+        let key = "\(stage.rawValue):\(result.rawValue):\(errorCode ?? "-")"
+        lock.lock()
+        guard !terminalRecorded else {
+            lock.unlock()
+            return
+        }
+        let inserted = recordedKeys.insert(key).inserted
+        if inserted,
+           stage == .syncCompleted || stage == .failed || stage == .cancelled {
+            terminalRecorded = true
+        }
+        lock.unlock()
+        guard inserted else { return }
+        let analyticsSession = session
+        Task { @MainActor in
+            ProductAnalytics.shared.trackLibraryConnection(
+                analyticsSession,
+                stage: stage,
+                result: result,
+                errorCode: errorCode,
+                bookCount: bookCount,
+                occurredAt: occurredAt
+            )
+        }
+    }
+
+    func close() {
+        lock.lock()
+        let shouldCancel = !terminalRecorded
+        lock.unlock()
+        if shouldCancel { record(.cancelled, result: .cancelled) }
     }
 }
 
@@ -350,6 +500,15 @@ enum AnalyticsSchema {
 
     private static let definitions: [AnalyticsEventName: Definition] = [
         .appSessionStart: .init(required: ["launchType"], optional: []),
+        .onboardingStep: .init(required: ["step", "result", "source"], optional: []),
+        .libraryConnection: .init(
+            required: ["bindSessionId", "source", "stage", "result"],
+            optional: ["errorCode", "durationMs", "bookCountBucket"]
+        ),
+        .contentInputStage: .init(
+            required: ["contentSource", "contentFormat", "stage", "result"],
+            optional: ["intendedMode", "durationMs", "errorCode", "storefront"]
+        ),
         .contentIntent: .init(required: ["contentSource", "contentFormat"], optional: ["intendedMode", "storefront"]),
         .contentReady: .init(required: ["contentSource", "contentFormat", "lengthBucket", "paragraphCountBucket"], optional: ["latencyMs", "storefront"]),
         .contentFailed: .init(required: ["contentSource", "contentFormat", "result", "errorStage", "errorCode"], optional: ["latencyMs", "storefront"]),
@@ -365,9 +524,18 @@ enum AnalyticsSchema {
         .homeProCardImpression: .init(required: [], optional: []),
         .homeProCardYearlyPurchaseTap: .init(required: [], optional: []),
         .homeProCardSecondaryTap: .init(required: [], optional: []),
-        .purchaseStart: .init(required: ["store", "productId", "trigger"], optional: []),
-        .purchaseResult: .init(required: ["store", "productId", "trigger", "result"], optional: ["errorCode"]),
-        .entitlementActivated: .init(required: ["store", "productId", "trigger", "activationSource"], optional: ["syncState"]),
+        .purchaseStart: .init(
+            required: ["store", "productId", "trigger"],
+            optional: ["transactionEnvironment"]
+        ),
+        .purchaseResult: .init(
+            required: ["store", "productId", "trigger", "result"],
+            optional: ["errorCode", "transactionEnvironment"]
+        ),
+        .entitlementActivated: .init(
+            required: ["store", "productId", "trigger", "activationSource"],
+            optional: ["syncState", "transactionEnvironment"]
+        ),
         .reviewPromptEligible: .init(required: ["trigger", "store"], optional: []),
         .reviewRequestAttempted: .init(required: ["trigger", "store", "result"], optional: ["errorCode"]),
         .reviewStoreLinkOpened: .init(required: ["trigger", "store"], optional: []),
@@ -411,7 +579,7 @@ enum AnalyticsSchema {
         properties: AnalyticsProperties
     ) throws {
         if let storefront = properties.storefront,
-           KindleStorefront.storefront(id: storefront)?.id != storefront {
+           KindleStorefront.entry(id: storefront)?.id != storefront {
             throw AnalyticsSchemaError.invalidPropertyValue(
                 property: "storefront",
                 value: storefront
@@ -422,6 +590,30 @@ enum AnalyticsSchema {
             throw AnalyticsSchemaError.invalidPropertyValue(
                 property: "storefront",
                 value: "nil"
+            )
+        }
+        if properties.contentSource != nil,
+           properties.contentSource != AnalyticsContentSource.kindle.rawValue,
+           properties.storefront != nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "storefront",
+                value: properties.storefront ?? "nil"
+            )
+        }
+
+        if name == .libraryConnection {
+            try validateLibraryConnection(properties)
+            return
+        }
+        if name == .contentInputStage {
+            try validateContentInputStage(properties)
+            return
+        }
+        if let transactionEnvironment = properties.transactionEnvironment,
+           !["production", "sandbox", "xcode", "unknown"].contains(transactionEnvironment) {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "transactionEnvironment",
+                value: transactionEnvironment
             )
         }
         guard name == .reviewPromptEligible
@@ -436,13 +628,23 @@ enum AnalyticsSchema {
             )
         }
 
-        let expectedTrigger = name == .reviewStoreLinkOpened
-            ? AppReviewTrigger.settings.rawValue
-            : AppReviewTrigger.thirdFiveMinuteRead.rawValue
-        if properties.trigger != expectedTrigger {
+        let allowedTriggers: Set<String> = name == .reviewStoreLinkOpened
+            ? [AppReviewTrigger.settings.rawValue]
+            : [
+                AppReviewTrigger.firstReadCompleted.rawValue,
+                AppReviewTrigger.libraryConnected.rawValue,
+                AppReviewTrigger.thirdFiveMinuteRead.rawValue,
+            ]
+        if let trigger = properties.trigger,
+           !allowedTriggers.contains(trigger) {
             throw AnalyticsSchemaError.invalidPropertyValue(
                 property: "trigger",
-                value: properties.trigger ?? "nil"
+                value: trigger
+            )
+        } else if properties.trigger == nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "trigger",
+                value: "nil"
             )
         }
 
@@ -452,6 +654,109 @@ enum AnalyticsSchema {
             throw AnalyticsSchemaError.invalidPropertyValue(
                 property: "result",
                 value: properties.result ?? "nil"
+            )
+        }
+    }
+
+    private static func validateLibraryConnection(_ properties: AnalyticsProperties) throws {
+        guard let bindSessionId = properties.bindSessionId,
+              UUID(uuidString: bindSessionId) != nil else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "bindSessionId",
+                value: properties.bindSessionId ?? "nil"
+            )
+        }
+        guard let source = properties.source,
+              AnalyticsLibrarySource(rawValue: source) != nil else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "source",
+                value: properties.source ?? "nil"
+            )
+        }
+        guard let stageValue = properties.stage,
+              let stage = AnalyticsLibraryConnectionStage(rawValue: stageValue) else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "stage",
+                value: properties.stage ?? "nil"
+            )
+        }
+        let expectedResult: AnalyticsResult = switch stage {
+        case .entryTapped, .loginStarted, .syncStarted: .started
+        case .connectionPresented, .loginSucceeded, .syncCompleted: .success
+        case .cancelled: .cancelled
+        case .failed: .failed
+        }
+        guard properties.result == expectedResult.rawValue else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "result",
+                value: properties.result ?? "nil"
+            )
+        }
+        if let durationMs = properties.durationMs, durationMs < 0 {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "durationMs",
+                value: String(durationMs)
+            )
+        }
+        if let bookCountBucket = properties.bookCountBucket,
+           !["none", "1", "2_5", "6_20", "21_50", "51_plus", "unknown"].contains(bookCountBucket) {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "bookCountBucket",
+                value: bookCountBucket
+            )
+        }
+        if stage == .failed, properties.errorCode == nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(property: "errorCode", value: "nil")
+        }
+        if stage != .failed, properties.errorCode != nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "errorCode",
+                value: properties.errorCode ?? "nil"
+            )
+        }
+    }
+
+    private static func validateContentInputStage(_ properties: AnalyticsProperties) throws {
+        guard let source = properties.contentSource,
+              AnalyticsContentSource(rawValue: source) != nil else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "contentSource",
+                value: properties.contentSource ?? "nil"
+            )
+        }
+        guard let format = properties.contentFormat,
+              AnalyticsContentFormat(rawValue: format) != nil else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "contentFormat",
+                value: properties.contentFormat ?? "nil"
+            )
+        }
+        guard let stageValue = properties.stage,
+              let stage = AnalyticsContentInputStage(rawValue: stageValue) else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "stage",
+                value: properties.stage ?? "nil"
+            )
+        }
+        let expectedResult: AnalyticsResult = switch stage {
+        case .sourceOpened, .processingStarted: .started
+        case .inputConfirmed, .processingCompleted: .success
+        case .cancelled: .cancelled
+        case .failed: .failed
+        }
+        guard properties.result == expectedResult.rawValue else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "result",
+                value: properties.result ?? "nil"
+            )
+        }
+        if stage == .failed, properties.errorCode == nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(property: "errorCode", value: "nil")
+        }
+        if stage != .failed, properties.errorCode != nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "errorCode",
+                value: properties.errorCode ?? "nil"
             )
         }
     }
@@ -555,6 +860,56 @@ struct UserDefaultsAnalyticsQueueStore: AnalyticsQueueStore, @unchecked Sendable
 struct AnalyticsTransportResult: Equatable, Sendable {
     let acceptedEventIds: Set<String>
     let rejectedEventIds: Set<String>
+    let rejectionReasons: [String: String]
+
+    init(
+        acceptedEventIds: Set<String>,
+        rejectedEventIds: Set<String>,
+        rejectionReasons: [String: String] = [:]
+    ) {
+        self.acceptedEventIds = acceptedEventIds
+        self.rejectedEventIds = rejectedEventIds
+        self.rejectionReasons = rejectionReasons
+    }
+}
+
+struct AnalyticsDeadLetterRecord: Codable, Equatable, Sendable {
+    let eventId: String
+    let eventName: String
+    let reason: String
+    let clientVersion: String
+    let rejectedAt: String
+}
+
+protocol AnalyticsDeadLetterStore: Sendable {
+    func load() -> [AnalyticsDeadLetterRecord]
+    func save(_ records: [AnalyticsDeadLetterRecord])
+}
+
+struct UserDefaultsAnalyticsDeadLetterStore: AnalyticsDeadLetterStore, @unchecked Sendable {
+    private let defaults: UserDefaults
+    private let key: String
+
+    init(
+        defaults: UserDefaults = .standard,
+        key: String = "product_analytics_dead_letters_v1"
+    ) {
+        self.defaults = defaults
+        self.key = key
+    }
+
+    func load() -> [AnalyticsDeadLetterRecord] {
+        guard let data = defaults.data(forKey: key) else { return [] }
+        return (try? JSONDecoder().decode([AnalyticsDeadLetterRecord].self, from: data)) ?? []
+    }
+
+    func save(_ records: [AnalyticsDeadLetterRecord]) {
+        if records.isEmpty {
+            defaults.removeObject(forKey: key)
+        } else if let data = try? JSONEncoder().encode(records) {
+            defaults.set(data, forKey: key)
+        }
+    }
 }
 
 protocol AnalyticsTransport: Sendable {
@@ -581,7 +936,10 @@ struct URLSessionAnalyticsTransport: AnalyticsTransport {
     private struct RequestBody: Encodable { let events: [AnalyticsEventEnvelope] }
     private struct ResponseBody: Decodable {
         struct DataBody: Decodable {
-            struct Rejected: Decodable { let eventId: String? }
+            struct Rejected: Decodable {
+                let eventId: String?
+                let reason: String?
+            }
             let acceptedEventIds: [String]?
             let rejected: [Rejected]?
             let inserted: Int?
@@ -613,8 +971,17 @@ struct URLSessionAnalyticsTransport: AnalyticsTransport {
             throw AnalyticsTransportError.degraded(body.data?.reason ?? "dropped")
         }
         if let accepted = body.data?.acceptedEventIds {
-            let rejected = Set(body.data?.rejected?.compactMap(\.eventId) ?? [])
-            return AnalyticsTransportResult(acceptedEventIds: Set(accepted), rejectedEventIds: rejected)
+            let rejectedRows = body.data?.rejected ?? []
+            let rejected = Set(rejectedRows.compactMap(\.eventId))
+            let reasons = rejectedRows.reduce(into: [String: String]()) { result, row in
+                guard let eventId = row.eventId else { return }
+                result[eventId] = row.reason ?? "server_rejected"
+            }
+            return AnalyticsTransportResult(
+                acceptedEventIds: Set(accepted),
+                rejectedEventIds: rejected,
+                rejectionReasons: reasons
+            )
         }
         // Legacy collector returns aggregate inserted/queued counts only. The
         // contract's legacy mappings are allowlisted, so a non-degraded success
@@ -632,23 +999,31 @@ struct URLSessionAnalyticsTransport: AnalyticsTransport {
 
 actor AnalyticsPipeline {
     private let store: AnalyticsQueueStore
+    private let deadLetterStore: AnalyticsDeadLetterStore
     private let transport: AnalyticsTransport
     private let batchSize: Int
     private let maxQueueSize: Int
+    private let maxDeadLetterSize: Int
     private var queue: [AnalyticsEventEnvelope]
+    private var deadLetters: [AnalyticsDeadLetterRecord]
     private var isFlushing = false
 
     init(
         store: AnalyticsQueueStore,
         transport: AnalyticsTransport,
         batchSize: Int = 20,
-        maxQueueSize: Int = 500
+        maxQueueSize: Int = 500,
+        deadLetterStore: AnalyticsDeadLetterStore = UserDefaultsAnalyticsDeadLetterStore(),
+        maxDeadLetterSize: Int = 50
     ) {
         self.store = store
+        self.deadLetterStore = deadLetterStore
         self.transport = transport
         self.batchSize = batchSize
         self.maxQueueSize = maxQueueSize
+        self.maxDeadLetterSize = maxDeadLetterSize
         self.queue = Array(store.load().suffix(maxQueueSize))
+        self.deadLetters = Array(deadLetterStore.load().suffix(maxDeadLetterSize))
     }
 
     func enqueue(_ event: AnalyticsEventEnvelope) async {
@@ -671,6 +1046,13 @@ actor AnalyticsPipeline {
                 let result = try await transport.send(batch)
                 let resolved = result.acceptedEventIds.union(result.rejectedEventIds)
                 guard !resolved.isEmpty else { return }
+                if !result.rejectedEventIds.isEmpty {
+                    retainRejectedEvents(
+                        batch,
+                        rejectedEventIds: result.rejectedEventIds,
+                        reasons: result.rejectionReasons
+                    )
+                }
                 queue.removeAll { resolved.contains($0.eventId) }
                 store.save(queue)
             } catch {
@@ -683,6 +1065,35 @@ actor AnalyticsPipeline {
     }
 
     func queuedEvents() -> [AnalyticsEventEnvelope] { queue }
+    func rejectedEvents() -> [AnalyticsDeadLetterRecord] { deadLetters }
+
+    private func retainRejectedEvents(
+        _ batch: [AnalyticsEventEnvelope],
+        rejectedEventIds: Set<String>,
+        reasons: [String: String]
+    ) {
+        let rejectedAt = analyticsISO8601.string(from: Date())
+        for event in batch where rejectedEventIds.contains(event.eventId) {
+            deadLetters.removeAll { $0.eventId == event.eventId }
+            deadLetters.append(
+                AnalyticsDeadLetterRecord(
+                    eventId: event.eventId,
+                    eventName: event.eventName.rawValue,
+                    reason: reasons[event.eventId] ?? "server_rejected",
+                    clientVersion: event.clientVersion,
+                    rejectedAt: rejectedAt
+                )
+            )
+        }
+        if deadLetters.count > maxDeadLetterSize {
+            deadLetters.removeFirst(deadLetters.count - maxDeadLetterSize)
+        }
+        deadLetterStore.save(deadLetters)
+#if DEBUG
+        let reasonCounts = Dictionary(grouping: deadLetters, by: \.reason).mapValues(\.count)
+        print("[Analytics] retained rejected-event summary: \(reasonCounts)")
+#endif
+    }
 }
 
 @MainActor
@@ -708,7 +1119,7 @@ final class ProductAnalytics {
         self.client = AnalyticsClientInfo(
             environment: Self.environment,
             platform: "ios",
-            variant: "app_store",
+            variant: Self.clientVariant,
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0",
             build: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
             anonymousId: Self.analyticsAnonymousId()
@@ -759,25 +1170,66 @@ final class ProductAnalytics {
             storefront: storefront,
             startedAt: Date()
         )
+        confirmContentIntent(context)
+        return context
+    }
+
+    /// Confirms that the user supplied real input. File pickers initially use
+    /// `.unknown`; once a URL is returned we refine the format without
+    /// changing the correlation id or start time.
+    @discardableResult
+    func confirmContentIntent(
+        _ context: AnalyticsContentContext,
+        format: AnalyticsContentFormat? = nil
+    ) -> AnalyticsContentContext {
+        let context = AnalyticsContentContext(
+            contentSessionId: context.contentSessionId,
+            source: context.source,
+            format: format ?? context.format,
+            entryPoint: context.entryPoint,
+            intendedMode: context.intendedMode,
+            storefront: context.storefront,
+            startedAt: context.startedAt
+        )
+        let confirmedAt = Date()
+        trackContentInputStage(
+            .inputConfirmed,
+            result: .success,
+            content: context,
+            occurredAt: confirmedAt
+        )
+        trackContentInputStage(
+            .processingStarted,
+            result: .started,
+            content: context,
+            occurredAt: confirmedAt.addingTimeInterval(0.001)
+        )
         track(
             .contentIntent,
             context: .init(
                 productArea: .reader,
                 surface: "content_import",
-                entryPoint: entryPoint,
+                entryPoint: context.entryPoint,
                 contentSessionId: context.contentSessionId
             ),
             properties: .init(
-                contentSource: source.rawValue,
-                contentFormat: format.rawValue,
-                intendedMode: intendedMode,
-                storefront: storefront
+                contentSource: context.source.rawValue,
+                contentFormat: context.format.rawValue,
+                intendedMode: context.intendedMode,
+                storefront: context.storefront
             )
         )
         return context
     }
 
     func contentReady(_ content: AnalyticsContentContext, document: ReadingDocument) {
+        let completedAt = Date()
+        trackContentInputStage(
+            .processingCompleted,
+            result: .success,
+            content: content,
+            occurredAt: completedAt
+        )
         track(
             .contentReady,
             context: .init(
@@ -791,9 +1243,20 @@ final class ProductAnalytics {
                 contentFormat: AnalyticsContentFormat(document.sourceKind).rawValue,
                 lengthBucket: Self.lengthBucket(document.fullText.count),
                 paragraphCountBucket: Self.paragraphBucket(document.readableParagraphs.count),
-                latencyMs: max(0, Int(Date().timeIntervalSince(content.startedAt) * 1000)),
+                latencyMs: max(0, Int(completedAt.timeIntervalSince(content.startedAt) * 1000)),
                 storefront: content.storefront
             )
+        )
+    }
+
+    /// Some legacy formats are accepted for asynchronous library processing
+    /// and do not open a reader in the same UI flow. They still need a terminal
+    /// input-stage event so the import funnel is not left in `processing_started`.
+    func contentInputCompleted(_ content: AnalyticsContentContext) {
+        trackContentInputStage(
+            .processingCompleted,
+            result: .success,
+            content: content
         )
     }
 
@@ -802,6 +1265,14 @@ final class ProductAnalytics {
         stage: String,
         code: String
     ) {
+        let failedAt = Date()
+        trackContentInputStage(
+            .failed,
+            result: .failed,
+            content: content,
+            errorCode: code,
+            occurredAt: failedAt
+        )
         track(
             .contentFailed,
             context: .init(
@@ -813,12 +1284,108 @@ final class ProductAnalytics {
             properties: .init(
                 contentSource: content.source.rawValue,
                 contentFormat: content.format.rawValue,
-                latencyMs: max(0, Int(Date().timeIntervalSince(content.startedAt) * 1000)),
+                latencyMs: max(0, Int(failedAt.timeIntervalSince(content.startedAt) * 1000)),
                 result: AnalyticsResult.failed.rawValue,
                 errorStage: stage,
                 errorCode: code,
                 storefront: content.storefront
             )
+        )
+    }
+
+    @discardableResult
+    func beginLibraryConnection(
+        source: AnalyticsLibrarySource,
+        entryPoint: String,
+        recordEntryTap: Bool = true
+    ) -> AnalyticsLibraryConnectionSession {
+        let session = AnalyticsLibraryConnectionSession(
+            source: source,
+            entryPoint: entryPoint
+        )
+        if recordEntryTap {
+            trackLibraryConnection(session, stage: .entryTapped, result: .started)
+        }
+        return session
+    }
+
+    func trackLibraryConnection(
+        _ session: AnalyticsLibraryConnectionSession,
+        stage: AnalyticsLibraryConnectionStage,
+        result: AnalyticsResult,
+        errorCode: String? = nil,
+        bookCount: Int? = nil,
+        occurredAt: Date = Date()
+    ) {
+        track(
+            .libraryConnection,
+            context: .init(
+                productArea: .reader,
+                surface: "library_connection",
+                entryPoint: session.entryPoint
+            ),
+            properties: .init(
+                source: session.source.rawValue,
+                bindSessionId: session.bindSessionId,
+                stage: stage.rawValue,
+                durationMs: max(0, Int(occurredAt.timeIntervalSince(session.startedAt) * 1000)),
+                result: result.rawValue,
+                errorCode: errorCode,
+                bookCountBucket: bookCount.map(Self.bookCountBucket)
+            ),
+            occurredAt: occurredAt
+        )
+    }
+
+    func trackContentSourceOpened(
+        source: AnalyticsContentSource,
+        format: AnalyticsContentFormat,
+        entryPoint: String,
+        intendedMode: String
+    ) -> AnalyticsContentContext {
+        let context = AnalyticsContentContext(
+            contentSessionId: UUID().uuidString,
+            source: source,
+            format: format,
+            entryPoint: entryPoint,
+            intendedMode: intendedMode,
+            storefront: nil,
+            startedAt: Date()
+        )
+        trackContentInputStage(.sourceOpened, result: .started, content: context)
+        return context
+    }
+
+    func trackContentInputCancelled(_ content: AnalyticsContentContext) {
+        trackContentInputStage(.cancelled, result: .cancelled, content: content)
+    }
+
+    private func trackContentInputStage(
+        _ stage: AnalyticsContentInputStage,
+        result: AnalyticsResult,
+        content: AnalyticsContentContext,
+        errorCode: String? = nil,
+        occurredAt: Date = Date()
+    ) {
+        track(
+            .contentInputStage,
+            context: .init(
+                productArea: .reader,
+                surface: "content_import",
+                entryPoint: content.entryPoint,
+                contentSessionId: content.contentSessionId
+            ),
+            properties: .init(
+                stage: stage.rawValue,
+                contentSource: content.source.rawValue,
+                contentFormat: content.format.rawValue,
+                intendedMode: content.intendedMode,
+                durationMs: max(0, Int(occurredAt.timeIntervalSince(content.startedAt) * 1000)),
+                result: result.rawValue,
+                errorCode: errorCode,
+                storefront: content.storefront
+            ),
+            occurredAt: occurredAt
         )
     }
 
@@ -897,6 +1464,39 @@ final class ProductAnalytics {
         #endif
     }
 
+    static var clientVariant: String {
+        #if targetEnvironment(simulator)
+        let simulator = true
+        #else
+        let simulator = false
+        #endif
+        #if DEBUG
+        let debug = true
+        #else
+        let debug = false
+        #endif
+        return clientVariant(
+            isDebug: debug,
+            isSimulator: simulator,
+            receiptLastPathComponent: Bundle.main.appStoreReceiptURL?.lastPathComponent,
+            hasEmbeddedProvisioningProfile:
+                Bundle.main.path(forResource: "embedded", ofType: "mobileprovision") != nil
+        )
+    }
+
+    nonisolated static func clientVariant(
+        isDebug: Bool,
+        isSimulator: Bool,
+        receiptLastPathComponent: String?,
+        hasEmbeddedProvisioningProfile: Bool
+    ) -> String {
+        if isSimulator { return "simulator" }
+        if isDebug { return "internal_debug" }
+        if receiptLastPathComponent == "sandboxReceipt" { return "testflight" }
+        if hasEmbeddedProvisioningProfile { return "internal" }
+        return "app_store"
+    }
+
     private static func analyticsAnonymousId() -> String {
         let defaults = UserDefaults.standard
         if let existing = defaults.string(forKey: anonymousIdKey), UUID(uuidString: existing) != nil {
@@ -925,6 +1525,17 @@ final class ProductAnalytics {
         case 6...20: return "6_20"
         case 21...100: return "21_100"
         default: return "101_plus"
+        }
+    }
+
+    private static func bookCountBucket(_ count: Int) -> String {
+        switch count {
+        case ..<1: return "none"
+        case 1: return "1"
+        case 2...5: return "2_5"
+        case 6...20: return "6_20"
+        case 21...50: return "21_50"
+        default: return "51_plus"
         }
     }
 }

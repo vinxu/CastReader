@@ -363,7 +363,7 @@ struct SettingsView: View {
 
             Button {
                 guard let url = URL(
-                    string: "mailto:support@castreader.com?subject=CastReader%20iOS%20Feedback"
+                    string: "mailto:support@castreader.ai?subject=CastReader%20iOS%20Feedback"
                 ) else { return }
                 openURL(url)
             } label: {

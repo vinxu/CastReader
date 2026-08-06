@@ -7,7 +7,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Save this content to your inbox. Open CastReader to read or explain it."
+            "value" : "Speichere diesen Inhalt im Eingang. Öffne CastReader, um ihn vorlesen oder erklären zu lassen."
           }
         },
         "en" : {
@@ -66,7 +66,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shared document"
+            "value" : "Geteiltes Dokument"
           }
         },
         "en" : {
@@ -243,7 +243,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CastReader could not open this item."
+            "value" : "CastReader konnte dieses Element nicht öffnen."
           }
         },
         "en" : {
@@ -302,7 +302,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shared image"
+            "value" : "Geteiltes Bild"
           }
         },
         "en" : {
@@ -361,7 +361,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Preparing content…"
+            "value" : "Inhalt wird vorbereitet …"
           }
         },
         "en" : {
@@ -420,7 +420,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Read aloud"
+            "value" : "Vorlesen"
           }
         },
         "en" : {
@@ -479,7 +479,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add to CastReader"
+            "value" : "Zu CastReader hinzufügen"
           }
         },
         "en" : {
@@ -538,7 +538,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Saved to your content inbox."
+            "value" : "Im Inhaltseingang gespeichert."
           }
         },
         "en" : {
@@ -597,7 +597,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Added to CastReader"
+            "value" : "Zu CastReader hinzugefügt"
           }
         },
         "en" : {
@@ -656,7 +656,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shared text"
+            "value" : "Geteilter Text"
           }
         },
         "en" : {
@@ -715,7 +715,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Send to CastReader"
+            "value" : "An CastReader senden"
           }
         },
         "en" : {

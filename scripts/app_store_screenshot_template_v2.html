@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 1290px;
+      height: 2796px;
+      margin: 0;
+      overflow: hidden;
+      background: #f7f3ed;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .title-frame {
+      position: absolute;
+      top: 66px;
+      left: 40px;
+      display: flex;
+      width: 1210px;
+      height: 190px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h1 {
+      width: 100%;
+      margin: 0;
+      color: #191919;
+      font-size: 76px;
+      font-weight: 750;
+      letter-spacing: -1px;
+      line-height: 96px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .screen-frame {
+      position: absolute;
+      top: 339px;
+      left: 78px;
+      width: 1134px;
+      height: 2457px;
+      overflow: hidden;
+      background: #fff;
+      border: 2px solid #d8d4cf;
+      border-radius: 44px 44px 0 0;
+    }
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+    }
+  </style>
+</head>
+<body>
+  <div class="title-frame">
+    <h1 id="title"></h1>
+  </div>
+  <div class="screen-frame">
+    <img id="screen" alt="">
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    document.querySelector("#title").textContent = params.get("title") || "";
+    document.querySelector("#screen").src = params.get("image") || "";
+  </script>
+</body>
+</html>

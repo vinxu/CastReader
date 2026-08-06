@@ -12,6 +12,7 @@
 //
 
 import XCTest
+import UIKit
 import WebKit
 @testable import CastReader
 
@@ -280,6 +281,7 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
     private var webView: WKWebView!
     private var inbox: Inbox!
     private var auxiliaryWebViews: [WKWebView] = []
+    private var hostingWindows: [UIWindow] = []
 
     private func makeReaderWebView(inbox: Inbox) throws -> WKWebView {
         let bundleJS = try Self.loadXCTestBundleJS()
@@ -290,10 +292,33 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         )
         let config = WKWebViewConfiguration()
         config.userContentController = controller
-        return WKWebView(
+        let webView = WKWebView(
             frame: CGRect(x: 0, y: 0, width: 390, height: 700),
             configuration: config
         )
+        // An unattached WKWebView is eligible for WebKit process freezing.
+        // These fixtures intentionally use timers to model a slow Google page
+        // turn, so keep every test reader in a visible window just like the
+        // production reader. Otherwise the final stability sample can be
+        // suspended between turn acknowledgement and rendered-page commit.
+        let window: UIWindow
+        if let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first {
+            window = UIWindow(windowScene: scene)
+            window.frame = webView.frame
+        } else {
+            window = UIWindow(frame: webView.frame)
+        }
+        let viewController = UIViewController()
+        window.rootViewController = viewController
+        viewController.view.frame = window.bounds
+        webView.frame = viewController.view.bounds
+        webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        viewController.view.addSubview(webView)
+        window.isHidden = false
+        hostingWindows.append(window)
+        return webView
     }
 
     override func setUp() async throws {
@@ -310,6 +335,11 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         auxiliaryWebViews.removeAll()
         webView?.configuration.userContentController
             .removeScriptMessageHandler(forName: WebReaderBridge.handlerName)
+        for window in hostingWindows {
+            window.isHidden = true
+            window.rootViewController = nil
+        }
+        hostingWindows.removeAll()
         webView = nil
         inbox = nil
         try await super.tearDown()

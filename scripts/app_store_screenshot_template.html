@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      width: 1320px;
+      height: 2868px;
+      margin: 0;
+      overflow: hidden;
+      background: #f7f3ed;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    }
+    h1 {
+      position: absolute;
+      top: 78px;
+      left: 50px;
+      width: 1220px;
+      margin: 0;
+      color: #191919;
+      font-size: 82px;
+      font-weight: 750;
+      line-height: 1.08;
+      letter-spacing: -1.2px;
+      text-align: center;
+    }
+    img {
+      position: absolute;
+      top: 354px;
+      left: 80px;
+      width: 1160px;
+      height: 2514px;
+      object-fit: fill;
+      border: 2px solid #d8d4cf;
+      border-radius: 44px;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="title"></h1>
+  <img id="screen" alt="">
+  <script>
+    const params = new URLSearchParams(location.search);
+    document.querySelector("#title").textContent = params.get("title") || "";
+    document.querySelector("#screen").src = params.get("image") || "";
+  </script>
+</body>
+</html>

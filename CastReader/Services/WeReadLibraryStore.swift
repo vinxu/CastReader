@@ -75,6 +75,7 @@ final class WeReadLibraryStore: ObservableObject {
                 merged[book.id] = book
             }
         }
+        let wasConnected = hasConnected
         books = merged.values.sorted { ($0.lastOpenedAt ?? $0.lastSyncedAt) > ($1.lastOpenedAt ?? $1.lastSyncedAt) }
         hasConnected = true
         if let label = account?.label?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty { accountLabel = label }
@@ -82,6 +83,12 @@ final class WeReadLibraryStore: ObservableObject {
         // localized fallback so changing CastReader language updates instantly.
         lastError = nil
         save()
+        if !wasConnected {
+            NotificationCenter.default.post(
+                name: .castReaderLibraryConnectedForReview,
+                object: nil
+            )
+        }
         // Same as the Kindle shelf: pull covers at sync time so Home never shows
         // empty placeholders while it fetches them one by one.
         ImageCache.shared.prefetch(books.compactMap(\.coverURL))

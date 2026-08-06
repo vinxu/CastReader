@@ -186,7 +186,11 @@ struct CastReaderApp: App {
                 .environment(\.locale, appLanguage.locale)
                 // 深色/浅色跟随系统（AppTheme 已全动态化，见 Utils/AppTheme.swift）
                 .onOpenURL { url in
-                    if url.scheme == "castreader", url.host == "share-inbox" {
+                    if StudyBoostDeepLink.matches(url) {
+                        StudyBoostRouter.shared.open()
+                    } else if let systemAction = SystemAction.from(url: url) {
+                        SystemActionStore.shared.enqueue(systemAction)
+                    } else if url.scheme == "castreader", url.host == "share-inbox" {
                         NotificationCenter.default.post(name: .castReaderShareInboxChanged, object: nil)
                     } else if url.scheme == "castreader", url.host == "pro" {
                         showSafariPro = true
