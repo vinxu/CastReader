@@ -234,6 +234,15 @@ private struct PhotoContent: View {
     @ViewBuilder
     private func overlay(resolver: PhotoAnchorResolver) -> some View {
         if mode == .read {
+            // 两层高亮：段落底色给「读到哪一段」，词高亮给「读到哪个字」。
+            // 报纸这类密集版面上只画一个词，眼睛很难跟上。
+            let paragraphRects = resolver.rectsForParagraph(paragraphIndex: readVM.currentParagraphIndex)
+            ForEach(Array(paragraphRects.enumerated()), id: \.offset) { _, rect in
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color(readVM.highlightUIColor).opacity(0.14))
+                    .frame(width: rect.width + 4, height: rect.height + 2)
+                    .position(x: rect.midX, y: rect.midY)
+            }
             if let wi = readVM.photoHighlightWordIndex {
                 let indexes = readVM.photoHighlightWordRange ?? wi..<(wi + 1)
                 let rects = indexes.flatMap {
@@ -241,7 +250,7 @@ private struct PhotoContent: View {
                 }
                 ForEach(Array(rects.enumerated()), id: \.offset) { _, rect in
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(Color(readVM.highlightUIColor).opacity(0.38))
+                        .fill(Color(readVM.highlightUIColor).opacity(0.42))
                         .frame(width: rect.width + 4, height: rect.height + 2)
                         .position(x: rect.midX, y: rect.midY)
                 }

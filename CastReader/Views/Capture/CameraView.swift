@@ -59,6 +59,20 @@ struct CameraView: UIViewControllerRepresentable {
 }
 
 extension UIImage {
+    /// 顺时针旋转 n 个 90°，像素级归正（结果 orientation 为 .up）。
+    /// 用于把横着拍的页面转正 —— OCR 与显示必须用同一张图，否则 bbox 对不上画面。
+    func rotatedClockwise(quarterTurns: Int) -> UIImage {
+        let turns = ((quarterTurns % 4) + 4) % 4
+        guard turns != 0, let cgImage = cgImage else { return self }
+        let orientation: UIImage.Orientation
+        switch turns {
+        case 1: orientation = .right
+        case 2: orientation = .down
+        default: orientation = .left
+        }
+        return UIImage(cgImage: cgImage, scale: scale, orientation: orientation).fixedOrientation()
+    }
+
     /// 归正 EXIF 方向，保证 OCR 的 bbox 与显示一致（统一为 .up）。
     func fixedOrientation() -> UIImage {
         guard imageOrientation != .up else { return self }

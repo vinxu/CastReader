@@ -90,6 +90,8 @@ final class CaptureFlowViewModel: ObservableObject {
         // 文件/剪贴板/分享进来的图未必经过 UIImagePickerController，
         // 所以先统一 EXIF 方向，再做几何矫正与质量评估。
         let normalized = image.fixedOrientation()
+        // 注意：内容级方向（报纸横着拍）由 OCRService 在识别时判定并归正 ——
+        // 那里才有行几何可用。这里只处理 EXIF 与文档透视。
         let rectified = alreadyRectified
             ? normalized
             : await Task.detached(priority: .userInitiated) {

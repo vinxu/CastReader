@@ -213,6 +213,58 @@ final class CapturePipelineTests: XCTestCase {
         XCTAssertFalse(PhotoRegionCropper.shouldOfferSelection(for: textDocument), "非照片源没有可框选的图")
     }
 
+    // MARK: - 页面旋转（像素级）
+
+    /// 旋转方向搞反是这类改动最容易犯的错：用不对称图像逐像素验证。
+    /// 左黑右白的横条，顺时针转 90° 后必须变成「上黑下白」的竖条。
+    func testRotateClockwiseMovesLeftEdgeToTop() {
+        let source = Self.halfBlackHalfWhite(width: 40, height: 20)
+        let rotated = source.rotatedClockwise(quarterTurns: 1)
+
+        XCTAssertEqual(rotated.size.width, 20, accuracy: 0.5, "宽高必须互换")
+        XCTAssertEqual(rotated.size.height, 40, accuracy: 0.5)
+        XCTAssertEqual(rotated.imageOrientation, .up, "必须是像素级归正，不是只改 orientation 标记")
+
+        let top = Self.brightness(of: rotated, atUnit: CGPoint(x: 0.5, y: 0.15))
+        let bottom = Self.brightness(of: rotated, atUnit: CGPoint(x: 0.5, y: 0.85))
+        XCTAssertLessThan(top, 0.3, "原来的左半（黑）必须转到上方")
+        XCTAssertGreaterThan(bottom, 0.7, "原来的右半（白）必须转到下方")
+    }
+
+    func testRotateByZeroOrFourTurnsIsIdentity() {
+        let source = Self.halfBlackHalfWhite(width: 40, height: 20)
+        XCTAssertEqual(source.rotatedClockwise(quarterTurns: 0).size, source.size)
+
+        let round = source.rotatedClockwise(quarterTurns: 4)
+        XCTAssertEqual(round.size.width, source.size.width, accuracy: 0.5)
+        XCTAssertLessThan(Self.brightness(of: round, atUnit: CGPoint(x: 0.15, y: 0.5)), 0.3)
+        XCTAssertGreaterThan(Self.brightness(of: round, atUnit: CGPoint(x: 0.85, y: 0.5)), 0.7)
+    }
+
+    private static func halfBlackHalfWhite(width: CGFloat, height: CGFloat) -> UIImage {
+        UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: renderFormat).image { context in
+            UIColor.black.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: width / 2, height: height))
+            UIColor.white.setFill()
+            context.fill(CGRect(x: width / 2, y: 0, width: width / 2, height: height))
+        }
+    }
+
+    /// 取归一化位置处的亮度（0 = 黑，1 = 白）。
+    private static func brightness(of image: UIImage, atUnit point: CGPoint) -> CGFloat {
+        guard let cgImage = image.cgImage else { return -1 }
+        let x = min(cgImage.width - 1, max(0, Int(point.x * CGFloat(cgImage.width))))
+        let y = min(cgImage.height - 1, max(0, Int(point.y * CGFloat(cgImage.height))))
+        var pixel: UInt8 = 0
+        guard let context = CGContext(
+            data: &pixel, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 1,
+            space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue
+        ) else { return -1 }
+        context.draw(cgImage, in: CGRect(x: -CGFloat(x), y: -CGFloat(cgImage.height - 1 - y),
+                                         width: CGFloat(cgImage.width), height: CGFloat(cgImage.height)))
+        return CGFloat(pixel) / 255
+    }
+
     // MARK: - Fixtures
 
     private static func photoDocument(columns: Int?, boxes: [(String, CGRect)]) -> ReadingDocument {

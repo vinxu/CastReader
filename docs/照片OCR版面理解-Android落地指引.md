@@ -64,9 +64,43 @@ iOS 的 `rebuildOcrLines` 会把行拆成词再纯几何重建行，容差随行
 
 ---
 
-## 3. 必须新增：`OcrLayoutAnalyzer.kt`
+## 3. 核心：`OcrLayoutAnalyzer.kt`（递归 XY-Cut）
 
-iOS 的 `CastReader/Services/OCRLayoutAnalyzer.swift` 是**纯几何算法，无平台依赖**，可 1:1 回译 Kotlin。建议放 `app/src/main/java/com/same/castreader/util/ocr/OcrLayoutAnalyzer.kt`。
+iOS 的 `CastReader/Services/OCRLayoutAnalyzer.swift` 是**纯几何算法，无平台依赖**，1:1 回译到 `app/src/main/java/com/same/castreader/util/ocr/OcrLayoutAnalyzer.kt`。
+
+### 3.0 为什么是递归分解，而不是「整页 → 列」
+
+这是本方案最重要的一条，也是最初两层实现失败的根因。
+
+报纸**不是**「页面 → 栏」的两层结构，而是**递归的矩形分割**：区域里还有区域，并列的两篇文章各自再分栏。固定层数表达不了这件事 —— 侧边那篇被裁切的文章会被当成主文的一栏，内容按层切碎后散插进主文的阅读流（实测主文开始前混进了 25 行碎片）。
+
+正确模型是经典 **Recursive XY-Cut**（Nagy & Seth, 1984）：
+
+```
+decompose(lines):
+  1. 收集所有候选切割（横切 + 竖切），按显著性排序
+  2. 依次尝试，取第一条真正切得开的
+  3. 对切出的两侧分别递归
+  4. 切不动则成为叶子
+
+阅读顺序 = 深度优先遍历
+```
+
+**每次只切一刀**。一次切成 N 份会退化回固定层数。
+
+产出的是区域树：
+
+```
+stack ↓                      ← 横切
+  图注区
+  stack ↓
+    大标题区
+    row →                    ← 竖切
+      栏1  栏2  栏3  栏4
+    页脚区
+```
+
+副产品：**「跨栏横幅」这个特例消失了**。标题与正文之间有横向空白，自然被横切分成独立区域，不需要专门的 banner 逻辑。特例减少是结构变对的信号。
 
 ### 3.1 坐标约定（第一件要做对的事）
 
@@ -93,57 +127,108 @@ fun OcrLine.toLayoutLine(id: Int, page: OcrPage) = LayoutLine(
 ### 3.2 阈值表（**两端必须同值**）
 
 ```kotlin
-object LayoutTuning {
-    const val MIN_COLUMN_CONFIDENCE = 0.55   // 低于此回落单栏
+object Tuning {
+    const val PROJECTION_BINS = 600           // 报纸栏缝约 1% 页宽，粗直方图会整条吞掉
+    const val COVERAGE_VALLEY_RATIO = 0.22    // 覆盖低于峰值该比例即视为空白
+    const val GAP_SHOULDER_RATIO = 0.30       // 竖缝两侧必须是实打实的正文（横切不适用，见 3.4）
+    const val SHOULDER_WINDOW_RATIO = 0.05    // 判断「两侧有内容」时向外看多宽
+    const val ZONE_BAND_HEIGHT_RATIO = 2.2    // 横切带至少这么多倍行高
+    const val FULL_WIDTH_LINE_RATIO = 0.75    // 达到正文区宽度此比例即「通栏元素」
+
+    const val MAX_DECOMPOSE_DEPTH = 8         // 递归深度上限
+    const val MIN_LINES_TO_SPLIT = 6          // 少于此不再往下切
+    const val MIN_LINES_PER_REGION = 1        // 一个区可以只有一行（大标题）
+
+    const val EDGE_STRIP_WIDTH_RATIO = 0.22   // 边缘窄栏：多窄
+    const val EDGE_STRIP_MARGIN_RATIO = 0.18  // 边缘窄栏：多贴边
+    const val MIN_LINES_FOR_EDGE_STRIP = 6
+    const val EDGE_STRIP_COVERAGE_RATIO = 0.6 // 纵向跨度 ≥ 主体的多少才算「贯穿」
+
+    const val MAX_SKEW_DEGREES = 12.0         // 倾角搜索范围
+    const val SKEW_STEP_DEGREES = 0.5
+    const val MIN_LINES_FOR_SKEW = 16
+    const val MIN_LINES_FOR_ORIENTATION = 6   // 方向推断的最少行数
+
+    const val FURNITURE_BAND_RATIO = 0.06     // 顶/底版面家具带
+    const val MIN_COLUMN_CONFIDENCE = 0.45
     const val MAX_COLUMNS = 6
-    const val PROJECTION_BINS = 600          // 报纸栏缝约 1% 页宽，粗直方图会整条吞掉
-    const val COVERAGE_VALLEY_RATIO = 0.22   // 覆盖低于峰值该比例即视为空白
-    const val GAP_SHOULDER_RATIO = 0.30      // 栏缝两侧必须是实打实的正文
-    const val SHOULDER_WINDOW_RATIO = 0.05   // 判断「两侧是正文」时向外看多宽
-    const val COLUMN_OCCUPANCY_RATIO = 0.45  // 行占据某列的判据
-    const val FURNITURE_BAND_RATIO = 0.06    // 顶/底版面家具带
-    const val MIN_LINES_PER_COLUMN = 3       // 少于此与相邻列合并
 }
 ```
 
+还有两项**在分解之前**跑，缺了会让后面全白做：
+
+- **倾角矫正（deskew）**：手持拍摄斜几度，栏就不再垂直，投影把栏缝整条抹平（实测直接 no-gaps → 整页乱序）。在 ±12° 内搜索使栏缝最清晰的角度，**只用于分析**，输出仍是原始行 id，所以 bbox 与画面依旧对得上。
+- **页面方向推断**：报纸常横着拍，EXIF 解决不了这种**内容级**旋转。单次 OCR 的行几何 + 识别器返回顺序即可推断（`wideShare * 0.6 + orderScore * 0.4`），零额外识别成本。
+
 改任一数值都要同步改 iOS，并跑两端的 fixture 回归（第 8 节）。
 
-### 3.3 算法规格
-
-```
-analyze(lines) -> LayoutAnalysis
-  1 medianHeight = median(行高)
-  2 栏缝检测 columnGaps()
-      a 垂直投影：每个 x bin 被多少行覆盖
-        ⚠️ 只累计**完全**落在行内的 bin：lo = ceil(minX*bins), hi = floor(maxX*bins)-1
-           向外取整会让 1% 页宽的栏缝被两侧 bin 吃掉，直方图变成一整片高台
-      b 找连续低覆盖区间（<= 峰值 * 0.22）
-      c 丢弃触及页面左右边缘的区间（那是页边距）
-      d 宽度 >= max(0.0015, medianHeight * 0.15)
-        ⚠️ 栏缝可以只有一个 bin 宽，**不要**用宽度当主判据
-      e 两侧邻域峰值（各看 5% 页宽）>= 峰值 * 0.30
-        ⚠️ 用邻域**峰值**而非紧邻单个 bin：栏边缘覆盖天然衰减，
-           且各栏行数本就能差一倍（一栏被插图截断、另一栏通到页底）
-      f 记录 depth = 1 - 缝内最低覆盖 / min(左峰, 右峰)
-  3 列区间 = 相邻栏缝中点切分；行数 < 3 的列并入相邻列（迭代到稳定）
-  4 打分（见 3.4），< 0.55 回落单栏
-  5 跨栏行 = 同时占据 >= 2 列 → 聚成横幅带（banner）
-  6 阅读顺序：横幅带把页面分层，每层内各列左→右、列内上→下
-     ⚠️ 最后做一次全域清扫，把夹在横幅带内部的漏网行补上 —— 绝不丢内容
-  7 角色分类（见 3.5）
-```
-
-### 3.4 打分（四项加权）
+### 3.3 切割的显著性
 
 ```kotlin
-val gapQuality = minDepth * 0.7 + widthScore * 0.3   // 干净程度为主，宽度为辅
-val alignment  = 1 - clamp(列内行左边界 MAD / (列宽 * 0.18))
-val occupancy  = clamp(median(行宽 / 列宽) / 0.75)
-val balance    = 1 - min(1, max(列宽变异系数, 行数变异系数))
-val total = gapQuality * 0.35 + alignment * 0.30 + occupancy * 0.20 + balance * 0.15
+val score = depth * (extent / (2 + extent))
 ```
 
-> **踩坑记录**：最初 `gapQuality` 只按缝宽打分，3 栏报纸实测只得 0.12，整体 0.47 < 0.55 被判单栏。报纸栏缝仅约 1% 页宽但**缝内几乎无字**，所以「干净程度（depth）」才是主信号。
+- **`depth`（贯穿度，主项）**：空白带内最低覆盖相对两侧峰值的下降幅度。贯穿全高的竖缝（分隔并列的两篇文章）因此能排在被跨栏标题打断的横缝之前 —— 这正是固定两层做不到的。
+- **`extent`（带宽）**：相对典型行高的倍数，用**平滑饱和**而非硬上限。
+
+> ⚠️ **不要写成 `min(1.5, extent)`**。硬上限会把「3.75 倍行高的区间隔」和「2.5 倍行高的栏缝」压成同一个数，有意义的差异丢失，谁先谁后退化成看数组顺序 —— iOS 实测因此把跨栏标题切进了第一栏。
+
+**同分时横切优先**（文档天然自上而下流动，先分区再分栏，XY-Cut 的标准取向）。不定这条规则，同分时结果取决于数组顺序，同一版面可能时而先分区、时而先分栏。
+
+### 3.4 两个轴必须对称处理
+
+各自要先剥掉会把自己那条缝填平的干扰项：
+
+| 轴 | 怕什么 | 剥离函数 |
+|---|---|---|
+| 竖切 | **通栏元素**（大标题、通栏图注横穿每一条栏缝） | `columnarCandidates` |
+| 横切 | **贯穿全高的窄边栏**（报纸边缘被裁切的文章从头通到尾，把所有横向区域分隔填平，层级建立不起来） | `zoneCandidates` |
+
+只做前者不做后者，是 iOS 实现里踩到的坑：顶层一条横切都找不到，只能一路竖切。
+
+**`shoulder` 判据两个轴的语义也不同**：
+
+```kotlin
+val shoulder = if (axis == HORIZONTAL) 1.0 else peak * GAP_SHOULDER_RATIO
+```
+
+竖切要求缝两侧都是实打实的正文；横切只要求两侧都有行 —— **一个区的厚度完全可以只有一行**（大标题本身就是一个区），拿正文区的峰值去卡它，区永远分不出来。区的厚度可以是一行，栏的宽度不会只有一个字。
+
+同理 `MIN_LINES_PER_REGION = 1`，不是 2。
+
+### 3.4.1 通栏行必须提升到父层
+
+竖切时**跨越切割线的行不能按 midX 硬分给某一栏**。
+
+通栏元素（大标题、页脚地址、通栏图注）不属于任何一栏 —— 它在版面上位于栏组的上方或下方，层级比栏更高。按 midX 分给某一栏，它就会黏在那一栏尾巴上读出来（iOS 实测页脚被接到了最后一栏后面）。
+
+```
+stack ↓
+  ├── 栏组上方的通栏行
+  ├── row → [左栏, 右栏]
+  └── 栏组下方的通栏行     ← 页脚落这里
+```
+
+这同时消掉了一处自相矛盾：找栏缝时剥离通栏行、执行切割时却又把它们切进去。
+
+### 3.4.2 边缘窄栏整块拆出
+
+报纸边缘那篇被裁切的文章贯穿全高，参与分解会被横切切碎。用 `detachEdgeStrip` 在分解**之前**整块拆成独立区域，按 x 排在主体之后。
+
+判据三条缺一不可：**窄**、**贴边**、**纵向跨度 ≥ 主体的 60%**。只有零星几行、或纵向只占一小段的不算 —— 那多半是图注或角标，拆出去反而打乱顺序。
+
+拆出来的边栏**自己也要递归分解**（它可能是好几段），不能直接当叶子。
+
+### 3.4.3 遍历时不要重排子节点
+
+```kotlin
+// ❌ 错的
+is Node.Row -> children.sortedBy { minX(it) }.flatMap(::orderedLeaves)
+// ✅ 对的
+is Node.Row -> children.flatMap(::orderedLeaves)
+```
+
+`decompose` 切出的 `[前, 后]` 顺序本来就对。子树内部可以横跨很大范围，拿它的 minX 去和兄弟比较会把整棵子树排错位置 —— iOS 实测把正文第 2 栏甩到了最后读。
 
 ### 3.5 角色分类（启发式，不上模型）
 
@@ -324,51 +409,50 @@ iOS 已把真实报纸照片的行几何入库，Android 可直接拿来跑同�
 
 ## 10. 落地进度
 
-### ✅ P0 已实现（547 tests / 0 failures）
+### ✅ 全部已实现（567 tests / 0 failures，`assembleDebug` 通过）
 
 | 文件 | 内容 |
 |---|---|
-| `util/ocr/OcrLayoutAnalyzer.kt` | 新增：列检测、阅读顺序、角色分类、诊断打分 |
-| `kindle/KindleOcrParagrapher.kt` | 接入：两阶段分析、按块聚类、误连行按词切分、家具过滤 |
-| `test/.../OcrLayoutAnalyzerTest.kt` | 10 个合成用例，与 iOS 逐条对齐 |
-| `test/.../OcrLayoutFixtureTest.kt` | 4 个真实报纸用例，**与 iOS 共用 fixture** |
-| `test/.../OcrColumnParagraphingTest.kt` | 5 个端到端用例（验证接入，不只是分析器） |
-| `test/resources/ocr-layout-*.json` | 从 iOS 仓库复制的真实版面几何 |
+| `util/ocr/OcrLayoutAnalyzer.kt` | **递归 XY-Cut**：区域树、倾角矫正、方向推断、边栏拆分、通栏行提升、角色分类 |
+| `kindle/KindleOcrParagrapher.kt` | 两阶段分析、按叶子聚类、误连行按词切分、家具过滤、多栏路径全链路保序 |
+| `util/ocr/ImageQualityAssessor.kt` | 分辨率 + 拉普拉斯方差，与 iOS 同阈值 |
+| `util/ocr/OcrRegionCropper.kt` | 选区裁剪判据（重叠 ≥ 50%、落空回退整页） |
+| `ui/screens/capture/CaptureRegionPicker.kt` | Compose 拖框选区 |
+| `ui/screens/capture/CaptureViewModel.kt` | 三态结果（READY / NEEDS_REGION / FAILED）、失败时附采集建议 |
+| `test/.../OcrLayoutAnalyzerTest.kt` 等 5 个测试文件 | 合成用例 + **与 iOS 共用的真实报纸 fixture** + 端到端接入用例 |
 
-**跨端一致性已验证**：两个独立实现（Swift / Kotlin）在同一份真实报纸数据（297 行）上得到完全相同的结果 —— 3 栏、无块横跨两列、块内行自上而下。
-
-#### 实现过程中的两个测试教训
-
-1. **跨块缝合会把整页连成一段**。测试数据若每行都不以句号结尾，「一栏底部续到下一栏顶部」的缝合规则会把三栏 36 行全连起来。这是**设计行为**（真实报纸的文章确实跨栏续接），但意味着构造测试数据时要让句子正常收尾，否则测的不是列约束。
-2. **误连行切开后，右半段的 `left` 落在栏缝里**。断言「是否跨栏」不能用栏缝中点当分界，要用**栏主体**范围，否则正确结果会被误判成失败。
-
-### ✅ P1 质量闸已实现
-
-| 文件 | 内容 |
-|---|---|
-| `util/ocr/ImageQualityAssessor.kt` | 分辨率 + 拉普拉斯方差（512 宽灰度缩略图上测，与原图分辨率无关），与 iOS 同阈值 |
-| `ui/screens/capture/CaptureViewModel.kt` | 识别**失败**时才附上采集建议；成功时保持沉默 |
-| `test/.../ImageQualityAssessorTest.kt` | 7 个用例 |
-
-核心算法做成接受灰度数组的纯函数（`Bitmap` 在 JVM 单测里不可用），Bitmap 版本只是包装 —— 这样判据和方差计算都能单测。
-
-### ✅ P2 框选区域已实现
-
-| 文件 | 内容 |
-|---|---|
-| `util/ocr/OcrRegionCropper.kt` | 裁剪判据（重叠 ≥ 段落自身面积 50%、落空回退整页）+ 触发条件 |
-| `ui/screens/capture/CaptureRegionPicker.kt` | Compose 拖框选区（aspectFit 几何、遮罩挖洞） |
-| `data/model/Ocr.kt` | `OcrPage.columnCount`（默认 1，兼容历史数据） |
-| `test/.../OcrRegionCropperTest.kt` + `CaptureRegionGeometryTest.kt` | 6 + 7 个用例 |
-
-**关键决定：选区做成 `CaptureScreen` 内的覆盖层，不新增导航目的地。** `CastReaderNavHost.kt` 当前有 523 行在途改动（`weread-explain-and-background-reading` 分支），加路由必然撞车；覆盖层方案完全不碰导航栈，返回键语义也保持不变（选区界面上按返回 = 回到取景）。
+**跨端一致性**：两个独立实现（Swift / Kotlin）在同一份真实报纸几何（297 行）上得到相同结果。
 
 ### ⏳ 待办
 
 | 阶段 | 状态 | 备注 |
 |---|---|---|
-| P1 ML Kit Document Scanner | 未开始 | 需加依赖 `play-services-mlkit-document-scanner`（APK 体积 + 依赖 Google Play 服务，属产品决策）；不碰导航，改动面在 `CaptureScreen` 的拍摄入口 |
-| P1 相册图透视矫正 | 未开始 | ⚠️ Android **没有** `VNDetectDocumentSegmentationRequest` 的系统级等价物，需要 OpenCV 依赖或自研四角检测，工作量与风险都明显高于 iOS，建议单独评估 |
-| P3 埋点 | 未开始 | 需与 iOS 同批，且要先对齐落后的契约副本 |
+| ML Kit Document Scanner | 未开始 | 需加 `play-services-mlkit-document-scanner` 依赖（APK 体积 + 依赖 Google Play 服务，属产品决策）；不碰导航，改动面在 `CaptureScreen` 拍摄入口 |
+| 方向推断接入 | 未开始 | 分析器已提供 `quarterTurnsToUpright`，需要在 `MultilingualOcrCoordinator` / `CaptureViewModel` 侧调用并旋转 Bitmap（**必须用高精度识别探测**，见下方踩坑） |
+| 相册图透视矫正 | 未开始 | ⚠️ Android **没有** `VNDetectDocumentSegmentationRequest` 的等价物，需 OpenCV 或自研四角检测，建议单独评估 |
+| 埋点 | 未开始 | 需与 iOS 同批，且要先对齐落后的契约副本 |
 
-**当前状态：567 tests / 0 failures，`assembleDebug` 通过。** 多栏报纸的阅读顺序、采集质量提示、框选区域都已可用，可以真机验收。
+---
+
+## 11. 已知限制
+
+- **被 OCR 误连的跨栏行**在递归结构下被**提升为独立区域**，而不是按列切开。内容仍是「左栏尾 + 右栏头」的拼接，但**不会打断其他栏的连贯**。真正切开需要词级信息，是 `KindleOcrParagrapher` 两阶段切分的职责。
+- 真实报纸 fixture 上仍有约 2/11 的块跨栏（正文栏窄、印刷与扫描噪声大）。测试守的是**比例 ≤ 20%**，不是零 —— 回归到大面积跨栏时会立刻报警。
+- deskew 只能矫正**旋转**，矫正不了**梯形畸变**。严重透视的照片仍会掉栏，建议走文档扫描器。
+
+---
+
+## 12. iOS 实现过程中踩过的坑（Android 别重踩）
+
+这些都不是调参能发现的，全部来自真实照片实测：
+
+| 坑 | 现象 | 正解 |
+|---|---|---|
+| 用 `.fast` 级别做方向探测 | 横放的页面只认出 3 行（accurate 是 197 行），方向直接判反 | **必须 accurate**；缩图到最长边 900px 把耗时压到 0.5–0.8s |
+| `min(1.5, extent)` 硬上限 | 区间隔与栏缝压成同一个分数，谁先谁后看数组顺序 | 平滑饱和 `extent / (2 + extent)` |
+| 只试最优的一刀 | 横切排前面但切不开时直接放弃，竖切没机会 → 正文变成「同一行三栏并排读」 | 按显著性**依次尝试**直到切得开 |
+| 遍历时按 minX 重排子节点 | 子树内部横跨大范围，整棵被排错位置 → 第 2 栏甩到最后读 | 信任 `decompose` 的顺序，不重排 |
+| `MIN_LINES_PER_REGION = 2` | 单行大标题切不出来，被塞进第一栏开头 | 取 1 |
+| 竖切按 midX 硬分通栏行 | 页脚黏在最后一栏尾巴上 | 提升到父层（3.4.1） |
+| 边栏拆分后传 `depth = 1` | 白白浪费一层递归预算，跨栏块从 18% 涨到 31% | 传 0，拆分是预处理不算一层 |
+| `columnRanges` 取最外层 | 递归后最外层只有两支，误连行切分判据失效 | 取**叶子级**并排除通栏叶子 |

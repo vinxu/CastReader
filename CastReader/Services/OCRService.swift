@@ -309,7 +309,27 @@ actor OCRService {
     /// Authoritative OCR entry used by every non-Kindle image path. The first
     /// pass only selects one language; the final pass is always a single-language
     /// profile so OCR correction, CJK token boxes and TTS language agree.
-    func recognizeImportedImage(image: UIImage, title: String? = nil) async throws -> ReadingDocument {
+    func recognizeImportedImage(
+        image: UIImage,
+        title: String? = nil,
+        orientationSettled: Bool = false
+    ) async throws -> ReadingDocument {
+        // 报纸常常是横着拍的（人把版面转过来看）。EXIF 归正解决不了这种
+        // **内容级**旋转，而版面理解假设「行是水平的、栏是垂直的」——
+        // 方向不对时列检测必然失效，读出来就是乱跳。
+        if !orientationSettled, let upright = try? await uprightedImage(image) {
+            return try await recognizeImportedImage(
+                image: upright,
+                title: title,
+                orientationSettled: true
+            )
+        }
+        #if DEBUG
+        // 把 OCR 真正吃进去的那张图留一份：版面问题只有拿真实样本
+        // 离线复现才查得动，靠日志里的几个数字会一直在猜。
+        Self.dumpDebugInput(image)
+        #endif
+
         let visionLocales = SupportedTTSLanguage.allCases
             .filter { $0 != .hindi }
             .map(\.visionRecognitionLanguage)
@@ -388,6 +408,72 @@ actor OCRService {
                 languageHint: profile.language
             )) ?? visionProbe
         }
+    }
+
+    #if DEBUG
+    /// 仅 DEBUG：把 OCR 输入图写进 Documents，供
+    /// `devicectl device copy from` 取回后离线复现。
+    private nonisolated static func dumpDebugInput(_ image: UIImage) {
+        guard let data = image.jpegData(compressionQuality: 0.9),
+              let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        else { return }
+        let url = documents.appendingPathComponent("ocr-input-latest.jpg")
+        try? data.write(to: url, options: .atomic)
+        KindleRunLog.write("OCR_INPUT_DUMP bytes=\(data.count) size=\(Int(image.size.width))x\(Int(image.size.height))")
+    }
+    #endif
+
+    /// 把横着拍/倒着拍的页面转正。已经正立时返回 `nil`（不做任何拷贝）。
+    ///
+    /// 只花一次轻量识别：Vision 会自己纠正文本方向来识别，`orientation` 只影响
+    /// 返回的 bbox 坐标系，所以单次结果的行几何 + 返回顺序就足以推断方向。
+    private func uprightedImage(_ image: UIImage) async throws -> UIImage? {
+        guard let cgImage = image.cgImage else { return nil }
+        let boxes = try await orientationProbeBoxes(cgImage: cgImage)
+        let turns = OCRLayoutAnalyzer.quarterTurnsToUpright(visionBoxesInReadingOrder: boxes)
+        guard turns != 0 else { return nil }
+        #if DEBUG
+        NSLog("CRDBG OCR orientation: rotating page clockwise %d×90° (lines=%d)", turns, boxes.count)
+        #endif
+        KindleRunLog.write("OCR_ORIENTATION turns=\(turns) lines=\(boxes.count)")
+        return image.rotatedClockwise(quarterTurns: turns)
+    }
+
+    /// 方向探测用的行 bbox。
+    ///
+    /// ⚠️ **必须用 `.accurate`**：`.fast` 级别的 Vision 不做文本方向自适应，
+    /// 横放的页面只能认出零星几行（实测同一张图 197 行 → 3 行），方向直接判反。
+    /// 缩图把 accurate 的耗时压到 0.5–0.8 秒 —— 判方向不需要高分辨率。
+    private func orientationProbeBoxes(cgImage: CGImage) async throws -> [CGRect] {
+        let probe = Self.downscaled(cgImage, maxSide: 900) ?? cgImage
+        return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[CGRect], Error>) in
+            let request = VNRecognizeTextRequest { request, error in
+                if let error { cont.resume(throwing: error); return }
+                let observations = (request.results as? [VNRecognizedTextObservation]) ?? []
+                cont.resume(returning: observations.map(\.boundingBox))
+            }
+            request.recognitionLevel = .accurate
+            request.usesLanguageCorrection = false
+            let handler = VNImageRequestHandler(cgImage: probe, orientation: .up, options: [:])
+            do { try handler.perform([request]) } catch { cont.resume(throwing: error) }
+        }
+    }
+
+    private nonisolated static func downscaled(_ cgImage: CGImage, maxSide: Int) -> CGImage? {
+        let longest = max(cgImage.width, cgImage.height)
+        guard longest > maxSide, longest > 0 else { return nil }
+        let scale = CGFloat(maxSide) / CGFloat(longest)
+        let width = max(1, Int((CGFloat(cgImage.width) * scale).rounded()))
+        let height = max(1, Int((CGFloat(cgImage.height) * scale).rounded()))
+        guard let context = CGContext(
+            data: nil, width: width, height: height,
+            bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        context.interpolationQuality = .high
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return context.makeImage()
     }
 
     /// 识别图片文字，按行聚合为段落。languages 为 BCP-47（如 ["en-US"]、["zh-Hans","en-US"]）。
@@ -940,8 +1026,12 @@ actor OCRService {
         }
     }
 
-    private func buildVisionParagraphBoxes(_ lines: [LineBox], language: String?) -> [ParagraphBox] {
-        let groups = groupLinesIntoParagraphs(lines)
+    private func buildVisionParagraphBoxes(
+        _ lines: [LineBox],
+        language: String?,
+        preserveOrder: Bool = false
+    ) -> [ParagraphBox] {
+        let groups = groupLinesIntoParagraphs(lines, preserveOrder: preserveOrder)
         return groups.compactMap { group in
             let words = group.flatMap(\.words)
             let text = normalizeOcrParagraphText(
@@ -952,9 +1042,10 @@ actor OCRService {
         }
     }
 
-    private func groupLinesIntoParagraphs(_ lines: [LineBox]) -> [[LineBox]] {
-        // Vision y 为底部原点，maxY 越大越靠上 → 从上到下排序
-        let sorted = lines.sorted { $0.bbox.maxY > $1.bbox.maxY }
+    private func groupLinesIntoParagraphs(_ lines: [LineBox], preserveOrder: Bool = false) -> [[LineBox]] {
+        // Vision y 为底部原点，maxY 越大越靠上 → 从上到下排序。
+        // 保序模式（多栏）下沿用传入顺序：那是倾角矫正后排好的阅读顺序。
+        let sorted = preserveOrder ? lines : lines.sorted { $0.bbox.maxY > $1.bbox.maxY }
         guard !sorted.isEmpty else { return [] }
 
         let heights = sorted.map { $0.bbox.height }.sorted()
@@ -1000,19 +1091,31 @@ actor OCRService {
 
         if analysis.isMultiColumn,
            let columnar = multiColumnParagraphBoxes(lines: lines, analysis: analysis, language: language) {
+            let columnsPerBlock = Set(analysis.blocks.map(\.columnIndex)).sorted()
             KindleRunLog.write(
                 "OCR_LAYOUT columns=\(analysis.columnCount) " +
                 "confidence=\(Int((analysis.confidence * 100).rounded())) " +
-                "blocks=\(analysis.blocks.count) roles=\(analysis.roleCounts) paras=\(columnar.count)"
+                "blocks=\(analysis.blocks.count) roles=\(analysis.roleCounts) paras=\(columnar.count) " +
+                "colIdx=\(columnsPerBlock) chars=\(columnar.reduce(0) { $0 + $1.text.count })"
             )
             return LayoutOutcome(boxes: columnar, analysis: analysis)
         }
 
         // 单栏：段落聚类流程与改造前完全一致，只额外剔除版面家具（页码/页眉）。
         let flowLines = readableLines(lines, analysis: analysis)
+        // 回落时把分项打出来：知道是「没找到缝」还是「找到了但某一项分低」，
+        // 才能对症下药，而不是盲调阈值。
+        let parts = OCRLayoutAnalyzer.columnDiagnostics(
+            lines: layoutInput(from: lines)
+        ).map {
+            String(
+                format: "gap=%.2f align=%.2f occ=%.2f bal=%.2f cols=%d",
+                $0.gapQuality, $0.alignment, $0.occupancy, $0.balance, $0.columns.count
+            )
+        } ?? "no-gaps"
         KindleRunLog.write(
             "OCR_LAYOUT columns=1 reason=\(analysis.fallbackReason ?? "single-column") " +
-            "lines=\(lines.count)->\(flowLines.count)"
+            "lines=\(lines.count)->\(flowLines.count) [\(parts)]"
         )
         return LayoutOutcome(
             boxes: singleFlowParagraphBoxes(from: flowLines, language: language),
@@ -1109,7 +1212,10 @@ actor OCRService {
         for block in analysis.blocks where block.role.isReadable {
             let blockLines = block.lineIDs.compactMap { lines.indices.contains($0) ? lines[$0] : nil }
             guard !blockLines.isEmpty else { continue }
-            boxes.append(contentsOf: singleFlowParagraphBoxes(from: blockLines, language: language))
+            // 块内保序：版面分析已按矫正坐标排好，再按原始 y 排会打乱顺序。
+            boxes.append(contentsOf: singleFlowParagraphBoxes(
+                from: blockLines, language: language, preserveOrder: true
+            ))
         }
         // 一栏底部续到下一栏顶部的断句在这里缝合（跨块，仍是既有规则）。
         let repaired = repairBrokenContinuations(boxes, language: language)
@@ -1127,11 +1233,15 @@ actor OCRService {
         return filtered.isEmpty ? lines : filtered
     }
 
-    private func singleFlowParagraphBoxes(from lines: [LineBox], language: String?) -> [ParagraphBox] {
-        let raw = buildVisionParagraphBoxes(lines, language: language)
+    private func singleFlowParagraphBoxes(
+        from lines: [LineBox],
+        language: String?,
+        preserveOrder: Bool = false
+    ) -> [ParagraphBox] {
+        let raw = buildVisionParagraphBoxes(lines, language: language, preserveOrder: preserveOrder)
         let fallback = repairBrokenContinuations(raw, language: language)
         let wordBoxes = lines.flatMap(\.words)
-        let layoutLines = self.layoutLines(from: lines)
+        let layoutLines = self.layoutLines(from: lines, preserveOrder: preserveOrder)
         guard !layoutLines.isEmpty else { return fallback }
         if layoutLines.count == 1 {
             return [makeParagraphBox(from: layoutLines)]
@@ -1206,7 +1316,10 @@ actor OCRService {
     ///
     /// 手持拍摄的报纸有 10° 以上倾斜，一行右端可以比下一行左端还低，纯几何重建
     /// 必然跨行错并；而 Vision / Tesseract 的行识别本身对倾斜是鲁棒的。
-    private func layoutLines(from lines: [LineBox]) -> [LayoutLine] {
+    /// - Parameter preserveOrder: 多栏路径传 `true`。版面分析是在**倾角矫正后**的
+    ///   坐标上排的序，倾斜页面上再按原始 y 排一次会把正确顺序打乱 —— 文本与词框
+    ///   的顺序一起错位，朗读跳、高亮也跟着跳。
+    private func layoutLines(from lines: [LineBox], preserveOrder: Bool = false) -> [LayoutLine] {
         var result: [LayoutLine] = []
         for line in lines {
             let valid = line.words.filter {
@@ -1238,6 +1351,8 @@ actor OCRService {
             }
         }
         // 块内（同一列）按自上而下排序；多栏的列间顺序由版面分析决定。
+        // 保序模式下直接沿用传入顺序 —— 那已经是矫正坐标下排好的阅读顺序。
+        guard !preserveOrder else { return result }
         return result.sorted { a, b in
             if abs(a.top - b.top) > 0.004 { return a.top < b.top }
             return a.left < b.left

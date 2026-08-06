@@ -30,6 +30,18 @@ struct PhotoAnchorResolver: ReadingAnchorResolver {
         return [ReadingGeometry.displayRect(forNorm: para.words[wordIndex].bboxNorm, in: fitted)]
     }
 
+    /// 整段的逐行矩形，用于段落级底色。
+    ///
+    /// 报纸这类密集版面上，只有一个词的高亮很难让人定位「读到哪了」；
+    /// 段落底色提供稳定的视觉锚点，词高亮负责精确指读。
+    /// 按视觉行分组（含 x 连续性约束），所以跨栏的段落不会连成一大片。
+    func rectsForParagraph(paragraphIndex: Int) -> [CGRect] {
+        guard let para = paragraph(paragraphIndex), !para.words.isEmpty else { return [] }
+        return groupByLine(para.words.map(\.bboxNorm))
+            .compactMap { ReadingGeometry.unionNorm($0) }
+            .map { ReadingGeometry.displayRect(forNorm: $0, in: fitted) }
+    }
+
     func rectsForCharRange(paragraphIndex: Int, range: Range<Int>) -> [CGRect] {
         guard let para = paragraph(paragraphIndex), !para.words.isEmpty else { return [] }
         let hitWords = wordsIntersecting(charRange: range, in: para)
