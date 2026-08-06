@@ -227,6 +227,25 @@ struct KindleStorefront: Codable, Identifiable, Equatable, Hashable, Sendable {
         }
     }
 
+    /// WKWebsiteDataRecord exposes only a display domain. Scope forced
+    /// reauthentication to the active marketplace so an expired Italian Kindle
+    /// session cannot sign the user out of an otherwise valid US/UK account.
+    static func isAmazonWebsiteDataDomain(
+        _ raw: String,
+        for storefront: KindleStorefront
+    ) -> Bool {
+        var domain = raw.lowercased()
+        if domain.hasPrefix(".") {
+            domain.removeFirst()
+        }
+        guard isAmazonWebsiteDataDomain(domain),
+              let observed = registrableDomain(for: domain),
+              let expected = registrableDomain(for: storefront.canonicalHost) else {
+            return false
+        }
+        return observed == expected
+    }
+
     static func registrableDomain(for host: String?) -> String? {
         guard let host = normalizedHost(host) else { return nil }
         let labels = host.split(separator: ".").map(String.init)
@@ -636,19 +655,65 @@ enum KindleStorefrontNavigationPolicy {
         if KindleStorefront.storefront(url: url) != nil {
             return allows(url, expectedStorefrontID: expectedStorefrontID)
         }
-        return isSafeAmazonAuthenticationURL(url)
+        return isSafeAmazonAuthenticationURL(
+            url,
+            expectedStorefrontID: expectedStorefrontID
+        )
     }
 
-    static func isSafeAmazonAuthenticationURL(_ url: URL?) -> Bool {
+    static func isSafeAmazonAuthenticationURL(
+        _ url: URL?,
+        expectedStorefrontID: String? = nil
+    ) -> Bool {
         guard let url,
               url.scheme?.lowercased() == "https",
               url.user == nil,
               url.password == nil,
               url.port == nil || url.port == 443,
-              KindleStorefront.isAmazonWebsiteDataDomain(url.host ?? "") else {
+              resemblesAmazonAuthenticationURL(url) else {
             return false
         }
 
+        if let expectedStorefrontID {
+            guard let expected = KindleStorefront.entry(id: expectedStorefrontID),
+                  KindleStorefront.isAmazonWebsiteDataDomain(
+                      url.host ?? "",
+                      for: expected
+                  ) else {
+                return false
+            }
+
+            let returnTargets = (URLComponents(
+                url: url,
+                resolvingAgainstBaseURL: false
+            )?.queryItems ?? []).filter {
+                let name = $0.name.lowercased()
+                return name == "openid.return_to" || name == "return_to"
+            }
+            for item in returnTargets {
+                guard let rawTarget = item.value,
+                      let target = URL(string: rawTarget),
+                      allows(
+                          target,
+                          expectedStorefrontID: expected.id
+                      ) else {
+                    return false
+                }
+            }
+        }
+
+        return true
+    }
+
+    /// Classification only; never use this as an allow decision. It lets the
+    /// WebView report a rejected auth redirect separately from an arbitrary
+    /// navigation while the stricter method above still enforces TLS,
+    /// credentials, port, marketplace ownership, and return targets.
+    static func resemblesAmazonAuthenticationURL(_ url: URL?) -> Bool {
+        guard let url,
+              KindleStorefront.isAmazonWebsiteDataDomain(url.host ?? "") else {
+            return false
+        }
         let path = url.path.lowercased()
         let queryNames = Set(
             (URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? [])

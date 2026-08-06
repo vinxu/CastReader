@@ -415,37 +415,134 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-        let url = webView.url?.absoluteString ?? ""
-        KindleRunLog.write("KINDLE shelf didStart url=\(url)")
+        KindleRunLog.write(
+            "KINDLE shelf didStart \(KindleSessionProbe.safeRouteLabel(webView.url))"
+        )
         KindleSessionProbe.logCookies(reason: "shelf-didStart")
     }
 
     func webView(_ webView: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation!) {
-        let url = webView.url?.absoluteString ?? ""
-        KindleRunLog.write("KINDLE shelf redirect landing=\(KindleSessionProbe.landingKind(url)) url=\(url)")
+        KindleRunLog.write(
+            "KINDLE shelf redirect \(KindleSessionProbe.safeRouteLabel(webView.url))"
+        )
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        guard KindleStorefrontNavigationPolicy.allowsMainFrame(
+            webView.url,
+            expectedStorefrontID: store.boundStorefrontID
+        ) else {
+            rejectUnexpectedMainFrameDestination(webView.url)
+            return
+        }
         let finishedURL = webView.url?.absoluteString ?? ""
         let landing = KindleSessionProbe.landingKind(finishedURL)
         if landing == "auth" {
             connectionAnalytics.record(.loginStarted, result: .started)
-        } else if landing == "library" || landing == "reader" {
+        } else if (landing == "library" || landing == "reader"),
+                  KindleStorefrontNavigationPolicy.allows(
+                      webView.url,
+                      expectedStorefrontID: store.boundStorefrontID
+                  ) {
             connectionAnalytics.record(.loginSucceeded, result: .success)
         }
-        if (landing == "library" || landing == "reader"),
-           let observed = KindleStorefront.storefront(rawURL: finishedURL),
-           observed.isSelectable,
-           observed.id != store.boundStorefrontID {
-            KindlePlaybackCenter.shared.close()
-            store.switchStorefront(to: observed.id)
-            KindleRunLog.write("KINDLE shelf storefront observed id=\(observed.id)")
-        }
-        KindleRunLog.write("KINDLE shelf didFinish landing=\(landing) url=\(finishedURL)")
+        KindleRunLog.write(
+            "KINDLE shelf didFinish \(KindleSessionProbe.safeRouteLabel(webView.url))"
+        )
         KindleSessionProbe.logCookies(reason: "shelf-didFinish-\(landing)")
         if landing == "library" { KindleSessionFreshness.markShelfOK() }
         statusText = AppLocalized("如果已经看到 Kindle 书架，请点同步。")
         Task { await refreshPageState() }
+    }
+
+    /// The shelf WebView has the same marketplace ownership boundary as the
+    /// reader WebView. Amazon's localized Kindle domains may redirect from a
+    /// legacy alias to the canonical host, and sign-in may temporarily visit a
+    /// secure Amazon authentication endpoint; everything else is denied before
+    /// it can replace the visible main frame or silently mutate the binding.
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        guard navigationAction.targetFrame?.isMainFrame == true,
+              let destination = navigationAction.request.url else {
+            decisionHandler(.allow)
+            return
+        }
+        guard KindleStorefrontNavigationPolicy.allowsMainFrame(
+            destination,
+            expectedStorefrontID: store.boundStorefrontID
+        ) else {
+            decisionHandler(.cancel)
+            rejectUnexpectedMainFrameDestination(destination)
+            return
+        }
+        decisionHandler(.allow)
+    }
+
+    /// Redirect responses need their own gate: WKWebView does not guarantee a
+    /// fresh action-policy callback for every server-side hop.
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationResponse: WKNavigationResponse,
+        decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
+    ) {
+        guard navigationResponse.isForMainFrame,
+              let destination = navigationResponse.response.url else {
+            decisionHandler(.allow)
+            return
+        }
+        guard KindleStorefrontNavigationPolicy.allowsMainFrame(
+            destination,
+            expectedStorefrontID: store.boundStorefrontID
+        ) else {
+            decisionHandler(.cancel)
+            rejectUnexpectedMainFrameDestination(destination)
+            return
+        }
+        decisionHandler(.allow)
+    }
+
+    private func rejectUnexpectedMainFrameDestination(_ destination: URL?) {
+        webView.stopLoading()
+        let expectedID = store.boundStorefrontID
+        let observed = KindleStorefront.storefront(url: destination)
+        let code: String
+        if KindleStorefrontNavigationPolicy
+            .resemblesAmazonAuthenticationURL(destination) {
+            code = "auth_redirect_rejected"
+            let domain = KindleStorefront.registrableDomain(for: destination?.host)
+                ?? "invalid_destination"
+            KindleRunLog.write(
+                "KINDLE shelf auth redirect rejected expected=\(expectedID) domain=\(domain)"
+            )
+        } else if let observed, observed.entryEnabled, observed.id != expectedID {
+            code = "storefront_mismatch"
+            KindleRunLog.write(
+                "KINDLE shelf navigation blocked expected=\(expectedID) observed=\(observed.id)"
+            )
+        } else {
+            code = "navigation_blocked"
+            let domain = KindleStorefront.registrableDomain(for: destination?.host)
+                ?? "invalid_destination"
+            KindleRunLog.write(
+                "KINDLE shelf navigation blocked expected=\(expectedID) domain=\(domain)"
+            )
+        }
+
+        let message = AppLocalized("当前 Amazon 站点与所选站点不一致。")
+        statusText = message
+        errorText = message
+        showsEmptyShelfRecovery = true
+        if onboardingAutomationEnabled {
+            onboardingState = .failed(message: message)
+        }
+        connectionAnalytics.record(
+            .failed,
+            result: .failed,
+            errorCode: code
+        )
     }
 
     func syncLibrary(
@@ -476,10 +573,15 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             var sawLibraryPage = false
             var sawWrongStorefront = false
             var stableEmptyEvidencePasses = 0
+            var stableSnapshotPasses = 0
+            var previousSnapshotKey: String?
+            var completedShelfScan = false
+            var lastPayload: KindleScrapeResult?
             var accountInfo: KindleAccountInfo?
 
             for pass in 0..<maxPasses {
                 let payload = try await scrapeCurrentViewport()
+                lastPayload = payload
                 guard !Task.isCancelled,
                       store.boundStorefrontID == expectedStorefrontID,
                       expectedOnboardingAttemptID.map({ $0 == onboardingAttemptID }) ?? true else {
@@ -491,8 +593,9 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                         payload.url.flatMap(URL.init(string:)),
                         expectedStorefrontID: store.boundStorefrontID
                     )
-                print("[KindleSync] pass=\(pass) url=\(payload.url ?? "") books=\(payload.books.count) auth=\(payload.authRequired == true) reader=\(payload.isReaderPage == true) signals=\(payload.hasReaderSignals == true) empty=\(payload.hasEmptyShelfSignal == true)")
-                KindleRunLog.write("KINDLE shelf sync pass=\(pass) landing=\(landing) books=\(payload.books.count) auth=\(payload.authRequired == true ? "Y" : "N") reader=\(payload.isReaderPage == true ? "Y" : "N") signals=\(payload.hasReaderSignals == true ? "Y" : "N") empty=\(payload.hasEmptyShelfSignal == true ? "Y" : "N")")
+                KindleRunLog.write(
+                    "KINDLE shelf sync pass=\(pass) storefront=\(expectedStorefrontID) landing=\(landing) books=\(payload.books.count) auth=\(payload.authRequired == true ? "Y" : "N") authState=\(payload.authState ?? "none") reader=\(payload.isReaderPage == true ? "Y" : "N") signals=\(payload.hasReaderSignals == true ? "Y" : "N") empty=\(payload.hasEmptyShelfSignal == true ? "Y" : "N") loading=\(payload.shelfLoading == true ? "Y" : "N") end=\(payload.atScrollEnd == true ? "Y" : "N")"
+                )
                 sawAuthRequired = sawAuthRequired || payload.authRequired == true
                 if let observedStorefrontID = KindleStorefront.storefront(
                     rawURL: payload.url
@@ -505,12 +608,20 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                 sawLibrarySignals = sawLibrarySignals || payload.hasReaderSignals == true || !payload.books.isEmpty
                 sawLibraryPage = sawLibraryPage
                     || isExactBoundLibrary
+                let hasStableSnapshot = payload.snapshotKey?.isEmpty == false
+                    && payload.snapshotKey == previousSnapshotKey
+                stableSnapshotPasses = hasStableSnapshot
+                    ? stableSnapshotPasses + 1
+                    : 0
+                previousSnapshotKey = payload.snapshotKey
                 let isStableEmptyEvidence = isExactBoundLibrary
                     && payload.pageReady == true
                     && payload.hasEmptyShelfSignal == true
                     && payload.authRequired != true
                     && payload.isReaderPage != true
                     && payload.hasReaderSignals != true
+                    && payload.shelfLoading != true
+                    && payload.atScrollEnd == true
                     && payload.books.isEmpty
                 stableEmptyEvidencePasses = isStableEmptyEvidence
                     ? stableEmptyEvidencePasses + 1
@@ -540,8 +651,24 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                 } else {
                     statusText = String(format: AppLocalized("已找到 %d 本 Kindle 书…"), byID.count)
                 }
-                if !byID.isEmpty, pass >= 2, idlePasses >= 2 { break }
-                if byID.isEmpty, stableEmptyEvidencePasses >= 2 { break }
+                let structurallyComplete = isExactBoundLibrary
+                    && payload.pageReady == true
+                    && payload.shelfLoading != true
+                    && payload.atScrollEnd == true
+                    && stableSnapshotPasses >= 1
+                if !byID.isEmpty,
+                   pass >= 1,
+                   idlePasses >= 1,
+                   structurallyComplete {
+                    completedShelfScan = true
+                    break
+                }
+                if byID.isEmpty,
+                   stableEmptyEvidencePasses >= 2,
+                   structurallyComplete {
+                    completedShelfScan = true
+                    break
+                }
                 try await scrollLibraryForward()
                 try await Task.sleep(nanoseconds: 650_000_000)
                 guard !Task.isCancelled,
@@ -559,6 +686,11 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             if sawWrongStorefront {
                 statusText = AppLocalized("当前 Amazon 站点与所选站点不一致。")
                 errorText = statusText
+                connectionAnalytics.record(
+                    .failed,
+                    result: .failed,
+                    errorCode: "storefront_mismatch"
+                )
                 if onboardingAutomationEnabled {
                     onboardingState = .failed(message: statusText)
                 }
@@ -581,7 +713,7 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                     statusText = AppLocalized("打开 Kindle 书架，然后点同步。")
                 }
                 if !lightPass {
-                    let isTrustedEmptyShelf = KindleEmptyShelfTrust.isTrusted(
+                    let isTrustedEmptyShelf = completedShelfScan && KindleEmptyShelfTrust.isTrusted(
                         sawLibraryPage: sawLibraryPage,
                         sawAuthRequired: sawAuthRequired,
                         sawReaderPage: sawReaderPage,
@@ -591,8 +723,9 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                     if isTrustedEmptyShelf {
                         store.markConnectedWithEmptyShelf(account: accountInfo)
                         connectionAnalytics.record(
-                            .syncCompleted,
-                            result: .success,
+                            .failed,
+                            result: .failed,
+                            errorCode: "empty_shelf",
                             bookCount: 0
                         )
                         errorText = nil
@@ -601,22 +734,55 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                             onboardingState = .empty
                         }
                     } else {
-                        errorText = AppLocalized("当前页面暂时没有找到 Kindle 书籍。")
+                        let lastLanding = KindleSessionProbe.landingKind(
+                            lastPayload?.url ?? ""
+                        )
+                        let failureCode = KindleShelfScanFailureClassifier.code(
+                            sawLibraryPage: sawLibraryPage,
+                            sawReaderPage: sawReaderPage,
+                            lastLanding: lastLanding,
+                            pageReady: lastPayload?.pageReady == true,
+                            shelfLoading: lastPayload?.shelfLoading == true,
+                            atScrollEnd: lastPayload?.atScrollEnd == true,
+                            stableSnapshotPasses: stableSnapshotPasses
+                        )
+                        if failureCode == "library_path_lost" {
+                            errorText = AppLocalized("打开 Kindle 书架，然后点同步。")
+                        } else if failureCode == "DOM_changed" {
+                            errorText = AppLocalized("当前页面暂时没有找到 Kindle 书籍。")
+                        } else {
+                            errorText = AppLocalized("书架仍在加载，请稍后重试。")
+                        }
                         connectionAnalytics.record(
                             .failed,
                             result: .failed,
-                            errorCode: "sync_snapshot_unavailable"
+                            errorCode: failureCode
                         )
                     }
                 }
             } else {
                 store.mergeScrapedBooks(books, account: accountInfo)
-                connectionAnalytics.record(
-                    .syncCompleted,
-                    result: .success,
-                    bookCount: books.count
-                )
-                statusText = AppLocalized("Kindle 书架已同步。")
+                if completedShelfScan {
+                    connectionAnalytics.record(
+                        .syncCompleted,
+                        result: .success,
+                        bookCount: books.count
+                    )
+                    statusText = AppLocalized("Kindle 书架已同步。")
+                    errorText = nil
+                } else {
+                    connectionAnalytics.record(
+                        .failed,
+                        result: .failed,
+                        errorCode: "scan_timeout",
+                        bookCount: books.count
+                    )
+                    statusText = String(
+                        format: AppLocalized("已同步 %d 本书。"),
+                        books.count
+                    )
+                    errorText = AppLocalized("书架仍在加载，请稍后重试。")
+                }
                 if onboardingAutomationEnabled {
                     onboardingState = .ready
                 }
@@ -625,7 +791,7 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             // The session fingerprint immediately after a sync is the missing
             // half of the picture: comparing it against the next book open shows
             // whether visiting the shelf is what refreshes Amazon's reader session.
-            KindleRunLog.write("KINDLE shelf sync done storefront=\(store.boundStorefrontID) books=\(books.count) auth=\(sawAuthRequired ? "Y" : "N") readerPage=\(sawReaderPage ? "Y" : "N") signals=\(sawLibrarySignals ? "Y" : "N") light=\(lightPass ? "Y" : "N")")
+            KindleRunLog.write("KINDLE shelf sync done storefront=\(store.boundStorefrontID) books=\(books.count) complete=\(completedShelfScan ? "Y" : "N") auth=\(sawAuthRequired ? "Y" : "N") readerPage=\(sawReaderPage ? "Y" : "N") signals=\(sawLibrarySignals ? "Y" : "N") light=\(lightPass ? "Y" : "N")")
             KindleSessionProbe.logCookies(reason: "shelf-sync-done")
         } catch is CancellationError {
             return
@@ -640,12 +806,14 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             connectionAnalytics.record(
                 .failed,
                 result: .failed,
-                errorCode: "sync_failed"
+                errorCode: "scan_timeout"
             )
             if onboardingAutomationEnabled {
                 onboardingState = .failed(message: error.localizedDescription)
             }
-            KindleRunLog.write("KINDLE shelf sync failed error=\(error.localizedDescription)")
+            KindleRunLog.write(
+                "KINDLE shelf sync failed code=\((error as NSError).code)"
+            )
             KindleSessionProbe.logCookies(reason: "shelf-sync-failed")
         }
     }
@@ -733,9 +901,13 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         return KindleScrapeResult(
             books: payload.books.map { $0.book(storefrontID: storefrontID) }.filter(\.isLikelyLibraryBook),
             authRequired: payload.authRequired,
+            authState: payload.authState,
             hasReaderSignals: payload.hasReaderSignals,
             hasEmptyShelfSignal: payload.hasEmptyShelfSignal,
             pageReady: payload.pageReady,
+            shelfLoading: payload.shelfLoading,
+            atScrollEnd: payload.atScrollEnd,
+            snapshotKey: payload.snapshotKey,
             isReaderPage: payload.isReaderPage,
             account: payload.account,
             url: payload.url,
@@ -777,7 +949,16 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     private func scrollLibraryForward() async throws {
         _ = try await evaluate("""
         (function() {
-          var all = Array.from(document.querySelectorAll('*')).concat([document.scrollingElement, document.body, document.documentElement]).filter(Boolean);
+          var roots = [document.scrollingElement, document.body, document.documentElement].filter(Boolean);
+          var all = Array.from(document.querySelectorAll('*')).filter(function(el) {
+            if (roots.indexOf(el) >= 0) return true;
+            try {
+              var overflowY = String(getComputedStyle(el).overflowY || '').toLowerCase();
+              return /^(?:auto|scroll|overlay)$/.test(overflowY) &&
+                (el.clientHeight || 0) >= 48 &&
+                (el.scrollHeight || 0) - (el.clientHeight || 0) > 4;
+            } catch (_) { return false; }
+          }).concat(roots);
           all.sort(function(a,b){ return ((b.scrollHeight||0)-(b.clientHeight||0))-((a.scrollHeight||0)-(a.clientHeight||0)); });
           var delta = Math.max(520, Math.floor((window.innerHeight || 700) * 0.82));
           for (var i=0; i<Math.min(8, all.length); i++) {
@@ -816,9 +997,13 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
 private struct KindleScrapePayload: Decodable {
     let books: [ScrapedKindleBook]
     let authRequired: Bool?
+    let authState: String?
     let hasReaderSignals: Bool?
     let hasEmptyShelfSignal: Bool?
     let pageReady: Bool?
+    let shelfLoading: Bool?
+    let atScrollEnd: Bool?
+    let snapshotKey: String?
     let isReaderPage: Bool?
     let account: KindleAccountInfo?
     let url: String?
@@ -827,9 +1012,13 @@ private struct KindleScrapePayload: Decodable {
 private struct KindleScrapeResult {
     let books: [KindleBook]
     let authRequired: Bool?
+    let authState: String?
     let hasReaderSignals: Bool?
     let hasEmptyShelfSignal: Bool?
     let pageReady: Bool?
+    let shelfLoading: Bool?
+    let atScrollEnd: Bool?
+    let snapshotKey: String?
     let isReaderPage: Bool?
     let account: KindleAccountInfo?
     let url: String?
@@ -849,6 +1038,30 @@ enum KindleEmptyShelfTrust {
             && !sawReaderPage
             && !sawLibrarySignals
             && stableEmptyEvidencePasses >= 2
+    }
+}
+
+enum KindleShelfScanFailureClassifier {
+    static func code(
+        sawLibraryPage: Bool,
+        sawReaderPage: Bool,
+        lastLanding: String,
+        pageReady: Bool,
+        shelfLoading: Bool,
+        atScrollEnd: Bool,
+        stableSnapshotPasses: Int
+    ) -> String {
+        if !sawLibraryPage, !sawReaderPage, lastLanding != "auth" {
+            return "library_path_lost"
+        }
+        if sawLibraryPage,
+           pageReady,
+           !shelfLoading,
+           atScrollEnd,
+           stableSnapshotPasses >= 1 {
+            return "DOM_changed"
+        }
+        return "scan_timeout"
     }
 }
 

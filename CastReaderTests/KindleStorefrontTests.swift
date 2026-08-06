@@ -560,6 +560,40 @@ final class KindleStorefrontTests: XCTestCase {
             ),
             "a secure Amazon-owned authentication endpoint is the only non-reader exception"
         )
+        XCTAssertTrue(
+            KindleStorefrontNavigationPolicy.allowsMainFrame(
+                URL(string: "https://www.amazon.es/ap/cvf"),
+                expectedStorefrontID: "es"
+            ),
+            "same-marketplace challenge pages may omit an explicit return target"
+        )
+        XCTAssertFalse(
+            KindleStorefrontNavigationPolicy.allowsMainFrame(
+                URL(string: "https://www.amazon.es/ap/signin?openid.return_to=https%3A%2F%2Fread.amazon.com%2Fkindle-library"),
+                expectedStorefrontID: "es"
+            ),
+            "an auth page cannot smuggle a return target into another Kindle marketplace"
+        )
+        XCTAssertTrue(
+            KindleStorefrontNavigationPolicy.resemblesAmazonAuthenticationURL(
+                URL(string: "https://www.amazon.es/ap/signin?openid.return_to=https%3A%2F%2Fread.amazon.com%2Fkindle-library")
+            ),
+            "a rejected auth redirect remains classifiable without becoming allowed"
+        )
+        XCTAssertFalse(
+            KindleStorefrontNavigationPolicy.allowsMainFrame(
+                URL(string: "https://www.amazon.com/ap/signin?openid.return_to=https%3A%2F%2Fleer.amazon.es%2Fkindle-library"),
+                expectedStorefrontID: "es"
+            ),
+            "the authentication host itself must belong to the expected marketplace"
+        )
+        XCTAssertFalse(
+            KindleStorefrontNavigationPolicy.allowsMainFrame(
+                URL(string: "https://www.amazon.es/ap/signin?return_to=https%3A%2F%2Fleer.amazon.es.phish.example%2Fkindle-library"),
+                expectedStorefrontID: "es"
+            ),
+            "return_to uses the same exact-host boundary as ordinary navigation"
+        )
         XCTAssertFalse(
             KindleStorefrontNavigationPolicy.allowsMainFrame(
                 URL(string: "https://amazon.es.phish.example/ap/signin?openid.return_to=x"),
@@ -598,6 +632,101 @@ final class KindleStorefrontTests: XCTestCase {
                 expectedStorefrontID: "es"
             )
         )
+    }
+
+    func testForcedReauthenticationWebsiteDataIsScopedToOneMarketplace() throws {
+        let italy = try XCTUnwrap(KindleStorefront.storefront(id: "it"))
+        XCTAssertTrue(
+            KindleStorefront.isAmazonWebsiteDataDomain("amazon.it", for: italy)
+        )
+        XCTAssertTrue(
+            KindleStorefront.isAmazonWebsiteDataDomain(".amazon.it", for: italy)
+        )
+        XCTAssertTrue(
+            KindleStorefront.isAmazonWebsiteDataDomain("leggi.amazon.it", for: italy)
+        )
+        XCTAssertFalse(
+            KindleStorefront.isAmazonWebsiteDataDomain("amazon.com", for: italy)
+        )
+        XCTAssertFalse(
+            KindleStorefront.isAmazonWebsiteDataDomain("amazon.de", for: italy)
+        )
+        XCTAssertFalse(
+            KindleStorefront.isAmazonWebsiteDataDomain("amazon.it.phish.example", for: italy)
+        )
+
+        let unitedKingdom = try XCTUnwrap(KindleStorefront.storefront(id: "uk"))
+        XCTAssertTrue(
+            KindleStorefront.isAmazonWebsiteDataDomain(
+                "www.amazon.co.uk",
+                for: unitedKingdom
+            )
+        )
+        XCTAssertFalse(
+            KindleStorefront.isAmazonWebsiteDataDomain(
+                "www.amazon.com",
+                for: unitedKingdom
+            )
+        )
+    }
+
+    func testLibraryBookRejectsUnknownOrSpoofedAbsoluteHostsEvenWithValidASIN() {
+        let unsafeURLs = [
+            "https://kindle.future.example/?asin=B012345678",
+            "https://read.amazon.com.phish.example/?asin=B012345678",
+            "http://read.amazon.com/?asin=B012345678",
+            "https://user@read.amazon.com/?asin=B012345678",
+            "https://read.amazon.com:444/?asin=B012345678",
+        ]
+        for rawURL in unsafeURLs {
+            let book = makeBook(
+                id: "B012345678",
+                readerURL: rawURL,
+                storefrontID: "us"
+            )
+            XCTAssertFalse(
+                KindleBookValidator.isLikelyLibraryBook(book),
+                "untrusted reader URL was accepted: \(rawURL)"
+            )
+        }
+
+        XCTAssertTrue(
+            KindleBookValidator.isLikelyLibraryBook(
+                makeBook(
+                    id: "B012345678",
+                    readerURL: "B012345678",
+                    storefrontID: "it"
+                )
+            ),
+            "legacy ASIN-only records still migrate to the bound canonical host"
+        )
+        XCTAssertTrue(
+            KindleBookValidator.isLikelyLibraryBook(
+                makeBook(
+                    id: "B012345678",
+                    readerURL: "https://read.amazon.it/?asin=B012345678",
+                    storefrontID: "it"
+                )
+            ),
+            "a recognized legacy alias remains migratable"
+        )
+
+        let untrustedHostlessValues = [
+            "/reader/B012345678",
+            "reader/B012345678",
+            "?asin=B012345678",
+            "not a url B012345678",
+            "https://%zz.example/reader/B012345678",
+        ]
+        for rawValue in untrustedHostlessValues {
+            XCTAssertNil(
+                KindleBookValidator.usableReaderURL(
+                    rawValue,
+                    storefront: KindleStorefront.entry(id: "it")
+                ),
+                "only an exact ASIN token may migrate without a trusted host: \(rawValue)"
+            )
+        }
     }
 
     func testExplicitBookStorefrontRepairsLegacyWrongStorefrontURL() {
@@ -850,8 +979,47 @@ final class KindleStorefrontTests: XCTestCase {
         )
     }
 
+    func testShelfScanFailureTaxonomyIsDeterministic() {
+        XCTAssertEqual(
+            KindleShelfScanFailureClassifier.code(
+                sawLibraryPage: false,
+                sawReaderPage: false,
+                lastLanding: "other",
+                pageReady: true,
+                shelfLoading: false,
+                atScrollEnd: true,
+                stableSnapshotPasses: 2
+            ),
+            "library_path_lost"
+        )
+        XCTAssertEqual(
+            KindleShelfScanFailureClassifier.code(
+                sawLibraryPage: true,
+                sawReaderPage: false,
+                lastLanding: "library",
+                pageReady: true,
+                shelfLoading: false,
+                atScrollEnd: true,
+                stableSnapshotPasses: 1
+            ),
+            "DOM_changed"
+        )
+        XCTAssertEqual(
+            KindleShelfScanFailureClassifier.code(
+                sawLibraryPage: true,
+                sawReaderPage: false,
+                lastLanding: "library",
+                pageReady: true,
+                shelfLoading: true,
+                atScrollEnd: false,
+                stableSnapshotPasses: 0
+            ),
+            "scan_timeout"
+        )
+    }
+
     @MainActor
-    func testScrapeLibraryRecognizesExplicitEmptyShelfInEightLanguages() async throws {
+    func testScrapeLibraryRecognizesExplicitEmptyShelfAcrossSupportedStorefrontLanguages() async throws {
         let phrases = [
             "Your library is empty",
             "Tu biblioteca está vacía",
@@ -860,6 +1028,7 @@ final class KindleStorefrontTests: XCTestCase {
             "Deine Bibliothek ist leer",
             "Votre bibliothèque est vide",
             "La tua libreria è vuota",
+            "Je bibliotheek is leeg",
             "आपकी लाइब्रेरी खाली है",
         ]
         let webView = WKWebView(
@@ -950,6 +1119,194 @@ final class KindleStorefrontTests: XCTestCase {
             false,
             "help copy containing an empty-shelf phrase must preserve cached books"
         )
+    }
+
+    @MainActor
+    func testScrapeLibraryUnderstandsDutchShelfMetadataFallbacks() async throws {
+        let webView = WKWebView(
+            frame: CGRect(x: 0, y: 0, width: 390, height: 844)
+        )
+        webView.loadHTMLString(
+            """
+            <!doctype html><html><head><style>
+            article { display:block; width:320px; height:180px; }
+            img { display:block; width:80px; height:120px; }
+            </style></head><body><main>
+            <article role="listitem" data-asin="B012345678">
+              <a href="https://lezen.amazon.nl/?asin=B012345678">
+                <img alt="Een voorbeeldboek">
+                <h2 data-testid="title">Een voorbeeldboek</h2>
+              </a>
+              <p class="author">door Voorbeeld Schrijver</p>
+              <p>Laatst gelezen: 42</p>
+            </article>
+            </main></body></html>
+            """,
+            baseURL: try XCTUnwrap(
+                URL(string: "https://lezen.amazon.nl/kindle-library")
+            )
+        )
+        try await waitUntilLoaded(webView)
+
+        let raw = try await webView.evaluateJavaScript(
+            KindleWebScripts.scrapeLibrary
+        )
+        let json = try XCTUnwrap(raw as? String)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(json.utf8))
+                as? [String: Any]
+        )
+        let books = try XCTUnwrap(object["books"] as? [[String: Any]])
+        let book = try XCTUnwrap(books.first)
+        XCTAssertEqual(book["title"] as? String, "Een voorbeeldboek")
+        XCTAssertEqual(book["author"] as? String, "Voorbeeld Schrijver")
+        XCTAssertEqual(book["progressLabel"] as? String, "Laatst gelezen: 42")
+        XCTAssertEqual(
+            book["readerURL"] as? String,
+            "https://lezen.amazon.nl/?asin=B012345678&ref_=kwl_kr_iv_rec_1"
+        )
+        XCTAssertEqual(object["shelfLoading"] as? Bool, false)
+        XCTAssertEqual(object["atScrollEnd"] as? Bool, true, json)
+        XCTAssertFalse((object["snapshotKey"] as? String ?? "").isEmpty)
+    }
+
+    @MainActor
+    func testScrapeLibraryUnderstandsItalianShelfAndCanonicalizesAliasReader() async throws {
+        let webView = WKWebView(
+            frame: CGRect(x: 0, y: 0, width: 390, height: 844)
+        )
+        webView.loadHTMLString(
+            """
+            <!doctype html><html><head><style>
+            article { display:block; width:320px; height:180px; }
+            img { display:block; width:80px; height:120px; }
+            </style></head><body><main>
+            <article role="listitem" data-asin="B087654321">
+              <a href="https://read.amazon.it/?asin=B087654321">
+                <img alt="Il barone rampante">
+                <h2 data-testid="title">Il barone rampante</h2>
+              </a>
+              <p class="author">di Italo Calvino</p>
+              <p>Ultima lettura: 18</p>
+            </article>
+            </main></body></html>
+            """,
+            baseURL: try XCTUnwrap(
+                URL(string: "https://leggi.amazon.it/kindle-library")
+            )
+        )
+        try await waitUntilLoaded(webView)
+
+        let raw = try await webView.evaluateJavaScript(
+            KindleWebScripts.scrapeLibrary
+        )
+        let json = try XCTUnwrap(raw as? String)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(json.utf8))
+                as? [String: Any]
+        )
+        let books = try XCTUnwrap(object["books"] as? [[String: Any]])
+        let book = try XCTUnwrap(books.first)
+        XCTAssertEqual(book["title"] as? String, "Il barone rampante")
+        XCTAssertEqual(book["author"] as? String, "Italo Calvino")
+        XCTAssertEqual(book["progressLabel"] as? String, "Ultima lettura: 18")
+        XCTAssertEqual(
+            book["readerURL"] as? String,
+            "https://leggi.amazon.it/?asin=B087654321&ref_=kwl_kr_iv_rec_1"
+        )
+        XCTAssertEqual(object["authRequired"] as? Bool, false)
+        XCTAssertEqual(object["shelfLoading"] as? Bool, false)
+        XCTAssertEqual(object["atScrollEnd"] as? Bool, true, json)
+    }
+
+    @MainActor
+    func testScrapeLibraryRecognizesAmazonChallengeWithoutCredentialInputs() async throws {
+        let webView = WKWebView(
+            frame: CGRect(x: 0, y: 0, width: 390, height: 844)
+        )
+        webView.loadHTMLString(
+            "<!doctype html><html><body><main>Verifica richiesta</main></body></html>",
+            baseURL: try XCTUnwrap(URL(string: "https://www.amazon.it/ap/cvf"))
+        )
+        try await waitUntilLoaded(webView)
+
+        let raw = try await webView.evaluateJavaScript(
+            KindleWebScripts.scrapeLibrary
+        )
+        let json = try XCTUnwrap(raw as? String)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(json.utf8))
+                as? [String: Any]
+        )
+        XCTAssertEqual(object["authRequired"] as? Bool, true)
+        XCTAssertEqual(object["authState"] as? String, "challenge")
+        XCTAssertEqual(object["hasEmptyShelfSignal"] as? Bool, false)
+    }
+
+    @MainActor
+    func testItalianAndDutchReaderControlFallbacks() async throws {
+        let fixtures: [(String, [String: String])] = [
+            ("it", [
+                "next": "Pagina successiva",
+                "previous": "Pagina precedente",
+                "settings": "Impostazioni di lettura",
+                "font-size": "Dimensione carattere",
+                "single-column": "Colonna singola",
+                "narrow": "Stretto",
+                "toc": "Indice",
+                "close": "Chiudi",
+                "yes": "Continua",
+                "no": "Annulla",
+                "location": "Posizione 42",
+                "sync-dialog": "Ultima posizione letta",
+            ]),
+            ("nl", [
+                "next": "Volgende pagina",
+                "previous": "Vorige pagina",
+                "settings": "Leesinstellingen",
+                "font-size": "Lettergrootte",
+                "single-column": "Eén kolom",
+                "narrow": "Smal",
+                "toc": "Inhoudsopgave",
+                "close": "Sluiten",
+                "yes": "Doorgaan",
+                "no": "Annuleren",
+                "location": "Locatie 42",
+                "sync-dialog": "Meest recent gelezen locatie",
+            ]),
+        ]
+
+        for (storefrontID, labels) in fixtures {
+            let controls = labels.map { kind, label in
+                "<button data-cr-kindle-kind=\"\(kind)\">\(label)</button>"
+            }.joined()
+            let webView = WKWebView(
+                frame: CGRect(x: 0, y: 0, width: 390, height: 844)
+            )
+            webView.loadHTMLString(
+                "<!doctype html><html><body>\(controls)</body></html>",
+                baseURL: try XCTUnwrap(
+                    KindleStorefront.entry(id: storefrontID)?.readerURL(
+                        asin: "B012345678"
+                    )
+                )
+            )
+            try await waitUntilLoaded(webView)
+
+            let raw = try await webView.evaluateJavaScript(
+                KindleWebScripts.readerSemanticFixtureProbe
+            )
+            let json = try XCTUnwrap(raw as? String)
+            let object = try XCTUnwrap(
+                JSONSerialization.jsonObject(with: Data(json.utf8))
+                    as? [String: Any]
+            )
+            let matches = try XCTUnwrap(object["matches"] as? [String: Bool])
+            XCTAssertEqual(matches.count, labels.count, storefrontID)
+            for kind in labels.keys {
+                XCTAssertEqual(matches[kind], true, "\(storefrontID):\(kind)")
+            }
+        }
     }
 
     private func deduplicated(_ values: [String]) -> [String] {

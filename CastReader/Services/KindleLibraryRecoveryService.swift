@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import WebKit
 
 @MainActor
@@ -477,7 +478,9 @@ final class KindleLibraryRecoveryService {
     }
 
     private static func logKey(_ value: String) -> String {
-        String(value.prefix(24))
+        guard !value.isEmpty else { return "" }
+        let hash = SHA256.hash(data: Data(value.utf8))
+        return hash.prefix(6).map { String(format: "%02x", $0) }.joined()
     }
 
     fileprivate enum LandingKind: String {

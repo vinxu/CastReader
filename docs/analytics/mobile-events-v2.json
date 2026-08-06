@@ -24,7 +24,7 @@
     "clientVariant": ["app_store", "testflight", "internal", "internal_debug", "simulator", "google_play"],
     "contentSource": ["camera", "photo_library", "file", "url", "text", "clipboard", "share_sheet", "system", "history", "kindle", "weread", "google_books", "kobo", "oreilly", "unknown"],
     "contentFormat": ["photo", "pdf", "epub", "docx", "text", "web", "kindle", "weread", "google_books", "kobo", "oreilly", "unknown"],
-    "storefront": ["us", "uk", "ca", "au", "jp", "de", "fr", "it", "es", "in", "br", "mx", "nl", "se", "tr", "ae", "sg", "pl", "eg", "sa"],
+    "storefront": ["us", "uk", "ca", "au", "jp", "de", "fr", "it", "es", "in", "br", "mx", "nl"],
     "librarySource": ["kindle", "weread", "google_books", "kobo", "oreilly"],
     "libraryConnectionStage": ["entry_tapped", "connection_presented", "login_started", "login_succeeded", "sync_started", "sync_completed", "cancelled", "failed"],
     "contentInputStage": ["source_opened", "input_confirmed", "processing_started", "processing_completed", "cancelled", "failed"],

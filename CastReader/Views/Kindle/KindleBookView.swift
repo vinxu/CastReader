@@ -1301,11 +1301,31 @@ enum KindleRunLog {
         } else {
             stateName = "off-main"
         }
-        append("\(formatter.string(from: Date())) [\(stateName)] \(message)\n")
+        append(
+            "\(formatter.string(from: Date())) [\(stateName)] \(sanitized(message))\n"
+        )
         #endif
     }
 
     #if DEBUG
+    private static func sanitized(_ message: String) -> String {
+        var value = message
+        let replacements: [(String, String)] = [
+            (#"https?://[^\s\"'<>]+"#, "<url>"),
+            (#"\bB[0-9A-Z]{9}\b"#, "<asin>"),
+            (#"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}"#, "<email>"),
+            (#"(?i)(?:openid\.|return_to|token|session|secret|password)=[^\s&]+"#, "<credential>"),
+        ]
+        for (pattern, replacement) in replacements {
+            value = value.replacingOccurrences(
+                of: pattern,
+                with: replacement,
+                options: .regularExpression
+            )
+        }
+        return value
+    }
+
     private static func append(_ text: String) {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
@@ -1334,6 +1354,26 @@ enum KindleRunLog {
 /// between a working and a failing book open, and never enough to reconstruct
 /// the credential.
 enum KindleSessionProbe {
+    /// Privacy-safe route diagnostics. Never persist a Kindle URL, path, query,
+    /// ASIN, title, or account identifier; storefront and eTLD+1 are sufficient
+    /// to diagnose routing and marketplace drift.
+    static func safeRouteLabel(_ rawURL: String) -> String {
+        guard let url = URL(string: rawURL) else { return "invalid" }
+        return safeRouteLabel(url)
+    }
+
+    static func safeRouteLabel(_ url: URL?) -> String {
+        guard let url else { return "empty" }
+        let landing = landingKind(url.absoluteString)
+        if let storefront = KindleStorefront.storefront(url: url) {
+            return "storefront=\(storefront.id) landing=\(landing)"
+        }
+        if let domain = KindleStorefront.registrableDomain(for: url.host) {
+            return "domain=\(domain) landing=\(landing)"
+        }
+        return "invalid landing=\(landing)"
+    }
+
     /// Classifies where a navigation actually landed. Amazon answers an expired
     /// reader session with a 302 into the OpenID sign-in portal, so the finished
     /// URL is the only reliable signal that the page on screen is not a book.
@@ -1365,37 +1405,35 @@ enum KindleSessionProbe {
         WKWebsiteDataStore.default().httpCookieStore.getAllCookies { cookies in
             let amazon = cookies
                 .filter { KindleStorefront.isAmazonWebsiteDataDomain($0.domain) }
-                .sorted { $0.name < $1.name }
             guard !amazon.isEmpty else {
-                KindleRunLog.write("KINDLE cookies reason=\(reason) count=0 total=\(cookies.count)")
+                KindleRunLog.write(
+                    "KINDLE session-data reason=\(reason) amazonCount=0 totalCount=\(cookies.count)"
+                )
                 return
             }
             let now = Date()
-            // The all-domain total is logged alongside so a store-wide event
-            // (rather than an Amazon-specific one) is visible as a change here.
-            let described = amazon.map { cookie -> String in
-                let expiry: String
-                if let date = cookie.expiresDate {
-                    expiry = "\(Int(date.timeIntervalSince(now) / 60))m"
-                } else {
-                    expiry = "session"
-                }
-                return "\(cookie.name)|\(cookie.domain)|exp=\(expiry)|v=\(digest(cookie.value))"
-            }
+            let storefrontCounts = KindleStorefront.all.compactMap { storefront -> String? in
+                let count = amazon.filter {
+                    KindleStorefront.isAmazonWebsiteDataDomain(
+                        $0.domain,
+                        for: storefront
+                    )
+                }.count
+                return count > 0 ? "\(storefront.id):\(count)" : nil
+            }.joined(separator: ",")
+            let sessionCount = amazon.filter { $0.expiresDate == nil }.count
+            let expiredCount = amazon.filter {
+                guard let expiry = $0.expiresDate else { return false }
+                return expiry <= now
+            }.count
+            let persistentCount = amazon.count - sessionCount
             KindleRunLog.write(
-                "KINDLE cookies reason=\(reason) count=\(amazon.count) total=\(cookies.count) \(described.joined(separator: " "))"
+                "KINDLE session-data reason=\(reason) amazonCount=\(amazon.count) totalCount=\(cookies.count) session=\(sessionCount) persistent=\(persistentCount) expired=\(expiredCount) storefrontCounts=\(storefrontCounts.isEmpty ? "none" : storefrontCounts)"
             )
         }
         #endif
     }
 
-    #if DEBUG
-    private static func digest(_ value: String) -> String {
-        let hash = SHA256.hash(data: Data(value.utf8))
-        let hex = hash.map { String(format: "%02x", $0) }.joined()
-        return String(hex.prefix(8))
-    }
-    #endif
 }
 
 /// Tracks when the reader and the shelf were last known-good, so a failing open
@@ -3057,7 +3095,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if webView.url == nil {
             load(book.effectiveReaderURL, reason: "reload-empty")
         } else {
-            KindleRunLog.write("KINDLE webview reload current=\(webView.url?.absoluteString ?? "")")
+            KindleRunLog.write(
+                "KINDLE webview reload \(KindleSessionProbe.safeRouteLabel(webView.url))"
+            )
             webView.reload()
         }
     }
@@ -3065,7 +3105,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         let finishedURL = webView.url?.absoluteString ?? ""
         let landing = KindleSessionProbe.landingKind(finishedURL)
-        KindleRunLog.write("KINDLE webview didFinish landing=\(landing) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK) url=\(finishedURL)")
+        KindleRunLog.write("KINDLE webview didFinish \(KindleSessionProbe.safeRouteLabel(webView.url)) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
         let expected = KindleStorefront.entry(id: analyticsContext.storefront)
             ?? store.boundStorefront
         if let finishedDestination = webView.url,
@@ -3498,7 +3538,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         finishKindleSyncDialog(reason: "navigation-start")
-        KindleRunLog.write("KINDLE webview didStart url=\(webView.url?.absoluteString ?? "")")
+        KindleRunLog.write(
+            "KINDLE webview didStart \(KindleSessionProbe.safeRouteLabel(webView.url))"
+        )
         // Authoritative "what did we send" snapshot. The pre-load one is empty on
         // the first open of a launch because the shared cookie store is not
         // populated until the WebView's network process exists.
@@ -3518,7 +3560,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             let url = http.url?.absoluteString ?? ""
             let landing = KindleSessionProbe.landingKind(url)
             lastMainFrameStatus = http.statusCode
-            KindleRunLog.write("KINDLE webview response status=\(http.statusCode) landing=\(landing) url=\(url)")
+            KindleRunLog.write(
+                "KINDLE webview response status=\(http.statusCode) \(KindleSessionProbe.safeRouteLabel(http.url))"
+            )
 
             let expected = KindleStorefront.entry(id: analyticsContext.storefront)
                 ?? store.boundStorefront
@@ -3546,17 +3590,22 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// gets there through Amazon's redirect chain, and only these hops show where
     /// the session is judged stale.
     func webView(_ webView: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation!) {
-        let url = webView.url?.absoluteString ?? ""
-        KindleRunLog.write("KINDLE webview redirect landing=\(KindleSessionProbe.landingKind(url)) url=\(url)")
+        KindleRunLog.write(
+            "KINDLE webview redirect \(KindleSessionProbe.safeRouteLabel(webView.url))"
+        )
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        KindleRunLog.write("KINDLE webview didFail url=\(webView.url?.absoluteString ?? "") error=\(error.localizedDescription)")
+        KindleRunLog.write(
+            "KINDLE webview didFail \(KindleSessionProbe.safeRouteLabel(webView.url)) code=\((error as NSError).code)"
+        )
         routeTransportFailure(error, reason: "didFail")
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        KindleRunLog.write("KINDLE webview didFailProvisional url=\(webView.url?.absoluteString ?? "") error=\(error.localizedDescription)")
+        KindleRunLog.write(
+            "KINDLE webview didFailProvisional \(KindleSessionProbe.safeRouteLabel(webView.url)) code=\((error as NSError).code)"
+        )
         routeTransportFailure(error, reason: "didFailProvisional")
     }
 
@@ -11061,7 +11110,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             webView.load(URLRequest(url: KindleWebScripts.libraryURL(for: storefront)))
             return
         }
-        KindleRunLog.write("KINDLE webview load reason=\(reason) storefront=\(storefront.id) raw=\(Self.keyLog(raw)) url=\(url.absoluteString) last=\(Self.keyLog(book.lastReadURL ?? "")) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
+        KindleRunLog.write("KINDLE webview load reason=\(reason) storefront=\(storefront.id) route=\(KindleSessionProbe.safeRouteLabel(url)) raw=\(Self.keyLog(raw)) last=\(Self.keyLog(book.lastReadURL ?? "")) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
         KindleSessionProbe.logCookies(reason: "book-load-\(reason)")
         webView.load(URLRequest(url: url))
     }
@@ -12421,7 +12470,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private static func keyLog(_ key: String) -> String {
         guard !key.isEmpty else { return "" }
-        return String(key.prefix(24))
+        let hash = SHA256.hash(data: Data(key.utf8))
+        return hash.prefix(6).map { String(format: "%02x", $0) }.joined()
     }
 
     private static func jsString(_ value: String) -> String {

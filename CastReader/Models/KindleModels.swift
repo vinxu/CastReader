@@ -935,6 +935,8 @@ enum KindleBookValidator {
         "scarica", "app kindle", "ulteriori informazioni",
         "leggi su qualsiasi dispositivo", "aiuto", "impostazioni", "taccuino",
         "termini",
+        "downloaden", "kindle-app", "meer informatie", "lezen op elk apparaat",
+        "ondersteuning", "instellingen", "notitieboek", "voorwaarden",
         "डाउनलोड", "ऐप स्टोर", "किंडल ऐप", "और जानें", "किसी भी डिवाइस पर पढ़ें",
         "सहायता", "समर्थन", "सेटिंग", "नोटबुक", "गोपनीयता", "शर्तें",
         "下载", "应用商店", "了解更多", "任何设备", "帮助", "支持", "设置", "笔记"
@@ -954,8 +956,24 @@ enum KindleBookValidator {
             return false
         }
 
+        // A valid ASIN is not proof that the surrounding URL came from Kindle.
+        // Preserve legacy ASIN-only records, but reject any absolute URL whose
+        // host is outside the exact storefront contract before repair can turn
+        // it into a trusted canonical URL.
+        let originalReaderURL = book.readerURL
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if let originalURL = URL(string: originalReaderURL),
+           originalURL.host != nil,
+           KindleStorefront.entry(url: originalURL) == nil {
+            return false
+        }
+
         let rawURL = repairedReaderURL(for: book, preferLastRead: false) ?? book.readerURL.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !rawURL.isEmpty else { return false }
+
+        guard KindleStorefront.entry(url: URL(string: rawURL)) != nil else {
+            return false
+        }
 
         let lowerURL = rawURL.lowercased()
         let hasASIN = containsASIN(book.asin) || containsASIN(book.id) || containsASIN(rawURL)
@@ -1024,8 +1042,11 @@ enum KindleBookValidator {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
-        if URL(string: trimmed)?.host == nil,
-           let asin = asinValue(in: trimmed) {
+        // Only the historical "ASIN-only" representation is eligible for
+        // hostless migration. A relative path or malformed absolute URL that
+        // merely contains an ASIN has no trustworthy marketplace ownership and
+        // must not be upgraded into a navigable Kindle URL.
+        if let asin = pureASINValue(trimmed) {
             return canonicalReaderURL(
                 asin: asin,
                 storefront: explicitStorefront ?? .us
@@ -1062,6 +1083,20 @@ enum KindleBookValidator {
         }
 
         return nil
+    }
+
+    private static func pureASINValue(_ raw: String) -> String? {
+        let candidate = raw
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+        guard candidate.count == 10,
+              candidate.unicodeScalars.allSatisfy({ scalar in
+                  (scalar.value >= 48 && scalar.value <= 57)
+                      || (scalar.value >= 65 && scalar.value <= 90)
+              }) else {
+            return nil
+        }
+        return candidate
     }
 
     static func canonicalReaderURL(

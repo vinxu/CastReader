@@ -160,7 +160,7 @@ struct HomeView: View {
     @State private var isTransitioningToImportDestination = false
     @State private var activeSheet: HomeSheet?
 
-    @State private var imagePickerRequest: ImagePickerRequest?
+    @State private var captureStage: CaptureStage?
     @State private var showFileImporter = false
     @State private var notice: String?
     @State private var isProcessingPDF = false
@@ -302,28 +302,10 @@ struct HomeView: View {
             KindleBackgroundProbeSheet()
         }
 #endif
-        .fullScreenCover(item: $imagePickerRequest) { request in
-            CameraView(
-                sourceType: request.sourceType,
-                onImage: { image in
-                    imagePickerRequest = nil
-                    confirmImport(format: .photo)
-                    Task {
-                        await captureVM.process(image: image)
-                        if let doc = captureVM.document {
-                            finishImport(doc)
-                            captureVM.reset()
-                        } else {
-                            failImport(stage: "ocr", code: captureVM.error == nil ? "empty_content" : "recognition_failed")
-                        }
-                    }
-                },
-                onCancel: {
-                    imagePickerRequest = nil
-                    cancelImport()
-                }
-            )
-            .ignoresSafeArea()
+        // 采集的三个全屏阶段（相机 / 文档扫描 / 选读区域）共用**一个** cover：
+        // 同屏挂多个 sheet/cover 会互相吞（见 CLAUDE.md 避坑指南）。
+        .fullScreenCover(item: $captureStage) { stage in
+            captureStageView(stage)
         }
         .fileImporter(isPresented: $showFileImporter, allowedContentTypes: supportedTypes, allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let url = urls.first {
@@ -772,8 +754,8 @@ struct HomeView: View {
     /// 触发选中的导入来源。
     private func trigger(_ src: ImportSource) {
         switch src {
-        case .camera:       DispatchQueue.main.async { imagePickerRequest = ImagePickerRequest(sourceType: .camera) }
-        case .photoLibrary: DispatchQueue.main.async { imagePickerRequest = ImagePickerRequest(sourceType: .photoLibrary) }
+        case .camera:       DispatchQueue.main.async { captureStage = .picker(.init(sourceType: .camera)) }
+        case .photoLibrary: DispatchQueue.main.async { captureStage = .picker(.init(sourceType: .photoLibrary)) }
         case .file:         DispatchQueue.main.async { showFileImporter = true }
         case .url:          DispatchQueue.main.async { activeSheet = .url }
         case .text:         DispatchQueue.main.async { activeSheet = .text }
@@ -798,6 +780,69 @@ struct HomeView: View {
         }
     }
     #endif
+
+    /// 采集的全屏阶段。三者共用同一个 `fullScreenCover`。
+    @ViewBuilder
+    private func captureStageView(_ stage: CaptureStage) -> some View {
+        switch stage {
+        case .picker(let request):
+            // 拍照优先走系统文档扫描器：自动找边 + 透视矫正 + 去阴影 + 多页连拍。
+            // 版面理解假设「栏是竖直的」，在采集阶段把画面拉正比事后补救可靠得多。
+            if request.sourceType == .camera, !request.forcePlainCamera, DocumentScannerView.isAvailable {
+                DocumentScannerView(
+                    onScan: { pages in
+                        captureStage = nil
+                        confirmImport(format: .photo)
+                        Task { await runCapture { await captureVM.processScannedPages(pages) } }
+                    },
+                    onCancel: {
+                        captureStage = nil
+                        cancelImport()
+                    },
+                    onFailure: { _ in
+                        // 扫描器起不来时回退普通相机，不让用户卡在这里。
+                        captureStage = .picker(ImagePickerRequest(sourceType: .camera, forcePlainCamera: true))
+                    }
+                )
+                .ignoresSafeArea()
+            } else {
+                CameraView(
+                    sourceType: request.sourceType,
+                    onImage: { image in
+                        captureStage = nil
+                        confirmImport(format: .photo)
+                        Task { await runCapture { await captureVM.process(image: image) } }
+                    },
+                    onCancel: {
+                        captureStage = nil
+                        cancelImport()
+                    }
+                )
+                .ignoresSafeArea()
+            }
+        case .regionSelection(let document):
+            PhotoRegionPicker(document: document) { picked in
+                captureStage = nil
+                finishImport(picked ?? document)
+            }
+        }
+    }
+
+    /// 拍照 / 选图 / 扫描的共同收尾：识别成功就开阅读器，否则记一次失败。
+    /// 多栏页面（报纸/杂志）先问一次「只读哪一块」—— 一次拍摄常包含好几篇文章。
+    private func runCapture(_ recognize: () async -> Void) async {
+        await recognize()
+        guard let doc = captureVM.document else {
+            failImport(stage: "ocr", code: captureVM.error == nil ? "empty_content" : "recognition_failed")
+            return
+        }
+        captureVM.reset()
+        if PhotoRegionCropper.shouldOfferSelection(for: doc) {
+            captureStage = .regionSelection(doc)
+        } else {
+            finishImport(doc)
+        }
+    }
 
     /// 落地：打开方式与场景正交。场景只注入 ExplainVM，朗读/解读由用户在入口选择。
     private func finishImport(_ doc: ReadingDocument) {
@@ -876,15 +921,7 @@ struct HomeView: View {
 
         if ["png", "jpg", "jpeg", "heic", "heif", "webp", "gif", "tiff"].contains(ext) {
             if let data = try? Data(contentsOf: url), let img = UIImage(data: data) {
-                Task {
-                    await captureVM.process(image: img)
-                    if let doc = captureVM.document {
-                        finishImport(doc)
-                        captureVM.reset()
-                    } else {
-                        failImport(stage: "ocr", code: captureVM.error == nil ? "empty_content" : "recognition_failed")
-                    }
-                }
+                Task { await runCapture { await captureVM.process(image: img) } }
             } else {
                 failImport(stage: "file_read", code: "unreadable_image")
                 notice = AppLocalized("无法读取图片")
@@ -1089,7 +1126,24 @@ private struct BoundLibraryActivationCard: View {
 
 private struct ImagePickerRequest: Identifiable, Equatable {
     let sourceType: UIImagePickerController.SourceType
+    /// 文档扫描器起不来时置位，强制走普通相机（否则会来回弹同一个失败的扫描器）。
+    var forcePlainCamera = false
     let id = UUID()
+}
+
+/// 采集的全屏阶段。合成一个枚举是为了只挂**一个** `fullScreenCover` ——
+/// 同屏多个 sheet/cover 会互相吞（见 CLAUDE.md 避坑指南第 9 条）。
+private enum CaptureStage: Identifiable {
+    case picker(ImagePickerRequest)
+    /// 多栏页面识别完成后，让用户先框出要读的那一块。
+    case regionSelection(ReadingDocument)
+
+    var id: String {
+        switch self {
+        case .picker(let request): return "picker-\(request.id)"
+        case .regionSelection(let document): return "region-\(document.id)"
+        }
+    }
 }
 
 private enum ImportPanel: Identifiable, Equatable {

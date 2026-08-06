@@ -408,7 +408,8 @@ actor OCRService {
         )
         guard !lines.isEmpty else { throw OCRError.noText }
 
-        let paraBoxes = buildParagraphBoxes(from: lines, strategy: paragraphStrategy, language: normalizedLanguage)
+        let outcome = buildParagraphBoxes(from: lines, strategy: paragraphStrategy, language: normalizedLanguage)
+        let paraBoxes = outcome.boxes
         var paragraphs: [ReadingParagraph] = []
         var globalWordId = 0
         for (pIdx, box) in paraBoxes.enumerated() {
@@ -445,7 +446,8 @@ actor OCRService {
             paragraphs: paragraphs,
             imageData: jpeg,
             imagePixelSize: pixel,
-            sourceURL: nil
+            sourceURL: nil,
+            layoutColumnCount: outcome.analysis?.columnCount
         )
     }
 
@@ -527,7 +529,7 @@ actor OCRService {
             language: profile.language
         )
         guard !lines.isEmpty else { throw OCRError.noText }
-        let paragraphs = buildParagraphBoxes(
+        let outcome = buildParagraphBoxes(
             from: lines,
             strategy: paragraphStrategy,
             language: profile.language
@@ -536,8 +538,9 @@ actor OCRService {
             image: image,
             imageData: nil,
             title: title,
-            paraBoxes: paragraphs,
-            language: profile.language
+            paraBoxes: outcome.boxes,
+            language: profile.language,
+            columnCount: outcome.analysis?.columnCount
         )
     }
 
@@ -590,6 +593,7 @@ actor OCRService {
         }
         let wordBoxes = result.words.compactMap(normalizedWord)
         guard !wordBoxes.isEmpty else { throw OCRError.noText }
+        var columnCount: Int?
         let paraBoxes: [ParagraphBox]
         if profile.tesseractModel == "jpn_vert" {
             guard !verticalColumnHints.isEmpty else {
@@ -617,11 +621,13 @@ actor OCRService {
                 words: wordBoxes,
                 language: profile.language
             )
-            paraBoxes = buildParagraphBoxes(
+            let outcome = buildParagraphBoxes(
                 from: lines,
                 strategy: paragraphStrategy,
                 language: profile.language
             )
+            paraBoxes = outcome.boxes
+            columnCount = outcome.analysis?.columnCount
         }
         let confidenceValues = result.words.map(\.confidence).filter { $0.isFinite && $0 >= 0 }
         let meanConfidence = confidenceValues.isEmpty
@@ -644,7 +650,8 @@ actor OCRService {
                 imageData: nil,
                 title: title,
                 paraBoxes: paraBoxes,
-                language: profile.language
+                language: profile.language,
+                columnCount: columnCount
             ),
             meanConfidence: meanConfidence
         )
@@ -863,7 +870,8 @@ actor OCRService {
         imageData: Data?,
         title: String?,
         paraBoxes: [ParagraphBox],
-        language: String
+        language: String,
+        columnCount: Int? = nil
     ) -> ReadingDocument {
         var paragraphs: [ReadingParagraph] = []
         var globalWordID = 0
@@ -893,7 +901,8 @@ actor OCRService {
             // back into either Vision or Tesseract.
             imageData: imageData ?? image.jpegData(compressionQuality: 0.9),
             imagePixelSize: pixel,
-            sourceURL: nil
+            sourceURL: nil,
+            layoutColumnCount: columnCount
         )
     }
 
@@ -916,10 +925,16 @@ actor OCRService {
         let medianWordWidth: CGFloat
     }
 
-    private func buildParagraphBoxes(from lines: [LineBox], strategy: OCRParagraphStrategy, language: String?) -> [ParagraphBox] {
+    /// 段落聚类结果 + 版面分析结论（供日志/度量与上层决策）。
+    private struct LayoutOutcome {
+        let boxes: [ParagraphBox]
+        let analysis: OCRLayoutAnalysis?
+    }
+
+    private func buildParagraphBoxes(from lines: [LineBox], strategy: OCRParagraphStrategy, language: String?) -> LayoutOutcome {
         switch strategy {
         case .visionLines:
-            return buildVisionParagraphBoxes(lines, language: language)
+            return LayoutOutcome(boxes: buildVisionParagraphBoxes(lines, language: language), analysis: nil)
         case .kindleLayout:
             return rebuildKindleParagraphBoxes(from: lines, language: language)
         }
@@ -963,11 +978,160 @@ actor OCRService {
         return groups
     }
 
-    private func rebuildKindleParagraphBoxes(from lines: [LineBox], language: String?) -> [ParagraphBox] {
+    /// 版面理解入口：先判列，再在「列/块」内部做既有段落聚类。
+    /// 多栏页面上，段落聚类若在整幅图上做，左右栏同高度的行必被并成一行。
+    private func rebuildKindleParagraphBoxes(from rawLines: [LineBox], language: String?) -> LayoutOutcome {
+        var lines = rawLines
+        var analysis = OCRLayoutAnalyzer.analyze(lines: layoutInput(from: lines))
+
+        // 第二遍：OCR 偶尔把两栏里同高度的行认成一整行（报纸底部尤其常见）。
+        // 用第一遍的列边界把这种行按词切开再重新分析 —— 否则它会被当成跨栏
+        // 横幅，把两栏的半句话拼在一起读出来。
+        if analysis.isMultiColumn {
+            let split = splitLinesAtColumnBoundaries(lines, columns: analysis.columnRanges)
+            if split.count > lines.count {
+                let second = OCRLayoutAnalyzer.analyze(lines: layoutInput(from: split))
+                if second.isMultiColumn {
+                    lines = split
+                    analysis = second
+                }
+            }
+        }
+
+        if analysis.isMultiColumn,
+           let columnar = multiColumnParagraphBoxes(lines: lines, analysis: analysis, language: language) {
+            KindleRunLog.write(
+                "OCR_LAYOUT columns=\(analysis.columnCount) " +
+                "confidence=\(Int((analysis.confidence * 100).rounded())) " +
+                "blocks=\(analysis.blocks.count) roles=\(analysis.roleCounts) paras=\(columnar.count)"
+            )
+            return LayoutOutcome(boxes: columnar, analysis: analysis)
+        }
+
+        // 单栏：段落聚类流程与改造前完全一致，只额外剔除版面家具（页码/页眉）。
+        let flowLines = readableLines(lines, analysis: analysis)
+        KindleRunLog.write(
+            "OCR_LAYOUT columns=1 reason=\(analysis.fallbackReason ?? "single-column") " +
+            "lines=\(lines.count)->\(flowLines.count)"
+        )
+        return LayoutOutcome(
+            boxes: singleFlowParagraphBoxes(from: flowLines, language: language),
+            analysis: analysis
+        )
+    }
+
+    private func layoutInput(from lines: [LineBox]) -> [OCRLayoutLine] {
+        lines.enumerated().map {
+            OCRLayoutLine.fromVision(id: $0.offset, text: $0.element.text, visionBBox: $0.element.bbox)
+        }
+    }
+
+    /// 用列边界把「横跨栏缝」的引擎行按词切成每列一段。
+    /// 只切正文字号的行：跨栏大标题本来就是横幅，整行保留。
+    private func splitLinesAtColumnBoundaries(
+        _ lines: [LineBox],
+        columns: [ClosedRange<CGFloat>]
+    ) -> [LineBox] {
+        guard columns.count >= 2 else { return lines }
+        let medianHeight = median(lines.map { $0.bbox.height }, fallback: 0.012)
+        func center(_ range: ClosedRange<CGFloat>) -> CGFloat { (range.lowerBound + range.upperBound) / 2 }
+
+        var result: [LineBox] = []
+        for line in lines {
+            let spanned = columns.filter { column in
+                let overlap = min(line.bbox.maxX, column.upperBound) - max(line.bbox.minX, column.lowerBound)
+                let reference = min(line.bbox.width, column.upperBound - column.lowerBound)
+                return overlap > 0 && reference > 0 && overlap >= reference * 0.45
+            }
+            // 被 OCR 误连的两栏行是两个**满栏**行拼起来的，因此左端贴着起始栏的
+            // 左边界、右端贴着结束栏的右边界；通栏图注是居中排版，两端都不贴边。
+            // 大标题也满宽，用字号上限单独挡掉。
+            //
+            // 这里不能改用「栏缝处有没有词间空隙」：Vision 的 boundingBox(for:)
+            // 对长行是按字符均匀插值的，栏缝的物理空白会被压没（实测只剩 0.002）。
+            guard spanned.count >= 2, line.words.count >= 2,
+                  line.bbox.height <= medianHeight * 2.5,
+                  isMisjoinedColumnLine(line, columns: columns) else {
+                result.append(line)
+                continue
+            }
+
+            var buckets: [Int: [WordBox]] = [:]
+            for word in line.words {
+                let midX = word.bbox.midX
+                let index = columns.firstIndex { $0.contains(midX) }
+                    ?? columns.indices.min { abs(center(columns[$0]) - midX) < abs(center(columns[$1]) - midX) }
+                guard let index else { continue }
+                buckets[index, default: []].append(word)
+            }
+            guard buckets.count >= 2 else {
+                result.append(line)
+                continue
+            }
+            for (_, words) in buckets.sorted(by: { $0.key < $1.key }) {
+                let sorted = words.sorted { $0.bbox.minX < $1.bbox.minX }
+                guard let box = union(sorted.map(\.bbox)) else { continue }
+                result.append(LineBox(
+                    text: joinOcrWordTexts(sorted.map(\.text)),
+                    bbox: box,
+                    words: sorted
+                ))
+            }
+        }
+        return result
+    }
+
+    /// 该行是否是「两个满栏行被 OCR 误连成一行」：左端贴起始栏左边界，
+    /// 右端贴结束栏右边界，且跨越了至少一条栏缝。
+    private func isMisjoinedColumnLine(
+        _ line: LineBox,
+        columns: [ClosedRange<CGFloat>]
+    ) -> Bool {
+        let tolerance: CGFloat = 0.12
+        guard let first = columns.first(where: { $0.upperBound > line.bbox.minX }),
+              let last = columns.last(where: { $0.lowerBound < line.bbox.maxX }),
+              first.lowerBound < last.lowerBound else { return false }
+        let firstWidth = first.upperBound - first.lowerBound
+        let lastWidth = last.upperBound - last.lowerBound
+        guard firstWidth > 0, lastWidth > 0 else { return false }
+        return abs(line.bbox.minX - first.lowerBound) <= firstWidth * tolerance
+            && abs(line.bbox.maxX - last.upperBound) <= lastWidth * tolerance
+    }
+
+    /// 按阅读顺序逐块聚类。块内只有同一列的行，段落聚类因此天然获得列约束，
+    /// 不会横穿栏缝。
+    private func multiColumnParagraphBoxes(
+        lines: [LineBox],
+        analysis: OCRLayoutAnalysis,
+        language: String?
+    ) -> [ParagraphBox]? {
+        var boxes: [ParagraphBox] = []
+        for block in analysis.blocks where block.role.isReadable {
+            let blockLines = block.lineIDs.compactMap { lines.indices.contains($0) ? lines[$0] : nil }
+            guard !blockLines.isEmpty else { continue }
+            boxes.append(contentsOf: singleFlowParagraphBoxes(from: blockLines, language: language))
+        }
+        // 一栏底部续到下一栏顶部的断句在这里缝合（跨块，仍是既有规则）。
+        let repaired = repairBrokenContinuations(boxes, language: language)
+            .filter { !$0.text.trimmingCharacters(in: .whitespaces).isEmpty }
+        return repaired.isEmpty ? nil : repaired
+    }
+
+    /// 剔除版面家具行。全部被判为家具时保留原样 —— 宁可多读，绝不产出空文档。
+    private func readableLines(_ lines: [LineBox], analysis: OCRLayoutAnalysis) -> [LineBox] {
+        let keep = Set(analysis.readableLineIDs)
+        guard !keep.isEmpty, keep.count < lines.count else { return lines }
+        let filtered = lines.enumerated()
+            .filter { keep.contains($0.offset) }
+            .map(\.element)
+        return filtered.isEmpty ? lines : filtered
+    }
+
+    private func singleFlowParagraphBoxes(from lines: [LineBox], language: String?) -> [ParagraphBox] {
         let raw = buildVisionParagraphBoxes(lines, language: language)
         let fallback = repairBrokenContinuations(raw, language: language)
         let wordBoxes = lines.flatMap(\.words)
-        let layoutLines = rebuildOcrLines(wordBoxes)
+        let layoutLines = self.layoutLines(from: lines)
         guard !layoutLines.isEmpty else { return fallback }
         if layoutLines.count == 1 {
             return [makeParagraphBox(from: layoutLines)]
@@ -1023,58 +1187,80 @@ actor OCRService {
             fallback.count >= 4 &&
             (repaired.count <= max(1, fallback.count / 3) || largestLines >= 12)
         if collapsedTooMuch {
+            #if DEBUG
             NSLog("CRDBG OCR kindleLayout fallback raw=%d lines=%d rebuilt=%d largestLines=%d",
                   fallback.count, layoutLines.count, repaired.count, largestLines)
+            #endif
             return fallback
         }
 
+        #if DEBUG
         NSLog("CRDBG OCR kindleLayout raw=%d lines=%d rebuilt=%d lineH=%.4f gap=%.4f",
               fallback.count, layoutLines.count, repaired.count, medianLineHeight, medianGap)
+        #endif
         return repaired
     }
 
-    private func rebuildOcrLines(_ words: [WordBox]) -> [LayoutLine] {
-        let valid = words
-            .filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && $0.bbox.width > 0 && $0.bbox.height > 0 }
-            .sorted { a, b in
-                let ac = layoutCenterY(a.bbox)
-                let bc = layoutCenterY(b.bbox)
-                if abs(ac - bc) > 0.003 { return ac < bc }
-                return a.bbox.minX < b.bbox.minX
+    /// 引擎给出的行是**权威分组边界**：只在一行内部按 x 邻接拆分（该行横跨栏缝时），
+    /// 绝不把两个引擎行的词并成一行。
+    ///
+    /// 手持拍摄的报纸有 10° 以上倾斜，一行右端可以比下一行左端还低，纯几何重建
+    /// 必然跨行错并；而 Vision / Tesseract 的行识别本身对倾斜是鲁棒的。
+    private func layoutLines(from lines: [LineBox]) -> [LayoutLine] {
+        var result: [LayoutLine] = []
+        for line in lines {
+            let valid = line.words.filter {
+                !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    && $0.bbox.width > 0 && $0.bbox.height > 0
             }
-        guard !valid.isEmpty else { return [] }
-
-        let medianWordHeight = median(valid.map { layoutHeight($0.bbox) }, fallback: 0.012)
-        let baseYTolerance = max(0.004, medianWordHeight * 0.62)
-        var groups: [[WordBox]] = []
-
-        for word in valid {
-            let centerY = layoutCenterY(word.bbox)
-            var bestIdx = -1
-            var bestDelta = CGFloat.greatestFiniteMagnitude
-            for idx in groups.indices {
-                let line = rebuildLine(groups[idx])
-                let tolerance = max(baseYTolerance, line.height * 0.7)
-                let delta = abs(centerY - line.centerY)
-                if delta <= tolerance && delta < bestDelta {
-                    bestIdx = idx
-                    bestDelta = delta
-                }
+            guard !valid.isEmpty else {
+                let text = line.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !text.isEmpty, line.bbox.width > 0, line.bbox.height > 0 else { continue }
+                result.append(LayoutLine(
+                    words: [],
+                    text: text,
+                    left: line.bbox.minX,
+                    top: layoutTop(line.bbox),
+                    right: line.bbox.maxX,
+                    bottom: layoutBottom(line.bbox),
+                    centerY: layoutCenterY(line.bbox),
+                    height: layoutHeight(line.bbox)
+                ))
+                continue
             }
-            if bestIdx >= 0 {
-                groups[bestIdx].append(word)
-            } else {
-                groups.append([word])
+            let rects = valid.map {
+                CGRect(x: $0.bbox.minX, y: layoutTop($0.bbox), width: $0.bbox.width, height: $0.bbox.height)
+            }
+            for group in OCRLayoutAnalyzer.groupWordsIntoLines(rects) {
+                let rebuilt = rebuildLine(group.map { valid[$0] })
+                guard !rebuilt.text.isEmpty else { continue }
+                result.append(rebuilt)
             }
         }
+        // 块内（同一列）按自上而下排序；多栏的列间顺序由版面分析决定。
+        return result.sorted { a, b in
+            if abs(a.top - b.top) > 0.004 { return a.top < b.top }
+            return a.left < b.left
+        }
+    }
 
-        return groups
-            .map(rebuildLine)
+    /// 纯几何行重建，仅用于引擎未提供行单位的兜底路径。
+    /// 算法在 `OCRLayoutAnalyzer.groupWordsIntoLines`：纵向容差固定（不随行组增高
+    /// 而放大）、同行必须 x 邻接。此前用行组累积高度做容差，行组会像雪球一样把
+    /// 下方整段吞进来。
+    private func rebuildOcrLines(_ words: [WordBox]) -> [LayoutLine] {
+        let valid = words.filter {
+            !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                && $0.bbox.width > 0 && $0.bbox.height > 0
+        }
+        guard !valid.isEmpty else { return [] }
+
+        let layoutRects = valid.map {
+            CGRect(x: $0.bbox.minX, y: layoutTop($0.bbox), width: $0.bbox.width, height: $0.bbox.height)
+        }
+        return OCRLayoutAnalyzer.groupWordsIntoLines(layoutRects)
+            .map { indexes in rebuildLine(indexes.map { valid[$0] }) }
             .filter { !$0.text.isEmpty }
-            .sorted { a, b in
-                if abs(a.top - b.top) > max(0.004, medianWordHeight * 0.5) { return a.top < b.top }
-                return a.left < b.left
-            }
     }
 
     private func rebuildLine(_ words: [WordBox]) -> LayoutLine {

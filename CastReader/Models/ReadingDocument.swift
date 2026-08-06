@@ -130,6 +130,9 @@ struct ReadingDocument: Identifiable, Equatable {
     var sourceURL: String? = nil         // 上传得到的 COS URL；纯拍摄为 synthetic
     var coverURL: String? = nil          // 绑定书库封面；Mini Player / 锁屏共用
     var fileData: Data? = nil            // 仅 docx：原始文件字节，交 WebView 内 mammoth 本地渲染
+    /// 仅 photo/kindle：版面分析判定的栏数。多栏说明这一页可能有不止一篇文章，
+    /// 用来决定要不要问用户「只读其中一块」。
+    var layoutColumnCount: Int? = nil
     var createdAt: Date = Date()
 
     init(id: String = UUID().uuidString,
@@ -142,6 +145,7 @@ struct ReadingDocument: Identifiable, Equatable {
          sourceURL: String? = nil,
          coverURL: String? = nil,
          fileData: Data? = nil,
+         layoutColumnCount: Int? = nil,
          createdAt: Date = Date()) {
         self.id = id
         self.title = title
@@ -153,6 +157,7 @@ struct ReadingDocument: Identifiable, Equatable {
         self.sourceURL = sourceURL
         self.coverURL = coverURL
         self.fileData = fileData
+        self.layoutColumnCount = layoutColumnCount
         self.createdAt = createdAt
     }
 

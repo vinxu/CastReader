@@ -1,6 +1,6 @@
 # Kindle 多站点（Storefront）适配 · 跨端设计方案
 
-2026-07-30。动 Kindle 前先读本仓库 Kindle 系列文档；本方案是多站点维度的总契约，iOS 先行，扩展/Android 对齐。
+2026-07-30。动 Kindle 前先读本仓库 Kindle 系列文档；本方案描述产品与数据模型。线上域名真值、重定向风险、发布门禁和故障处理以 [`Kindle站点可靠性与域名变更SOP-跨端.md`](Kindle站点可靠性与域名变更SOP-跨端.md) 为准；机器目录以 [`contracts/kindle-storefronts-v1.json`](contracts/kindle-storefronts-v1.json) 为唯一真相源。
 
 ## 0. 问题的本质：站点是「账号属性」，不是「语言属性」
 

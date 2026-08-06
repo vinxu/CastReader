@@ -83,6 +83,17 @@ tts,listen,audiobook,voice,reader,ocr,epub,ebook,book,kindle,kobo,novel,dyslexia
 - 评分 1 → **3 条**（avg 5.0），创始人渠道起效，继续推向 30。
 - 测量口径再确认：iTunes API（本脚本）与点点数据绝对值有偏差，**点点为准，本脚本只看趋势**。
 
+## 2026-08-06 事故记录：1.2.16/1.2.17 关键词字段回退
+
+1.2.16/1.2.17 提交时关键词被按旧来源重写，**10/11 locale 偏离目标**（仅 es-MX 幸存）。重点损失：
+zh-Hans 美区扩容尾巴全删（`听书` 美区 #105 的机制被拆）、ja 丢 9 个主力 token 且剩余 token 与名称/副标题重复、
+hi 回退到 44/100。en-US 的 kindle/kobo/novel 增补也未上车。
+
+**防线（本日起生效）**：
+- 唯一真相源 `docs/aso/approved-keywords.json`（当前 v3-1.2.18：v2 全量恢复 + en-US 增 kindle/kobo/novel、ja 增 Kindle、de 增 kindle）
+- 漂移检查 `ruby scripts/verify_aso_keywords.rb [版本号]`——发版前核对提交内容、上线后核对生效结果，非零退出即偏离
+- **规则：改词必须先改 json 并在本文记录理由**；1.2.18 按 json 全量粘贴修复
+
 ## 待办数据源
 
 - [ ] ASA 搜索词报表（等交付量起来，每周回填）

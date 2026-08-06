@@ -79,23 +79,37 @@ struct PhotoAnchorResolver: ReadingAnchorResolver {
     }
 
     /// 按归一化 y（行）聚类矩形。Vision y 为底部原点，同一行 midY 接近。
+    /// 多栏版面上一个逻辑段落可以跨栏，所以同一「行」还必须在 x 方向连续：
+    /// 否则左右两栏同高度的词会被并成一个横跨栏缝的矩形，标注就画到空白上了。
     private func groupByLine(_ rects: [CGRect]) -> [[CGRect]] {
         guard !rects.isEmpty else { return [] }
-        let sorted = rects.sorted { $0.midY > $1.midY }   // 从上到下（y 大在上）
+        let tol = (rects.map(\.height).max() ?? 0.01) * 0.6
+        let sorted = rects.sorted { a, b in
+            if abs(a.midY - b.midY) > tol { return a.midY > b.midY }   // 从上到下（y 大在上）
+            return a.minX < b.minX
+        }
         var lines: [[CGRect]] = []
         var current: [CGRect] = [sorted[0]]
         var lineY = sorted[0].midY
-        let tol = sorted[0].height * 0.6
+        var runMaxX = sorted[0].maxX
         for r in sorted.dropFirst() {
-            if abs(r.midY - lineY) <= tol {
+            let sameRow = abs(r.midY - lineY) <= tol
+            let contiguous = r.minX - runMaxX <= Self.maxIntraLineGap
+            if sameRow && contiguous {
                 current.append(r)
+                runMaxX = max(runMaxX, r.maxX)
             } else {
                 lines.append(current)
                 current = [r]
                 lineY = r.midY
+                runMaxX = r.maxX
             }
         }
         lines.append(current)
         return lines
     }
+
+    /// 同一行内相邻词的最大空隙（归一化页宽）。超过即视为跨越栏缝或制表空白，
+    /// 该行在此断开，分别绘制。
+    private static let maxIntraLineGap: CGFloat = 0.035
 }

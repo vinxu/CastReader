@@ -80,29 +80,29 @@ enum KindleWebScripts {
         if (!text) return false;
         switch (kind) {
         case 'next':
-          return /(?:^|\\s)(?:next(?: page)?|forward|siguiente|página siguiente|próxima página|pagina seguinte|seguinte|次のページ|次へ|nächste seite|weiter|page suivante|suivant|pagina successiva|avanti|अगला पृष्ठ|अगला)(?:$|\\s)/i.test(text);
+          return /(?:^|\\s)(?:next(?: page)?|forward|siguiente|página siguiente|próxima página|pagina seguinte|seguinte|次のページ|次へ|nächste seite|weiter|page suivante|suivant|pagina successiva|avanti|volgende pagina|volgende|vooruit|अगला पृष्ठ|अगला)(?:$|\\s)/i.test(text);
         case 'previous':
-          return /(?:^|\\s)(?:previous(?: page)?|prev|back|anterior|página anterior|pagina anterior|前のページ|前へ|vorherige seite|zurück|page précédente|précédent|pagina precedente|indietro|पिछला पृष्ठ|पिछला)(?:$|\\s)/i.test(text);
+          return /(?:^|\\s)(?:previous(?: page)?|prev|back|anterior|página anterior|pagina anterior|前のページ|前へ|vorherige seite|zurück|page précédente|précédent|pagina precedente|indietro|vorige pagina|vorige|terug|पिछला पृष्ठ|पिछला)(?:$|\\s)/i.test(text);
         case 'settings':
-          return /(?:font|display|appearance|reading settings?|text settings?|fuente|visualización|apariencia|configuración de lectura|fonte|aparência|configurações de leitura|フォント|表示|読書設定|schrift|anzeige|leseeinstellungen|police|affichage|paramètres de lecture|carattere|visualizzazione|impostazioni di lettura|फ़ॉन्ट|प्रदर्शन|पठन सेटिंग)/i.test(text);
+          return /(?:font|display|appearance|reading settings?|text settings?|fuente|visualización|apariencia|configuración de lectura|fonte|aparência|configurações de leitura|フォント|表示|読書設定|schrift|anzeige|leseeinstellungen|police|affichage|paramètres de lecture|carattere|visualizzazione|impostazioni di lettura|lettertype|weergave|leesinstellingen|tekstinstellingen|फ़ॉन्ट|प्रदर्शन|पठन सेटिंग)/i.test(text);
         case 'font-size':
-          return /(?:font size|preferred font size|tamaño de fuente|tamanho da fonte|フォントサイズ|schriftgröße|taille de police|dimensione carattere|फ़ॉन्ट आकार)/i.test(text);
+          return /(?:font size|preferred font size|tamaño de fuente|tamanho da fonte|フォントサイズ|schriftgröße|taille de police|dimensione carattere|lettergrootte|फ़ॉन्ट आकार)/i.test(text);
         case 'single-column':
-          return /(?:single column|one column|una columna|columna única|uma coluna|coluna única|1列|一列|単一列|eine spalte|einzelne spalte|une colonne|colonna singola|एक कॉलम)/i.test(text);
+          return /(?:single column|one column|una columna|columna única|uma coluna|coluna única|1列|一列|単一列|eine spalte|einzelne spalte|une colonne|colonna singola|één kolom|eén kolom|een kolom|enkele kolom|एक कॉलम)/i.test(text);
         case 'narrow':
-          return /(?:^|\\s)(?:narrow|estrecho|estreita|狭い|schmal|étroit|stretto|संकीर्ण)(?:$|\\s)/i.test(text);
+          return /(?:^|\\s)(?:narrow|estrecho|estreita|狭い|schmal|étroit|stretto|smal|संकीर्ण)(?:$|\\s)/i.test(text);
         case 'toc':
-          return /(?:table of contents|contents|go to|chapter|índice|contenido|capítulo|ir a|sumário|capítulo|ir para|目次|章|移動|inhaltsverzeichnis|kapitel|gehe zu|table des matières|sommaire|chapitre|indice|sommario|capitolo|विषय सूची|अध्याय)/i.test(text);
+          return /(?:table of contents|contents|go to|chapter|índice|contenido|capítulo|ir a|sumário|capítulo|ir para|目次|章|移動|inhaltsverzeichnis|kapitel|gehe zu|table des matières|sommaire|chapitre|indice|sommario|capitolo|inhoudsopgave|inhoud|ga naar|hoofdstuk|विषय सूची|अध्याय)/i.test(text);
         case 'close':
-          return /^(?:close|done|dismiss|cerrar|listo|hecho|fechar|concluído|閉じる|完了|schließen|fertig|fermer|terminé|chiudi|fatto|बंद|पूर्ण)$/i.test(text);
+          return /^(?:close|done|dismiss|cerrar|listo|hecho|fechar|concluído|閉じる|完了|schließen|fertig|fermer|terminé|chiudi|fatto|sluiten|klaar|बंद|पूर्ण)$/i.test(text);
         case 'yes':
-          return /^(?:yes|ok|go|continue|sí|aceptar|continuar|ir|sim|continuar|ir|はい|移動|続行|ja|ok|weiter|los|oui|continuer|aller|sì|continua|vai|हाँ|ठीक|जारी रखें|जाएं)$/i.test(text);
+          return /^(?:yes|ok|go|continue|sí|aceptar|continuar|ir|sim|continuar|ir|はい|移動|続行|ja|ok|weiter|los|oui|continuer|aller|sì|continua|vai|doorgaan|ga|हाँ|ठीक|जारी रखें|जाएं)$/i.test(text);
         case 'no':
-          return /^(?:no|cancel|stay|cancelar|quedarse|não|cancelar|ficar|いいえ|キャンセル|このまま|nein|abbrechen|bleiben|non|annuler|rester|no|annulla|resta|नहीं|रद्द|यहीं रहें)$/i.test(text);
+          return /^(?:no|cancel|stay|cancelar|quedarse|não|cancelar|ficar|いいえ|キャンセル|このまま|nein|abbrechen|bleiben|non|annuler|rester|no|annulla|resta|nee|annuleren|blijven|नहीं|रद्द|यहीं रहें)$/i.test(text);
         case 'location':
-          return /(?:location|page|position|ubicación|posición|página|localização|posição|página|位置|ページ|position|seite|emplacement|page|posizione|pagina|स्थान|पृष्ठ)/i.test(text);
+          return /(?:location|page|position|ubicación|posición|página|localização|posição|página|位置|ページ|position|seite|emplacement|page|posizione|pagina|locatie|positie|स्थान|पृष्ठ)/i.test(text);
         case 'sync-dialog':
-          return /(?:most recent (?:page|location) read|furthest (?:page|location) read|ubicación (?:leída )?más reciente|posición (?:leída )?más reciente|página (?:leída )?más reciente|última (?:página|posición) leída|localização (?:lida )?mais recente|posição (?:lida )?mais recente|página lida mais recentemente|última página lida|最後に読んだ(?:ページ|位置)|最も遠い(?:ページ|位置)|前回読んだ(?:ページ|位置)|最新の(?:ページ|位置)|zuletzt gelesene (?:seite|position)|letzte leseposition|am weitesten gelesene (?:seite|position)|page (?:lue )?la plus récente|emplacement (?:lu )?le plus récent|dernière (?:page|position) (?:de lecture|lue)|pagina (?:letta )?più recente|posizione (?:letta )?più recente|ultima (?:pagina|posizione) letta|सबसे हाल में पढ़ा (?:गया )?(?:पृष्ठ|स्थान)|हाल ही में पढ़ा (?:गया )?(?:पृष्ठ|स्थान)|अंतिम पठन स्थान|सबसे आगे पढ़ा (?:गया )?(?:पृष्ठ|स्थान))/i.test(text);
+          return /(?:most recent (?:page|location) read|furthest (?:page|location) read|ubicación (?:leída )?más reciente|posición (?:leída )?más reciente|página (?:leída )?más reciente|última (?:página|posición) leída|localização (?:lida )?mais recente|posição (?:lida )?mais recente|página lida mais recentemente|última página lida|最後に読んだ(?:ページ|位置)|最も遠い(?:ページ|位置)|前回読んだ(?:ページ|位置)|最新の(?:ページ|位置)|zuletzt gelesene (?:seite|position)|letzte leseposition|am weitesten gelesene (?:seite|position)|page (?:lue )?la plus récente|emplacement (?:lu )?le plus récent|dernière (?:page|position) (?:de lecture|lue)|pagina (?:letta )?più recente|posizione (?:letta )?più recente|ultima (?:pagina|posizione) letta|meest recent gelezen (?:pagina|locatie|positie)|laatst gelezen (?:pagina|locatie|positie)|verst gelezen (?:pagina|locatie|positie)|meest ver gelezen (?:pagina|locatie|positie)|सबसे हाल में पढ़ा (?:गया )?(?:पृष्ठ|स्थान)|हाल ही में पढ़ा (?:गया )?(?:पृष्ठ|स्थान)|अंतिम पठन स्थान|सबसे आगे पढ़ा (?:गया )?(?:पृष्ठ|स्थान))/i.test(text);
         default:
           return false;
         }
@@ -237,6 +237,22 @@ enum KindleWebScripts {
         url:location.href,
         title:document.title || ''
       });
+    })();
+    """
+
+    /// Fixture-only semantic probe used by XCTest to keep localized Kindle
+    /// reader controls from silently drifting. The production scripts use the
+    /// same helpers, so this exercises the exact matching rules without
+    /// clicking or mutating a live Amazon page.
+    static let readerSemanticFixtureProbe = """
+    (function() {
+      \(uiSemanticHelpers)
+      var matches = {};
+      Array.from(document.querySelectorAll('[data-cr-kindle-kind]')).forEach(function(el) {
+        var kind = el.getAttribute('data-cr-kindle-kind') || '';
+        matches[kind] = crKindleUISemanticScore(el, kind) >= 45;
+      });
+      return JSON.stringify({ ok:true, matches:matches });
     })();
     """
 
@@ -783,6 +799,83 @@ enum KindleWebScripts {
           return false;
         }
       }
+      function authenticationState() {
+        var path = String(location.pathname || '').toLowerCase();
+        if (/\\/ap\\/cvf(?:\\/|$)|\\/errors\\/validatecaptcha/.test(path)) return 'challenge';
+        if (/\\/ap\\/signin(?:\\/|$)/.test(path)) return 'sign_in';
+        try {
+          var challengeInput = Array.from(document.querySelectorAll(
+            'input[autocomplete="one-time-code"],input[name*="otp" i],input[name*="code" i],input[name*="captcha" i],#auth-mfa-otpcode'
+          )).some(visible);
+          if (challengeInput) return 'challenge';
+          var credentialInput = Array.from(document.querySelectorAll(
+            'input[type=email],input[name=email],input[type=password],#ap_email,#ap_password'
+          )).some(visible);
+          if (credentialInput) return 'sign_in';
+        } catch (_) {}
+        return '';
+      }
+      function hasVisibleLoadingState() {
+        var selectors = [
+          '[aria-busy="true"]',
+          '[data-testid*="loading" i]',
+          '[data-test*="loading" i]',
+          '[data-automation-id*="loading" i]',
+          '[class*="skeleton" i]',
+          '[class*="spinner" i]',
+          '[class*="loading" i]'
+        ];
+        for (var i = 0; i < selectors.length; i++) {
+          try {
+            if (Array.from(document.querySelectorAll(selectors[i])).some(visible)) return true;
+          } catch (_) {}
+        }
+        return false;
+      }
+      function shelfScrollState() {
+        var candidates = [document.scrollingElement, document.documentElement, document.body];
+        try { candidates = candidates.concat(Array.from(document.querySelectorAll('*'))); } catch (_) {}
+        var seen = [];
+        var best = { top:0, max:0, remaining:0, viewport:0 };
+        candidates.filter(Boolean).forEach(function(el) {
+          if (seen.indexOf(el) >= 0) return;
+          seen.push(el);
+          try {
+            var viewport = Math.max(0, Number(el.clientHeight || 0));
+            var extent = Math.max(0, Number(el.scrollHeight || 0));
+            var max = Math.max(0, extent - viewport);
+            var isRoot = el === document.scrollingElement ||
+              el === document.documentElement || el === document.body;
+            if (!isRoot) {
+              var overflowY = String(getComputedStyle(el).overflowY || '').toLowerCase();
+              var isScrollableContainer = /^(?:auto|scroll|overlay)$/.test(overflowY) &&
+                viewport >= 48 && max > 4;
+              if (!isScrollableContainer) return;
+            }
+            if (max < best.max) return;
+            var top = isRoot
+              ? Math.max(Number(window.scrollY || 0), Number(el.scrollTop || 0))
+              : Math.max(0, Number(el.scrollTop || 0));
+            best = {
+              top:top,
+              max:max,
+              remaining:Math.max(0, max - top),
+              viewport:viewport
+            };
+          } catch (_) {}
+        });
+        // WebKit may report a small root extent for safe-area/viewport chrome
+        // even when the document has no remaining shelf content. Treat the
+        // final 96pt (or 8% of the viewport) as the end; Amazon lazy-loading
+        // triggers before this boundary and the following stable-snapshot pass
+        // still prevents premature completion.
+        var threshold = Math.max(96, Math.floor(best.viewport * 0.08));
+        return {
+          atEnd:best.max <= 4 || best.remaining <= threshold,
+          positionBucket:Math.floor(best.top / 48),
+          extentBucket:Math.floor(best.max / 48)
+        };
+      }
       function hasExplicitEmptyShelfSignal() {
         try {
           var activeSearch = Array.from(document.querySelectorAll('input[type="search"], input[role="searchbox"]'))
@@ -818,6 +911,12 @@ enum KindleWebScripts {
           'la tua biblioteca è vuota',
           'nessun libro nella tua libreria',
           'non hai libri',
+          'je bibliotheek is leeg',
+          'uw bibliotheek is leeg',
+          'geen boeken in je bibliotheek',
+          'geen boeken in uw bibliotheek',
+          'je hebt geen boeken',
+          'u hebt geen boeken',
           'आपकी लाइब्रेरी खाली है',
           'आपकी लाइब्रेरी में कोई किताब नहीं',
           'आपकी लाइब्रेरी में कोई पुस्तक नहीं',
@@ -896,7 +995,7 @@ enum KindleWebScripts {
       }
       function badTitle(raw) {
         var v = String(raw || '').toLowerCase();
-        return /download|app store|kindle app|learn more|read on any device|help|support|settings|notebook|privacy|terms|descargar|tienda de aplicaciones|más información|ayuda|configuración|privacidad|términos|baixar|loja de aplicativos|saiba mais|ajuda|configurações|privacidade|termos|ダウンロード|アプリストア|詳細|ヘルプ|設定|プライバシー|規約|herunterladen|app-store|mehr erfahren|hilfe|einstellungen|datenschutz|bedingungen|télécharger|en savoir plus|aide|paramètres|confidentialité|conditions|scarica|ulteriori informazioni|aiuto|impostazioni|privacy|termini|डाउनलोड|ऐप स्टोर|और जानें|सहायता|सेटिंग|गोपनीयता|शर्तें|下载|应用商店|了解更多|任何设备|帮助|支持|设置|笔记/.test(v);
+        return /download|app store|kindle app|learn more|read on any device|help|support|settings|notebook|privacy|terms|descargar|tienda de aplicaciones|más información|ayuda|configuración|privacidad|términos|baixar|loja de aplicativos|saiba mais|ajuda|configurações|privacidade|termos|ダウンロード|アプリストア|詳細|ヘルプ|設定|プライバシー|規約|herunterladen|app-store|mehr erfahren|hilfe|einstellungen|datenschutz|bedingungen|télécharger|en savoir plus|aide|paramètres|confidentialité|conditions|scarica|ulteriori informazioni|aiuto|impostazioni|privacy|termini|meer informatie|lezen op elk apparaat|ondersteuning|instellingen|notitieboek|voorwaarden|डाउनलोड|ऐप स्टोर|और जानें|सहायता|सेटिंग|गोपनीयता|शर्तें|下载|应用商店|了解更多|任何设备|帮助|支持|设置|笔记/.test(v);
       }
       function nearestCard(a) {
         var node = a;
@@ -934,7 +1033,7 @@ enum KindleWebScripts {
           try {
             var v = text(card.querySelector(selectors[i]));
             if (v && v !== title && v.length < 120) {
-              return v.replace(/^(?:by|por|de|par|von|di|著者|作者|लेखक|द्वारा)\\s*[:：]?\\s*/i, '').trim();
+              return v.replace(/^(?:by|por|de|par|von|di|door|著者|作者|लेखक|द्वारा)\\s*[:：]?\\s*/i, '').trim();
             }
           } catch (e) {}
         }
@@ -942,8 +1041,8 @@ enum KindleWebScripts {
         for (var j = 0; j < lines.length; j++) {
           var line = lines[j];
           if (line === title) continue;
-          if (/^(?:by|por|de|par|von|di|著者|作者|लेखक|द्वारा)\\s*[:：]?\\s*/i.test(line)) {
-            return line.replace(/^(?:by|por|de|par|von|di|著者|作者|लेखक|द्वारा)\\s*[:：]?\\s*/i, '').trim();
+          if (/^(?:by|por|de|par|von|di|door|著者|作者|लेखक|द्वारा)\\s*[:：]?\\s*/i.test(line)) {
+            return line.replace(/^(?:by|por|de|par|von|di|door|著者|作者|लेखक|द्वारा)\\s*[:：]?\\s*/i, '').trim();
           }
         }
         return '';
@@ -957,7 +1056,7 @@ enum KindleWebScripts {
                 if (direct) return String(direct).replace(/\\s+/g, ' ').trim();
               }
               var raw = normalizedDigits(text(card));
-              var m = raw.match(/(\\d{1,3}\\s*%|(?:Page|Location|Last\\s+read|Página|Ubicación|Posición|Última\\s+lectura|Localização|Posição|Última\\s+leitura|ページ|位置|最終閲覧|Seite|Position|Zuletzt\\s+gelesen|Page|Emplacement|Dernière\\s+lecture|Pagina|Posizione|Ultima\\s+lettura|पृष्ठ|स्थान|अंतिम\\s+पठन)\\s*[:#-]?\\s*\\d+[^\\n,;]*)/i);
+              var m = raw.match(/(\\d{1,3}\\s*%|(?:Page|Location|Last\\s+read|Página|Ubicación|Posición|Última\\s+lectura|Localização|Posição|Última\\s+leitura|ページ|位置|最終閲覧|Seite|Position|Zuletzt\\s+gelesen|Page|Emplacement|Dernière\\s+lecture|Pagina|Posizione|Ultima\\s+lettura|Pagina|Locatie|Positie|Laatst\\s+gelezen|पृष्ठ|स्थान|अंतिम\\s+पठन)\\s*[:#-]?\\s*\\d+[^\\n,;]*)/i);
               return m ? m[1].replace(/\\s+/g, ' ').trim() : '';
             }
             function languageFrom(card) {
@@ -993,8 +1092,8 @@ enum KindleWebScripts {
               for (var i = 0; i < selectors.length && !label; i++) {
                 try {
                   var el = document.querySelector(selectors[i]);
-                  var v = text(el).replace(/^(?:Hello|Hi|Hola|Olá|こんにちは|Hallo|Bonjour|Ciao|नमस्ते),?\\s*/i, '').trim();
-                  if (v && !/sign\\s*in|account|lists?|returns?|orders?|iniciar sesión|cuenta|entrar|conta|anmelden|konto|connexion|compte|accedi|account|ログイン|アカウント|साइन इन|खाता/i.test(v) && v.length < 80) label = v;
+                  var v = text(el).replace(/^(?:Hello|Hi|Hola|Olá|こんにちは|Hallo|Bonjour|Ciao|Hoi|Welkom|नमस्ते),?\\s*/i, '').trim();
+                  if (v && !/sign\\s*in|account|lists?|returns?|orders?|iniciar sesión|cuenta|entrar|conta|anmelden|konto|connexion|compte|accedi|inloggen|aanmelden|lijsten?|retourzendingen|bestellingen|ログイン|アカウント|साइन इन|खाता/i.test(v) && v.length < 80) label = v;
                 } catch (e) {}
               }
               return { label: label, email: email };
@@ -1025,12 +1124,14 @@ enum KindleWebScripts {
       }
       var seen = {};
       var books = [];
-      candidateLinks().forEach(function(a) {
+      var candidates = candidateLinks();
+      candidates.forEach(function(a) {
         var href = abs(attr(a, 'href'));
         var card = nearestCard(a);
         var img = card.querySelector('img') || a.querySelector('img');
         var asin = attr(card, 'data-asin') || attr(a, 'data-asin') || asinFrom(href) || asinFrom(nodeSignature(card)) || asinFrom(text(card));
-        if (asin && !isReaderHref(href)) href = readerURLForASIN(asin);
+        var canonicalReader = asin ? readerURLForASIN(asin) : '';
+        if (canonicalReader) href = canonicalReader;
         var title = titleFrom(card, a, img);
         if (!title || title.length < 2) return;
         if (badTitle(title) || badTitle(text(a))) return;
@@ -1053,19 +1154,34 @@ enum KindleWebScripts {
           languageSource: language ? 'library-hint' : ''
         });
       });
-      var signin = Array.from(document.querySelectorAll('input[type=email], input[name=email], input[type=password], #ap_email, #ap_password')).some(visible);
-      var hasReaderSignals = books.length > 0 || candidateLinks().length > 0;
+      var authState = authenticationState();
+      var signin = !!authState;
+      var hasReaderSignals = books.length > 0 || candidates.length > 0;
             var readerPage = /[?&]asin=[A-Z0-9]{10}/i.test(location.search) || /\\/reader\\//i.test(location.pathname);
             var pageReady = document.readyState === 'complete';
+            var shelfLoading = hasVisibleLoadingState();
+            var scrollState = shelfScrollState();
             var hasEmptyShelfSignal = pageReady && !signin && !readerPage &&
-              !hasReaderSignals && hasExplicitEmptyShelfSignal();
+              !hasReaderSignals && !shelfLoading && hasExplicitEmptyShelfSignal();
+            var snapshotKey = [
+              books.length,
+              candidates.length,
+              scrollState.positionBucket,
+              scrollState.extentBucket,
+              shelfLoading ? 1 : 0,
+              hasEmptyShelfSignal ? 1 : 0
+            ].join(':');
             return JSON.stringify({
               ok: true,
               loggedIn: books.length > 0,
               authRequired: signin,
+              authState: authState,
               hasReaderSignals: hasReaderSignals,
               hasEmptyShelfSignal: hasEmptyShelfSignal,
               pageReady: pageReady,
+              shelfLoading: shelfLoading,
+              atScrollEnd: scrollState.atEnd,
+              snapshotKey: snapshotKey,
               isReaderPage: readerPage,
               account: accountInfo(),
               url: location.href,

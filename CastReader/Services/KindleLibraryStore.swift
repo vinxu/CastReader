@@ -310,13 +310,14 @@ final class KindleLibraryStore: ObservableObject {
     /// the anchors are keyed by book id, so reading positions survive a failure
     /// the user did not ask for.
     func markSessionExpiredForRebind() async {
+        let expiredStorefront = boundStorefront
         books.removeAll()
         hasConnected = false
         accountLabel = nil
         accountEmail = nil
         lastError = nil
         save()
-        await clearAmazonWebsiteData()
+        await clearAmazonWebsiteData(for: expiredStorefront)
     }
 
     func load() {
@@ -448,13 +449,23 @@ final class KindleLibraryStore: ObservableObject {
         }
     }
 
-    private func clearAmazonWebsiteData() async {
+    private func clearAmazonWebsiteData(
+        for storefront: KindleStorefront? = nil
+    ) async {
         let dataStore = WKWebsiteDataStore.default()
         let types = WKWebsiteDataStore.allWebsiteDataTypes()
         await withCheckedContinuation { continuation in
             dataStore.fetchDataRecords(ofTypes: types) { records in
                 let targets = records.filter { record in
-                    KindleStorefront.isAmazonWebsiteDataDomain(record.displayName)
+                    if let storefront {
+                        return KindleStorefront.isAmazonWebsiteDataDomain(
+                            record.displayName,
+                            for: storefront
+                        )
+                    }
+                    return KindleStorefront.isAmazonWebsiteDataDomain(
+                        record.displayName
+                    )
                 }
                 guard !targets.isEmpty else {
                     continuation.resume()

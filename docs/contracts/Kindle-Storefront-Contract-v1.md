@@ -6,6 +6,8 @@
 - `kindle-storefront-contract-cases-v1.json`：域名真值表、规范化用例和安全负例。
 - `test-kindle-storefront-contract.mjs`：目录自检；可选对比浏览器扩展的 `KINDLE_MATCHES`。
 
+线上完整重定向语义、7 个 alias 书架路径丢失、User-Agent、真机验收与域名变更流程见 [`../Kindle站点可靠性与域名变更SOP-跨端.md`](../Kindle站点可靠性与域名变更SOP-跨端.md)。产品与数据模型见 [`../Kindle多站点Storefront适配-跨端设计方案.md`](../Kindle多站点Storefront适配-跨端设计方案.md)。
+
 ## 数量口径与验证范围
 
 2026-07-30 对 Amazon 官方入口做了匿名网络验证，目录收敛为：
@@ -108,6 +110,14 @@ node docs/contracts/test-kindle-storefront-contract.mjs \
   --android-root ../CastReader-Android
 node docs/contracts/test-kindle-storefront-contract.mjs \
   --extension-root ../MyProject/readout-desktop
+
+# 离线验证完整路由语义与安全负例。
+node docs/contracts/test-kindle-live-route-policy.mjs
+
+# 无账号、无 Cookie，使用真实 Android 浏览器形态 UA 的线上 L1/L2 预检。
+node docs/contracts/verify-kindle-live-routes.mjs
 ```
 
 Android 命令会把 Kotlin 运行时目录、地区映射、alias 和八语顺序投影回 canonical JSON；扩展命令验证运行时目录、所有派生消费者以及（已执行 `pnpm build` 时）生产 manifest 的 21 个注入 host 与共享合同完全一致。扩展的 background、content、TTS orchestrator、analytics、Pro moment 与 QuickRead 也统一使用同一精确 matcher。
+
+线上预检会验证 13 个 canonical 的 landing/library/reader，以及 7 个 alias 的 library/reader 完整跳转链。alias `/kindle-library` 丢路径会明确显示为 `ALIAS_RISK`，不会被误报为 canonical 宕机；canonical 路径丢失、跨 marketplace、reader ASIN/ref 丢失或浏览器 UA 被拒都会失败。脚本不发送 Cookie，只使用合成 ASIN，输出不含 query 或账号信息。

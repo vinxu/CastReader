@@ -67,6 +67,11 @@ final class ProductAnalyticsTests: XCTestCase {
             Set(domains["contentInputStage"] ?? []),
             Set(AnalyticsContentInputStage.allCases.map(\.rawValue))
         )
+        XCTAssertEqual(
+            domains["storefront"] ?? [],
+            KindleStorefront.all.filter(\.entryEnabled).map(\.id),
+            "analytics may use only the 13 entry-enabled storefront IDs"
+        )
     }
 
     func testEveryEventBuildsAValidDualEnvelope() throws {
@@ -120,6 +125,7 @@ final class ProductAnalyticsTests: XCTestCase {
     }
 
     func testKindleEventsRequireAndValidateCanonicalStorefrontDimension() {
+        let bindSessionId = "33333333-3333-4333-8333-333333333333"
         XCTAssertNoThrow(
             try AnalyticsSchema.validate(
                 .contentIntent,
@@ -131,6 +137,27 @@ final class ProductAnalyticsTests: XCTestCase {
                 )
             )
         )
+        for errorCode in [
+            "auth_redirect_rejected",
+            "library_path_lost",
+            "empty_shelf",
+            "scan_timeout",
+            "DOM_changed",
+        ] {
+            XCTAssertNoThrow(
+                try AnalyticsSchema.validate(
+                    .libraryConnection,
+                    properties: .init(
+                        source: AnalyticsLibrarySource.kindle.rawValue,
+                        bindSessionId: bindSessionId,
+                        stage: AnalyticsLibraryConnectionStage.failed.rawValue,
+                        result: AnalyticsResult.failed.rawValue,
+                        errorCode: errorCode
+                    )
+                ),
+                errorCode
+            )
+        }
         XCTAssertThrowsError(
             try AnalyticsSchema.validate(
                 .contentIntent,
