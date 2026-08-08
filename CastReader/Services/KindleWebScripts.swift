@@ -4953,7 +4953,7 @@ enum KindleWebScripts {
     static let pageCaptureBootstrap = """
     (function() {
       \(uiSemanticHelpers)
-      var crKindleInstallVersion = 40;
+      var crKindleInstallVersion = 41;
       // OCR keeps the source glyphs lossless. Kindle pages are mostly flat-color
       // text surfaces, so PNG is often no larger than JPEG and avoids destroying
       // CJK punctuation / Devanagari combining marks. 2048px is only a safety cap;
@@ -5988,7 +5988,26 @@ enum KindleWebScripts {
         } catch (_) {}
       }
       function setImportant(el, name, value) {
-        try { if (el && el.style) el.style.setProperty(name, value, 'important'); } catch (_) {}
+        // Write only on a real change. Chromium 150 records a mutation for same-value style
+        // writes, and on Android that turned an unconditional write inside a style-observing
+        // MutationObserver into a self-sustaining storm that wedged the renderer (white page,
+        // evaluateJavaScript callbacks never returning). WebKit is not Chromium, but the same
+        // primitive must stay fixed-point safe so a future observer cannot ignite it here.
+        try {
+          if (!el || !el.style) return;
+          if (el.style.getPropertyValue(name) === value &&
+              el.style.getPropertyPriority(name) === 'important') return;
+          el.style.setProperty(name, value, 'important');
+        } catch (_) {}
+      }
+      function removeIfPresent(el, name) {
+        // Paired no-op-aware primitive: route style removals through this instead of a bare
+        // removeProperty so removals are also invisible to any style-observing observer.
+        try {
+          if (!el || !el.style) return;
+          if (el.style.getPropertyValue(name) === '') return;
+          el.style.removeProperty(name);
+        } catch (_) {}
       }
       function isKindleUiTarget(target) {
         try {
