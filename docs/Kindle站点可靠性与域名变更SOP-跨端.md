@@ -10,6 +10,7 @@
 - [`contracts/kindle-storefront-contract-cases-v1.json`](contracts/kindle-storefront-contract-cases-v1.json)：域名安全真值表。
 - [`contracts/Kindle-Storefront-Contract-v1.md`](contracts/Kindle-Storefront-Contract-v1.md)：合同字段和跨仓库消费方式。
 - [`Kindle多站点Storefront适配-跨端设计方案.md`](Kindle多站点Storefront适配-跨端设计方案.md)：产品与数据模型设计。
+- [`Kindle-13站点与Cookie弹框-iOS交接-2026-08-07.md`](Kindle-13站点与Cookie弹框-iOS交接-2026-08-07.md)：当前实现状态、Cookie viewport/close 安全合同与 iOS 必测矩阵。
 
 ## 1. 结论先行
 
@@ -25,6 +26,47 @@ Kindle 同步可靠性的第一原则不是“猜用户语言”，而是始终�
 4. **13 个 canonical 是入口全集。** 不得因为某国存在 Amazon 零售站，就自行拼接 `read.amazon.<tld>`。
 
 违反任一条都可能出现“登录成功但书架为空”“扫描不到书”“有书但打不开”“被重写到美区”等表面相似、根因不同的问题。
+
+### 1.1 13 个站点唯一允许的绑定流程
+
+13 个 enabled storefront 的产品流程和技术状态机必须完全一致，差别只能来自合同中的 canonical Kindle host 与同 marketplace 登录 host：
+
+1. 从已绑定/用户选中的 `storefrontID` 取得 entry-enabled storefront；设备语言和时区不能在此时改写它。
+2. fresh navigation 精确构造 `https://<canonicalHost>/kindle-library`，不得从 alias、零售域名或语言拼接域名。
+3. 未登录时 Amazon 可以把 canonical `/kindle-library` 导向同 canonical `/landing`。
+4. landing 上的登录动作必须进入同 marketplace 的 `www.amazon.*`；`openid.return_to` / `return_to` 必须精确指回第 2 步的 canonical `/kindle-library`。
+5. 登录、OTP 或 CAPTCHA 完成后，主框架必须回到同 storefront 的 canonical `/kindle-library`；回到根路径、alias、其他 marketplace 或未知 host 都不能算“已连接”。
+6. 页面 ready 且结构快照稳定后扫描书架；每本书写入同一个 `storefrontID`，reader URL 立即 canonicalize。
+7. 开书只构造 `https://<canonicalHost>/?asin=<ASIN>&ref_=kwl_kr_iv_rec_1`；reader 登录回链必须保留同 canonical、ASIN 和 `ref_`。
+8. 首次出声后才能完成 L3 的“可用”验收；仅看到登录页、302 或书架 HTML 都不是 L3。
+
+统一流程的最小不变量：
+
+```text
+bound storefront S
+  → S.canonical/kindle-library
+  → S.marketplace/ap/signin?return_to=S.canonical/kindle-library
+  → S.canonical/kindle-library
+  → scan books tagged S
+  → S.canonical/?asin=...&ref_=kwl_kr_iv_rec_1
+  → first audio
+```
+
+任一箭头跨 storefront、丢 `/kindle-library`、丢 ASIN/ref 或从 alias 起步，整条绑定都失败；不能用“页面能打开”兜底成成功。
+
+### 1.2 英文 US 与本地化 IT：流程相同，域名不能照抄
+
+| 环节 | US（英文、无 alias） | IT（本地化 canonical） | iOS/Android 共同要求 |
+|---|---|---|---|
+| storefront | `us` | `it` | 以用户绑定值为真相 |
+| fresh 书架 | `https://read.amazon.com/kindle-library` | `https://leggi.amazon.it/kindle-library` | 只从 canonical 构造 |
+| 登录 host | `www.amazon.com` | `www.amazon.it` | 必须与 storefront marketplace 一致 |
+| 登录回链 | `read.amazon.com/kindle-library` | `leggi.amazon.it/kindle-library` | 必须精确回 canonical 书架 |
+| fresh reader | `read.amazon.com/?asin=…&ref_=…` | `leggi.amazon.it/?asin=…&ref_=…` | 同 canonical，并保留 ASIN/ref |
+| alias | 无 | `read.amazon.it` | IT alias 只能识别/迁移，不能 fresh navigation |
+| alias 书架结果 | — | 跳 `leggi.amazon.it/`，丢 `/kindle-library` | 明确报 `ALIAS_RISK`，不能当 canonical 故障 |
+
+因此不能把 US 的 `read.amazon.com` 字面量复制到所有语言，也不能按表面规律把 IT 写成 `read.amazon.it`。客户端只消费共享合同，不推导域名。
 
 ## 2. 本轮事故复盘：为什么意大利站会显示 Kindle 无效
 
@@ -96,6 +138,28 @@ https://<canonical>/?asin=<ASIN>&ref_=kwl_kr_iv_rec_1
 
 都会进入同 marketplace 的登录链，且 `return_to` 同时保留 canonical host、ASIN 和 `ref_`。
 
+#### 3.2.1 13 canonical 统一验收矩阵
+
+下表中的“L1/L2”是匿名路由证据；“L3”必须使用对应 marketplace 的真实账号、已购书并完成首次出声。所有行使用同一状态机，不能为某个语言另写捷径。
+
+| ID | fresh canonical library | 同站登录 host | 必须返回 | reader 必须保留 | L1/L2 状态 | L3 状态 |
+|---|---|---|---|---|---|---|
+| `us` | `read.amazon.com/kindle-library` | `www.amazon.com` | 同一 canonical library | US canonical + ASIN/ref | 独立审计通过 | 需对应账号验收 |
+| `uk` | `read.amazon.co.uk/kindle-library` | `www.amazon.co.uk` | 同一 canonical library | UK canonical + ASIN/ref | 独立审计通过 | 需对应账号验收 |
+| `ca` | `read.amazon.ca/kindle-library` | `www.amazon.ca` | 同一 canonical library | CA canonical + ASIN/ref | 独立审计通过 | 需对应账号验收 |
+| `au` | `read.amazon.com.au/kindle-library` | `www.amazon.com.au` | 同一 canonical library | AU canonical + ASIN/ref | 独立审计通过 | 需对应账号验收 |
+| `jp` | `read.amazon.co.jp/kindle-library` | `www.amazon.co.jp` | 同一 canonical library | JP canonical + ASIN/ref | 独立审计通过；当前出口 NETWORK/FAIL | 需换网并用对应账号验收 |
+| `de` | `lesen.amazon.de/kindle-library` | `www.amazon.de` | 同一 canonical library | DE canonical + ASIN/ref | 独立审计通过 | 需对应账号验收 |
+| `fr` | `lire.amazon.fr/kindle-library` | `www.amazon.fr` | 同一 canonical library | FR canonical + ASIN/ref | 独立审计通过 | 需对应账号验收 |
+| `it` | `leggi.amazon.it/kindle-library` | `www.amazon.it` | 同一 canonical library | IT canonical + ASIN/ref | 独立审计通过 | 需对应账号验收 |
+| `es` | `leer.amazon.es/kindle-library` | `www.amazon.es` | 同一 canonical library | ES canonical + ASIN/ref | 独立审计通过 | 需对应账号验收 |
+| `in` | `read.amazon.in/kindle-library` | `www.amazon.in` | 同一 canonical library | IN canonical + ASIN/ref | 独立审计通过 | 需对应账号验收 |
+| `br` | `ler.amazon.com.br/kindle-library` | `www.amazon.com.br` | 同一 canonical library | BR canonical + ASIN/ref | 独立审计通过 | 需对应账号验收 |
+| `mx` | `leer.amazon.com.mx/kindle-library` | `www.amazon.com.mx` | 同一 canonical library | MX canonical + ASIN/ref | 独立审计通过 | 需对应账号验收 |
+| `nl` | `lezen.amazon.nl/kindle-library` | `www.amazon.nl` | 同一 canonical library | NL canonical + ASIN/ref | 独立审计通过 | 需对应账号验收 |
+
+验收结论必须按列记录，禁止把某行历史 L2 结果复制成当前网络 PASS，也禁止把 L2 填到 L3。JP 当前出口无法连接时应保持 `NETWORK/FAIL`，换可达网络重跑。
+
 ### 3.3 alias 的准确口径
 
 7 个本地化 alias 的行为一致：
@@ -105,6 +169,16 @@ https://<canonical>/?asin=<ASIN>&ref_=kwl_kr_iv_rec_1
 - 新绑定、重扫、修复 URL、首次开书：**绝不能生成 alias**。
 
 因此线上门禁将 alias 书架路径丢失报告为 `ALIAS_RISK`，而不是误报 canonical 站点宕机；但客户端测试必须证明 fresh navigation 永远只从 canonical 出发。
+
+| Storefront | 禁止作为 fresh 入口的 alias | fresh 必须使用 |
+|---|---|---|
+| DE | `read.amazon.de` | `lesen.amazon.de` |
+| FR | `read.amazon.fr` | `lire.amazon.fr` |
+| IT | `read.amazon.it` | `leggi.amazon.it` |
+| ES | `read.amazon.es` | `leer.amazon.es` |
+| BR | `read.amazon.com.br` | `ler.amazon.com.br` |
+| MX | `read.amazon.com.mx` | `leer.amazon.com.mx` |
+| NL | `read.amazon.nl` | `lezen.amazon.nl` |
 
 ### 3.4 不能作为入口的域名
 
@@ -227,6 +301,7 @@ WebView 可放行当前 storefront 的 Kindle host，以及同 marketplace 的 A
 
 - 登录 host 属于当前 storefront 对应的 Amazon registrable domain；
 - `openid.return_to` / `return_to` 若存在，目标是当前 entry-enabled storefront；
+- 书架连接和后台书架恢复场景中，目标还必须是该 storefront 的 canonical `/kindle-library`，不能是 canonical 根路径，也不能是同站 alias；
 - 识别到的另一 Kindle storefront 即使 path 叫 `/ap/signin`，也不能绕过跨站限制。
 
 ### 6.3 书架和 reader 的语义门禁
@@ -242,6 +317,41 @@ reader 验收：
 - 完整链所有 URL 均属于同 storefront；
 - 任一嵌套 `return_to` 解码后必须同时包含原 ASIN 和 `ref_`；
 - 只保留 ASIN、丢 ref，或只保留 ref、丢 ASIN，都失败。
+
+### 6.4 iOS 出现问题时的直接补正顺序
+
+iOS 不单独发明站点逻辑。按症状从上到下修，前一层未通过时不要用下一层兜底：
+
+| 症状 | 先检查 | 应补正的位置 | 通过标准 |
+|---|---|---|---|
+| 第一次打开就进错站/alias | `boundStorefrontID` 与 `libraryURL` | `CastReader/Models/KindleStorefront.swift`、`CastReader/Views/Kindle/KindleLibraryConnectView.swift` | US 生成 `read.amazon.com`；IT 生成 `leggi.amazon.it`；所有 13 行来自合同 |
+| 登录进入其他 marketplace | 登录 host、`openid.return_to` / `return_to` | `KindleStorefrontNavigationPolicy`，连接 WebView 的 navigation action 与 response delegate | 外层登录域和内层回链都属于当前 storefront；跨站、phish、畸形编码拒绝 |
+| 登录完成仍停 landing/显示已连接但没书架 | 最终主框架 URL 是否精确 canonical `/kindle-library` | `KindleLibraryConnectView.swift`、`KindleLibraryStore.swift` | 根路径、alias、其他站点都不能设置 connected；只有 canonical library 可开始扫描 |
+| 书架扫描过早结束或空书架误判 | ready/loading/滚动到底/结构快照 | `KindleWebScripts.swift`、`KindleLibraryStore.swift` | 空书架有独立证据；有书时结构稳定后完成；DOM 变化有明确失败码 |
+| 书能同步但开书跳美区/别的站 | 每本书的 `storefrontID`、修复后的 reader URL | `KindleModels.swift`、`KindleLibraryStore.swift` | 扫描结果立即 canonicalize；reader 使用书所属 storefront，并保留 ASIN/ref |
+| reader 出现 Cookie 同意层但操作按钮看不到 | WKWebView 是否被放大、上移并由外层裁切 | `KindleWebScripts.swift`、`KindleBookView.swift`、`KindleLibraryConnectView.swift` | 只侦测 Amazon 原生层；出现时临时使用完整 viewport，消失后恢复阅读裁切；不自动选择、不改 DOM |
+| 一个站点过期导致所有 Amazon 会话退出 | website data 清理范围 | `KindleLibraryStore.swift` | 自动重绑只清当前 marketplace；用户主动断开才清全部 |
+| 非英语站扫描失败 | 是否结构优先、目标语言 fixture 是否覆盖 | `KindleWebScripts.swift`、`CastReaderTests/KindleStorefrontTests.swift` | 目标语言有书/空书架/登录 challenge/reader 控件 fixture；不依赖单一英文文案 |
+
+iOS 最小实现顺序应保持：
+
+```text
+KindleStorefront.entry(boundStorefrontID)
+  → storefront.libraryURL
+  → allowsMainFrame(expectedStorefrontID + exact auth return_to)
+  → isExactLibraryURL
+  → scrape(book.storefrontID = storefront.id)
+  → storefront.readerURL(asin)
+```
+
+每次补正至少增加以下回归：
+
+- US canonical 正例与 IT localized canonical 正例；
+- IT `read.amazon.it/kindle-library` 不得成为 fresh URL；
+- 同 marketplace 登录 + 正确回链正例；外层同站但回链 US、phish、malformed 负例；
+- WebView navigation action 与 response 两层跨 storefront 负例；
+- 7 alias 老书可迁移，但迁移后写 canonical；
+- 13 storefront runtime 投影与共享 JSON 完全一致。
 
 ## 7. User-Agent 是路由合同的一部分
 
@@ -282,6 +392,33 @@ Amazon 会根据 UA 把 `/kindle-library` 路由到不同页面。curl 或自定
 - 非拉丁文字和双向/竖排内容不影响站点识别。
 
 本轮 Android 与 iOS 均已补荷兰语空书架、账户/控件、bad title、`door` 作者、`Pagina/Locatie/Positie/Laatst gelezen` 进度词，以及翻页、目录、显示偏好兜底和测试；iOS 另有意大利语书架、作者、最近阅读、登录 challenge 与 reader 控件 WKWebView fixture。以后新增站点时必须同时添加目标语言 HTML fixture，不能只把 host 加入目录。
+
+### 9.1 阅读页 Cookie 同意层与 viewport 裁切
+
+真实 Amazon.it 账号暴露了另一个与站点域名无关、但会表现成“Kindle 无效”的问题：为了隐藏 Kindle 原生上下栏，客户端可能把 reader WebView 放大、上移，再由外层容器裁切。Amazon 原生 Cookie 同意层通常固定在其 DOM viewport 底部；底部裁切后，提示仍在但“接受/拒绝/管理偏好”等操作区可能落在 CastReader 可视范围之外，用户无法继续。
+
+这不是意大利语专属问题。Cookie 层是否出现由 marketplace、会话状态、Amazon 灰度和隐私区域决定，13 个 enabled storefront 都必须使用同一状态机。跨端实现必须遵守：
+
+1. **不代替用户作出隐私选择。** 优先识别 Amazon 稳定结构（例如 `#sp-cc`、`ion-modal` 与原生 action）。只有同时确认 Cookie/modal 语义、唯一可见且可交互的纯关闭按钮时，允许每个 document 最多点击一次关闭；不得点击 Accept/Allow/Agree/OK/Reject/Manage，不得移除/隐藏 Amazon DOM，也不得生成 CastReader 自制同意按钮。
+2. **无法安全关闭时完整展示原生操作区。** Android 暂停 reader 的放大/平移/裁切；iOS 返回 `KindleViewportCrop.identity`。必须让 Amazon 原按钮在同一个 WebView 中自然重排到可见边界内，由用户自行处理。
+3. **弹层消失后恢复阅读布局。** 观察器采用 DOM mutation 事件驱动，不使用持续轮询；自动关闭后只做一次短 follow-up，仍可见才切 identity。客户端保存正常 reader crop，不把临时 identity 覆盖为永久布局。新主框架导航和 reader 销毁时清除旧可见状态，避免旧 document 的迟到消息污染新页面。
+4. **语言无关、结构优先。** EN、DE、FR、IT、ES、PT、NL、JA、HI 文案只能用于 generic dialog 兜底；已知 Amazon DOM ID/class/action 才是主要证据，不能因为新翻译没出现在正则里就再次遮挡按钮。
+5. **不记录隐私内容。** 日志最多记录 storefront、`visible/hidden` 与阶段；不得记录 consent 文案、用户选择、Cookie 名称/值、完整 URL、账号信息。
+
+iOS 对应实现位置：
+
+```text
+KindleWebScripts.amazonCookieConsentBridge
+  → castReaderKindle { type: "kindle-cookie-consent", documentToken,
+                       visible, autoCloseAttempted, decision }
+  → KindleBookViewModel.isAmazonCookieConsentVisible
+  → KindleCookieConsentViewportPolicy
+  → KindleWebViewContainer（identity 展开 / 正常 crop 恢复）
+```
+
+Android 与 iOS 必须保持等价语义：WebView 内最多对唯一、明确的纯关闭控件尝试一次；否则原生容器临时取消 reader crop。任何 Cookie 选择都只能由用户点击 Amazon 原生控件完成。
+
+最小回归 fixture 必须验证：唯一 X 恰好点击一次；Accept/Reject/Manage 点击数始终为 0；无 X、多个 X、link/submit/disabled/hidden 候选都不点击并进入完整 viewport；删除/关闭弹层后只恢复一次原 crop；旧 document 消息被丢弃。真实账号 L3 还需在至少一个本地化站点和一个英语站点各验证一次，不能只用静态 HTML fixture 代替。
 
 ## 10. 旧数据迁移与合并
 
@@ -342,6 +479,16 @@ live verifier 的固定行为：
 
 DoH 只用于排除本地解析污染，绝不能关闭 TLS 验证、忽略 SNI 或把“DNS 解析成功但 443 不可达”记为通过。网络失败应保持 `NETWORK/FAIL`，换可达网络或 CI 出口复跑。
 
+### 12.1 当前出口最近一次 iOS Safari 匿名结果
+
+执行：
+
+```bash
+node docs/contracts/verify-kindle-live-routes.mjs --profile=ios-safari
+```
+
+2026-08-06 结果：US/UK/CA/AU/DE/FR/IT/ES/IN/BR/MX/NL 的 canonical landing、library、reader 共 36 项通过；DE/FR/IT/ES/BR/MX/NL 的 7 个 alias library 均准确报告 `ALIAS_RISK`，alias reader 保留 ASIN/ref。JP 的 landing/library/reader 共 3 项因当前出口系统 DNS 污染且 DoH 正确地址 443 仍不可达而保持 `NETWORK/FAIL`，进程退出 1。该结果证明门禁 fail-closed，不代表 JP canonical 语义失败；JP 必须换可达网络重跑，不能手工改为 PASS。
+
 ## 13. 真机/真实账号 L3 验收矩阵
 
 发布前至少执行：
@@ -392,19 +539,23 @@ DoH 只用于排除本地解析污染，绝不能关闭 TLS 验证、忽略 SNI 
 
 本轮已对齐以下关键差异：
 
+- 13 个 enabled storefront 的书架新导航统一由 `libraryURL` 生成 `https://{canonicalHost}/kindle-library`；导航策略只接受 expected storefront 的 canonical host；
+- 7 个 alias 仅供 URL 所有权识别、旧书迁移和 canonical 化，书架与 reader fresh navigation 均拒绝 alias；
+- 英文界面不会覆盖 Amazon.it 的地区推荐或已绑定权威值，意大利站始终进入 `https://leggi.amazon.it/kindle-library`；
 - 会话过期强制重绑只清当前 storefront；用户主动断开才清全部 Amazon 数据；
 - 书籍校验拒绝未知/spoof/HTTP/userinfo/非 443 绝对 URL，即使带合法 ASIN；
-- 登录例外限制到当前 marketplace，并校验 `openid.return_to` / `return_to`；
-- 书架 WebView 的主框架 action 与 response 两层拒绝跨 storefront；
+- 登录例外限制到当前 marketplace，并校验 `openid.return_to` / `return_to`；书架场景还要求回到 canonical `/kindle-library`；
+- 可见书架、reader、过期会话 warm-up 和旧书自动恢复 WebView 都有主框架 action 与 response 两层门禁，后台恢复不能绕过 canonical 限制；
 - 保留纯 ASIN、已知 alias 的老数据迁移；
 - fresh scrape 产出的 reader URL 立即 canonicalize，alias 只用于旧数据识别与迁移；
 - 扫描完成要求 canonical library、页面 ready、非 loading、滚动到底和结构快照稳定，不再按“连续两轮没新增书”提前结束；
 - 失败可区分 `auth_redirect_rejected`、`library_path_lost`、`empty_shelf`、`scan_timeout`、`DOM_changed`；
 - 补齐意大利语与荷兰语的书架、作者、进度、登录 challenge、翻页/目录/显示偏好 DOM fallback 和 WKWebView fixture；
+- reader Cookie 同意层只允许对唯一、明确的纯关闭控件尝试一次；其他情况展示完整 Amazon viewport，且绝不自动接受/拒绝/管理 Cookie；
 - DEBUG 会话诊断只记录 storefront 粗粒度计数，不记录 Cookie 名称、值、哈希、完整 URL、ASIN、书名或邮箱；
 - Kindle 内容事件携带 13 个 enabled `storefront`；`library_connection` 继续遵守当前后端合同，不由客户端单方面增加该字段。
 
-`KindleStorefrontTests` 本轮 25 项测试通过，配套 `ProductAnalyticsTests` 与 Release 构建通过。以后任何站点目录、URL 修复、WebView 或 cookie 变更，都必须保持这些测试和三层门禁通过。
+`KindleStorefrontTests` 本轮 28 项测试通过，覆盖全部 13 个 canonical、全部 7 个 alias 拒绝 fresh navigation、alias→canonical 迁移、Amazon.it 英文界面/绑定权威、登录回链、Cookie scope、意大利/荷兰 DOM fixture；Cookie consent 另由 close-only/完整 viewport 合同测试覆盖。跨端 catalog 和离线 live-route policy 门禁同时通过。以后任何站点目录、URL 修复、WebView 或 cookie 变更，都必须保持这些测试和三层门禁通过。
 
 ## 16. 发布红线
 

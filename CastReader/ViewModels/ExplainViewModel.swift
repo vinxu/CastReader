@@ -1442,7 +1442,11 @@ final class ExplainViewModel: ObservableObject {
                 // server entitlement 超限 → 付费墙（对齐扩展：免费额度用满当付费墙，不当普通错误）
                 if case QuickReadError.httpError(402) = error {
                     if self.pro.needsEmailSync {
-                        self.status = .error(AppLocalized(AuthService.shared.hasEmailAccount ? "本机已解锁；跨平台同步等待 Apple 验证接口。" : "已检测到购买，请登录邮箱同步 Pro"))
+                        self.status = .error(AuthService.shared.hasSyncableAccount
+                            ? AppLocalized("本机已解锁；跨平台同步等待 Apple 验证接口。")
+                            : (AppRegion.current == .cn
+                                ? AppLocalized("已检测到购买，请登录后同步会员")
+                                : AppLocalized("已检测到购买，请登录邮箱同步 Pro")))
                         self.stageText = AppLocalized("解读失败")
                     } else if self.pro.isPro {
                         self.status = .error(AppLocalized("解读服务暂未识别 Pro 会员，请稍后重试"))

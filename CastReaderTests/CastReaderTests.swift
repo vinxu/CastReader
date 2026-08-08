@@ -304,7 +304,7 @@ class CastReaderTests: XCTestCase {
         let migrated = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
         XCTAssertEqual(migrated.phase, .postponed)
         XCTAssertFalse(migrated.isChooserPresented)
-        XCTAssertTrue(migrated.shouldResumeDeferredKindleFlow)
+        XCTAssertTrue(migrated.shouldResumeDeferredLibraryFlow)
     }
 
     @MainActor

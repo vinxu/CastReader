@@ -33,6 +33,657 @@ enum KindleWebScripts {
     static let mobileChromeUserAgent = "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36"
     static let desktopChromeUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 
+    /// Event-driven Cookie Notice bridge for the paged reader. The runtime token identifies the
+    /// native reader instance; the script creates a second token that is stable only for this
+    /// document. Host and storefront checks are intentionally repeated here because this script
+    /// must never run on aliases, recognition-only hosts, auth pages, or another marketplace.
+    static func amazonCookieConsentBridge(
+        token: String,
+        storefront: KindleStorefront
+    ) -> String {
+        let canonicalHosts = KindleStorefront.selectable.map(\.canonicalHost)
+        guard !token.isEmpty,
+              storefront.entryEnabled,
+              KindleStorefront.entry(id: storefront.id)?.canonicalHost == storefront.canonicalHost,
+              canonicalHosts.contains(storefront.canonicalHost),
+              let tokenData = try? JSONEncoder().encode(token),
+              let tokenLiteral = String(data: tokenData, encoding: .utf8),
+              let storefrontData = try? JSONEncoder().encode(storefront.id),
+              let storefrontLiteral = String(data: storefrontData, encoding: .utf8),
+              let hostData = try? JSONEncoder().encode(storefront.canonicalHost),
+              let hostLiteral = String(data: hostData, encoding: .utf8),
+              let allowedHostsData = try? JSONEncoder().encode(canonicalHosts),
+              let allowedHostsLiteral = String(data: allowedHostsData, encoding: .utf8) else {
+            return "(function(){ return false; })();"
+        }
+
+        return #"""
+        (function() {
+          try {
+            var VERSION = 1;
+            var RUNTIME_TOKEN = \#(tokenLiteral);
+            var STOREFRONT = \#(storefrontLiteral);
+            var EXPECTED_HOST = \#(hostLiteral);
+            var ALLOWED_HOSTS = \#(allowedHostsLiteral);
+            var host = String(location.hostname || '').toLowerCase();
+            if (host.endsWith('.')) host = host.slice(0, -1);
+            if (window.top !== window.self ||
+                String(location.protocol || '').toLowerCase() !== 'https:' ||
+                (location.port && location.port !== '443') ||
+                location.username || location.password ||
+                ALLOWED_HOSTS.indexOf(host) < 0 ||
+                host !== EXPECTED_HOST) return false;
+
+            var STATE_KEY = '__crKindleCookieConsentBridge';
+            var ATTEMPT_KEY = '__crKindleCookieConsentCloseAttempted';
+            var previous = window[STATE_KEY];
+            if (previous && previous.version === VERSION) {
+              if (previous.runtimeToken !== RUNTIME_TOKEN ||
+                  previous.storefront !== STOREFRONT ||
+                  previous.expectedHost !== EXPECTED_HOST) return false;
+              if (typeof previous.schedule === 'function') previous.schedule('reinstall');
+              return true;
+            }
+
+            function makeDocumentToken() {
+              try {
+                var words = new Uint32Array(4);
+                crypto.getRandomValues(words);
+                return Array.from(words).map(function(word) {
+                  return word.toString(16).padStart(8, '0');
+                }).join('');
+              } catch (_) {
+                return Date.now().toString(36) + '-' +
+                  Math.random().toString(36).slice(2) + '-' +
+                  Math.random().toString(36).slice(2);
+              }
+            }
+
+            var DECISION = Object.freeze({
+              notVisible:'not_visible',
+              autoClosed:'auto_closed',
+              manualNoClose:'manual_no_close',
+              manualMultipleCloses:'manual_multiple_closes',
+              manualMultipleNotices:'manual_multiple_notices',
+              manualProbeOnly:'manual_probe_only',
+              manualAfterAttempt:'manual_after_close_attempt',
+              manualClickFailed:'manual_close_click_failed',
+              resolved:'resolved'
+            });
+            var state = {
+              version:VERSION,
+              runtimeToken:RUNTIME_TOKEN,
+              documentToken:makeDocumentToken(),
+              storefront:STOREFRONT,
+              expectedHost:EXPECTED_HOST,
+              roots:new Set(),
+              observer:null,
+              scanTimer:0,
+              followupTimer:0,
+              awaitingFollowup:false,
+              followupUsed:false,
+              clickFailed:false,
+              attempted:window[ATTEMPT_KEY] === true,
+              seenNotice:false,
+              activeNotice:null,
+              lastVisible:null,
+              lastEmission:'',
+              stopped:false,
+              schedule:null
+            };
+            window[STATE_KEY] = state;
+
+            var noticeSelector = [
+              '#sp-cc', '.sp-cc', '[id^="sp-cc-"]',
+              '[id*="cookie" i]', '[data-testid*="cookie" i]', '[class*="cookie" i]',
+              '[id*="consent" i]', '[data-testid*="consent" i]', '[class*="consent" i]',
+              'ion-modal', 'ion-overlay', '[id^="ion-overlay-"]',
+              '[role="dialog"]', '[role="alertdialog"]', '[aria-modal="true"]',
+              '[class*="modal" i]', '[class*="overlay" i]',
+              '[class*="banner" i]', '[class*="notice" i]'
+            ].join(',');
+
+            function normalized(value) {
+              try { value = String(value || '').normalize('NFKC'); }
+              catch (_) { value = String(value || ''); }
+              return value.replace(/\s+/g, ' ').trim().toLowerCase();
+            }
+
+            function parentOrHost(element) {
+              if (!element) return null;
+              if (element.parentElement) return element.parentElement;
+              try {
+                var root = element.getRootNode && element.getRootNode();
+                return root && root.host ? root.host : null;
+              } catch (_) { return null; }
+            }
+
+            function composedContains(ancestor, node) {
+              for (var current = node, depth = 0;
+                   current && depth < 64;
+                   depth++, current = parentOrHost(current)) {
+                if (current === ancestor) return true;
+              }
+              return false;
+            }
+
+            function hiddenBySelfOrAncestor(element, requireInteraction) {
+              for (var current = element, depth = 0;
+                   current && depth < 48;
+                   depth++, current = parentOrHost(current)) {
+                try {
+                  if ((current.hasAttribute && current.hasAttribute('inert')) ||
+                      current.inert === true || current.hidden ||
+                      (current.getAttribute && current.getAttribute('aria-hidden') === 'true')) {
+                    return true;
+                  }
+                  if (requireInteraction && current.getAttribute &&
+                      normalized(current.getAttribute('aria-disabled')) === 'true') return true;
+                  var style = getComputedStyle(current);
+                  if (!style || style.display === 'none' || style.visibility === 'hidden' ||
+                      style.contentVisibility === 'hidden' || Number(style.opacity || 1) <= 0.01 ||
+                      (requireInteraction && style.pointerEvents === 'none')) return true;
+                } catch (_) { return true; }
+              }
+              return false;
+            }
+
+            function rendered(element, requireInteraction) {
+              try {
+                if (!element || !element.isConnected ||
+                    hiddenBySelfOrAncestor(element, requireInteraction)) return false;
+                if (requireInteraction && (
+                    element.disabled === true || element.hasAttribute('disabled') ||
+                    normalized(element.getAttribute('aria-disabled')) === 'true' ||
+                    (element.matches && element.matches(':disabled')))) return false;
+                var rect = element.getBoundingClientRect();
+                var width = Number(innerWidth || document.documentElement.clientWidth || 0);
+                var height = Number(innerHeight || document.documentElement.clientHeight || 0);
+                return rect.width > 4 && rect.height > 4 &&
+                  rect.right > 0 && rect.bottom > 0 && rect.left < width && rect.top < height;
+              } catch (_) { return false; }
+            }
+
+            function queryAllDeep(selector) {
+              var result = [];
+              state.roots.forEach(function(root) {
+                try { result = result.concat(Array.from(root.querySelectorAll(selector))); }
+                catch (_) {}
+              });
+              return Array.from(new Set(result));
+            }
+
+            function deepText(element) {
+              var parts = [];
+              var roots = [];
+              try {
+                parts.push(element.innerText || element.textContent || '');
+                if (element.shadowRoot) roots.push(element.shadowRoot);
+                Array.from(element.querySelectorAll('*')).forEach(function(node) {
+                  if (node.shadowRoot) roots.push(node.shadowRoot);
+                });
+              } catch (_) {}
+              for (var index = 0; index < roots.length; index++) {
+                var root = roots[index];
+                try {
+                  parts.push(root.textContent || '');
+                  Array.from(root.querySelectorAll('*')).forEach(function(node) {
+                    if (node.shadowRoot) roots.push(node.shadowRoot);
+                  });
+                } catch (_) {}
+              }
+              return parts.join(' ');
+            }
+
+            function elementMetadata(element) {
+              if (!element) return '';
+              var parts = [];
+              try {
+                parts.push(
+                  element.id || '',
+                  typeof element.className === 'string' ? element.className : '',
+                  element.getAttribute && element.getAttribute('data-testid'),
+                  element.getAttribute && element.getAttribute('data-test'),
+                  element.getAttribute && element.getAttribute('data-action'),
+                  element.getAttribute && element.getAttribute('role'),
+                  element.getAttribute && element.getAttribute('aria-label'),
+                  element.getAttribute && element.getAttribute('title'),
+                  deepText(element)
+                );
+              } catch (_) {}
+              return normalized(parts.join(' '));
+            }
+
+            function hasCookieWords(value) {
+              return /cookie|cookies|cookie-notice|クッキー|쿠키|कुकी|饼干|餅乾/.test(value || '');
+            }
+
+            function knownAmazonCookieIdentity(element) {
+              try {
+                return element.matches(
+                  '#sp-cc,.sp-cc,[id^="sp-cc-"],' +
+                  '[id*="cookie" i],[data-testid*="cookie" i],[class*="cookie" i]'
+                );
+              } catch (_) { return false; }
+            }
+
+            function hasNoticeSemantics(element) {
+              var value = elementMetadata(element);
+              var known = knownAmazonCookieIdentity(element);
+              var amazon = /amazon|アマゾン|亚马逊|亞馬遜|अमेज़न/.test(value);
+              return known || (hasCookieWords(value) && (amazon ||
+                /cookie|consent|privacy|datenschutz|einwilligung|confidentialit|privacidad|privacidade|preferenze|voorkeuren|toestemming/.test(value)));
+            }
+
+            function hasModalStructure(element) {
+              try {
+                if (element.matches(
+                    '#sp-cc,.sp-cc,ion-modal,ion-overlay,[id^="ion-overlay-"],' +
+                    '[role="dialog"],[role="alertdialog"],[aria-modal="true"]')) return true;
+                var token = normalized([
+                  element.id || '',
+                  typeof element.className === 'string' ? element.className : '',
+                  element.getAttribute('data-testid') || '',
+                  element.getAttribute('role') || ''
+                ].join(' '));
+                if (/(^|[\s_-])(modal|overlay|banner|notice|dialog)([\s_-]|$)/.test(token)) return true;
+                var style = getComputedStyle(element);
+                return style.position === 'fixed' || style.position === 'sticky';
+              } catch (_) { return false; }
+            }
+
+            function noticeRoot(seed) {
+              var viewportWidth = Number(innerWidth || document.documentElement.clientWidth || 0);
+              var viewportHeight = Number(innerHeight || document.documentElement.clientHeight || 0);
+              for (var element = seed, depth = 0;
+                   element && depth < 12;
+                   depth++, element = parentOrHost(element)) {
+                if (element === document.body || element === document.documentElement) break;
+                if (!rendered(element, false) ||
+                    !hasNoticeSemantics(element) || !hasModalStructure(element)) continue;
+                var rect = element.getBoundingClientRect();
+                var substantial = rect.width >= Math.min(220, viewportWidth * 0.35) &&
+                  rect.height >= Math.min(64, viewportHeight * 0.07);
+                if (substantial) return element;
+              }
+              return null;
+            }
+
+            function findNotices() {
+              var notices = [];
+              queryAllDeep(noticeSelector).forEach(function(seed) {
+                var candidate = noticeRoot(seed);
+                if (!candidate) return;
+                for (var i = 0; i < notices.length; i++) {
+                  if (candidate === notices[i]) return;
+                  if (composedContains(candidate, notices[i])) return;
+                  if (composedContains(notices[i], candidate)) {
+                    notices[i] = candidate;
+                    return;
+                  }
+                }
+                notices.push(candidate);
+              });
+              return notices;
+            }
+
+            function buttonHost(element) {
+              var candidate = element;
+              for (var current = element, depth = 0;
+                   current && depth < 12;
+                   depth++, current = parentOrHost(current)) {
+                if (String(current.tagName || '').toLowerCase() === 'ion-button') {
+                  candidate = current;
+                  break;
+                }
+              }
+              return candidate;
+            }
+
+            function deepButtonMetadata(button) {
+              var parts = [];
+              function append(element) {
+                if (!element) return;
+                try {
+                  parts.push(
+                    element.id || '',
+                    typeof element.className === 'string' ? element.className : '',
+                    element.getAttribute && element.getAttribute('name'),
+                    element.getAttribute && element.getAttribute('icon'),
+                    element.getAttribute && element.getAttribute('part'),
+                    element.getAttribute && element.getAttribute('data-icon'),
+                    element.getAttribute && element.getAttribute('data-testid'),
+                    element.getAttribute && element.getAttribute('data-action'),
+                    element.getAttribute && element.getAttribute('aria-label'),
+                    element.getAttribute && element.getAttribute('title')
+                  );
+                } catch (_) {}
+              }
+              append(button);
+              var roots = [button];
+              for (var index = 0; index < roots.length; index++) {
+                var root = roots[index];
+                try {
+                  Array.from(root.querySelectorAll('*')).forEach(function(node) {
+                    append(node);
+                    if (node.shadowRoot) roots.push(node.shadowRoot);
+                  });
+                  if (root.shadowRoot) roots.push(root.shadowRoot);
+                } catch (_) {}
+              }
+              return normalized(parts.join(' '));
+            }
+
+            function buttonLabel(button) {
+              try {
+                return normalized([
+                  button.getAttribute('aria-label') || '',
+                  button.getAttribute('title') || '',
+                  button.getAttribute('value') || '',
+                  deepText(button)
+                ].join(' ')).replace(/[.!?。！？]+$/, '');
+              } catch (_) { return ''; }
+            }
+
+            function hasHrefInComposedChain(button) {
+              var roots = [button];
+              for (var index = 0; index < roots.length; index++) {
+                var root = roots[index];
+                try {
+                  if (root.querySelector && root.querySelector('[href]')) return true;
+                  if (root.shadowRoot) roots.push(root.shadowRoot);
+                  Array.from(root.querySelectorAll('*')).forEach(function(node) {
+                    if (node.shadowRoot) roots.push(node.shadowRoot);
+                  });
+                } catch (_) { return true; }
+              }
+              for (var current = button, depth = 0;
+                   current && depth < 32;
+                   depth++, current = parentOrHost(current)) {
+                try {
+                  if (String(current.tagName || '').toLowerCase() === 'a' ||
+                      (current.hasAttribute && current.hasAttribute('href'))) return true;
+                } catch (_) { return true; }
+              }
+              return false;
+            }
+
+            function hasChoiceMeaning(value) {
+              var choices = /(^|[\s_-])(accept|allow|agree|ok|reject|decline|deny|manage|settings|customi[sz]e|preferences?|save|necessary|essential|accetta|accettare|consenti|consentire|rifiuta|rifiutare|gestisci|impostazioni|personalizza|preferenze|salva|akzeptieren|zustimmen|erlauben|ablehnen|verwalten|einstellungen|anpassen|speichern|accepter|autoriser|consentir|refuser|gérer|gerer|paramètres|parametres|personnaliser|enregistrer|aceptar|permitir|consentir|rechazar|denegar|gestionar|configuración|configuracion|preferencias|personalizar|guardar|aceitar|permitir|concordar|rejeitar|recusar|gerir|gerenciar|definições|definicoes|configurações|configuracoes|preferências|preferencias|personalizar|salvar|guardar|accepteren|toestaan|akkoord|weigeren|afwijzen|beheren|instellingen|aanpassen|voorkeuren|opslaan)([\s_-]|$)/.test(value || '');
+              return choices || /同意|許可|受け入|拒否|設定|管理|カスタマイズ|保存|接受|允许|允許|拒绝|拒絕|设置|管理|स्वीकार|अनुमति|सहमत|अस्वीकार|प्रबंध|सेटिंग/.test(value || '');
+            }
+
+            function isPureCloseButton(button) {
+              var tag = String(button && button.tagName || '').toLowerCase();
+              if (tag !== 'button' && tag !== 'ion-button') return false;
+              if (!rendered(button, true)) return false;
+              try {
+                if (hasHrefInComposedChain(button)) return false;
+                var explicitType = normalized(button.getAttribute('type'));
+                if (explicitType === 'submit' || (tag === 'button' && button.form && button.type === 'submit')) {
+                  return false;
+                }
+              } catch (_) { return false; }
+
+              var label = buttonLabel(button);
+              var structure = deepButtonMetadata(button);
+              if (hasChoiceMeaning(label) || hasChoiceMeaning(structure)) return false;
+              var exactLabel = /^(?:close|dismiss|chiudi|schließen|schliessen|fermer|cerrar|fechar|sluiten|閉じる|बंद|बंद करें|x|×|✕|✖)(?: (?:button|dialog|modal|banner|notice|cookie|cookies|finestra|fenster|venster|fenêtre|fenetre|ventana|janela))?$/.test(label);
+              var structuralClose = /(^|[\s_-])(close|dismiss|chiudi|schließen|schliessen|fermer|cerrar|fechar|sluiten|xmark|close-outline|close-circle)([\s_-]|$)/.test(structure);
+              return exactLabel || structuralClose;
+            }
+
+            function findCloseButtons(notice) {
+              var candidates = [];
+              queryAllDeep('button,ion-button').forEach(function(raw) {
+                var button = buttonHost(raw);
+                if (!button || !composedContains(notice, button) || !isPureCloseButton(button)) return;
+                if (candidates.indexOf(button) < 0) candidates.push(button);
+              });
+              return candidates;
+            }
+
+            function emit(visible, decision, force) {
+              var key = [visible ? 1 : 0, state.attempted ? 1 : 0, decision].join('|');
+              if (!force && key === state.lastEmission) return;
+              state.lastEmission = key;
+              state.lastVisible = !!visible;
+              try {
+                var handler = window.webkit && window.webkit.messageHandlers &&
+                  window.webkit.messageHandlers.castReaderKindle;
+                if (handler && typeof handler.postMessage === 'function') {
+                  handler.postMessage({
+                    type:'kindle-cookie-consent',
+                    token:state.runtimeToken,
+                    documentToken:state.documentToken,
+                    storefront:state.storefront,
+                    visible:!!visible,
+                    attempted:!!state.attempted,
+                    decision:String(decision || '')
+                  });
+                }
+              } catch (_) {}
+            }
+
+            function scan(reason, isFollowup, probeOnly) {
+              if (state.stopped) return;
+              discoverOpenShadowRoots(document);
+              var notices = findNotices();
+              if (notices.length !== 1) {
+                state.activeNotice = null;
+                if (isFollowup) state.awaitingFollowup = false;
+                if (notices.length > 1) {
+                  state.seenNotice = true;
+                  emit(true, DECISION.manualMultipleNotices, probeOnly);
+                } else if (isFollowup && state.attempted) {
+                  emit(false, DECISION.autoClosed, probeOnly);
+                } else if (state.seenNotice) {
+                  if (!probeOnly && state.lastVisible === false) return;
+                  emit(false, DECISION.resolved, probeOnly);
+                } else {
+                  emit(false, DECISION.notVisible, probeOnly);
+                }
+                return;
+              }
+
+              var notice = notices[0];
+              state.activeNotice = notice;
+              state.seenNotice = true;
+              if (probeOnly) {
+                emit(true, DECISION.manualProbeOnly, true);
+                return;
+              }
+              if (isFollowup) {
+                state.awaitingFollowup = false;
+                emit(true, state.clickFailed ? DECISION.manualClickFailed : DECISION.manualAfterAttempt);
+                return;
+              }
+              if (state.awaitingFollowup) return;
+              if (state.attempted) {
+                emit(true, state.clickFailed ? DECISION.manualClickFailed : DECISION.manualAfterAttempt);
+                return;
+              }
+
+              var closes = findCloseButtons(notice);
+              if (closes.length !== 1) {
+                emit(true, closes.length > 1 ? DECISION.manualMultipleCloses : DECISION.manualNoClose);
+                return;
+              }
+
+              // Persist before dispatch so synchronous mutation handlers and duplicate installs
+              // cannot make a second privacy-affecting attempt in this document.
+              state.attempted = true;
+              try {
+                Object.defineProperty(window, ATTEMPT_KEY, {
+                  value:true,
+                  configurable:false,
+                  enumerable:false,
+                  writable:false
+                });
+              } catch (_) {
+                try { window[ATTEMPT_KEY] = true; } catch (_) {}
+              }
+              state.awaitingFollowup = true;
+              state.followupUsed = true;
+              try { closes[0].click(); }
+              catch (_) { state.clickFailed = true; }
+              state.followupTimer = setTimeout(function() {
+                state.followupTimer = 0;
+                scan('single-followup', true, false);
+              }, 900);
+            }
+
+            function scheduleScan(reason) {
+              if (state.stopped || state.awaitingFollowup || state.scanTimer) return;
+              state.scanTimer = setTimeout(function() {
+                state.scanTimer = 0;
+                scan(reason, false, false);
+              }, 60);
+            }
+            state.schedule = scheduleScan;
+            window.__crKindleCookieConsentProbe = function() {
+              if (state.stopped) return false;
+              discoverOpenShadowRoots(document);
+              scan('native-probe', false, true);
+              return true;
+            };
+
+            function observeRoot(root) {
+              if (!root || state.roots.has(root)) return;
+              if (root.nodeType !== 9 && root.nodeType !== 11) return;
+              state.roots.add(root);
+              try {
+                state.observer.observe(root, {
+                  childList:true,
+                  subtree:true,
+                  characterData:true,
+                  attributes:true,
+                  attributeFilter:[
+                    'id','class','style','hidden','inert','aria-hidden','aria-disabled','disabled',
+                    'aria-label','title','open','role','data-testid','data-test','data-action',
+                    'type','href','name','value'
+                  ]
+                });
+              } catch (_) {}
+            }
+
+            function discoverOpenShadowRoots(root) {
+              if (!root) return;
+              if (root.nodeType === 9 || root.nodeType === 11) observeRoot(root);
+              var nodes = [];
+              try {
+                if (root.nodeType === 1) nodes.push(root);
+                nodes = nodes.concat(Array.from(root.querySelectorAll('*')));
+              } catch (_) {}
+              nodes.forEach(function(node) {
+                try {
+                  if (node.shadowRoot) {
+                    observeRoot(node.shadowRoot);
+                    discoverOpenShadowRoots(node.shadowRoot);
+                  }
+                } catch (_) {}
+              });
+            }
+
+            function relatedToActive(node) {
+              var element = node && node.nodeType === 1 ? node : node && node.parentElement;
+              if (!element || !state.activeNotice) return false;
+              return composedContains(state.activeNotice, element) ||
+                composedContains(element, state.activeNotice);
+            }
+
+            function quickPotential(node) {
+              var element = node && node.nodeType === 1 ? node : node && node.parentElement;
+              if (!element) return false;
+              if (relatedToActive(element)) return true;
+              try {
+                if ((element.matches && element.matches(noticeSelector)) ||
+                    (element.querySelector && element.querySelector(noticeSelector))) return true;
+              } catch (_) {}
+              for (var current = element, depth = 0;
+                   current && depth < 10;
+                   depth++, current = parentOrHost(current)) {
+                if (current === document.body || current === document.documentElement) break;
+                var value = '';
+                try {
+                  value = normalized([
+                    current.id || '',
+                    typeof current.className === 'string' ? current.className : '',
+                    current.getAttribute && current.getAttribute('data-testid'),
+                    current.getAttribute && current.getAttribute('role'),
+                    current.getAttribute && current.getAttribute('aria-label'),
+                    String(current.textContent || '').slice(0, 800)
+                  ].join(' '));
+                } catch (_) {}
+                if (hasCookieWords(value) || /sp-cc|cookie-consent|consent-banner/.test(value)) {
+                  return true;
+                }
+                try { if (current.matches && current.matches(noticeSelector)) return true; }
+                catch (_) {}
+              }
+              return false;
+            }
+
+            state.observer = new MutationObserver(function(records) {
+              var relevant = false;
+              records.forEach(function(record) {
+                Array.from(record.addedNodes || []).forEach(function(node) {
+                  discoverOpenShadowRoots(node);
+                  if (quickPotential(node)) relevant = true;
+                });
+                Array.from(record.removedNodes || []).forEach(function(node) {
+                  if (quickPotential(node) || relatedToActive(record.target)) relevant = true;
+                });
+                if ((record.type === 'attributes' || record.type === 'characterData') &&
+                    (quickPotential(record.target) || relatedToActive(record.target))) relevant = true;
+              });
+              if (relevant) scheduleScan('relevant-mutation');
+            });
+
+            // MutationObserver cannot see attachShadow() itself. Wrap it at document start so
+            // open roots attached to already-connected custom elements are also observed.
+            try {
+              var nativeAttachShadow = Element.prototype.attachShadow;
+              if (nativeAttachShadow && !nativeAttachShadow.__crKindleConsentWrapped) {
+                var wrappedAttachShadow = function(init) {
+                  var shadow = nativeAttachShadow.call(this, init);
+                  try {
+                    if (shadow && (!init || init.mode === 'open')) {
+                      observeRoot(shadow);
+                      discoverOpenShadowRoots(shadow);
+                      scheduleScan('new-shadow-root');
+                    }
+                  } catch (_) {}
+                  return shadow;
+                };
+                Object.defineProperty(wrappedAttachShadow, '__crKindleConsentWrapped', {
+                  value:true,
+                  configurable:false,
+                  enumerable:false,
+                  writable:false
+                });
+                Element.prototype.attachShadow = wrappedAttachShadow;
+              }
+            } catch (_) {}
+
+            discoverOpenShadowRoots(document);
+            scheduleScan('install');
+            document.addEventListener('DOMContentLoaded', function() {
+              discoverOpenShadowRoots(document);
+              scheduleScan('dom-content-loaded');
+            }, { once:true });
+            window.addEventListener('load', function() {
+              discoverOpenShadowRoots(document);
+              scheduleScan('load');
+            }, { once:true });
+            return true;
+          } catch (_) {
+            return false;
+          }
+        })();
+        """#
+    }
+
     /// Kindle localizes visible labels per marketplace. These helpers deliberately
     /// score stable DOM semantics first (`data-*`, id/class, role, geometry).
     /// Text in CastReader's eight non-Chinese app languages is only a fallback.

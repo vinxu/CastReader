@@ -26,8 +26,12 @@ struct SettingsView: View {
     @ObservedObject private var voiceCatalog = VoiceCatalogService.shared
     @State private var showPaywall = false
     @State private var showLogin = false
+    @State private var showsDeleteAccountConfirm = false
+    @State private var deleteAccountError: String?
     @State private var showClearHistory = false
     @State private var showVoiceBrowser = false
+    /// 绑定 `AppRegion` 的覆盖值，这样内部开关切换后界面能立即反映。
+    @AppStorage("appRegion.v1.override") private var regionOverrideRaw: String = ""
 
     init(onRequestLibraryOnboarding: ((Bool) -> Void)? = nil) {
         self.onRequestLibraryOnboarding = onRequestLibraryOnboarding
@@ -54,6 +58,9 @@ struct SettingsView: View {
                 appearanceSection
                 supportSection
                 dataSection
+                if showsInternalRegionSwitcher {
+                    internalRegionSection
+                }
                 #if DEBUG
                 debugSection
                 #endif
@@ -107,6 +114,7 @@ struct SettingsView: View {
                     Spacer()
                 }
                 Button(role: .destructive) { auth.signOut() } label: { Text("退出登录") }
+                deleteAccountButton
             } else {
                 Button { showLogin = true } label: {
                     Label("登录 / 注册", systemImage: "person.crop.circle")
@@ -114,6 +122,49 @@ struct SettingsView: View {
                 Text("登录后 Pro 与额度跨设备同步")
                     .font(.caption2).foregroundColor(AppTheme.mutedForeground)
             }
+        }
+    }
+
+    /// 账号注销。个人信息保护法与国内应用商店的强制要求：
+    /// 必须能在 App 内自助发起，且要有明确的二次确认与后果说明。
+    @ViewBuilder
+    private var deleteAccountButton: some View {
+        Button(role: .destructive) {
+            deleteAccountError = nil
+            showsDeleteAccountConfirm = true
+        } label: {
+            Text(AppLocalized("注销账号"))
+        }
+        .disabled(auth.isWorking)
+        .confirmationDialog(
+            AppLocalized("确定要注销账号吗？"),
+            isPresented: $showsDeleteAccountConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(AppLocalized("确认注销"), role: .destructive) {
+                Task { await deleteAccount() }
+            }
+            Button(AppLocalized("取消"), role: .cancel) {}
+        } message: {
+            Text(AppLocalized("注销后将删除你的账号与个人信息，已购买的订阅不会自动退款。此操作无法撤销。"))
+        }
+
+        if let deleteAccountError {
+            Text(deleteAccountError)
+                .font(.caption2)
+                .foregroundColor(AppTheme.destructive)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func deleteAccount() async {
+        do {
+            try await auth.deleteAccount()
+            deleteAccountError = nil
+        } catch let error as PhoneAuthError {
+            deleteAccountError = error.errorDescription
+        } catch {
+            deleteAccountError = PhoneAuthError.network.errorDescription
         }
     }
 
@@ -208,7 +259,7 @@ struct SettingsView: View {
             if pro.isPro {
                 Button("管理订阅") { Task { await pro.openManageSubscriptions() } }
             }
-            if pro.needsEmailSync && !auth.hasEmailAccount {
+            if pro.needsEmailSync && !auth.hasSyncableAccount {
                 Button("登录邮箱同步 Pro") { showLogin = true }
             }
         }
@@ -228,7 +279,11 @@ struct SettingsView: View {
             return pro.serverPlan == "yearly" ? "年度订阅" : (pro.serverPlan == "monthly" ? "月度订阅" : "已解锁")
         }
         if pro.needsEmailSync {
-            return auth.hasEmailAccount ? "本机已解锁，跨平台同步待完成" : "已检测到购买，请登录邮箱同步 Pro"
+            if auth.hasSyncableAccount { return "本机已解锁，跨平台同步待完成" }
+            // 中国区用手机号登录，提示里不能说「邮箱」。
+            return AppRegion.current == .cn
+                ? "已检测到购买，请登录后同步会员"
+                : "已检测到购买，请登录邮箱同步 Pro"
         }
         return "已解锁"
     }
@@ -411,6 +466,71 @@ struct SettingsView: View {
     }
     #endif
 
+    // MARK: - 内部：发行区域切换
+
+    /// 内部测试用的邮箱。只有这个账号（或 Debug 构建）能看到区域开关。
+    private static let internalTesterEmail = "vinxu.cn@gmail.com"
+
+    private var showsInternalRegionSwitcher: Bool {
+        #if DEBUG
+        return true
+        #else
+        // 已经手动切过区域的设备必须始终能看到开关，否则切到中国区之后
+        // Google 登录入口消失，就再也没有办法切回来了。
+        if AppRegion.overrideRegion != nil { return true }
+        return auth.normalizedEmail == Self.internalTesterEmail
+        #endif
+    }
+
+    private var internalRegionSection: some View {
+        Section {
+            Picker("发行区域", selection: $regionOverrideRaw) {
+                Text("跟随 App Store 地区").tag("")
+                Text("中国大陆（CHN）").tag(AppRegion.cn.rawValue)
+                Text("全球（Global）").tag(AppRegion.global.rawValue)
+            }
+            .pickerStyle(.inline)
+            .accessibilityIdentifier("settingsRegionOverride")
+
+            HStack {
+                Text("当前生效")
+                Spacer()
+                Text(AppRegion.current == .cn ? "中国大陆" : "全球")
+                    .foregroundColor(AppTheme.mutedForeground)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("settingsRegionEffective")
+            .accessibilityValue(AppRegion.current.rawValue)
+
+            HStack {
+                Text("判据来源")
+                Spacer()
+                Text(AppRegion.provenance.rawValue)
+                    .foregroundColor(AppTheme.mutedForeground)
+            }
+            HStack {
+                Text("App Store 地区")
+                Spacer()
+                Text(AppRegion.resolvedStorefrontCode ?? "解析中…")
+                    .foregroundColor(AppTheme.mutedForeground)
+            }
+
+            Button {
+                reopenLibraryOnboarding(reset: true)
+            } label: {
+                Label("重置首启引导", systemImage: "arrow.counterclockwise")
+            }
+        } header: {
+            Text("内部测试 · 发行区域")
+        } footer: {
+            Text(
+                "切换后请完全退出并重新打开 App：书库入口、登录方式与后端地址会随区域变化，"
+                + "部分已初始化的状态需要重启才会刷新。中国大陆版隐藏 Kindle / Google 图书 / Kobo / "
+                + "O’Reilly 与 Google 登录，改用微信读书与手机号登录。"
+            )
+        }
+    }
+
     private func reopenLibraryOnboarding(reset: Bool) {
         if let onRequestLibraryOnboarding {
             onRequestLibraryOnboarding(reset)
@@ -452,7 +572,7 @@ private struct AppLanguagePickerView: View {
             }
             .accessibilityIdentifier("appLanguage.\(language.rawValue)")
         }
-        .navigationTitle("语言")
+        .navigationTitle(AppLocalized("语言"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }

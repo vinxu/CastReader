@@ -18,8 +18,19 @@ enum QuickReadEndpoint {
     static let remoteConfigURL = "https://castreader-config-1323065328.cos.accelerate.myqcloud.com/quickread-config.json"
     private static let cacheKey = "quickread_base_v1"
 
-    /// 当前 base：远程配置缓存优先，否则兜底。
+    /// 中国大陆版的解读后端（境内节点 + 境内合规模型）。
+    /// 只有 `Constants.Features.chinaBackendEnabled` 打开后才会被使用。
+    static let chinaBase = "https://qr.castreader.cn"
+
+    /// 当前 base。
+    ///
+    /// 优先级：中国大陆版（境内后端就绪后）→ 远程配置缓存 → 兜底。
+    /// 中国区必须走境内节点，因为解读会调用大模型——境外模型在国内不合规。
+    /// 备案完成前 `chinaBackendEnabled` 保持 false，此时行为与改动前完全一致。
     static func base() -> String {
+        if Constants.Features.chinaBackendEnabled, AppRegion.current == .cn {
+            return chinaBase
+        }
         if let s = UserDefaults.standard.string(forKey: cacheKey), s.hasPrefix("http") { return s }
         return defaultBase
     }

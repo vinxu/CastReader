@@ -78,9 +78,10 @@ struct KindleStorefront: Codable, Identifiable, Equatable, Hashable, Sendable {
         return KindleStorefrontCatalog.shared.byID[id.lowercased()]
     }
 
-    /// Returns a storefront that may be used for a new navigation. Recognition
-    /// and entry are intentionally separate so historical Amazon.cn URLs can be
-    /// identified without ever becoming a login or reader destination.
+    /// Returns a storefront ID that is enabled for new navigation. URL
+    /// destinations still have to pass `KindleStorefrontNavigationPolicy`:
+    /// aliases may identify this enabled storefront for migration, but only its
+    /// canonical host may be loaded as a fresh destination.
     static func entry(id: String?) -> KindleStorefront? {
         storefront(id: id).flatMap { $0.entryEnabled ? $0 : nil }
     }
@@ -103,6 +104,19 @@ struct KindleStorefront: Codable, Identifiable, Equatable, Hashable, Sendable {
 
     static func entry(url: URL?) -> KindleStorefront? {
         storefront(url: url).flatMap { $0.entryEnabled ? $0 : nil }
+    }
+
+    /// Exact canonical ownership check for fresh navigation. Recognition via
+    /// `storefront(url:)` / `entry(url:)` deliberately remains broader so the
+    /// seven historical `read.amazon.*` aliases can still be migrated without
+    /// ever becoming a new shelf or reader entry.
+    func ownsCanonicalURL(_ url: URL?) -> Bool {
+        guard let url,
+              Self.storefront(url: url)?.id == id,
+              let host = Self.normalizedHost(url.host) else {
+            return false
+        }
+        return host == canonicalHost
     }
 
     static func storefront(rawURL: String?) -> KindleStorefront? {
@@ -630,15 +644,14 @@ enum KindleDomainDriftSentinel {
 
 enum KindleStorefrontNavigationPolicy {
     /// Recognition is intentionally broader than navigation. A destination is
-    /// safe only when it is an entry-enabled host owned by the expected active
-    /// marketplace; this keeps historical CN links and cross-site redirects
-    /// observable without allowing them into the current reader session.
+    /// safe only when it is the canonical host of the expected active
+    /// marketplace; this keeps aliases, historical CN links and cross-site
+    /// redirects observable without allowing them into a fresh session.
     static func allows(_ url: URL?, expectedStorefrontID: String?) -> Bool {
-        guard let expected = KindleStorefront.entry(id: expectedStorefrontID),
-              let destination = KindleStorefront.entry(url: url) else {
+        guard let expected = KindleStorefront.entry(id: expectedStorefrontID) else {
             return false
         }
-        return destination.id == expected.id
+        return expected.ownsCanonicalURL(url)
     }
 
     /// Main-frame navigation is deny-by-default. Besides the active Kindle
@@ -646,7 +659,8 @@ enum KindleStorefrontNavigationPolicy {
     /// endpoint needed to recover an expired reader session.
     static func allowsMainFrame(
         _ url: URL?,
-        expectedStorefrontID: String?
+        expectedStorefrontID: String?,
+        expectedAuthenticationReturnPath: String? = nil
     ) -> Bool {
         // A recognized Kindle host is always governed by storefront ownership,
         // even when its path resembles an auth endpoint. This prevents another
@@ -657,29 +671,115 @@ enum KindleStorefrontNavigationPolicy {
         }
         return isSafeAmazonAuthenticationURL(
             url,
-            expectedStorefrontID: expectedStorefrontID
+            expectedStorefrontID: expectedStorefrontID,
+            expectedReturnPath: expectedAuthenticationReturnPath
         )
+    }
+
+    /// Reader navigation is stricter than ordinary storefront navigation. A
+    /// canonical host alone is not enough: the destination must remain the
+    /// current book's exact reader entry, including both ASIN and the contract
+    /// `ref_` identity. Amazon sign-in URLs are accepted only inside the same
+    /// marketplace, and every nested return target is checked by this same
+    /// policy before the main frame may follow it.
+    static func allowsMainFrame(
+        _ url: URL?,
+        expectedStorefrontID: String?,
+        expectedASIN: String,
+        expectedReaderRef: String = KindleStorefront.readerReferenceValue
+    ) -> Bool {
+        allowsReaderMainFrame(
+            url,
+            expectedStorefrontID: expectedStorefrontID,
+            expectedASIN: expectedASIN,
+            expectedReaderRef: expectedReaderRef
+        )
+    }
+
+    static func allowsReaderMainFrame(
+        _ url: URL?,
+        expectedStorefrontID: String?,
+        expectedASIN: String,
+        expectedReaderRef: String = KindleStorefront.readerReferenceValue
+    ) -> Bool {
+        guard let expected = KindleStorefront.entry(id: expectedStorefrontID),
+              let asin = normalizedASIN(expectedASIN),
+              expectedReaderRef == expectedReaderRef.trimmingCharacters(
+                  in: .whitespacesAndNewlines
+              ),
+              !expectedReaderRef.isEmpty else {
+            return false
+        }
+        return allowsReaderMainFrame(
+            url,
+            expectedStorefront: expected,
+            expectedASIN: asin,
+            expectedReaderRef: expectedReaderRef,
+            authenticationDepth: 0,
+            visitedURLs: []
+        )
+    }
+
+    static func isExactReaderURL(
+        _ url: URL?,
+        expectedStorefrontID: String?,
+        expectedASIN: String,
+        expectedReaderRef: String = KindleStorefront.readerReferenceValue
+    ) -> Bool {
+        guard let expected = KindleStorefront.entry(id: expectedStorefrontID),
+              let url,
+              let asin = normalizedASIN(expectedASIN),
+              expectedReaderRef == expectedReaderRef.trimmingCharacters(
+                  in: .whitespacesAndNewlines
+              ),
+              !expectedReaderRef.isEmpty,
+              expected.ownsCanonicalURL(url) else {
+            return false
+        }
+
+        let expectedPath = expected.readerURL(asin: asin).path
+        let observedPath = url.path.isEmpty ? "/" : url.path
+        guard observedPath == expectedPath,
+              let queryItems = URLComponents(
+                  url: url,
+                  resolvingAgainstBaseURL: false
+              )?.queryItems else {
+            return false
+        }
+
+        let asinItems = queryItems.filter { $0.name.lowercased() == "asin" }
+        let refItems = queryItems.filter { $0.name.lowercased() == "ref_" }
+        guard asinItems.count == 1,
+              refItems.count == 1,
+              asinItems[0].name == "asin",
+              refItems[0].name == "ref_",
+              let rawObservedASIN = asinItems[0].value,
+              rawObservedASIN == rawObservedASIN.trimmingCharacters(
+                  in: .whitespacesAndNewlines
+              ),
+              let observedASIN = normalizedASIN(rawObservedASIN),
+              observedASIN == asin,
+              refItems[0].value == expectedReaderRef else {
+            return false
+        }
+        return true
     }
 
     static func isSafeAmazonAuthenticationURL(
         _ url: URL?,
-        expectedStorefrontID: String? = nil
+        expectedStorefrontID: String? = nil,
+        expectedReturnPath: String? = nil
     ) -> Bool {
         guard let url,
-              url.scheme?.lowercased() == "https",
-              url.user == nil,
-              url.password == nil,
-              url.port == nil || url.port == 443,
-              resemblesAmazonAuthenticationURL(url) else {
+              isSafeAmazonAuthenticationEnvelope(
+                  url,
+                  expectedStorefrontID: expectedStorefrontID
+              ) else {
             return false
         }
 
         if let expectedStorefrontID {
-            guard let expected = KindleStorefront.entry(id: expectedStorefrontID),
-                  KindleStorefront.isAmazonWebsiteDataDomain(
-                      url.host ?? "",
-                      for: expected
-                  ) else {
+            guard let expected = KindleStorefront.entry(id: expectedStorefrontID) else {
                 return false
             }
 
@@ -690,19 +790,161 @@ enum KindleStorefrontNavigationPolicy {
                 let name = $0.name.lowercased()
                 return name == "openid.return_to" || name == "return_to"
             }
+            if returnTargets.isEmpty {
+                return isAuthenticationChallengeWithoutReturnTarget(url)
+            }
             for item in returnTargets {
                 guard let rawTarget = item.value,
                       let target = URL(string: rawTarget),
                       allows(
                           target,
                           expectedStorefrontID: expected.id
-                      ) else {
+                      ),
+                      expectedReturnPath.map({
+                          normalizedPath(target.path) == normalizedPath($0)
+                      }) ?? true else {
                     return false
                 }
             }
         }
 
         return true
+    }
+
+    private static func allowsReaderMainFrame(
+        _ url: URL?,
+        expectedStorefront: KindleStorefront,
+        expectedASIN: String,
+        expectedReaderRef: String,
+        authenticationDepth: Int,
+        visitedURLs: Set<String>
+    ) -> Bool {
+        guard let url,
+              authenticationDepth <= 8,
+              !visitedURLs.contains(url.absoluteString) else {
+            return false
+        }
+        var nextVisitedURLs = visitedURLs
+        nextVisitedURLs.insert(url.absoluteString)
+
+        // A recognized Kindle destination never receives the authentication
+        // exception. This rejects aliases, CN, another marketplace, the bare
+        // root, library/landing routes, and reader URLs with incomplete or
+        // conflicting identity.
+        if KindleStorefront.storefront(url: url) != nil {
+            return isExactReaderURL(
+                url,
+                expectedStorefrontID: expectedStorefront.id,
+                expectedASIN: expectedASIN,
+                expectedReaderRef: expectedReaderRef
+            )
+        }
+
+        guard isSafeAmazonAuthenticationEnvelope(
+            url,
+            expectedStorefrontID: expectedStorefront.id
+        ), let returnTargets = authenticationReturnTargets(in: url) else {
+            return false
+        }
+
+        // Only an explicit OTP/CVF challenge may omit return_to. A regular
+        // sign-in/authportal URL without a target would silently discard the
+        // current book identity, so it is denied instead of relying on a later
+        // redirect to repair it.
+        if returnTargets.isEmpty {
+            return isAuthenticationChallengeWithoutReturnTarget(url)
+        }
+
+        // Every target (including nested auth URLs) must preserve the same book
+        // identity.
+        return returnTargets.allSatisfy { target in
+            allowsReaderMainFrame(
+                target,
+                expectedStorefront: expectedStorefront,
+                expectedASIN: expectedASIN,
+                expectedReaderRef: expectedReaderRef,
+                authenticationDepth: authenticationDepth + 1,
+                visitedURLs: nextVisitedURLs
+            )
+        }
+    }
+
+    private static func isSafeAmazonAuthenticationEnvelope(
+        _ url: URL,
+        expectedStorefrontID: String?
+    ) -> Bool {
+        guard url.scheme?.lowercased() == "https",
+              url.user == nil,
+              url.password == nil,
+              url.port == nil || url.port == 443,
+              resemblesAmazonAuthenticationURL(url) else {
+            return false
+        }
+        guard let expectedStorefrontID else { return true }
+        guard let expected = KindleStorefront.entry(id: expectedStorefrontID) else {
+            return false
+        }
+        return KindleStorefront.isAmazonWebsiteDataDomain(
+            url.host ?? "",
+            for: expected
+        )
+    }
+
+    private static func authenticationReturnTargets(in url: URL) -> [URL]? {
+        guard let components = URLComponents(
+            url: url,
+            resolvingAgainstBaseURL: false
+        ) else {
+            return nil
+        }
+        let items = (components.queryItems ?? []).filter {
+            let name = $0.name.lowercased()
+            return name == "openid.return_to" || name == "return_to"
+        }
+        var targets: [URL] = []
+        targets.reserveCapacity(items.count)
+        for item in items {
+            guard let rawTarget = item.value,
+                  rawTarget == rawTarget.trimmingCharacters(
+                      in: .whitespacesAndNewlines
+                  ),
+                  !rawTarget.isEmpty,
+                  let target = URL(string: rawTarget) else {
+                return nil
+            }
+            targets.append(target)
+        }
+        return targets
+    }
+
+    private static func isAuthenticationChallengeWithoutReturnTarget(
+        _ url: URL
+    ) -> Bool {
+        let path = normalizedPath(url.path).lowercased()
+        return path == "/ap/cvf" || path.hasPrefix("/ap/cvf/")
+    }
+
+    private static func normalizedASIN(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let candidate = raw
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+        guard candidate.count == 10,
+              candidate.unicodeScalars.allSatisfy({ scalar in
+                  (scalar.value >= 48 && scalar.value <= 57)
+                      || (scalar.value >= 65 && scalar.value <= 90)
+              }) else {
+            return nil
+        }
+        return candidate
+    }
+
+    private static func normalizedPath(_ raw: String) -> String {
+        var path = raw.lowercased()
+        while path.count > 1, path.hasSuffix("/") {
+            path.removeLast()
+        }
+        return path.isEmpty ? "/" : path
     }
 
     /// Classification only; never use this as an allow decision. It lets the

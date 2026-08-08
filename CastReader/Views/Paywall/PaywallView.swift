@@ -145,7 +145,7 @@ struct ProUpsellContent: View {
 
     @ViewBuilder
     private var accountRow: some View {
-        if pro.needsEmailSync && !auth.hasEmailAccount {
+        if pro.needsEmailSync && !auth.hasSyncableAccount {
             Button { showLogin = true } label: {
                 Text("登录邮箱同步 Pro").font(.caption.weight(.semibold))
             }
@@ -250,13 +250,13 @@ struct ProUpsellContent: View {
                     .foregroundColor(AppTheme.primary)
                     .font(.headline)
                     .multilineTextAlignment(.center)
-                Text(auth.hasEmailAccount
+                Text(auth.hasSyncableAccount
                      ? AppLocalized("本机已解锁；跨平台同步等待 Apple 验证接口。")
                      : AppLocalized("本机已解锁；登录邮箱后可完成跨平台同步。"))
                     .font(.caption)
                     .foregroundColor(AppTheme.mutedForeground)
                     .multilineTextAlignment(.center)
-                if !auth.hasEmailAccount {
+                if !auth.hasSyncableAccount {
                     Button("登录邮箱同步 Pro") { showLogin = true }
                         .font(.subheadline.weight(.semibold))
                 }
@@ -310,14 +310,14 @@ struct ProUpsellContent: View {
                     .disabled(busy)
                 }
                 Button {
-                    guard auth.hasEmailAccount else { showLogin = true; return }
+                    guard auth.hasSyncableAccount else { showLogin = true; return }
                     guard let product = pro.products.first(where: { $0.id == selectedProductID }) else { return }
                     busy = true
                     Task { _ = await pro.purchase(product, analyticsTrigger: analyticsTrigger); busy = false }
                 } label: {
                     HStack {
                         if busy { ProgressView().tint(.white) }
-                        if !auth.hasEmailAccount { Image(systemName: "person.crop.circle.badge.checkmark") }
+                        if !auth.hasSyncableAccount { Image(systemName: "person.crop.circle.badge.checkmark") }
                         Text(primaryCTATitle).fontWeight(.bold)
                     }
                     .frame(maxWidth: .infinity)
@@ -327,7 +327,7 @@ struct ProUpsellContent: View {
                 .tint(AppTheme.primary)
                 .disabled(busy || selectedProductID == nil)
 
-                if !auth.hasEmailAccount {
+                if !auth.hasSyncableAccount {
                     Text("购买前需要登录邮箱，用于跨设备同步 Pro。")
                         .font(.caption2)
                         .foregroundColor(AppTheme.mutedForeground)
@@ -388,7 +388,7 @@ struct ProUpsellContent: View {
             return AppLocalized("已恢复 Pro 会员")
         }
         if pro.storeKitLocalPro {
-            if auth.hasEmailAccount {
+            if auth.hasSyncableAccount {
                 return AppLocalized("已恢复购买，本机已解锁；跨平台同步等待 Apple 验证接口。")
             }
             return AppLocalized("已检测到购买，请登录邮箱同步 Pro")

@@ -188,10 +188,12 @@ struct HomeView: View {
                     if !hasShelfBooks && !libraryOnboarding.shouldShowReminder {
                         librarySourcesEmptyCard
                     }
-                    KindleHomeSection(store: kindleStore)
-                    GoogleBooksHomeSection()
-                    KoboHomeSection()
-                    OReillyHomeSection()
+                    if showsOverseasLibraryModules {
+                        KindleHomeSection(store: kindleStore)
+                        GoogleBooksHomeSection()
+                        KoboHomeSection()
+                        OReillyHomeSection()
+                    }
                     if showsWeReadModule {
                         WeReadHomeSection()
                     }
@@ -358,7 +360,7 @@ struct HomeView: View {
         let action = HomeProPurchaseContract.primaryAction(
             isPro: pro.isPro,
             hasYearlyProduct: pro.yearly != nil,
-            hasEmailAccount: auth.hasEmailAccount,
+            hasEmailAccount: auth.hasSyncableAccount,
             isLoadingProducts: isLoadingProProducts || (!didAttemptProProductLoad && pro.yearly == nil),
             isPurchaseInFlight: isPurchasingAnnual || pro.purchaseInFlight
         )
@@ -423,11 +425,20 @@ struct HomeView: View {
     // MARK: - 继续看
 
     private var showsWeReadModule: Bool {
-        WeReadAvailability.isAvailable(
+        // 中国大陆版把微信读书当作唯一书库，始终展示；其他地区沿用既有的
+        // 语言/时区可用性判定，行为不变。
+        if AppRegion.current == .cn { return true }
+        return WeReadAvailability.isAvailable(
             appLanguage: appLanguage.selectedLanguage,
             systemLanguageCode: Locale.autoupdatingCurrent.language.languageCode?.identifier,
             timeZoneIdentifier: TimeZone.autoupdatingCurrent.identifier
         )
+    }
+
+    /// Kindle / Google 图书 / Kobo / O'Reilly 在中国大陆版不展示：
+    /// 这些站点要么已停止中国区服务，要么在境内不可访问。
+    private var showsOverseasLibraryModules: Bool {
+        AppRegion.current != .cn
     }
 
     private var hasShelfBooks: Bool {
@@ -446,6 +457,25 @@ struct HomeView: View {
             || (showsWeReadModule && !weReadStore.needsConnection)
     }
 
+    /// 中国区只有微信读书一个书库，泛称「电子书书架」反而让人不知道点进去会发生什么，
+    /// 直接点名。其他地区有五个来源，保持泛称。
+    private var librarySourcesEmptyCardTitle: String {
+        if AppRegion.current == .cn {
+            return hasConnectedShelf
+                ? AppLocalized("同步微信读书书架")
+                : AppLocalized("连接微信读书")
+        }
+        return hasConnectedShelf
+            ? AppLocalized("同步你的电子书书架")
+            : AppLocalized("连接你的电子书书架")
+    }
+
+    private var librarySourcesEmptyCardSubtitle: String {
+        AppRegion.current == .cn
+            ? AppLocalized("用微信登录，把书架变成有声书")
+            : AppLocalized("登录后同步书架与阅读进度")
+    }
+
     private var librarySourcesEmptyCard: some View {
         Button {
             activeSheet = .librarySources
@@ -461,15 +491,11 @@ struct HomeView: View {
                     )
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(
-                        hasConnectedShelf
-                            ? AppLocalized("同步你的电子书书架")
-                            : AppLocalized("连接你的电子书书架")
-                    )
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(AppTheme.foreground)
+                    Text(librarySourcesEmptyCardTitle)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(AppTheme.foreground)
 
-                    Text(AppLocalized("登录后同步书架与阅读进度"))
+                    Text(librarySourcesEmptyCardSubtitle)
                         .font(.caption)
                         .foregroundColor(AppTheme.mutedForeground)
                         .fixedSize(horizontal: false, vertical: true)
@@ -498,14 +524,15 @@ struct HomeView: View {
     }
 
     private var libraryOnboardingReminder: some View {
-        let source = libraryOnboarding.selectedSource
+        // 还没选过书库时按发行区域给默认值：中国区是微信读书，其余是 Kindle。
+        // 否则这张卡在 CN 下会显示一个没有指向的「继续」。
+        let source = libraryOnboarding.selectedSource ?? AppRegion.current.onboardingSource
         let hasBooks: Bool = switch source {
         case .kindle: !kindleStore.boundBooks.isEmpty
         case .weread: !weReadStore.books.isEmpty
         case .googleBooks: !googleBooksStore.books.isEmpty
         case .kobo: !koboStore.books.isEmpty
         case .oreilly: !oreillyStore.books.isEmpty
-        case nil: false
         }
         let actionTitle: String = switch source {
         case .kindle:
@@ -520,8 +547,6 @@ struct HomeView: View {
             hasBooks
                 ? AppLocalized("打开一本书")
                 : AppLocalized("绑定 O’Reilly")
-        case nil:
-            AppLocalized("继续")
         }
 
         return BoundLibraryActivationCard(
@@ -534,7 +559,7 @@ struct HomeView: View {
     }
 
     private func continueLibraryOnboarding() {
-        if libraryOnboarding.shouldResumeDeferredKindleFlow {
+        if libraryOnboarding.shouldResumeDeferredLibraryFlow {
             libraryOnboarding.presentChooser()
             return
         }

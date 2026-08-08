@@ -193,5 +193,39 @@
   "excludedAppLanguages": [
     "zh",
     "zh-Hans"
+  ],
+  "regionalFallbackCases": [
+    {
+      "id": "zh-HK",
+      "deviceRegions": ["HK"],
+      "appLanguageTags": ["zh-HK"],
+      "deviceLanguageTags": ["zh-HK"],
+      "timeZoneID": "Asia/Hong_Kong",
+      "expectedFirstStorefrontID": "us"
+    },
+    {
+      "id": "zh-TW",
+      "deviceRegions": ["TW"],
+      "appLanguageTags": ["zh-TW"],
+      "deviceLanguageTags": ["zh-TW"],
+      "timeZoneID": "Asia/Taipei",
+      "expectedFirstStorefrontID": "us"
+    },
+    {
+      "id": "zh-SG",
+      "deviceRegions": ["SG"],
+      "appLanguageTags": ["zh-SG"],
+      "deviceLanguageTags": ["zh-SG"],
+      "timeZoneID": "Asia/Singapore",
+      "expectedFirstStorefrontID": "us"
+    },
+    {
+      "id": "en-SG",
+      "deviceRegions": ["SG"],
+      "appLanguageTags": ["en-SG"],
+      "deviceLanguageTags": ["en-SG"],
+      "timeZoneID": "Asia/Singapore",
+      "expectedFirstStorefrontID": "us"
+    }
   ]
 }

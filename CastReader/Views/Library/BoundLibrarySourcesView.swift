@@ -241,10 +241,22 @@ struct LibrarySourcesView: View {
         let languageCode = selected == .system
             ? Locale.autoupdatingCurrent.language.languageCode?.identifier
             : selected.rawValue
+        let preferred: [BoundLibraryOnboardingSource]
         if languageCode?.lowercased().hasPrefix("zh") == true {
-            return [.kindle, .weread, .googleBooks, .kobo, .oreilly]
+            preferred = [.kindle, .weread, .googleBooks, .kobo, .oreilly]
+        } else {
+            preferred = [.kindle, .googleBooks, .kobo, .oreilly, .weread]
         }
-        return [.kindle, .googleBooks, .kobo, .oreilly, .weread]
+        // 中国大陆版把微信读书排到第一，其余书库仍可手动绑定（只有在境内
+        // 打不开的 Google Play 图书被排除）。按发行区域过滤，不按界面语言，
+        // 所以界面是中文的海外用户不受影响。
+        let available = AppRegion.current.availableBoundLibraries
+        let availableSet = Set(available)
+        if AppRegion.current == .cn {
+            // 直接采用区域给出的顺序：微信读书在前，其余按可用性排在后面。
+            return available
+        }
+        return preferred.filter(availableSet.contains)
     }
 
     private var connectedSources: [BoundLibraryOnboardingSource] {
