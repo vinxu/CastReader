@@ -1264,7 +1264,7 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
     private static func currentPageSignInURL(in webView: WKWebView) async -> URL? {
         let value: Any?
         do {
-            value = try await webView.evaluateJavaScript(
+            value = try await webView.evaluateJavaScriptBounded(
                 GoogleBooksWebScripts.currentPageSignInURL
             )
         } catch {
@@ -1304,11 +1304,21 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
     /// can stall on a visually blank document, so treat the trusted
     /// Play-Books continuation itself as success evidence and reload the shelf
     /// from the shared authenticated data store.
+    ///
+    /// Google's post-2FA chain can also route through an interstitial at
+    /// `gds.google.com/web/landing?continue=…` (captured live on Android,
+    /// 2026-08: parameters authuser/continue/ep/gdsid/gm3e/hl/pli/rapt/
+    /// service/tda). It is the same shape as CheckCookie — a client-driven
+    /// hand-off page carrying the trusted continuation — so it gets the same
+    /// treatment: by the time this hop appears the session cookies are set,
+    /// and a stalled landing document must not strand the user on a spent
+    /// sign-in page.
     private static func isShelfRecoveryDestination(_ url: URL) -> Bool {
         if isPlayBooksDestination(url) { return true }
         guard url.scheme?.lowercased() == "https",
-              url.host?.lowercased() == "accounts.google.com",
-              url.path.lowercased() == "/checkcookie",
+              url.user == nil,
+              url.password == nil,
+              let host = url.host?.lowercased(),
               let components = URLComponents(
                 url: url,
                 resolvingAgainstBaseURL: false
@@ -1318,6 +1328,10 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
               let continueURL = URL(string: rawContinue) else {
             return false
         }
+        let path = url.path.lowercased()
+        let isCheckCookie = host == "accounts.google.com" && path == "/checkcookie"
+        let isSignInLanding = host == "gds.google.com" && path == "/web/landing"
+        guard isCheckCookie || isSignInLanding else { return false }
         return isPlayBooksDestination(continueURL)
     }
 
@@ -1325,13 +1339,10 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
         url?.absoluteString.lowercased() == "about:blank"
     }
 
+    /// 有界 JS 等待（默认 8s）：登录轮询与书架扫描都经过这里，一个不回来的
+    /// 回调不允许把绑定流程无声挂死。
     private func evaluate(_ js: String) async throws -> GoogleBooksScanResult {
-        let value: Any = try await withCheckedThrowingContinuation { continuation in
-            webView.evaluateJavaScript(js) { value, error in
-                if let error { continuation.resume(throwing: error) }
-                else { continuation.resume(returning: value as Any) }
-            }
-        }
+        let value: Any = try await webView.evaluateJavaScriptBounded(js)
         guard let raw = value as? [String: Any] else {
             throw NSError(domain: "GoogleBooks", code: 1)
         }
