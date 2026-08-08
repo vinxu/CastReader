@@ -257,12 +257,14 @@ final class KindleLibraryRecoveryService {
         )
     }
 
+    /// 有界 JS 等待（默认 8s）：恢复流程跑在不可见的 WebView 上，一个永不回来的
+    /// 回调会让整次自动恢复无声挂死，用户只能看到永远转圈。
     private func evaluate(_ script: String, in webView: WKWebView) async throws -> Any {
-        try await withCheckedThrowingContinuation { continuation in
+        try await WebViewBoundedWait.run { finish in
             webView.evaluateJavaScript(script) { value, error in
-                if let error { continuation.resume(throwing: error) }
-                else if let value { continuation.resume(returning: value) }
-                else { continuation.resume(returning: NSNull()) }
+                if let error { finish(.failure(error)) }
+                else if let value { finish(.success(value)) }
+                else { finish(.success(NSNull())) }
             }
         }
     }

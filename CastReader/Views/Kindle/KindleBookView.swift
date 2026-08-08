@@ -276,6 +276,12 @@ struct KindleBookView: View {
             if model.isStaleBookEntryError {
                 staleBookRecoveryOverlay
             }
+            // Terminal E-READY verdict from the readiness watchdog: the page
+            // never became usable inside its deadline. Sits below the auth /
+            // rebind covers because those flows own their own endings.
+            if model.readerReadinessFailureText != nil {
+                readerReadinessFailureOverlay
+            }
             // Topmost: hides both Amazon's sign-in page and the shelf being
             // loaded to reactivate the session. If recovery fails the cover is
             // removed so the user can complete a real sign-in.
@@ -336,6 +342,45 @@ struct KindleBookView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// 就绪看门狗的终态卡：页面在截止期内没有变得可用（E-READY）。
+    /// 一定给出动作——重新加载或返回——白屏不许是无声终态。
+    private var readerReadinessFailureOverlay: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "hourglass.badge.exclamationmark")
+                .font(.system(size: 30, weight: .semibold))
+                .foregroundStyle(AppTheme.primary)
+            Text("Kindle 页面长时间没有准备好")
+                .font(.headline)
+                .multilineTextAlignment(.center)
+            Text(model.readerReadinessFailureText ?? "")
+                .font(.subheadline)
+                .foregroundStyle(AppTheme.mutedForeground)
+                .multilineTextAlignment(.center)
+            Button {
+                model.retryReaderReadiness()
+            } label: {
+                Text(LocalizedStringKey("重新加载")).frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(AppTheme.primary)
+            Button("返回") {
+                if KindlePlaybackCenter.shared.isPresented && KindlePlaybackCenter.shared.isOwning(model) {
+                    KindlePlaybackCenter.shared.minimize()
+                } else {
+                    dismiss()
+                }
+            }
+        }
+        .padding(22)
+        .frame(maxWidth: 380)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppTheme.border, lineWidth: 0.5))
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.2))
+        .allowsHitTesting(true)
     }
 
     private var staleBookRecoveryOverlay: some View {
@@ -1931,6 +1976,23 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var nativeTOCEpoch: UInt64 = 0
     private var isNativeTOCBridgeJumping = false
     private var readerSurfaceFreezeUntil: Date?
+    /// 阅读器就绪终局（E-READY）：看门狗在截止期内没有等到一个可用页面。
+    /// 非 nil 时呈现全屏错误卡——白屏不再是无声终态。
+    @Published private(set) var readerReadinessFailureText: String?
+    /// 「这个阅读器有没有变得可用」的唯一所有者（Android fe24532 同款状态机）。
+    /// 阅读器文档提交时武装；capture/layout-stable/探针任一证明可用即解除；
+    /// auth/stale/storefront 修复接管时取消（终局由它们回答）。
+    private var readerReadinessWatchdog = ReaderReadinessWatchdog(
+        timeoutMs: KindleBookViewModel.readerReadinessTimeoutMs,
+        refreshIntervalMs: KindleBookViewModel.readerReadinessRefreshIntervalMs
+    )
+    private var readerReadinessTicket: ReaderReadinessWatchdog.Ticket?
+    private var readerReadinessTask: Task<Void, Never>?
+    private var readerDocumentEpoch: UInt64 = 0
+    private var isReaderSetupRunning = false
+    private var readerSetupGeneration: UInt64 = 0
+    private static let readerReadinessTimeoutMs: Int64 = 20_000
+    private static let readerReadinessRefreshIntervalMs: Int64 = 4_000
 
     let webView: WKWebView
 
@@ -3081,6 +3143,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
         readerSetupTask?.cancel()
         readerSetupTask = nil
+        // consent 期间页面被 Amazon 的弹层占住，就绪测量失真；弹层解决后
+        // 的恢复路径会经 scheduleReaderSetup 重新武装一只新看门狗。
+        cancelReaderReadinessWatchdog(reason: "cookie-consent")
         readerLayoutRepairTask?.cancel()
         readerLayoutRepairTask = nil
         layoutPlaybackRestartTask?.cancel()
@@ -3472,6 +3537,164 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
     }
 
+    /// 阅读器主文档提交即武装就绪看门狗——这是 Android「arm when a reader
+    /// document commits」的直接对应。提交先于 didFinish，也覆盖那些永远
+    /// 完成不了加载的文档。非阅读器文档（auth/library）由各自的修复流程负责，
+    /// 看门狗退出。
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        let landing = KindleSessionProbe.landingKind(webView.url?.absoluteString ?? "")
+        KindleRunLog.write(
+            "KINDLE webview didCommit \(KindleSessionProbe.safeRouteLabel(webView.url)) landing=\(landing)"
+        )
+        if landing == "reader" {
+            armReaderReadinessWatchdog(reason: "reader-commit")
+        } else {
+            cancelReaderReadinessWatchdog(reason: "commit-\(landing)")
+        }
+    }
+
+    private static func readinessNowElapsedMs() -> Int64 {
+        Int64(ProcessInfo.processInfo.systemUptime * 1000)
+    }
+
+    private func armReaderReadinessWatchdog(reason: String) {
+        readerDocumentEpoch &+= 1
+        readerReadinessFailureText = nil
+        let identity = ReaderReadinessWatchdog.Identity(
+            readerDocumentEpoch: readerDocumentEpoch,
+            bookID: book.id,
+            // iOS 的阅读器文档本身就是命令面，没有独立的命令会话纪元。
+            commandSessionEpoch: 0
+        )
+        let ticket = readerReadinessWatchdog.arm(identity, nowElapsedMs: Self.readinessNowElapsedMs())
+        readerReadinessTicket = ticket
+        readerReadinessTask?.cancel()
+        KindleRunLog.write(
+            "KINDLE reader readiness armed reason=\(reason) epoch=\(readerDocumentEpoch) book=\(Self.keyLog(book.id))"
+        )
+        readerReadinessTask = Task { @MainActor [weak self] in
+            while true {
+                let tickStartedAt = Date()
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                guard let self, !Task.isCancelled else { return }
+                guard self.readerReadinessTicket == ticket else { return }
+                // 1s 的睡眠花了远超 1s：App 被挂起过。挂起期间页面没有机会
+                // 加载，旧截止期已失真——重新武装而不是立刻宣判 E-READY。
+                if Date().timeIntervalSince(tickStartedAt) > 5 {
+                    KindleRunLog.write("KINDLE reader readiness re-armed after-suspension")
+                    self.armReaderReadinessWatchdog(reason: "foreground-resume")
+                    return
+                }
+                let action = self.readerReadinessWatchdog.action(
+                    ticket,
+                    nowElapsedMs: Self.readinessNowElapsedMs(),
+                    hasReadyFrame: !self.isNavigating
+                )
+                switch action {
+                case .wait:
+                    continue
+                case .stale:
+                    return
+                case .timeout:
+                    self.readerReadinessWatchdog.cancel(ticket)
+                    self.readerReadinessTicket = nil
+                    self.surfaceReaderReadinessTimeout()
+                    return
+                case .refresh:
+                    let ready = await self.probeReaderBecameReady()
+                    guard !Task.isCancelled, self.readerReadinessTicket == ticket else { return }
+                    if ready {
+                        self.markReaderBecameReady(reason: "watchdog-probe")
+                        return
+                    }
+                    // 准备链没有在跑（被超时错误终止过，或从未启动）才重启它；
+                    // 健康的慢链不打断。
+                    if !self.isReaderSetupRunning {
+                        self.scheduleReaderSetup(reason: "readiness-refresh")
+                    }
+                }
+            }
+        }
+    }
+
+    /// 幂等武装：已有活跃票据时什么都不做。给 didFinish/consent 恢复等
+    /// 二次入口用，避免每次 setup 都重置截止期。
+    private func ensureReaderReadinessWatchdogArmed(reason: String) {
+        if let ticket = readerReadinessTicket, readerReadinessWatchdog.isActive(ticket) { return }
+        armReaderReadinessWatchdog(reason: reason)
+    }
+
+    private func cancelReaderReadinessWatchdog(reason: String) {
+        guard readerReadinessTicket != nil || readerReadinessTask != nil else { return }
+        if let ticket = readerReadinessTicket { readerReadinessWatchdog.cancel(ticket) }
+        readerReadinessTicket = nil
+        readerReadinessTask?.cancel()
+        readerReadinessTask = nil
+        KindleRunLog.write("KINDLE reader readiness cancelled reason=\(reason)")
+    }
+
+    /// 任何一次「页面确实可用」的证据都从这里解除看门狗：
+    /// 布局稳定、成功捕获、或看门狗自己的探针。
+    private func markReaderBecameReady(reason: String) {
+        guard let ticket = readerReadinessTicket else { return }
+        guard readerReadinessWatchdog.isActive(ticket) else {
+            readerReadinessTicket = nil
+            return
+        }
+        readerReadinessWatchdog.cancel(ticket)
+        readerReadinessTicket = nil
+        readerReadinessTask?.cancel()
+        readerReadinessTask = nil
+        readerReadinessFailureText = nil
+        KindleRunLog.write("KINDLE reader readiness ready reason=\(reason)")
+    }
+
+    /// 与 waitForKindleImageStable 同一套「页面可用」判据，但单次、有界。
+    private func probeReaderBecameReady() async -> Bool {
+        installCaptureScript()
+        guard let state = try? await evaluateJSON("window.__crKindleState && window.__crKindleState()") else {
+            return false
+        }
+        let key = (state["key"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let orderedCount = Self.int(from: state["orderedCount"]) ?? 0
+        let visibleArea = Self.numberValue(state["visibleArea"]) ?? 0
+        let bandVisibleArea = Self.numberValue(state["bandVisibleArea"]) ?? 0
+        return !key.isEmpty && orderedCount > 0 && max(visibleArea, bandVisibleArea) > 0
+    }
+
+    private func surfaceReaderReadinessTimeout() {
+        readerReadinessTask = nil
+        // auth/stale/rebind 修复已接管时，就绪问题由它们的终态回答，
+        // 不再叠加一层 E-READY。
+        guard contentCover == nil,
+              !isStaleBookRecovering,
+              !isStaleBookEntryError,
+              !needsKindleRebind,
+              !isAmazonCookieConsentVisible else {
+            KindleRunLog.write("KINDLE reader readiness timeout suppressed-by-recovery")
+            return
+        }
+        readerReadinessFailureText = String(
+            format: AppLocalized("Kindle 页面长时间没有准备好（%@）。"),
+            "E-READY"
+        )
+        KindleRunLog.write("KINDLE reader readiness timeout verdict=E-READY")
+        ProductAnalytics.shared.contentFailed(
+            analyticsContext,
+            stage: "reader_readiness",
+            code: "E-READY"
+        )
+    }
+
+    /// E-READY 卡上的「重新加载」：清掉终态，重新加载阅读器文档，
+    /// didCommit 会武装一只全新的看门狗。
+    func retryReaderReadiness() {
+        KindleRunLog.write("KINDLE reader readiness retry")
+        readerReadinessFailureText = nil
+        cancelReaderReadinessWatchdog(reason: "user-retry")
+        reload()
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         let finishedURL = webView.url?.absoluteString ?? ""
         let landing = KindleSessionProbe.landingKind(finishedURL)
@@ -3535,9 +3758,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private func scheduleReaderSetup(reason: String) {
         guard readerOperationAllowed(.readerSetup, reason: reason) else { return }
+        ensureReaderReadinessWatchdogArmed(reason: "setup-\(reason)")
         readerSetupTask?.cancel()
         configurePageModeGestures()
+        // 完成/失败都要放下 running 标记，看门狗以此判断准备链是否还活着；
+        // generation 防止被替换的旧任务在退出时清掉新任务的标记。
+        readerSetupGeneration &+= 1
+        let generation = readerSetupGeneration
+        isReaderSetupRunning = true
         readerSetupTask = Task { @MainActor [weak self] in
+            defer {
+                if let self, self.readerSetupGeneration == generation {
+                    self.isReaderSetupRunning = false
+                }
+            }
             guard let self, !Task.isCancelled else { return }
             await self.applyKindleReaderPreferences(reason: reason)
             guard !Task.isCancelled else { return }
@@ -3646,6 +3880,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private func startStaleBookRecovery() {
         guard !staleBookRecoveryAttempted, staleBookRecoveryTask == nil else { return }
+        cancelReaderReadinessWatchdog(reason: "stale-recovery")
         staleBookRecoveryAttempted = true
         isStaleBookRecovering = true
         staleBookRecoveryMessage = nil
@@ -3716,6 +3951,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// very next open succeed. So: load the shelf, then retry the book.
     private func startAuthRecovery() {
         guard contentCover == nil, !needsKindleRebind else { return }
+        // 会话修复接管终局；就绪看门狗对 auth 页面无话可说。
+        cancelReaderReadinessWatchdog(reason: "auth-recovery")
         guard !authRecoveryAttempted else {
             contentCover = nil
             statusText = AppLocalized("Kindle 登录已过期，请重新登录并同步书架。")
@@ -3758,6 +3995,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     ) {
         guard !storefrontHandoffInFlight else { return }
         storefrontHandoffInFlight = true
+        cancelReaderReadinessWatchdog(reason: "storefront-handoff")
         let supported = observed.entryEnabled
         ProductAnalytics.shared.contentFailed(
             analyticsContext,
@@ -3794,6 +4032,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         guard !storefrontHandoffInFlight else { return }
         storefrontHandoffInFlight = true
+        cancelReaderReadinessWatchdog(reason: "blocked-destination")
         let domain = KindleStorefront.registrableDomain(for: url?.host)
             ?? "invalid_destination"
         ProductAnalytics.shared.contentFailed(
@@ -5910,6 +6149,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         isContinuingExplainPage = false
         cancelPageCaching(clearPrepared: true)
         clearPendingContinuation()
+        cancelReaderReadinessWatchdog(reason: "stop-all")
         invalidateReadPageSession(reason: "stop-all")
         readVM?.stop()
         explainVM?.stop()
@@ -8796,9 +9036,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let configuration = WKSnapshotConfiguration()
         configuration.rect = rect
         configuration.snapshotWidth = NSNumber(value: Double(surface.width))
-        let image: UIImage? = await withCheckedContinuation { continuation in
+        // takeSnapshot 与 evaluateJavaScript 同病：渲染进程不响应时回调不回来。
+        // 超时按拿不到快照处理（返回 nil），继续走已有的失败分支。
+        let image: UIImage? = try? await WebViewBoundedWait.run { [webView] finish in
             webView.takeSnapshot(with: configuration) { image, _ in
-                continuation.resume(returning: image)
+                finish(.success(image))
             }
         }
         guard continuousReadHandoff?.serial == serial, let image else { return false }
@@ -11546,6 +11788,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         KindleRunLog.write("KINDLE webview load reason=\(reason) storefront=\(storefront.id) route=\(KindleSessionProbe.safeRouteLabel(url)) raw=\(Self.keyLog(raw)) last=\(Self.keyLog(book.lastReadURL ?? "")) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
         KindleSessionProbe.logCookies(reason: "book-load-\(reason)")
+        // 从发出请求那一刻起就绪就有了主人：连 didCommit 都到不了的加载
+        // 也必须在截止期内给出终局。文档提交后 didCommit 会武装新票据。
+        armReaderReadinessWatchdog(reason: "load-\(reason)")
         webView.load(URLRequest(url: url))
     }
 
@@ -11696,6 +11941,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                               attempt + 1,
                               signature)
                         #endif
+                        markReaderBecameReady(reason: "layout-stable")
                         return
                     }
                 } else {
@@ -11753,6 +11999,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                       String(describing: payload["visibleArea"] ?? "?"),
                       String(describing: payload["bandVisibleArea"] ?? "?"))
                 #endif
+                markReaderBecameReady(reason: "capture")
                 return try await makeCapturedPage(from: payload, pageIndex: pageIndex)
             }
             lastReason = payload["reason"] as? String ?? lastReason
@@ -12824,17 +13071,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return object as? [String: Any] ?? [:]
     }
 
+    /// 所有 Kindle 阅读器 JS 都从这里走。有界（默认 8s）：一个永不回来的
+    /// evaluateJavaScript 回调曾在 Android 上把整条准备链无声卡死，超时必须
+    /// 以错误抛出，让调用方走既有错误路径、由 readiness watchdog 收终局。
     @discardableResult
     private func evaluate(_ script: String) async throws -> Any {
-        try await withCheckedThrowingContinuation { continuation in
-            webView.evaluateJavaScript(script) { result, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume(returning: result as Any)
-                }
-            }
-        }
+        try await webView.evaluateJavaScriptBounded(script)
     }
 
     private static func decodeDataURL(_ dataURL: String) -> Data? {

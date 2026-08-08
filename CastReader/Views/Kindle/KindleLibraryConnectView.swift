@@ -1106,17 +1106,10 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         """)
     }
 
+    /// 有界 JS 等待（默认 8s）——书架扫描不允许被一个不回来的回调无声卡死。
     @discardableResult
     private func evaluate(_ script: String) async throws -> Any {
-        try await withCheckedThrowingContinuation { continuation in
-            webView.evaluateJavaScript(script) { result, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume(returning: result as Any)
-                }
-            }
-        }
+        try await webView.evaluateJavaScriptBounded(script)
     }
 
     private func jsonData(from value: Any) throws -> Data {

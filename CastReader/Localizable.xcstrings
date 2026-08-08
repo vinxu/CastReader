@@ -41927,6 +41927,58 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Cookie 提示已关闭，点击播放即可继续。" } }
       }
     },
+    "Kindle 页面长时间没有准备好" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die Kindle-Seite wurde nicht rechtzeitig bereit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The Kindle page took too long to get ready" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "La página de Kindle tardó demasiado en prepararse" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "La page Kindle a mis trop de temps à se préparer" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "Kindle पेज तैयार होने में बहुत समय लगा" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "La pagina Kindle ha impiegato troppo tempo a prepararsi" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Kindleページの準備に時間がかかりすぎています" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "A página do Kindle demorou demais para ficar pronta" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Kindle 页面长时间没有准备好" } }
+      }
+    },
+    "Kindle 页面长时间没有准备好（%@）。" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die Kindle-Seite wurde nicht rechtzeitig bereit (%@)." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The Kindle page took too long to get ready (%@)." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "La página de Kindle tardó demasiado en prepararse (%@)." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "La page Kindle a mis trop de temps à se préparer (%@)." } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "Kindle पेज तैयार होने में बहुत समय लग गया (%@)।" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "La pagina Kindle ha impiegato troppo tempo a prepararsi (%@)." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Kindleページの準備に時間がかかりすぎています（%@）。" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "A página do Kindle demorou demais para ficar pronta (%@)." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Kindle 页面长时间没有准备好（%@）。" } }
+      }
+    },
+    "页面脚本长时间无响应。" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Das Seitenskript reagiert nicht mehr." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The page script stopped responding." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "El script de la página dejó de responder." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Le script de la page ne répond plus." } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "पेज स्क्रिप्ट ने जवाब देना बंद कर दिया।" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Lo script della pagina non risponde più." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ページのスクリプトが応答しなくなりました。" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "O script da página parou de responder." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "页面脚本长时间无响应。" } }
+      }
+    },
+    "重新加载" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Neu laden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reload" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Recargar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Recharger" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "फिर से लोड करें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Ricarica" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "再読み込み" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Recarregar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重新加载" } }
+      }
+    },
     "Kindle 书籍入口已失效，请重新同步书架。" : {
       "localizations" : {
         "de" : { "stringUnit" : { "state" : "translated", "value" : "Der Link zu diesem Kindle-Buch ist nicht mehr gültig. Synchronisiere deine Bibliothek erneut." } },
