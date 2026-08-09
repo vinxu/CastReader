@@ -11,6 +11,7 @@ struct LoginView: View {
     @ObservedObject private var auth = AuthService.shared
     @Environment(\.dismiss) private var dismiss
     @State private var errorMessage: String?
+    @State private var showsPhoneSignIn = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -24,6 +25,8 @@ struct LoginView: View {
             Spacer()
 
             VStack(spacing: 12) {
+                // 中国区把手机号放在首位：这是国内用户最习惯、也最合规的方式。
+                phoneButton
                 googleButton
                 appleButton
             }
@@ -38,13 +41,38 @@ struct LoginView: View {
         .background(AppTheme.background.ignoresSafeArea())
         .overlay { if auth.isWorking { ProgressView().scaleEffect(1.2) } }
         .onChange(of: auth.isSignedIn) { signedIn in if signedIn { dismiss() } }
+        .sheet(isPresented: $showsPhoneSignIn) {
+            PhoneSignInView()
+        }
+    }
+
+    @ViewBuilder
+    private var phoneButton: some View {
+        if AppRegion.current == .cn {
+            Button { showsPhoneSignIn = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "iphone").font(.system(size: 18, weight: .bold))
+                    Text(AppLocalized("使用手机号继续")).fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity).padding()
+                .background(AppTheme.buttonPrimary)
+                .foregroundColor(AppTheme.buttonPrimaryForeground)
+                .cornerRadius(12)
+            }
+            .disabled(auth.isWorking)
+            .accessibilityIdentifier("login.phone")
+        }
     }
 
     // MARK: 按钮
 
     @ViewBuilder
     private var googleButton: some View {
-        if Constants.GoogleOAuth.isConfigured {
+        if !AppRegion.current.showsGoogleSignIn {
+            // 中国大陆版不展示 Google 登录：账号服务在境内不可用。
+            // 这里整块隐藏，连「未配置」的提示也不出现。
+            EmptyView()
+        } else if Constants.GoogleOAuth.isConfigured {
             Button { signInGoogle() } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "globe").font(.system(size: 18, weight: .bold))

@@ -10,7 +10,7 @@ actor VoiceCloneService {
     private let sessionProvider: any MobileSessionProviding
 
     init(
-        baseURL: URL = URL(string: "https://castreader.ai")!,
+        baseURL: URL = URL(string: Constants.API.webURL) ?? URL(string: "https://castreader.ai")!,
         session: URLSession = .shared,
         sessionProvider: any MobileSessionProviding
     ) {

@@ -52,7 +52,7 @@ final class ProManager: ObservableObject {
     }
 
     var isCrossPlatformPro: Bool {
-        serverPro && AuthService.shared.normalizedEmail != nil
+        serverPro && AuthService.shared.hasSyncableAccount
     }
 
     private static let appAccountTokenKey = "storekit_app_account_token_v1"
@@ -209,7 +209,7 @@ final class ProManager: ObservableObject {
         setStoreKitLocalPro(active, reason: "refresh-entitlements")
         await refreshIntroOfferEligibility()
         if active,
-           AuthService.shared.normalizedEmail != nil,
+           AuthService.shared.hasSyncableAccount,
            let latestSignedTransaction {
             let synced = await ProBackendService.shared.verifyAppleTransaction(latestSignedTransaction)
             debugLog("storekit-server-sync result=\(synced ? "Y" : "N")")
@@ -232,8 +232,9 @@ final class ProManager: ObservableObject {
             context: analyticsContext,
             properties: .init(trigger: analyticsTrigger, store: "app_store", productId: product.id)
         )
-        guard AuthService.shared.normalizedEmail != nil else {
-            refreshSyncState(reason: "purchase-blocked-missing-email")
+        // 中国区手机号账号没有邮箱，但有后端 user id，同样能关联权益。
+        guard AuthService.shared.hasSyncableAccount else {
+            refreshSyncState(reason: "purchase-blocked-missing-account")
             debugLog("purchase BLOCK missing-email product=\(product.id) localStoreKit=\(storeKitLocalPro ? "Y" : "N")")
             ProductAnalytics.shared.track(
                 .purchaseResult,
@@ -389,7 +390,7 @@ final class ProManager: ObservableObject {
     }
 
     func refreshSyncState(reason: String) {
-        let hasEmail = AuthService.shared.normalizedEmail != nil
+        let hasEmail = AuthService.shared.hasSyncableAccount
         let pending = storeKitLocalPro && !serverPro
         needsEmailSync = pending
         if pending {

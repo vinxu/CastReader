@@ -10,6 +10,23 @@ enum Constants {
         /// Voice cloning remains implemented and its persisted data is retained,
         /// but the feature is intentionally unavailable in this release.
         static let voiceCloningEnabled = false
+
+        /// 中国大陆后端（`api.castreader.cn`）是否已就绪。
+        ///
+        /// **服务本身已经跑起来了**（2026-08-08 部署在上海的 CVM，手机号短信登录、
+        /// 支付宝、Pro 状态、埋点全部上线并通过冒烟测试），但仍然保持 `false`，
+        /// 原因只有一个：**域名 ICP 备案还卡在管局审核**（8/6 提交）。
+        ///
+        /// 实测（2026-08-08，境内网络直连）：同一个 IP、同一个 nginx，
+        /// 随便编的 SNI 都能完成 TLS 握手，唯独带 `castreader.cn` 的连接
+        /// 在 Client Hello 之后被 RST。80 端口正常，443 被按域名切断 ——
+        /// 这是未备案域名的标准待遇，**对境内外用户一视同仁**。
+        ///
+        /// ⚠️ 不要因为「服务器上 curl 自己是通的」就以为可以打开：那是同机
+        /// 回环，根本不经过运营商的拦截点，会得到假的健康结论。
+        ///
+        /// 备案下号后改成 `true` 即可整体切换，无需改动任何调用方。
+        static let chinaBackendEnabled = false
     }
 
     enum API {
@@ -47,12 +64,27 @@ enum Constants {
         static let quickReadFastBlock0 = "\(quickReadBaseURL)/api/quickread/fast-block0"     // 快道：直出 block_0 秒开
 
         // 账号 / Pro 后端（Web，readout-web）
-        static let webURL = "https://castreader.ai"
-        static let proStatus = "\(webURL)/api/pro/status"               // GET ?device_id=&user_id=&local_date=
-        static let proListenTrack = "\(webURL)/api/pro/listen-track"    // POST {device_id|user_id, seconds}
-        static let proVerifyApple = "\(webURL)/api/pro/verify-apple"    // POST signed StoreKit 2 transaction
-        static let authSocialSignIn = "\(webURL)/api/auth/sign-in/social" // POST {provider, idToken:{token}} (better-auth)
-        static let pricingURL = "\(webURL)/pricing"
+        /// 全球版后端。中国大陆后端就绪前，`.cn` 设备也走这里（见
+        /// `Constants.Features.chinaBackendEnabled`）。
+        static let globalWebURL = "https://castreader.ai"
+
+        /// 当前设备应使用的 Web 后端。
+        ///
+        /// 只有「区域判定为中国大陆」且「境内后端已就绪」时才切到 `castreader.cn`；
+        /// 任一条件不满足都退回 `globalWebURL`，因此其他国家的行为与改动前逐字节一致。
+        static var webURL: String {
+            guard Features.chinaBackendEnabled, AppRegion.current == .cn else {
+                return globalWebURL
+            }
+            return AppRegion.cn.webBaseURL
+        }
+
+        static var proStatus: String { "\(webURL)/api/pro/status" }               // GET ?device_id=&user_id=&local_date=
+        static var proListenTrack: String { "\(webURL)/api/pro/listen-track" }    // POST {device_id|user_id, seconds}
+        static var proVerifyApple: String { "\(webURL)/api/pro/verify-apple" }    // POST signed StoreKit 2 transaction
+        static var authSocialSignIn: String { "\(webURL)/api/auth/sign-in/social" } // POST {provider, idToken:{token}} (better-auth)
+        static var analyticsEvents: String { "\(webURL)/api/events" }             // POST 自研埋点
+        static var pricingURL: String { "\(webURL)/pricing" }
         private static var legalLanguagePath: String {
             Locale.current.language.languageCode?.identifier == "zh" ? "zh" : "en"
         }

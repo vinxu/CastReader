@@ -41,6 +41,23 @@ enum CastReaderIntentMode: String, AppEnum, Codable, CaseIterable, Sendable {
     ]
 }
 
+/// Which system surface deposited the pending action.
+///
+/// Recorded alongside the action so a launch caused by Siri, a widget or a
+/// deep link can be told apart from an ordinary icon tap in analytics. The
+/// value carries no user content — only which door the session came through.
+enum SystemActionOrigin: String, Codable, Sendable {
+    /// Siri, Spotlight, Shortcuts or the Action Button ran an App Intent.
+    case appIntent = "intent"
+    /// A widget button or link ran the intent from the widget process.
+    case widget
+    /// A `castreader://` URL opened the app directly.
+    case deepLink = "deep_link"
+
+    /// Value written to `app_session_start.launchType`.
+    var launchType: String { rawValue }
+}
+
 /// A one-shot command deposited by an extension and consumed by the app.
 ///
 /// The value intentionally carries identifiers and raw input only. Resolving a

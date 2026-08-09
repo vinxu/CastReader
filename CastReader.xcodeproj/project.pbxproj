@@ -10,6 +10,7 @@
 		0005E1F83148CBD79E6B3220 /* Document.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E09BB529C1CA7779FDFB2EC /* Document.swift */; };
 		005AE06492A860648466479B /* ImagePreprocessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13231119542F6E23A85BF6D7 /* ImagePreprocessor.swift */; };
 		013005BEBDDA834E4065D767 /* OReillyLibraryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19AB80C67A62526B46397548 /* OReillyLibraryViews.swift */; };
+		01722CA5C530933D4EFC3433 /* AppRegionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90703099D5F4D609FE925DFF /* AppRegionTests.swift */; };
 		0263110BFD6224D72D0FF94C /* SystemIntegrationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2549C0C15931360F88CE528F /* SystemIntegrationModels.swift */; };
 		02999253127ED65C58A45A15 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A977595733911031D3CF809F /* PrivacyInfo.xcprivacy */; };
 		0525370D4B5A98900BFAB55D /* WebReaderProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32072C86884F9467DF21811E /* WebReaderProtocol.swift */; };
@@ -28,6 +29,7 @@
 		10757E43FA45D96BC7F380DC /* KoboModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3F8E038E798D5F3D55349ED /* KoboModels.swift */; };
 		15303BC03E296E46E410C377 /* OReillyContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D2A791F7A5F65648C787404 /* OReillyContractTests.swift */; };
 		17317D4925CD54205F17A0E6 /* ocr-offscreen.html in Resources */ = {isa = PBXBuildFile; fileRef = 9A6BF1F360210EFE45FD23EC /* ocr-offscreen.html */; };
+		176195DF57C587351255E7FE /* PhoneAuthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7C5624C4F8A37F6B9D99AA7 /* PhoneAuthTests.swift */; };
 		188454A4A128F2B9E17F8B00 /* TextReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4635DFCE285FD3F831DD58F9 /* TextReaderView.swift */; };
 		19D6D34E32F761A4BD9EA455 /* TTSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C075E9F81D7FA6BAEDD4A775 /* TTSService.swift */; };
 		1AA1CA41CC604536FB016D70 /* WeReadLibraryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF6331C40127B3CFD74830D /* WeReadLibraryViews.swift */; };
@@ -49,7 +51,9 @@
 		2DF6F815ECAA3403198F1218 /* HandwrittenMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9806136203478F27ACD5D77E /* HandwrittenMark.swift */; };
 		2F40C39B5A03A0892A7059E0 /* WeReadWebScripts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A49AE7BADF4DE6F68A182023 /* WeReadWebScripts.swift */; };
 		31037446F69538B432D7E385 /* TTSTimestamp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2307DC560054A8D7E0F928 /* TTSTimestamp.swift */; };
+		33523745D2F5EFE2148057C1 /* WeReadFirstLaunchFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F901153EF99788B291E57C8D /* WeReadFirstLaunchFlowView.swift */; };
 		346E42A693CC08A73EC982E7 /* OReillyLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBC51174F1503B670B07F832 /* OReillyLibraryStore.swift */; };
+		34DBCB42399B0C80D78F3565 /* BoundLibraryOnboardingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10ACDD948331046460B1AAB /* BoundLibraryOnboardingComponents.swift */; };
 		36E2F97C0792515908213D7D /* home-pro-moby-dick.jpg in Resources */ = {isa = PBXBuildFile; fileRef = F63ECD32EBBA35FA5769CA20 /* home-pro-moby-dick.jpg */; };
 		375BF0E7E31D7C0FAE97BB01 /* DocumentBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 467FF23EFFB3CA089945B18F /* DocumentBuilder.swift */; };
 		396ED2E14D9332E795839479 /* ReaderHostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07C5692102E30283E5300278 /* ReaderHostView.swift */; };
@@ -79,6 +83,7 @@
 		6348E8FA37876CAB17DC394D /* home-pro-dracula.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 1C441D52AC363CE4CDB92ABE /* home-pro-dracula.jpg */; };
 		63A377E875990F2903E40579 /* SystemIntegrationStores.swift in Sources */ = {isa = PBXBuildFile; fileRef = E051EFD79C32F5A9AD9FD8E8 /* SystemIntegrationStores.swift */; };
 		63E84E370C9B0A63159111ED /* ClipboardPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F80A4DBB36859B47B2273469 /* ClipboardPromptView.swift */; };
+		65B55629AAEAF7E9DCFADA15 /* AppRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DCDA811A66569ACA1A7B22B /* AppRegion.swift */; };
 		6604B14430754C3EB4272AC4 /* icon-48.png in Resources */ = {isa = PBXBuildFile; fileRef = 4430C7ED2CD0E31652591DD4 /* icon-48.png */; };
 		67DFC48EFA05558011D7D22A /* UserAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 187851CA43919EEC09E8D79B /* UserAccount.swift */; };
 		67FF6D00C35D7200A192DBE9 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF3E61B1211E2CEA444F5B49 /* HomeView.swift */; };
@@ -128,6 +133,7 @@
 		97E3A9A71E038CB70FF41D58 /* PDFReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF67CD316FCBDF59EE331C1E /* PDFReaderView.swift */; };
 		98A5D6CE979D4D4ACD2CCFAA /* ShareInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CCC423B5AB5B150D52FEA4E /* ShareInbox.swift */; };
 		99419D9FE98D3FDC6FE1411C /* PhotoReaderCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75455BD2CEAED5005A9D36DE /* PhotoReaderCanvas.swift */; };
+		9A4A81886270EEE95559944C /* PhoneAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBEA839BCB62878023DC973 /* PhoneAuthService.swift */; };
 		9C9F438254B010257E20BF6B /* VoiceCloneModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C9DA879AEB8EF31D0EF84DA /* VoiceCloneModels.swift */; };
 		9E694AD6EC2C70BE1D09664D /* BoundLibrarySourcesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070F8A7B64ECF6188661B7FA /* BoundLibrarySourcesView.swift */; };
 		9E891B727D0F746D1BFA7CC2 /* MarkOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DBBB57864E28A85EDCE490E /* MarkOverlay.swift */; };
@@ -139,6 +145,7 @@
 		A6216E364617BE044C63F5EC /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C2440FCF286F3BCF19EE6A9 /* AuthService.swift */; };
 		A86A5F835CEE1334154FBEA1 /* KindleReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9466AC2534634EF20AA55C6B /* KindleReaderView.swift */; };
 		A87727771485EBDD69620C51 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83B7BA09F489F3994B7F1FF1 /* AppSettings.swift */; };
+		A88FAE489C53C0D6828D8C95 /* PhoneSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 058AF3AAB588018076178869 /* PhoneSignInView.swift */; };
 		B00B9CA3E1AAE3C2F33D024B /* icon-32.png in Resources */ = {isa = PBXBuildFile; fileRef = 5D493F1ECEC7ADE0AF67E903 /* icon-32.png */; };
 		B08FFCB67C87DA7CA9F130BB /* ReadAloudViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC4B7E35E1FE11E85C691860 /* ReadAloudViewModel.swift */; };
 		B0AA6888E8BFC388A2FE7E7A /* ShareInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CCC423B5AB5B150D52FEA4E /* ShareInbox.swift */; };
@@ -147,6 +154,7 @@
 		B60D6BE2323894BC7B4D7902 /* StableDeviceID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A7A389E0E6992130E23E8CB /* StableDeviceID.swift */; };
 		B63A77C9251A2B2DBC561FEF /* LiveWebPlatform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA8D71DB39FA40708D1B8A5 /* LiveWebPlatform.swift */; };
 		B65F28112047820DD67441E8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C7EC511EE228DC080069CB1 /* SettingsView.swift */; };
+		BB9D4E7B5E87BDF3F5AC6D0D /* PhoneAuthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84B85C1FC6D26380A1F4CD37 /* PhoneAuthModels.swift */; };
 		BC39CAE4FD7F1E8A45F0EEA6 /* WebReaderBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41C6D1F6C29B805ADAEC3084 /* WebReaderBridge.swift */; };
 		BD0D8AD4053D16B7442754F2 /* brainrot-bg in Resources */ = {isa = PBXBuildFile; fileRef = 21D8F6C3473D401D7043D09E /* brainrot-bg */; };
 		C19474DAFB7227AAD75F9FC0 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 7EA6103F72D795CC9E9DCCE8 /* manifest.json */; };
@@ -180,6 +188,7 @@
 		E0105256DAF7F2019D161A38 /* KindleLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84E410C30DD995DF7AD53FE7 /* KindleLibraryView.swift */; };
 		E01EACED2AB2C0CDF748BDA6 /* OCRLayoutFixtureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8838921BDBDEB6D3F936FB12 /* OCRLayoutFixtureTests.swift */; };
 		E0C7F6DF34A54172DCBAA102 /* VoiceCloneCreatedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDA08A2825CB7A7E1B354886 /* VoiceCloneCreatedView.swift */; };
+		E0CB785C515C92035A3FC231 /* WeReadOnboardingBookRecommendation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07D1CC1C393BAA74BFDCF1CD /* WeReadOnboardingBookRecommendation.swift */; };
 		E1FEA7B2F9A962BF615E4798 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D82B6DD5DD6BE313FEAFB328 /* CameraView.swift */; };
 		E416202071363865844AB917 /* HomeProUpsellCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEBBC802715FD4368B8C6263 /* HomeProUpsellCard.swift */; };
 		E80DE846E6E69769FC289153 /* WebReaderEvalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8DEDDFA8A2D6838F0F598FF /* WebReaderEvalTests.swift */; };
@@ -199,6 +208,7 @@
 		F5DCC785C4DD3D9CF6CEF617 /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = ED21FC396B9DD208375CB89E /* _locales */; };
 		F64FB010D8BF89D169039054 /* UpgradeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BADFF78812F29A372D39115D /* UpgradeView.swift */; };
 		F78004B9864A063E32A52051 /* OReillyWebScripts.swift in Sources */ = {isa = PBXBuildFile; fileRef = E44986777A2149EBCF56D366 /* OReillyWebScripts.swift */; };
+		FB71C4FA46768B4DCCF6B123 /* SystemIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AFFA6BF715740474FCC7BDA /* SystemIntegrationTests.swift */; };
 		FD30A29CB4BC1CAB79044D1A /* VoiceCloneRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92763406584E79DA9A4ADFF1 /* VoiceCloneRecorder.swift */; };
 		FDB0D33DF97062A6B517B642 /* KoboLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9848DAF4ECD74B44B2F7A425 /* KoboLibraryStore.swift */; };
 /* End PBXBuildFile section */
@@ -265,10 +275,12 @@
 		04E0733B5543E86966CE408F /* KoboLibraryViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KoboLibraryViews.swift; sourceTree = "<group>"; };
 		0538339ACBEB86AF70BA159C /* KindleFirstLaunchFlowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleFirstLaunchFlowView.swift; sourceTree = "<group>"; };
 		0545B73586C10C3C45E1DBC8 /* ShareViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		058AF3AAB588018076178869 /* PhoneSignInView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhoneSignInView.swift; sourceTree = "<group>"; };
 		0595DA2DAD6B52D471AB9313 /* home-pro-alice.jpg */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.jpeg; path = "home-pro-alice.jpg"; sourceTree = "<group>"; };
 		06778BF8CF82DBBACB1A8C2A /* SeededGenerator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SeededGenerator.swift; sourceTree = "<group>"; };
 		070F8A7B64ECF6188661B7FA /* BoundLibrarySourcesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BoundLibrarySourcesView.swift; sourceTree = "<group>"; };
 		07C5692102E30283E5300278 /* ReaderHostView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReaderHostView.swift; sourceTree = "<group>"; };
+		07D1CC1C393BAA74BFDCF1CD /* WeReadOnboardingBookRecommendation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeReadOnboardingBookRecommendation.swift; sourceTree = "<group>"; };
 		0858EAE99F40C1DC0928F5EA /* background.js */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.javascript; path = background.js; sourceTree = "<group>"; };
 		0872B9FD1954366BEDD17635 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		0A65E9DEEB7017D92A3F7198 /* Localizable.xcstrings */ = {isa = PBXFileReference; includeInIndex = 1; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -312,6 +324,7 @@
 		33BE0CA82F7535C299208B88 /* ProductAnalyticsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProductAnalyticsTests.swift; sourceTree = "<group>"; };
 		37DA9BAFA8D381D756622EFE /* CastReaderWidgetBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CastReaderWidgetBundle.swift; sourceTree = "<group>"; };
 		387EE522241151A231434533 /* google-books-webreader-xctest.js */ = {isa = PBXFileReference; includeInIndex = 1; path = "google-books-webreader-xctest.js"; sourceTree = "<group>"; };
+		3AFFA6BF715740474FCC7BDA /* SystemIntegrationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemIntegrationTests.swift; sourceTree = "<group>"; };
 		3CCC423B5AB5B150D52FEA4E /* ShareInbox.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareInbox.swift; sourceTree = "<group>"; };
 		3D2A791F7A5F65648C787404 /* OReillyContractTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OReillyContractTests.swift; sourceTree = "<group>"; };
 		3DBBB57864E28A85EDCE490E /* MarkOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MarkOverlay.swift; sourceTree = "<group>"; };
@@ -348,6 +361,7 @@
 		69F977619F990E63A25E8D54 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		6C2440FCF286F3BCF19EE6A9 /* AuthService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		6C435B5A70582649C83CDE8E /* tts-voice-catalog-envelope.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = "tts-voice-catalog-envelope.json"; sourceTree = "<group>"; };
+		6FBEA839BCB62878023DC973 /* PhoneAuthService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhoneAuthService.swift; sourceTree = "<group>"; };
 		7191A3BE5B4AD135DF96CE22 /* ProBackendService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProBackendService.swift; sourceTree = "<group>"; };
 		746AE8CC17EF6ADD3CB9F08F /* ResumeReminderManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ResumeReminderManager.swift; sourceTree = "<group>"; };
 		74C3338DEECCCDA259EBC639 /* OCRService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
@@ -366,13 +380,16 @@
 		78FA7FC77BA953B5F7817B91 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7A7A389E0E6992130E23E8CB /* StableDeviceID.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StableDeviceID.swift; sourceTree = "<group>"; };
 		7C02A0DA8EAECC475D1D7997 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		7DCDA811A66569ACA1A7B22B /* AppRegion.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppRegion.swift; sourceTree = "<group>"; };
 		7E587B7C6F6E5EF9DF007378 /* PaymentTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PaymentTests.swift; sourceTree = "<group>"; };
 		7EA6103F72D795CC9E9DCCE8 /* manifest.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
 		8118FFA3D352755C5F7A2087 /* CastReader Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "CastReader Widget.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		83B7BA09F489F3994B7F1FF1 /* AppSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		84427A88091A6CDBAFAC9420 /* WeReadDesktopProbeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeReadDesktopProbeView.swift; sourceTree = "<group>"; };
+		84B85C1FC6D26380A1F4CD37 /* PhoneAuthModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhoneAuthModels.swift; sourceTree = "<group>"; };
 		84E410C30DD995DF7AD53FE7 /* KindleLibraryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleLibraryView.swift; sourceTree = "<group>"; };
 		8838921BDBDEB6D3F936FB12 /* OCRLayoutFixtureTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OCRLayoutFixtureTests.swift; sourceTree = "<group>"; };
+		90703099D5F4D609FE925DFF /* AppRegionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppRegionTests.swift; sourceTree = "<group>"; };
 		92763406584E79DA9A4ADFF1 /* VoiceCloneRecorder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceCloneRecorder.swift; sourceTree = "<group>"; };
 		9466AC2534634EF20AA55C6B /* KindleReaderView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleReaderView.swift; sourceTree = "<group>"; };
 		9806136203478F27ACD5D77E /* HandwrittenMark.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HandwrittenMark.swift; sourceTree = "<group>"; };
@@ -406,6 +423,7 @@
 		BE3276E6DB4EE74AC0190DE1 /* LibraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewModel.swift; sourceTree = "<group>"; };
 		C0688F027C1AF34A76650671 /* VoiceBrowserView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceBrowserView.swift; sourceTree = "<group>"; };
 		C075E9F81D7FA6BAEDD4A775 /* TTSService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTSService.swift; sourceTree = "<group>"; };
+		C10ACDD948331046460B1AAB /* BoundLibraryOnboardingComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BoundLibraryOnboardingComponents.swift; sourceTree = "<group>"; };
 		C22F58DEB2517DA73708546F /* HistoryStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HistoryStore.swift; sourceTree = "<group>"; };
 		C3A568412C460BA152A951B4 /* GoogleBooksLibraryViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleBooksLibraryViews.swift; sourceTree = "<group>"; };
 		C5F025428C7210C49D480AB1 /* ReadingAnchorResolver.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReadingAnchorResolver.swift; sourceTree = "<group>"; };
@@ -421,6 +439,7 @@
 		D41105864AEB5716CE1F821B /* OCRLayoutAnalyzerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OCRLayoutAnalyzerTests.swift; sourceTree = "<group>"; };
 		D4916AA0517505E1777ED2B9 /* KindleBookView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KindleBookView.swift; sourceTree = "<group>"; };
 		D697CF8D18FFD6D20B2846DA /* WebAssets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = WebAssets; sourceTree = "<group>"; };
+		D7C5624C4F8A37F6B9D99AA7 /* PhoneAuthTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhoneAuthTests.swift; sourceTree = "<group>"; };
 		D82AE4F573D3FC8180D95180 /* CastReader Safari Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "CastReader Safari Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D82B6DD5DD6BE313FEAFB328 /* CameraView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
 		DBC51174F1503B670B07F832 /* OReillyLibraryStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OReillyLibraryStore.swift; sourceTree = "<group>"; };
@@ -450,6 +469,7 @@
 		F5D6BDB86D88CD8AECD9D960 /* ProductAnalytics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProductAnalytics.swift; sourceTree = "<group>"; };
 		F63ECD32EBBA35FA5769CA20 /* home-pro-moby-dick.jpg */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.jpeg; path = "home-pro-moby-dick.jpg"; sourceTree = "<group>"; };
 		F80A4DBB36859B47B2273469 /* ClipboardPromptView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ClipboardPromptView.swift; sourceTree = "<group>"; };
+		F901153EF99788B291E57C8D /* WeReadFirstLaunchFlowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeReadFirstLaunchFlowView.swift; sourceTree = "<group>"; };
 		FB2025974499DFD8E820D265 /* VoiceCatalog.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceCatalog.swift; sourceTree = "<group>"; };
 		FC84C1F572243F57FE79E7B8 /* Localizable.xcstrings */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		FD2D76920935AFC0A36BDF7F /* CastReader Share Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "CastReader Share Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -617,6 +637,7 @@
 				17B6372FAE22B30920E7E00C /* GoogleBooksModels.swift */,
 				E3F8E038E798D5F3D55349ED /* KoboModels.swift */,
 				31D98FBACB2CDF480ADA806E /* OReillyModels.swift */,
+				84B85C1FC6D26380A1F4CD37 /* PhoneAuthModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -626,6 +647,7 @@
 			children = (
 				48D9703C788196326AACDB7B /* LibraryView.swift */,
 				070F8A7B64ECF6188661B7FA /* BoundLibrarySourcesView.swift */,
+				C10ACDD948331046460B1AAB /* BoundLibraryOnboardingComponents.swift */,
 			);
 			path = Library;
 			sourceTree = "<group>";
@@ -711,6 +733,9 @@
 				D41105864AEB5716CE1F821B /* OCRLayoutAnalyzerTests.swift */,
 				5E54211E09D3FCAB3E2322D7 /* CapturePipelineTests.swift */,
 				8838921BDBDEB6D3F936FB12 /* OCRLayoutFixtureTests.swift */,
+				3AFFA6BF715740474FCC7BDA /* SystemIntegrationTests.swift */,
+				90703099D5F4D609FE925DFF /* AppRegionTests.swift */,
+				D7C5624C4F8A37F6B9D99AA7 /* PhoneAuthTests.swift */,
 			);
 			path = CastReaderTests;
 			sourceTree = "<group>";
@@ -848,6 +873,8 @@
 			isa = PBXGroup;
 			children = (
 				DFF6331C40127B3CFD74830D /* WeReadLibraryViews.swift */,
+				F901153EF99788B291E57C8D /* WeReadFirstLaunchFlowView.swift */,
+				07D1CC1C393BAA74BFDCF1CD /* WeReadOnboardingBookRecommendation.swift */,
 			);
 			path = WeRead;
 			sourceTree = "<group>";
@@ -882,6 +909,7 @@
 			children = (
 				F3672A44B520576EC77FEBFD /* LoginView.swift */,
 				B1C37FD799726E19012B9615 /* AppleSignInButton.swift */,
+				058AF3AAB588018076178869 /* PhoneSignInView.swift */,
 			);
 			path = Auth;
 			sourceTree = "<group>";
@@ -963,6 +991,8 @@
 				E44986777A2149EBCF56D366 /* OReillyWebScripts.swift */,
 				5FFF507EAC1BC8A8D884C9F7 /* OCRLayoutAnalyzer.swift */,
 				13231119542F6E23A85BF6D7 /* ImagePreprocessor.swift */,
+				7DCDA811A66569ACA1A7B22B /* AppRegion.swift */,
+				6FBEA839BCB62878023DC973 /* PhoneAuthService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -1387,6 +1417,13 @@
 				8F92B63B2321943A09247409 /* DocumentScannerView.swift in Sources */,
 				005AE06492A860648466479B /* ImagePreprocessor.swift in Sources */,
 				438D1E305B7277CE04136EC6 /* PhotoRegionPicker.swift in Sources */,
+				65B55629AAEAF7E9DCFADA15 /* AppRegion.swift in Sources */,
+				34DBCB42399B0C80D78F3565 /* BoundLibraryOnboardingComponents.swift in Sources */,
+				33523745D2F5EFE2148057C1 /* WeReadFirstLaunchFlowView.swift in Sources */,
+				E0CB785C515C92035A3FC231 /* WeReadOnboardingBookRecommendation.swift in Sources */,
+				BB9D4E7B5E87BDF3F5AC6D0D /* PhoneAuthModels.swift in Sources */,
+				9A4A81886270EEE95559944C /* PhoneAuthService.swift in Sources */,
+				A88FAE489C53C0D6828D8C95 /* PhoneSignInView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1411,6 +1448,9 @@
 				6337837882ED5E948BA14BC2 /* OCRLayoutAnalyzerTests.swift in Sources */,
 				0B6B82DC22920D7A6C4DEB68 /* CapturePipelineTests.swift in Sources */,
 				E01EACED2AB2C0CDF748BDA6 /* OCRLayoutFixtureTests.swift in Sources */,
+				FB71C4FA46768B4DCCF6B123 /* SystemIntegrationTests.swift in Sources */,
+				01722CA5C530933D4EFC3433 /* AppRegionTests.swift in Sources */,
+				176195DF57C587351255E7FE /* PhoneAuthTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1485,12 +1525,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Safari Extension/CastReaderSafariExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 32;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Safari Extension/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				MARKETING_VERSION = 1.2.17;
+				MARKETING_VERSION = 1.2.18;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.SafariExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1624,7 +1664,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = CastReader/CastReader.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 32;
 				DEVELOPMENT_ASSET_PATHS = "\"CastReader/Preview Content\"";
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				ENABLE_PREVIEWS = YES;
@@ -1641,7 +1681,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.17;
+				MARKETING_VERSION = 1.2.18;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1662,7 +1702,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = CastReader/CastReader.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 32;
 				DEVELOPMENT_ASSET_PATHS = "\"CastReader/Preview Content\"";
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				ENABLE_PREVIEWS = YES;
@@ -1679,7 +1719,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.17;
+				MARKETING_VERSION = 1.2.18;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -1775,12 +1815,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Widget/CastReaderWidget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 32;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Widget/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				MARKETING_VERSION = 1.2.17;
+				MARKETING_VERSION = 1.2.18;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1799,12 +1839,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Safari Extension/CastReaderSafariExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 32;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Safari Extension/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				MARKETING_VERSION = 1.2.17;
+				MARKETING_VERSION = 1.2.18;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.SafariExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1822,12 +1862,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Share Extension/CastReaderShareExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 32;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Share Extension/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				MARKETING_VERSION = 1.2.17;
+				MARKETING_VERSION = 1.2.18;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1845,12 +1885,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Widget/CastReaderWidget.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 32;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Widget/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				MARKETING_VERSION = 1.2.17;
+				MARKETING_VERSION = 1.2.18;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1870,12 +1910,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = "CastReader Share Extension/CastReaderShareExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 31;
+				CURRENT_PROJECT_VERSION = 32;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "CastReader Share Extension/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				MARKETING_VERSION = 1.2.17;
+				MARKETING_VERSION = 1.2.18;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
