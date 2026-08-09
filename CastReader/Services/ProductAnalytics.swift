@@ -96,6 +96,23 @@ enum AnalyticsResult: String, Codable, Sendable {
     case pending
 }
 
+/// How a session started. The three system-surface values mirror
+/// `SystemActionOrigin`, which lives in the extension-safe SystemIntegration
+/// module and therefore cannot import this file; `SystemIntegrationTests`
+/// pins the two vocabularies together.
+enum AnalyticsLaunchType: String, Codable, CaseIterable, Sendable {
+    /// Ordinary launch — icon tap, or the app being restored by the system.
+    case cold
+    /// Same process returning to foreground after the session window expired.
+    case foregroundAfter30m = "foreground_after_30m"
+    /// Siri, Spotlight, Shortcuts or the Action Button ran an App Intent.
+    case intent
+    /// A widget button or link.
+    case widget
+    /// A `castreader://` URL.
+    case deepLink = "deep_link"
+}
+
 enum AnalyticsLibrarySource: String, Codable, CaseIterable, Sendable {
     case kindle
     case weread
@@ -510,6 +527,7 @@ struct AnalyticsEventEnvelope: Codable, Equatable, Identifiable, Sendable {
     let clientVariant: String
     let clientVersion: String
     let clientBuild: String?
+    let clientRegion: String
     let anonymousId: String
     let backendUserId: String?
     let appSessionId: String
@@ -617,6 +635,9 @@ enum AnalyticsSchema {
     private static let forbidden = Set([
         "content", "text", "ocrText", "fileName", "title", "url", "urlPath",
         "referrer", "email", "imageData", "rawError", "responseBody",
+        // 中国区新增的身份与支付凭据字段：手机号登录与支付宝订阅都不得进入埋点。
+        "phone", "phoneNumber", "smsCode", "verificationCode",
+        "wechatUid", "wereadUid", "agreementNo",
     ])
 
     static func validate(_ name: AnalyticsEventName, properties: AnalyticsProperties) throws {
@@ -672,6 +693,16 @@ enum AnalyticsSchema {
                 property: "storefront",
                 value: properties.storefront ?? "nil"
             )
+        }
+
+        if name == .appSessionStart {
+            guard let launchType = properties.launchType,
+                  AnalyticsLaunchType(rawValue: launchType) != nil else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "launchType",
+                    value: properties.launchType ?? "nil"
+                )
+            }
         }
 
         if name == .libraryConnection {
@@ -947,6 +978,8 @@ struct AnalyticsClientInfo: Equatable, Sendable {
     let version: String
     let build: String?
     let anonymousId: String
+    /// 发行区域（`AppRegion`）。区分中国大陆版与全球版的同一事件。
+    let region: String
 }
 
 enum AnalyticsEnvelopeFactory {
@@ -982,6 +1015,7 @@ enum AnalyticsEnvelopeFactory {
             clientVariant: client.variant,
             clientVersion: client.version,
             clientBuild: client.build,
+            clientRegion: client.region,
             anonymousId: client.anonymousId,
             backendUserId: backendUserId,
             appSessionId: appSessionId,
@@ -1288,7 +1322,10 @@ final class ProductAnalytics {
     private var scheduledFlushTask: Task<Void, Never>?
 
     private init() {
-        let endpoint = URL(string: "https://castreader.ai/api/events")!
+        // 区域就绪前（首次安装的第一次启动）走时区兜底；`chinaBackendEnabled`
+        // 关闭时这里恒等于 castreader.ai，与改动前一致。
+        let endpoint = URL(string: Constants.API.analyticsEvents)
+            ?? URL(string: "https://castreader.ai/api/events")!
         let pipeline = AnalyticsPipeline(
             store: UserDefaultsAnalyticsQueueStore(),
             transport: URLSessionAnalyticsTransport(endpoint: endpoint)
@@ -1300,7 +1337,8 @@ final class ProductAnalytics {
             variant: Self.clientVariant,
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0",
             build: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
-            anonymousId: Self.analyticsAnonymousId()
+            anonymousId: Self.analyticsAnonymousId(),
+            region: AppRegion.current.rawValue
         )
     }
 

@@ -115,6 +115,7 @@ final class SystemActionStore: @unchecked Sendable {
 
     private enum Storage {
         static let pendingActionKey = "systemIntegration.pendingAction.v1"
+        static let pendingOriginKey = "systemIntegration.pendingActionOrigin.v1"
     }
 
     private let defaults: UserDefaults?
@@ -131,7 +132,7 @@ final class SystemActionStore: @unchecked Sendable {
 
     /// Stores one pending action. The slot is intentionally last-write-wins.
     @discardableResult
-    func enqueue(_ action: SystemAction) -> Bool {
+    func enqueue(_ action: SystemAction, origin: SystemActionOrigin = .appIntent) -> Bool {
         guard let data = try? JSONEncoder().encode(action) else { return false }
 
         lock.lock()
@@ -140,10 +141,25 @@ final class SystemActionStore: @unchecked Sendable {
             return false
         }
         defaults.set(data, forKey: Storage.pendingActionKey)
+        defaults.set(origin.rawValue, forKey: Storage.pendingOriginKey)
         lock.unlock()
 
         NotificationCenter.default.post(name: .castReaderSystemActionPending, object: nil)
         return true
+    }
+
+    /// Non-destructive read of which surface deposited the pending action.
+    ///
+    /// An App Intent runs in its own process and only then launches the app, so
+    /// by the time `startAppSession` runs the slot is already populated. Peeking
+    /// must not consume it — routing the action is still MainTab's job.
+    func peekPendingOrigin() -> SystemActionOrigin? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let defaults,
+              defaults.data(forKey: Storage.pendingActionKey) != nil,
+              let raw = defaults.string(forKey: Storage.pendingOriginKey) else { return nil }
+        return SystemActionOrigin(rawValue: raw)
     }
 
     /// Atomically claims the single pending slot within this process.
@@ -157,6 +173,7 @@ final class SystemActionStore: @unchecked Sendable {
         }
         let data = defaults.data(forKey: Storage.pendingActionKey)
         defaults.removeObject(forKey: Storage.pendingActionKey)
+        defaults.removeObject(forKey: Storage.pendingOriginKey)
         lock.unlock()
 
         guard let data else { return nil }

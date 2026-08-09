@@ -206,6 +206,7 @@ class CastReaderUITests: XCTestCase {
             "-CastReaderOpenStudyBoost",
         ]
         app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
 
         XCTAssertTrue(
             app.descendants(matching: .any)["studyBoostView"].waitForExistence(timeout: 6)
@@ -539,6 +540,7 @@ class CastReaderUITests: XCTestCase {
                 "-CastReaderSkipSignInGate",
             ]
             app.launch()
+            dismissSelfOpenSystemAlertIfPresent()
             XCTAssertTrue(
                 app.tabBars.buttons[configuration.home].waitForExistence(timeout: 5),
                 "Missing localized Home tab for \(configuration.language)"
@@ -609,6 +611,9 @@ class CastReaderUITests: XCTestCase {
             "-AppleLocale", "en_US",
             "-CastReaderResetLibraryOnboarding",
             "-CastReaderSkipSignInGate",
+            // 固定为全球版：否则开发机时区在中国大陆时，首启会被路由到
+            // 微信读书引导，这些 Kindle 断言会全部落空。
+            "-CastReaderRegion", "global",
             "-CastReaderForceLibraryOnboardingRebind",
             "-boundLibraryOnboarding.v1.isActivated", "NO",
             "-boundLibraryOnboarding.v1.hasSeenChooser", "NO",
@@ -638,6 +643,9 @@ class CastReaderUITests: XCTestCase {
             "-AppleLocale", "zh_CN",
             "-CastReaderResetLibraryOnboarding",
             "-CastReaderSkipSignInGate",
+            // 固定为全球版：否则开发机时区在中国大陆时，首启会被路由到
+            // 微信读书引导，这些 Kindle 断言会全部落空。
+            "-CastReaderRegion", "global",
             "-CastReaderForceLibraryOnboardingRebind",
             // UserDefaults can survive a preceding UI-test process on the
             // shared simulator. Pin the argument domain to the value step so
@@ -756,6 +764,267 @@ class CastReaderUITests: XCTestCase {
         add(screenshot)
     }
 
+
+    /// 轮询等待某个元素的 accessibilityValue 变成期望值。
+    /// SwiftUI 重绘后 value 的更新会晚一两帧，直接断言会偶发失败。
+    private func expect(
+        _ element: XCUIElement,
+        toHaveValue expected: String,
+        _ message: String,
+        timeout: TimeInterval = 5
+    ) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if (element.value as? String) == expected { return }
+            usleep(200_000)
+        }
+        XCTFail("\(message)（实际：\(String(describing: element.value))）")
+    }
+
+    /// 内部区域开关必须能在设置里找到，并且能把区域切到中国大陆。
+    ///
+    /// 这个开关是真机测试中国区的唯一入口：切到 CN 后 Google 登录会消失，
+    /// 如果开关本身不可见或切不回来，测试设备就被锁死在中国区了。
+    func testInternalRegionSwitcherIsReachableAndSwitchesRegion() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderSkipLibraryOnboarding",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        // 齿轮只在「音色」Tab 的工具栏上。
+        app.tabBars.buttons["音色"].tap()
+        XCTAssertTrue(app.buttons["settingsGearButton"].waitForExistence(timeout: 6))
+        app.buttons["settingsGearButton"].tap()
+        XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 6))
+
+        let chinaOption = app.buttons["中国大陆（CHN）"]
+        for _ in 0..<12 where !chinaOption.exists {
+            app.swipeUp()
+        }
+        XCTAssertTrue(
+            chinaOption.waitForExistence(timeout: 4),
+            "设置里必须能找到内部区域开关的「中国大陆」选项"
+        )
+
+        chinaOption.tap()
+
+        // 切换后当前生效区域要立刻反映出来。
+        let effective = app.descendants(matching: .any)["settingsRegionEffective"]
+        XCTAssertTrue(effective.waitForExistence(timeout: 4))
+        expect(effective, toHaveValue: "cn", "切到 CHN 后当前生效区域应为 cn")
+
+        // 必须能切回来——否则测试机会被锁死在中国区。
+        let globalOption = app.buttons["全球（Global）"]
+        XCTAssertTrue(globalOption.exists, "必须保留切回全球的入口")
+        globalOption.tap()
+        expect(effective, toHaveValue: "global", "切回后当前生效区域应为 global")
+    }
+
+    /// 中国区首启走微信读书强绑定：四屏，没有站点确认屏，
+    /// 也不应出现任何 Kindle / Google 图书 / Kobo / O'Reilly 的痕迹。
+    func testFirstLaunchInChinaShowsWeReadOnboarding() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderResetLibraryOnboarding",
+            "-CastReaderRegion", "cn",
+            "-boundLibraryOnboarding.v1.isActivated", "NO",
+            "-boundLibraryOnboarding.v1.hasSeenChooser", "NO",
+            "-boundLibraryOnboarding.v3.phase", "sample",
+            "-boundLibraryOnboarding.v3.resumePhase", "sample",
+            "-boundLibraryOnboarding.v3.hasCompletedSample", "NO",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        let connect = app.buttons["wereadOnboarding.sample.start"]
+        XCTAssertTrue(
+            connect.waitForExistence(timeout: 6),
+            "中国区首启必须落在微信读书价值页"
+        )
+
+        let sampleTitle = app.staticTexts["wereadOnboarding.sample.title"]
+        XCTAssertTrue(sampleTitle.waitForExistence(timeout: 2))
+        XCTAssertEqual(sampleTitle.label, "把你的微信读书变成有声书")
+
+        XCTAssertTrue(
+            app.buttons["wereadOnboarding.sample.skip"].exists,
+            "价值页必须保留「我没有微信读书」的退路"
+        )
+        XCTAssertFalse(
+            app.buttons["kindleOnboarding.sample.start"].exists,
+            "中国区不得出现 Kindle 引导入口"
+        )
+
+        connect.tap()
+
+        // 微信读书是单站点：价值页之后直接进登录，不经过站点确认屏。
+        // 用「稍后」按钮判定：按钮一定会被曝光为可查询元素，容器上的
+        // accessibilityIdentifier 在 SwiftUI 里未必稳定可见。
+        let loginPostpone = app.buttons["wereadOnboarding.login.postpone"]
+        if !loginPostpone.waitForExistence(timeout: 10) {
+            XCTFail(
+                "中国区必须从价值页直接进入微信登录，不应出现站点选择。当前元素树：\n"
+                    + app.debugDescription
+            )
+        }
+        XCTAssertFalse(
+            app.buttons["kindleOnboarding.storefront.continue"].exists,
+            "微信读书没有站点确认屏"
+        )
+        XCTAssertTrue(
+            app.staticTexts["wereadOnboarding.login.qrGuidance"].exists,
+            "登录页必须给出长按识别二维码的操作指引"
+        )
+
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "WeRead onboarding login"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
+    /// 中国区手机号登录：后端未接通时用预设码也要能走完并真正登录成功。
+    func testChinaPhoneSignInCompletesWithPresetCode() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderRegion", "cn",
+            "-CastReaderSkipLibraryOnboarding",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        // 设置 → 登录
+        app.tabBars.buttons["音色"].tap()
+        XCTAssertTrue(app.buttons["settingsGearButton"].waitForExistence(timeout: 8))
+        app.buttons["settingsGearButton"].tap()
+        XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 6))
+
+        let signIn = app.buttons["登录 / 注册"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 6))
+        signIn.tap()
+
+        let phoneEntry = app.buttons["login.phone"]
+        XCTAssertTrue(phoneEntry.waitForExistence(timeout: 6), "中国区必须提供手机号登录入口")
+        XCTAssertFalse(
+            app.buttons["使用 Google 继续"].exists,
+            "中国区不得展示 Google 登录"
+        )
+        phoneEntry.tap()
+
+        let phoneField = app.textFields["phoneSignIn.phoneField"]
+        XCTAssertTrue(phoneField.waitForExistence(timeout: 6))
+        phoneField.tap()
+        phoneField.typeText("13800138000")
+
+        // 协议未勾选时主按钮必须不可点——这是合规硬要求。
+        let primary = app.buttons["phoneSignIn.primary"]
+        XCTAssertTrue(primary.exists)
+        XCTAssertFalse(primary.isEnabled, "未同意协议时不得允许获取验证码")
+
+        app.buttons["phoneSignIn.agreement"].tap()
+        XCTAssertTrue(primary.isEnabled, "勾选协议后应可获取验证码")
+        primary.tap()
+
+        let codeField = app.textFields["phoneSignIn.codeField"]
+        XCTAssertTrue(codeField.waitForExistence(timeout: 15), "应进入验证码输入步骤")
+        codeField.tap()
+        codeField.typeText("888888")
+        primary.tap()
+
+        // 登录成功后回到设置页，账号区出现「退出登录」。
+        XCTAssertTrue(
+            app.buttons["退出登录"].waitForExistence(timeout: 20),
+            "预设验证码必须能完成登录"
+        )
+
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "CN phone sign-in completed"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
+    /// 中国区手机号账号必须能进入付费流程。
+    ///
+    /// 回归点：购买门禁原本要求账号有邮箱，而手机号账号没有邮箱——
+    /// 那会让中国区所有用户的付费按钮点不动。
+    func testChinaPhoneAccountCanReachPurchase() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderRegion", "cn",
+            "-CastReaderSkipLibraryOnboarding",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        signInWithPresetPhoneCode(app)
+
+        // 登录后进入升级页，付费按钮必须可用（不再被邮箱门禁挡住）。
+        let upgrade = app.buttons["settingsProLink"]
+        if upgrade.waitForExistence(timeout: 6) {
+            upgrade.tap()
+        } else {
+            app.staticTexts["CastReader Pro"].firstMatch.tap()
+        }
+
+        let purchase = app.buttons["paywallPurchaseButton"]
+        if purchase.waitForExistence(timeout: 10) {
+            XCTAssertTrue(
+                purchase.isEnabled,
+                "手机号账号必须能点付费按钮——邮箱门禁会挡住整个中国区"
+            )
+        }
+
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "CN paywall with phone account"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
+    /// 用预设验证码完成中国区手机号登录，停在设置页。
+    private func signInWithPresetPhoneCode(_ app: XCUIApplication) {
+        app.tabBars.buttons["音色"].tap()
+        XCTAssertTrue(app.buttons["settingsGearButton"].waitForExistence(timeout: 8))
+        app.buttons["settingsGearButton"].tap()
+        XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 6))
+
+        let signIn = app.buttons["登录 / 注册"]
+        guard signIn.waitForExistence(timeout: 6) else { return }   // 已登录
+        signIn.tap()
+
+        let phoneEntry = app.buttons["login.phone"]
+        XCTAssertTrue(phoneEntry.waitForExistence(timeout: 6))
+        phoneEntry.tap()
+
+        let phoneField = app.textFields["phoneSignIn.phoneField"]
+        XCTAssertTrue(phoneField.waitForExistence(timeout: 6))
+        phoneField.tap()
+        phoneField.typeText("13800138000")
+        app.buttons["phoneSignIn.agreement"].tap()
+
+        let primary = app.buttons["phoneSignIn.primary"]
+        primary.tap()
+
+        let codeField = app.textFields["phoneSignIn.codeField"]
+        XCTAssertTrue(codeField.waitForExistence(timeout: 15))
+        codeField.tap()
+        codeField.typeText("888888")
+        primary.tap()
+
+        XCTAssertTrue(
+            app.buttons["退出登录"].waitForExistence(timeout: 20),
+            "预设验证码必须能完成登录"
+        )
+    }
+
     func testOnboardingCanBeDeferredWithoutAContentDecision() {
         let app = XCUIApplication()
         app.launchArguments = [
@@ -769,6 +1038,9 @@ class CastReaderUITests: XCTestCase {
             "-boundLibraryOnboarding.v3.phase", "sample",
             "-boundLibraryOnboarding.v3.resumePhase", "sample",
             "-boundLibraryOnboarding.v3.hasCompletedSample", "NO",
+            // 固定为全球版：否则开发机时区在中国大陆时，首启会被路由到
+            // 微信读书引导，这些 Kindle 断言会全部落空。
+            "-CastReaderRegion", "global",
         ]
         app.launch()
         dismissSelfOpenSystemAlertIfPresent()
@@ -787,6 +1059,9 @@ class CastReaderUITests: XCTestCase {
             "-interfaceLanguage", "system",
             "-CastReaderResetLibraryOnboarding",
             "-CastReaderSkipSignInGate",
+            // 固定为全球版：否则开发机时区在中国大陆时，首启会被路由到
+            // 微信读书引导，这些 Kindle 断言会全部落空。
+            "-CastReaderRegion", "global",
             "-CastReaderForceLibraryOnboardingRebind",
             "-boundLibraryOnboarding.v1.isActivated", "NO",
             "-boundLibraryOnboarding.v1.hasSeenChooser", "NO",

@@ -490,6 +490,71 @@ final class GoogleBooksContractTests: XCTestCase {
         )
     }
 
+    /// gds.google.com/web/landing 是登录续跳链中的落地中转页（Android 6a2f17d
+    /// 案例）：直接命中或作为 CheckCookie 的 continue 目标都要触发书架恢复。
+    @MainActor
+    func testShelfRecoveryDestinationAcceptsTheGdsLandingHop() {
+        XCTAssertTrue(
+            GoogleBooksLibrarySyncViewModel.isShelfRecoveryDestination(
+                URL(string: "https://gds.google.com/web/landing?rapt=abc")!
+            )
+        )
+        XCTAssertTrue(
+            GoogleBooksLibrarySyncViewModel.isShelfRecoveryDestination(
+                URL(
+                    string: "https://accounts.google.com/CheckCookie?continue=https%3A%2F%2Fgds.google.com%2Fweb%2Flanding"
+                )!
+            )
+        )
+        XCTAssertFalse(
+            GoogleBooksLibrarySyncViewModel.isShelfRecoveryDestination(
+                URL(string: "https://gds.google.com/other")!
+            )
+        )
+        XCTAssertFalse(
+            GoogleBooksLibrarySyncViewModel.isShelfRecoveryDestination(
+                URL(string: "http://gds.google.com/web/landing")!
+            )
+        )
+    }
+
+    /// 被拦导航诊断只允许携带 URL 的形状：host、path 与排序后的参数名。
+    /// 参数值可能携带账号数据，任何情况下都不得出现在形状里。
+    @MainActor
+    func testBlockedNavigationShapeCarriesParameterNamesButNeverValues() {
+        let shape = GoogleBooksLibrarySyncViewModel.blockedNavigationShape(
+            URL(
+                string: "https://idp.example.com/signin/challenge?TL=secret1&continue=https%3A%2F%2Fx&b=2"
+            )!
+        )
+        XCTAssertEqual(shape, "idp.example.com/signin/challenge?[TL,b,continue]")
+        XCTAssertFalse(shape.contains("secret1"))
+        XCTAssertEqual(
+            GoogleBooksLibrarySyncViewModel.blockedNavigationShape(
+                URL(string: "https://idp.example.com/hop")!
+            ),
+            "idp.example.com/hop?[]"
+        )
+        XCTAssertEqual(
+            GoogleBooksLibrarySyncViewModel.blockedNavigationShape(nil),
+            "unparseable"
+        )
+    }
+
+    /// 被拦回落的限频契约：8 秒窗口内只放行一次，窗口过后可再次回落。
+    @MainActor
+    func testBindingBlockRescueIsRateLimitedToOnePerWindow() {
+        let model = GoogleBooksLibrarySyncViewModel(
+            requestLoader: { _, _ in nil },
+            signInURLResolver: { _ in nil }
+        )
+        XCTAssertTrue(model.consumeBindingBlockRescue(now: 100))
+        XCTAssertFalse(model.consumeBindingBlockRescue(now: 107.9))
+        XCTAssertTrue(model.consumeBindingBlockRescue(now: 108))
+        XCTAssertFalse(model.consumeBindingBlockRescue(now: 108.5))
+        model.stop()
+    }
+
     @MainActor
     func testShelfRecoveryDestinationAcceptsTheGdsLandingHop() {
         XCTAssertTrue(

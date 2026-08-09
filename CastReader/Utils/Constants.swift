@@ -14,6 +14,17 @@ enum Constants {
         /// The provider adapters are not part of this release target.
         static let cloudStorageEnabled = false
 
+        /// 中国大陆账号、手机号、Pro 与埋点后端已在备案域名
+        /// `api.castreader.cn` 上线并通过生产接口预检。
+        static let chinaBackendEnabled = true
+
+        /// 上海账号后端目前没有 TTS 兼容路由；保持既有 TTS 节点选择，避免中国区
+        /// 因区域开关误打到 Next.js 404。后端补齐并通过合成冒烟后再单独开启。
+        static let chinaTTSBackendEnabled = false
+
+        /// `qr.castreader.cn` 当前尚未提供可验证的 TLS/QuickRead 服务。中国区暂时
+        /// 沿用现有 QuickRead 路由，保证“其他保持不变”。
+        static let chinaQuickReadBackendEnabled = false
     }
 
     enum API {
@@ -51,12 +62,24 @@ enum Constants {
         static let quickReadFastBlock0 = "\(quickReadBaseURL)/api/quickread/fast-block0"     // 快道：直出 block_0 秒开
 
         // 账号 / Pro 后端（Web，readout-web）
-        static let webURL = "https://castreader.ai"
-        static let proStatus = "\(webURL)/api/pro/status"               // GET ?device_id=&user_id=&local_date=
-        static let proListenTrack = "\(webURL)/api/pro/listen-track"    // POST {device_id|user_id, seconds}
-        static let proVerifyApple = "\(webURL)/api/pro/verify-apple"    // POST signed StoreKit 2 transaction
-        static let authSocialSignIn = "\(webURL)/api/auth/sign-in/social" // POST {provider, idToken:{token}} (better-auth)
-        static let pricingURL = "\(webURL)/pricing"
+        static let globalWebURL = "https://castreader.ai"
+
+        /// 中国大陆 storefront 使用备案后的境内账号后端；其他 storefront 的地址
+        /// 与改动前一致。按需计算，避免首启 Storefront 尚未解析时固化错误区域。
+        static var webURL: String {
+            guard Features.chinaBackendEnabled, AppRegion.current == .cn else {
+                return globalWebURL
+            }
+            return AppRegion.cn.webBaseURL
+        }
+
+        static var proStatus: String { "\(webURL)/api/pro/status" }               // GET ?device_id=&user_id=&local_date=
+        static var proListenTrack: String { "\(webURL)/api/pro/listen-track" }    // POST {device_id|user_id, seconds}
+        static var proVerifyApple: String { "\(webURL)/api/pro/verify-apple" }    // POST signed StoreKit 2 transaction
+        static var authSocialSignIn: String { "\(webURL)/api/auth/sign-in/social" } // POST {provider, idToken:{token}} (better-auth)
+        static var analyticsEvents: String { "\(webURL)/api/events" }
+        static var pricingURL: String { "\(webURL)/pricing" }
+
         /// 邮箱验证码登录（better-auth email-otp）走 castreader.com。
         ///
         /// 两站共用同一个 Supabase（user 表是同一份），但 auth 的正式归属是 .com，

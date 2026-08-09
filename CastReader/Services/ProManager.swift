@@ -52,7 +52,7 @@ final class ProManager: ObservableObject {
     }
 
     var isCrossPlatformPro: Bool {
-        serverPro && AuthService.shared.normalizedEmail != nil
+        serverPro && AuthService.shared.hasSyncableAccount
     }
 
     private static let appAccountTokenKey = "storekit_app_account_token_v1"
@@ -241,7 +241,8 @@ final class ProManager: ObservableObject {
             properties: .init(trigger: analyticsTrigger, store: "app_store", productId: product.id)
         )
         // 硬登录墙后所有人必然已登录；Apple 登录可能拿不到 email（仅首次授权返回），
-        // 不能因此挡购买——StoreKit 本身不需要 email，email 只影响跨平台同步的时机。
+        // 手机号账号同样算已登录；StoreKit 本身不要求 email，email / backend user id
+        // 只影响跨平台权益同步的时机，不能成为购买前置条件。
         guard AuthService.shared.isSignedIn else {
             refreshSyncState(reason: "purchase-blocked-signed-out")
             debugLog("purchase BLOCK signed-out product=\(product.id) localStoreKit=\(storeKitLocalPro ? "Y" : "N")")
@@ -399,7 +400,7 @@ final class ProManager: ObservableObject {
     }
 
     func refreshSyncState(reason: String) {
-        let hasEmail = AuthService.shared.normalizedEmail != nil
+        let hasEmail = AuthService.shared.hasSyncableAccount
         let pending = storeKitLocalPro && !serverPro
         needsEmailSync = pending
         if pending {

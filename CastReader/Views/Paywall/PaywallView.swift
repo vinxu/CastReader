@@ -145,7 +145,7 @@ struct ProUpsellContent: View {
 
     @ViewBuilder
     private var accountRow: some View {
-        if pro.needsEmailSync && !auth.hasEmailAccount {
+        if pro.needsEmailSync && !auth.hasSyncableAccount {
             Button { showLogin = true } label: {
                 Text("登录邮箱同步 Pro").font(.caption.weight(.semibold))
             }
@@ -250,13 +250,13 @@ struct ProUpsellContent: View {
                     .foregroundColor(AppTheme.primary)
                     .font(.headline)
                     .multilineTextAlignment(.center)
-                Text(auth.hasEmailAccount
+                Text(auth.hasSyncableAccount
                      ? AppLocalized("本机已解锁；跨平台同步等待 Apple 验证接口。")
                      : AppLocalized("本机已解锁；登录邮箱后可完成跨平台同步。"))
                     .font(.caption)
                     .foregroundColor(AppTheme.mutedForeground)
                     .multilineTextAlignment(.center)
-                if !auth.hasEmailAccount {
+                if !auth.hasSyncableAccount {
                     Button("登录邮箱同步 Pro") { showLogin = true }
                         .font(.subheadline.weight(.semibold))
                 }
@@ -311,8 +311,8 @@ struct ProUpsellContent: View {
                 }
                 Button {
                     // 只要求「已登录」：Apple 登录可能没有 email（仅首次授权返回），
-                    // 拿 email 当购买前置会把已登录用户再弹回登录页形成死循环。
-                    // email 只决定跨平台同步何时可用，不阻塞 StoreKit 购买。
+                    // 手机号账号也没有 email；StoreKit 购买只要求已有账号身份，
+                    // email / backend user id 只决定跨平台同步何时可用。
                     guard auth.isSignedIn else { showLogin = true; return }
                     guard let product = pro.products.first(where: { $0.id == selectedProductID }) else { return }
                     busy = true
@@ -330,8 +330,8 @@ struct ProUpsellContent: View {
                 .tint(AppTheme.primary)
                 .disabled(busy || selectedProductID == nil)
 
-                if !auth.hasEmailAccount {
-                    Text(AppLocalized("登录邮箱账号后，Pro 可跨设备同步。"))
+                if !auth.hasSyncableAccount {
+                    Text(AppLocalized("登录可同步的账号后，Pro 可跨设备同步。"))
                         .font(.caption2)
                         .foregroundColor(AppTheme.mutedForeground)
                         .multilineTextAlignment(.center)
@@ -391,7 +391,7 @@ struct ProUpsellContent: View {
             return AppLocalized("已恢复 Pro 会员")
         }
         if pro.storeKitLocalPro {
-            if auth.hasEmailAccount {
+            if auth.hasSyncableAccount {
                 return AppLocalized("已恢复购买，本机已解锁；跨平台同步等待 Apple 验证接口。")
             }
             return AppLocalized("已检测到购买，请登录邮箱同步 Pro")

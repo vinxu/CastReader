@@ -55,6 +55,20 @@ final class AuthService: NSObject, ObservableObject {
     }
     var hasEmailAccount: Bool { normalizedEmail != nil }
 
+    /// 是否具备可跨设备同步 Pro 的账号身份。
+    ///
+    /// 全球版靠邮箱（Google/Apple 一定会给），但中国区手机号账号**没有邮箱**，
+    /// 它拿到的是后端直接下发的 user id。把邮箱当作唯一判据会把所有手机号
+    /// 用户挡在购买之外——付费按钮点不动、Pro 也同步不回来。
+    ///
+    /// 因此购买与同步类门禁一律用这个判据；只有「确实要把邮箱发给后端」的
+    /// 地方才继续读 `normalizedEmail`。
+    var hasSyncableAccount: Bool {
+        if normalizedEmail != nil { return true }
+        if let backendUserId = account?.backendUserId, !backendUserId.isEmpty { return true }
+        return false
+    }
+
     /// 查 Pro 用的账号 id：仅用后端 better-auth user id；关联失败时为 nil → Pro 查询退回 device_id 维度。
     /// 不回退 provider sub（account.id），因其与后端 user_id 不同命名空间，会查不到 Web 端付费的 Pro。
     var proUserId: String? { account?.backendUserId }
@@ -147,6 +161,54 @@ final class AuthService: NSObject, ObservableObject {
         guard changed else { return }
         account = acc
         persist()
+    }
+
+    // MARK: - 手机号登录（中国区）
+
+    /// 手机号 + 短信验证码登录。
+    ///
+    /// 与 Google/Apple 的差别：后端直接下发 mobile session token 与 user id，
+    /// 不需要再走 `exchangeWithBackend`。手机号本身只保留脱敏形式。
+    func signInWithPhone(phone rawPhone: String, code: String) async throws {
+        isWorking = true
+        defer { isWorking = false }
+
+        let result = try await PhoneAuthService.shared.verify(phone: rawPhone, code: code)
+        await MobileSessionStore.shared.adoptExternalSession(
+            token: result.sessionToken,
+            provider: "phone"
+        )
+
+        let masked = ChinaPhoneNumber.masked(rawPhone)
+        applyAccount(
+            UserAccount(
+                id: result.userId,
+                email: nil,
+                name: result.displayName,
+                pictureURL: nil,
+                provider: "phone",
+                backendUserId: result.userId,
+                maskedPhone: masked.isEmpty ? nil : masked
+            )
+        )
+
+        // 登录后立刻按账号维度刷新 Pro，避免继续停留在 device_id 维度。
+        ProManager.shared.refreshSyncState(reason: "phone-sign-in")
+        await ProManager.shared.refresh()
+    }
+
+    /// 注销账号：先请求后端删除，再清空本地身份。
+    ///
+    /// 后端失败时**不**清本地——否则用户会以为已注销，实际数据还在。
+    func deleteAccount() async throws {
+        isWorking = true
+        defer { isWorking = false }
+
+        guard let token = await MobileSessionStore.shared.sessionToken() else {
+            throw PhoneAuthError.server(status: 401, message: AppLocalized("请先重新登录后再注销账号"))
+        }
+        try await PhoneAuthService.shared.deleteAccount(sessionToken: token)
+        signOut()
     }
 
     /// Pro 查询需要 readout-web / better-auth 的 user id。旧版本若登录时换取失败，

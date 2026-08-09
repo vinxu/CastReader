@@ -22,6 +22,7 @@ struct LoginView: View {
     @AppStorage("last_signin_provider") private var lastProvider = ""
     @Environment(\.dismiss) private var dismiss
     @State private var errorMessage: String?
+    @State private var showsPhoneSignIn = false
 
     // 邮箱验证码流
     @State private var emailFlowExpanded = false
@@ -48,6 +49,9 @@ struct LoginView: View {
             dismiss()
         }
         .onReceive(cooldownTimer) { _ in if resendCooldown > 0 { resendCooldown -= 1 } }
+        .sheet(isPresented: $showsPhoneSignIn) {
+            PhoneSignInView()
+        }
     }
 
     /// 竖屏用 Spacer 把内容撑成上中下三段；横屏（`verticalSizeClass == .compact`）
@@ -82,6 +86,7 @@ struct LoginView: View {
     /// 邮箱流展开后占据整块区域，此时不再显示图标行。
     private var channelStack: some View {
         VStack(spacing: 14) {
+            phoneButton
             googleButton
             if emailFlowExpanded {
                 emailSection
@@ -175,6 +180,24 @@ struct LoginView: View {
         }
         .padding(12)
         .background(AppTheme.surface, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    @ViewBuilder
+    private var phoneButton: some View {
+        if AppRegion.current.showsPhoneSignIn {
+            Button { showsPhoneSignIn = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "iphone").font(.system(size: 18, weight: .bold))
+                    Text(AppLocalized("使用手机号继续")).fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity).padding()
+                .background(AppTheme.buttonPrimary)
+                .foregroundColor(AppTheme.buttonPrimaryForeground)
+                .cornerRadius(12)
+            }
+            .disabled(auth.isWorking)
+            .accessibilityIdentifier("login.phone")
+        }
     }
 
     // MARK: 按钮

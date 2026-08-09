@@ -174,6 +174,14 @@ enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
         case .oreilly: return .oreilly
         }
     }
+
+    /// 引导中是否需要先让用户确认站点。
+    ///
+    /// 只有 Amazon 有多个 storefront；微信读书等单站点书库直接跳过该屏，
+    /// 于是中国区的首启引导是四屏而不是五屏。
+    var requiresStorefrontSelection: Bool {
+        self == .kindle
+    }
 }
 
 enum BoundLibraryOnboardingPhase: String, Equatable {
@@ -276,7 +284,9 @@ final class BoundLibraryOnboardingStore: ObservableObject {
             // v1 users who already dismissed the chooser must not be forced
             // through a new full-screen flow after upgrading.
             initialPhase = .postponed
-            initialResumePhase = .storefront
+            // 单站点书库没有站点确认屏，恢复点是登录而不是 storefront。
+            let source = restoredSource ?? AppRegion.current.onboardingSource
+            initialResumePhase = source.requiresStorefrontSelection ? .storefront : .login
         } else {
             initialPhase = .sample
             initialResumePhase = .sample
@@ -293,13 +303,52 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         hasSeenChooser && !isActivated
     }
 
+    /// 当前发行区域下仍然可用的已选书库；不可用时为 nil。
+    ///
+    /// `selectedSource` 可能是在别的区域（或 storefront 解析完成前）持久化的：
+    /// 例如 global 下绑了 Google Play 图书，区域解析为 CN 后该书库被
+    /// `AppRegion.availableBoundLibraries` 排除，MainTabView 的区域闸门会吞掉
+    /// 一切绑定请求。UI 读取选择必须经由本属性，把不可用值视同未选择——
+    /// 否则首页会渲染一个点了没反应的死入口。持久化值保留不清除：区域可能
+    /// 只是时区兜底的临时误判，切回后选择自动恢复。
+    var regionAvailableSelectedSource: BoundLibraryOnboardingSource? {
+        guard let selectedSource,
+              AppRegion.current.availableBoundLibraries.contains(selectedSource)
+        else { return nil }
+        return selectedSource
+    }
+
+    /// 本次首启引导强绑定的书库。
+    ///
+    /// 用户已经选过且该书库在当前区域可用就用他选的；否则取发行区域的
+    /// 默认——全球版是 Kindle，中国大陆版是微信读书（见 `AppRegion.onboardingSource`）。
+    var flowSource: BoundLibraryOnboardingSource {
+        regionAvailableSelectedSource ?? AppRegion.current.onboardingSource
+    }
+
+    /// 引导被推迟后，首屏之后应该落到哪一步。
+    ///
+    /// 单站点书库（微信读书）没有站点确认屏，直接落到登录。
+    private var stepAfterSample: BoundLibraryOnboardingPhase {
+        flowSource.requiresStorefrontSelection ? .storefront : .login
+    }
+
     /// Home must reopen the persisted v3 step instead of routing a deferred
-    /// Kindle user through the legacy one-shot connection notification.
-    var shouldResumeDeferredKindleFlow: Bool {
+    /// user through the legacy one-shot connection notification.
+    ///
+    /// Only the region's own onboarding provider owns the full-screen flow —
+    /// global is Kindle, China is WeRead. Every other provider (Google Books,
+    /// Kobo, O'Reilly, and WeRead outside China) is bound through its own sheet
+    /// straight from Home, so it must not be routed back into the cover.
+    ///
+    /// Comparing against `flowSource` here would be a no-op: it falls back to
+    /// `selectedSource`, so the check would pass for every provider and hijack
+    /// their direct binding route.
+    var shouldResumeDeferredLibraryFlow: Bool {
         !isActivated
             && phase == .postponed
             && resumePhase.isActiveFlow
-            && selectedSource == .kindle
+            && selectedSource == AppRegion.current.onboardingSource
     }
 
     /// Generic name used by the migration contract. The global build's guided
@@ -335,12 +384,12 @@ final class BoundLibraryOnboardingStore: ObservableObject {
 
     func presentChooser() {
         if phase == .postponed {
-            phase = resumePhase.isActiveFlow ? resumePhase : (hasCompletedSample ? .storefront : .sample)
+            phase = resumePhase.isActiveFlow ? resumePhase : (hasCompletedSample ? stepAfterSample : .sample)
         } else if phase == .activated {
             // Production Settings intentionally offers “重新打开书库引导”. Keep the
             // earned activation, but allow this explicitly presented replay to
             // advance through the informational/connection steps.
-            phase = hasCompletedSample ? .storefront : .sample
+            phase = hasCompletedSample ? stepAfterSample : .sample
         }
         isChooserPresented = true
         persistFlowState()
@@ -350,10 +399,16 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         isChooserPresented = false
     }
 
+    /// 价值屏之后：Kindle 去站点确认，单站点书库（微信读书）直接去登录。
     func completeSample() {
         guard canAdvancePresentedFlow else { return }
         hasCompletedSample = true
-        transition(to: .storefront)
+        if stepAfterSample == .login {
+            // 没有站点屏的书库在这里就要认领 source，否则后续步骤拿不到归属。
+            confirmLibrarySelection(flowSource)
+        } else {
+            transition(to: .storefront)
+        }
     }
 
     func showStorefrontConfirmation() {
@@ -366,27 +421,36 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         transition(to: .sample)
     }
 
-    func confirmKindleStorefront() {
+    /// 用户确认要连接某个书库：记下归属并进入登录屏。
+    func confirmLibrarySelection(_ source: BoundLibraryOnboardingSource) {
         guard canAdvancePresentedFlow else { return }
-        if selectedSource != nil, selectedSource != .kindle, !isActivated {
+        if selectedSource != nil, selectedSource != source, !isActivated {
             resetActivationProgress()
         }
-        selectedSource = .kindle
+        selectedSource = source
         hasSeenChooser = true
-        defaults.set(BoundLibraryOnboardingSource.kindle.rawValue, forKey: Key.selectedSource)
+        defaults.set(source.rawValue, forKey: Key.selectedSource)
         defaults.set(true, forKey: Key.hasSeenChooser)
         transition(to: .login)
     }
 
-    func beginKindleScan() {
+    func confirmKindleStorefront() {
+        confirmLibrarySelection(.kindle)
+    }
+
+    func beginLibraryScan() {
         guard canAdvancePresentedFlow else { return }
         transition(to: .scan)
     }
 
-    func requireKindleLogin() {
+    func requireLibraryLogin() {
         guard canAdvancePresentedFlow else { return }
         transition(to: .login)
     }
+
+    func beginKindleScan() { beginLibraryScan() }
+
+    func requireKindleLogin() { requireLibraryLogin() }
 
     func prepareFirstListen(bookID: String) {
         guard canAdvancePresentedFlow else { return }
@@ -394,20 +458,24 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         transition(to: .firstListen)
     }
 
-    /// Dismisses the onboarding before MainTab presents the real Kindle reader.
-    /// Activation still completes only through natural Kindle playback ticks.
-    func startFirstListen(bookID: String) {
+    /// Dismisses the onboarding before MainTab presents the real reader.
+    /// Activation still completes only through natural playback ticks.
+    ///
+    /// `source` 必须是本次引导实际绑定的书库——中国区走微信读书，写死 Kindle
+    /// 会把 CN 用户错误归因成 Kindle 用户，埋点与后续跳转全部错位。
+    func startFirstListen(bookID: String, source: BoundLibraryOnboardingSource? = nil) {
         guard !isActivated else {
             isChooserPresented = false
             return
         }
-        selectedSource = .kindle
+        let resolved = source ?? flowSource
+        selectedSource = resolved
         hasSeenChooser = true
         recommendedBookID = bookID
         phase = .firstListen
         resumePhase = .firstListen
         isChooserPresented = false
-        defaults.set(BoundLibraryOnboardingSource.kindle.rawValue, forKey: Key.selectedSource)
+        defaults.set(resolved.rawValue, forKey: Key.selectedSource)
         defaults.set(true, forKey: Key.hasSeenChooser)
         persistFlowState()
     }

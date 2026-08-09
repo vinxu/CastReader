@@ -76,6 +76,7 @@ struct MainTabView: View {
 
     private enum LibraryOnboardingPostDismissAction {
         case kindleBook(KindleBook)
+        case wereadBook(WeReadBook)
         case restoreClipboard
     }
 
@@ -110,6 +111,8 @@ struct MainTabView: View {
     @State private var shareInboxMetadataLoadingIDs: Set<UUID> = []
     @State private var showShareInbox = false
     @State private var pendingLibraryOnboardingAction: LibraryOnboardingPostDismissAction?
+    /// 区域的权威判据是否已就绪。首启引导要等它，避免呈现错版本的引导。
+    @State private var isRegionResolved = AppRegion.isAuthoritative
     @State private var reviewRequestTask: Task<Void, Never>?
     @State private var systemActionTask: Task<Void, Never>?
     @State private var systemActionNotice: String?
@@ -355,6 +358,13 @@ struct MainTabView: View {
             }
             restartReviewRequestMonitor()
         }
+        .task {
+            // 首启引导要按发行区域分派两套完全不同的界面，所以先把 storefront
+            // 解析出来。已就绪时这里立即返回，不会拖慢冷启动。
+            guard !isRegionResolved else { return }
+            _ = await AppRegion.awaitAuthoritative()
+            isRegionResolved = true
+        }
         .onChange(of: reviewOpportunityState) {
             restartReviewRequestMonitor()
         }
@@ -477,12 +487,22 @@ struct MainTabView: View {
             isPresented: libraryOnboardingPresentation,
             onDismiss: handleLibraryOnboardingDismissal
         ) {
-            KindleFirstLaunchFlowView(
-                onboarding: libraryOnboarding,
-                onSkip: handleLibraryOnboardingPostpone,
-                onStartBook: handleKindleOnboardingStartBook
-            )
-            .interactiveDismissDisabled()
+            // 中国区强绑定微信读书（四屏），其余地区保持 Kindle 五屏引导不变。
+            if AppRegion.current == .cn {
+                WeReadFirstLaunchFlowView(
+                    onboarding: libraryOnboarding,
+                    onSkip: handleLibraryOnboardingPostpone,
+                    onStartBook: handleWeReadOnboardingStartBook
+                )
+                .interactiveDismissDisabled()
+            } else {
+                KindleFirstLaunchFlowView(
+                    onboarding: libraryOnboarding,
+                    onSkip: handleLibraryOnboardingPostpone,
+                    onStartBook: handleKindleOnboardingStartBook
+                )
+                .interactiveDismissDisabled()
+            }
         }
         .alert(
             AppLocalized("以后在 YouTube 里点分享，就能直接听字幕稿。"),
@@ -560,7 +580,10 @@ struct MainTabView: View {
 
     private var libraryOnboardingPresentation: Binding<Bool> {
         Binding(
-            get: { libraryOnboarding.isChooserPresented },
+            // 等区域的权威判据（App Store storefront）就绪再呈现引导。
+            // 否则首次安装时只有时区兜底可用，人在中国大陆出差的海外用户会先
+            // 闪一下微信读书引导再跳回 Kindle 引导。最多等 2 秒，超时按兜底值走。
+            get: { isRegionResolved && libraryOnboarding.isChooserPresented },
             set: { presented in
                 if presented {
                     libraryOnboarding.presentChooser()
@@ -1512,6 +1535,10 @@ struct MainTabView: View {
         pendingLibraryOnboardingAction = .kindleBook(book)
     }
 
+    private func handleWeReadOnboardingStartBook(_ book: WeReadBook) {
+        pendingLibraryOnboardingAction = .wereadBook(book)
+    }
+
     private func handleLibraryOnboardingPostpone() {
         pendingLibraryOnboardingAction = .restoreClipboard
         libraryOnboarding.postpone()
@@ -1528,9 +1555,34 @@ struct MainTabView: View {
                 book: book,
                 intent: .autoplayRead(requestID: UUID())
             )
+        case .wereadBook(let book):
+            selectedTab = 0
+            openWeReadOnboardingBook(book)
         case .restoreClipboard:
             clipboard.check()
         }
+    }
+
+    /// 引导的首听：进阅读器并自动朗读。归因保持在 `library_onboarding`，
+    /// 激活仍然只由真实播放的 30 秒累计完成。
+    private func openWeReadOnboardingBook(_ book: WeReadBook) {
+        WeReadLibraryStore.shared.markOpened(book)
+        let document = ReadingDocument(
+            id: book.id,
+            title: book.title,
+            sourceKind: .weread,
+            language: Constants.TTS.defaultLanguage,
+            paragraphs: [],
+            sourceURL: book.effectiveReaderURL,
+            coverURL: book.coverURL
+        )
+        let context = ProductAnalytics.shared.beginContentIntent(
+            source: .weread,
+            format: .weread,
+            entryPoint: libraryOnboarding.analyticsEntryPoint(for: .weread) ?? "library_onboarding",
+            intendedMode: "read"
+        )
+        coordinator.open(document, mode: .read, autoplay: true, analyticsContext: context)
     }
 
     /// Route every library connection request through one always-mounted root.
@@ -1541,6 +1593,10 @@ struct MainTabView: View {
         _ source: BoundLibraryOnboardingSource,
         entryPoint: String
     ) {
+        // 区域闸门：中国大陆版只允许微信读书。
+        // 隐藏 UI 入口还不够——这里挡住所有程序化触发（例如阅读器重连），
+        // 保证境外书库在 CN 下是真正不可达的代码路径，而不只是看不见。
+        guard AppRegion.current.availableBoundLibraries.contains(source) else { return }
         selectedTab = 0
         if let superseded = pendingLibraryConnection {
             ProductAnalytics.shared.trackLibraryConnection(

@@ -611,7 +611,8 @@ final class ProductAnalyticsTests: XCTestCase {
                 variant: "unit_test",
                 version: "1.0",
                 build: "1",
-                anonymousId: "22222222-2222-2222-2222-222222222222"
+                anonymousId: "22222222-2222-2222-2222-222222222222",
+                region: "global"
             ),
             appSessionId: "app-session",
             backendUserId: "backend-user",

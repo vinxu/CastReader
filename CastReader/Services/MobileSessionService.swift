@@ -12,14 +12,22 @@ actor MobileSessionStore: MobileSessionProviding {
     private static let providerKey = "castreader_mobile_session_provider_v1"
     private static let identityTokenKey = "castreader_mobile_identity_token_v1"
 
-    private let endpoint: URL
+    private let overrideEndpoint: URL?
     private let session: URLSession
 
+    /// 会话端点跟随发行区域（中国区后端就绪前仍是 castreader.ai，见
+    /// `Constants.Features.chinaBackendEnabled`）。因此按需计算而不是在 init 固化。
+    private var endpoint: URL {
+        overrideEndpoint
+            ?? URL(string: Constants.API.webURL + "/api/mobile-auth/session")
+            ?? URL(string: "https://castreader.ai/api/mobile-auth/session")!
+    }
+
     init(
-        endpoint: URL = URL(string: "https://castreader.ai/api/mobile-auth/session")!,
+        endpoint: URL? = nil,
         session: URLSession = .shared
     ) {
-        self.endpoint = endpoint
+        self.overrideEndpoint = endpoint
         self.session = session
     }
 
@@ -52,6 +60,17 @@ actor MobileSessionStore: MobileSessionProviding {
         KeychainStore.set(provider, for: Self.providerKey)
         KeychainStore.set(idToken, for: Self.identityTokenKey)
         return token
+    }
+
+    /// 收下由其他登录方式（中国区手机号）直接下发的会话 token。
+    ///
+    /// 手机号登录没有 idToken 可换，服务端在校验验证码时就把 session 发下来了。
+    /// 这类会话无法本地续期，过期后需要用户重新登录（`refreshSession` 因此返回 nil）。
+    func adoptExternalSession(token: String, provider: String) {
+        guard let token = normalized(token) else { return }
+        KeychainStore.set(token, for: Self.keychainKey)
+        KeychainStore.set(provider, for: Self.providerKey)
+        KeychainStore.delete(Self.identityTokenKey)
     }
 
     func refreshSession() async -> String? {

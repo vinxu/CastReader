@@ -55,14 +55,34 @@ enum TTSEndpoint {
         return raw
     }
 
-    /// 主用节点：大陆→CN，否则→US。
+    /// 中国大陆版的 TTS 节点（境内备案实例）。
+    /// 只有 `Constants.Features.chinaBackendEnabled` 打开后才会被使用。
+    static let chinaMainlandBase = "https://api.castreader.cn"
+
+    /// 主用节点。
+    ///
+    /// 中国大陆版（境内后端就绪后）固定走 `api.castreader.cn`；其余情况沿用既有的
+    /// 时区就近路由：大陆时区→CN 节点，否则→US。
+    ///
+    /// 注意这里有两个不同的「中国」概念，不要合并：
+    /// - `AppRegion == .cn` 是**发行区域**，决定合规与商业规则；
+    /// - `isMainlandChina()` 是**当前所在地**，决定哪个节点快。
+    ///   海外用户到中国出差仍应走 CN 节点，这是正确行为。
     static func primaryBase() -> String {
+        if Constants.Features.chinaTTSBackendEnabled, AppRegion.current == .cn {
+            return chinaMainlandBase
+        }
         let e = endpoints()
         return isMainlandChina() ? e.cn : e.us
     }
 
     /// 回退节点：仅当主用是 CN 时回退到 US；否则无回退。
+    ///
+    /// 中国大陆版**没有**回退——境内版本不得把请求打到境外节点。
     static func fallbackBase() -> String? {
+        if Constants.Features.chinaTTSBackendEnabled, AppRegion.current == .cn {
+            return nil
+        }
         guard isMainlandChina() else { return nil }
         return endpoints().us
     }

@@ -2,6 +2,8 @@
   "contract_version": 2,
   "transport": {
     "endpoint": "https://castreader.ai/api/events",
+    "endpoint_cn": "https://api.castreader.cn/api/events",
+    "endpoint_comment": "按 AppRegion 分派；中国大陆后端就绪前 cn 设备仍走 endpoint（见 Constants.Features.chinaBackendEnabled）",
     "batch_max": 20,
     "compatibility": "dual_v2_legacy"
   },
@@ -14,6 +16,7 @@
     "clientPlatform",
     "clientVariant",
     "clientVersion",
+    "clientRegion",
     "anonymousId",
     "appSessionId",
     "productArea",
@@ -22,6 +25,7 @@
   ],
   "value_domains": {
     "clientVariant": ["app_store", "testflight", "internal", "internal_debug", "simulator", "google_play"],
+    "clientRegion": ["global", "cn"],
     "contentSource": ["camera", "photo_library", "file", "url", "text", "clipboard", "share_sheet", "system", "history", "kindle", "weread", "google_books", "kobo", "oreilly", "google_drive", "dropbox", "onedrive", "youtube_ios", "youtube_android", "unknown"],
     "contentFormat": ["photo", "pdf", "epub", "docx", "text", "web", "kindle", "weread", "google_books", "kobo", "oreilly", "youtube", "unknown"],
     "storefront": ["us", "uk", "ca", "au", "jp", "de", "fr", "it", "es", "in", "br", "mx", "nl"],
@@ -270,6 +274,13 @@
     "email",
     "imageData",
     "rawError",
-    "responseBody"
+    "responseBody",
+    "phone",
+    "phoneNumber",
+    "smsCode",
+    "verificationCode",
+    "wechatUid",
+    "wereadUid",
+    "agreementNo"
   ]
 }

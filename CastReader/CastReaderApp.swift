@@ -172,14 +172,21 @@ struct CastReaderApp: App {
         }
 
         // Pro 订阅状态 + 每日额度初始化
+        // An App Intent runs in its own process and deposits the action before
+        // launching us, so the pending slot already says which system surface
+        // opened this session. Peeking never consumes it — MainTab still routes.
+        let launchType = SystemActionStore.shared.peekPendingOrigin()?.launchType ?? "cold"
         Task { @MainActor in
-            ProductAnalytics.shared.startAppSession()
+            ProductAnalytics.shared.startAppSession(launchType: launchType)
             ProManager.shared.start()
             QuotaManager.shared.rollIfNewDay()
             VoiceCatalogService.shared.start()
             NetworkReachability.shared.start()
             YouTubeTranscriptService.resetWebsiteDataStoreIfNeeded()
         }
+        // 解析发行区域（App Store storefront）。首启引导会等这个结果，
+        // 所以要尽早发起；失败保留上次缓存，默认 global。
+        Task { await AppRegion.refreshStorefront() }
         // 刷新云端 TTS 节点配置（CN/US 路由）
         Task { await TTSEndpoint.refreshRemoteConfig() }
         // 刷新云端解读(quickread)后端地址（换后端零发版；兜底 qr.castreader.ai）
@@ -232,7 +239,7 @@ struct CastReaderApp: App {
                             )
                         }
                     } else if let systemAction = SystemAction.from(url: url) {
-                        SystemActionStore.shared.enqueue(systemAction)
+                        SystemActionStore.shared.enqueue(systemAction, origin: .deepLink)
                     } else if url.scheme == "castreader", url.host == "share-inbox" {
                         NotificationCenter.default.post(name: .castReaderShareInboxChanged, object: nil)
                     } else if url.scheme == "castreader", url.host == "pro" {

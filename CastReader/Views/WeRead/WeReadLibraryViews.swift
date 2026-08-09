@@ -351,6 +351,8 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     @Published var availableCount = 0
     @Published var statusText = AppLocalized("打开微信读书并登录。")
     @Published var errorText: String?
+    /// 首启引导用的连接进度。与 Kindle 引导共用同一组语义。
+    @Published private(set) var onboardingState: BoundLibraryOnboardingConnectionState = .idle
     let webView: WKWebView
     private let store = WeReadLibraryStore.shared
     private var didLoad = false
@@ -369,6 +371,9 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     private var shouldResolveNativeLoginInForeground = false
     private let loginReplyProxy: WeReadLoginReplyProxy
     private let connectionAnalytics: AnalyticsLibraryConnectionRecorder
+    private var onboardingAutomationEnabled = false
+    private var onboardingAttemptID = 0
+    private var onboardingAutomationTask: Task<Void, Never>?
 
     var secondaryStatus: String {
         if availableCount > 0 {
@@ -679,6 +684,105 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                     nsError.code
                 )
                 replyHandler(nil, "The WeRead login request failed.")
+            }
+        }
+    }
+
+    // MARK: - 首启引导自动化
+    //
+    // 引导屏不自己驱动导航：登录与书架加载仍然由 WeRead 页面自身的生命周期
+    // （didCommit / didFinish）推进，这里只做两件事——把分散的信号归纳成
+    // `onboardingState`，以及在书架就绪时替用户按下那次「同步」。
+    //
+    // ⚠️ 铁律（docs/WeRead-iOS-Login-Session-Contract.md）：二维码可见到进入书架
+    // 期间必须保持同一个 WKWebView、同一个 document、同一个登录 UID。所以这里
+    // 只调 `loadIfNeeded()`（首次加载，自带 didLoad 保护），**绝不** load/reload/
+    // goBack，也不因为主题或几何变化重新导航。
+
+    func startOnboardingAutomation() {
+        onboardingAutomationEnabled = true
+        loadIfNeeded()
+        restartOnboardingAutomation(reason: "start")
+    }
+
+    func stopOnboardingAutomation() {
+        onboardingAutomationEnabled = false
+        onboardingAttemptID += 1
+        onboardingAutomationTask?.cancel()
+        onboardingAutomationTask = nil
+        // 已经就绪的结果要保留：引导切屏时不该把「书架已备好」退回未开始。
+        if case .ready = onboardingState { return }
+        onboardingState = .idle
+    }
+
+    func retryOnboardingScan() {
+        errorText = nil
+        restartOnboardingAutomation(reason: "manual-retry")
+    }
+
+    private func restartOnboardingAutomation(reason: String) {
+        guard onboardingAutomationEnabled else { return }
+        onboardingAttemptID += 1
+        let attemptID = onboardingAttemptID
+        onboardingAutomationTask?.cancel()
+        onboardingAutomationTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            var syncAttempts = 0
+
+            while !Task.isCancelled,
+                  self.onboardingAutomationEnabled,
+                  attemptID == self.onboardingAttemptID {
+                let scan = try? await self.evaluate(WeReadWebScripts.libraryScan)
+                guard !Task.isCancelled,
+                      attemptID == self.onboardingAttemptID else { return }
+
+                // 还没登录：页面自己在轮询并展示二维码，这里只负责报告状态。
+                guard let scan, scan.authenticated, !scan.authRequired else {
+                    self.onboardingState = .awaitingLogin
+                    try? await Task.sleep(for: .milliseconds(700))
+                    continue
+                }
+
+                self.onboardingState = .scanning(
+                    found: max(self.availableCount, scan.books.count)
+                )
+
+                // 页面自身的扫描/同步正在跑，等它。
+                if self.isScanning || self.isSyncing {
+                    try? await Task.sleep(for: .milliseconds(600))
+                    continue
+                }
+
+                if self.pendingBooks.isEmpty {
+                    // didFinish 尚未把书架抓完（例如刚从登录跳过来），补一次。
+                    await self.refreshPreview()
+                    guard !Task.isCancelled,
+                          attemptID == self.onboardingAttemptID else { return }
+                }
+
+                if !self.pendingBooks.isEmpty {
+                    syncAttempts += 1
+                    let synced = await self.syncLibrary()
+                    guard !Task.isCancelled,
+                          attemptID == self.onboardingAttemptID else { return }
+                    if synced, !self.store.books.isEmpty {
+                        self.onboardingState = .ready
+                        return
+                    }
+                    if syncAttempts >= 2 {
+                        self.onboardingState = .failed(
+                            message: self.errorText
+                                ?? AppLocalized("暂时没能同步微信读书书架，请重试。")
+                        )
+                        return
+                    }
+                } else if self.errorText != nil {
+                    // 登录成功但书架确实是空的。
+                    self.onboardingState = .empty
+                    return
+                }
+
+                try? await Task.sleep(for: .milliseconds(800))
             }
         }
     }

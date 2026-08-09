@@ -9,6 +9,16 @@
 import AppIntents
 import Foundation
 
+/// Which binary deposited the action. `openAppWhenRun` intents may execute in
+/// either the widget or the app process, so widget-vs-Siri is best effort; the
+/// distinction that always holds — and the one analytics needs — is
+/// "a system surface launched us" versus an ordinary icon tap.
+#if CASTREADER_WIDGET
+private let castReaderSystemActionOrigin: SystemActionOrigin = .widget
+#else
+private let castReaderSystemActionOrigin: SystemActionOrigin = .appIntent
+#endif
+
 #if !CASTREADER_WIDGET
 struct ReadWithCastReaderIntent: AppIntent {
     static let title: LocalizedStringResource = "Read with CastReader"
@@ -42,7 +52,7 @@ struct ReadWithCastReaderIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        SystemActionStore.shared.enqueue(systemAction)
+        SystemActionStore.shared.enqueue(systemAction, origin: castReaderSystemActionOrigin)
         return .result()
     }
 }
@@ -78,7 +88,7 @@ struct ExplainWithCastReaderIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        SystemActionStore.shared.enqueue(systemAction)
+        SystemActionStore.shared.enqueue(systemAction, origin: castReaderSystemActionOrigin)
         return .result()
     }
 }
@@ -109,7 +119,10 @@ struct ContinueInCastReaderIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        SystemActionStore.shared.enqueue(.continueReading(itemID: item?.id, mode: mode))
+        SystemActionStore.shared.enqueue(
+            .continueReading(itemID: item?.id, mode: mode),
+            origin: castReaderSystemActionOrigin
+        )
         return .result()
     }
 }
