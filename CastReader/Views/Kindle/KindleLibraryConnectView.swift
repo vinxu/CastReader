@@ -6,14 +6,10 @@
 import SwiftUI
 import WebKit
 
-enum KindleOnboardingConnectionState: Equatable {
-    case idle
-    case awaitingLogin
-    case scanning(found: Int)
-    case ready
-    case empty
-    case failed(message: String)
-}
+/// 连接状态机已提升为与书库无关的共享类型（见
+/// `BoundLibraryOnboardingComponents.swift`），微信读书引导复用同一组语义。
+/// 保留这个名字以免改动 Kindle 侧既有调用点。
+typealias KindleOnboardingConnectionState = BoundLibraryOnboardingConnectionState
 
 struct KindleLibraryConnectView: View {
     @Environment(\.dismiss) private var dismiss
@@ -218,6 +214,143 @@ struct KindleViewportCrop: Equatable {
             abs(heightScale - 1) < 0.001 &&
             abs(offsetX) < 0.5 &&
             abs(offsetY) < 0.5
+    }
+}
+
+/// Cookie consent remains Amazon UI. CastReader only switches viewport presentation so the
+/// original action area is reachable, then returns to the normal reader crop after it disappears.
+enum KindleCookieConsentViewportPolicy {
+    static func effectiveCrop(
+        normalCrop: KindleViewportCrop,
+        isConsentVisible: Bool
+    ) -> KindleViewportCrop {
+        isConsentVisible ? .identity : normalCrop
+    }
+}
+
+/// Every operation that can observe or mutate the paged Kindle surface passes
+/// through one policy. This keeps a visible Amazon notice from being captured,
+/// OCR'd, paged past, or used to start more TTS work while the user is handling
+/// Amazon's own UI.
+enum KindleCookieConsentPipelineOperation: String, CaseIterable {
+    case readerSetup
+    case layoutRepair
+    case capture
+    case ocr
+    case pageTurn
+    case automaticPageTurn
+    case ttsPreparation
+    case visualRecovery
+    case reload
+}
+
+enum KindleCookieConsentPipelinePolicy {
+    static func allows(
+        _ operation: KindleCookieConsentPipelineOperation,
+        isConsentVisible: Bool
+    ) -> Bool {
+        _ = operation
+        return !isConsentVisible
+    }
+}
+
+enum KindleCookieConsentDecision: String, CaseIterable {
+    case notVisible = "not_visible"
+    case autoClosed = "auto_closed"
+    case manualNoClose = "manual_no_close"
+    case manualMultipleCloses = "manual_multiple_closes"
+    case manualMultipleNotices = "manual_multiple_notices"
+    case manualAfterCloseAttempt = "manual_after_close_attempt"
+    case manualCloseClickFailed = "manual_close_click_failed"
+    case manualProbeOnly = "manual_probe_only"
+    case resolved
+}
+
+struct KindleCookieConsentBridgePayload: Equatable {
+    let runtimeToken: String
+    let documentToken: String
+    let storefrontID: String
+    let visible: Bool
+    let attemptedAutoClose: Bool
+    let decision: KindleCookieConsentDecision
+
+    init?(dictionary: [String: Any]) {
+        guard dictionary["type"] as? String == "kindle-cookie-consent",
+              let runtimeToken = dictionary["token"] as? String,
+              !runtimeToken.isEmpty,
+              let documentToken = dictionary["documentToken"] as? String,
+              !documentToken.isEmpty,
+              let storefrontID = dictionary["storefront"] as? String,
+              KindleStorefront.entry(id: storefrontID) != nil,
+              let visible = dictionary["visible"] as? Bool,
+              let attemptedAutoClose = dictionary["attempted"] as? Bool,
+              let rawDecision = dictionary["decision"] as? String,
+              let decision = KindleCookieConsentDecision(rawValue: rawDecision) else {
+            return nil
+        }
+        self.runtimeToken = runtimeToken
+        self.documentToken = documentToken
+        self.storefrontID = storefrontID
+        self.visible = visible
+        self.attemptedAutoClose = attemptedAutoClose
+        self.decision = decision
+    }
+}
+
+enum KindleCookieConsentBridgePolicy {
+    static func accepts(
+        _ payload: KindleCookieConsentBridgePayload,
+        expectedRuntimeToken: String,
+        activeDocumentToken: String?,
+        retiredDocumentTokens: Set<String>,
+        isMainFrame: Bool,
+        isExpectedWebView: Bool,
+        sourceURL: URL?,
+        currentURL: URL?,
+        expectedStorefrontID: String,
+        expectedASIN: String
+    ) -> Bool {
+        guard isMainFrame,
+              isExpectedWebView,
+              payload.runtimeToken == expectedRuntimeToken,
+              payload.storefrontID == expectedStorefrontID,
+              !retiredDocumentTokens.contains(payload.documentToken),
+              activeDocumentToken.map({ $0 == payload.documentToken }) ?? true,
+              KindleStorefrontNavigationPolicy.isExactReaderURL(
+                  sourceURL,
+                  expectedStorefrontID: expectedStorefrontID,
+                  expectedASIN: expectedASIN
+              ),
+              KindleStorefrontNavigationPolicy.isExactReaderURL(
+                  currentURL,
+                  expectedStorefrontID: expectedStorefrontID,
+                  expectedASIN: expectedASIN
+              ) else {
+            return false
+        }
+        return true
+    }
+}
+
+enum KindleCookieConsentStateChangeReason: String {
+    case observer
+    case navigationStart
+    case readerHidden
+    case destroy
+    case rendererReplacement
+}
+
+enum KindleCookieConsentRecoveryPolicy {
+    static func shouldScheduleRecovery(
+        wasVisible: Bool,
+        isVisible: Bool,
+        reason: KindleCookieConsentStateChangeReason,
+        isSyncDialogVisible: Bool
+    ) -> Bool {
+        wasVisible &&
+            !isVisible &&
+            reason == .observer &&
+            !isSyncDialogVisible
     }
 }
 
@@ -430,7 +563,8 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard KindleStorefrontNavigationPolicy.allowsMainFrame(
             webView.url,
-            expectedStorefrontID: store.boundStorefrontID
+            expectedStorefrontID: store.boundStorefrontID,
+            expectedAuthenticationReturnPath: store.boundStorefront.libraryURL.path
         ) else {
             rejectUnexpectedMainFrameDestination(webView.url)
             return
@@ -472,7 +606,8 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         }
         guard KindleStorefrontNavigationPolicy.allowsMainFrame(
             destination,
-            expectedStorefrontID: store.boundStorefrontID
+            expectedStorefrontID: store.boundStorefrontID,
+            expectedAuthenticationReturnPath: store.boundStorefront.libraryURL.path
         ) else {
             decisionHandler(.cancel)
             rejectUnexpectedMainFrameDestination(destination)
@@ -495,7 +630,8 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         }
         guard KindleStorefrontNavigationPolicy.allowsMainFrame(
             destination,
-            expectedStorefrontID: store.boundStorefrontID
+            expectedStorefrontID: store.boundStorefrontID,
+            expectedAuthenticationReturnPath: store.boundStorefront.libraryURL.path
         ) else {
             decisionHandler(.cancel)
             rejectUnexpectedMainFrameDestination(destination)
@@ -506,6 +642,13 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
 
     private func rejectUnexpectedMainFrameDestination(_ destination: URL?) {
         webView.stopLoading()
+#if DEBUG
+        // Path-level evidence for live-gate diagnosis. Host and path only —
+        // never the query, which can carry tokens or account identifiers.
+        KindleRunLog.write(
+            "KINDLE shelf blocked destination host=\(destination?.host ?? "nil") path=\(destination?.path ?? "nil")"
+        )
+#endif
         let expectedID = store.boundStorefrontID
         let observed = KindleStorefront.storefront(url: destination)
         let code: String

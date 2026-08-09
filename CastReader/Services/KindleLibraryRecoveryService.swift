@@ -2,6 +2,67 @@ import Foundation
 import CryptoKit
 import WebKit
 
+/// Shared deny-by-default gate for transient shelf WebViews used outside the
+/// visible connection screen. Keeping these recovery surfaces behind the same
+/// action + response checks prevents an alias or cross-market redirect from
+/// bypassing the canonical-only policy in the background.
+@MainActor
+final class KindleCanonicalShelfNavigationGate: NSObject, WKNavigationDelegate {
+    private let storefront: KindleStorefront
+    private(set) var hasBlockedNavigation = false
+
+    init(storefront: KindleStorefront) {
+        self.storefront = storefront
+        super.init()
+    }
+
+    private func allows(_ url: URL?) -> Bool {
+        KindleStorefrontNavigationPolicy.allowsMainFrame(
+            url,
+            expectedStorefrontID: storefront.id,
+            expectedAuthenticationReturnPath: storefront.libraryURL.path
+        )
+    }
+
+    private func block(_ webView: WKWebView, destination: URL?) {
+        hasBlockedNavigation = true
+        webView.stopLoading()
+        let domain = KindleStorefront.registrableDomain(for: destination?.host)
+            ?? "invalid_destination"
+        KindleRunLog.write(
+            "KINDLE transient shelf navigation blocked expected=\(storefront.id) domain=\(domain)"
+        )
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        guard navigationAction.targetFrame?.isMainFrame == true,
+              !allows(navigationAction.request.url) else {
+            decisionHandler(.allow)
+            return
+        }
+        decisionHandler(.cancel)
+        block(webView, destination: navigationAction.request.url)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationResponse: WKNavigationResponse,
+        decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
+    ) {
+        guard navigationResponse.isForMainFrame,
+              !allows(navigationResponse.response.url) else {
+            decisionHandler(.allow)
+            return
+        }
+        decisionHandler(.cancel)
+        block(webView, destination: navigationResponse.response.url)
+    }
+}
+
 @MainActor
 final class KindleLibraryRecoveryService {
     static let shared = KindleLibraryRecoveryService()
@@ -29,6 +90,14 @@ final class KindleLibraryRecoveryService {
                 ?? KindleStorefront.entry(rawURL: book.lastReadURL)
                 ?? KindleStorefront.entry(rawURL: book.readerURL)
                 ?? KindleLibraryStore.shared.boundStorefront
+            let navigationGate = KindleCanonicalShelfNavigationGate(
+                storefront: storefront
+            )
+            let previousNavigationDelegate = webView.navigationDelegate
+            webView.navigationDelegate = navigationGate
+            defer {
+                webView.navigationDelegate = previousNavigationDelegate
+            }
             onProgress(AppLocalized("正在打开 Kindle 书架…"))
             KindleRunLog.write("KINDLE library auto-recovery storefront=\(storefront.id)")
             webView.load(URLRequest(
@@ -37,6 +106,7 @@ final class KindleLibraryRecoveryService {
             ))
             for _ in 0..<40 {
                 try Task.checkCancellation()
+                if navigationGate.hasBlockedNavigation { return .notFound }
                 if !webView.isLoading {
                     switch Self.landingKind(webView.url, expectedStorefront: storefront) {
                     case .library:
@@ -65,6 +135,7 @@ final class KindleLibraryRecoveryService {
             var initialPayload: RecoveryPayload?
             onProgress(AppLocalized("正在等待 Kindle 书架加载…"))
             for readinessAttempt in 0..<24 {
+                if navigationGate.hasBlockedNavigation { return .notFound }
                 let payload = try await scrape(webView, expectedStorefront: storefront)
                 let rowCount = payload.books?.count ?? 0
                 KindleRunLog.write(
@@ -89,6 +160,7 @@ final class KindleLibraryRecoveryService {
             var idlePasses = 0
             onProgress(AppLocalized("正在同步 Kindle 书架…"))
             for pass in 0..<12 {
+                if navigationGate.hasBlockedNavigation { return .notFound }
                 let before = Set(recoveredBooks.map(\.id)).count
                 let payload: RecoveryPayload
                 if pass == 0, let initialPayload {
@@ -514,6 +586,12 @@ final class KindleLibraryRecoveryService {
             return .other
         }
         guard actualStorefront.id == expectedStorefront.id else {
+            return .otherStorefront
+        }
+        guard expectedStorefront.ownsCanonicalURL(url) else {
+            // Known aliases remain valid ownership evidence for migration, but
+            // a recovery WebView must never accept one as a fresh shelf/reader
+            // destination because localized aliases can drop /kindle-library.
             return .otherStorefront
         }
         if path == normalizedPath(expectedStorefront.libraryURL.path) {

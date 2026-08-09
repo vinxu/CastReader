@@ -69,6 +69,10 @@ struct KindleBookView: View {
         model.isNativeTOCPresented || model.isKindleTOCVisible
     }
 
+    private var shouldHidePlaybackControls: Bool {
+        shouldHidePlaybackForNativeTOC || model.isAmazonCookieConsentVisible
+    }
+
     private var headerHeight: CGFloat {
         usesCompactPlaybackBar ? 44 : 52
     }
@@ -86,9 +90,9 @@ struct KindleBookView: View {
                 if !usesCompactPlaybackBar {
                     Divider()
                     playbackBar
-                        .opacity(shouldHidePlaybackForNativeTOC ? 0 : (model.isKindleSyncDialogVisible ? 0.45 : 1))
-                        .allowsHitTesting(!shouldHidePlaybackForNativeTOC && !model.isKindleSyncDialogVisible)
-                        .accessibilityHidden(shouldHidePlaybackForNativeTOC || model.isKindleSyncDialogVisible)
+                        .opacity(shouldHidePlaybackControls ? 0 : (model.isKindleSyncDialogVisible ? 0.45 : 1))
+                        .allowsHitTesting(!shouldHidePlaybackControls && !model.isKindleSyncDialogVisible)
+                        .accessibilityHidden(shouldHidePlaybackControls || model.isKindleSyncDialogVisible)
                 }
             }
 
@@ -96,9 +100,9 @@ struct KindleBookView: View {
                 landscapePlaybackOverlay
                     .padding(.horizontal, 22)
                     .padding(.bottom, 8)
-                    .opacity(shouldHidePlaybackForNativeTOC ? 0 : (model.isKindleSyncDialogVisible ? 0.45 : 1))
-                    .allowsHitTesting(!shouldHidePlaybackForNativeTOC && !model.isKindleSyncDialogVisible)
-                    .accessibilityHidden(shouldHidePlaybackForNativeTOC || model.isKindleSyncDialogVisible)
+                    .opacity(shouldHidePlaybackControls ? 0 : (model.isKindleSyncDialogVisible ? 0.45 : 1))
+                    .allowsHitTesting(!shouldHidePlaybackControls && !model.isKindleSyncDialogVisible)
+                    .accessibilityHidden(shouldHidePlaybackControls || model.isKindleSyncDialogVisible)
             }
 
             if model.isNativeTOCPresented {
@@ -415,8 +419,8 @@ struct KindleBookView: View {
             }
             .padding(3)
             .background(AppTheme.surfaceVariant, in: Capsule())
-            .opacity(model.isKindleSyncDialogVisible ? 0.5 : 1)
-            .allowsHitTesting(!model.isKindleSyncDialogVisible)
+            .opacity(model.isKindleSyncDialogVisible || model.isAmazonCookieConsentVisible ? 0.5 : 1)
+            .allowsHitTesting(!model.isKindleSyncDialogVisible && !model.isAmazonCookieConsentVisible)
         }
         .frame(height: headerHeight)
         .padding(.horizontal, 14)
@@ -1878,6 +1882,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     @Published var isNativeTOCLoading = false
     @Published var nativeTOCError: String?
     @Published var nativeTOCEntries: [KindleTOCEntry] = []
+    @Published private(set) var isAmazonCookieConsentVisible = false
     @Published private(set) var isKindleSyncDialogVisible = false
     @Published private(set) var kindleSyncLocalLocation: Int?
     @Published private(set) var kindleSyncCloudLocation: Int?
@@ -1912,6 +1917,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var authRecoveryAttempted = false
     private var lastMainFrameStatus: Int?
     private var authRecoveryTask: Task<Void, Never>?
+    private let cookieConsentRuntimeToken: String
+    private var cookieConsentDocumentToken: String?
+    private var retiredCookieConsentDocumentTokens = Set<String>()
+    private var cookieConsentRecoveryTask: Task<Void, Never>?
+    private var cookieConsentEpoch: UInt64 = 0
+    private var cookieConsentResumeMode: ReaderMode?
+    private var cookieConsentShouldResumePlayback = false
+    private var cookieConsentAwaitingRecovery = false
     private var lastNativeTOCSelectionText: String?
     private var lastNativeTOCSelectionPageKey: String?
     private var nativeTOCTask: Task<Void, Never>?
@@ -1962,6 +1975,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var playbackCancellables = Set<AnyCancellable>()
     private let store = KindleLibraryStore.shared
     private let analyticsContext: AnalyticsContentContext
+
+    /// One reader WebView is bound to one concrete book identity. Storefront
+    /// ownership alone is not enough because an auth redirect could otherwise
+    /// return to a bare reader root or a different ASIN.
+    private var expectedReaderASIN: String? {
+        KindleBookValidator.asinValue(in: book.asin)
+            ?? KindleBookValidator.asinValue(in: book.id)
+            ?? KindleBookValidator.asinValue(in: book.effectiveReaderURL)
+    }
     /// Page-local OCR documents all participate in one user-initiated Kindle
     /// reading session. The coordinator survives resetViewModels(page:).
     private let readAnalyticsSessionCoordinator = ReadAnalyticsSessionCoordinator()
@@ -2109,14 +2131,34 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard isReaderSurfaceAttached != attached else { return }
         isReaderSurfaceAttached = attached
         KindleRunLog.write("KINDLE lifecycle surfaceAttached=\(attached ? "Y" : "N")")
+        if attached {
+            scheduleCookieConsentRecovery()
+            webView.evaluateJavaScript(
+                "window.__crKindleCookieConsentProbe && window.__crKindleCookieConsentProbe()",
+                completionHandler: nil
+            )
+        } else {
+            resetAmazonCookieConsentState(reason: .readerHidden)
+        }
     }
 
     func setReaderPresented(_ presented: Bool) {
         guard isReaderPresented != presented else { return }
         isReaderPresented = presented
         KindleRunLog.write("KINDLE lifecycle presented=\(presented ? "Y" : "N")")
-        if presented, needsForegroundVisualResync {
-            KindleRunLog.write("KINDLE lifecycle visual-resync pending reason=reader-presented")
+        if presented {
+            // Messages received while the mini player owned the WebView are
+            // intentionally rejected. Probe again when the reader becomes
+            // visible so JS de-duplication cannot strand a still-visible
+            // Amazon notice outside native state.
+            scheduleCookieConsentRecovery()
+            webView.evaluateJavaScript(
+                "window.__crKindleCookieConsentProbe && window.__crKindleCookieConsentProbe()",
+                completionHandler: nil
+            )
+            if needsForegroundVisualResync {
+                KindleRunLog.write("KINDLE lifecycle visual-resync pending reason=reader-presented")
+            }
         }
     }
 
@@ -2157,6 +2199,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func notePlaybackLayoutChange(reason: String) {
+        guard readerOperationAllowed(.layoutRepair, reason: reason) else { return }
         guard !isPlayerControlOverlayPresented else {
             KindleRunLog.write("KINDLE layout ignored reason=\(reason) source=player-overlay")
             return
@@ -2219,6 +2262,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func effectiveViewportCrop(forSurfaceSize size: CGSize) -> KindleViewportCrop {
+        if isAmazonCookieConsentVisible {
+            return KindleCookieConsentViewportPolicy.effectiveCrop(
+                normalCrop: viewportCrop,
+                isConsentVisible: true
+            )
+        }
         let normalized = CGSize(
             width: max(1, size.width.rounded(.toNearestOrAwayFromZero)),
             height: max(1, size.height.rounded(.toNearestOrAwayFromZero))
@@ -2260,6 +2309,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func noteReaderLayoutChange(reason: String) {
+        guard readerOperationAllowed(.layoutRepair, reason: reason) else { return }
         guard !isPlayerControlOverlayPresented else {
             KindleRunLog.write("KINDLE reader layout ignored reason=\(reason) source=player-overlay")
             return
@@ -2360,6 +2410,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func repairReaderLayout(reason: String, attempt: Int = 1) async {
+        guard readerOperationAllowed(.layoutRepair, reason: reason) else { return }
         guard didLoad else { return }
         webView.setNeedsLayout()
         webView.layoutIfNeeded()
@@ -2502,6 +2553,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     @discardableResult
     private func recoverReaderLayoutForIdle(reason: String, maxAttempts: Int) async -> Bool {
+        guard readerOperationAllowed(.layoutRepair, reason: reason) else { return false }
         guard didLoad else { return false }
         guard !isNativeTOCPresented, !isKindleTOCVisible else {
             KindleRunLog.write("KINDLE reader layout idle-recover skipped reason=\(reason) nativeTOC=1")
@@ -2655,14 +2707,23 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             intendedMode: "read",
             storefront: resolvedBook.storefrontID
         )
+        self.cookieConsentRuntimeToken = UUID().uuidString
+        let readerStorefront = KindleStorefront.entry(id: resolvedBook.storefrontID)
+            ?? KindleLibraryStore.shared.boundStorefront
+        let cookieConsentBridge = KindleWebScripts.amazonCookieConsentBridge(
+            token: cookieConsentRuntimeToken,
+            storefront: readerStorefront
+        )
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         let userContentController = WKUserContentController()
         // These are the only scripts that must run before Amazon's renderer:
-        // metadata wraps fetch, while the small blob hook captures pre-rendered
-        // page images before Kindle revokes their original object URLs. The
-        // ~207KB capture/UI payload stays lazy and installs after navigation.
+        // metadata wraps fetch, the small blob hook captures pre-rendered page
+        // images before Kindle revokes their original object URLs, and the
+        // close-only consent bridge leaves every privacy choice to Amazon and
+        // asks native to reveal the full viewport when no unique close exists.
+        // The ~207KB capture/UI payload stays lazy and installs after navigation.
         if #available(iOS 14.0, *) {
             userContentController.addUserScript(WKUserScript(
                 source: KindleWebScripts.restrictedToKnownStorefronts(
@@ -2680,6 +2741,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 forMainFrameOnly: true,
                 in: .page
             ))
+            userContentController.addUserScript(WKUserScript(
+                source: cookieConsentBridge,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true,
+                in: .page
+            ))
         } else {
             userContentController.addUserScript(WKUserScript(
                 source: KindleWebScripts.restrictedToKnownStorefronts(
@@ -2692,6 +2759,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 source: KindleWebScripts.restrictedToKnownStorefronts(
                     KindleWebScripts.metadataBootstrap
                 ),
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
+            userContentController.addUserScript(WKUserScript(
+                source: cookieConsentBridge,
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true
             ))
@@ -2755,6 +2827,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// it back into `deinit`.
     func destroy() {
         stopAll()
+        resetAmazonCookieConsentState(reason: .destroy)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "castReaderKindle")
         webView.configuration.userContentController.removeAllUserScripts()
         webView.navigationDelegate = nil
@@ -2775,14 +2848,29 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     nonisolated func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         let body = message.body
+        let isMainFrame = message.frameInfo.isMainFrame
+        let sourceURL = message.frameInfo.request.url
+        let sourceWebView = message.webView
         Task { @MainActor [weak self] in
-            self?.handleKindleScriptMessage(body)
+            self?.handleKindleScriptMessage(
+                body,
+                sourceWebView: sourceWebView,
+                sourceContentController: userContentController,
+                isMainFrame: isMainFrame,
+                sourceURL: sourceURL
+            )
         }
     }
 
-    private func handleKindleScriptMessage(_ body: Any) {
+    private func handleKindleScriptMessage(
+        _ body: Any,
+        sourceWebView: WKWebView?,
+        sourceContentController: WKUserContentController,
+        isMainFrame: Bool,
+        sourceURL: URL?
+    ) {
         guard let payload = body as? [String: Any] else {
-            KindleRunLog.write("KINDLE script message invalid \(String(describing: body))")
+            KindleRunLog.write("KINDLE script message rejected reason=malformed-body")
             return
         }
         if let event = KindleSyncDialogEvent(payload: payload) {
@@ -2791,6 +2879,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         let type = payload["type"] as? String ?? "unknown"
         switch type {
+        case "kindle-cookie-consent":
+            handleAmazonCookieConsentMessage(
+                payload,
+                sourceWebView: sourceWebView,
+                sourceContentController: sourceContentController,
+                isMainFrame: isMainFrame,
+                sourceURL: sourceURL
+            )
         case "kindle-user-page-gesture":
             let direction = payload["direction"] as? String ?? "unknown"
             guard shouldResumeAfterUserPageTurn,
@@ -2840,6 +2936,256 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
     }
 
+    private func handleAmazonCookieConsentMessage(
+        _ dictionary: [String: Any],
+        sourceWebView: WKWebView?,
+        sourceContentController: WKUserContentController,
+        isMainFrame: Bool,
+        sourceURL: URL?
+    ) {
+        guard let payload = KindleCookieConsentBridgePayload(dictionary: dictionary),
+              let expectedASIN = expectedReaderASIN else {
+            KindleRunLog.write("KINDLE cookie message rejected reason=malformed-envelope")
+            return
+        }
+        let expected = KindleStorefront.entry(id: analyticsContext.storefront)
+            ?? store.boundStorefront
+        let expectedWebView = sourceWebView === webView &&
+            sourceContentController === webView.configuration.userContentController
+        guard isReaderSurfaceAttached,
+              isReaderPresented,
+              libraryRecoveryWebView == nil,
+              KindleCookieConsentBridgePolicy.accepts(
+                  payload,
+                  expectedRuntimeToken: cookieConsentRuntimeToken,
+                  activeDocumentToken: cookieConsentDocumentToken,
+                  retiredDocumentTokens: retiredCookieConsentDocumentTokens,
+                  isMainFrame: isMainFrame,
+                  isExpectedWebView: expectedWebView,
+                  sourceURL: sourceURL,
+                  currentURL: webView.url,
+                  expectedStorefrontID: expected.id,
+                  expectedASIN: expectedASIN
+              ) else {
+            KindleRunLog.write("KINDLE cookie message rejected reason=origin-or-token")
+            return
+        }
+        if cookieConsentDocumentToken == nil {
+            cookieConsentDocumentToken = payload.documentToken
+        }
+        updateAmazonCookieConsentState(
+            visible: payload.visible,
+            reason: .observer,
+            decision: payload.decision,
+            attemptedAutoClose: payload.attemptedAutoClose
+        )
+    }
+
+    private func retireAmazonCookieConsentDocument() {
+        if let token = cookieConsentDocumentToken {
+            retiredCookieConsentDocumentTokens.insert(token)
+            if retiredCookieConsentDocumentTokens.count > 16,
+               let oldest = retiredCookieConsentDocumentTokens.first {
+                retiredCookieConsentDocumentTokens.remove(oldest)
+            }
+        }
+        cookieConsentDocumentToken = nil
+    }
+
+    private func resetAmazonCookieConsentState(
+        reason: KindleCookieConsentStateChangeReason
+    ) {
+        let wasVisible = isAmazonCookieConsentVisible
+        cookieConsentEpoch &+= 1
+        cookieConsentRecoveryTask?.cancel()
+        cookieConsentRecoveryTask = nil
+        cookieConsentAwaitingRecovery = false
+        cookieConsentResumeMode = nil
+        cookieConsentShouldResumePlayback = false
+        isAmazonCookieConsentVisible = false
+        retireAmazonCookieConsentDocument()
+        if wasVisible {
+            KindleRunLog.write("KINDLE cookie consent reset reason=\(reason.rawValue)")
+        }
+    }
+
+    private func updateAmazonCookieConsentState(
+        visible: Bool,
+        reason: KindleCookieConsentStateChangeReason,
+        decision: KindleCookieConsentDecision,
+        attemptedAutoClose: Bool
+    ) {
+        let wasVisible = isAmazonCookieConsentVisible
+        if wasVisible == visible {
+            KindleRunLog.write(
+                "KINDLE cookie consent unchanged state=\(visible ? "visible" : "hidden") storefront=\(book.storefrontID ?? "unknown") decision=\(decision.rawValue) attempted=\(attemptedAutoClose ? "Y" : "N")"
+            )
+            return
+        }
+        isAmazonCookieConsentVisible = visible
+        cookieConsentEpoch &+= 1
+        let epoch = cookieConsentEpoch
+        KindleRunLog.write(
+            "KINDLE cookie consent state=\(visible ? "visible" : "hidden") storefront=\(book.storefrontID ?? "unknown") decision=\(decision.rawValue) attempted=\(attemptedAutoClose ? "Y" : "N")"
+        )
+        if visible {
+            cookieConsentAwaitingRecovery = false
+            cookieConsentRecoveryTask?.cancel()
+            cookieConsentRecoveryTask = nil
+            pauseReaderAutomationForCookieConsent()
+            return
+        }
+
+        cookieConsentAwaitingRecovery = wasVisible && reason == .observer
+        guard KindleCookieConsentRecoveryPolicy.shouldScheduleRecovery(
+            wasVisible: wasVisible,
+            isVisible: visible,
+            reason: reason,
+            isSyncDialogVisible: isKindleSyncDialogVisible
+        ) else { return }
+        scheduleCookieConsentRecovery(epoch: epoch)
+    }
+
+    private func readerOperationAllowed(
+        _ operation: KindleCookieConsentPipelineOperation,
+        reason: String
+    ) -> Bool {
+        let allowed = KindleCookieConsentPipelinePolicy.allows(
+            operation,
+            isConsentVisible: isAmazonCookieConsentVisible
+        )
+        if !allowed {
+            KindleRunLog.write(
+                "KINDLE operation paused operation=\(operation.rawValue) reason=\(reason)"
+            )
+        }
+        return allowed
+    }
+
+    private func requireReaderOperation(
+        _ operation: KindleCookieConsentPipelineOperation,
+        reason: String
+    ) throws {
+        guard readerOperationAllowed(operation, reason: reason) else {
+            throw KindleBookError.cookieConsentVisible
+        }
+    }
+
+    private func pauseReaderAutomationForCookieConsent() {
+        // The identity-viewport switch resizes the WebView enough that the
+        // bridge can briefly report the notice gone and visible again within
+        // one episode (observed live 2026-08-09: visible → resolved → visible
+        // in the same second). A later pause must not forget that the first
+        // one stopped live playback, so the resume intent is sticky until the
+        // episode ends via reset, navigation, or completed recovery.
+        cookieConsentResumeMode = cookieConsentResumeMode ?? mode
+        cookieConsentShouldResumePlayback = cookieConsentShouldResumePlayback ||
+            isCurrentModePlaybackActiveOrPreparing ||
+            isAdvancingLivePage ||
+            isPageTurnResuming ||
+            isPreparing ||
+            pendingAutoplayRequestID != nil
+
+        readerSetupTask?.cancel()
+        readerSetupTask = nil
+        readerLayoutRepairTask?.cancel()
+        readerLayoutRepairTask = nil
+        layoutPlaybackRestartTask?.cancel()
+        layoutPlaybackRestartTask = nil
+        navigationRestartTask?.cancel()
+        navigationRestartTask = nil
+        manualPageResumeTask?.cancel()
+        manualPageResumeTask = nil
+        modeSwitchTask?.cancel()
+        modeSwitchTask = nil
+        continueListeningTask?.cancel()
+        continueListeningTask = nil
+        onboardingAutoplayRetryTask?.cancel()
+        onboardingAutoplayRetryTask = nil
+        cancelContinuousReadHandoff(reason: "cookie-consent", force: true)
+        invalidatePagePreloads(clearPrepared: false, reason: "cookie-consent")
+        cancelLiveHighlightTasks()
+        clearExternalMismatchState()
+
+        if cookieConsentShouldResumePlayback {
+            let resumeMode = cookieConsentResumeMode ?? mode
+            stopPlaybackForPageTurn(
+                reason: "cookie-consent",
+                clearLiveOverlay: false
+            )
+            mode = resumeMode
+        }
+        isPreparing = false
+        isPageTurnResuming = false
+        isAdvancingLivePage = false
+        statusText = AppLocalized("请先处理 Amazon 的 Cookie 提示。")
+        KindleRunLog.write(
+            "KINDLE cookie pipeline paused resume=\(cookieConsentShouldResumePlayback ? "Y" : "N") mode=\((cookieConsentResumeMode ?? mode).rawValue)"
+        )
+    }
+
+    private func scheduleCookieConsentRecovery(epoch: UInt64? = nil) {
+        guard cookieConsentAwaitingRecovery,
+              !isAmazonCookieConsentVisible,
+              !isKindleSyncDialogVisible,
+              isReaderSurfaceAttached else { return }
+        let expectedEpoch = epoch ?? cookieConsentEpoch
+        cookieConsentRecoveryTask?.cancel()
+        cookieConsentRecoveryTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            try? await Task.sleep(nanoseconds: 360_000_000)
+            guard !Task.isCancelled,
+                  self.cookieConsentEpoch == expectedEpoch,
+                  self.cookieConsentAwaitingRecovery,
+                  !self.isAmazonCookieConsentVisible,
+                  !self.isKindleSyncDialogVisible,
+                  self.isReaderSurfaceAttached else { return }
+
+            do {
+                try self.requireReaderOperation(.readerSetup, reason: "cookie-recovery")
+                self.configurePageModeGestures()
+                _ = try await self.ensureCaptureScriptInstalled(
+                    reason: "cookie-consent-hidden"
+                )
+                await self.setKindlePageModeLocked(true)
+                try await self.waitForPageReady()
+                try await self.waitForKindleImageStable()
+                guard !Task.isCancelled,
+                      self.cookieConsentEpoch == expectedEpoch,
+                      !self.isAmazonCookieConsentVisible,
+                      !self.isKindleSyncDialogVisible else { return }
+
+                self.cookieConsentAwaitingRecovery = false
+                self.cookieConsentRecoveryTask = nil
+                let shouldResume = self.cookieConsentShouldResumePlayback
+                let resumeMode = self.cookieConsentResumeMode ?? self.mode
+                self.cookieConsentShouldResumePlayback = false
+                self.cookieConsentResumeMode = nil
+                self.mode = resumeMode
+
+                if shouldResume {
+                    _ = try await self.startCurrentMode()
+                } else {
+                    self.statusText = AppLocalized("打开任意位置，然后点播放开始朗读。")
+                    if let key = self.livePageKey?.nilIfEmpty {
+                        self.startCachingNextPage(afterKey: key)
+                    }
+                }
+                KindleRunLog.write(
+                    "KINDLE cookie pipeline recovered resume=\(shouldResume ? "Y" : "N") mode=\(resumeMode.rawValue)"
+                )
+            } catch is CancellationError {
+                KindleRunLog.write("KINDLE cookie pipeline recovery cancelled")
+            } catch {
+                self.cookieConsentRecoveryTask = nil
+                self.statusText = AppLocalized("Cookie 提示已关闭，点击播放即可继续。")
+                KindleRunLog.write(
+                    "KINDLE cookie pipeline recovery deferred error=\(error.localizedDescription)"
+                )
+            }
+        }
+    }
+
     private func handleKindleSyncDialogEvent(_ event: KindleSyncDialogEvent) {
         if let localLocation = event.localLocation { kindleSyncLocalLocation = localLocation }
         if let cloudLocation = event.cloudLocation { kindleSyncCloudLocation = cloudLocation }
@@ -2880,6 +3226,23 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let resumeMode = syncDialogResumeMode ?? mode
         syncDialogShouldResume = false
         syncDialogResumeMode = nil
+
+        if isAmazonCookieConsentVisible || cookieConsentAwaitingRecovery {
+            cookieConsentShouldResumePlayback = cookieConsentShouldResumePlayback ||
+                shouldResume ||
+                pendingStartAfterSyncResolution
+            cookieConsentResumeMode = cookieConsentResumeMode ?? resumeMode
+            pendingStartAfterSyncResolution = false
+            cookieConsentAwaitingRecovery = true
+            statusText = isAmazonCookieConsentVisible
+                ? AppLocalized("请先处理 Amazon 的 Cookie 提示。")
+                : AppLocalized("正在恢复 Kindle 阅读页面…")
+            KindleRunLog.write(
+                "KINDLE sync dialog handed-off cookie recovery visible=\(isAmazonCookieConsentVisible ? "Y" : "N") resume=\(cookieConsentShouldResumePlayback ? "Y" : "N")"
+            )
+            scheduleCookieConsentRecovery()
+            return
+        }
         statusText = AppLocalized("正在应用 Kindle 阅读位置…")
         KindleRunLog.write("KINDLE sync dialog hidden reason=\(reason) local=\(kindleSyncLocalLocation ?? -1) cloud=\(kindleSyncCloudLocation ?? -1) resume=\(shouldResume ? "Y" : "N")")
 
@@ -3044,6 +3407,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func requestContinueListening() {
+        guard readerOperationAllowed(.ttsPreparation, reason: "continue-listening") else {
+            statusText = AppLocalized("请先处理 Amazon 的 Cookie 提示。")
+            return
+        }
         guard !isKindleSyncDialogVisible else {
             statusText = AppLocalized("请先确认 Kindle 阅读位置。")
             return
@@ -3067,6 +3434,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         onboardingAutoplayRetryTask = nil
         onboardingAutoplayRetryCount = 0
         pendingAutoplayRequestID = requestID
+        if !readerOperationAllowed(.ttsPreparation, reason: "onboarding-autoplay") {
+            cookieConsentShouldResumePlayback = true
+            cookieConsentResumeMode = .read
+            statusText = AppLocalized("请先处理 Amazon 的 Cookie 提示。")
+            return
+        }
         KindleRunLog.write(
             "KINDLE onboarding autoplay requested id=\(requestID.uuidString.prefix(8)) book=\(Self.keyLog(book.id))"
         )
@@ -3091,6 +3464,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func reload() {
+        guard readerOperationAllowed(.reload, reason: "user-reload") else {
+            statusText = AppLocalized("请先处理 Amazon 的 Cookie 提示。")
+            return
+        }
         resetLiveSession(clearPlaybackCenter: false)
         if webView.url == nil {
             load(book.effectiveReaderURL, reason: "reload-empty")
@@ -3109,10 +3486,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let expected = KindleStorefront.entry(id: analyticsContext.storefront)
             ?? store.boundStorefront
         if let finishedDestination = webView.url,
-           !KindleStorefrontNavigationPolicy.allowsMainFrame(
-               finishedDestination,
-               expectedStorefrontID: expected.id
-           ) {
+           (expectedReaderASIN == nil ||
+            !KindleStorefrontNavigationPolicy.allowsReaderMainFrame(
+                finishedDestination,
+                expectedStorefrontID: expected.id,
+                expectedASIN: expectedReaderASIN ?? ""
+            )) {
             rejectUnexpectedMainFrameDestination(
                 finishedDestination,
                 expected: expected
@@ -3162,6 +3541,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func scheduleReaderSetup(reason: String) {
+        guard readerOperationAllowed(.readerSetup, reason: reason) else { return }
         readerSetupTask?.cancel()
         configurePageModeGestures()
         readerSetupTask = Task { @MainActor [weak self] in
@@ -3463,10 +3843,18 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// configuration (no desktop reader UA, no reader scripts) because that is
     /// the client Amazon refreshes the book session for.
     private func warmShelfSession() async -> Bool {
+        let storefront = KindleStorefront.entry(id: book.storefrontID)
+            ?? store.boundStorefront
         let warmer = makeLibraryRecoveryWebView()
+        let navigationGate = KindleCanonicalShelfNavigationGate(
+            storefront: storefront
+        )
+        warmer.navigationDelegate = navigationGate
         libraryRecoveryWebView = warmer
-        defer { libraryRecoveryWebView = nil }
-        let storefront = KindleStorefront.entry(id: book.storefrontID) ?? store.boundStorefront
+        defer {
+            warmer.navigationDelegate = nil
+            libraryRecoveryWebView = nil
+        }
         KindleRunLog.write("KINDLE auth-recovery shelf storefront=\(storefront.id)")
         warmer.load(URLRequest(
             url: KindleWebScripts.libraryURL(for: storefront),
@@ -3476,6 +3864,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         for _ in 0..<60 {   // ~15s
             try? await Task.sleep(nanoseconds: 250_000_000)
             if Task.isCancelled { return false }
+            if navigationGate.hasBlockedNavigation { return false }
             guard !warmer.isLoading else { continue }
             switch KindleSessionProbe.landingKind(warmer.url?.absoluteString ?? "") {
             case "library":
@@ -3525,10 +3914,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         let expected = KindleStorefront.entry(id: analyticsContext.storefront)
             ?? store.boundStorefront
-        guard KindleStorefrontNavigationPolicy.allowsMainFrame(
-            destination,
-            expectedStorefrontID: expected.id
-        ) else {
+        guard let expectedASIN = expectedReaderASIN,
+              KindleStorefrontNavigationPolicy.allowsReaderMainFrame(
+                  destination,
+                  expectedStorefrontID: expected.id,
+                  expectedASIN: expectedASIN
+              ) else {
             decisionHandler(.cancel)
             rejectUnexpectedMainFrameDestination(destination, expected: expected)
             return
@@ -3538,6 +3929,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         finishKindleSyncDialog(reason: "navigation-start")
+        resetAmazonCookieConsentState(reason: .navigationStart)
         KindleRunLog.write(
             "KINDLE webview didStart \(KindleSessionProbe.safeRouteLabel(webView.url))"
         )
@@ -3566,10 +3958,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
             let expected = KindleStorefront.entry(id: analyticsContext.storefront)
                 ?? store.boundStorefront
-            if !KindleStorefrontNavigationPolicy.allowsMainFrame(
-                http.url,
-                expectedStorefrontID: expected.id
-            ) {
+            if expectedReaderASIN == nil ||
+                !KindleStorefrontNavigationPolicy.allowsReaderMainFrame(
+                    http.url,
+                    expectedStorefrontID: expected.id,
+                    expectedASIN: expectedReaderASIN ?? ""
+                ) {
                 decisionHandler(.cancel)
                 rejectUnexpectedMainFrameDestination(http.url, expected: expected)
                 return
@@ -3634,6 +4028,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func performContinueListening(request: Int, requestedAt: Date, reason: String) async {
+        guard readerOperationAllowed(.ttsPreparation, reason: reason) else { return }
         let audio = AudioPlayerService.shared
         if mode == .read,
            let vm = readVM,
@@ -4692,6 +5087,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func switchModeAndContinuePlayback(from oldMode: ReaderMode, to newMode: ReaderMode, reason: String) async {
+        guard readerOperationAllowed(.ttsPreparation, reason: reason) else { return }
         guard !Task.isCancelled, mode == oldMode else { return }
         // A mode switch tears down the active playback pipeline. Refresh the
         // authoritative quota first so a stale positive cache cannot stop the
@@ -4758,6 +5154,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     @discardableResult
     func startCurrentMode() async throws -> KindlePlaybackStartOutcome {
+        try requireReaderOperation(.ttsPreparation, reason: "start-current-mode")
         guard !isKindleSyncDialogVisible else {
             statusText = AppLocalized("请先确认 Kindle 阅读位置。")
             pendingStartAfterSyncResolution = true
@@ -4937,6 +5334,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func turnPage(_ direction: KindlePageTurnDirection) async {
+        guard readerOperationAllowed(.pageTurn, reason: direction.logName) else {
+            statusText = AppLocalized("请先处理 Amazon 的 Cookie 提示。")
+            return
+        }
         guard !isKindleSyncDialogVisible else {
             statusText = AppLocalized("请先确认 Kindle 阅读位置。")
             KindleRunLog.write("KINDLE page turn blocked sync-dialog direction=\(direction.logName)")
@@ -4987,6 +5388,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         shouldResumeAfterTurn: Bool,
         resumeMode: ReaderMode
     ) async -> Bool {
+        guard readerOperationAllowed(.pageTurn, reason: "manual-\(direction.logName)") else {
+            return false
+        }
         let fallbackOldKey = livePageKey
         let reason = "manual-\(direction.logName)"
         // Stop the old page before any WebView readiness/geometry await. Audio,
@@ -5340,6 +5744,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func requestKindlePageTurnTarget(_ direction: KindlePageTurnDirection, oldKey: String) async throws -> (targetKey: String, result: [String: Any]) {
+        try requireReaderOperation(.pageTurn, reason: "dispatch-target-\(direction.logName)")
         lastConfirmedTurnFingerprint = nil
         guard isReaderSurfaceAttached, webView.window != nil else {
             throw KindleBookError.captureFailed("reader-surface-not-visible")
@@ -5361,6 +5766,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         var lastState: [String: Any] = beforeState
         for _ in 0..<24 {
             try await Task.sleep(nanoseconds: 200_000_000)
+            try requireReaderOperation(.pageTurn, reason: "dispatch-confirm-\(direction.logName)")
             guard !Task.isCancelled else { throw CancellationError() }
             let state = try await evaluateJSON("window.__crKindleState && window.__crKindleState()")
             lastState = state
@@ -5398,6 +5804,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func requestKindlePageTurn(_ direction: KindlePageTurnDirection) async throws -> [String: Any] {
+        try requireReaderOperation(.pageTurn, reason: "dispatch-\(direction.logName)")
         await setKindlePageModeLockedLightweight(true, reason: "turn-\(direction.logName)")
         let jsDirection: String
         switch direction {
@@ -5530,6 +5937,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func prepareDocument(pageBudget: Int) async throws -> ReadingDocument {
+        try requireReaderOperation(.capture, reason: "prepare-document")
         guard !isPreparing else {
             throw KindleBookError.busy
         }
@@ -5546,6 +5954,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let target = max(1, min(pageBudget, 10))
 
         for index in 0..<target {
+            try requireReaderOperation(.capture, reason: "prepare-document-loop")
             if index > 0 {
                 statusText = String(format: AppLocalized("正在预加载第 %d 页…"), index + 1)
                 try await scrollForward()
@@ -5577,6 +5986,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func ensureLiveDocument(force: Bool = false) async throws -> ReadingDocument {
+        try requireReaderOperation(.capture, reason: "ensure-live-document")
         if !force, let liveDocument { return liveDocument }
         guard !isPreparing else { throw KindleBookError.busy }
         isPreparing = true
@@ -5620,6 +6030,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         installCaptureScript()
         await setKindlePageModeLocked(true)
         try await waitForPageReady()
+        try requireReaderOperation(.capture, reason: "ensure-live-document-ready")
         guard !Task.isCancelled, preloadEpoch == prepareEpoch else { throw CancellationError() }
         if force {
             // Starting playback must not move the Kindle page. Capture exactly what
@@ -6171,6 +6582,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 try? await Task.sleep(nanoseconds: 250_000_000)
                 guard !Task.isCancelled,
                       self.shouldResumeAfterUserPageTurn,
+                      self.readerOperationAllowed(.automaticPageTurn, reason: "page-key-watcher"),
                       !self.isKindleSyncDialogVisible,
                       !self.isPageTurnResuming,
                       !self.isAdvancingLivePage,
@@ -6438,6 +6850,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func restartPlaybackFromCurrentVisiblePageAfterLayout(reason: String, preferredKey: String?) async {
+        guard readerOperationAllowed(.layoutRepair, reason: reason) else { return }
         guard let pendingMode = pendingLayoutPlaybackMode,
               !isPreparing,
               !isAdvancingLivePage else { return }
@@ -6501,6 +6914,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         appReviewReadSession: AppReviewReadSessionProgress? = nil,
         continueLogicalReadSession: Bool = false
     ) async throws {
+        try requireReaderOperation(.ttsPreparation, reason: "restart-after-page-turn")
         switch mode {
         case .read:
             let queuedDocument = try await buildTextQueueForCurrentPage(baseDocument: document)
@@ -6650,6 +7064,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func refocusPlaybackPosition(reason: String) async {
+        guard readerOperationAllowed(.visualRecovery, reason: reason) else { return }
         guard readVM != nil || explainVM != nil else { return }
         guard shouldRunPlaybackRefocus else { return }
         guard !isPageTurnResuming else {
@@ -7951,6 +8366,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         prefetchedSegments: [AudioSegment] = [],
         reason: String
     ) -> Bool {
+        guard readerOperationAllowed(.ttsPreparation, reason: reason) else { return false }
         guard mode == .read, let vm = readVM else { return false }
         let readableIDs = document.paragraphs
             .filter { $0.type.isReadable && SpeechTextSanitizer.containsSpeakableContent($0.text) }
@@ -7989,6 +8405,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// used to stop at the cache; this promotes that cache into the live queue so
     /// AVPlayer can cross the page boundary just like an ordinary segment edge.
     private func maybeArmContinuousReadHandoff(reason: String) {
+        guard readerOperationAllowed(.automaticPageTurn, reason: reason) else { return }
         guard continuousReadHandoff == nil,
               continuousReadCommitTask == nil,
               mode == .read,
@@ -8130,6 +8547,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func beginContinuousReadPageTurnIfNeeded(serial: Int, trigger: String) {
+        guard readerOperationAllowed(.automaticPageTurn, reason: trigger) else { return }
         guard continuousReadTurnTask == nil,
               let handoff = continuousReadHandoff,
               handoff.serial == serial else { return }
@@ -8186,6 +8604,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func stageContinuousReadPage(_ handoff: KindleContinuousReadHandoff) async throws {
+        try requireReaderOperation(.automaticPageTurn, reason: "continuous-stage")
         guard continuousReadHandoff?.serial == handoff.serial else { throw CancellationError() }
         try await ensureCaptureScriptInstalled(reason: "read-continuous-page-turn")
         await setKindlePageModeLocked(true)
@@ -8947,6 +9366,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         session: KindleReadPageSession,
         expectedPageKey: String
     ) async {
+        guard readerOperationAllowed(.automaticPageTurn, reason: "read-auto-advance") else {
+            cancelAutomaticAppReviewContinuation(for: session)
+            return
+        }
         guard mode == .read,
               !isAdvancingLivePage,
               activeReadPageSession == session,
@@ -9005,6 +9428,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func advanceToNextExplainPageIfNeeded() async {
+        guard readerOperationAllowed(.automaticPageTurn, reason: "explain-auto-advance") else {
+            isContinuingExplainPage = false
+            return
+        }
         guard mode == .explain, !isAdvancingLivePage else {
             isContinuingExplainPage = false
             return
@@ -9043,6 +9470,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         reason: String,
         appReviewReadSession: AppReviewReadSessionProgress? = nil
     ) async {
+        guard readerOperationAllowed(.automaticPageTurn, reason: reason) else { return }
         // Retain the page owner until the next page has actually claimed the
         // shared logical analytics coordinator. If navigation fails before
         // that claim, this owner is still responsible for the one terminal
@@ -9235,6 +9663,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func requestNativeNextPageForAutoAdvance(oldKey: String, reason: String) async throws -> String {
+        try requireReaderOperation(.automaticPageTurn, reason: reason)
         let target = try await requestKindlePageTurnTarget(.next, oldKey: oldKey)
         let result = target.result
         let ok = Self.boolValue(result["ok"])
@@ -9327,6 +9756,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         reason: String,
         prefetched: ExplainViewModel.PrefetchedFirstBlock? = nil
     ) {
+        guard readerOperationAllowed(.ttsPreparation, reason: reason) else { return }
         guard mode == .explain, let vm = explainVM else { return }
         readVM?.deactivate()
         vm.activate()
@@ -9353,6 +9783,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func ensureExplainNextPagePrefetch(afterKey rawKey: String, reason: String) {
+        guard readerOperationAllowed(.ttsPreparation, reason: reason) else { return }
         let afterKey = normalizedPageKey(rawKey)
         guard !afterKey.isEmpty, mode == .explain else { return }
 
@@ -10213,6 +10644,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func startPrepareCurrentPageContinuation(document: ReadingDocument, paragraphIndex: Int) {
+        guard readerOperationAllowed(.ttsPreparation, reason: "current-page-continuation") else { return }
         guard pendingContinuationParagraphIndex != paragraphIndex || pendingContinuationSegments.isEmpty else { return }
         pendingContinuationTask?.cancel()
         pendingContinuationParagraphIndex = paragraphIndex
@@ -10255,6 +10687,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func startCachingNextPage(afterKey rawKey: String) {
+        guard readerOperationAllowed(.capture, reason: "cache-next-page") else { return }
         let afterKey = rawKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !afterKey.isEmpty else { return }
         guard !isPageTurnResuming else {
@@ -10326,6 +10759,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func startPreparedReadStartAudioPrefetch(afterKey: String, prepared: KindleCachedPage, reason: String) {
+        guard readerOperationAllowed(.ttsPreparation, reason: reason) else { return }
         guard mode == .read else { return }
         let pageKey = normalizedPageKey(prepared.page.key)
         guard !pageKey.isEmpty, pageKey != afterKey else { return }
@@ -10380,6 +10814,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func cacheNextPage(afterKey: String, epoch: UInt64) async {
+        guard readerOperationAllowed(.capture, reason: "cache-next-page-task") else { return }
         defer {
             if cachingNextPageAfterKey == afterKey && preloadEpoch == epoch {
                 cachingNextPageAfterKey = nil
@@ -10495,6 +10930,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         epoch: UInt64,
         reason: String
     ) async throws -> Bool {
+        try requireReaderOperation(.ttsPreparation, reason: reason)
         guard mode == .read, preloadEpoch == epoch else { return false }
         let afterKey = normalizedPageKey(prepared.afterKey)
         let pageKey = normalizedPageKey(prepared.page.key)
@@ -10593,6 +11029,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func startExplainFirstBlockPrefetch(afterKey: String, pageKey: String, document: ReadingDocument, epoch: UInt64) {
+        guard readerOperationAllowed(.ttsPreparation, reason: "explain-first-block") else { return }
         guard mode == .explain, preloadEpoch == epoch else { return }
         guard ProManager.shared.isPro else {
             KindleRunLog.write("KINDLE explain prefetch skip free-user after=\(Self.keyLog(afterKey)) key=\(Self.keyLog(pageKey)) epoch=\(epoch)")
@@ -10767,6 +11204,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         language: String,
         voiceOverride: String? = nil
     ) async throws -> [AudioSegment] {
+        try requireReaderOperation(.ttsPreparation, reason: "detached-tts")
         let voice = voiceOverride ?? AppSettings.shared.voice(for: language)
         return try await TTSService.shared.generatePrefetchSegments(
             paragraphIndex: paragraphIndex,
@@ -11102,12 +11540,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed) ?? trimmed
         let storefront = KindleStorefront.entry(id: book.storefrontID) ?? store.boundStorefront
         guard let url = URL(string: trimmed) ?? URL(string: encoded),
-              KindleStorefrontNavigationPolicy.allows(
-                url,
-                expectedStorefrontID: storefront.id
+              let expectedASIN = expectedReaderASIN,
+              KindleStorefrontNavigationPolicy.isExactReaderURL(
+                  url,
+                  expectedStorefrontID: storefront.id,
+                  expectedASIN: expectedASIN
               ) else {
             KindleRunLog.write("KINDLE webview load failed-invalid reason=\(reason) raw=\(Self.keyLog(raw))")
-            webView.load(URLRequest(url: KindleWebScripts.libraryURL(for: storefront)))
+            isStaleBookEntryError = true
+            statusText = AppLocalized("Kindle 书籍入口已失效，请重新同步书架。")
             return
         }
         KindleRunLog.write("KINDLE webview load reason=\(reason) storefront=\(storefront.id) route=\(KindleSessionProbe.safeRouteLabel(url)) raw=\(Self.keyLog(raw)) last=\(Self.keyLog(book.lastReadURL ?? "")) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
@@ -11119,6 +11560,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// *and* at document start on every navigation, paying the 207KB parse twice.
     /// Metadata is already installed by the user script, so it is not repeated.
     private func installCaptureScript() {
+        guard readerOperationAllowed(.readerSetup, reason: "install-capture-script") else { return }
         guard KindleStorefront.matches(url: webView.url) else { return }
         webView.evaluateJavaScript(
             KindleWebScripts.restrictedToKnownStorefronts(KindleWebScripts.pageCaptureBootstrap),
@@ -11128,6 +11570,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     @discardableResult
     private func ensureCaptureScriptInstalled(reason: String) async throws -> [String: Any] {
+        try requireReaderOperation(.readerSetup, reason: reason)
         guard KindleStorefront.matches(url: webView.url) else {
             KindleRunLog.write("KINDLE script install blocked unknown-origin reason=\(reason)")
             throw KindleBookError.invalidPayload
@@ -11168,6 +11611,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func setKindlePageModeLockedLightweight(_ locked: Bool, reason: String) async {
+        guard readerOperationAllowed(.layoutRepair, reason: reason) else { return }
         let flag = locked ? "true" : "false"
         let script = """
         \(KindleWebScripts.pageModeLockBootstrap)
@@ -11182,6 +11626,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func setKindlePageModeLocked(_ locked: Bool) async {
+        guard readerOperationAllowed(.layoutRepair, reason: "page-mode-lock") else { return }
         let flag = locked ? "true" : "false"
         let script = """
         (function() {
@@ -11207,7 +11652,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func waitForPageReady() async throws {
+        try requireReaderOperation(.readerSetup, reason: "wait-page-ready")
         for _ in 0..<12 {
+            try requireReaderOperation(.readerSetup, reason: "wait-page-ready-loop")
             installCaptureScript()
             if let state = try? await evaluateJSON("window.__crKindleState && window.__crKindleState()"),
                (state["heldKeys"] as? Int ?? 0) > 0 || !(state["key"] as? String ?? "").isEmpty {
@@ -11218,9 +11665,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func waitForKindleImageStable() async throws {
+        try requireReaderOperation(.layoutRepair, reason: "wait-image-stable")
         var previousSignature: String?
         var stableHits = 0
         for attempt in 0..<24 {
+            try requireReaderOperation(.layoutRepair, reason: "wait-image-stable-loop")
             installCaptureScript()
             if let state = try? await evaluateJSON("window.__crKindleState && window.__crKindleState()"),
                let rect = state["rect"] as? [String: Any] {
@@ -11279,8 +11728,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func captureVisiblePage(pageIndex: Int, targetKey: String? = nil) async throws -> CapturedKindlePage {
+        try requireReaderOperation(.capture, reason: "visible-page")
         var lastReason = "no-visible-kindle-image"
         for _ in 0..<10 {
+            try requireReaderOperation(.capture, reason: "visible-page-loop")
             let trimmedTarget = targetKey?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             let script: String
             if trimmedTarget.isEmpty {
@@ -11318,8 +11769,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func captureNearbyPage(offset: Int) async throws -> CapturedKindlePage {
+        try requireReaderOperation(.capture, reason: "nearby-page")
         var lastReason = "no-nearby-kindle-image"
         for _ in 0..<5 {
+            try requireReaderOperation(.capture, reason: "nearby-page-loop")
             let payload = try await evaluateJSON("window.__crKindleCandidateSnapshotNearCurrent && window.__crKindleCandidateSnapshotNearCurrent(\(offset), \(Self.ocrCaptureJavaScriptArguments))")
             if payload["ok"] as? Bool == true {
                 #if DEBUG
@@ -11344,6 +11797,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func captureNextPage(afterKey: String) async throws -> CapturedKindlePage {
+        try requireReaderOperation(.capture, reason: "next-page")
         installCaptureScript()
         await setKindlePageModeLocked(true)
         let escapedKey = afterKey
@@ -11351,6 +11805,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             .replacingOccurrences(of: "'", with: "\\'")
         var lastReason = "no-next-candidate"
         for attempt in 0..<6 {
+            try requireReaderOperation(.capture, reason: "next-page-loop")
             let payload = try await evaluateJSON("window.__crKindleNextPageSnapshot && window.__crKindleNextPageSnapshot('\(escapedKey)', \(Self.ocrCaptureJavaScriptArguments))")
             if payload["ok"] as? Bool == true {
                 #if DEBUG
@@ -11382,6 +11837,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func captureCandidatePages(afterKey: String, limit: Int) async throws -> [CapturedKindlePage] {
+        try requireReaderOperation(.capture, reason: "candidate-pages")
         installCaptureScript()
         await setKindlePageModeLocked(true)
         let escapedKey = afterKey
@@ -11437,6 +11893,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func makeCapturedPage(from payload: [String: Any], pageIndex: Int) async throws -> CapturedKindlePage {
+        try requireReaderOperation(.capture, reason: "make-captured-page")
         let decodeStartedAt = Date()
         guard let dataURL = payload["image"] as? String,
               let imageData = Self.decodeDataURL(dataURL),
@@ -11492,6 +11949,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func recognizeKindlePage(image: UIImage, imageData: Data) async throws -> (document: ReadingDocument, layout: String) {
+        try requireReaderOperation(.ocr, reason: "recognize-page")
         // Same authority order as the extension: renderer metadata first, then a
         // previously verified profile, finally independent single-locale OCR consensus.
         var profile = await rendererKindleLanguageProfile()
@@ -12706,6 +13164,7 @@ private struct CapturedKindlePage {
 
 private enum KindleBookError: LocalizedError {
     case busy
+    case cookieConsentVisible
     case noImage
     case noText
     case badImage
@@ -12718,6 +13177,8 @@ private enum KindleBookError: LocalizedError {
         switch self {
         case .busy:
             return AppLocalized("Kindle 页面正在准备中。")
+        case .cookieConsentVisible:
+            return AppLocalized("请先处理 Amazon 的 Cookie 提示。")
         case .noImage:
             return AppLocalized("没有找到 Kindle 页面图片，请打开书籍页面后重试。")
         case .noText:
