@@ -102,11 +102,17 @@ function bootPlayBooks(): boolean {
     onInstalled: ({ extract: doExtract }) => {
       const CR = (window as unknown as { CR?: { disableScroll?: boolean } }).CR
       if (CR) CR.disableScroll = true
+      // Native 的 acceptsActiveGoogleBooksFrameEvent 按 payload.source 过滤平台；
+      // pageMeta 带了 source 而这里发的事件（turnRequested/turnFailed/preview…）
+      // 一直没带，导致整类事件在 native 侧被当作非本平台静默丢弃。
       const post = (type: string, payload: Record<string, unknown> = {}): void => {
         try {
           ;(window as unknown as {
             webkit?: { messageHandlers?: Record<string, { postMessage: (m: unknown) => void }> }
-          }).webkit?.messageHandlers?.castreader?.postMessage({ type, payload })
+          }).webkit?.messageHandlers?.castreader?.postMessage({
+            type,
+            payload: { source: 'google-books', ...payload },
+          })
         } catch { /* */ }
       }
       installPlayBooksReader(post, (reason, metadata = {}) => {
@@ -159,7 +165,10 @@ function bootKobo(): boolean {
                 { postMessage: (message: unknown) => void }
               >
             }
-          }).webkit?.messageHandlers?.castreader?.postMessage({ type, payload })
+          }).webkit?.messageHandlers?.castreader?.postMessage({
+            type,
+            payload: { source: 'kobo', ...payload },
+          })
         } catch { /* */ }
       }
       installKoboReader(post, (reason, metadata = {}) => {
@@ -212,7 +221,10 @@ function bootOReilly(): boolean {
                 { postMessage: (message: unknown) => void }
               >
             }
-          }).webkit?.messageHandlers?.castreader?.postMessage({ type, payload })
+          }).webkit?.messageHandlers?.castreader?.postMessage({
+            type,
+            payload: { source: 'oreilly', ...payload },
+          })
         } catch { /* */ }
       }
       installOReillyReader(post, (reason, metadata = {}) => {

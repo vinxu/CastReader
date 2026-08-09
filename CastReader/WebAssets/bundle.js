@@ -40384,6 +40384,82 @@ var __CRWeb = (() => {
     "LINK",
     "META"
   ]);
+  function collectBrSplitSegments(root2, splitGroupId) {
+    const candidates = [];
+    let currentParts = [];
+    let currentParents = [];
+    let currentTextNodes = [];
+    let currentBrRunBefore = 0;
+    let pendingBrRun = 0;
+    let splitIndex = 0;
+    const flushSegment = () => {
+      const text = currentParts.join(" ").trim();
+      if (text.length > 0 && currentTextNodes.length > 0) {
+        candidates.push({
+          text,
+          parents: currentParents.slice(),
+          textNodes: currentTextNodes.slice(),
+          source: "br-split",
+          splitGroupId,
+          splitIndex: splitIndex++,
+          brRunBefore: currentBrRunBefore,
+          brRunAfter: 0
+        });
+      }
+      currentParts = [];
+      currentParents = [];
+      currentTextNodes = [];
+      currentBrRunBefore = 0;
+    };
+    const applyPendingBrRun = () => {
+      if (pendingBrRun === 0) return;
+      const previous = candidates[candidates.length - 1];
+      if (previous) previous.brRunAfter = pendingBrRun;
+      currentBrRunBefore = pendingBrRun;
+      pendingBrRun = 0;
+    };
+    const walkForBR = (node) => {
+      var _a;
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = (_a = node.textContent) == null ? void 0 : _a.trim();
+        if (!text) return;
+        if (currentParts.length === 0) applyPendingBrRun();
+        currentParts.push(text);
+        currentTextNodes.push(node);
+        const parent2 = node.parentElement;
+        if (parent2) currentParents.push(parent2);
+        return;
+      }
+      if (!(node instanceof HTMLElement)) return;
+      if (node.tagName === "BR") {
+        if (currentParts.length > 0) flushSegment();
+        pendingBrRun++;
+        return;
+      }
+      if (FIX_SKIP_TAGS.has(node.tagName)) return;
+      for (let i = 0; i < node.childNodes.length; i++) {
+        walkForBR(node.childNodes[i]);
+      }
+    };
+    walkForBR(root2);
+    if (currentParts.length > 0) flushSegment();
+    applyPendingBrRun();
+    return candidates.filter((segment) => segment.text.length >= 5);
+  }
+  function dedupeBrSplitSegments(segments, seen, originalText) {
+    const originalKey = originalText.substring(0, 100);
+    const splitSeen = /* @__PURE__ */ new Set();
+    const retained = [];
+    for (const segment of segments) {
+      const key = segment.text.substring(0, 100);
+      if (splitSeen.has(key)) continue;
+      if (seen.has(key) && key !== originalKey) continue;
+      splitSeen.add(key);
+      seen.add(key);
+      retained.push(segment);
+    }
+    return retained;
+  }
   var ORPHAN_BLOCK_BOUNDARY = /* @__PURE__ */ new Set([
     "TABLE",
     "THEAD",
@@ -40685,52 +40761,14 @@ var __CRWeb = (() => {
     }
     const MEGA_THRESHOLD = 2e3;
     const expandedBlocks = [];
+    let brSplitGroupCounter = 0;
     for (const block of allBlocks) {
-      let walkForBR = function(node2) {
-        var _a2;
-        if (node2.nodeType === Node.TEXT_NODE) {
-          const t = (_a2 = node2.textContent) == null ? void 0 : _a2.trim();
-          if (t) {
-            currentParts.push(t);
-            currentTextNodes.push(node2);
-            const p = node2.parentElement;
-            if (p) currentParents.push(p);
-          }
-        } else if (node2 instanceof HTMLElement) {
-          if (node2.tagName === "BR") {
-            flushSegment();
-          } else if (FIX_SKIP_TAGS.has(node2.tagName)) {
-            return;
-          } else {
-            for (let i = 0; i < node2.childNodes.length; i++) {
-              walkForBR(node2.childNodes[i]);
-            }
-          }
-        }
-      };
       if (block.text.length <= MEGA_THRESHOLD) {
         expandedBlocks.push(block);
         continue;
       }
-      const pendingSegments = [];
-      let currentParts = [];
-      let currentParents = [];
-      let currentTextNodes = [];
-      const flushSegment = () => {
-        const seg = currentParts.join(" ").trim();
-        if (seg.length >= 5 && currentTextNodes.length > 0) {
-          pendingSegments.push({
-            text: seg,
-            parents: currentParents.slice(),
-            textNodes: currentTextNodes.slice()
-          });
-        }
-        currentParts = [];
-        currentParents = [];
-        currentTextNodes = [];
-      };
-      walkForBR(block.element);
-      flushSegment();
+      const splitGroupId = `br-${brSplitGroupCounter++}`;
+      const pendingSegments = collectBrSplitSegments(block.element, splitGroupId);
       const segments = [];
       for (const pending of pendingSegments) {
         const { text: seg, parents: parents2, textNodes } = pending;
@@ -40778,17 +40816,23 @@ var __CRWeb = (() => {
         } else if (lca) {
           anchor = lca;
         }
-        segments.push({ text: seg, el: anchor });
+        segments.push(__spreadProps(__spreadValues({}, pending), { el: anchor }));
       }
       if (segments.length >= 3) {
-        for (const { text: seg, el: anchor } of segments) {
-          const key = seg.substring(0, 100);
-          if (!seen.has(key)) {
-            seen.add(key);
-            const rect = anchor.getBoundingClientRect();
-            const useRect = rect.width > 0 || rect.height > 0 ? rect : block.rect;
-            expandedBlocks.push({ text: seg, element: anchor, rect: useRect });
-          }
+        const retainedSegments = dedupeBrSplitSegments(segments, seen, block.text);
+        for (const segment of retainedSegments) {
+          const rect = segment.el.getBoundingClientRect();
+          const useRect = rect.width > 0 || rect.height > 0 ? rect : block.rect;
+          expandedBlocks.push({
+            text: segment.text,
+            element: segment.el,
+            rect: useRect,
+            source: segment.source,
+            splitGroupId: segment.splitGroupId,
+            splitIndex: segment.splitIndex,
+            brRunBefore: segment.brRunBefore,
+            brRunAfter: segment.brRunAfter
+          });
         }
       } else {
         expandedBlocks.push(block);
@@ -41294,10 +41338,18 @@ var __CRWeb = (() => {
         b.element = tighter;
       }
     }
-    let paragraphs = dedupedBlocks.map((b) => ({
+    let paragraphs = dedupedBlocks.map((b) => __spreadValues({
       text: b.text,
       element: b.element
-    }));
+    }, b.source === "br-split" && b.splitGroupId !== void 0 && b.splitIndex !== void 0 && b.brRunBefore !== void 0 && b.brRunAfter !== void 0 ? {
+      visualLineBreak: {
+        source: b.source,
+        splitGroupId: b.splitGroupId,
+        splitIndex: b.splitIndex,
+        brRunBefore: b.brRunBefore,
+        brRunAfter: b.brRunAfter
+      }
+    } : {}));
     paragraphs = anchorParagraphsToTitle(paragraphs);
     console.log(`[Castreader] Zone: ${allBlocks.length} raw \u2192 ${finalBlocks.length} blocks \u2192 ${columns.length} cols \u2192 ${zones.length} zones \u2192 ${paragraphs.length} paragraphs`);
     for (let i = 0; i < Math.min(5, paragraphs.length); i++) {
@@ -53622,6 +53674,77 @@ var __CRWeb = (() => {
     const paragraphs = candidates[0];
     return (paragraphs == null ? void 0 : paragraphs.length) ? { paragraphs, contentFingerprint: candidateFingerprint(paragraphs) } : null;
   }
+  function visiblePagerControl(candidate) {
+    if (!(candidate instanceof HTMLElement)) return null;
+    const style = (candidate.ownerDocument.defaultView || window).getComputedStyle(candidate);
+    if (style.display === "none" || style.visibility === "hidden") return null;
+    const rect = candidate.getBoundingClientRect();
+    if (!intersect(
+      { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+      viewportRect()
+    )) return null;
+    return candidate;
+  }
+  function pagerControlEnabled(control) {
+    if (control.getAttribute("aria-disabled") === "true") return false;
+    if (control instanceof HTMLButtonElement && control.disabled) return false;
+    return true;
+  }
+  function usablePagerControl(candidate) {
+    const control = visiblePagerControl(candidate);
+    if (control == null || !pagerControlEnabled(control)) return null;
+    return control;
+  }
+  var lastButtonDiscovery = null;
+  function pagerButtonDiscovery() {
+    return lastButtonDiscovery;
+  }
+  var PAGE_FRAGMENT = /\d+\s*\/\s*\d+/;
+  function nearPageIndicator(control) {
+    let scope = control.parentElement;
+    for (let depth = 0; depth < 4 && scope; depth += 1, scope = scope.parentElement) {
+      const rect = scope.getBoundingClientRect();
+      if (rect.height > 160) break;
+      if (PAGE_FRAGMENT.test(scope.textContent || "")) return true;
+    }
+    return false;
+  }
+  function structuralPagerButton(direction) {
+    const iconNames = direction === "next" ? ["chevron_right", "navigate_next", "keyboard_arrow_right", "arrow_forward", "arrow_forward_ios"] : ["chevron_left", "navigate_before", "keyboard_arrow_left", "arrow_back", "arrow_back_ios"];
+    for (const raw of Array.from(document.querySelectorAll('button, [role="button"]'))) {
+      const control = visiblePagerControl(raw);
+      if (!control) continue;
+      const icon = control.querySelector(
+        "mat-icon, [data-mat-icon-type], .material-icons, .google-symbols, .material-symbols-outlined"
+      );
+      const glyph = ((icon == null ? void 0 : icon.textContent) || "").trim();
+      if (!iconNames.includes(glyph)) continue;
+      if (!nearPageIndicator(control)) continue;
+      return pagerControlEnabled(control) ? control : null;
+    }
+    const anchors = [];
+    for (const el of Array.from(document.querySelectorAll("span, div, p"))) {
+      if (!(el instanceof HTMLElement)) continue;
+      const text = el.textContent || "";
+      if (text.length > 40 || !/\d+\s*\/\s*\d+\s*$/.test(text)) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0 || rect.width > 240 || rect.height <= 0) continue;
+      anchors.push(el);
+    }
+    const leaves = anchors.filter((a) => !anchors.some((b) => b !== a && a.contains(b)));
+    for (const anchor of leaves) {
+      const anchorRect = anchor.getBoundingClientRect();
+      let scope = anchor.parentElement;
+      for (let depth = 0; depth < 5 && scope; depth += 1, scope = scope.parentElement) {
+        const sided = Array.from(scope.querySelectorAll('button, [role="button"]')).map(visiblePagerControl).filter((el) => el !== null && !el.contains(anchor)).map((el) => ({ el, rect: el.getBoundingClientRect() })).filter(({ rect }) => direction === "next" ? rect.left >= anchorRect.right - 1 && rect.left - anchorRect.right <= 160 : rect.right <= anchorRect.left + 1 && anchorRect.left - rect.right <= 160).sort((a, b) => direction === "next" ? a.rect.left - b.rect.left : b.rect.right - a.rect.right);
+        if (sided.length > 0) {
+          const closest = sided[0].el;
+          return pagerControlEnabled(closest) ? closest : null;
+        }
+      }
+    }
+    return null;
+  }
   function clickablePageButton(direction) {
     const selectors = direction === "next" ? [
       'button[aria-label="Next Page"]',
@@ -53630,6 +53753,22 @@ var __CRWeb = (() => {
       '[aria-label*="\u6B21\u306E\u30DA\u30FC\u30B8"]',
       '[aria-label*="\u4E0B\u4E00\u9875"]',
       '[aria-label*="\u4E0B\u4E00\u9801"]',
+      'button[aria-label*="successiva" i]',
+      '[role="button"][aria-label*="successiva" i]',
+      'button[aria-label*="siguiente" i]',
+      '[role="button"][aria-label*="siguiente" i]',
+      'button[aria-label*="suivante" i]',
+      '[role="button"][aria-label*="suivante" i]',
+      'button[aria-label*="\xE4chste Seite" i]',
+      '[role="button"][aria-label*="\xE4chste Seite" i]',
+      'button[aria-label*="r\xF3xima" i]',
+      '[role="button"][aria-label*="r\xF3xima" i]',
+      'button[aria-label*="volgende" i]',
+      '[role="button"][aria-label*="volgende" i]',
+      'button[aria-label*="\u0905\u0917\u0932\u093E"]',
+      '[role="button"][aria-label*="\u0905\u0917\u0932\u093E"]',
+      'button[aria-label*="\uB2E4\uC74C \uD398\uC774\uC9C0"]',
+      '[role="button"][aria-label*="\uB2E4\uC74C \uD398\uC774\uC9C0"]',
       ".next-page-button",
       "#next-page"
     ] : [
@@ -53640,25 +53779,38 @@ var __CRWeb = (() => {
       '[aria-label*="\u524D\u306E\u30DA\u30FC\u30B8"]',
       '[aria-label*="\u4E0A\u4E00\u9875"]',
       '[aria-label*="\u4E0A\u4E00\u9801"]',
+      'button[aria-label*="precedente" i]',
+      '[role="button"][aria-label*="precedente" i]',
+      'button[aria-label*="anterior" i]',
+      '[role="button"][aria-label*="anterior" i]',
+      'button[aria-label*="r\xE9c\xE9dente" i]',
+      '[role="button"][aria-label*="r\xE9c\xE9dente" i]',
+      'button[aria-label*="orherige Seite" i]',
+      '[role="button"][aria-label*="orherige Seite" i]',
+      'button[aria-label*="vorige" i]',
+      '[role="button"][aria-label*="vorige" i]',
+      'button[aria-label*="\u092A\u093F\u091B\u0932\u093E"]',
+      '[role="button"][aria-label*="\u092A\u093F\u091B\u0932\u093E"]',
+      'button[aria-label*="\uC774\uC804 \uD398\uC774\uC9C0"]',
+      '[role="button"][aria-label*="\uC774\uC804 \uD398\uC774\uC9C0"]',
       ".previous-page-button",
       ".prev-page-button",
       "#previous-page",
       "#prev-page"
     ];
     for (const sel of selectors) {
-      const el = document.querySelector(sel);
-      if (!(el instanceof HTMLElement)) continue;
-      if (el.getAttribute("aria-disabled") === "true") continue;
-      if (el instanceof HTMLButtonElement && el.disabled) continue;
-      const style = (el.ownerDocument.defaultView || window).getComputedStyle(el);
-      if (style.display === "none" || style.visibility === "hidden") continue;
-      const rect = el.getBoundingClientRect();
-      if (!intersect(
-        { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
-        viewportRect()
-      )) continue;
-      return el;
+      const el = usablePagerControl(document.querySelector(sel));
+      if (el) {
+        lastButtonDiscovery = "label";
+        return el;
+      }
     }
+    const structural = structuralPagerButton(direction);
+    if (structural) {
+      lastButtonDiscovery = "structural";
+      return structural;
+    }
+    lastButtonDiscovery = null;
     return null;
   }
   function turnPlayBooksPage(direction, method) {
@@ -54057,6 +54209,7 @@ var __CRWeb = (() => {
       }
       postForFrame("googleBooksTurnRequested", __spreadValues({
         method: pendingTurnMethod,
+        discovery: pendingTurnMethod === "button" ? pagerButtonDiscovery() || "" : "",
         attempt: 1
       }, metadata));
       if (turnConfirmationTimer) clearTimeout(turnConfirmationTimer);
@@ -58319,7 +58472,10 @@ var __CRWeb = (() => {
           var _a, _b, _c;
           try {
             ;
-            (_c = (_b = (_a = window.webkit) == null ? void 0 : _a.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({ type: type2, payload });
+            (_c = (_b = (_a = window.webkit) == null ? void 0 : _a.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({
+              type: type2,
+              payload: __spreadValues({ source: "google-books" }, payload)
+            });
           } catch (e) {
           }
         };
@@ -58356,7 +58512,10 @@ var __CRWeb = (() => {
           var _a, _b, _c;
           try {
             ;
-            (_c = (_b = (_a = window.webkit) == null ? void 0 : _a.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({ type: type2, payload });
+            (_c = (_b = (_a = window.webkit) == null ? void 0 : _a.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({
+              type: type2,
+              payload: __spreadValues({ source: "kobo" }, payload)
+            });
           } catch (e) {
           }
         };
@@ -58392,7 +58551,10 @@ var __CRWeb = (() => {
           var _a, _b, _c;
           try {
             ;
-            (_c = (_b = (_a = window.webkit) == null ? void 0 : _a.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({ type: type2, payload });
+            (_c = (_b = (_a = window.webkit) == null ? void 0 : _a.messageHandlers) == null ? void 0 : _b.castreader) == null ? void 0 : _c.postMessage({
+              type: type2,
+              payload: __spreadValues({ source: "oreilly" }, payload)
+            });
           } catch (e) {
           }
         };

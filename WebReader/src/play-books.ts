@@ -1112,7 +1112,110 @@ export function extractPlayBooksNextPagePreview(): {
 
 // --------------------------------------------------------------- 翻页 / 监听
 
+function visiblePagerControl(candidate: Element | null): HTMLElement | null {
+  if (!(candidate instanceof HTMLElement)) return null
+  const style = (candidate.ownerDocument.defaultView || window).getComputedStyle(candidate)
+  if (style.display === 'none' || style.visibility === 'hidden') return null
+  const rect = candidate.getBoundingClientRect()
+  if (!intersect(
+    { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
+    viewportRect()
+  )) return null
+  return candidate
+}
+
+function pagerControlEnabled(control: HTMLElement): boolean {
+  if (control.getAttribute('aria-disabled') === 'true') return false
+  if (control instanceof HTMLButtonElement && control.disabled) return false
+  return true
+}
+
+function usablePagerControl(candidate: Element | null): HTMLElement | null {
+  const control = visiblePagerControl(candidate)
+  if (control == null || !pagerControlEnabled(control)) return null
+  return control
+}
+
+/** 词表探测怎么找到按钮的 —— 词表命中还是结构兜底。随 turnRequested 上报，
+ * 让远端报告能证明非英语 UI 走了哪条路。 */
+export type PagerButtonDiscovery = 'label' | 'structural'
+let lastButtonDiscovery: PagerButtonDiscovery | null = null
+export function pagerButtonDiscovery(): PagerButtonDiscovery | null {
+  return lastButtonDiscovery
+}
+
+/** 页码碎片（"N / M" 的任意片段）。Google 把页码拆进多个 span（1.0.30 探针实拍：
+ * `<span class="range"> 1 </span><span> / 9</span>` 混着 screen-reader 文本），
+ * 叶子级永远拼不出完整指示器，所以这里只认"包含"与"结尾"两种弱形态。 */
+const PAGE_FRAGMENT = /\d+\s*\/\s*\d+/
+
+function nearPageIndicator(control: HTMLElement): boolean {
+  let scope: HTMLElement | null = control.parentElement
+  for (let depth = 0; depth < 4 && scope; depth += 1, scope = scope.parentElement) {
+    const rect = scope.getBoundingClientRect()
+    if (rect.height > 160) break // 越过控制条高度就是内容区了，别把正文当指示器
+    if (PAGE_FRAGMENT.test(scope.textContent || '')) return true
+  }
+  return false
+}
+
+/** 结构化兜底，aria-label 词表覆盖不到的语言（1.0.29 意大利语用户 method=hotspot
+ * 即词表落空）走这里。两级信号，全部与 UI 语言无关：
+ * 1. 按钮内 Material 图标的 ligature 文本（chevron_right 等）+ 页码碎片邻近；
+ * 2. 页码碎片锚点两侧几何最近的控件（LTR 假设，与 hotspot 的 90%/10% 一致）。
+ * 原则：结构化探测定位"那一颗"按钮后由可用性定成败，绝不跳过 disabled 挑下一个 ——
+ * 末页的 next 天然 disabled/缺失，退而求其次会点到无关控件（实拍误中"注释"）。 */
+function structuralPagerButton(direction: 'next' | 'prev'): HTMLElement | null {
+  const iconNames = direction === 'next'
+    ? ['chevron_right', 'navigate_next', 'keyboard_arrow_right', 'arrow_forward', 'arrow_forward_ios']
+    : ['chevron_left', 'navigate_before', 'keyboard_arrow_left', 'arrow_back', 'arrow_back_ios']
+  for (const raw of Array.from(document.querySelectorAll('button, [role="button"]'))) {
+    const control = visiblePagerControl(raw)
+    if (!control) continue
+    const icon = control.querySelector(
+      'mat-icon, [data-mat-icon-type], .material-icons, .google-symbols, .material-symbols-outlined'
+    )
+    const glyph = (icon?.textContent || '').trim()
+    if (!iconNames.includes(glyph)) continue
+    if (!nearPageIndicator(control)) continue
+    return pagerControlEnabled(control) ? control : null
+  }
+  const anchors: HTMLElement[] = []
+  for (const el of Array.from(document.querySelectorAll('span, div, p'))) {
+    if (!(el instanceof HTMLElement)) continue
+    const text = el.textContent || ''
+    if (text.length > 40 || !/\d+\s*\/\s*\d+\s*$/.test(text)) continue
+    const rect = el.getBoundingClientRect()
+    if (rect.width <= 0 || rect.width > 240 || rect.height <= 0) continue
+    anchors.push(el)
+  }
+  const leaves = anchors.filter(a => !anchors.some(b => b !== a && a.contains(b)))
+  for (const anchor of leaves) {
+    const anchorRect = anchor.getBoundingClientRect()
+    let scope: HTMLElement | null = anchor.parentElement
+    for (let depth = 0; depth < 5 && scope; depth += 1, scope = scope.parentElement) {
+      const sided = Array.from(scope.querySelectorAll('button, [role="button"]'))
+        .map(visiblePagerControl)
+        .filter((el): el is HTMLElement => el !== null && !el.contains(anchor))
+        .map(el => ({ el, rect: el.getBoundingClientRect() }))
+        .filter(({ rect }) => direction === 'next'
+          ? rect.left >= anchorRect.right - 1 && rect.left - anchorRect.right <= 160
+          : rect.right <= anchorRect.left + 1 && anchorRect.left - rect.right <= 160)
+        .sort((a, b) => direction === 'next'
+          ? a.rect.left - b.rect.left
+          : b.rect.right - a.rect.right)
+      if (sided.length > 0) {
+        const closest = sided[0].el
+        return pagerControlEnabled(closest) ? closest : null
+      }
+    }
+  }
+  return null
+}
+
 function clickablePageButton(direction: 'next' | 'prev'): HTMLElement | null {
+  // aria-label 词表按语言排：en / ja / zh 是实测过的历史词表；it/es/fr/de/pt/nl/hi/ko
+  // 是 1.0.30 补的兜底（attr 选择器的 i 标志只折叠 ASCII，非 ASCII 词避开首字母大写）。
   const selectors = direction === 'next'
     ? [
         'button[aria-label="Next Page"]',
@@ -1121,6 +1224,22 @@ function clickablePageButton(direction: 'next' | 'prev'): HTMLElement | null {
         '[aria-label*="次のページ"]',
         '[aria-label*="下一页"]',
         '[aria-label*="下一頁"]',
+        'button[aria-label*="successiva" i]',
+        '[role="button"][aria-label*="successiva" i]',
+        'button[aria-label*="siguiente" i]',
+        '[role="button"][aria-label*="siguiente" i]',
+        'button[aria-label*="suivante" i]',
+        '[role="button"][aria-label*="suivante" i]',
+        'button[aria-label*="ächste Seite" i]',
+        '[role="button"][aria-label*="ächste Seite" i]',
+        'button[aria-label*="róxima" i]',
+        '[role="button"][aria-label*="róxima" i]',
+        'button[aria-label*="volgende" i]',
+        '[role="button"][aria-label*="volgende" i]',
+        'button[aria-label*="अगला"]',
+        '[role="button"][aria-label*="अगला"]',
+        'button[aria-label*="다음 페이지"]',
+        '[role="button"][aria-label*="다음 페이지"]',
         '.next-page-button',
         '#next-page',
       ]
@@ -1132,25 +1251,38 @@ function clickablePageButton(direction: 'next' | 'prev'): HTMLElement | null {
         '[aria-label*="前のページ"]',
         '[aria-label*="上一页"]',
         '[aria-label*="上一頁"]',
+        'button[aria-label*="precedente" i]',
+        '[role="button"][aria-label*="precedente" i]',
+        'button[aria-label*="anterior" i]',
+        '[role="button"][aria-label*="anterior" i]',
+        'button[aria-label*="récédente" i]',
+        '[role="button"][aria-label*="récédente" i]',
+        'button[aria-label*="orherige Seite" i]',
+        '[role="button"][aria-label*="orherige Seite" i]',
+        'button[aria-label*="vorige" i]',
+        '[role="button"][aria-label*="vorige" i]',
+        'button[aria-label*="पिछला"]',
+        '[role="button"][aria-label*="पिछला"]',
+        'button[aria-label*="이전 페이지"]',
+        '[role="button"][aria-label*="이전 페이지"]',
         '.previous-page-button',
         '.prev-page-button',
         '#previous-page',
         '#prev-page',
       ]
   for (const sel of selectors) {
-    const el = document.querySelector(sel)
-    if (!(el instanceof HTMLElement)) continue
-    if (el.getAttribute('aria-disabled') === 'true') continue
-    if (el instanceof HTMLButtonElement && el.disabled) continue
-    const style = (el.ownerDocument.defaultView || window).getComputedStyle(el)
-    if (style.display === 'none' || style.visibility === 'hidden') continue
-    const rect = el.getBoundingClientRect()
-    if (!intersect(
-      { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom },
-      viewportRect()
-    )) continue
-    return el
+    const el = usablePagerControl(document.querySelector(sel))
+    if (el) {
+      lastButtonDiscovery = 'label'
+      return el
+    }
   }
+  const structural = structuralPagerButton(direction)
+  if (structural) {
+    lastButtonDiscovery = 'structural'
+    return structural
+  }
+  lastButtonDiscovery = null
   return null
 }
 
@@ -1667,6 +1799,7 @@ export function installPlayBooksReader(
     }
     postForFrame('googleBooksTurnRequested', {
       method: pendingTurnMethod,
+      discovery: pendingTurnMethod === 'button' ? (pagerButtonDiscovery() || '') : '',
       attempt: 1,
       ...metadata,
     })

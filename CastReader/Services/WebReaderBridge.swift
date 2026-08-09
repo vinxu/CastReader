@@ -69,6 +69,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var lastGoogleBooksEvidence: GoogleBooksPageEvidence?
     private var lastGoogleBooksParagraphTexts: [String] = []
     private var lastGoogleBooksLanguage = ""
+    /// Per-page language detections for the diagnostics log. The 1.0.29 Italian
+    /// report says the app "forgets" the preferred voice and locks the picker to
+    /// English: the voice is a pure function of the detected page language, so a
+    /// history that mixes languages inside one book is direct proof of detector
+    /// flapping. Entries are "lang@signaturePrefix"; kept across reloads on purpose.
+    private var recentGoogleBooksLanguageDetections: [String] = []
     private var googleBooksReadDOMSegments: [[String: Any]] = []
     private var googleBooksExplainDOMSegments: [[String: Any]] = []
     private var activeGoogleBooksFrameSessionID: String?
@@ -811,6 +817,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     }
 
     private func receiveScriptMessage(_ message: WKScriptMessage) {
+        #if DEBUG
+        debugBlindPagerLabelsIfRequested(message)
+        #endif
         let body = message.body
         let frameInfo = message.frameInfo
         let securityOrigin = frameInfo.securityOrigin
@@ -845,6 +854,50 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             self.handle(body)
         }
     }
+
+    #if DEBUG
+    /// Verification-only hook, never compiled into release. Launching with
+    /// `-CRBlindPagerLabels YES` neutralizes every pager aria-label inside the
+    /// Google Books reader frame so the structural discovery fallback can be
+    /// exercised against the live DOM: the reader chrome language follows the
+    /// Google account, so the label wordlist cannot be starved any other way.
+    /// External protocol injection (iwdp / Appium) cannot reach the
+    /// cross-origin reader frame on current simulators; this native hook is
+    /// the equivalent runtime DOM intervention. The shipped bundle and the
+    /// discovery logic under test stay untouched.
+    private func debugBlindPagerLabelsIfRequested(_ message: WKScriptMessage) {
+        guard UserDefaults.standard.bool(forKey: "CRBlindPagerLabels"),
+              isGoogleBooks,
+              !message.frameInfo.isMainFrame,
+              message.frameInfo.securityOrigin.host.lowercased()
+                  .hasSuffix("books.googleusercontent.com"),
+              let webView = message.webView else { return }
+        let js = """
+        (() => {
+          const BLIND = 'x-verify'
+          const blind = () => {
+            document.querySelectorAll('button[aria-label], [role=\\"button\\"][aria-label]').forEach((el) => {
+              if (el.getAttribute('aria-label') !== BLIND) el.setAttribute('aria-label', BLIND)
+            })
+          }
+          blind()
+          if (!window.__crBlindObserver) {
+            window.__crBlindObserver = new MutationObserver(() => blind())
+            window.__crBlindObserver.observe(document.documentElement, {
+              subtree: true, childList: true, attributes: true, attributeFilter: ['aria-label'],
+            })
+            window.__crBlindInstalled = true
+          }
+          return 'count=' + document.querySelectorAll('[aria-label=\\"x-verify\\"]').length
+        })()
+        """
+        webView.evaluateJavaScript(js, in: message.frameInfo, in: .page) { result in
+            if case .success(let value) = result {
+                ReaderRunLog.write("GBOOKS debug blind pager labels \(value)")
+            }
+        }
+    }
+    #endif
 
     private func handle(_ body: Any) {
         guard let msg = WebInboundMessage(body) else { return }
@@ -885,7 +938,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 return
             }
             ReaderRunLog.write(
-                "GBOOKS turn requested method=\((msg.payload["method"] as? String) ?? "")"
+                "GBOOKS turn requested method=\((msg.payload["method"] as? String) ?? "") " +
+                "discovery=\((msg.payload["discovery"] as? String) ?? "")"
             )
         case "googleBooksTurnFailed":
             guard acceptsActiveGoogleBooksFrameEvent(msg.payload) else { return }
@@ -2878,6 +2932,32 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         maybeStartGoogleBooksSpeechPreload()
     }
 
+    private func recordGoogleBooksLanguageDetection(
+        _ language: String,
+        signature: String
+    ) {
+        // Tag pages by the signature *suffix*: the leading fields are viewport
+        // geometry shared by every page of a book, while the trailing field is
+        // a literal DOM-text slice that differs per page. (Verified 2026-08-09:
+        // prefix-tagged entries collapsed all same-language pages into one.)
+        let pageTag = String(signature.suffix(8))
+            .replacingOccurrences(of: " ", with: "_")
+        let entry = "\(language)@\(pageTag)"
+        if recentGoogleBooksLanguageDetections.last == entry { return }
+        recentGoogleBooksLanguageDetections.append(entry)
+        if recentGoogleBooksLanguageDetections.count > 6 {
+            recentGoogleBooksLanguageDetections.removeFirst(
+                recentGoogleBooksLanguageDetections.count - 6
+            )
+        }
+    }
+
+    private var googleBooksLanguageHistoryForLog: String {
+        recentGoogleBooksLanguageDetections.isEmpty
+            ? "-"
+            : recentGoogleBooksLanguageDetections.joined(separator: " ")
+    }
+
     /// Diagnostics are metadata-only and pass through the same active-frame and
     /// source-signature fence as content previews. Never log preview text.
     private func receiveGoogleBooksPreviewDiagnostic(
@@ -4097,6 +4177,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             lastGoogleBooksEvidence = pageForDOMMapping.evidence
             lastGoogleBooksParagraphTexts = incomingParagraphTexts
             lastGoogleBooksLanguage = pageForDOMMapping.language
+            recordGoogleBooksLanguageDetection(
+                pageForDOMMapping.language,
+                signature: signature
+            )
             googleBooksReadDOMSegments = readSegments
             googleBooksExplainDOMSegments = explainSegments
             googleBooksReadinessTask?.cancel()
@@ -4402,6 +4486,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         lastGoogleBooksEvidence = parsed.evidence
         lastGoogleBooksParagraphTexts = incomingParagraphTexts
         lastGoogleBooksLanguage = parsed.language
+        recordGoogleBooksLanguageDetection(
+            parsed.language,
+            signature: signature
+        )
         googleBooksReadDOMSegments = readSegments
         googleBooksExplainDOMSegments = explainSegments
         // Keep the cursor that shaped this visual page until the next physical
@@ -4423,7 +4511,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         livePlatform?.clearReaderError()
         ReaderRunLog.write(
             "GBOOKS page commit reason=\(reason.rawValue) paras=\(parsed.paragraphs.count) " +
-            "cross=\(parsed.boundary != nil ? "Y" : "N") sig=\(String(signature.prefix(24)))"
+            "cross=\(parsed.boundary != nil ? "Y" : "N") sig=\(String(signature.prefix(24))) " +
+            "tts.language=\(parsed.language) " +
+            "tts.voice=\(AppSettings.shared.voice(for: parsed.language)) " +
+            "tts.langHistory=\(googleBooksLanguageHistoryForLog)"
         )
 
         HistoryStore.shared.updateDetectedLanguage(
