@@ -983,10 +983,13 @@ enum KindleStorefrontNavigationPolicy {
         return path.isEmpty ? "/" : path
     }
 
-    /// Classification only; never use this as an allow decision. It lets the
-    /// WebView report a rejected auth redirect separately from an arbitrary
-    /// navigation while the stricter method above still enforces TLS,
-    /// credentials, port, marketplace ownership, and return targets.
+    /// Recognizes the shapes Amazon's sign-in chain actually takes. This is not
+    /// an allow decision on its own, but it *is* a necessary condition inside
+    /// `isSafeAmazonAuthenticationEnvelope`, which additionally enforces TLS,
+    /// credentials, port, marketplace ownership, and return targets. A step
+    /// missing here is therefore not merely mislabeled in logs — it is denied,
+    /// which strands the user mid-login. Keep this list in sync with
+    /// `authenticationState()` in KindleWebScripts.
     static func resemblesAmazonAuthenticationURL(_ url: URL?) -> Bool {
         guard let url,
               KindleStorefront.isAmazonWebsiteDataDomain(url.host ?? "") else {
@@ -1004,6 +1007,18 @@ enum KindleStorefrontNavigationPolicy {
             // openid query. /ap/mfa is the TOTP sibling of the same step.
             || path.contains("/ap/challenge")
             || path.contains("/ap/mfa")
+            // Amazon's bot check is served from the marketplace root domain
+            // (www.amazon.*), not from an /ap/ path, and risk scoring inserts
+            // it between the email and password steps — exactly where support
+            // reports "the app dies right after I type my email". Our own
+            // authenticationState() has always classified it as a challenge;
+            // the native gate did not, so it was cancelled mid-login.
+            || path.contains("/errors/validatecaptcha")
+            // Post-authentication account repair (add/confirm phone, address)
+            // is a mandatory step Amazon can force before releasing the return
+            // target, and password recovery is reachable from the sign-in form.
+            || path.contains("/ap/accountfixup")
+            || path.contains("/ap/forgotpassword")
             || url.host?.lowercased().contains("authportal") == true
             || queryNames.contains(where: { $0.hasPrefix("openid.") })
     }

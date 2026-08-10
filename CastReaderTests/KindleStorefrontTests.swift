@@ -1041,6 +1041,75 @@ final class KindleStorefrontTests: XCTestCase {
         )
     }
 
+    /// The marketplace login host for a storefront: read.amazon.co.uk ->
+    /// www.amazon.co.uk. Amazon serves the risk-check pages from here rather
+    /// than from the canonical Kindle host.
+    private func marketplaceLoginHost(
+        for storefront: KindleStorefront
+    ) throws -> String {
+        let canonical = storefront.canonicalHost
+        let range = try XCTUnwrap(
+            canonical.range(of: "amazon."),
+            "unexpected canonical host \(canonical)"
+        )
+        return "www." + canonical[range.lowerBound...]
+    }
+
+    /// Regression for the support report "the app dies right after I type my
+    /// email". Amazon's risk scoring inserts a bot check between the email and
+    /// password steps, and serves it from www.amazon.* with no /ap/ path and no
+    /// openid query — so the gate cancelled it, and onboarding turned that
+    /// cancellation into an opaque overlay over the live sign-in form.
+    /// KindleWebScripts.authenticationState() had always classified this page
+    /// as a challenge; the native gate is what disagreed.
+    func testSignInChainAdmitsMarketplaceRiskChecks() throws {
+        let admittedPaths = [
+            "/errors/validateCaptcha",
+            "/ap/accountfixup",
+            "/ap/forgotpassword",
+        ]
+        for storefront in KindleStorefront.selectable {
+            let loginHost = try marketplaceLoginHost(for: storefront)
+            for path in admittedPaths {
+                XCTAssertTrue(
+                    KindleStorefrontNavigationPolicy.allowsMainFrame(
+                        URL(string: "https://\(loginHost)\(path)"),
+                        expectedStorefrontID: storefront.id,
+                        expectedAuthenticationReturnPath: storefront.libraryURL.path
+                    ),
+                    "\(storefront.id) must not strand the user at \(path)"
+                )
+            }
+        }
+    }
+
+    /// Admitting the risk-check pages must not widen the boundary: another
+    /// marketplace, a non-authentication path, and plaintext all stay denied.
+    func testMarketplaceRiskCheckAdmissionStaysScoped() throws {
+        let us = try XCTUnwrap(KindleStorefront.storefront(id: "us"))
+        let denied = [
+            // Another marketplace's captcha cannot enter a US session.
+            "https://www.amazon.de/errors/validateCaptcha",
+            "https://www.amazon.co.uk/ap/accountfixup",
+            // Ordinary retail paths are not authentication steps.
+            "https://www.amazon.com/gp/cart/view.html",
+            "https://www.amazon.com/errors/somethingelse",
+            // Lookalike domains and plaintext stay out.
+            "https://www.amazon.com.phish.example/errors/validateCaptcha",
+            "http://www.amazon.com/errors/validateCaptcha",
+        ]
+        for raw in denied {
+            XCTAssertFalse(
+                KindleStorefrontNavigationPolicy.allowsMainFrame(
+                    URL(string: raw),
+                    expectedStorefrontID: us.id,
+                    expectedAuthenticationReturnPath: us.libraryURL.path
+                ),
+                raw
+            )
+        }
+    }
+
     func testForcedReauthenticationWebsiteDataIsScopedToOneMarketplace() throws {
         let italy = try XCTUnwrap(KindleStorefront.storefront(id: "it"))
         XCTAssertTrue(
