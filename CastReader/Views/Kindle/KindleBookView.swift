@@ -10612,14 +10612,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
               let activeReadVM = readVM,
               let sourceVM = notification.object as? ReadAloudViewModel,
               sourceVM === activeReadVM else { return }
-        let playbackLanguage = VoiceCatalog.normalizedLanguage(
-            readVM?.document.language ?? liveDocument?.language ?? ""
-        )
-        guard requestedLanguage == playbackLanguage else { return }
+        // The language being spoken, not the language the page was recognized as.
+        // A correction changes the first without changing the second, and comparing
+        // against the document would drop the notification exactly then.
+        guard requestedLanguage == activeReadVM.playbackLanguage else { return }
 
         // Audio prefetched with voice A must never be adopted after the live VM
-        // has switched to voice B. Keep OCR/page captures, invalidate only audio
-        // continuations, and immediately warm the prepared next page again.
+        // has switched to voice B. An ordinary voice change invalidates only the
+        // audio continuations — the page captures are still valid — and then warms
+        // the prepared next page again.
         cancelContinuousReadHandoff(reason: "voice-switch", force: true)
         clearPendingContinuation()
         cachedStartAudio = nil
@@ -10627,6 +10628,23 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let fromVoice = notification.userInfo?["fromVoiceID"] as? String ?? "-"
         let toVoice = notification.userInfo?["toVoiceID"] as? String ?? "-"
         KindleRunLog.write("KINDLE voice switch invalidate audio-prefetch from=\(fromVoice) to=\(toVoice) lang=\(requestedLanguage)")
+
+        // A language correction is different: it also changes the locale the next
+        // page must be recognized under. Anything already captured was read under
+        // the old one, so keeping it would delay the correction by a page — drop
+        // the captures as well and let the warm-up below redo them.
+        let recognizedLanguage = VoiceCatalog.normalizedLanguage(
+            activeReadVM.document.language.isEmpty
+                ? (liveDocument?.language ?? "")
+                : activeReadVM.document.language
+        )
+        if !recognizedLanguage.isEmpty, requestedLanguage != recognizedLanguage {
+            cancelPageCaching(clearPrepared: true)
+            KindleRunLog.write(
+                "KINDLE language corrected recognized=\(recognizedLanguage) " +
+                "narration=\(requestedLanguage) prepared-captures=dropped"
+            )
+        }
         if let liveKey = livePageKey?.nilIfEmpty {
             startCachingNextPage(afterKey: liveKey)
         }
@@ -11969,7 +11987,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         if profile == nil, KindleLanguageContract.isVerified(language: book.language, source: book.languageSource) {
             profile = persistedKindleLanguageProfile()
         }
-        if profile == nil {
+        let correction = ReadingLanguageStore.shared.override(for: readingLanguageContentKey)
+        // The consensus probe recognizes the page once per supported language, so
+        // it is a last resort — and pointless once the reader has said what this
+        // book is. Skipping it also keeps a wrong guess from being persisted as a
+        // verified profile behind a correction that already answered the question.
+        if profile == nil, KindleLanguageContract.normalize(correction) == nil {
             let probe = try await OCRService.shared.probeKindleLanguage(
                 image: image,
                 titleContext: [book.title, book.author].filter { !$0.isEmpty }.joined(separator: " ")
@@ -11979,6 +12002,21 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 persistKindleLanguageProfile(profile, source: "ocr-consensus-v2")
                 KindleRunLog.write("KINDLE_PROFILE_PROBE selected=\(profile.language) winningLocale=\(probe.visionLocale) chars=\(probe.readableCharacterCount) score=\(Int(probe.score))")
             }
+        }
+        // The reader's own correction outranks all three, and is deliberately kept
+        // in its own store rather than written back over `book.language`: those
+        // record what the renderer and the OCR consensus believe, this records what
+        // the reader said. Mixing them is how a wrong guess becomes unappealable.
+        if let corrected = KindleReadingLanguageCorrection.profile(
+            correcting: profile,
+            with: correction
+        ) {
+            KindleRunLog.write(
+                "KINDLE_PROFILE_USER_CORRECTED asin=\(Self.keyLog(book.asin ?? book.id)) " +
+                "from=\(profile?.language ?? "none") to=\(corrected.language) " +
+                "ocrLocale=\(corrected.visionLocale)"
+            )
+            profile = corrected
         }
         guard let profile else {
             throw KindleBookError.captureFailed("unsupported-kindle-language")
@@ -12051,6 +12089,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         try validateKindleWritingMode(profile: profile, document: doc)
         return (doc, layout.isDual ? "single-fallback:\(layout.reason)" : "single:\(layout.reason)")
+    }
+
+    /// Must agree with `ReadAloudViewModel.readingLanguageContentKey`, which files
+    /// the correction under the playback book id this reader hands it.
+    private var readingLanguageContentKey: String {
+        ReadingLanguageStore.contentKey(
+            namespace: ReadingSourceKind.kindle.rawValue,
+            bookID: book.id
+        )
     }
 
     private func persistedKindleLanguageProfile() -> KindleLanguageProfile? {

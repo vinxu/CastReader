@@ -529,6 +529,111 @@ final class ReadingLanguageTests: XCTestCase {
         XCTAssertEqual(pageViewModel().playbackLanguage, "it")
     }
 
+    // MARK: - Kindle recognizes under the corrected language
+
+    /// A Kindle page is recognized with a Vision locale, so a correction has to
+    /// reach OCR and not only the voice. Recognizing an Italian page as English
+    /// does not just mispronounce it — Vision returns the nearest English words,
+    /// so the text itself comes back wrong.
+    func testACorrectionOutranksRendererMetadataAndOCRConsensus() {
+        let metadataSaysEnglish = try? XCTUnwrap(
+            KindleLanguageContract.profile(language: "en-US")
+        )
+        let corrected = KindleReadingLanguageCorrection.profile(
+            correcting: metadataSaysEnglish, with: "it"
+        )
+        XCTAssertEqual(corrected?.language, "it")
+        XCTAssertEqual(corrected?.visionLocale, "it-IT")
+        XCTAssertEqual(corrected?.tesseractModel, "ita")
+
+        // Nothing to correct: no override, or one that names the same language.
+        XCTAssertNil(
+            KindleReadingLanguageCorrection.profile(correcting: metadataSaysEnglish, with: nil)
+        )
+        XCTAssertNil(
+            KindleReadingLanguageCorrection.profile(correcting: metadataSaysEnglish, with: "  ")
+        )
+        XCTAssertNil(
+            KindleReadingLanguageCorrection.profile(correcting: metadataSaysEnglish, with: "en-GB")
+        )
+        // An unsupported correction is not a licence to recognize under nothing.
+        XCTAssertNil(
+            KindleReadingLanguageCorrection.profile(correcting: metadataSaysEnglish, with: "ko")
+        )
+    }
+
+    /// The probe can fail to name any supported language. A correction is then the
+    /// only thing standing between the reader and an unusable book.
+    func testACorrectionSuppliesAProfileWhenNoneCouldBeResolved() {
+        let corrected = KindleReadingLanguageCorrection.profile(correcting: nil, with: "it-IT")
+        XCTAssertEqual(corrected?.language, "it")
+        XCTAssertEqual(corrected?.writingMode, .horizontal)
+    }
+
+    /// The correction restates the language, not the page geometry.
+    func testACorrectionKeepsTheObservedWritingModeButNotLanguageDefaults() {
+        let japaneseVertical = KindleLanguageContract.profile(
+            language: "ja", writingMode: .vertical
+        )
+        XCTAssertEqual(japaneseVertical?.readingDirection, .rtl)
+
+        let corrected = KindleReadingLanguageCorrection.profile(
+            correcting: japaneseVertical, with: "it"
+        )
+        // The page is still laid out the way it was observed…
+        XCTAssertEqual(corrected?.writingMode, .vertical)
+        // …but right-to-left was a Japanese default, not something seen on the
+        // page. Carrying it into an Italian book would reverse its columns.
+        XCTAssertEqual(corrected?.readingDirection, .ltr)
+        XCTAssertEqual(corrected?.pageProgressionFallback, .ltr)
+        XCTAssertEqual(corrected?.tesseractModel, "ita")
+    }
+
+    /// Both halves of the Kindle wiring: OCR consults the correction, and the
+    /// voice-switch handler compares against the language actually being spoken.
+    /// Comparing against the recognized document language instead would drop the
+    /// notification precisely on a correction, which is when it matters.
+    func testKindleReaderConsultsTheCorrectionAndTracksTheSpokenLanguage() throws {
+        let reader = try repositorySources(["CastReader/Views/Kindle/KindleBookView.swift"])
+            .values
+            .first!
+        XCTAssertTrue(reader.contains("KindleReadingLanguageCorrection.profile("))
+        XCTAssertTrue(
+            reader.contains("ReadingLanguageStore.shared.override(for: readingLanguageContentKey)")
+        )
+        // The nine-locale consensus probe is skipped once the reader has answered.
+        XCTAssertTrue(
+            reader.contains("if profile == nil, KindleLanguageContract.normalize(correction) == nil {")
+        )
+        XCTAssertTrue(reader.contains("requestedLanguage == activeReadVM.playbackLanguage"))
+        XCTAssertFalse(
+            reader.contains("readVM?.document.language ?? liveDocument?.language"),
+            "The voice-switch guard must not compare against the recognized language"
+        )
+    }
+
+    /// The Kindle reader and the read-aloud view model have to file the correction
+    /// under the same key, or the reader would never see what the panel wrote.
+    @MainActor
+    func testKindleReaderAndPlaybackAgreeOnTheContentKey() {
+        let document = ReadingDocument(
+            title: "Kindle page",
+            sourceKind: .kindle,
+            language: "en",
+            paragraphs: []
+        )
+        let vm = ReadAloudViewModel(document: document)
+        vm.configurePlaybackMetadata(id: "B00ASIN", title: "Kindle book", coverURL: nil)
+        XCTAssertEqual(
+            vm.readingLanguageContentKey,
+            ReadingLanguageStore.contentKey(
+                namespace: ReadingSourceKind.kindle.rawValue,
+                bookID: "B00ASIN"
+            )
+        )
+        XCTAssertEqual(vm.readingLanguageContentKey, "kindle:B00ASIN")
+    }
+
     // MARK: - Helpers
 
     private func repositorySources(_ paths: [String]) throws -> [String: String] {

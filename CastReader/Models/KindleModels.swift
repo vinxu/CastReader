@@ -213,6 +213,40 @@ enum KindleLanguageContract {
     }
 }
 
+/// What a Kindle page is recognized as when the user has told us what language
+/// this book is.
+///
+/// The three ordinary sources - renderer metadata, a previously verified book
+/// profile, and single-locale OCR consensus - are all inference. Metadata can be
+/// wrong or missing, and consensus sees one page. Recognizing a page under the
+/// wrong locale does not merely mispronounce it: Vision returns the nearest
+/// words of the language it was asked for, so an Italian page read as English
+/// comes back subtly wrong, and the reader has no other way to say otherwise.
+/// A correction therefore outranks all three - the same order as
+/// `ReadingLanguagePolicy`, where a user correction outranks any detection.
+enum KindleReadingLanguageCorrection {
+
+    /// The profile to recognize with, or nil when there is nothing to correct.
+    ///
+    /// A correction restates the language, not the page geometry, so the writing
+    /// mode observed on the page carries over while reading direction and page
+    /// progression fall back to the corrected language's own defaults. Those
+    /// defaults are a function of the language - Japanese alone defaults to
+    /// right-to-left - so carrying a Japanese default into an Italian book would
+    /// reverse its column order.
+    static func profile(
+        correcting resolved: KindleLanguageProfile?,
+        with override: String?
+    ) -> KindleLanguageProfile? {
+        guard let corrected = KindleLanguageContract.normalize(override),
+              corrected != resolved?.language else { return nil }
+        return KindleLanguageContract.profile(
+            language: corrected,
+            writingMode: resolved?.writingMode ?? .horizontal
+        )
+    }
+}
+
 enum KindleWritingModeContract {
     /// Kindle renderer metadata sometimes calls a portrait page/image `vertical`.
     /// Strongly elongated paragraph rectangles are the actual glyph-flow authority.
