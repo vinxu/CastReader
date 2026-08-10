@@ -6,14 +6,10 @@
 import SwiftUI
 import WebKit
 
-enum KindleOnboardingConnectionState: Equatable {
-    case idle
-    case awaitingLogin
-    case scanning(found: Int)
-    case ready
-    case empty
-    case failed(message: String)
-}
+/// 连接状态机已提升为与书库无关的共享类型（见
+/// `BoundLibraryOnboardingComponents.swift`），微信读书引导复用同一组语义。
+/// 保留这个名字以免改动 Kindle 侧既有调用点。
+typealias KindleOnboardingConnectionState = BoundLibraryOnboardingConnectionState
 
 struct KindleLibraryConnectView: View {
     @Environment(\.dismiss) private var dismiss
@@ -678,31 +674,6 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             )
         }
 
-        connectionAnalytics.record(
-            .failed,
-            result: .failed,
-            errorCode: code
-        )
-
-        // A rejected authentication hop means the user is still mid-login, not
-        // that the binding is wrong. Reporting the storefront-mismatch copy and
-        // flipping onboarding to `.failed` would drive
-        // KindleFirstLaunchFlowView from `.login` to `.scan`, dropping an
-        // opaque overlay over the live Amazon form and disabling hit testing —
-        // which reads to the user as the app crashing right after they type
-        // their email. The path list this gate depends on is an enumeration and
-        // will never be complete, so a miss must degrade to "keep signing in"
-        // rather than to a dead end.
-        if code == "auth_redirect_rejected" {
-            statusText = AppLocalized("请登录 Amazon Kindle，然后点同步。")
-            errorText = nil
-            showsEmptyShelfRecovery = false
-            if onboardingAutomationEnabled {
-                onboardingState = .awaitingLogin
-            }
-            return
-        }
-
         let message = AppLocalized("当前 Amazon 站点与所选站点不一致。")
         statusText = message
         errorText = message
@@ -710,6 +681,11 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         if onboardingAutomationEnabled {
             onboardingState = .failed(message: message)
         }
+        connectionAnalytics.record(
+            .failed,
+            result: .failed,
+            errorCode: code
+        )
     }
 
     func syncLibrary(
