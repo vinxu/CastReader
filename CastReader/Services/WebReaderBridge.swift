@@ -69,6 +69,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var lastGoogleBooksEvidence: GoogleBooksPageEvidence?
     private var lastGoogleBooksParagraphTexts: [String] = []
     private var lastGoogleBooksLanguage = ""
+    /// The language this book has already settled on, updated only by a page that
+    /// read clearly on its own. Reading language is decided per page, and a page of
+    /// headings, an epigraph, a caption or a full-page illustration carries too
+    /// little text to decide — `NLLanguageRecognizer` does not stay silent there, it
+    /// guesses (measured: three characters of Roman numerals read as Spanish at
+    /// 0.33). Carrying this forward is what stops one such page from repointing an
+    /// Italian book at an English voice mid-chapter. See `ReadingLanguagePolicy`.
+    private var rememberedReadingLanguage = ""
     /// Per-page language detections for the diagnostics log. The 1.0.29 Italian
     /// report says the app "forgets" the preferred voice and locks the picker to
     /// English: the voice is a pure function of the detected page language, so a
@@ -1505,7 +1513,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             fingerprint: fingerprint,
             evidence: evidence,
             page: page,
-            language: LanguageDetector.detect((speechTexts.isEmpty ? rawTexts : speechTexts).prefix(24).joined(separator: " ")),
+            language: resolveReadingLanguage(
+                (speechTexts.isEmpty ? rawTexts : speechTexts).prefix(24).joined(separator: " ")
+            ),
             readerURL: payload["readerURL"] as? String,
             progress: payload["progressLabel"] as? String,
             geometrySource: payload["geometrySource"] as? String ?? "unknown",
@@ -1567,7 +1577,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             sourceFingerprint: sourceFingerprint,
             contentFingerprint: contentFingerprint,
             page: page,
-            language: LanguageDetector.detect(texts.prefix(24).joined(separator: " ")),
+            // A prediction, not a committed page: resolve but do not let it define
+            // the book's language.
+            language: resolveReadingLanguage(
+                texts.prefix(24).joined(separator: " "),
+                remember: false
+            ),
             confidence: (payload["confidence"] as? String) ?? "unknown",
             preparedParagraphIndex: preparedInput.0,
             preparedText: preparedInput.1,
@@ -2349,6 +2364,29 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         ReaderRunLog.write("WEREAD preload invalidated reason=\(reason) preserve=\(preservePrediction ? "Y" : "N")")
     }
 
+    /// Which language this page should be narrated in. Detection is only one of
+    /// three kinds of evidence: a language the user set for this book outranks it,
+    /// and a page too thin to decide keeps the language the book already settled on
+    /// rather than falling back to English.
+    ///
+    /// `remember` is false for speculative next-page work: a predicted page may
+    /// never be committed, so it must not be able to define the book's language.
+    private func resolveReadingLanguage(_ sample: String, remember: Bool = true) -> String {
+        let decision = ReadingLanguagePolicy.resolve(
+            userOverride: ReadingLanguageStore.shared.override(for: readingLanguageContentKey),
+            confidentDetection: ReadingLanguagePolicy.confidentLanguage(for: sample),
+            remembered: rememberedReadingLanguage
+        )
+        if remember, decision.shouldRemember {
+            rememberedReadingLanguage = decision.language
+        }
+        return decision.language
+    }
+
+    private var readingLanguageContentKey: String {
+        readVM?.readingLanguageContentKey ?? ""
+    }
+
     private func invalidateWeReadExplainPrefetch(reason: String) {
         weReadExplainPrefetchTask?.cancel()
         weReadExplainPrefetchTask = nil
@@ -2373,8 +2411,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     ) {
         guard let readVM, !paras.isEmpty else { return }
         let rps = paras.map { ReadingParagraph(id: $0.paragraphIndex, text: $0.text, type: .paragraph) }
-        // 从提取的正文检测语言（中文网页→zh 音色），统一系统化判定，避免中文用英文音色。
-        let detected = LanguageDetector.detect(rps.prefix(30).map { $0.text }.joined(separator: " "))
+        // 从提取的正文判定语言（中文网页→zh 音色），统一系统化判定，避免中文用英文音色。
+        let detected = resolveReadingLanguage(rps.prefix(30).map { $0.text }.joined(separator: " "))
         print("[WebReader] 🌐 detected language=\(detected)")
         HistoryStore.shared.updateDetectedLanguage(documentID: readVM.document.id, language: detected)
         readVM.loadWebParagraphs(rps, language: detected, weReadBoundary: weReadBoundary)
@@ -2571,7 +2609,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
         let spoken = paragraphs.map(\.text).joined(separator: " ")
         let visibleSpoken = explainParagraphs.map(\.text).joined(separator: " ")
-        let language = LanguageDetector.detect(String(spoken.prefix(1200)))
+        let language = resolveReadingLanguage(String(spoken.prefix(1200)))
         return GoogleBooksParsedPage(
             paragraphs: paragraphs,
             explainParagraphs: explainParagraphs,
@@ -3017,9 +3055,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             }
             return
         }
-        let language = lastGoogleBooksLanguage.isEmpty
-            ? LanguageDetector.detect(candidate.text)
-            : lastGoogleBooksLanguage
+        // Speculative next page: the language it will be spoken in follows the same
+        // three kinds of evidence, but a prediction never defines the book.
+        let language = resolveReadingLanguage(candidate.text, remember: false)
         let voiceID = AppSettings.shared.voice(for: language)
         if let prepared = preparedGoogleBooksSpeechPreview {
             if prepared.candidate == candidate,

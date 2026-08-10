@@ -1046,6 +1046,9 @@ struct ReaderPlaybackConsole<PlaybackControls: View>: View {
     let playbackStatus: String
     let statusMessage: String?
     let voiceLanguage: String?
+    /// Read-aloud only: lets the voice panel correct which language this content
+    /// is narrated in. Explain leaves it nil, which keeps its language pinned.
+    let onCorrectReadingLanguage: ((String) -> Void)?
     let showTOC: (() -> Void)?
     let playbackControls: PlaybackControls
 
@@ -1053,12 +1056,14 @@ struct ReaderPlaybackConsole<PlaybackControls: View>: View {
         playbackStatus: String,
         statusMessage: String? = nil,
         voiceLanguage: String?,
+        onCorrectReadingLanguage: ((String) -> Void)? = nil,
         showTOC: (() -> Void)?,
         @ViewBuilder playbackControls: () -> PlaybackControls
     ) {
         self.playbackStatus = playbackStatus
         self.statusMessage = statusMessage
         self.voiceLanguage = voiceLanguage
+        self.onCorrectReadingLanguage = onCorrectReadingLanguage
         self.showTOC = showTOC
         self.playbackControls = playbackControls()
     }
@@ -1114,7 +1119,8 @@ struct ReaderPlaybackConsole<PlaybackControls: View>: View {
             PlaybackVoiceButton(
                 language: voiceLanguage,
                 size: 32,
-                showsLabel: false
+                showsLabel: false,
+                onCorrectReadingLanguage: onCorrectReadingLanguage
             )
         } else {
             ZStack {
@@ -1192,6 +1198,7 @@ private struct ReadControlBar: View {
                 playbackStatus: playbackStatus(for: presentationState),
                 statusMessage: voiceSwitch.progress?.localizedMessage,
                 voiceLanguage: vm.hasStartedPlayback ? vm.playbackLanguage : nil,
+                onCorrectReadingLanguage: { [weak vm] in vm?.correctReadingLanguage($0) },
                 showTOC: showTOC
             ) {
                 HStack(spacing: 10) {
@@ -1355,7 +1362,12 @@ private struct ReaderLandscapeReadOverlay: View {
                         .accessibilityLabel(Text(AppLocalized("目录")))
                     }
                     if vm.hasStartedPlayback {
-                        PlaybackVoiceButton(language: vm.playbackLanguage)
+                        PlaybackVoiceButton(
+                            language: vm.playbackLanguage,
+                            onCorrectReadingLanguage: { [weak vm] in
+                                vm?.correctReadingLanguage($0)
+                            }
+                        )
                     }
                     SpeedMenu()
                 }

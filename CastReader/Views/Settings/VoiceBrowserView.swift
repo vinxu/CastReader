@@ -22,24 +22,39 @@ final class PlaybackVoicePanelCenter: ObservableObject {
     struct Request: Identifiable, Equatable {
         let id = UUID()
         let language: String
+        /// Read-aloud arrives with a way to correct which language this content is
+        /// narrated in; Explain does not. Only a language that cannot be corrected
+        /// stays pinned in the panel — see `VoiceBrowserView.languagePinned`.
+        let isReadingLanguageCorrectable: Bool
     }
 
     static let shared = PlaybackVoicePanelCenter()
 
     @Published private(set) var request: Request?
+    /// Held outside `Request` so the published value stays `Equatable`.
+    private var correctionHandler: ((String) -> Void)?
 
     var isPresented: Bool { request != nil }
 
     private init() {}
 
-    func present(language: String) {
+    func present(language: String, onCorrectReadingLanguage: ((String) -> Void)? = nil) {
         let normalized = VoiceCatalog.normalizedLanguage(language)
         guard !normalized.isEmpty else { return }
-        request = Request(language: normalized)
+        correctionHandler = onCorrectReadingLanguage
+        request = Request(
+            language: normalized,
+            isReadingLanguageCorrectable: onCorrectReadingLanguage != nil
+        )
+    }
+
+    func correctReadingLanguage(_ language: String) {
+        correctionHandler?(language)
     }
 
     func dismiss() {
         request = nil
+        correctionHandler = nil
     }
 }
 
@@ -53,7 +68,14 @@ struct VoiceBrowserView: View {
     @ObservedObject private var samplePlayer: VoiceSamplePlayer
     @ObservedObject private var voiceSwitch: VoiceSwitchStatusCenter
     private let presentation: VoiceBrowserPresentation
-    private let lockedLanguage: String?
+    /// The reader seeds the panel with the language it is currently narrating in.
+    /// It is the initial selection, not a lock: it used to filter everything —
+    /// including this panel's own search box — while the control that could change
+    /// it was disabled, so one page misdetected as English left no reachable
+    /// Italian voice to correct it with. See `ReadingLanguagePolicy`.
+    private let initialLanguage: String?
+    /// Supplied by read-aloud only: picking a language re-narrates the content in it.
+    private let onCorrectReadingLanguage: ((String) -> Void)?
     private let onDone: (() -> Void)?
 
     @State private var tab: VoiceBrowserTab = .explore
@@ -65,15 +87,18 @@ struct VoiceBrowserView: View {
     @State private var selectingVoiceID: String?
     @State private var showLanguagePicker = false
     @State private var showPaywall = false
+    @State private var languageChosenByUser = false
 
     init(
         presentation: VoiceBrowserPresentation = .sheet,
         language: String? = nil,
+        onCorrectReadingLanguage: ((String) -> Void)? = nil,
         onDone: (() -> Void)? = nil
     ) {
         self.presentation = presentation
         let normalized = language.map(VoiceCatalog.normalizedLanguage) ?? ""
-        self.lockedLanguage = normalized.isEmpty ? nil : normalized
+        self.initialLanguage = normalized.isEmpty ? nil : normalized
+        self.onCorrectReadingLanguage = onCorrectReadingLanguage
         self.onDone = onDone
         _settings = ObservedObject(wrappedValue: .shared)
         _pro = ObservedObject(wrappedValue: .shared)
@@ -90,11 +115,13 @@ struct VoiceBrowserView: View {
         library: VoiceLibraryStore,
         presentation: VoiceBrowserPresentation = .sheet,
         language: String? = nil,
+        onCorrectReadingLanguage: ((String) -> Void)? = nil,
         onDone: (() -> Void)? = nil
     ) {
         self.presentation = presentation
         let normalized = language.map(VoiceCatalog.normalizedLanguage) ?? ""
-        self.lockedLanguage = normalized.isEmpty ? nil : normalized
+        self.initialLanguage = normalized.isEmpty ? nil : normalized
+        self.onCorrectReadingLanguage = onCorrectReadingLanguage
         self.onDone = onDone
         _settings = ObservedObject(wrappedValue: settings)
         _pro = ObservedObject(wrappedValue: pro)
@@ -102,6 +129,23 @@ struct VoiceBrowserView: View {
         _library = ObservedObject(wrappedValue: library)
         _samplePlayer = ObservedObject(wrappedValue: .shared)
         _voiceSwitch = ObservedObject(wrappedValue: .shared)
+    }
+
+    /// Pin the language only when it was supplied from outside *and* cannot be
+    /// corrected — that is the Explain panel alone, whose language is a user
+    /// setting and whose cross-language picks are rejected downstream, so opening
+    /// it up would only produce voices that do nothing when tapped. Read-aloud
+    /// always arrives with a correction, so it can never be pinned again.
+    private var languagePinned: Bool {
+        initialLanguage != nil && onCorrectReadingLanguage == nil
+    }
+
+    /// In the reader this control *is* "which language is this content narrated in".
+    /// In Settings there is no current book, so it keeps its browse-filter meaning.
+    private var isReadingLanguageControl: Bool { initialLanguage != nil }
+
+    private var languageControlTitle: String {
+        isReadingLanguageControl ? AppLocalized("朗读语言") : AppLocalized("语言")
     }
 
     var body: some View {
@@ -157,10 +201,11 @@ struct VoiceBrowserView: View {
         .presentationDragIndicator(.visible)
         .sheet(isPresented: $showLanguagePicker) {
             VoiceLanguagePickerView(
+                title: languageControlTitle,
                 languages: availableLanguages,
                 selection: Binding(
                     get: { library.browserLanguage },
-                    set: { library.setBrowserLanguage($0) }
+                    set: { chooseLanguage($0) }
                 )
             )
         }
@@ -238,18 +283,18 @@ struct VoiceBrowserView: View {
 
     private var languageSelector: some View {
         Group {
-            if lockedLanguage == nil {
+            if languagePinned {
+                languageSelectorContent(showsDisclosure: false)
+            } else {
                 Button {
                     showLanguagePicker = true
                 } label: {
                     languageSelectorContent(showsDisclosure: true)
                 }
                 .buttonStyle(.plain)
-            } else {
-                languageSelectorContent(showsDisclosure: false)
             }
         }
-        .accessibilityLabel(Text("朗读语言"))
+        .accessibilityLabel(Text(languageControlTitle))
         .accessibilityValue(Text(selectedLanguageName))
     }
 
@@ -260,7 +305,7 @@ struct VoiceBrowserView: View {
                 .foregroundStyle(AppTheme.primary)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("朗读语言")
+                Text(languageControlTitle)
                     .font(.caption)
                     .foregroundStyle(AppTheme.mutedForeground)
                 Text(selectedLanguageName)
@@ -414,6 +459,7 @@ struct VoiceBrowserView: View {
         guard selectingVoiceID == nil else { return }
         if VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings) {
             library.recordRecent(voice.code)
+            applyReadingLanguage(of: voice)
             return
         }
         guard voice.isPro else { return }
@@ -423,6 +469,7 @@ struct VoiceBrowserView: View {
             await pro.refresh()
             if VoiceSelectionPolicy.select(voice, isPro: pro.isPro, settings: settings) {
                 library.recordRecent(voice.code)
+                applyReadingLanguage(of: voice)
             } else {
                 showPaywall = true
             }
@@ -430,10 +477,41 @@ struct VoiceBrowserView: View {
         }
     }
 
+    /// Picking a voice from another language is the user telling us what language
+    /// this content is. The preference is stored under the voice's own language
+    /// first — `AppSettings.setVoice` refusing to file a voice under a foreign
+    /// language is the right invariant and stays — and only then does the reading
+    /// language follow, so a single re-narration lands on the voice just tapped.
+    /// Without this the pick was stored and then ignored: playback still read the
+    /// misdetected English preference, and tapping an Italian voice did nothing.
+    private func applyReadingLanguage(of voice: VoiceOption) {
+        guard let onCorrectReadingLanguage else { return }
+        let language = VoiceCatalog.normalizedLanguage(voice.lang)
+        guard !language.isEmpty else { return }
+        onCorrectReadingLanguage(language)
+    }
+
+    /// The user picked a language in this panel. In the reader that is a statement
+    /// about the content — "read this book in Italian" — so it corrects the reading
+    /// language and re-narrates immediately, instead of only filtering the list and
+    /// leaving the user to guess which voice belongs to which language.
+    private func chooseLanguage(_ language: String) {
+        let normalized = VoiceCatalog.normalizedLanguage(language)
+        guard !normalized.isEmpty else { return }
+        languageChosenByUser = true
+        library.setBrowserLanguage(normalized)
+        onCorrectReadingLanguage?(normalized)
+    }
+
     private func synchronizeBrowserLanguage() {
-        if let lockedLanguage {
-            if library.browserLanguage != lockedLanguage {
-                library.setBrowserLanguage(lockedLanguage)
+        if let initialLanguage {
+            // Follow the reading language until the user picks one themselves. After
+            // that, pulling the panel back would undo the correction that is still on
+            // its way into playback — which is exactly what "and I cannot change it"
+            // felt like. Only a pinned language keeps following unconditionally.
+            guard languagePinned || !languageChosenByUser else { return }
+            if library.browserLanguage != initialLanguage {
+                library.setBrowserLanguage(initialLanguage)
             }
             return
         }
@@ -501,6 +579,9 @@ struct PlaybackVoicePanelOverlay: View {
                     VoiceBrowserView(
                         presentation: .playerOverlay,
                         language: request.language,
+                        onCorrectReadingLanguage: request.isReadingLanguageCorrectable
+                            ? { center.correctReadingLanguage($0) }
+                            : nil,
                         onDone: { center.dismiss() }
                     )
                     .frame(width: panelWidth, height: panelHeight)
@@ -523,6 +604,7 @@ struct PlaybackVoicePanelOverlay: View {
 
 private struct VoiceLanguagePickerView: View {
     @Environment(\.dismiss) private var dismiss
+    let title: String
     let languages: [VoiceCatalogLanguageOption]
     @Binding var selection: String
     @State private var searchText = ""
@@ -555,7 +637,7 @@ private struct VoiceLanguagePickerView: View {
                 .buttonStyle(.plain)
                 .accessibilityValue(Text(VoiceBrowserLanguage.voiceCountText(language.voiceCount)))
             }
-            .navigationTitle("朗读语言")
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "搜索语言")
             .toolbar {
@@ -747,6 +829,10 @@ struct PlaybackVoiceButton: View {
     let language: String
     var size: CGFloat = 36
     var showsLabel = false
+    /// Read-aloud passes this so the panel's language control becomes the way to
+    /// correct which language this content is narrated in. Explain leaves it nil:
+    /// its language is a user setting, not something detection can get wrong.
+    var onCorrectReadingLanguage: ((String) -> Void)?
 
     private var normalizedLanguage: String {
         VoiceCatalog.normalizedLanguage(language)
@@ -771,7 +857,10 @@ struct PlaybackVoiceButton: View {
 
     var body: some View {
         Button {
-            PlaybackVoicePanelCenter.shared.present(language: normalizedLanguage)
+            PlaybackVoicePanelCenter.shared.present(
+                language: normalizedLanguage,
+                onCorrectReadingLanguage: onCorrectReadingLanguage
+            )
         } label: {
             VStack(spacing: showsLabel ? 4 : 0) {
                 avatar
@@ -790,6 +879,7 @@ struct PlaybackVoiceButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("playbackVoiceButton")
         .accessibilityLabel(Text(AppLocalized("音色")))
         .accessibilityValue(Text(displayName))
     }

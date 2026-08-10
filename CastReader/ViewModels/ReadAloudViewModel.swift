@@ -263,9 +263,13 @@ final class ReadAloudViewModel: ObservableObject {
     private var pendingLiveWebResume: PendingLiveWebResume?
     private var isAwaitingLiveWebCarryCompletion = false
     private var pendingLiveWebCarryStartIndex: Int?
+    /// 用户亲手更正的朗读语言，压过逐页检测与文档自带语言。
+    /// 检测每翻一页重判一次，而章节标题/题记/图注这类稀疏页证据不足会回落英语，
+    /// 于是一本意大利语书读到那样一页就换成英语音色；用户的选择不能被下一页推翻。
+    private var correctedLanguage: String? = nil
     private var paras: [ReadingParagraph] { webParagraphs ?? document.paragraphs }
-    /// 有效朗读语言：.web 源用从正文检测的语言，否则用 document.language。
-    private var docLanguage: String { webLanguage ?? document.language }
+    /// 有效朗读语言：用户更正 > .web 源从正文检测的语言 > document.language。
+    private var docLanguage: String { correctedLanguage ?? webLanguage ?? document.language }
     @Published var webAudioSegments: [AudioSegment] = []   // 扁平全局顺序（供 bridge 转 JS audioSegments）
     @Published var webHighlight: WebHighlightCmd? = nil     // 当前 DOM 高亮指令（句级/词级）
     @Published var pdfHighlight: PDFWordHighlight? = nil    // PDF 词级高亮（当前段质量通过才更新，否则保留句级淡高亮）
@@ -375,9 +379,44 @@ final class ReadAloudViewModel: ObservableObject {
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         self.analyticsSessionCoordinator = analyticsSessionCoordinator
             ?? ReadAnalyticsSessionCoordinator()
-        self.playbackVoiceID = AppSettings.shared.voice(for: document.language)
+        // A correction the user made for this book outlives the session: reopening
+        // it must not hand the book back to whatever the first page detects.
+        self.correctedLanguage = ReadingLanguageStore.shared.override(
+            for: ReadingLanguageStore.contentKey(
+                namespace: document.sourceKind.rawValue,
+                bookID: document.id
+            )
+        )
+        self.playbackVoiceID = AppSettings.shared
+            .voice(for: correctedLanguage ?? document.language)
         recomputeReadableIndices()
         bind()
+    }
+
+    /// Where this book's reading-language correction is filed.
+    ///
+    /// Kindle builds a fresh `ReadingDocument` for every page, so `document.id` is a
+    /// per-page UUID there and the stable book identity arrives with the playback
+    /// metadata instead. Keying on that is what makes a correction survive a page
+    /// turn on the very shelf the report came from.
+    var readingLanguageContentKey: String {
+        let bookID = playbackBookID?.trimmed ?? ""
+        return ReadingLanguageStore.contentKey(
+            namespace: document.sourceKind.rawValue,
+            bookID: bookID.isEmpty ? document.id : bookID
+        )
+    }
+
+    /// The book identity can arrive after `init`; pick the stored correction up
+    /// again when it does, or a Kindle page turn would quietly drop it.
+    private func adoptStoredReadingLanguageCorrection() {
+        guard correctedLanguage == nil,
+              let stored = ReadingLanguageStore.shared.override(for: readingLanguageContentKey)
+        else { return }
+        correctedLanguage = stored
+        if !isActive, currentParagraphIndex < 0 {
+            playbackVoiceID = settings.voice(for: docLanguage)
+        }
     }
 
     func configurePlaybackMetadata(id: String, title: String, coverURL: String?, chapterTitle: String? = nil) {
@@ -385,6 +424,7 @@ final class ReadAloudViewModel: ObservableObject {
         playbackTitle = title
         playbackCoverURL = coverURL
         playbackChapterTitle = chapterTitle
+        adoptStoredReadingLanguageCorrection()
     }
 
     /// A Kindle page handoff is safe only after the last readable chunk has
@@ -522,6 +562,27 @@ final class ReadAloudViewModel: ObservableObject {
     /// PDF/text/Kindle content already carries it on the document.
     var playbackLanguage: String {
         VoiceCatalog.normalizedLanguage(docLanguage)
+    }
+
+    /// The user correcting, from the voice panel, which language this content is
+    /// narrated in — the front door for a misdetected page. Re-narrates with the
+    /// voice they already prefer for that language; the voice itself remains
+    /// changeable in the same panel.
+    func correctReadingLanguage(_ language: String) {
+        let normalized = VoiceCatalog.normalizedLanguage(language)
+        guard !normalized.isEmpty, normalized != playbackLanguage else { return }
+        let previous = playbackLanguage
+        correctedLanguage = normalized
+        // Persist per book, so the correction still holds on the next page and the
+        // next time this book is opened — otherwise the very next detection undoes it.
+        ReadingLanguageStore.shared.setOverride(normalized, for: readingLanguageContentKey)
+        ReaderRunLog.write(
+            "READ language corrected from=\(previous) to=\(normalized) doc=\(document.id)"
+        )
+        // Force the restart: a cloned voice can be shared across languages, and
+        // comparing voice ids alone would then read "nothing changed" even though
+        // the language — and therefore the TTS request — just did.
+        handleVoicePreferenceChanged(forceRestart: true)
     }
 
     /// The voice avatar is deliberately hidden before the first Play action.
@@ -1669,9 +1730,9 @@ final class ReadAloudViewModel: ObservableObject {
         }
     }
 
-    private func handleVoicePreferenceChanged() {
+    private func handleVoicePreferenceChanged(forceRestart: Bool = false) {
         let newVoiceID = settings.voice(for: docLanguage)
-        guard newVoiceID != playbackVoiceID else { return }
+        guard forceRestart || newVoiceID != playbackVoiceID else { return }
         let oldVoiceID = playbackVoiceID
         playbackVoiceID = newVoiceID
 

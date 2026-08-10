@@ -92,7 +92,13 @@ private struct MiniPlayerBar: View {
             if isExplain {
                 PlaybackVoiceButton(language: explainVM.playbackLanguage, size: 34)
             } else if readVM.hasStartedPlayback {
-                PlaybackVoiceButton(language: readVM.playbackLanguage, size: 34)
+                PlaybackVoiceButton(
+                    language: readVM.playbackLanguage,
+                    size: 34,
+                    onCorrectReadingLanguage: { [weak readVM] in
+                        readVM?.correctReadingLanguage($0)
+                    }
+                )
             }
 
             Button { onPlayTap() } label: {

@@ -730,6 +730,7 @@ private struct KindleReadPlaybackBar: View {
             playbackStatus: playbackStatus,
             statusMessage: voiceSwitch.progress?.localizedMessage,
             voiceLanguage: vm.hasStartedPlayback ? vm.playbackLanguage : nil,
+            onCorrectReadingLanguage: { [weak vm] in vm?.correctReadingLanguage($0) },
             previousPage: previousPage,
             nextPage: nextPage,
             showTOC: showTOC
@@ -807,6 +808,9 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
     let playbackStatus: String
     let statusMessage: String?
     let voiceLanguage: String?
+    /// Read-aloud only: lets the voice panel correct which language this book is
+    /// narrated in. Explain leaves it nil, which keeps its language pinned.
+    let onCorrectReadingLanguage: ((String) -> Void)?
     let previousPage: () -> Void
     let nextPage: () -> Void
     let showTOC: () -> Void
@@ -817,6 +821,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
         playbackStatus: String,
         statusMessage: String? = nil,
         voiceLanguage: String?,
+        onCorrectReadingLanguage: ((String) -> Void)? = nil,
         previousPage: @escaping () -> Void,
         nextPage: @escaping () -> Void,
         showTOC: @escaping () -> Void,
@@ -826,6 +831,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
         self.playbackStatus = playbackStatus
         self.statusMessage = statusMessage
         self.voiceLanguage = voiceLanguage
+        self.onCorrectReadingLanguage = onCorrectReadingLanguage
         self.previousPage = previousPage
         self.nextPage = nextPage
         self.showTOC = showTOC
@@ -1142,6 +1148,7 @@ private struct KindleLandscapeReadOverlay: View {
                 playbackStatus: isLoading ? AppLocalized("正在准备…") : (vm.isPlaying ? AppLocalized("朗读中") : AppLocalized("已暂停")),
                 statusMessage: voiceSwitch.progress?.localizedMessage,
                 voiceLanguage: vm.hasStartedPlayback ? vm.playbackLanguage : nil,
+                onCorrectReadingLanguage: { [weak vm] in vm?.correctReadingLanguage($0) },
                 previousPage: previousPage,
                 nextPage: nextPage,
                 showTOC: showTOC
@@ -1570,7 +1577,13 @@ struct KindleMiniPlayerView: View {
                 if model.mode == .explain, let vm = model.explainVM {
                     PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
                 } else if let vm = model.readVM, vm.hasStartedPlayback {
-                    PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
+                    PlaybackVoiceButton(
+                        language: vm.playbackLanguage,
+                        size: 34,
+                        onCorrectReadingLanguage: { [weak vm] in
+                            vm?.correctReadingLanguage($0)
+                        }
+                    )
                 }
 
                 Button {

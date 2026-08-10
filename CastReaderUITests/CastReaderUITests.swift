@@ -18,6 +18,155 @@ class CastReaderUITests: XCTestCase {
         XCTAssertFalse(app.buttons["已创建"].exists)
     }
 
+    /// The Italian reader's exact path, end to end: a page narrated in English,
+    /// the voice panel opened, the reading language corrected to Italian, and the
+    /// same panel then asked for "Nicola".
+    ///
+    /// Before the fix the reader's language control was inert text and every list
+    /// in the panel — including its own search box — was filtered by the page
+    /// language, so this path dead-ended at "no matching voices".
+    ///
+    /// Opt-in: it needs the live voice catalog (the offline fallback ships one
+    /// Italian voice, and Nicola is not it) and real read-aloud.
+    ///
+    /// Real read-aloud spends free listen quota, which is per install. Repeated runs
+    /// on one simulator eventually exhaust it and the voice control never appears;
+    /// `xcrun simctl uninstall <device> com.same.castreader` first.
+    func testReaderVoicePanelCorrectsAMisdetectedReadingLanguage() throws {
+        try XCTSkipUnless(
+            ProcessInfo.processInfo.environment["CASTREADER_RUN_LIVE_VOICE_TESTS"] == "1",
+            "Set CASTREADER_RUN_LIVE_VOICE_TESTS=1 to run against the live voice catalog."
+        )
+        XCUIDevice.shared.orientation = .portrait
+        let englishPage = """
+        That dream was but a moment in a man's life, whose proper business it seemed \
+        was to get food and kill his fellows and beget after the manner of all that \
+        belongs to the fellowship of the beasts. About him, hidden from him by the \
+        thinnest of veils, were the untouched sources of Power, whose magnitude we \
+        scarcely do more than suspect even to-day.
+        """
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderCaptureTextB64", Data(englishPage.utf8).base64EncodedString(),
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        let play = app.buttons["readPlayPauseButton"].firstMatch
+        XCTAssertTrue(play.waitForExistence(timeout: 30), "The seeded page must open in the reader")
+        play.tap()
+
+        // The voice control only appears once a paragraph has entered playback.
+        let voiceButton = app.buttons["playbackVoiceButton"].firstMatch
+        XCTAssertTrue(
+            voiceButton.waitForExistence(timeout: 40),
+            "Read-aloud must reach the voice control before the panel can be opened"
+        )
+        let englishVoice = voiceButton.value as? String ?? ""
+        XCTAssertFalse(englishVoice.isEmpty)
+
+        voiceButton.tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any)["playbackVoicePanel"].waitForExistence(timeout: 10)
+        )
+
+        // The control is a Button again, not the disabled label it used to be.
+        let languageControl = app.buttons["Reading Language"].firstMatch
+        XCTAssertTrue(
+            languageControl.waitForExistence(timeout: 5),
+            "The reader's language control must be reachable and named Reading Language"
+        )
+        XCTAssertEqual(
+            languageControl.value as? String,
+            "English (United States)",
+            "The panel opens on the language the content is currently narrated in"
+        )
+        languageControl.tap()
+
+        // The picker is a half-height sheet whose rows are laid out lazily, so
+        // reach Italian through its own search rather than by scrolling.
+        let languageSearch = app.searchFields["Search Languages"]
+        XCTAssertTrue(languageSearch.waitForExistence(timeout: 10))
+        languageSearch.tap()
+        languageSearch.typeText("Italian")
+        let italian = app.buttons
+            .matching(NSPredicate(format: "label BEGINSWITH %@", "Italian"))
+            .firstMatch
+        XCTAssertTrue(italian.waitForExistence(timeout: 10))
+        italian.tap()
+
+        // (a) The content itself is now narrated in Italian. The reader's own voice
+        // control stays behind the panel and its value follows the reading language,
+        // so a changed voice means the correction reached playback, not just the list.
+        let switched = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value != %@", englishVoice),
+            object: voiceButton
+        )
+        XCTAssertEqual(
+            XCTWaiter().wait(for: [switched], timeout: 20),
+            .completed,
+            "Correcting the reading language must re-narrate with that language's voice"
+        )
+        XCTAssertEqual(
+            voiceButton.value as? String,
+            "Sara",
+            "Italian with no stored preference resolves to the catalog default voice"
+        )
+
+        // (b) Nicola is now reachable from the search box that used to return nothing.
+        let search = app.searchFields["Search Voices"]
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        search.tap()
+        search.typeText("Nicola")
+        XCTAssertTrue(
+            app.staticTexts["Nicola"].waitForExistence(timeout: 15),
+            "Searching Nicola after correcting the language must find the Italian voice"
+        )
+    }
+
+    /// Explain keeps its language pinned. It is chosen by the user in Settings, and
+    /// a cross-language voice is rejected downstream, so an openable control there
+    /// would only offer voices that do nothing when tapped — a worse dead end than
+    /// the one being fixed. Needs no network: only the control's shape is asserted.
+    func testExplainVoicePanelKeepsItsLanguagePinned() {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderCaptureTextB64",
+            Data("A short English page for the explain panel.".utf8).base64EncodedString(),
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        XCTAssertTrue(
+            app.buttons["readPlayPauseButton"].firstMatch.waitForExistence(timeout: 30),
+            "The seeded page must open in the reader"
+        )
+        app.buttons["Explain"].firstMatch.tap()
+
+        let voiceButton = app.buttons["playbackVoiceButton"].firstMatch
+        XCTAssertTrue(voiceButton.waitForExistence(timeout: 15))
+        voiceButton.tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any)["playbackVoicePanel"].waitForExistence(timeout: 10)
+        )
+
+        XCTAssertTrue(
+            app.staticTexts["Reading Language"].waitForExistence(timeout: 5),
+            "The pinned control still states which language is being spoken"
+        )
+        XCTAssertFalse(
+            app.buttons["Reading Language"].exists,
+            "Explain's language must stay pinned rather than become correctable"
+        )
+    }
+
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
 
