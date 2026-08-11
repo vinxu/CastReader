@@ -1,0 +1,90 @@
+//------------------------------------------------------------------------------
+//
+// Copyright (c) Microsoft Corporation.
+// All rights reserved.
+//
+// This code is licensed under the MIT License.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files(the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions :
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+//------------------------------------------------------------------------------
+
+#import <Foundation/Foundation.h>
+
+NS_ASSUME_NONNULL_BEGIN
+
+@class MSALHTTPConfig;
+@class MSALTelemetryConfig;
+@class MSALLoggerConfig;
+@class MSALCacheConfig;
+
+/**
+    MSAL configuration interface responsible for globally applicable authentication properties.
+    @note Configuration changes inside MSALGlobalConfig will apply to all instances of `MSALPublicClientApplication`
+*/
+@interface MSALGlobalConfig : NSObject
+
+#pragma mark - Configuration options
+
+/**
+    Network configuration, refer to `MSALHTTPConfig` for more details
+ */
+@property (class, readonly) MSALHTTPConfig *httpConfig;
+
+/**
+    Telemetry configurations, refer to `MSALTelemetryConfig` for more details
+ */
+@property (class, readonly) MSALTelemetryConfig *telemetryConfig;
+
+/**
+    Logger configurations, refer to `MSALLoggerConfig` for more details
+ */
+@property (class, readonly) MSALLoggerConfig *loggerConfig;
+
+/**
+    Setting to define MSAL behavior when Microsoft Authenticator application is installed.
+    By default, MSAL will always try to use Microsoft Authenticator application when getting a token interactively. 
+    Set this property to MSALBrokeredAvailabilityNone to disable this behavior
+ */
+@property (class) MSALBrokeredAvailability brokerAvailability;
+
+/**
+      When enabled, MSAL will attempt to acquire bound app refresh tokens for the app. These refresh tokens are bound to the device ensuring they can't be redeemed on any other device other than this one.
+      The device must be registered using most secure storage and Authenticator(Broker) must be present on the device to bootstrap bound app refresh tokens.
+
+      @note Platform behavior: This setting is currently only applied on iOS (`TARGET_OS_IPHONE`). On other Apple platforms (for example, macOS), this flag is a no-op and does not change token acquisition behavior.
+      @note Initialization timing: This value is read during `MSALPublicClientApplication` initialization (when configuring the application cache/BART support). To take effect, it must be set before creating any `MSALPublicClientApplication` instances.
+ */
+@property (class) BOOL shouldRequestBoundAppRefreshTokens;
+
+#pragma mark - Unavailable initializers
+
+/**
+    Use class properties instead.
+ */
+- (nonnull instancetype)init NS_UNAVAILABLE;
+
+/**
+    Use class properties instead.
+*/
++ (nonnull instancetype)new NS_UNAVAILABLE;
+
+@end
+
+NS_ASSUME_NONNULL_END
