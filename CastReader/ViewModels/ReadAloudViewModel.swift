@@ -2334,6 +2334,10 @@ final class ReadAloudViewModel: ObservableObject {
                 self.prefetchedSegments = collected
                 self.prefetchedIndex = nextIndex
                 self.prefetchingIndex = nil
+                // Do the disk write and asset parse now, while the current
+                // paragraph is still playing. At the boundary this is the
+                // difference between ~70ms of silence and almost none.
+                self.audio.prestageSegments(collected)
                 self.prefetchedYouTubeAudioIsQuotaExempt =
                     self.document.sourceKind == .youtube && cachedIsReplayEligible
                 NSLog("CRDBG prefetch done para=%d segs=%d", nextIndex, collected.count)
@@ -2371,6 +2375,8 @@ final class ReadAloudViewModel: ObservableObject {
         prefetchedIndex = nil
         prefetchedSegments = []
         prefetchedYouTubeAudioIsQuotaExempt = false
+        // Whatever was staged for the discarded prefetch will never be played.
+        audio.discardPrestagedSegments()
     }
 
     /// 把已预取的下一段缓存「转正」为当前段：重置高亮状态 + 一次性入队播放（无 TTS 等待），并继续预取再下一段。

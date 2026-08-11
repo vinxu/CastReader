@@ -907,6 +907,61 @@ class AudioPlayerService: NSObject, ObservableObject {
         return predecessor
     }
 
+    // MARK: Boundary pre-staging
+
+    /// Files written ahead of playback, keyed by segment id.
+    ///
+    /// Measured on device, a paragraph boundary spends 50–72ms between staging
+    /// a segment and the item reporting `readyToPlay` — the disk write plus the
+    /// asset parse — and that shows up as a gap between paragraphs. Both can
+    /// happen while the previous paragraph is still playing.
+    private var stagedFiles: [String: URL] = [:]
+    /// Bounded so a long prefetch chain cannot accumulate temp files.
+    private static let maximumStagedFiles = 6
+
+    /// Write these segments to disk and warm their assets now, so the boundary
+    /// only has to hand an already-parsed URL to the player.
+    ///
+    /// Safe to call repeatedly: already-staged segments are skipped, and a
+    /// failure simply leaves the ordinary in-line staging path to do the work.
+    func prestageSegments(_ segments: [AudioSegment]) {
+        guard !segments.isEmpty else { return }
+        for segment in segments {
+            guard stagedFiles[segment.id] == nil, !segment.audioData.isEmpty else { continue }
+            if stagedFiles.count >= Self.maximumStagedFiles { break }
+            let ext = segment.isWavFormat ? "wav" : "mp3"
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("prestage_\(segment.id)_\(UUID().uuidString).\(ext)")
+            do {
+                try segment.audioData.write(to: url)
+            } catch {
+                continue
+            }
+            stagedFiles[segment.id] = url
+            // Parsing the asset is the expensive half. Doing it here means the
+            // item created at the boundary reaches `readyToPlay` almost at once.
+            let asset = AVURLAsset(url: url)
+            Task.detached(priority: .utility) {
+                _ = try? await asset.load(.duration, .tracks)
+            }
+        }
+    }
+
+    private func takeStagedFile(for segment: AudioSegment) -> URL? {
+        guard let url = stagedFiles.removeValue(forKey: segment.id) else { return nil }
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return url
+    }
+
+    /// Drop staged files that playback will never reach (jump, stop, new
+    /// generation). Temp files are cheap but not free.
+    func discardPrestagedSegments() {
+        for url in stagedFiles.values {
+            try? FileManager.default.removeItem(at: url)
+        }
+        stagedFiles.removeAll()
+    }
+
     /// Remove only not-yet-played handoff items. The current and historical
     /// queue prefix is preserved so cancellation cannot cut audible playback.
     /// Returns false when one of the requested ids is already the current item.
@@ -1226,6 +1281,20 @@ class AudioPlayerService: NSObject, ObservableObject {
         )
 
         print("🔊 playSegment[\(index)]: audioData size: \(segment.audioData.count), duration: \(segment.duration)")
+
+        // A paragraph boundary is the one moment where this work is audible, so
+        // reuse the file the prefetch already staged when there is one.
+        if let staged = takeStagedFile(for: segment) {
+            currentTempFileURL = staged
+            ReaderRunLog.write("AUDIO stage reused segment=\(segment.id)")
+            playAudio(
+                from: staged,
+                initialProgress: initialProgress,
+                autoPlayWhenReady: autoPlayWhenReady,
+                expectedSession: expectedSession
+            )
+            return true
+        }
 
         // Create temporary file for audio data
         // Use .wav extension for local TTS (WAV format) or .mp3 for cloud TTS
