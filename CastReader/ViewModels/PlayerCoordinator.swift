@@ -38,6 +38,9 @@ final class PlayerCoordinator: ObservableObject {
 
     /// 一次播放会话：一个文档配一对 VM。会话存活期间播放不断，跨阅读器开合、跨 Tab。
     struct Session: Identifiable {
+        /// Rendering/playback identity. Cloud revisions intentionally create a
+        /// new session while retaining the stable remote document ID in
+        /// `document.id` for History and playback metadata.
         let id: String
         let document: ReadingDocument
         let analyticsContext: AnalyticsContentContext
@@ -62,8 +65,11 @@ final class PlayerCoordinator: ObservableObject {
         analyticsContext suppliedAnalyticsContext: AnalyticsContentContext? = nil
     ) {
         KindlePlaybackCenter.shared.close()
+        if document.sourceKind != .youtube {
+            YouTubeTranscriptService.shared.releaseWarmSession()
+        }
 
-        if session?.id != document.id {
+        if session?.id != document.contentSessionKey {
             session?.readVM.stop()
             session?.explainVM.stop()
             let analyticsContext: AnalyticsContentContext
@@ -98,7 +104,7 @@ final class PlayerCoordinator: ObservableObject {
                 title: document.title,
                 coverURL: document.coverURL
             )
-            session = Session(id: document.id,
+            session = Session(id: document.contentSessionKey,
                               document: document,
                               analyticsContext: analyticsContext,
                               readVM: readVM,
@@ -155,7 +161,17 @@ final class PlayerCoordinator: ObservableObject {
     }
 
     /// 关闭会话（Mini Player 的 ✕）：停止播放并清空。
-    func close() {
+    /// - Parameter releasingYouTubeWarmSession: pass `false` when this close is
+    ///   only a step in swapping to another session for the *same* video — a
+    ///   caption-language switch. The kept-alive document is exactly what makes
+    ///   the next switch fast, so it must outlive that internal churn.
+    func close(releasingYouTubeWarmSession: Bool = true) {
+        // The YouTube extractor may be holding a hidden document alive so
+        // caption-language switches stay fast. Nothing justifies that once the
+        // reader it belonged to is gone.
+        if releasingYouTubeWarmSession, session?.document.sourceKind == .youtube {
+            YouTubeTranscriptService.shared.releaseWarmSession()
+        }
         session?.readVM.stop()
         session?.explainVM.stop()
         session = nil

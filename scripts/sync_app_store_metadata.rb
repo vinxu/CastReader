@@ -9,7 +9,7 @@ require "uri"
 
 APP_ID = "6757636395"
 VALIDATE_ONLY = ENV["ASC_VALIDATE_ONLY"] == "1"
-DEFAULT_METADATA_PATH = File.expand_path("../docs/CastReader-AppStore-Metadata-11-Languages-1.2.15.md", __dir__)
+DEFAULT_METADATA_PATH = File.expand_path("../docs/CastReader-AppStore-Metadata-11-Languages-1.2.20.md", __dir__)
 VERSION_ID = VALIDATE_ONLY ? ARGV.fetch(0, "-") : ARGV.fetch(0)
 BUILD_ID = VALIDATE_ONLY ? ARGV.fetch(1, "-") : ARGV.fetch(1)
 METADATA_PATH = ENV.fetch("ASC_METADATA_PATH", ARGV.fetch(2, DEFAULT_METADATA_PATH))

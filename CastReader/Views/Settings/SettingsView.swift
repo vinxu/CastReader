@@ -24,6 +24,7 @@ struct SettingsView: View {
     @ObservedObject private var oreillyStore = OReillyLibraryStore.shared
     @ObservedObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
     @ObservedObject private var voiceCatalog = VoiceCatalogService.shared
+    @ObservedObject private var history = HistoryStore.shared
     @State private var showPaywall = false
     @State private var showLogin = false
     @State private var showClearHistory = false
@@ -244,7 +245,7 @@ struct SettingsView: View {
                     Image(systemName: "books.vertical.fill").foregroundColor(AppTheme.primary)
                     Text("文库")
                     Spacer()
-                    Text("\(HistoryStore.shared.records.count)")
+                    Text("\(history.visibleRecords.count)")
                         .foregroundColor(AppTheme.mutedForeground)
                 }
                 .accessibilityIdentifier("settingsLibraryLink")
@@ -452,7 +453,7 @@ private struct AppLanguagePickerView: View {
             }
             .accessibilityIdentifier("appLanguage.\(language.rawValue)")
         }
-        .navigationTitle("语言")
+        .navigationTitle(AppLocalized("语言"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }

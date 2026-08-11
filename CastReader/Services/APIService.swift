@@ -55,6 +55,13 @@ actor APIService {
         self.decoder = JSONDecoder()
     }
 
+    /// Test-only dependency seam used by transport-boundary contract tests.
+    /// Production continues to use `shared` and the default pinned timeouts.
+    init(session: URLSession) {
+        self.session = session
+        self.decoder = JSONDecoder()
+    }
+
     // MARK: - Generic Request
 
     private func request<T: Decodable>(_ url: URL, method: String = "GET", body: Data? = nil) async throws -> T {
@@ -281,7 +288,13 @@ actor APIService {
 
     // MARK: - TTS API
 
-    func generateTTS(text: String, voice: String? = nil, speed: Double = Constants.TTS.defaultSpeed, language: String = Constants.TTS.defaultLanguage) async throws -> TTSResponse {
+    func generateTTS(
+        text: String,
+        voice: String? = nil,
+        speed: Double = Constants.TTS.defaultSpeed,
+        language: String = Constants.TTS.defaultLanguage,
+        includeVoiceCode: Bool = true
+    ) async throws -> TTSResponse {
         // 节点路由（对齐扩展）：大陆时区→CN 节点，其他→US；CN 失败回退 US。
         let sanitized = SpeechTextSanitizer.sanitizedForTTS(text)
         guard SpeechTextSanitizer.containsSpeakableContent(sanitized) else {
@@ -301,7 +314,13 @@ actor APIService {
         // oversized clone request and never recover by changing narrators.
         let maxLength = resolvedVoice.hasPrefix("vc_") ? 600 : 5000
         let inputText = sanitized.count > maxLength ? String(sanitized.prefix(maxLength)) : sanitized
-        let ttsRequest = TTSRequest(input: inputText, voice: resolvedVoice, speed: speed, language: canonicalLanguage)
+        let ttsRequest = TTSRequest(
+            input: inputText,
+            voice: resolvedVoice,
+            speed: speed,
+            language: canonicalLanguage,
+            includeVoiceCode: includeVoiceCode
+        )
         let bodyData = try JSONEncoder().encode(ttsRequest)
         apiDebugLog("[TTSRoute] language=\(canonicalLanguage) voice=\(resolvedVoice) clone=\(resolvedVoice.hasPrefix("vc_") ? "Y" : "N")")
 

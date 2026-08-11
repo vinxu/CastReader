@@ -11,6 +11,17 @@ import UIKit
 @MainActor
 final class CastReaderAppDelegate: NSObject, UIApplicationDelegate {
     func application(
+        _ app: UIApplication,
+        open url: URL,
+        options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+    ) -> Bool {
+        CloudStorageCenter.handleOAuthRedirect(
+            url,
+            sourceApplication: options[.sourceApplication] as? String
+        )
+    }
+
+    func application(
         _ application: UIApplication,
         supportedInterfaceOrientationsFor window: UIWindow?
     ) -> UIInterfaceOrientationMask {
@@ -127,6 +138,8 @@ struct CastReaderApp: App {
     @State private var pendingSafariLibraryOnboardingReset: Bool?
 
     init() {
+        CloudTemporaryFileJanitor.removeAbandonedImports()
+
         // 简单的内存警告监听
         NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
@@ -152,6 +165,14 @@ struct CastReaderApp: App {
             ProManager.shared.start()
             QuotaManager.shared.rollIfNewDay()
             VoiceCatalogService.shared.start()
+            NetworkReachability.shared.start()
+            YouTubeTranscriptService.resetWebsiteDataStoreIfNeeded()
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderResetGoogleDriveBinding") {
+                await CloudStorageCenter.shared.resetGoogleDriveLocalStateForDeviceTesting()
+                print("GoogleDriveOAuth local_binding_reset_complete")
+            }
+            #endif
         }
         // 刷新云端 TTS 节点配置（CN/US 路由）
         Task { await TTSEndpoint.refreshRemoteConfig() }
@@ -186,8 +207,29 @@ struct CastReaderApp: App {
                 .environment(\.locale, appLanguage.locale)
                 // 深色/浅色跟随系统（AppTheme 已全动态化，见 Utils/AppTheme.swift）
                 .onOpenURL { url in
-                    if StudyBoostDeepLink.matches(url) {
+                    if CloudStorageCenter.isOAuthRedirectURL(url) {
+                        // UIScene apps may receive this callback here without
+                        // UIApplicationDelegate delivery. The shared router
+                        // deduplicates the two paths when UIKit emits both.
+                        _ = CloudStorageCenter.handleOAuthRedirect(url)
+                    } else if StudyBoostDeepLink.matches(url) {
                         StudyBoostRouter.shared.open()
+                    } else if url.scheme == "castreader", url.host == "youtube" {
+                        let components = URLComponents(
+                            url: url,
+                            resolvingAgainstBaseURL: false
+                        )
+                        if let rawURL = components?.queryItems?
+                            .first(where: { $0.name == "url" })?.value {
+                            let entryValue = components?.queryItems?
+                                .first(where: { $0.name == "entry" })?.value
+                            let entry = entryValue.flatMap(YouTubeListenEntry.init(rawValue:))
+                                ?? .scheme
+                            _ = YouTubeRouteCenter.shared.open(
+                                rawURL,
+                                entry: entry
+                            )
+                        }
                     } else if let systemAction = SystemAction.from(url: url) {
                         SystemActionStore.shared.enqueue(systemAction)
                     } else if url.scheme == "castreader", url.host == "share-inbox" {

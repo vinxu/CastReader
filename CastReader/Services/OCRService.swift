@@ -28,6 +28,32 @@ enum OCRError: Error, LocalizedError {
     }
 }
 
+/// `VNImageRequestHandler.perform` is synchronous, so a task cancellation alone
+/// cannot interrupt an in-flight Vision pass. This tiny lock-protected bridge
+/// lets the structured-concurrency cancellation handler cancel the active
+/// request from another executor without racing request installation.
+private final class VisionCancellationBridge: @unchecked Sendable {
+    private let lock = NSLock()
+    private var request: VNRequest?
+    private var isCancelled = false
+
+    func install(_ request: VNRequest) {
+        lock.lock()
+        self.request = request
+        let shouldCancel = isCancelled
+        lock.unlock()
+        if shouldCancel { request.cancel() }
+    }
+
+    func cancel() {
+        lock.lock()
+        isCancelled = true
+        let request = request
+        lock.unlock()
+        request?.cancel()
+    }
+}
+
 private struct KindleTesseractWordBox {
     let text: String
     let left: CGFloat
@@ -193,15 +219,33 @@ private final class KindleOCRSchemeHandler: NSObject, WKURLSchemeHandler {
     func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {}
 }
 
-enum OCRParagraphStrategy {
+enum OCRParagraphStrategy: Equatable {
     case visionLines
     case kindleLayout
+    /// A live Kindle raster has already been classified as one visible page.
+    /// Do not run the generic newspaper/magazine XY-cut again: large spaces in
+    /// justified prose can otherwise be mistaken for column gutters and reorder
+    /// an ordinary page before TTS/highlight routing sees it.
+    case kindleSingleFlow
 
     var logName: String {
         switch self {
         case .visionLines: return "vision"
         case .kindleLayout: return "kindleLayout"
+        case .kindleSingleFlow: return "kindleSingleFlow"
         }
+    }
+}
+
+/// Renderer-level page classification is authoritative for live Kindle OCR.
+/// A detected spread is cropped first; every isolated page then uses one
+/// top-to-bottom flow. Only an unsplittable spread may fall back to generic
+/// recursive column analysis.
+enum KindleLivePageOCRContract {
+    static let isolatedPageStrategy: OCRParagraphStrategy = .kindleSingleFlow
+
+    static func wholeImageStrategy(rendererDetectedDualPage: Bool) -> OCRParagraphStrategy {
+        rendererDetectedDualPage ? .kindleLayout : .kindleSingleFlow
     }
 }
 
@@ -314,16 +358,28 @@ actor OCRService {
         title: String? = nil,
         orientationSettled: Bool = false
     ) async throws -> ReadingDocument {
+        try Task.checkCancellation()
         // 报纸常常是横着拍的（人把版面转过来看）。EXIF 归正解决不了这种
         // **内容级**旋转，而版面理解假设「行是水平的、栏是垂直的」——
         // 方向不对时列检测必然失效，读出来就是乱跳。
-        if !orientationSettled, let upright = try? await uprightedImage(image) {
-            return try await recognizeImportedImage(
-                image: upright,
-                title: title,
-                orientationSettled: true
-            )
+        if !orientationSettled {
+            do {
+                if let upright = try await uprightedImage(image) {
+                    try Task.checkCancellation()
+                    return try await recognizeImportedImage(
+                        image: upright,
+                        title: title,
+                        orientationSettled: true
+                    )
+                }
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                // Orientation detection is best-effort; OCR itself remains the
+                // authoritative operation. Cancellation is never best-effort.
+            }
         }
+        try Task.checkCancellation()
         #if DEBUG
         // 把 OCR 真正吃进去的那张图留一份：版面问题只有拿真实样本
         // 离线复现才查得动，靠日志里的几个数字会一直在猜。
@@ -343,9 +399,12 @@ actor OCRService {
                 paragraphStrategy: .visionLines,
                 languageHint: nil
             )
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             lastError = error
         }
+        try Task.checkCancellation()
 
         let visionEvidence = visionProbe.map { LanguageDetector.evidence(for: $0.fullText) }
         var hindiCandidate: TesseractDocumentCandidate?
@@ -361,10 +420,13 @@ actor OCRService {
                 )
                 _ = try validateKindleDocument(candidate.document, profile: hindiProfile, engine: .tesseract)
                 hindiCandidate = candidate
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 lastError = error
             }
         }
+        try Task.checkCancellation()
 
         if let hindiCandidate {
             let hindiEvidence = LanguageDetector.evidence(for: hindiCandidate.document.fullText)
@@ -377,6 +439,7 @@ actor OCRService {
                 NSLog("CRDBG Imported OCR selected=hi engine=tesseract confidence=%d chars=%d",
                       Int(hindiCandidate.meanConfidence.rounded()), hindiEvidence.readableCharacterCount)
                 #endif
+                try Task.checkCancellation()
                 return hindiCandidate.document
             }
         }
@@ -395,18 +458,30 @@ actor OCRService {
             #if DEBUG
             NSLog("CRDBG Imported OCR selected=%@ engine=profile chars=%d", profile.language, document.fullText.count)
             #endif
+            try Task.checkCancellation()
             return document
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             // Keep the final geometry single-language even if the stricter
             // Kindle quality gate rejects it. The multilingual probe is only
             // the last fail-open value and never the preferred display result.
-            return (try? await recognize(
-                image: image,
-                languages: [profile.visionLocale],
-                title: title,
-                paragraphStrategy: .kindleLayout,
-                languageHint: profile.language
-            )) ?? visionProbe
+            do {
+                let fallback = try await recognize(
+                    image: image,
+                    languages: [profile.visionLocale],
+                    title: title,
+                    paragraphStrategy: .kindleLayout,
+                    languageHint: profile.language
+                )
+                try Task.checkCancellation()
+                return fallback
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                try Task.checkCancellation()
+                return visionProbe
+            }
         }
     }
 
@@ -428,8 +503,10 @@ actor OCRService {
     /// 只花一次轻量识别：Vision 会自己纠正文本方向来识别，`orientation` 只影响
     /// 返回的 bbox 坐标系，所以单次结果的行几何 + 返回顺序就足以推断方向。
     private func uprightedImage(_ image: UIImage) async throws -> UIImage? {
+        try Task.checkCancellation()
         guard let cgImage = image.cgImage else { return nil }
         let boxes = try await orientationProbeBoxes(cgImage: cgImage)
+        try Task.checkCancellation()
         let turns = OCRLayoutAnalyzer.quarterTurnsToUpright(visionBoxesInReadingOrder: boxes)
         guard turns != 0 else { return nil }
         #if DEBUG
@@ -445,18 +522,28 @@ actor OCRService {
     /// 横放的页面只能认出零星几行（实测同一张图 197 行 → 3 行），方向直接判反。
     /// 缩图把 accurate 的耗时压到 0.5–0.8 秒 —— 判方向不需要高分辨率。
     private func orientationProbeBoxes(cgImage: CGImage) async throws -> [CGRect] {
+        try Task.checkCancellation()
         let probe = Self.downscaled(cgImage, maxSide: 900) ?? cgImage
-        return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[CGRect], Error>) in
-            let request = VNRecognizeTextRequest { request, error in
-                if let error { cont.resume(throwing: error); return }
-                let observations = (request.results as? [VNRecognizedTextObservation]) ?? []
-                cont.resume(returning: observations.map(\.boundingBox))
+        try Task.checkCancellation()
+        let cancellationBridge = VisionCancellationBridge()
+        let boxes = try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[CGRect], Error>) in
+                let request = VNRecognizeTextRequest { request, error in
+                    if let error { cont.resume(throwing: error); return }
+                    let observations = (request.results as? [VNRecognizedTextObservation]) ?? []
+                    cont.resume(returning: observations.map(\.boundingBox))
+                }
+                cancellationBridge.install(request)
+                request.recognitionLevel = .accurate
+                request.usesLanguageCorrection = false
+                let handler = VNImageRequestHandler(cgImage: probe, orientation: .up, options: [:])
+                do { try handler.perform([request]) } catch { cont.resume(throwing: error) }
             }
-            request.recognitionLevel = .accurate
-            request.usesLanguageCorrection = false
-            let handler = VNImageRequestHandler(cgImage: probe, orientation: .up, options: [:])
-            do { try handler.perform([request]) } catch { cont.resume(throwing: error) }
+        } onCancel: {
+            cancellationBridge.cancel()
         }
+        try Task.checkCancellation()
+        return boxes
     }
 
     private nonisolated static func downscaled(_ cgImage: CGImage, maxSide: Int) -> CGImage? {
@@ -484,6 +571,7 @@ actor OCRService {
         paragraphStrategy: OCRParagraphStrategy = .visionLines,
         languageHint: String? = nil
     ) async throws -> ReadingDocument {
+        try Task.checkCancellation()
         guard let cg = image.cgImage else { throw OCRError.noCGImage }
 
         let normalizedLanguage = KindleLanguageContract.normalize(languageHint)
@@ -492,6 +580,7 @@ actor OCRService {
             languages: languages,
             language: normalizedLanguage
         )
+        try Task.checkCancellation()
         guard !lines.isEmpty else { throw OCRError.noText }
 
         let outcome = buildParagraphBoxes(from: lines, strategy: paragraphStrategy, language: normalizedLanguage)
@@ -499,8 +588,10 @@ actor OCRService {
         var paragraphs: [ReadingParagraph] = []
         var globalWordId = 0
         for (pIdx, box) in paraBoxes.enumerated() {
+            try Task.checkCancellation()
             var words: [OCRWord] = []
             for w in box.words {
+                try Task.checkCancellation()
                 words.append(OCRWord(id: globalWordId, text: w.text, bboxNorm: w.bbox))
                 globalWordId += 1
             }
@@ -514,6 +605,7 @@ actor OCRService {
         paragraphs = paragraphs.enumerated().map { (i, p) in
             ReadingParagraph(id: i, text: p.text, type: p.type, words: p.words, bboxNorm: p.bboxNorm)
         }
+        try Task.checkCancellation()
 
         let joined = paragraphs.map(\.text).joined(separator: " ")
         let lang = normalizedLanguage ?? detectLanguage(joined)
@@ -547,9 +639,11 @@ actor OCRService {
         paragraphStrategy: OCRParagraphStrategy = .kindleLayout,
         verticalColumnHints: [KindleVerticalColumnHint] = []
     ) async throws -> ReadingDocument {
+        try Task.checkCancellation()
         let route = KindleOCRRoutingContract.route(for: profile)
         var lastError: Error = OCRError.noText
         for engine in route.engines {
+            try Task.checkCancellation()
             do {
                 let document: ReadingDocument
                 switch engine {
@@ -583,7 +677,10 @@ actor OCRService {
                       document.paragraphs.reduce(0) { $0 + $1.words.count },
                       document.fullText.count)
                 #endif
+                try Task.checkCancellation()
                 return document
+            } catch is CancellationError {
+                throw CancellationError()
             } catch {
                 lastError = error
                 KindleRunLog.write(
@@ -877,51 +974,60 @@ actor OCRService {
         languages: [String],
         language: String?
     ) async throws -> [LineBox] {
-        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[LineBox], Error>) in
-            let request = VNRecognizeTextRequest { request, error in
-                if let error = error { cont.resume(throwing: error); return }
-                let observations = (request.results as? [VNRecognizedTextObservation]) ?? []
-                var lines: [LineBox] = []
-                for obs in observations {
-                    guard let candidate = obs.topCandidates(1).first else { continue }
-                    let str = candidate.string
-                    var words: [WordBox] = []
-                    // Latin uses words; Chinese/Japanese use grapheme ranges so
-                    // a whole no-space line never collapses into one highlight box.
-                    for range in KindleOCRTextContract.tokenRanges(in: str, language: language) {
-                        if let box = try? candidate.boundingBox(for: range), !box.boundingBox.isNull {
-                            words.append(WordBox(text: String(str[range]), bbox: box.boundingBox))
+        try Task.checkCancellation()
+        let cancellationBridge = VisionCancellationBridge()
+        let lines = try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[LineBox], Error>) in
+                let request = VNRecognizeTextRequest { request, error in
+                    if let error = error { cont.resume(throwing: error); return }
+                    let observations = (request.results as? [VNRecognizedTextObservation]) ?? []
+                    var lines: [LineBox] = []
+                    for obs in observations {
+                        guard let candidate = obs.topCandidates(1).first else { continue }
+                        let str = candidate.string
+                        var words: [WordBox] = []
+                        // Latin uses words; Chinese/Japanese use grapheme ranges so
+                        // a whole no-space line never collapses into one highlight box.
+                        for range in KindleOCRTextContract.tokenRanges(in: str, language: language) {
+                            if let box = try? candidate.boundingBox(for: range), !box.boundingBox.isNull {
+                                words.append(WordBox(text: String(str[range]), bbox: box.boundingBox))
+                            }
                         }
+                        // Geometry fallback preserves the same script-aware tokens.
+                        if words.isEmpty {
+                            words = self.splitProportionally(
+                                text: str,
+                                lineBox: obs.boundingBox,
+                                language: language
+                            )
+                        }
+                        lines.append(LineBox(text: str, bbox: obs.boundingBox, words: words))
                     }
-                    // Geometry fallback preserves the same script-aware tokens.
-                    if words.isEmpty {
-                        words = self.splitProportionally(
-                            text: str,
-                            lineBox: obs.boundingBox,
-                            language: language
-                        )
+                    cont.resume(returning: lines)
+                }
+                cancellationBridge.install(request)
+                request.recognitionLevel = .accurate
+                request.usesLanguageCorrection = true
+                if !languages.isEmpty {
+                    let available = Set((try? request.supportedRecognitionLanguages()) ?? [])
+                    let supported = languages.filter(available.contains)
+                    guard !supported.isEmpty else {
+                        cont.resume(throwing: OCRError.unsupportedLanguages(languages))
+                        return
                     }
-                    lines.append(LineBox(text: str, bbox: obs.boundingBox, words: words))
+                    request.recognitionLanguages = supported
+                    request.automaticallyDetectsLanguage = supported.count > 1
                 }
-                cont.resume(returning: lines)
-            }
-            request.recognitionLevel = .accurate
-            request.usesLanguageCorrection = true
-            if !languages.isEmpty {
-                let available = Set((try? request.supportedRecognitionLanguages()) ?? [])
-                let supported = languages.filter(available.contains)
-                guard !supported.isEmpty else {
-                    cont.resume(throwing: OCRError.unsupportedLanguages(languages))
-                    return
-                }
-                request.recognitionLanguages = supported
-                request.automaticallyDetectsLanguage = supported.count > 1
-            }
 
-            let handler = VNImageRequestHandler(cgImage: cgImage, orientation: .up, options: [:])
-            do { try handler.perform([request]) }
-            catch { cont.resume(throwing: error) }
+                let handler = VNImageRequestHandler(cgImage: cgImage, orientation: .up, options: [:])
+                do { try handler.perform([request]) }
+                catch { cont.resume(throwing: error) }
+            }
+        } onCancel: {
+            cancellationBridge.cancel()
         }
+        try Task.checkCancellation()
+        return lines
     }
 
     private nonisolated func splitProportionally(
@@ -1023,6 +1129,25 @@ actor OCRService {
             return LayoutOutcome(boxes: buildVisionParagraphBoxes(lines, language: language), analysis: nil)
         case .kindleLayout:
             return rebuildKindleParagraphBoxes(from: lines, language: language)
+        case .kindleSingleFlow:
+            // Keep the analyzer as diagnostics only. The renderer-level page
+            // detector is authoritative for live Kindle pages; both halves of
+            // a detected spread are cropped before reaching this path.
+            let diagnostic = OCRLayoutAnalyzer.analyze(lines: layoutInput(from: lines))
+            if diagnostic.isMultiColumn {
+                KindleRunLog.write(
+                    "OCR_LAYOUT columns=1 reason=kindle-renderer-single-flow " +
+                    "prevented=\(diagnostic.columnCount) lines=\(lines.count)"
+                )
+            } else {
+                KindleRunLog.write(
+                    "OCR_LAYOUT columns=1 reason=kindle-renderer-single-flow lines=\(lines.count)"
+                )
+            }
+            return LayoutOutcome(
+                boxes: singleFlowParagraphBoxes(from: lines, language: language),
+                analysis: nil
+            )
         }
     }
 

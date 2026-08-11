@@ -10,7 +10,7 @@ struct TTSRequest: Codable {
     let model: String
     let input: String
     let voice: String
-    let voiceCode: String
+    let voiceCode: String?
     let responseFormat: String
     let returnTimestamps: Bool
     let speed: Double
@@ -29,11 +29,20 @@ struct TTSRequest: Codable {
         case language
     }
 
-    init(input: String, voice: String = "af_heart", speed: Double = 1.0, language: String = "en") {
+    init(
+        input: String,
+        voice: String = "af_heart",
+        speed: Double = 1.0,
+        language: String = "en",
+        includeVoiceCode: Bool = true
+    ) {
         self.model = "kokoro"
         self.input = input
         self.voice = voice
-        self.voiceCode = voice
+        // Preserve the existing request body for every caller by default.
+        // YouTube explicitly opts out for non-English/Chinese caption tracks,
+        // whose backend contract accepts only the canonical `voice` field.
+        self.voiceCode = includeVoiceCode ? voice : nil
         self.responseFormat = "mp3"
         self.returnTimestamps = true
         self.speed = speed
@@ -149,16 +158,30 @@ enum TTSTimestampQuality {
         // duplicated or unrelated timestamp words from passing the gate.
         var cursor = normalizedReference.startIndex
         var matchedCharacters = 0
+        var firstMatchedStart: String.Index?
+        var lastMatchedEnd: String.Index?
         for token in meaningfulTokens {
             guard cursor < normalizedReference.endIndex,
                   let range = normalizedReference.range(
                     of: token,
                     range: cursor..<normalizedReference.endIndex
                   ) else { continue }
+            if firstMatchedStart == nil { firstMatchedStart = range.lowerBound }
             matchedCharacters += token.count
             cursor = range.upperBound
+            lastMatchedEnd = range.upperBound
         }
-        return Double(matchedCharacters) / Double(normalizedReference.count) >= 0.8
+        guard Double(matchedCharacters) / Double(normalizedReference.count) >= 0.8 else {
+            return false
+        }
+
+        // Overall coverage alone can hide a missing prefix or suffix. In
+        // particular, the TTS aligner used to return 90%+ coverage for lyric
+        // captions while omitting the final 2–3 spoken words. A segment is
+        // word-reliable only when the ordered timestamps reach both readable
+        // ends; otherwise the reader must use its sentence-level fallback.
+        return firstMatchedStart == normalizedReference.startIndex
+            && lastMatchedEnd == normalizedReference.endIndex
     }
 
     private static func normalizeCoverageText(_ text: String) -> String {

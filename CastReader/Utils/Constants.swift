@@ -10,6 +10,20 @@ enum Constants {
         /// Voice cloning remains implemented and its persisted data is retained,
         /// but the feature is intentionally unavailable in this release.
         static let voiceCloningEnabled = false
+
+        /// Google Drive, Dropbox and OneDrive remain implemented while their
+        /// public OAuth/provider reviews are pending. Release builds keep every
+        /// cloud entry hidden; DEBUG builds can opt in explicitly for regression
+        /// testing without exposing the feature to normal users.
+        static var cloudStorageEnabled: Bool {
+            #if DEBUG
+            let arguments = ProcessInfo.processInfo.arguments
+            return arguments.contains("-CastReaderCloudUITest")
+                || arguments.contains("-CastReaderEnableCloudStorage")
+            #else
+            return false
+            #endif
+        }
     }
 
     enum API {
@@ -79,6 +93,56 @@ enum Constants {
         static var redirectURI: String { "\(reversedClientID):/oauth2redirect" }
         /// 是否已配置真实 client id（否则隐藏 Google 登录入口）。
         static var isConfigured: Bool { !clientID.hasPrefix("YOUR_GOOGLE") }
+    }
+
+    /// 云盘连接使用独立 public-client 配置。值由本机 Secrets.xcconfig 注入 Info.plist；
+    /// access/refresh token 永远不进入 Info.plist、UserDefaults 或 CastReader 后端。
+    enum CloudStorage {
+        private static func configuredValue(_ key: String) -> String {
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderCloudUITest") {
+                switch key {
+                case "GoogleDriveClientID":
+                    return "ui-test.apps.googleusercontent.com"
+                case "GoogleDriveRedirectScheme":
+                    return "com.googleusercontent.apps.ui-test"
+                case "DropboxAppKey":
+                    return "ui-test-dropbox"
+                case "MicrosoftClientID":
+                    return "00000000-0000-0000-0000-000000000001"
+                default:
+                    break
+                }
+            }
+            #endif
+            guard let raw = Bundle.main.object(forInfoDictionaryKey: key) as? String else { return "" }
+            let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !value.isEmpty,
+                  !value.hasPrefix("YOUR_"),
+                  value != "unconfigured",
+                  !value.contains("$(") else { return "" }
+            return value
+        }
+
+        enum GoogleDrive {
+            static var clientID: String { configuredValue("GoogleDriveClientID") }
+            static var redirectScheme: String { configuredValue("GoogleDriveRedirectScheme") }
+            static var redirectURI: String { redirectScheme.isEmpty ? "" : "\(redirectScheme):/oauth2redirect" }
+            static var isConfigured: Bool { !clientID.isEmpty && !redirectScheme.isEmpty }
+        }
+
+        enum Dropbox {
+            static var appKey: String { configuredValue("DropboxAppKey") }
+            static var callbackScheme: String { appKey.isEmpty ? "" : "db-\(appKey)" }
+            static var isConfigured: Bool { !appKey.isEmpty }
+        }
+
+        enum Microsoft {
+            static var clientID: String { configuredValue("MicrosoftClientID") }
+            static let authority = "https://login.microsoftonline.com/common"
+            static let redirectURI = "msauth.com.same.castreader://auth"
+            static var isConfigured: Bool { !clientID.isEmpty }
+        }
     }
 
     enum Storage {

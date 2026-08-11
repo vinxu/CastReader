@@ -704,6 +704,8 @@ private struct KindleEmptyPlaybackBar: View {
                 )
             }
             .disabled(isPreparing)
+            .accessibilityIdentifier("kindleReadPlayPauseButton")
+            .accessibilityValue(isPreparing ? "loading" : "paused")
         }
     }
 }
@@ -743,6 +745,8 @@ private struct KindleReadPlaybackBar: View {
                 )
             }
             .disabled(isLoading)
+            .accessibilityIdentifier("kindleReadPlayPauseButton")
+            .accessibilityValue(isLoading ? "loading" : (vm.isPlaying ? "playing" : "paused"))
         }
     }
 
@@ -908,12 +912,14 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
                 accessibilityLabel: AppLocalized("上一页"),
                 action: previousPage
             )
+            .accessibilityIdentifier("kindlePreviousPageButton")
             playControl
             KindlePageTurnButton(
                 systemName: "chevron.right",
                 accessibilityLabel: AppLocalized("下一页"),
                 action: nextPage
             )
+            .accessibilityIdentifier("kindleNextPageButton")
         }
     }
 
@@ -935,7 +941,8 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
             PlaybackVoiceButton(
                 language: voiceLanguage,
                 size: 32,
-                showsLabel: showsLabel
+                showsLabel: showsLabel,
+                onCorrectReadingLanguage: onCorrectReadingLanguage
             )
         } else {
             VStack(spacing: showsLabel ? 4 : 0) {
@@ -2011,7 +2018,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     // Render layer: consumes word routes and paints highlight/marks onto the live Kindle page.
+    private enum PendingVisualHighlight {
+        case word(paragraphIndex: Int, wordIndex: Int)
+        case range(paragraphIndex: Int, range: Range<Int>)
+    }
+
     private var visualSyncTask: Task<Void, Never>?
+    private var activeVisualSyncSequence: UInt64?
+    private var pendingVisualHighlight: PendingVisualHighlight?
     private var visualScrollTask: Task<Void, Never>?
     private var visualRecoveryTask: Task<Void, Never>?
     private var readerLayoutRepairTask: Task<Void, Never>?
@@ -8502,7 +8516,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             let shouldRelease = KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
                 hasConfirmedVisibleSurface: self.continuousReadStagedPage != nil,
                 textFingerprintMatches: fingerprintMatches,
-                visualReleasePresented: self.continuousReadAudioGateReleasePresented
+                firstHighlightHandshakeFinished: self.continuousReadAudioGateReleasePresented
             )
             if !shouldRelease,
                self.continuousReadStagedPage != nil,
@@ -8878,7 +8892,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// in the same main-thread turn. If the prepared audio is released in that
     /// turn as well, AVPlayer can speak several words before SwiftUI has drawn
     /// the already-staged Kindle page. Hold the concrete queue item for a few
-    /// display frames, then retry the gate after the new surface is visible.
+    /// display frames, paint the first mapped word on the staged surface, then
+    /// retry the gate. Audio is never released onto a blank-highlight page.
     private func scheduleContinuousReadAudioGateRelease(serial: Int) {
         guard continuousReadHandoff?.serial == serial,
               continuousReadStagedPage != nil,
@@ -8894,11 +8909,77 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                   !Task.isCancelled,
                   self.continuousReadHandoff?.serial == serial,
                   self.continuousReadStagedPage != nil else { return }
+            let primed = await self.primeContinuousReadFirstHighlight(serial: serial)
+            guard !Task.isCancelled,
+                  self.continuousReadHandoff?.serial == serial,
+                  self.continuousReadStagedPage != nil else { return }
             self.continuousReadAudioGateReleasePresented = true
             self.continuousReadAudioGateReleaseTask = nil
-            KindleRunLog.write("KINDLE read continuous audio-gate frame-presented serial=\(serial)")
+            KindleRunLog.write(
+                "KINDLE read continuous audio-gate frame-highlight-ready " +
+                "serial=\(serial) primed=\(primed ? "Y" : "N")"
+            )
             AudioPlayerService.shared.resumeGatedSegmentIfPossible()
         }
+    }
+
+    /// The staged overlay exists before the queued audio item is released, so
+    /// use that window to establish the first visible word. This avoids the
+    /// circular handoff where AVPlayer had to start before the new VM could emit
+    /// its first range. Failure is logged and remains fail-open: playback must
+    /// not deadlock if WebKit is temporarily unavailable.
+    private func primeContinuousReadFirstHighlight(serial: Int) async -> Bool {
+        guard let handoff = continuousReadHandoff,
+              handoff.serial == serial,
+              let staged = continuousReadStagedPage,
+              let paragraph = staged.document.paragraphs.first(where: { $0.id == handoff.paragraphIndex })
+                ?? staged.document.paragraphs.first(where: { $0.type.isReadable }),
+              !paragraph.words.isEmpty else {
+            KindleRunLog.write("KINDLE read continuous highlight-prime unavailable serial=\(serial) reason=no-paragraph")
+            return false
+        }
+
+        let mappings = OCRWordAligner.mapTimestampWords(
+            in: paragraph,
+            segments: handoff.segments,
+            allowFallback: false,
+            allowBoundedFallback: true
+        )
+        guard let wordIndex = mappings.compactMap({ $0 }).first else {
+            KindleRunLog.write("KINDLE read continuous highlight-prime unavailable serial=\(serial) reason=no-mapping")
+            return false
+        }
+
+        let sequence = nextVisualSyncSequence()
+        var lastReason = "unknown"
+        for attempt in 1...3 {
+            do {
+                let result = try await evaluateJSON(
+                    "window.__crKindleLiveHighlightWord && " +
+                    "window.__crKindleLiveHighlightWord(\(paragraph.id), \(wordIndex), \(sequence))"
+                )
+                let ok = result["ok"] as? Bool == true && result["stale"] as? Bool != true
+                if ok {
+                    let key = continuousReadStagedLiveKey?.nilIfEmpty ?? staged.page.key
+                    lastHighlightedWordByParagraph["\(key)#\(paragraph.id)"] = wordIndex
+                    KindleRunLog.write(
+                        "KINDLE read continuous highlight-prime serial=\(serial) " +
+                        "p=\(paragraph.id) w=\(wordIndex) attempt=\(attempt) ok=Y"
+                    )
+                    return true
+                }
+                lastReason = result["reason"] as? String ?? "not-painted"
+            } catch {
+                lastReason = error.localizedDescription
+            }
+            guard attempt < 3, !Task.isCancelled else { break }
+            try? await Task.sleep(nanoseconds: 70_000_000)
+        }
+        KindleRunLog.write(
+            "KINDLE read continuous highlight-prime serial=\(serial) " +
+            "p=\(paragraph.id) w=\(wordIndex) ok=N reason=\(lastReason)"
+        )
+        return false
     }
 
     private func continuousReadSegments(_ segments: [AudioSegment], serial: Int) -> [AudioSegment] {
@@ -10557,6 +10638,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         visualSyncSequence &+= 1
         visualSyncTask?.cancel()
         visualSyncTask = nil
+        activeVisualSyncSequence = nil
+        pendingVisualHighlight = nil
         visualScrollTask?.cancel()
         visualScrollTask = nil
         visualRecoveryTask?.cancel()
@@ -11258,21 +11341,64 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private func enqueueHighlightWord(paragraphIndex: Int, wordIndex: Int) {
         guard !isContinuousReadVisualTransition else { return }
-        let sequence = nextVisualSyncSequence()
-        visualSyncTask?.cancel()
-        visualSyncTask = Task { [weak self] in
-            guard let self, !Task.isCancelled else { return }
-            await self.highlightWord(paragraphIndex: paragraphIndex, wordIndex: wordIndex, sequence: sequence)
-        }
+        enqueueVisualHighlight(.word(paragraphIndex: paragraphIndex, wordIndex: wordIndex))
     }
 
     private func enqueueHighlightWordRange(paragraphIndex: Int, range: Range<Int>) {
         guard !isContinuousReadVisualTransition else { return }
+        enqueueVisualHighlight(.range(paragraphIndex: paragraphIndex, range: range))
+    }
+
+    /// Serialize WebKit paint calls. Cancelling an in-flight first word on every
+    /// audio tick made a busy page discard word 0, then word 1, then word 2 until
+    /// one request finally completed. Keep the current paint alive and coalesce
+    /// only the pending request to the latest timestamp.
+    private func enqueueVisualHighlight(_ request: PendingVisualHighlight) {
+        if visualSyncTask != nil {
+            pendingVisualHighlight = request
+            return
+        }
+        startVisualHighlight(request)
+    }
+
+    private func startVisualHighlight(_ request: PendingVisualHighlight) {
         let sequence = nextVisualSyncSequence()
-        visualSyncTask?.cancel()
+        activeVisualSyncSequence = sequence
         visualSyncTask = Task { [weak self] in
-            guard let self, !Task.isCancelled else { return }
-            await self.highlightWordRange(paragraphIndex: paragraphIndex, range: range, sequence: sequence)
+            guard let self else { return }
+            if !Task.isCancelled {
+                switch request {
+                case let .word(paragraphIndex, wordIndex):
+                    await self.highlightWord(
+                        paragraphIndex: paragraphIndex,
+                        wordIndex: wordIndex,
+                        sequence: sequence
+                    )
+                case let .range(paragraphIndex, range):
+                    await self.highlightWordRange(
+                        paragraphIndex: paragraphIndex,
+                        range: range,
+                        sequence: sequence
+                    )
+                }
+            }
+
+            let completion = KindleVisualHighlightQueueContract.completion(
+                activeSequence: self.activeVisualSyncSequence,
+                completedSequence: sequence,
+                taskCancelled: Task.isCancelled,
+                hasPending: self.pendingVisualHighlight != nil
+            )
+            guard completion != .stale else { return }
+            self.visualSyncTask = nil
+            self.activeVisualSyncSequence = nil
+            guard completion == .drainPending,
+                  let pending = self.pendingVisualHighlight else {
+                self.pendingVisualHighlight = nil
+                return
+            }
+            self.pendingVisualHighlight = nil
+            self.startVisualHighlight(pending)
         }
     }
 
@@ -11532,7 +11658,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     func follow(coordinator: PlayerCoordinator, document: ReadingDocument) {
         stopFollowing()
         lastSyncedPageIndex = nil
-        guard let session = coordinator.session, session.id == document.id else { return }
+        guard let session = coordinator.session, session.document.id == document.id else { return }
 
         session.readVM.$currentParagraphIndex
             .receive(on: DispatchQueue.main)
@@ -12033,14 +12159,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 image: split.left.image,
                 profile: profile,
                 title: book.title,
-                paragraphStrategy: .kindleLayout,
+                // The spread detector has already isolated one visible page.
+                paragraphStrategy: KindleLivePageOCRContract.isolatedPageStrategy,
                 verticalColumnHints: kindleVerticalColumnHints
             )
             let right = try? await OCRService.shared.recognizeKindle(
                 image: split.right.image,
                 profile: profile,
                 title: book.title,
-                paragraphStrategy: .kindleLayout,
+                paragraphStrategy: KindleLivePageOCRContract.isolatedPageStrategy,
                 verticalColumnHints: kindleVerticalColumnHints
             )
 
@@ -12071,7 +12198,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             image: image,
             profile: profile,
             title: book.title,
-            paragraphStrategy: .kindleLayout,
+            // A failed spread crop still needs the general column fallback;
+            // an explicitly single renderer page must never be re-cut by the
+            // generic document layout analyzer.
+            paragraphStrategy: KindleLivePageOCRContract.wholeImageStrategy(
+                rendererDetectedDualPage: layout.isDual
+            ),
             verticalColumnHints: kindleVerticalColumnHints
         )
         doc.sourceKind = .kindle

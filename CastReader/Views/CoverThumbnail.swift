@@ -33,12 +33,37 @@ struct CoverThumbnail: View {
             .clipped()
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         }
-        .task(id: record.coverPath) { await load() }
+        .task(id: loadIdentity) { await load() }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: .castReaderYouTubeThumbnailCacheChanged
+            )
+        ) { _ in
+            guard record.sourceKind == .youtube else { return }
+            Task { await load() }
+        }
     }
 
     private func load() async {
+        if record.sourceKind == .youtube {
+            guard let sourceURL = record.sourceURL,
+                  let reference = YouTubeURLParser.parse(sourceURL),
+                  let cache = YouTubeCacheProvider.shared,
+                  let data = await cache.peekThumbnail(videoId: reference.videoId) else {
+                image = nil
+                return
+            }
+            let decoded = await Task.detached { UIImage(data: data) }.value
+            guard !Task.isCancelled else { return }
+            image = decoded
+            return
+        }
         guard let url = HistoryStore.shared.coverURL(for: record) else { image = nil; return }
         image = await Task.detached { UIImage(contentsOfFile: url.path) }.value
+    }
+
+    private var loadIdentity: String {
+        [record.id, record.sourceURL ?? "", record.coverPath ?? ""].joined(separator: "|")
     }
 
     private var placeholder: some View {
@@ -61,6 +86,7 @@ struct CoverThumbnail: View {
         case .googleBooks: return "book.pages.fill"
         case .kobo: return "book.closed.fill"
         case .oreilly: return "text.book.closed.fill"
+        case .youtube: return "play.rectangle.fill"
         case .photo: return "photo"
         case .text: return "text.alignleft"
         }

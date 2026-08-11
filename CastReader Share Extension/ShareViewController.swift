@@ -6,6 +6,9 @@ final class ShareViewController: UIViewController {
     private let detailLabel = UILabel()
     private let successImageView = UIImageView()
     private let saveButton = UIButton(type: .system)
+    private var savedYouTubeDeepLink: URL?
+    private var isImporting = false
+    private var isAutoRouteProbeActive = false
 
     private enum L10n {
         static let appGroup = "group.com.same.castreader"
@@ -26,6 +29,10 @@ final class ShareViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         configureUI()
+        isAutoRouteProbeActive = true
+        Task { @MainActor in
+            await autoRouteYouTubeIfPresent()
+        }
     }
 
     private func configureUI() {
@@ -51,7 +58,7 @@ final class ShareViewController: UIViewController {
         saveButton.layer.cornerRadius = 12
         saveButton.backgroundColor = .label
         saveButton.setTitleColor(.systemBackground, for: .normal)
-        saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
+        saveButton.addTarget(self, action: #selector(primaryButtonTapped), for: .touchUpInside)
 
         let stack = UIStackView(arrangedSubviews: [successImageView, titleLabel, detailLabel, saveButton])
         stack.axis = .vertical
@@ -65,31 +72,158 @@ final class ShareViewController: UIViewController {
         ])
     }
 
-    @objc private func saveTapped() { importSharedItem() }
+    @objc private func primaryButtonTapped() {
+        if savedYouTubeDeepLink != nil {
+            Task { @MainActor in
+                await retryOpeningContainingApp()
+            }
+        } else {
+            // A manual tap claims the share immediately. The in-flight
+            // YouTube probe may still finish loading its provider, but the
+            // ownership check below prevents a second enqueue/import.
+            isAutoRouteProbeActive = false
+            importSharedItem()
+        }
+    }
 
     private func importSharedItem() {
+        guard !isImporting else { return }
+        isImporting = true
         saveButton.isEnabled = false
         detailLabel.text = L10n.text("share_importing")
 
         Task { @MainActor in
             do {
                 try await saveFirstSupportedAttachment()
-                showSavedState()
-                try? await Task.sleep(nanoseconds: 550_000_000)
-                extensionContext?.completeRequest(returningItems: nil)
+                if savedYouTubeDeepLink != nil {
+                    await finishYouTubeHandoff()
+                } else {
+                    showSavedState()
+                    try? await Task.sleep(nanoseconds: 550_000_000)
+                    extensionContext?.completeRequest(returningItems: nil)
+                }
             } catch {
                 detailLabel.text = L10n.text("share_failed")
                 saveButton.isEnabled = true
+                isImporting = false
             }
         }
+    }
+
+    /// YouTube is the one share type with an explicit zero-configuration route:
+    /// selecting CastReader is itself the user's confirmation. Ordinary links,
+    /// files, text and images retain the existing Save button behavior.
+    private func autoRouteYouTubeIfPresent() async {
+        defer {
+            isAutoRouteProbeActive = false
+        }
+        guard !isImporting, let url = await sharedYouTubeURL() else { return }
+        // Attachment loading is asynchronous. Re-check ownership after it
+        // returns so a future UI change cannot let manual and automatic import
+        // both enqueue different durable IDs for the same share.
+        guard isAutoRouteProbeActive, !isImporting else { return }
+        guard let reference = YouTubeURLParser.parse(url.absoluteString),
+              YouTubePendingLinkStore.enqueue(reference.canonicalURLString, entry: .share) else {
+            return
+        }
+        isImporting = true
+        saveButton.isEnabled = false
+        detailLabel.text = L10n.text("share_importing")
+        var components = URLComponents()
+        components.scheme = "castreader"
+        components.host = "youtube"
+        components.queryItems = [
+            URLQueryItem(name: "url", value: reference.canonicalURLString),
+            URLQueryItem(name: "entry", value: YouTubeListenEntry.share.rawValue)
+        ]
+        savedYouTubeDeepLink = components.url
+        await finishYouTubeHandoff()
+    }
+
+    private func sharedYouTubeURL() async -> URL? {
+        let inputItems = (extensionContext?.inputItems as? [NSExtensionItem]) ?? []
+        let providers = inputItems.flatMap { $0.attachments ?? [] }
+        for provider in providers {
+            if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier),
+               let item = try? await load(provider, typeIdentifier: UTType.url.identifier) {
+                let url = (item as? URL)
+                    ?? (item as? NSURL).map { $0 as URL }
+                    ?? (item as? String).flatMap(URL.init(string:))
+                    ?? (item as? NSString).flatMap { URL(string: String($0)) }
+                if let url, YouTubeURLParser.parse(url.absoluteString) != nil { return url }
+            }
+            if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier),
+               let item = try? await load(provider, typeIdentifier: UTType.plainText.identifier) {
+                let text = (item as? String) ?? (item as? NSString).map(String.init)
+                if let text,
+                   let url = ShareInboxLinkExtractor.firstWebURL(in: text),
+                   YouTubeURLParser.parse(url.absoluteString) != nil {
+                    return url
+                }
+            }
+        }
+        return nil
     }
 
     private func showSavedState() {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         successImageView.isHidden = false
-        titleLabel.text = L10n.text("share_success_title")
-        detailLabel.text = L10n.text("share_saved")
+        titleLabel.text = savedYouTubeDeepLink == nil
+            ? L10n.text("share_success_title")
+            : L10n.text("share_youtube_success_title")
+        detailLabel.text = savedYouTubeDeepLink == nil
+            ? L10n.text("share_saved")
+            : L10n.text("share_youtube_saved")
         saveButton.isHidden = true
+    }
+
+    private func showManualYouTubeOpenState() {
+        successImageView.isHidden = false
+        titleLabel.text = L10n.text("share_youtube_success_title")
+        detailLabel.text = L10n.text("share_youtube_open_manually")
+        saveButton.setTitle(L10n.text("share_youtube_open_app"), for: .normal)
+        saveButton.isHidden = false
+        saveButton.isEnabled = true
+        isImporting = false
+    }
+
+    private func finishYouTubeHandoff() async {
+        showSavedState()
+        if await openContainingAppForYouTubeIfPossible() {
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            extensionContext?.completeRequest(returningItems: nil)
+        } else {
+            // iOS can decline cross-app opens from a Share Extension. Keep the
+            // sheet visible with a retry button instead of claiming success
+            // and dismissing into an apparently lost handoff.
+            showManualYouTubeOpenState()
+        }
+    }
+
+    private func retryOpeningContainingApp() async {
+        guard !isImporting else { return }
+        isImporting = true
+        saveButton.isEnabled = false
+        detailLabel.text = L10n.text("share_youtube_opening")
+        if await openContainingAppForYouTubeIfPossible() {
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            extensionContext?.completeRequest(returningItems: nil)
+        } else {
+            showManualYouTubeOpenState()
+        }
+    }
+
+    /// `NSExtensionContext.open` is best-effort for a Share Extension and may
+    /// return false on iOS. The App Group pending queue is the authoritative
+    /// handoff; this call only shortens the path on systems that accept it.
+    private func openContainingAppForYouTubeIfPossible() async -> Bool {
+        guard let deepLink = savedYouTubeDeepLink,
+              let extensionContext else { return false }
+        return await withCheckedContinuation { continuation in
+            extensionContext.open(deepLink) { opened in
+                continuation.resume(returning: opened)
+            }
+        }
     }
 
     private func saveFirstSupportedAttachment() async throws {
@@ -174,6 +308,21 @@ final class ShareViewController: UIViewController {
 
     private func saveWebURL(_ url: URL) throws -> Bool {
         guard ShareInboxLinkExtractor.isReadableWebURL(url) else { return false }
+        if let reference = YouTubeURLParser.parse(url.absoluteString) {
+            guard YouTubePendingLinkStore.enqueue(
+                reference.canonicalURLString,
+                entry: .share
+            ) else { return false }
+            var components = URLComponents()
+            components.scheme = "castreader"
+            components.host = "youtube"
+            components.queryItems = [
+                URLQueryItem(name: "url", value: reference.canonicalURLString),
+                URLQueryItem(name: "entry", value: YouTubeListenEntry.share.rawValue)
+            ]
+            savedYouTubeDeepLink = components.url
+            return true
+        }
         let title = url.host?.replacingOccurrences(of: "www.", with: "") ?? ""
         try ShareInboxStore.enqueue(
             kind: .url,

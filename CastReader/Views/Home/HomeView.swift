@@ -93,8 +93,46 @@ final class ImportRouter: ObservableObject {
     @Published var generalToken = 0
     @Published var studyBoostToken = 0
     @Published var hideMainChrome = false
+    @Published private(set) var cloudReconnectRequest: CloudReconnectRequest?
     func openQuickImport() { generalToken += 1 }
     func openStudyBoostImport() { studyBoostToken += 1 }
+
+    func reconnectCloud(
+        _ provider: CloudProviderID,
+        forceAccountSelection: Bool,
+        expectedAccount: CloudAccount? = nil
+    ) {
+        guard Constants.Features.cloudStorageEnabled else { return }
+        cloudReconnectRequest = CloudReconnectRequest(
+            provider: provider,
+            forceAccountSelection: forceAccountSelection,
+            expectedAccount: expectedAccount
+        )
+    }
+
+    func consumeCloudReconnectRequest(_ id: UUID) {
+        guard cloudReconnectRequest?.id == id else { return }
+        cloudReconnectRequest = nil
+    }
+}
+
+struct CloudReconnectRequest: Identifiable, Equatable {
+    let id = UUID()
+    let provider: CloudProviderID
+    let forceAccountSelection: Bool
+    let expectedAccount: CloudAccount?
+}
+
+private enum CloudProviderAction: Equatable {
+    case open
+    case switchAccount
+    case privacy
+}
+
+private struct CloudFlowRoute {
+    let provider: CloudProviderID
+    let action: CloudProviderAction
+    let expectedAccount: CloudAccount?
 }
 
 struct HomeView: View {
@@ -111,6 +149,7 @@ struct HomeView: View {
     @ObservedObject private var auth = AuthService.shared
     @StateObject private var captureVM = CaptureFlowViewModel()
     @StateObject private var importVM = ImportViewModel()
+    @ObservedObject private var cloudStorage = CloudStorageCenter.shared
     @ObservedObject private var kindleStore = KindleLibraryStore.shared
     @ObservedObject private var weReadStore = WeReadLibraryStore.shared
     @ObservedObject private var googleBooksStore = GoogleBooksLibraryStore.shared
@@ -135,6 +174,7 @@ struct HomeView: View {
         case importPanel(ImportPanel)
         case text
         case url
+        case cloudFlow(CloudFlowRoute)
         case librarySources
         case proDetails
         case loginForAnnualPurchase
@@ -144,6 +184,7 @@ struct HomeView: View {
             case .importPanel(let panel): return "import-\(panel.id)"
             case .text: return "text"
             case .url: return "url"
+            case .cloudFlow(let route): return "cloud-\(route.provider.rawValue)-\(String(describing: route.action))"
             case .librarySources: return "library-sources"
             case .proDetails: return "pro-details"
             case .loginForAnnualPurchase: return "pro-login"
@@ -163,7 +204,11 @@ struct HomeView: View {
     @State private var captureStage: CaptureStage?
     @State private var showFileImporter = false
     @State private var notice: String?
+    @State private var cloudHistoryFailure: CloudHistoryFailurePresentation?
     @State private var isProcessingPDF = false
+    @State private var cloudHistoryProgress: CloudHistoryReopenProgress?
+    @State private var cloudHistoryTask: Task<Void, Never>?
+    @State private var cloudHistoryAttemptID: UUID?
     @State private var isLoadingProProducts = false
     @State private var didAttemptProProductLoad = false
     @State private var isPurchasingAnnual = false
@@ -189,6 +234,11 @@ struct HomeView: View {
                         librarySourcesEmptyCard
                     }
                     KindleHomeSection(store: kindleStore)
+                    YouTubeHomeSection(
+                        activeDocumentID: coordinator.session?.document.sourceKind == .youtube
+                            ? coordinator.session?.document.id
+                            : nil
+                    )
                     GoogleBooksHomeSection()
                     KoboHomeSection()
                     OReillyHomeSection()
@@ -253,6 +303,7 @@ struct HomeView: View {
         .onDisappear {
             // A pushed Home destination is not the stable Home root either.
             onReviewPresentationBlockedChanged(true)
+            cancelCloudHistoryReopen()
         }
         // ➕（底部）→ 快速导入面板。默认通用导入，也可在面板里选择场景。
         .onChange(of: importRouter.generalToken) { _ in
@@ -261,12 +312,33 @@ struct HomeView: View {
         .onChange(of: importRouter.studyBoostToken) { _ in
             activeSheet = .importPanel(.scenario(.study))
         }
+        .onReceive(importRouter.$cloudReconnectRequest.compactMap { $0 }) { request in
+            importRouter.consumeCloudReconnectRequest(request.id)
+            beginCloudImport(
+                request.provider,
+                scenario: nil,
+                mode: .read,
+                action: request.forceAccountSelection ? .switchAccount : .open,
+                expectedAccount: request.expectedAccount
+            )
+        }
         .sheet(item: $activeSheet, onDismiss: handleHomeSheetDismissed) { sheet in
             switch sheet {
             case .importPanel(let panel):
-                ImportOptionsSheet(panel: panel) { scenario, mode, source in
-                    beginImport(source, scenario: scenario, mode: mode)
-                }
+                ImportOptionsSheet(
+                    panel: panel,
+                    onPick: { scenario, mode, source in
+                        beginImport(source, scenario: scenario, mode: mode)
+                    },
+                    onPickCloud: { scenario, mode, provider, action in
+                        beginCloudImport(
+                            provider,
+                            scenario: scenario,
+                            mode: mode,
+                            action: action
+                        )
+                    }
+                )
             case .text:
                 TextInputSheet { title, text in
                     activeSheet = nil
@@ -285,6 +357,26 @@ struct HomeView: View {
                         notice = AppLocalized("网址无效")
                     }
                 }
+            case .cloudFlow(let route):
+                CloudStorageFlowView(
+                    provider: route.provider,
+                    scenario: importScenario.flatMap(ExplainContentType.init(rawValue:)),
+                    mode: importMode,
+                    analyticsContext: importAnalyticsContext,
+                    forceAccountSelection: route.action == .switchAccount,
+                    showsDisclosureOnStart: route.action == .privacy,
+                    privacyReviewOnly: route.action == .privacy,
+                    expectedAccount: route.expectedAccount,
+                    onComplete: { result in
+                        confirmImport(format: analyticsFormat(for: result.format))
+                        activeSheet = nil
+                        finishImport(result.document)
+                    },
+                    onCancel: {
+                        activeSheet = nil
+                        cancelImport()
+                    }
+                )
             case .librarySources:
                 LibrarySourcesSheet()
             case .proDetails:
@@ -318,6 +410,50 @@ struct HomeView: View {
         .alert("提示", isPresented: Binding(get: { notice != nil }, set: { if !$0 { notice = nil } })) {
             Button("好", role: .cancel) {}
         } message: { Text(notice ?? "") }
+        .confirmationDialog(
+            CloudLocalized("提示"),
+            isPresented: Binding(
+                get: { cloudHistoryFailure != nil },
+                set: { if !$0 { cloudHistoryFailure = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: cloudHistoryFailure
+        ) { failure in
+            switch failure.recovery {
+            case .reconnect(let forceAccountSelection):
+                Button(CloudLocalized("连接云盘")) {
+                    cloudHistoryFailure = nil
+                    importRouter.reconnectCloud(
+                        failure.record.origin?.provider ?? .googleDrive,
+                        forceAccountSelection: forceAccountSelection,
+                        expectedAccount: failure.record.origin.map {
+                            CloudAccount(
+                                provider: $0.provider,
+                                stableAccountKey: $0.accountKey,
+                                maskedEmail: $0.maskedAccountHint
+                            )
+                        }
+                    )
+                }
+            case .removeRecord:
+                Button(CloudLocalized("从文库移除此记录"), role: .destructive) {
+                    history.delete(failure.record.id)
+                    cloudHistoryFailure = nil
+                }
+            case .retry:
+                Button(CloudLocalized("重试")) {
+                    cloudHistoryFailure = nil
+                    reopen(failure.record)
+                }
+            case .dismiss:
+                EmptyView()
+            }
+            Button(CloudLocalized("取消"), role: .cancel) {
+                cloudHistoryFailure = nil
+            }
+        } message: { failure in
+            Text(failure.message)
+        }
         .alert("识别失败", isPresented: Binding(get: { captureVM.error != nil }, set: { if !$0 { captureVM.error = nil } })) {
             Button("好", role: .cancel) {}
         } message: { Text(captureVM.error ?? "") }
@@ -494,7 +630,9 @@ struct HomeView: View {
     }
 
     private var continueRecords: [HistoryRecord] {
-        history.records.filter { HomeContinueContract.includes($0.sourceKind) }
+        history.visibleRecords.filter {
+            HomeContinueContract.includes($0.sourceKind)
+        }
     }
 
     private var libraryOnboardingReminder: some View {
@@ -751,6 +889,50 @@ struct HomeView: View {
         }
     }
 
+    private func beginCloudImport(
+        _ provider: CloudProviderID,
+        scenario: ExplainContentType?,
+        mode: ReaderMode,
+        action: CloudProviderAction,
+        expectedAccount: CloudAccount? = nil
+    ) {
+        guard Constants.Features.cloudStorageEnabled else { return }
+        importScenario = scenario?.rawValue
+        importMode = mode
+        importAnalyticsContext = ProductAnalytics.shared.trackContentSourceOpened(
+            source: analyticsSource(for: provider),
+            format: .unknown,
+            entryPoint: scenario == nil ? "quick_import_cloud" : "scenario_import_cloud",
+            intendedMode: mode == .read ? "read" : "explain"
+        )
+        isTransitioningToImportDestination = true
+        activeSheet = nil
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            activeSheet = .cloudFlow(CloudFlowRoute(
+                provider: provider,
+                action: action,
+                expectedAccount: expectedAccount
+            ))
+        }
+    }
+
+    private func analyticsSource(for provider: CloudProviderID) -> AnalyticsContentSource {
+        switch provider {
+        case .googleDrive: return .googleDrive
+        case .dropbox: return .dropbox
+        case .oneDrive: return .oneDrive
+        }
+    }
+
+    private func analyticsFormat(for format: SupportedDocumentFormat) -> AnalyticsContentFormat {
+        switch format {
+        case .pdf: return .pdf
+        case .docx: return .docx
+        case .epub: return .epub
+        case .text: return .text
+        }
+    }
+
     /// 触发选中的导入来源。
     private func trigger(_ src: ImportSource) {
         switch src {
@@ -891,15 +1073,68 @@ struct HomeView: View {
     }
 
     private func reopen(_ rec: HistoryRecord) {
-        Task {
-            if let doc = await history.reopen(rec) {
-                let context = ProductAnalytics.shared.beginContentIntent(
-                    source: .history,
-                    format: AnalyticsContentFormat(doc.sourceKind),
-                    entryPoint: "history_resume",
-                    intendedMode: "read"
-                )
-                coordinator.open(doc, analyticsContext: context)
+        guard cloudHistoryProgress == nil else { return }
+        cloudHistoryTask?.cancel()
+        let attemptID = UUID()
+        cloudHistoryAttemptID = attemptID
+        cloudHistoryTask = Task { @MainActor in
+            defer {
+                if cloudHistoryAttemptID == attemptID {
+                    cloudHistoryProgress = nil
+                    cloudHistoryTask = nil
+                    cloudHistoryAttemptID = nil
+                }
+            }
+            let context = ProductAnalytics.shared.beginContentIntent(
+                source: .history,
+                format: AnalyticsContentFormat(rec.sourceKind),
+                entryPoint: "history_resume",
+                intendedMode: "read"
+            )
+            if rec.requiresRemoteReopen {
+                cloudHistoryProgress = .validatingAccount
+                do {
+                    let result = try await CloudHistoryReopenService().reopen(
+                        rec,
+                        mode: .read,
+                        analyticsContext: context
+                    ) { progress in
+                        Task { @MainActor in
+                            guard cloudHistoryAttemptID == attemptID else { return }
+                            cloudHistoryProgress = progress
+                        }
+                    }
+                    guard !Task.isCancelled,
+                          cloudHistoryAttemptID == attemptID else { return }
+                    coordinator.open(result.document, analyticsContext: context)
+                    if CloudHistoryFailurePresentation.contentChanged(
+                        record: rec,
+                        result: result
+                    ) {
+                        notice = CloudLocalized("云端文件已更新，已加载最新版本")
+                    }
+                } catch {
+                    guard !Task.isCancelled,
+                          cloudHistoryAttemptID == attemptID else { return }
+                    cloudHistoryFailure = CloudHistoryFailurePresentation.make(
+                        record: rec,
+                        error: error
+                    )
+                }
+                return
+            }
+
+            do {
+                if let doc = try await history.reopen(rec) {
+                    guard !Task.isCancelled,
+                          cloudHistoryAttemptID == attemptID else { return }
+                    coordinator.open(doc, analyticsContext: context)
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                guard cloudHistoryAttemptID == attemptID else { return }
+                notice = error.localizedDescription
             }
         }
     }
@@ -915,9 +1150,14 @@ struct HomeView: View {
     }
 
     private func handleImportedFile(_ url: URL) {
+        let ext = url.pathExtension.lowercased()
+        if let format = SupportedDocumentFormat(fileExtension: ext) {
+            handleUnifiedDocumentFile(url, format: format)
+            return
+        }
+
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
-        let ext = url.pathExtension.lowercased()
 
         if ["png", "jpg", "jpeg", "heic", "heif", "webp", "gif", "tiff"].contains(ext) {
             if let data = try? Data(contentsOf: url), let img = UIImage(data: data) {
@@ -926,68 +1166,11 @@ struct HomeView: View {
                 failImport(stage: "file_read", code: "unreadable_image")
                 notice = AppLocalized("无法读取图片")
             }
-        } else if ext == "pdf" {
-            guard let data = try? Data(contentsOf: url) else {
-                failImport(stage: "file_read", code: "pdf_read_failed")
-                notice = AppLocalized("无法读取该 PDF")
-                return
-            }
-            let title = url.deletingPathExtension().lastPathComponent
-            let scenario = importScenario
-            let mode = importMode
-            isProcessingPDF = true
-            Task {
-                defer { isProcessingPDF = false }
-                let doc = await DocumentBuilder.fromPDFWithOCR(
-                    data: data,
-                    fallbackTitle: title
-                )
-                importScenario = scenario
-                importMode = mode
-                if let doc { finishImport(doc) }
-                else {
-                    failImport(stage: "parse", code: "pdf_parse_or_ocr_failed")
-                    notice = AppLocalized("无法读取该 PDF")
-                }
-            }
         } else if ["txt", "text", "md", "markdown"].contains(ext) {
             if let doc = DocumentBuilder.fromTextFile(url: url) { finishImport(doc) }
             else {
                 failImport(stage: "parse", code: "text_parse_failed")
                 notice = AppLocalized("无法读取文本文件")
-            }
-        } else if ext == "docx" {
-            // DOCX 本地渲染（WebView 内 mammoth 保排版）——不上传后端。
-            if let data = try? Data(contentsOf: url) {
-                // 标题：DOCX 内嵌标题（core.xml/首段）优先，回退文件名。
-                let title = DocumentBuilder.docxTitle(data: data) ?? url.deletingPathExtension().lastPathComponent
-                finishImport(ReadingDocument(title: title, sourceKind: .docx, paragraphs: [], fileData: data))
-            } else {
-                failImport(stage: "file_read", code: "docx_read_failed")
-                notice = AppLocalized("无法读取该文件")
-            }
-        } else if ext == "epub" {
-            // EPUB 原生解析（ZIPFoundation + SwiftSoup，含内嵌图片）——不上传、不走 WebView。
-            // 大书 4000+ 段解析较重，后台线程做，避免卡 UI。data 已在安全作用域内同步读出。
-            if let data = try? Data(contentsOf: url) {
-                let title = url.deletingPathExtension().lastPathComponent
-                let scenario = importScenario   // 捕获当前入口状态（detached 解析期间 finishImport 仍按它走）
-                let mode = importMode
-                Task {
-                    let doc = await Task.detached(priority: .userInitiated) {
-                        DocumentBuilder.fromEPUB(data: data, title: title)
-                    }.value
-                    importScenario = scenario
-                    importMode = mode
-                    if let doc { finishImport(doc) }
-                    else {
-                        failImport(stage: "parse", code: "epub_parse_failed")
-                        notice = AppLocalized("无法解析该 EPUB")
-                    }
-                }
-            } else {
-                failImport(stage: "file_read", code: "epub_read_failed")
-                notice = AppLocalized("无法读取该文件")
             }
         } else {
             // 其他未知格式 → 暂仍走后端处理
@@ -1015,14 +1198,62 @@ struct HomeView: View {
         }
     }
 
+    private func handleUnifiedDocumentFile(_ url: URL, format: SupportedDocumentFormat) {
+        let scenario = importScenario
+        let mode = importMode
+        isProcessingPDF = true
+        Task {
+            defer { isProcessingPDF = false }
+            do {
+                let result = try await DocumentImportPipeline().importDocument(
+                    DocumentImportRequest(
+                        localURL: url,
+                        expectedFormat: format,
+                        requiresSecurityScopedAccess: true
+                    )
+                )
+                importScenario = scenario
+                importMode = mode
+                finishImport(result.document)
+            } catch {
+                importScenario = scenario
+                importMode = mode
+                failImport(stage: "parse", code: "local_\(format.rawValue)_import_failed")
+                notice = documentImportErrorMessage(error)
+            }
+        }
+    }
+
+    private func documentImportErrorMessage(_ error: Error) -> String {
+        if let error = error as? DocumentImportError {
+            switch error {
+            case .unsupportedExtension, .extensionMismatch, .mimeTypeMismatch:
+                return AppLocalized("文件格式与扩展名不一致")
+            case .invalidPDF, .invalidDOCX, .invalidEPUB, .parseFailed:
+                return AppLocalized("文件可能已损坏、受密码或 DRM 保护，暂时无法读取")
+            case .emptyFile, .fileReadFailed, .invalidLocalURL, .byteCountMismatch:
+                return AppLocalized("无法读取该文件")
+            case .resourceLimitExceeded(let reason):
+                return reason == .insufficientDeviceStorage
+                    ? CloudLocalized("设备可用空间不足，无法下载此文件")
+                    : CloudLocalized("文件过大或解压后体积异常，已停止导入")
+            case .cancelled:
+                return AppLocalized("操作已取消")
+            }
+        }
+        return AppLocalized("无法读取该文件")
+    }
+
     private func analyticsFormat(for url: URL) -> AnalyticsContentFormat {
+        if SupportedDocumentFormat(fileExtension: url.pathExtension) == .text {
+            return .text
+        }
         switch url.pathExtension.lowercased() {
         case "png", "jpg", "jpeg", "heic", "heif", "webp", "gif", "tiff":
             return .photo
         case "pdf": return .pdf
         case "epub": return .epub
         case "docx": return .docx
-        case "txt", "text", "md", "markdown": return .text
         default: return .unknown
         }
     }
@@ -1042,15 +1273,64 @@ struct HomeView: View {
         ZStack {
             Color.black.opacity(0.35).ignoresSafeArea()
             VStack(spacing: 12) {
-                ProgressView().tint(.white)
-                Text(importVM.isUploading ? AppLocalized("上传中…") : AppLocalized("识别中…")).foregroundColor(.white).font(.subheadline)
+                if case .downloading(let progress) = cloudHistoryProgress,
+                   let fraction = progress.fractionCompleted {
+                    ProgressView(value: fraction)
+                        .tint(.white)
+                        .frame(maxWidth: 220)
+                    Text("\(Int(fraction * 100))%")
+                        .foregroundColor(.white)
+                        .font(.caption.monospacedDigit())
+                } else {
+                    ProgressView().tint(.white)
+                }
+                Text(processingStatusText)
+                    .foregroundColor(.white)
+                    .font(.subheadline)
+                if cloudHistoryProgress != nil {
+                    Button(CloudLocalized("取消"), role: .cancel) {
+                        cancelCloudHistoryReopen()
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.white)
+                    .frame(minHeight: 44)
+                }
             }
             .padding(24).background(.ultraThinMaterial).cornerRadius(16)
         }
     }
 
+    private func cancelCloudHistoryReopen() {
+        cloudHistoryTask?.cancel()
+        cloudHistoryTask = nil
+        cloudHistoryAttemptID = nil
+        cloudHistoryProgress = nil
+    }
+
     private var isProcessingContent: Bool {
         captureVM.isProcessing || importVM.isUploading || isProcessingPDF
+            || cloudHistoryProgress != nil
+    }
+
+    private var processingStatusText: String {
+        guard let progress = cloudHistoryProgress else {
+            return importVM.isUploading ? AppLocalized("上传中…") : AppLocalized("识别中…")
+        }
+        switch progress {
+        case .validatingAccount:
+            return CloudLocalized("正在连接账号…")
+        case .downloading:
+            return CloudLocalized("正在下载…")
+        case .importing(let value):
+            switch value.stage {
+            case .checkingFile: return CloudLocalized("正在检查文件…")
+            case .parsing(.pdf): return CloudLocalized("正在解析 PDF…")
+            case .parsing(.docx): return CloudLocalized("正在解析 Word…")
+            case .parsing(.epub): return CloudLocalized("正在解析 EPUB…")
+            case .parsing(.text): return CloudLocalized("正在准备阅读器…")
+            case .preparingReader: return CloudLocalized("正在准备阅读器…")
+            }
+        }
     }
 }
 
@@ -1168,15 +1448,31 @@ private enum ImportPanel: Identifiable, Equatable {
 private struct ImportOptionsSheet: View {
     let panel: ImportPanel
     var onPick: (ExplainContentType?, ReaderMode, ImportSource) -> Void
+    var onPickCloud: (ExplainContentType?, ReaderMode, CloudProviderID, CloudProviderAction) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @ObservedObject private var settings = AppSettings.shared
+    @ObservedObject private var cloudStorage = CloudStorageCenter.shared
     @State private var selectedScenario: ExplainContentType?
     @State private var selectedMode: ReaderMode
+    @State private var disconnectProvider: CloudProviderID?
+    @State private var notice: String?
+    @State private var disconnectRecovery: CloudDisconnectResult?
 
-    init(panel: ImportPanel, onPick: @escaping (ExplainContentType?, ReaderMode, ImportSource) -> Void) {
+    init(
+        panel: ImportPanel,
+        onPick: @escaping (ExplainContentType?, ReaderMode, ImportSource) -> Void,
+        onPickCloud: @escaping (
+            ExplainContentType?,
+            ReaderMode,
+            CloudProviderID,
+            CloudProviderAction
+        ) -> Void
+    ) {
         self.panel = panel
         self.onPick = onPick
+        self.onPickCloud = onPickCloud
         _selectedScenario = State(initialValue: panel.fixedScenario)
         _selectedMode = State(initialValue: panel.fixedScenario == nil ? .read : .explain)
     }
@@ -1201,6 +1497,9 @@ private struct ImportOptionsSheet: View {
                         depthPicker
                     }
                     sourceList
+                    if Constants.Features.cloudStorageEnabled {
+                        cloudSourceList
+                    }
                     if panel.fixedScenario == nil {
                         librarySourcesLink
                     }
@@ -1216,6 +1515,87 @@ private struct ImportOptionsSheet: View {
                     Button("取消") { dismiss() }
                 }
             }
+        }
+        .task {
+            guard Constants.Features.cloudStorageEnabled else { return }
+            await cloudStorage.refreshConnectionStates()
+        }
+        .alert(
+            CloudLocalized("解除关联？"),
+            isPresented: Binding(
+                get: { disconnectProvider != nil },
+                set: { if !$0 { disconnectProvider = nil } }
+            )
+        ) {
+            Button(CloudLocalized("取消"), role: .cancel) { disconnectProvider = nil }
+            Button(CloudLocalized("解除关联"), role: .destructive) {
+                guard let provider = disconnectProvider else { return }
+                disconnectProvider = nil
+                Task {
+                    let result = await cloudStorage.disconnect(provider)
+                    disconnectRecovery = result.remoteRevocationStatus == .unconfirmed
+                        ? result
+                        : nil
+                    notice = disconnectMessage(result)
+                }
+            }
+        } message: {
+            Text(CloudLocalized("这会取消当前云盘操作并删除本机账号关联；阅读历史基础信息会保留。"))
+        }
+        .alert(
+            CloudLocalized("提示"),
+            isPresented: Binding(
+                get: { notice != nil },
+                set: {
+                    if !$0 {
+                        notice = nil
+                        disconnectRecovery = nil
+                    }
+                }
+            )
+        ) {
+            if let recovery = disconnectRecovery,
+               recovery.provider == .googleDrive,
+               recovery.remoteRevocationStatus == .unconfirmed {
+                if recovery.retryable {
+                    Button(CloudLocalized("重试")) {
+                        retryGoogleRevocation()
+                    }
+                }
+                Button(CloudLocalized("在 Google 账号中管理授权")) {
+                    if let url = URL(string: "https://myaccount.google.com/connections") {
+                        openURL(url)
+                    }
+                }
+            }
+            Button(CloudLocalized("好"), role: .cancel) {}
+        } message: {
+            Text(notice ?? "")
+        }
+    }
+
+    private func disconnectMessage(_ result: CloudDisconnectResult) -> String {
+        switch result.remoteRevocationStatus {
+        case .confirmed:
+            return CloudLocalized("账号关联及云盘授权已解除")
+        case .unconfirmed:
+            return CloudLocalized("已从此设备断开；云盘端授权暂未确认撤销")
+        case .unsupported:
+            return CloudLocalized("已从此设备断开")
+        }
+    }
+
+    private func retryGoogleRevocation() {
+        notice = nil
+        disconnectRecovery = nil
+        Task {
+            let result = await cloudStorage.retryPendingRemoteRevocation(
+                for: .googleDrive
+            )
+            disconnectRecovery = result.remoteRevocationStatus == .unconfirmed
+                ? result
+                : nil
+            notice = disconnectMessage(result)
         }
     }
 
@@ -1330,6 +1710,45 @@ private struct ImportOptionsSheet: View {
                     onPick(activeScenario, selectedMode, source)
                 }
             }
+        }
+    }
+
+    private var cloudSourceList: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(CloudLocalized("云端文件"))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(AppTheme.foreground)
+                Spacer()
+                Label(CloudLocalized("只读"), systemImage: "lock.shield")
+                    .font(.caption)
+                    .foregroundColor(AppTheme.mutedForeground)
+            }
+
+            ForEach(CloudProviderID.allCases) { provider in
+                CloudStorageProviderRow(
+                    provider: provider,
+                    state: cloudStorage.state(for: provider),
+                    isConfigured: cloudStorage.isConfigured(provider),
+                    onOpen: {
+                        onPickCloud(activeScenario, selectedMode, provider, .open)
+                    },
+                    onSwitchAccount: {
+                        onPickCloud(activeScenario, selectedMode, provider, .switchAccount)
+                    },
+                    onDisconnect: {
+                        disconnectProvider = provider
+                    },
+                    onShowPrivacy: {
+                        onPickCloud(activeScenario, selectedMode, provider, .privacy)
+                    }
+                )
+            }
+
+            Text(CloudLocalized("所有文件均会显示；支持的文档可直接朗读或解读，原文件仅在本机临时处理。"))
+                .font(.caption)
+                .foregroundColor(AppTheme.mutedForeground)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -1551,17 +1970,39 @@ private struct ContinueCard: View {
 private struct ContinueCardContent: View {
     let record: HistoryRecord
 
-    private let cardWidth: CGFloat = 168
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var cardWidth: CGFloat {
+        dynamicTypeSize.isAccessibilitySize ? 240 : 168
+    }
     private var coverHeight: CGFloat { cardWidth * 9 / 16 }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             CoverThumbnail(record: record, contentMode: record.sourceKind == .kindle ? .fit : .fill, cornerRadius: 0)
                 .frame(width: cardWidth, height: coverHeight)
+                .overlay(alignment: .bottomLeading) {
+                    if let origin = record.origin {
+                        HStack(spacing: 5) {
+                            CloudProviderIcon(provider: origin.provider, size: 20)
+                            Text(origin.maskedAccountHint ?? origin.provider.displayName)
+                                .font(.caption2.weight(.semibold))
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4)
+                        .background(.regularMaterial, in: Capsule())
+                        .padding(6)
+                    }
+                }
             Text(record.title)
                 .font(.caption.weight(.semibold)).foregroundColor(AppTheme.foreground)
-                .lineLimit(2).multilineTextAlignment(.leading)
-                .frame(width: cardWidth - 20, height: 38, alignment: .topLeading)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 2)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: cardWidth - 20, alignment: .topLeading)
+                .frame(minHeight: 38, alignment: .topLeading)
                 .padding(.horizontal, 10).padding(.vertical, 8)
         }
         .frame(width: cardWidth)

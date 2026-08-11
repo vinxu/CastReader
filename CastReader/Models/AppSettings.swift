@@ -113,6 +113,18 @@ func AppLocalized(_ key: String.LocalizationValue) -> String {
     )
 }
 
+/// Cloud-storage copy lives in its own string catalog so the OAuth/privacy
+/// surface can be audited independently from the rest of the app.
+func CloudLocalized(_ key: String.LocalizationValue) -> String {
+    let language = AppLanguageManager.shared
+    return String(
+        localized: key,
+        table: "CloudStorage",
+        bundle: language.localizationBundle,
+        locale: language.locale
+    )
+}
+
 enum BoundLibraryOnboardingSource: String, CaseIterable, Identifiable {
     case kindle
     case weread
@@ -277,6 +289,12 @@ final class BoundLibraryOnboardingStore: ObservableObject {
             && phase == .postponed
             && resumePhase.isActiveFlow
             && selectedSource == .kindle
+    }
+
+    /// Generic name used by the migration contract. The global build's guided
+    /// onboarding provider remains Kindle, so both accessors share one rule.
+    var shouldResumeDeferredLibraryFlow: Bool {
+        shouldResumeDeferredKindleFlow
     }
 
     func select(_ source: BoundLibraryOnboardingSource) {

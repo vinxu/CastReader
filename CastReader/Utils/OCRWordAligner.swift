@@ -18,16 +18,23 @@ enum OCRWordAligner {
     static func mapTimestampWords(
         in paragraph: ReadingParagraph,
         segments: [AudioSegment],
-        allowFallback: Bool = true
+        allowFallback: Bool = true,
+        allowBoundedFallback: Bool = false
     ) -> [Int?] {
         let timestamps = segments.flatMap(\.timestamps)
-        return mapTimestampWords(timestamps, in: paragraph, allowFallback: allowFallback)
+        return mapTimestampWords(
+            timestamps,
+            in: paragraph,
+            allowFallback: allowFallback,
+            allowBoundedFallback: allowBoundedFallback
+        )
     }
 
     static func mapTimestampWords(
         _ timestamps: [TTSTimestamp],
         in paragraph: ReadingParagraph,
-        allowFallback: Bool = true
+        allowFallback: Bool = true,
+        allowBoundedFallback: Bool = false
     ) -> [Int?] {
         guard !timestamps.isEmpty, !paragraph.words.isEmpty else { return [] }
         let textChars = Array(paragraph.text)
@@ -40,13 +47,40 @@ enum OCRWordAligner {
 
         for ts in timestamps {
             let word = ts.word
-            if let match = findWordPositionNormalized(textChars: textChars, word: word, startPos: searchPos, distanceGuard: true) {
+            // Kindle timestamps should first consume the nearest exact OCR
+            // token after locale folding. Searching the full paragraph first
+            // is unsafe for short accented words: Italian `e` can otherwise
+            // skip the current `è` and land on a later unaccented `e`.
+            if let idx = boundedFallbackWordIndex(
+                word,
+                comparableWords: comparableWords,
+                from: ocrCursor,
+                allowBoundedFallback: allowBoundedFallback
+            ) {
+                output.append(idx)
+                ocrCursor = idx + 1
+                if let range = wordRanges.first(where: { $0.idx == idx }) {
+                    searchPos = max(searchPos, range.end)
+                }
+            } else if let match = findWordPositionNormalized(textChars: textChars, word: word, startPos: searchPos, distanceGuard: true) {
                 let idx = nearestOCRWordIndex(forCharPos: match.pos, ranges: wordRanges, tolerance: 3, minIndex: ocrCursor)
-                    ?? (allowFallback ? fallbackWordIndex(word, comparableWords: comparableWords, from: ocrCursor, window: 14) : nil)
+                    ?? (allowFallback ? fallbackWordIndex(
+                        word,
+                        comparableWords: comparableWords,
+                        from: ocrCursor,
+                        window: 14,
+                        allowFuzzy: true
+                    ) : nil)
                 output.append(idx)
                 searchPos = match.pos + match.matchLen
                 if let idx { ocrCursor = max(ocrCursor, idx + 1) }
-            } else if allowFallback, let idx = fallbackWordIndex(word, comparableWords: comparableWords, from: ocrCursor, window: 14) {
+            } else if allowFallback, let idx = fallbackWordIndex(
+                word,
+                comparableWords: comparableWords,
+                from: ocrCursor,
+                window: 14,
+                allowFuzzy: true
+            ) {
                 output.append(idx)
                 ocrCursor = idx + 1
             } else {
@@ -108,7 +142,33 @@ enum OCRWordAligner {
         return best.idx
     }
 
-    private static func fallbackWordIndex(_ word: String, comparableWords: [String], from cursor: Int, window: Int) -> Int? {
+    private static func boundedFallbackWordIndex(
+        _ word: String,
+        comparableWords: [String],
+        from cursor: Int,
+        allowBoundedFallback: Bool
+    ) -> Int? {
+        guard allowBoundedFallback else { return nil }
+        // Live Kindle uses this narrow exact-only recovery for locale spelling
+        // differences such as `piu`/`più` and smart apostrophes. It may look at
+        // only the next few OCR tokens and never applies fuzzy short-word
+        // matching, so repeated Italian words cannot jump to a distant bbox.
+        return fallbackWordIndex(
+            word,
+            comparableWords: comparableWords,
+            from: cursor,
+            window: 4,
+            allowFuzzy: false
+        )
+    }
+
+    private static func fallbackWordIndex(
+        _ word: String,
+        comparableWords: [String],
+        from cursor: Int,
+        window: Int,
+        allowFuzzy: Bool
+    ) -> Int? {
         let target = comparable(word)
         guard !target.isEmpty else { return nil }
         let start = min(max(0, cursor), comparableWords.count)
@@ -117,6 +177,7 @@ enum OCRWordAligner {
         for i in start..<end where comparableWords[i] == target {
             return i
         }
+        guard allowFuzzy else { return nil }
         for i in start..<end where fuzzyWordMatch(target: target, candidate: comparableWords[i]) {
             return i
         }
@@ -351,7 +412,11 @@ enum OCRWordAligner {
     }
 
     private static func comparable(_ raw: String) -> String {
-        raw.map(normalizeQuote)
+        String(raw.map(normalizeQuote))
+            .folding(
+                options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive],
+                locale: Locale(identifier: "en_US_POSIX")
+            )
             .filter { isWordChar($0) }
             .map { String($0).lowercased() }
             .joined()

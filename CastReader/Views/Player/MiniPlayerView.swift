@@ -132,12 +132,12 @@ private struct MiniPlayerBar: View {
         .padding(.horizontal, 8)
     }
 
-    private var playbackCoverID: String { audio.currentBookId ?? session.id }
+    private var playbackCoverID: String { audio.currentBookId ?? session.document.id }
 
     /// 封面 key：随当前播放书籍、远程封面、本地封面落地变化触发重载。
     private var coverKey: String {
         let local = history.records.first(where: { $0.id == playbackCoverID })?.coverPath
-            ?? history.records.first(where: { $0.id == session.id })?.coverPath
+            ?? history.records.first(where: { $0.id == session.document.id })?.coverPath
             ?? ""
         return "\(playbackCoverID)|\(local)|\(audio.currentCoverUrl ?? "")"
     }

@@ -323,9 +323,9 @@ enum KindleContinuousPageHandoffContract {
     static func shouldReleaseAudioGate(
         hasConfirmedVisibleSurface: Bool,
         textFingerprintMatches: Bool,
-        visualReleasePresented: Bool
+        firstHighlightHandshakeFinished: Bool
     ) -> Bool {
-        hasConfirmedVisibleSurface && textFingerprintMatches && visualReleasePresented
+        hasConfirmedVisibleSurface && textFingerprintMatches && firstHighlightHandshakeFinished
     }
 
     static func shouldReleaseVisualHold(
@@ -362,6 +362,28 @@ enum KindleContinuousPageHandoffContract {
         isQueuedSegmentGated: Bool
     ) -> Bool {
         hasConfirmedVisibleSurface && !textFingerprintMatches && isQueuedSegmentGated
+    }
+}
+
+enum KindleVisualHighlightCompletion: Equatable {
+    /// A newer paint task owns the slot. The older completion must not clear it.
+    case stale
+    /// The active task completed or was cancelled with nothing left to paint.
+    case clearOnly
+    /// The active task completed and the latest coalesced timestamp should run.
+    case drainPending
+}
+
+enum KindleVisualHighlightQueueContract {
+    static func completion(
+        activeSequence: UInt64?,
+        completedSequence: UInt64,
+        taskCancelled: Bool,
+        hasPending: Bool
+    ) -> KindleVisualHighlightCompletion {
+        guard activeSequence == completedSequence else { return .stale }
+        guard !taskCancelled, hasPending else { return .clearOnly }
+        return .drainPending
     }
 }
 

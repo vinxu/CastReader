@@ -198,6 +198,70 @@ final class ReadAnalyticsSessionCoordinator {
     }
 }
 
+enum YouTubeTTSRequestPolicy {
+    /// The legacy `voice_code` alias is unsupported for YouTube caption tracks
+    /// outside English and Chinese. Every other document source deliberately
+    /// keeps the pre-existing request body.
+    static func includeVoiceCode(
+        sourceKind: ReadingSourceKind,
+        language: String
+    ) -> Bool {
+        guard sourceKind == .youtube else { return true }
+        guard let canonical = SupportedTTSLanguage(identifier: language)?.rawValue else {
+            return false
+        }
+        return canonical == "en" || canonical == "zh"
+    }
+}
+
+enum YouTubePersistentAudioQuotaPolicy {
+    static func isQuotaExempt(
+        sourceKind: ReadingSourceKind,
+        persistentCacheHit: Bool
+    ) -> Bool {
+        sourceKind == .youtube && persistentCacheHit
+    }
+
+    static func canStart(
+        sourceKind: ReadingSourceKind,
+        persistentCacheHit: Bool,
+        isPro: Bool,
+        hasListenQuota: Bool
+    ) -> Bool {
+        isQuotaExempt(
+            sourceKind: sourceKind,
+            persistentCacheHit: persistentCacheHit
+        ) || isPro || hasListenQuota
+    }
+
+    static func shouldAccount(
+        sourceKind: ReadingSourceKind,
+        persistentCacheHit: Bool
+    ) -> Bool {
+        !isQuotaExempt(
+            sourceKind: sourceKind,
+            persistentCacheHit: persistentCacheHit
+        )
+    }
+}
+
+enum YouTubePlaybackAcceptancePolicy {
+    static func shouldConfirm(
+        currentTime: Double,
+        segmentID: String,
+        lastConfirmedSegmentID: String
+    ) -> Bool {
+        currentTime.isFinite
+            && currentTime > 0.05
+            && !segmentID.isEmpty
+            && lastConfirmedSegmentID != segmentID
+    }
+
+    static func didCompleteFirstListen(currentTime: Double) -> Bool {
+        currentTime.isFinite && currentTime >= 1
+    }
+}
+
 @MainActor
 final class ReadAloudViewModel: ObservableObject {
 
@@ -250,6 +314,10 @@ final class ReadAloudViewModel: ObservableObject {
     private var prefetchingIndex: Int? = nil     // 正在预取中的段
     private var prefetchedIndex: Int? = nil       // 已预取完成、可秒接的段
     private var prefetchedSegments: [AudioSegment] = []
+    /// `true` only when the prepared paragraph came from the persistent
+    /// YouTube TTS cache. Freshly generated prefetches remain billable even
+    /// after their bytes are persisted for a future replay.
+    private var prefetchedYouTubeAudioIsQuotaExempt = false
 
     // .web 源：段落由 WebView extractor 提取后注入；朗读输出经 bridge 驱动 DOM 高亮。
     private var webParagraphs: [ReadingParagraph]? = nil
@@ -286,7 +354,16 @@ final class ReadAloudViewModel: ObservableObject {
     private var ocrWordIndexes: [Int?] = []
     private var photoCursor = 0
     private var lastSegmentId = ""
+    private var lastSegmentBaselineTime: Double = 0
     private var lastSegmentMaxTime: Double = 0
+    private var lastYouTubeProgressWriteAt: Date?
+    private var lastYouTubeHistoryProgressWriteAt: Date?
+    private var lastYouTubeProgressSegmentID = ""
+    private var lastYouTubePlaybackSignalSegmentID = ""
+    /// Paragraphs loaded from the persistent YouTube audio cache. All segments
+    /// of one paragraph have one origin, so this survives queue reconstruction
+    /// without relying on globally reusable `paragraph-segment` IDs.
+    private var youtubeQuotaExemptParagraphs = Set<Int>()
     private var graceSeconds: Double = 0
     private(set) var isActive = false
     private var lastNowPlayingCaption: String?
@@ -381,10 +458,16 @@ final class ReadAloudViewModel: ObservableObject {
             ?? ReadAnalyticsSessionCoordinator()
         // A correction the user made for this book outlives the session: reopening
         // it must not hand the book back to whatever the first page detects.
+        // YouTube is the exception to book-level identity: each selected caption
+        // track is its own content session. A stale correction for the video must
+        // never override a newly selected track in another language.
+        let initialLanguageContentID = document.sourceKind == .youtube
+            ? document.contentSessionKey
+            : document.id
         self.correctedLanguage = ReadingLanguageStore.shared.override(
             for: ReadingLanguageStore.contentKey(
                 namespace: document.sourceKind.rawValue,
-                bookID: document.id
+                bookID: initialLanguageContentID
             )
         )
         self.playbackVoiceID = AppSettings.shared
@@ -400,6 +483,12 @@ final class ReadAloudViewModel: ObservableObject {
     /// metadata instead. Keying on that is what makes a correction survive a page
     /// turn on the very shelf the report came from.
     var readingLanguageContentKey: String {
+        if document.sourceKind == .youtube {
+            return ReadingLanguageStore.contentKey(
+                namespace: document.sourceKind.rawValue,
+                bookID: document.contentSessionKey
+            )
+        }
         let bookID = playbackBookID?.trimmed ?? ""
         return ReadingLanguageStore.contentKey(
             namespace: document.sourceKind.rawValue,
@@ -723,10 +812,44 @@ final class ReadAloudViewModel: ObservableObject {
         // to the exact player time instead of skipping the first words.
         let adoptionTime = audio.currentTime
         updateHighlight(adoptionTime)
+        primeKindleHighlightForContinuousAdoption(at: adoptionTime)
         updateNowPlayingCaption(adoptionTime)
 
         preloadNext(after: paragraphIndex)
         return true
+    }
+
+    /// The queued next-page item is adopted at a rebased time of zero. Cloud
+    /// timestamps commonly start a fraction of a second later, so the normal
+    /// tick path intentionally publishes no word yet. Kindle's audio gate needs
+    /// a concrete first bbox before it can release audio; prime only that first
+    /// locally aligned word and let subsequent ticks resume normal ownership.
+    private func primeKindleHighlightForContinuousAdoption(at time: Double) {
+        guard document.sourceKind == .kindle,
+              photoHighlightWordRange == nil,
+              time <= 0.35,
+              let segment = audio.currentSegment,
+              segment.paragraphIndex == currentParagraphIndex,
+              hasReliableWordHighlight(segment) else { return }
+
+        let segments = wordHighlightSegments(segmentsByParagraph[currentParagraphIndex] ?? [])
+        guard let segmentPosition = segments.firstIndex(where: { $0.id == segment.id }) else { return }
+        ensureOCRWordAligned()
+        let firstGlobalIndex = segments.prefix(segmentPosition).reduce(0) { $0 + $1.timestamps.count }
+        let end = min(ocrWordIndexes.count, firstGlobalIndex + segment.timestamps.count)
+        guard firstGlobalIndex < end,
+              let mapped = ocrWordIndexes[firstGlobalIndex..<end].compactMap({ $0 }).first else { return }
+
+        photoHighlightWordRange = mapped..<(mapped + 1)
+        photoHighlightWordIndex = mapped
+        #if DEBUG
+        NSLog(
+            "CRDBG kindle continuous highlight primed para=%d word=%d timeMs=%d",
+            currentParagraphIndex,
+            mapped,
+            Int(time * 1_000)
+        )
+        #endif
     }
 
     /// Covers the rare case where a very short prefetched utterance finishes
@@ -1128,7 +1251,11 @@ final class ReadAloudViewModel: ObservableObject {
     private func start(allowAccessRefresh: Bool) {
         liveWebTurnIntentSuspended = false
         guard !readableIndices.isEmpty else { status = .error(AppLocalized("无可朗读内容")); return }
-        guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
+        // YouTube must probe its persistent TTS cache before deciding whether
+        // fresh-listen quota is required. Other sources keep the synchronous
+        // gate and retry behavior unchanged.
+        guard document.sourceKind == .youtube
+                || canStartAudio(persistentYouTubeCacheHit: false) else {
             if allowAccessRefresh {
                 refreshAccessThenRetryStart()
                 return
@@ -1145,7 +1272,10 @@ final class ReadAloudViewModel: ObservableObject {
         applySpeed()
         let preferred = preferredLiveWebStartIndex.flatMap { readableIndices.contains($0) ? $0 : nil }
         preferredLiveWebStartIndex = nil
-        generate(preferred ?? readableIndices[0])
+        generate(
+            preferred ?? readableIndices[0],
+            allowAccessRefresh: allowAccessRefresh
+        )
     }
 
     func togglePlayPause() {
@@ -1164,7 +1294,10 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         // 从暂停恢复播放时补额度闸门：否则免费用户在「宽限硬上限」弹墙后关墙、再点播放即可无限续听。
-        if !audio.isPlaying, !pro.isPro, !quota.canStartListen(isPro: pro.isPro) {
+        if !audio.isPlaying,
+           !currentAudioIsQuotaExempt,
+           !pro.isPro,
+           !quota.canStartListen(isPro: pro.isPro) {
             refreshAccessThenRetryResume()
             return
         }
@@ -1195,7 +1328,9 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         if !ownsAudioQueue {
-            guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
+            guard currentAudioIsQuotaExempt
+                    || pro.isPro
+                    || quota.canStartListen(isPro: pro.isPro) else {
                 refreshAccessThenRetryResume()
                 return
             }
@@ -1208,7 +1343,9 @@ final class ReadAloudViewModel: ObservableObject {
            !audio.hasQueuedSegments {
             return
         }
-        guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
+        guard currentAudioIsQuotaExempt
+                || pro.isPro
+                || quota.canStartListen(isPro: pro.isPro) else {
             refreshAccessThenRetryResume()
             return
         }
@@ -1270,7 +1407,8 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func jump(to paragraphIndex: Int, allowAccessRefresh: Bool) {
         guard readableIndices.contains(paragraphIndex) else { return }
-        guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
+        guard document.sourceKind == .youtube
+                || canStartAudio(persistentYouTubeCacheHit: false) else {
             if allowAccessRefresh {
                 refreshAccessThenRetryJump(to: paragraphIndex)
                 return
@@ -1290,23 +1428,78 @@ final class ReadAloudViewModel: ObservableObject {
             applySpeed()
         }
         beginAnalyticsReadSessionIfNeeded(resume: currentParagraphIndex >= 0)
-        generate(paragraphIndex)
+        generate(
+            paragraphIndex,
+            allowAccessRefresh: allowAccessRefresh
+        )
     }
 
     /// 用外部已经生成好的首段音频启动朗读。Kindle 页级预加载会使用这个入口：
     /// 页面 OCR/文档和下一页首段 TTS 都提前完成时，翻页后无需再等首字节。
     func startWithPrefetchedSegments(_ segments: [AudioSegment], paragraphIndex: Int) {
-        startWithPrefetchedSegments(segments, paragraphIndex: paragraphIndex, allowAccessRefresh: true)
+        startWithPrefetchedSegments(
+            segments,
+            paragraphIndex: paragraphIndex,
+            allowAccessRefresh: true
+        )
     }
 
-    private func startWithPrefetchedSegments(_ segments: [AudioSegment], paragraphIndex: Int, allowAccessRefresh: Bool) {
+    /// Starts a locally cached YouTube paragraph at its persisted stable
+    /// segment/fraction without emitting a short burst from the segment start.
+    /// Persistent YouTube replay is quota-exempt; fresh audio remains on the
+    /// normal daily listen meter.
+    func startWithCachedSegments(
+        _ segments: [AudioSegment],
+        paragraphIndex: Int,
+        segmentID: String?,
+        progress: Double,
+        isReplayEligible: Bool,
+        autoplay: Bool = true
+    ) {
+        startWithPrefetchedSegments(
+            segments,
+            paragraphIndex: paragraphIndex,
+            allowAccessRefresh: true,
+            initialSegmentID: segmentID,
+            initialProgress: progress,
+            autoplay: autoplay,
+            persistentYouTubeCacheHit: isReplayEligible
+        )
+    }
+
+    /// A route can reuse an existing reader VM. Reset its one-shot playback
+    /// confirmation so the enclosing share flow can wait for real audio rather
+    /// than treating transcript extraction as listening success.
+    func prepareForYouTubePlaybackAcceptanceSignal() {
+        guard document.sourceKind == .youtube else { return }
+        lastYouTubePlaybackSignalSegmentID = ""
+    }
+
+    private func startWithPrefetchedSegments(
+        _ segments: [AudioSegment],
+        paragraphIndex: Int,
+        allowAccessRefresh: Bool,
+        initialSegmentID: String? = nil,
+        initialProgress: Double = 0,
+        autoplay: Bool = true,
+        persistentYouTubeCacheHit: Bool = false
+    ) {
         guard readableIndices.contains(paragraphIndex), !segments.isEmpty else {
             jump(to: paragraphIndex)
             return
         }
-        guard pro.isPro || quota.canStartListen(isPro: pro.isPro) else {
+        guard canStartAudio(
+            persistentYouTubeCacheHit: persistentYouTubeCacheHit
+        ) else {
             if allowAccessRefresh {
-                refreshAccessThenRetryPrefetched(segments, paragraphIndex: paragraphIndex)
+                refreshAccessThenRetryPrefetched(
+                    segments,
+                    paragraphIndex: paragraphIndex,
+                    initialSegmentID: initialSegmentID,
+                    initialProgress: initialProgress,
+                    autoplay: autoplay,
+                    persistentYouTubeCacheHit: persistentYouTubeCacheHit
+                )
                 return
             }
             status = .pending
@@ -1316,7 +1509,9 @@ final class ReadAloudViewModel: ObservableObject {
         }
 
         invalidateAccessRetry()
-        beginAnalyticsReadSessionIfNeeded(resume: currentParagraphIndex >= 0)
+        beginAnalyticsReadSessionIfNeeded(
+            resume: currentParagraphIndex >= 0 || initialProgress > 0
+        )
         activate()
         guard let token = ensureAudioSessionClaim() else { return }
         applyPlaybackMetadata()
@@ -1329,6 +1524,10 @@ final class ReadAloudViewModel: ObservableObject {
 
         _ = audio.clearQueue(session: token)
         _ = audio.setMoreSegmentsExpected(false, session: token)
+        setYouTubeAudioQuotaOrigin(
+            paragraphIndex: paragraphIndex,
+            persistentCacheHit: persistentYouTubeCacheHit
+        )
         segmentsByParagraph[paragraphIndex] = segments
         currentParagraphIndex = paragraphIndex
         processedDisplayText = segments.map { $0.text }.joined()
@@ -1341,11 +1540,54 @@ final class ReadAloudViewModel: ObservableObject {
         lastWordKey = ""
         status = .ready
         if document.sourceKind.isWebRendered { webAudioSegments.append(contentsOf: segments) }
-        _ = audio.loadSegments(
-            segments,
-            autoPlay: !liveWebTurnIntentSuspended,
-            session: token
-        )
+        let shouldAutoplay = autoplay && !liveWebTurnIntentSuspended
+        if let requestedID = initialSegmentID,
+           segments.contains(where: { $0.id == requestedID }) {
+            let loaded = audio.loadSegments(
+                segments,
+                autoPlay: false,
+                session: token
+            )
+            if loaded {
+                let didStart = audio.startQueuedSegment(
+                    id: requestedID,
+                    progress: initialProgress,
+                    autoPlay: shouldAutoplay,
+                    session: token
+                )
+                if didStart,
+                   let requested = segments.first(where: { $0.id == requestedID }) {
+                    let initialPosition = max(
+                        0,
+                        requested.duration * min(0.98, max(0, initialProgress))
+                    )
+                    if YouTubePersistentAudioQuotaPolicy.shouldAccount(
+                        sourceKind: document.sourceKind,
+                        persistentCacheHit: persistentYouTubeCacheHit
+                    ) {
+                        primeListenAccounting(
+                            segmentID: requestedID,
+                            position: initialPosition
+                        )
+                    } else {
+                        // Flush any prior billable segment, but never seed the
+                        // listen meter from a quota-exempt persisted replay.
+                        commitListen()
+                    }
+                    analyticsSessionCoordinator.seedPlaybackCursor(
+                        ownerID: analyticsSessionOwnerID,
+                        segmentID: requestedID,
+                        position: initialPosition
+                    )
+                }
+            }
+        } else {
+            _ = audio.loadSegments(
+                segments,
+                autoPlay: shouldAutoplay,
+                session: token
+            )
+        }
 
         preloadNext(after: paragraphIndex)
     }
@@ -1376,7 +1618,9 @@ final class ReadAloudViewModel: ObservableObject {
                   self.isActive,
                   self.currentParagraphIndex == paragraphIndex else { return }
             self.accessRetryTask = nil
-            if self.pro.isPro || self.quota.canStartListen(isPro: self.pro.isPro) {
+            if self.currentAudioIsQuotaExempt
+                || self.pro.isPro
+                || self.quota.canStartListen(isPro: self.pro.isPro) {
                 self.beginAnalyticsReadSessionIfNeeded(resume: true)
                 // This is a retry of an explicit Resume action. `play()` is
                 // idempotent; toggle could pause audio started by a newer event.
@@ -1409,7 +1653,14 @@ final class ReadAloudViewModel: ObservableObject {
         }
     }
 
-    private func refreshAccessThenRetryPrefetched(_ segments: [AudioSegment], paragraphIndex: Int) {
+    private func refreshAccessThenRetryPrefetched(
+        _ segments: [AudioSegment],
+        paragraphIndex: Int,
+        initialSegmentID: String? = nil,
+        initialProgress: Double = 0,
+        autoplay: Bool = true,
+        persistentYouTubeCacheHit: Bool = false
+    ) {
         status = .loading
         invalidateAccessRetry()
         let retryEpoch = accessRetryEpoch
@@ -1422,7 +1673,11 @@ final class ReadAloudViewModel: ObservableObject {
             self.startWithPrefetchedSegments(
                 segments,
                 paragraphIndex: paragraphIndex,
-                allowAccessRefresh: false
+                allowAccessRefresh: false,
+                initialSegmentID: initialSegmentID,
+                initialProgress: initialProgress,
+                autoplay: autoplay,
+                persistentYouTubeCacheHit: persistentYouTubeCacheHit
             )
         }
     }
@@ -1436,6 +1691,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     func stop() {
+        saveYouTubeProgress(audio.currentTime, force: true)
         invalidateAccessRetry()
         generationEpoch &+= 1
         liveWebTurnIntentSuspended = false
@@ -1461,14 +1717,160 @@ final class ReadAloudViewModel: ObservableObject {
 
     // MARK: - Generation
 
+    private var includeVoiceCodeForTTS: Bool {
+        YouTubeTTSRequestPolicy.includeVoiceCode(
+            sourceKind: document.sourceKind,
+            language: docLanguage
+        )
+    }
+
+    private func setYouTubeAudioQuotaOrigin(
+        paragraphIndex: Int,
+        persistentCacheHit: Bool
+    ) {
+        guard document.sourceKind == .youtube else { return }
+        if YouTubePersistentAudioQuotaPolicy.isQuotaExempt(
+            sourceKind: document.sourceKind,
+            persistentCacheHit: persistentCacheHit
+        ) {
+            youtubeQuotaExemptParagraphs.insert(paragraphIndex)
+        } else {
+            youtubeQuotaExemptParagraphs.remove(paragraphIndex)
+        }
+    }
+
+    private func isYouTubeAudioQuotaExempt(paragraphIndex: Int) -> Bool {
+        YouTubePersistentAudioQuotaPolicy.isQuotaExempt(
+            sourceKind: document.sourceKind,
+            persistentCacheHit: youtubeQuotaExemptParagraphs.contains(paragraphIndex)
+        )
+    }
+
+    private var currentAudioIsQuotaExempt: Bool {
+        guard currentParagraphIndex >= 0 else { return false }
+        return isYouTubeAudioQuotaExempt(paragraphIndex: currentParagraphIndex)
+    }
+
+    private func canStartAudio(persistentYouTubeCacheHit: Bool) -> Bool {
+        YouTubePersistentAudioQuotaPolicy.canStart(
+            sourceKind: document.sourceKind,
+            persistentCacheHit: persistentYouTubeCacheHit,
+            isPro: pro.isPro,
+            hasListenQuota: quota.canStartListen(isPro: pro.isPro)
+        )
+    }
+
+    /// A YouTube cache lookup must happen before the quota decision. This keeps
+    /// persistent replay available offline/after the daily allowance is spent,
+    /// while a cache miss still refreshes entitlement and blocks fresh TTS.
+    private func authorizeFreshYouTubeGeneration(
+        paragraphIndex: Int,
+        epoch: UInt64,
+        session: AudioPlaybackSessionToken,
+        allowAccessRefresh: Bool
+    ) async -> Bool {
+        guard document.sourceKind == .youtube else { return true }
+        if canStartAudio(persistentYouTubeCacheHit: false) { return true }
+
+        if allowAccessRefresh {
+            await ProManager.shared.refresh()
+            guard !Task.isCancelled,
+                  generationEpoch == epoch,
+                  currentParagraphIndex == paragraphIndex,
+                  audioSessionToken == session,
+                  audio.isPlaybackSessionActive(session) else { return false }
+            if canStartAudio(persistentYouTubeCacheHit: false) { return true }
+        }
+
+        guard generationEpoch == epoch,
+              currentParagraphIndex == paragraphIndex,
+              audioSessionToken == session,
+              audio.isPlaybackSessionActive(session) else { return false }
+        _ = audio.setMoreSegmentsExpected(false, session: session)
+        status = .pending
+        showPaywall = true
+        endAnalyticsReadSession(result: .blocked, reason: "listen_quota")
+        return false
+    }
+
+    private var youtubeTranscriptCacheKey: YouTubeTranscriptCacheKey? {
+        document.youtubeTranscript.map(YouTubeCacheStore.cacheKey(for:))
+    }
+
+    private func youtubeAudioCacheKey(
+        paragraphIndex: Int,
+        voice: String
+    ) -> YouTubeTTSAudioCacheKey? {
+        guard let transcriptKey = youtubeTranscriptCacheKey else { return nil }
+        return YouTubeTTSAudioCacheKey(
+            transcriptFingerprint: transcriptKey.transcriptFingerprint,
+            voiceCode: voice,
+            playbackLanguage: playbackLanguage,
+            schemaVersion: YouTubeTTSAudioCacheSchema.current,
+            paragraphIndex: paragraphIndex
+        )
+    }
+
+    private func cachedYouTubeAudio(
+        paragraphIndex: Int,
+        voice: String
+    ) async -> YouTubeCachedAudioPlayback? {
+        guard document.sourceKind == .youtube,
+              let cache = YouTubeCacheProvider.shared,
+              let transcriptKey = youtubeTranscriptCacheKey,
+              let audioKey = youtubeAudioCacheKey(
+                paragraphIndex: paragraphIndex,
+                voice: voice
+              ),
+              let playback = await cache.cachedAudioPlayback(
+                for: audioKey,
+                transcriptKey: transcriptKey
+              ),
+              !playback.segments.isEmpty,
+              playback.segments.allSatisfy({
+                  $0.paragraphIndex == paragraphIndex
+              }) else {
+            return nil
+        }
+        return playback
+    }
+
+    private func persistYouTubeAudio(
+        _ segments: [AudioSegment],
+        paragraphIndex: Int,
+        voice: String
+    ) async {
+        guard document.sourceKind == .youtube,
+              !segments.isEmpty,
+              let cache = YouTubeCacheProvider.shared,
+              let transcriptKey = youtubeTranscriptCacheKey,
+              let audioKey = youtubeAudioCacheKey(
+                paragraphIndex: paragraphIndex,
+                voice: voice
+              ) else { return }
+        try? await cache.storeAudioSegments(
+            segments,
+            for: audioKey,
+            transcriptKey: transcriptKey
+        )
+    }
+
     private func generate(
         _ index: Int,
         voiceOverride: String? = nil,
         autoPlay: Bool = true,
-        voiceSwitchID: UUID? = nil
+        voiceSwitchID: UUID? = nil,
+        allowAccessRefresh: Bool = true
     ) {
         guard isActive, paras.indices.contains(index) else { return }
         guard let session = ensureAudioSessionClaim() else { return }
+        if document.sourceKind == .youtube {
+            // A manual jump or voice switch can replace the player before its
+            // next tick. Commit the previous fresh paragraph now so the cache-
+            // miss authorization below observes the true remaining quota.
+            // Persisted replay never enters the listen accumulator.
+            commitListen()
+        }
         invalidateAccessRetry()
         isAwaitingLiveWebCarryCompletion = false
         pendingLiveWebCarryStartIndex = nil
@@ -1489,6 +1891,10 @@ final class ReadAloudViewModel: ObservableObject {
 
         _ = audio.clearQueue(session: session)
         _ = audio.setMoreSegmentsExpected(true, session: session)
+        setYouTubeAudioQuotaOrigin(
+            paragraphIndex: index,
+            persistentCacheHit: false
+        )
         segmentsByParagraph[index] = []
         currentParagraphIndex = index
         processedDisplayText = nil
@@ -1506,13 +1912,62 @@ final class ReadAloudViewModel: ObservableObject {
             guard let self = self else { return }
             do {
                 try Task.checkCancellation()
+                if let cached = await self.cachedYouTubeAudio(
+                    paragraphIndex: index,
+                    voice: voice
+                ) {
+                    if !cached.isReplayEligible {
+                        guard await self.authorizeFreshYouTubeGeneration(
+                            paragraphIndex: index,
+                            epoch: epoch,
+                            session: session,
+                            allowAccessRefresh: allowAccessRefresh
+                        ) else { return }
+                    }
+                    guard self.generationEpoch == epoch,
+                          self.currentParagraphIndex == index,
+                          self.audioSessionToken == session,
+                          self.audio.isPlaybackSessionActive(session) else {
+                        return
+                    }
+                    self.setYouTubeAudioQuotaOrigin(
+                        paragraphIndex: index,
+                        persistentCacheHit: cached.isReplayEligible
+                    )
+                    for segment in cached.segments {
+                        self.appendSegment(
+                            segment,
+                            paragraph: index,
+                            epoch: epoch,
+                            session: session,
+                            autoPlay: autoPlay,
+                            voiceSwitchID: voiceSwitchID
+                        )
+                    }
+                    _ = self.audio.finishStreamingProducer(session: session)
+                    self.status = .ready
+                    ReaderRunLog.write(
+                        "READ cache hit para=\(index) epoch=\(epoch) " +
+                        "segs=\(cached.segments.count) " +
+                        "replay=\(cached.isReplayEligible ? "Y" : "N")"
+                    )
+                    self.preloadNext(after: index)
+                    return
+                }
+                guard await self.authorizeFreshYouTubeGeneration(
+                    paragraphIndex: index,
+                    epoch: epoch,
+                    session: session,
+                    allowAccessRefresh: allowAccessRefresh
+                ) else { return }
                 NSLog("CRDBG generate request begin para=%d voice=%@ epoch=%llu", index, voice, epoch)
                 try await TTSService.shared.generateTTSForParagraph(
                     paragraphIndex: index,
                     text: SpeechTextSanitizer.sanitizedForTTS(para.text),
                     voice: voice,
                     speed: 1.0,                       // 1.0 生成，播放用 playbackRate
-                    language: self.docLanguage
+                    language: self.docLanguage,
+                    includeVoiceCode: self.includeVoiceCodeForTTS
                 ) { [weak self] segment in
                     self?.appendSegment(
                         segment,
@@ -1557,8 +2012,21 @@ final class ReadAloudViewModel: ObservableObject {
                         self.activeVoiceSwitchID = nil
                     }
                 }
-                if self.generationEpoch == epoch, self.isActive {
+                if self.generationEpoch == epoch,
+                   self.currentParagraphIndex == index,
+                   self.audioSessionToken == session,
+                   self.audio.isPlaybackSessionActive(session),
+                   self.isActive {
+                    let generated = self.segmentsByParagraph[index] ?? []
+                    // Publish/start the next prefetch before cache persistence.
+                    // A large LRU scan must never consume the audible lead time,
+                    // and no stale task can resurrect an old paragraph prefetch.
                     self.preloadNext(after: index)
+                    await self.persistYouTubeAudio(
+                        generated,
+                        paragraphIndex: index,
+                        voice: voice
+                    )
                 }
             } catch is CancellationError {
                 ReaderRunLog.write(
@@ -1800,10 +2268,12 @@ final class ReadAloudViewModel: ObservableObject {
         prefetchingIndex = nextIndex
         prefetchedIndex = nil
         prefetchedSegments = []
+        prefetchedYouTubeAudioIsQuotaExempt = false
         let epoch = generationEpoch
         let para = paras[nextIndex]
         let voice = settings.voice(for: docLanguage)
         let lang = docLanguage
+        let includeVoiceCode = includeVoiceCodeForTTS
         NSLog("CRDBG prefetch start para=%d", nextIndex)
         ReaderRunLog.write(
             "READ prefetch start para=\(nextIndex) epoch=\(epoch) " +
@@ -1811,26 +2281,73 @@ final class ReadAloudViewModel: ObservableObject {
         )
         prefetchTask = Task { [weak self] in
             do {
-                let collected = try await TTSService.shared.generatePrefetchSegments(
+                let cached = await self?.cachedYouTubeAudio(
                     paragraphIndex: nextIndex,
-                    text: SpeechTextSanitizer.sanitizedForTTS(para.text),
-                    voice: voice,
-                    speed: 1.0,
-                    language: lang
+                    voice: voice
                 )
+                let collected: [AudioSegment]
+                let cachedIsReplayEligible: Bool
+                if let cached {
+                    if !cached.isReplayEligible,
+                       let self,
+                       self.document.sourceKind == .youtube,
+                       !self.canStartAudio(persistentYouTubeCacheHit: false) {
+                        if self.generationEpoch == epoch,
+                           self.prefetchingIndex == nextIndex {
+                            self.prefetchingIndex = nil
+                        }
+                        return
+                    }
+                    collected = cached.segments
+                    cachedIsReplayEligible = cached.isReplayEligible
+                } else {
+                    // Persistent-cache replay can continue after quota is
+                    // exhausted, but background prefetch must never create new
+                    // billable audio without fresh-listen allowance.
+                    if let self,
+                       self.document.sourceKind == .youtube,
+                       !self.canStartAudio(persistentYouTubeCacheHit: false) {
+                        if self.generationEpoch == epoch,
+                           self.prefetchingIndex == nextIndex {
+                            self.prefetchingIndex = nil
+                        }
+                        return
+                    }
+                    collected = try await TTSService.shared.generatePrefetchSegments(
+                        paragraphIndex: nextIndex,
+                        text: SpeechTextSanitizer.sanitizedForTTS(para.text),
+                        voice: voice,
+                        speed: 1.0,
+                        language: lang,
+                        includeVoiceCode: includeVoiceCode
+                    )
+                    cachedIsReplayEligible = false
+                }
                 guard let self,
                       !Task.isCancelled,
                       self.isActive,
                       self.generationEpoch == epoch,
                       self.prefetchingIndex == nextIndex else { return }
+                // Publish the generated segments before doing cache I/O. The
+                // player may reach this paragraph while the cache actor is
+                // pruning/scanning a large store; playback must not wait for it.
                 self.prefetchedSegments = collected
                 self.prefetchedIndex = nextIndex
                 self.prefetchingIndex = nil
+                self.prefetchedYouTubeAudioIsQuotaExempt =
+                    self.document.sourceKind == .youtube && cachedIsReplayEligible
                 NSLog("CRDBG prefetch done para=%d segs=%d", nextIndex, collected.count)
                 ReaderRunLog.write(
                     "READ prefetch done para=\(nextIndex) epoch=\(epoch) " +
                     "segs=\(collected.count)"
                 )
+                if cached == nil {
+                    await self.persistYouTubeAudio(
+                        collected,
+                        paragraphIndex: nextIndex,
+                        voice: voice
+                    )
+                }
             } catch {
                 guard let self,
                       self.generationEpoch == epoch,
@@ -1853,6 +2370,7 @@ final class ReadAloudViewModel: ObservableObject {
         prefetchingIndex = nil
         prefetchedIndex = nil
         prefetchedSegments = []
+        prefetchedYouTubeAudioIsQuotaExempt = false
     }
 
     /// 把已预取的下一段缓存「转正」为当前段：重置高亮状态 + 一次性入队播放（无 TTS 等待），并继续预取再下一段。
@@ -1860,10 +2378,12 @@ final class ReadAloudViewModel: ObservableObject {
         guard isActive else { return }
         guard let session = ensureAudioSessionClaim() else { return }
         let segs = prefetchedSegments
+        let persistentYouTubeCacheHit = prefetchedYouTubeAudioIsQuotaExempt
         prefetchedSegments = []
         prefetchedIndex = nil
         prefetchingIndex = nil
         prefetchTask = nil
+        prefetchedYouTubeAudioIsQuotaExempt = false
         guard !segs.isEmpty else { generate(index); return }
         NSLog("CRDBG promote prefetch para=%d segs=%d", index, segs.count)
         ReaderRunLog.write(
@@ -1871,6 +2391,10 @@ final class ReadAloudViewModel: ObservableObject {
         )
 
         // 重置段/高亮状态（对齐 generate 开头），但不重新请求 TTS。
+        setYouTubeAudioQuotaOrigin(
+            paragraphIndex: index,
+            persistentCacheHit: persistentYouTubeCacheHit
+        )
         segmentsByParagraph[index] = segs
         currentParagraphIndex = index
         processedDisplayText = segs.map { $0.text }.joined()
@@ -1894,6 +2418,54 @@ final class ReadAloudViewModel: ObservableObject {
 
         // 立即预取再下一段，保持「始终领先一段」。
         preloadNext(after: index)
+    }
+
+    /// Persist the completed paragraph and only then mark it as replay-safe.
+    /// Generation, prefetch, pause and manual jumps never grant this bit.
+    private func persistCompletedYouTubeParagraphIfNeeded() {
+        let completedParagraphIndex = currentParagraphIndex
+        guard document.sourceKind == .youtube,
+              completedParagraphIndex >= 0 else { return }
+        persistYouTubeHistorySummary(
+            paragraphFraction: 1,
+            now: Date(),
+            force: true
+        )
+
+        guard let segments = segmentsByParagraph[completedParagraphIndex],
+              !segments.isEmpty,
+              let cache = YouTubeCacheProvider.shared,
+              let transcriptKey = youtubeTranscriptCacheKey,
+              let audioKey = youtubeAudioCacheKey(
+                  paragraphIndex: completedParagraphIndex,
+                  voice: playbackVoiceID
+              ) else { return }
+
+        Task {
+            do {
+                if let finalSegment = segments.last {
+                    try await cache.saveProgress(
+                        paragraphIndex: completedParagraphIndex,
+                        segmentId: finalSegment.id,
+                        segmentIndex: finalSegment.segmentIndex,
+                        fractionalProgress: 1,
+                        paragraphFractionalProgress: 1,
+                        for: transcriptKey
+                    )
+                }
+                try await cache.storeAudioSegments(
+                    segments,
+                    for: audioKey,
+                    transcriptKey: transcriptKey
+                )
+                try await cache.markAudioReplayEligible(
+                    for: audioKey,
+                    transcriptKey: transcriptKey
+                )
+            } catch {
+                // Cache failure must never interrupt playback progression.
+            }
+        }
     }
 
     private func advance() {
@@ -1940,6 +2512,7 @@ final class ReadAloudViewModel: ObservableObject {
             NSLog("CRDBG advance ignored duplicate document-finished para=%d", currentParagraphIndex)
             return
         }
+        persistCompletedYouTubeParagraphIfNeeded()
         commitListen()
         NSLog("CRDBG advance from para=%d readable=%d", currentParagraphIndex, readableIndices.count)
         ReaderRunLog.write(
@@ -1980,8 +2553,59 @@ final class ReadAloudViewModel: ObservableObject {
             onDocumentFinished?(automaticPageContinuation)
             return
         }
-        // 段落边界做额度闸门（“读完本篇”自然边界）
+        let nextIndex = readableIndices[nextPos]
+        let hasReadyPrefetch = prefetchedIndex == nextIndex
+            && !prefetchedSegments.isEmpty
+        let readyPrefetchIsQuotaExempt = hasReadyPrefetch
+            && prefetchedYouTubeAudioIsQuotaExempt
+
+        // A persistent YouTube cache hit is allowed to cross a quota boundary.
+        // Fresh prefetches still pass through the ordinary paragraph gate.
+        if readyPrefetchIsQuotaExempt {
+            promotePrefetch(to: nextIndex)
+            return
+        }
+
+        // At a YouTube boundary the in-flight lookup may still resolve to a
+        // quota-exempt persistent hit. Wait for its origin before deciding.
+        if document.sourceKind == .youtube,
+           prefetchingIndex == nextIndex,
+           let task = prefetchTask {
+            status = .loading
+            ReaderRunLog.write(
+                "READ boundary waiting YouTube cache origin from=\(currentParagraphIndex) " +
+                "next=\(nextIndex)"
+            )
+            let epoch = generationEpoch
+            let sourceParagraphIndex = currentParagraphIndex
+            prefetchPromotionTask?.cancel()
+            prefetchPromotionTask = Task { [weak self] in
+                _ = await task.value
+                guard let self,
+                      !Task.isCancelled,
+                      self.isActive,
+                      self.generationEpoch == epoch,
+                      self.currentParagraphIndex == sourceParagraphIndex else { return }
+                self.prefetchPromotionTask = nil
+                self.advance(allowAccessRefresh: allowAccessRefresh)
+            }
+            return
+        }
+
+        // 段落边界做额度闸门（“读完本篇”自然边界）。With no prepared
+        // YouTube origin, let foreground generation probe disk first; its cache
+        // miss path owns the fresh-audio quota refresh/paywall decision.
         if !pro.isPro && !quota.canStartListen(isPro: pro.isPro) {
+            if document.sourceKind == .youtube, !hasReadyPrefetch {
+                ReaderRunLog.write(
+                    "READ boundary YouTube cache probe next=\(nextIndex)"
+                )
+                generate(
+                    nextIndex,
+                    allowAccessRefresh: allowAccessRefresh
+                )
+                return
+            }
             if allowAccessRefresh {
                 refreshAccessThenRetryAdvance()
                 return
@@ -1994,9 +2618,9 @@ final class ReadAloudViewModel: ObservableObject {
             endAnalyticsReadSession(result: .blocked, reason: "listen_quota")
             return
         }
-        let nextIndex = readableIndices[nextPos]
+
         // ① 预取已就绪 → 秒接，无需重新请求 TTS（消除段间等首字节的 gap）
-        if prefetchedIndex == nextIndex, !prefetchedSegments.isEmpty {
+        if hasReadyPrefetch {
             promotePrefetch(to: nextIndex)
             return
         }
@@ -2024,7 +2648,10 @@ final class ReadAloudViewModel: ObservableObject {
                     ReaderRunLog.write(
                         "READ boundary prefetch miss next=\(nextIndex); foreground generate"
                     )
-                    self.generate(nextIndex)
+                    self.generate(
+                        nextIndex,
+                        allowAccessRefresh: allowAccessRefresh
+                    )
                 }
             }
             return
@@ -2033,7 +2660,10 @@ final class ReadAloudViewModel: ObservableObject {
         ReaderRunLog.write(
             "READ boundary no prefetch next=\(nextIndex); foreground generate"
         )
-        generate(nextIndex)
+        generate(
+            nextIndex,
+            allowAccessRefresh: allowAccessRefresh
+        )
     }
 
     private static func statusLogValue(_ status: TTSStatus) -> String {
@@ -2077,9 +2707,99 @@ final class ReadAloudViewModel: ObservableObject {
         guard ownsAudioQueue else { return }
         accountAnalyticsPlayback(t)
         accountListen(t)
+        saveYouTubeProgress(t)
         updateHighlight(t)
         updateNowPlayingCaption(t)
         signalPageBoundaryIfNeeded(t)
+    }
+
+    private func saveYouTubeProgress(_ currentTime: Double, force: Bool = false) {
+        guard document.sourceKind == .youtube,
+              let segment = audio.currentSegment,
+              segment.paragraphIndex == currentParagraphIndex else { return }
+
+        // Playback acceptance is a player fact, not a persistence fact. Keep
+        // it functional even when the optional on-disk cache is unavailable.
+        if YouTubePlaybackAcceptancePolicy.shouldConfirm(
+            currentTime: currentTime,
+            segmentID: segment.id,
+            lastConfirmedSegmentID: lastYouTubePlaybackSignalSegmentID
+        ) {
+            lastYouTubePlaybackSignalSegmentID = segment.id
+            NotificationCenter.default.post(
+                name: .castReaderYouTubePlaybackConfirmed,
+                object: document.contentSessionKey
+            )
+        }
+        if YouTubePlaybackAcceptancePolicy.didCompleteFirstListen(
+            currentTime: currentTime
+        ) {
+            UserDefaults.standard.set(
+                true,
+                forKey: "youtube.didCompleteFirstListen"
+            )
+        }
+
+        guard let cache = YouTubeCacheProvider.shared,
+              let transcriptKey = youtubeTranscriptCacheKey else { return }
+        let duration = audio.duration > 0.01 ? audio.duration : segment.duration
+        guard duration > 0.01 else { return }
+        guard let playbackPosition = YouTubeParagraphProgressContract.position(
+            in: segmentsByParagraph[currentParagraphIndex] ?? [segment],
+            currentSegmentID: segment.id,
+            currentTime: currentTime,
+            currentSegmentDuration: duration
+        ) else { return }
+
+        let now = Date()
+        let segmentChanged = lastYouTubeProgressSegmentID != segment.id
+        let elapsed = lastYouTubeProgressWriteAt.map { now.timeIntervalSince($0) }
+            ?? .greatestFiniteMagnitude
+        guard force || segmentChanged || elapsed >= 1 else { return }
+        lastYouTubeProgressSegmentID = segment.id
+        lastYouTubeProgressWriteAt = now
+        Task {
+            try? await cache.saveProgress(
+                paragraphIndex: segment.paragraphIndex,
+                segmentId: segment.id,
+                segmentIndex: segment.segmentIndex,
+                fractionalProgress: playbackPosition.segmentFraction,
+                paragraphFractionalProgress: playbackPosition.paragraphFraction,
+                for: transcriptKey
+            )
+        }
+        persistYouTubeHistorySummary(
+            paragraphFraction: playbackPosition.paragraphFraction,
+            now: now,
+            force: force || segmentChanged
+        )
+
+    }
+
+    private func persistYouTubeHistorySummary(
+        paragraphFraction: Double,
+        now: Date,
+        force: Bool
+    ) {
+        guard document.sourceKind == .youtube,
+              let position = readableIndices.firstIndex(of: currentParagraphIndex),
+              !readableIndices.isEmpty,
+              let paragraph = paras.first(where: { $0.id == currentParagraphIndex }) else {
+            return
+        }
+        let elapsed = lastYouTubeHistoryProgressWriteAt.map {
+            now.timeIntervalSince($0)
+        } ?? .greatestFiniteMagnitude
+        guard force || elapsed >= 5 else { return }
+        lastYouTubeHistoryProgressWriteAt = now
+        let completed = Double(position) + min(1, max(0, paragraphFraction))
+        let overall = min(1, max(0, completed / Double(readableIndices.count)))
+        HistoryStore.shared.updateYouTubeListeningSummary(
+            documentID: document.id,
+            durationMs: document.youtubeTranscript?.metadata.durationMs,
+            resumeStartMs: paragraph.startMs ?? 0,
+            progressFraction: overall
+        )
     }
 
     private func signalPageBoundaryIfNeeded(_ time: Double) {
@@ -2384,7 +3104,8 @@ final class ReadAloudViewModel: ObservableObject {
         ocrWordIndexes = OCRWordAligner.mapTimestampWords(
             in: document.paragraphs[currentParagraphIndex],
             segments: segs,
-            allowFallback: allowFallback
+            allowFallback: allowFallback,
+            allowBoundedFallback: document.sourceKind == .kindle
         )
         ocrAlignedPara = currentParagraphIndex
         ocrAlignedSegCount = segs.count
@@ -2392,11 +3113,20 @@ final class ReadAloudViewModel: ObservableObject {
         let hit = ocrWordIndexes.compactMap { $0 }.count
         let total = ocrWordIndexes.count
         if total > 0 {
+            let firstMapped = ocrWordIndexes.firstIndex(where: { $0 != nil })
+            let mapped = ocrWordIndexes.compactMap { $0 }
             NSLog("CRDBG ocr align para=%d hit=%d/%d mode=%@",
                   currentParagraphIndex,
                   hit,
                   total,
                   allowFallback ? "fallback" : "strict")
+            if document.sourceKind == .kindle {
+                KindleRunLog.write(
+                    "KINDLE_ALIGN p=\(currentParagraphIndex) total=\(total) hit=\(hit) " +
+                    "prefixMiss=\(firstMapped ?? total) first=\(firstMapped.flatMap { ocrWordIndexes[$0] } ?? -1) " +
+                    "monotonic=\(mapped == mapped.sorted() ? "Y" : "N")"
+                )
+            }
         }
         #endif
     }
@@ -2680,9 +3410,15 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func analyticsEventContext(readSessionID: String?) -> AnalyticsEventContext {
-        AnalyticsEventContext(
+        let surface: String
+        switch document.sourceKind {
+        case .kindle: surface = "kindle_reader"
+        case .youtube: surface = "youtube_transcript"
+        default: surface = "reader"
+        }
+        return AnalyticsEventContext(
             productArea: .readAloud,
-            surface: document.sourceKind == .kindle ? "kindle_reader" : "reader",
+            surface: surface,
             entryPoint: analyticsContext.entryPoint,
             contentSessionId: analyticsContext.contentSessionId,
             readSessionId: readSessionID
@@ -2709,11 +3445,22 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func accountListen(_ t: Double) {
         guard let seg = audio.currentSegment else { return }
+        guard YouTubePersistentAudioQuotaPolicy.shouldAccount(
+            sourceKind: document.sourceKind,
+            persistentCacheHit: youtubeQuotaExemptParagraphs.contains(seg.paragraphIndex)
+        ) else {
+            // `accountListen` only retains billable segments. Crossing into a
+            // persisted YouTube paragraph therefore flushes the previous
+            // billable delta once, then leaves replay entirely unmetered.
+            if !lastSegmentId.isEmpty { commitListen() }
+            return
+        }
         if seg.id == lastSegmentId {
             if t > lastSegmentMaxTime { lastSegmentMaxTime = t }
         } else {
             commitListen()
             lastSegmentId = seg.id
+            lastSegmentBaselineTime = 0
             lastSegmentMaxTime = t
         }
         // 宽限硬上限：超额后继续播放累计，超过 graceCap 强制停止
@@ -2722,6 +3469,13 @@ final class ReadAloudViewModel: ObservableObject {
                 refreshAccessThenHandleListenCap()
             }
         }
+    }
+
+    private func primeListenAccounting(segmentID: String, position: Double) {
+        commitListen()
+        lastSegmentId = segmentID
+        lastSegmentBaselineTime = max(0, position)
+        lastSegmentMaxTime = max(0, position)
     }
 
     private func refreshAccessThenHandleListenCap() {
@@ -2747,12 +3501,18 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func commitListen() {
-        guard lastSegmentMaxTime > 0 else { return }
-        let delta = lastSegmentMaxTime
+        let delta = max(0, lastSegmentMaxTime - lastSegmentBaselineTime)
+        guard delta > 0 else {
+            lastSegmentBaselineTime = 0
+            lastSegmentMaxTime = 0
+            lastSegmentId = ""
+            return
+        }
         if !pro.isPro && quota.listenRemaining <= 0 {
             graceSeconds += delta
         }
         quota.addListen(delta)
+        lastSegmentBaselineTime = 0
         lastSegmentMaxTime = 0
         lastSegmentId = ""
     }

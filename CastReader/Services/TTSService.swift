@@ -46,6 +46,7 @@ actor TTSService {
         voice: String? = nil,
         speed: Double = Constants.TTS.defaultSpeed,
         language: String = Constants.TTS.defaultLanguage,
+        includeVoiceCode: Bool = true,
         onSegmentReady: @escaping (AudioSegment) async -> Void
     ) async throws {
         try Task.checkCancellation()
@@ -68,6 +69,7 @@ actor TTSService {
             voice: resolvedVoice,
             speed: speed,
             language: language,
+            includeVoiceCode: includeVoiceCode,
             onSegmentReady: onSegmentReady
         )
     }
@@ -82,7 +84,8 @@ actor TTSService {
         text: String,
         voice: String? = nil,
         speed: Double = Constants.TTS.defaultSpeed,
-        language: String = Constants.TTS.defaultLanguage
+        language: String = Constants.TTS.defaultLanguage,
+        includeVoiceCode: Bool = true
     ) async throws -> [AudioSegment] {
         var segmentIndex = 0
         var segments: [AudioSegment] = []
@@ -103,7 +106,8 @@ actor TTSService {
                     text: remainingText,
                     voice: resolvedVoice,
                     speed: speed,
-                    language: language
+                    language: language,
+                    includeVoiceCode: includeVoiceCode
                 )
                 try Task.checkCancellation()
                 guard let audioData = Data(base64Encoded: response.audio) else {
@@ -142,6 +146,7 @@ actor TTSService {
         voice: String,
         speed: Double,
         language: String,
+        includeVoiceCode: Bool,
         onSegmentReady: @escaping (AudioSegment) async -> Void
     ) async throws {
         guard currentRequestId == requestId else {
@@ -167,7 +172,8 @@ actor TTSService {
                     text: remainingText,
                     voice: voice,
                     speed: speed,
-                    language: language
+                    language: language,
+                    includeVoiceCode: includeVoiceCode
                 )
 
                 try Task.checkCancellation()

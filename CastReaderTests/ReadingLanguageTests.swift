@@ -376,6 +376,23 @@ final class ReadingLanguageTests: XCTestCase {
                 "\(path) must let read-aloud correct its reading language"
             )
         }
+
+        // Checking the whole Kindle file used to false-pass because the outer
+        // playback bar owned the correction while the console dropped it before
+        // constructing the actual voice button. Assert the concrete handoff.
+        let kindle = sources["CastReader/Views/Kindle/KindleBookView.swift"]!
+        guard let consoleStart = kindle.range(of: "private struct KindlePlaybackConsole"),
+              let explainStart = kindle.range(
+                of: "private struct KindleExplainPlaybackBar",
+                range: consoleStart.upperBound..<kindle.endIndex
+              ) else {
+            return XCTFail("Expected Kindle playback console source boundaries")
+        }
+        let console = String(kindle[consoleStart.lowerBound..<explainStart.lowerBound])
+        XCTAssertTrue(
+            console.contains("onCorrectReadingLanguage: onCorrectReadingLanguage"),
+            "KindlePlaybackConsole must forward reading-language correction to PlaybackVoiceButton"
+        )
     }
 
     // MARK: - Searching the panel
@@ -494,6 +511,76 @@ final class ReadingLanguageTests: XCTestCase {
         // Reopening the same book starts in the corrected language, not in whatever
         // the document or the first page says.
         XCTAssertEqual(ReadAloudViewModel(document: document).playbackLanguage, "it")
+    }
+
+    /// A YouTube video can expose several caption tracks. Language corrections
+    /// belong to the selected transcript session, never to the video as a whole:
+    /// otherwise correcting one bad track can silently relabel a later official
+    /// English track as Chinese.
+    @MainActor
+    func testYouTubeCorrectionUsesCaptionSessionAndIgnoresLegacyVideoOverride() {
+        let token = UUID().uuidString
+        let documentID = "youtube-video-\(token)"
+        let englishSession = "youtube-track-en-\(token)"
+        let alternateSession = "youtube-track-alt-\(token)"
+        let legacyVideoKey = ReadingLanguageStore.contentKey(
+            namespace: ReadingSourceKind.youtube.rawValue,
+            bookID: documentID
+        )
+        let englishSessionKey = ReadingLanguageStore.contentKey(
+            namespace: ReadingSourceKind.youtube.rawValue,
+            bookID: englishSession
+        )
+        let alternateSessionKey = ReadingLanguageStore.contentKey(
+            namespace: ReadingSourceKind.youtube.rawValue,
+            bookID: alternateSession
+        )
+        defer {
+            ReadingLanguageStore.shared.clearOverride(for: legacyVideoKey)
+            ReadingLanguageStore.shared.clearOverride(for: englishSessionKey)
+            ReadingLanguageStore.shared.clearOverride(for: alternateSessionKey)
+        }
+
+        ReadingLanguageStore.shared.setOverride("zh", for: legacyVideoKey)
+
+        func document(contentSessionKey: String) -> ReadingDocument {
+            ReadingDocument(
+                id: documentID,
+                title: "Caption session",
+                sourceKind: .youtube,
+                language: "en",
+                paragraphs: [
+                    ReadingParagraph(id: 0, text: englishControl, type: .paragraph),
+                ],
+                contentSessionKey: contentSessionKey
+            )
+        }
+
+        let firstOpen = ReadAloudViewModel(
+            document: document(contentSessionKey: englishSession)
+        )
+        XCTAssertEqual(firstOpen.readingLanguageContentKey, englishSessionKey)
+        XCTAssertEqual(
+            firstOpen.playbackLanguage,
+            "en",
+            "a legacy video-level override must never leak into a caption session"
+        )
+
+        firstOpen.correctReadingLanguage("zh")
+        XCTAssertEqual(ReadingLanguageStore.shared.override(for: englishSessionKey), "zh")
+        XCTAssertEqual(
+            ReadAloudViewModel(
+                document: document(contentSessionKey: englishSession)
+            ).playbackLanguage,
+            "zh"
+        )
+        XCTAssertEqual(
+            ReadAloudViewModel(
+                document: document(contentSessionKey: alternateSession)
+            ).playbackLanguage,
+            "en",
+            "another caption session for the same video must remain independent"
+        )
     }
 
     /// Kindle builds a fresh document per page, so its book identity arrives with
