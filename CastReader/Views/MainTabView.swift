@@ -1400,7 +1400,7 @@ struct MainTabView: View {
         switch failure.recovery {
         case .reconnect(let forceAccountSelection):
             importRouter.reconnectCloud(
-                failure.record.origin?.provider ?? .googleDrive,
+                failure.record.origin?.provider ?? .unavailableA,
                 forceAccountSelection: forceAccountSelection,
                 expectedAccount: failure.record.origin.map {
                     CloudAccount(

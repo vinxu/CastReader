@@ -87,7 +87,7 @@ struct LibraryView: View {
                     Button(CloudLocalized("连接云盘")) {
                         cloudFailure = nil
                         importRouter.reconnectCloud(
-                            failure.record.origin?.provider ?? .googleDrive,
+                            failure.record.origin?.provider ?? .unavailableA,
                             forceAccountSelection: forceAccountSelection,
                             expectedAccount: failure.record.origin.map {
                                 CloudAccount(

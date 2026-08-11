@@ -12,17 +12,15 @@ import Foundation
 // MARK: - Provider and capability
 
 enum CloudProviderID: String, Codable, CaseIterable, Identifiable, Sendable {
-    case googleDrive = "google_drive"
-    case dropbox
-    case oneDrive = "onedrive"
+    case unavailableA = "unavailable_a"
+    case unavailableB = "unavailable_b"
+    case unavailableC = "unavailable_c"
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .googleDrive: return "Google Drive"
-        case .dropbox: return "Dropbox"
-        case .oneDrive: return "Microsoft OneDrive"
+        case .unavailableA, .unavailableB, .unavailableC: return "Unavailable"
         }
     }
 }
