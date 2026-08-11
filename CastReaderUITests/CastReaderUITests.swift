@@ -1208,9 +1208,8 @@ class CastReaderUITests: XCTestCase {
         }
     }
 
-    /// 内部调试开关仍可恢复三家云盘入口，便于审核通过后继续回归。
-    /// 不进入 OAuth/隐私系统页，避免外部页面让这个入口测试超时。
-    func testCloudProvidersAndPrivacyDisclosureAppearInPlusFlow() {
+    /// App Store 发布包必须保持云盘入口关闭；历史调试参数也不能重新开启。
+    func testCloudProvidersStayExcludedEvenWithLegacyDebugArgument() {
         let app = XCUIApplication()
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
@@ -1235,17 +1234,14 @@ class CastReaderUITests: XCTestCase {
             "cloudProvider.dropbox",
             "cloudProvider.onedrive",
         ]
-        for _ in 0..<4 where !providerIDs.allSatisfy({ app.descendants(matching: .any)[$0].exists }) {
-            importOptions.swipeUp()
-        }
         for providerID in providerIDs {
-            XCTAssertTrue(
-                app.descendants(matching: .any)[providerID].waitForExistence(timeout: 3),
-                "➕ 缺少云盘入口：\(providerID)"
+            XCTAssertFalse(
+                app.descendants(matching: .any)[providerID].exists,
+                "发布配置不应被调试参数重新开启：\(providerID)"
             )
         }
 
-        XCTAssertTrue(app.staticTexts["云端文件"].exists)
+        XCTAssertFalse(app.staticTexts["云端文件"].exists)
     }
 
     /// 统一书架来源页承载所有商业阅读平台，新增平台不再挤占首页。
