@@ -1,6 +1,6 @@
-# CastReader · App Store Metadata · 1.2.15
+# CastReader · App Store Metadata · 1.2.20
 
-This file is the complete, machine-consumable metadata source for the 1.2.15 release. Each locale contains exactly six `text` blocks in this order: name, subtitle, promotional text, keywords, description, and What's New.
+This file is the complete, machine-consumable metadata source for the 1.2.20 release. Each locale contains exactly six `text` blocks in this order: name, subtitle, promotional text, keywords, description, and What's New. The 1.2.20 copy introduces Listen to YouTube as a transcript-reading feature: users explicitly paste or share a public video link, CastReader reads an available public transcript with its own TTS, and availability depends on public captions and region. The copy does not claim YouTube audio/video playback, downloading, saving, conversion, or offline YouTube media.
 
 ## English (U.S.) — `en-US`
 
@@ -19,19 +19,22 @@ Text to Speech for PDF & Web
 ### Promotional Text
 
 ```text
-Try Pro free for 7 days. Turn photos, web pages, PDFs, and books into natural speech with synced highlighting — or let AI explain them with handwritten-style notes.
+New: Listen to YouTube. Paste or share a public video link, then hear its available transcript with CastReader voices, synced highlighting, and automatic scrolling.
 ```
 
 ### Keywords
 
 ```text
-tts,listen,audiobook,voice,reader,ocr,scan,epub,ebook,article,dyslexia,adhd,study,document
+tts,video,caption,transcript,subtitle,voice,reader,ocr,scan,pdf,epub,article,dyslexia,study
 ```
 
 ### Description
 
 ```text
 CastReader turns any text into something you can hear and understand.
+
+LISTEN TO YOUTUBE — HEAR PUBLIC TRANSCRIPTS
+Paste or share a public YouTube video link. When a public transcript is available, CastReader reads the caption text aloud with its own voices, synchronized highlighting, and automatic scrolling. CastReader does not play, download, save, or convert the original video or audio. Availability depends on the video’s public captions and your region.
 
 READ ALOUD — STAY FOCUSED
 Turn photos, web pages, PDFs, EPUBs, documents, and books into natural speech. Synchronized highlighting and automatic scrolling keep your eyes and ears on the same sentence while you study, commute, exercise, or rest your eyes.
@@ -72,10 +75,9 @@ Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/st
 ### What’s New
 
 ```text
-• Added Google Play Books and Kobo connections: sync your library, then listen to or explain books page by page.
-• Added O’Reilly Learning, including supported institution and library access: sync eligible books from reading history, then listen to or explain long chapters.
-• Kindle now lets you choose your regional website instead of always opening the U.S. site.
-• Unified automatic and manual page turns, previous/next-page controls, cover artwork and lock-screen playback; improved dark mode, localization and stability.
+• Added Listen to YouTube: paste or share a public video link to hear an available public transcript with CastReader TTS, synchronized highlighting, and automatic scrolling.
+• Voice choices now stay locked to your selection until you change them.
+• Faster transcript detection, clearer no-transcript feedback, better language selection, and more complete end-of-line highlighting.
 ```
 
 ## 简体中文 — `zh-Hans`
@@ -95,19 +97,22 @@ PDF·网页·电子书·拍照转语音
 ### 推广文本
 
 ```text
-Pro 现可免费试用 7 天。拍照、网页、PDF、电子书一键朗读，同步高亮跟读；AI 还能讲解原文并绘制手写标注。九种语言界面与语音。
+新功能：听 YouTube。粘贴或分享公开视频链接，即可用 CastReader 自有语音朗读可用字幕稿，并同步高亮、自动滚动。功能取决于公开视频字幕与地区。
 ```
 
 ### 关键词
 
 ```text
-听书,文字转语音,英语听力,有声书,网页阅读,文档,学习,无障碍
+视频字幕,字幕朗读,转录稿,文字转语音,英语听力,网页阅读,文档朗读,有声书
 ```
 
 ### 描述
 
 ```text
 CastReader 把任何文字变成「能听，也能懂」的内容。
+
+听 YOUTUBE —— 朗读公开字幕稿
+粘贴或分享公开 YouTube 视频链接。视频提供公开字幕稿时，CastReader 会使用自己的语音朗读字幕文字，并同步高亮、自动滚动。CastReader 不播放、下载、保存或转换视频的音视频内容。功能可用性取决于公开视频字幕与所在地区。
 
 朗读 —— 让注意力跟上声音
 拍照、网页、PDF、EPUB、文档和电子书都能转换成自然语音。同步高亮配合自动滚动，让眼睛与耳朵停留在同一句话上。学习、通勤、运动、做家务或需要护眼时，都能继续阅读。
@@ -148,10 +153,9 @@ CASTREADER PRO
 ### 此版本更新
 
 ```text
-• 新增 Google Play 图书和 Kobo 连接：同步书架后，可逐页朗读或解读书籍。
-• 新增 O’Reilly Learning 连接，支持符合条件的机构和图书馆访问：可从阅读历史同步书籍，并朗读或解读长章节。
-• Kindle 现在支持选择所在地区站点，不再固定进入美国站。
-• 统一自动与手动翻页、上一页/下一页、封面与锁屏播放，并优化深色模式、多语言显示和稳定性。
+• 新增“听 YouTube”：粘贴或分享公开视频链接，使用 CastReader 自有语音朗读可用的公开字幕稿，并同步高亮、自动滚动。
+• 音色选择现在会保持锁定，只有主动更换时才会改变。
+• 加快字幕稿解析与无字幕反馈，并优化字幕语言判断和句末高亮。
 ```
 
 ## 日本語 — `ja`
@@ -171,19 +175,22 @@ PDF・Web・本を音声で聴く
 ### プロモーションテキスト
 
 ```text
-Proが7日間無料に。写真、Web、PDF、電子書籍を自然な音声で読み上げ、同期ハイライトで集中。AI解説は原文に手書き風の注釈を表示します。
+新機能「YouTube を聴く」。公開動画のリンクを貼り付けるか共有すると、利用可能な字幕をCastReaderの音声で読み上げ、同期ハイライトと自動スクロールで追えます。
 ```
 
 ### キーワード
 
 ```text
-読み上げ,朗読,音声合成,電子書籍,学習,OCR,PDF,TTS
+動画字幕,字幕読み上げ,文字起こし,音声朗読,電子書籍,語学学習,OCR,PDF
 ```
 
 ### 説明
 
 ```text
 CastReaderは、あらゆる文章を「聞ける・理解できる」コンテンツに変えます。
+
+YOUTUBEを聴く — 公開字幕を読み上げ
+公開YouTube動画のリンクを貼り付けるか共有してください。公開字幕がある場合、CastReaderの音声で字幕テキストを読み上げ、同期ハイライトと自動スクロールで追えます。CastReaderは動画や音声を再生、ダウンロード、保存、変換しません。利用可否は公開字幕と地域によって異なります。
 
 読み上げ — 音声と一緒に集中
 写真、Webページ、PDF、EPUB、文書、電子書籍を自然な音声で読み上げます。同期ハイライトと自動スクロールで、目と耳が同じ文章を追い続けます。
@@ -224,10 +231,9 @@ CASTREADER PRO
 ### 新機能
 
 ```text
-• Google Play ブックスとKoboの連携に対応。ライブラリを同期し、ページごとに読み上げ・AI解説できます。
-• O’Reilly Learningを追加。対象の機関・図書館アクセスにも対応し、読書履歴から対象書籍を同期して長い章を読み上げ・解説できます。
-• Kindleは米国サイト固定ではなく、利用地域のサイトを選べるようになりました。
-• 自動・手動ページ送り、前後ページ操作、表紙とロック画面再生を統一し、ダークモード、多言語表示、安定性を改善しました。
+• 「YouTube を聴く」を追加。公開動画リンクを貼り付けるか共有すると、利用可能な公開字幕をCastReaderの音声で読み上げ、同期ハイライトと自動スクロールで追えます。
+• 選択した音声は、自分で変更するまで固定されるようになりました。
+• 字幕の検出速度、字幕がない場合の案内、言語判定、文末のハイライトを改善しました。
 ```
 
 ## Español (España) — `es-ES`
@@ -247,19 +253,22 @@ Escucha PDF, web y libros
 ### Texto promocional
 
 ```text
-Prueba Pro gratis 7 días. Convierte fotos, webs, PDF y libros en voz natural con resaltado sincronizado, o deja que la IA explique el original con notas manuscritas.
+Nuevo: Escucha YouTube. Pega o comparte un enlace de video público y oye la transcripción disponible con voces de CastReader y resaltado sincronizado.
 ```
 
 ### Palabras clave
 
 ```text
-tts,ocr,leer,lector,audiolibro,ebook,epub,estudio,resumen,dislexia,documentos,escanear
+video,subtítulos,transcripción,leer,voz,lector,ocr,pdf,epub,estudio,dislexia,documentos
 ```
 
 ### Descripción
 
 ```text
 CastReader convierte cualquier texto en contenido que puedes escuchar y comprender.
+
+ESCUCHA YOUTUBE — TRANSCRIPCIONES PÚBLICAS
+Pega o comparte el enlace de un video público de YouTube. Si hay una transcripción pública, CastReader lee el texto de los subtítulos con sus propias voces, resaltado sincronizado y desplazamiento automático. CastReader no reproduce, descarga, guarda ni convierte el audio o video original. La disponibilidad depende de los subtítulos públicos y de la región.
 
 LECTURA EN VOZ ALTA — MANTÉN LA CONCENTRACIÓN
 Convierte fotos, páginas web, PDF, EPUB, documentos y libros en voz natural. El resaltado sincronizado y el desplazamiento automático mantienen tus ojos y oídos en la misma frase mientras estudias, viajas o descansas la vista.
@@ -300,10 +309,9 @@ Términos de uso (EULA): https://www.apple.com/legal/internet-services/itunes/de
 ### Novedades
 
 ```text
-• Añadimos conexiones con Google Play Libros y Kobo: sincroniza tu biblioteca y escucha o pide explicaciones página a página.
-• Añadimos O’Reilly Learning, incluido el acceso compatible de instituciones y bibliotecas: sincroniza libros compatibles desde el historial y escucha o explica capítulos largos.
-• Kindle ahora permite elegir el sitio de tu región en lugar de abrir siempre el de EE. UU.
-• Unificamos el cambio automático y manual de página, los controles anterior/siguiente, las portadas y la reproducción en la pantalla bloqueada; además, mejoramos el modo oscuro, las traducciones y la estabilidad.
+• Añadimos Escucha YouTube: pega o comparte el enlace de un video público para oír la transcripción pública disponible con voces de CastReader, resaltado sincronizado y desplazamiento automático.
+• La voz elegida permanece fija hasta que la cambies.
+• Detección de transcripciones más rápida, avisos más claros cuando no hay una disponible y mejoras de idioma y resaltado al final de cada línea.
 ```
 
 ## Français — `fr-FR`
@@ -323,19 +331,22 @@ CastReader : Lecture vocale IA
 ### Texte promotionnel
 
 ```text
-Essayez Pro gratuitement 7 jours. Photos, pages web, PDF et livres lus à voix haute avec surlignage synchronisé — ou expliqués par l’IA avec des notes manuscrites.
+Nouveau : Écouter YouTube. Collez ou partagez un lien vidéo public et écoutez la transcription disponible avec les voix de CastReader et le surlignage synchronisé.
 ```
 
 ### Mots-clés
 
 ```text
-tts,ocr,lire,lecteur,voix,livre audio,ebook,epub,étude,résumé,dyslexie,document
+vidéo,sous-titres,transcription,lire,voix,lecteur,ocr,pdf,epub,étude,dyslexie,document
 ```
 
 ### Description
 
 ```text
 CastReader transforme n’importe quel texte en contenu à écouter et à comprendre.
+
+ÉCOUTER YOUTUBE — TRANSCRIPTIONS PUBLIQUES
+Collez ou partagez le lien d’une vidéo YouTube publique. Si une transcription publique est disponible, CastReader lit le texte des sous-titres avec ses propres voix, un surlignage synchronisé et le défilement automatique. CastReader ne diffuse, ne télécharge, n’enregistre ni ne convertit les flux audio ou vidéo d’origine. La disponibilité dépend des sous-titres publics et de la région.
 
 LECTURE À VOIX HAUTE — RESTEZ CONCENTRÉ
 Transformez photos, pages web, PDF, EPUB, documents et livres en voix naturelle. Le surlignage synchronisé et le défilement automatique permettent à vos yeux et à vos oreilles de suivre la même phrase pendant vos études, vos trajets ou lorsque vous reposez vos yeux.
@@ -376,10 +387,9 @@ Conditions d’utilisation (EULA) : https://www.apple.com/legal/internet-service
 ### Nouveautés
 
 ```text
-• Connexion à Google Play Livres et Kobo : synchronisez votre bibliothèque, puis écoutez ou faites expliquer vos livres page par page.
-• Ajout d’O’Reilly Learning, y compris les accès admissibles d’institutions et de bibliothèques : synchronisez les livres disponibles depuis l’historique, puis écoutez ou faites expliquer les longs chapitres.
-• Kindle permet désormais de choisir le site de votre région au lieu d’ouvrir systématiquement le site américain.
-• Unification du changement de page automatique et manuel, des commandes page précédente/suivante, des couvertures et de la lecture sur l’écran verrouillé ; amélioration du mode sombre, des traductions et de la stabilité.
+• Ajout d’Écouter YouTube : collez ou partagez le lien d’une vidéo publique pour écouter la transcription publique disponible avec les voix de CastReader, le surlignage synchronisé et le défilement automatique.
+• La voix choisie reste verrouillée jusqu’à ce que vous la changiez.
+• Détection plus rapide des transcriptions, message plus clair lorsqu’elles sont indisponibles, et amélioration de la langue et du surlignage en fin de ligne.
 ```
 
 ## Português (Brasil) — `pt-BR`
@@ -399,19 +409,22 @@ Ouvir PDF, web e livros
 ### Texto promocional
 
 ```text
-Experimente o Pro grátis por 7 dias. Fotos, páginas, PDFs e livros em voz natural com destaque sincronizado — ou explicados pela IA com notas à mão.
+Novo: Ouça YouTube. Cole ou compartilhe o link de um vídeo público e ouça a transcrição disponível com vozes do CastReader e destaque sincronizado.
 ```
 
 ### Palavras-chave
 
 ```text
-tts,ocr,ler,leitor,audiolivro,ebook,epub,estudo,resumo,dislexia,documentos,escanear
+vídeo,legendas,transcrição,ler,voz,leitor,ocr,pdf,epub,estudo,dislexia,documentos
 ```
 
 ### Descrição
 
 ```text
 O CastReader transforma qualquer texto em conteúdo que você pode ouvir e entender.
+
+OUÇA YOUTUBE — TRANSCRIÇÕES PÚBLICAS
+Cole ou compartilhe o link de um vídeo público do YouTube. Quando houver uma transcrição pública, o CastReader lê o texto das legendas com vozes próprias, destaque sincronizado e rolagem automática. O CastReader não reproduz, baixa, salva nem converte o áudio ou vídeo original. A disponibilidade depende das legendas públicas e da região.
 
 LEITURA EM VOZ ALTA — MANTENHA O FOCO
 Transforme fotos, páginas da web, PDFs, EPUBs, documentos e livros em voz natural. O destaque sincronizado e a rolagem automática mantêm seus olhos e ouvidos na mesma frase enquanto você estuda, se desloca ou descansa a visão.
@@ -452,10 +465,9 @@ Termos de Uso (EULA): https://www.apple.com/legal/internet-services/itunes/dev/s
 ### Novidades
 
 ```text
-• Adicionamos conexões com Google Play Livros e Kobo: sincronize sua biblioteca e ouça ou explique os livros página por página.
-• Adicionamos o O’Reilly Learning, inclusive acessos qualificados de instituições e bibliotecas: sincronize livros disponíveis pelo histórico e ouça ou explique capítulos longos.
-• O Kindle agora permite escolher o site da sua região, em vez de abrir sempre o site dos EUA.
-• Unificamos a troca automática e manual de páginas, os controles de página anterior/seguinte, capas e reprodução na tela bloqueada; também melhoramos modo escuro, traduções e estabilidade.
+• Adicionamos Ouça YouTube: cole ou compartilhe o link de um vídeo público para ouvir a transcrição pública disponível com vozes do CastReader, destaque sincronizado e rolagem automática.
+• A voz escolhida permanece fixada até você alterá-la.
+• Detecção de transcrição mais rápida, aviso mais claro quando não há uma disponível e melhorias no idioma e no destaque do fim das linhas.
 ```
 
 ## Italiano — `it`
@@ -475,19 +487,22 @@ Ascolta PDF, web e libri
 ### Testo promozionale
 
 ```text
-Prova Pro gratis per 7 giorni. Foto, pagine web, PDF e libri letti con voce naturale ed evidenziazione sincronizzata, o spiegati dall’IA con note a mano.
+Novità: Ascolta YouTube. Incolla o condividi un link video pubblico e ascolta la trascrizione disponibile con le voci di CastReader e l’evidenziazione sincronizzata.
 ```
 
 ### Parole chiave
 
 ```text
-tts,ocr,leggere,lettore,audiolibro,ebook,epub,studio,riassunto,dislessia,documenti,voce
+video,sottotitoli,trascrizione,leggere,voce,lettore,ocr,pdf,epub,studio,dislessia
 ```
 
 ### Descrizione
 
 ```text
 CastReader trasforma qualsiasi testo in contenuto da ascoltare e comprendere.
+
+ASCOLTA YOUTUBE — TRASCRIZIONI PUBBLICHE
+Incolla o condividi il link di un video pubblico di YouTube. Se è disponibile una trascrizione pubblica, CastReader legge il testo dei sottotitoli con le proprie voci, l’evidenziazione sincronizzata e lo scorrimento automatico. CastReader non riproduce, scarica, salva né converte l’audio o il video originale. La disponibilità dipende dai sottotitoli pubblici e dall’area geografica.
 
 LETTURA AD ALTA VOCE — RESTA CONCENTRATO
 Trasforma foto, pagine web, PDF, EPUB, documenti e libri in una voce naturale. L’evidenziazione sincronizzata e lo scorrimento automatico mantengono occhi e orecchie sulla stessa frase mentre studi, viaggi o riposi la vista.
@@ -528,10 +543,9 @@ Termini di utilizzo (EULA): https://www.apple.com/legal/internet-services/itunes
 ### Novità
 
 ```text
-• Aggiunti i collegamenti a Google Play Libri e Kobo: sincronizza la libreria, quindi ascolta o fai spiegare i libri pagina per pagina.
-• Aggiunto O’Reilly Learning, inclusi gli accessi idonei di enti e biblioteche: sincronizza i libri disponibili dalla cronologia, quindi ascolta o fai spiegare i capitoli lunghi.
-• Kindle ora consente di scegliere il sito della propria area geografica invece di aprire sempre quello statunitense.
-• Unificati cambio pagina automatico e manuale, comandi pagina precedente/successiva, copertine e riproduzione nella schermata di blocco; migliorati anche modalità scura, traduzioni e stabilità.
+• Aggiunto Ascolta YouTube: incolla o condividi il link di un video pubblico per ascoltare la trascrizione pubblica disponibile con le voci di CastReader, evidenziazione sincronizzata e scorrimento automatico.
+• La voce scelta rimane bloccata finché non la cambi.
+• Rilevamento delle trascrizioni più rapido, messaggi più chiari quando non sono disponibili e miglioramenti alla lingua e all’evidenziazione a fine riga.
 ```
 
 ## हिन्दी — `hi`
@@ -551,19 +565,22 @@ CastReader: सुनें और समझें
 ### प्रचार टेक्स्ट
 
 ```text
-Pro 7 दिन मुफ़्त आज़माएँ। फ़ोटो, वेब पेज, PDF और किताबें प्राकृतिक आवाज़ में सुनें, सिंक हाइलाइट के साथ — या AI से हस्तलिखित नोट्स के साथ समझें।
+नया: YouTube सुनें। सार्वजनिक वीडियो लिंक पेस्ट या शेयर करें और उपलब्ध ट्रांसक्रिप्ट को CastReader की आवाज़ों व सिंक हाइलाइट के साथ सुनें।
 ```
 
 ### कीवर्ड
 
 ```text
-टीटीएस,ओसीआर,PDF,सुनना,किताब,वेब,ebook,study
+video,caption,transcript,subtitle,listen,टीटीएस,ओसीआर,pdf,ebook
 ```
 
 ### विवरण
 
 ```text
 CastReader किसी भी टेक्स्ट को ऐसी सामग्री में बदलता है जिसे आप सुन और समझ सकते हैं।
+
+YOUTUBE सुनें — सार्वजनिक ट्रांसक्रिप्ट
+किसी सार्वजनिक YouTube वीडियो का लिंक पेस्ट या शेयर करें। सार्वजनिक ट्रांसक्रिप्ट उपलब्ध होने पर CastReader अपनी आवाज़ों, सिंक हाइलाइट और ऑटो-स्क्रॉल के साथ कैप्शन टेक्स्ट पढ़ता है। CastReader मूल वीडियो या ऑडियो को चलाता, डाउनलोड, सेव या कन्वर्ट नहीं करता। उपलब्धता सार्वजनिक कैप्शन और आपके क्षेत्र पर निर्भर करती है।
 
 ज़ोर से पढ़ें — ध्यान बनाए रखें
 फ़ोटो, वेब पेज, PDF, EPUB, दस्तावेज़ और किताबें प्राकृतिक आवाज़ में सुनें। सिंक्रोनाइज़्ड हाइलाइट और ऑटो-स्क्रॉल आपकी आंखों और कानों को एक ही वाक्य पर रखते हैं—चाहे आप पढ़ाई कर रहे हों, यात्रा में हों या आंखों को आराम दे रहे हों।
@@ -604,10 +621,9 @@ CastReader का हर दिन मुफ़्त उपयोग करे�
 ### नया क्या है
 
 ```text
-• Google Play Books और Kobo कनेक्शन जोड़े गए: अपनी लाइब्रेरी सिंक करें और किताबों को पेज-दर-पेज सुनें या AI से समझें।
-• O’Reilly Learning जोड़ा गया, जिसमें योग्य संस्था और लाइब्रेरी एक्सेस शामिल है: पढ़ने के इतिहास से उपलब्ध किताबें सिंक करें और लंबे अध्याय सुनें या समझें।
-• Kindle में अब अमेरिकी साइट के बजाय अपने क्षेत्र की साइट चुनी जा सकती है।
-• अपने-आप और मैन्युअल पेज बदलना, पिछला/अगला पेज, कवर और लॉक-स्क्रीन प्लेबैक एक जैसे किए गए; डार्क मोड, अनुवाद और स्थिरता भी बेहतर हुई।
+• YouTube सुनें जोड़ा: सार्वजनिक वीडियो लिंक पेस्ट या शेयर करें और उपलब्ध सार्वजनिक ट्रांसक्रिप्ट को CastReader की आवाज़ों, सिंक हाइलाइट और ऑटो-स्क्रॉल के साथ सुनें।
+• चुनी गई आवाज़ तब तक लॉक रहती है, जब तक आप उसे बदलें।
+• ट्रांसक्रिप्ट की तेज़ पहचान, उपलब्ध न होने पर साफ़ संदेश, बेहतर भाषा चयन और पंक्ति के अंत तक हाइलाइट।
 ```
 
 ## Deutsch — `de-DE`
@@ -627,19 +643,22 @@ PDF, Web & Bücher anhören
 ### Werbetext
 
 ```text
-Pro 7 Tage gratis testen. Fotos, Webseiten, PDFs und Bücher natürlich vorlesen lassen – mit synchroner Hervorhebung, oder von der KI mit Notizen erklärt.
+Neu: YouTube anhören. Füge den Link zu einem öffentlichen Video ein oder teile ihn und höre das verfügbare Transkript mit CastReader-Stimmen und synchroner Hervorhebung.
 ```
 
 ### Keywords
 
 ```text
-tts,ocr,sprachausgabe,hörbuch,ebook,epub,lernen,studium,zusammenfassung,dokument
+video,untertitel,transkript,vorlesen,stimme,ocr,pdf,epub,lernen,hörbuch,dokument
 ```
 
 ### Beschreibung
 
 ```text
 CastReader macht aus jedem Text etwas, das du hören und verstehen kannst.
+
+YOUTUBE ANHÖREN — ÖFFENTLICHE TRANSKRIPTE
+Füge den Link zu einem öffentlichen YouTube-Video ein oder teile ihn. Ist ein öffentliches Transkript verfügbar, liest CastReader den Untertiteltext mit eigenen Stimmen, synchroner Hervorhebung und automatischem Scrollen vor. CastReader spielt das Originalvideo oder -audio nicht ab und lädt es weder herunter noch speichert oder konvertiert es. Die Verfügbarkeit hängt von öffentlichen Untertiteln und der Region ab.
 
 VORLESEN — KONZENTRIERT BLEIBEN
 Verwandle Fotos, Webseiten, PDFs, EPUBs, Dokumente und Bücher in natürliche Sprache. Synchrone Hervorhebung und automatisches Scrollen halten Augen und Ohren im selben Satz – beim Lernen, Pendeln oder wenn du deine Augen schonen willst.
@@ -680,10 +699,9 @@ Nutzungsbedingungen (EULA): https://www.apple.com/legal/internet-services/itunes
 ### Neu in dieser Version
 
 ```text
-• Neu: Verbindungen zu Google Play Books und Kobo. Bibliothek synchronisieren und Bücher Seite für Seite vorlesen oder erklären lassen.
-• Neu: O’Reilly Learning einschließlich berechtigter Institutions- und Bibliothekszugänge. Verfügbare Bücher aus dem Leseverlauf synchronisieren und lange Kapitel anhören oder erklären lassen.
-• Bei Kindle lässt sich jetzt die Website der eigenen Region auswählen, statt immer die US-Seite zu öffnen.
-• Automatischer und manueller Seitenwechsel, Vor-/Zurück-Steuerung, Cover und Sperrbildschirm-Wiedergabe wurden vereinheitlicht; Dunkelmodus, Übersetzungen und Stabilität wurden verbessert.
+• Neu: YouTube anhören. Füge einen öffentlichen Videolink ein oder teile ihn und höre das verfügbare öffentliche Transkript mit CastReader-Stimmen, synchroner Hervorhebung und automatischem Scrollen.
+• Die gewählte Stimme bleibt eingestellt, bis du sie selbst änderst.
+• Schnellere Transkripterkennung, klarere Hinweise bei fehlendem Transkript sowie bessere Sprachwahl und Hervorhebung am Zeilenende.
 ```
 
 ## 繁體中文 — `zh-Hant`
@@ -703,19 +721,22 @@ PDF·網頁·電子書·拍照轉語音
 ### 推廣文字
 
 ```text
-Pro 現可免費試用 7 天。拍照、網頁、PDF、電子書一鍵朗讀，同步高亮跟讀；AI 還能講解原文並繪製手寫標註。九種語言介面與語音。
+新功能：聽 YouTube。貼上或分享公開影片連結，即可用 CastReader 自有語音朗讀可用逐字稿，並同步高亮、自動捲動。功能取決於公開字幕與所在地區。
 ```
 
 ### 關鍵詞
 
 ```text
-聽書,文字轉語音,英語聽力,有聲書,網頁閱讀,文件,學習
+影片字幕,字幕朗讀,逐字稿,文字轉語音,英語聽力,網頁閱讀,文件朗讀,有聲書
 ```
 
 ### 描述
 
 ```text
 CastReader 把任何文字變成「能聽，也能懂」的內容。
+
+聽 YOUTUBE —— 朗讀公開逐字稿
+貼上或分享公開 YouTube 影片連結。影片提供公開逐字稿時，CastReader 會使用自己的語音朗讀字幕文字，並同步高亮、自動捲動。CastReader 不播放、下載、儲存或轉換影片的影音內容。功能可用性取決於公開字幕與所在地區。
 
 朗讀 —— 讓注意力跟上聲音
 拍照、網頁、PDF、EPUB、文件和電子書都能轉換成自然語音。同步高亮配合自動捲動，讓眼睛與耳朵停在同一句話上。學習、通勤、運動、做家事或需要護眼時，都能繼續閱讀。
@@ -756,10 +777,9 @@ CASTREADER PRO
 ### 此版本更新
 
 ```text
-• 新增 Google Play 圖書與 Kobo 連接：同步書架後，可逐頁朗讀或解讀書籍。
-• 新增 O’Reilly Learning 連接，支援符合條件的機構和圖書館存取：可從閱讀記錄同步書籍，並朗讀或解讀長章節。
-• Kindle 現在支援選擇所在地區站點，不再固定進入美國站。
-• 統一自動與手動翻頁、上一頁/下一頁、封面與鎖定畫面播放，並改善深色模式、多語言顯示和穩定性。
+• 新增「聽 YouTube」：貼上或分享公開影片連結，使用 CastReader 自有語音朗讀可用的公開逐字稿，並同步高亮、自動捲動。
+• 音色選擇現在會保持鎖定，只有主動更換時才會改變。
+• 加快逐字稿解析與無字幕回饋，並改善字幕語言判斷和句末高亮。
 ```
 
 ## Español (México) — `es-MX`
@@ -779,19 +799,22 @@ Escucha PDF, web y libros
 ### Texto promocional
 
 ```text
-Prueba Pro gratis 7 días. Convierte fotos, webs, PDF y libros en voz natural con resaltado sincronizado, o deja que la IA explique el original con notas manuscritas.
+Nuevo: Escucha YouTube. Pega o comparte un enlace de video público y oye la transcripción disponible con voces de CastReader y resaltado sincronizado.
 ```
 
 ### Palabras clave
 
 ```text
-summary,summarizer,textbook,paper,notes,narrator,speak,news,homework,lecture
+video,subtítulos,transcripción,leer,voz,lector,ocr,pdf,epub,estudio,dislexia,documentos
 ```
 
 ### Descripción
 
 ```text
 CastReader convierte cualquier texto en contenido que puedes escuchar y comprender.
+
+ESCUCHA YOUTUBE — TRANSCRIPCIONES PÚBLICAS
+Pega o comparte el enlace de un video público de YouTube. Si hay una transcripción pública, CastReader lee el texto de los subtítulos con sus propias voces, resaltado sincronizado y desplazamiento automático. CastReader no reproduce, descarga, guarda ni convierte el audio o video original. La disponibilidad depende de los subtítulos públicos y de la región.
 
 LECTURA EN VOZ ALTA — MANTÉN LA CONCENTRACIÓN
 Convierte fotos, páginas web, PDF, EPUB, documentos y libros en voz natural. El resaltado sincronizado y el desplazamiento automático mantienen tus ojos y oídos en la misma frase mientras estudias, te trasladas o descansas la vista.
@@ -832,8 +855,7 @@ Términos de uso (EULA): https://www.apple.com/legal/internet-services/itunes/de
 ### Novedades
 
 ```text
-• Añadimos conexiones con Google Play Libros y Kobo: sincroniza tu biblioteca y escucha o pide explicaciones página por página.
-• Añadimos O’Reilly Learning, incluido el acceso compatible de instituciones y bibliotecas: sincroniza libros compatibles desde el historial y escucha o explica capítulos largos.
-• Kindle ahora permite elegir el sitio de tu región en lugar de abrir siempre el de EE. UU.
-• Unificamos el cambio automático y manual de página, los controles anterior/siguiente, las portadas y la reproducción en la pantalla bloqueada; además, mejoramos el modo oscuro, las traducciones y la estabilidad.
+• Agregamos Escucha YouTube: pega o comparte el enlace de un video público para oír la transcripción pública disponible con voces de CastReader, resaltado sincronizado y desplazamiento automático.
+• La voz elegida permanece fija hasta que la cambies.
+• Detección de transcripciones más rápida, avisos más claros cuando no hay una disponible y mejoras de idioma y resaltado al final de cada línea.
 ```

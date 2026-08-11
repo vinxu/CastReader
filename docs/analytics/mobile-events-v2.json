@@ -22,8 +22,8 @@
   ],
   "value_domains": {
     "clientVariant": ["app_store", "testflight", "internal", "internal_debug", "simulator", "google_play"],
-    "contentSource": ["camera", "photo_library", "file", "url", "text", "clipboard", "share_sheet", "system", "history", "kindle", "weread", "google_books", "kobo", "oreilly", "unknown"],
-    "contentFormat": ["photo", "pdf", "epub", "docx", "text", "web", "kindle", "weread", "google_books", "kobo", "oreilly", "unknown"],
+    "contentSource": ["camera", "photo_library", "file", "url", "text", "clipboard", "share_sheet", "system", "history", "kindle", "weread", "google_books", "kobo", "oreilly", "google_drive", "dropbox", "onedrive", "youtube_ios", "youtube_android", "unknown"],
+    "contentFormat": ["photo", "pdf", "epub", "docx", "text", "web", "kindle", "weread", "google_books", "kobo", "oreilly", "youtube", "unknown"],
     "storefront": ["us", "uk", "ca", "au", "jp", "de", "fr", "it", "es", "in", "br", "mx", "nl"],
     "librarySource": ["kindle", "weread", "google_books", "kobo", "oreilly"],
     "libraryConnectionStage": ["entry_tapped", "connection_presented", "login_started", "login_succeeded", "sync_started", "sync_completed", "cancelled", "failed"],
@@ -81,6 +81,48 @@
       "product_area": "reader",
       "required_properties": ["contentSource", "contentFormat", "result", "errorStage", "errorCode"],
       "optional_properties": ["latencyMs", "storefront"]
+    },
+    {
+      "name": "yt_share_received",
+      "legacy_event": "yt_share_received",
+      "product_area": "reader",
+      "required_properties": ["entry"],
+      "optional_properties": []
+    },
+    {
+      "name": "yt_home_view",
+      "legacy_event": "yt_home_view",
+      "product_area": "reader",
+      "required_properties": ["firstTime"],
+      "optional_properties": []
+    },
+    {
+      "name": "yt_extract_done",
+      "legacy_event": "yt_extract_done",
+      "product_area": "reader",
+      "required_properties": ["cueCount", "paragraphCount", "language", "elapsedMs"],
+      "optional_properties": ["warmSession"]
+    },
+    {
+      "name": "yt_extract_fail",
+      "legacy_event": "yt_extract_fail",
+      "product_area": "reader",
+      "required_properties": ["reason"],
+      "optional_properties": []
+    },
+    {
+      "name": "yt_caption_language_open",
+      "legacy_event": "yt_caption_language_open",
+      "product_area": "reader",
+      "required_properties": ["trackCount"],
+      "optional_properties": ["playableTrackCount"]
+    },
+    {
+      "name": "yt_caption_language_switch",
+      "legacy_event": "yt_caption_language_switch",
+      "product_area": "reader",
+      "required_properties": ["fromLanguage", "toLanguage", "kind"],
+      "optional_properties": ["cacheHit", "elapsedMs"]
     },
     {
       "name": "read_start",
