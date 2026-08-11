@@ -44,14 +44,6 @@
 	<string>$(QUICKREAD_API_KEY)</string>
 	<key>CastReaderPrivateKeychainAccessGroup</key>
 	<string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>GoogleDriveClientID</key>
-	<string>$(GOOGLE_DRIVE_CLIENT_ID)</string>
-	<key>GoogleDriveRedirectScheme</key>
-	<string>$(GOOGLE_DRIVE_REDIRECT_SCHEME)</string>
-	<key>DropboxAppKey</key>
-	<string>$(DROPBOX_APP_KEY)</string>
-	<key>MicrosoftClientID</key>
-	<string>$(MICROSOFT_CLIENT_ID)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -62,37 +54,9 @@
 				<string>castreader</string>
 			</array>
 		</dict>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>ai.castreader.google-drive</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>$(GOOGLE_DRIVE_REDIRECT_SCHEME)</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>ai.castreader.dropbox</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>db-$(DROPBOX_APP_KEY)</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>ai.castreader.microsoft</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>msauth.com.same.castreader</string>
-			</array>
-		</dict>
 	</array>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
-		<string>dbapi-8-emm</string>
-		<string>dbapi-2</string>
-		<string>msauthv2</string>
-		<string>msauthv3</string>
 		<string>youtube</string>
 	</array>
 	<key>UIBackgroundModes</key>
