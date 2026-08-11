@@ -897,11 +897,70 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
         }
         guard let url = navigationAction.request.url,
               Self.allowedTopLevelURL(url) != nil else {
-            errorText = AppLocalized("内容暂时无法打开，请重试")
+            reportBlockedTopLevelNavigation(navigationAction.request.url)
+            // Google may finish 2FA on a short-lived hop outside our allowlist.
+            // By this point its session cookies are already stored, so returning
+            // to the shelf is safer than leaving the user on a dead continuation.
+            if navigationAction.targetFrame?.isMainFrame == true,
+               consumeBindingBlockRescue() {
+                errorText = nil
+                Task { [weak webView] in
+                    webView?.load(URLRequest(url: GoogleBooksWebScripts.shelfURL))
+                }
+            } else {
+                errorText = AppLocalized("内容暂时无法打开，请重试")
+            }
             decisionHandler(.cancel)
             return
         }
         decisionHandler(.allow)
+    }
+
+    /// Only one recovery navigation may be issued per eight-second window.
+    private var lastBindingBlockRescueAt: TimeInterval = -.infinity
+
+    func consumeBindingBlockRescue(
+        now: TimeInterval = ProcessInfo.processInfo.systemUptime
+    ) -> Bool {
+        guard now - lastBindingBlockRescueAt >= 8 else { return false }
+        lastBindingBlockRescueAt = now
+        return true
+    }
+
+    /// Report URL shape only. Query values can contain account data and must
+    /// never enter analytics.
+    private func reportBlockedTopLevelNavigation(_ url: URL?) {
+        ProductAnalytics.shared.track(
+            .contentFailed,
+            context: AnalyticsEventContext(
+                productArea: .reader,
+                surface: "google_books_binding",
+                entryPoint: analyticsSession.entryPoint
+            ),
+            properties: AnalyticsProperties(
+                contentSource: AnalyticsContentSource.googleBooks.rawValue,
+                contentFormat: AnalyticsContentFormat.googleBooks.rawValue,
+                result: AnalyticsResult.blocked.rawValue,
+                errorStage: "blocked_main_navigation",
+                errorCode: Self.blockedNavigationShape(url)
+            )
+        )
+    }
+
+    static func blockedNavigationShape(_ url: URL?) -> String {
+        guard let url,
+              let components = URLComponents(
+                url: url,
+                resolvingAgainstBaseURL: false
+              ) else {
+            return "unparseable"
+        }
+        let names = (components.queryItems ?? [])
+            .map(\.name)
+            .sorted()
+            .joined(separator: ",")
+            .prefix(120)
+        return "\(components.host ?? "")\(components.path)?[\(names)]"
     }
 
     func webView(
@@ -1304,8 +1363,9 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
     /// can stall on a visually blank document, so treat the trusted
     /// Play-Books continuation itself as success evidence and reload the shelf
     /// from the shared authenticated data store.
-    private static func isShelfRecoveryDestination(_ url: URL) -> Bool {
+    static func isShelfRecoveryDestination(_ url: URL) -> Bool {
         if isPlayBooksDestination(url) { return true }
+        if isGoogleLandingDestination(url) { return true }
         guard url.scheme?.lowercased() == "https",
               url.host?.lowercased() == "accounts.google.com",
               url.path.lowercased() == "/checkcookie",
@@ -1319,6 +1379,15 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
             return false
         }
         return isPlayBooksDestination(continueURL)
+            || isGoogleLandingDestination(continueURL)
+    }
+
+    /// Google can route the post-2FA continuation through this landing page
+    /// before returning to Play Books. Treat it as authenticated shelf evidence.
+    private static func isGoogleLandingDestination(_ url: URL) -> Bool {
+        guard url.scheme?.lowercased() == "https",
+              url.host?.lowercased() == "gds.google.com" else { return false }
+        return url.path.lowercased().hasPrefix("/web/landing")
     }
 
     private static func isBlankDocument(_ url: URL?) -> Bool {

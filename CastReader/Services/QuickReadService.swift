@@ -20,8 +20,29 @@ enum QuickReadEndpoint {
 
     /// 当前 base：远程配置缓存优先，否则兜底。
     static func base() -> String {
-        if let s = UserDefaults.standard.string(forKey: cacheKey), s.hasPrefix("http") { return s }
+        if let cached = UserDefaults.standard.string(forKey: cacheKey),
+           let secureBase = normalizedSecureBase(cached) {
+            return secureBase
+        }
         return defaultBase
+    }
+
+    /// Cloud-derived text may contain private document content. Remote
+    /// failover must therefore never weaken transport security, even if a
+    /// stale or malformed configuration value has already been cached.
+    static func normalizedSecureBase(_ rawValue: String) -> String? {
+        var raw = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        while raw.hasSuffix("/") { raw.removeLast() }
+        guard let components = URLComponents(string: raw),
+              components.scheme?.lowercased() == "https",
+              components.host?.isEmpty == false,
+              components.user == nil,
+              components.password == nil,
+              components.query == nil,
+              components.fragment == nil else {
+            return nil
+        }
+        return raw
     }
 
     static var planURL: String         { "\(base())/api/quickread/extract-plan" }   // SSE
@@ -37,8 +58,9 @@ enum QuickReadEndpoint {
             req.timeoutInterval = 4
             let (data, _) = try await URLSession.shared.data(for: req)
             if let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let b = obj["base"] as? String, b.hasPrefix("http") {
-                UserDefaults.standard.set(b, forKey: cacheKey)
+               let rawBase = obj["base"] as? String,
+               let secureBase = normalizedSecureBase(rawBase) {
+                UserDefaults.standard.set(secureBase, forKey: cacheKey)
             }
         } catch {
             // 保留缓存 / 兜底
@@ -96,10 +118,23 @@ enum QuickReadSSEErrorMapper {
 
 actor QuickReadService {
     static let shared = QuickReadService()
-    private init() {}
+
+    private init() {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 90
+        configuration.timeoutIntervalForResource = 120
+        self.session = URLSession(configuration: configuration)
+    }
+
+    /// Test-only dependency seam used by transport-boundary contract tests.
+    /// Production continues to use `shared` and the default pinned timeouts.
+    init(session: URLSession) {
+        self.session = session
+    }
 
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private let session: URLSession
 
     private func debugLog(_ message: String) {
         #if DEBUG
@@ -211,13 +246,6 @@ actor QuickReadService {
         }
         return errorPreview(data)
     }
-
-    private lazy var session: URLSession = {
-        let cfg = URLSessionConfiguration.default
-        cfg.timeoutIntervalForRequest = 90
-        cfg.timeoutIntervalForResource = 120
-        return URLSession(configuration: cfg)
-    }()
 
     // MARK: - 重试（网络波动 / 后端瞬时错误自愈，指数退避）
 

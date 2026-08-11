@@ -23,6 +23,7 @@ enum ReadingSourceKind: String, Equatable, Codable {
     case docx    // 本地 DOCX：WKWebView 内 mammoth.js 转 HTML 渲染（不上传后端），复用 web 的高亮/标注/提取链路
     case pdf     // 本地 PDF：PDFKit 原生 PDFView 渲染（保排版不重排），朗读高亮用 characterBounds overlay
     case epub    // 本地 EPUB：ZIPFoundation 解包 + SwiftSoup 抽段落（含内嵌图片字节），原生 TextReaderView 渲染（不上传、不走 WebView）
+    case youtube // YouTube 公开字幕稿：原生字幕视图 + CastReader 自有 TTS（不播放/下载视频音频流）
 }
 
 extension ReadingSourceKind {
@@ -41,7 +42,7 @@ extension ReadingSourceKind {
     }
 
     /// 原生文本渲染源（重排文本 / EPUB）：走 TextReaderView，朗读词/句高亮统一用 processedDisplayText 内字符范围。
-    var isNativeTextRendered: Bool { self == .text || self == .epub }
+    var isNativeTextRendered: Bool { self == .text || self == .epub || self == .youtube }
 
     /// OCR 图片几何源：用每个词的 Vision bbox 在原图上叠加高亮/mark。
     var isOCRImageRendered: Bool { self == .photo || self == .kindle }
@@ -98,12 +99,13 @@ struct ReadingParagraph: Identifiable, Equatable {
     var pdfRange: NSRange? = nil // 仅 pdf：该句在该页 string 内的字符范围（PDFKit characterBounds 高亮用）
     var pageIndex: Int? = nil    // 仅 kindle：该 OCR 段落所属的 Kindle 渲染页
     var imageData: Data? = nil   // 仅 epub：内嵌图片字节（PNG/JPEG），type==.image 时直接渲染
+    var startMs: Int? = nil      // 仅 youtube：字幕段在原视频中的跳转锚（不用于 TTS 同步）
 
     init(id: Int, text: String, type: ReadingParagraphType = .paragraph,
          words: [OCRWord] = [], bboxNorm: CGRect? = nil,
          visualFragments: [OCRVisualFragment] = [],
          pdfPageIndex: Int? = nil, pdfRange: NSRange? = nil, pageIndex: Int? = nil,
-         imageData: Data? = nil) {
+         imageData: Data? = nil, startMs: Int? = nil) {
         self.id = id
         self.text = text
         self.type = type
@@ -114,6 +116,7 @@ struct ReadingParagraph: Identifiable, Equatable {
         self.pdfRange = pdfRange
         self.pageIndex = pageIndex
         self.imageData = imageData
+        self.startMs = startMs
     }
 }
 
@@ -130,6 +133,19 @@ struct ReadingDocument: Identifiable, Equatable {
     var sourceURL: String? = nil         // 上传得到的 COS URL；纯拍摄为 synthetic
     var coverURL: String? = nil          // 绑定书库封面；Mini Player / 锁屏共用
     var fileData: Data? = nil            // 仅 docx：原始文件字节，交 WebView 内 mammoth 本地渲染
+    /// 云盘来源只保存可重新获取的远端引用，不包含 OAuth token 或文件字节。
+    var origin: CloudDocumentOrigin? = nil
+    /// 本地导入保持原有 payload 持久化；云盘导入只留远端引用。
+    var persistencePolicy: DocumentPersistencePolicy = .localPayload
+    /// 实际交给解析器的格式（Google 原生文档可与原始 MIME 不同）。
+    var effectiveFormat: SupportedDocumentFormat? = nil
+    var exportFormat: CloudExportFormat? = nil
+    /// 下载完成时服务端返回的最终修订号。
+    var contentRevision: String? = nil
+    /// 内容会话身份：本地文档等于 id；云盘文档随 revision / 导出格式变化。
+    var contentSessionKey: String
+    var youtubeTranscript: YouTubeTranscriptDocument? = nil // 仅 youtube：字幕、元数据与画面锚
+    var youtubeCacheHit: Bool = false     // 仅用于当前会话的离线/缓存徽标
     /// 仅 photo/kindle：版面分析判定的栏数。多栏说明这一页可能有不止一篇文章，
     /// 用来决定要不要问用户「只读其中一块」。
     var layoutColumnCount: Int? = nil
@@ -145,6 +161,14 @@ struct ReadingDocument: Identifiable, Equatable {
          sourceURL: String? = nil,
          coverURL: String? = nil,
          fileData: Data? = nil,
+         origin: CloudDocumentOrigin? = nil,
+         persistencePolicy: DocumentPersistencePolicy? = nil,
+         effectiveFormat: SupportedDocumentFormat? = nil,
+         exportFormat: CloudExportFormat? = nil,
+         contentRevision: String? = nil,
+         contentSessionKey: String? = nil,
+         youtubeTranscript: YouTubeTranscriptDocument? = nil,
+         youtubeCacheHit: Bool = false,
          layoutColumnCount: Int? = nil,
          createdAt: Date = Date()) {
         self.id = id
@@ -157,6 +181,18 @@ struct ReadingDocument: Identifiable, Equatable {
         self.sourceURL = sourceURL
         self.coverURL = coverURL
         self.fileData = fileData
+        self.origin = origin
+        // A provider origin is a hard privacy boundary: callers cannot
+        // accidentally turn an ephemeral cloud download into History payload.
+        self.persistencePolicy = origin == nil
+            ? (persistencePolicy ?? .localPayload)
+            : .remoteReference
+        self.effectiveFormat = effectiveFormat
+        self.exportFormat = exportFormat
+        self.contentRevision = contentRevision
+        self.contentSessionKey = contentSessionKey ?? id
+        self.youtubeTranscript = youtubeTranscript
+        self.youtubeCacheHit = youtubeCacheHit
         self.layoutColumnCount = layoutColumnCount
         self.createdAt = createdAt
     }

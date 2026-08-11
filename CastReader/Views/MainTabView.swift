@@ -92,9 +92,11 @@ struct MainTabView: View {
     @StateObject private var importRouter = ImportRouter()
     @StateObject private var voiceCloneAccess = VoiceCloneAccessCoordinator.shared
     @StateObject private var playbackVoicePanel = PlaybackVoicePanelCenter.shared
+    @StateObject private var captionLanguageSwitcher = YouTubeCaptionLanguageSwitcher.shared
     @StateObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
     @StateObject private var reviewPrompt = AppReviewPromptManager.shared
     @StateObject private var studyBoostRouter = StudyBoostRouter.shared
+    @StateObject private var youtubeRouteCenter = YouTubeRouteCenter.shared
     @ObservedObject private var audioPlayer = AudioPlayerService.shared
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.requestReview) private var requestReview
@@ -110,10 +112,21 @@ struct MainTabView: View {
     @State private var pendingLibraryOnboardingAction: LibraryOnboardingPostDismissAction?
     @State private var reviewRequestTask: Task<Void, Never>?
     @State private var systemActionTask: Task<Void, Never>?
+    @State private var systemActionNotice: String?
+    @State private var systemCloudFailure: CloudHistoryFailurePresentation?
+    @State private var systemCloudFailureMode: CastReaderIntentMode = .read
     @State private var libraryConnectionPresentationTask: Task<Void, Never>?
     @State private var activeLibraryConnection: LibraryConnectionRoute?
     @State private var pendingLibraryConnection: LibraryConnectionRoute?
     @State private var homeBlocksReviewPresentation = false
+    @State private var youtubeExtractionPresentation: YouTubeExtractionPresentation?
+    @State private var youtubeExtractionTask: Task<Void, Never>?
+    @State private var youtubePresentationWaitTask: Task<Void, Never>?
+    @State private var activeYouTubeRequestID: UUID?
+    @State private var showYouTubeShareAha = false
+    @State private var pendingYouTubeShareAhaSessionKey: String?
+    @State private var pendingYouTubePlaybackAcceptance: YouTubeDurablePlaybackAcceptance?
+    @AppStorage("youtube.didShowShareAha") private var didShowYouTubeShareAha = false
 
     init() {
         _selectedTab = State(initialValue: 0)
@@ -130,6 +143,10 @@ struct MainTabView: View {
     }
 
     var body: some View {
+        presentationContent
+    }
+
+    private var mainContent: some View {
         ZStack(alignment: .bottom) {
             TabView(selection: $selectedTab) {
                 HomeView(
@@ -243,6 +260,38 @@ struct MainTabView: View {
                 .zIndex(200)
             }
 
+            if let youtubeExtractionPresentation {
+                YouTubeExtractionOverlay(
+                    presentation: youtubeExtractionPresentation,
+                    cancel: cancelYouTubeExtraction,
+                    retry: {
+                        beginYouTubeExtraction(
+                            youtubeExtractionPresentation.request
+                        )
+                    }
+                )
+                .transition(.opacity)
+                .zIndex(300)
+            }
+
+            if let transcript = presentedCaptionLanguageTranscript {
+                YouTubeCaptionLanguagePanelOverlay(
+                    switcher: captionLanguageSwitcher,
+                    transcript: transcript,
+                    select: switchYouTubeCaptionLanguage
+                )
+                .zIndex(310)
+            }
+
+            if let targetLanguage = captionLanguageSwitcher.phase.overlayLanguage {
+                YouTubeCaptionLanguageSwitchOverlay(
+                    targetLanguage: targetLanguage,
+                    cancel: captionLanguageSwitcher.cancel
+                )
+                .transition(.opacity)
+                .zIndex(320)
+            }
+
         }
         .coordinateSpace(name: Self.rootSpace)
         .onPreferenceChange(MiniPlayerTopKey.self) { value in
@@ -255,18 +304,44 @@ struct MainTabView: View {
         }
         .environmentObject(coordinator)
         .environmentObject(importRouter)
+        .onReceive(importRouter.$cloudReconnectRequest.compactMap { $0 }) { _ in
+            selectedTab = 0
+        }
         .toolbar(importRouter.hideMainChrome ? .hidden : .visible, for: .tabBar)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: coordinator.showsMiniPlayer)
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: kindleCenter.showsMiniPlayer)
         .animation(.spring(response: 0.32, dampingFraction: 0.9), value: importRouter.hideMainChrome)
         .animation(.spring(response: 0.34, dampingFraction: 0.9), value: playbackVoicePanel.isPresented)
         .animation(.spring(response: 0.38, dampingFraction: 0.9), value: studyBoostRouter.isPresented)
+        .animation(
+            .spring(response: 0.34, dampingFraction: 0.9),
+            value: captionLanguageSwitcher.isPickerPresented
+        )
+        .alert(
+            AppLocalized("切换字幕语言失败"),
+            isPresented: captionLanguageFailureBinding
+        ) {
+            Button(AppLocalized("好的"), role: .cancel) {
+                captionLanguageSwitcher.failureMessage = nil
+            }
+        } message: {
+            Text(captionLanguageSwitcher.failureMessage ?? "")
+        }
+    }
+
+    private var lifecycleContent: some View {
+        mainContent
         .onChange(of: scenePhase) { phase in
             if phase == .active {
                 reviewPrompt.recordActiveDay()
                 ResumeReminderManager.shared.appBecameActive()   // 取消待发召回 + 时机成熟则请求通知权限
-                let routedSystemAction = routePendingSystemActionIfAvailable()
-                if !routedSystemAction && !libraryOnboarding.isChooserPresented {
+                let routedYouTube = routePendingYouTubeIfAvailable()
+                let routedSystemAction = routedYouTube
+                    ? false
+                    : routePendingSystemActionIfAvailable()
+                if !routedYouTube,
+                   !routedSystemAction,
+                   !libraryOnboarding.isChooserPresented {
                     clipboard.check()   // 进 App / 回前台 → 探测剪贴板
                 }
                 reloadShareInbox(showWhenPending: false)
@@ -275,20 +350,24 @@ struct MainTabView: View {
         .task {
             reviewPrompt.recordActiveDay()
             reloadShareInbox(showWhenPending: false)
-            routePendingSystemActionIfAvailable()
+            if !routePendingYouTubeIfAvailable() {
+                routePendingSystemActionIfAvailable()
+            }
             restartReviewRequestMonitor()
         }
         .onChange(of: reviewOpportunityState) {
             restartReviewRequestMonitor()
         }
-        .onDisappear {
-            reviewRequestTask?.cancel()
-            reviewRequestTask = nil
-            systemActionTask?.cancel()
-            systemActionTask = nil
-            libraryConnectionPresentationTask?.cancel()
-            libraryConnectionPresentationTask = nil
+        .onChange(of: coordinator.session?.id) { sessionID in
+            guard let pending = pendingYouTubePlaybackAcceptance,
+                  pending.contentSessionKey != sessionID else { return }
+            youtubeRouteCenter.releaseWithoutAcknowledgement(pending.request)
+            pendingYouTubePlaybackAcceptance = nil
+            if pendingYouTubeShareAhaSessionKey == pending.contentSessionKey {
+                pendingYouTubeShareAhaSessionKey = nil
+            }
         }
+        .onDisappear(perform: handleMainTabDisappear)
         .onReceive(NotificationCenter.default.publisher(for: .castReaderSystemActionPending)) { _ in
             Task { @MainActor in
                 routePendingSystemActionIfAvailable()
@@ -296,6 +375,29 @@ struct MainTabView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .castReaderShareInboxChanged)) { _ in
             reloadShareInbox(showWhenPending: true)
+        }
+        .onReceive(youtubeRouteCenter.$request.compactMap { $0 }) { request in
+            guard scenePhase == .active else { return }
+            beginYouTubeExtraction(request)
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: .castReaderYouTubePlaybackConfirmed
+            )
+        ) { notification in
+            guard let sessionKey = notification.object as? String else { return }
+            if let pending = pendingYouTubePlaybackAcceptance,
+               pending.matches(sessionKey) {
+                pendingYouTubePlaybackAcceptance = nil
+                youtubeRouteCenter.acknowledge(pending.request)
+                scheduleNextPendingYouTubeHandoff()
+            }
+            if !didShowYouTubeShareAha,
+               pendingYouTubeShareAhaSessionKey == sessionKey {
+                pendingYouTubeShareAhaSessionKey = nil
+                didShowYouTubeShareAha = true
+                showYouTubeShareAha = true
+            }
         }
         .onReceive(
             NotificationCenter.default.publisher(
@@ -325,6 +427,10 @@ struct MainTabView: View {
         .onChange(of: kindleCenter.isPresented) { isPresented in
             if isPresented { coordinator.close() }
         }
+    }
+
+    private var presentationContent: some View {
+        lifecycleContent
         .sheet(item: $clipboard.detected) { kind in
             ClipboardPromptView(
                 kind: kind,
@@ -378,6 +484,78 @@ struct MainTabView: View {
             )
             .interactiveDismissDisabled()
         }
+        .alert(
+            AppLocalized("以后在 YouTube 里点分享，就能直接听字幕稿。"),
+            isPresented: $showYouTubeShareAha
+        ) {
+            Button(AppLocalized("好"), role: .cancel) {}
+        } message: {
+            Text(AppLocalized("在视频的分享面板里选择 CastReader；字幕可用时会直接进入朗读。"))
+        }
+        .alert(
+            CloudLocalized("提示"),
+            isPresented: Binding(
+                get: { systemActionNotice != nil || systemCloudFailure != nil },
+                set: {
+                    if !$0 {
+                        systemActionNotice = nil
+                        systemCloudFailure = nil
+                    }
+                }
+            )
+        ) {
+            systemActionAlertActions
+        } message: {
+            Text(systemCloudFailure?.message ?? systemActionNotice ?? "")
+        }
+    }
+
+    @ViewBuilder
+    private var systemActionAlertActions: some View {
+        if let failure = systemCloudFailure {
+            switch failure.recovery {
+            case .reconnect:
+                Button(CloudLocalized("连接账号")) {
+                    recoverSystemCloudFailure(failure)
+                }
+                Button(CloudLocalized("取消"), role: .cancel) {}
+            case .removeRecord:
+                Button(CloudLocalized("从历史记录移除"), role: .destructive) {
+                    recoverSystemCloudFailure(failure)
+                }
+                Button(CloudLocalized("取消"), role: .cancel) {}
+            case .retry:
+                Button(CloudLocalized("重试")) {
+                    recoverSystemCloudFailure(failure)
+                }
+                Button(CloudLocalized("取消"), role: .cancel) {}
+            case .dismiss:
+                Button(CloudLocalized("好"), role: .cancel) {}
+            }
+        } else {
+            Button(CloudLocalized("好"), role: .cancel) {}
+        }
+    }
+
+    private func handleMainTabDisappear() {
+        if let interruptedRequest = youtubeExtractionPresentation?.request {
+            youtubeRouteCenter.releaseWithoutAcknowledgement(interruptedRequest)
+        }
+        if let pending = pendingYouTubePlaybackAcceptance {
+            youtubeRouteCenter.releaseWithoutAcknowledgement(pending.request)
+            pendingYouTubePlaybackAcceptance = nil
+        }
+        reviewRequestTask?.cancel()
+        reviewRequestTask = nil
+        systemActionTask?.cancel()
+        systemActionTask = nil
+        libraryConnectionPresentationTask?.cancel()
+        libraryConnectionPresentationTask = nil
+        youtubeExtractionTask?.cancel()
+        youtubeExtractionTask = nil
+        youtubePresentationWaitTask?.cancel()
+        youtubePresentationWaitTask = nil
+        YouTubeTranscriptService.shared.cancel()
     }
 
     private var libraryOnboardingPresentation: Binding<Bool> {
@@ -405,7 +583,8 @@ struct MainTabView: View {
             homeIsIdle: !homeBlocksReviewPresentation
                 && !studyBoostRouter.isPresented
                 && activeLibraryConnection == nil
-                && pendingLibraryConnection == nil,
+                && pendingLibraryConnection == nil
+                && youtubeExtractionPresentation == nil,
             clipboardSheetIsHidden: clipboard.detected == nil,
             shareInboxIsHidden: !showShareInbox,
             voiceCloneSheetIsHidden: voiceCloneAccess.prompt == nil,
@@ -422,6 +601,639 @@ struct MainTabView: View {
         studyBoostRouter.dismiss()
         DispatchQueue.main.async {
             importRouter.openStudyBoostImport()
+        }
+    }
+
+    /// Consumes either an already-routed deep link or the oldest Share
+    /// Extension handoff. The App Group queue is authoritative because iOS does
+    /// not guarantee that a Share Extension can foreground its containing app.
+    @discardableResult
+    private func routePendingYouTubeIfAvailable() -> Bool {
+        guard scenePhase == .active else { return false }
+        if let request = youtubeRouteCenter.request {
+            beginYouTubeExtraction(request)
+            return true
+        }
+        guard let pending = YouTubePendingLinkStore.peekNext() else { return false }
+        return youtubeRouteCenter.open(
+            pending.rawURL,
+            entry: pending.entry,
+            pendingItemID: pending.id
+        )
+    }
+
+    private func beginYouTubeExtraction(_ request: YouTubeListenRequest) {
+        // Deep-link publishers can fire while the scene is still inactive.
+        // Leave the request unconsumed until the foreground routing pass so an
+        // extraction never starts invisibly behind system presentation.
+        guard scenePhase == .active else { return }
+        if activeYouTubeRequestID == request.id,
+           youtubeExtractionTask != nil {
+            return
+        }
+
+        // The extraction overlay lives below UIKit sheets/covers. Clear
+        // app-owned blockers, then wait for their dismissal animation before
+        // consuming the route so first-launch shares cannot autoplay invisibly.
+        selectedTab = 0
+        showShareInbox = false
+        clipboard.consume()
+        playbackVoicePanel.dismiss()
+        studyBoostRouter.dismiss()
+        voiceCloneAccess.prompt = nil
+        pendingLibraryConnection = nil
+        activeLibraryConnection = nil
+        libraryConnectionPresentationTask?.cancel()
+        libraryConnectionPresentationTask = nil
+        if libraryOnboarding.isChooserPresented {
+            pendingLibraryOnboardingAction = nil
+            libraryOnboarding.postpone()
+        }
+        if hasBlockingSystemPresentation {
+            youtubePresentationWaitTask?.cancel()
+            youtubePresentationWaitTask = Task { @MainActor in
+                while !Task.isCancelled {
+                    guard scenePhase == .active else { return }
+                    if !hasBlockingSystemPresentation,
+                       !libraryOnboarding.isChooserPresented {
+                        youtubePresentationWaitTask = nil
+                        beginYouTubeExtraction(request)
+                        return
+                    }
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                }
+            }
+            return
+        }
+        youtubePresentationWaitTask?.cancel()
+        youtubePresentationWaitTask = nil
+
+        youtubeExtractionTask?.cancel()
+        YouTubeTranscriptService.shared.cancel()
+        pendingYouTubeShareAhaSessionKey = nil
+        activeYouTubeRequestID = request.id
+        youtubeExtractionPresentation = .loading(request)
+        youtubeRouteCenter.consume(request.id)
+        if request.entry != .history {
+            ProductAnalytics.shared.track(
+                .youtubeShareReceived,
+                context: AnalyticsEventContext(
+                    productArea: .reader,
+                    surface: "youtube_entry",
+                    entryPoint: "youtube_\(request.entry.rawValue)"
+                ),
+                properties: .init(entry: request.entry.rawValue)
+            )
+        }
+
+        let analyticsContext = ProductAnalytics.shared.beginContentIntent(
+            source: .youtubeIOS,
+            format: .youtube,
+            entryPoint: "youtube_\(request.entry.rawValue)",
+            intendedMode: "read"
+        )
+        let startedAt = Date()
+
+        youtubeExtractionTask = Task { @MainActor in
+            do {
+                // Fresh TTS starts only after the final paragraph/resume target
+                // is known. ReadAloudViewModel already streams its first audio
+                // segment immediately; an off-player full-paragraph prewarm
+                // delayed first sound and could probe the wrong resume paragraph.
+                let result = try await resolveYouTubeTranscript(for: request)
+                try Task.checkCancellation()
+                guard activeYouTubeRequestID == request.id else { return }
+
+                if !result.cacheHit {
+                    ProductAnalytics.shared.track(
+                        .youtubeExtractDone,
+                        context: AnalyticsEventContext(
+                            productArea: .reader,
+                            surface: "youtube_extract",
+                            entryPoint: analyticsContext.entryPoint,
+                            contentSessionId: analyticsContext.contentSessionId
+                        ),
+                        properties: .init(
+                            language: result.transcript.track.languageCode,
+                            cueCount: result.transcript.cues.count,
+                            paragraphCount: result.transcript.paragraphs.count,
+                            elapsedMs: max(
+                                0,
+                                Int(Date().timeIntervalSince(startedAt) * 1_000)
+                            ),
+                            warmSession: YouTubeTranscriptService.shared
+                                .lastExtractionServedFromWarmSession
+                        )
+                    )
+                }
+
+                let document = YouTubeReadingDocumentBuilder.make(
+                    transcript: result.transcript,
+                    cacheHit: result.cacheHit
+                )
+                if let current = coordinator.session?.document,
+                   current.id == document.id,
+                   current.contentSessionKey != document.contentSessionKey {
+                    coordinator.close()
+                }
+                coordinator.open(
+                    document,
+                    mode: .read,
+                    autoplay: false,
+                    analyticsContext: analyticsContext
+                )
+                let durableAcceptance = YouTubeDurablePlaybackAcceptance(
+                    request: request,
+                    contentSessionKey: document.contentSessionKey
+                )
+                let didStart = await startYouTubePlayback(
+                    request: request,
+                    transcript: result.transcript,
+                    cacheKey: result.cacheKey,
+                    durableAcceptance: durableAcceptance
+                )
+                guard didStart else {
+                    youtubeRouteCenter.releaseWithoutAcknowledgement(request)
+                    throw CancellationError()
+                }
+                cacheYouTubeThumbnailIfNeeded(
+                    result.transcript.metadata.thumbnailURL,
+                    key: result.cacheKey
+                )
+
+                youtubeExtractionPresentation = nil
+                activeYouTubeRequestID = nil
+                youtubeExtractionTask = nil
+                if durableAcceptance == nil {
+                    youtubeRouteCenter.acknowledge(request)
+                    scheduleNextPendingYouTubeHandoff()
+                }
+            } catch is CancellationError {
+                finishCancelledYouTubeRequest(request.id)
+            } catch let failure as YouTubeTranscriptFailure {
+                handleYouTubeExtractionFailure(
+                    failure,
+                    request: request,
+                    analyticsContext: analyticsContext
+                )
+            } catch {
+                handleYouTubeExtractionFailure(
+                    .network,
+                    request: request,
+                    analyticsContext: analyticsContext
+                )
+            }
+        }
+    }
+
+    private struct YouTubeTranscriptResolution {
+        let transcript: YouTubeTranscriptDocument
+        let cacheKey: YouTubeTranscriptCacheKey
+        let cacheHit: Bool
+    }
+
+    private func resolveYouTubeTranscript(
+        for request: YouTubeListenRequest
+    ) async throws -> YouTubeTranscriptResolution {
+        let cache = YouTubeCacheProvider.shared
+        let immediate: YouTubeCachedTranscriptResolution?
+        if request.entry == .history {
+            immediate = await cache?.mostRecentTranscript(
+                videoId: request.reference.videoId
+            )
+        } else {
+            immediate = await cache?.mostRecentPreferredTranscript(
+                videoId: request.reference.videoId,
+                preferredLanguage: preferredYouTubeCaptionLanguage
+            )
+        }
+        if let immediate,
+           (try? YouTubeTranscriptContentLanguagePolicy.validatedPlaybackLanguage(
+               for: immediate.document
+           )) != nil,
+           YouTubeReadingDocumentBuilder.firstPlayableParagraph(
+               in: immediate.document
+           ) != nil {
+            let key = immediate.key
+            let transcript = immediate.document
+            return YouTubeTranscriptResolution(
+                transcript: transcript,
+                cacheKey: key,
+                cacheHit: true
+            )
+        }
+
+        let transcript: YouTubeTranscriptDocument
+        do {
+            transcript = try await YouTubeTranscriptService.shared.extract(
+                request.reference,
+                preferredLanguage: preferredYouTubeCaptionLanguage,
+                timeout: YouTubeTranscriptService.defaultExtractionTimeout
+            )
+        } catch let failure as YouTubeTranscriptFailure
+            where failure == .network || failure == .timeout
+                || failure == .captionAccess {
+            if let cachedResolution = await cache?.mostRecentTranscript(
+                videoId: request.reference.videoId
+            ),
+               (try? YouTubeTranscriptContentLanguagePolicy.validatedPlaybackLanguage(
+                   for: cachedResolution.document
+               )) != nil,
+               YouTubeReadingDocumentBuilder.firstPlayableParagraph(
+                   in: cachedResolution.document
+               ) != nil {
+                let fallbackKey = cachedResolution.key
+                let cached = cachedResolution.document
+                return YouTubeTranscriptResolution(
+                    transcript: cached,
+                    cacheKey: fallbackKey,
+                    cacheHit: true
+                )
+            }
+            throw failure
+        }
+        _ = try YouTubeTranscriptContentLanguagePolicy.validatedPlaybackLanguage(
+            for: transcript
+        )
+        guard YouTubeReadingDocumentBuilder.firstPlayableParagraph(
+            in: transcript
+        ) != nil else {
+            throw YouTubeTranscriptFailure.noCaptions
+        }
+        let key = YouTubeCacheStore.cacheKey(for: transcript)
+        if let cache = YouTubeCacheProvider.shared {
+            try? await cache.storeTranscript(transcript, for: key)
+        }
+        return YouTubeTranscriptResolution(
+            transcript: transcript,
+            cacheKey: key,
+            cacheHit: false
+        )
+    }
+
+    private var preferredYouTubeCaptionLanguage: String {
+        let selected = AppLanguageManager.shared.selectedLanguage
+        if selected == .system {
+            return Locale.preferredLanguages.first ?? "en"
+        }
+        return selected.rawValue
+    }
+
+    private func startYouTubePlayback(
+        request: YouTubeListenRequest,
+        transcript: YouTubeTranscriptDocument,
+        cacheKey: YouTubeTranscriptCacheKey,
+        durableAcceptance: YouTubeDurablePlaybackAcceptance?
+    ) async -> Bool {
+        guard let session = coordinator.session else { return false }
+        let readVM = session.readVM
+        let contentSessionKey = session.id
+
+        // History is a continuation surface: its saved progress wins over the
+        // timestamp that may have been present on the originally shared URL.
+        let explicitStart = request.entry == .history
+            ? nil
+            : request.reference.startSeconds
+        let savedProgress: YouTubePlaybackProgress?
+        if explicitStart == nil, let cache = YouTubeCacheProvider.shared {
+            // Transcript selection/store already touched this entry. Resume
+            // lookup is read-only so it does not add another atomic manifest
+            // write on the path to first audio.
+            savedProgress = await cache.peekProgress(for: cacheKey)
+        } else {
+            savedProgress = nil
+        }
+
+        let persistedHistorySummary: HistoryRecord? = {
+            guard request.entry == .history else { return nil }
+            return HistoryStore.shared.records.first { record in
+                guard record.sourceKind == .youtube,
+                      let sourceURL = record.sourceURL,
+                      let reference = YouTubeURLParser.parse(sourceURL) else {
+                    return false
+                }
+                return reference.videoId == request.reference.videoId
+            }
+        }()
+
+        let resumedParagraph = savedProgress.flatMap {
+            YouTubeReadingDocumentBuilder.resumingParagraph(
+                in: transcript,
+                progress: $0
+            )
+        }
+        let persistedHistoryIsComplete = (
+            persistedHistorySummary?.youtubeProgressFraction ?? 0
+        ) >= 0.999
+        let paragraphIndex = resumedParagraph
+            ?? YouTubeReadingDocumentBuilder.startingParagraph(
+                in: transcript,
+                startSeconds: persistedHistoryIsComplete
+                    ? nil
+                    : explicitStart ?? persistedHistorySummary?.youtubeResumeStartMs.map {
+                        $0 / 1_000
+                    }
+            )
+        let applicableProgress = savedProgress.flatMap { progress in
+            progress.paragraphIndex == paragraphIndex
+                && progress.resolvedParagraphFractionalProgress < 0.999
+                ? progress
+                : nil
+        }
+        return await beginYouTubeAudio(
+            transcript: transcript,
+            cacheKey: cacheKey,
+            paragraphIndex: paragraphIndex,
+            progress: applicableProgress,
+            readVM: readVM
+        ) {
+            armYouTubePlaybackAcceptance(
+                request: request,
+                readVM: readVM,
+                contentSessionKey: contentSessionKey,
+                durableAcceptance: durableAcceptance
+            )
+        }
+    }
+
+    /// Shared tail of every YouTube open: cached audio when the exact
+    /// transcript + voice + language triple is on disk, a fresh generation
+    /// otherwise. `acceptance` is evaluated immediately before playback so a
+    /// session that changed while the cache was read cannot be started into.
+    private func beginYouTubeAudio(
+        transcript: YouTubeTranscriptDocument,
+        cacheKey: YouTubeTranscriptCacheKey,
+        paragraphIndex: Int,
+        progress: YouTubePlaybackProgress?,
+        readVM: ReadAloudViewModel,
+        acceptance: () -> Bool
+    ) async -> Bool {
+        guard transcript.paragraphs.contains(where: { $0.id == paragraphIndex }) else {
+            guard acceptance() else { return false }
+            readVM.start()
+            return true
+        }
+
+        let playbackLanguage = readVM.playbackLanguage
+        let voice = AppSettings.shared.voice(for: playbackLanguage)
+        if let cache = YouTubeCacheProvider.shared {
+            let audioKey = YouTubeTTSAudioCacheKey(
+                transcriptFingerprint: cacheKey.transcriptFingerprint,
+                voiceCode: voice,
+                playbackLanguage: playbackLanguage,
+                schemaVersion: YouTubeTTSAudioCacheSchema.current,
+                paragraphIndex: paragraphIndex
+            )
+            if let cached = await cache.cachedAudioPlayback(
+                for: audioKey,
+                transcriptKey: cacheKey
+            ), !cached.segments.isEmpty {
+                guard acceptance() else { return false }
+                readVM.startWithCachedSegments(
+                    cached.segments,
+                    paragraphIndex: paragraphIndex,
+                    segmentID: progress?.segmentId,
+                    progress: progress?.fractionalProgress ?? 0,
+                    isReplayEligible: cached.isReplayEligible,
+                    autoplay: true
+                )
+                return true
+            }
+        }
+        guard acceptance() else { return false }
+        readVM.jump(to: paragraphIndex)
+        return true
+    }
+
+    // MARK: YouTube caption language
+
+    /// The picker is bound to the reader that is actually on screen. A session
+    /// that closed while the panel was open must not keep it alive.
+    private var presentedCaptionLanguageTranscript: YouTubeTranscriptDocument? {
+        guard let videoID = captionLanguageSwitcher.presentedPickerVideoID,
+              let document = coordinator.session?.document,
+              document.sourceKind == .youtube,
+              let transcript = document.youtubeTranscript,
+              transcript.metadata.videoId == videoID else { return nil }
+        return transcript
+    }
+
+    private var captionLanguageFailureBinding: Binding<Bool> {
+        Binding(
+            get: { captionLanguageSwitcher.failureMessage != nil },
+            set: { presented in
+                if !presented { captionLanguageSwitcher.failureMessage = nil }
+            }
+        )
+    }
+
+    private func switchYouTubeCaptionLanguage(to option: YouTubeCaptionTrackOption) {
+        guard let session = coordinator.session,
+              session.document.sourceKind == .youtube,
+              let transcript = session.document.youtubeTranscript,
+              let reference = YouTubeURLParser.parse(
+                  transcript.metadata.sourceURL
+              ) else { return }
+        let document = session.document
+
+        // Paragraph ids do not survive a track change — the new language has
+        // its own cue grouping — so the timeline position is the only anchor
+        // that carries meaning across the switch.
+        let resumeAnchorMs = document.paragraphs.first {
+            $0.id == session.readVM.currentParagraphIndex
+        }?.startMs ?? 0
+
+        ProductAnalytics.shared.track(
+            .youtubeCaptionLanguageSwitch,
+            context: AnalyticsEventContext(
+                productArea: .reader,
+                surface: "youtube_caption_language",
+                entryPoint: "youtube_reader"
+            ),
+            properties: .init(
+                fromLanguage: YouTubeTrackSelector.baseLanguage(
+                    transcript.track.languageCode
+                ),
+                toLanguage: YouTubeTrackSelector.baseLanguage(option.languageCode),
+                kind: option.isAutomatic ? "asr" : "manual"
+            )
+        )
+
+        captionLanguageSwitcher.startSwitch(
+            to: option,
+            reference: reference,
+            resumeAnchorMs: resumeAnchorMs,
+            cache: YouTubeCacheProvider.shared
+        ) { resolution in
+            await applyYouTubeCaptionLanguageSwitch(resolution)
+        }
+    }
+
+    private func applyYouTubeCaptionLanguageSwitch(
+        _ resolution: YouTubeCaptionLanguageSwitcher.Resolution
+    ) async {
+        let document = YouTubeReadingDocumentBuilder.make(
+            transcript: resolution.transcript,
+            cacheHit: resolution.cacheHit
+        )
+        // Every YouTube document for one video shares `document.id`; only the
+        // session key changes per track. Without this explicit close the
+        // coordinator would keep the old track's view model and voice.
+        if let current = coordinator.session?.document,
+           current.id == document.id,
+           coordinator.session?.id != document.contentSessionKey {
+            // Same video, different track: keep the warm document, it is what
+            // makes the *next* switch fast.
+            coordinator.close(releasingYouTubeWarmSession: false)
+        }
+        coordinator.open(document, mode: .read, autoplay: false)
+        guard let session = coordinator.session,
+              session.id == document.contentSessionKey else { return }
+
+        let paragraphIndex = YouTubeReadingDocumentBuilder.startingParagraph(
+            in: resolution.transcript,
+            startSeconds: resolution.resumeAnchorMs / 1_000
+        )
+        _ = await beginYouTubeAudio(
+            transcript: resolution.transcript,
+            cacheKey: resolution.cacheKey,
+            paragraphIndex: paragraphIndex,
+            progress: nil,
+            readVM: session.readVM
+        ) {
+            coordinator.session?.id == document.contentSessionKey
+        }
+        cacheYouTubeThumbnailIfNeeded(
+            resolution.transcript.metadata.thumbnailURL,
+            key: resolution.cacheKey
+        )
+    }
+
+    private func armYouTubePlaybackAcceptance(
+        request: YouTubeListenRequest,
+        readVM: ReadAloudViewModel,
+        contentSessionKey: String,
+        durableAcceptance: YouTubeDurablePlaybackAcceptance?
+    ) -> Bool {
+        guard !Task.isCancelled,
+              let currentSession = coordinator.session,
+              currentSession.readVM === readVM,
+              currentSession.id == contentSessionKey else { return false }
+        readVM.prepareForYouTubePlaybackAcceptanceSignal()
+        pendingYouTubePlaybackAcceptance = durableAcceptance
+        pendingYouTubeShareAhaSessionKey = request.entry == .share
+            && !didShowYouTubeShareAha
+            ? contentSessionKey
+            : nil
+        return true
+    }
+
+    private func cacheYouTubeThumbnailIfNeeded(
+        _ rawURL: String?,
+        key: YouTubeTranscriptCacheKey
+    ) {
+        guard let cache = YouTubeCacheProvider.shared,
+              let rawURL,
+              let components = URLComponents(string: rawURL),
+              components.scheme?.lowercased() == "https",
+              components.host?.isEmpty == false,
+              components.user == nil,
+              components.password == nil,
+              let url = components.url else { return }
+        Task {
+            if await cache.thumbnail(for: key) != nil { return }
+            guard let (data, response) = try? await URLSession.shared.data(from: url),
+                  let http = response as? HTTPURLResponse,
+                  (200..<300).contains(http.statusCode),
+                  !data.isEmpty,
+                  data.count <= 20 * 1_024 * 1_024 else { return }
+            try? await cache.storeThumbnail(data, for: key)
+        }
+    }
+
+    private func handleYouTubeExtractionFailure(
+        _ failure: YouTubeTranscriptFailure,
+        request: YouTubeListenRequest,
+        analyticsContext: AnalyticsContentContext
+    ) {
+        guard activeYouTubeRequestID == request.id else { return }
+        if failure == .cancelled {
+            finishCancelledYouTubeRequest(request.id)
+            return
+        }
+        ProductAnalytics.shared.contentFailed(
+            analyticsContext,
+            stage: "youtube_extract",
+            code: failure.rawValue
+        )
+        if let reason = youtubeAnalyticsFailureReason(failure) {
+            ProductAnalytics.shared.track(
+                .youtubeExtractFail,
+                context: AnalyticsEventContext(
+                    productArea: .reader,
+                    surface: "youtube_extract",
+                    entryPoint: analyticsContext.entryPoint,
+                    contentSessionId: analyticsContext.contentSessionId
+                ),
+                properties: .init(reason: reason)
+            )
+        }
+        youtubeExtractionPresentation = .failure(request, failure)
+        pendingYouTubeShareAhaSessionKey = nil
+        activeYouTubeRequestID = nil
+        youtubeExtractionTask = nil
+    }
+
+    private func youtubeAnalyticsFailureReason(
+        _ failure: YouTubeTranscriptFailure
+    ) -> String? {
+        switch failure {
+        case .noCaptions: return "no_captions"
+        case .live: return "live"
+        case .restricted: return "restricted"
+        case .unavailable, .invalidURL, .malformedResponse: return "unavailable"
+        case .captionAccess: return "caption_access"
+        case .trackUnavailable: return "track_unavailable"
+        case .timeout, .network: return "timeout"
+        case .unsupportedLanguage: return "unsupported_language"
+        case .cancelled: return nil
+        }
+    }
+
+    private func finishCancelledYouTubeRequest(_ requestID: UUID) {
+        guard activeYouTubeRequestID == requestID else { return }
+        youtubeExtractionPresentation = nil
+        activeYouTubeRequestID = nil
+        pendingYouTubeShareAhaSessionKey = nil
+        youtubeExtractionTask = nil
+    }
+
+    private func cancelYouTubeExtraction() {
+        let cancelledRequest = youtubeExtractionPresentation?.request
+        youtubeExtractionTask?.cancel()
+        youtubeExtractionTask = nil
+        YouTubeTranscriptService.shared.cancel()
+        youtubeExtractionPresentation = nil
+        activeYouTubeRequestID = nil
+        pendingYouTubeShareAhaSessionKey = nil
+        if let cancelledRequest {
+            youtubeRouteCenter.acknowledge(cancelledRequest)
+        }
+        scheduleNextPendingYouTubeHandoff()
+    }
+
+    /// Keep the App Group FIFO moving without requiring another background /
+    /// foreground cycle. Terminal failures intentionally do not call this: the
+    /// failed item stays visible until the user retries or explicitly cancels.
+    private func scheduleNextPendingYouTubeHandoff() {
+        Task { @MainActor in
+            // Let the reader cover and first-share acknowledgement alert settle
+            // before presenting the next extraction state.
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            guard scenePhase == .active,
+                  youtubeExtractionPresentation == nil,
+                  activeYouTubeRequestID == nil else { return }
+            _ = routePendingYouTubeIfAvailable()
         }
     }
 
@@ -463,6 +1275,11 @@ struct MainTabView: View {
             let value = input.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !value.isEmpty else {
                 openQuickImportFromSystemAction()
+                return
+            }
+
+            if YouTubeURLParser.parse(value) != nil {
+                _ = youtubeRouteCenter.open(value, entry: .scheme)
                 return
             }
 
@@ -516,14 +1333,56 @@ struct MainTabView: View {
                 entryPoint: "app_intent_continue",
                 intendedMode: mode == .read ? "read" : "explain"
             )
-            guard let document = await HistoryStore.shared.reopen(record) else {
-                ProductAnalytics.shared.contentFailed(
-                    analyticsContext,
-                    stage: "reopen",
-                    code: "missing_history_payload"
-                )
-                openQuickImportFromSystemAction()
-                return
+            let document: ReadingDocument
+            if record.requiresRemoteReopen {
+                guard Constants.Features.cloudStorageEnabled else {
+                    openQuickImportFromSystemAction()
+                    return
+                }
+                do {
+                    document = try await CloudHistoryReopenService().reopen(
+                        record,
+                        mode: mode,
+                        analyticsContext: analyticsContext
+                    ).document
+                } catch {
+                    ProductAnalytics.shared.contentFailed(
+                        analyticsContext,
+                        stage: "cloud_reopen",
+                        code: "cloud_history_reopen_failed"
+                    )
+                    if let failure = CloudHistoryFailurePresentation.make(
+                        record: record,
+                        error: error
+                    ) {
+                        systemCloudFailureMode = intentMode
+                        systemCloudFailure = failure
+                    }
+                    return
+                }
+            } else {
+                do {
+                    guard let reopened = try await HistoryStore.shared.reopen(record) else {
+                        ProductAnalytics.shared.contentFailed(
+                            analyticsContext,
+                            stage: "reopen",
+                            code: "missing_history_payload"
+                        )
+                        openQuickImportFromSystemAction()
+                        return
+                    }
+                    document = reopened
+                } catch is CancellationError {
+                    return
+                } catch {
+                    ProductAnalytics.shared.contentFailed(
+                        analyticsContext,
+                        stage: "reopen",
+                        code: "history_reopen_failed"
+                    )
+                    openQuickImportFromSystemAction()
+                    return
+                }
             }
             coordinator.open(
                 document,
@@ -531,6 +1390,38 @@ struct MainTabView: View {
                 autoplay: true,
                 analyticsContext: analyticsContext
             )
+        }
+    }
+
+    private func recoverSystemCloudFailure(
+        _ failure: CloudHistoryFailurePresentation
+    ) {
+        systemCloudFailure = nil
+        switch failure.recovery {
+        case .reconnect(let forceAccountSelection):
+            importRouter.reconnectCloud(
+                failure.record.origin?.provider ?? .googleDrive,
+                forceAccountSelection: forceAccountSelection,
+                expectedAccount: failure.record.origin.map {
+                    CloudAccount(
+                        provider: $0.provider,
+                        stableAccountKey: $0.accountKey,
+                        maskedEmail: $0.maskedAccountHint
+                    )
+                }
+            )
+        case .removeRecord:
+            HistoryStore.shared.delete(failure.record.id)
+        case .retry:
+            _ = SystemActionStore.shared.enqueue(
+                .continueReading(
+                    itemID: failure.record.id,
+                    mode: systemCloudFailureMode
+                )
+            )
+            _ = routePendingSystemActionIfAvailable()
+        case .dismiss:
+            break
         }
     }
 
@@ -782,6 +1673,14 @@ struct MainTabView: View {
     private func handleClipboard(_ kind: ClipboardImportViewModel.Kind, mode: ReaderMode) {
         clipboard.consume()
         guard let content = clipboard.read(kind) else { return }   // 用户确认后才读取剪贴板（系统弹一次 Allow Paste）；拒绝→nil
+        if case .url(let rawURL) = content,
+           YouTubeURLParser.parse(rawURL) != nil {
+            if mode == .explain {
+                systemActionNotice = AppLocalized("YouTube 字幕稿目前仅支持朗读，已自动切换为朗读。")
+            }
+            _ = YouTubeRouteCenter.shared.open(rawURL, entry: .clipboard)
+            return
+        }
         let format: AnalyticsContentFormat
         switch content {
         case .url: format = .web
@@ -912,7 +1811,14 @@ struct MainTabView: View {
 
         switch record.kind {
         case .url:
-            complete(record.sourceURL.flatMap(DocumentBuilder.fromWebURL))
+            if let rawURL = record.sourceURL,
+               YouTubeURLParser.parse(rawURL) != nil {
+                isImportingSharedContent = false
+                showShareInbox = false
+                _ = YouTubeRouteCenter.shared.open(rawURL, entry: .share)
+            } else {
+                complete(record.sourceURL.flatMap(DocumentBuilder.fromWebURL))
+            }
         case .text:
             guard let url = ShareInboxStore.payloadURL(for: record),
                   let data = try? Data(contentsOf: url) else { complete(nil); return }
@@ -930,30 +1836,34 @@ struct MainTabView: View {
                 text = raw
             }
             complete(DocumentBuilder.fromPlainText(text, title: record.localizedDisplayTitle))
-        case .pdf:
-            guard let url = ShareInboxStore.payloadURL(for: record),
-                  let data = try? Data(contentsOf: url) else { complete(nil); return }
-            Task { @MainActor in
-                let document = await DocumentBuilder.fromPDFWithOCR(
-                    data: data,
-                    title: record.localizedDisplayTitle,
-                    fallbackTitle: record.localizedDisplayTitle
-                )
-                complete(document)
+        case .pdf, .docx, .epub:
+            guard let url = ShareInboxStore.payloadURL(for: record) else {
+                complete(nil)
+                return
             }
-        case .docx:
-            guard let url = ShareInboxStore.payloadURL(for: record),
-                  let data = try? Data(contentsOf: url) else { complete(nil); return }
-            let title = DocumentBuilder.docxTitle(data: data) ?? record.localizedDisplayTitle
-            complete(ReadingDocument(title: title, sourceKind: .docx, paragraphs: [], fileData: data))
-        case .epub:
-            guard let url = ShareInboxStore.payloadURL(for: record),
-                  let data = try? Data(contentsOf: url) else { complete(nil); return }
-            Task {
-                let document = await Task.detached(priority: .userInitiated) {
-                    DocumentBuilder.fromEPUB(data: data, title: record.localizedDisplayTitle)
-                }.value
-                await MainActor.run { complete(document) }
+            let documentFormat: SupportedDocumentFormat = switch record.kind {
+            case .pdf: .pdf
+            case .docx: .docx
+            case .epub: .epub
+            default: .pdf
+            }
+            let displayTitle = record.localizedDisplayTitle
+            let effectiveFilename = displayTitle.lowercased().hasSuffix(".\(documentFormat.rawValue)")
+                ? displayTitle
+                : "\(displayTitle).\(documentFormat.rawValue)"
+            Task { @MainActor in
+                do {
+                    let result = try await DocumentImportPipeline().importDocument(
+                        DocumentImportRequest(
+                            localURL: url,
+                            effectiveFilename: effectiveFilename,
+                            expectedFormat: documentFormat
+                        )
+                    )
+                    complete(result.document)
+                } catch {
+                    complete(nil)
+                }
             }
         case .image:
             guard let url = ShareInboxStore.payloadURL(for: record),

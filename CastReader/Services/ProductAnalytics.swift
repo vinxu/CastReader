@@ -17,6 +17,12 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
     case contentIntent = "content_intent"
     case contentReady = "content_ready"
     case contentFailed = "content_failed"
+    case youtubeShareReceived = "yt_share_received"
+    case youtubeHomeView = "yt_home_view"
+    case youtubeExtractDone = "yt_extract_done"
+    case youtubeExtractFail = "yt_extract_fail"
+    case youtubeCaptionLanguageOpen = "yt_caption_language_open"
+    case youtubeCaptionLanguageSwitch = "yt_caption_language_switch"
     case readStart = "read_start"
     case readFirstAudio = "read_first_audio"
     case readMilestone = "read_milestone"
@@ -45,6 +51,12 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
         case .contentIntent: return "feature_use"
         case .contentReady: return "reader_file_loaded"
         case .contentFailed: return "reader_file_error"
+        case .youtubeShareReceived: return "yt_share_received"
+        case .youtubeHomeView: return "yt_home_view"
+        case .youtubeExtractDone: return "yt_extract_done"
+        case .youtubeExtractFail: return "yt_extract_fail"
+        case .youtubeCaptionLanguageOpen: return "yt_caption_language_open"
+        case .youtubeCaptionLanguageSwitch: return "yt_caption_language_switch"
         case .readStart: return "reading_start"
         case .readFirstAudio: return "perf_metric"
         case .readMilestone: return "playback_progress"
@@ -127,6 +139,10 @@ enum AnalyticsContentSource: String, Codable, CaseIterable, Sendable {
     case googleBooks = "google_books"
     case kobo
     case oreilly
+    case googleDrive = "google_drive"
+    case dropbox
+    case oneDrive = "onedrive"
+    case youtubeIOS = "youtube_ios"
     case unknown
 }
 
@@ -142,6 +158,7 @@ enum AnalyticsContentFormat: String, Codable, CaseIterable, Sendable {
     case googleBooks = "google_books"
     case kobo
     case oreilly
+    case youtube
     case unknown
 }
 
@@ -183,6 +200,19 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
     var syncState: String?
     var bookCountBucket: String?
     var transactionEnvironment: String?
+    var entry: String?
+    var firstTime: Bool?
+    var cueCount: Int?
+    var paragraphCount: Int?
+    var elapsedMs: Int?
+    var reason: String?
+    var trackCount: Int?
+    var playableTrackCount: Int?
+    var fromLanguage: String?
+    var toLanguage: String?
+    var kind: String?
+    var cacheHit: Bool?
+    var warmSession: Bool?
 
     init(
         launchType: String? = nil,
@@ -221,6 +251,19 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         syncState: String? = nil,
         bookCountBucket: String? = nil,
         transactionEnvironment: String? = nil,
+        entry: String? = nil,
+        firstTime: Bool? = nil,
+        cueCount: Int? = nil,
+        paragraphCount: Int? = nil,
+        elapsedMs: Int? = nil,
+        reason: String? = nil,
+        trackCount: Int? = nil,
+        playableTrackCount: Int? = nil,
+        fromLanguage: String? = nil,
+        toLanguage: String? = nil,
+        kind: String? = nil,
+        cacheHit: Bool? = nil,
+        warmSession: Bool? = nil,
         storefront: String? = nil
     ) {
         self.launchType = launchType
@@ -260,6 +303,19 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         self.syncState = syncState
         self.bookCountBucket = bookCountBucket
         self.transactionEnvironment = transactionEnvironment
+        self.entry = entry
+        self.firstTime = firstTime
+        self.cueCount = cueCount
+        self.paragraphCount = paragraphCount
+        self.elapsedMs = elapsedMs
+        self.reason = reason
+        self.trackCount = trackCount
+        self.playableTrackCount = playableTrackCount
+        self.fromLanguage = fromLanguage
+        self.toLanguage = toLanguage
+        self.kind = kind
+        self.cacheHit = cacheHit
+        self.warmSession = warmSession
     }
 }
 
@@ -419,6 +475,7 @@ extension AnalyticsContentSource {
         case .googleBooks: self = .googleBooks
         case .kobo: self = .kobo
         case .oreilly: self = .oreilly
+        case .youtube: self = .youtubeIOS
         default: self = .unknown
         }
     }
@@ -438,6 +495,7 @@ extension AnalyticsContentFormat {
         case .docx: self = .docx
         case .pdf: self = .pdf
         case .epub: self = .epub
+        case .youtube: self = .youtube
         }
     }
 }
@@ -512,6 +570,21 @@ enum AnalyticsSchema {
         .contentIntent: .init(required: ["contentSource", "contentFormat"], optional: ["intendedMode", "storefront"]),
         .contentReady: .init(required: ["contentSource", "contentFormat", "lengthBucket", "paragraphCountBucket"], optional: ["latencyMs", "storefront"]),
         .contentFailed: .init(required: ["contentSource", "contentFormat", "result", "errorStage", "errorCode"], optional: ["latencyMs", "storefront"]),
+        .youtubeShareReceived: .init(required: ["entry"], optional: []),
+        .youtubeHomeView: .init(required: ["firstTime"], optional: []),
+        .youtubeExtractDone: .init(
+            required: ["cueCount", "paragraphCount", "language", "elapsedMs"],
+            optional: ["warmSession"]
+        ),
+        .youtubeExtractFail: .init(required: ["reason"], optional: []),
+        .youtubeCaptionLanguageOpen: .init(
+            required: ["trackCount"],
+            optional: ["playableTrackCount"]
+        ),
+        .youtubeCaptionLanguageSwitch: .init(
+            required: ["fromLanguage", "toLanguage", "kind"],
+            optional: ["cacheHit", "elapsedMs"]
+        ),
         .readStart: .init(required: ["contentSource", "contentFormat", "language", "voiceId", "speed", "resume"], optional: ["storefront"]),
         .readFirstAudio: .init(required: ["latencyMs", "language", "voiceId"], optional: ["storefront"]),
         .readMilestone: .init(required: ["milestoneSeconds", "playbackSeconds"], optional: ["completionBucket", "storefront"]),
@@ -607,6 +680,15 @@ enum AnalyticsSchema {
         }
         if name == .contentInputStage {
             try validateContentInputStage(properties)
+            return
+        }
+        if name == .youtubeShareReceived
+            || name == .youtubeHomeView
+            || name == .youtubeExtractDone
+            || name == .youtubeExtractFail
+            || name == .youtubeCaptionLanguageOpen
+            || name == .youtubeCaptionLanguageSwitch {
+            try validateYouTubeEvent(name, properties: properties)
             return
         }
         if let transactionEnvironment = properties.transactionEnvironment,
@@ -713,6 +795,100 @@ enum AnalyticsSchema {
                 property: "errorCode",
                 value: properties.errorCode ?? "nil"
             )
+        }
+    }
+
+    private static func validateYouTubeEvent(
+        _ name: AnalyticsEventName,
+        properties: AnalyticsProperties
+    ) throws {
+        if name == .youtubeShareReceived {
+            guard let entry = properties.entry,
+                  ["share", "clipboard", "scheme", "paste", "sample"].contains(entry) else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "entry",
+                    value: properties.entry ?? "nil"
+                )
+            }
+        }
+        if name == .youtubeExtractDone {
+            if let cueCount = properties.cueCount, cueCount <= 0 {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "cueCount",
+                    value: String(cueCount)
+                )
+            }
+            if let paragraphCount = properties.paragraphCount, paragraphCount <= 0 {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "paragraphCount",
+                    value: String(paragraphCount)
+                )
+            }
+            if let elapsedMs = properties.elapsedMs, elapsedMs < 0 {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "elapsedMs",
+                    value: String(elapsedMs)
+                )
+            }
+            if properties.language?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "language",
+                    value: properties.language ?? "nil"
+                )
+            }
+        }
+        if name == .youtubeExtractFail {
+            guard let reason = properties.reason,
+                  [
+                    "no_captions",
+                    "live",
+                    "restricted",
+                    "unavailable",
+                    "caption_access",
+                    "track_unavailable",
+                    "timeout",
+                    "unsupported_language",
+                  ].contains(reason) else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "reason",
+                    value: properties.reason ?? "nil"
+                )
+            }
+        }
+        if name == .youtubeCaptionLanguageOpen {
+            guard let trackCount = properties.trackCount, trackCount > 0 else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "trackCount",
+                    value: properties.trackCount.map(String.init) ?? "nil"
+                )
+            }
+            if let playable = properties.playableTrackCount,
+               playable < 0 || playable > trackCount {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "playableTrackCount",
+                    value: String(playable)
+                )
+            }
+        }
+        if name == .youtubeCaptionLanguageSwitch {
+            for (property, value) in [
+                ("fromLanguage", properties.fromLanguage),
+                ("toLanguage", properties.toLanguage),
+            ] {
+                guard let value,
+                      !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw AnalyticsSchemaError.invalidPropertyValue(
+                        property: property,
+                        value: value ?? "nil"
+                    )
+                }
+            }
+            guard let kind = properties.kind, ["asr", "manual"].contains(kind) else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "kind",
+                    value: properties.kind ?? "nil"
+                )
+            }
         }
     }
 

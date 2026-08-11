@@ -191,6 +191,21 @@ enum SpeechTextSanitizer {
             .replacingOccurrences(of: "\r\n", with: "\n")
             .replacingOccurrences(of: "\u{00A0}", with: " ")
 
+        // Caption tracks use musical-note glyphs as visual line boundaries.
+        // Sending them to the production TTS aligner makes otherwise complete
+        // audio responses lose the final few word timestamps. Keep the glyphs
+        // in the source transcript, but turn them into spoken-text boundaries.
+        s = s.replacingOccurrences(
+            of: #"^\s*(?:[♪♫♩♬🎵🎶]+\s*)+"#,
+            with: "",
+            options: .regularExpression
+        )
+        s = s.replacingOccurrences(
+            of: #"(?:\s*[♪♫♩♬🎵🎶]+\s*)+"#,
+            with: ". ",
+            options: .regularExpression
+        )
+
         // Keep arithmetic multiplication readable, but remove standalone Markdown/bullet/star ornaments.
         s = s.replacingOccurrences(
             of: #"(?<=\d)\s*[*＊﹡×]\s*(?=\d)"#,

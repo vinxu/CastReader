@@ -34,8 +34,8 @@
 				<true/>
 				<key>NSExtensionActivationSupportsWebPageWithMaxCount</key>
 				<integer>10</integer>
-				<key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
-				<integer>10</integer>
+			<key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
+			<integer>1</integer>
 			</dict>
 		</dict>
 		<key>NSExtensionPointIdentifier</key>

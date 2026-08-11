@@ -7,6 +7,7 @@
 //
 
 import XCTest
+import ZIPFoundation
 @testable import CastReader
 
 final class EpubNativeEngineTests: XCTestCase {
@@ -76,5 +77,130 @@ final class EpubNativeEngineTests: XCTestCase {
         XCTAssertEqual(doc?.sourceKind, .epub)
         XCTAssertFalse(doc?.isEmpty ?? true, "EPUB 文档无可朗读内容")
         print("📗 DocumentBuilder.fromEPUB: lang=\(doc?.language ?? "?") 段落=\(doc?.paragraphs.count ?? 0) readable=\(doc?.readableParagraphs.count ?? 0)")
+    }
+
+    func testRejectsEPUBWithOversizedEntryMetadataBeforeExtraction() throws {
+        let normalData = try makeMinimalEPUB(extraEntries: [
+            "OEBPS/oversized.bin": Data([0x42]),
+        ])
+        let maliciousData = try replacingCentralDirectoryUncompressedSize(
+            in: normalData,
+            path: "OEBPS/oversized.bin",
+            with: UInt32(DocumentResourceLimits.archive.maximumEntryUncompressedBytes + 1)
+        )
+
+        XCTAssertThrowsError(try DocumentFormatValidator.validate(
+            data: maliciousData,
+            filename: "oversized.epub",
+            expectedFormat: .epub
+        )) { error in
+            XCTAssertEqual(
+                error as? DocumentImportError,
+                .resourceLimitExceeded(.archiveEntryTooLarge)
+            )
+        }
+        XCTAssertNil(
+            EpubNativeEngine.parse(data: maliciousData, fallbackTitle: "oversized"),
+            "Direct EPUB parsing must retain the same pre-extraction archive limit"
+        )
+    }
+
+    private func makeMinimalEPUB(extraEntries: [String: Data]) throws -> Data {
+        var entries: [String: Data] = [
+            "mimetype": Data("application/epub+zip".utf8),
+            "META-INF/container.xml": Data("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <container xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                  <rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles>
+                </container>
+                """.utf8),
+            "OEBPS/content.opf": Data("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf">
+                  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Safe fixture</dc:title></metadata>
+                  <manifest><item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/></manifest>
+                  <spine><itemref idref="chapter"/></spine>
+                </package>
+                """.utf8),
+            "OEBPS/chapter.xhtml": Data("""
+                <html xmlns="http://www.w3.org/1999/xhtml"><body><p>Readable fixture.</p></body></html>
+                """.utf8),
+        ]
+        for (path, data) in extraEntries {
+            entries[path] = data
+        }
+
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("EpubNativeEngineLimits-\(UUID().uuidString)", isDirectory: true)
+        let archiveURL = root.appendingPathExtension("epub")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: archiveURL)
+        }
+        for (path, data) in entries {
+            let url = root.appendingPathComponent(path)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try data.write(to: url, options: .atomic)
+        }
+        let archive = try Archive(url: archiveURL, accessMode: .create)
+        for path in entries.keys.sorted() {
+            try archive.addEntry(
+                with: path,
+                fileURL: root.appendingPathComponent(path),
+                compressionMethod: .none
+            )
+        }
+        return try Data(contentsOf: archiveURL)
+    }
+
+    /// Change only the central-directory declaration. The physical entry stays
+    /// one byte, proving validation rejects hostile metadata before extraction
+    /// or allocation based on the declared expanded size.
+    private func replacingCentralDirectoryUncompressedSize(
+        in data: Data,
+        path: String,
+        with value: UInt32
+    ) throws -> Data {
+        var result = data
+        let signature: [UInt8] = [0x50, 0x4b, 0x01, 0x02]
+        var offset = 0
+
+        while offset + 46 <= result.count {
+            if Array(result[offset..<(offset + 4)]) != signature {
+                offset += 1
+                continue
+            }
+            let filenameLength = littleEndianUInt16(in: result, at: offset + 28)
+            let extraLength = littleEndianUInt16(in: result, at: offset + 30)
+            let commentLength = littleEndianUInt16(in: result, at: offset + 32)
+            let filenameStart = offset + 46
+            let filenameEnd = filenameStart + Int(filenameLength)
+            guard filenameEnd <= result.count else { break }
+            let filename = String(
+                data: result[filenameStart..<filenameEnd],
+                encoding: .utf8
+            )
+            if filename == path {
+                var littleEndian = value.littleEndian
+                withUnsafeBytes(of: &littleEndian) { bytes in
+                    result.replaceSubrange((offset + 24)..<(offset + 28), with: bytes)
+                }
+                return result
+            }
+            offset = filenameEnd + Int(extraLength) + Int(commentLength)
+        }
+        throw NSError(
+            domain: "EpubNativeEngineLimitsTests",
+            code: 1,
+            userInfo: [NSLocalizedDescriptionKey: "Fixture central-directory entry was not found"]
+        )
+    }
+
+    private func littleEndianUInt16(in data: Data, at offset: Int) -> UInt16 {
+        UInt16(data[offset]) | (UInt16(data[offset + 1]) << 8)
     }
 }

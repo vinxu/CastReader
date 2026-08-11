@@ -10,7 +10,10 @@ import XCTest
 class CastReaderUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
-        true
+        // Language and appearance configurations are covered by dedicated UI tests.
+        // Running this generic launch test for every Xcode-generated configuration
+        // creates hundreds of redundant launches on Xcode 26.
+        false
     }
 
     override func setUpWithError() throws {

@@ -538,7 +538,7 @@ struct ReaderHostView: View {
             .preference(key: ReaderSurfaceSizeKey.self, value: surfaceSize)
         }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .id(document.id)   // 锁定 identity 到文档：切朗读/解读不重建 reader（保住 EPUB 已渲染的 WebView，避免闪白重载）
+            .id(document.contentSessionKey)   // 同一远端文件换 revision 必须重建；切朗读/解读仍不重建
     }
 
     // MARK: 顶部
@@ -555,12 +555,22 @@ struct ReaderHostView: View {
                 .lineLimit(1)
                 .foregroundColor(AppTheme.foreground)
             Spacer(minLength: 8)
-            Picker("", selection: modeSelection) {
-                ForEach(ReaderMode.allCases) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
+            if document.sourceKind == .youtube {
+                Label(AppLocalized("字幕稿"), systemImage: "captions.bubble.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AppTheme.primary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(AppTheme.primary.opacity(0.12), in: Capsule())
+                    .accessibilityIdentifier("youtubeTranscriptBadge")
+            } else {
+                Picker("", selection: modeSelection) {
+                    ForEach(ReaderMode.allCases) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 140)
+                .accessibilityIdentifier("readerModePicker")
             }
-            .pickerStyle(.segmented)
-            .frame(width: 140)
-            .accessibilityIdentifier("readerModePicker")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, usesCompactPlaybackBar ? 6 : 10)
@@ -651,6 +661,12 @@ struct ReaderHostView: View {
         case .epub, .text:
             // EPUB 已原生解析为段落（含图片段），与 text 源共用 TextReaderView 渲染管线
             TextReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode, refocusToken: refocusToken)
+        case .youtube:
+            YouTubeListenView(
+                document: document,
+                readVM: readVM,
+                refocusToken: refocusToken
+            )
         }
     }
 

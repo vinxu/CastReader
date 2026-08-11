@@ -709,6 +709,71 @@
         }
       }
     },
+    "share_youtube_saved" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Der Videolink wurde gespeichert. CastReader wird jetzt geöffnet, wenn iOS es zulässt, oder automatisch beim nächsten App-Start." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your video link is saved. CastReader will open it now when iOS allows, or automatically the next time you open the app." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "El enlace del video se guardó. CastReader se abrirá ahora si iOS lo permite, o automáticamente la próxima vez que abras la app." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Le lien de la vidéo est enregistré. CastReader va s’ouvrir si iOS l’autorise, ou automatiquement à la prochaine ouverture." } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "वीडियो लिंक सहेज लिया गया है। iOS की अनुमति मिलने पर CastReader अभी खुलेगा, या अगली बार ऐप खोलने पर अपने आप जारी रहेगा।" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Il link del video è stato salvato. CastReader si aprirà ora se iOS lo consente, oppure automaticamente al prossimo avvio." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "動画リンクを保存しました。iOS で許可されれば CastReader を今すぐ開き、許可されない場合は次回起動時に自動で続行します。" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "O link do vídeo foi salvo. O CastReader será aberto agora se o iOS permitir, ou automaticamente na próxima vez que você abrir o app." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "视频链接已保存。系统允许时会立即打开 CastReader；否则下次打开 App 时会自动继续。" } }
+      }
+    },
+    "share_youtube_success_title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "YouTube-Transkript empfangen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "YouTube transcript received" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Transcripción de YouTube recibida" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Transcription YouTube reçue" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "YouTube ट्रांसक्रिप्ट प्राप्त हुआ" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Trascrizione YouTube ricevuta" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "YouTube の字幕を受信しました" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Transcrição do YouTube recebida" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已接收 YouTube 字幕稿" } }
+      }
+    },
+    "share_youtube_open_app" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "CastReader öffnen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open CastReader" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Abrir CastReader" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ouvrir CastReader" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "CastReader खोलें" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Apri CastReader" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "CastReader を開く" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Abrir o CastReader" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开 CastReader" } }
+      }
+    },
+    "share_youtube_open_manually" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Der Link ist sicher gespeichert. Tippe unten, um CastReader zu öffnen, oder öffne die App später manuell." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The link is safely saved. Tap below to open CastReader, or open the app manually later." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "El enlace está guardado. Toca abajo para abrir CastReader o abre la app manualmente más tarde." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Le lien est bien enregistré. Touchez ci-dessous pour ouvrir CastReader, ou ouvrez l’app manuellement plus tard." } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "लिंक सुरक्षित है। CastReader खोलने के लिए नीचे टैप करें, या बाद में ऐप को स्वयं खोलें।" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Il link è stato salvato. Tocca qui sotto per aprire CastReader oppure apri l’app manualmente più tardi." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "リンクは保存済みです。下のボタンで CastReader を開くか、後で手動でアプリを開いてください。" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "O link está salvo. Toque abaixo para abrir o CastReader ou abra o app manualmente depois." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "链接已安全保存。轻点下方按钮打开 CastReader；也可稍后手动打开 App 自动继续。" } }
+      }
+    },
+    "share_youtube_opening" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "CastReader wird geöffnet …" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Opening CastReader…" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Abriendo CastReader…" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ouverture de CastReader…" } },
+        "hi" : { "stringUnit" : { "state" : "translated", "value" : "CastReader खोला जा रहा है…" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Apertura di CastReader…" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "CastReader を開いています…" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Abrindo o CastReader…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在打开 CastReader…" } }
+      }
+    },
     "share_title" : {
       "extractionState" : "stale",
       "localizations" : {

@@ -15,6 +15,13 @@ import SwiftSoup
 
 enum EpubNativeEngine {
 
+    /// Bound synchronous SwiftSoup/HtmlParser work between cancellation
+    /// checkpoints. Images keep the archive-wide limit and are streamed in
+    /// cancellable chunks; XML/XHTML larger than this is rejected as malformed.
+    static let maximumContainerMarkupBytes: UInt64 = 1 * 1_024 * 1_024
+    static let maximumPackageMarkupBytes: UInt64 = 8 * 1_024 * 1_024
+    static let maximumChapterMarkupBytes: UInt64 = 8 * 1_024 * 1_024
+
     struct ParsedEpub {
         let title: String?
         let paragraphs: [ReadingParagraph]
@@ -22,21 +29,93 @@ enum EpubNativeEngine {
 
     /// 解析 EPUB 字节为顺序段落（图片段已回填字节）。失败返回 nil（调用方回退原上传流程）。
     static func parse(data: Data, fallbackTitle: String) -> ParsedEpub? {
-        guard let archive = try? Archive(data: data, accessMode: .read) else { return nil }
+        try? parseCancellable(data: data, fallbackTitle: fallbackTitle)
+    }
 
-        func entryData(_ path: String) -> Data? {
-            guard let entry = archive[path] else { return nil }
+    /// Cancellation-aware EPUB parser used by the device-only import path.
+    /// Ordinary malformed input returns nil; cancellation and enforced resource
+    /// limits remain observable so callers can report them without partial books.
+    static func parseCancellable(data: Data, fallbackTitle: String) throws -> ParsedEpub? {
+        try Task.checkCancellation()
+        guard Int64(data.count) <= SupportedDocumentFormat.epub.maximumInputBytes else {
+            return nil
+        }
+        let archive: Archive
+        do {
+            archive = try Archive(
+                data: data,
+                accessMode: .read,
+                pathEncoding: nil
+            )
+        } catch {
+            try Task.checkCancellation()
+            return nil
+        }
+        try Task.checkCancellation()
+        try DocumentArchiveValidator.validate(archive)
+
+        var extractedBytes: UInt64 = 0
+
+        func entryData(
+            _ path: String,
+            maximumBytes: UInt64 = DocumentResourceLimits.archive.maximumEntryUncompressedBytes
+        ) throws -> Data? {
+            try Task.checkCancellation()
+            guard let entry = archive[path], entry.type == .file else { return nil }
+            guard entry.uncompressedSize <= maximumBytes else {
+                if maximumBytes == DocumentResourceLimits.archive.maximumEntryUncompressedBytes {
+                    throw DocumentImportError.resourceLimitExceeded(.archiveEntryTooLarge)
+                }
+                throw DocumentImportError.invalidEPUB(reason: "markup_entry_too_large")
+            }
             var d = Data()
-            do { _ = try archive.extract(entry) { d.append($0) } } catch { return nil }
+            d.reserveCapacity(Int(entry.uncompressedSize))
+            do {
+                _ = try archive.extract(entry) { chunk in
+                    try Task.checkCancellation()
+                    let chunkBytes = UInt64(chunk.count)
+                    guard UInt64(d.count) <= DocumentResourceLimits.archive.maximumEntryUncompressedBytes,
+                          chunkBytes <= DocumentResourceLimits.archive.maximumEntryUncompressedBytes - UInt64(d.count) else {
+                        throw DocumentImportError.resourceLimitExceeded(.archiveEntryTooLarge)
+                    }
+                    guard extractedBytes <= DocumentResourceLimits.archive.maximumTotalUncompressedBytes,
+                          chunkBytes <= DocumentResourceLimits.archive.maximumTotalUncompressedBytes - extractedBytes else {
+                        throw DocumentImportError.resourceLimitExceeded(.archiveExpandedSizeTooLarge)
+                    }
+                    guard UInt64(d.count) <= maximumBytes,
+                          chunkBytes <= maximumBytes - UInt64(d.count) else {
+                        throw ExtractionLimitError.exceeded
+                    }
+                    d.append(chunk)
+                    extractedBytes += chunkBytes
+                }
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch let error as DocumentImportError {
+                throw error
+            } catch is ExtractionLimitError {
+                throw DocumentImportError.invalidEPUB(reason: "markup_entry_too_large")
+            } catch {
+                try Task.checkCancellation()
+                return nil
+            }
+            try Task.checkCancellation()
             return d
         }
 
         // 1. META-INF/container.xml → OPF 路径
-        guard let containerData = entryData("META-INF/container.xml"),
+        guard let containerData = try entryData(
+            "META-INF/container.xml",
+            maximumBytes: maximumContainerMarkupBytes
+        ),
               let containerXml = decodeXml(containerData),
               let containerDoc = try? SwiftSoup.parse(containerXml, "", Parser.xmlParser()),
               let opf = (try? containerDoc.select("rootfile").first()?.attr("full-path")) ?? nil,
-              !opf.isEmpty else { return nil }
+              !opf.isEmpty else {
+            try Task.checkCancellation()
+            return nil
+        }
+        try Task.checkCancellation()
 
         // OPF 所在目录（相对 zip 根）—— manifest 内 href 相对此目录
         let opfPathNorm = normHref(opf)
@@ -48,28 +127,53 @@ enum EpubNativeEngine {
         }
 
         // 2. OPF → manifest（id→href,type）+ spine（阅读顺序）
-        guard let opfData = entryData(opf) ?? entryData(opfPathNorm),
+        let primaryOPFData = try entryData(opf, maximumBytes: maximumPackageMarkupBytes)
+        let resolvedOPFData: Data?
+        if let primaryOPFData {
+            resolvedOPFData = primaryOPFData
+        } else {
+            resolvedOPFData = try entryData(
+                opfPathNorm,
+                maximumBytes: maximumPackageMarkupBytes
+            )
+        }
+        guard let opfData = resolvedOPFData,
               let opfXml = decodeXml(opfData),
-              let opfDoc = try? SwiftSoup.parse(opfXml, "", Parser.xmlParser()) else { return nil }
+              let opfDoc = try? SwiftSoup.parse(opfXml, "", Parser.xmlParser()) else {
+            try Task.checkCancellation()
+            return nil
+        }
+        try Task.checkCancellation()
 
         var manifest: [String: (href: String, type: String)] = [:]
-        for item in (try? opfDoc.select("manifest item").array()) ?? [] {
+        let manifestItems = (try? opfDoc.select("manifest item").array()) ?? []
+        try Task.checkCancellation()
+        for item in manifestItems {
+            try Task.checkCancellation()
             let id = (try? item.attr("id")) ?? ""
             let href = (try? item.attr("href")) ?? ""
             let type = (try? item.attr("media-type")) ?? ""
             if !id.isEmpty, !href.isEmpty { manifest[id] = (href, type) }
         }
         var spine: [String] = []
-        for r in (try? opfDoc.select("spine itemref").array()) ?? [] {
+        let spineItems = (try? opfDoc.select("spine itemref").array()) ?? []
+        try Task.checkCancellation()
+        for r in spineItems {
+            try Task.checkCancellation()
             let idref = (try? r.attr("idref")) ?? ""
             if !idref.isEmpty { spine.append(idref) }
         }
-        guard !spine.isEmpty else { return nil }
+        guard !spine.isEmpty else {
+            try Task.checkCancellation()
+            return nil
+        }
 
         // 3. 内嵌图片资源：规范化 href（相对 OPF 目录）→ 字节
         var images: [String: Data] = [:]
-        for item in manifest.values where item.type.lowercased().hasPrefix("image/") {
-            if let d = entryData(zipPath(relOpf: item.href)) {
+        for item in manifest.values {
+            try Task.checkCancellation()
+            guard item.type.lowercased().hasPrefix("image/") else { continue }
+            if let d = try entryData(zipPath(relOpf: item.href)) {
                 images[normHref(item.href)] = d
             }
         }
@@ -78,11 +182,20 @@ enum EpubNativeEngine {
         var paragraphs: [ReadingParagraph] = []
         var idx = 0
         for idref in spine {
+            try Task.checkCancellation()
             guard let item = manifest[idref] else { continue }
             let t = item.type.lowercased()
             guard t.contains("html") || t.contains("xml") else { continue }   // 仅 XHTML 章节
-            guard let chData = entryData(zipPath(relOpf: item.href)), let xhtml = decodeXml(chData) else { continue }
-            for b in HtmlParser.parse(xhtml) {
+            guard let chData = try entryData(
+                zipPath(relOpf: item.href),
+                maximumBytes: maximumChapterMarkupBytes
+            ),
+                  let xhtml = decodeXml(chData) else { continue }
+            try Task.checkCancellation()
+            let blocks = HtmlParser.parse(xhtml)
+            try Task.checkCancellation()
+            for b in blocks {
+                try Task.checkCancellation()
                 var imageData: Data? = nil
                 if b.type == .image {
                     guard let href = b.imageHref else { continue }
@@ -97,17 +210,29 @@ enum EpubNativeEngine {
             }
         }
 
-        guard !paragraphs.isEmpty else { return nil }
-        return ParsedEpub(title: extractTitle(opfDoc) ?? fallbackTitle, paragraphs: paragraphs)
+        try Task.checkCancellation()
+        guard !paragraphs.isEmpty else {
+            try Task.checkCancellation()
+            return nil
+        }
+        let title = try extractTitleCancellable(opfDoc) ?? fallbackTitle
+        try Task.checkCancellation()
+        return ParsedEpub(title: title, paragraphs: paragraphs)
     }
 
     // MARK: - Helpers
 
+    private enum ExtractionLimitError: Error {
+        case exceeded
+    }
+
     /// 从 OPF metadata 取 dc:title（按 tagName 含 "title" 匹配，避开命名空间选择器兼容性问题）。
     /// 注意 SwiftSoup.Document 显式限定——CastReader 另有 Models/Document.swift 同名类型。
-    private static func extractTitle(_ opfDoc: SwiftSoup.Document) -> String? {
+    private static func extractTitleCancellable(_ opfDoc: SwiftSoup.Document) throws -> String? {
+        try Task.checkCancellation()
         guard let meta = try? opfDoc.select("metadata").first() else { return nil }
         for el in (try? meta.getAllElements().array()) ?? [] {
+            try Task.checkCancellation()
             if el.tagName().lowercased().contains("title"), let t = try? el.text() {
                 let trimmed = t.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty { return trimmed }

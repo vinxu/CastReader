@@ -1,5 +1,5 @@
 {
-  "originHash" : "0d3b3f935d5bf384d9a65b27e92d752025a9467edab6aea2551af2340c85c4d1",
+  "originHash" : "a2dac2703a191e9a468d0fca4acd6fad66bf2fa4a7adc6ea450db8456731ac1d",
   "pins" : [
     {
       "identity" : "swiftsoup",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "49dcadd93161f4a44b4994d3a3e8de9f085aface",
         "version" : "2.13.5"
+      }
+    },
+    {
+      "identity" : "swiftydropbox",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dropbox/SwiftyDropbox.git",
+      "state" : {
+        "revision" : "e315e0b14edb83f022134aef389deb4e8bee6bbf",
+        "version" : "10.2.4"
       }
     },
     {

@@ -151,6 +151,49 @@ class CastReaderTests: XCTestCase {
         XCTAssertNil(SystemContinueContract.record(in: records, itemID: "kindle"))
     }
 
+    func testPausedCloudFeatureHidesRemoteHistoryFromAppAndSystemContinue() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let cloudRecord = HistoryRecord(
+            id: "cloud-pdf",
+            title: "Remote PDF",
+            sourceKindRaw: ReadingSourceKind.pdf.rawValue,
+            sourceURL: nil,
+            language: "en",
+            createdAt: now,
+            lastOpenedAt: now,
+            coverPath: nil,
+            persistencePolicy: .remoteReference
+        )
+
+        XCTAssertFalse(
+            HistoryVisibilityContract.includes(
+                cloudRecord,
+                cloudStorageEnabled: false
+            )
+        )
+        XCTAssertTrue(
+            HistoryVisibilityContract.includes(
+                cloudRecord,
+                cloudStorageEnabled: true
+            )
+        )
+        XCTAssertNil(
+            SystemContinueContract.record(
+                in: [cloudRecord],
+                itemID: cloudRecord.id,
+                cloudStorageEnabled: false
+            )
+        )
+        XCTAssertEqual(
+            SystemContinueContract.record(
+                in: [cloudRecord],
+                itemID: cloudRecord.id,
+                cloudStorageEnabled: true
+            )?.id,
+            cloudRecord.id
+        )
+    }
+
     func testDeferredAutoplayGateConsumesEachRequestExactlyOnce() {
         var gate = DeferredAutoplayGate()
 
@@ -1241,18 +1284,47 @@ class CastReaderTests: XCTestCase {
         XCTAssertTrue(KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
             hasConfirmedVisibleSurface: true,
             textFingerprintMatches: true,
-            visualReleasePresented: true
+            firstHighlightHandshakeFinished: true
         ))
         XCTAssertFalse(KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
             hasConfirmedVisibleSurface: true,
             textFingerprintMatches: false,
-            visualReleasePresented: true
+            firstHighlightHandshakeFinished: true
         ))
         XCTAssertFalse(KindleContinuousPageHandoffContract.shouldReleaseAudioGate(
             hasConfirmedVisibleSurface: true,
             textFingerprintMatches: true,
-            visualReleasePresented: false
+            firstHighlightHandshakeFinished: false
         ))
+        XCTAssertEqual(
+            KindleVisualHighlightQueueContract.completion(
+                activeSequence: 8,
+                completedSequence: 8,
+                taskCancelled: false,
+                hasPending: true
+            ),
+            .drainPending,
+            "A refocus sequence bump must not strand the active paint slot or freeze later words"
+        )
+        XCTAssertEqual(
+            KindleVisualHighlightQueueContract.completion(
+                activeSequence: 9,
+                completedSequence: 8,
+                taskCancelled: false,
+                hasPending: true
+            ),
+            .stale,
+            "An older completion must not clear a newer task's ownership"
+        )
+        XCTAssertEqual(
+            KindleVisualHighlightQueueContract.completion(
+                activeSequence: 8,
+                completedSequence: 8,
+                taskCancelled: true,
+                hasPending: true
+            ),
+            .clearOnly
+        )
         XCTAssertFalse(KindleContinuousPageHandoffContract.shouldReleaseVisualHold(
             audioBoundaryReached: false,
             hasConfirmedVisibleSurface: true
@@ -1287,6 +1359,15 @@ class CastReaderTests: XCTestCase {
         XCTAssertFalse(KindleColumnLayoutContract.isDualColumn(aspect: 1.70, pixelsReadable: true, centerGutter: false))
         XCTAssertTrue(KindleColumnLayoutContract.isDualColumn(aspect: 1.70, pixelsReadable: false, centerGutter: false))
         XCTAssertNil(KindleColumnLayoutContract.cacheSignature(contentKey: "same", pixelFingerprint: nil, pixelSize: CGSize(width: 100, height: 100)))
+        XCTAssertEqual(KindleLivePageOCRContract.isolatedPageStrategy, .kindleSingleFlow)
+        XCTAssertEqual(
+            KindleLivePageOCRContract.wholeImageStrategy(rendererDetectedDualPage: false),
+            .kindleSingleFlow
+        )
+        XCTAssertEqual(
+            KindleLivePageOCRContract.wholeImageStrategy(rendererDetectedDualPage: true),
+            .kindleLayout
+        )
         XCTAssertNotEqual(
             KindleColumnLayoutContract.cacheSignature(contentKey: "same", pixelFingerprint: "a", pixelSize: CGSize(width: 100, height: 100)),
             KindleColumnLayoutContract.cacheSignature(contentKey: "same", pixelFingerprint: "b", pixelSize: CGSize(width: 100, height: 100))
@@ -1626,6 +1707,21 @@ class CastReaderTests: XCTestCase {
             timestamps: timestamps(["timestamps", "stay", "inside", "audio"]),
             duration: 2
         ), "timestamps outside the actual audio duration must fall back")
+        XCTAssertFalse(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "one two three four five six seven eight nine ten",
+            timestamps: timestamps(["one", "two", "three", "four", "five", "six", "seven", "eight"]),
+            duration: 10
+        ), "High overall coverage must not hide missing spoken words at the tail")
+        XCTAssertTrue(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "one two three four five six seven eight nine ten",
+            timestamps: timestamps(["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]),
+            duration: 10
+        ), "The same segment remains word-reliable when its spoken tail is covered")
+        XCTAssertFalse(TTSTimestampQuality.hasReliableWordGranularity(
+            text: "Please highlight every spoken word in order",
+            timestamps: timestamps(["highlight", "every", "spoken", "word", "in", "order"]),
+            duration: 8
+        ), "High overall coverage must not hide missing spoken words at the start")
         let chineseWords = "一二三四五六七八九十".map(String.init)
         XCTAssertEqual(
             ReadAloudViewModel.alignedPhotoWordRange(
@@ -1690,6 +1786,20 @@ class CastReaderTests: XCTestCase {
             ),
             "匹配失败不能退回句首并错误高亮第一个字"
         )
+    }
+
+    func testSpeechTextSanitizerConvertsMusicMarkersIntoSentenceBoundaries() {
+        let lyrics = "♪ Inside we both know what's been going ♪ ♪ We know the game and we're gonna play it ♪"
+        let sanitized = SpeechTextSanitizer.sanitizedForTTS(lyrics)
+
+        XCTAssertEqual(
+            sanitized,
+            "Inside we both know what's been going. We know the game and we're gonna play it."
+        )
+        XCTAssertFalse(sanitized.contains("♪"))
+        let musicOnly = "♩ ♪ ♫ ♬ 🎵 🎶"
+        XCTAssertEqual(SpeechTextSanitizer.sanitizedForTTS(musicOnly), "")
+        XCTAssertFalse(SpeechTextSanitizer.containsSpeakableContent(musicOnly))
     }
 
     func testJapaneseNaturalSentenceRequestsMatchAndroidAndExtension() {
@@ -3567,6 +3677,24 @@ final class TTSEndpointSecurityTests: XCTestCase {
         XCTAssertNil(TTSEndpoint.normalizedSecureBase("http://example.com:8123"))
         XCTAssertNil(TTSEndpoint.normalizedSecureBase("not a URL"))
         XCTAssertNil(TTSEndpoint.normalizedSecureBase(""))
+    }
+}
+
+final class QuickReadEndpointSecurityTests: XCTestCase {
+    func testAcceptsOnlyNormalizedHTTPSBases() {
+        XCTAssertEqual(
+            QuickReadEndpoint.normalizedSecureBase(" https://qr.castreader.ai/ "),
+            "https://qr.castreader.ai"
+        )
+        XCTAssertEqual(
+            QuickReadEndpoint.normalizedSecureBase("https://example.com:8443/service/"),
+            "https://example.com:8443/service"
+        )
+        XCTAssertNil(QuickReadEndpoint.normalizedSecureBase("http://example.com:8443"))
+        XCTAssertNil(QuickReadEndpoint.normalizedSecureBase("https://user@example.com"))
+        XCTAssertNil(QuickReadEndpoint.normalizedSecureBase("https://example.com?token=value"))
+        XCTAssertNil(QuickReadEndpoint.normalizedSecureBase("not a URL"))
+        XCTAssertNil(QuickReadEndpoint.normalizedSecureBase(""))
     }
 }
 

@@ -74,7 +74,7 @@ struct AppReviewAutomaticPageContinuation: Equatable, Sendable {
         switch sourceKind {
         case .kindle, .weread, .googleBooks, .kobo, .oreilly:
             return progress
-        case .photo, .text, .web, .docx, .pdf, .epub:
+        case .photo, .text, .web, .docx, .pdf, .epub, .youtube:
             return nil
         }
     }

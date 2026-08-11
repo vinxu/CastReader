@@ -49,6 +49,7 @@ class CastReaderUITests: XCTestCase {
         app.launchArguments = [
             "-AppleLanguages", "(en)",
             "-AppleLocale", "en_US",
+            "-interfaceLanguage", "en",
             "-CastReaderSkipLibraryOnboarding",
             "-CastReaderCaptureTextB64", Data(englishPage.utf8).base64EncodedString(),
         ]
@@ -137,6 +138,7 @@ class CastReaderUITests: XCTestCase {
         app.launchArguments = [
             "-AppleLanguages", "(en)",
             "-AppleLocale", "en_US",
+            "-interfaceLanguage", "system",
             "-CastReaderSkipLibraryOnboarding",
             "-CastReaderCaptureTextB64",
             Data("A short English page for the explain panel.".utf8).base64EncodedString(),
@@ -148,7 +150,11 @@ class CastReaderUITests: XCTestCase {
             app.buttons["readPlayPauseButton"].firstMatch.waitForExistence(timeout: 30),
             "The seeded page must open in the reader"
         )
-        app.buttons["Explain"].firstMatch.tap()
+        let modePicker = app.segmentedControls["readerModePicker"]
+        XCTAssertTrue(modePicker.waitForExistence(timeout: 5))
+        let explain = modePicker.buttons["Explain"]
+        XCTAssertTrue(explain.waitForExistence(timeout: 5))
+        explain.tap()
 
         let voiceButton = app.buttons["playbackVoiceButton"].firstMatch
         XCTAssertTrue(voiceButton.waitForExistence(timeout: 15))
@@ -192,6 +198,7 @@ class CastReaderUITests: XCTestCase {
         app.launchArguments = [
             "-AppleLanguages", "(en)",
             "-AppleLocale", "en_US",
+            "-interfaceLanguage", "system",
             "-CastReaderSkipLibraryOnboarding",
             "-CastReaderOpenStudyBoost",
         ]
@@ -230,6 +237,7 @@ class CastReaderUITests: XCTestCase {
         app.launchArguments += [
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
+            "-interfaceLanguage", "system",
             "-CastReaderSkipLibraryOnboarding",
         ]
         app.launch()
@@ -242,13 +250,254 @@ class CastReaderUITests: XCTestCase {
     /// clear it before asserting the app surface.
     private func dismissSelfOpenSystemAlertIfPresent() {
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        for label in ["Open", "打开"] {
-            let button = springboard.alerts.buttons[label]
-            if button.waitForExistence(timeout: 0.4) {
+        // StoreKit can ask an unsigned simulator to sign in even though these
+        // tests never purchase. Dismiss that unrelated system sheet so it
+        // cannot cover the feature under test or strand the next test run.
+        let alert = springboard.alerts.firstMatch
+        guard alert.waitForExistence(timeout: 2) else { return }
+        for label in ["Not Now", "以后再说", "暂不", "Cancel", "取消"] {
+            let button = alert.buttons[label]
+            if button.exists {
                 button.tap()
                 return
             }
         }
+        for label in ["Open", "打开"] {
+            let button = alert.buttons[label]
+            if button.exists {
+                button.tap()
+                return
+            }
+        }
+    }
+
+    private func dismissClipboardPromptIfPresent(in app: XCUIApplication) {
+        let dismiss = app.buttons["忽略"]
+        if dismiss.waitForExistence(timeout: 2) {
+            dismiss.tap()
+        }
+    }
+
+    private func waitForVisibleYouTubeParagraph(
+        in app: XCUIApplication,
+        timeout: TimeInterval
+    ) -> XCUIElement? {
+        let query = app.descendants(matching: .any).matching(
+            NSPredicate(
+                format: "identifier BEGINSWITH %@",
+                "youtubeTranscriptParagraph_"
+            )
+        )
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            for element in query.allElementsBoundByIndex
+                where element.exists && element.isHittable {
+                let renderedText = [
+                    element.label,
+                    element.value as? String ?? "",
+                ].joined(separator: " ")
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if !renderedText.isEmpty { return element }
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        } while Date() < deadline
+        return nil
+    }
+
+    /// Opt-in because it reaches the real public YouTube page. It validates
+    /// the short-lived extraction WebView, native transcript handoff and the
+    /// second-open cache path without making ordinary CI depend on the network.
+    ///
+    /// Drive the sample through the app's discovery surface. Recent simulator
+    /// runtimes force-relaunch an already controlled app after
+    /// `XCUIApplication.open(_:)`; that replacement debug launch drops the URL.
+    /// Deep-link parsing and routing remain covered by deterministic tests.
+    func testYouTubePublicTranscriptLiveExtractionAndCacheReopen() throws {
+        try XCTSkipUnless(
+            ProcessInfo.processInfo.environment["CASTREADER_RUN_LIVE_YOUTUBE_TESTS"] == "1",
+            "Set CASTREADER_RUN_LIVE_YOUTUBE_TESTS=1 for the live acceptance probe."
+        )
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-CastReaderSkipLibraryOnboarding",
+        ]
+
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+        app.activate()
+        openYouTubePublicSample(in: app)
+
+        guard let visibleParagraph = waitForVisibleYouTubeParagraph(
+            in: app,
+            timeout: 50
+        ) else {
+            XCTFail("Public sample did not reach a visible native transcript paragraph")
+            return
+        }
+        XCTAssertTrue(visibleParagraph.isHittable)
+        let renderedParagraphText = [
+            visibleParagraph.label,
+            visibleParagraph.value as? String ?? "",
+        ].joined(separator: " ")
+        XCTAssertNil(
+            renderedParagraphText.range(
+                of: #"^\d{1,2}:\d{2}\d+\s+(?:second|minute)"#,
+                options: [.regularExpression, .caseInsensitive]
+            ),
+            "YouTube accessibility timing text leaked into the rendered caption"
+        )
+        XCTAssertFalse(
+            app.webViews.firstMatch.exists,
+            "The extraction WebView must be destroyed before showing the transcript"
+        )
+        let playPause = app.buttons["readPlayPauseButton"]
+        XCTAssertTrue(
+            playPause.waitForExistence(timeout: 5),
+            "The native reader controls did not appear after extraction"
+        )
+        let audiblePlayback = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value ==[c] 'playing'"),
+            object: playPause
+        )
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [audiblePlayback], timeout: 20),
+            .completed,
+            "The public sample never reached real CastReader TTS playback"
+        )
+        let cacheBadge = app.descendants(matching: .any)[
+            "youtubeOfflineCacheBadge"
+        ]
+        XCTAssertTrue(cacheBadge.waitForExistence(timeout: 5))
+        let completeArtwork = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value == 'artwork complete'"),
+            object: cacheBadge
+        )
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [completeArtwork], timeout: 20),
+            .completed,
+            "The public sample did not persist every required artwork resource"
+        )
+        let firstScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        firstScreenshot.name = "YouTube live transcript, TTS and artwork"
+        firstScreenshot.lifetime = .keepAlways
+        add(firstScreenshot)
+
+        app.terminate()
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+        app.activate()
+        let cacheStartedAt = Date()
+        openYouTubePublicSample(in: app)
+        guard let reopenedParagraph = waitForVisibleYouTubeParagraph(
+            in: app,
+            timeout: 5
+        ) else {
+            XCTFail("Cached transcript did not reopen to a visible native paragraph")
+            return
+        }
+        XCTAssertTrue(reopenedParagraph.isHittable)
+        XCTAssertLessThan(
+            Date().timeIntervalSince(cacheStartedAt),
+            5,
+            "Cached transcript reopen exceeded the acceptance window"
+        )
+        let reopenedCacheBadge = app.descendants(matching: .any)[
+            "youtubeOfflineCacheBadge"
+        ]
+        XCTAssertTrue(reopenedCacheBadge.waitForExistence(timeout: 5))
+        XCTAssertEqual(
+            reopenedCacheBadge.value as? String,
+            "artwork complete",
+            "Cached reopen lost persisted storyboard coverage"
+        )
+        let cachedScreenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        cachedScreenshot.name = "YouTube cached transcript reopen"
+        cachedScreenshot.lifetime = .keepAlways
+        add(cachedScreenshot)
+    }
+
+    /// Regression probe for a real page that YouTube currently places behind
+    /// bot verification. Success is acceptable if YouTube later permits the
+    /// transcript again; an explicit access restriction is also truthful. The
+    /// old false "parsing timed out" state must never return.
+    func testYouTubeReportedURLNeverMisreportsVerificationAsTimeout() throws {
+        #if !CASTREADER_LIVE_YOUTUBE_CLASSIFICATION
+        try XCTSkipUnless(
+            ProcessInfo.processInfo.environment[
+                "CASTREADER_RUN_LIVE_YOUTUBE_CLASSIFICATION_TESTS"
+            ] == "1",
+            "Set CASTREADER_RUN_LIVE_YOUTUBE_CLASSIFICATION_TESTS=1 for this probe."
+        )
+        #endif
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-interfaceLanguage", "zh-Hans",
+            "-CastReaderSkipLibraryOnboarding",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+        app.activate()
+        dismissClipboardPromptIfPresent(in: app)
+
+        let entry = app.buttons["youtubeHomeEntryCard"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 5))
+        entry.tap()
+        let field = app.textFields["youtubeURLField"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        field.typeText(
+            "https://m.youtube.com/watch?v=wpb-DrbhEiY&pp=iggCQAE%3D&ra=m"
+        )
+        let listen = app.buttons["youtubePasteListenButton"]
+        XCTAssertTrue(listen.waitForExistence(timeout: 5))
+        listen.tap()
+
+        let restricted = app.staticTexts["该视频需要登录 YouTube 查看，无法解析"]
+        let falseTimeout = app.staticTexts["解析超时，请重试"]
+        var paragraph: XCUIElement?
+        let deadline = Date().addingTimeInterval(50)
+        repeat {
+            paragraph = waitForVisibleYouTubeParagraph(in: app, timeout: 0.05)
+            if paragraph != nil || restricted.exists || falseTimeout.exists { break }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        } while Date() < deadline
+
+        XCTAssertFalse(falseTimeout.exists, "bot verification regressed to a false timeout")
+        XCTAssertTrue(
+            paragraph != nil || restricted.exists,
+            "the exact URL reached neither a transcript nor the truthful restricted state"
+        )
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screenshot.name = "YouTube reported URL terminal state"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
+    private func openYouTubePublicSample(in app: XCUIApplication) {
+        let entry = app.buttons["youtubeHomeEntryCard"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 5))
+        entry.tap()
+
+        if let liveURL = ProcessInfo.processInfo.environment[
+            "CASTREADER_YOUTUBE_LIVE_URL"
+        ], !liveURL.isEmpty {
+            let field = app.textFields["youtubeURLField"]
+            XCTAssertTrue(field.waitForExistence(timeout: 5))
+            field.tap()
+            field.typeText(liveURL)
+            let listen = app.buttons["youtubePasteListenButton"]
+            XCTAssertTrue(listen.waitForExistence(timeout: 5))
+            listen.tap()
+            return
+        }
+
+        let sample = app.buttons["youtubeSampleButton"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 5))
+        sample.tap()
     }
 
     /// 九个正式语言包都必须能独立启动，并显示各自的首页标签。
@@ -270,6 +519,7 @@ class CastReaderUITests: XCTestCase {
             app.launchArguments = [
                 "-AppleLanguages", "(\(configuration.language))",
                 "-AppleLocale", configuration.locale,
+                "-interfaceLanguage", "system",
                 "-CastReaderSkipLibraryOnboarding",
             ]
             app.launch()
@@ -302,6 +552,7 @@ class CastReaderUITests: XCTestCase {
                 app.launchArguments = [
                     "-AppleLanguages", "(\(configuration.language))",
                     "-AppleLocale", configuration.locale,
+                    "-interfaceLanguage", "system",
                     "-AppleInterfaceStyle", appearance,
                     "-CastReaderSkipLibraryOnboarding",
                 ]
@@ -491,7 +742,13 @@ class CastReaderUITests: XCTestCase {
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
+            "-interfaceLanguage", "system",
             "-CastReaderResetLibraryOnboarding",
+            "-boundLibraryOnboarding.v1.isActivated", "NO",
+            "-boundLibraryOnboarding.v1.hasSeenChooser", "NO",
+            "-boundLibraryOnboarding.v3.phase", "sample",
+            "-boundLibraryOnboarding.v3.resumePhase", "sample",
+            "-boundLibraryOnboarding.v3.hasCompletedSample", "NO",
         ]
         app.launch()
         dismissSelfOpenSystemAlertIfPresent()
@@ -507,9 +764,14 @@ class CastReaderUITests: XCTestCase {
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
+            "-interfaceLanguage", "system",
             "-CastReaderResetLibraryOnboarding",
             "-CastReaderForceLibraryOnboardingRebind",
-            "-CastReaderOnboardingSampleInstant",
+            "-boundLibraryOnboarding.v1.isActivated", "NO",
+            "-boundLibraryOnboarding.v1.hasSeenChooser", "NO",
+            "-boundLibraryOnboarding.v3.phase", "sample",
+            "-boundLibraryOnboarding.v3.resumePhase", "sample",
+            "-boundLibraryOnboarding.v3.hasCompletedSample", "NO",
         ]
         app.launch()
         dismissSelfOpenSystemAlertIfPresent()
@@ -768,14 +1030,90 @@ class CastReaderUITests: XCTestCase {
         keepScreenshot(of: app, named: "GoogleBooks-03-explain-playing")
     }
 
+    /// Opt-in live Kindle gate for a shelf that is already signed in on this
+    /// simulator. It keeps the reader alive long enough for the external
+    /// Kindle run log to observe OCR ordering, word paints, and at least one
+    /// automatic page handoff without ever embedding Amazon credentials.
+    func testKindleLiveHighlightAndAutomaticHandoff() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard environment["CASTREADER_KINDLE_LIVE_HIGHLIGHT"] == "1",
+              let bookID = environment["CASTREADER_KINDLE_LIVE_BOOK_ID"],
+              !bookID.isEmpty else {
+            throw XCTSkip(
+                "Set CASTREADER_KINDLE_LIVE_HIGHLIGHT=1 and CASTREADER_KINDLE_LIVE_BOOK_ID"
+            )
+        }
+
+        let observationSeconds = min(
+            360,
+            max(30, Double(environment["CASTREADER_KINDLE_LIVE_SECONDS"] ?? "210") ?? 210)
+        )
+        let interruptionMonitor = addUIInterruptionMonitor(
+            withDescription: "CastReader system permission alerts"
+        ) { alert in
+            let denyLabels = ["Don’t Allow", "不允许", "Non consentire"]
+            if let deny = denyLabels
+                .map({ alert.buttons[$0] })
+                .first(where: { $0.exists }) {
+                deny.tap()
+                return true
+            }
+            guard alert.buttons.count > 0 else { return false }
+            alert.buttons.element(boundBy: 0).tap()
+            return true
+        }
+        defer { removeUIInterruptionMonitor(interruptionMonitor) }
+
+        let app = XCUIApplication()
+        app.launchArguments = ["-CastReaderSkipLibraryOnboarding"]
+        app.launch()
+        // Trigger the interruption monitor if a fresh Xcode install reset the
+        // simulator's notification authorization while keeping shelf data.
+        app.tap()
+
+        let shelfEntry = app.buttons["homeShelfBook.kindle.\(bookID)"]
+        XCTAssertTrue(shelfEntry.waitForExistence(timeout: 30), "Kindle live test book is missing from Home")
+        shelfEntry.tap()
+
+        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 45), "Kindle reader WebView did not open")
+        // The WebView enters the hierarchy before Amazon finishes creating the
+        // actual page image. Wait for that real navigation, then step back from
+        // a possible persisted terminal page so the fixture always has prose.
+        RunLoop.current.run(until: Date().addingTimeInterval(35))
+        let previousPage = app.buttons["kindlePreviousPageButton"]
+        if previousPage.waitForExistence(timeout: 10),
+           previousPage.isEnabled,
+           previousPage.isHittable {
+            previousPage.tap()
+            RunLoop.current.run(until: Date().addingTimeInterval(10))
+        }
+        let readButton = app.buttons["kindleReadPlayPauseButton"]
+        XCTAssertTrue(readButton.waitForExistence(timeout: 45), "Kindle read control did not appear")
+        // Amazon can finish drawing the page before SwiftUI replaces the
+        // temporary preparing control in the accessibility snapshot. The
+        // visible control is already tappable at that point, so do not gate the
+        // real start on a transient `paused` value from the previous bar.
+        readButton.tap()
+        XCTAssertTrue(
+            waitForAccessibilityValue("playing", on: readButton, timeout: 150),
+            "Kindle Italian page did not start real TTS playback"
+        )
+        keepScreenshot(of: app, named: "KindleLive-01-playing")
+
+        RunLoop.current.run(until: Date().addingTimeInterval(observationSeconds))
+        XCTAssertTrue(readButton.exists, "Kindle reader closed during continuous playback")
+        keepScreenshot(of: app, named: "KindleLive-02-after-handoff-window")
+    }
+
     /// 统一书架页仍必须提供其他书库；首启本身只保留一条 Kindle 路径。
-    func testOnboardingOffersAllFourBoundLibraries() {
+    func testOnboardingOffersAllFiveBoundLibraries() {
         let app = launchZh()
         app.buttons["homeShelfSourcesButton"].tap()
         XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.kindle"].waitForExistence(timeout: 6))
         XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.weread"].exists)
         XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.google_books"].exists)
         XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.kobo"].exists)
+        XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.oreilly"].exists)
     }
 
     func testSettingsCanReopenLibraryOnboardingAfterDismissal() {
@@ -857,16 +1195,67 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.buttons["上传文件"].waitForExistence(timeout: 5), "➕ 未弹出导入方式")
         XCTAssertTrue(app.buttons["输入网址"].exists)
         XCTAssertTrue(app.buttons["librarySourcesImportButton"].exists)
+        XCTAssertFalse(app.staticTexts["云端文件"].exists)
+        for providerID in [
+            "cloudProvider.google_drive",
+            "cloudProvider.dropbox",
+            "cloudProvider.onedrive",
+        ] {
+            XCTAssertFalse(
+                app.descendants(matching: .any)[providerID].exists,
+                "发布配置不应显示云盘入口：\(providerID)"
+            )
+        }
+    }
+
+    /// 内部调试开关仍可恢复三家云盘入口，便于审核通过后继续回归。
+    /// 不进入 OAuth/隐私系统页，避免外部页面让这个入口测试超时。
+    func testCloudProvidersAndPrivacyDisclosureAppearInPlusFlow() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderCloudUITest",
+            "-cloud.privacy.google_drive.version", "0",
+            "-cloud.privacy.dropbox.version", "0",
+            "-cloud.privacy.onedrive.version", "0",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        let plus = app.buttons["plusImportButton"]
+        XCTAssertTrue(plus.waitForExistence(timeout: 6))
+        plus.tap()
+        let importOptions = app.descendants(matching: .any)["importOptions.general"]
+        XCTAssertTrue(importOptions.waitForExistence(timeout: 6))
+
+        let providerIDs = [
+            "cloudProvider.google_drive",
+            "cloudProvider.dropbox",
+            "cloudProvider.onedrive",
+        ]
+        for _ in 0..<4 where !providerIDs.allSatisfy({ app.descendants(matching: .any)[$0].exists }) {
+            importOptions.swipeUp()
+        }
+        for providerID in providerIDs {
+            XCTAssertTrue(
+                app.descendants(matching: .any)[providerID].waitForExistence(timeout: 3),
+                "➕ 缺少云盘入口：\(providerID)"
+            )
+        }
+
+        XCTAssertTrue(app.staticTexts["云端文件"].exists)
     }
 
     /// 统一书架来源页承载所有商业阅读平台，新增平台不再挤占首页。
-    func testShelfSourcesOffersAllFourPlatforms() {
+    func testShelfSourcesOffersAllFivePlatforms() {
         let app = launchZh()
         openShelfSources(in: app)
 
-        for source in ["kindle", "weread", "google_books", "kobo"] {
+        for source in ["kindle", "weread", "google_books", "kobo", "oreilly"] {
             XCTAssertTrue(
-                app.descendants(matching: .any)["shelfSourceRow.\(source)"]
+                app.buttons["shelfSourcePrimaryAction.\(source)"]
                     .waitForExistence(timeout: 5),
                 "统一书架来源页缺少平台：\(source)"
             )
@@ -1043,12 +1432,32 @@ class CastReaderUITests: XCTestCase {
         on element: XCUIElement,
         timeout: TimeInterval
     ) -> Bool {
+        let identifier = element.identifier
+
+        func currentCandidates() -> [XCUIElement] {
+            guard !identifier.isEmpty else { return [element] }
+            return XCUIApplication()
+                .descendants(matching: .any)
+                .matching(identifier: identifier)
+                .allElementsBoundByIndex
+        }
+
+        func hasExpectedValue() -> Bool {
+            currentCandidates().contains {
+                $0.exists && ($0.value as? String) == expected
+            }
+        }
+
         let deadline = Date().addingTimeInterval(timeout)
         repeat {
-            if element.exists, (element.value as? String) == expected { return true }
+            // SwiftUI can replace a temporary loading control with the real
+            // playback control while preserving the accessibility identifier.
+            // Re-query that identifier so the test does not keep polling the
+            // detached pre-playback XCUIElement snapshot.
+            if hasExpectedValue() { return true }
             RunLoop.current.run(until: Date().addingTimeInterval(0.25))
         } while Date() < deadline
-        return element.exists && (element.value as? String) == expected
+        return hasExpectedValue()
     }
 
     private func waitForEither(

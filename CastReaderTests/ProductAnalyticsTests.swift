@@ -13,7 +13,7 @@ final class ProductAnalyticsTests: XCTestCase {
         let data = try Data(contentsOf: contractURL)
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let events = try XCTUnwrap(object["events"] as? [[String: Any]])
-        XCTAssertEqual(events.count, 25)
+        XCTAssertEqual(events.count, 31)
         let names = Set(events.compactMap { $0["name"] as? String })
         let legacy = Dictionary(uniqueKeysWithValues: events.compactMap { row -> (String, String)? in
             guard let name = row["name"] as? String,
@@ -47,10 +47,15 @@ final class ProductAnalyticsTests: XCTestCase {
         }
 
         let domains = try XCTUnwrap(object["value_domains"] as? [String: [String]])
+        let contractContentSources = Set(domains["contentSource"] ?? [])
+        // This contract is shared by both mobile clients. iOS must cover its
+        // complete domain while retaining Android's platform-specific source
+        // in the canonical cross-platform document.
         XCTAssertEqual(
-            Set(domains["contentSource"] ?? []),
+            contractContentSources.subtracting(["youtube_android"]),
             Set(AnalyticsContentSource.allCases.map(\.rawValue))
         )
+        XCTAssertTrue(contractContentSources.contains("youtube_android"))
         XCTAssertEqual(
             Set(domains["contentFormat"] ?? []),
             Set(AnalyticsContentFormat.allCases.map(\.rawValue))
@@ -101,6 +106,121 @@ final class ProductAnalyticsTests: XCTestCase {
         ) { error in
             XCTAssertEqual(error as? AnalyticsSchemaError, .unknownProperties(["language"]))
         }
+    }
+
+    func testYouTubeEventsAcceptOnlyPrivacySafeContractValues() throws {
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .contentIntent,
+                properties: .init(
+                    contentSource: AnalyticsContentSource.youtubeIOS.rawValue,
+                    contentFormat: AnalyticsContentFormat.youtube.rawValue,
+                    intendedMode: "read"
+                )
+            )
+        )
+        for entry in ["share", "clipboard", "scheme", "paste", "sample"] {
+            XCTAssertNoThrow(
+                try AnalyticsSchema.validate(
+                    .youtubeShareReceived,
+                    properties: .init(entry: entry)
+                )
+            )
+        }
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .youtubeHomeView,
+                properties: .init(firstTime: true)
+            )
+        )
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .youtubeExtractDone,
+                properties: .init(
+                    language: "zh-Hans",
+                    cueCount: 120,
+                    paragraphCount: 24,
+                    elapsedMs: 1_234
+                )
+            )
+        )
+        for reason in [
+            "no_captions",
+            "live",
+            "restricted",
+            "unavailable",
+            "caption_access",
+            "track_unavailable",
+            "timeout",
+            "unsupported_language",
+        ] {
+            XCTAssertNoThrow(
+                try AnalyticsSchema.validate(
+                    .youtubeExtractFail,
+                    properties: .init(reason: reason)
+                )
+            )
+        }
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .youtubeCaptionLanguageOpen,
+                properties: .init(trackCount: 4, playableTrackCount: 3)
+            )
+        )
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .youtubeCaptionLanguageSwitch,
+                properties: .init(fromLanguage: "en", toLanguage: "ja", kind: "asr")
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .youtubeCaptionLanguageOpen,
+                properties: .init(trackCount: 2, playableTrackCount: 5)
+            ),
+            "playable tracks cannot outnumber the tracks the page offered"
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .youtubeCaptionLanguageSwitch,
+                properties: .init(fromLanguage: "en", toLanguage: "ja", kind: "translated")
+            )
+        )
+
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .youtubeShareReceived,
+                properties: .init(entry: "https://www.youtube.com/watch?v=secret")
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .youtubeExtractDone,
+                properties: .init(
+                    language: "en",
+                    cueCount: 0,
+                    paragraphCount: 1,
+                    elapsedMs: 10
+                )
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .youtubeExtractFail,
+                properties: .init(reason: "raw server response")
+            )
+        )
+        XCTAssertEqual(AnalyticsContentSource.youtubeIOS.rawValue, "youtube_ios")
+        XCTAssertEqual(AnalyticsContentFormat.youtube.rawValue, "youtube")
+        let fallback = AnalyticsContentContext.fallback(
+            for: ReadingDocument(
+                title: "YouTube transcript",
+                sourceKind: .youtube,
+                paragraphs: []
+            )
+        )
+        XCTAssertEqual(fallback.source, .youtubeIOS)
+        XCTAssertEqual(fallback.format, .youtube)
     }
 
     func testHomeProCardImpressionIsNotAPaywallExposure() {
@@ -498,7 +618,9 @@ final class ProductAnalyticsTests: XCTestCase {
              .reviewStoreLinkOpened:
             return .app
         case .libraryConnection, .contentInputStage, .contentIntent, .contentReady,
-             .contentFailed:
+             .contentFailed, .youtubeShareReceived, .youtubeHomeView,
+             .youtubeExtractDone, .youtubeExtractFail,
+             .youtubeCaptionLanguageOpen, .youtubeCaptionLanguageSwitch:
             return .reader
         case .readStart, .readFirstAudio, .readMilestone, .readEnd: return .readAloud
         case .explainStart, .explainFirstBlock, .explainMilestone, .explainEnd: return .explain
@@ -538,6 +660,24 @@ final class ProductAnalyticsTests: XCTestCase {
             return .init(contentSource: "file", contentFormat: "pdf", lengthBucket: "500_1999", paragraphCountBucket: "6_20", latencyMs: 120)
         case .contentFailed:
             return .init(contentSource: "file", contentFormat: "pdf", latencyMs: 120, result: "failed", errorStage: "parse", errorCode: "invalid_file")
+        case .youtubeShareReceived:
+            return .init(entry: "share")
+        case .youtubeHomeView:
+            return .init(firstTime: true)
+        case .youtubeExtractDone:
+            return .init(language: "en", cueCount: 100, paragraphCount: 20, elapsedMs: 500)
+        case .youtubeExtractFail:
+            return .init(reason: "no_captions")
+        case .youtubeCaptionLanguageOpen:
+            return .init(trackCount: 3, playableTrackCount: 2)
+        case .youtubeCaptionLanguageSwitch:
+            return .init(
+                elapsedMs: 900,
+                fromLanguage: "en",
+                toLanguage: "de",
+                kind: "manual",
+                cacheHit: false
+            )
         case .readStart:
             return .init(contentSource: "file", contentFormat: "pdf", language: "en", voiceId: "af_heart", speed: 1, resume: false)
         case .readFirstAudio:

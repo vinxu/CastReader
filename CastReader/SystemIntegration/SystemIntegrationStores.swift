@@ -14,7 +14,10 @@ final class ContinueSnapshotStore: @unchecked Sendable {
     )
 
     private enum Storage {
-        static let snapshotsKey = "systemIntegration.continueSnapshots.v1"
+        // v2 intentionally drops stale v1 snapshots after the cloud feature
+        // was paused, so a widget cannot expose a remote item before the app
+        // has launched and rebuilt the filtered projection.
+        static let snapshotsKey = "systemIntegration.continueSnapshots.v2"
         static let maximumCount = 8
 
         // Keep the system surface aligned with HomeContinueContract without

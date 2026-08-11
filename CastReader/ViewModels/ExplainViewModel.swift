@@ -2235,14 +2235,27 @@ final class ExplainViewModel: ObservableObject {
         buildPlanRequest(document: doc, paras: sourceParas, prevSummary: prevSummary)
     }
 
+    /// A cloud document's stable local ID is derived from provider/account/item
+    /// identifiers and must never leave the device as a long-lived pseudonym.
+    /// The remote filename is metadata too, so QuickRead receives a generic
+    /// title while still receiving the user-requested document text.
+    static func quickReadSourceURL(for document: ReadingDocument) -> String {
+        guard document.origin == nil else { return "castreader://cloud-document" }
+        return document.sourceURL ?? "castreader://doc/\(document.id)"
+    }
+
+    static func quickReadTitle(for document: ReadingDocument) -> String {
+        document.origin == nil ? document.title : "Cloud document"
+    }
+
     private func buildPlanRequest(document targetDoc: ReadingDocument, paras sourceParas: [ReadingParagraph], prevSummary: String?) -> ExtractPlanRequest {
         let paras = sourceParas.map { QuickreadParagraphDTO(text: $0.text, type: typeString($0.type)) }
         let fullText = sourceParas.map(\.text).joined(separator: "\n\n")
-        let src = targetDoc.sourceURL ?? "castreader://doc/\(targetDoc.id)"
+        let src = Self.quickReadSourceURL(for: targetDoc)
         let continuity = prevSummary ?? fastSection?.text
         return ExtractPlanRequest(
             source_url: src,
-            title: targetDoc.title,
+            title: Self.quickReadTitle(for: targetDoc),
             lang: forcedExplainLang ?? settings.explainLangOrNil,   // 快道激活 → 用锁定语言，与快道 block_0 一致
             depth: requestDepth,                                    // 永远=用户设置的 3 档；场景不改深度（与 content_type 正交）
             text: fullText,

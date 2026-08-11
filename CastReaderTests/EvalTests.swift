@@ -359,6 +359,57 @@ final class EvalTests: XCTestCase {
         XCTAssertEqual(compact, compact.sorted(), "OCR word indexes must be monotonic: \(mapped)")
     }
 
+    /// Italian TTS may normalize smart apostrophes and omit written accents in
+    /// timestamp tokens. Kindle's exact bounded recovery should still cover the
+    /// first word immediately and then remain strictly sequential.
+    func testOCRWordAligner_ItalianApostrophesAndDiacriticsStayLocal() {
+        let ocrWords = ["L’esatto", "significato", "è", "più", "chiaro", "c’è", "nel", "testo"]
+        let ttsWords = ["L'esatto", "significato", "e", "piu", "chiaro", "c'e", "nel", "testo"]
+        let paragraph = ocrParagraph(text: ocrWords.joined(separator: " "), ocrWords: ocrWords)
+
+        let mapped = OCRWordAligner.mapTimestampWords(
+            timestamps(ttsWords),
+            in: paragraph,
+            allowFallback: false,
+            allowBoundedFallback: true
+        )
+
+        XCTAssertEqual(mapped, Array(0..<ocrWords.count).map(Optional.some))
+    }
+
+    /// The Kindle fallback is intentionally a four-token exact window. A short
+    /// accented token must not jump over an unrelated phrase to a distant word
+    /// with the same folded spelling.
+    func testOCRWordAligner_ItalianBoundedFallbackDoesNotJumpToDistantWord() {
+        let ocrWords = ["uno", "due", "tre", "quattro", "cinque", "più"]
+        let paragraph = ocrParagraph(text: ocrWords.joined(separator: " "), ocrWords: ocrWords)
+
+        let mapped = OCRWordAligner.mapTimestampWords(
+            timestamps(["piu"]),
+            in: paragraph,
+            allowFallback: false,
+            allowBoundedFallback: true
+        )
+
+        XCTAssertEqual(mapped, [nil])
+    }
+
+    /// A missing leading timestamp token may stay unpainted, but it cannot
+    /// consume the OCR cursor: the first real page word must still map to bbox 0.
+    func testOCRWordAligner_ItalianMissingLeadingTokenKeepsFirstPageWord() {
+        let ocrWords = ["Quando", "avevo", "visto", "Okusan"]
+        let paragraph = ocrParagraph(text: ocrWords.joined(separator: " "), ocrWords: ocrWords)
+
+        let mapped = OCRWordAligner.mapTimestampWords(
+            timestamps(["…", "Quando", "avevo", "visto", "Okusan"]),
+            in: paragraph,
+            allowFallback: false,
+            allowBoundedFallback: true
+        )
+
+        XCTAssertEqual(mapped, [nil, 0, 1, 2, 3])
+    }
+
     /// 照片中文 TTS 无词时间戳，高亮按段内进度推进。验证 photoWordIndex 单调不减、覆盖首末词、不越界。
     @MainActor
     func testPhotoWordIndex_MonotonicAndBounded() {
