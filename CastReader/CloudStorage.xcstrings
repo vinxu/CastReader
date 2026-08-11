@@ -1,0 +1,5026 @@
+{
+  "sourceLanguage": "zh-Hans",
+  "strings": {
+    "与我共享": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Für mich freigegeben"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Shared with me"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Compartido conmigo"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Partagés avec moi"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "मेरे साथ शेयर किया गया"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Condivisi con me"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "共有アイテム"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Compartilhados comigo"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "与我共享"}}
+    }},
+    "我的云端硬盘": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Meine Ablage"}},
+      "en": {"stringUnit": {"state": "translated", "value": "My Drive"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Mi unidad"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Mon Drive"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "मेरी ड्राइव"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Il mio Drive"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "マイドライブ"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Meu Drive"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "我的云端硬盘"}}
+    }},
+    "%@ 账号操作": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Kontoaktionen für %@"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Account actions for %@"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Acciones de la cuenta de %@"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Actions du compte %@"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "%@ खाते की कार्रवाइयाँ"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Azioni dell’account %@"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "%@ のアカウント操作"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Ações da conta do %@"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "%@ 账号操作"}}
+    }},
+    "切换云盘，当前 %@": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Cloud-Speicher wechseln, aktuell %@"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Switch drive, currently %@"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Cambiar unidad, actual %@"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Changer de lecteur, actuellement %@"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "क्लाउड ड्राइव बदलें, अभी %@"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Cambia unità, attualmente %@"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "ドライブを切り替え、現在 %@"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Trocar unidade, atual %@"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "切换云盘，当前 %@"}}
+    }},
+    "设备可用空间不足，无法下载此文件": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Auf dem Gerät ist nicht genug freier Speicherplatz für diese Datei verfügbar."}},
+      "en": {"stringUnit": {"state": "translated", "value": "This device does not have enough free space to download the file."}},
+      "es": {"stringUnit": {"state": "translated", "value": "El dispositivo no tiene suficiente espacio libre para descargar el archivo."}},
+      "fr": {"stringUnit": {"state": "translated", "value": "L’appareil ne dispose pas d’assez d’espace libre pour télécharger ce fichier."}},
+      "hi": {"stringUnit": {"state": "translated", "value": "इस फ़ाइल को डाउनलोड करने के लिए डिवाइस में पर्याप्त खाली स्थान नहीं है।"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Il dispositivo non dispone di spazio libero sufficiente per scaricare il file."}},
+      "ja": {"stringUnit": {"state": "translated", "value": "このファイルをダウンロードするための空き容量が端末にありません。"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "O dispositivo não tem espaço livre suficiente para baixar o arquivo."}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "设备可用空间不足，无法下载此文件"}}
+    }},
+    "连接云盘": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Cloud-Speicher verbinden"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Connect cloud storage"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Conectar almacenamiento en la nube"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Connecter le stockage cloud"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "क्लाउड स्टोरेज कनेक्ट करें"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Collega l’archivio cloud"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "クラウドストレージに接続"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Conectar armazenamento em nuvem"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "连接云盘"}}
+    }},
+    "从文库移除此记录": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Diesen Eintrag aus der Bibliothek entfernen"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Remove this entry from Library"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Eliminar este registro de la biblioteca"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Retirer cette entrée de la bibliothèque"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "इस रिकॉर्ड को लाइब्रेरी से हटाएँ"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Rimuovi questa voce dalla libreria"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "この履歴をライブラリから削除"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Remover este registro da biblioteca"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "从文库移除此记录"}}
+    }},
+    "连接原账号后继续": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Verbinde das ursprüngliche Konto, um fortzufahren"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Connect the original account to continue"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Conecta la cuenta original para continuar"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Connectez le compte d’origine pour continuer"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "जारी रखने के लिए मूल खाता कनेक्ट करें"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Collega l’account originale per continuare"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "元のアカウントに接続して続ける"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Conecte a conta original para continuar"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "连接原账号后继续"}}
+    }},
+    "需连接原账号": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Ursprüngliches Konto erforderlich"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Original account required"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Se requiere la cuenta original"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Compte d’origine requis"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "मूल खाता आवश्यक है"}},
+      "it": {"stringUnit": {"state": "translated", "value": "È richiesto l’account originale"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "元のアカウントが必要です"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "A conta original é necessária"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "需连接原账号"}}
+    }},
+    "云端文件已更新，已加载最新版本": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Die Cloud-Datei wurde aktualisiert. Die neueste Version wurde geladen."}},
+      "en": {"stringUnit": {"state": "translated", "value": "The cloud file was updated. The latest version has been loaded."}},
+      "es": {"stringUnit": {"state": "translated", "value": "El archivo en la nube se actualizó. Se cargó la versión más reciente."}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Le fichier cloud a été mis à jour. La dernière version a été chargée."}},
+      "hi": {"stringUnit": {"state": "translated", "value": "क्लाउड फ़ाइल अपडेट हुई। नवीनतम संस्करण लोड किया गया है।"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Il file cloud è stato aggiornato. È stata caricata la versione più recente."}},
+      "ja": {"stringUnit": {"state": "translated", "value": "クラウド上のファイルが更新されました。最新バージョンを読み込みました。"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "O arquivo na nuvem foi atualizado. A versão mais recente foi carregada."}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "云端文件已更新，已加载最新版本"}}
+    }},
+    "切换云盘": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Laufwerk wechseln"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Switch drive"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Cambiar unidad"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Changer de lecteur"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "ड्राइव बदलें"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Cambia unità"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "ドライブを切り替える"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Trocar unidade"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "切换云盘"}}
+    }},
+    "朗读或解读可能发送全文": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Vorlesen oder Erklären kann den Volltext senden"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Read Aloud or Explain may send the full text"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Leer o Explicar puede enviar el texto completo"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "La lecture ou l’explication peut envoyer le texte intégral"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "ज़ोर से पढ़ें या व्याख्या पूरा पाठ भेज सकती है"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Lettura o Spiegazione può inviare il testo completo"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "読み上げ・解説では全文が送信される場合があります"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Leitura ou Explicação pode enviar o texto completo"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "朗读或解读可能发送全文"}}
+    }},
+    "仅当你主动开始朗读或解读时，CastReader 才会发送在本机解析出的处理所需文本（可能覆盖所选文件全文）；原始文件不会发送到文件上传或存储接口。": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Nur wenn du Vorlesen oder Erklären aktiv startest, sendet CastReader den dafür benötigten, auf diesem Gerät extrahierten Text (möglicherweise den gesamten Text der ausgewählten Datei). Die Originaldatei wird nicht an Datei-Upload- oder Speicherendpunkte gesendet."}},
+      "en": {"stringUnit": {"state": "translated", "value": "Only when you actively start Read Aloud or Explain does CastReader send the required text parsed on this device (which may include the full text of the selected file). The original file is not sent to file-upload or storage endpoints."}},
+      "es": {"stringUnit": {"state": "translated", "value": "Solo cuando inicias activamente Leer o Explicar, CastReader envía el texto necesario analizado en este dispositivo (que puede incluir todo el texto del archivo seleccionado). El archivo original no se envía a interfaces de carga ni almacenamiento de archivos."}},
+      "fr": {"stringUnit": {"state": "translated", "value": "CastReader envoie le texte nécessaire extrait sur cet appareil (pouvant inclure tout le texte du fichier choisi) uniquement lorsque vous lancez activement la lecture ou l’explication. Le fichier d’origine n’est pas envoyé à des interfaces de téléversement ou de stockage de fichiers."}},
+      "hi": {"stringUnit": {"state": "translated", "value": "CastReader केवल तब इस डिवाइस पर पार्स किया गया आवश्यक पाठ भेजता है, जब आप स्वयं ज़ोर से पढ़ना या व्याख्या शुरू करते हैं (इसमें चुनी गई फ़ाइल का पूरा पाठ शामिल हो सकता है)। मूल फ़ाइल किसी फ़ाइल अपलोड या स्टोरेज इंटरफ़ेस पर नहीं भेजी जाती।"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Solo quando avvii attivamente Lettura o Spiegazione, CastReader invia il testo necessario estratto su questo dispositivo (che può includere tutto il testo del file selezionato). Il file originale non viene inviato a interfacce di caricamento o archiviazione dei file."}},
+      "ja": {"stringUnit": {"state": "translated", "value": "ユーザーが読み上げまたは解説を開始した場合にのみ、CastReaderはこの端末で解析した処理に必要なテキスト（選択したファイルの全文を含む場合があります）を送信します。元のファイルがファイルアップロードまたはストレージ用インターフェースに送信されることはありません。"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Somente quando você inicia ativamente Leitura ou Explicação, o CastReader envia o texto necessário processado neste dispositivo (que pode incluir todo o texto do arquivo selecionado). O arquivo original não é enviado a interfaces de upload ou armazenamento de arquivos."}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "仅当你主动开始朗读或解读时，CastReader 才会发送在本机解析出的处理所需文本（可能覆盖所选文件全文）；原始文件不会发送到文件上传或存储接口。"}}
+    }},
+    "本机会保存脱敏账号提示、派生账号 key、云盘与文件 ID、文件名、格式和版本；保留到你删除记录或 App 数据。原文件不永久保存。": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Auf diesem Gerät werden ein maskierter Kontohinweis, ein abgeleiteter Kontoschlüssel, Cloud- und Datei-ID, Dateiname, Format und Version gespeichert, bis du den Eintrag oder die App-Daten löschst. Die Originaldatei wird nicht dauerhaft gespeichert."}},
+      "en": {"stringUnit": {"state": "translated", "value": "This device stores a masked account hint, a derived account key, cloud and file IDs, filename, format, and version until you delete the record or app data. The original file is not stored permanently."}},
+      "es": {"stringUnit": {"state": "translated", "value": "Este dispositivo guarda una referencia de cuenta enmascarada, una clave derivada, los ID de nube y archivo, el nombre, el formato y la versión hasta que elimines el registro o los datos de la app. El archivo original no se guarda de forma permanente."}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Cet appareil conserve un indice de compte masqué, une clé dérivée, les identifiants du cloud et du fichier, le nom, le format et la version jusqu’à la suppression de l’entrée ou des données de l’app. Le fichier original n’est pas conservé durablement."}},
+      "hi": {"stringUnit": {"state": "translated", "value": "यह डिवाइस मास्क किया गया खाता संकेत, निकाली गई खाता कुंजी, क्लाउड और फ़ाइल ID, फ़ाइल नाम, फ़ॉर्मेट और संस्करण तब तक रखता है जब तक आप रिकॉर्ड या ऐप डेटा नहीं मिटाते। मूल फ़ाइल स्थायी रूप से नहीं रखी जाती।"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Questo dispositivo conserva un riferimento account mascherato, una chiave derivata, gli ID cloud e file, il nome, il formato e la versione finché non elimini il record o i dati dell’app. Il file originale non viene conservato in modo permanente."}},
+      "ja": {"stringUnit": {"state": "translated", "value": "この端末には、マスク済みアカウント表示、派生アカウントキー、クラウド／ファイルID、ファイル名、形式、バージョンが、履歴またはAppデータを削除するまで保存されます。元ファイルは恒久保存されません。"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Este dispositivo guarda uma indicação de conta mascarada, uma chave derivada, IDs da nuvem e do arquivo, nome, formato e versão até você excluir o registro ou os dados do app. O arquivo original não é armazenado permanentemente."}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "本机会保存脱敏账号提示、派生账号 key、云盘与文件 ID、文件名、格式和版本；保留到你删除记录或 App 数据。原文件不永久保存。"}}
+    }},
+    "删除与控制": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Löschen und Kontrolle"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Deletion and control"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Eliminación y control"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Suppression et contrôle"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "हटाना और नियंत्रण"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Eliminazione e controllo"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "削除と管理"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Exclusão e controle"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "删除与控制"}}
+    }},
+    "解除关联会立即删除可访问文件的本机关联；若 Google 撤销暂未确认，只在隔离的撤销队列保留旧令牌用于重试，CastReader 不会使用它获取文件，确认后删除。删除文库记录会删除远程引用。": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Beim Trennen wird die lokale Verknüpfung zu zugänglichen Dateien sofort gelöscht. Ist der Widerruf bei Google noch nicht bestätigt, bleibt das alte Token nur in einer isolierten Widerrufswarteschlange für einen erneuten Versuch erhalten. CastReader verwendet es nicht zum Abrufen von Dateien und löscht es nach der Bestätigung. Das Löschen eines Bibliothekseintrags entfernt die Remote-Referenz."}},
+      "en": {"stringUnit": {"state": "translated", "value": "Disconnecting immediately removes the local link to accessible files. If Google revocation is not yet confirmed, the old token is retained only in an isolated revocation queue for retry. CastReader will not use it to retrieve files and deletes it after confirmation. Deleting a Library record removes its remote reference."}},
+      "es": {"stringUnit": {"state": "translated", "value": "Al desconectar se elimina de inmediato el vínculo local con los archivos accesibles. Si Google aún no confirma la revocación, el token anterior solo se conserva en una cola de revocación aislada para volver a intentarlo. CastReader no lo usará para obtener archivos y lo eliminará tras la confirmación. Al borrar un registro de la biblioteca se elimina su referencia remota."}},
+      "fr": {"stringUnit": {"state": "translated", "value": "La déconnexion supprime immédiatement le lien local vers les fichiers accessibles. Si Google n’a pas encore confirmé la révocation, l’ancien jeton est conservé uniquement dans une file de révocation isolée afin de réessayer. CastReader ne l’utilisera pas pour récupérer des fichiers et le supprimera après confirmation. La suppression d’une entrée de la bibliothèque retire sa référence distante."}},
+      "hi": {"stringUnit": {"state": "translated", "value": "डिस्कनेक्ट करने पर सुलभ फ़ाइलों का स्थानीय संबंध तुरंत हट जाता है। यदि Google निरस्तीकरण की पुष्टि लंबित है, तो पुराने टोकन को केवल दोबारा प्रयास करने के लिए एक अलग निरस्तीकरण कतार में रखा जाता है। CastReader इसका उपयोग फ़ाइलें प्राप्त करने के लिए नहीं करेगा और पुष्टि के बाद इसे मिटा देगा। लाइब्रेरी रिकॉर्ड मिटाने पर उसका रिमोट संदर्भ हट जाता है।"}},
+      "it": {"stringUnit": {"state": "translated", "value": "La disconnessione elimina subito il collegamento locale ai file accessibili. Se Google non ha ancora confermato la revoca, il vecchio token viene conservato solo in una coda di revoca isolata per riprovare. CastReader non lo userà per recuperare file e lo eliminerà dopo la conferma. Eliminando un elemento della libreria si rimuove il relativo riferimento remoto."}},
+      "ja": {"stringUnit": {"state": "translated", "value": "連携を解除すると、アクセス可能なファイルとの端末内の関連付けは直ちに削除されます。Googleでの取り消しが未確認の場合、再試行のために古いトークンを隔離された取り消しキュー内にのみ保持します。CastReaderがそのトークンをファイル取得に使用することはなく、確認後に削除します。ライブラリ履歴を削除するとリモート参照も削除されます。"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Ao desconectar, o vínculo local com os arquivos acessíveis é removido imediatamente. Se a revogação do Google ainda não estiver confirmada, o token antigo será mantido somente em uma fila de revogação isolada para nova tentativa. O CastReader não o usará para obter arquivos e o excluirá após a confirmação. Excluir um registro da Biblioteca remove sua referência remota."}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "解除关联会立即删除可访问文件的本机关联；若 Google 撤销暂未确认，只在隔离的撤销队列保留旧令牌用于重试，CastReader 不会使用它获取文件，确认后删除。删除文库记录会删除远程引用。"}}
+    }},
+    "重新连接": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Erneut verbinden"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Reconnect"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Volver a conectar"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Reconnecter"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "फिर से कनेक्ट करें"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Ricollega"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "再接続"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Reconectar"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "重新连接"}}
+    }},
+    "组织策略禁止 CastReader 访问此云盘，请联系组织管理员": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Eine Organisationsrichtlinie verhindert den Zugriff von CastReader auf diesen Cloud-Speicher. Wende dich an die Administration deiner Organisation."}},
+      "en": {"stringUnit": {"state": "translated", "value": "Your organization’s policy prevents CastReader from accessing this cloud storage. Contact your organization administrator."}},
+      "es": {"stringUnit": {"state": "translated", "value": "La política de tu organización impide que CastReader acceda a este almacenamiento en la nube. Contacta con el administrador de tu organización."}},
+      "fr": {"stringUnit": {"state": "translated", "value": "La politique de votre organisation empêche CastReader d’accéder à ce stockage cloud. Contactez l’administrateur de votre organisation."}},
+      "hi": {"stringUnit": {"state": "translated", "value": "आपके संगठन की नीति CastReader को इस क्लाउड स्टोरेज तक पहुँचने से रोकती है। अपने संगठन के व्यवस्थापक से संपर्क करें।"}},
+      "it": {"stringUnit": {"state": "translated", "value": "I criteri della tua organizzazione impediscono a CastReader di accedere a questo archivio cloud. Contatta l’amministratore dell’organizzazione."}},
+      "ja": {"stringUnit": {"state": "translated", "value": "組織のポリシーにより、CastReaderはこのクラウドストレージにアクセスできません。組織の管理者にお問い合わせください。"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "A política da sua organização impede o CastReader de acessar este armazenamento em nuvem. Entre em contato com o administrador da organização."}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "组织策略禁止 CastReader 访问此云盘，请联系组织管理员"}}
+    }},
+    "此 Google 文档超过 Google Drive 的导出大小限制，无法导入": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Dieses Google-Dokument überschreitet das Exportgrößenlimit von Google Drive und kann nicht importiert werden."}},
+      "en": {"stringUnit": {"state": "translated", "value": "This Google document exceeds Google Drive’s export size limit and cannot be imported."}},
+      "es": {"stringUnit": {"state": "translated", "value": "Este documento de Google supera el límite de tamaño de exportación de Google Drive y no se puede importar."}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Ce document Google dépasse la limite de taille d’exportation de Google Drive et ne peut pas être importé."}},
+      "hi": {"stringUnit": {"state": "translated", "value": "यह Google दस्तावेज़ Google Drive की निर्यात आकार सीमा से बड़ा है और आयात नहीं किया जा सकता।"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Questo documento Google supera il limite di dimensione per l’esportazione di Google Drive e non può essere importato."}},
+      "ja": {"stringUnit": {"state": "translated", "value": "このGoogleドキュメントはGoogle Driveのエクスポート上限を超えているため、読み込めません。"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Este documento do Google excede o limite de tamanho de exportação do Google Drive e não pode ser importado."}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "此 Google 文档超过 Google Drive 的导出大小限制，无法导入"}}
+    }},
+    "云盘拒绝了此操作，请联系云盘管理员或稍后查看服务状态": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Der Cloud-Speicher hat diesen Vorgang abgelehnt. Wende dich an die Administration oder prüfe später den Dienststatus."}},
+      "en": {"stringUnit": {"state": "translated", "value": "The cloud service rejected this operation. Contact your cloud administrator or check the service status later."}},
+      "es": {"stringUnit": {"state": "translated", "value": "El servicio en la nube rechazó esta operación. Contacta con el administrador o consulta el estado del servicio más tarde."}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Le service cloud a refusé cette opération. Contactez l’administrateur ou consultez l’état du service ultérieurement."}},
+      "hi": {"stringUnit": {"state": "translated", "value": "क्लाउड सेवा ने यह कार्रवाई अस्वीकार कर दी। अपने क्लाउड व्यवस्थापक से संपर्क करें या बाद में सेवा की स्थिति देखें।"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Il servizio cloud ha rifiutato l’operazione. Contatta l’amministratore o verifica più tardi lo stato del servizio."}},
+      "ja": {"stringUnit": {"state": "translated", "value": "クラウドサービスがこの操作を拒否しました。クラウド管理者に問い合わせるか、後でサービス状況を確認してください。"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "O serviço de nuvem recusou esta operação. Entre em contato com o administrador ou verifique o status do serviço mais tarde."}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "云盘拒绝了此操作，请联系云盘管理员或稍后查看服务状态"}}
+    }},
+    "云盘返回了无法识别的数据，暂时无法完成此操作": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Der Cloud-Speicher hat nicht erkennbare Daten zurückgegeben. Dieser Vorgang kann derzeit nicht abgeschlossen werden."}},
+      "en": {"stringUnit": {"state": "translated", "value": "The cloud service returned unrecognized data, so this operation cannot be completed right now."}},
+      "es": {"stringUnit": {"state": "translated", "value": "El servicio en la nube devolvió datos no reconocidos y la operación no se puede completar ahora."}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Le service cloud a renvoyé des données non reconnues ; cette opération ne peut pas être effectuée pour le moment."}},
+      "hi": {"stringUnit": {"state": "translated", "value": "क्लाउड सेवा ने अपरिचित डेटा लौटाया, इसलिए यह कार्रवाई अभी पूरी नहीं की जा सकती।"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Il servizio cloud ha restituito dati non riconosciuti, quindi al momento non è possibile completare l’operazione."}},
+      "ja": {"stringUnit": {"state": "translated", "value": "クラウドサービスから認識できないデータが返されたため、現在この操作を完了できません。"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "O serviço de nuvem retornou dados não reconhecidos, portanto a operação não pode ser concluída agora."}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "云盘返回了无法识别的数据，暂时无法完成此操作"}}
+    }},
+    "设备可用空间不足，请在系统设置中管理存储空间后再试": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Auf dem Gerät ist nicht genug Speicherplatz verfügbar. Gib in den Systemeinstellungen Speicher frei und versuche es erneut."}},
+      "en": {"stringUnit": {"state": "translated", "value": "This device does not have enough free space. Manage storage in System Settings, then try again."}},
+      "es": {"stringUnit": {"state": "translated", "value": "El dispositivo no tiene suficiente espacio libre. Gestiona el almacenamiento en Ajustes y vuelve a intentarlo."}},
+      "fr": {"stringUnit": {"state": "translated", "value": "L’appareil ne dispose pas d’assez d’espace libre. Gérez le stockage dans Réglages, puis réessayez."}},
+      "hi": {"stringUnit": {"state": "translated", "value": "डिवाइस में पर्याप्त खाली स्थान नहीं है। सिस्टम सेटिंग्स में स्टोरेज प्रबंधित करें, फिर दोबारा कोशिश करें।"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Il dispositivo non dispone di spazio libero sufficiente. Gestisci lo spazio nelle Impostazioni di sistema, quindi riprova."}},
+      "ja": {"stringUnit": {"state": "translated", "value": "端末の空き容量が不足しています。システム設定でストレージを管理してから、もう一度お試しください。"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "O dispositivo não tem espaço livre suficiente. Gerencie o armazenamento nos Ajustes do sistema e tente novamente."}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "设备可用空间不足，请在系统设置中管理存储空间后再试"}}
+    }},
+    "云盘暂时无法完成此操作，请稍后再试": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Der Cloud-Speicher kann diesen Vorgang derzeit nicht abschließen. Versuche es später erneut."}},
+      "en": {"stringUnit": {"state": "translated", "value": "The cloud service cannot complete this operation right now. Try again later."}},
+      "es": {"stringUnit": {"state": "translated", "value": "El servicio en la nube no puede completar esta operación ahora. Inténtalo más tarde."}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Le service cloud ne peut pas effectuer cette opération pour le moment. Réessayez plus tard."}},
+      "hi": {"stringUnit": {"state": "translated", "value": "क्लाउड सेवा यह कार्रवाई अभी पूरी नहीं कर सकती। बाद में फिर कोशिश करें।"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Al momento il servizio cloud non può completare l’operazione. Riprova più tardi."}},
+      "ja": {"stringUnit": {"state": "translated", "value": "クラウドサービスは現在この操作を完了できません。しばらくしてからもう一度お試しください。"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "O serviço de nuvem não pode concluir esta operação agora. Tente novamente mais tarde."}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "云盘暂时无法完成此操作，请稍后再试"}}
+    }},
+    "查看完整隐私政策": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Vollständige Datenschutzrichtlinie ansehen"}},
+      "en": {"stringUnit": {"state": "translated", "value": "View the full Privacy Policy"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Ver la Política de privacidad completa"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Voir la Politique de confidentialité complète"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "पूरी गोपनीयता नीति देखें"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Visualizza l’Informativa sulla privacy completa"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "プライバシーポリシー全文を見る"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Ver a Política de Privacidade completa"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "查看完整隐私政策"}}
+    }},
+    "文件过大或解压后体积异常，已停止导入": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Datei ist zu groß oder wird auf eine unsichere Größe entpackt. Der Import wurde gestoppt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file is too large or expands to an unsafe size. Import was stopped."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El archivo es demasiado grande o se expande a un tamaño no seguro. Se detuvo la importación."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le fichier est trop volumineux ou se décompresse à une taille non sûre. L’importation a été arrêtée."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ाइल बहुत बड़ी है या निकालने पर असुरक्षित आकार तक फैलती है। आयात रोक दिया गया।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il file è troppo grande o si espande fino a dimensioni non sicure. L’importazione è stata interrotta."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルが大きすぎるか、展開後のサイズが安全上限を超えるため、読み込みを停止しました。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O arquivo é grande demais ou se expande para um tamanho não seguro. A importação foi interrompida."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件过大或解压后体积异常，已停止导入"
+          }
+        }
+      }
+    },
+    "选择导出格式": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportformat auswählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select export format"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seleccionar formato de exportación"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sélectionner le format d’exportation"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "निर्यात फ़ॉर्मेट चुनें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seleziona il formato di esportazione"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポート形式を選択"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selecionar formato de exportação"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择导出格式"
+          }
+        }
+      }
+    },
+    "取消": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuler"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "रद्द करें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annulla"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンセル"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
+    },
+    "云端文档会在设备上导出后进入现有阅读器": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Cloud-Dokument wird auf diesem Gerät exportiert und anschließend im vorhandenen Reader geöffnet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The cloud document will be exported on this device and opened in the existing reader."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El documento en la nube se exportará en este dispositivo y se abrirá en el lector existente."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le document cloud sera exporté sur cet appareil, puis ouvert dans le lecteur existant."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "क्लाउड दस्तावेज़ इस डिवाइस पर निर्यात होकर मौजूदा रीडर में खुलेगा।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il documento nel cloud verrà esportato su questo dispositivo e aperto nel lettore esistente."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クラウド上のドキュメントをこのデバイスでエクスポートして、既存のリーダーで開きます。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O documento na nuvem será exportado neste dispositivo e aberto no leitor atual."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云端文档会在设备上导出后进入现有阅读器"
+          }
+        }
+      }
+    },
+    "账号操作": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontoaktionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account actions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acciones de la cuenta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actions du compte"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "खाता कार्रवाइयाँ"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Azioni account"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アカウント操作"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ações da conta"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "账号操作"
+          }
+        }
+      }
+    },
+    "更换账号": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konto wechseln"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch account"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambiar de cuenta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changer de compte"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "खाता बदलें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambia account"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アカウントを変更"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trocar de conta"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更换账号"
+          }
+        }
+      }
+    },
+    "查看数据使用说明": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinweise zur Datennutzung anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View data usage details"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver información sobre el uso de datos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voir les informations sur l’utilisation des données"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "डेटा उपयोग की जानकारी देखें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visualizza le informazioni sull’uso dei dati"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "データ利用について表示"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver informações sobre o uso de dados"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看数据使用说明"
+          }
+        }
+      }
+    },
+    "解除关联": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verknüpfung aufheben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnect"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desvincular"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dissocier"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लिंक हटाएँ"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scollega"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連携を解除"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desvincular"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解除关联"
+          }
+        }
+      }
+    },
+    "解除关联？": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verknüpfung aufheben?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnect?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Desvincular?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dissocier ?"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लिंक हटाएँ?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scollegare?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連携を解除しますか？"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desvincular?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解除关联？"
+          }
+        }
+      }
+    },
+    "这会删除本机保存的授权关联并取消当前操作；阅读历史基础信息会保留。": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dadurch werden die auf diesem Gerät gespeicherte Autorisierungsverknüpfung gelöscht und der aktuelle Vorgang abgebrochen. Grundlegende Angaben im Leseverlauf bleiben erhalten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This will remove the authorization link saved on this device and cancel the current operation. Basic reading history metadata will be kept."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esto eliminará la autorización guardada en este dispositivo y cancelará la operación actual. Se conservarán los datos básicos del historial de lectura."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cela supprimera l’autorisation enregistrée sur cet appareil et annulera l’opération en cours. Les informations de base de l’historique de lecture seront conservées."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इससे इस डिवाइस पर सेव किया गया प्राधिकरण लिंक हट जाएगा और मौजूदा कार्रवाई रद्द हो जाएगी। पढ़ने के इतिहास की बुनियादी जानकारी बनी रहेगी।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questa operazione rimuoverà l’autorizzazione salvata sul dispositivo e annullerà l’operazione in corso. I dati di base della cronologia di lettura verranno conservati."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このデバイスに保存されている認証連携を削除し、現在の操作をキャンセルします。読書履歴の基本情報は保持されます。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isso removerá a autorização salva neste dispositivo e cancelará a operação atual. As informações básicas do histórico de leitura serão mantidas."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这会删除本机保存的授权关联并取消当前操作；阅读历史基础信息会保留。"
+          }
+        }
+      }
+    },
+    "提示": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinweis"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notice"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aviso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सूचना"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avviso"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お知らせ"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aviso"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提示"
+          }
+        }
+      }
+    },
+    "好": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aceptar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ठीक है"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "好"
+          }
+        }
+      }
+    },
+    "关闭": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerrar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermer"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "बंद करें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chiudi"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閉じる"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fechar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
+      }
+    },
+    "账号关联及云盘授权已解除": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontoverknüpfung und Cloud-Autorisierung wurden aufgehoben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The account link and cloud authorization have been removed."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se han eliminado la vinculación de la cuenta y la autorización del almacenamiento en la nube."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’association du compte et l’autorisation cloud ont été supprimées."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "खाता लिंक और क्लाउड प्राधिकरण हटा दिए गए हैं।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il collegamento dell’account e l’autorizzazione al cloud sono stati rimossi."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アカウント連携とクラウドの認証を解除しました。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O vínculo da conta e a autorização da nuvem foram removidos."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "账号关联及云盘授权已解除"
+          }
+        }
+      }
+    },
+    "已从此设备断开；云盘端授权暂未确认撤销，可稍后在云盘账号设置中检查": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbindung auf diesem Gerät getrennt. Ob die Autorisierung beim Cloud-Anbieter widerrufen wurde, konnte noch nicht bestätigt werden. Prüfe dies später in den Kontoeinstellungen des Cloud-Anbieters."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnected from this device. Revocation by the cloud provider has not yet been confirmed; check later in the cloud account settings."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconectado de este dispositivo. Aún no se ha confirmado la revocación de la autorización en el proveedor; puedes comprobarlo más tarde en los ajustes de la cuenta del servicio en la nube."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déconnecté de cet appareil. La révocation de l’autorisation auprès du fournisseur cloud n’est pas encore confirmée ; vérifiez-la plus tard dans les réglages du compte cloud."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस डिवाइस से डिस्कनेक्ट किया गया। क्लाउड सेवा में प्राधिकरण रद्द होने की अभी पुष्टि नहीं हुई है; बाद में क्लाउड खाते की सेटिंग में जाँचें।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnessione da questo dispositivo completata. La revoca dell’autorizzazione presso il provider cloud non è ancora confermata; controlla in seguito nelle impostazioni dell’account cloud."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このデバイスとの接続を解除しました。クラウド側の認証が取り消されたかはまだ確認できません。後でクラウドのアカウント設定を確認してください。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconectado deste dispositivo. A revogação da autorização no provedor de nuvem ainda não foi confirmada; verifique depois nas configurações da conta do serviço de nuvem."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已从此设备断开；云盘端授权暂未确认撤销，可稍后在云盘账号设置中检查"
+          }
+        }
+      }
+    },
+    "已从此设备断开": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbindung auf diesem Gerät getrennt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnected from this device."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconectado de este dispositivo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déconnecté de cet appareil."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस डिवाइस से डिस्कनेक्ट किया गया।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnessione da questo dispositivo completata."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このデバイスとの接続を解除しました。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconectado deste dispositivo."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已从此设备断开"
+          }
+        }
+      }
+    },
+    "Word（DOCX）": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word (DOCX)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word (DOCX)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word (DOCX)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word (DOCX)"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word (DOCX)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word (DOCX)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word（DOCX）"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word (DOCX)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word（DOCX）"
+          }
+        }
+      }
+    },
+    "暂不可用": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Derzeit nicht verfügbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporarily unavailable"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No disponible temporalmente"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporairement indisponible"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़िलहाल उपलब्ध नहीं"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporaneamente non disponibile"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一時的に利用できません"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporariamente indisponível"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂不可用"
+          }
+        }
+      }
+    },
+    "未连接": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht verbunden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin conexión"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non connecté"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कनेक्ट नहीं है"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non connesso"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未接続"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não conectado"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未连接"
+          }
+        }
+      }
+    },
+    "正在连接…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbindung wird hergestellt …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecting…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectando…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कनेक्ट हो रहा है…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connessione…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続中…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectando…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在连接…"
+          }
+        }
+      }
+    },
+    "需要重新连接": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneute Verbindung erforderlich"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconnect required"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es necesario volver a conectar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconnexion requise"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फिर से कनेक्ट करना ज़रूरी है"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "È necessario riconnettersi"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再接続が必要です"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "É preciso reconectar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要重新连接"
+          }
+        }
+      }
+    },
+    "已连接": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbunden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecté"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कनेक्टेड"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connesso"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続済み"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectado"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已连接"
+          }
+        }
+      }
+    },
+    "连接 %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit %@ verbinden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect to %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectar con %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se connecter à %@"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ से कनेक्ट करें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connetti a %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@に接続"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectar a %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接 %@"
+          }
+        }
+      }
+    },
+    "只读访问 · 原文件不上 CastReader 云端": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schreibgeschützter Zugriff · Originaldateien werden nicht in die CastReader-Cloud hochgeladen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read-only access · Original files are not uploaded to CastReader Cloud"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acceso de solo lectura · Los archivos originales no se suben a la nube de CastReader"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accès en lecture seule · Les fichiers d’origine ne sont pas envoyés dans le cloud CastReader"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "केवल पढ़ने का एक्सेस · मूल फ़ाइलें CastReader Cloud पर अपलोड नहीं होतीं"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accesso in sola lettura · I file originali non vengono caricati nel cloud CastReader"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み取り専用アクセス · 元のファイルはCastReaderクラウドにアップロードされません"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acesso somente leitura · Os arquivos originais não são enviados à nuvem do CastReader"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只读访问 · 原文件不上 CastReader 云端"
+          }
+        }
+      }
+    },
+    "仅申请读取权限": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur Leseberechtigung angefordert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request read access only"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo se solicita permiso de lectura"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seule l’autorisation de lecture est demandée"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "केवल पढ़ने की अनुमति माँगी जाती है"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viene richiesta solo l’autorizzazione alla lettura"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み取り権限のみを要求"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solicita somente permissão de leitura"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅申请读取权限"
+          }
+        }
+      }
+    },
+    "CastReader 不会在你的云盘中创建、修改、移动或删除文件。": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader erstellt, ändert, verschiebt oder löscht keine Dateien in deinem Cloud-Speicher."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader will not create, modify, move, or delete files in your cloud storage."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader no creará, modificará, moverá ni eliminará archivos de tu almacenamiento en la nube."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader ne créera, ne modifiera, ne déplacera et ne supprimera aucun fichier dans votre stockage cloud."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader आपके क्लाउड स्टोरेज में कोई फ़ाइल बनाएगा, बदलेगा, खिसकाएगा या मिटाएगा नहीं।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader non creerà, modificherà, sposterà o eliminerà file nel tuo spazio di archiviazione cloud."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReaderがクラウドストレージ内のファイルを作成、変更、移動、削除することはありません。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O CastReader não criará, modificará, moverá nem excluirá arquivos no seu armazenamento em nuvem."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CastReader 不会在你的云盘中创建、修改、移动或删除文件。"
+          }
+        }
+      }
+    },
+    "文件只下载到这台设备": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dateien werden nur auf dieses Gerät heruntergeladen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files download only to this device"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los archivos solo se descargan en este dispositivo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les fichiers sont téléchargés uniquement sur cet appareil"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ाइलें केवल इस डिवाइस पर डाउनलोड होती हैं"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I file vengono scaricati solo su questo dispositivo"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルはこのデバイスにのみダウンロード"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os arquivos são baixados somente neste dispositivo"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件只下载到这台设备"
+          }
+        }
+      }
+    },
+    "支持的文档会进入临时目录并在本机校验、解析；不会上传到 CastReader 的文件存储。": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unterstützte Dokumente werden in einem temporären Ordner auf diesem Gerät geprüft und verarbeitet. Sie werden nicht in den Dateispeicher von CastReader hochgeladen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supported documents are placed in a temporary folder and validated and parsed on this device. They are not uploaded to CastReader file storage."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los documentos compatibles se guardan en una carpeta temporal y se validan y procesan en este dispositivo. No se suben al almacenamiento de archivos de CastReader."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les documents pris en charge sont placés dans un dossier temporaire, puis vérifiés et analysés sur cet appareil. Ils ne sont pas envoyés dans l’espace de stockage de CastReader."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "समर्थित दस्तावेज़ अस्थायी फ़ोल्डर में रखे जाते हैं और इसी डिवाइस पर जाँचे व पार्स किए जाते हैं। उन्हें CastReader के फ़ाइल स्टोरेज पर अपलोड नहीं किया जाता।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I documenti supportati vengono inseriti in una cartella temporanea e verificati e analizzati su questo dispositivo. Non vengono caricati nello spazio di archiviazione file di CastReader."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "対応している文書は一時フォルダに保存され、このデバイス上で検証・解析されます。CastReaderのファイルストレージにはアップロードされません。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os documentos compatíveis são colocados em uma pasta temporária e validados e processados neste dispositivo. Eles não são enviados ao armazenamento de arquivos do CastReader."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "支持的文档会进入临时目录并在本机校验、解析；不会上传到 CastReader 的文件存储。"
+          }
+        }
+      }
+    },
+    "朗读与解读沿用现有服务": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorlesen und Erklären nutzen die vorhandenen Dienste"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read Aloud and Explain use existing services"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leer en voz alta y Explicar usan los servicios existentes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La lecture à voix haute et l’explication utilisent les services existants"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ज़ोर से पढ़ना और व्याख्या मौजूदा सेवाओं का उपयोग करते हैं"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lettura ad alta voce e Spiegazione usano i servizi esistenti"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み上げと解説は既存のサービスを利用"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ler em voz alta e Explicar usam os serviços existentes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "朗读与解读沿用现有服务"
+          }
+        }
+      }
+    },
+    "开始朗读或解读后，必要的文本会按现有产品逻辑发送到 CastReader 的 TTS 或 QuickRead 服务。": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wenn du das Vorlesen oder Erklären startest, wird erforderlicher Text gemäß der bestehenden Produktlogik an die TTS- oder QuickRead-Dienste von CastReader gesendet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After you start Read Aloud or Explain, required text is sent to CastReader’s TTS or QuickRead services under the app’s existing processing flow."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuando inicies Leer en voz alta o Explicar, el texto necesario se enviará a los servicios TTS o QuickRead de CastReader según el flujo de procesamiento existente."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Après le démarrage de la lecture à voix haute ou de l’explication, le texte nécessaire est envoyé aux services TTS ou QuickRead de CastReader selon le processus existant de l’app."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ज़ोर से पढ़ना या व्याख्या शुरू करने के बाद, आवश्यक टेक्स्ट ऐप की मौजूदा प्रक्रिया के अनुसार CastReader की TTS या QuickRead सेवा को भेजा जाता है।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quando avvii Lettura ad alta voce o Spiegazione, il testo necessario viene inviato ai servizi TTS o QuickRead di CastReader secondo il flusso di elaborazione esistente."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み上げまたは解説を開始すると、必要なテキストが既存の処理フローに従ってCastReaderのTTSまたはQuickReadサービスに送信されます。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ao iniciar Ler em voz alta ou Explicar, o texto necessário é enviado aos serviços TTS ou QuickRead do CastReader conforme o fluxo de processamento atual do app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始朗读或解读后，必要的文本会按现有产品逻辑发送到 CastReader 的 TTS 或 QuickRead 服务。"
+          }
+        }
+      }
+    },
+    "历史只保存远程引用": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verlauf speichert nur den Remoteverweis"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History stores remote references only"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El historial solo guarda referencias remotas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’historique ne conserve que les références distantes"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इतिहास में केवल रिमोट संदर्भ सेव होते हैं"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La cronologia salva solo riferimenti remoti"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "履歴にはリモート参照のみを保存"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O histórico salva somente referências remotas"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "历史只保存远程引用"
+          }
+        }
+      }
+    },
+    "文库会保存文件来源、版本和基础元数据；再次打开时从原云盘重新下载，不自动永久保存原文件。": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Bibliothek speichert Quelle, Version und grundlegende Metadaten. Beim erneuten Öffnen wird die Datei wieder aus dem ursprünglichen Cloud-Speicher geladen; die Originaldatei wird nicht dauerhaft gespeichert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The library saves the file source, version, and basic metadata. When reopened, the file is downloaded again from its original cloud storage and is not automatically kept permanently."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La biblioteca guarda el origen, la versión y los metadatos básicos del archivo. Al volver a abrirlo, se descarga de nuevo del almacenamiento en la nube original y no se conserva automáticamente de forma permanente."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La bibliothèque enregistre la source, la version et les métadonnées de base du fichier. À la réouverture, le fichier est téléchargé à nouveau depuis son stockage cloud d’origine et n’est pas conservé automatiquement de façon permanente."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "लाइब्रेरी फ़ाइल का स्रोत, संस्करण और बुनियादी मेटाडेटा सेव करती है। दोबारा खोलने पर फ़ाइल मूल क्लाउड स्टोरेज से फिर डाउनलोड होती है और मूल फ़ाइल अपने-आप स्थायी रूप से सेव नहीं होती।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La libreria salva l’origine, la versione e i metadati di base del file. Alla riapertura, il file viene scaricato di nuovo dal cloud originale e non viene conservato automaticamente in modo permanente."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ライブラリにはファイルの提供元、バージョン、基本メタデータが保存されます。再度開くと元のクラウドからダウンロードされ、元のファイルが自動的に永続保存されることはありません。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A biblioteca salva a origem, a versão e os metadados básicos do arquivo. Ao abri-lo novamente, ele é baixado outra vez do armazenamento em nuvem original e não é mantido automaticamente de forma permanente."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文库会保存文件来源、版本和基础元数据；再次打开时从原云盘重新下载，不自动永久保存原文件。"
+          }
+        }
+      }
+    },
+    "继续连接": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiter verbinden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "जारी रखें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続を続ける"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续连接"
+          }
+        }
+      }
+    },
+    "这个文件夹是空的": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Ordner ist leer"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This folder is empty"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta carpeta está vacía"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce dossier est vide"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "यह फ़ोल्डर खाली है"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questa cartella è vuota"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このフォルダは空です"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta pasta está vazia"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这个文件夹是空的"
+          }
+        }
+      }
+    },
+    "没有找到支持的文件": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine unterstützten Dateien gefunden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No supported files found"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se encontraron archivos compatibles"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun fichier compatible trouvé"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कोई समर्थित फ़ाइल नहीं मिली"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun file supportato trovato"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "対応しているファイルが見つかりません"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhum arquivo compatível encontrado"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有找到支持的文件"
+          }
+        }
+      }
+    },
+    "文件夹": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordner"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folders"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carpetas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dossiers"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ोल्डर"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cartelle"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "フォルダ"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastas"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件夹"
+          }
+        }
+      }
+    },
+    "文件": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dateien"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archivos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fichiers"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ाइलें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイル"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arquivos"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件"
+          }
+        }
+      }
+    },
+    "原文件仅下载到本机临时目录，不会上传到 CastReader 云端": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Originaldateien werden nur in einen temporären Ordner auf diesem Gerät geladen und nicht in die CastReader-Cloud hochgeladen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original files are downloaded only to a temporary folder on this device and are not uploaded to CastReader Cloud."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los archivos originales solo se descargan en una carpeta temporal de este dispositivo y no se suben a la nube de CastReader."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les fichiers d’origine sont téléchargés uniquement dans un dossier temporaire sur cet appareil et ne sont pas envoyés dans le cloud CastReader."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मूल फ़ाइलें केवल इस डिवाइस के अस्थायी फ़ोल्डर में डाउनलोड होती हैं और CastReader Cloud पर अपलोड नहीं होतीं।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I file originali vengono scaricati solo in una cartella temporanea su questo dispositivo e non vengono caricati nel cloud CastReader."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元のファイルはこのデバイスの一時フォルダにのみダウンロードされ、CastReaderクラウドにはアップロードされません。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Os arquivos originais são baixados somente para uma pasta temporária neste dispositivo e não são enviados à nuvem do CastReader."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原文件仅下载到本机临时目录，不会上传到 CastReader 云端"
+          }
+        }
+      }
+    },
+    "根目录": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stammverzeichnis"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Root"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raíz"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Racine"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "रूट"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cartella principale"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ルート"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raiz"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "根目录"
+          }
+        }
+      }
+    },
+    "不支持此格式": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses Format wird nicht unterstützt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This format is not supported"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este formato no es compatible"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce format n’est pas pris en charge"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "यह फ़ॉर्मेट समर्थित नहीं है"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo formato non è supportato"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この形式には対応していません"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este formato não é compatível"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不支持此格式"
+          }
+        }
+      }
+    },
+    "可导出": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportierbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportable"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se puede exportar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportable"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "निर्यात योग्य"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esportabile"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エクスポート可能"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportável"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可导出"
+          }
+        }
+      }
+    },
+    "可朗读与解读": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorlesen und Erklären möglich"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available for Read Aloud and Explain"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disponible para Leer en voz alta y Explicar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disponible pour la lecture à voix haute et l’explication"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ज़ोर से पढ़ने और व्याख्या के लिए उपलब्ध"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disponibile per Lettura ad alta voce e Spiegazione"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み上げ・解説に対応"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disponível para Ler em voz alta e Explicar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可朗读与解读"
+          }
+        }
+      }
+    },
+    "原文件只在本机临时处理": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Originaldatei wird nur vorübergehend auf diesem Gerät verarbeitet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original file is processed temporarily on this device only"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El archivo original solo se procesa temporalmente en este dispositivo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le fichier d’origine est traité temporairement sur cet appareil uniquement"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मूल फ़ाइल केवल इस डिवाइस पर अस्थायी रूप से प्रोसेस होती है"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il file originale viene elaborato temporaneamente solo su questo dispositivo"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "元のファイルはこのデバイスで一時的にのみ処理されます"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O arquivo original é processado temporariamente apenas neste dispositivo"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原文件只在本机临时处理"
+          }
+        }
+      }
+    },
+    "正在连接账号…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konto wird verbunden …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecting account…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectando la cuenta…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion du compte…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "खाता कनेक्ट हो रहा है…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connessione dell’account…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アカウントに接続中…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectando a conta…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在连接账号…"
+          }
+        }
+      }
+    },
+    "正在获取文件信息…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dateiinformationen werden abgerufen …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting file information…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obteniendo información del archivo…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Récupération des informations du fichier…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ाइल की जानकारी ली जा रही है…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recupero delle informazioni sul file…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイル情報を取得中…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obtendo informações do arquivo…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在获取文件信息…"
+          }
+        }
+      }
+    },
+    "正在下载…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird heruntergeladen …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descargando…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléchargement…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "डाउनलोड हो रहा है…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ダウンロード中…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baixando…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在下载…"
+          }
+        }
+      }
+    },
+    "正在检查文件…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datei wird geprüft …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking file…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprobando el archivo…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérification du fichier…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ाइल जाँची जा रही है…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifica del file…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルを確認中…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verificando o arquivo…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在检查文件…"
+          }
+        }
+      }
+    },
+    "正在解析 PDF…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF wird verarbeitet …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parsing PDF…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analizando PDF…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyse du PDF…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF पार्स हो रहा है…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analisi del PDF…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDFを解析中…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analisando PDF…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在解析 PDF…"
+          }
+        }
+      }
+    },
+    "正在解析 Word…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word wird verarbeitet …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parsing Word…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analizando Word…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyse du document Word…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word पार्स हो रहा है…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analisi del documento Word…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wordを解析中…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analisando Word…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在解析 Word…"
+          }
+        }
+      }
+    },
+    "正在解析 EPUB…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EPUB wird verarbeitet …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parsing EPUB…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analizando EPUB…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyse de l’EPUB…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EPUB पार्स हो रहा है…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analisi dell’EPUB…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "EPUBを解析中…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analisando EPUB…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在解析 EPUB…"
+          }
+        }
+      }
+    },
+    "正在准备阅读器…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reader wird vorbereitet …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing reader…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparando el lector…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Préparation du lecteur…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "रीडर तैयार हो रहा है…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparazione del lettore…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リーダーを準備中…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparando o leitor…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在准备阅读器…"
+          }
+        }
+      }
+    },
+    "正在处理…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird verarbeitet …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Processing…"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Procesando…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Traitement…"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "प्रोसेस हो रहा है…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elaborazione…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "処理中…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Processando…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在处理…"
+          }
+        }
+      }
+    },
+    "在 Google 账号中管理授权": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zugriff im Google-Konto verwalten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage access in Google Account"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestionar acceso en la cuenta de Google"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gérer l’accès dans le compte Google"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google खाते में ऐक्सेस मैनेज करें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestisci l’accesso nell’Account Google"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google アカウントでアクセスを管理"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gerenciar acesso na Conta do Google"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 Google 账号中管理授权"
+          }
+        }
+      }
+    },
+    "重试": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reintentar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réessayer"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फिर कोशिश करें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riprova"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再試行"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tentar novamente"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试"
+          }
+        }
+      }
+    },
+    "该云盘尚未完成开发者配置，请稍后再试": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Cloud-Speicher ist noch nicht für die App konfiguriert. Versuche es später erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This cloud provider hasn’t been configured for the app yet. Please try again later."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este servicio en la nube todavía no está configurado para la app. Inténtalo de nuevo más tarde."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce fournisseur cloud n’est pas encore configuré pour l’app. Réessayez plus tard."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "यह क्लाउड सेवा अभी ऐप के लिए कॉन्फ़िगर नहीं है। बाद में फिर कोशिश करें।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo provider cloud non è ancora configurato per l’app. Riprova più tardi."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このクラウドサービスはまだアプリ用に設定されていません。しばらくしてからもう一度お試しください。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este provedor de nuvem ainda não foi configurado para o app. Tente novamente mais tarde."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "该云盘尚未完成开发者配置，请稍后再试"
+          }
+        }
+      }
+    },
+    "连接已失效，请重新连接后再试": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbindung abgelaufen. Stelle die Verbindung erneut her und versuche es noch einmal."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection expired. Reconnect and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La conexión ha caducado. Vuelve a conectarte e inténtalo de nuevo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La connexion a expiré. Reconnectez-vous et réessayez."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कनेक्शन की समय-सीमा खत्म हो गई है। फिर से कनेक्ट करके कोशिश करें।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La connessione è scaduta. Riconnettiti e riprova."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続の有効期限が切れました。再接続して、もう一度お試しください。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A conexão expirou. Reconecte e tente novamente."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接已失效，请重新连接后再试"
+          }
+        }
+      }
+    },
+    "当前连接的账号不是这个文件所属账号，请切换账号后再试": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das derzeit verbundene Konto gehört nicht zu dieser Datei. Wechsle das Konto und versuche es erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connected account does not own this file. Switch accounts and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La cuenta conectada no es la propietaria de este archivo. Cambia de cuenta e inténtalo de nuevo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le compte connecté n’est pas celui auquel appartient ce fichier. Changez de compte et réessayez."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कनेक्टेड खाता इस फ़ाइल का खाता नहीं है। खाता बदलकर फिर कोशिश करें।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’account connesso non è quello a cui appartiene questo file. Cambia account e riprova."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在接続中のアカウントは、このファイルの所有アカウントではありません。アカウントを変更して、もう一度お試しください。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A conta conectada não é a proprietária deste arquivo. Troque de conta e tente novamente."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前连接的账号不是这个文件所属账号，请切换账号后再试"
+          }
+        }
+      }
+    },
+    "文件已被移动、删除，或当前账号无权访问": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Datei wurde verschoben oder gelöscht, oder dieses Konto hat keinen Zugriff."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file was moved or deleted, or this account does not have access."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El archivo se ha movido o eliminado, o esta cuenta no tiene acceso."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le fichier a été déplacé ou supprimé, ou ce compte n’y a pas accès."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ाइल खिसका दी गई है या मिटा दी गई है, या इस खाते के पास एक्सेस नहीं है।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il file è stato spostato o eliminato oppure questo account non ha accesso."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルが移動または削除されたか、このアカウントにアクセス権がありません。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O arquivo foi movido ou excluído, ou esta conta não tem acesso."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件已被移动、删除，或当前账号无权访问"
+          }
+        }
+      }
+    },
+    "该文件不允许下载": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Datei darf nicht heruntergeladen werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file cannot be downloaded."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este archivo no se puede descargar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce fichier ne peut pas être téléchargé."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस फ़ाइल को डाउनलोड करने की अनुमति नहीं है।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo file non può essere scaricato."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このファイルはダウンロードできません。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não é permitido baixar este arquivo."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "该文件不允许下载"
+          }
+        }
+      }
+    },
+    "云盘请求过于频繁，请稍后重试": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu viele Cloud-Anfragen. Versuche es später erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many cloud requests. Please try again later."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demasiadas solicitudes al servicio en la nube. Inténtalo de nuevo más tarde."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trop de requêtes cloud. Réessayez plus tard."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "क्लाउड पर बहुत ज़्यादा अनुरोध हुए हैं। बाद में फिर कोशिश करें।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Troppe richieste al cloud. Riprova più tardi."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クラウドへのリクエストが多すぎます。しばらくしてからもう一度お試しください。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muitas solicitações à nuvem. Tente novamente mais tarde."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云盘请求过于频繁，请稍后重试"
+          }
+        }
+      }
+    },
+    "网络连接失败，请检查网络后重试": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Netzwerkverbindung fehlgeschlagen. Prüfe deine Verbindung und versuche es erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network connection failed. Check your connection and try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error de conexión de red. Comprueba la conexión e inténtalo de nuevo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Échec de la connexion réseau. Vérifiez votre connexion et réessayez."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "नेटवर्क कनेक्शन विफल रहा। अपना कनेक्शन जाँचें और फिर कोशिश करें।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connessione di rete non riuscita. Controlla la connessione e riprova."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ネットワーク接続に失敗しました。接続を確認して、もう一度お試しください。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falha na conexão de rede. Verifique a conexão e tente novamente."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络连接失败，请检查网络后重试"
+          }
+        }
+      }
+    },
+    "操作已取消": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorgang abgebrochen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operation canceled."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operación cancelada."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opération annulée."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कार्रवाई रद्द कर दी गई।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operazione annullata."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作をキャンセルしました。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operação cancelada."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作已取消"
+          }
+        }
+      }
+    },
+    "云盘暂时无法完成此操作，请重试": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Cloud-Speicher kann diesen Vorgang derzeit nicht abschließen. Versuche es erneut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The cloud provider can’t complete this operation right now. Please try again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El servicio en la nube no puede completar esta operación ahora. Inténtalo de nuevo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le fournisseur cloud ne peut pas terminer cette opération pour le moment. Réessayez."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "क्लाउड सेवा अभी यह कार्रवाई पूरी नहीं कर सकती। फिर कोशिश करें।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il provider cloud non può completare l’operazione al momento. Riprova."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在、クラウドサービスでこの操作を完了できません。もう一度お試しください。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O provedor de nuvem não pode concluir esta operação agora. Tente novamente."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云盘暂时无法完成此操作，请重试"
+          }
+        }
+      }
+    },
+    "文件可能已损坏、受密码或 DRM 保护，暂时无法读取": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Datei ist möglicherweise beschädigt oder durch ein Passwort bzw. DRM geschützt und kann derzeit nicht gelesen werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file may be corrupted or protected by a password or DRM and cannot be read right now."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es posible que el archivo esté dañado o protegido con contraseña o DRM y no pueda leerse ahora."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le fichier est peut-être endommagé ou protégé par un mot de passe ou un DRM et ne peut pas être lu pour le moment."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ाइल खराब हो सकती है या पासवर्ड अथवा DRM से सुरक्षित हो सकती है, इसलिए अभी पढ़ी नहीं जा सकती।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il file potrebbe essere danneggiato o protetto da password o DRM e non può essere letto al momento."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルが破損しているか、パスワードまたはDRMで保護されているため、現在読み込めない可能性があります。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O arquivo pode estar corrompido ou protegido por senha ou DRM e não pode ser lido no momento."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件可能已损坏、受密码或 DRM 保护，暂时无法读取"
+          }
+        }
+      }
+    },
+    "文件格式与扩展名不一致，已停止导入": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dateiformat und Erweiterung stimmen nicht überein. Der Import wurde beendet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file format does not match its extension. Import stopped."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El formato del archivo no coincide con su extensión. Se ha detenido la importación."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le format du fichier ne correspond pas à son extension. L’importation a été interrompue."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ाइल फ़ॉर्मेट और एक्सटेंशन मेल नहीं खाते। इंपोर्ट रोक दिया गया।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il formato del file non corrisponde all’estensione. Importazione interrotta."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイル形式と拡張子が一致しないため、インポートを中止しました。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O formato do arquivo não corresponde à extensão. A importação foi interrompida."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件格式与扩展名不一致，已停止导入"
+          }
+        }
+      }
+    },
+    "下载的文件不完整，请重新下载": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die heruntergeladene Datei ist unvollständig. Lade sie erneut herunter."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The downloaded file is incomplete. Please download it again."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El archivo descargado está incompleto. Vuelve a descargarlo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le fichier téléchargé est incomplet. Téléchargez-le à nouveau."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "डाउनलोड की गई फ़ाइल अधूरी है। इसे फिर से डाउनलोड करें।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il file scaricato è incompleto. Scaricalo di nuovo."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ダウンロードしたファイルが不完全です。もう一度ダウンロードしてください。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O arquivo baixado está incompleto. Baixe-o novamente."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下载的文件不完整，请重新下载"
+          }
+        }
+      }
+    },
+    "文件格式与扩展名不一致": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dateiformat und Erweiterung stimmen nicht überein."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file format does not match its extension."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El formato del archivo no coincide con su extensión."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le format du fichier ne correspond pas à son extension."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "फ़ाइल फ़ॉर्मेट और एक्सटेंशन मेल नहीं खाते।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il formato del file non corrisponde all’estensione."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイル形式と拡張子が一致しません。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O formato do arquivo não corresponde à extensão."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件格式与扩展名不一致"
+          }
+        }
+      }
+    },
+    "无法读取该文件": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Datei kann nicht gelesen werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unable to read this file."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No se puede leer este archivo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de lire ce fichier."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "यह फ़ाइल पढ़ी नहीं जा सकती।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossibile leggere questo file."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このファイルを読み込めません。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Não foi possível ler este arquivo."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取该文件"
+          }
+        }
+      }
+    },
+    "已从此设备断开；云盘端授权暂未确认撤销": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbindung auf diesem Gerät getrennt. Der Widerruf der Cloud-Autorisierung wurde noch nicht bestätigt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnected from this device; cloud authorization revocation has not yet been confirmed."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconectado de este dispositivo; aún no se ha confirmado la revocación de la autorización en la nube."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déconnecté de cet appareil ; la révocation de l’autorisation cloud n’est pas encore confirmée."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस डिवाइस से डिस्कनेक्ट किया गया; क्लाउड प्राधिकरण रद्द होने की अभी पुष्टि नहीं हुई है।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnessione da questo dispositivo completata; la revoca dell’autorizzazione cloud non è ancora confermata."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このデバイスとの接続を解除しましたが、クラウド側の認証取り消しはまだ確認できません。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desconectado deste dispositivo; a revogação da autorização da nuvem ainda não foi confirmada."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已从此设备断开；云盘端授权暂未确认撤销"
+          }
+        }
+      }
+    },
+    "这会取消当前云盘操作并删除本机账号关联；阅读历史基础信息会保留。": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dadurch wird der aktuelle Cloud-Vorgang abgebrochen und die Kontoverknüpfung auf diesem Gerät gelöscht. Grundlegende Angaben im Leseverlauf bleiben erhalten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This will cancel the current cloud operation and remove the account link from this device. Basic reading history metadata will be kept."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esto cancelará la operación actual en la nube y eliminará la vinculación de la cuenta de este dispositivo. Se conservarán los datos básicos del historial de lectura."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cela annulera l’opération cloud en cours et supprimera l’association du compte sur cet appareil. Les informations de base de l’historique de lecture seront conservées."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इससे मौजूदा क्लाउड कार्रवाई रद्द हो जाएगी और इस डिवाइस से खाता लिंक हट जाएगा। पढ़ने के इतिहास की बुनियादी जानकारी बनी रहेगी।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questa operazione annullerà l’operazione cloud in corso e rimuoverà il collegamento dell’account da questo dispositivo. I dati di base della cronologia di lettura verranno conservati."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在のクラウド操作をキャンセルし、このデバイスのアカウント連携を削除します。読書履歴の基本情報は保持されます。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Isso cancelará a operação atual na nuvem e removerá o vínculo da conta deste dispositivo. As informações básicas do histórico de leitura serão mantidas."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这会取消当前云盘操作并删除本机账号关联；阅读历史基础信息会保留。"
+          }
+        }
+      }
+    },
+    "云端文件": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud-Dateien"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud files"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archivos en la nube"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fichiers cloud"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "क्लाउड फ़ाइलें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File nel cloud"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クラウドファイル"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arquivos na nuvem"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云端文件"
+          }
+        }
+      }
+    },
+    "只读": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schreibgeschützt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read-only"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solo lectura"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture seule"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "केवल पढ़ने के लिए"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sola lettura"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読み取り専用"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Somente leitura"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只读"
+          }
+        }
+      }
+    },
+    "所有文件均会显示；支持的文档可直接朗读或解读，原文件仅在本机临时处理。": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Dateien werden angezeigt. Unterstützte Dokumente können direkt vorgelesen oder erklärt werden; Originaldateien werden nur vorübergehend auf diesem Gerät verarbeitet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All files are shown. Supported documents can be read aloud or explained directly; original files are processed temporarily on this device only."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se muestran todos los archivos. Los documentos compatibles se pueden leer o explicar directamente; los archivos originales solo se procesan temporalmente en este dispositivo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tous les fichiers sont affichés. Les documents pris en charge peuvent être lus ou expliqués directement ; les fichiers d’origine sont traités temporairement sur cet appareil uniquement."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सभी फ़ाइलें दिखाई जाती हैं। समर्थित दस्तावेज़ सीधे पढ़े या समझाए जा सकते हैं; मूल फ़ाइलें केवल इस डिवाइस पर अस्थायी रूप से प्रोसेस होती हैं।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vengono mostrati tutti i file. I documenti supportati possono essere letti o spiegati direttamente; i file originali vengono elaborati temporaneamente solo su questo dispositivo."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "すべてのファイルが表示されます。対応している文書はそのまま読み上げ・解説でき、元のファイルはこのデバイスで一時的にのみ処理されます。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Todos os arquivos são exibidos. Os documentos compatíveis podem ser lidos ou explicados diretamente; os arquivos originais são processados temporariamente apenas neste dispositivo."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有文件均会显示；支持的文档可直接朗读或解读，原文件仅在本机临时处理。"
+          }
+        }
+      }
+    },
+    "Google Drive": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Drive"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Drive"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Drive"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Drive"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Drive"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Drive"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Drive"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Drive"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google Drive"
+          }
+        }
+      }
+    },
+    "Dropbox": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dropbox"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dropbox"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dropbox"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dropbox"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dropbox"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dropbox"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dropbox"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dropbox"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dropbox"
+          }
+        }
+      }
+    },
+    "Microsoft OneDrive": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microsoft OneDrive"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microsoft OneDrive"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microsoft OneDrive"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microsoft OneDrive"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microsoft OneDrive"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microsoft OneDrive"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microsoft OneDrive"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microsoft OneDrive"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microsoft OneDrive"
+          }
+        }
+      }
+    },
+    "确认更换账号？": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konto wirklich wechseln?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch accounts?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Confirmas que quieres cambiar de cuenta?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmer le changement de compte ?"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "खाता बदलने की पुष्टि करें?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confermare il cambio di account?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アカウントを変更しますか？"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmar troca de conta?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认更换账号？"
+          }
+        }
+      }
+    },
+    "将从 %@ 更换为 %@。确认后，当前文件列表会刷新。": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Konto wird von %@ zu %@ gewechselt. Nach der Bestätigung wird die aktuelle Dateiliste aktualisiert."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You’ll switch from %@ to %@. After you confirm, the current file list will refresh."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cambiarás de %@ a %@. Cuando confirmes, se actualizará la lista de archivos actual."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vous allez passer de %@ à %@. Après confirmation, la liste de fichiers actuelle sera actualisée."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "खाता %@ से %@ में बदल जाएगा। पुष्टि के बाद मौजूदा फ़ाइल सूची रीफ़्रेश होगी।"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passerai da %@ a %@. Dopo la conferma, l’elenco dei file corrente verrà aggiornato."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@から%@に変更します。確認すると、現在のファイル一覧が更新されます。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Você trocará de %@ para %@. Após a confirmação, a lista de arquivos atual será atualizada."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将从 %@ 更换为 %@。确认后，当前文件列表会刷新。"
+          }
+        }
+      }
+    },
+    "确认更换": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wechsel bestätigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm switch"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmar cambio"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmer le changement"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "बदलाव की पुष्टि करें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conferma cambio"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "変更を確定"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmar troca"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认更换"
+          }
+        }
+      }
+    },
+    "继续使用当前账号": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuelles Konto weiterverwenden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep using current account"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguir usando la cuenta actual"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer avec le compte actuel"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मौजूदा खाते का उपयोग जारी रखें"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua a usare l’account attuale"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "現在のアカウントを使い続ける"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar usando a conta atual"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续使用当前账号"
+          }
+        }
+      }
+    },
+    "账号": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konto"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuenta"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compte"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "खाता"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アカウント"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conta"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "账号"
+          }
+        }
+      }
+    },
+    "此文件暂时无法朗读或解读": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Datei kann derzeit nicht vorgelesen oder erklärt werden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file can’t currently be read aloud or explained"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este archivo no se puede leer en voz alta ni explicar por ahora"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce fichier ne peut pas encore être lu à voix haute ni expliqué"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इस फ़ाइल को फ़िलहाल पढ़कर सुनाया या समझाया नहीं जा सकता"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al momento questo file non può essere letto ad alta voce o spiegato"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このファイルは現在、読み上げまたは解説できません"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No momento, este arquivo não pode ser lido em voz alta nem explicado"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此文件暂时无法朗读或解读"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
