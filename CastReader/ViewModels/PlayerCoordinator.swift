@@ -144,8 +144,10 @@ final class PlayerCoordinator: ObservableObject {
     /// 收起阅读器（不停播放）→ Mini Player 接管。
     func minimize() {
         guard let document = session?.document else { return }
-        if document.sourceKind == .weread {
-            // WeRead is portrait-only in both full reader and Mini Player.
+        if Self.isPortraitOnly(document.sourceKind) {
+            // Portrait-only in both the full reader and the Mini Player: the
+            // reader stays mounted off-screen, so releasing the lock here would
+            // let a rotation reflow it behind the user's back.
             AppOrientationLock.lockPortrait(owner: Self.orientationOwner)
         } else {
             AppOrientationLock.lockCurrent(owner: Self.orientationOwner)
@@ -180,10 +182,20 @@ final class PlayerCoordinator: ObservableObject {
     }
 
     private func updateOrientationForExpandedReader(_ document: ReadingDocument) {
-        if document.sourceKind == .weread {
+        if Self.isPortraitOnly(document.sourceKind) {
             AppOrientationLock.lockPortrait(owner: Self.orientationOwner)
         } else {
             AppOrientationLock.unlock(owner: Self.orientationOwner)
         }
+    }
+
+    /// Sources whose reader is designed for one column only.
+    ///
+    /// The YouTube transcript reader stacks a 16:9 artwork header over a
+    /// timestamped list; in landscape the artwork eats the viewport and the
+    /// layout falls apart. WeRead is portrait-only for a different reason —
+    /// rotating its live WebView reflows the page mid-playback.
+    private static func isPortraitOnly(_ sourceKind: ReadingSourceKind) -> Bool {
+        sourceKind == .weread || sourceKind == .youtube
     }
 }
