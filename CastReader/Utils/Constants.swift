@@ -11,6 +11,9 @@ enum Constants {
         /// but the feature is intentionally unavailable in this release.
         static let voiceCloningEnabled = false
 
+        /// The provider adapters are not part of this release target.
+        static let cloudStorageEnabled = false
+
     }
 
     enum API {

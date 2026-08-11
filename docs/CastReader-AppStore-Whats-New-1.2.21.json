@@ -1,0 +1,13 @@
+{
+  "en-US": "• YouTube transcripts now support selecting from available subtitle languages.\n• Improved orientation handling keeps the transcript reader layout stable.\n• Faster loading and smoother transitions between paragraphs with audio prefetching.",
+  "zh-Hans": "• YouTube 字幕现可从视频提供的多语言字幕中切换。\n• 优化屏幕方向处理，让字幕阅读布局保持稳定。\n• 通过音频预加载提升加载速度，让段落衔接更流畅。",
+  "ja": "• YouTubeの字幕で、利用可能な言語を選べるようになりました。\n• 画面の向きの処理を改善し、字幕リーダーのレイアウトを安定させました。\n• 音声の先読みで読み込みを高速化し、段落間の移行を滑らかにしました。",
+  "es-ES": "• Las transcripciones de YouTube ahora permiten elegir entre los idiomas de subtítulos disponibles.\n• Mejoramos la gestión de la orientación para mantener estable el diseño del lector.\n• Carga más rápida y transiciones más fluidas entre párrafos gracias a la precarga de audio.",
+  "fr-FR": "• Les transcriptions YouTube permettent désormais de choisir parmi les langues de sous-titres disponibles.\n• La gestion de l’orientation a été améliorée pour stabiliser la mise en page du lecteur.\n• Chargement plus rapide et transitions plus fluides entre les paragraphes grâce au préchargement audio.",
+  "pt-BR": "• As transcrições do YouTube agora permitem escolher entre os idiomas de legenda disponíveis.\n• Melhoramos o controle de orientação para manter o layout do leitor estável.\n• Carregamento mais rápido e transições mais suaves entre parágrafos com pré-carregamento de áudio.",
+  "it": "• Le trascrizioni di YouTube ora consentono di scegliere tra le lingue dei sottotitoli disponibili.\n• Migliorata la gestione dell’orientamento per mantenere stabile il layout del lettore.\n• Caricamento più rapido e passaggi più fluidi tra i paragrafi grazie al precaricamento audio.",
+  "hi": "• YouTube ट्रांसक्रिप्ट में अब उपलब्ध उपशीर्षक भाषाओं में से भाषा चुनी जा सकती है।\n• ओरिएंटेशन प्रबंधन बेहतर किया गया है, ताकि ट्रांसक्रिप्ट रीडर का लेआउट स्थिर रहे।\n• ऑडियो प्रीफ़ेच से लोडिंग तेज़ और पैराग्राफ़ के बीच बदलाव अधिक सहज हुए हैं।",
+  "de-DE": "• Bei YouTube-Transkripten kann jetzt aus den verfügbaren Untertitelsprachen gewählt werden.\n• Die Ausrichtungssteuerung wurde verbessert, damit das Reader-Layout stabil bleibt.\n• Schnelleres Laden und flüssigere Übergänge zwischen Absätzen durch Audio-Vorladen.",
+  "zh-Hant": "• YouTube 字幕現在可從影片提供的多語言字幕中切換。\n• 改善螢幕方向處理，讓字幕閱讀版面保持穩定。\n• 透過音訊預載提升載入速度，讓段落銜接更流暢。",
+  "es-MX": "• Las transcripciones de YouTube ahora permiten elegir entre los idiomas de subtítulos disponibles.\n• Mejoramos la gestión de la orientación para mantener estable el diseño del lector.\n• Carga más rápida y transiciones más fluidas entre párrafos gracias a la precarga de audio."
+}
