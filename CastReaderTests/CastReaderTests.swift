@@ -3829,6 +3829,50 @@ final class StudyBoostTests: XCTestCase {
             )
         }
     }
+
+}
+
+final class AppleAccountLinkTests: XCTestCase {
+
+    /// `needsAppleRelink` 是付费用户被当成免费用户时唯一的自救提示，误报会骚扰
+    /// 正常用户，漏报会让人永远卡住——两个方向都要钉住。
+    @MainActor
+    func testNeedsAppleRelink_onlyForAppleAccountsMissingBackendId() {
+        let auth = AuthService.shared
+        let restore = auth.account
+        defer {
+            if let restore { auth.applyAccount(restore) } else { auth.signOut() }
+        }
+
+        auth.signOut()
+        XCTAssertFalse(auth.needsAppleRelink, "未登录不该提示重新关联")
+
+        auth.applyAccount(UserAccount(
+            id: "google-sub", email: "a@b.com", name: nil, pictureURL: nil,
+            provider: "google", backendUserId: nil
+        ))
+        XCTAssertFalse(auth.needsAppleRelink, "Google 账号有 Keychain 重试路径，不该走 Apple 提示")
+
+        auth.applyAccount(UserAccount(
+            id: "apple-sub", email: nil, name: nil, pictureURL: nil,
+            provider: "apple", backendUserId: "backend-123"
+        ))
+        XCTAssertFalse(auth.needsAppleRelink, "已关联的 Apple 账号不该提示")
+
+        auth.applyAccount(UserAccount(
+            id: "apple-sub", email: nil, name: nil, pictureURL: nil,
+            provider: "apple", backendUserId: nil
+        ))
+        XCTAssertTrue(auth.needsAppleRelink, "Apple 账号缺后端 id 必须提示，否则用户无从自救")
+
+        auth.applyAccount(UserAccount(
+            id: "apple-sub", email: nil, name: nil, pictureURL: nil,
+            provider: "apple", backendUserId: ""
+        ))
+        XCTAssertTrue(auth.needsAppleRelink, "空串等同于未关联")
+        XCTAssertNil(auth.proUserId?.isEmpty == false ? auth.proUserId : nil,
+                     "未关联时 proUserId 不该被当作有效值传给 /api/pro/status")
+    }
 }
 
 @MainActor
