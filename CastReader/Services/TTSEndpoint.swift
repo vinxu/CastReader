@@ -15,7 +15,7 @@ enum TTSEndpoint {
     static let usDefault = "https://api.castreader.ai"
     private static let legacyUSDefault = "http://api.castreader.ai:8123"
 
-    static let remoteConfigURL = "https://castreader-config-1323065328.cos.accelerate.myqcloud.com/tts-endpoints.json"
+    static let remoteConfigURL = "https://zqxgmqygirtpttnrvjpf.supabase.co/storage/v1/object/public/castreader-public/config/tts-endpoints-v2.json"
     private static let cacheKey = "tts_endpoints_v1"
     private static let cacheTimeKey = "tts_endpoints_v1_time"
 

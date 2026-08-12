@@ -15,7 +15,7 @@ import Foundation
 enum QuickReadEndpoint {
     /// 本地兜底：新东京干净节点。远程配置可覆盖。**绝不再用旧的 quickread.castreader.ai:8444**。
     static let defaultBase = "https://qr.castreader.ai"
-    static let remoteConfigURL = "https://castreader-config-1323065328.cos.accelerate.myqcloud.com/quickread-config.json"
+    static let remoteConfigURL = "https://zqxgmqygirtpttnrvjpf.supabase.co/storage/v1/object/public/castreader-public/config/quickread-config.json"
     private static let cacheKey = "quickread_base_v1"
 
     /// 当前 base：远程配置缓存优先，否则兜底。
