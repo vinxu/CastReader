@@ -41,18 +41,21 @@ xcodebuild test -workspace CastReader.xcworkspace -scheme CastReader -destinatio
 ```
 或 Xcode：⌘B / ⌘R / ⌘U。
 
-### 5 个 target（`CastReader` scheme 会连扩展一起构建）
+### 6 个 target（`CastReader` scheme 会连扩展一起构建）
 
 | target | bundle id | 说明 |
 |---|---|---|
 | CastReader | `com.same.castreader` | 主 app，部署目标 **iOS 17.6** |
 | CastReader Safari Extension | `com.same.castreader.SafariExtension` | Safari Web Extension |
 | CastReader Share Extension | `com.same.castreader.ShareExtension` | 系统分享入口 |
+| CastReader Widget | `com.same.castreader.Widget` | 主屏小组件 |
 | CastReaderTests / CastReaderUITests | — | 单测 / UI 测试 |
 
-主 app **依赖并 embed 两个扩展**，所以扩展坏了主 app 也编不过。App Group = `group.com.same.castreader`（Share/Safari 扩展与主 app 交换数据的唯一通道）。
+主 app **依赖并 embed 三个扩展**，所以扩展坏了主 app 也编不过。App Group = `group.com.same.castreader`（Share/Safari 扩展与主 app 交换数据的唯一通道）。
 
-> ⚠️ **Safari 扩展的网页资源不在本仓库**：Resources build phase 指向兄弟仓库 `../../MyProject/readout-desktop/.output/safari-ios-mv2/`（manifest.json / background.js / content-scripts / tesseract-wasm …）。该目录缺失时 Safari 扩展 target 会因找不到输入文件而失败。需要先在 readout-desktop 仓库构建出 `safari-ios-mv2` 产物。
+> **Safari 扩展的网页资源已入本仓库**：`CastReader Safari Extension/Resources/`（manifest.json / background.js / content-scripts / _locales 九语 / assets …），随包发布，克隆仓库即可编译，**不再依赖兄弟仓库 readout-desktop**。
+>
+> 这些资源在 pbxproj 里是 **folder reference**（`lastKnownFileType = folder`，如 `assets` / `chunks` / `brainrot-bg`），所以增删目录内的网页文件**不需要改 pbxproj**——与主 app 每个 `.swift` 必须登记 4 处的规则相反。资源本身仍由扩展仓库 readout-desktop 构建产出，更新时把产物整体覆盖进 `Resources/` 即可。
 
 ### WebReader JS bundle（改了 TS 才需要重新构建）
 
@@ -279,7 +282,6 @@ Constants.API.webURL           = https://castreader.ai                # 账号 /
 - `Constants.GoogleOAuth.clientID`：已填；换环境时注意。
 - App Store Connect 订阅产品 + scheme 关联 `Configuration.storekit`。
 - Apple 开发者后台为 App ID 开启 Sign in with Apple capability。
-- Safari 扩展资源产物（`readout-desktop/.output/safari-ios-mv2`）就位。
 
 ## 测试与自检
 
