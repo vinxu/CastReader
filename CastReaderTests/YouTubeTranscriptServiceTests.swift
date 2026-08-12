@@ -54,11 +54,11 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
         }
     }
 
-    func testMainFrameNavigationAllowsOnlyCanonicalWatchDocument() {
+    func testMainFrameNavigationAllowsOnlyOfficialEmbedDocument() throws {
+        let reference = YouTubeVideoReference(videoId: videoID, startSeconds: 45)
         let allowed = [
-            "https://www.youtube.com/watch?v=\(videoID)",
-            "https://www.youtube.com/watch/?v=\(videoID)&t=45s",
-            "https://www.youtube.com/watch?hl=zh-CN&v=\(videoID)&app=desktop",
+            try XCTUnwrap(reference.embedURL(preferredLanguage: "zh-CN")).absoluteString,
+            "https://www.youtube.com/embed/\(videoID)/?origin=https%3A%2F%2Fcom.same.castreader&cc_load_policy=1&mute=1&autoplay=1&playsinline=1&enablejsapi=1",
         ]
         for rawValue in allowed {
             XCTAssertTrue(
@@ -71,16 +71,18 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
         }
 
         let rejected = [
-            "http://www.youtube.com/watch?v=\(videoID)",
-            "https://youtube.com/watch?v=\(videoID)",
-            "https://m.youtube.com/watch?v=\(videoID)",
-            "https://youtu.be/\(videoID)",
-            "https://www.youtube.com:443/watch?v=\(videoID)",
-            "https://user@www.youtube.com/watch?v=\(videoID)",
-            "https://www.youtube.com/shorts/\(videoID)",
-            "https://www.youtube.com/watch?v=aaaaaaaaaaa",
-            "https://www.youtube.com/watch?v=\(videoID)&v=aaaaaaaaaaa",
-            "https://www.youtube.com.evil.example/watch?v=\(videoID)",
+            "https://www.youtube.com/watch?v=\(videoID)",
+            "http://www.youtube.com/embed/\(videoID)",
+            "https://youtube.com/embed/\(videoID)",
+            "https://m.youtube.com/embed/\(videoID)",
+            "https://www.youtube.com:443/embed/\(videoID)",
+            "https://user@www.youtube.com/embed/\(videoID)",
+            "https://www.youtube.com/embed/aaaaaaaaaaa?enablejsapi=1&playsinline=1&autoplay=1&mute=1&cc_load_policy=1&origin=https%3A%2F%2Fcom.same.castreader",
+            "https://www.youtube.com/embed/\(videoID)/extra?enablejsapi=1&playsinline=1&autoplay=1&mute=1&cc_load_policy=1&origin=https%3A%2F%2Fcom.same.castreader",
+            "https://www.youtube.com/embed/\(videoID)?enablejsapi=1&playsinline=1&autoplay=1&mute=1&cc_load_policy=1",
+            "https://www.youtube.com/embed/\(videoID)?enablejsapi=1&playsinline=1&autoplay=1&mute=1&cc_load_policy=1&origin=https%3A%2F%2Fevil.example",
+            "https://www.youtube.com/embed/\(videoID)?enablejsapi=1&playsinline=1&autoplay=1&mute=1&cc_load_policy=1&origin=https%3A%2F%2Fcom.same.castreader&unexpected=1",
+            "https://www.youtube.com.evil.example/embed/\(videoID)?enablejsapi=1&playsinline=1&autoplay=1&mute=1&cc_load_policy=1&origin=https%3A%2F%2Fcom.same.castreader",
             "https://consent.youtube.com/m?continue=https://www.youtube.com/watch?v=\(videoID)",
         ]
         for rawValue in rejected {
@@ -173,11 +175,11 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
             startedAtNanoseconds: 5_000_000_000
         )
         let first = timeline.record(
-            .contentRuleLookupStarted,
+            .requestStarted,
             nowNanoseconds: 5_250_000_000
         )
         let clockMovedBackwards = timeline.record(
-            .contentRuleReady,
+            .navigationStarted,
             nowNanoseconds: 5_125_000_000
         )
         let later = timeline.record(
@@ -195,132 +197,63 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
         }
     }
 
-    func testMediaBlockRuleListHasFailClosedStaticContract() throws {
-        let data = Data(YouTubeTranscriptContentPolicy.mediaBlockRuleListJSON.utf8)
-        let rules = try XCTUnwrap(
-            JSONSerialization.jsonObject(with: data) as? [[String: Any]]
-        )
-        XCTAssertEqual(rules.count, 1)
-        XCTAssertTrue(rules.allSatisfy { rule in
-            (rule["action"] as? [String: Any])?["type"] as? String == "block"
-        })
-
-        let triggers = try rules.map { rule in
-            try XCTUnwrap(rule["trigger"] as? [String: Any])
-        }
-        XCTAssertFalse(triggers.contains { trigger in
-            (trigger["resource-type"] as? [String])?.contains("media") == true
-        }, "native subtitle tracks must not be blocked as generic media")
-        XCTAssertTrue(triggers.contains { trigger in
-            (trigger["url-filter"] as? String)?.contains("googlevideo\\.com") == true
-        })
-        XCTAssertFalse(
-            YouTubeTranscriptContentPolicy.mediaBlockRuleListJSON.contains("ignore-previous-rules")
-        )
-    }
-
-    @MainActor
-    func testMediaBlockRuleListCompilesInWebKit() async {
-        guard let store = WKContentRuleListStore.default() else {
-            XCTFail("WKContentRuleListStore must exist on the iOS test host")
-            return
-        }
-        do {
-            let compiledRuleList = try await store.compileContentRuleList(
-                forIdentifier: "com.same.castreader.youtube-media-block-unit-test",
-                encodedContentRuleList: YouTubeTranscriptContentPolicy.mediaBlockRuleListJSON
-            )
-            XCTAssertNotNil(compiledRuleList)
-        } catch {
-            XCTFail("content rule compilation failed: \(error)")
-        }
-    }
-
-    @MainActor
-    func testNativeTimeoutCoversContentRuleResolution() async {
-        let service = YouTubeTranscriptService(
-            vendoredBridgeLoader: { "void 0;" },
-            pageLoader: { _, _ in
-                XCTFail("navigation must not start while rule resolution is pending")
-            },
-            contentRuleListResolver: { _ in
-                // Deliberately never complete. The native total deadline must
-                // still terminate the request instead of loading forever.
-            }
-        )
-        let reference = YouTubeVideoReference(
-            videoId: videoID,
-            startSeconds: nil
-        )
-        let startedAt = Date()
-
-        do {
-            _ = try await service.extract(
-                reference,
-                preferredLanguage: "en",
-                timeout: 0.1
-            )
-            XCTFail("a stalled content-rule resolver must time out")
-        } catch {
-            XCTAssertEqual(error as? YouTubeTranscriptFailure, .timeout)
-        }
-
-        XCTAssertLessThan(Date().timeIntervalSince(startedAt), 1.0)
-        XCTAssertNil(service.activeVideoIDForTesting)
-    }
-
-    @MainActor
-    func testResolvedMediaBlockRuleListIsReusedForTheNextExtraction() async throws {
-        guard let store = WKContentRuleListStore.default() else {
-            XCTFail("WKContentRuleListStore must exist on the iOS test host")
-            return
-        }
-        let compiledRuleList = try await store.compileContentRuleList(
-            forIdentifier: "com.same.castreader.youtube-media-block-memory-cache-test",
-            encodedContentRuleList: YouTubeTranscriptContentPolicy.mediaBlockRuleListJSON
-        )
-        var resolverCalls = 0
-        var navigationStarts = 0
-        let service = YouTubeTranscriptService(
-            vendoredBridgeLoader: { "void 0;" },
-            pageLoader: { _, _ in navigationStarts += 1 },
-            contentRuleListResolver: { completion in
-                resolverCalls += 1
-                completion(compiledRuleList, nil)
-            }
-        )
-        let reference = YouTubeVideoReference(
-            videoId: videoID,
-            startSeconds: nil
-        )
-
-        let first = Task { @MainActor in
-            try await service.extract(
-                reference,
-                preferredLanguage: "en",
-                timeout: 5
-            )
-        }
-        await waitForNavigationStarts(1) { navigationStarts }
-        XCTAssertEqual(resolverCalls, 1)
-        service.cancel()
-        await assertCancelled(first)
-
-        let second = Task { @MainActor in
-            try await service.extract(
-                reference,
-                preferredLanguage: "en",
-                timeout: 5
-            )
-        }
-        await waitForNavigationStarts(2) { navigationStarts }
+    func testOfficialEmbedURLKeepsCanonicalWatchURLSeparate() throws {
+        let reference = YouTubeVideoReference(videoId: videoID, startSeconds: 90)
         XCTAssertEqual(
-            resolverCalls,
-            1,
-            "the resolved WKContentRuleList should bypass a second store lookup"
+            reference.canonicalURLString,
+            "https://www.youtube.com/watch?v=\(videoID)&t=90s"
         )
+        let components = try XCTUnwrap(
+            URLComponents(
+                url: try XCTUnwrap(reference.embedURL(preferredLanguage: "zh-CN")),
+                resolvingAgainstBaseURL: false
+            )
+        )
+        XCTAssertEqual(components.scheme, "https")
+        XCTAssertEqual(components.host, "www.youtube.com")
+        XCTAssertEqual(components.path, "/embed/\(videoID)")
+        let query = Dictionary(
+            uniqueKeysWithValues: (components.queryItems ?? []).compactMap { item in
+                item.value.map { (item.name, $0) }
+            }
+        )
+        XCTAssertEqual(query["enablejsapi"], "1")
+        XCTAssertEqual(query["playsinline"], "1")
+        XCTAssertEqual(query["autoplay"], "1")
+        XCTAssertEqual(query["mute"], "1")
+        XCTAssertEqual(query["cc_load_policy"], "1")
+        XCTAssertEqual(query["cc_lang_pref"], "zh-CN")
+        XCTAssertEqual(query["origin"], "https://com.same.castreader")
+        XCTAssertEqual(query["start"], "90")
+    }
+
+    @MainActor
+    func testExtractionStartsOfficialEmbedWithRequiredIdentityHeaders() async {
+        var capturedRequest: URLRequest?
+        let service = YouTubeTranscriptService(
+            vendoredBridgeLoader: { "void 0;" },
+            pageLoader: { _, request in capturedRequest = request }
+        )
+        let reference = YouTubeVideoReference(
+            videoId: videoID,
+            startSeconds: 45
+        )
+        let extraction = Task { @MainActor in
+            try await service.extract(
+                reference,
+                preferredLanguage: "zh_CN",
+                timeout: 5
+            )
+        }
+        await waitForNavigationStarts(1) { capturedRequest == nil ? 0 : 1 }
+        let request = capturedRequest
+        XCTAssertEqual(request?.value(forHTTPHeaderField: "Referer"), "https://com.same.castreader")
+        XCTAssertEqual(request?.value(forHTTPHeaderField: "Accept-Language"), "zh-CN")
+        XCTAssertEqual(request?.url?.host, "www.youtube.com")
+        XCTAssertEqual(request?.url?.path, "/embed/\(videoID)")
+        XCTAssertFalse(request?.url?.absoluteString.contains("/watch") ?? true)
         service.cancel()
-        await assertCancelled(second)
+        await assertCancelled(extraction)
     }
 
     @MainActor
@@ -332,19 +265,17 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
             requestToken: token,
             preferredLanguage: "en"
         )
-        XCTAssertEqual(scripts.count, 3)
+        XCTAssertEqual(scripts.count, 2)
         for script in scripts {
             XCTAssertEqual(script.injectionTime, .atDocumentStart)
             XCTAssertTrue(script.isForMainFrameOnly)
         }
-        XCTAssertTrue(scripts[0].source.contains("media.muted = true"))
-        XCTAssertTrue(scripts[0].source.contains("media.pause()"))
-        XCTAssertFalse(scripts[0].source.contains("media.preload = 'none'"))
-        XCTAssertTrue(scripts[1].source.contains(bridgeFixture))
-        XCTAssertTrue(scripts[2].source.contains("var EXPECTED_VIDEO_ID = \"\(videoID)\""))
-        XCTAssertTrue(scripts[2].source.contains("var REQUEST_TOKEN = \"\(token)\""))
-        XCTAssertTrue(scripts[2].source.contains("ADAPTER_BUDGET_MS = 34500"))
-        XCTAssertTrue(scripts[2].source.contains("terminalPlayabilityError"))
+        XCTAssertTrue(scripts[0].source.contains(bridgeFixture))
+        XCTAssertTrue(scripts[1].source.contains("var EXPECTED_VIDEO_ID = \"\(videoID)\""))
+        XCTAssertTrue(scripts[1].source.contains("var REQUEST_TOKEN = \"\(token)\""))
+        XCTAssertTrue(scripts[1].source.contains("ADAPTER_BUDGET_MS = 34500"))
+        XCTAssertTrue(scripts[1].source.contains("terminalPlayabilityError"))
+        XCTAssertFalse(scripts.contains { $0.source.contains("media.pause()") })
 
         let customBudgetScripts = YouTubeTranscriptService.documentStartScripts(
             vendoredBridge: bridgeFixture,
@@ -354,17 +285,21 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
             timeout: 25
         )
         XCTAssertTrue(
-            customBudgetScripts[2].source.contains("ADAPTER_BUDGET_MS = 17500")
+            customBudgetScripts[1].source.contains("ADAPTER_BUDGET_MS = 17500")
         )
     }
 
-    func testMessageFrameRequiresMainCanonicalHTTPSDocument() {
+    func testMessageFrameRequiresMainOfficialEmbedHTTPSDocument() throws {
+        let embedURL = try XCTUnwrap(
+            YouTubeVideoReference(videoId: videoID, startSeconds: nil)
+                .embedURL(preferredLanguage: "en")
+        ).absoluteString
         let legal = YouTubeTranscriptMessageFrame(
             isMainFrame: true,
             securityScheme: "https",
             securityHost: "www.youtube.com",
             securityPort: 443,
-            requestURL: "https://www.youtube.com/watch?v=\(videoID)"
+            requestURL: embedURL
         )
         XCTAssertTrue(
             YouTubeTranscriptSecurityPolicy.allowsMessageFrame(
@@ -407,7 +342,7 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
                 securityScheme: "https",
                 securityHost: legal.securityHost,
                 securityPort: 443,
-                requestURL: "https://www.youtube.com/feed/subscriptions"
+                requestURL: "https://www.youtube.com/watch?v=\(videoID)"
             ),
         ]
         for frame in rejected {
@@ -931,6 +866,14 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
                 "status": "LOGIN_REQUIRED",
                 "classification": "sign_in_required",
             ]], .restricted),
+            ([
+                "ok": false,
+                "playability": [
+                    "status": "LOGIN_REQUIRED",
+                    "classification": "sign_in_required",
+                ],
+                "error": ["code": "youtube_verification_required"],
+            ], .youtubeAccessLimited),
             (["playability": [
                 "status": "UNPLAYABLE",
                 "classification": "geo_restricted",
@@ -952,6 +895,14 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
             (["ok": false, "error": ["code": "fetch_timeout"]], .timeout),
             (["ok": false, "error": ["code": "adapter_timeout"]], .timeout),
             (["ok": false, "error": ["code": "player_timeout"]], .timeout),
+            ([
+                "ok": false,
+                "playability": [
+                    "status": "UNPLAYABLE",
+                    "classification": "unknown",
+                ],
+                "error": ["code": "player_bootstrap_failed"],
+            ], .playerBootstrapFailed),
             (["ok": false, "error": ["code": "network"]], .network),
             (["ok": false, "error": ["code": "fetch_failed"]], .network),
             (["ok": false, "error": ["code": "transcript_empty"]], .captionAccess),

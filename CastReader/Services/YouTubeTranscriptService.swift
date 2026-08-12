@@ -36,14 +36,41 @@ enum YouTubeTranscriptSecurityPolicy {
               components.host?.lowercased() == canonicalHost,
               components.port == nil,
               components.user == nil,
-              components.password == nil,
-              components.path == "/watch" || components.path == "/watch/" else {
+              components.password == nil else {
             return false
         }
-        let videoValues = (components.queryItems ?? [])
-            .filter { $0.name == "v" }
+        let pathComponents = components.path.split(separator: "/")
+        guard pathComponents.count == 2,
+              pathComponents[0] == "embed",
+              pathComponents[1] == expectedVideoID else { return false }
+
+        let items = components.queryItems ?? []
+        func uniqueValue(_ name: String) -> String? {
+            let values = items.filter { $0.name == name }.compactMap(\.value)
+            return values.count == 1 ? values[0] : nil
+        }
+        guard uniqueValue("enablejsapi") == "1",
+              uniqueValue("playsinline") == "1",
+              uniqueValue("autoplay") == "1",
+              uniqueValue("mute") == "1",
+              uniqueValue("cc_load_policy") == "1",
+              uniqueValue("origin") == YouTubeVideoReference.embedOriginString else {
+            return false
+        }
+        let startValues = items.filter { $0.name == "start" }.compactMap(\.value)
+        let languageValues = items
+            .filter { $0.name == "cc_lang_pref" }
             .compactMap(\.value)
-        return videoValues.count == 1 && videoValues[0] == expectedVideoID
+        guard startValues.count <= 1,
+              startValues.first.map({ Int($0).map { $0 >= 0 } ?? false }) ?? true,
+              languageValues.count <= 1 else {
+            return false
+        }
+        let allowedNames: Set<String> = [
+            "enablejsapi", "playsinline", "autoplay", "cc_load_policy",
+            "cc_lang_pref", "mute", "origin", "start",
+        ]
+        return items.allSatisfy { allowedNames.contains($0.name) }
     }
 
     static func allowsMessageFrame(
@@ -122,35 +149,11 @@ enum YouTubeTranscriptHTTPPolicy {
     }
 }
 
-/// A defense-in-depth network boundary for the short-lived extraction page.
-/// Block YouTube's actual audio/video CDN while leaving same-origin text tracks
-/// available. WebKit classifies native `<track>` caption loads as media on some
-/// iOS releases, so a blanket `resource-type: media` rule also blocks subtitles.
-enum YouTubeTranscriptContentPolicy {
-    static let mediaBlockRuleListIdentifier =
-        "com.same.castreader.youtube-media-block-v1"
-
-    static let mediaBlockRuleListJSON = #"""
-    [
-      {
-        "trigger": {
-          "url-filter": "^https://([a-z0-9-]+\\.)*googlevideo\\.com/.*",
-          "url-filter-is-case-sensitive": false
-        },
-        "action": { "type": "block" }
-      }
-    ]
-    """#
-}
-
 /// Privacy-safe, monotonic checkpoints for the native half of extraction.
 /// Snapshots intentionally contain no URL, video ID, request token, title or
 /// caption text, so DEBUG timing logs cannot accidentally retain page data.
 enum YouTubeTranscriptNativeStage: String, CaseIterable, Equatable, Sendable {
     case requestStarted = "request_started"
-    case contentRuleLookupStarted = "content_rule_lookup_started"
-    case contentRuleCacheHit = "content_rule_cache_hit"
-    case contentRuleReady = "content_rule_ready"
     case navigationStarted = "navigation_started"
     case messageReceived = "message_received"
     case transcriptReady = "transcript_ready"
@@ -586,6 +589,14 @@ enum YouTubeTranscriptEnvelopeClassifier {
             return .live
         }
 
+        // A verification wall often carries YouTube's generic LOGIN_REQUIRED
+        // playability status even when the video itself remains public. Trust
+        // the adapter's specific evidence before account-gating heuristics so
+        // the UI never tells the user that signing in will unlock the video.
+        if errorCode == "youtube_verification_required" {
+            return .youtubeAccessLimited
+        }
+
         let restricted = [
             "age_restricted",
             "sign_in_required",
@@ -597,6 +608,14 @@ enum YouTubeTranscriptEnvelopeClassifier {
             || status == "content_check_required"
             || errorCode == "restricted_video" {
             return .restricted
+        }
+
+        // A failed player bootstrap is a transient access/initialization
+        // failure. YouTube can pair it with a generic UNPLAYABLE status, so
+        // classify the explicit adapter code before the status-only fallback.
+        // It is neither proof of sign-in gating nor a caption parsing timeout.
+        if errorCode == "player_bootstrap_failed" {
+            return .playerBootstrapFailed
         }
 
         let unavailable = ["geo_restricted", "removed", "unavailable", "private"]
@@ -650,10 +669,6 @@ enum YouTubeTranscriptEnvelopeClassifier {
 
 // MARK: - WebKit extraction
 
-typealias YouTubeContentRuleListResolver = (
-    @escaping (WKContentRuleList?, Error?) -> Void
-) -> Void
-
 @MainActor
 final class YouTubeTranscriptService: NSObject {
     static let shared = YouTubeTranscriptService()
@@ -672,7 +687,7 @@ final class YouTubeTranscriptService: NSObject {
     /// Bump to discard the extraction store's cookies and caches once on the
     /// next launch. Reputation from a session YouTube decided to distrust is
     /// carried in that store, and it outlives the code change that caused it.
-    private static let websiteDataStoreResetVersion = 1
+    private static let websiteDataStoreResetVersion = 2
     private static let websiteDataStoreResetKey = "youtube.dataStoreResetVersion"
 
     static func resetWebsiteDataStoreIfNeeded() {
@@ -696,8 +711,6 @@ final class YouTubeTranscriptService: NSObject {
 
     private let vendoredBridgeLoader: () -> String?
     private let pageLoader: (WKWebView, URLRequest) -> Void
-    private let contentRuleListResolver: YouTubeContentRuleListResolver
-    private var cachedMediaBlockRuleList: WKContentRuleList?
 
     private final class ActiveRequest {
         let id: UUID
@@ -830,7 +843,6 @@ final class YouTubeTranscriptService: NSObject {
         pageLoader = { webView, request in
             _ = webView.load(request)
         }
-        contentRuleListResolver = Self.resolveMediaBlockingRuleList
         super.init()
         observeWarmSessionLifecycle()
     }
@@ -864,13 +876,10 @@ final class YouTubeTranscriptService: NSObject {
     /// `init()`/`shared`, the bundled bridge and `WKWebView.load(_:)` above.
     init(
         vendoredBridgeLoader: @escaping () -> String?,
-        pageLoader: @escaping (WKWebView, URLRequest) -> Void,
-        contentRuleListResolver: YouTubeContentRuleListResolver? = nil
+        pageLoader: @escaping (WKWebView, URLRequest) -> Void
     ) {
         self.vendoredBridgeLoader = vendoredBridgeLoader
         self.pageLoader = pageLoader
-        self.contentRuleListResolver = contentRuleListResolver
-            ?? Self.resolveMediaBlockingRuleList
         super.init()
     }
 
@@ -889,12 +898,6 @@ final class YouTubeTranscriptService: NSObject {
         timeout: TimeInterval = YouTubeTranscriptService.defaultExtractionTimeout
     ) -> [WKUserScript] {
         [
-            WKUserScript(
-                source: mediaQuiescenceScript,
-                injectionTime: .atDocumentStart,
-                forMainFrameOnly: true,
-                in: .page
-            ),
             WKUserScript(
                 source: YouTubeWebScripts.earlyBridgeBootstrap(vendoredBridge),
                 injectionTime: .atDocumentStart,
@@ -952,14 +955,6 @@ final class YouTubeTranscriptService: NSObject {
             }
         }
 
-        guard let targetURL = reference.canonicalURL,
-              YouTubeTranscriptSecurityPolicy.allowsMainFrameNavigation(
-                  targetURL,
-                  expectedVideoID: reference.videoId
-              ) else {
-            throw YouTubeTranscriptFailure.invalidURL
-        }
-
         lastExtractionServedFromWarmSession = false
         let requestID = UUID()
         let token = UUID().uuidString.lowercased() + UUID().uuidString.lowercased()
@@ -967,6 +962,13 @@ final class YouTubeTranscriptService: NSObject {
         let boundedTimeout = timeout.isFinite
             ? min(max(timeout, 0.1), 300)
             : Self.defaultExtractionTimeout
+        guard let request = Self.initialEmbedRequest(
+            reference: reference,
+            preferredLanguage: language,
+            timeout: boundedTimeout
+        ) else {
+            throw YouTubeTranscriptFailure.invalidURL
+        }
 
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
@@ -980,7 +982,7 @@ final class YouTubeTranscriptService: NSObject {
                     reference: reference,
                     preferredLanguage: language,
                     requestedTrack: requestedTrack,
-                    targetURL: targetURL,
+                    request: request,
                     timeout: boundedTimeout,
                     onTranscriptReady: onTranscriptReady,
                     continuation: continuation
@@ -1279,7 +1281,7 @@ final class YouTubeTranscriptService: NSObject {
         reference: YouTubeVideoReference,
         preferredLanguage: String,
         requestedTrack: YouTubeTrackRequest?,
-        targetURL: URL,
+        request: URLRequest,
         timeout: TimeInterval,
         onTranscriptReady: ((YouTubeTranscriptDocument) -> Void)?,
         continuation: CheckedContinuation<YouTubeTranscriptDocument, Error>
@@ -1313,14 +1315,17 @@ final class YouTubeTranscriptService: NSObject {
         let configuration = WKWebViewConfiguration()
         configuration.userContentController = controller
         configuration.websiteDataStore = Self.websiteDataStore
-        configuration.mediaTypesRequiringUserActionForPlayback = .all
-        configuration.allowsInlineMediaPlayback = false
+        // Let the exact-video official Embed bootstrap itself silently. The
+        // page-world adapter mutes before its one controlled play request and
+        // pauses as soon as the correlated player response is captured. A real
+        // user tap remains the fallback when YouTube still holds a preview shell.
+        configuration.mediaTypesRequiringUserActionForPlayback = []
+        configuration.allowsInlineMediaPlayback = true
         configuration.allowsAirPlayForMediaPlayback = false
         configuration.allowsPictureInPictureMediaPlayback = false
-        // Ask WebKit for its native desktop presentation. Do not spoof Chrome:
-        // YouTube binds BotGuard/PO tokens to browser integrity signals, and a
-        // Chrome UA backed by an iOS WebKit engine produces unusable proofs.
-        configuration.defaultWebpagePreferences.preferredContentMode = .desktop
+        // Keep WebKit's native mobile identity. The official embed endpoint is
+        // responsive and does not need the desktop watch-page presentation.
+        configuration.defaultWebpagePreferences.preferredContentMode = .mobile
 
         let webView = WKWebView(frame: Self.viewport, configuration: configuration)
         webView.navigationDelegate = self
@@ -1343,100 +1348,37 @@ final class YouTubeTranscriptService: NSObject {
         context.hostingWindow = attachToTransparentWindow(webView)
         activeRequest = context
         recordStage(.requestStarted, for: context)
-        // This is the total native deadline. Arm it before the content-rule
-        // lookup/compile starts so a wedged WebKit rule-store callback cannot
-        // leave the extraction overlay loading forever.
+        // This is the total native deadline, including navigation bootstrap.
         startTimeout(requestID: requestID, timeout: timeout)
+        recordStage(.navigationStarted, for: context)
+        pageLoader(webView, request)
+    }
 
+    /// Builds the exact first-party embed request YouTube requires on iOS.
+    /// Kept as a pure contract so tests can prevent an accidental regression
+    /// back to `/watch` or loss of the app-identity Referer header.
+    static func initialEmbedRequest(
+        reference: YouTubeVideoReference,
+        preferredLanguage: String,
+        timeout: TimeInterval
+    ) -> URLRequest? {
+        let language = safeLanguageTag(preferredLanguage)
+        guard let url = reference.embedURL(preferredLanguage: language),
+              YouTubeTranscriptSecurityPolicy.allowsMainFrameNavigation(
+                  url,
+                  expectedVideoID: reference.videoId
+              ) else { return nil }
         var request = URLRequest(
-            url: targetURL,
+            url: url,
             cachePolicy: .reloadIgnoringLocalAndRemoteCacheData,
             timeoutInterval: timeout
         )
-        request.setValue(preferredLanguage, forHTTPHeaderField: "Accept-Language")
-        installMediaBlockingRules(
-            on: controller,
-            webView: webView,
-            request: request,
-            requestID: requestID
+        request.setValue(language, forHTTPHeaderField: "Accept-Language")
+        request.setValue(
+            YouTubeVideoReference.embedOriginString,
+            forHTTPHeaderField: "Referer"
         )
-    }
-
-    /// Content rules are attached before the first navigation. Compilation is
-    /// fail-closed: a rule-store failure must never silently permit a media
-    /// request merely to keep transcript extraction alive.
-    private func installMediaBlockingRules(
-        on controller: WKUserContentController,
-        webView: WKWebView,
-        request: URLRequest,
-        requestID: UUID
-    ) {
-        guard let active = activeRequest,
-              active.id == requestID,
-              active.webView === webView else { return }
-
-        if let cachedMediaBlockRuleList {
-            recordStage(.contentRuleCacheHit, for: active)
-            controller.add(cachedMediaBlockRuleList)
-            recordStage(.navigationStarted, for: active)
-            pageLoader(webView, request)
-            return
-        }
-
-        recordStage(.contentRuleLookupStarted, for: active)
-        contentRuleListResolver { [weak self, weak webView] ruleList, error in
-            // WKContentRuleListStore does not promise a MainActor callback. Both
-            // the in-memory cache and active-request identity are MainActor state,
-            // so validate and install only after hopping back to the main queue.
-            DispatchQueue.main.async { [weak self, weak webView] in
-                guard let self,
-                      let webView,
-                      let active = self.activeRequest,
-                      active.id == requestID,
-                      active.webView === webView else { return }
-                guard let ruleList, error == nil else {
-                    self.finish(requestID: requestID, throwing: .malformedResponse)
-                    return
-                }
-                self.cachedMediaBlockRuleList = ruleList
-                self.recordStage(.contentRuleReady, for: active)
-                controller.add(ruleList)
-                self.recordStage(.navigationStarted, for: active)
-                self.pageLoader(webView, request)
-            }
-        }
-    }
-
-    /// WebKit already persists compiled rule lists by identifier. The service
-    /// additionally retains the resolved object for its lifetime, avoiding an
-    /// asynchronous rule-store lookup on every YouTube link after the first.
-    private nonisolated static func resolveMediaBlockingRuleList(
-        completion: @escaping (WKContentRuleList?, Error?) -> Void
-    ) {
-        guard let store = WKContentRuleListStore.default() else {
-            completion(
-                nil,
-                NSError(
-                    domain: "YouTubeTranscriptContentPolicy",
-                    code: 1,
-                    userInfo: nil
-                )
-            )
-            return
-        }
-
-        let identifier = YouTubeTranscriptContentPolicy.mediaBlockRuleListIdentifier
-        store.lookUpContentRuleList(forIdentifier: identifier) { ruleList, _ in
-            if let ruleList {
-                completion(ruleList, nil)
-                return
-            }
-            store.compileContentRuleList(
-                forIdentifier: identifier,
-                encodedContentRuleList: YouTubeTranscriptContentPolicy.mediaBlockRuleListJSON,
-                completionHandler: completion
-            )
-        }
+        return request
     }
 
     private func startTimeout(requestID: UUID, timeout: TimeInterval) {
@@ -1706,6 +1648,10 @@ final class YouTubeTranscriptService: NSObject {
     /// service alive through a WebView nobody is using.
     private func destroy(webView: WKWebView?, hostingWindow: UIWindow?) {
         if let webView {
+            // Belt-and-suspenders cleanup for an autoplay+mute Embed. The page
+            // bridge already pauses on the correlated exact-video response;
+            // this also covers cancellation or teardown during bootstrap.
+            webView.pauseAllMediaPlayback {}
             webView.stopLoading()
             webView.navigationDelegate = nil
             webView.uiDelegate = nil
@@ -1754,36 +1700,6 @@ final class YouTubeTranscriptService: NSObject {
     }
     #endif
 
-    private static let mediaQuiescenceScript = #"""
-    (function () {
-      'use strict';
-      function stopMedia(media) {
-        try {
-          media.muted = true;
-          media.volume = 0;
-          if (!media.paused) media.pause();
-          media.removeAttribute('autoplay');
-        } catch (error) {}
-      }
-      function sweep() {
-        document.querySelectorAll('video, audio').forEach(stopMedia);
-      }
-      document.addEventListener('play', function (event) {
-        if (event.target instanceof HTMLMediaElement) stopMedia(event.target);
-      }, true);
-      if (document.documentElement) {
-        new MutationObserver(sweep).observe(document.documentElement, {
-          childList: true,
-          subtree: true
-        });
-      }
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', sweep, { once: true });
-      } else {
-        sweep();
-      }
-    })();
-    """#
 }
 
 extension YouTubeTranscriptService: WKScriptMessageHandler {

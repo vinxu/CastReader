@@ -150,6 +150,8 @@ final class ProductAnalyticsTests: XCTestCase {
             "restricted",
             "unavailable",
             "caption_access",
+            "player_bootstrap_failed",
+            "youtube_access_limited",
             "track_unavailable",
             "timeout",
             "unsupported_language",

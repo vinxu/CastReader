@@ -832,7 +832,9 @@ struct MainTabView: View {
             )
         } catch let failure as YouTubeTranscriptFailure
             where failure == .network || failure == .timeout
-                || failure == .captionAccess {
+                || failure == .captionAccess
+                || failure == .playerBootstrapFailed
+                || failure == .youtubeAccessLimited {
             if let cachedResolution = await cache?.mostRecentTranscript(
                 videoId: request.reference.videoId
             ),
@@ -1193,6 +1195,8 @@ struct MainTabView: View {
         case .restricted: return "restricted"
         case .unavailable, .invalidURL, .malformedResponse: return "unavailable"
         case .captionAccess: return "caption_access"
+        case .playerBootstrapFailed: return "player_bootstrap_failed"
+        case .youtubeAccessLimited: return "youtube_access_limited"
         case .trackUnavailable: return "track_unavailable"
         case .timeout, .network: return "timeout"
         case .unsupportedLanguage: return "unsupported_language"

@@ -1,5 +1,7 @@
 # YouTube 字幕语言切换 / 竖屏锁定 / 朗读衔接：iOS 增量与 Android 对齐交接
 
+> **提取架构更新（2026-08-12）：** 本文的多语选轨、竖屏锁定和 TTS 衔接合同继续有效；涉及 `/watch`、desktop WebView、bot challenge、transcript endpoint 与 VPN 的提取实现/排障描述，已由 `docs/YouTube官方Embed字幕提取-Android重构交接.md` 取代。Android 重构应先执行新文档，不得继续以旧 watch 链路为基线。
+
 > 更新日期：2026-08-12
 > iOS 工程：`/Users/xuxuheng/Documents/CastReader`
 > Android 工程：`/Users/xuxuheng/Documents/CastReader-Android`
@@ -249,4 +251,5 @@ iOS 尚未修改，因为代价明确：分段变了等于段落编号变了，*
 
 - [ ] 轨列表、缓存、日志中均无签名 URL / PO token
 - [ ] 埋点无 title / url / videoId / 字幕正文
-- [ ] 不下载、不缓存、不播放 YouTube 音视频流
+- [ ] 官方 Embed 仅在系统硬静音下短暂初始化并有界暂停；不持久化 YouTube
+  音视频流，CastReader 只用字幕文本生成朗读音频

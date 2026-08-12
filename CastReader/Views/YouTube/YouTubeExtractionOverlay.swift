@@ -132,7 +132,7 @@ struct YouTubeExtractionOverlay: View {
                 Text(AppLocalized("正在解析字幕…"))
                     .font(.headline)
                     .foregroundStyle(AppTheme.foreground)
-                Text(AppLocalized("CastReader 不播放或保留 YouTube 视频和音频流；朗读声音由字幕文本生成。"))
+                Text(AppLocalized("字幕读取通过 YouTube 官方播放器完成；播放器仅静音初始化并立即暂停，朗读声音由字幕文本生成。"))
                     .font(.caption)
                     .foregroundStyle(AppTheme.mutedForeground)
                     .multilineTextAlignment(.center)
@@ -148,6 +148,19 @@ struct YouTubeExtractionOverlay: View {
                     .font(.headline)
                     .foregroundStyle(AppTheme.foreground)
                     .multilineTextAlignment(.center)
+                if failure == .playerBootstrapFailed
+                    || failure == .youtubeAccessLimited {
+                    Button {
+                        openInYouTube(presentation.request)
+                    } label: {
+                        Label(
+                            AppLocalized("在 YouTube 中打开"),
+                            systemImage: "arrow.up.right.square"
+                        )
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("youtubeExtractionOpenInYouTubeButton")
+                }
                 HStack(spacing: 12) {
                     Button(AppLocalized("取消"), role: .cancel, action: cancel)
                         .buttonStyle(.bordered)
@@ -158,5 +171,14 @@ struct YouTubeExtractionOverlay: View {
                 }
             }
         }
+    }
+
+    private func openInYouTube(_ request: YouTubeListenRequest) {
+        let seconds = max(0, request.reference.startSeconds ?? 0)
+        let milliseconds = seconds.multipliedReportingOverflow(by: 1_000)
+        YouTubeLinkOpener.open(
+            videoId: request.reference.videoId,
+            startMs: milliseconds.overflow ? Int.max : milliseconds.partialValue
+        )
     }
 }

@@ -420,8 +420,9 @@ class CastReaderUITests: XCTestCase {
 
     /// Regression probe for a real page that YouTube currently places behind
     /// bot verification. Success is acceptable if YouTube later permits the
-    /// transcript again; an explicit access restriction is also truthful. The
-    /// old false "parsing timed out" state must never return.
+    /// transcript again; an explicit temporary access limitation is also
+    /// truthful. Neither the old false timeout nor a false sign-in claim may
+    /// return.
     func testYouTubeReportedURLNeverMisreportsVerificationAsTimeout() throws {
         #if !CASTREADER_LIVE_YOUTUBE_CLASSIFICATION
         try XCTSkipUnless(
@@ -456,20 +457,28 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(listen.waitForExistence(timeout: 5))
         listen.tap()
 
-        let restricted = app.staticTexts["该视频需要登录 YouTube 查看，无法解析"]
+        let accessLimited = app.staticTexts[
+            "YouTube 暂时限制了字幕访问，视频本身可能仍可正常观看；请稍后重试或在 YouTube 中打开"
+        ]
+        let misleadingSignIn = app.staticTexts["该视频需要登录 YouTube 查看，无法解析"]
         let falseTimeout = app.staticTexts["解析超时，请重试"]
         var paragraph: XCUIElement?
         let deadline = Date().addingTimeInterval(50)
         repeat {
             paragraph = waitForVisibleYouTubeParagraph(in: app, timeout: 0.05)
-            if paragraph != nil || restricted.exists || falseTimeout.exists { break }
+            if paragraph != nil || accessLimited.exists
+                || misleadingSignIn.exists || falseTimeout.exists { break }
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         } while Date() < deadline
 
         XCTAssertFalse(falseTimeout.exists, "bot verification regressed to a false timeout")
+        XCTAssertFalse(
+            misleadingSignIn.exists,
+            "bot verification regressed to a false YouTube sign-in requirement"
+        )
         XCTAssertTrue(
-            paragraph != nil || restricted.exists,
-            "the exact URL reached neither a transcript nor the truthful restricted state"
+            paragraph != nil || accessLimited.exists,
+            "the exact URL reached neither a transcript nor the truthful access-limited state"
         )
         let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         screenshot.name = "YouTube reported URL terminal state"

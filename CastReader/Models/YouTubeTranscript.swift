@@ -16,6 +16,10 @@ struct YouTubeVideoReference: Codable, Equatable, Sendable {
     let videoId: String
     let startSeconds: Int?
 
+    /// Stable app identity used by YouTube's official embedded player. The
+    /// embed document's `origin` and initial request `Referer` must agree.
+    static let embedOriginString = "https://com.same.castreader"
+
     var canonicalURLString: String {
         var result = "https://www.youtube.com/watch?v=\(videoId)"
         if let startSeconds {
@@ -25,6 +29,42 @@ struct YouTubeVideoReference: Codable, Equatable, Sendable {
     }
 
     var canonicalURL: URL? { URL(string: canonicalURLString) }
+
+    /// Official player document used internally by the short-lived WebView.
+    /// Keep this separate from `canonicalURL`: history, sharing and "open in
+    /// YouTube" must continue to use the ordinary watch URL.
+    var embedURL: URL? { embedURL(preferredLanguage: nil) }
+
+    func embedURL(preferredLanguage: String?) -> URL? {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "www.youtube.com"
+        components.path = "/embed/\(videoId)"
+        var queryItems = [
+            URLQueryItem(name: "enablejsapi", value: "1"),
+            URLQueryItem(name: "playsinline", value: "1"),
+            // A no-autoplay Embed stays on YouTube's thumbnail preview in
+            // iOS WebKit and never exposes the player/caption response. Start
+            // the official player muted; the extraction bridge pauses it as
+            // soon as the exact-video response is captured.
+            URLQueryItem(name: "autoplay", value: "1"),
+            URLQueryItem(name: "mute", value: "1"),
+            URLQueryItem(name: "cc_load_policy", value: "1"),
+            URLQueryItem(name: "origin", value: Self.embedOriginString),
+        ]
+        if let preferredLanguage, !preferredLanguage.isEmpty {
+            queryItems.append(
+                URLQueryItem(name: "cc_lang_pref", value: preferredLanguage)
+            )
+        }
+        if let startSeconds, startSeconds > 0 {
+            queryItems.append(
+                URLQueryItem(name: "start", value: String(startSeconds))
+            )
+        }
+        components.queryItems = queryItems
+        return components.url
+    }
 }
 
 enum YouTubeURLParser {
@@ -882,6 +922,13 @@ enum YouTubeTranscriptFailure: String, Error, Codable, Equatable, Sendable, Case
     case unsupportedLanguage = "unsupported_language"
     case malformedResponse = "malformed_response"
     case captionAccess = "caption_access"
+    /// YouTube's player document did not initialize far enough to expose its
+    /// caption surface. This is transient and is not evidence that the video
+    /// requires sign-in, has no captions, or timed out while parsing captions.
+    case playerBootstrapFailed = "player_bootstrap_failed"
+    /// YouTube presented an anti-automation verification wall. This says
+    /// nothing about whether the video itself requires an account to watch.
+    case youtubeAccessLimited = "youtube_access_limited"
     /// An explicitly requested caption track could not be fetched. Distinct
     /// from `captionAccess`: the video's captions work, this one track did not,
     /// so the reader keeps playing the track it already had.

@@ -43,6 +43,92 @@ final class YouTubeWebScriptsTests: XCTestCase {
         XCTAssertTrue(missingToken?.isNull == true)
     }
 
+    func testPlayerRequestBodyCorrelationRequiresExactExpectedVideo() throws {
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript(YouTubeWebScripts.subtitleProofTokenFunction)
+        let videoIDReader = try XCTUnwrap(
+            context.objectForKeyedSubscript(
+                "castReaderPlayerRequestVideoIDFromBody"
+            )
+        )
+        let expected = "NHHPNMIK-fY"
+
+        XCTAssertEqual(
+            videoIDReader.call(withArguments: [[
+                "videoId": expected,
+                "context": ["client": ["clientName": "WEB_EMBEDDED_PLAYER"]],
+            ], expected])?.toString(),
+            expected
+        )
+        XCTAssertEqual(
+            videoIDReader.call(withArguments: [
+                #"{"videoId":"NHHPNMIK-fY"}"#,
+                expected,
+            ])?.toString(),
+            expected
+        )
+        XCTAssertTrue(
+            videoIDReader.call(withArguments: [[
+                "videoId": "unrelated-video",
+            ], expected])?.isNull == true
+        )
+        XCTAssertTrue(
+            videoIDReader.call(withArguments: [
+                #"{"context":{"client":{"clientName":"WEB"}}}"#,
+                expected,
+            ])?.isNull == true
+        )
+    }
+
+    func testOfficialEmbedPreviewUsesTypedExactVideoEndpoint() throws {
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript(YouTubeWebScripts.embedPreviewFunction)
+        let videoIDReader = try XCTUnwrap(
+            context.objectForKeyedSubscript(
+                "castReaderOfficialEmbedPreviewVideoID"
+            )
+        )
+        let expected = "NHHPNMIK-fY"
+        let playerVars: [String: Any] = [
+            "embedded_player_response": [
+                "embedPreview": [
+                    "thumbnailPreviewRenderer": [
+                        "playButton": [
+                            "buttonRenderer": [
+                                "navigationEndpoint": [
+                                    "watchEndpoint": ["videoId": expected],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]
+
+        XCTAssertEqual(
+            videoIDReader.call(withArguments: [playerVars, expected])?.toString(),
+            expected
+        )
+        XCTAssertTrue(
+            videoIDReader.call(withArguments: [
+                playerVars,
+                "different-video",
+            ])?.isNull == true
+        )
+        XCTAssertTrue(
+            videoIDReader.call(withArguments: [[
+                "embedded_player_response": [
+                    "embedPreview": [
+                        "thumbnailPreviewRenderer": [
+                            "watchOnYoutubeButton": ["videoId": expected],
+                        ],
+                    ],
+                ],
+            ], expected])?.isNull == true,
+            "an unrelated watch link must never authorize bootstrap"
+        )
+    }
+
     func testOfficialCaptionTrackMatchesLanguageKindAndVSSID() throws {
         let context = try makeURLCapableJavaScriptContext()
         context.evaluateScript(YouTubeWebScripts.officialCaptionTrackFunction)
@@ -338,6 +424,55 @@ final class YouTubeWebScriptsTests: XCTestCase {
                 .forProperty("videoId")?.toString(),
             videoID
         )
+    }
+
+    func testExactRequestCorrelatedPlayerResponseCanHydrateWithoutVideoDetails() throws {
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript(YouTubeWebScripts.playerResponseSelectionFunction)
+        let selector = try XCTUnwrap(
+            context.objectForKeyedSubscript("castReaderSelectPlayerResponse")
+        )
+        let videoID = "NHHPNMIK-fY"
+        let captured: [String: Any] = [
+            "playabilityStatus": ["status": "OK"],
+            "captions": [
+                "playerCaptionsTracklistRenderer": [
+                    "captionTracks": [["languageCode": "en"]],
+                ],
+            ],
+        ]
+        let staleRuntime: [String: Any] = [
+            "videoDetails": ["videoId": videoID],
+            "playabilityStatus": ["status": "UNPLAYABLE"],
+        ]
+
+        let selected = selector.call(withArguments: [
+            NSNull(),
+            staleRuntime,
+            videoID,
+            captured,
+            videoID,
+        ])
+        XCTAssertEqual(
+            selected?.forProperty("playabilityStatus")?
+                .forProperty("status")?.toString(),
+            "OK"
+        )
+        XCTAssertEqual(
+            selected?.forProperty("captions")?
+                .forProperty("playerCaptionsTracklistRenderer")?
+                .forProperty("captionTracks")?.toArray()?.count,
+            1
+        )
+
+        let rejected = selector.call(withArguments: [
+            NSNull(),
+            NSNull(),
+            videoID,
+            captured,
+            "different-video",
+        ])
+        XCTAssertTrue(rejected?.isNull == true)
     }
 
     func testInitialDataProvidesVideoScopedTranscriptFallbackEvidence() throws {
@@ -655,6 +790,11 @@ final class YouTubeWebScriptsTests: XCTestCase {
             "return 'zh-hant'",
             "castReaderCaptionURLWithProof",
             "castReaderSubtitleProofFromPlayerBody",
+            "castReaderPlayerRequestVideoIDFromBody",
+            "captured exact-video player response transport=",
+            "capturePlayerFetchResponse",
+            "capturePlayerResponseText",
+            "capturedPlayerResponseVideoID",
             "serviceIntegrityDimensions",
             "poToken",
             "potc",
@@ -737,8 +877,11 @@ final class YouTubeWebScriptsTests: XCTestCase {
             "retained sign-in/verification evidence",
             "code: 'live_video'",
             "code: 'restricted_video'",
+            "'youtube_verification_required'",
             "code: 'unavailable_video'",
             "code: 'adapter_timeout'",
+            "code: 'player_bootstrap_failed'",
+            "player bootstrap failed ",
             "sawFetchTimeout",
             "sawFetchNetworkFailure",
             "abandoning timedtext candidates after uncorrelated fetch timeout",
@@ -753,6 +896,13 @@ final class YouTubeWebScriptsTests: XCTestCase {
         for token in requiredTokens {
             XCTAssertTrue(source.contains(token), "missing adapter token: \(token)")
         }
+        XCTAssertTrue(source.contains("/^\\/embed\\/([^/?]+)\\/?$/"))
+        XCTAssertTrue(source.contains("var isEmbedSurface ="))
+        XCTAssertTrue(
+            source.contains("official embed surface: watch transcript lanes disabled")
+        )
+        XCTAssertTrue(source.contains("cues.length === 0 && !isEmbedSurface"))
+        XCTAssertFalse(source.contains("code: 'player_timeout'"))
         XCTAssertFalse(source.contains("chrome."))
         XCTAssertFalse(source.contains("browser.runtime"))
         XCTAssertFalse(source.contains("24500"))
@@ -772,6 +922,169 @@ final class YouTubeWebScriptsTests: XCTestCase {
         } else {
             XCTFail("missing timedtext timeout control-flow branch")
         }
+    }
+
+    func testEmbedBootstrapIsExactSingleShotAndPrefersCueing() throws {
+        let source = YouTubeWebScripts.extractionAdapter(
+            expectedVideoID: "NHHPNMIK-fY"
+        )
+        let start = try XCTUnwrap(
+            source.range(of: "function maybeBootstrapOfficialEmbedPreview(")
+        )
+        let end = try XCTUnwrap(
+            source.range(
+                of: "function embedBootstrapDiagnostic()",
+                range: start.upperBound..<source.endIndex
+            )
+        )
+        let body = source[start.lowerBound..<end.lowerBound]
+
+        XCTAssertTrue(body.contains("castReaderOfficialEmbedPreviewVideoID("))
+        XCTAssertTrue(body.contains("if (!isOfficialEmbedSurface() || embedBootstrapAttempted)"))
+        let cueByID = try XCTUnwrap(body.range(of: "typeof player.cueVideoById"))
+        let cueByVars = try XCTUnwrap(
+            body.range(of: "typeof player.cueVideoByPlayerVars")
+        )
+        let exactButton = try XCTUnwrap(
+            body.range(of: "exactOfficialEmbedPlayButton()")
+        )
+        XCTAssertLessThan(cueByID.lowerBound, cueByVars.lowerBound)
+        XCTAssertLessThan(cueByVars.lowerBound, exactButton.lowerBound)
+        XCTAssertEqual(
+            body.components(separatedBy: "button.click();").count - 1,
+            1,
+            "the official overlay click must remain single-shot"
+        )
+        XCTAssertTrue(body.contains("embedCueAttemptedAt = Date.now();"))
+        XCTAssertTrue(body.contains("Date.now() - embedCueAttemptedAt < 150"))
+        XCTAssertTrue(body.contains("capturedPlayerResponse || resolvedPlayerVideoID(response)"))
+        XCTAssertTrue(body.contains("if (!embedCueAttempted)"))
+        XCTAssertTrue(body.contains("typeof officialPlayer.playVideo"))
+        XCTAssertTrue(body.contains("embedBootstrapMethod = 'official_player_playVideo'"))
+        XCTAssertEqual(
+            body.components(separatedBy: "officialPlayer.playVideo();").count - 1,
+            1,
+            "the muted player bootstrap must remain single-shot"
+        )
+        let exactButtonFallback = try XCTUnwrap(
+            body.range(of: "var button = exactOfficialEmbedPlayButton();")
+        )
+        let playerFallback = try XCTUnwrap(
+            body.range(of: "officialPlayer.playVideo();")
+        )
+        XCTAssertLessThan(exactButtonFallback.lowerBound, playerFallback.lowerBound)
+
+        let buttonStart = try XCTUnwrap(
+            source.range(of: "function exactOfficialEmbedPlayButton()")
+        )
+        let buttonEnd = try XCTUnwrap(
+            source.range(
+                of: "function maybeBootstrapOfficialEmbedPreview(",
+                range: buttonStart.upperBound..<source.endIndex
+            )
+        )
+        let buttonBody = source[buttonStart.lowerBound..<buttonEnd.lowerBound]
+        XCTAssertTrue(buttonBody.contains("#movie_player button.ytp-large-play-button"))
+        XCTAssertTrue(buttonBody.contains("#player button.ytp-large-play-button"))
+        XCTAssertTrue(buttonBody.contains("#movie_player button.ytmCuedOverlayPlayButton"))
+        XCTAssertTrue(buttonBody.contains("#player button.ytmCuedOverlayPlayButton"))
+        XCTAssertTrue(buttonBody.contains("button.closest('a[href]')"))
+        XCTAssertFalse(buttonBody.contains("querySelector('button')"))
+        XCTAssertFalse(buttonBody.contains("querySelectorAll('button')"))
+
+        let waitStart = try XCTUnwrap(
+            source.range(of: "async function waitForMatchingPlayer()")
+        )
+        let waitEnd = try XCTUnwrap(
+            source.range(
+                of: "function normalizedLanguage",
+                range: waitStart.upperBound..<source.endIndex
+            )
+        )
+        let waitBody = source[waitStart.lowerBound..<waitEnd.lowerBound]
+        let bootstrap = try XCTUnwrap(
+            waitBody.range(of: "maybeBootstrapOfficialEmbedPreview(expected);")
+        )
+        let snapshot = try XCTUnwrap(
+            waitBody.range(of: "var synchronous = snapshot(null);")
+        )
+        XCTAssertLessThan(bootstrap.lowerBound, snapshot.lowerBound)
+    }
+
+    func testPlayingEmbedBootstrapIsMutedAndPausedAfterExactResponseCapture() throws {
+        let source = YouTubeWebScripts.extractionAdapter(
+            expectedVideoID: "NHHPNMIK-fY"
+        )
+        let pauseStart = try XCTUnwrap(
+            source.range(of: "function pauseOfficialEmbedAfterHydration(")
+        )
+        let pauseEnd = try XCTUnwrap(
+            source.range(
+                of: "function maybeBootstrapOfficialEmbedPreview(",
+                range: pauseStart.upperBound..<source.endIndex
+            )
+        )
+        let pauseBody = source[pauseStart.lowerBound..<pauseEnd.lowerBound]
+        XCTAssertTrue(pauseBody.contains("String(correlatedVideoID || '') !== expected"))
+        XCTAssertTrue(pauseBody.contains("!isOfficialEmbedSurface()"))
+        XCTAssertFalse(pauseBody.contains("!embedBootstrapAttempted"))
+        XCTAssertTrue(pauseBody.contains("document.querySelector('#movie_player')"))
+        XCTAssertTrue(pauseBody.contains("typeof player.mute === 'function'"))
+        XCTAssertTrue(pauseBody.contains("player.pauseVideo();"))
+        XCTAssertTrue(pauseBody.contains("setTimeout(pauseWhenReady, 50)"))
+
+        let publishStart = try XCTUnwrap(
+            source.range(of: "function publishCapturedPlayerResponse(")
+        )
+        let publishEnd = try XCTUnwrap(
+            source.range(
+                of: "function capturePlayerResponseText(",
+                range: publishStart.upperBound..<source.endIndex
+            )
+        )
+        let publishBody = source[publishStart.lowerBound..<publishEnd.lowerBound]
+        let correlate = try XCTUnwrap(
+            publishBody.range(of: "videoID !== expected")
+        )
+        let storeResponse = try XCTUnwrap(
+            publishBody.range(of: "capturedPlayerResponse = response;")
+        )
+        let pause = try XCTUnwrap(
+            publishBody.range(of: "pauseOfficialEmbedAfterHydration(videoID);")
+        )
+        XCTAssertLessThan(correlate.lowerBound, storeResponse.lowerBound)
+        XCTAssertLessThan(storeResponse.lowerBound, pause.lowerBound)
+    }
+
+    func testPlayerResponseCaptureIsRequestBodyCorrelatedForFetchAndXHR() throws {
+        let source = YouTubeWebScripts.extractionAdapter(
+            expectedVideoID: "NHHPNMIK-fY"
+        )
+        XCTAssertTrue(source.contains("parsedURL.origin === location.origin"))
+        XCTAssertTrue(source.contains("correlatedPlayerVideoID = capturePlayerRequestBody("))
+        XCTAssertTrue(source.contains("capturePlayerFetchResponse(response, correlatedPlayerVideoID)"))
+        XCTAssertTrue(source.contains("requestInput.clone().text()"))
+        XCTAssertTrue(source.contains("!hasExplicitBody && requestInput"))
+        XCTAssertTrue(source.contains("this.addEventListener('loadend'"))
+        XCTAssertTrue(source.contains("'xhr'"))
+        XCTAssertTrue(source.contains("capturedPlayerResponse,"))
+        XCTAssertTrue(source.contains("capturedPlayerResponseVideoID"))
+        XCTAssertTrue(source.contains("resolvedPlayerVideoID(response)"))
+
+        let lateStart = try XCTUnwrap(
+            source.range(of: "if (cues.length === 0 && !directLane.promise &&")
+        )
+        let lateEnd = try XCTUnwrap(
+            source.range(
+                of: "if (cues.length === 0 && !isEmbedSurface)",
+                range: lateStart.upperBound..<source.endIndex
+            )
+        )
+        let lateBranch = source[lateStart.lowerBound..<lateEnd.lowerBound]
+        XCTAssertTrue(
+            lateBranch.contains("!isEmbedSurface"),
+            "Embed must never enter the watch-only late get_transcript lane"
+        )
     }
 
     func testMatchingPlayerChecksSynchronousResponseBeforeWaitingForBridge() throws {
@@ -1229,7 +1542,7 @@ final class YouTubeWebScriptsTests: XCTestCase {
         XCTAssertEqual(result.envelope["ok"] as? Bool, false)
         XCTAssertEqual(
             (result.envelope["error"] as? [String: Any])?["code"] as? String,
-            "restricted_video"
+            "youtube_verification_required"
         )
         XCTAssertEqual(
             (result.envelope["playability"] as? [String: Any])?["status"] as? String,
@@ -1273,7 +1586,7 @@ final class YouTubeWebScriptsTests: XCTestCase {
         XCTAssertEqual(result.transcriptRequestCount, 0)
         XCTAssertEqual(
             (result.envelope["error"] as? [String: Any])?["code"] as? String,
-            "restricted_video"
+            "youtube_verification_required"
         )
         XCTAssertNotEqual(
             (result.envelope["error"] as? [String: Any])?["code"] as? String,
@@ -1295,7 +1608,7 @@ final class YouTubeWebScriptsTests: XCTestCase {
         XCTAssertEqual(result.envelope["ok"] as? Bool, false)
         XCTAssertEqual(
             (result.envelope["error"] as? [String: Any])?["code"] as? String,
-            "restricted_video"
+            "youtube_verification_required"
         )
         XCTAssertEqual(
             (result.envelope["playability"] as? [String: Any])?["classification"] as? String,

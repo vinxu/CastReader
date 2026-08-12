@@ -107,10 +107,9 @@ enum YouTubeWebScripts {
     """#
 
     /// YouTube can expose two player responses at once. The initial document
-    /// response still contains public caption tracks while the live player can
-    /// become `UNPLAYABLE` after CastReader deliberately blocks media loads.
-    /// Rank both responses instead of allowing that media-block side effect to
-    /// turn a captioned video into a false unavailable result.
+    /// response can contain public caption tracks before the runtime player
+    /// finishes hydration or replaces its status. Rank both responses so a
+    /// later incomplete response cannot erase valid exact-video evidence.
     static let playerResponseSelectionFunction = #"""
     function castReaderCaptionTracks(response) {
       var tracks = response && response.captions &&
@@ -125,15 +124,23 @@ enum YouTubeWebScripts {
       return Array.isArray(bridgeTracks) ? bridgeTracks : [];
     }
 
-    function castReaderPlayerResponseScore(response, expectedVideoID) {
+    function castReaderPlayerResponseScore(
+      response,
+      expectedVideoID,
+      correlatedVideoID
+    ) {
       if (!response || typeof response !== 'object') return -1000000;
       var details = response.videoDetails || {};
       var actualVideoID = String(details.videoId || '');
+      var correlated = String(correlatedVideoID || '');
       var expected = String(expectedVideoID || '');
       var score = 0;
       if (expected) {
-        if (actualVideoID === expected) score += 1000;
-        else if (actualVideoID) score -= 1000;
+        if (actualVideoID && actualVideoID !== expected) return -1000000;
+        if (correlated && correlated !== expected) return -1000000;
+        if (actualVideoID === expected ||
+            (!actualVideoID && correlated === expected)) score += 1000;
+        if (correlated === expected) score += 20;
       }
       var status = String(response.playabilityStatus &&
         response.playabilityStatus.status || '').toUpperCase();
@@ -143,14 +150,31 @@ enum YouTubeWebScripts {
       return score;
     }
 
-    function castReaderSelectPlayerResponse(initialResponse, runtimeResponse, expectedVideoID) {
-      var candidates = [initialResponse, runtimeResponse];
+    function castReaderSelectPlayerResponse(
+      initialResponse,
+      runtimeResponse,
+      expectedVideoID,
+      capturedResponse,
+      capturedResponseVideoID
+    ) {
+      var candidates = [
+        { response: initialResponse, correlatedVideoID: null },
+        { response: runtimeResponse, correlatedVideoID: null },
+        {
+          response: capturedResponse,
+          correlatedVideoID: capturedResponseVideoID
+        }
+      ];
       var selected = null;
       var selectedScore = -1000001;
       candidates.forEach(function (candidate) {
-        var score = castReaderPlayerResponseScore(candidate, expectedVideoID);
+        var score = castReaderPlayerResponseScore(
+          candidate.response,
+          expectedVideoID,
+          candidate.correlatedVideoID
+        );
         if (score > selectedScore) {
-          selected = candidate;
+          selected = candidate.response;
           selectedScore = score;
         }
       });
@@ -165,17 +189,35 @@ enum YouTubeWebScripts {
     /// ephemeral proof for the matching caption URL; it is never persisted or
     /// sent to native code.
     static let subtitleProofTokenFunction = #"""
-    function castReaderSubtitleProofFromPlayerBody(body, expectedVideoID) {
+    function castReaderPlayerRequestPayload(body) {
       var payload = body;
       if (typeof payload === 'string') {
         if (!payload || payload.length > 2 * 1024 * 1024) return null;
         try { payload = JSON.parse(payload); } catch (error) { return null; }
       }
-      if (!payload || typeof payload !== 'object') return null;
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        return null;
+      }
+      return payload;
+    }
 
+    function castReaderPlayerRequestVideoIDFromBody(body, expectedVideoID) {
+      var payload = castReaderPlayerRequestPayload(body);
+      if (!payload) return null;
       var videoID = String(payload.videoId || '');
       var expected = String(expectedVideoID || '');
       if (!videoID || (expected && videoID !== expected)) return null;
+      return videoID;
+    }
+
+    function castReaderSubtitleProofFromPlayerBody(body, expectedVideoID) {
+      var payload = castReaderPlayerRequestPayload(body);
+      if (!payload) return null;
+      var videoID = castReaderPlayerRequestVideoIDFromBody(
+        payload,
+        expectedVideoID
+      );
+      if (!videoID) return null;
 
       var dimensions = payload.serviceIntegrityDimensions || {};
       var token = String(dimensions.poToken || '').trim();
@@ -216,6 +258,30 @@ enum YouTubeWebScripts {
       } catch (error) {
         return formatted;
       }
+    }
+    """#
+
+    /// The no-autoplay Embed response can intentionally stop at YouTube's
+    /// official thumbnail preview. Correlate that preview through its typed
+    /// watchEndpoint, never through visible copy or a generic link search.
+    static let embedPreviewFunction = #"""
+    function castReaderOfficialEmbedPreviewVideoID(playerVars, expectedVideoID) {
+      var raw = playerVars && playerVars.embedded_player_response;
+      if (typeof raw === 'string') {
+        if (!raw || raw.length > 2 * 1024 * 1024) return null;
+        try { raw = JSON.parse(raw); } catch (error) { return null; }
+      }
+      if (!raw || typeof raw !== 'object') return null;
+      var renderer = raw.embedPreview &&
+        raw.embedPreview.thumbnailPreviewRenderer;
+      var endpoint = renderer && renderer.playButton &&
+        renderer.playButton.buttonRenderer &&
+        renderer.playButton.buttonRenderer.navigationEndpoint &&
+        renderer.playButton.buttonRenderer.navigationEndpoint.watchEndpoint;
+      var videoID = String(endpoint && endpoint.videoId || '');
+      var expected = String(expectedVideoID || '');
+      if (!videoID || (expected && videoID !== expected)) return null;
+      return videoID;
     }
     """#
 
@@ -641,6 +707,20 @@ enum YouTubeWebScripts {
           var latestOfficialTimedtextURL = null;
           var capturedSubtitleProof = null;
           var subtitleProofWaiters = [];
+          // This response is accepted only after the corresponding player
+          // request body names EXPECTED_VIDEO_ID exactly. Keeping the
+          // correlation beside the response lets an Embed response without
+          // videoDetails still count as exact-video evidence.
+          var capturedPlayerResponse = null;
+          var capturedPlayerResponseVideoID = null;
+          var capturedPlayerResponseTransport = null;
+          var capturedPlayerResponseStatus = 0;
+          var embedPreviewDetected = false;
+          var embedBootstrapAttempted = false;
+          var embedCueAttempted = false;
+          var embedCueAttemptedAt = 0;
+          var embedBootstrapMethod = 'not_attempted';
+          var embedHydrationPaused = false;
           var requestedOfficialCaptionModule = false;
           // A missing track during page bootstrap is not evidence that the
           // video has no captions. The fast negative path below is armed only
@@ -758,6 +838,68 @@ enum YouTubeWebScripts {
             if (wasMissing) note('captured video-scoped subtitle proof');
           }
 
+          function capturePlayerRequestBody(body) {
+            if (!String(EXPECTED_VIDEO_ID || '')) return null;
+            captureSubtitleProofFromBody(body);
+            return castReaderPlayerRequestVideoIDFromBody(
+              body,
+              EXPECTED_VIDEO_ID
+            );
+          }
+
+          function publishCapturedPlayerResponse(
+            response,
+            correlatedVideoID,
+            status,
+            transport
+          ) {
+            var expected = String(EXPECTED_VIDEO_ID || getURLVideoID() || '');
+            var videoID = String(correlatedVideoID || '');
+            if (!response || typeof response !== 'object' ||
+                Array.isArray(response) || !videoID ||
+                (expected && videoID !== expected)) return;
+            capturedPlayerResponse = response;
+            capturedPlayerResponseVideoID = videoID;
+            capturedPlayerResponseStatus = Number(status || 0);
+            capturedPlayerResponseTransport = String(transport || 'unknown');
+            note('captured exact-video player response transport=' +
+              capturedPlayerResponseTransport + ' status=' +
+              capturedPlayerResponseStatus);
+            pauseOfficialEmbedAfterHydration(videoID);
+          }
+
+          function capturePlayerResponseText(
+            body,
+            correlatedVideoID,
+            status,
+            transport
+          ) {
+            if (typeof body !== 'string' || body.length > 5 * 1024 * 1024) {
+              return;
+            }
+            var response = null;
+            try { response = JSON.parse(body); } catch (error) { return; }
+            publishCapturedPlayerResponse(
+              response,
+              correlatedVideoID,
+              status,
+              transport
+            );
+          }
+
+          function capturePlayerFetchResponse(response, correlatedVideoID) {
+            if (!response || !correlatedVideoID ||
+                typeof response.clone !== 'function') return;
+            response.clone().text().then(function (body) {
+              capturePlayerResponseText(
+                body,
+                correlatedVideoID,
+                Number(response.status || 0),
+                'fetch'
+              );
+            }).catch(function () {});
+          }
+
           function waitForSubtitleProof(timeoutMs) {
             if (capturedSubtitleProof) return Promise.resolve(capturedSubtitleProof);
             return new Promise(function (resolve) {
@@ -780,6 +922,7 @@ enum YouTubeWebScripts {
           }
 
           \#(subtitleProofTokenFunction)
+          \#(embedPreviewFunction)
           \#(officialCaptionTrackFunction)
 
           function captureOfficialTimedtextFetch(response, parsedURL) {
@@ -845,21 +988,42 @@ enum YouTubeWebScripts {
               } catch (error) {}
               var parsedURL = null;
               try { parsedURL = new URL(requestURL, location.href); } catch (error) {}
-              if (parsedURL && parsedURL.pathname === '/youtubei/v1/player') {
+              var correlatedPlayerVideoID = null;
+              var correlatedPlayerVideoIDPromise = null;
+              if (parsedURL && parsedURL.origin === location.origin &&
+                  parsedURL.pathname === '/youtubei/v1/player') {
                 try {
                   var requestOptions = args[1];
-                  if (requestOptions && requestOptions.body !== undefined) {
-                    captureSubtitleProofFromBody(requestOptions.body);
+                  var hasExplicitBody = Boolean(
+                    requestOptions && requestOptions.body !== undefined
+                  );
+                  if (hasExplicitBody) {
+                    correlatedPlayerVideoID = capturePlayerRequestBody(
+                      requestOptions.body
+                    );
                   }
                   var requestInput = args[0];
-                  if (requestInput && typeof requestInput.clone === 'function') {
-                    requestInput.clone().text().then(captureSubtitleProofFromBody)
-                      .catch(function () {});
+                  if (!hasExplicitBody && requestInput &&
+                      typeof requestInput.clone === 'function') {
+                    correlatedPlayerVideoIDPromise = requestInput.clone().text()
+                      .then(function (body) {
+                        return capturePlayerRequestBody(body);
+                      }).catch(function () { return null; });
                   }
                 } catch (error) {}
               }
               var response = await upstreamFetch.apply(window, args);
               try {
+                if (parsedURL && parsedURL.origin === location.origin &&
+                    parsedURL.pathname === '/youtubei/v1/player') {
+                  if (correlatedPlayerVideoID) {
+                    capturePlayerFetchResponse(response, correlatedPlayerVideoID);
+                  } else if (correlatedPlayerVideoIDPromise) {
+                    correlatedPlayerVideoIDPromise.then(function (videoID) {
+                      if (videoID) capturePlayerFetchResponse(response, videoID);
+                    });
+                  }
+                }
                 captureOfficialTimedtextFetch(response, parsedURL);
                 if (parsedURL && !directTranscriptFetchInFlight &&
                     parsedURL.origin === location.origin &&
@@ -911,7 +1075,9 @@ enum YouTubeWebScripts {
                 typeof upstreamSend !== 'function') return;
             var requestURLKey = '__crYtPlayerRequestURL_' +
               String(REQUEST_TOKEN || '').slice(0, 12);
-            var responseCaptureKey = '__crYtTimedtextCapture_' +
+            var timedtextResponseCaptureKey = '__crYtTimedtextCapture_' +
+              String(REQUEST_TOKEN || '').slice(0, 12);
+            var playerResponseCaptureKey = '__crYtPlayerResponseCapture_' +
               String(REQUEST_TOKEN || '').slice(0, 12);
             XHR.prototype.open = function (method, url) {
               try { this[requestURLKey] = String(url || ''); } catch (error) {}
@@ -920,15 +1086,40 @@ enum YouTubeWebScripts {
             XHR.prototype.send = function (body) {
               try {
                 var parsedURL = new URL(String(this[requestURLKey] || ''), location.href);
-                if (parsedURL.pathname === '/youtubei/v1/player') {
-                  captureSubtitleProofFromBody(body);
+                if (parsedURL.origin === location.origin &&
+                    parsedURL.pathname === '/youtubei/v1/player') {
+                  var correlatedPlayerVideoID = capturePlayerRequestBody(body);
+                  if (correlatedPlayerVideoID &&
+                      !this[playerResponseCaptureKey]) {
+                    this[playerResponseCaptureKey] = true;
+                    var playerRequest = this;
+                    this.addEventListener('loadend', function () {
+                      try {
+                        var responseText = '';
+                        if (typeof playerRequest.responseText === 'string') {
+                          responseText = playerRequest.responseText;
+                        } else if (typeof playerRequest.response === 'string') {
+                          responseText = playerRequest.response;
+                        } else if (playerRequest.responseType === 'json' &&
+                                   playerRequest.response) {
+                          responseText = JSON.stringify(playerRequest.response);
+                        }
+                        capturePlayerResponseText(
+                          responseText,
+                          correlatedPlayerVideoID,
+                          Number(playerRequest.status || 0),
+                          'xhr'
+                        );
+                      } catch (error) {}
+                    });
+                  }
                 }
-                if (!this[responseCaptureKey] &&
+                if (!this[timedtextResponseCaptureKey] &&
                     castReaderTrustedDecoratedCaptionURL(
                       parsedURL.href,
                       EXPECTED_VIDEO_ID
                     )) {
-                  this[responseCaptureKey] = true;
+                  this[timedtextResponseCaptureKey] = true;
                   var request = this;
                   this.addEventListener('loadend', function () {
                     try {
@@ -1051,7 +1242,7 @@ enum YouTubeWebScripts {
             var response = readPlayerResponse();
             var metadata = metadataFrom(
               response,
-              playerVideoID(response) || initialDataVideoID() || getURLVideoID()
+              resolvedPlayerVideoID(response) || initialDataVideoID() || getURLVideoID()
             );
             var envelope = makeEnvelope(metadata);
             if (!retainRestrictedAccessEvidence(
@@ -1073,6 +1264,8 @@ enum YouTubeWebScripts {
               var queryID = new URL(location.href).searchParams.get('v');
               if (queryID) return queryID;
             } catch (error) {}
+            var embed = String(location.pathname || '').match(/^\/embed\/([^/?]+)\/?$/);
+            if (embed) return embed[1];
             var shorts = String(location.pathname || '').match(/^\/shorts\/([^/?]+)/);
             if (shorts) return shorts[1];
             if (String(location.hostname || '').toLowerCase() === 'youtu.be') {
@@ -1080,6 +1273,219 @@ enum YouTubeWebScripts {
               if (shortLink) return shortLink[1];
             }
             return null;
+          }
+
+          function isOfficialEmbedSurface() {
+            return /^\/embed\/[^/?]+\/?$/.test(
+              String(location.pathname || '')
+            );
+          }
+
+          function officialEmbedPlayerVars() {
+            try {
+              if (window.ytcfg && typeof window.ytcfg.get === 'function') {
+                var configured = window.ytcfg.get('PLAYER_VARS');
+                if (configured && typeof configured === 'object') {
+                  return configured;
+                }
+              }
+            } catch (error) {}
+            try {
+              var args = window.ytplayer && window.ytplayer.config &&
+                window.ytplayer.config.args;
+              return args && typeof args === 'object' ? args : null;
+            } catch (error) {
+              return null;
+            }
+          }
+
+          function exactOfficialEmbedPlayButton() {
+            var button = null;
+            try {
+              button = document.querySelector(
+                '#movie_player button.ytp-large-play-button, ' +
+                '#player button.ytp-large-play-button, ' +
+                '#movie_player button.ytmCuedOverlayPlayButton, ' +
+                '#player button.ytmCuedOverlayPlayButton'
+              );
+            } catch (error) {}
+            if (!button || String(button.tagName || '').toUpperCase() !== 'BUTTON' ||
+                button.disabled || typeof button.click !== 'function') return null;
+            var className = String(button.className || '');
+            if (!/(^|\s)(?:ytp-large-play-button|ytmCuedOverlayPlayButton)(?:\s|$)/
+                .test(className)) return null;
+            try {
+              if (typeof button.closest === 'function' &&
+                  button.closest('a[href]')) return null;
+            } catch (error) {
+              return null;
+            }
+            return button;
+          }
+
+          function pauseOfficialEmbedAfterHydration(correlatedVideoID) {
+            var expected = String(EXPECTED_VIDEO_ID || getURLVideoID() || '');
+            if (embedHydrationPaused || !expected ||
+                String(correlatedVideoID || '') !== expected ||
+                !isOfficialEmbedSurface()) return;
+            var attempts = 0;
+            function pauseWhenReady() {
+              if (embedHydrationPaused) return;
+              attempts += 1;
+              var player = null;
+              try { player = document.querySelector('#movie_player'); } catch (error) {}
+              if (!player || typeof player.pauseVideo !== 'function') {
+                if (attempts < 12) setTimeout(pauseWhenReady, 50);
+                return;
+              }
+              try {
+                if (typeof player.mute === 'function') player.mute();
+              } catch (error) {}
+              try {
+                player.pauseVideo();
+                embedHydrationPaused = true;
+                note('official embed paused immediately after exact response');
+              } catch (error) {
+                if (attempts < 12) setTimeout(pauseWhenReady, 50);
+              }
+            }
+            pauseWhenReady();
+          }
+
+          // Autoplay+mute normally hydrates the official Embed. Some WebKit
+          // builds can still remain on its thumbnail preview, so cue and then
+          // activate only that exact official player as a bounded fallback.
+          function maybeBootstrapOfficialEmbedPreview(expectedVideoID) {
+            if (!isOfficialEmbedSurface() || embedBootstrapAttempted) return false;
+            var previewVideoID = castReaderOfficialEmbedPreviewVideoID(
+              officialEmbedPlayerVars(),
+              expectedVideoID
+            );
+            if (!previewVideoID) return false;
+            if (!embedPreviewDetected) {
+              embedPreviewDetected = true;
+              note('official embed preview detected for exact video');
+            }
+
+            var playerNodes = [];
+            ['#movie_player', '#player'].forEach(function (selector) {
+              try {
+                var node = document.querySelector(selector);
+                if (node && playerNodes.indexOf(node) < 0) playerNodes.push(node);
+              } catch (error) {}
+            });
+
+            if (!embedCueAttempted) {
+              var cueAction = null;
+              playerNodes.some(function (player) {
+                if (typeof player.cueVideoById === 'function') {
+                  cueAction = {
+                    method: 'cueVideoById',
+                    run: function () { player.cueVideoById(previewVideoID, 0); }
+                  };
+                  return true;
+                }
+                return false;
+              });
+              if (!cueAction) {
+                playerNodes.some(function (player) {
+                  if (typeof player.cueVideoByPlayerVars === 'function') {
+                    cueAction = {
+                      method: 'cueVideoByPlayerVars',
+                      run: function () {
+                        player.cueVideoByPlayerVars({
+                          videoId: previewVideoID,
+                          video_id: previewVideoID,
+                          startSeconds: 0
+                        });
+                      }
+                    };
+                    return true;
+                  }
+                  return false;
+                });
+              }
+              if (cueAction) {
+                embedCueAttempted = true;
+                embedCueAttemptedAt = Date.now();
+                embedBootstrapMethod = cueAction.method;
+                try {
+                  cueAction.run();
+                  note('official embed cue method=' + embedBootstrapMethod);
+                } catch (error) {
+                  embedBootstrapMethod += '_failed';
+                  note('official embed cue action failed');
+                }
+                // Cueing is deliberately non-playing, but some mobile Embed
+                // builds only transition from preview after their official
+                // overlay button is pressed. Give the cue one polling turn
+                // before using that precise fallback.
+                return true;
+              }
+            }
+
+            var response = readPlayerResponse();
+            if (capturedPlayerResponse || resolvedPlayerVideoID(response)) {
+              embedBootstrapAttempted = true;
+              embedBootstrapMethod += '_hydrated';
+              return true;
+            }
+            if (embedCueAttempted && Date.now() - embedCueAttemptedAt < 150) {
+              return false;
+            }
+
+            if (!embedCueAttempted) {
+              embedBootstrapMethod = 'waiting_for_official_cue';
+              return false;
+            }
+
+            var button = exactOfficialEmbedPlayButton();
+            if (button) {
+              embedBootstrapAttempted = true;
+              embedBootstrapMethod = 'exact_embed_play_button';
+              try {
+                button.click();
+                note('official embed bootstrap method=' + embedBootstrapMethod);
+                return true;
+              } catch (error) {
+                embedBootstrapMethod += '_failed';
+                note('official embed bootstrap action failed');
+                return false;
+              }
+            }
+
+            var officialPlayer = null;
+            try {
+              officialPlayer = document.querySelector('#movie_player');
+            } catch (error) {}
+            if (!officialPlayer ||
+                typeof officialPlayer.playVideo !== 'function') {
+              embedBootstrapMethod = 'waiting_for_official_control';
+              return false;
+            }
+            embedBootstrapAttempted = true;
+            embedBootstrapMethod = 'official_player_playVideo';
+            try {
+              if (typeof officialPlayer.mute === 'function') {
+                officialPlayer.mute();
+              }
+              officialPlayer.playVideo();
+              note('official embed bootstrap method=' + embedBootstrapMethod);
+              return true;
+            } catch (error) {
+              embedBootstrapMethod += '_failed';
+              note('official embed bootstrap action failed');
+              return false;
+            }
+          }
+
+          function embedBootstrapDiagnostic() {
+            return 'preview=' + embedPreviewDetected +
+              ' attempted=' + embedBootstrapAttempted +
+              ' method=' + embedBootstrapMethod +
+              ' capturedResponse=' + Boolean(capturedPlayerResponse) +
+              ' transport=' + (capturedPlayerResponseTransport || 'none') +
+              ' status=' + Number(capturedPlayerResponseStatus || 0);
           }
 
           // A LOGIN_REQUIRED anti-bot response can omit videoDetails and
@@ -1110,7 +1516,9 @@ enum YouTubeWebScripts {
             var selected = castReaderSelectPlayerResponse(
               initial && typeof initial === 'object' ? initial : null,
               runtime,
-              EXPECTED_VIDEO_ID || getURLVideoID()
+              EXPECTED_VIDEO_ID || getURLVideoID(),
+              capturedPlayerResponse,
+              capturedPlayerResponseVideoID
             );
             if (hasBotVerificationChallengeEvidence(selected)) {
               sawBotVerificationChallenge = true;
@@ -1127,11 +1535,17 @@ enum YouTubeWebScripts {
               window.ytInitialPlayerResponse,
               selectedResponse,
               document
+            ) || castReaderPlayerResponseHasBotVerificationChallenge(
+              capturedPlayerResponse
             );
           }
 
           function hasGenericSignInRequirementEvidence(selectedResponse) {
-            return [window.ytInitialPlayerResponse, selectedResponse].some(
+            return [
+              window.ytInitialPlayerResponse,
+              selectedResponse,
+              capturedPlayerResponse
+            ].some(
               function (response) {
                 var status = response && response.playabilityStatus || {};
                 return playabilityClassification(
@@ -1145,6 +1559,13 @@ enum YouTubeWebScripts {
 
           function playerVideoID(response) {
             return response && response.videoDetails && response.videoDetails.videoId || null;
+          }
+
+          function resolvedPlayerVideoID(response) {
+            var explicitVideoID = playerVideoID(response);
+            if (explicitVideoID) return explicitVideoID;
+            return response && response === capturedPlayerResponse ?
+              capturedPlayerResponseVideoID : null;
           }
 
           function officialPlayerSubtitleProof() {
@@ -1288,12 +1709,14 @@ enum YouTubeWebScripts {
               return false;
             }
 
-            var initialData = window.ytInitialData;
-            if (!initialData ||
-                castReaderInitialDataVideoID(initialData) !== expected ||
-                !Array.isArray(initialData.engagementPanels) ||
-                castReaderInitialDataHasTranscriptEndpoint(initialData, expected)) {
-              return false;
+            if (!isOfficialEmbedSurface()) {
+              var initialData = window.ytInitialData;
+              if (!initialData ||
+                  castReaderInitialDataVideoID(initialData) !== expected ||
+                  !Array.isArray(initialData.engagementPanels) ||
+                  castReaderInitialDataHasTranscriptEndpoint(initialData, expected)) {
+                return false;
+              }
             }
             if (castReaderCaptionTracks(initial).length > 0 ||
                 !playerState || !playerState.matched ||
@@ -1732,7 +2155,7 @@ enum YouTubeWebScripts {
             function snapshot(bridgeResult) {
               bridgeResult = bridgeResult || { tracks: [], playerVideoId: null };
               var response = readPlayerResponse();
-              var responseVideoID = playerVideoID(response);
+              var responseVideoID = resolvedPlayerVideoID(response);
               var pageVideoID = initialDataVideoID();
               var actual = responseVideoID || bridgeResult.playerVideoId || pageVideoID;
               return {
@@ -1781,6 +2204,7 @@ enum YouTubeWebScripts {
                 if (Date.now() >= playerDeadline) break;
               }
               attempt += 1;
+              maybeBootstrapOfficialEmbedPreview(expected);
 
               // The inline initial player response is often complete before
               // the vendored bridge has attached to `document.body`. Consult
@@ -1800,8 +2224,8 @@ enum YouTubeWebScripts {
               }
 
               var result = await fetchTracksOnce();
-              // The vendored bridge can observe the media-blocked runtime
-              // player before it notices ytInitialPlayerResponse. Resolve the
+              // The vendored bridge can observe the runtime player before it
+              // notices ytInitialPlayerResponse. Resolve the
               // tracks from the same scored response used for playability and
               // metadata so its valid signed timedtext URLs are not discarded.
               last = snapshot(result);
@@ -2857,8 +3281,8 @@ enum YouTubeWebScripts {
             };
           }
 
-          // YouTube can replace its initial LOGIN_REQUIRED response after the
-          // media-blocking runtime player reports UNPLAYABLE. Latch and re-read
+          // YouTube can replace an initial LOGIN_REQUIRED response while the
+          // runtime player hydrates. Latch and re-read
           // challenge evidence before every terminal path so neither the
           // adapter watchdog nor an exception can turn a known access wall
           // into a misleading timeout/malformed-response message.
@@ -2880,7 +3304,8 @@ enum YouTubeWebScripts {
               classification: 'sign_in_required'
             };
             envelope.error = {
-              code: 'restricted_video',
+              code: hasBotVerificationChallenge ?
+                'youtube_verification_required' : 'restricted_video',
               message: hasBotVerificationChallenge ?
                 'YouTube requires verification before exposing this public transcript.' :
                 'This video requires YouTube access that CastReader does not request.'
@@ -2913,6 +3338,11 @@ enum YouTubeWebScripts {
           async function run() {
             if (window.top !== window.self) return;
 
+            // `/embed/{videoId}` is CastReader's supported WebView surface.
+            // Watch-page engagement panels and get_transcript continuations do
+            // not belong to this document and must not consume the timeout.
+            var isEmbedSurface = isOfficialEmbedSurface();
+
             var player = await waitForMatchingPlayer();
             var metadata = metadataFrom(player.response, player.playerVideoId);
             var envelope = makeEnvelope(metadata);
@@ -2921,9 +3351,12 @@ enum YouTubeWebScripts {
               hasBotVerificationChallengeEvidence(player.response);
             var hasSignInRequirement = hasBotVerificationChallenge ||
               hasGenericSignInRequirementEvidence(player.response);
-            var botVerificationError = {
-              code: 'restricted_video',
+            var signInAccessError = hasBotVerificationChallenge ? {
+              code: 'youtube_verification_required',
               message: 'YouTube requires verification before exposing this public transcript.'
+            } : {
+              code: 'restricted_video',
+              message: 'This video requires YouTube access that CastReader does not request.'
             };
             var mayUsePublicTranscriptDespiteLogin = Boolean(
               player.matched &&
@@ -2938,7 +3371,7 @@ enum YouTubeWebScripts {
                   reason: 'YouTube requires sign-in or verification.',
                   classification: 'sign_in_required'
                 };
-                envelope.error = botVerificationError;
+                envelope.error = signInAccessError;
               } else {
                 envelope.error = terminalError;
               }
@@ -2946,9 +3379,10 @@ enum YouTubeWebScripts {
               return;
             }
             if (!player.matched) {
-              envelope.error = hasSignInRequirement ? botVerificationError : {
-                  code: 'player_timeout',
-                  message: 'YouTube player did not reach the requested video in time.'
+              note('player bootstrap failed ' + embedBootstrapDiagnostic());
+              envelope.error = hasSignInRequirement ? signInAccessError : {
+                  code: 'player_bootstrap_failed',
+                  message: 'YouTube Embed player did not initialize for the requested video.'
                 };
               postOnce(envelope);
               return;
@@ -2987,7 +3421,8 @@ enum YouTubeWebScripts {
             var sawFetchTimeout = false;
             var sawFetchNetworkFailure = false;
             var sawTranscriptAccessRejected = false;
-            var transcriptEndpointWasFound = initialDataHasTranscriptEndpoint();
+            var transcriptEndpointWasFound = !isEmbedSurface &&
+              initialDataHasTranscriptEndpoint();
             var directLane = {
               promise: null,
               settled: false,
@@ -3054,24 +3489,28 @@ enum YouTubeWebScripts {
             // only polls locally until an endpoint exists and sends no request
             // when it remains absent. This overlaps that wait with proof and
             // official-caption hydration instead of paying it serially later.
-            note('starting direct transcript lane endpointInitially=' +
-              transcriptEndpointWasFound);
-            directLane.promise = directTranscriptViaInitialData(
-              preferredCandidate && preferredCandidate.track
-            ).catch(function () {
-              return {
-                cues: [], endpointFound: transcriptEndpointWasFound ||
-                  initialDataHasTranscriptEndpoint(),
-                status: 0,
-                accessRejected: false,
-                timedOut: false,
-                networkFailed: true
-              };
-            }).then(function (direct) {
-              directLane.result = direct;
-              directLane.settled = true;
-              return direct;
-            });
+            if (!isEmbedSurface) {
+              note('starting direct transcript lane endpointInitially=' +
+                transcriptEndpointWasFound);
+              directLane.promise = directTranscriptViaInitialData(
+                preferredCandidate && preferredCandidate.track
+              ).catch(function () {
+                return {
+                  cues: [], endpointFound: transcriptEndpointWasFound ||
+                    initialDataHasTranscriptEndpoint(),
+                  status: 0,
+                  accessRejected: false,
+                  timedOut: false,
+                  networkFailed: true
+                };
+              }).then(function (direct) {
+                directLane.result = direct;
+                directLane.settled = true;
+                return direct;
+              });
+            } else {
+              note('official embed surface: watch transcript lanes disabled');
+            }
             note('uiLanguage=' + uiLanguage + ' orderedTracks=' +
               trackCandidates.map(function (candidate) {
                 return candidate.index + ':' +
@@ -3373,7 +3812,7 @@ enum YouTubeWebScripts {
               mergeDirectResult(await directLane.promise);
             }
 
-            if (cues.length === 0 && !directLane.promise &&
+            if (cues.length === 0 && !directLane.promise && !isEmbedSurface &&
                 remainingBudget() > 7200) {
               note('timedtext unavailable; requesting direct transcript endpoint');
               var direct = await directTranscriptViaInitialData(
@@ -3384,7 +3823,7 @@ enum YouTubeWebScripts {
               mergeDirectResult(direct);
             }
 
-            if (cues.length === 0) {
+            if (cues.length === 0 && !isEmbedSurface) {
               note('direct transcript unavailable; requesting transcript bridge');
               clearTranscriptFetchCaptures();
               var fallbackPromise = transcriptViaMainWorld();
@@ -3503,10 +3942,10 @@ enum YouTubeWebScripts {
                 reason: 'YouTube requires bot verification.',
                 classification: 'sign_in_required'
               };
-              envelope.error = botVerificationError;
+              envelope.error = signInAccessError;
             } else if (!envelope.ok) {
               transcriptEndpointWasFound = transcriptEndpointWasFound ||
-                initialDataHasTranscriptEndpoint();
+                (!isEmbedSurface && initialDataHasTranscriptEndpoint());
               // A genuine no-caption result has already returned above through
               // `player.conclusivelyNoCaptions`, which requires a completed,
               // exact-video and repeatedly stable evidence set. Reaching this

@@ -732,7 +732,7 @@ struct YouTubeHomeView: View {
 
     private var complianceNote: some View {
         Label(
-            AppLocalized("CastReader 不播放或保留 YouTube 视频和音频流；朗读声音由字幕文本生成。"),
+            AppLocalized("字幕读取通过 YouTube 官方播放器完成；播放器仅静音初始化并立即暂停，朗读声音由字幕文本生成。"),
             systemImage: "captions.bubble"
         )
         .font(.caption)

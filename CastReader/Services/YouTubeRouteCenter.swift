@@ -338,6 +338,10 @@ extension YouTubeTranscriptFailure: LocalizedError {
             return AppLocalized("字幕格式暂时无法读取，请重试")
         case .captionAccess:
             return AppLocalized("已检测到字幕，但暂时无法读取，请重试")
+        case .playerBootstrapFailed:
+            return AppLocalized("YouTube 播放器未能初始化或暂时限制了字幕访问，请重试或在 YouTube 中打开视频")
+        case .youtubeAccessLimited:
+            return AppLocalized("YouTube 暂时限制了字幕访问，视频本身可能仍可正常观看；请稍后重试或在 YouTube 中打开")
         case .trackUnavailable:
             return AppLocalized("这个语言的字幕暂时读不到，已保留当前语言")
         case .network:

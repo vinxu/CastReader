@@ -490,7 +490,31 @@ final class YouTubeTranscriptModelTests: XCTestCase {
         XCTAssertEqual(YouTubeTranscriptFailure.restricted.reason, "restricted")
         XCTAssertEqual(YouTubeTranscriptFailure.unavailable.reason, "unavailable")
         XCTAssertEqual(YouTubeTranscriptFailure.captionAccess.reason, "caption_access")
+        XCTAssertEqual(
+            YouTubeTranscriptFailure.playerBootstrapFailed.reason,
+            "player_bootstrap_failed"
+        )
+        XCTAssertEqual(
+            YouTubeTranscriptFailure.youtubeAccessLimited.reason,
+            "youtube_access_limited"
+        )
         XCTAssertEqual(YouTubeTranscriptFailure.timeout.reason, "timeout")
+        XCTAssertNotEqual(
+            YouTubeTranscriptFailure.playerBootstrapFailed.errorDescription,
+            YouTubeTranscriptFailure.restricted.errorDescription
+        )
+        XCTAssertNotEqual(
+            YouTubeTranscriptFailure.playerBootstrapFailed.errorDescription,
+            YouTubeTranscriptFailure.timeout.errorDescription
+        )
+        XCTAssertNotEqual(
+            YouTubeTranscriptFailure.youtubeAccessLimited.errorDescription,
+            YouTubeTranscriptFailure.restricted.errorDescription
+        )
+        XCTAssertNotEqual(
+            YouTubeTranscriptFailure.youtubeAccessLimited.errorDescription,
+            YouTubeTranscriptFailure.timeout.errorDescription
+        )
         XCTAssertEqual(Set(YouTubeTranscriptFailure.allCases.map(\.reason)).count,
                        YouTubeTranscriptFailure.allCases.count)
     }
