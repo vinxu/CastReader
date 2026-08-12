@@ -29,6 +29,9 @@ struct SettingsView: View {
     @State private var showLogin = false
     @State private var showClearHistory = false
     @State private var showVoiceBrowser = false
+    @State private var isRestoring = false
+    @State private var showRestoreResult = false
+    @State private var restoreMessage = ""
 
     init(onRequestLibraryOnboarding: ((Bool) -> Void)? = nil) {
         self.onRequestLibraryOnboarding = onRequestLibraryOnboarding
@@ -69,6 +72,9 @@ struct SettingsView: View {
                 Button("清除全部", role: .destructive) { HistoryStore.shared.clearAll() }
                 Button("取消", role: .cancel) {}
             } message: { Text("将删除文库中全部本地历史，此操作不可撤销。") }
+            .alert("恢复购买", isPresented: $showRestoreResult) {
+                Button("好", role: .cancel) {}
+            } message: { Text(restoreMessage) }
         }
         .navigationViewStyle(.stack)
     }
@@ -209,9 +215,42 @@ struct SettingsView: View {
             if pro.isPro {
                 Button("管理订阅") { Task { await pro.openManageSubscriptions() } }
             }
+            // 不按 isPro 门控：真正需要恢复购买的，恰恰是已付费却被识别成免费的人。
+            // 把它藏在「升级 Pro」页里，等于要求这些用户先点开一个让他们再付一次钱的页面。
+            Button("恢复购买") { restorePurchases() }
+                .disabled(isRestoring)
             if pro.needsEmailSync && !auth.hasEmailAccount {
                 Button("登录邮箱同步 Pro") { showLogin = true }
             }
+            if auth.needsAppleRelink && !pro.isPro {
+                appleRelinkRow
+            }
+        }
+    }
+
+    /// Apple 登录没换到后端 user id 时，Pro 只能按 device_id 查——网页端订阅或换过设备
+    /// 的用户会被当成未订阅。重新登录一次是唯一修复路径（见 `needsAppleRelink`）。
+    private var appleRelinkRow: some View {
+        Button { showLogin = true } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("重新登录以同步 Pro")
+                Text("账号未完成关联，在其他设备或网页订阅的 Pro 可能无法识别")
+                    .font(.caption)
+                    .foregroundColor(AppTheme.mutedForeground)
+                    .multilineTextAlignment(.leading)
+            }
+        }
+    }
+
+    private func restorePurchases() {
+        isRestoring = true
+        Task {
+            await pro.restore()
+            isRestoring = false
+            restoreMessage = pro.isPro
+                ? AppLocalized("已恢复 Pro 会员")
+                : AppLocalized("未找到可恢复的购买")
+            showRestoreResult = true
         }
     }
 

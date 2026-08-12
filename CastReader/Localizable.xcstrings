@@ -16849,6 +16849,122 @@
         }
       }
     },
+    "重新登录以同步 Pro" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut anmelden, um Pro zu synchronisieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in again to sync Pro"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vuelve a iniciar sesión para sincronizar Pro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnectez-vous pour synchroniser Pro"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro सिंक करने के लिए फिर से साइन इन करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accedi di nuovo per sincronizzare Pro"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再度サインインして Pro を同期"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entre novamente para sincronizar o Pro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新登录以同步 Pro"
+          }
+        }
+      }
+    },
+    "账号未完成关联，在其他设备或网页订阅的 Pro 可能无法识别" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Konto ist nicht vollständig verknüpft. Ein auf einem anderen Gerät oder im Web gekauftes Pro-Abo wird möglicherweise nicht erkannt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your account isn't fully linked, so a Pro subscription bought on another device or on the web may not be recognized."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu cuenta no está completamente vinculada, por lo que una suscripción Pro comprada en otro dispositivo o en la web puede no reconocerse."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre compte n'est pas entièrement lié : un abonnement Pro souscrit sur un autre appareil ou sur le web peut ne pas être reconnu."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपका खाता पूरी तरह लिंक नहीं है, इसलिए किसी अन्य डिवाइस या वेब पर खरीदी गई Pro सदस्यता पहचानी नहीं जा सकती।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo account non è completamente collegato: un abbonamento Pro acquistato su un altro dispositivo o sul web potrebbe non essere riconosciuto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントの連携が完了していません。他のデバイスやウェブで購入した Pro が認識されない場合があります。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua conta não está totalmente vinculada, então uma assinatura Pro comprada em outro dispositivo ou na web pode não ser reconhecida."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "账号未完成关联，在其他设备或网页订阅的 Pro 可能无法识别"
+          }
+        }
+      }
+    },
     "我的声音" : {
       "localizations" : {
         "de" : {

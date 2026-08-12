@@ -26,12 +26,29 @@ extension AuthService {
 
         // best-effort：把 Apple identity token 发给 better-auth 换 user id
         if let tokenData = cred.identityToken, let token = String(data: tokenData, encoding: .utf8) {
-            acc.backendUserId = (try? await exchangeWithBackend(provider: "apple", idToken: token)) ?? prior?.backendUserId
+            acc.backendUserId = await exchangeAppleIdentityToken(token) ?? prior?.backendUserId
             _ = try? await MobileSessionStore.shared.exchange(provider: "apple", idToken: token)
         }
 
         applyAccount(acc)
         await ProManager.shared.refreshServer()
         return true
+    }
+
+    /// Apple 的 identity token 只在这一次授权回调里存在，而且是短期 JWT——换不到后端
+    /// user id 就没有第二次机会：不像 Google 能从 Keychain 取回 id_token 重试（见
+    /// `ensureBackendUserIdForPro`），Apple 用户只能重新走一遍登录。所以趁 token 还
+    /// 有效时多试几次，别让一次网络抖动变成永久的 `backendUserId == nil`——那会让
+    /// Pro 查询退回 device_id 维度，Web 端付费和换设备的订阅都查不到。
+    private func exchangeAppleIdentityToken(_ token: String) async -> String? {
+        let backoff: [UInt64] = [0, 700_000_000, 1_800_000_000]
+        for delay in backoff {
+            if delay > 0 { try? await Task.sleep(nanoseconds: delay) }
+            if let id = try? await exchangeWithBackend(provider: "apple", idToken: token),
+               !id.isEmpty {
+                return id
+            }
+        }
+        return nil
     }
 }

@@ -53,6 +53,17 @@ final class AuthService: NSObject, ObservableObject {
     /// 不回退 provider sub（account.id），因其与后端 user_id 不同命名空间，会查不到 Web 端付费的 Pro。
     var proUserId: String? { account?.backendUserId }
 
+    /// Apple 登录未能关联后端 user id 的状态——需要用户重新登录一次才能修复。
+    ///
+    /// Apple 的 identity token 只在授权回调期间存在，`ensureBackendUserIdForPro()` 对
+    /// Apple 账号无能为力（拿不到可重放的 token）。未关联时 Pro 只能按 device_id 查，
+    /// 于是 Web 端（Stripe）付费和换过设备的订阅都会被当成未订阅。重新走一遍
+    /// Sign in with Apple 会重新换取，是唯一的自救路径，所以要让用户看得见。
+    var needsAppleRelink: Bool {
+        guard let acc = account, acc.provider == "apple" else { return false }
+        return (acc.backendUserId ?? "").isEmpty
+    }
+
     private var webSession: ASWebAuthenticationSession?
     private let accountKey = "auth_account_v1"
 
