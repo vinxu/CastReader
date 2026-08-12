@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct SettingsView: View {
+    private let shareInboxUnreadCount: Int
+    private let onOpenShareInbox: (() -> Void)?
     private let onRequestLibraryOnboarding: ((Bool) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
@@ -33,7 +35,13 @@ struct SettingsView: View {
     @State private var showRestoreResult = false
     @State private var restoreMessage = ""
 
-    init(onRequestLibraryOnboarding: ((Bool) -> Void)? = nil) {
+    init(
+        shareInboxUnreadCount: Int = 0,
+        onOpenShareInbox: (() -> Void)? = nil,
+        onRequestLibraryOnboarding: ((Bool) -> Void)? = nil
+    ) {
+        self.shareInboxUnreadCount = shareInboxUnreadCount
+        self.onOpenShareInbox = onOpenShareInbox
         self.onRequestLibraryOnboarding = onRequestLibraryOnboarding
     }
 
@@ -290,9 +298,39 @@ struct SettingsView: View {
                 .accessibilityIdentifier("settingsLibraryLink")
             }
             .accessibilityIdentifier("settingsLibraryLink")
+            shareInboxRow
         } footer: {
             Text("拍摄、上传、输入网址或文本，处理过的内容都在这里。仅保存在本机。")
         }
+    }
+
+    /// 收件箱从首页 toolbar 下沉到这里。它是低频入口（要先从别的 app 分享内容过来），
+    /// 但未读数必须往上冒到齿轮上，否则用户不会知道有待处理的内容。
+    private var shareInboxRow: some View {
+        Button {
+            onOpenShareInbox?()
+            dismiss()
+        } label: {
+            HStack {
+                Image(systemName: shareInboxUnreadCount > 0 ? "tray.full.fill" : "tray.fill")
+                    .foregroundColor(AppTheme.primary)
+                Text("内容接收箱")
+                    .foregroundColor(AppTheme.foreground)
+                Spacer()
+                if shareInboxUnreadCount > 0 {
+                    Text("\(shareInboxUnreadCount)")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(AppTheme.primary))
+                }
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundColor(AppTheme.mutedForeground)
+            }
+        }
+        .accessibilityIdentifier("settingsShareInboxLink")
     }
 
     // MARK: 播放

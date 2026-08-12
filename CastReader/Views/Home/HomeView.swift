@@ -268,24 +268,12 @@ struct HomeView: View {
                     .accessibilityIdentifier("homeShelfSourcesButton")
                     .accessibilityLabel(Text(AppLocalized("管理书架来源")))
 
-                    Button(action: onOpenShareInbox) {
-                        ZStack(alignment: .topTrailing) {
-                            Image(systemName: shareInboxUnreadCount > 0 ? "tray.full" : "tray")
-                                .font(.system(size: 18, weight: .regular))
-                                .foregroundStyle(AppTheme.foreground)
-                                .frame(width: 30, height: 30)
-                            if shareInboxUnreadCount > 0 {
-                                Circle()
-                                    .fill(AppTheme.primary)
-                                    .frame(width: 8, height: 8)
-                                    .overlay(Circle().stroke(AppTheme.background, lineWidth: 1.5))
-                                    .offset(x: 1, y: 1)
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("contentInboxButton")
-                    .accessibilityLabel(Text(AppLocalized("内容接收箱")))
+                    // 收件箱下沉到设置里（低频入口），未读数由头像上的红点接手。
+                    SettingsToolbarButton(
+                        shareInboxUnreadCount: shareInboxUnreadCount,
+                        onOpenShareInbox: onOpenShareInbox
+                    )
+                    .frame(width: 30, height: 30)
                 }
             }
             .overlay { if isProcessingContent { processingOverlay } }

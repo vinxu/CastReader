@@ -2016,20 +2016,75 @@ private struct ShareInboxView: View {
 }
 
 struct SettingsToolbarButton: View {
+    /// 收件箱从首页 toolbar 下沉进设置后，未读数改由这颗按钮代为提示。
+    var shareInboxUnreadCount: Int = 0
+    var onOpenShareInbox: (() -> Void)?
+
+    @ObservedObject private var auth = AuthService.shared
     @State private var showSettings = false
     @State private var pendingLibraryOnboardingReset: Bool?
+    @State private var pendingOpenShareInbox = false
 
     var body: some View {
         Button { showSettings = true } label: {
-            Image(systemName: "gearshape")
+            ZStack(alignment: .topTrailing) {
+                // 露头像而不是齿轮：用户来这里多半是找账号和订阅，不是找"设置"。
+                avatar
+                    .frame(width: 28, height: 28)
+                    .clipShape(Circle())
+                if shareInboxUnreadCount > 0 {
+                    Circle()
+                        .fill(AppTheme.primary)
+                        .frame(width: 8, height: 8)
+                        .overlay(Circle().stroke(AppTheme.background, lineWidth: 1.5))
+                        .offset(x: 2, y: -2)
+                }
+            }
         }
-        .accessibilityLabel(Text(AppLocalized("设置")))
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(AppLocalized("账号与设置")))
         .accessibilityIdentifier("settingsGearButton")
-        .sheet(isPresented: $showSettings, onDismiss: presentRequestedLibraryOnboarding) {
-            SettingsView { reset in
+        .sheet(isPresented: $showSettings, onDismiss: handleSettingsDismissed) {
+            SettingsView(
+                shareInboxUnreadCount: shareInboxUnreadCount,
+                onOpenShareInbox: { pendingOpenShareInbox = true }
+            ) { reset in
                 pendingLibraryOnboardingReset = reset
             }
         }
+    }
+
+    @ViewBuilder
+    private var avatar: some View {
+        if let acc = auth.account {
+            if let s = acc.pictureURL, let url = URL(string: s) {
+                CachedAsyncImage(url: url) { initialCircle(acc) }
+            } else {
+                initialCircle(acc)
+            }
+        } else {
+            Image(systemName: "person.crop.circle")
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(AppTheme.foreground)
+        }
+    }
+
+    private func initialCircle(_ acc: UserAccount) -> some View {
+        ZStack {
+            Circle().fill(AppTheme.primary.opacity(0.15))
+            Text(acc.initial).font(.subheadline).foregroundColor(AppTheme.primary)
+        }
+    }
+
+    /// 设置是 sheet，从它内部再开一个 sheet 会互相吞掉（见 CLAUDE.md 避坑 #9），
+    /// 所以收件箱只在设置关闭之后由父层打开。
+    private func handleSettingsDismissed() {
+        if pendingOpenShareInbox {
+            pendingOpenShareInbox = false
+            onOpenShareInbox?()
+        }
+        presentRequestedLibraryOnboarding()
     }
 
     private func presentRequestedLibraryOnboarding() {
