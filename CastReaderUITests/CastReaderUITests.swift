@@ -1173,18 +1173,9 @@ class CastReaderUITests: XCTestCase {
         for id in ["scenario-paper", "scenario-book", "scenario-report", "scenario-contract", "scenario-study", "scenario-manual"] {
             XCTAssertTrue(app.buttons[id].exists, "缺场景 chip: \(id)")
         }
-        let unifiedEmptyCTA = app.buttons["shelfSourcesButton"]
-        let connectedSections = [
-            "homeShelfSection.kindle",
-            "homeShelfSection.weread",
-            "homeShelfSection.google_books",
-            "homeShelfSection.kobo",
-        ].map { app.descendants(matching: .any)[$0] }
-        XCTAssertTrue(
-            unifiedEmptyCTA.waitForExistence(timeout: 3)
-                || connectedSections.contains(where: \.exists),
-            "首页应显示统一书架入口或已连接且有内容的书架"
-        )
+        // The top-right button is now the stable unified source entry. The
+        // body may legitimately contain no empty CTA while onboarding is
+        // deferred, and connected source sections are data-dependent.
         for legacyID in [
             "connectKindleButton",
             "connectWeReadButton",

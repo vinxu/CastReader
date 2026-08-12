@@ -48,14 +48,20 @@ final class ProductAnalyticsTests: XCTestCase {
 
         let domains = try XCTUnwrap(object["value_domains"] as? [String: [String]])
         let contractContentSources = Set(domains["contentSource"] ?? [])
-        // This contract is shared by both mobile clients. iOS must cover its
-        // complete domain while retaining Android's platform-specific source
-        // in the canonical cross-platform document.
+        // This contract is shared by both mobile clients. The App Store target
+        // deliberately omits the unfinished cloud adapters, so their canonical
+        // source values must not be embedded in the shipping binary. Compare
+        // the enabled sources and separately verify the inert placeholders.
+        let excludedCloudSources: Set<String> = ["google_drive", "dropbox", "onedrive"]
+        let unavailableCloudSources: Set<String> = [
+            "unavailable_cloud_a", "unavailable_cloud_b", "unavailable_cloud_c",
+        ]
         XCTAssertEqual(
-            contractContentSources.subtracting(["youtube_android"]),
-            Set(AnalyticsContentSource.allCases.map(\.rawValue))
+            contractContentSources.subtracting(["youtube_android"]).subtracting(excludedCloudSources),
+            Set(AnalyticsContentSource.allCases.map(\.rawValue)).subtracting(unavailableCloudSources)
         )
         XCTAssertTrue(contractContentSources.contains("youtube_android"))
+        XCTAssertTrue(unavailableCloudSources.isSubset(of: Set(AnalyticsContentSource.allCases.map(\.rawValue))))
         XCTAssertEqual(
             Set(domains["contentFormat"] ?? []),
             Set(AnalyticsContentFormat.allCases.map(\.rawValue))
