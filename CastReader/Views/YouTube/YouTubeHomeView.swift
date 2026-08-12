@@ -340,8 +340,10 @@ struct YouTubeHomeSection: View {
         }
     }
 
+    /// 整卡即入口：标题和按钮原本都写「粘贴视频链接」，同一句话在一张卡里出现两次，
+    /// 还配了一颗全宽实心按钮——空状态不需要这么强的视觉重量。
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        NavigationLink(destination: YouTubeHomeView()) {
             HStack(spacing: 14) {
                 youtubeIcon
                 VStack(alignment: .leading, spacing: 4) {
@@ -351,27 +353,24 @@ struct YouTubeHomeSection: View {
                     Text(AppLocalized("朗读过的字幕稿会显示在这里，方便继续收听。"))
                         .font(.caption)
                         .foregroundStyle(AppTheme.mutedForeground)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(AppTheme.mutedForeground)
             }
-
-            HStack(spacing: 10) {
-                NavigationLink(destination: YouTubeHomeView()) {
-                    Label(AppLocalized("粘贴视频链接"), systemImage: "doc.on.clipboard")
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(AppTheme.primary)
-                .accessibilityIdentifier("youtubeHomeEntryCard")
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(AppTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(AppTheme.border.opacity(0.72), lineWidth: 1)
             }
-            .font(.subheadline.weight(.semibold))
         }
-        .padding(14)
-        .background(AppTheme.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(AppTheme.border.opacity(0.72), lineWidth: 1)
-        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("youtubeHomeEntryCard")
     }
 
     private var youtubeIcon: some View {
