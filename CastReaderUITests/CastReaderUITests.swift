@@ -51,6 +51,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLocale", "en_US",
             "-interfaceLanguage", "en",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
             "-CastReaderCaptureTextB64", Data(englishPage.utf8).base64EncodedString(),
         ]
         app.launch()
@@ -140,6 +141,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLocale", "en_US",
             "-interfaceLanguage", "system",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
             "-CastReaderCaptureTextB64",
             Data("A short English page for the explain panel.".utf8).base64EncodedString(),
         ]
@@ -200,6 +202,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLocale", "en_US",
             "-interfaceLanguage", "system",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
             "-CastReaderOpenStudyBoost",
         ]
         app.launch()
@@ -239,6 +242,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLocale", "zh_CN",
             "-interfaceLanguage", "system",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
         ]
         app.launch()
         dismissSelfOpenSystemAlertIfPresent()
@@ -322,6 +326,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLanguages", "(en)",
             "-AppleLocale", "en_US",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
         ]
 
         app.launch()
@@ -438,6 +443,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLocale", "zh_CN",
             "-interfaceLanguage", "zh-Hans",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
         ]
         app.launch()
         dismissSelfOpenSystemAlertIfPresent()
@@ -530,6 +536,7 @@ class CastReaderUITests: XCTestCase {
                 "-AppleLocale", configuration.locale,
                 "-interfaceLanguage", "system",
                 "-CastReaderSkipLibraryOnboarding",
+                "-CastReaderSkipSignInGate",
             ]
             app.launch()
             XCTAssertTrue(
@@ -564,6 +571,7 @@ class CastReaderUITests: XCTestCase {
                     "-interfaceLanguage", "system",
                     "-AppleInterfaceStyle", appearance,
                     "-CastReaderSkipLibraryOnboarding",
+                    "-CastReaderSkipSignInGate",
                 ]
                 app.launch()
 
@@ -600,6 +608,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLanguages", "(en)",
             "-AppleLocale", "en_US",
             "-CastReaderResetLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
             "-CastReaderForceLibraryOnboardingRebind",
             "-boundLibraryOnboarding.v1.isActivated", "NO",
             "-boundLibraryOnboarding.v1.hasSeenChooser", "NO",
@@ -628,6 +637,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "-CastReaderResetLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
             "-CastReaderForceLibraryOnboardingRebind",
             // UserDefaults can survive a preceding UI-test process on the
             // shared simulator. Pin the argument domain to the value step so
@@ -753,6 +763,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLocale", "zh_CN",
             "-interfaceLanguage", "system",
             "-CastReaderResetLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
             "-boundLibraryOnboarding.v1.isActivated", "NO",
             "-boundLibraryOnboarding.v1.hasSeenChooser", "NO",
             "-boundLibraryOnboarding.v3.phase", "sample",
@@ -775,6 +786,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLocale", "zh_CN",
             "-interfaceLanguage", "system",
             "-CastReaderResetLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
             "-CastReaderForceLibraryOnboardingRebind",
             "-boundLibraryOnboarding.v1.isActivated", "NO",
             "-boundLibraryOnboarding.v1.hasSeenChooser", "NO",
@@ -849,6 +861,7 @@ class CastReaderUITests: XCTestCase {
             "-boundLibraryOnboarding.v3.hasCompletedSample", "NO",
             "-googlebooks.library.connected.v1", "NO",
             "-googlebooks.library.books.v1", "",
+            "-CastReaderSkipSignInGate",
         ]
         app.launch()
         dismissSelfOpenSystemAlertIfPresent()
@@ -881,6 +894,7 @@ class CastReaderUITests: XCTestCase {
                 "-AppleLanguages", "(zh-Hans)",
                 "-AppleLocale", "zh_CN",
                 "-CastReaderSkipLibraryOnboarding",
+                "-CastReaderSkipSignInGate",
                 "-boundLibraryOnboarding.v1.selectedSource", provider.source,
                 "-boundLibraryOnboarding.v1.hasSeenChooser", "YES",
                 "-boundLibraryOnboarding.v1.isActivated", "NO",
@@ -929,6 +943,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
             "-CastReaderForceLibraryOnboardingRebind",
             "-CastReaderGoogleBooksLiveLoginGate",
         ]
@@ -976,6 +991,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
             "-CastReaderGoogleBooksLiveTestURL", exactReaderURL,
         ]
         app.launch()
@@ -1074,7 +1090,7 @@ class CastReaderUITests: XCTestCase {
         defer { removeUIInterruptionMonitor(interruptionMonitor) }
 
         let app = XCUIApplication()
-        app.launchArguments = ["-CastReaderSkipLibraryOnboarding"]
+        app.launchArguments = ["-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate"]
         app.launch()
         // Trigger the interruption monitor if a fresh Xcode install reset the
         // simulator's notification authorization while keeping shelf data.
@@ -1215,6 +1231,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
             "-CastReaderCloudUITest",
             "-cloud.privacy.google_drive.version", "0",
             "-cloud.privacy.dropbox.version", "0",
@@ -1524,6 +1541,7 @@ final class AppStoreCaptureUITests: XCTestCase {
             "-AppleLanguages", "(en)",
             "-AppleLocale", "en_US",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
         ]
         app.launch()
         return app
@@ -1613,6 +1631,7 @@ final class AppStoreCaptureUITests: XCTestCase {
             "-AppleLanguages", "(en)",
             "-AppleLocale", "en_US",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
             "-CastReaderDisableDebugPro",
         ]
         app.launch()

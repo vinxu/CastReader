@@ -21,7 +21,12 @@ struct UserAccount: Codable, Equatable {
         return AppLocalized("已登录")
     }
 
+    /// 头像首字母。Apple 登录可能既无 name 也无 email（只在首次授权返回），
+    /// 此时退到 provider 首字母而不是「?」——问号看起来像出错了。
     var initial: String {
-        String((name ?? email ?? "?").prefix(1)).uppercased()
+        if let source = [name, email].compactMap({ $0 }).first(where: { !$0.isEmpty }) {
+            return String(source.prefix(1)).uppercased()
+        }
+        return provider == "apple" ? "A" : String(provider.prefix(1)).uppercased()
     }
 }

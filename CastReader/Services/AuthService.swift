@@ -19,6 +19,9 @@ enum AuthError: Error, LocalizedError {
     case invalidCallback
     case tokenExchangeFailed(String)
     case invalidIDToken
+    case invalidEmail
+    case emailOTPUnavailable
+    case invalidOTP
 
     var errorDescription: String? {
         switch self {
@@ -27,6 +30,9 @@ enum AuthError: Error, LocalizedError {
         case .invalidCallback: return AppLocalized("登录回调无效")
         case .tokenExchangeFailed(let m): return AppLocalized("登录失败：\(m)")
         case .invalidIDToken: return AppLocalized("无法解析登录信息")
+        case .invalidEmail: return AppLocalized("请输入有效的邮箱地址")
+        case .emailOTPUnavailable: return AppLocalized("邮箱登录暂未开放，请使用 Google 或 Apple 登录")
+        case .invalidOTP: return AppLocalized("验证码错误或已过期，请重试")
         }
     }
 }
@@ -96,6 +102,7 @@ final class AuthService: NSObject, ObservableObject {
         persist()
         KeychainStore.delete("google_id_token")
         KeychainStore.delete("google_access_token")
+        KeychainStore.delete("betterauth_session_token")
         Task { @MainActor in
             ProManager.shared.clearServerEntitlement()   // 先本地清，避免 refreshServer 失败时 serverPro 滞留为 true
             await ProManager.shared.refreshServer()       // 再按 device_id 维度刷新
@@ -116,6 +123,28 @@ final class AuthService: NSObject, ObservableObject {
 
     /// 供 Apple 登录扩展写入账号（private(set) 仅本文件可设）。
     func applyAccount(_ acc: UserAccount) {
+        account = acc
+        persist()
+    }
+
+    /// 用服务端返回的资料补齐本地缺失的昵称/头像，**只填空不覆盖**。
+    ///
+    /// 两条路径拿不到完整资料：邮箱验证码登录（better-auth 响应常不带 name/image）
+    /// 与 Apple 的二次登录（只有首次授权给资料）。它们和 Google 登录落在同一个后端
+    /// 账号上，而 `/api/pro/status` 会回传 `account{name,email,image}`——用它回填，
+    /// 用户就不会看到「同一个账号换个方式登进来就没头像了」。
+    func fillMissingProfile(name: String?, pictureURL: String?) {
+        guard var acc = account else { return }
+        var changed = false
+        if (acc.name ?? "").isEmpty, let name, !name.isEmpty {
+            acc.name = name
+            changed = true
+        }
+        if (acc.pictureURL ?? "").isEmpty, let pictureURL, !pictureURL.isEmpty {
+            acc.pictureURL = pictureURL
+            changed = true
+        }
+        guard changed else { return }
         account = acc
         persist()
     }
@@ -189,6 +218,107 @@ final class AuthService: NSObject, ObservableObject {
         account = acc
         persist()
         await ProManager.shared.refreshServer()   // 按账号刷新 Pro
+    }
+
+    // MARK: - 邮箱验证码登录（better-auth email-otp）
+    //
+    // 第三条登录通道：不依赖任何第三方授权服务（中国区 Google 不通时 Apple 之外的
+    // 唯一冗余）。后端未启用 email-otp 插件时两个路由返回 404 → emailOTPUnavailable，
+    // 插件上线后此通道自动点亮，无需发版。
+    //
+    // ⚠️ 只有这条链路打 castreader.com（`emailOTPBaseURL`）——插件装在那边，
+    // 且 auth 的正式归属是 .com。两站共用同一个 Supabase，拿到的 user.id
+    // 与 Google 登录换到的 backendUserId 属于同一命名空间，Pro 查询照常。
+    //
+    // Pro 一致性：登录响应里的 user.id 就是 better-auth user id，直接作为
+    // backendUserId（无 social idToken 可换，也不需要）；email 一定存在，满足
+    // refreshServer 的 email-primary 规则，Web 端 Stripe Pro 按 email 匹配。
+    // 局限：/api/mobile-auth/session 目前只认 google/apple，邮箱账号换不到 cms_
+    // 会话 → verify-apple 上报会跳过（needsEmailSync 如实显示“跨平台同步等待”）。
+
+    /// 发送登录验证码。成功返回；失败抛 AuthError。
+    func sendEmailOTP(to email: String) async throws {
+        let normalized = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard Self.isPlausibleEmail(normalized) else { throw AuthError.invalidEmail }
+        isWorking = true
+        defer { isWorking = false }
+        _ = try await postEmailOTP(
+            path: "email-otp/send-verification-otp",
+            body: ["email": normalized, "type": "sign-in"]
+        )
+    }
+
+    /// 用邮箱+验证码完成登录，成功后与 Google/Apple 一样刷新服务端 Pro。
+    func signInWithEmailOTP(email: String, code: String) async throws {
+        let normalized = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard Self.isPlausibleEmail(normalized) else { throw AuthError.invalidEmail }
+        let otp = code.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !otp.isEmpty else { throw AuthError.invalidOTP }
+        isWorking = true
+        defer { isWorking = false }
+
+        let obj = try await postEmailOTP(
+            path: "sign-in/email-otp",
+            body: ["email": normalized, "otp": otp]
+        )
+        let user = obj["user"] as? [String: Any]
+        guard let backendId = (user?["id"] as? String) ?? (obj["userId"] as? String),
+              !backendId.isEmpty else {
+            throw AuthError.invalidIDToken
+        }
+
+        // better-auth 会话 token：目前 mobile-auth 换不了 cms_ 会话用不上，但和
+        // Apple identity token 一样只在这一刻拿得到——先存下来，后端支持后可
+        // 直接补换会话，不用逼用户重新登录（见 needsAppleRelink 的教训）。
+        if let token = obj["token"] as? String, !token.isEmpty {
+            KeychainStore.set(token, for: "betterauth_session_token")
+        }
+
+        // 同一个后端账号可能之前用 Google 登过（email-otp 按 email 命中同一条 user
+        // 记录，backendUserId 相同）。better-auth 的登录响应常常不带 name/image，
+        // 直接采用会把已有的头像和昵称覆盖成空。所以缺什么就沿用旧账号的。
+        let prior = account?.backendUserId == backendId ? account : nil
+        account = UserAccount(
+            id: backendId,
+            email: (user?["email"] as? String) ?? normalized,
+            name: (user?["name"] as? String) ?? prior?.name,
+            pictureURL: (user?["image"] as? String) ?? prior?.pictureURL,
+            provider: "email",
+            backendUserId: backendId
+        )
+        persist()
+        await ProManager.shared.refreshServer()   // 按账号刷新 Pro + 额度
+    }
+
+    /// better-auth email-otp 的两个 POST。404 = 插件未启用；sign-in 的 400/401 = 验证码错。
+    private func postEmailOTP(path: String, body: [String: String]) async throws -> [String: Any] {
+        guard let url = URL(string: "\(Constants.API.emailOTPBaseURL)/api/auth/\(path)") else {
+            throw AuthError.tokenExchangeFailed("invalid endpoint")
+        }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        let (data, response) = try await URLSession.shared.data(for: req)
+        guard let http = response as? HTTPURLResponse else {
+            throw AuthError.tokenExchangeFailed("no response")
+        }
+        switch http.statusCode {
+        case 200..<300:
+            return (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+        case 404:
+            throw AuthError.emailOTPUnavailable
+        case 400, 401, 403:
+            throw AuthError.invalidOTP
+        default:
+            throw AuthError.tokenExchangeFailed("HTTP \(http.statusCode)")
+        }
+    }
+
+    private static func isPlausibleEmail(_ s: String) -> Bool {
+        guard s.count >= 5, s.count <= 254 else { return false }
+        let parts = s.split(separator: "@")
+        return parts.count == 2 && parts[1].contains(".") && !parts[0].isEmpty
     }
 
     // MARK: - Google OAuth 细节

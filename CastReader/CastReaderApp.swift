@@ -117,6 +117,30 @@ enum AppOrientationLock {
     }
 }
 
+/// 硬登录门：未登录时整个 App 只渲染登录页。
+///
+/// 对全部未登录用户生效，包括从旧版本升级上来的老用户——`AuthService.restore()`
+/// 在 init 里同步跑完，登录过的人不会看到这道门闪一下。
+///
+/// MainTabView 只在登录后创建，所以常驻阅读器（ReaderHostView / KindleBookView）
+/// 的生命周期不受影响；只有主动登出才会销毁它们，这与登出语义一致。
+struct RootAuthGate: View {
+    @ObservedObject private var auth = AuthService.shared
+
+    /// UI 测试无法走真实的 Google/Apple 授权，所以它们需要一条绕过。沿用
+    /// BoundLibraryOnboardingStore 既有的 launch-argument 约定。
+    private let bypassesGate = ProcessInfo.processInfo.arguments
+        .contains("-CastReaderSkipSignInGate")
+
+    var body: some View {
+        if auth.isSignedIn || bypassesGate {
+            MainTabView()
+        } else {
+            LoginView(isRootGate: true)
+        }
+    }
+}
+
 @main
 struct CastReaderApp: App {
     @UIApplicationDelegateAdaptor(CastReaderAppDelegate.self) private var appDelegate
@@ -124,6 +148,7 @@ struct CastReaderApp: App {
     @StateObject private var appLanguage = AppLanguageManager.shared
     @State private var showSafariPro = false
     @State private var showSafariAccount = false
+    @State private var showSignOutConfirm = false
     @State private var pendingSafariLibraryOnboardingReset: Bool?
 
     init() {
@@ -183,7 +208,7 @@ struct CastReaderApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            RootAuthGate()
                 .environmentObject(visitorService)
                 .environment(\.locale, appLanguage.locale)
                 // 深色/浅色跟随系统（AppTheme 已全动态化，见 Utils/AppTheme.swift）
@@ -216,13 +241,23 @@ struct CastReaderApp: App {
                         let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
                         let action = components?.queryItems?.first(where: { $0.name == "action" })?.value
                         if action == "signout" {
-                            AuthService.shared.signOut()
-                            SafariExtensionBridge.syncFromApp()
-                            showSafariAccount = false
+                            // 硬登录墙下登出 = App 回到登录页。深链是外部输入
+                            // （Safari 扩展页面），不能未经确认直接执行。
+                            showSignOutConfirm = true
                         } else {
                             showSafariAccount = true
                         }
                     }
+                }
+                .alert(AppLocalized("退出登录"), isPresented: $showSignOutConfirm) {
+                    Button(AppLocalized("退出登录"), role: .destructive) {
+                        AuthService.shared.signOut()
+                        SafariExtensionBridge.syncFromApp()
+                        showSafariAccount = false
+                    }
+                    Button(AppLocalized("取消"), role: .cancel) {}
+                } message: {
+                    Text(AppLocalized("退出登录后需要重新登录才能继续使用 CastReader。"))
                 }
                 .sheet(isPresented: $showSafariPro) {
                     PaywallView(

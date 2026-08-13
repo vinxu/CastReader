@@ -310,14 +310,17 @@ struct ProUpsellContent: View {
                     .disabled(busy)
                 }
                 Button {
-                    guard auth.hasEmailAccount else { showLogin = true; return }
+                    // 只要求「已登录」：Apple 登录可能没有 email（仅首次授权返回），
+                    // 拿 email 当购买前置会把已登录用户再弹回登录页形成死循环。
+                    // email 只决定跨平台同步何时可用，不阻塞 StoreKit 购买。
+                    guard auth.isSignedIn else { showLogin = true; return }
                     guard let product = pro.products.first(where: { $0.id == selectedProductID }) else { return }
                     busy = true
                     Task { _ = await pro.purchase(product, analyticsTrigger: analyticsTrigger); busy = false }
                 } label: {
                     HStack {
                         if busy { ProgressView().tint(.white) }
-                        if !auth.hasEmailAccount { Image(systemName: "person.crop.circle.badge.checkmark") }
+                        if !auth.isSignedIn { Image(systemName: "person.crop.circle.badge.checkmark") }
                         Text(primaryCTATitle).fontWeight(.bold)
                     }
                     .frame(maxWidth: .infinity)
@@ -328,7 +331,7 @@ struct ProUpsellContent: View {
                 .disabled(busy || selectedProductID == nil)
 
                 if !auth.hasEmailAccount {
-                    Text("购买前需要登录邮箱，用于跨设备同步 Pro。")
+                    Text(AppLocalized("登录邮箱账号后，Pro 可跨设备同步。"))
                         .font(.caption2)
                         .foregroundColor(AppTheme.mutedForeground)
                         .multilineTextAlignment(.center)

@@ -101,6 +101,12 @@ final class ProManager: ObservableObject {
         serverPlan = status.plan
         serverAccount = status.account
         serverEmail = email
+        // 服务端是账号资料的权威来源：邮箱验证码登录（better-auth 响应常不带
+        // name/image）和 Apple 二次登录（Apple 只在首次授权给资料）都会拿到空的
+        // 昵称/头像，这里把它们补回来，同一个后端账号在各端显示才一致。
+        if let account = status.account {
+            AuthService.shared.fillMissingProfile(name: account.name, pictureURL: account.image)
+        }
         QuotaManager.shared.applyServerStatus(status)
         refreshSyncState(reason: "refresh-server")
     }
@@ -208,8 +214,10 @@ final class ProManager: ObservableObject {
         }
         setStoreKitLocalPro(active, reason: "refresh-entitlements")
         await refreshIntroOfferEligibility()
+        // 上报只要已登录就尝试：verify-apple 实际依赖 cms_ 会话（无会话时自 SKIP），
+        // 拿 email 当前置条件会漏掉 Apple 无 email 但有会话的账号。
         if active,
-           AuthService.shared.normalizedEmail != nil,
+           AuthService.shared.isSignedIn,
            let latestSignedTransaction {
             let synced = await ProBackendService.shared.verifyAppleTransaction(latestSignedTransaction)
             debugLog("storekit-server-sync result=\(synced ? "Y" : "N")")
@@ -232,15 +240,17 @@ final class ProManager: ObservableObject {
             context: analyticsContext,
             properties: .init(trigger: analyticsTrigger, store: "app_store", productId: product.id)
         )
-        guard AuthService.shared.normalizedEmail != nil else {
-            refreshSyncState(reason: "purchase-blocked-missing-email")
-            debugLog("purchase BLOCK missing-email product=\(product.id) localStoreKit=\(storeKitLocalPro ? "Y" : "N")")
+        // 硬登录墙后所有人必然已登录；Apple 登录可能拿不到 email（仅首次授权返回），
+        // 不能因此挡购买——StoreKit 本身不需要 email，email 只影响跨平台同步的时机。
+        guard AuthService.shared.isSignedIn else {
+            refreshSyncState(reason: "purchase-blocked-signed-out")
+            debugLog("purchase BLOCK signed-out product=\(product.id) localStoreKit=\(storeKitLocalPro ? "Y" : "N")")
             ProductAnalytics.shared.track(
                 .purchaseResult,
                 context: analyticsContext,
                 properties: .init(
                     result: AnalyticsResult.blocked.rawValue,
-                    errorCode: "email_required",
+                    errorCode: "signin_required",
                     trigger: analyticsTrigger,
                     store: "app_store",
                     productId: product.id

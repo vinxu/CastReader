@@ -41,6 +41,17 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         }
     }
 
+    /// 归一化后的 BCP-47 主语言码（`.system` 落到系统语言）。供需要按语言分支
+    /// 又不关心地区的场景使用，例如法务页面只有 en / zh 两个版本。
+    var resolvedLanguageCode: String {
+        switch self {
+        case .system:
+            return Locale.autoupdatingCurrent.language.languageCode?.identifier ?? "en"
+        default:
+            return rawValue.split(separator: "-").first.map(String.init) ?? rawValue
+        }
+    }
+
     /// Keep language names self-identifying so users can always recover after
     /// selecting a language they do not read.
     var displayName: String {

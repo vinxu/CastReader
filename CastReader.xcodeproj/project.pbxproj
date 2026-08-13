@@ -16,6 +16,7 @@
 		035A8C198187F919A534A20A /* UnshippedIntegrationStubs.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30F8BE8B664ED3C47E1058B /* UnshippedIntegrationStubs.swift */; };
 		0525370D4B5A98900BFAB55D /* WebReaderProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32072C86884F9467DF21811E /* WebReaderProtocol.swift */; };
 		058DC51AD4462A22F75912E9 /* PaymentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E587B7C6F6E5EF9DF007378 /* PaymentTests.swift */; };
+		05DE8D9EEB283CD25BDE3901 /* LastUsedBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0AB56A948FFA0562CD2781 /* LastUsedBubble.swift */; };
 		05F0C22935169FFCEDD8E580 /* SystemIntegrationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2549C0C15931360F88CE528F /* SystemIntegrationModels.swift */; };
 		065145A317645E070D8EBD81 /* ocr-layout-skewed-single-column.json in Resources */ = {isa = PBXBuildFile; fileRef = CB01746E00252E83EDBA072F /* ocr-layout-skewed-single-column.json */; };
 		068BC698ED1492519B5A7B52 /* ProductAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D6BDB86D88CD8AECD9D960 /* ProductAnalytics.swift */; };
@@ -310,6 +311,7 @@
 		1AD1B310DE681499A5B19880 /* GoogleBooksWebBridgeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleBooksWebBridgeTests.swift; sourceTree = "<group>"; };
 		1C441D52AC363CE4CDB92ABE /* home-pro-dracula.jpg */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.jpeg; path = "home-pro-dracula.jpg"; sourceTree = "<group>"; };
 		1C7EC511EE228DC080069CB1 /* SettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		1D0AB56A948FFA0562CD2781 /* LastUsedBubble.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LastUsedBubble.swift; sourceTree = "<group>"; };
 		1D90EDE000D8F2E575477ADE /* GoogleBooksWebScripts.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GoogleBooksWebScripts.swift; sourceTree = "<group>"; };
 		1E09BB529C1CA7779FDFB2EC /* Document.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Document.swift; sourceTree = "<group>"; };
 		1F75FB1EC2AF94E68377231E /* WeReadLibraryStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WeReadLibraryStore.swift; sourceTree = "<group>"; };
@@ -954,6 +956,7 @@
 			children = (
 				F3672A44B520576EC77FEBFD /* LoginView.swift */,
 				B1C37FD799726E19012B9615 /* AppleSignInButton.swift */,
+				1D0AB56A948FFA0562CD2781 /* LastUsedBubble.swift */,
 			);
 			path = Auth;
 			sourceTree = "<group>";
@@ -1481,6 +1484,7 @@
 				D85E21EB3E00EC79F165F916 /* CloudStorageModels.swift in Sources */,
 				10CA302D247691B44165D574 /* DocumentImportPipeline.swift in Sources */,
 				035A8C198187F919A534A20A /* UnshippedIntegrationStubs.swift in Sources */,
+				05DE8D9EEB283CD25BDE3901 /* LastUsedBubble.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -57,11 +57,27 @@ enum Constants {
         static let proVerifyApple = "\(webURL)/api/pro/verify-apple"    // POST signed StoreKit 2 transaction
         static let authSocialSignIn = "\(webURL)/api/auth/sign-in/social" // POST {provider, idToken:{token}} (better-auth)
         static let pricingURL = "\(webURL)/pricing"
-        private static var legalLanguagePath: String {
-            Locale.current.language.languageCode?.identifier == "zh" ? "zh" : "en"
+        /// 邮箱验证码登录（better-auth email-otp）走 castreader.com。
+        ///
+        /// 两站共用同一个 Supabase（user 表是同一份），但 auth 的正式归属是 .com，
+        /// 插件也只装在那边——所以只有这条链路换域名，Pro / 额度 / 埋点仍走
+        /// `webURL`（castreader.ai），避免为一个登录方式动整个 API 基址。
+        static let emailOTPBaseURL = "https://castreader.com"
+
+        /// 法务页面在 castreader.com（与 API 所在的 castreader.ai 是两个站点）。
+        ///
+        /// 该站只有 en / zh 两个版本，且**英文没有语言前缀**（`/en/...` 会 301 到
+        /// `/...`）；其余语言前缀一律 301 回英文，唯独 `/pt-BR/...` 直接 404——
+        /// 所以这里只能产出「zh 带前缀 / 其余无前缀」两种形态，不要按 UI 语言拼。
+        private static let legalBaseURL = "https://castreader.com"
+
+        /// 跟随 **App 内语言**而非系统语言：用户在设置里切成中文，法务页也要给中文。
+        private static var legalLanguagePrefix: String {
+            let code = AppLanguageManager.shared.selectedLanguage.resolvedLanguageCode
+            return code == "zh" ? "/zh" : ""
         }
-        static var termsURL: String { "\(webURL)/\(legalLanguagePath)/terms-of-service" }
-        static var privacyURL: String { "\(webURL)/\(legalLanguagePath)/privacy-policy" }
+        static var termsURL: String { "\(legalBaseURL)\(legalLanguagePrefix)/terms-of-service" }
+        static var privacyURL: String { "\(legalBaseURL)\(legalLanguagePrefix)/privacy-policy" }
     }
 
     /// Google OAuth（原生 ASWebAuthenticationSession + PKCE，无需 SDK）。

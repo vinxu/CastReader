@@ -30,6 +30,7 @@ struct SettingsView: View {
     @State private var showPaywall = false
     @State private var showLogin = false
     @State private var showClearHistory = false
+    @State private var showSignOutConfirm = false
     @State private var showVoiceBrowser = false
     @State private var isRestoring = false
     @State private var showRestoreResult = false
@@ -121,7 +122,16 @@ struct SettingsView: View {
                     }
                     Spacer()
                 }
-                Button(role: .destructive) { auth.signOut() } label: { Text("退出登录") }
+                // 硬登录墙下退出登录 = 回到登录页才能继续用，误触代价高 → 二次确认。
+                Button(role: .destructive) { showSignOutConfirm = true } label: { Text("退出登录") }
+                    .confirmationDialog(
+                        Text(AppLocalized("退出登录后需要重新登录才能继续使用 CastReader。")),
+                        isPresented: $showSignOutConfirm,
+                        titleVisibility: .visible
+                    ) {
+                        Button(AppLocalized("退出登录"), role: .destructive) { auth.signOut() }
+                        Button(AppLocalized("取消"), role: .cancel) {}
+                    }
             } else {
                 Button { showLogin = true } label: {
                     Label("登录 / 注册", systemImage: "person.crop.circle")
