@@ -884,7 +884,12 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func recomputeReadableIndices() {
         readableIndices = paras.enumerated()
-            .filter { $0.element.type.isReadable && SpeechTextSanitizer.containsSpeakableContent($0.element.text) }
+            .filter {
+                $0.element.type.isReadable &&
+                    SpeechTextSanitizer.containsSpeakableContent(
+                        $0.element.resolvedSpeechText
+                    )
+            }
             .map { $0.offset }
     }
 
@@ -1963,11 +1968,14 @@ final class ReadAloudViewModel: ObservableObject {
                 NSLog("CRDBG generate request begin para=%d voice=%@ epoch=%llu", index, voice, epoch)
                 try await TTSService.shared.generateTTSForParagraph(
                     paragraphIndex: index,
-                    text: SpeechTextSanitizer.sanitizedForTTS(para.text),
+                    text: SpeechTextSanitizer.sanitizedForTTS(
+                        para.resolvedSpeechText
+                    ),
                     voice: voice,
                     speed: 1.0,                       // 1.0 生成，播放用 playbackRate
                     language: self.docLanguage,
-                    includeVoiceCode: self.includeVoiceCodeForTTS
+                    includeVoiceCode: self.includeVoiceCodeForTTS,
+                    speaker: para.speaker
                 ) { [weak self] segment in
                     self?.appendSegment(
                         segment,
@@ -2277,7 +2285,7 @@ final class ReadAloudViewModel: ObservableObject {
         NSLog("CRDBG prefetch start para=%d", nextIndex)
         ReaderRunLog.write(
             "READ prefetch start para=\(nextIndex) epoch=\(epoch) " +
-            "chars=\(para.text.utf16.count)"
+            "chars=\(para.resolvedSpeechText.utf16.count)"
         )
         prefetchTask = Task { [weak self] in
             do {
@@ -2315,11 +2323,14 @@ final class ReadAloudViewModel: ObservableObject {
                     }
                     collected = try await TTSService.shared.generatePrefetchSegments(
                         paragraphIndex: nextIndex,
-                        text: SpeechTextSanitizer.sanitizedForTTS(para.text),
+                        text: SpeechTextSanitizer.sanitizedForTTS(
+                            para.resolvedSpeechText
+                        ),
                         voice: voice,
                         speed: 1.0,
                         language: lang,
-                        includeVoiceCode: includeVoiceCode
+                        includeVoiceCode: includeVoiceCode,
+                        speaker: para.speaker
                     )
                     cachedIsReplayEligible = false
                 }

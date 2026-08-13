@@ -250,7 +250,10 @@ enum YouTubeTranscriptContentLanguagePolicy {
     }
 
     static func evidence(for cues: [YouTubeTranscriptCue]) -> Evidence {
-        evidence(for: cues.prefix(80).map(\.text).joined(separator: " "))
+        let speech = YouTubeCaptionSemanticAnalyzer.paragraphs(
+            from: Array(cues.prefix(80))
+        ).map(\.resolvedSpeechText).filter { !$0.isEmpty }.joined(separator: " ")
+        return evidence(for: speech)
     }
 
     static func evidence(for text: String) -> Evidence {
@@ -340,6 +343,12 @@ enum YouTubeTranscriptContentLanguagePolicy {
 }
 
 enum YouTubeTranscriptEnvelopeDecoder {
+    private struct CueDeduplicationKey: Hashable {
+        let startMs: Int
+        let speaker: String?
+        let text: String
+    }
+
     static let maximumMessageBytes = 20 * 1_024 * 1_024
 
     static func requestToken(from body: Any) -> String? {
@@ -388,7 +397,7 @@ enum YouTubeTranscriptEnvelopeDecoder {
             throw failure
         }
 
-        var seen = Set<String>()
+        var seen = Set<CueDeduplicationKey>()
         var cues: [YouTubeTranscriptCue] = []
         cues.reserveCapacity(envelope.cues.count)
         for cue in envelope.cues {
@@ -398,13 +407,25 @@ enum YouTubeTranscriptEnvelopeDecoder {
             guard !text.isEmpty, cue.startMs >= 0, cue.durationMs >= 0 else {
                 throw YouTubeTranscriptFailure.malformedResponse
             }
-            let key = "\(cue.startMs)|\(text)"
+            let speaker: String? = {
+                guard let value = cue.speaker?
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
+                      !value.isEmpty,
+                      value.count <= 128 else { return nil }
+                return value
+            }()
+            let key = CueDeduplicationKey(
+                startMs: cue.startMs,
+                speaker: speaker,
+                text: text
+            )
             guard seen.insert(key).inserted else { continue }
             cues.append(
                 YouTubeTranscriptCue(
                     text: text,
                     startMs: cue.startMs,
-                    durationMs: cue.durationMs
+                    durationMs: cue.durationMs,
+                    speaker: speaker
                 )
             )
         }
@@ -500,6 +521,20 @@ enum YouTubeTranscriptEnvelopeDecoder {
                 ? nil
                 : cleaned(envelope.captionTrack?.kind)
         )
+        if let requestedTrack {
+            guard !usedUnverifiedTranscriptSource else {
+                // Transcript panel/endpoint lanes are not bound to the pinned
+                // candidate. Even a matching language cannot prove manual vs
+                // ASR (or which same-language track) for an explicit request.
+                throw YouTubeTranscriptFailure.trackUnavailable
+            }
+            let kindMatches = track.isAutomatic == requestedTrack.isAutomatic
+            let identityMatches = requestedTrack.id.isEmpty ||
+                requestedTrack.id == track.baseURL
+            guard kindMatches, identityMatches else {
+                throw YouTubeTranscriptFailure.trackUnavailable
+            }
+        }
 
         let title = cleaned(envelope.title) ?? reference.videoId
         let durationMs = durationMilliseconds(envelope.durationSeconds)

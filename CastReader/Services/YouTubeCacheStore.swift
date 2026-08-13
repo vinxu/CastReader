@@ -116,10 +116,9 @@ struct YouTubeTTSAudioCacheKey: Codable, Equatable, Hashable, Sendable {
 
 enum YouTubeTTSAudioCacheSchema {
     /// Increment whenever AudioSegment persistence semantics change.
-    /// Version 4 binds audio to the canonical playback language. Some cloned
-    /// voices are shared across languages, so voice identity alone cannot keep
-    /// an old synthesis from crossing a language correction boundary.
-    static let current = 4
+    /// Version 7 binds audio to caption semantic schema 3, whose typed inline
+    /// parenthetical decisions can change the TTS input and utterance index.
+    static let current = 7
 }
 
 struct YouTubePlaybackProgress: Codable, Equatable, Sendable {
@@ -133,6 +132,10 @@ struct YouTubePlaybackProgress: Codable, Equatable, Sendable {
     /// Older manifests do not contain this field, so readers fall back to the
     /// legacy segment-local value until playback writes a fresh checkpoint.
     let paragraphFractionalProgress: Double?
+    /// Paragraph indexes are derived from caption semantics. A missing value
+    /// identifies a pre-P0 checkpoint and must not be applied to regenerated
+    /// paragraphs, even when the raw transcript fingerprint is unchanged.
+    let semanticSchemaVersion: Int?
     let updatedAt: Date
 
     init(
@@ -141,6 +144,7 @@ struct YouTubePlaybackProgress: Codable, Equatable, Sendable {
         segmentIndex: Int,
         fractionalProgress: Double,
         paragraphFractionalProgress: Double? = nil,
+        semanticSchemaVersion: Int? = YouTubeCaptionSemanticSchema.current,
         updatedAt: Date
     ) {
         self.paragraphIndex = paragraphIndex
@@ -148,6 +152,7 @@ struct YouTubePlaybackProgress: Codable, Equatable, Sendable {
         self.segmentIndex = segmentIndex
         self.fractionalProgress = fractionalProgress
         self.paragraphFractionalProgress = paragraphFractionalProgress
+        self.semanticSchemaVersion = semanticSchemaVersion
         self.updatedAt = updatedAt
     }
 
@@ -157,6 +162,7 @@ struct YouTubePlaybackProgress: Codable, Equatable, Sendable {
         case segmentIndex
         case fractionalProgress
         case paragraphFractionalProgress
+        case semanticSchemaVersion
         case updatedAt
     }
 
@@ -173,6 +179,10 @@ struct YouTubePlaybackProgress: Codable, Equatable, Sendable {
             Double.self,
             forKey: .paragraphFractionalProgress
         )
+        semanticSchemaVersion = try container.decodeIfPresent(
+            Int.self,
+            forKey: .semanticSchemaVersion
+        )
         updatedAt = try container.decode(Date.self, forKey: .updatedAt)
     }
 
@@ -185,6 +195,10 @@ struct YouTubePlaybackProgress: Codable, Equatable, Sendable {
         try container.encodeIfPresent(
             paragraphFractionalProgress,
             forKey: .paragraphFractionalProgress
+        )
+        try container.encodeIfPresent(
+            semanticSchemaVersion,
+            forKey: .semanticSchemaVersion
         )
         try container.encode(updatedAt, forKey: .updatedAt)
     }
@@ -565,6 +579,15 @@ actor YouTubeCacheStore {
             data.append(Data(String(text.count).utf8))
             data.append(0x3A)
             data.append(text)
+            if let speaker = cue.speaker?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+               !speaker.isEmpty {
+                let speakerData = Data(speaker.utf8)
+                data.append(0x1F)
+                data.append(Data(String(speakerData.count).utf8))
+                data.append(0x3A)
+                data.append(speakerData)
+            }
             data.append(0x0A)
         }
         return YouTubeCacheDigest.sha256(data)
@@ -720,6 +743,32 @@ actor YouTubeCacheStore {
         return nil
     }
 
+    /// Exact picker-track lookup. A manual and an ASR track can share the same
+    /// language, so the ordinary preferred-language lookup is intentionally
+    /// too broad for an explicit user selection.
+    func mostRecentTranscript(
+        videoId: String,
+        matching option: YouTubeCaptionTrackOption
+    ) -> YouTubeCachedTranscriptResolution? {
+        let videoHash = YouTubeCacheDigest.sha256(videoId)
+        let candidates = manifest.entries.values
+            .filter { $0.key.videoIdHash == videoHash && $0.hasTranscript }
+            .sorted { $0.lastAccessAt > $1.lastAccessAt }
+        for candidate in candidates {
+            guard let document = transcriptWithoutTouch(for: candidate.key) else {
+                markTranscriptCorrupt(for: candidate.key)
+                continue
+            }
+            guard option.matches(document.track) else { continue }
+            touchTranscriptAccess(for: candidate.key)
+            return YouTubeCachedTranscriptResolution(
+                key: candidate.key,
+                document: document
+            )
+        }
+        return nil
+    }
+
     /// Preferred-language cache hit used before live extraction. A track in
     /// the preferred base language wins (manual before ASR). A cross-language
     /// track is reusable only after the live selector has explicitly chosen it
@@ -830,7 +879,11 @@ actor YouTubeCacheStore {
                 continue
             }
             let readableIndexes = document.paragraphs
-                .filter { SpeechTextSanitizer.containsSpeakableContent($0.text) }
+                .filter {
+                    SpeechTextSanitizer.containsSpeakableContent(
+                        $0.resolvedSpeechText
+                    )
+                }
                 .map(\.id)
             let audio: YouTubeAudioCacheCoverage
             if let voiceCode = voiceCodeByLanguage[base], !readableIndexes.isEmpty {
@@ -843,6 +896,59 @@ actor YouTubeCacheStore {
                 audio = .none(totalParagraphs: readableIndexes.count)
             }
             result[base] = YouTubeCaptionLanguageAvailability(
+                hasTranscript: true,
+                audio: audio
+            )
+        }
+        return result
+    }
+
+    /// Per-picker-track cache state. Unlike the legacy language projection,
+    /// this keeps `en|manual` and `en|asr` independent so offline selection
+    /// never promises a transcript belonging to the other track.
+    func captionTrackAvailability(
+        videoId: String,
+        options: [YouTubeCaptionTrackOption],
+        voiceCodeByLanguage: [String: String]
+    ) -> [String: YouTubeCaptionLanguageAvailability] {
+        let videoHash = YouTubeCacheDigest.sha256(videoId)
+        let candidates = manifest.entries.values
+            .filter { $0.key.videoIdHash == videoHash && $0.hasTranscript }
+            .sorted { $0.lastAccessAt > $1.lastAccessAt }
+
+        var decoded: [(entry: YouTubeCacheManifestEntry, document: YouTubeTranscriptDocument)] = []
+        for candidate in candidates {
+            guard let document = transcriptWithoutTouch(for: candidate.key) else {
+                markTranscriptCorrupt(for: candidate.key)
+                continue
+            }
+            decoded.append((candidate, document))
+        }
+
+        var result: [String: YouTubeCaptionLanguageAvailability] = [:]
+        for option in YouTubeCaptionTrackOption.normalized(options) {
+            guard let selected = decoded.first(where: {
+                option.matches($0.document.track)
+            }) else { continue }
+            let base = Self.baseLanguage(option.languageCode)
+            let readableIndexes = selected.document.paragraphs
+                .filter {
+                    SpeechTextSanitizer.containsSpeakableContent(
+                        $0.resolvedSpeechText
+                    )
+                }
+                .map(\.id)
+            let audio: YouTubeAudioCacheCoverage
+            if let voiceCode = voiceCodeByLanguage[base], !readableIndexes.isEmpty {
+                audio = audioCacheCoverage(
+                    for: selected.entry.key,
+                    voiceCode: voiceCode,
+                    paragraphIndexes: readableIndexes
+                )
+            } else {
+                audio = .none(totalParagraphs: readableIndexes.count)
+            }
+            result[option.selectionKey] = YouTubeCaptionLanguageAvailability(
                 hasTranscript: true,
                 audio: audio
             )
@@ -1309,6 +1415,7 @@ actor YouTubeCacheStore {
               var entry = manifest.entries[storageKey],
               entry.key == key,
               let progress = entry.progress,
+              progress.semanticSchemaVersion == YouTubeCaptionSemanticSchema.current,
               progress.paragraphIndex >= 0,
               progress.segmentIndex >= 0,
               !progress.segmentId.isEmpty,
@@ -1332,6 +1439,7 @@ actor YouTubeCacheStore {
               let entry = manifest.entries[storageKey],
               entry.key == key,
               let progress = entry.progress,
+              progress.semanticSchemaVersion == YouTubeCaptionSemanticSchema.current,
               progress.paragraphIndex >= 0,
               progress.segmentIndex >= 0,
               !progress.segmentId.isEmpty,

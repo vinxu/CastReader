@@ -153,7 +153,7 @@ struct YouTubeCaptionLanguagePanel: View {
         .task(id: transcript.metadata.videoId) {
             await availability.load(
                 videoId: transcript.metadata.videoId,
-                languages: options.filter(\.isPlayable).map(\.languageCode)
+                options: options.filter(\.isPlayable)
             )
         }
     }
@@ -234,7 +234,7 @@ struct YouTubeCaptionLanguagePanel: View {
 
     private func row(_ option: YouTubeCaptionTrackOption) -> some View {
         let isCurrent = option.matches(transcript.track)
-        let state = availability.state(for: option.languageCode)
+        let state = availability.state(for: option)
         let needsNetwork = YouTubeCaptionLanguagePickerPolicy.requiresNetwork(
             hasTranscript: state.hasTranscript,
             isOnline: reachability.isOnline
@@ -281,7 +281,7 @@ struct YouTubeCaptionLanguagePanel: View {
         }
         .buttonStyle(.plain)
         .disabled(!isSelectable && !isCurrent)
-        .accessibilityIdentifier("youtubeCaptionLanguageRow_\(option.languageCode)")
+        .accessibilityIdentifier("youtubeCaptionLanguageRow_\(option.selectionKey)")
         .accessibilityAddTraits(isCurrent ? [.isSelected] : [])
     }
 
@@ -323,20 +323,21 @@ struct YouTubeCaptionLanguagePanel: View {
 private final class YouTubeCaptionLanguageAvailabilityLoader: ObservableObject {
     @Published private(set) var states: [String: YouTubeCaptionLanguageAvailability] = [:]
 
-    func state(for languageCode: String) -> YouTubeCaptionLanguageAvailability {
-        states[YouTubeTrackSelector.baseLanguage(languageCode)] ?? .unavailable
+    func state(for option: YouTubeCaptionTrackOption) -> YouTubeCaptionLanguageAvailability {
+        states[option.selectionKey] ?? .unavailable
     }
 
-    func load(videoId: String, languages: [String]) async {
+    func load(videoId: String, options: [YouTubeCaptionTrackOption]) async {
         guard let cache = YouTubeCacheProvider.shared else { return }
         let settings = AppSettings.shared
-        let voiceCodeByLanguage = languages.reduce(into: [String: String]()) { result, language in
-            let base = YouTubeTrackSelector.baseLanguage(language)
+        let voiceCodeByLanguage = options.reduce(into: [String: String]()) { result, option in
+            let base = YouTubeTrackSelector.baseLanguage(option.languageCode)
             guard !base.isEmpty, result[base] == nil else { return }
             result[base] = settings.voice(for: base)
         }
-        let resolved = await cache.captionLanguageAvailability(
+        let resolved = await cache.captionTrackAvailability(
             videoId: videoId,
+            options: options,
             voiceCodeByLanguage: voiceCodeByLanguage
         )
         guard !Task.isCancelled else { return }

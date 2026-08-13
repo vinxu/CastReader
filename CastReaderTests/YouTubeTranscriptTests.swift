@@ -107,29 +107,925 @@ final class YouTubeURLParserTests: XCTestCase {
     }
 }
 
+private struct YouTubeCaptionSemanticGoldenContract: Decodable {
+    let schemaVersion: Int
+    let cases: [YouTubeCaptionSemanticGoldenCase]
+}
+
+private struct YouTubeCaptionSemanticGoldenCase: Decodable {
+    let id: String
+    let cues: [YouTubeTranscriptCue]
+    let expectedParagraphs: [YouTubeTranscriptParagraph]
+}
+
 final class YouTubeTranscriptGroupingTests: XCTestCase {
-    func testSortsAndBreaksOnlyWhenGapIsStrictlyGreaterThanTwoSeconds() {
+    func testEnvironmentAndDeliveryLabelsStayVisibleButAreNotNarrated() {
         let cues = [
-            YouTubeTranscriptCue(text: "third", startMs: 7_001, durationMs: 100),
-            YouTubeTranscriptCue(text: "first", startMs: 0, durationMs: 1_000),
-            YouTubeTranscriptCue(text: "second", startMs: 3_000, durationMs: 2_000),
+            YouTubeTranscriptCue(text: "[Music]", startMs: 0, durationMs: 500),
+            YouTubeTranscriptCue(
+                text: "(whispering) Keep quiet",
+                startMs: 2_000,
+                durationMs: 500
+            ),
+            YouTubeTranscriptCue(text: "【掌声】", startMs: 4_000, durationMs: 500),
         ]
         let result = YouTubeTranscriptGrouper.cuesIntoParagraphs(cues)
 
-        XCTAssertEqual(result.map(\.id), [0, 1])
-        XCTAssertEqual(result.map(\.startMs), [0, 7_001])
-        XCTAssertEqual(result.map(\.text), ["first second", "third"])
-        // first→second gap is exactly 2000ms, so it must not break.
+        XCTAssertEqual(result.map(\.text), ["[Music]", "(whispering) Keep quiet", "【掌声】"])
+        XCTAssertEqual(result.map(\.resolvedSpeechText), ["", "Keep quiet", ""])
     }
 
-    func testDurationControlsGapRatherThanPreviousStart() {
-        let cues = [
-            YouTubeTranscriptCue(text: "one", startMs: 0, durationMs: 5_000),
-            YouTubeTranscriptCue(text: "two", startMs: 6_500, durationMs: 0),
-        ]
+    func testConsecutiveLeadingEventAndDeliveryLabelsAreRemovedFromSpeech() throws {
+        let source = "(laughing) (whispering) Keep quiet"
+        let paragraph = try XCTUnwrap(
+            YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                YouTubeTranscriptCue(text: source, startMs: 0),
+            ]).first
+        )
+
+        XCTAssertEqual(paragraph.text, source)
+        XCTAssertEqual(paragraph.resolvedSpeechText, "Keep quiet")
+    }
+
+    func testEventBeforeSpeakerPrefixDoesNotLeakLabelOrRoleIntoSpeech() throws {
+        for source in [
+            "[Music] ALICE: Hello",
+            ">> [Music] ALICE: Hello",
+        ] {
+            let paragraph = try XCTUnwrap(
+                YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                    YouTubeTranscriptCue(text: source, startMs: 0),
+                ]).first,
+                source
+            )
+            XCTAssertEqual(paragraph.text, source)
+            XCTAssertEqual(paragraph.resolvedSpeechText, "Hello", source)
+            XCTAssertEqual(paragraph.speaker, "ALICE", source)
+        }
+    }
+
+    func testCommonCombinedEventLabelsStayVisibleButAreNotNarrated() throws {
+        for source in [
+            "[upbeat music]",
+            "[music playing]",
+            "[laughter and applause]",
+        ] {
+            let paragraph = try XCTUnwrap(
+                YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                    YouTubeTranscriptCue(text: source, startMs: 0),
+                ]).first,
+                source
+            )
+            XCTAssertEqual(paragraph.text, source)
+            XCTAssertEqual(paragraph.resolvedSpeechText, "", source)
+        }
+    }
+
+    func testInlineOrdinaryMusicAndManAnnotationsRemainSpokenWithoutSpeakerInference() throws {
+        for source in [
+            "I study (music) theory every day",
+            "The word [man] appears in this example",
+        ] {
+            let paragraph = try XCTUnwrap(
+                YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                    YouTubeTranscriptCue(text: source, startMs: 0),
+                ]).first,
+                source
+            )
+
+            XCTAssertEqual(paragraph.text, source, source)
+            XCTAssertEqual(paragraph.resolvedSpeechText, source, source)
+            XCTAssertNil(paragraph.speaker, source)
+        }
+    }
+
+    func testLyricsKeepWordsWhileRemovingOnlyMusicNotesFromSpeech() throws {
+        let paragraph = try XCTUnwrap(
+            YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                YouTubeTranscriptCue(text: "♪ We are alive ♪", startMs: 0),
+            ]).first
+        )
+
+        XCTAssertEqual(paragraph.text, "♪ We are alive ♪")
+        XCTAssertEqual(paragraph.resolvedSpeechText, "We are alive")
+    }
+
+    func testExplicitSpeakerPrefixesAreExtracted() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: ">> ALICE: Hello there", startMs: 0),
+            YouTubeTranscriptCue(text: ">> BOB：Hi", startMs: 500),
+        ])
+
+        XCTAssertEqual(result.map(\.text), [">> ALICE: Hello there", ">> BOB：Hi"])
+        XCTAssertEqual(result.map(\.resolvedSpeechText), ["Hello there", "Hi"])
+        XCTAssertEqual(result.map(\.speaker), ["ALICE", "BOB"])
+    }
+
+    func testRoleOnlyCueCarriesSpeakerIntoFollowingSpeech() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "[narrator]", startMs: 0, durationMs: 100),
+            YouTubeTranscriptCue(text: "Welcome.", startMs: 100, durationMs: 500),
+        ])
+
+        XCTAssertEqual(result.map(\.text), ["[narrator]", "Welcome."])
+        XCTAssertEqual(result.map(\.resolvedSpeechText), ["", "Welcome."])
+        XCTAssertEqual(result.map(\.speaker), [nil, "narrator"])
+    }
+
+    func testSceneEventClearsActiveSpeaker() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: ">> ALICE: Hello", startMs: 0),
+            YouTubeTranscriptCue(text: "[Music]", startMs: 100),
+            YouTubeTranscriptCue(text: "A new scene", startMs: 200),
+        ])
+
+        XCTAssertEqual(result.map(\.resolvedSpeechText), ["Hello", "", "A new scene"])
+        XCTAssertEqual(result.map(\.speaker), ["ALICE", nil, nil])
+    }
+
+    func testEventPlacementResetsInheritedSpeakerBeforeOrAfterAdjacentSpeech() {
+        let leading = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: ">> ALICE: Hello", startMs: 0, durationMs: 500),
+            YouTubeTranscriptCue(text: "[Music] A new scene", startMs: 1_000, durationMs: 500),
+        ])
+        XCTAssertEqual(leading.map(\.resolvedSpeechText), ["Hello", "A new scene"])
+        XCTAssertEqual(leading.map(\.speaker), ["ALICE", nil])
+
+        let trailing = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: ">> ALICE: Goodbye [Music]", startMs: 0, durationMs: 500),
+            YouTubeTranscriptCue(text: "A new scene", startMs: 1_000, durationMs: 500),
+        ])
+        XCTAssertEqual(trailing.map(\.resolvedSpeechText), ["Goodbye", "A new scene"])
+        XCTAssertEqual(trailing.map(\.speaker), ["ALICE", nil])
+
+        let newExplicitTurn = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: ">> ALICE: Hello", startMs: 0, durationMs: 500),
+            YouTubeTranscriptCue(text: "[Music] BOB: Welcome", startMs: 1_000, durationMs: 500),
+        ])
+        XCTAssertEqual(newExplicitTurn.map(\.resolvedSpeechText), ["Hello", "Welcome"])
+        XCTAssertEqual(newExplicitTurn.map(\.speaker), ["ALICE", "BOB"])
+    }
+
+    func testOneOffLabelsURLsAndClockTextAreNotGuessedAsSpeakers() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "Alice: this appears once", startMs: 0),
+            YouTubeTranscriptCue(text: "Note: keep this heading", startMs: 2_000),
+            YouTubeTranscriptCue(text: "https://example.com/watch", startMs: 4_000),
+            YouTubeTranscriptCue(text: "Meet at 10:30 tomorrow", startMs: 6_000),
+        ])
+
+        XCTAssertEqual(result.map(\.resolvedSpeechText), [
+            "Alice: this appears once",
+            "Note: keep this heading",
+            "https://example.com/watch",
+            "Meet at 10:30 tomorrow",
+        ])
+        XCTAssertTrue(result.allSatisfy { $0.speaker == nil })
+    }
+
+    func testHeadingsLanguagesAndAcronymsAreNotGuessedAsSpeakers() throws {
+        for source in [
+            "CHAPTER 1: Introduction",
+            "C++: Basics",
+            "API: request failed",
+        ] {
+            let paragraph = try XCTUnwrap(
+                YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                    YouTubeTranscriptCue(text: source, startMs: 0),
+                ]).first,
+                source
+            )
+            XCTAssertEqual(paragraph.resolvedSpeechText, source)
+            XCTAssertNil(paragraph.speaker, source)
+        }
+    }
+
+    func testBreaksAtExactTwelveHundredMillisecondGap() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "first", startMs: 0),
+            YouTubeTranscriptCue(text: "second", startMs: 1_199),
+            YouTubeTranscriptCue(text: "third", startMs: 2_399),
+        ])
+
+        XCTAssertEqual(result.map(\.resolvedSpeechText), ["first second", "third"])
+        XCTAssertEqual(result.map(\.startMs), [0, 2_399])
+    }
+
+    func testSentenceTerminalCreatesNaturalBoundaryWithoutTimeGap() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "A complete sentence.", startMs: 0, durationMs: 1_000),
+            YouTubeTranscriptCue(text: "Next thought", startMs: 1_000),
+        ])
+
         XCTAssertEqual(
-            YouTubeTranscriptGrouper.cuesIntoParagraphs(cues).map(\.text),
-            ["one two"]
+            result.map(\.resolvedSpeechText),
+            ["A complete sentence.", "Next thought"]
+        )
+    }
+
+    func testStructuredSpeakerChangeCreatesBoundary() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "hello", startMs: 0, speaker: "Alice"),
+            YouTubeTranscriptCue(text: "again", startMs: 300, speaker: "Alice"),
+            YouTubeTranscriptCue(text: "response", startMs: 600, speaker: "Bob"),
+        ])
+
+        XCTAssertEqual(result.map(\.resolvedSpeechText), ["hello again", "response"])
+        XCTAssertEqual(result.map(\.speaker), ["Alice", "Bob"])
+    }
+
+    func testRollingCaptionOverlapIsRemovedOnlyFromSpeech() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "today we are learning how to code",
+                startMs: 0,
+                durationMs: 2_000
+            ),
+            YouTubeTranscriptCue(
+                text: "learning how to code with Swift",
+                startMs: 1_500,
+                durationMs: 2_000
+            ),
+        ])
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(
+            result[0].text,
+            "today we are learning how to code learning how to code with Swift"
+        )
+        XCTAssertEqual(
+            result[0].resolvedSpeechText,
+            "today we are learning how to code with Swift"
+        )
+    }
+
+    func testThreeRollingCaptionUpdatesDoNotReintroducePriorWords() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "today we are learning how to code",
+                startMs: 0,
+                durationMs: 2_000
+            ),
+            YouTubeTranscriptCue(
+                text: "learning how to code with Swift",
+                startMs: 1_500,
+                durationMs: 2_000
+            ),
+            YouTubeTranscriptCue(
+                text: "how to code with Swift safely",
+                startMs: 2_500,
+                durationMs: 2_000
+            ),
+        ])
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(
+            result[0].resolvedSpeechText,
+            "today we are learning how to code with Swift safely"
+        )
+    }
+
+    func testExactRollingDuplicateAdvancesTimeWindowBeforeFollowingUpdate() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "today we are learning how to code",
+                startMs: 0,
+                durationMs: 1_000
+            ),
+            YouTubeTranscriptCue(
+                text: "today we are learning how to code",
+                startMs: 1_000,
+                durationMs: 1_000
+            ),
+            YouTubeTranscriptCue(
+                text: "learning how to code with Swift",
+                startMs: 2_000,
+                durationMs: 1_000
+            ),
+        ])
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(
+            result[0].resolvedSpeechText,
+            "today we are learning how to code with Swift"
+        )
+    }
+
+    func testOverlappingDuplicateMultiSentenceCuesAreNarratedOnlyOnce() {
+        let source = "Alpha sentence. Beta sentence."
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: source, startMs: 0, durationMs: 2_000),
+            YouTubeTranscriptCue(text: source, startMs: 500, durationMs: 2_000),
+        ])
+
+        XCTAssertEqual(
+            result.map(\.resolvedSpeechText),
+            ["Alpha sentence.", "Beta sentence."]
+        )
+        XCTAssertEqual(
+            result.map(\.resolvedSpeechText).joined(separator: " "),
+            source
+        )
+    }
+
+    func testSuppressedDuplicateThenMusicStillBreaksBeforeNextScene() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "Welcome to the show",
+                startMs: 0,
+                durationMs: 2_000
+            ),
+            YouTubeTranscriptCue(
+                text: "Welcome to the show",
+                startMs: 1_500,
+                durationMs: 2_000
+            ),
+            YouTubeTranscriptCue(text: "[Music]", startMs: 3_000, durationMs: 500),
+            YouTubeTranscriptCue(text: "A new scene begins", startMs: 3_500),
+        ])
+
+        XCTAssertEqual(result.map(\.id), [0, 1, 2])
+        XCTAssertEqual(
+            result.map(\.resolvedSpeechText),
+            ["Welcome to the show", "", "A new scene begins"]
+        )
+        XCTAssertEqual(result[1].text, "[Music]")
+    }
+
+    func testShortRepeatedWordsAreNotMistakenForRollingOverlap() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "no no no", startMs: 0, durationMs: 1_000),
+            YouTubeTranscriptCue(text: "no no no", startMs: 500, durationMs: 1_000),
+        ])
+
+        XCTAssertEqual(result.map(\.resolvedSpeechText), ["no no no no no no"])
+    }
+
+    func testMultipleSpeakerTurnsInsideOneCueBecomeSeparateParagraphs() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: ">> ALICE: Hi. >> BOB: Hello.",
+                startMs: 0,
+                durationMs: 2_000
+            ),
+        ])
+
+        XCTAssertEqual(result.map(\.speaker), ["ALICE", "BOB"])
+        XCTAssertEqual(result.map(\.resolvedSpeechText), ["Hi.", "Hello."])
+    }
+
+    func testTechnicalBitShiftOperatorsAreNotTreatedAsSpeakerTurns() throws {
+        let source = "Use x >> 1 and y >> 2"
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: source, startMs: 0),
+        ])
+        let paragraph = try XCTUnwrap(result.first)
+
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(paragraph.text, source)
+        XCTAssertEqual(paragraph.resolvedSpeechText, source)
+        XCTAssertNil(paragraph.speaker)
+    }
+
+    func testNamelessTurnMarkerDoesNotTurnIntroductoryProseIntoSpeaker() throws {
+        for source in [
+            ">> To summarize: we need two things",
+            ">> Visit https://example.com",
+        ] {
+            let paragraph = try XCTUnwrap(
+                YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                    YouTubeTranscriptCue(text: source, startMs: 0),
+                ]).first
+            )
+            XCTAssertEqual(
+                paragraph.resolvedSpeechText,
+                String(source.dropFirst(2)).trimmingCharacters(in: .whitespaces),
+                source
+            )
+            XCTAssertNil(paragraph.speaker, source)
+        }
+    }
+
+    func testNamelessThenNamedTurnsInsideOneCueDoNotLeakMarkerOrRole() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: ">> Hello. >> BOB: Hi.",
+                startMs: 0,
+                durationMs: 2_000
+            ),
+        ])
+
+        XCTAssertEqual(result.map(\.resolvedSpeechText), ["Hello.", "Hi."])
+        XCTAssertEqual(result.map(\.speaker), [nil, "BOB"])
+    }
+
+    func testTitleCaseNamesOnExplicitTurnsAreRecognizedOnce() throws {
+        let paragraph = try XCTUnwrap(
+            YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                YouTubeTranscriptCue(text: ">> Alice: Hello", startMs: 0),
+            ]).first
+        )
+
+        XCTAssertEqual(paragraph.resolvedSpeechText, "Hello")
+        XCTAssertEqual(paragraph.speaker, "Alice")
+    }
+
+    func testRollingDuplicateProsePrefixDoesNotBecomeSpeakerEvidence() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "To summarize: we need two things",
+                startMs: 0,
+                durationMs: 0
+            ),
+            YouTubeTranscriptCue(
+                text: "To summarize: we need two things today",
+                startMs: 500,
+                durationMs: 0
+            ),
+            YouTubeTranscriptCue(
+                text: "To summarize: we need two things today together",
+                startMs: 1_100,
+                durationMs: 0
+            ),
+        ])
+
+        XCTAssertEqual(
+            result.map(\.resolvedSpeechText).joined(separator: " "),
+            "To summarize: we need two things today together"
+        )
+        XCTAssertTrue(result.allSatisfy { $0.speaker == nil })
+    }
+
+    func testRollingSpeakerEvidenceUsesSameOverlapGraceAsSpeechDedupe() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "To summarize: we need two things",
+                startMs: 0,
+                durationMs: 1_000
+            ),
+            YouTubeTranscriptCue(
+                text: "To summarize: we need two things today",
+                startMs: 1_100,
+                durationMs: 1_000
+            ),
+        ])
+
+        XCTAssertEqual(
+            result.map(\.resolvedSpeechText).joined(separator: " "),
+            "To summarize: we need two things today"
+        )
+        XCTAssertTrue(result.allSatisfy { $0.speaker == nil })
+    }
+
+    func testRepeatedSpeakerAfterLeadingSemanticLabelIsRecognized() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "[Music] Alice: Hello", startMs: 0),
+            YouTubeTranscriptCue(text: "(whispering) Alice: Quiet", startMs: 2_000),
+        ])
+
+        XCTAssertEqual(result.map(\.resolvedSpeechText), ["Hello", "Quiet"])
+        XCTAssertEqual(result.map(\.speaker), ["Alice", "Alice"])
+    }
+
+    func testFullNamesAndInitialAliasesShareIdentityWithoutEnteringTTS() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "David Biello: No, no, no. Stay there for a second.",
+                startMs: 1_028_204,
+                durationMs: 2_750
+            ),
+            YouTubeTranscriptCue(
+                text: "Matt Walker: You're welcome. DB: Yes, thank you, thank you.",
+                startMs: 1_034_829,
+                durationMs: 3_084
+            ),
+            YouTubeTranscriptCue(
+                text: "MW: So you're right, we can't catch up on sleep.",
+                startMs: 1_050_163,
+                durationMs: 2_333
+            ),
+            YouTubeTranscriptCue(
+                text: "DB: Because we're smart.",
+                startMs: 1_072_579,
+                durationMs: 1_125
+            ),
+            YouTubeTranscriptCue(
+                text: "MW: And I make one more point.",
+                startMs: 1_073_746,
+                durationMs: 1_500
+            ),
+        ])
+
+        XCTAssertEqual(result.map(\.resolvedSpeechText), [
+            "No, no, no.",
+            "Stay there for a second.",
+            "You're welcome.",
+            "Yes, thank you, thank you.",
+            "So you're right, we can't catch up on sleep.",
+            "Because we're smart.",
+            "And I make one more point.",
+        ])
+        XCTAssertEqual(result.map(\.speaker), [
+            "David Biello", "David Biello", "Matt Walker", "DB", "MW", "DB", "MW",
+        ])
+        let visible = result.map(\.text).joined(separator: " ")
+        let spoken = result.map(\.resolvedSpeechText).joined(separator: " ")
+        for label in ["David Biello:", "Matt Walker:", "DB:", "MW:"] {
+            XCTAssertTrue(visible.contains(label), label)
+            XCTAssertFalse(spoken.contains(label), label)
+        }
+    }
+
+    func testOpeningProductionCreditsAreVisibleButSilentAndDoNotLeakSpeaker() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "Transcriber: Tijana Mihajlović Reviewer: Denise RQ",
+                startMs: 0,
+                durationMs: 7_000
+            ),
+            YouTubeTranscriptCue(text: "Hi.", startMs: 3_292, durationMs: 800),
+            YouTubeTranscriptCue(
+                text: "Reviewer: This approach is wrong.",
+                startMs: 20_000,
+                durationMs: 1_000
+            ),
+        ])
+
+        XCTAssertEqual(result.map(\.text), [
+            "Transcriber: Tijana Mihajlović Reviewer: Denise RQ",
+            "Hi.",
+            "Reviewer: This approach is wrong.",
+        ])
+        XCTAssertEqual(
+            result.map(\.resolvedSpeechText),
+            ["", "Hi.", "Reviewer: This approach is wrong."]
+        )
+        XCTAssertTrue(result.allSatisfy { $0.speaker == nil })
+    }
+
+    func testSingleOpeningBylineIsSilentOnlyForCompleteNameLikeRecord() throws {
+        let metadata = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "Transcriber: Rhonda Jacobs",
+                startMs: 0,
+                durationMs: 1_000
+            ),
+        ])
+        XCTAssertEqual(metadata.map(\.resolvedSpeechText), [""])
+
+        let prose = try XCTUnwrap(
+            YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                YouTubeTranscriptCue(
+                    text: "Reviewer: This approach is wrong.",
+                    startMs: 0,
+                    durationMs: 1_000
+                ),
+            ]).first
+        )
+        XCTAssertEqual(prose.resolvedSpeechText, "Reviewer: This approach is wrong.")
+        XCTAssertNil(prose.speaker)
+
+        for source in [
+            "Translator: Press Continue",
+            "Transcriber: This Is A Test",
+            "翻译：把这句话翻译成英文",
+        ] {
+            let paragraph = try XCTUnwrap(
+                YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                    YouTubeTranscriptCue(text: source, startMs: 0, durationMs: 1_000),
+                ]).first,
+                source
+            )
+            XCTAssertEqual(paragraph.resolvedSpeechText, source, source)
+            XCTAssertNil(paragraph.speaker, source)
+        }
+    }
+
+    func testRepeatedNonPersonHeadingsAndTechnicalInitialsRemainSpeech() {
+        let headings = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "User: signs in", startMs: 0, durationMs: 500),
+            YouTubeTranscriptCue(text: "User: redirects", startMs: 2_000, durationMs: 500),
+            YouTubeTranscriptCue(text: "Status: pending", startMs: 4_000, durationMs: 500),
+            YouTubeTranscriptCue(text: "Status: complete", startMs: 6_000, durationMs: 500),
+        ])
+        XCTAssertEqual(headings.map(\.resolvedSpeechText), [
+            "User: signs in", "User: redirects", "Status: pending", "Status: complete",
+        ])
+        XCTAssertTrue(headings.allSatisfy { $0.speaker == nil })
+
+        let technical = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "Machine Learning: overview", startMs: 0, durationMs: 500),
+            YouTubeTranscriptCue(text: "ML: training", startMs: 2_000, durationMs: 500),
+            YouTubeTranscriptCue(text: "ML: inference", startMs: 4_000, durationMs: 500),
+        ])
+        XCTAssertEqual(technical.map(\.resolvedSpeechText), [
+            "Machine Learning: overview", "ML: training", "ML: inference",
+        ])
+        XCTAssertTrue(technical.allSatisfy { $0.speaker == nil })
+
+        let transformedTechnical = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "Quantum Computing: overview", startMs: 0, durationMs: 500),
+            YouTubeTranscriptCue(text: "QC: training", startMs: 2_000, durationMs: 500),
+            YouTubeTranscriptCue(text: "QC: inference", startMs: 4_000, durationMs: 500),
+        ])
+        XCTAssertEqual(transformedTechnical.map(\.resolvedSpeechText), [
+            "Quantum Computing: overview", "QC: training", "QC: inference",
+        ])
+        XCTAssertTrue(transformedTechnical.allSatisfy { $0.speaker == nil })
+    }
+
+    func testRollingWindowsDoNotCastTwoSpeakerVotes() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "Alice: today we are learning how to code",
+                startMs: 0,
+                durationMs: 2_000
+            ),
+            YouTubeTranscriptCue(
+                text: "Alice: today we are learning how to code with Swift",
+                startMs: 1_500,
+                durationMs: 2_000
+            ),
+        ])
+        XCTAssertEqual(
+            result.map(\.resolvedSpeechText).joined(separator: " "),
+            "Alice: today we are learning how to code with Swift"
+        )
+        XCTAssertTrue(result.allSatisfy { $0.speaker == nil })
+    }
+
+    func testOpenEventGrammarSilencesDescriptionsButPreservesUnknownLabels() throws {
+        for source in [
+            "[birds chirping]", "[door creaking]", "[phone ringing]", "[baby crying]",
+            "[engine revving]", "[audience applauding]", "[speaking foreign language]",
+        ] {
+            let paragraph = try XCTUnwrap(
+                YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                    YouTubeTranscriptCue(text: source, startMs: 0),
+                ]).first,
+                source
+            )
+            XCTAssertEqual(paragraph.resolvedSpeechText, "", source)
+        }
+        let unknown = "[Project Update]"
+        XCTAssertEqual(
+            YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                YouTubeTranscriptCue(text: unknown, startMs: 0),
+            ]).first?.resolvedSpeechText,
+            unknown
+        )
+    }
+
+    func testShiftOperatorsWithColonOperandsNeverCreateSpeakerTurns() {
+        let source = "Use x >> A: first. Use y >> B: second."
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: source, startMs: 0, durationMs: 1_000),
+        ])
+        XCTAssertEqual(result.map(\.resolvedSpeechText).joined(separator: " "), source)
+        XCTAssertTrue(result.allSatisfy { $0.speaker == nil })
+    }
+
+    func testStructuredSpeakerConflictFailsOpenInsteadOfMisattributingText() throws {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "Bob: first", startMs: 0, speaker: "Bob"),
+            YouTubeTranscriptCue(text: "Bob: again", startMs: 2_000, speaker: "Bob"),
+            YouTubeTranscriptCue(text: "Bob: hello", startMs: 4_000, speaker: "Alice"),
+        ])
+        let last = try XCTUnwrap(result.last)
+        XCTAssertEqual(last.resolvedSpeechText, "Bob: hello")
+        XCTAssertEqual(last.speaker, "Alice")
+    }
+
+    func testDurationCapSplitsOneWordAndUnevenSentenceCues() {
+        let singleWord = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "helloworld", startMs: 0, durationMs: 30_000),
+        ])
+        XCTAssertEqual(singleWord.count, 2)
+        XCTAssertEqual(singleWord.map(\.resolvedSpeechText).joined(), "helloworld")
+
+        let uneven = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "Hi. " + Array(repeating: "word", count: 40).joined(separator: " "),
+                startMs: 0,
+                durationMs: 30_000
+            ),
+        ])
+        XCTAssertGreaterThanOrEqual(uneven.count, 2)
+        XCTAssertEqual(uneven.first?.startMs, 0)
+        XCTAssertTrue(zip(uneven, uneven.dropFirst()).allSatisfy { $0.startMs <= $1.startMs })
+    }
+
+    func testAmbiguousInitialsDoNotMergeWeakFullNameCandidates() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "Mary Clark: First statement.", startMs: 0),
+            YouTubeTranscriptCue(text: "Michael Chen: Second statement.", startMs: 2_000),
+            YouTubeTranscriptCue(text: "MC: Third statement.", startMs: 4_000),
+            YouTubeTranscriptCue(text: "MC: Fourth statement.", startMs: 6_000),
+        ])
+
+        XCTAssertEqual(result.map(\.resolvedSpeechText), [
+            "Mary Clark: First statement.",
+            "Michael Chen: Second statement.",
+            "MC: Third statement.",
+            "MC: Fourth statement.",
+        ])
+        XCTAssertEqual(result.map(\.speaker), [nil, nil, nil, nil])
+    }
+
+    func testSpeakerInferenceDependsOnStructureNotSpecificNames() {
+        func projection(_ first: String, _ second: String) -> [(String, Bool)] {
+            let firstAlias = first.split(separator: " ")
+                .compactMap(\.first)
+                .map(String.init)
+                .joined()
+                .uppercased()
+            let secondAlias = second.split(separator: " ")
+                .compactMap(\.first)
+                .map(String.init)
+                .joined()
+                .uppercased()
+            return YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                YouTubeTranscriptCue(text: "\(first): Welcome.", startMs: 0, durationMs: 1_000),
+                YouTubeTranscriptCue(
+                    text: "\(second): Thanks. \(firstAlias): Agreed.",
+                    startMs: 2_000,
+                    durationMs: 2_000
+                ),
+                YouTubeTranscriptCue(text: "\(secondAlias): Continue.", startMs: 5_000, durationMs: 1_000),
+                YouTubeTranscriptCue(text: "\(firstAlias): Done.", startMs: 7_000, durationMs: 1_000),
+                YouTubeTranscriptCue(text: "\(secondAlias): Goodbye.", startMs: 9_000, durationMs: 1_000),
+            ]).enumerated().map { index, paragraph in
+                let speech = index < 2
+                    ? paragraph.resolvedSpeechText.components(separatedBy: ": ").dropFirst()
+                        .joined(separator: ": ")
+                    : paragraph.resolvedSpeechText
+                return (speech, paragraph.speaker != nil)
+            }
+        }
+
+        let baseline = projection("David Biello", "Matt Walker")
+        let renamed = projection("Nora Patel", "Luis Garcia")
+        XCTAssertEqual(baseline.map(\.0), renamed.map(\.0))
+        XCTAssertEqual(baseline.map(\.1), renamed.map(\.1))
+    }
+
+    func testRealCueEndGapsDriveSoftAndHardUtteranceBoundaries() {
+        let oneMillisecond = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "But about a month ago, I was up early, panicking about this,",
+                startMs: 14_966,
+                durationMs: 5_283
+            ),
+            YouTubeTranscriptCue(
+                text: "and I watched an old TED Talk that Brené Brown did on vulnerability.",
+                startMs: 20_250,
+                durationMs: 5_751
+            ),
+        ])
+        XCTAssertEqual(oneMillisecond.count, 1)
+        XCTAssertEqual(oneMillisecond.first?.startMs, 14_966)
+
+        let soft = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "She is a shame researcher,",
+                startMs: 30_266,
+                durationMs: 2_830
+            ),
+            YouTubeTranscriptCue(
+                text: "and I am a recovering bulimic, alcoholic, and drug user.",
+                startMs: 33_781,
+                durationMs: 5_450
+            ),
+        ])
+        XCTAssertEqual(soft.map(\.startMs), [30_266, 33_781])
+
+        let hard = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "But what I learned during that time",
+                startMs: 759_547,
+                durationMs: 3_509
+            ),
+            YouTubeTranscriptCue(
+                text: "is that sitting with the pain and the joy of being a human being",
+                startMs: 763_057,
+                durationMs: 4_810
+            ),
+            YouTubeTranscriptCue(
+                text: "while refusing to run for any exits",
+                startMs: 769_148,
+                durationMs: 3_020
+            ),
+            YouTubeTranscriptCue(
+                text: "is the only way to become a real human being.",
+                startMs: 772_758,
+                durationMs: 3_630
+            ),
+        ])
+        XCTAssertEqual(hard.map(\.startMs), [759_547, 769_148])
+    }
+
+    func testSingleOversizedExtendedGraphemeCannotBypassUTF16Cap() {
+        for source in [
+            "a" + String(repeating: "\u{0301}", count: 300),
+            "a" + String(repeating: "\u{1D165}", count: 150),
+        ] {
+            let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                YouTubeTranscriptCue(text: source, startMs: 0),
+            ])
+
+            XCTAssertGreaterThan(result.count, 1)
+            XCTAssertTrue(result.allSatisfy {
+                ($0.resolvedSpeechText as NSString).length <= 240
+            })
+            XCTAssertEqual(result.map(\.resolvedSpeechText).joined(), source)
+        }
+    }
+
+    func testOversizedTextKeepsOrdinaryExtendedGraphemesIntact() {
+        let first = "a" + String(repeating: "\u{0301}", count: 150)
+        let second = "b" + String(repeating: "\u{0301}", count: 150)
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: first + second, startMs: 0),
+        ])
+
+        XCTAssertEqual(result.map(\.resolvedSpeechText), [first, second])
+        XCTAssertTrue(result.allSatisfy {
+            ($0.resolvedSpeechText as NSString).length <= 240
+        })
+    }
+
+    func testLargeInlineLabelUsesOverflowSafeDisplayPartitioning() {
+        let source = String(repeating: "a", count: 25_000) +
+            " [laughter] " + String(repeating: "b", count: 25_000)
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: source, startMs: 0, durationMs: 30_000),
+        ])
+        let speech = result.map(\.resolvedSpeechText).joined()
+
+        XCTAssertGreaterThan(result.count, 100)
+        XCTAssertTrue(result.allSatisfy { ($0.resolvedSpeechText as NSString).length <= 240 })
+        XCTAssertTrue(result.allSatisfy { ($0.text as NSString).length <= 300 })
+        XCTAssertEqual(speech.filter { $0 == "a" }.count, 25_000)
+        XCTAssertEqual(speech.filter { $0 == "b" }.count, 25_000)
+        XCTAssertFalse(speech.localizedCaseInsensitiveContains("laughter"))
+    }
+
+    func testMultipleSentencesInsideOneCueUseNaturalBoundaries() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "First sentence. Second sentence! Third sentence?",
+                startMs: 0,
+                durationMs: 3_000
+            ),
+        ])
+
+        XCTAssertEqual(
+            result.map(\.resolvedSpeechText),
+            ["First sentence.", "Second sentence!", "Third sentence?"]
+        )
+    }
+
+    func testSingleOversizedCueIsSplitWithoutDroppingWords() {
+        let source = (1...60).map { "word\($0)" }.joined(separator: " ")
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: source, startMs: 0, durationMs: 12_000),
+        ])
+
+        XCTAssertGreaterThan(result.count, 1)
+        XCTAssertTrue(result.allSatisfy {
+            $0.resolvedSpeechText.split(whereSeparator: { $0.isWhitespace }).count <= 42
+        })
+        XCTAssertEqual(
+            result.map(\.resolvedSpeechText).joined(separator: " "),
+            source
+        )
+    }
+
+    func testOversizedCueWithInlineLaughterStillSplitsWithoutDroppingSpeechWords() {
+        let expectedWords = (1...60).map { "word\($0)" }
+        let source = expectedWords.prefix(30).joined(separator: " ")
+            + " [laughter] "
+            + expectedWords.suffix(30).joined(separator: " ")
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: source, startMs: 0, durationMs: 12_000),
+        ])
+        let spokenWords = result.flatMap { paragraph in
+            paragraph.resolvedSpeechText
+                .split(whereSeparator: { $0.isWhitespace })
+                .map {
+                    String($0).trimmingCharacters(in: .punctuationCharacters)
+                }
+                .filter { !$0.isEmpty }
+        }
+
+        XCTAssertGreaterThan(result.count, 1)
+        XCTAssertTrue(result.allSatisfy {
+            $0.resolvedSpeechText.split(whereSeparator: { $0.isWhitespace }).count <= 42
+        })
+        XCTAssertEqual(spokenWords, expectedWords)
+        XCTAssertFalse(
+            result.map(\.resolvedSpeechText).joined(separator: " ")
+                .localizedCaseInsensitiveContains("laughter")
         )
     }
 
@@ -145,29 +1041,6 @@ final class YouTubeTranscriptGroupingTests: XCTestCase {
         XCTAssertEqual(result.first?.startMs, Int.max - 10)
     }
 
-    func testLengthCheckOccursBeforeAppendingNextCue() {
-        let exactly150 = String(repeating: "a", count: 150)
-        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
-            YouTubeTranscriptCue(text: exactly150, startMs: 0),
-            YouTubeTranscriptCue(text: "b", startMs: 100),
-            YouTubeTranscriptCue(text: "c", startMs: 200),
-        ])
-
-        XCTAssertEqual(result.count, 2)
-        XCTAssertEqual(result[0].text, "\(exactly150) b")
-        XCTAssertEqual(result[1].text, "c")
-        XCTAssertEqual(result[1].startMs, 200)
-    }
-
-    func testUsesJavaScriptCompatibleUTF16Length() {
-        let emoji = String(repeating: "😀", count: 76) // 152 UTF-16 code units
-        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
-            YouTubeTranscriptCue(text: emoji, startMs: 0),
-            YouTubeTranscriptCue(text: "next", startMs: 100),
-        ])
-        XCTAssertEqual(result.map(\.text), [emoji, "next"])
-    }
-
     func testNormalizesNewlinesDropsEmptyCuesAndKeepsStableEqualTimeOrder() {
         let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
             YouTubeTranscriptCue(text: "  ", startMs: 0),
@@ -175,8 +1048,341 @@ final class YouTubeTranscriptGroupingTests: XCTestCase {
             YouTubeTranscriptCue(text: "gamma", startMs: 100),
         ])
         XCTAssertEqual(result, [
-            YouTubeTranscriptParagraph(id: 0, text: "alpha beta gamma", startMs: 100),
+            YouTubeTranscriptParagraph(
+                id: 0,
+                text: "alpha beta gamma",
+                speechText: "alpha beta gamma",
+                startMs: 100
+            ),
         ])
+    }
+
+    /// Conservative cleaning is an information-safety property: bracket
+    /// syntax alone is never enough to suppress content. These labels are
+    /// deliberately varied by delimiter, language and proximity to the event
+    /// grammar so a future taxonomy expansion cannot silently turn unknown
+    /// text into an empty TTS payload.
+    func testUnknownSemanticLabelsFailOpenAcrossDelimiterAndLanguageTransforms() throws {
+        let unknownLabels = [
+            "[Project Update]",
+            "(Quarterly Results)",
+            "【项目更新】",
+            "［設計レビュー］",
+            "[birds reviewing]",
+            "(door architecture)",
+        ]
+
+        for (index, source) in unknownLabels.enumerated() {
+            let paragraph = try XCTUnwrap(
+                YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                    YouTubeTranscriptCue(
+                        text: source,
+                        startMs: index * 2_000,
+                        durationMs: 500
+                    ),
+                ]).first,
+                source
+            )
+            XCTAssertEqual(paragraph.text, source, source)
+            XCTAssertEqual(paragraph.resolvedSpeechText, source, source)
+            XCTAssertNil(paragraph.speaker, source)
+        }
+    }
+
+    /// Role state, delivery annotations and scene events are different
+    /// semantic classes. A delivery label preserves the active role, while a
+    /// scene event clears it on the side of the speech where the event occurs.
+    func testRoleAndEventStateMachineIsStableAcrossLeadingAndTrailingLabels() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "[narrator]", startMs: 0, durationMs: 100),
+            YouTubeTranscriptCue(
+                text: "(whispering) first statement",
+                startMs: 100,
+                durationMs: 500
+            ),
+            YouTubeTranscriptCue(text: "second statement", startMs: 600, durationMs: 500),
+            YouTubeTranscriptCue(
+                text: "[birds chirping] third statement",
+                startMs: 1_100,
+                durationMs: 500
+            ),
+            YouTubeTranscriptCue(text: "fourth statement", startMs: 1_600, durationMs: 500),
+            YouTubeTranscriptCue(text: "[host]", startMs: 2_100, durationMs: 100),
+            YouTubeTranscriptCue(
+                text: "fifth statement [door closing]",
+                startMs: 2_200,
+                durationMs: 500
+            ),
+            YouTubeTranscriptCue(text: "sixth statement", startMs: 2_700, durationMs: 500),
+        ])
+
+        XCTAssertEqual(result.map(\.resolvedSpeechText), [
+            "", "first statement second statement", "third statement fourth statement",
+            "", "fifth statement", "sixth statement",
+        ])
+        XCTAssertEqual(result.map(\.speaker), [
+            nil, "narrator", nil, nil, "host", nil,
+        ])
+    }
+
+    /// Boundary and scene-reset evidence must come from the same typed span.
+    /// A leading delivery label cannot lend its position to an unrelated
+    /// inline event and accidentally clear the inherited speaker.
+    func testDialogueResetDoesNotCombineEvidenceAcrossDifferentSpans() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(text: "[narrator]", startMs: 0, durationMs: 100),
+            YouTubeTranscriptCue(
+                text: "(whispering) alpha [laughter] beta",
+                startMs: 100,
+                durationMs: 1_000
+            ),
+        ])
+
+        let spoken = result.filter { !$0.resolvedSpeechText.isEmpty }
+        XCTAssertEqual(
+            spoken.map { $0.resolvedSpeechText.replacingOccurrences(of: " ", with: "") },
+            ["alpha.", "beta"]
+        )
+        XCTAssertTrue(spoken.allSatisfy { $0.speaker == "narrator" })
+    }
+
+    /// Suppression is permitted only after classification. This directly
+    /// verifies the auditable intermediate representation, including category,
+    /// placement, evidence strength and the UTF-16 source range used to remove
+    /// a span from TTS text.
+    func testSemanticLabelSpansRequireTypedEvidenceBeforeSuppression() throws {
+        let source = "[music] alpha [laughter and applause] beta (whispering) gamma [Project Update]"
+        let spans = YouTubeCaptionSemanticAnalyzer.semanticLabelSpans(in: source)
+
+        XCTAssertEqual(spans.map(\.rawText), [
+            "[music]", "[laughter and applause]", "(whispering)", "[Project Update]",
+        ])
+        XCTAssertEqual(spans.map(\.category), [
+            .music, .audienceReaction, .delivery, .unknown,
+        ])
+        XCTAssertEqual(spans.map(\.position), [
+            .leading, .inline, .inline, .trailing,
+        ])
+        XCTAssertEqual(spans.map(\.disposition), [
+            .suppress, .suppress, .suppress, .preserve,
+        ])
+        XCTAssertEqual(spans.map(\.evidence), [
+            .exactTaxonomy, .composedEventGrammar, .exactTaxonomy, .unknown,
+        ])
+        XCTAssertEqual(spans.map(\.confidence), [
+            .high, .medium, .high, .unknown,
+        ])
+        XCTAssertEqual(spans.map(\.decisionReason), [
+            .classifiedAccessibilityMetadata,
+            .classifiedAccessibilityMetadata,
+            .classifiedAccessibilityMetadata,
+            .unknownFailOpen,
+        ])
+
+        let sourceNSString = source as NSString
+        for span in spans {
+            XCTAssertEqual(sourceNSString.substring(with: span.inputRange), span.rawText)
+            if span.disposition != .preserve {
+                XCTAssertNotEqual(span.category, .unknown)
+                XCTAssertNotEqual(span.evidence, .unknown)
+                XCTAssertNotEqual(span.confidence, .unknown)
+            }
+        }
+    }
+
+    /// Parentheses are prose-ambiguous. Exact delivery/unavailable markers may
+    /// be removed inline; sound words and open-grammar guesses remain verbatim.
+    func testInlineRoundLabelDispositionDependsOnCategoryAndConfidence() {
+        let source = "A (music) B (birds chirping) C (whispering) D (inaudible) E"
+        let spans = YouTubeCaptionSemanticAnalyzer.semanticLabelSpans(in: source)
+
+        XCTAssertEqual(spans.map(\.category), [
+            .music, .ambientSound, .delivery, .unavailable,
+        ])
+        XCTAssertEqual(spans.map(\.confidence), [.high, .medium, .high, .high])
+        XCTAssertEqual(spans.map(\.disposition), [
+            .preserve, .preserve, .suppress, .suppress,
+        ])
+    }
+
+    func testInlineMetadataPauseDoesNotDuplicateExistingTerminalPunctuation() throws {
+        let paragraph = try XCTUnwrap(
+            YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                YouTubeTranscriptCue(
+                    text: "alpha. (whispering) beta",
+                    startMs: 0,
+                    durationMs: 1_000
+                ),
+            ]).first
+        )
+        XCTAssertEqual(paragraph.resolvedSpeechText, "alpha.")
+        let fullSpeech = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: "alpha. (whispering) beta",
+                startMs: 0,
+                durationMs: 1_000
+            ),
+        ]).map(\.resolvedSpeechText).joined(separator: " ")
+        XCTAssertEqual(fullSpeech, "alpha. beta")
+    }
+
+    /// Speaker names are data, not segmentation rules. Replacing every name
+    /// and its initials with equally shaped alternatives must leave utterance
+    /// text, timing projection and paragraph boundaries unchanged.
+    func testSpeakerRenamingDoesNotChangeUtteranceSegmentationOrTiming() {
+        func projection(
+            first: String,
+            firstAlias: String,
+            second: String,
+            secondAlias: String
+        ) -> [YouTubeTranscriptParagraph] {
+            YouTubeTranscriptGrouper.cuesIntoParagraphs([
+                YouTubeTranscriptCue(
+                    text: ">> \(first): Alpha sentence. >> \(second): Beta sentence.",
+                    startMs: 10_000,
+                    durationMs: 4_000
+                ),
+                YouTubeTranscriptCue(
+                    text: ">> \(firstAlias): Gamma sentence. >> \(secondAlias): Delta sentence.",
+                    startMs: 15_000,
+                    durationMs: 4_000
+                ),
+            ])
+        }
+
+        let baseline = projection(
+            first: "Alice Stone",
+            firstAlias: "AS",
+            second: "Bruno Mills",
+            secondAlias: "BM"
+        )
+        let renamed = projection(
+            first: "Clara Jones",
+            firstAlias: "CJ",
+            second: "Derek Young",
+            secondAlias: "DY"
+        )
+
+        XCTAssertEqual(
+            baseline.map(\.resolvedSpeechText),
+            ["Alpha sentence.", "Beta sentence.", "Gamma sentence.", "Delta sentence."]
+        )
+        XCTAssertEqual(renamed.map(\.resolvedSpeechText), baseline.map(\.resolvedSpeechText))
+        XCTAssertEqual(renamed.map(\.startMs), baseline.map(\.startMs))
+        XCTAssertEqual(renamed.map { $0.speaker != nil }, baseline.map { $0.speaker != nil })
+    }
+
+    /// Acronym aliasing is allowed only after person-like evidence. Repeating
+    /// the structural pattern with unrelated technical concepts must preserve
+    /// both the expansion and acronym as ordinary speech.
+    func testTechnicalAcronymFamiliesRemainSpeechUnderLexicalTransformation() {
+        let families: [(longForm: String, acronym: String)] = [
+            ("Vector Database", "VD"),
+            ("Transport Layer Security", "TLS"),
+            ("Domain Driven Design", "DDD"),
+        ]
+
+        for family in families {
+            let source = [
+                "\(family.longForm): overview",
+                "\(family.acronym): configuration",
+                "\(family.acronym): diagnostics",
+            ]
+            let result = YouTubeTranscriptGrouper.cuesIntoParagraphs(
+                source.enumerated().map { index, text in
+                    YouTubeTranscriptCue(
+                        text: text,
+                        startMs: index * 2_000,
+                        durationMs: 500
+                    )
+                }
+            )
+
+            XCTAssertEqual(result.map(\.resolvedSpeechText), source, family.longForm)
+            XCTAssertTrue(result.allSatisfy { $0.speaker == nil }, family.longForm)
+        }
+    }
+
+    /// Every derived timestamp is an anchor into the source media. Splitting
+    /// turns and sentences may project a later start, but it must remain
+    /// monotonic and inside the originating cue's bounded time interval.
+    func testProjectedUtteranceStartsAreMonotonicAndInsideSourceCueWindows() {
+        let firstWindow = 10_000...19_000
+        let secondWindow = 30_000...36_000
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: ">> ALICE: alpha sentence. >> BOB: beta sentence. >> ALICE: gamma sentence.",
+                startMs: firstWindow.lowerBound,
+                durationMs: firstWindow.upperBound - firstWindow.lowerBound
+            ),
+            YouTubeTranscriptCue(
+                text: "First unit. Second unit!",
+                startMs: secondWindow.lowerBound,
+                durationMs: secondWindow.upperBound - secondWindow.lowerBound
+            ),
+        ])
+
+        XCTAssertEqual(result.map(\.resolvedSpeechText), [
+            "alpha sentence.", "beta sentence.", "gamma sentence.",
+            "First unit.", "Second unit!",
+        ])
+        XCTAssertTrue(zip(result, result.dropFirst()).allSatisfy { $0.startMs <= $1.startMs })
+        for paragraph in result {
+            let sourceWindow = paragraph.resolvedSpeechText.first?.isLowercase == true
+                ? firstWindow
+                : secondWindow
+            XCTAssertTrue(
+                sourceWindow.contains(paragraph.startMs),
+                "\(paragraph.resolvedSpeechText) @ \(paragraph.startMs)"
+            )
+        }
+    }
+
+    /// Known removable spans may disappear, but every ordinary body token
+    /// must survive exactly once and in source order after segmentation.
+    func testSpeechProjectionPreservesAllBodyTokensWhileSuppressingTypedSpans() {
+        let result = YouTubeTranscriptGrouper.cuesIntoParagraphs([
+            YouTubeTranscriptCue(
+                text: ">> ALICE: alphaone alphatwo [laughter] alphathree. " +
+                    ">> BOB: betaone (whispering) betatwo.",
+                startMs: 5_000,
+                durationMs: 5_000
+            ),
+        ])
+        let spoken = result.map(\.resolvedSpeechText).joined(separator: " ")
+        let bodyTokens = spoken
+            .split(whereSeparator: \.isWhitespace)
+            .map { String($0).trimmingCharacters(in: .punctuationCharacters).lowercased() }
+            .filter { !$0.isEmpty }
+
+        XCTAssertEqual(bodyTokens, [
+            "alphaone", "alphatwo", "alphathree", "betaone", "betatwo",
+        ])
+        XCTAssertFalse(spoken.localizedCaseInsensitiveContains("laughter"))
+        XCTAssertFalse(spoken.localizedCaseInsensitiveContains("whispering"))
+        XCTAssertFalse(spoken.localizedCaseInsensitiveContains("alice"))
+        XCTAssertFalse(spoken.localizedCaseInsensitiveContains("bob"))
+    }
+
+    func testMatchesVersionedCrossPlatformGoldenUtterances() throws {
+        let repositoryRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let fixtureURL = repositoryRoot
+            .appendingPathComponent("docs/contracts/youtube-caption-semantics-v3.json")
+        let contract = try JSONDecoder().decode(
+            YouTubeCaptionSemanticGoldenContract.self,
+            from: Data(contentsOf: fixtureURL)
+        )
+
+        XCTAssertEqual(contract.schemaVersion, YouTubeCaptionSemanticSchema.current)
+        for fixture in contract.cases {
+            XCTAssertEqual(
+                YouTubeTranscriptGrouper.cuesIntoParagraphs(fixture.cues),
+                fixture.expectedParagraphs,
+                fixture.id
+            )
+        }
     }
 }
 
@@ -482,6 +1688,58 @@ final class YouTubeTranscriptModelTests: XCTestCase {
             legacy.artworkSchemaVersion,
             "old cache entries must trigger an artwork-only metadata refresh"
         )
+    }
+
+    func testLegacyCodableWithoutSemanticFieldsUsesSafeDefaultsAndRederivesParagraphs() throws {
+        let decoder = JSONDecoder()
+        let legacyCue = try decoder.decode(
+            YouTubeTranscriptCue.self,
+            from: Data(#"{"text":"legacy cue","startMs":10,"durationMs":20}"#.utf8)
+        )
+        XCTAssertNil(legacyCue.speaker)
+
+        let legacyParagraph = try decoder.decode(
+            YouTubeTranscriptParagraph.self,
+            from: Data(#"{"id":7,"text":"legacy paragraph","startMs":10}"#.utf8)
+        )
+        XCTAssertNil(legacyParagraph.speechText)
+        XCTAssertNil(legacyParagraph.speaker)
+        XCTAssertEqual(legacyParagraph.resolvedSpeechText, "legacy paragraph")
+
+        let legacyDocument = Data(#"""
+        {
+          "metadata": {
+            "videoId": "dQw4w9WgXcQ",
+            "title": "Legacy",
+            "sourceURL": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+          },
+          "track": {
+            "baseUrl": "https://captions.example/legacy",
+            "languageCode": "en"
+          },
+          "cues": [
+            {"text": "[Music]", "startMs": 0, "durationMs": 500},
+            {"text": ">> ALICE: Hello.", "startMs": 2000, "durationMs": 500}
+          ],
+          "paragraphs": [
+            {"id": 99, "text": "stale cached paragraph", "startMs": 0}
+          ],
+          "extractedAt": 0
+        }
+        """#.utf8)
+        let decoded = try decoder.decode(
+            YouTubeTranscriptDocument.self,
+            from: legacyDocument
+        )
+
+        XCTAssertNil(
+            decoded.captionSemanticSchemaVersion,
+            "pre-P0 cues stay usable offline but must be refreshed online for structured speakers"
+        )
+        XCTAssertEqual(decoded.paragraphs.map(\.id), [0, 1])
+        XCTAssertEqual(decoded.paragraphs.map(\.text), ["[Music]", ">> ALICE: Hello."])
+        XCTAssertEqual(decoded.paragraphs.map(\.resolvedSpeechText), ["", "Hello."])
+        XCTAssertEqual(decoded.paragraphs.last?.speaker, "ALICE")
     }
 
     func testFailureReasonsAreStableForAnalyticsAndUIRouting() {

@@ -91,6 +91,11 @@ enum ReadingParagraphType: Equatable {
 struct ReadingParagraph: Identifiable, Equatable {
     let id: Int                 // 连续 0-based 段落索引
     let text: String            // 重排纯文本（TTS 输入 + 文本命中）
+    /// Optional source-specific narration text. YouTube keeps accessibility
+    /// annotations in `text` for display while sending only `speechText` to
+    /// TTS. `nil` preserves the existing contract for every other source.
+    var speechText: String? = nil
+    var speaker: String? = nil
     var type: ReadingParagraphType = .paragraph
     var words: [OCRWord] = []   // 仅 photo，按阅读顺序
     var bboxNorm: CGRect? = nil // 仅 photo，段落包络（用于滚动/居中）
@@ -101,13 +106,16 @@ struct ReadingParagraph: Identifiable, Equatable {
     var imageData: Data? = nil   // 仅 epub：内嵌图片字节（PNG/JPEG），type==.image 时直接渲染
     var startMs: Int? = nil      // 仅 youtube：字幕段在原视频中的跳转锚（不用于 TTS 同步）
 
-    init(id: Int, text: String, type: ReadingParagraphType = .paragraph,
+    init(id: Int, text: String, speechText: String? = nil, speaker: String? = nil,
+         type: ReadingParagraphType = .paragraph,
          words: [OCRWord] = [], bboxNorm: CGRect? = nil,
          visualFragments: [OCRVisualFragment] = [],
          pdfPageIndex: Int? = nil, pdfRange: NSRange? = nil, pageIndex: Int? = nil,
          imageData: Data? = nil, startMs: Int? = nil) {
         self.id = id
         self.text = text
+        self.speechText = speechText
+        self.speaker = speaker
         self.type = type
         self.words = words
         self.bboxNorm = bboxNorm
@@ -118,6 +126,8 @@ struct ReadingParagraph: Identifiable, Equatable {
         self.imageData = imageData
         self.startMs = startMs
     }
+
+    var resolvedSpeechText: String { speechText ?? text }
 }
 
 // MARK: - Document
@@ -204,7 +214,10 @@ struct ReadingDocument: Identifiable, Equatable {
 
     /// 参与朗读的段落（剔除代码块与空段）
     var readableParagraphs: [ReadingParagraph] {
-        paragraphs.filter { $0.type.isReadable && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        paragraphs.filter {
+            $0.type.isReadable &&
+                !$0.resolvedSpeechText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
     }
 
     var isEmpty: Bool {

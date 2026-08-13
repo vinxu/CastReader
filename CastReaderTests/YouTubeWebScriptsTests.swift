@@ -13,6 +13,254 @@ import XCTest
 @testable import CastReader
 
 final class YouTubeWebScriptsTests: XCTestCase {
+    func testWebVTTParserPreservesAndSplitsFullyAttributedVoiceTurns() throws {
+        let source = YouTubeWebScripts.extractionAdapter(
+            expectedVideoID: "fixture-video-id"
+        )
+        let start = try XCTUnwrap(source.range(of: "function parseClock"))
+        let end = try XCTUnwrap(
+            source.range(
+                of: "function parseTimedtextXML",
+                range: start.upperBound..<source.endIndex
+            )
+        )
+        let parserSource = String(source[start.lowerBound..<end.lowerBound])
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript(YouTubeWebScripts.captionCuePayloadFunction)
+        context.evaluateScript(
+            #"""
+            function cleanText(value) {
+              return String(value || '').replace(/\s+/g, ' ').trim();
+            }
+            function decodeEntities(value) { return String(value || ''); }
+            """#
+        )
+        context.evaluateScript(parserSource)
+        let parser = try XCTUnwrap(context.objectForKeyedSubscript("parseWebVTT"))
+        let fixture = #"""
+        WEBVTT
+
+        00:00:00.000 --> 00:00:01.000
+        <v Alice>Hello</v>
+
+        00:00:01.000 --> 00:00:02.000
+        <v Bob>Hi</v>
+
+        00:00:02.000 --> 00:00:03.000
+        <v Alice>Hello</v> <v Bob>there</v>
+        """#
+
+        let cues = try XCTUnwrap(
+            parser.call(withArguments: [fixture])?.toArray() as? [[String: Any]]
+        )
+        XCTAssertEqual(cues.count, 4)
+        XCTAssertEqual(cues[0]["text"] as? String, "Hello")
+        XCTAssertEqual(cues[0]["speaker"] as? String, "Alice")
+        XCTAssertEqual(cues[0]["startMs"] as? Int, 0)
+        XCTAssertEqual(cues[0]["durationMs"] as? Int, 1_000)
+        XCTAssertEqual(cues[1]["text"] as? String, "Hi")
+        XCTAssertEqual(cues[1]["speaker"] as? String, "Bob")
+        XCTAssertEqual(cues[2]["text"] as? String, "Hello")
+        XCTAssertEqual(cues[2]["speaker"] as? String, "Alice")
+        XCTAssertEqual(cues[2]["startMs"] as? Int, 2_000)
+        XCTAssertEqual(cues[2]["durationMs"] as? Int, 500)
+        XCTAssertEqual(cues[3]["text"] as? String, "there")
+        XCTAssertEqual(cues[3]["speaker"] as? String, "Bob")
+        XCTAssertEqual(cues[3]["startMs"] as? Int, 2_500)
+        XCTAssertEqual(cues[3]["durationMs"] as? Int, 500)
+    }
+
+    func testWebVTTMultiVoiceTimeProjectionUsesTextWeightAndConservesDuration() throws {
+        let context = try makeCaptionCueJavaScriptContext()
+        let parser = try installWebVTTParser(in: context)
+        let fixture = #"""
+        WEBVTT
+
+        00:00:10.000 --> 00:00:11.000
+        <v Alice>Hi</v><v Bob>abcdefgh</v>
+        """#
+
+        let cues = try XCTUnwrap(
+            parser.call(withArguments: [fixture])?.toArray() as? [[String: Any]]
+        )
+        XCTAssertEqual(cues.count, 2)
+        XCTAssertEqual(cues.map { $0["text"] as? String }, ["Hi", "abcdefgh"])
+        XCTAssertEqual(cues.map { $0["speaker"] as? String }, ["Alice", "Bob"])
+        XCTAssertEqual(cues.map { $0["startMs"] as? Int }, [10_000, 10_200])
+        XCTAssertEqual(cues.map { $0["durationMs"] as? Int }, [200, 800])
+        XCTAssertEqual(cues.compactMap { $0["durationMs"] as? Int }.reduce(0, +), 1_000)
+    }
+
+    func testWebVTTAmbiguousPartialAttributionFailsOpenWithoutDroppingText() throws {
+        let context = try makeCaptionCueJavaScriptContext()
+        let parser = try installWebVTTParser(in: context)
+        let fixture = #"""
+        WEBVTT
+
+        00:00:00.000 --> 00:00:01.000
+        Introduction <v Alice>Hello</v>
+
+        00:00:01.000 --> 00:00:02.000
+        <v Alice>Hello</v> unattributed tail
+        """#
+
+        let cues = try XCTUnwrap(
+            parser.call(withArguments: [fixture])?.toArray() as? [[String: Any]]
+        )
+        XCTAssertEqual(cues.count, 2)
+        XCTAssertEqual(cues[0]["text"] as? String, "Introduction Hello")
+        XCTAssertTrue(cues[0]["speaker"] is NSNull)
+        XCTAssertEqual(cues[1]["text"] as? String, "Hello unattributed tail")
+        XCTAssertTrue(cues[1]["speaker"] is NSNull)
+    }
+
+    func testAdjacentSameVoiceNodesMergeWithoutInventingCJKSpaces() throws {
+        let context = try makeCaptionCueJavaScriptContext()
+        let payload = try XCTUnwrap(
+            context.objectForKeyedSubscript("castReaderCaptionCuePayload")
+        )
+        let result = try XCTUnwrap(payload.call(withArguments: [
+            "<v 小明>你</v><v 小明>好</v><v 小红>呀</v>",
+            NSNull(),
+        ]))
+        let turns = try XCTUnwrap(result.forProperty("turns")?.toArray() as? [[String: Any]])
+
+        XCTAssertEqual(result.forProperty("text")?.toString(), "你好呀")
+        XCTAssertEqual(turns.count, 2)
+        XCTAssertEqual(turns[0]["text"] as? String, "你好")
+        XCTAssertEqual(turns[0]["speaker"] as? String, "小明")
+        XCTAssertEqual(turns[1]["text"] as? String, "呀")
+        XCTAssertEqual(turns[1]["speaker"] as? String, "小红")
+    }
+
+    func testRawWebVTTEntitiesAreDecodedExactlyOnce() throws {
+        let context = try makeCaptionCueJavaScriptContext()
+        let parser = try installWebVTTParser(in: context)
+        let fixture = #"""
+        WEBVTT
+
+        00:00:00.000 --> 00:00:01.000
+        <v Alice>Fish &amp;amp; Chips</v>
+        """#
+
+        let cues = try XCTUnwrap(
+            parser.call(withArguments: [fixture])?.toArray() as? [[String: Any]]
+        )
+        XCTAssertEqual(cues.count, 1)
+        XCTAssertEqual(cues[0]["text"] as? String, "Fish &amp; Chips")
+        XCTAssertEqual(cues[0]["speaker"] as? String, "Alice")
+    }
+
+    func testFragmentTextContentIsNotDecodedASecondTime() throws {
+        let context = try makeCaptionCueJavaScriptContext()
+        context.evaluateScript(
+            #"""
+            var __captionFragment = {
+              textContent: 'Fish &amp; Chips',
+              querySelectorAll: function (selector) {
+                if (selector !== 'span[title]') return [];
+                return [{
+                  textContent: 'Fish &amp; Chips',
+                  getAttribute: function (name) {
+                    return name === 'title' ? 'Alice' : null;
+                  }
+                }];
+              }
+            };
+            """#
+        )
+        XCTAssertNil(context.exception)
+        let payload = try XCTUnwrap(
+            context.objectForKeyedSubscript("castReaderCaptionCuePayload")
+        )
+        let fragment = try XCTUnwrap(
+            context.objectForKeyedSubscript("__captionFragment")
+        )
+        let result = payload.call(withArguments: [
+            "<v Alice>Fish &amp;amp; Chips</v>",
+            fragment,
+        ])
+
+        XCTAssertEqual(result?.forProperty("text")?.toString(), "Fish &amp; Chips")
+        XCTAssertEqual(result?.forProperty("speaker")?.toString(), "Alice")
+    }
+
+    func testEmptyFragmentTextFallsBackToRawCueText() throws {
+        let context = try makeCaptionCueJavaScriptContext()
+        context.evaluateScript(
+            #"""
+            var __emptyCaptionFragment = {
+              textContent: '',
+              querySelectorAll: function () { return []; }
+            };
+            """#
+        )
+        XCTAssertNil(context.exception)
+        let payload = try XCTUnwrap(
+            context.objectForKeyedSubscript("castReaderCaptionCuePayload")
+        )
+        let fragment = try XCTUnwrap(
+            context.objectForKeyedSubscript("__emptyCaptionFragment")
+        )
+        let result = payload.call(withArguments: [
+            "<v Alice>Fallback &amp; caption</v>",
+            fragment,
+        ])
+
+        XCTAssertEqual(result?.forProperty("text")?.toString(), "Fallback & caption")
+        XCTAssertTrue(result?.forProperty("speaker")?.isNull == true)
+    }
+
+    func testEntityEquivalentVoiceNamesCollapseToOneSpeaker() throws {
+        let context = try makeCaptionCueJavaScriptContext()
+        let payload = try XCTUnwrap(
+            context.objectForKeyedSubscript("castReaderCaptionCuePayload")
+        )
+        let result = payload.call(withArguments: [
+            "<v Tom &amp; Jerry>Hello</v> <v Tom &#38; Jerry>again</v>",
+            NSNull(),
+        ])
+
+        XCTAssertEqual(result?.forProperty("text")?.toString(), "Hello again")
+        XCTAssertEqual(result?.forProperty("speaker")?.toString(), "Tom & Jerry")
+    }
+
+    func testJavaScriptCueDedupeKeyCannotCollideOnPipeCharacters() throws {
+        let source = YouTubeWebScripts.extractionAdapter(
+            expectedVideoID: "fixture-video-id"
+        )
+        let start = try XCTUnwrap(source.range(of: "function dedupeCues"))
+        let end = try XCTUnwrap(
+            source.range(
+                of: "function playabilityReason",
+                range: start.upperBound..<source.endIndex
+            )
+        )
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript(
+            #"""
+            function cleanText(value) {
+              return String(value || '').replace(/\s+/g, ' ').trim();
+            }
+            """#
+        )
+        context.evaluateScript(String(source[start.lowerBound..<end.lowerBound]))
+        XCTAssertNil(context.exception)
+        let dedupe = try XCTUnwrap(context.objectForKeyedSubscript("dedupeCues"))
+        let cues = try XCTUnwrap(
+            dedupe.call(withArguments: [[
+                ["text": "C", "speaker": "A|B", "startMs": 0, "durationMs": 500],
+                ["text": "B|C", "speaker": "A", "startMs": 0, "durationMs": 500],
+            ]])?.toArray() as? [[String: Any]]
+        )
+
+        XCTAssertEqual(cues.count, 2)
+        XCTAssertEqual(cues[0]["speaker"] as? String, "A|B")
+        XCTAssertEqual(cues[0]["text"] as? String, "C")
+        XCTAssertEqual(cues[1]["speaker"] as? String, "A")
+        XCTAssertEqual(cues[1]["text"] as? String, "B|C")
+    }
+
     func testSubtitleProofIsAcceptedOnlyForTheExpectedVideo() throws {
         let context = try XCTUnwrap(JSContext())
         context.evaluateScript(YouTubeWebScripts.subtitleProofTokenFunction)
@@ -1905,6 +2153,59 @@ final class YouTubeWebScriptsTests: XCTestCase {
         return try XCTUnwrap(String(data: data, encoding: .utf8))
     }
 
+    private func makeCaptionCueJavaScriptContext() throws -> JSContext {
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript(
+            #"""
+            function cleanText(value) {
+              return String(value || '').replace(/\s+/g, ' ').trim();
+            }
+            function decodeEntities(value) {
+              return String(value || '').replace(
+                /&(amp|lt|gt|quot|#39|#38|#x26);/gi,
+                function (match, entity) {
+                  switch (String(entity).toLowerCase()) {
+                    case 'amp': return '&';
+                    case 'lt': return '<';
+                    case 'gt': return '>';
+                    case 'quot': return '"';
+                    case '#39': return "'";
+                    case '#38':
+                    case '#x26': return '&';
+                    default: return match;
+                  }
+                }
+              );
+            }
+            """#
+        )
+        context.evaluateScript(YouTubeWebScripts.captionCuePayloadFunction)
+        _ = try XCTUnwrap(
+            context.exception == nil ? true : nil,
+            context.exception?.toString() ?? "caption cue fixture failed to parse"
+        )
+        return context
+    }
+
+    private func installWebVTTParser(in context: JSContext) throws -> JSValue {
+        let source = YouTubeWebScripts.extractionAdapter(
+            expectedVideoID: "fixture-video-id"
+        )
+        let start = try XCTUnwrap(source.range(of: "function parseClock"))
+        let end = try XCTUnwrap(
+            source.range(
+                of: "function parseTimedtextXML",
+                range: start.upperBound..<source.endIndex
+            )
+        )
+        context.evaluateScript(String(source[start.lowerBound..<end.lowerBound]))
+        _ = try XCTUnwrap(
+            context.exception == nil ? true : nil,
+            context.exception?.toString() ?? "WebVTT parser fixture failed to parse"
+        )
+        return try XCTUnwrap(context.objectForKeyedSubscript("parseWebVTT"))
+    }
+
     private func makeURLCapableJavaScriptContext() throws -> JSContext {
         let context = try XCTUnwrap(JSContext())
         context.evaluateScript(
@@ -1948,7 +2249,7 @@ final class YouTubeWebScriptsTests: XCTestCase {
             }
             """#
         )
-        try XCTUnwrap(
+        _ = try XCTUnwrap(
             context.exception == nil ? true : nil,
             context.exception?.toString() ?? "URL fixture failed to parse"
         )

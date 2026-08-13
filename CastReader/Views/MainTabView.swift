@@ -807,34 +807,58 @@ struct MainTabView: View {
                 preferredLanguage: preferredYouTubeCaptionLanguage
             )
         }
-        if let immediate,
-           (try? YouTubeTranscriptContentLanguagePolicy.validatedPlaybackLanguage(
-               for: immediate.document
-           )) != nil,
-           YouTubeReadingDocumentBuilder.firstPlayableParagraph(
-               in: immediate.document
-           ) != nil {
-            let key = immediate.key
-            let transcript = immediate.document
+        let usableImmediate: YouTubeCachedTranscriptResolution? = immediate.flatMap {
+            candidate -> YouTubeCachedTranscriptResolution? in
+            guard (try? YouTubeTranscriptContentLanguagePolicy.validatedPlaybackLanguage(
+                for: candidate.document
+            )) != nil,
+            YouTubeReadingDocumentBuilder.firstPlayableParagraph(
+                in: candidate.document
+            ) != nil else { return nil }
+            return candidate
+        }
+        if let usableImmediate,
+           usableImmediate.document.captionSemanticSchemaVersion ==
+               YouTubeCaptionSemanticSchema.current ||
+               !NetworkReachability.shared.isOnline {
             return YouTubeTranscriptResolution(
-                transcript: transcript,
-                cacheKey: key,
+                transcript: usableImmediate.document,
+                cacheKey: usableImmediate.key,
                 cacheHit: true
             )
         }
 
         let transcript: YouTubeTranscriptDocument
+        let refreshPreference = usableImmediate?.document.track.languageCode
+            ?? preferredYouTubeCaptionLanguage
+        let refreshTrack: YouTubeTrackRequest? = usableImmediate.flatMap { cached in
+            guard cached.document.captionSemanticSchemaVersion !=
+                    YouTubeCaptionSemanticSchema.current else { return nil }
+            return YouTubeTrackRequest(refreshing: cached.document)
+        }
         do {
             transcript = try await YouTubeTranscriptService.shared.extract(
                 request.reference,
-                preferredLanguage: preferredYouTubeCaptionLanguage,
+                preferredLanguage: refreshPreference,
+                requestedTrack: refreshTrack,
                 timeout: YouTubeTranscriptService.defaultExtractionTimeout
             )
         } catch let failure as YouTubeTranscriptFailure
             where failure == .network || failure == .timeout
                 || failure == .captionAccess
                 || failure == .playerBootstrapFailed
-                || failure == .youtubeAccessLimited {
+                || failure == .youtubeAccessLimited
+                || (failure == .trackUnavailable && usableImmediate != nil) {
+            // A pre-P0 cache cannot reconstruct WebVTT speaker tags, so an
+            // online open first tries to refresh it. Keep that exact language
+            // and track as the first fallback when YouTube is unreachable.
+            if let usableImmediate {
+                return YouTubeTranscriptResolution(
+                    transcript: usableImmediate.document,
+                    cacheKey: usableImmediate.key,
+                    cacheHit: true
+                )
+            }
             if let cachedResolution = await cache?.mostRecentTranscript(
                 videoId: request.reference.videoId
             ),

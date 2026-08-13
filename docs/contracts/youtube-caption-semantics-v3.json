@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 3,
+  "cases": [
+    {
+      "id": "environment_delivery",
+      "cues": [
+        {"text": "[Music]", "startMs": 0, "durationMs": 500},
+        {"text": "(whispering) Keep quiet", "startMs": 2000, "durationMs": 500},
+        {"text": "【掌声】", "startMs": 4000, "durationMs": 500}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "[Music]", "speechText": "", "startMs": 0},
+        {"id": 1, "text": "(whispering) Keep quiet", "speechText": "Keep quiet", "startMs": 2000},
+        {"id": 2, "text": "【掌声】", "speechText": "", "startMs": 4000}
+      ]
+    },
+    {
+      "id": "event_before_speaker",
+      "cues": [
+        {"text": "[Music] ALICE: Hello", "startMs": 0, "durationMs": 1000}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "[Music] ALICE: Hello", "speechText": "Hello", "startMs": 0, "speaker": "ALICE"}
+      ]
+    },
+    {
+      "id": "structured_speaker_change",
+      "cues": [
+        {"text": "hello", "startMs": 0, "durationMs": 0, "speaker": "Alice"},
+        {"text": "again", "startMs": 300, "durationMs": 0, "speaker": "Alice"},
+        {"text": "response", "startMs": 600, "durationMs": 0, "speaker": "Bob"}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "hello again", "speechText": "hello again", "startMs": 0, "speaker": "Alice"},
+        {"id": 1, "text": "response", "speechText": "response", "startMs": 600, "speaker": "Bob"}
+      ]
+    },
+    {
+      "id": "role_only_carry",
+      "cues": [
+        {"text": "[narrator]", "startMs": 0, "durationMs": 100},
+        {"text": "Welcome.", "startMs": 100, "durationMs": 500}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "[narrator]", "speechText": "", "startMs": 0},
+        {"id": 1, "text": "Welcome.", "speechText": "Welcome.", "startMs": 100, "speaker": "narrator"}
+      ]
+    },
+    {
+      "id": "rolling_overlap",
+      "cues": [
+        {"text": "today we are learning how to code", "startMs": 0, "durationMs": 2000},
+        {"text": "learning how to code with Swift", "startMs": 1500, "durationMs": 2000}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "today we are learning how to code learning how to code with Swift", "speechText": "today we are learning how to code with Swift", "startMs": 0}
+      ]
+    },
+    {
+      "id": "multiple_turns",
+      "cues": [
+        {"text": ">> ALICE: Hi. >> BOB: Hello.", "startMs": 0, "durationMs": 2000}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": ">> ALICE: Hi.", "speechText": "Hi.", "startMs": 0, "speaker": "ALICE"},
+        {"id": 1, "text": ">> BOB: Hello.", "speechText": "Hello.", "startMs": 1000, "speaker": "BOB"}
+      ]
+    },
+    {
+      "id": "natural_sentences",
+      "cues": [
+        {"text": "First sentence. Second sentence! Third sentence?", "startMs": 0, "durationMs": 3000}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "First sentence.", "speechText": "First sentence.", "startMs": 0},
+        {"id": 1, "text": "Second sentence!", "speechText": "Second sentence!", "startMs": 937},
+        {"id": 2, "text": "Third sentence?", "speechText": "Third sentence?", "startMs": 1937}
+      ]
+    },
+    {
+      "id": "exact_hard_gap",
+      "cues": [
+        {"text": "first", "startMs": 0, "durationMs": 0},
+        {"text": "second", "startMs": 1199, "durationMs": 0},
+        {"text": "third", "startMs": 2399, "durationMs": 0}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "first second", "speechText": "first second", "startMs": 0},
+        {"id": 1, "text": "third", "speechText": "third", "startMs": 2399}
+      ]
+    },
+    {
+      "id": "conservative_inline",
+      "cues": [
+        {"text": "I study (music) theory every day", "startMs": 0, "durationMs": 0},
+        {"text": "The word [man] appears in this example", "startMs": 2000, "durationMs": 0}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "I study (music) theory every day", "speechText": "I study (music) theory every day", "startMs": 0},
+        {"id": 1, "text": "The word [man] appears in this example", "speechText": "The word [man] appears in this example", "startMs": 2000}
+      ]
+    },
+    {
+      "id": "typed_inline_parenthetical",
+      "cues": [
+        {"text": "alpha. (whispering) beta", "startMs": 0, "durationMs": 1000},
+        {"text": "I study (music) theory", "startMs": 2000, "durationMs": 1000},
+        {"text": "A (birds chirping) model", "startMs": 4000, "durationMs": 1000}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "alpha.", "speechText": "alpha.", "startMs": 0},
+        {"id": 1, "text": "(whispering) beta I study (music) theory A (birds chirping) model", "speechText": "beta I study (music) theory A (birds chirping) model", "startMs": 545}
+      ]
+    },
+    {
+      "id": "stable_normalization",
+      "cues": [
+        {"text": "  ", "startMs": 0, "durationMs": 0},
+        {"text": "alpha\nbeta", "startMs": 100, "durationMs": 0},
+        {"text": "gamma", "startMs": 100, "durationMs": 0}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "alpha beta gamma", "speechText": "alpha beta gamma", "startMs": 100}
+      ]
+    },
+    {
+      "id": "unicode_whitespace",
+      "cues": [
+        {"text": "alpha\u00a0beta", "startMs": 0, "durationMs": 0},
+        {"text": "gamma\u202fdelta", "startMs": 0, "durationMs": 0}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "alpha beta gamma delta", "speechText": "alpha beta gamma delta", "startMs": 0}
+      ]
+    },
+    {
+      "id": "unicode_whitespace_turns",
+      "cues": [
+        {"text": ">> ALICE: Hi.\u00a0>> BOB: Yo.", "startMs": 0, "durationMs": 2000}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": ">> ALICE: Hi.", "speechText": "Hi.", "startMs": 0, "speaker": "ALICE"},
+        {"id": 1, "text": ">> BOB: Yo.", "speechText": "Yo.", "startMs": 1120, "speaker": "BOB"}
+      ]
+    },
+    {
+      "id": "cjk_combining_join",
+      "cues": [
+        {"text": "你\u0301", "startMs": 0, "durationMs": 0},
+        {"text": "好", "startMs": 0, "durationMs": 0}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "你\u0301好", "speechText": "你\u0301好", "startMs": 0}
+      ]
+    },
+    {
+      "id": "overflow_chunk_start_falls_back",
+      "cues": [
+        {"text": "First. Second.", "startMs": 9223372036854775797, "durationMs": 30000}
+      ],
+      "expectedParagraphs": [
+        {"id": 0, "text": "First.", "speechText": "First.", "startMs": 9223372036854775797},
+        {"id": 1, "text": "Second.", "speechText": "Second.", "startMs": 9223372036854775797}
+      ]
+    }
+  ]
+}

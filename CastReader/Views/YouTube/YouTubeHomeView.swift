@@ -195,7 +195,12 @@ private final class YouTubeHistoryStatusLoader: ObservableObject {
                 cacheHit: true
             )
             let paragraphIndexes = readingDocument.paragraphs
-                .filter { $0.type.isReadable }
+                .filter {
+                    $0.type.isReadable &&
+                        SpeechTextSanitizer.containsSpeakableContent(
+                            $0.resolvedSpeechText
+                        )
+                }
                 .map(\.id)
             let offlineCoverage = await cache.offlineCacheCoverage(
                 for: key,
@@ -203,7 +208,12 @@ private final class YouTubeHistoryStatusLoader: ObservableObject {
                 paragraphIndexes: paragraphIndexes
             )
             let readableParagraphs = readingDocument.paragraphs
-                .filter { $0.type.isReadable }
+                .filter {
+                    $0.type.isReadable &&
+                        SpeechTextSanitizer.containsSpeakableContent(
+                            $0.resolvedSpeechText
+                        )
+                }
             let paragraphCount = readableParagraphs.count
             let percent: Int?
             if let progress,

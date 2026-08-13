@@ -310,7 +310,41 @@ final class YouTubeCacheStoreTests: XCTestCase {
         XCTAssertEqual(chinese.playbackLanguage, "zh")
         XCTAssertEqual(englishUS.storageKey, englishGB.storageKey)
         XCTAssertNotEqual(englishUS.storageKey, chinese.storageKey)
-        XCTAssertEqual(YouTubeTTSAudioCacheSchema.current, 4)
+        XCTAssertEqual(YouTubeTTSAudioCacheSchema.current, 7)
+    }
+
+    func testTranscriptFingerprintPreservesLegacyIdentityUntilSpeakerEvidenceExists() {
+        let legacyCue = YouTubeTranscriptCue(
+            text: "hello",
+            startMs: 1_000,
+            durationMs: 2_000
+        )
+        let blankSpeakerCue = YouTubeTranscriptCue(
+            text: "hello",
+            startMs: 1_000,
+            durationMs: 2_000,
+            speaker: "   "
+        )
+        let voicedCue = YouTubeTranscriptCue(
+            text: "hello",
+            startMs: 1_000,
+            durationMs: 2_000,
+            speaker: "Alice"
+        )
+
+        let legacy = YouTubeCacheStore.transcriptFingerprint(for: [legacyCue])
+        XCTAssertEqual(
+            legacy,
+            "0f4f029fb0b2c28b0b7f4ecc59eaaa3fe6347ee050516eaab190874e2ef7128e"
+        )
+        XCTAssertEqual(
+            YouTubeCacheStore.transcriptFingerprint(for: [blankSpeakerCue]),
+            legacy
+        )
+        XCTAssertNotEqual(
+            YouTubeCacheStore.transcriptFingerprint(for: [voicedCue]),
+            legacy
+        )
     }
 
     func testProgressRoundTripAndAccessTimeTouch() async throws {
@@ -346,6 +380,49 @@ final class YouTubeCacheStoreTests: XCTestCase {
         XCTAssertEqual(restored?.fractionalProgress, 0.625)
         XCTAssertEqual(restored?.paragraphFractionalProgress, 0.8125)
         XCTAssertEqual(restored?.resolvedParagraphFractionalProgress, 0.8125)
+        XCTAssertEqual(
+            restored?.semanticSchemaVersion,
+            YouTubeCaptionSemanticSchema.current
+        )
+    }
+
+    func testLegacyProgressWithoutCaptionSemanticVersionIsIgnored() async throws {
+        let fixture = try makeFixture()
+        let store = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
+        let document = makeDocument(videoId: "aaaaaaaaaaa", text: "legacy progress")
+        let key = YouTubeCacheStore.cacheKey(for: document)
+        try await store.storeTranscript(document, for: key)
+        _ = try await store.saveProgress(
+            paragraphIndex: 0,
+            segmentId: "0-0",
+            segmentIndex: 0,
+            fractionalProgress: 0.25,
+            for: key
+        )
+
+        let manifestURL = fixture.cacheRoot.appendingPathComponent("manifest.json")
+        let manifestData = try Data(contentsOf: manifestURL)
+        var manifest = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: manifestData) as? [String: Any]
+        )
+        var entries = try XCTUnwrap(manifest["entries"] as? [String: Any])
+        var entry = try XCTUnwrap(entries[key.storageKey] as? [String: Any])
+        var progress = try XCTUnwrap(entry["progress"] as? [String: Any])
+        progress.removeValue(forKey: "semanticSchemaVersion")
+        entry["progress"] = progress
+        entries[key.storageKey] = entry
+        manifest["entries"] = entries
+        try JSONSerialization.data(withJSONObject: manifest).write(
+            to: manifestURL,
+            options: .atomic
+        )
+
+        let reopened = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
+        let restored = await reopened.peekProgress(for: key)
+        XCTAssertNil(
+            restored,
+            "old paragraph indexes must not be restored after semantic regrouping"
+        )
     }
 
     func testOfflineTranscriptSelectionPrefersBaseLanguageThenEnglish() async throws {
@@ -1479,6 +1556,52 @@ final class YouTubeCacheStoreTests: XCTestCase {
             "a transcript without its audio is instant to switch to, not offline-ready"
         )
         XCTAssertNil(availability["ja"], "languages never cached must not appear")
+    }
+
+    func testExplicitTrackLookupAndAvailabilityDoNotCrossManualAndASR() async throws {
+        let fixture = try makeFixture()
+        let store = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
+        let videoId = "aaaaaaaaaaa"
+        let manual = makeDocument(
+            videoId: videoId,
+            text: "manual captions",
+            trackLanguage: "en"
+        )
+        let manualKey = YouTubeCacheStore.cacheKey(for: manual)
+        try await store.storeTranscript(manual, for: manualKey)
+
+        let manualOption = YouTubeCaptionTrackOption(
+            id: manual.track.baseURL,
+            languageCode: "en",
+            kind: "manual"
+        )
+        let asrOption = YouTubeCaptionTrackOption(
+            id: "a.en",
+            languageCode: "en",
+            kind: "asr"
+        )
+
+        let manualHit = await store.mostRecentTranscript(
+            videoId: videoId,
+            matching: manualOption
+        )
+        let asrHit = await store.mostRecentTranscript(
+            videoId: videoId,
+            matching: asrOption
+        )
+        XCTAssertEqual(manualHit?.key, manualKey)
+        XCTAssertNil(asrHit)
+
+        let availability = await store.captionTrackAvailability(
+            videoId: videoId,
+            options: [manualOption, asrOption],
+            voiceCodeByLanguage: ["en": "af_heart"]
+        )
+        XCTAssertEqual(availability[manualOption.selectionKey]?.hasTranscript, true)
+        XCTAssertNil(
+            availability[asrOption.selectionKey],
+            "manual cache must not make the ASR row selectable while offline"
+        )
     }
 
     func testCaptionLanguageAvailabilityDoesNotDisturbEvictionOrder() async throws {

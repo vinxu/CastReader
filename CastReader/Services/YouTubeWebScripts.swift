@@ -600,6 +600,203 @@ enum YouTubeWebScripts {
     }
     """#
 
+    /// Preserves structured WebVTT voice turns. `VTTCue.getCueAsHTML()`
+    /// exposes `<v Name>` as `span[title]`; raw markup is parsed only by the
+    /// same narrow voice grammar. Attribution is accepted only when voice
+    /// spans cover every visible character, otherwise it fails open.
+    static let captionCuePayloadFunction = #"""
+    function castReaderVoiceCoverageText(value) {
+      return String(value || '').replace(/\s+/g, '');
+    }
+
+    function castReaderValidatedVoiceTurns(turns, fullText) {
+      if (!Array.isArray(turns) || turns.length === 0) return null;
+      var normalized = [];
+      for (var index = 0; index < turns.length; index += 1) {
+        var speaker = cleanText(turns[index] && turns[index].speaker || '');
+        var sourceText = String(turns[index] && turns[index].sourceText || '');
+        var text = cleanText(sourceText);
+        if (!speaker || !text) return null;
+        normalized.push({
+          text: text,
+          sourceText: sourceText,
+          speaker: speaker
+        });
+      }
+      if (castReaderVoiceCoverageText(normalized.map(function (turn) {
+            return turn.sourceText;
+          }).join('')) !== castReaderVoiceCoverageText(fullText)) return null;
+
+      // Adjacent nodes carrying the same voice are one semantic turn. Keep
+      // their source spacing while merging so CJK text gets no artificial gap.
+      var merged = [];
+      normalized.forEach(function (turn) {
+        var previous = merged[merged.length - 1];
+        if (previous && previous.speaker.toLowerCase() === turn.speaker.toLowerCase()) {
+          previous.sourceText += turn.sourceText;
+          previous.text = cleanText(previous.sourceText);
+        } else {
+          merged.push({
+            text: turn.text,
+            sourceText: turn.sourceText,
+            speaker: turn.speaker
+          });
+        }
+      });
+      return merged.map(function (turn) {
+        return { text: turn.text, speaker: turn.speaker };
+      });
+    }
+
+    function castReaderFragmentVoiceTurns(fragment) {
+      if (!fragment || typeof fragment.querySelectorAll !== 'function' ||
+          typeof fragment.textContent !== 'string') return null;
+      var nodes = [];
+      try { nodes = Array.from(fragment.querySelectorAll('span[title]')); } catch (error) {}
+      if (nodes.length === 0) return null;
+      var turns = nodes.map(function (node) {
+        return {
+          speaker: String(node && node.getAttribute('title') || ''),
+          sourceText: String(node && node.textContent || '')
+        };
+      });
+      return castReaderValidatedVoiceTurns(turns, fragment.textContent);
+    }
+
+    function castReaderRawVoiceTurns(source, decodeOnce) {
+      var voicePattern = /<v(?:\.[^\s>.]+)*[ \t]+([^>]+)>/gi;
+      var matches = [];
+      var match;
+      while ((match = voicePattern.exec(source)) !== null) {
+        matches.push({
+          start: match.index,
+          contentStart: voicePattern.lastIndex,
+          speaker: cleanText(decodeOnce(match[1]))
+        });
+      }
+      if (matches.length === 0) return null;
+
+      function visibleMarkupText(value) {
+        return decodeOnce(String(value || '').replace(/<[^>]+>/g, ''));
+      }
+
+      // Visible text outside a voice node makes attribution ambiguous. Keep
+      // one ordinary cue without a speaker instead of guessing or dropping it.
+      if (castReaderVoiceCoverageText(visibleMarkupText(source.slice(0, matches[0].start)))) {
+        return null;
+      }
+      var turns = [];
+      for (var index = 0; index < matches.length; index += 1) {
+        var current = matches[index];
+        var nextStart = index + 1 < matches.length ? matches[index + 1].start : source.length;
+        var closePattern = /<\/v\s*>/gi;
+        closePattern.lastIndex = current.contentStart;
+        var close = closePattern.exec(source);
+        var contentEnd = nextStart;
+        if (close && close.index < nextStart) {
+          contentEnd = close.index;
+          var unattributedTail = visibleMarkupText(source.slice(closePattern.lastIndex, nextStart));
+          if (castReaderVoiceCoverageText(unattributedTail)) return null;
+        }
+        turns.push({
+          speaker: current.speaker,
+          sourceText: visibleMarkupText(source.slice(current.contentStart, contentEnd))
+        });
+      }
+      return castReaderValidatedVoiceTurns(turns, visibleMarkupText(source));
+    }
+
+    function castReaderCaptionCuePayload(rawMarkup, fragment) {
+      var source = String(rawMarkup || '');
+      var usedFragment = false;
+      function decodeOnce(value) {
+        try {
+          if (typeof decodeEntities === 'function') {
+            return String(decodeEntities(String(value || '')) || '');
+          }
+        } catch (error) {}
+        return String(value || '');
+      }
+      var fragmentTurns = null;
+      try {
+        if (fragment && typeof fragment.querySelectorAll === 'function' &&
+            typeof fragment.textContent === 'string') {
+          usedFragment = true;
+          fragmentTurns = castReaderFragmentVoiceTurns(fragment);
+        }
+      } catch (error) {}
+      var rawTurns = castReaderRawVoiceTurns(source, decodeOnce);
+      var visibleText = '';
+      try {
+        visibleText = fragment && typeof fragment.textContent === 'string' ?
+          fragment.textContent : '';
+      } catch (error) {}
+      if (!usedFragment || !visibleText) {
+        visibleText = decodeOnce(source.replace(/<[^>]+>/g, ''));
+      }
+      // A real DOM fragment is authoritative. If its voice nodes do not fully
+      // cover visible text, raw markup must not override that ambiguity.
+      var turns = usedFragment ? fragmentTurns : rawTurns;
+      if (turns && castReaderVoiceCoverageText(turns.map(function (turn) {
+            return turn.text;
+          }).join('')) !== castReaderVoiceCoverageText(visibleText)) turns = null;
+      var uniqueVoices = [];
+      (turns || []).forEach(function (turn) {
+        if (!uniqueVoices.some(function (seen) {
+          return seen.toLowerCase() === turn.speaker.toLowerCase();
+        })) uniqueVoices.push(turn.speaker);
+      });
+      return {
+        text: String(visibleText || ''),
+        speaker: uniqueVoices.length === 1 ? uniqueVoices[0] : null,
+        turns: turns && turns.length > 1 ? turns : null
+      };
+    }
+
+    /** Split a structured multi-voice cue without inventing word timestamps. */
+    function castReaderExpandCaptionCue(payload, rawStartMs, rawDurationMs) {
+      var text = cleanText(payload && payload.text || '');
+      var startMs = Math.max(0, Math.round(Number(rawStartMs || 0)));
+      var durationMs = Math.max(0, Math.round(Number(rawDurationMs || 0)));
+      if (!text) return [];
+      var turns = Array.isArray(payload && payload.turns) ? payload.turns.map(function (turn) {
+        return {
+          text: cleanText(turn && turn.text || ''),
+          speaker: cleanText(turn && turn.speaker || '')
+        };
+      }) : [];
+      var complete = turns.length > 1 && turns.every(function (turn) {
+        return turn.text && turn.speaker;
+      }) && castReaderVoiceCoverageText(turns.map(function (turn) {
+        return turn.text;
+      }).join('')) === castReaderVoiceCoverageText(text);
+      if (!complete) {
+        return [{
+          text: text,
+          speaker: cleanText(payload && payload.speaker || '') || null,
+          startMs: startMs,
+          durationMs: durationMs
+        }];
+      }
+
+      var weights = turns.map(function (turn) { return Math.max(1, turn.text.length); });
+      var totalWeight = weights.reduce(function (sum, weight) { return sum + weight; }, 0);
+      var consumedWeight = 0;
+      return turns.map(function (turn, index) {
+        var lower = Math.floor(durationMs * consumedWeight / totalWeight);
+        consumedWeight += weights[index];
+        var upper = index === turns.length - 1 ? durationMs :
+          Math.floor(durationMs * consumedWeight / totalWeight);
+        return {
+          text: turn.text,
+          speaker: turn.speaker,
+          startMs: startMs + lower,
+          durationMs: Math.max(0, upper - lower)
+        };
+      });
+    }
+    """#
+
     /// Loads the exact compiled bridge copied into the app's WebAssets folder.
     /// The second candidate keeps unit-test and preview bundles convenient
     /// without weakening the production subdirectory contract.
@@ -1181,6 +1378,7 @@ enum YouTubeWebScripts {
           \#(playerResponseSelectionFunction)
           \#(initialDataTranscriptFunction)
           \#(transcriptDOMCueFunction)
+          \#(captionCuePayloadFunction)
 
           function remainingBudget() {
             return Math.max(0, ADAPTER_BUDGET_MS - (Date.now() - startedAt));
@@ -2037,28 +2235,27 @@ enum YouTubeWebScripts {
               var cues = [];
               for (var cueIndex = 0; cueIndex < nativeCues.length; cueIndex += 1) {
                 var nativeCue = nativeCues[cueIndex];
-                var cueText = '';
+                var cueFragment = null;
                 try {
                   if (nativeCue && typeof nativeCue.getCueAsHTML === 'function') {
-                    var cueFragment = nativeCue.getCueAsHTML();
-                    cueText = cleanText(cueFragment && cueFragment.textContent || '');
+                    cueFragment = nativeCue.getCueAsHTML();
                   }
                 } catch (error) {}
-                if (!cueText) {
-                  cueText = cleanText(decodeEntities(
-                    String(nativeCue && nativeCue.text || '')
-                      .replace(/<[^>]+>/g, '')
-                  ));
-                }
+                var cuePayload = castReaderCaptionCuePayload(
+                  String(nativeCue && nativeCue.text || ''),
+                  cueFragment
+                );
                 var start = Number(nativeCue && nativeCue.startTime);
                 var end = Number(nativeCue && nativeCue.endTime);
-                if (!cueText || !Number.isFinite(start)) continue;
-                cues.push({
-                  text: cueText,
-                  startMs: Math.max(0, Math.round(start * 1000)),
-                  durationMs: Number.isFinite(end) && end >= start ?
-                    Math.round((end - start) * 1000) : 0
-                });
+                if (!Number.isFinite(start)) continue;
+                var cueStartMs = Math.max(0, Math.round(start * 1000));
+                var cueDurationMs = Number.isFinite(end) && end >= start ?
+                  Math.round((end - start) * 1000) : 0;
+                cues = cues.concat(castReaderExpandCaptionCue(
+                  cuePayload,
+                  cueStartMs,
+                  cueDurationMs
+                ));
               }
               if (cues.length === 0 ||
                   (score > bestScore ||
@@ -2780,15 +2977,15 @@ enum YouTubeWebScripts {
               var startMs = parseClock(sides[0]);
               var endMs = parseClock(sides[1]);
               if (startMs === null) return;
-              var cueText = cleanText(decodeEntities(lines.slice(timestampIndex + 1)
-                .map(function (line) { return line.replace(/<[^>]+>/g, ''); })
-                .join(' ')));
-              if (!cueText) return;
-              cues.push({
-                text: cueText,
-                startMs: startMs,
-                durationMs: endMs !== null && endMs >= startMs ? endMs - startMs : 0
-              });
+              var cuePayload = castReaderCaptionCuePayload(
+                lines.slice(timestampIndex + 1).join(' '),
+                null
+              );
+              cues = cues.concat(castReaderExpandCaptionCue(
+                cuePayload,
+                startMs,
+                endMs !== null && endMs >= startMs ? endMs - startMs : 0
+              ));
             });
             return cues;
           }
@@ -3148,14 +3345,21 @@ enum YouTubeWebScripts {
           function dedupeCues(input) {
             var seen = new Set();
             return (Array.isArray(input) ? input : []).map(function (raw) {
-              return {
+              var speaker = cleanText(String(raw && raw.speaker || '')) || null;
+              var cue = {
                 text: cleanText(String(raw && raw.text || '').replace(/\n/g, ' ')),
                 startMs: Math.max(0, Math.round(Number(raw && raw.startMs || 0))),
                 durationMs: Math.max(0, Math.round(Number(raw && raw.durationMs || 0)))
               };
+              if (speaker) cue.speaker = speaker;
+              return cue;
             }).filter(function (cue) {
               if (!cue.text || !Number.isFinite(cue.startMs)) return false;
-              var key = String(cue.startMs) + '|' + cue.text;
+              var key = JSON.stringify([
+                cue.startMs,
+                cue.speaker || null,
+                cue.text
+              ]);
               if (seen.has(key)) return false;
               seen.add(key);
               return true;

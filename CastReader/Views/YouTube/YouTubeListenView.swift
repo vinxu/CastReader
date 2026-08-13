@@ -29,7 +29,12 @@ struct YouTubeListenView: View {
                         paragraphStartMs: currentStartMs,
                         cacheKey: YouTubeCacheStore.cacheKey(for: transcript),
                         paragraphIndexes: document.paragraphs
-                            .filter { $0.type.isReadable }
+                            .filter {
+                                $0.type.isReadable &&
+                                    SpeechTextSanitizer.containsSpeakableContent(
+                                        $0.resolvedSpeechText
+                                    )
+                            }
                             .map(\.id),
                         documentLanguage: document.language
                     )
@@ -136,14 +141,33 @@ struct YouTubeListenView: View {
                 )
             )
 
-            ReaderTextView(
-                text: displayedText,
-                highlightRange: isCurrent ? readVM.highlightRange : nil,
-                isCurrent: isCurrent,
-                fontSize: 18,
-                highlightColor: readVM.highlightUIColor,
-                onReady: { _ in }
-            )
+            VStack(alignment: .leading, spacing: 3) {
+                if let speaker = paragraph.speaker?.trimmingCharacters(
+                    in: .whitespacesAndNewlines
+                ), !speaker.isEmpty,
+                   !Self.hasVisibleSpeakerPrefix(
+                       paragraph.text,
+                       speaker: speaker
+                   ) || displayedText != paragraph.text {
+                    Text(speaker)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(
+                            isCurrent ? AppTheme.primary : AppTheme.secondaryForeground
+                        )
+                        .accessibilityIdentifier(
+                            "youtubeTranscriptSpeaker_\(paragraph.id)"
+                        )
+                }
+                ReaderTextView(
+                    text: displayedText,
+                    highlightRange: isCurrent ? readVM.highlightRange : nil,
+                    isCurrent: isCurrent,
+                    fontSize: 18,
+                    highlightColor: readVM.highlightUIColor,
+                    onReady: { _ in }
+                )
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 10)
             .overlay(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 2)
@@ -199,6 +223,20 @@ struct YouTubeListenView: View {
             return String(format: "%d:%02d:%02d", hours, minutes, seconds)
         }
         return String(format: "%02d:%02d", minutes, seconds)
+    }
+
+    private static func hasVisibleSpeakerPrefix(
+        _ text: String,
+        speaker: String
+    ) -> Bool {
+        var value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.hasPrefix(">>") || value.hasPrefix("＞＞") {
+            value = String(value.dropFirst(2))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let folded = value.precomposedStringWithCompatibilityMapping.lowercased()
+        let name = speaker.precomposedStringWithCompatibilityMapping.lowercased()
+        return folded.hasPrefix(name + ":") || folded.hasPrefix(name + "：")
     }
 }
 

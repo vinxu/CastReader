@@ -170,35 +170,63 @@ final class YouTubeCaptionLanguageSwitcher: ObservableObject {
         resumeAnchorMs: Int,
         cache: YouTubeCacheStore?
     ) async throws -> Resolution {
-        if let cached = await cache?.mostRecentPreferredTranscript(
+        let cachedCandidate = await cache?.mostRecentTranscript(
             videoId: reference.videoId,
-            preferredLanguage: option.languageCode
-        ),
-           YouTubeTrackSelector.baseLanguage(cached.document.track.languageCode)
-            == YouTubeTrackSelector.baseLanguage(option.languageCode),
-           (try? YouTubeTranscriptContentLanguagePolicy.validatedPlaybackLanguage(
-               for: cached.document
-           )) != nil,
-           YouTubeReadingDocumentBuilder.firstPlayableParagraph(
-               in: cached.document
-           ) != nil {
+            matching: option
+        )
+        let usableCached: YouTubeCachedTranscriptResolution? = cachedCandidate.flatMap {
+            cached -> YouTubeCachedTranscriptResolution? in
+            guard option.matches(cached.document.track),
+                  (try? YouTubeTranscriptContentLanguagePolicy.validatedPlaybackLanguage(
+                      for: cached.document
+                  )) != nil,
+                  YouTubeReadingDocumentBuilder.firstPlayableParagraph(
+                      in: cached.document
+                  ) != nil else { return nil }
+            return cached
+        }
+        if let usableCached,
+           usableCached.document.captionSemanticSchemaVersion ==
+               YouTubeCaptionSemanticSchema.current ||
+               !NetworkReachability.shared.isOnline {
             return Resolution(
-                transcript: cached.document,
-                cacheKey: cached.key,
+                transcript: usableCached.document,
+                cacheKey: usableCached.key,
                 cacheHit: true,
                 resumeAnchorMs: resumeAnchorMs
             )
         }
 
-        let transcript = try await YouTubeTranscriptService.shared.extract(
-            reference,
-            preferredLanguage: option.languageCode,
-            requestedTrack: YouTubeTrackRequest(option: option),
-            timeout: YouTubeTranscriptService.defaultExtractionTimeout
-        )
+        let transcript: YouTubeTranscriptDocument
+        do {
+            transcript = try await YouTubeTranscriptService.shared.extract(
+                reference,
+                preferredLanguage: option.languageCode,
+                requestedTrack: YouTubeTrackRequest(option: option),
+                timeout: YouTubeTranscriptService.defaultExtractionTimeout
+            )
+        } catch let failure as YouTubeTranscriptFailure
+            where failure == .network || failure == .timeout
+                || failure == .captionAccess
+                || failure == .playerBootstrapFailed
+                || failure == .youtubeAccessLimited
+                || (failure == .trackUnavailable && usableCached != nil) {
+            if let usableCached {
+                return Resolution(
+                    transcript: usableCached.document,
+                    cacheKey: usableCached.key,
+                    cacheHit: true,
+                    resumeAnchorMs: resumeAnchorMs
+                )
+            }
+            throw failure
+        }
         _ = try YouTubeTranscriptContentLanguagePolicy.validatedPlaybackLanguage(
             for: transcript
         )
+        guard option.matches(transcript.track) else {
+            throw YouTubeTranscriptFailure.trackUnavailable
+        }
         guard YouTubeReadingDocumentBuilder.firstPlayableParagraph(
             in: transcript
         ) != nil else {

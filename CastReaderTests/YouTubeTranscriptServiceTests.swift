@@ -615,6 +615,76 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
         XCTAssertEqual(document.extractedAt, extractedAt)
     }
 
+    func testEnvelopeCarriesStructuredSpeakerAndDoesNotDedupeDifferentVoices() throws {
+        let body = try makeBody(
+            cues: [
+                [
+                    "text": "Hello",
+                    "speaker": "  Alice  ",
+                    "startMs": 0,
+                    "durationMs": 800,
+                ],
+                [
+                    "text": "Hello",
+                    "speaker": "Bob",
+                    "startMs": 0,
+                    "durationMs": 800,
+                ],
+            ],
+            captionTrack: [
+                "id": "en|manual|English|0",
+                "languageCode": "en",
+                "kind": "manual",
+            ],
+            extra: ["transcriptSource": "vtt"]
+        )
+        let document = try YouTubeTranscriptEnvelopeDecoder.document(
+            from: YouTubeTranscriptEnvelopeDecoder.decode(body),
+            reference: YouTubeVideoReference(videoId: videoID, startSeconds: nil),
+            preferredLanguage: "en"
+        )
+
+        XCTAssertEqual(document.cues.map(\.speaker), ["Alice", "Bob"])
+        XCTAssertEqual(document.paragraphs.map(\.speaker), ["Alice", "Bob"])
+        XCTAssertEqual(document.paragraphs.map(\.resolvedSpeechText), ["Hello", "Hello"])
+    }
+
+    func testNativeCueDedupeKeyCannotCollideOnPipeCharacters() throws {
+        let body = try makeBody(
+            cues: [
+                [
+                    "text": "C",
+                    "speaker": "A|B",
+                    "startMs": 0,
+                    "durationMs": 500,
+                ],
+                [
+                    "text": "B|C",
+                    "speaker": "A",
+                    "startMs": 0,
+                    "durationMs": 500,
+                ],
+            ],
+            captionTrack: [
+                "id": "en|manual|English|0",
+                "languageCode": "en",
+                "kind": "manual",
+            ],
+            extra: ["transcriptSource": "vtt"]
+        )
+        let document = try YouTubeTranscriptEnvelopeDecoder.document(
+            from: YouTubeTranscriptEnvelopeDecoder.decode(body),
+            reference: YouTubeVideoReference(videoId: videoID, startSeconds: nil),
+            preferredLanguage: "en"
+        )
+
+        XCTAssertEqual(document.cues.count, 2)
+        XCTAssertEqual(document.cues[0].speaker, "A|B")
+        XCTAssertEqual(document.cues[0].text, "C")
+        XCTAssertEqual(document.cues[1].speaker, "A")
+        XCTAssertEqual(document.cues[1].text, "B|C")
+    }
+
     func testTranscriptPanelFallbackUsesDetectedCueLanguageAndIndependentIdentity() throws {
         let body = try makeBody(
             cues: [[
@@ -1164,6 +1234,62 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
         XCTAssertEqual(document.selectedForLanguage, "de")
     }
 
+    func testRequestedASRRejectsSameLanguageManualTrack() throws {
+        let body = try makeBody(
+            cues: [["text": "Hello from manual captions", "startMs": 0, "durationMs": 900]],
+            captionTrack: [
+                "id": ".en",
+                "languageCode": "en",
+                "kind": "manual",
+                "index": 0,
+            ],
+            extra: ["transcriptSource": "json3"]
+        )
+
+        XCTAssertThrowsError(
+            try YouTubeTranscriptEnvelopeDecoder.document(
+                from: try YouTubeTranscriptEnvelopeDecoder.decode(body),
+                reference: YouTubeVideoReference(videoId: videoID, startSeconds: nil),
+                preferredLanguage: "en",
+                requestedTrack: YouTubeTrackRequest(
+                    id: "",
+                    languageCode: "en",
+                    isAutomatic: true
+                )
+            )
+        ) { error in
+            XCTAssertEqual(error as? YouTubeTranscriptFailure, .trackUnavailable)
+        }
+    }
+
+    func testLooseLegacyRefreshRejectsSameLanguageUnverifiedTranscriptLane() throws {
+        let body = try makeBody(
+            cues: [["text": "Hello from an unbound panel", "startMs": 0, "durationMs": 900]],
+            captionTrack: [
+                "id": ".en",
+                "languageCode": "en",
+                "kind": "manual",
+                "index": 0,
+            ],
+            extra: ["transcriptSource": "transcript_bridge"]
+        )
+
+        XCTAssertThrowsError(
+            try YouTubeTranscriptEnvelopeDecoder.document(
+                from: try YouTubeTranscriptEnvelopeDecoder.decode(body),
+                reference: YouTubeVideoReference(videoId: videoID, startSeconds: nil),
+                preferredLanguage: "en",
+                requestedTrack: YouTubeTrackRequest(
+                    id: "",
+                    languageCode: "en",
+                    isAutomatic: false
+                )
+            )
+        ) { error in
+            XCTAssertEqual(error as? YouTubeTranscriptFailure, .trackUnavailable)
+        }
+    }
+
     func testAdapterPinsTheRequestedTrackAndFailsClosed() {
         let source = YouTubeWebScripts.extractionAdapter(
             expectedVideoID: videoID,
@@ -1223,6 +1349,30 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
         XCTAssertEqual(normalized.map(\.id), ["en1", "en3"])
         XCTAssertEqual(normalized[0].languageCode, "en-us")
         XCTAssertTrue(normalized[1].isAutomatic)
+    }
+
+    func testLegacyTrackRefreshPinsCachedLanguageAndKindWithoutSignedIdentity() {
+        let document = YouTubeTranscriptDocument(
+            metadata: YouTubeVideoMetadata(
+                videoId: videoID,
+                title: "Legacy",
+                channelName: nil,
+                sourceURL: "https://www.youtube.com/watch?v=\(videoID)",
+                thumbnailURL: nil,
+                durationMs: 1_000
+            ),
+            track: YouTubeCaptionTrack(
+                baseURL: "https://www.youtube.com/api/timedtext?legacy=1",
+                languageCode: "en-US",
+                kind: "asr"
+            ),
+            cues: [YouTubeTranscriptCue(text: "legacy", startMs: 0)]
+        )
+
+        let request = YouTubeTrackRequest(refreshing: document)
+        XCTAssertEqual(request.id, "")
+        XCTAssertEqual(request.languageCode, "en-US")
+        XCTAssertTrue(request.isAutomatic)
     }
 
     // MARK: Warm session

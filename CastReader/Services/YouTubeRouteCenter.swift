@@ -185,7 +185,13 @@ enum YouTubeReadingDocumentBuilder {
             for: transcript.track.languageCode
         )
         let paragraphs = transcript.paragraphs.map {
-            ReadingParagraph(id: $0.id, text: $0.text, startMs: $0.startMs)
+            ReadingParagraph(
+                id: $0.id,
+                text: $0.text,
+                speechText: $0.resolvedSpeechText,
+                speaker: $0.speaker,
+                startMs: $0.startMs
+            )
         }
         return ReadingDocument(
             id: "youtube-\(metadata.videoId)",
@@ -256,7 +262,7 @@ enum YouTubeReadingDocumentBuilder {
     }
 
     private static func isPlayable(_ paragraph: YouTubeTranscriptParagraph) -> Bool {
-        SpeechTextSanitizer.containsSpeakableContent(paragraph.text)
+        SpeechTextSanitizer.containsSpeakableContent(paragraph.resolvedSpeechText)
     }
 }
 

@@ -47,6 +47,7 @@ actor TTSService {
         speed: Double = Constants.TTS.defaultSpeed,
         language: String = Constants.TTS.defaultLanguage,
         includeVoiceCode: Bool = true,
+        speaker: String? = nil,
         onSegmentReady: @escaping (AudioSegment) async -> Void
     ) async throws {
         try Task.checkCancellation()
@@ -70,6 +71,7 @@ actor TTSService {
             speed: speed,
             language: language,
             includeVoiceCode: includeVoiceCode,
+            speaker: speaker,
             onSegmentReady: onSegmentReady
         )
     }
@@ -85,7 +87,8 @@ actor TTSService {
         voice: String? = nil,
         speed: Double = Constants.TTS.defaultSpeed,
         language: String = Constants.TTS.defaultLanguage,
-        includeVoiceCode: Bool = true
+        includeVoiceCode: Bool = true,
+        speaker: String? = nil
     ) async throws -> [AudioSegment] {
         var segmentIndex = 0
         var segments: [AudioSegment] = []
@@ -120,7 +123,8 @@ actor TTSService {
                     timestamps: response.safeTimestamps,
                     duration: response.safeDuration,
                     text: response.processedText ?? remainingText,
-                    unprocessedText: response.unprocessedText ?? ""
+                    unprocessedText: response.unprocessedText ?? "",
+                    speaker: speaker
                 )
                 segments.append(ensureDuration(rawSegment))
                 segmentIndex += 1
@@ -147,6 +151,7 @@ actor TTSService {
         speed: Double,
         language: String,
         includeVoiceCode: Bool,
+        speaker: String?,
         onSegmentReady: @escaping (AudioSegment) async -> Void
     ) async throws {
         guard currentRequestId == requestId else {
@@ -208,7 +213,8 @@ actor TTSService {
                     timestamps: timestamps,
                     duration: duration,
                     text: segmentText,
-                    unprocessedText: response.unprocessedText ?? ""
+                    unprocessedText: response.unprocessedText ?? "",
+                    speaker: speaker
                 )
                 // 中文云端常无 duration（且无词时间戳）→ 用真实音频时长兜底，供解读时间线/进度。
                 // 词时间戳不合成：朗读对齐扩展，无词时间戳语言走句子级高亮。
