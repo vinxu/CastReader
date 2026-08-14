@@ -352,6 +352,175 @@ class CastReaderTests: XCTestCase {
     }
 
     @MainActor
+    func testChinaAccountDoesNotInheritLegacyActivatedKindleOnboarding() throws {
+        let suite = "BoundLibraryChinaScopeTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        defaults.set("kindle", forKey: "boundLibraryOnboarding.v1.selectedSource")
+        defaults.set(true, forKey: "boundLibraryOnboarding.v1.hasSeenChooser")
+        defaults.set(true, forKey: "boundLibraryOnboarding.v1.isActivated")
+        defaults.set("activated", forKey: "boundLibraryOnboarding.v3.phase")
+        defaults.set(true, forKey: "boundLibraryOnboarding.v3.hasCompletedSample")
+
+        let store = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        XCTAssertTrue(store.isActivated, "测试前置必须还原真机上的旧 Kindle 状态")
+
+        store.activateAccountScope(
+            storageID: String(repeating: "c", count: 64),
+            region: .cn,
+            migrateLegacyState: true
+        )
+
+        XCTAssertFalse(store.isActivated, "中国账号不能继承设备级 Kindle 激活状态")
+        XCTAssertNil(store.selectedSource)
+        XCTAssertEqual(store.phase, .sample)
+        XCTAssertTrue(store.isChooserPresented, "中国账号首次登录后必须展示书架引导")
+    }
+
+    @MainActor
+    func testRestoredGlobalAccountCopiesLegacyOnboardingOnlyOnce() throws {
+        let suite = "BoundLibraryGlobalMigrationTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let account = String(repeating: "a", count: 64)
+
+        defaults.set("kindle", forKey: "boundLibraryOnboarding.v1.selectedSource")
+        defaults.set(true, forKey: "boundLibraryOnboarding.v1.hasSeenChooser")
+        defaults.set(true, forKey: "boundLibraryOnboarding.v1.isActivated")
+        defaults.set("activated", forKey: "boundLibraryOnboarding.v3.phase")
+
+        let store = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        store.activateAccountScope(
+            storageID: account,
+            region: .global,
+            migrateLegacyState: true
+        )
+        XCTAssertTrue(store.isActivated, "升级时已登录的全球老账号不能被强制重走引导")
+
+        store.reset()
+        XCTAssertFalse(store.isActivated)
+        XCTAssertTrue(store.isChooserPresented)
+        store.deactivateAccountScope()
+        store.activateAccountScope(
+            storageID: account,
+            region: .global,
+            migrateLegacyState: true
+        )
+
+        XCTAssertFalse(store.isActivated, "显式重置后旧设备状态不能再次灌回账号 scope")
+        XCTAssertEqual(store.phase, .sample)
+        XCTAssertTrue(store.isChooserPresented)
+    }
+
+    @MainActor
+    func testNewGlobalLoginNeverImportsLegacyStateOnLaterRestore() throws {
+        let suite = "BoundLibraryNewGlobalAccountTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let account = String(repeating: "b", count: 64)
+
+        defaults.set("kindle", forKey: "boundLibraryOnboarding.v1.selectedSource")
+        defaults.set(true, forKey: "boundLibraryOnboarding.v1.hasSeenChooser")
+        defaults.set(true, forKey: "boundLibraryOnboarding.v1.isActivated")
+        defaults.set("activated", forKey: "boundLibraryOnboarding.v3.phase")
+
+        let store = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        store.activateAccountScope(
+            storageID: account,
+            region: .global,
+            migrateLegacyState: false
+        )
+        XCTAssertFalse(store.isActivated, "新登录账号不能继承另一个旧账号的设备状态")
+        store.postpone()
+
+        store.deactivateAccountScope()
+        store.activateAccountScope(
+            storageID: account,
+            region: .global,
+            migrateLegacyState: true
+        )
+
+        XCTAssertFalse(store.isActivated, "新账号冷启动恢复时也不能补迁移旧设备状态")
+        XCTAssertEqual(store.phase, .postponed)
+        XCTAssertFalse(store.isChooserPresented)
+    }
+
+    @MainActor
+    func testBoundLibraryOnboardingReloadsAcrossAccountAndRegionBoundaries() throws {
+        let suite = "BoundLibraryBoundaryTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let accountA = String(repeating: "1", count: 64)
+        let accountB = String(repeating: "2", count: 64)
+
+        let store = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
+        store.activateAccountScope(storageID: accountA, region: .cn)
+        store.select(.weread)
+        XCTAssertEqual(store.selectedSource, .weread)
+        XCTAssertEqual(store.phase, .postponed)
+
+        store.activateAccountScope(storageID: accountB, region: .cn)
+        XCTAssertNil(store.selectedSource, "账号 B 不能看到账号 A 的书架引导进度")
+        XCTAssertEqual(store.phase, .sample)
+        XCTAssertTrue(store.isChooserPresented)
+
+        store.activateAccountScope(storageID: accountA, region: .cn)
+        XCTAssertEqual(store.selectedSource, .weread, "切回账号 A 必须恢复自己的进度")
+        XCTAssertEqual(store.phase, .postponed)
+        XCTAssertFalse(store.isChooserPresented)
+
+        store.activateAccountScope(storageID: accountA, region: .global)
+        XCTAssertNil(store.selectedSource, "同一账号的全球与中国产品引导必须隔离")
+        XCTAssertEqual(store.phase, .sample)
+        XCTAssertTrue(store.isChooserPresented)
+
+        store.deactivateAccountScope()
+        XCTAssertFalse(store.isChooserPresented, "退出登录时不能把引导盖在登录页上")
+        store.activateAccountScope(storageID: accountA, region: .cn)
+        XCTAssertEqual(store.selectedSource, .weread, "登出不能删除账号自己的引导进度")
+    }
+
+    @MainActor
+    func testResetLaunchArgumentClearsRestoredAccountScopeWithoutLegacyRefill() throws {
+        let suite = "BoundLibraryScopedResetTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let account = String(repeating: "d", count: 64)
+        let scopedPrefix = ".region.global.account.\(account)"
+
+        defaults.set("kindle", forKey: "boundLibraryOnboarding.v1.selectedSource")
+        defaults.set(true, forKey: "boundLibraryOnboarding.v1.isActivated")
+        defaults.set("kindle", forKey: "boundLibraryOnboarding.v1.selectedSource\(scopedPrefix)")
+        defaults.set(true, forKey: "boundLibraryOnboarding.v1.isActivated\(scopedPrefix)")
+        defaults.set("activated", forKey: "boundLibraryOnboarding.v3.phase\(scopedPrefix)")
+
+        let store = BoundLibraryOnboardingStore(
+            defaults: defaults,
+            arguments: ["-CastReaderResetLibraryOnboarding"]
+        )
+        store.activateAccountScope(
+            storageID: account,
+            region: .global,
+            migrateLegacyState: true
+        )
+
+        XCTAssertFalse(store.isActivated)
+        XCTAssertNil(store.selectedSource)
+        XCTAssertEqual(store.phase, .sample)
+        XCTAssertTrue(store.isChooserPresented)
+
+        store.deactivateAccountScope()
+        store.activateAccountScope(
+            storageID: account,
+            region: .global,
+            migrateLegacyState: true
+        )
+        XCTAssertFalse(store.isActivated, "reset 后不能从 legacy 状态重新灌回")
+        XCTAssertEqual(store.phase, .sample)
+    }
+
+    @MainActor
     func testActivatedUserCanReplayOnboardingWithoutLosingActivation() throws {
         let suite = "BoundLibraryReplayTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))

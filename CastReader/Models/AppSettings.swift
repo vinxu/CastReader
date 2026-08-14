@@ -225,6 +225,10 @@ final class BoundLibraryOnboardingStore: ObservableObject {
     @Published private(set) var recommendedBookID: String?
 
     private let defaults: UserDefaults
+    private let skipsChooser: Bool
+    private var resetsScopeOnNextActivation: Bool
+    private var activeStorageID: String?
+    private var activeRegion: AppRegion?
     private var lastPersistedPlaybackBucket: Int
     private var resumePhase: BoundLibraryOnboardingPhase
 
@@ -237,6 +241,18 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         static let resumePhase = "boundLibraryOnboarding.v3.resumePhase"
         static let hasCompletedSample = "boundLibraryOnboarding.v3.hasCompletedSample"
         static let recommendedBookID = "boundLibraryOnboarding.v3.recommendedBookID"
+        static let scopeInitialized = "boundLibraryOnboarding.v4.scopeInitialized"
+
+        static let persistedState = [
+            selectedSource,
+            hasSeenChooser,
+            isActivated,
+            activationPlaybackSeconds,
+            phase,
+            resumePhase,
+            hasCompletedSample,
+            recommendedBookID,
+        ]
     }
 
     init(
@@ -244,31 +260,95 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         arguments: [String] = ProcessInfo.processInfo.arguments
     ) {
         self.defaults = defaults
+        skipsChooser = arguments.contains("-CastReaderSkipLibraryOnboarding")
+        resetsScopeOnNextActivation = arguments.contains("-CastReaderResetLibraryOnboarding")
+        activeStorageID = nil
+        activeRegion = nil
+        selectedSource = nil
+        hasSeenChooser = false
+        isActivated = false
+        isChooserPresented = false
+        activationPlaybackSeconds = 0
+        lastPersistedPlaybackBucket = 0
+        phase = .sample
+        resumePhase = .sample
+        hasCompletedSample = false
+        recommendedBookID = nil
 
         if arguments.contains("-CastReaderResetLibraryOnboarding") {
-            Self.clearPersistedState(in: defaults)
+            Self.clearPersistedState(in: defaults, storageID: nil, region: nil)
         }
 
-        let restoredSource = defaults.string(forKey: Key.selectedSource)
+        loadPersistedState()
+    }
+
+    /// Binds onboarding progress to the exact signed-in product boundary.
+    ///
+    /// The account storage id already includes the service route. Product
+    /// region is an additional dimension because CHN may temporarily use the
+    /// global compatibility gateway while still requiring WeRead onboarding.
+    func activateAccountScope(
+        storageID: String,
+        region: AppRegion,
+        migrateLegacyState: Bool = false
+    ) {
+        guard storageID.count == 64,
+              storageID.allSatisfy(\.isHexDigit) else {
+            deactivateAccountScope()
+            return
+        }
+
+        let changed = activeStorageID != storageID || activeRegion != region
+        activeStorageID = storageID
+        activeRegion = region
+        let reset = resetActivatedScopeIfNeeded()
+        let migrated = reset ? false : migrateLegacyStateIfNeeded(enabled: migrateLegacyState)
+        guard changed || migrated || reset else { return }
+        loadPersistedState()
+    }
+
+    /// Clears only the in-memory account binding. Persisted progress remains
+    /// available if the same account returns later.
+    func deactivateAccountScope() {
+        activeStorageID = nil
+        activeRegion = nil
+        resetInMemory(presentChooser: false)
+    }
+
+    #if DEBUG
+    /// Existing UI/unit tests intentionally exercise the historical unscoped
+    /// keys. Production authenticated flows always call activateAccountScope.
+    func activateLegacyTestingScope() {
+        activeStorageID = nil
+        activeRegion = nil
+        // init already cleared the legacy keys for this deterministic test
+        // mode; there is no authenticated account scope to clear later.
+        resetsScopeOnNextActivation = false
+        loadPersistedState()
+    }
+    #endif
+
+    private func loadPersistedState() {
+        let restoredSource = defaults.string(forKey: storageKey(Key.selectedSource))
             .flatMap(BoundLibraryOnboardingSource.init(rawValue:))
-        let restoredHasSeenChooser = defaults.bool(forKey: Key.hasSeenChooser)
-        let restoredIsActivated = defaults.bool(forKey: Key.isActivated)
-        let restoredPhase = defaults.string(forKey: Key.phase)
+        let restoredHasSeenChooser = defaults.bool(forKey: storageKey(Key.hasSeenChooser))
+        let restoredIsActivated = defaults.bool(forKey: storageKey(Key.isActivated))
+        let restoredPhase = defaults.string(forKey: storageKey(Key.phase))
             .flatMap(BoundLibraryOnboardingPhase.init(rawValue:))
-        let restoredResumePhase = defaults.string(forKey: Key.resumePhase)
+        let restoredResumePhase = defaults.string(forKey: storageKey(Key.resumePhase))
             .flatMap(BoundLibraryOnboardingPhase.init(rawValue:))
         let restoredPlaybackSeconds = min(
             Double(Self.activationSeconds),
-            max(0, defaults.double(forKey: Key.activationPlaybackSeconds))
+            max(0, defaults.double(forKey: storageKey(Key.activationPlaybackSeconds)))
         )
-        let skipsChooser = arguments.contains("-CastReaderSkipLibraryOnboarding")
+
         selectedSource = restoredSource
         hasSeenChooser = restoredHasSeenChooser
         isActivated = restoredIsActivated
         activationPlaybackSeconds = restoredPlaybackSeconds
         lastPersistedPlaybackBucket = Int(restoredPlaybackSeconds / 5)
-        hasCompletedSample = defaults.bool(forKey: Key.hasCompletedSample)
-        recommendedBookID = defaults.string(forKey: Key.recommendedBookID)
+        hasCompletedSample = defaults.bool(forKey: storageKey(Key.hasCompletedSample))
+        recommendedBookID = defaults.string(forKey: storageKey(Key.recommendedBookID))
 
         let initialPhase: BoundLibraryOnboardingPhase
         let initialResumePhase: BoundLibraryOnboardingPhase
@@ -297,6 +377,86 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         isChooserPresented = !skipsChooser
             && !restoredIsActivated
             && initialPhase.isActiveFlow
+    }
+
+    private func resetInMemory(presentChooser: Bool) {
+        selectedSource = nil
+        hasSeenChooser = false
+        isActivated = false
+        isChooserPresented = presentChooser
+        activationPlaybackSeconds = 0
+        phase = .sample
+        resumePhase = .sample
+        hasCompletedSample = false
+        recommendedBookID = nil
+        lastPersistedPlaybackBucket = 0
+    }
+
+    private func migrateLegacyStateIfNeeded(enabled: Bool) -> Bool {
+        guard let activeStorageID,
+              let activeRegion else { return false }
+        let marker = Self.scopedKey(
+            Key.scopeInitialized,
+            storageID: activeStorageID,
+            region: activeRegion
+        )
+        guard !defaults.bool(forKey: marker) else { return false }
+
+        var copied = false
+        if enabled, activeRegion == .global {
+            for legacyKey in Key.persistedState {
+                guard let value = defaults.object(forKey: legacyKey) else { continue }
+                defaults.set(value, forKey: Self.scopedKey(
+                    legacyKey,
+                    storageID: activeStorageID,
+                    region: activeRegion
+                ))
+                copied = true
+            }
+        }
+        // Every new account/product scope is initialized exactly once. A new
+        // login that intentionally started fresh must not import legacy device
+        // state merely because its next launch is now a cold restore.
+        defaults.set(true, forKey: marker)
+        return copied
+    }
+
+    private func resetActivatedScopeIfNeeded() -> Bool {
+        guard resetsScopeOnNextActivation,
+              let activeStorageID,
+              let activeRegion else { return false }
+        resetsScopeOnNextActivation = false
+        Self.clearPersistedState(
+            in: defaults,
+            storageID: activeStorageID,
+            region: activeRegion
+        )
+        // A deterministic test reset is a deliberate fresh start. Mark the
+        // scope initialized so a global cold-restore migration cannot refill
+        // it from the old device-wide keys in the same launch.
+        defaults.set(true, forKey: Self.scopedKey(
+            Key.scopeInitialized,
+            storageID: activeStorageID,
+            region: activeRegion
+        ))
+        return true
+    }
+
+    private func storageKey(_ legacyKey: String) -> String {
+        guard let activeStorageID, let activeRegion else { return legacyKey }
+        return Self.scopedKey(
+            legacyKey,
+            storageID: activeStorageID,
+            region: activeRegion
+        )
+    }
+
+    private static func scopedKey(
+        _ legacyKey: String,
+        storageID: String,
+        region: AppRegion
+    ) -> String {
+        "\(legacyKey).region.\(region.rawValue).account.\(storageID)"
     }
 
     var shouldShowReminder: Bool {
@@ -356,8 +516,8 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         isChooserPresented = false
         phase = .postponed
         resumePhase = .firstListen
-        defaults.set(source.rawValue, forKey: Key.selectedSource)
-        defaults.set(true, forKey: Key.hasSeenChooser)
+        defaults.set(source.rawValue, forKey: storageKey(Key.selectedSource))
+        defaults.set(true, forKey: storageKey(Key.hasSeenChooser))
         persistFlowState()
     }
 
@@ -368,7 +528,7 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         hasSeenChooser = true
         isChooserPresented = false
         phase = .postponed
-        defaults.set(true, forKey: Key.hasSeenChooser)
+        defaults.set(true, forKey: storageKey(Key.hasSeenChooser))
         persistFlowState()
     }
 
@@ -419,8 +579,8 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         }
         selectedSource = source
         hasSeenChooser = true
-        defaults.set(source.rawValue, forKey: Key.selectedSource)
-        defaults.set(true, forKey: Key.hasSeenChooser)
+        defaults.set(source.rawValue, forKey: storageKey(Key.selectedSource))
+        defaults.set(true, forKey: storageKey(Key.hasSeenChooser))
         transition(to: .login)
     }
 
@@ -465,8 +625,8 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         phase = .firstListen
         resumePhase = .firstListen
         isChooserPresented = false
-        defaults.set(resolved.rawValue, forKey: Key.selectedSource)
-        defaults.set(true, forKey: Key.hasSeenChooser)
+        defaults.set(resolved.rawValue, forKey: storageKey(Key.selectedSource))
+        defaults.set(true, forKey: storageKey(Key.hasSeenChooser))
         persistFlowState()
     }
 
@@ -498,10 +658,10 @@ final class BoundLibraryOnboardingStore: ObservableObject {
 
         if selectedSource == nil {
             selectedSource = playbackSource
-            defaults.set(playbackSource.rawValue, forKey: Key.selectedSource)
+            defaults.set(playbackSource.rawValue, forKey: storageKey(Key.selectedSource))
         }
         hasSeenChooser = true
-        defaults.set(true, forKey: Key.hasSeenChooser)
+        defaults.set(true, forKey: storageKey(Key.hasSeenChooser))
 
         activationPlaybackSeconds = min(
             Double(Self.activationSeconds),
@@ -512,7 +672,7 @@ final class BoundLibraryOnboardingStore: ObservableObject {
             lastPersistedPlaybackBucket = persistenceBucket
             defaults.set(
                 activationPlaybackSeconds,
-                forKey: Key.activationPlaybackSeconds
+                forKey: storageKey(Key.activationPlaybackSeconds)
             )
         }
 
@@ -549,26 +709,33 @@ final class BoundLibraryOnboardingStore: ObservableObject {
         recommendedBookID = nil
         activationPlaybackSeconds = Double(Self.activationSeconds)
         lastPersistedPlaybackBucket = Self.activationSeconds / 5
-        defaults.set(source.rawValue, forKey: Key.selectedSource)
-        defaults.set(true, forKey: Key.hasSeenChooser)
-        defaults.set(true, forKey: Key.isActivated)
-        defaults.set(activationPlaybackSeconds, forKey: Key.activationPlaybackSeconds)
+        defaults.set(source.rawValue, forKey: storageKey(Key.selectedSource))
+        defaults.set(true, forKey: storageKey(Key.hasSeenChooser))
+        defaults.set(true, forKey: storageKey(Key.isActivated))
+        defaults.set(
+            activationPlaybackSeconds,
+            forKey: storageKey(Key.activationPlaybackSeconds)
+        )
         persistFlowState()
     }
 
     /// Available to the DEBUG settings screen and deterministic UI tests.
     func reset() {
-        Self.clearPersistedState(in: defaults)
-        selectedSource = nil
-        hasSeenChooser = false
-        isActivated = false
-        isChooserPresented = true
-        activationPlaybackSeconds = 0
-        phase = .sample
-        resumePhase = .sample
-        hasCompletedSample = false
-        recommendedBookID = nil
-        lastPersistedPlaybackBucket = 0
+        Self.clearPersistedState(
+            in: defaults,
+            storageID: activeStorageID,
+            region: activeRegion
+        )
+        // Keep the per-scope migration marker. An explicit reset must not let
+        // legacy device-wide state flow back into this account on next login.
+        if let activeStorageID, let activeRegion {
+            defaults.set(true, forKey: Self.scopedKey(
+                Key.scopeInitialized,
+                storageID: activeStorageID,
+                region: activeRegion
+            ))
+        }
+        resetInMemory(presentChooser: true)
     }
 
     private func transition(to nextPhase: BoundLibraryOnboardingPhase) {
@@ -587,25 +754,32 @@ final class BoundLibraryOnboardingStore: ObservableObject {
     private func resetActivationProgress() {
         activationPlaybackSeconds = 0
         lastPersistedPlaybackBucket = 0
-        defaults.removeObject(forKey: Key.activationPlaybackSeconds)
+        defaults.removeObject(forKey: storageKey(Key.activationPlaybackSeconds))
     }
 
     private func persistFlowState() {
-        defaults.set(phase.rawValue, forKey: Key.phase)
-        defaults.set(resumePhase.rawValue, forKey: Key.resumePhase)
-        defaults.set(hasCompletedSample, forKey: Key.hasCompletedSample)
-        defaults.set(recommendedBookID, forKey: Key.recommendedBookID)
+        defaults.set(phase.rawValue, forKey: storageKey(Key.phase))
+        defaults.set(resumePhase.rawValue, forKey: storageKey(Key.resumePhase))
+        defaults.set(hasCompletedSample, forKey: storageKey(Key.hasCompletedSample))
+        defaults.set(recommendedBookID, forKey: storageKey(Key.recommendedBookID))
     }
 
-    private static func clearPersistedState(in defaults: UserDefaults) {
-        defaults.removeObject(forKey: Key.selectedSource)
-        defaults.removeObject(forKey: Key.hasSeenChooser)
-        defaults.removeObject(forKey: Key.isActivated)
-        defaults.removeObject(forKey: Key.activationPlaybackSeconds)
-        defaults.removeObject(forKey: Key.phase)
-        defaults.removeObject(forKey: Key.resumePhase)
-        defaults.removeObject(forKey: Key.hasCompletedSample)
-        defaults.removeObject(forKey: Key.recommendedBookID)
+    private static func clearPersistedState(
+        in defaults: UserDefaults,
+        storageID: String?,
+        region: AppRegion?
+    ) {
+        for legacyKey in Key.persistedState {
+            if let storageID, let region {
+                defaults.removeObject(forKey: scopedKey(
+                    legacyKey,
+                    storageID: storageID,
+                    region: region
+                ))
+            } else {
+                defaults.removeObject(forKey: legacyKey)
+            }
+        }
     }
 }
 

@@ -124,7 +124,10 @@ enum AccountContentIsolation {
     }
 
     @discardableResult
-    static func activate(for account: UserAccount) -> String? {
+    static func activate(
+        for account: UserAccount,
+        migrateLegacyLibraryOnboarding: Bool = false
+    ) -> String? {
         guard let scope = AccountContentScope.resolved(account: account) else {
             deactivate()
             return nil
@@ -140,6 +143,13 @@ enum AccountContentIsolation {
         }
         activeStorageID = scope.storageID
         _ = AccountContentScopeBridge.activate(storageID: scope.storageID)
+        BoundLibraryOnboardingStore.shared.activateAccountScope(
+            storageID: scope.storageID,
+            region: AppRegion.current,
+            migrateLegacyState: migrateLegacyLibraryOnboarding
+                && AppRegion.current == .global
+                && ServiceRouting.current == .globalGateway
+        )
         CommercialWebSession.activateAccountScope(scope)
         HistoryStore.shared.activateAccountScope(storageID: scope.storageID)
         YouTubeCacheProvider.activateAccountScope(storageID: scope.storageID)
@@ -166,6 +176,7 @@ enum AccountContentIsolation {
         if ProcessInfo.processInfo.arguments.contains("-CastReaderSkipSignInGate") {
             activeStorageID = "debug-legacy"
             AccountContentScopeBridge.activateLegacyTestingScope()
+            BoundLibraryOnboardingStore.shared.activateLegacyTestingScope()
             CommercialWebSession.activateLegacyTestingScope()
             _ = HistoryStore.shared.activateLegacyTestingScope()
             YouTubeCacheProvider.activateLegacyTestingScope()
@@ -183,6 +194,7 @@ enum AccountContentIsolation {
 
         activeStorageID = nil
         AccountContentScopeBridge.deactivate()
+        BoundLibraryOnboardingStore.shared.deactivateAccountScope()
         CommercialWebSession.deactivateAccountScope()
         HistoryStore.shared.deactivateAccountScope()
         YouTubeCacheProvider.deactivateAccountScope()
@@ -397,7 +409,10 @@ final class AuthService: NSObject, ObservableObject {
             // builds could leave `auth_account_v1*` behind after the route's
             // cms_ bearer was missing/cleared, which rendered MainTab with
             // cached content while every protected request returned 401.
-            guard let storageID = AccountContentIsolation.activate(for: acc) else {
+            guard let storageID = AccountContentIsolation.activate(
+                for: acc,
+                migrateLegacyLibraryOnboarding: true
+            ) else {
                 discardInvalidRestoredIdentity()
                 return
             }

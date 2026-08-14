@@ -957,6 +957,63 @@ class CastReaderUITests: XCTestCase {
         add(screenshot)
     }
 
+    /// Regression for upgrades/switches where this device already completed
+    /// the old global Kindle activation. The real CN login boundary must load
+    /// a fresh account-scoped WeRead flow instead of inheriting that state.
+    func testChinaPhoneFirstLoginIgnoresLegacyActivatedKindleOnboarding() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderRegion", "cn",
+            "-CastReaderServiceRoute", "cn",
+            "-CastReaderPhoneAuthLocalFallback",
+            "-CastReaderDisableDebugPro",
+            "-auth_account_v1.cn", "RESET",
+            "-boundLibraryOnboarding.v1.selectedSource", "kindle",
+            "-boundLibraryOnboarding.v1.hasSeenChooser", "YES",
+            "-boundLibraryOnboarding.v1.isActivated", "YES",
+            "-boundLibraryOnboarding.v1.activationPlaybackSeconds", "30",
+            "-boundLibraryOnboarding.v3.phase", "activated",
+            "-boundLibraryOnboarding.v3.resumePhase", "firstListen",
+            "-boundLibraryOnboarding.v3.hasCompletedSample", "YES",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        openAcceptedPhoneSignIn(app)
+        let phoneField = app.textFields["phoneSignIn.phoneField"]
+        let codeField = app.textFields["phoneSignIn.codeField"]
+        let resend = app.buttons["phoneSignIn.resend"]
+        let primary = app.buttons["phoneSignIn.primary"]
+        XCTAssertTrue(phoneField.waitForExistence(timeout: 6))
+
+        // A unique local fallback identity keeps repeated UI-test runs
+        // independent without deleting any real/simulator account data.
+        let randomPrefix = UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(8)
+        let suffix = (UInt32(randomPrefix, radix: 16) ?? 0) % 100_000_000
+        let phone = String(format: "138%08u", suffix)
+        phoneField.tap()
+        phoneField.typeText(phone)
+        XCTAssertTrue(resend.isEnabled)
+        resend.tap()
+        codeField.tap()
+        codeField.typeText("888888")
+        XCTAssertTrue(primary.isEnabled)
+        primary.tap()
+
+        let weReadStart = app.buttons["wereadOnboarding.sample.start"]
+        XCTAssertTrue(
+            weReadStart.waitForExistence(timeout: 20),
+            "中国区新账号登录后必须显示微信读书绑定引导，不能继承旧 Kindle 激活状态"
+        )
+        XCTAssertEqual(
+            app.staticTexts["wereadOnboarding.sample.title"].label,
+            "把你的微信读书变成有声书"
+        )
+        XCTAssertFalse(app.buttons["kindleOnboarding.sample.start"].exists)
+    }
+
     /// 中国区手机号登录：后端未接通时用预设码也要能走完并真正登录成功。
     func testChinaPhoneSignInCompletesWithPresetCode() {
         let app = XCUIApplication()
