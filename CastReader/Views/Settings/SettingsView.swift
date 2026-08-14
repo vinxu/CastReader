@@ -225,9 +225,7 @@ struct SettingsView: View {
         }
         .frame(width: 40, height: 40)
         .clipShape(Circle())
-        // 会员标识放在这里而不是工具栏：40pt 头像放得下皇冠，右下角也不会跟
-        // 未读提醒的红点位置混淆。工具栏那颗头像只用一圈描边表示 Pro——这里
-        // 不再叠描边，同色的圈会跟皇冠糊在一起。
+        // 会员标识只保留在设置页账号卡内；右上角工具栏始终是无会员装饰的账号头像。
         .overlay(alignment: .bottomTrailing) {
             if pro.isPro { proCrownBadge }
         }
