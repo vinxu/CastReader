@@ -2111,20 +2111,17 @@ struct SettingsToolbarButton: View {
 
     var body: some View {
         Button { showSettings = true } label: {
-            ZStack {
-                Color.clear
+            ZStack(alignment: .topTrailing) {
                 // 露头像而不是齿轮：用户来这里多半是找账号和订阅，不是找"设置"。
                 avatar
-                    .frame(width: 40, height: 40)
+                    .frame(width: 28, height: 28)
                     .clipShape(Circle())
-            }
-            .frame(width: 44, height: 44)
-            .overlay(alignment: .topTrailing) {
                 if shareInboxUnreadCount > 0 {
                     Circle()
                         .fill(AppTheme.primary)
                         .frame(width: 8, height: 8)
                         .overlay(Circle().stroke(AppTheme.background, lineWidth: 1.5))
+                        .offset(x: 2, y: -2)
                 }
             }
         }

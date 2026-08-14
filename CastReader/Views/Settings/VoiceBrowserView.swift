@@ -197,7 +197,7 @@ struct VoiceBrowserView: View {
                             accessibilityID: "voiceShelfSourcesButton"
                         )
                         SettingsToolbarButton()
-                            .frame(width: 44, height: 44)
+                            .frame(width: 30, height: 30)
                     }
                 }
             }

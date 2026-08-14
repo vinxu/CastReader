@@ -269,7 +269,7 @@ struct HomeView: View {
                         shareInboxUnreadCount: shareInboxUnreadCount,
                         onOpenShareInbox: onOpenShareInbox
                     )
-                    .frame(width: 44, height: 44)
+                    .frame(width: 30, height: 30)
                 }
             }
             .overlay { if isProcessingContent { processingOverlay } }

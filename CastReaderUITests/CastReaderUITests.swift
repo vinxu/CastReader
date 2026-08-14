@@ -1745,16 +1745,16 @@ class CastReaderUITests: XCTestCase {
         )
     }
 
-    /// 账号入口遵循 44pt 标准工具栏控件，并且可访问名称不泄露会员状态。
-    /// 头像自身的 40pt 尺寸与无会员装饰由发布前截图一起验收。
-    func testSettingsToolbarUsesLargeAccountEntry() {
+    /// 账号入口恢复 UI 分支介入前的尺寸，并且可访问名称不泄露会员状态。
+    /// 头像自身的 28pt 尺寸与无会员装饰由发布前截图一起验收。
+    func testSettingsToolbarUsesOriginalAccountEntry() {
         let app = launchZh()
         let settings = app.buttons["settingsGearButton"]
 
         XCTAssertTrue(settings.waitForExistence(timeout: 6))
         XCTAssertEqual(settings.label, "账号与设置")
-        XCTAssertGreaterThanOrEqual(settings.frame.width, 44)
-        XCTAssertGreaterThanOrEqual(settings.frame.height, 44)
+        XCTAssertGreaterThanOrEqual(settings.frame.width, 28)
+        XCTAssertGreaterThanOrEqual(settings.frame.height, 28)
     }
 
     /// 设置是 sheet，必须有「关闭」按钮，而不是只能下拉退出。
