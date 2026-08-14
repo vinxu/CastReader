@@ -1745,6 +1745,17 @@ class CastReaderUITests: XCTestCase {
         )
     }
 
+    /// 账号入口只展示头像：会员状态不能再把头像缩小或加回 Pro 标识。
+    func testSettingsToolbarUsesLargeAvatarWithoutProDecoration() {
+        let app = launchZh()
+        let settings = app.buttons["settingsGearButton"]
+
+        XCTAssertTrue(settings.waitForExistence(timeout: 6))
+        XCTAssertEqual(settings.label, "账号与设置")
+        XCTAssertGreaterThanOrEqual(settings.frame.width, 36)
+        XCTAssertGreaterThanOrEqual(settings.frame.height, 36)
+    }
+
     /// 设置是 sheet，必须有「关闭」按钮，而不是只能下拉退出。
     func testSettingsSheetHasCloseButton() {
         let app = launchZh()

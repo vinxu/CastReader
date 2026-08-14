@@ -2105,14 +2105,9 @@ struct SettingsToolbarButton: View {
     var onOpenShareInbox: (() -> Void)?
 
     @ObservedObject private var auth = AuthService.shared
-    @ObservedObject private var pro = ProManager.shared
     @State private var showSettings = false
     @State private var pendingLibraryOnboardingReset: Bool?
     @State private var pendingOpenShareInbox = false
-
-    /// Pro 时头像让出 3pt 给外圈，圆框才不会压在头像自身的轮廓上糊成一团；
-    /// 非会员维持原来的 28pt，不会因为这个功能被无端改小。
-    private var avatarDiameter: CGFloat { pro.isPro ? 25 : 28 }
 
     var body: some View {
         Button { showSettings = true } label: {
@@ -2120,7 +2115,7 @@ struct SettingsToolbarButton: View {
                 Color.clear
                 // 露头像而不是齿轮：用户来这里多半是找账号和订阅，不是找"设置"。
                 avatar
-                    .frame(width: avatarDiameter, height: avatarDiameter)
+                    .frame(width: 36, height: 36)
                     .clipShape(Circle())
                 if shareInboxUnreadCount > 0 {
                     Circle()
@@ -2129,17 +2124,10 @@ struct SettingsToolbarButton: View {
                         .overlay(Circle().stroke(AppTheme.background, lineWidth: 1.5))
                 }
             }
-            .frame(width: 30, height: 30)
-            // Pro 在这里只给一圈描边：角标会被当成未读红点，让人下意识想点掉它。
-            // 皇冠留给设置里的账号头像，那儿有空间也不会跟提醒混淆。
-            .overlay {
-                if pro.isPro {
-                    Circle().strokeBorder(AppTheme.primary, lineWidth: 1.5)
-                }
-            }
+            .frame(width: 40, height: 40)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(pro.isPro ? AppLocalized("账号与设置（Pro 会员）") : AppLocalized("账号与设置")))
+        .accessibilityLabel(Text(AppLocalized("账号与设置")))
         .accessibilityIdentifier("settingsGearButton")
         .sheet(isPresented: $showSettings, onDismiss: handleSettingsDismissed) {
             SettingsView(
