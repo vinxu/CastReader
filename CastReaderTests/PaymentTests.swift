@@ -393,6 +393,11 @@ final class PaymentTests: XCTestCase {
             ProManager.shared.storeKitLocalPro,
             "同一账号范围内的资料补全不能清除 StoreKit 快照"
         )
+        XCTAssertFalse(
+            ProManager.shared.serverPro,
+            "资料变更后应等待同一账号的服务端权益重新确认"
+        )
+        ProManager.shared.setEntitlementsForTesting(storeKit: true, server: true)
 
         AuthService.shared.applyAccount(UserAccount(
             id: "next-provider-user",
