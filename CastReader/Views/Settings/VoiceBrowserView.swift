@@ -191,8 +191,13 @@ struct VoiceBrowserView: View {
                         }
                     }
                 } else {
-                    ToolbarItem(placement: .navigationBarTrailing) {
+                    // 与首页右上角保持同一组入口：切 Tab 时书架按钮不再消失。
+                    ToolbarItemGroup(placement: .navigationBarTrailing) {
+                        ShelfSourcesToolbarButton(
+                            accessibilityID: "voiceShelfSourcesButton"
+                        )
                         SettingsToolbarButton()
+                            .frame(width: 30, height: 30)
                     }
                 }
             }

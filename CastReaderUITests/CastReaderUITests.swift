@@ -1528,10 +1528,33 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.tabBars.buttons["音色"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.tabBars.buttons["设置"].exists)
 
+        XCTAssertTrue(app.buttons["homeShelfSourcesButton"].exists)
+
         app.tabBars.buttons["音色"].tap()
         XCTAssertTrue(app.navigationBars["音色"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["探索"].exists)
         XCTAssertTrue(app.buttons["settingsGearButton"].exists)
+        // 右上角这组入口在两个 Tab 上必须一致：切到音色时书架不能消失。
+        XCTAssertTrue(
+            app.buttons["voiceShelfSourcesButton"].exists,
+            "音色 Tab 缺少书架来源入口，右上角在切 Tab 时又变了"
+        )
+    }
+
+    /// 设置是 sheet，必须有「关闭」按钮，而不是只能下拉退出。
+    func testSettingsSheetHasCloseButton() {
+        let app = launchZh()
+        let gear = app.buttons["settingsGearButton"]
+        XCTAssertTrue(gear.waitForExistence(timeout: 6))
+        gear.tap()
+
+        let close = app.buttons["settingsCloseButton"]
+        XCTAssertTrue(close.waitForExistence(timeout: 6), "设置没有关闭按钮")
+        close.tap()
+        XCTAssertTrue(
+            app.tabBars.buttons["首页"].waitForExistence(timeout: 6),
+            "点关闭后设置没有退出"
+        )
     }
 
     /// 点「论文 / 学术」→ 场景导入面板，列出上传文件 + 输入网址等来源。

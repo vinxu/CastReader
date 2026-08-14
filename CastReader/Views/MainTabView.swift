@@ -2058,34 +2058,66 @@ private struct ShareInboxView: View {
     }
 }
 
+/// 书架来源入口。首页与音色 Tab 共用同一颗按钮，切 Tab 时右上角不再变化。
+struct ShelfSourcesToolbarButton: View {
+    /// 传入时由调用方负责呈现（首页统一走自己的 `activeSheet`，避免同屏多 sheet 互吞，
+    /// 见 CLAUDE.md 避坑 #9）；不传则这颗按钮自己挂 sheet。
+    var accessibilityID: String = "homeShelfSourcesButton"
+    var onTap: (() -> Void)?
+
+    @State private var showsShelfSources = false
+
+    var body: some View {
+        Button {
+            if let onTap { onTap() } else { showsShelfSources = true }
+        } label: {
+            Image(systemName: "books.vertical.fill")
+                .font(.system(size: 18, weight: .regular))
+                .foregroundStyle(AppTheme.foreground)
+                .frame(width: 30, height: 30)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(accessibilityID)
+        .accessibilityLabel(Text(AppLocalized("管理书架来源")))
+        .sheet(isPresented: $showsShelfSources) { LibrarySourcesSheet() }
+    }
+}
+
 struct SettingsToolbarButton: View {
     /// 收件箱从首页 toolbar 下沉进设置后，未读数改由这颗按钮代为提示。
     var shareInboxUnreadCount: Int = 0
     var onOpenShareInbox: (() -> Void)?
 
     @ObservedObject private var auth = AuthService.shared
+    @ObservedObject private var pro = ProManager.shared
     @State private var showSettings = false
     @State private var pendingLibraryOnboardingReset: Bool?
     @State private var pendingOpenShareInbox = false
 
     var body: some View {
         Button { showSettings = true } label: {
+            // Pro 皇冠占右上角（与设置里的 Pro 图标同一符号），未读红点让位到左上角，
+            // 两者同时出现也不重叠。徽标只到 11pt 并压在 30pt 槽位的角上：正好骑在
+            // 头像圆周上，既不盖住脸，也不越出槽位被工具栏胶囊裁掉。
             ZStack(alignment: .topTrailing) {
+                Color.clear
                 // 露头像而不是齿轮：用户来这里多半是找账号和订阅，不是找"设置"。
                 avatar
                     .frame(width: 28, height: 28)
                     .clipShape(Circle())
+                if pro.isPro { proCrownBadge }
                 if shareInboxUnreadCount > 0 {
                     Circle()
                         .fill(AppTheme.primary)
-                        .frame(width: 8, height: 8)
-                        .overlay(Circle().stroke(AppTheme.background, lineWidth: 1.5))
-                        .offset(x: 2, y: -2)
+                        .frame(width: 9, height: 9)
+                        .overlay(Circle().stroke(AppTheme.background, lineWidth: 1))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
             }
+            .frame(width: 30, height: 30)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(AppLocalized("账号与设置")))
+        .accessibilityLabel(Text(pro.isPro ? AppLocalized("账号与设置（Pro 会员）") : AppLocalized("账号与设置")))
         .accessibilityIdentifier("settingsGearButton")
         .sheet(isPresented: $showSettings, onDismiss: handleSettingsDismissed) {
             SettingsView(
@@ -2095,6 +2127,19 @@ struct SettingsToolbarButton: View {
                 pendingLibraryOnboardingReset = reset
             }
         }
+    }
+
+    private var proCrownBadge: some View {
+        Circle()
+            .fill(AppTheme.primary)
+            .frame(width: 11, height: 11)
+            .overlay(
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 5.5, weight: .semibold))
+                    .foregroundStyle(AppTheme.primaryForeground)
+            )
+            .overlay(Circle().stroke(AppTheme.background, lineWidth: 1))
+            .accessibilityIdentifier("settingsProBadge")
     }
 
     @ViewBuilder

@@ -79,6 +79,14 @@ struct SettingsView: View {
                 #endif
             }
             .navigationTitle("设置")
+            // 设置是 sheet，但没有关闭按钮时只能下拉退出。与书架来源等 sheet 对齐，
+            // 在左上角补一颗「关闭」。
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(AppLocalized("关闭")) { dismiss() }
+                        .accessibilityIdentifier("settingsCloseButton")
+                }
+            }
             .sheet(isPresented: $showPaywall) {
                 PaywallView(analyticsTrigger: "settings_upgrade", analyticsSurface: "settings")
             }

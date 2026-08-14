@@ -260,17 +260,9 @@ struct HomeView: View {
             .navigationTitle("CastReader")
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button {
+                    ShelfSourcesToolbarButton(onTap: {
                         activeSheet = .librarySources
-                    } label: {
-                        Image(systemName: "books.vertical.fill")
-                            .font(.system(size: 18, weight: .regular))
-                            .foregroundStyle(AppTheme.foreground)
-                            .frame(width: 30, height: 30)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("homeShelfSourcesButton")
-                    .accessibilityLabel(Text(AppLocalized("管理书架来源")))
+                    })
 
                     // 收件箱下沉到设置里（低频入口），未读数由头像上的红点接手。
                     SettingsToolbarButton(
