@@ -104,6 +104,154 @@ final class PaymentTests: XCTestCase {
         XCTAssertEqual(status.listenSeconds, 60)
     }
 
+    func testPhoneBackendUserCanAdoptServerProWithoutEmail() {
+        XCTAssertEqual(
+            ProManager.serverIdentityKey(userId: "  phone-user-42  ", email: nil),
+            "user:phone-user-42|email:-"
+        )
+        XCTAssertTrue(
+            ProManager.shouldAdoptServerPro(
+                true,
+                userId: "  phone-user-42  ",
+                email: nil
+            ),
+            "手机号账号有规范化 backend user id 时必须采用服务端 Pro"
+        )
+        XCTAssertFalse(
+            ProManager.shouldAdoptServerPro(
+                false,
+                userId: "phone-user-42",
+                email: nil
+            )
+        )
+    }
+
+    func testAnonymousStatusCanNeverGrantServerPro() {
+        XCTAssertNil(ProManager.serverIdentityKey(userId: nil, email: nil))
+        XCTAssertNil(ProManager.serverIdentityKey(userId: "  ", email: "\n"))
+        XCTAssertFalse(
+            ProManager.shouldAdoptServerPro(true, userId: nil, email: nil),
+            "只有 device_id 的匿名状态不能授予跨端 Pro"
+        )
+    }
+
+    func testServerIdentityNormalizesEmailAndChangesWithPhoneAccount() {
+        XCTAssertEqual(
+            ProManager.serverIdentityKey(userId: "user-a", email: " Reader@Example.COM "),
+            "user:user-a|email:reader@example.com"
+        )
+        XCTAssertNotEqual(
+            ProManager.serverIdentityKey(userId: "phone-a", email: nil),
+            ProManager.serverIdentityKey(userId: "phone-b", email: nil),
+            "两个无邮箱手机号账号必须有不同的内存权益身份"
+        )
+    }
+
+    func testAccountBoundStoreKitTokenIsStableAccountScopedAndFailClosed() {
+        let token = ProManager.accountBoundAppAccountToken(userId: " user-42 ")
+        XCTAssertEqual(
+            token,
+            ProManager.accountBoundAppAccountToken(userId: "user-42")
+        )
+        XCTAssertEqual(
+            token.uuidString.lowercased(),
+            "d346986d-7e0b-805a-b235-41f487858289",
+            "iOS and backend must derive the exact same UUIDv8 bytes"
+        )
+        XCTAssertNotEqual(
+            token,
+            ProManager.accountBoundAppAccountToken(userId: "user-99")
+        )
+        XCTAssertTrue(ProManager.isAccountBoundAppAccountToken(token))
+        XCTAssertTrue(ProManager.transactionBelongsToCurrentAccount(
+            appAccountToken: token,
+            expectedAccountToken: token
+        ))
+        XCTAssertFalse(ProManager.transactionBelongsToCurrentAccount(
+            appAccountToken: token,
+            expectedAccountToken: nil
+        ))
+        XCTAssertFalse(ProManager.transactionBelongsToCurrentAccount(
+            appAccountToken: token,
+            expectedAccountToken: ProManager.accountBoundAppAccountToken(userId: "user-99")
+        ))
+        XCTAssertTrue(
+            ProManager.transactionBelongsToCurrentAccount(
+                appAccountToken: UUID(),
+                expectedAccountToken: token
+            ),
+            "legacy UUIDv4 purchases must remain restorable"
+        )
+    }
+
+    func testOnlyVerifiedStoreKitTransactionsMayBeFinished() {
+        XCTAssertTrue(ProManager.shouldFinishStoreKitTransaction(isVerified: true))
+        XCTAssertFalse(
+            ProManager.shouldFinishStoreKitTransaction(isVerified: false),
+            "unverified charged transactions must remain available for retry"
+        )
+    }
+
+    func testTransactionUpdatesRejectForeignProductsAndAccountBoundMismatches() {
+        let current = ProManager.accountBoundAppAccountToken(userId: "user-current")
+        let other = ProManager.accountBoundAppAccountToken(userId: "user-other")
+
+        XCTAssertTrue(ProManager.shouldProcessTransactionUpdate(
+            productID: ProManager.yearlyID,
+            appAccountToken: current,
+            expectedAccountToken: current
+        ))
+        XCTAssertFalse(ProManager.shouldProcessTransactionUpdate(
+            productID: "com.example.unrelated.product",
+            appAccountToken: current,
+            expectedAccountToken: current
+        ), "non-CastReader products must never be finished by this listener")
+        XCTAssertFalse(ProManager.shouldProcessTransactionUpdate(
+            productID: ProManager.monthlyID,
+            appAccountToken: other,
+            expectedAccountToken: current
+        ), "a UUIDv8 transaction bound to another account must remain pending")
+        XCTAssertFalse(ProManager.shouldProcessTransactionUpdate(
+            productID: ProManager.monthlyID,
+            appAccountToken: current,
+            expectedAccountToken: nil
+        ), "UUIDv8 must fail closed when no canonical backend account is available")
+    }
+
+    func testTransactionUpdatesPreserveLegacyUUIDCompatibility() {
+        let current = ProManager.accountBoundAppAccountToken(userId: "user-current")
+        XCTAssertTrue(ProManager.shouldProcessTransactionUpdate(
+            productID: ProManager.monthlyID,
+            appAccountToken: UUID(),
+            expectedAccountToken: current
+        ), "historical UUIDv4 transactions remain restorable")
+        XCTAssertTrue(ProManager.shouldProcessTransactionUpdate(
+            productID: ProManager.yearlyID,
+            appAccountToken: nil,
+            expectedAccountToken: nil
+        ), "historical nil tokens retain the released compatibility policy")
+    }
+
+    func testAnonymousDeviceIdentityPreservesLegacyKeysAndIsolatesChinaRoute() {
+        XCTAssertEqual(
+            StableDeviceID.keychainKey(for: .globalGateway),
+            "stable_device_id",
+            "old live installations must keep their exact Keychain identity"
+        )
+        XCTAssertEqual(
+            StableDeviceID.defaultsKey(for: .globalGateway),
+            Constants.Storage.visitorIdKey
+        )
+        XCTAssertEqual(
+            StableDeviceID.keychainKey(for: .chinaGateway),
+            "stable_device_id.cn"
+        )
+        XCTAssertEqual(
+            StableDeviceID.defaultsKey(for: .chinaGateway),
+            "\(Constants.Storage.visitorIdKey).cn"
+        )
+    }
+
     // MARK: 1. 产品加载
 
     @MainActor

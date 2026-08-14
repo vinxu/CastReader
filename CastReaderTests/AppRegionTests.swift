@@ -12,26 +12,50 @@ final class AppRegionTests: XCTestCase {
 
     private let storefrontKey = "appRegion.v1.storefrontCountryCode"
     private let overrideKey = "appRegion.v1.override"
+    private let serviceOverrideKey = "serviceRouting.v1.override"
+    private let serviceBackendKey = "serviceRouting.v1.backendConfiguration"
     private var savedStorefront: String?
     private var savedOverride: String?
+    private var savedServiceOverride: String?
+    private var savedServiceBackend: Data?
 
     override func setUp() {
         super.setUp()
         savedStorefront = UserDefaults.standard.string(forKey: storefrontKey)
         savedOverride = UserDefaults.standard.string(forKey: overrideKey)
+        savedServiceOverride = UserDefaults.standard.string(forKey: serviceOverrideKey)
+        savedServiceBackend = UserDefaults.standard.data(forKey: serviceBackendKey)
         UserDefaults.standard.removeObject(forKey: storefrontKey)
         UserDefaults.standard.removeObject(forKey: overrideKey)
+        UserDefaults.standard.removeObject(forKey: serviceOverrideKey)
+        UserDefaults.standard.removeObject(forKey: serviceBackendKey)
+        AppRegion.resetProcessResolutionForTesting()
+        ServiceRouting.resetProcessSnapshotForTesting()
+        TTSEndpoint.resetProcessSnapshotForTesting()
+        QuickReadEndpoint.resetProcessSnapshotForTesting()
     }
 
     override func tearDown() {
         UserDefaults.standard.removeObject(forKey: storefrontKey)
         UserDefaults.standard.removeObject(forKey: overrideKey)
+        UserDefaults.standard.removeObject(forKey: serviceOverrideKey)
+        UserDefaults.standard.removeObject(forKey: serviceBackendKey)
         if let savedStorefront {
             UserDefaults.standard.set(savedStorefront, forKey: storefrontKey)
         }
         if let savedOverride {
             UserDefaults.standard.set(savedOverride, forKey: overrideKey)
         }
+        if let savedServiceOverride {
+            UserDefaults.standard.set(savedServiceOverride, forKey: serviceOverrideKey)
+        }
+        if let savedServiceBackend {
+            UserDefaults.standard.set(savedServiceBackend, forKey: serviceBackendKey)
+        }
+        AppRegion.resetProcessResolutionForTesting()
+        ServiceRouting.resetProcessSnapshotForTesting()
+        TTSEndpoint.resetProcessSnapshotForTesting()
+        QuickReadEndpoint.resetProcessSnapshotForTesting()
         super.tearDown()
     }
 
@@ -74,6 +98,120 @@ final class AppRegionTests: XCTestCase {
         XCTAssertFalse(AppRegion.isAuthoritative)
     }
 
+    func testLaunchPreparationUsesCurrentStorefrontInsteadOfTimezoneOrStaleCache() async {
+        UserDefaults.standard.set("USA", forKey: storefrontKey)
+
+        let resolution = await AppRegion.prepareForCurrentProcess {
+            "CHN"
+        }
+
+        XCTAssertEqual(
+            resolution,
+            .init(region: .cn, isAuthoritative: true, provenance: .storefront)
+        )
+        XCTAssertEqual(AppRegion.resolvedStorefrontCode, "CHN")
+        XCTAssertEqual(AppRegion.current, .cn)
+    }
+
+    func testLaunchPreparationOfflineRetainsCachedChinaStorefront() async {
+        UserDefaults.standard.set("CHN", forKey: storefrontKey)
+
+        let resolution = await AppRegion.prepareForCurrentProcess {
+            nil
+        }
+
+        XCTAssertEqual(
+            resolution,
+            .init(region: .cn, isAuthoritative: true, provenance: .storefront)
+        )
+        XCTAssertEqual(AppRegion.resolvedStorefrontCode, "CHN")
+        XCTAssertEqual(AppRegion.current, .cn)
+        XCTAssertTrue(AppRegion.isAuthoritative)
+    }
+
+    func testLaunchPreparationFirstInstallWithoutStorefrontFailsClosedGlobal() async {
+        XCTAssertNil(AppRegion.resolvedStorefrontCode)
+
+        let resolution = await AppRegion.prepareForCurrentProcess {
+            nil
+        }
+
+        XCTAssertEqual(
+            resolution,
+            .init(region: .global, isAuthoritative: true, provenance: .safeDefault)
+        )
+        XCTAssertNil(AppRegion.resolvedStorefrontCode)
+        XCTAssertEqual(AppRegion.current, .global)
+        XCTAssertTrue(AppRegion.isAuthoritative)
+    }
+
+    func testLaunchPreparationTimeoutRetainsCachedAuthoritativeStorefront() async {
+        UserDefaults.standard.set("CHN", forKey: storefrontKey)
+        let startedAt = Date()
+
+        let resolution = await AppRegion.prepareForCurrentProcess(
+            storefrontTimeout: 0.05
+        ) {
+            try? await Task.sleep(for: .seconds(30))
+            return "USA"
+        }
+
+        XCTAssertLessThan(
+            Date().timeIntervalSince(startedAt),
+            1,
+            "StoreKit 未返回时启动必须由真实 deadline 截断"
+        )
+        XCTAssertEqual(
+            resolution,
+            .init(region: .cn, isAuthoritative: true, provenance: .storefront)
+        )
+        XCTAssertEqual(AppRegion.resolvedStorefrontCode, "CHN")
+    }
+
+    func testLaunchPreparationTimeoutOnFirstInstallFailsClosedGlobal() async {
+        let startedAt = Date()
+
+        let resolution = await AppRegion.prepareForCurrentProcess(
+            storefrontTimeout: 0.05
+        ) {
+            try? await Task.sleep(for: .seconds(30))
+            return "CHN"
+        }
+
+        XCTAssertLessThan(
+            Date().timeIntervalSince(startedAt),
+            1,
+            "首次安装也不能被 StoreKit 无限阻塞"
+        )
+        XCTAssertEqual(
+            resolution,
+            .init(region: .global, isAuthoritative: true, provenance: .safeDefault)
+        )
+        XCTAssertNil(AppRegion.resolvedStorefrontCode)
+    }
+
+    func testExplicitLaunchRegionSkipsStorefrontProvider() async {
+        let resolution = await AppRegion.prepareForCurrentProcess(
+            arguments: ["app", "-CastReaderRegion", "cn"]
+        ) {
+            return "USA"
+        }
+
+        XCTAssertEqual(
+            resolution,
+            .init(region: .cn, isAuthoritative: true, provenance: .launchArgument)
+        )
+        XCTAssertEqual(
+            AppRegion.resolve(
+                defaults: .standard,
+                arguments: ["app", "-CastReaderRegion", "cn"],
+                timeZoneIdentifier: "America/Los_Angeles",
+                allowLocalOverride: false
+            ),
+            .init(region: .cn, isAuthoritative: true, provenance: .launchArgument)
+        )
+    }
+
     func testProvenanceReportsWhichSignalDecided() {
         XCTAssertEqual(AppRegion.provenance, .timeZone)
         UserDefaults.standard.set("USA", forKey: storefrontKey)
@@ -93,8 +231,7 @@ final class AppRegionTests: XCTestCase {
         XCTAssertEqual(AppRegion.global.onboardingSource, .kindle)
         XCTAssertTrue(AppRegion.global.showsGoogleSignIn)
         XCTAssertFalse(AppRegion.global.showsPhoneSignIn)
-        XCTAssertEqual(AppRegion.global.webBaseURL, "https://castreader.ai")
-        XCTAssertEqual(AppRegion.global.apiGatewayBaseURL, "https://api.castreader.ai")
+        XCTAssertTrue(AppRegion.global.showsEmailSignIn)
         XCTAssertEqual(AppRegion.global.currencySymbol, "$")
     }
 
@@ -106,53 +243,116 @@ final class AppRegionTests: XCTestCase {
         )
         // 默认书库仍是微信读书——可绑定不等于默认。
         XCTAssertEqual(AppRegion.cn.onboardingSource, .weread)
-        XCTAssertTrue(AppRegion.cn.showsGoogleSignIn)
+        XCTAssertFalse(AppRegion.cn.showsGoogleSignIn)
         XCTAssertTrue(AppRegion.cn.showsPhoneSignIn)
-        XCTAssertEqual(AppRegion.cn.webBaseURL, "https://api.castreader.cn")
-        XCTAssertEqual(AppRegion.cn.apiGatewayBaseURL, "https://api.castreader.cn")
+        XCTAssertFalse(AppRegion.cn.showsEmailSignIn)
         XCTAssertEqual(AppRegion.cn.currencySymbol, "¥")
     }
 
-    /// 开关打开时 CN 设备走境内后端，关闭时退回全球后端。
-    ///
-    /// 写成随开关分支而不是写死某一个值：这个开关是备案被拦时的回退阀门，
-    /// 断言写死会让「关掉它」这个应急操作顺带挂掉测试。
-    func testWebURLFollowsChinaBackendSwitch() {
+    // MARK: - 登录协议门禁
+
+    func testGlobalLoginActionExecutesWithoutExplicitConsent() {
+        var gate = LoginConsentGate()
+
+        XCTAssertEqual(
+            gate.request(.google, requiresExplicitConsent: false),
+            .execute(.google)
+        )
+        XCTAssertFalse(gate.hasAgreed)
+        XCTAssertNil(gate.pendingAction)
+    }
+
+    func testChinaLoginActionWaitsForConsentThenResumesSameAction() {
+        var gate = LoginConsentGate()
+
+        XCTAssertEqual(
+            gate.request(.phone, requiresExplicitConsent: true),
+            .requestConsent
+        )
+        XCTAssertEqual(gate.pendingAction, .phone)
+        XCTAssertEqual(gate.acceptPendingAction(), .phone)
+        XCTAssertTrue(gate.hasAgreed)
+        XCTAssertNil(gate.pendingAction)
+
+        XCTAssertEqual(
+            gate.request(.apple, requiresExplicitConsent: true),
+            .execute(.apple)
+        )
+    }
+
+    func testDecliningChinaConsentNeverExecutesStaleLoginAction() {
+        var gate = LoginConsentGate()
+
+        XCTAssertEqual(
+            gate.request(.apple, requiresExplicitConsent: true),
+            .requestConsent
+        )
+        gate.declinePendingAction()
+
+        XCTAssertFalse(gate.hasAgreed)
+        XCTAssertNil(gate.pendingAction)
+        XCTAssertNil(gate.acceptPendingAction())
+    }
+
+    func testUncheckingChinaConsentRequiresPromptAgain() {
+        var gate = LoginConsentGate()
+        gate.setAgreement(true)
+        XCTAssertEqual(
+            gate.request(.sendEmailCode, requiresExplicitConsent: true),
+            .execute(.sendEmailCode)
+        )
+
+        gate.setAgreement(false)
+        XCTAssertEqual(
+            gate.request(.verifyEmailCode, requiresExplicitConsent: true),
+            .requestConsent
+        )
+        XCTAssertEqual(gate.pendingAction, .verifyEmailCode)
+    }
+
+    /// CHN 产品体验不能自动改变服务线路；无灰度配置时安全走全球网关。
+    func testChinaProductRegionDefaultsToGlobalGateway() {
         UserDefaults.standard.set("CHN", forKey: storefrontKey)
-        if Constants.Features.chinaBackendEnabled {
-            XCTAssertEqual(Constants.API.webURL, "https://api.castreader.cn")
-        } else {
-            XCTAssertEqual(Constants.API.webURL, Constants.API.globalWebURL)
-        }
+        XCTAssertEqual(ServiceRouting.current, .globalGateway)
+        XCTAssertEqual(Constants.API.webURL, Constants.API.globalWebURL)
     }
 
     func testWebURLIsAlwaysGlobalOutsideChina() {
         UserDefaults.standard.set("USA", forKey: storefrontKey)
         XCTAssertEqual(Constants.API.webURL, Constants.API.globalWebURL)
-        XCTAssertEqual(Constants.API.proStatus, "https://castreader.ai/api/pro/status")
-        XCTAssertEqual(Constants.API.analyticsEvents, "https://castreader.ai/api/events")
+        XCTAssertEqual(Constants.API.proStatus, "https://api.castreader.ai/api/pro/status")
+        XCTAssertEqual(Constants.API.analyticsEvents, "https://api.castreader.ai/api/events")
     }
 
-    func testChinaRoutesEveryOwnedServiceThroughFiledGateway() {
+    func testChinaUsesFiledGeneralGatewayAndDedicatedQuickReadIngress() {
         UserDefaults.standard.set("CHN", forKey: storefrontKey)
+        ServiceRouting.overrideRoute = .chinaGateway
+        ServiceRouting.resetProcessSnapshotForTesting()
 
         XCTAssertEqual(Constants.API.baseURL, "https://api.castreader.cn")
-        XCTAssertEqual(Constants.API.documents, "https://api.castreader.cn/documents")
-        XCTAssertEqual(Constants.API.sts, "https://api.castreader.cn/sts")
-        XCTAssertEqual(Constants.API.asyncUpload, "https://api.castreader.cn/async-md-upload-by-url")
-        XCTAssertEqual(Constants.API.syncUpload, "https://api.castreader.cn/upload")
+        XCTAssertEqual(Constants.API.documents, "https://api.castreader.cn/api/mobile/documents")
+        XCTAssertEqual(
+            Constants.API.sts,
+            "https://api.castreader.cn/api/mobile/upload/sts"
+        )
+        XCTAssertEqual(Constants.API.asyncUpload, "https://api.castreader.cn/api/mobile/upload/notify")
         XCTAssertEqual(Constants.API.ttsCatalog, "https://api.castreader.cn/api/tts/catalog?contract=tts-voice-catalog-v1")
         XCTAssertEqual(TTSEndpoint.primaryBase(), "https://api.castreader.cn")
         XCTAssertNil(TTSEndpoint.fallbackBase())
-        XCTAssertEqual(QuickReadEndpoint.base(), "https://api.castreader.cn")
+        XCTAssertEqual(QuickReadEndpoint.base(), "https://quickread.castreader.cn")
     }
 
     func testGlobalServiceGatewayStaysOnDotAI() {
         UserDefaults.standard.set("USA", forKey: storefrontKey)
+        ServiceRouting.overrideRoute = .globalGateway
+        ServiceRouting.resetProcessSnapshotForTesting()
 
         XCTAssertEqual(Constants.API.baseURL, "https://api.castreader.ai")
-        XCTAssertEqual(Constants.API.documents, "https://api.castreader.ai/documents")
+        XCTAssertEqual(Constants.API.documents, "https://api.castreader.ai/api/mobile/documents")
         XCTAssertEqual(Constants.API.tts, "https://api.castreader.ai/api/captioned_speech_partly")
+        XCTAssertEqual(Constants.API.webURL, "https://api.castreader.ai")
+        XCTAssertEqual(QuickReadEndpoint.base(), "https://api.castreader.ai")
+        XCTAssertNil(TTSEndpoint.fallbackBase())
     }
 
     // MARK: - 引导步骤

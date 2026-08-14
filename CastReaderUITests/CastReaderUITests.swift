@@ -781,16 +781,16 @@ class CastReaderUITests: XCTestCase {
         XCTFail("\(message)（实际：\(String(describing: element.value))）")
     }
 
-    /// 内部区域开关必须能在设置里找到，并且能把区域切到中国大陆。
-    ///
-    /// 这个开关是真机测试中国区的唯一入口：切到 CN 后 Google 登录会消失，
-    /// 如果开关本身不可见或切不回来，测试设备就被锁死在中国区了。
+    /// 产品发行区域和自有 API 服务线路必须是两个独立开关。线路切换只写给
+    /// 下次启动，当前进程保持 global，避免一次会话混用后端。
     func testInternalRegionSwitcherIsReachableAndSwitchesRegion() {
         let app = XCUIApplication()
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
+            "-CastReaderResetServiceRouteState",
         ]
         app.launch()
         dismissSelfOpenSystemAlertIfPresent()
@@ -814,14 +814,82 @@ class CastReaderUITests: XCTestCase {
 
         // 切换后当前生效区域要立刻反映出来。
         let effective = app.descendants(matching: .any)["settingsRegionEffective"]
+        // Form rows are virtualized. Selecting the last inline picker option
+        // can leave the status row just below the rendered viewport.
+        for _ in 0..<6 where !effective.exists {
+            app.swipeUp()
+        }
         XCTAssertTrue(effective.waitForExistence(timeout: 4))
         expect(effective, toHaveValue: "cn", "切到 CHN 后当前生效区域应为 cn")
 
         // 必须能切回来——否则测试机会被锁死在中国区。
         let globalOption = app.buttons["全球（Global）"]
-        XCTAssertTrue(globalOption.exists, "必须保留切回全球的入口")
+        for _ in 0..<6 where !globalOption.isHittable {
+            app.swipeDown()
+        }
+        XCTAssertTrue(globalOption.isHittable, "必须保留切回全球的入口")
         globalOption.tap()
+        for _ in 0..<6 where !effective.exists {
+            app.swipeUp()
+        }
         expect(effective, toHaveValue: "global", "切回后当前生效区域应为 global")
+
+        let chinaRouteOption = app.buttons["中国备案网关"]
+        for _ in 0..<8 where !chinaRouteOption.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(chinaRouteOption.isHittable, "必须提供独立的中国服务线路开关")
+        let currentRoute = app.descendants(matching: .any)["settingsServiceRouteEffective"]
+        let nextRoute = app.descendants(matching: .any)["settingsServiceRouteNextLaunch"]
+        for _ in 0..<6 where !currentRoute.exists || !nextRoute.exists {
+            app.swipeUp()
+        }
+        XCTAssertTrue(currentRoute.exists)
+        XCTAssertTrue(nextRoute.exists)
+        expect(currentRoute, toHaveValue: "global", "当前进程应保持全球网关")
+        for _ in 0..<6 where !chinaRouteOption.isHittable {
+            app.swipeDown()
+        }
+        XCTAssertTrue(chinaRouteOption.isHittable)
+        chinaRouteOption.tap()
+        for _ in 0..<6 where !currentRoute.exists || !nextRoute.exists {
+            app.swipeUp()
+        }
+        expect(currentRoute, toHaveValue: "global", "设置后当前进程不得中途切线")
+        expect(nextRoute, toHaveValue: "cn", "中国网关应在下次启动生效")
+
+        // Restore the persistent override so this test cannot change the route
+        // observed by a later UI test or a developer's next manual launch.
+        let globalRouteOption = app.buttons["全球网关"]
+        for _ in 0..<8 where !globalRouteOption.isHittable {
+            app.swipeDown()
+        }
+        XCTAssertTrue(globalRouteOption.isHittable, "必须保留切回全球网关的入口")
+        globalRouteOption.tap()
+        for _ in 0..<6 where !nextRoute.exists {
+            app.swipeUp()
+        }
+        expect(nextRoute, toHaveValue: "global", "测试结束前必须恢复全球网关")
+    }
+
+    /// 产品区域与服务线路只放在设置页，登录页不重复暴露内部测试控件。
+    func testRootLoginDoesNotExposeDistributionSettings() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderResetServiceRouteState",
+            "-CastReaderRegion", "global",
+            "-auth_account_v1", "RESET",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        XCTAssertFalse(app.buttons["login.phone"].exists, "global 产品体验不应显示手机号入口")
+        XCTAssertFalse(app.descendants(matching: .any)["loginRegionOverride"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["loginServiceRouteOverride"].exists)
+        XCTAssertTrue(app.buttons["login.apple"].waitForExistence(timeout: 6))
+        XCTAssertTrue(app.buttons["login.email"].exists)
     }
 
     /// 中国区首启走微信读书强绑定：四屏，没有站点确认屏，
@@ -896,20 +964,23 @@ class CastReaderUITests: XCTestCase {
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "-CastReaderRegion", "cn",
+            "-CastReaderServiceRoute", "cn",
             "-CastReaderSkipLibraryOnboarding",
             "-CastReaderPhoneAuthLocalFallback",
-            "-auth_account_v1", "RESET",
+            "-CastReaderDisableDebugPro",
+            "-auth_account_v1.cn", "RESET",
         ]
         app.launch()
         dismissSelfOpenSystemAlertIfPresent()
 
         let phoneEntry = app.buttons["login.phone"]
         XCTAssertTrue(phoneEntry.waitForExistence(timeout: 6), "中国区必须提供手机号登录入口")
-        XCTAssertTrue(
+        XCTAssertFalse(
             app.buttons["使用 Google 继续"].exists,
-            "手机号是中国区首选，但不得删除既有 Google 登录入口"
+            "中国区不得展示不可用的 Google 登录入口"
         )
-        XCTAssertTrue(app.buttons["login.apple"].exists, "Apple 登录必须与其他通道等价展示")
+        XCTAssertTrue(app.buttons["login.apple"].exists, "中国区必须保留 Apple 小图标入口")
+        XCTAssertFalse(app.buttons["login.email"].exists, "中国区不应展示尚未接通的邮箱登录")
 
         signInWithPresetPhoneCode(app)
 
@@ -917,6 +988,93 @@ class CastReaderUITests: XCTestCase {
         screenshot.name = "CN phone sign-in completed"
         screenshot.lifetime = .keepAlways
         add(screenshot)
+    }
+
+    /// A resend failure must not remove or lock the verification form. This
+    /// mirrors the production case where Tencent already delivered the SMS but
+    /// the client saw a timeout/limit error and still needs to submit that code.
+    func testChinaPhoneSignInAcceptsExistingCodeAfterSendFailure() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderRegion", "cn",
+            "-CastReaderServiceRoute", "cn",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderPhoneAuthLocalFallback",
+            "-CastReaderPhoneAuthForceSendFailure",
+            "-CastReaderDisableDebugPro",
+            "-auth_account_v1.cn", "RESET",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        openAcceptedPhoneSignIn(app)
+
+        let phoneField = app.textFields["phoneSignIn.phoneField"]
+        let codeField = app.textFields["phoneSignIn.codeField"]
+        let send = app.buttons["phoneSignIn.resend"]
+        let login = app.buttons["phoneSignIn.primary"]
+
+        XCTAssertTrue(phoneField.waitForExistence(timeout: 6))
+        XCTAssertTrue(codeField.exists, "验证码输入框必须从页面初始状态就存在")
+        XCTAssertEqual(send.label, "获取验证码")
+        XCTAssertEqual(login.label, "登录")
+        XCTAssertFalse(login.isEnabled)
+
+        phoneField.tap()
+        phoneField.typeText("13800138000")
+        XCTAssertTrue(send.isEnabled)
+        XCTAssertFalse(login.isEnabled, "只有手机号、没有 6 位验证码时不得提交")
+
+        send.tap()
+        let error = app.staticTexts["phoneSignIn.error"]
+        XCTAssertTrue(error.waitForExistence(timeout: 6), "发码失败应给出错误提示")
+        XCTAssertTrue(codeField.exists, "发码失败后验证码输入框不能消失")
+
+        codeField.tap()
+        codeField.typeText("888888")
+        XCTAssertTrue(login.isEnabled, "已有合法验证码时，发码失败不能锁死登录")
+        login.tap()
+
+        XCTAssertTrue(
+            app.buttons["settingsGearButton"].waitForExistence(timeout: 20),
+            "已有验证码必须能继续完成登录"
+        )
+    }
+
+    /// 手机号是中国产品能力，不由网络线路决定。即便服务仍走 global，
+    /// 中国产品登录页也必须隐藏 Google 与邮箱，只保留手机号和 Apple。
+    func testChinaProductOnGlobalRouteKeepsSupportedLoginChannels() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderRegion", "cn",
+            "-CastReaderServiceRoute", "global",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderPhoneAuthLocalFallback",
+            "-CastReaderDisableDebugPro",
+            "-auth_account_v1", "RESET",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        XCTAssertTrue(
+            app.buttons["login.phone"].waitForExistence(timeout: 6),
+            "中国产品在 global 网关也必须提供手机号入口"
+        )
+        XCTAssertFalse(
+            app.buttons["使用 Google 继续"].exists,
+            "中国区不能因为服务暂走 global 就重新显示 Google"
+        )
+        XCTAssertTrue(
+            app.buttons["login.apple"].exists,
+            "中国区必须保留 Apple 登录"
+        )
+        XCTAssertFalse(app.buttons["login.email"].exists, "中国区不应因服务暂走 global 就显示邮箱登录")
+
+        signInWithPresetPhoneCode(app)
     }
 
     /// 中国区手机号账号必须能进入付费流程。
@@ -929,9 +1087,11 @@ class CastReaderUITests: XCTestCase {
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "-CastReaderRegion", "cn",
+            "-CastReaderServiceRoute", "cn",
             "-CastReaderSkipLibraryOnboarding",
             "-CastReaderPhoneAuthLocalFallback",
-            "-auth_account_v1", "RESET",
+            "-CastReaderDisableDebugPro",
+            "-auth_account_v1.cn", "RESET",
         ]
         app.launch()
         dismissSelfOpenSystemAlertIfPresent()
@@ -940,19 +1100,15 @@ class CastReaderUITests: XCTestCase {
 
         // 登录后进入升级页，付费按钮必须可用（不再被邮箱门禁挡住）。
         let upgrade = app.buttons["settingsProLink"]
-        if upgrade.waitForExistence(timeout: 6) {
-            upgrade.tap()
-        } else {
-            app.staticTexts["CastReader Pro"].firstMatch.tap()
-        }
+        XCTAssertTrue(upgrade.waitForExistence(timeout: 10), "手机号账号必须能看到升级入口")
+        upgrade.tap()
 
         let purchase = app.buttons["paywallPurchaseButton"]
-        if purchase.waitForExistence(timeout: 10) {
-            XCTAssertTrue(
-                purchase.isEnabled,
-                "手机号账号必须能点付费按钮——邮箱门禁会挡住整个中国区"
-            )
-        }
+        XCTAssertTrue(purchase.waitForExistence(timeout: 15), "StoreKit 商品必须加载并展示购买按钮")
+        XCTAssertTrue(
+            purchase.isEnabled,
+            "手机号账号必须能点付费按钮——邮箱门禁会挡住整个中国区"
+        )
 
         let screenshot = XCTAttachment(screenshot: app.screenshot())
         screenshot.name = "CN paywall with phone account"
@@ -962,27 +1118,29 @@ class CastReaderUITests: XCTestCase {
 
     /// 用预设验证码完成中国区手机号登录，停在设置页。
     private func signInWithPresetPhoneCode(_ app: XCUIApplication) {
-        let phoneEntry = app.buttons["login.phone"]
-        XCTAssertTrue(phoneEntry.waitForExistence(timeout: 6))
-        phoneEntry.tap()
+        openAcceptedPhoneSignIn(app)
 
         let phoneField = app.textFields["phoneSignIn.phoneField"]
+        let codeField = app.textFields["phoneSignIn.codeField"]
+        let resend = app.buttons["phoneSignIn.resend"]
+        let primary = app.buttons["phoneSignIn.primary"]
         XCTAssertTrue(phoneField.waitForExistence(timeout: 6))
+        XCTAssertTrue(codeField.exists, "验证码框必须不依赖发码成功才显示")
+        XCTAssertEqual(resend.label, "获取验证码")
+        XCTAssertEqual(primary.label, "登录")
+        XCTAssertFalse(primary.isEnabled)
+
         phoneField.tap()
         phoneField.typeText("13800138000")
 
-        let primary = app.buttons["phoneSignIn.primary"]
-        XCTAssertTrue(primary.exists)
-        XCTAssertFalse(primary.isEnabled, "未同意协议时不得允许获取验证码")
+        XCTAssertTrue(resend.isEnabled, "合法手机号应允许获取验证码")
+        XCTAssertFalse(primary.isEnabled, "登录按钮必须等待完整验证码")
+        resend.tap()
 
-        app.buttons["phoneSignIn.agreement"].tap()
-        XCTAssertTrue(primary.isEnabled, "勾选协议后应可获取验证码")
-        primary.tap()
-
-        let codeField = app.textFields["phoneSignIn.codeField"]
-        XCTAssertTrue(codeField.waitForExistence(timeout: 15))
+        XCTAssertTrue(codeField.exists)
         codeField.tap()
         codeField.typeText("888888")
+        XCTAssertTrue(primary.isEnabled)
         primary.tap()
 
         let settings = app.buttons["settingsGearButton"]
@@ -993,6 +1151,23 @@ class CastReaderUITests: XCTestCase {
             app.buttons["退出登录"].waitForExistence(timeout: 20),
             "预设验证码必须能完成登录"
         )
+    }
+
+    /// Enter the phone sheet through the real China consent continuation.
+    private func openAcceptedPhoneSignIn(_ app: XCUIApplication) {
+        let phoneEntry = app.buttons["login.phone"]
+        XCTAssertTrue(phoneEntry.waitForExistence(timeout: 6))
+
+        let consent = app.buttons["login.chinaConsent"]
+        XCTAssertTrue(consent.exists, "中国区登录页必须展示协议勾选框")
+        expect(consent, toHaveValue: "unchecked", "协议必须默认不勾选")
+
+        phoneEntry.tap()
+        XCTAssertTrue(
+            app.alerts["服务条款与隐私政策"].waitForExistence(timeout: 4),
+            "未勾选协议点击登录方式必须弹出确认框"
+        )
+        app.alerts["服务条款与隐私政策"].buttons["同意"].tap()
     }
 
     func testOnboardingCanBeDeferredWithoutAContentDecision() {
@@ -1520,6 +1695,35 @@ class CastReaderUITests: XCTestCase {
         }
     }
 
+    func testChinaRegionStillOffersAllFiveShelfPlatforms() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderRegion", "cn",
+            "-CastReaderServiceRoute", "global",
+            "-CastReaderSkipSignInGate",
+            "-CastReaderSkipLibraryOnboarding",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        XCTAssertTrue(
+            app.descendants(matching: .any)["homeShelfSection.youtube"]
+                .waitForExistence(timeout: 5),
+            "中国发行体验仍必须保留 YouTube 首页入口"
+        )
+        openShelfSources(in: app)
+
+        for source in ["weread", "kindle", "google_books", "kobo", "oreilly"] {
+            XCTAssertTrue(
+                app.buttons["shelfSourcePrimaryAction.\(source)"]
+                    .waitForExistence(timeout: 5),
+                "中国发行体验仍必须保留平台：\(source)"
+            )
+        }
+    }
+
     /// 首页和中间 ➕ 保持不变，只把右侧 Settings 替换成 Voice。
     func testHomePlusAndVoiceNavigation() {
         let app = launchZh()
@@ -1554,6 +1758,55 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(
             app.tabBars.buttons["首页"].waitForExistence(timeout: 6),
             "点关闭后设置没有退出"
+        )
+    }
+
+    /// 中国大陆发行体验必须在设置的「关于」区域公开备案号，并把整行做成
+    /// 可点击的工信部查询入口；全球发行体验不得误显示中国备案信息。
+    func testChinaSettingsShowsClickableICPRecordOnlyInChinaRegion() {
+        let chinaApp = XCUIApplication()
+        chinaApp.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-interfaceLanguage", "system",
+            "-CastReaderRegion", "cn",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
+        ]
+        chinaApp.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        let chinaGear = chinaApp.buttons["settingsGearButton"]
+        XCTAssertTrue(chinaGear.waitForExistence(timeout: 6))
+        chinaGear.tap()
+        let filingLink = chinaApp.descendants(matching: .any)["settingsICPLink"]
+        for _ in 0..<16 where !filingLink.isHittable {
+            chinaApp.swipeUp()
+        }
+        XCTAssertTrue(filingLink.waitForExistence(timeout: 5), "中国区设置缺少 ICP 备案号")
+        XCTAssertTrue(filingLink.isEnabled, "ICP 备案号必须可点击前往工信部查询页")
+        XCTAssertTrue(filingLink.label.contains("沪ICP备14008512号-12A"))
+
+        chinaApp.terminate()
+
+        let globalApp = XCUIApplication()
+        globalApp.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-interfaceLanguage", "system",
+            "-CastReaderRegion", "global",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
+        ]
+        globalApp.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+        let globalGear = globalApp.buttons["settingsGearButton"]
+        XCTAssertTrue(globalGear.waitForExistence(timeout: 6))
+        globalGear.tap()
+        for _ in 0..<16 { globalApp.swipeUp() }
+        XCTAssertFalse(
+            globalApp.descendants(matching: .any)["settingsICPLink"].exists,
+            "全球发行体验不应显示中国 ICP 备案号"
         )
     }
 

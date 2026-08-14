@@ -3,80 +3,34 @@
 //  CastReader
 //
 //  解读后端客户端：extract-plan(SSE) → extract-block(JSON) → compose-block(JSON)。
-//  base = QuickReadEndpoint.base()（COS 远程配置优先，本地兜底 qr.castreader.ai —— 换后端零发版）。
+//  base = 当前进程已冻结的线路：global 走 api.castreader.ai，cn 直连
+//  quickread.castreader.cn。
 //
 
 import Foundation
 
-/// 解读后端地址 —— 远程配置(COS quickread-config.json)优先，否则本地兜底。
-/// 对齐 TTSEndpoint 的远程配置模式 + 浏览器扩展 loadRemoteConfig。
-/// 价值：换后端 / 容灾零发版 —— 改云端 JSON，客户端下次启动即生效（这次旧机被弃用，扩展靠它零改动切换，
-/// iOS 因写死地址被迫发版；补上这个机制后，这是最后一次为换后端而发版）。
+/// QuickRead 是自有业务，新版不再读取可把文档内容导向任意域名的客户端远程配置。
+/// CN 独立入口是编译期固定合同；供应商切换和容灾只能在所选线路服务端完成。
 enum QuickReadEndpoint {
-    /// 本地兜底：新东京干净节点。远程配置可覆盖。**绝不再用旧的 quickread.castreader.ai:8444**。
-    static let defaultBase = "https://qr.castreader.ai"
-    static let remoteConfigURL = "https://zqxgmqygirtpttnrvjpf.supabase.co/storage/v1/object/public/castreader-public/config/quickread-config.json"
-    private static let cacheKey = "quickread_base_v1"
+    static let defaultBase = ServiceRoute.globalGateway.quickReadBaseURL
+    static let chinaBase = ServiceRoute.chinaGateway.quickReadBaseURL
 
-    /// 中国大陆版统一走备案 API 网关；网关在服务器侧转发现有 QuickRead 上游，
-    /// 客户端不再直接暴露 `.ai` 解读域名。
-    static let chinaBase = "https://api.castreader.cn"
+    static func base() -> String { ServiceRouting.current.quickReadBaseURL }
 
-    /// 当前 base。
-    ///
-    /// 优先级：中国大陆备案网关 → 远程配置缓存 → 全球兜底。
-    static func base() -> String {
-        if Constants.Features.chinaQuickReadBackendEnabled,
-           AppRegion.current == .cn,
-           let secureBase = normalizedSecureBase(chinaBase) {
-            return secureBase
-        }
-        if let cached = UserDefaults.standard.string(forKey: cacheKey),
-           let secureBase = normalizedSecureBase(cached) {
-            return secureBase
-        }
-        return defaultBase
-    }
-
-    /// Cloud-derived text may contain private document content. Remote
-    /// failover must therefore never weaken transport security, even if a
-    /// stale or malformed configuration value has already been cached.
-    static func normalizedSecureBase(_ rawValue: String) -> String? {
-        var raw = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        while raw.hasSuffix("/") { raw.removeLast() }
-        guard let components = URLComponents(string: raw),
-              components.scheme?.lowercased() == "https",
-              components.host?.isEmpty == false,
-              components.user == nil,
-              components.password == nil,
-              components.query == nil,
-              components.fragment == nil else {
-            return nil
-        }
-        return raw
-    }
+    @discardableResult
+    static func freezeForCurrentProcess() -> String { base() }
 
     static var planURL: String         { "\(base())/api/quickread/extract-plan" }   // SSE
     static var extractBlockURL: String { "\(base())/api/quickread/extract-block" }  // JSON
     static var composeBlockURL: String { "\(base())/api/quickread/compose-block" }  // JSON
     static var fastBlock0URL: String   { "\(base())/api/quickread/fast-block0" }    // JSON 快道
 
-    /// 启动时拉一次远程配置（非阻塞；4s 超时；失败保留缓存/兜底）。每次启动刷新 → 换后端隔次启动即生效。
-    static func refreshRemoteConfig() async {
-        guard let url = URL(string: remoteConfigURL) else { return }
-        do {
-            var req = URLRequest(url: url)
-            req.timeoutInterval = 4
-            let (data, _) = try await URLSession.shared.data(for: req)
-            if let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let rawBase = obj["base"] as? String,
-               let secureBase = normalizedSecureBase(rawBase) {
-                UserDefaults.standard.set(secureBase, forKey: cacheKey)
-            }
-        } catch {
-            // 保留缓存 / 兜底
-        }
-    }
+    /// 保留方法签名供旧启动调用渐进编译；新版的上游切换只在网关服务端完成。
+    static func refreshRemoteConfig() async {}
+
+    #if DEBUG
+    static func resetProcessSnapshotForTesting() {}
+    #endif
 }
 
 enum QuickReadError: Error, LocalizedError {
@@ -134,18 +88,24 @@ actor QuickReadService {
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 90
         configuration.timeoutIntervalForResource = 120
-        self.session = URLSession(configuration: configuration)
+        self.session = OwnedAPIURLSession.make(configuration: configuration)
+        self.mobileSessionProvider = MobileSessionStore.shared
     }
 
     /// Test-only dependency seam used by transport-boundary contract tests.
     /// Production continues to use `shared` and the default pinned timeouts.
-    init(session: URLSession) {
+    init(
+        session: URLSession,
+        mobileSessionProvider: MobileSessionProviding = MobileSessionStore.shared
+    ) {
         self.session = session
+        self.mobileSessionProvider = mobileSessionProvider
     }
 
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
     private let session: URLSession
+    private let mobileSessionProvider: MobileSessionProviding
 
     private func debugLog(_ message: String) {
         #if DEBUG
@@ -153,8 +113,8 @@ actor QuickReadService {
         #endif
     }
 
-    /// 稳定设备 ID（复用 visitor id），用于 x-device-id。必须与 /api/pro/status 同一个维度，
-    /// 否则 QuickRead 额度/Pro 判断会和客户端 Pro 状态脱节。
+    /// 保留设备 id 仅供本地调试输出；两条新网关的 QuickRead 都不发送它。
+    /// 额度由网关从 cms_ 的 canonical user + ingress route 推导。
     private static var deviceId: String {
         ProBackendService.deviceId
     }
@@ -181,22 +141,18 @@ actor QuickReadService {
         }
     }
 
-    /// 解读后端鉴权 header。device 兜底；登录后附带 user/email，保证 Pro gate 与 /api/pro/status 同口径。
-    private func applyAuthHeaders(_ req: inout URLRequest, identity: AuthHeaderIdentity) {
+    /// 全球/中国网关均只发 cms_ session。网关验证后自行推导 canonical
+    /// user 与不可轮换的线路额度主体；客户端输入不得覆盖两者。
+    private func applyAuthHeaders(
+        _ req: inout URLRequest,
+        sessionToken: String
+    ) throws {
         applyBaseHeaders(&req)
-        req.setValue(Self.deviceId, forHTTPHeaderField: "x-device-id")
-        if let userId = identity.userId, !userId.isEmpty {
-            req.setValue(userId, forHTTPHeaderField: "x-user-id")
-        }
-        if let email = identity.email, !email.isEmpty {
-            req.setValue(email, forHTTPHeaderField: "x-user-email")
-        }
+        try applyGatewaySessionHeaders(&req, sessionToken: sessionToken)
     }
 
     private func applyBaseHeaders(_ req: inout URLRequest) {
-        if !Constants.API.quickReadAPIKey.isEmpty {
-            req.setValue(Constants.API.quickReadAPIKey, forHTTPHeaderField: "x-api-key")
-        }
+        // 上游 key 只存在网关服务器环境，绝不由新客户端携带。
         req.setValue(Self.localDateString(), forHTTPHeaderField: "x-local-date")
         req.setValue("ios", forHTTPHeaderField: "x-client-platform")
     }
@@ -205,9 +161,76 @@ actor QuickReadService {
     /// block/compose calls are authorized by job_id and intentionally omit
     /// entitlement identity so a conservative server won't count every block as
     /// a new explain.
-    private func applyContinuationHeaders(_ req: inout URLRequest) {
+    private func applyContinuationHeaders(
+        _ req: inout URLRequest,
+        sessionToken: String
+    ) throws {
         applyBaseHeaders(&req)
+        try applyGatewaySessionHeaders(&req, sessionToken: sessionToken)
         req.setValue("true", forHTTPHeaderField: "x-quickread-continuation")
+    }
+
+    private func applyGatewaySessionHeaders(
+        _ req: inout URLRequest,
+        sessionToken: String
+    ) throws {
+        guard MobileSessionStore.isServerSessionToken(sessionToken) else {
+            throw QuickReadError.httpError(401)
+        }
+        req.setValue("Bearer \(sessionToken)", forHTTPHeaderField: "Authorization")
+        req.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+    }
+
+    /// Resolve one route-bound server session for an entire QuickRead operation.
+    /// A syntactically valid `cms_` token may still have expired server-side, so
+    /// the first HTTP 401 performs exactly one same-route refresh and retries the
+    /// identical request once. A missing/invalid token spends that single refresh
+    /// before touching the network. The refreshed token is passed directly into
+    /// request construction, so a stale provider read cannot replay the old token.
+    private func withGatewaySessionRefresh<T>(
+        _ operation: (String) async throws -> T
+    ) async throws -> T {
+        var didRefresh = false
+        var token = await mobileSessionProvider.sessionToken()
+
+        if token.map(MobileSessionStore.isServerSessionToken) != true {
+            didRefresh = true
+            token = await mobileSessionProvider.refreshSession()
+        }
+        guard let token, MobileSessionStore.isServerSessionToken(token) else {
+            await mobileSessionProvider.rejectSession(nil)
+            throw QuickReadError.httpError(401)
+        }
+
+        do {
+            return try await operation(token)
+        } catch {
+            guard Self.isUnauthorized(error) else { throw error }
+            guard !didRefresh else {
+                await mobileSessionProvider.rejectSession(token)
+                throw error
+            }
+            guard let refreshed = await mobileSessionProvider.refreshSession(),
+                  MobileSessionStore.isServerSessionToken(refreshed) else {
+                await mobileSessionProvider.rejectSession(token)
+                throw error
+            }
+            do {
+                return try await operation(refreshed)
+            } catch {
+                if Self.isUnauthorized(error) {
+                    await mobileSessionProvider.rejectSession(refreshed)
+                }
+                throw error
+            }
+        }
+    }
+
+    private static func isUnauthorized(_ error: Error) -> Bool {
+        if case QuickReadError.httpError(let status) = error {
+            return status == 401
+        }
+        return false
     }
 
     private static func localDateString() -> String {
@@ -298,8 +321,16 @@ actor QuickReadService {
         // 重试整条 SSE（重连重建流）；onBlock0/onStage 在 ExplainViewModel 端幂等（box 覆盖 / 仅更新 UI 文字）。
         let startedAt = Date()
         do {
-            let done = try await withRetry {
-                try await self.runExtractPlanOnce(url: url, payload: payload, onStage: onStage, onBlock0: onBlock0)
+            let done = try await withGatewaySessionRefresh { sessionToken in
+                try await self.withRetry {
+                    try await self.runExtractPlanOnce(
+                        url: url,
+                        payload: payload,
+                        sessionToken: sessionToken,
+                        onStage: onStage,
+                        onBlock0: onBlock0
+                    )
+                }
             }
             debugLog("extract-plan DONE job=\(done.job_id ?? "nil") total=\(done.total_blocks.map(String.init) ?? "nil") model=\(done.model_used ?? "nil") elapsed=\(Self.elapsed(startedAt))")
             return done
@@ -310,6 +341,7 @@ actor QuickReadService {
     }
 
     private func runExtractPlanOnce(url: URL, payload: Data,
+                                    sessionToken: String,
                                     onStage: @escaping (String) -> Void,
                                     onBlock0: @escaping (PlanBlock0) -> Void) async throws -> PlanDone {
         var req = URLRequest(url: url)
@@ -317,7 +349,7 @@ actor QuickReadService {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         let identity = await authHeaderIdentity()
-        applyAuthHeaders(&req, identity: identity)
+        try applyAuthHeaders(&req, sessionToken: sessionToken)
         debugAuth("extract-plan", identity: identity)
         req.httpBody = payload
 
@@ -420,39 +452,42 @@ actor QuickReadService {
                                      lang: lang, depth: depth, prev_summary: prevSummary, content_type: contentType)
         let startedAt = Date()
         debugLog("fast-block0 START scenario=\(contentType ?? "general") depth=\(depth) lang=\(lang ?? "auto") opening=\(openingParas.count) chars=\(openingParas.reduce(0) { $0 + $1.count })")
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let identity = await authHeaderIdentity()
-        applyAuthHeaders(&req, identity: identity)
-        debugAuth("fast-block0", identity: identity)
-        req.httpBody = try encoder.encode(body)
-        req.timeoutInterval = 8   // 快道超时即放弃，走质道
+        let payload = try encoder.encode(body)
+        return try await withGatewaySessionRefresh { sessionToken in
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            let identity = await self.authHeaderIdentity()
+            try self.applyAuthHeaders(&req, sessionToken: sessionToken)
+            self.debugAuth("fast-block0", identity: identity)
+            req.httpBody = payload
+            req.timeoutInterval = 8   // 快道超时即放弃，走质道
 
-        let (data, response) = try await session.data(for: req)
-        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            debugLog("fast-block0 HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(Self.errorPreview(data))")
-            throw QuickReadError.httpError(http.statusCode)
-        }
-        let resp = try decoder.decode(FastBlock0Response.self, from: data)
-        guard let b0 = resp.block_0,
-              !b0.narration.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            debugLog("fast-block0 noBlock0 elapsed=\(Self.elapsed(startedAt))")
-            throw QuickReadError.noBlock0
-        }
-        // marks 精简形态 → QuickreadEvent：非空 text 保留；at 留空（端侧均匀分布，见 ensureTiming）。
-        // 场景化后端会返回 wave/star/strike/weight/role。旧白名单只保留 4 种，导致快道首块可见 mark 被压低。
-        let supported: Set<String> = ["highlight", "underline", "wave", "strike", "circle", "star", "number"]
-        let events = (b0.marks ?? [])
-            .filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            .map {
-                let style = supported.contains($0.style) ? $0.style : "underline"
-                return QuickreadEvent(at: nil, action: style, text: $0.text, n: $0.n,
-                                      role: $0.role, weight: $0.weight, note: $0.note)
+            let (data, response) = try await self.session.data(for: req)
+            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                self.debugLog("fast-block0 HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(Self.errorPreview(data))")
+                throw QuickReadError.httpError(http.statusCode)
             }
-        debugLog("fast-block0 DONE marks_raw=\(b0.marks?.count ?? 0) marks_kept=\(events.count) text=\(b0.narration.count) elapsed=\(Self.elapsed(startedAt))")
-        return QuickreadSection(id: "fast-0", text: b0.narration, style: "explain",
-                                cinematic: QuickreadCinematic(events: events))
+            let resp = try self.decoder.decode(FastBlock0Response.self, from: data)
+            guard let b0 = resp.block_0,
+                  !b0.narration.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                self.debugLog("fast-block0 noBlock0 elapsed=\(Self.elapsed(startedAt))")
+                throw QuickReadError.noBlock0
+            }
+            // marks 精简形态 → QuickreadEvent：非空 text 保留；at 留空（端侧均匀分布，见 ensureTiming）。
+            // 场景化后端会返回 wave/star/strike/weight/role。旧白名单只保留 4 种，导致快道首块可见 mark 被压低。
+            let supported: Set<String> = ["highlight", "underline", "wave", "strike", "circle", "star", "number"]
+            let events = (b0.marks ?? [])
+                .filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                .map {
+                    let style = supported.contains($0.style) ? $0.style : "underline"
+                    return QuickreadEvent(at: nil, action: style, text: $0.text, n: $0.n,
+                                          role: $0.role, weight: $0.weight, note: $0.note)
+                }
+            self.debugLog("fast-block0 DONE marks_raw=\(b0.marks?.count ?? 0) marks_kept=\(events.count) text=\(b0.narration.count) elapsed=\(Self.elapsed(startedAt))")
+            return QuickreadSection(id: "fast-0", text: b0.narration, style: "explain",
+                                    cinematic: QuickreadCinematic(events: events))
+        }
     }
 
     private func postSection<Body: Encodable>(_ urlString: String, body: Body, label: String) async throws -> QuickreadSection {
@@ -460,26 +495,28 @@ actor QuickReadService {
         let payload = try encoder.encode(body)
         debugLog("\(label) START bytes=\(payload.count)")
         let startedAt = Date()
-        return try await withRetry {
-            var req = URLRequest(url: url)
-            req.httpMethod = "POST"
-            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            let identity = await self.authHeaderIdentity()
-            self.applyContinuationHeaders(&req)
-            self.debugContinuationAuth(label, identity: identity)
-            req.httpBody = payload
-            let (data, response) = try await self.session.data(for: req)
-            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-                self.debugLog("\(label) HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(Self.errorPreview(data))")
-                throw QuickReadError.httpError(http.statusCode)
-            }
-            do {
-                let section = try self.decoder.decode(QuickreadSectionResponse.self, from: data).section
-                self.debugLog("\(label) DONE marks=\(section.events.count) text=\(section.text.count) elapsed=\(Self.elapsed(startedAt))")
-                return section
-            } catch {
-                self.debugLog("\(label) DECODE_FAIL elapsed=\(Self.elapsed(startedAt)) error=\(error)")
-                throw QuickReadError.decodeError("\(error)")
+        return try await withGatewaySessionRefresh { sessionToken in
+            try await self.withRetry {
+                var req = URLRequest(url: url)
+                req.httpMethod = "POST"
+                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                let identity = await self.authHeaderIdentity()
+                try self.applyContinuationHeaders(&req, sessionToken: sessionToken)
+                self.debugContinuationAuth(label, identity: identity)
+                req.httpBody = payload
+                let (data, response) = try await self.session.data(for: req)
+                if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                    self.debugLog("\(label) HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(Self.errorPreview(data))")
+                    throw QuickReadError.httpError(http.statusCode)
+                }
+                do {
+                    let section = try self.decoder.decode(QuickreadSectionResponse.self, from: data).section
+                    self.debugLog("\(label) DONE marks=\(section.events.count) text=\(section.text.count) elapsed=\(Self.elapsed(startedAt))")
+                    return section
+                } catch {
+                    self.debugLog("\(label) DECODE_FAIL elapsed=\(Self.elapsed(startedAt)) error=\(error)")
+                    throw QuickReadError.decodeError("\(error)")
+                }
             }
         }
     }

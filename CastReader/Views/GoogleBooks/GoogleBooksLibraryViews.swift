@@ -559,6 +559,7 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
 
     let webView: WKWebView
     private let store = GoogleBooksLibraryStore.shared
+    private let accountBoundaryToken = AccountContentIsolation.captureBoundaryToken()
     private var didLoad = false
     private var pendingBooks: [String: GoogleBooksBook] = [:]
     private var pendingAccount: GoogleBooksAccountInfo?
@@ -997,9 +998,16 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
     }
 
     func syncLibrary() async -> Bool {
+        guard let accountBoundaryToken,
+              AccountContentIsolation.isCurrent(accountBoundaryToken) else {
+            return false
+        }
         guard !isSyncing else { return false }
         recordConnectionStage(.syncStarted, result: .started)
         if !canSyncLibrary { await refreshPreview() }
+        guard AccountContentIsolation.isCurrent(accountBoundaryToken) else {
+            return false
+        }
         guard canSyncLibrary else {
             recordConnectionStage(
                 .failed,

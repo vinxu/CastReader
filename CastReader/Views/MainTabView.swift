@@ -109,6 +109,7 @@ struct MainTabView: View {
     @State private var shareInboxUnreadCount = 0
     @State private var shareInboxErrors: [UUID: String] = [:]
     @State private var shareInboxMetadataLoadingIDs: Set<UUID> = []
+    @State private var shareInboxImportTask: Task<Void, Never>?
     @State private var showShareInbox = false
     @State private var pendingLibraryOnboardingAction: LibraryOnboardingPostDismissAction?
     /// 区域的权威判据是否已就绪。首启引导要等它，避免呈现错版本的引导。
@@ -571,6 +572,8 @@ struct MainTabView: View {
         reviewRequestTask = nil
         systemActionTask?.cancel()
         systemActionTask = nil
+        shareInboxImportTask?.cancel()
+        shareInboxImportTask = nil
         libraryConnectionPresentationTask?.cancel()
         libraryConnectionPresentationTask = nil
         youtubeExtractionTask?.cancel()
@@ -1826,7 +1829,13 @@ struct MainTabView: View {
     /// only the explicit Delete action removes the private payload.
     private func openSharedItem(_ pending: ShareInboxItem, mode: ReaderMode) {
         guard !isImportingSharedContent else { return }
+        shareInboxImportTask?.cancel()
+        shareInboxImportTask = nil
         isImportingSharedContent = true
+        guard let boundary = AccountContentIsolation.captureBoundaryToken() else {
+            isImportingSharedContent = false
+            return
+        }
         let record = pending.record
         shareInboxErrors[record.id] = nil
         let format: AnalyticsContentFormat = switch record.kind {
@@ -1845,6 +1854,7 @@ struct MainTabView: View {
         )
 
         func complete(_ document: ReadingDocument?) {
+            guard AccountContentIsolation.isCurrent(boundary) else { return }
             guard let document, !document.isEmpty || document.sourceKind.isWebRendered else {
                 ProductAnalytics.shared.contentFailed(analyticsContext, stage: "parse", code: "empty_or_unsupported")
                 shareInboxErrors[record.id] = AppLocalized("内容暂时无法打开，请重试")
@@ -1898,7 +1908,7 @@ struct MainTabView: View {
             let effectiveFilename = displayTitle.lowercased().hasSuffix(".\(documentFormat.rawValue)")
                 ? displayTitle
                 : "\(displayTitle).\(documentFormat.rawValue)"
-            Task { @MainActor in
+            shareInboxImportTask = Task { @MainActor in
                 do {
                     let result = try await DocumentImportPipeline().importDocument(
                         DocumentImportRequest(
@@ -1907,8 +1917,12 @@ struct MainTabView: View {
                             expectedFormat: documentFormat
                         )
                     )
+                    guard !Task.isCancelled,
+                          AccountContentIsolation.isCurrent(boundary) else { return }
                     complete(result.document)
                 } catch {
+                    guard !Task.isCancelled,
+                          AccountContentIsolation.isCurrent(boundary) else { return }
                     complete(nil)
                 }
             }
@@ -1916,9 +1930,11 @@ struct MainTabView: View {
             guard let url = ShareInboxStore.payloadURL(for: record),
                   let data = try? Data(contentsOf: url),
                   let image = UIImage(data: data) else { complete(nil); return }
-            Task { @MainActor in
+            shareInboxImportTask = Task { @MainActor in
                 let capture = CaptureFlowViewModel()
                 await capture.process(image: image)
+                guard !Task.isCancelled,
+                      AccountContentIsolation.isCurrent(boundary) else { return }
                 if let document = capture.document {
                     complete(document)
                 } else {
@@ -2094,27 +2110,33 @@ struct SettingsToolbarButton: View {
     @State private var pendingLibraryOnboardingReset: Bool?
     @State private var pendingOpenShareInbox = false
 
+    /// Pro 时头像让出 3pt 给外圈，圆框才不会压在头像自身的轮廓上糊成一团；
+    /// 非会员维持原来的 28pt，不会因为这个功能被无端改小。
+    private var avatarDiameter: CGFloat { pro.isPro ? 25 : 28 }
+
     var body: some View {
         Button { showSettings = true } label: {
-            // Pro 皇冠占右上角（与设置里的 Pro 图标同一符号），未读红点让位到左上角，
-            // 两者同时出现也不重叠。徽标只到 11pt 并压在 30pt 槽位的角上：正好骑在
-            // 头像圆周上，既不盖住脸，也不越出槽位被工具栏胶囊裁掉。
             ZStack(alignment: .topTrailing) {
                 Color.clear
                 // 露头像而不是齿轮：用户来这里多半是找账号和订阅，不是找"设置"。
                 avatar
-                    .frame(width: 28, height: 28)
+                    .frame(width: avatarDiameter, height: avatarDiameter)
                     .clipShape(Circle())
-                if pro.isPro { proCrownBadge }
                 if shareInboxUnreadCount > 0 {
                     Circle()
                         .fill(AppTheme.primary)
-                        .frame(width: 9, height: 9)
-                        .overlay(Circle().stroke(AppTheme.background, lineWidth: 1))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .frame(width: 8, height: 8)
+                        .overlay(Circle().stroke(AppTheme.background, lineWidth: 1.5))
                 }
             }
             .frame(width: 30, height: 30)
+            // Pro 在这里只给一圈描边：角标会被当成未读红点，让人下意识想点掉它。
+            // 皇冠留给设置里的账号头像，那儿有空间也不会跟提醒混淆。
+            .overlay {
+                if pro.isPro {
+                    Circle().strokeBorder(AppTheme.primary, lineWidth: 1.5)
+                }
+            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(pro.isPro ? AppLocalized("账号与设置（Pro 会员）") : AppLocalized("账号与设置")))
@@ -2127,19 +2149,6 @@ struct SettingsToolbarButton: View {
                 pendingLibraryOnboardingReset = reset
             }
         }
-    }
-
-    private var proCrownBadge: some View {
-        Circle()
-            .fill(AppTheme.primary)
-            .frame(width: 11, height: 11)
-            .overlay(
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 5.5, weight: .semibold))
-                    .foregroundStyle(AppTheme.primaryForeground)
-            )
-            .overlay(Circle().stroke(AppTheme.background, lineWidth: 1))
-            .accessibilityIdentifier("settingsProBadge")
     }
 
     @ViewBuilder

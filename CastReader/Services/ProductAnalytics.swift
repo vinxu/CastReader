@@ -528,6 +528,9 @@ struct AnalyticsEventEnvelope: Codable, Equatable, Identifiable, Sendable {
     let clientVersion: String
     let clientBuild: String?
     let clientRegion: String
+    /// 实际自有服务线路，与产品发行区域分开记录。可选是为了继续解码升级前
+    /// 已落盘、尚未发送的队列事件；本版本新建的事件始终写入 global/cn。
+    let serviceRoute: String?
     let anonymousId: String
     let backendUserId: String?
     let appSessionId: String
@@ -989,6 +992,8 @@ struct AnalyticsClientInfo: Equatable, Sendable {
     let anonymousId: String
     /// 发行区域（`AppRegion`）。区分中国大陆版与全球版的同一事件。
     let region: String
+    /// 本次进程冻结的自有服务线路，值域为 global/cn。
+    let serviceRoute: String
 }
 
 enum AnalyticsEnvelopeFactory {
@@ -1025,6 +1030,7 @@ enum AnalyticsEnvelopeFactory {
             clientVersion: client.version,
             clientBuild: client.build,
             clientRegion: client.region,
+            serviceRoute: client.serviceRoute,
             anonymousId: client.anonymousId,
             backendUserId: backendUserId,
             appSessionId: appSessionId,
@@ -1175,7 +1181,7 @@ struct URLSessionAnalyticsTransport: AnalyticsTransport {
     }
 
     let endpoint: URL
-    var session: URLSession = .shared
+    var session: URLSession = OwnedAPIURLSession.shared
 
     func send(_ events: [AnalyticsEventEnvelope]) async throws -> AnalyticsTransportResult {
         var request = URLRequest(url: endpoint)
@@ -1331,13 +1337,18 @@ final class ProductAnalytics {
     private var scheduledFlushTask: Task<Void, Never>?
 
     private init() {
-        // 区域就绪前（首次安装的第一次启动）走时区兜底；`chinaBackendEnabled`
-        // 关闭时这里恒等于 castreader.ai，与改动前一致。
+        // endpoint 来自启动时已冻结的 ServiceRouting；后续切换只影响下次进程，
+        // 因而队列、transport 与其他业务请求不会混线。
         let endpoint = URL(string: Constants.API.analyticsEvents)
-            ?? URL(string: "https://castreader.ai/api/events")!
+            ?? URL(string: "https://api.castreader.ai/api/events")!
+        let queueKey = ServiceRouting.current.isolatedStorageKey("product_analytics_queue_v1")
+        let deadLetterKey = ServiceRouting.current.isolatedStorageKey(
+            "product_analytics_dead_letters_v1"
+        )
         let pipeline = AnalyticsPipeline(
-            store: UserDefaultsAnalyticsQueueStore(),
-            transport: URLSessionAnalyticsTransport(endpoint: endpoint)
+            store: UserDefaultsAnalyticsQueueStore(key: queueKey),
+            transport: URLSessionAnalyticsTransport(endpoint: endpoint),
+            deadLetterStore: UserDefaultsAnalyticsDeadLetterStore(key: deadLetterKey)
         )
         self.pipeline = pipeline
         self.client = AnalyticsClientInfo(
@@ -1347,7 +1358,8 @@ final class ProductAnalytics {
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0",
             build: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
             anonymousId: Self.analyticsAnonymousId(),
-            region: AppRegion.current.rawValue
+            region: AppRegion.current.rawValue,
+            serviceRoute: ServiceRouting.current.rawValue
         )
     }
 

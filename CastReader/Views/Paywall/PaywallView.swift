@@ -82,6 +82,8 @@ struct ProUpsellContent: View {
     @State private var loadFailed = false
     @State private var showRestoreAlert = false
     @State private var restoreMessage = ""
+    @State private var showPurchaseAlert = false
+    @State private var purchaseMessage = ""
     @State private var selectedProductID: String?
 
     private let benefits: [(String, String)] = [
@@ -119,6 +121,11 @@ struct ProUpsellContent: View {
         .alert("恢复购买", isPresented: $showRestoreAlert) {
             Button("好", role: .cancel) {}
         } message: { Text(restoreMessage) }
+        .alert(AppLocalized("购买未完成"), isPresented: $showPurchaseAlert) {
+            Button(AppLocalized("好"), role: .cancel) {}
+        } message: {
+            Text(purchaseMessage)
+        }
         .onAppear { Task { await reloadProducts(); syncDefaultSelection(); await pro.refresh() } }
         .onChange(of: pro.products.map(\.id)) { _ in syncDefaultSelection() }
         .task {
@@ -147,9 +154,9 @@ struct ProUpsellContent: View {
     private var accountRow: some View {
         if pro.needsEmailSync && !auth.hasSyncableAccount {
             Button { showLogin = true } label: {
-                Text("登录邮箱同步 Pro").font(.caption.weight(.semibold))
+                Text("登录").font(.caption.weight(.semibold))
             }
-            Text("已检测到购买，请登录邮箱完成跨平台同步。")
+            Text("已检测到购买，请登录后同步会员")
                 .font(.caption2)
                 .foregroundColor(AppTheme.mutedForeground)
                 .multilineTextAlignment(.center)
@@ -246,18 +253,18 @@ struct ProUpsellContent: View {
                 .foregroundColor(.green).font(.headline)
         } else if pro.storeKitLocalPro {
             VStack(spacing: 10) {
-                Label("已检测到购买，请登录邮箱同步 Pro", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
+                Label("已检测到购买，请登录后同步会员", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
                     .foregroundColor(AppTheme.primary)
                     .font(.headline)
                     .multilineTextAlignment(.center)
                 Text(auth.hasSyncableAccount
                      ? AppLocalized("本机已解锁；跨平台同步等待 Apple 验证接口。")
-                     : AppLocalized("本机已解锁；登录邮箱后可完成跨平台同步。"))
+                     : AppLocalized("已检测到购买，请登录后同步会员"))
                     .font(.caption)
                     .foregroundColor(AppTheme.mutedForeground)
                     .multilineTextAlignment(.center)
                 if !auth.hasSyncableAccount {
-                    Button("登录邮箱同步 Pro") { showLogin = true }
+                    Button("登录") { showLogin = true }
                         .font(.subheadline.weight(.semibold))
                 }
             }
@@ -316,7 +323,18 @@ struct ProUpsellContent: View {
                     guard auth.isSignedIn else { showLogin = true; return }
                     guard let product = pro.products.first(where: { $0.id == selectedProductID }) else { return }
                     busy = true
-                    Task { _ = await pro.purchase(product, analyticsTrigger: analyticsTrigger); busy = false }
+                    Task {
+                        let purchased = await pro.purchase(
+                            product,
+                            analyticsTrigger: analyticsTrigger
+                        )
+                        busy = false
+                        guard !purchased else { return }
+                        purchaseMessage = AppLocalized(
+                            "购买尚未完成。请稍后重试；若交易正在等待批准，获批后会员会自动生效。"
+                        )
+                        showPurchaseAlert = true
+                    }
                 } label: {
                     HStack {
                         if busy { ProgressView().tint(.white) }
@@ -329,6 +347,7 @@ struct ProUpsellContent: View {
                 .buttonStyle(.borderedProminent)
                 .tint(AppTheme.primary)
                 .disabled(busy || selectedProductID == nil)
+                .accessibilityIdentifier("paywallPurchaseButton")
 
                 if !auth.hasSyncableAccount {
                     Text(AppLocalized("登录可同步的账号后，Pro 可跨设备同步。"))
@@ -394,7 +413,7 @@ struct ProUpsellContent: View {
             if auth.hasSyncableAccount {
                 return AppLocalized("已恢复购买，本机已解锁；跨平台同步等待 Apple 验证接口。")
             }
-            return AppLocalized("已检测到购买，请登录邮箱同步 Pro")
+            return AppLocalized("已检测到购买，请登录后同步会员")
         }
         return AppLocalized("未找到可恢复的购买")
     }

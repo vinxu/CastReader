@@ -45,21 +45,27 @@ actor APIService {
 
     private let session: URLSession
     private let decoder: JSONDecoder
+    private let mobileSessionProvider: any MobileSessionProviding
 
     private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 60
-        self.session = URLSession(configuration: config)
+        self.session = OwnedAPIURLSession.make(configuration: config)
 
         self.decoder = JSONDecoder()
+        self.mobileSessionProvider = MobileSessionStore.shared
     }
 
     /// Test-only dependency seam used by transport-boundary contract tests.
     /// Production continues to use `shared` and the default pinned timeouts.
-    init(session: URLSession) {
+    init(
+        session: URLSession,
+        mobileSessionProvider: any MobileSessionProviding = MobileSessionStore.shared
+    ) {
         self.session = session
         self.decoder = JSONDecoder()
+        self.mobileSessionProvider = mobileSessionProvider
     }
 
     // MARK: - Generic Request
@@ -102,10 +108,9 @@ actor APIService {
 
     // MARK: - Library API
 
-    func fetchDocuments(userId: String, limit: Int = 100, offset: Int = 0) async throws -> [Document] {
+    func fetchDocuments(limit: Int = 100, offset: Int = 0) async throws -> [Document] {
         var components = URLComponents(string: Constants.API.documents)
         components?.queryItems = [
-            URLQueryItem(name: "user_id", value: userId),
             URLQueryItem(name: "limit", value: "\(limit)"),
             URLQueryItem(name: "offset", value: "\(offset)")
         ]
@@ -114,9 +119,70 @@ actor APIService {
             throw APIError.invalidURL
         }
 
-        // API returns {"success":true,"documents":[...],"count":N}
-        let response: DocumentListResponse = try await request(url)
-        return response.documents ?? []
+        return try await fetchDocuments(
+            url: url,
+            suppliedToken: nil,
+            canRefreshSession: true
+        )
+    }
+
+    /// Document ownership is an authenticated server concern.  In particular,
+    /// this method never accepts a caller-provided user/device/email identifier
+    /// and never falls back to the released-client compatibility endpoint.
+    private func fetchDocuments(
+        url: URL,
+        suppliedToken: String?,
+        canRefreshSession: Bool
+    ) async throws -> [Document] {
+        var token: String?
+        if let suppliedToken {
+            token = suppliedToken
+        } else {
+            token = await mobileSessionProvider.sessionToken()
+        }
+        if !Self.isValidMobileSession(token), canRefreshSession {
+            token = await mobileSessionProvider.refreshSession()
+        }
+        guard let token, Self.isValidMobileSession(token) else {
+            await mobileSessionProvider.rejectSession(nil)
+            throw APIError.httpError(401)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        if httpResponse.statusCode == 401 {
+            if canRefreshSession,
+               let refreshed = await mobileSessionProvider.refreshSession(),
+               Self.isValidMobileSession(refreshed) {
+                return try await fetchDocuments(
+                    url: url,
+                    suppliedToken: refreshed,
+                    canRefreshSession: false
+                )
+            }
+            await mobileSessionProvider.rejectSession(token)
+            throw APIError.httpError(401)
+        }
+        guard 200..<300 ~= httpResponse.statusCode else {
+            throw APIError.httpError(httpResponse.statusCode)
+        }
+
+        do {
+            let payload = try decoder.decode(DocumentListResponse.self, from: data)
+            return payload.documents ?? []
+        } catch {
+            // A protected library response may contain private titles and URLs;
+            // do not emit the raw body into device logs on decode failure.
+            throw APIError.decodingError(error)
+        }
     }
 
     // MARK: - Upload API
@@ -126,16 +192,89 @@ actor APIService {
             throw APIError.invalidURL
         }
 
-        let response: STSResponse = try await request(url)
-        guard let sts = response.sts else {
+        return try await fetchSTSCredentials(
+            url: url,
+            suppliedToken: nil,
+            canRefreshSession: true
+        )
+    }
+
+    /// The protected mobile STS endpoint is deliberately separate from the
+    /// generic request helper: it must never make an anonymous request or fall
+    /// back to the historical `/sts` compatibility endpoint.
+    private func fetchSTSCredentials(
+        url: URL,
+        suppliedToken: String?,
+        canRefreshSession: Bool
+    ) async throws -> STSCredentials {
+        var token: String?
+        if let suppliedToken {
+            token = suppliedToken
+        } else {
+            token = await mobileSessionProvider.sessionToken()
+        }
+        if !Self.isValidMobileSession(token), canRefreshSession {
+            token = await mobileSessionProvider.refreshSession()
+        }
+        guard let token, Self.isValidMobileSession(token) else {
+            await mobileSessionProvider.rejectSession(nil)
+            throw APIError.httpError(401)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        if httpResponse.statusCode == 401 {
+            if canRefreshSession,
+               let refreshed = await mobileSessionProvider.refreshSession(),
+               Self.isValidMobileSession(refreshed) {
+                return try await fetchSTSCredentials(
+                    url: url,
+                    suppliedToken: refreshed,
+                    canRefreshSession: false
+                )
+            }
+            await mobileSessionProvider.rejectSession(token)
+            throw APIError.httpError(401)
+        }
+        guard 200..<300 ~= httpResponse.statusCode else {
+            throw APIError.httpError(httpResponse.statusCode)
+        }
+
+        let payload: STSResponse
+        do {
+            payload = try decoder.decode(STSResponse.self, from: data)
+        } catch {
+            throw APIError.decodingError(error)
+        }
+        guard let sts = payload.sts else {
             throw APIError.invalidResponse
         }
         return sts
     }
 
-    func notifyUpload(filename: String, filepath: String, userId: String, voiceId: String? = nil) async throws -> UploadResponse {
+    private static func isValidMobileSession(_ token: String?) -> Bool {
+        guard let token else { return false }
+        return MobileSessionStore.isServerSessionToken(token)
+    }
+
+    func notifyUpload(
+        filename: String,
+        filepath: String,
+        voiceId: String? = nil
+    ) async throws -> UploadResponse {
         guard let url = URL(string: Constants.API.asyncUpload) else {
             throw APIError.invalidURL
+        }
+        guard !filename.trimmed.isEmpty, !filepath.trimmed.isEmpty else {
+            throw APIError.invalidResponse
         }
 
         apiDebugLog("📤 [API] notifyUpload URL: \(url)")
@@ -143,7 +282,7 @@ actor APIService {
             preferred: voiceId ?? "",
             for: Constants.TTS.defaultLanguage
         )
-        apiDebugLog("📤 [API] notifyUpload params: filename=\(filename), filepath=\(filepath), user_id=\(userId), voice_id=\(resolvedVoice)")
+        apiDebugLog("📤 [API] notifyUpload params: filename=\(filename), voice_id=\(resolvedVoice)")
 
         // Use multipart/form-data format (same as web)
         let boundary = "Boundary-\(UUID().uuidString)"
@@ -158,15 +297,46 @@ actor APIService {
 
         appendFormField(name: "filename", value: filename)
         appendFormField(name: "filepath", value: filepath)
-        appendFormField(name: "user_id", value: userId)
         appendFormField(name: "voice_id", value: resolvedVoice)
 
         bodyData.append("--\(boundary)--\r\n".data(using: .utf8)!)
+
+        return try await notifyUpload(
+            url: url,
+            boundary: boundary,
+            bodyData: bodyData,
+            suppliedToken: nil,
+            canRefreshSession: true
+        )
+    }
+
+    private func notifyUpload(
+        url: URL,
+        boundary: String,
+        bodyData: Data,
+        suppliedToken: String?,
+        canRefreshSession: Bool
+    ) async throws -> UploadResponse {
+        var token: String?
+        if let suppliedToken {
+            token = suppliedToken
+        } else {
+            token = await mobileSessionProvider.sessionToken()
+        }
+        if !Self.isValidMobileSession(token), canRefreshSession {
+            token = await mobileSessionProvider.refreshSession()
+        }
+        guard let token, Self.isValidMobileSession(token) else {
+            await mobileSessionProvider.rejectSession(nil)
+            throw APIError.httpError(401)
+        }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
         request.httpBody = bodyData
 
         let (data, response) = try await session.data(for: request)
@@ -175,6 +345,21 @@ actor APIService {
             throw APIError.invalidResponse
         }
 
+        if httpResponse.statusCode == 401 {
+            if canRefreshSession,
+               let refreshed = await mobileSessionProvider.refreshSession(),
+               Self.isValidMobileSession(refreshed) {
+                return try await notifyUpload(
+                    url: url,
+                    boundary: boundary,
+                    bodyData: bodyData,
+                    suppliedToken: refreshed,
+                    canRefreshSession: false
+                )
+            }
+            await mobileSessionProvider.rejectSession(token)
+            throw APIError.httpError(401)
+        }
         guard 200..<300 ~= httpResponse.statusCode else {
             if let errorBody = String(data: data, encoding: .utf8) {
                 apiDebugLog("🔴 [API] HTTP \(httpResponse.statusCode) error response: \(errorBody)")
@@ -193,86 +378,13 @@ actor APIService {
         }
     }
 
-    /// Upload EPUB file synchronously (returns immediately with book data)
-    func uploadEPUB(fileData: Data, filename: String, userId: String, voiceId: String? = nil) async throws -> EPUBUploadResponse {
-        guard let url = URL(string: Constants.API.syncUpload) else {
-            throw APIError.invalidURL
-        }
-
-        apiDebugLog("📗 [API] uploadEPUB URL: \(url)")
-        apiDebugLog("📗 [API] uploadEPUB params: filename=\(filename), size=\(fileData.count) bytes, user_id=\(userId)")
-
-        // Use multipart/form-data with file binary
-        let boundary = "Boundary-\(UUID().uuidString)"
-        var bodyData = Data()
-
-        // Add file field
-        bodyData.append("--\(boundary)\r\n".data(using: .utf8)!)
-        bodyData.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
-        bodyData.append("Content-Type: application/epub+zip\r\n\r\n".data(using: .utf8)!)
-        bodyData.append(fileData)
-        bodyData.append("\r\n".data(using: .utf8)!)
-
-        // Add user_id field
-        bodyData.append("--\(boundary)\r\n".data(using: .utf8)!)
-        bodyData.append("Content-Disposition: form-data; name=\"user_id\"\r\n\r\n".data(using: .utf8)!)
-        bodyData.append("\(userId)\r\n".data(using: .utf8)!)
-
-        let resolvedVoice = VoiceCatalog.resolvedVoice(
-            preferred: voiceId ?? "",
-            for: Constants.TTS.defaultLanguage
-        )
-        // Add voice_id field
-        bodyData.append("--\(boundary)\r\n".data(using: .utf8)!)
-        bodyData.append("Content-Disposition: form-data; name=\"voice_id\"\r\n\r\n".data(using: .utf8)!)
-        bodyData.append("\(resolvedVoice)\r\n".data(using: .utf8)!)
-
-        bodyData.append("--\(boundary)--\r\n".data(using: .utf8)!)
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.httpBody = bodyData
-        // EPUB processing can take longer
-        request.timeoutInterval = 120
-
-        let (data, response) = try await session.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.invalidResponse
-        }
-
-        apiDebugLog("📗 [API] uploadEPUB response status: \(httpResponse.statusCode)")
-
-        guard 200..<300 ~= httpResponse.statusCode else {
-            if let errorBody = String(data: data, encoding: .utf8) {
-                apiDebugLog("🔴 [API] HTTP \(httpResponse.statusCode) error response: \(errorBody)")
-            }
-            throw APIError.httpError(httpResponse.statusCode)
-        }
-
-        // Debug: print raw response
-        if let jsonString = String(data: data, encoding: .utf8) {
-            apiDebugLog("📗 [API] uploadEPUB raw response: \(String(jsonString.prefix(500)))")
-        }
-
-        do {
-            return try decoder.decode(EPUBUploadResponse.self, from: data)
-        } catch {
-            if let jsonString = String(data: data, encoding: .utf8) {
-                apiDebugLog("🔴 [API] Decoding failed. Raw response: \(String(jsonString.prefix(1500)))")
-            }
-            apiDebugLog("🔴 [API] Decoding error details: \(error)")
-            throw APIError.decodingError(error)
-        }
-    }
-
 
     /// Fetch Markdown content from URL
     func fetchMarkdownContent(url urlString: String) async throws -> String {
         // URL encode to handle spaces and special characters
         guard let encoded = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let contentURL = URL(string: encoded) else {
+              let decodedURL = URL(string: encoded),
+              let contentURL = OwnedAPIRedirectPolicy.routedResponseURL(decodedURL) else {
             throw APIError.invalidURL
         }
 
@@ -295,7 +407,7 @@ actor APIService {
         language: String = Constants.TTS.defaultLanguage,
         includeVoiceCode: Bool = true
     ) async throws -> TTSResponse {
-        // 节点路由（对齐扩展）：大陆时区→CN 节点，其他→US；CN 失败回退 US。
+        // 新版只使用本次进程冻结的统一网关；不再按时区选择旧节点，也不跨线回退。
         let sanitized = SpeechTextSanitizer.sanitizedForTTS(text)
         guard SpeechTextSanitizer.containsSpeakableContent(sanitized) else {
             throw APIError.serverError("No speakable text for TTS")
@@ -329,21 +441,16 @@ actor APIService {
         }
 
         let primary = TTSEndpoint.primaryBase()
-        do {
-            guard let url = URL(string: TTSEndpoint.partlyURL(base: primary)) else { throw APIError.invalidURL }
-            return try await request(url, method: "POST", body: bodyData)
-        } catch {
-            if let fb = TTSEndpoint.fallbackBase(), let url = URL(string: TTSEndpoint.partlyURL(base: fb)) {
-                apiDebugLog("[TTS] primary node failed (\(primary)) → fallback US: \(fb)")
-                return try await request(url, method: "POST", body: bodyData)
-            }
-            throw error
+        guard let url = URL(string: TTSEndpoint.partlyURL(base: primary)) else {
+            throw APIError.invalidURL
         }
+        return try await request(url, method: "POST", body: bodyData)
     }
 
     private func requestClonedVoiceTTS(body: Data, voiceID: String, canRefresh: Bool = true) async throws -> TTSResponse {
         guard let url = URL(string: Constants.API.tts) else { throw APIError.invalidURL }
         guard let token = await MobileSessionStore.shared.sessionToken(), !token.isEmpty else {
+            await MobileSessionStore.shared.rejectSession(nil)
             await MainActor.run { VoiceCloneAccessCoordinator.shared.prompt = .signIn }
             throw VoiceCloneError.sessionUnavailable
         }
@@ -364,7 +471,7 @@ actor APIService {
         guard 200..<300 ~= http.statusCode else {
             switch http.statusCode {
             case 401:
-                await MobileSessionStore.shared.invalidateSession()
+                await MobileSessionStore.shared.rejectSession(token)
                 await MainActor.run { VoiceCloneAccessCoordinator.shared.prompt = .signIn }
             case 403:
                 await MainActor.run {

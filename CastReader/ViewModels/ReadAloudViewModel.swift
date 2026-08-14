@@ -292,12 +292,33 @@ enum YouTubePlaybackPersistencePolicy {
 
 struct YouTubePlaybackCheckpoint: Equatable, Sendable {
     let sequence: UInt64
+    let accountBoundaryToken: AccountContentBoundaryToken?
     let transcriptKey: YouTubeTranscriptCacheKey
     let paragraphIndex: Int
     let segmentID: String
     let segmentIndex: Int
     let segmentFraction: Double
     let paragraphFraction: Double
+
+    init(
+        sequence: UInt64,
+        accountBoundaryToken: AccountContentBoundaryToken? = nil,
+        transcriptKey: YouTubeTranscriptCacheKey,
+        paragraphIndex: Int,
+        segmentID: String,
+        segmentIndex: Int,
+        segmentFraction: Double,
+        paragraphFraction: Double
+    ) {
+        self.sequence = sequence
+        self.accountBoundaryToken = accountBoundaryToken
+        self.transcriptKey = transcriptKey
+        self.paragraphIndex = paragraphIndex
+        self.segmentID = segmentID
+        self.segmentIndex = segmentIndex
+        self.segmentFraction = segmentFraction
+        self.paragraphFraction = paragraphFraction
+    }
 
     var identity: String {
         transcriptKey.storageKey
@@ -429,6 +450,8 @@ enum YouTubePlaybackPersistenceSequence {
 /// from an older session, while the actor keeps all disk writes single-flight.
 enum YouTubePlaybackPersistenceRuntime {
     static let coordinator = YouTubePlaybackPersistenceCoordinator { work in
+        guard let boundary = work.checkpoint.accountBoundaryToken,
+              await AccountContentIsolation.isCurrent(boundary) else { return }
         guard let cache = YouTubeCacheProvider.shared else { return }
         do {
             switch work {
@@ -546,6 +569,7 @@ final class ReadAloudViewModel: ObservableObject {
     private let quota = QuotaManager.shared
     private let analyticsSessionCoordinator: ReadAnalyticsSessionCoordinator
     private let analyticsSessionOwnerID = UUID()
+    private let accountBoundaryToken: AccountContentBoundaryToken?
     let youtubeTranscriptCacheKey: YouTubeTranscriptCacheKey?
     let youtubeReadableParagraphIndexes: [Int]
     private let youtubePersistenceLane: YouTubePlaybackPersistenceSubmissionLane
@@ -720,6 +744,7 @@ final class ReadAloudViewModel: ObservableObject {
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         self.analyticsSessionCoordinator = analyticsSessionCoordinator
             ?? ReadAnalyticsSessionCoordinator()
+        self.accountBoundaryToken = AccountContentIsolation.captureBoundaryToken()
         self.youtubeTranscriptCacheKey = document.youtubeTranscript.map {
             YouTubeCacheStore.cacheKey(for: $0)
         }
@@ -2688,6 +2713,7 @@ final class ReadAloudViewModel: ObservableObject {
 
         let checkpoint = YouTubePlaybackCheckpoint(
             sequence: YouTubePlaybackPersistenceSequence.next(),
+            accountBoundaryToken: accountBoundaryToken,
             transcriptKey: transcriptKey,
             paragraphIndex: completedParagraphIndex,
             segmentID: finalSegment.id,
@@ -3000,6 +3026,7 @@ final class ReadAloudViewModel: ObservableObject {
         lastYouTubeProgressWriteAt = now
         let checkpoint = YouTubePlaybackCheckpoint(
             sequence: YouTubePlaybackPersistenceSequence.next(),
+            accountBoundaryToken: accountBoundaryToken,
             transcriptKey: transcriptKey,
             paragraphIndex: segment.paragraphIndex,
             segmentID: segment.id,
@@ -3043,7 +3070,9 @@ final class ReadAloudViewModel: ObservableObject {
         now: Date,
         force: Bool
     ) {
-        guard document.sourceKind == .youtube,
+        guard let accountBoundaryToken,
+              AccountContentIsolation.isCurrent(accountBoundaryToken),
+              document.sourceKind == .youtube,
               let position = readableIndices.firstIndex(of: currentParagraphIndex),
               !readableIndices.isEmpty,
               let paragraph = paras.first(where: { $0.id == currentParagraphIndex }) else {

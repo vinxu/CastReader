@@ -316,11 +316,15 @@ final class ImageCache {
     /// purge is self-healing: the next sync re-fetches.
     nonisolated func prefetch(_ urls: [String], concurrency: Int = 4) {
         let pending = urls
-            .filter { !$0.isEmpty && !isCached($0) }
+            .filter { !$0.isEmpty }
             .compactMap { raw -> (String, URL)? in
-                guard let url = URL(string: raw) else { return nil }
-                return (raw, url)
+                guard let url = URL(string: raw),
+                      let routedURL = OwnedAPIRedirectPolicy.routedResponseURL(url) else {
+                    return nil
+                }
+                return (routedURL.absoluteString, routedURL)
             }
+            .filter { !isCached($0.0) }
         guard !pending.isEmpty else { return }
 
         Task.detached(priority: .utility) {
@@ -331,7 +335,7 @@ final class ImageCache {
                     let (key, url) = pending[index]
                     index += 1
                     group.addTask {
-                        guard let (data, _) = try? await URLSession.shared.data(from: url),
+                        guard let (data, _) = try? await OwnedAPIURLSession.data(from: url),
                               let image = UIImage(data: data) else { return }
                         ImageCache.shared.set(key, image: image, data: data)
                     }
@@ -380,7 +384,9 @@ struct CachedAsyncImage<Placeholder: View>: View {
             }
         }
         .task(id: url?.absoluteString) {
-            let requestURL = url
+            let requestURL = url.flatMap {
+                OwnedAPIRedirectPolicy.routedResponseURL($0)
+            }
             let requestKey = requestURL?.absoluteString
             activeRequest = requestKey
             image = nil
@@ -404,7 +410,7 @@ struct CachedAsyncImage<Placeholder: View>: View {
         }
 
         do {
-            let (data, _) = try await URLSession.shared.data(from: requestURL)
+            let (data, _) = try await OwnedAPIURLSession.data(from: requestURL)
             try Task.checkCancellation()
             guard let uiImage = UIImage(data: data) else { return }
             // 还是可以缓存已返回的图片，但只有当它仍是当前请求时才能回写 UI。

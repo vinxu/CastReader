@@ -726,27 +726,29 @@ class AudioPlayerService: NSObject, ObservableObject {
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? playbackRate : 0.0
 
-        // 封面：优先本地封面文件（History/<id>.cover.jpg，与「继续看」卡片同源）；惰性加载一次后缓存。
+        // 封面：优先当前账号 History 的本地封面；惰性加载一次后缓存。
+        // 未激活账号作用域时绝不回读旧版 Documents/History。
         if currentCoverImage == nil, let id = currentBookId { currentCoverImage = Self.localCoverImage(forID: id) }
         if let image = currentCoverImage {
             nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
         } else if let coverUrlString = currentCoverUrl?
                     .trimmingCharacters(in: .whitespacesAndNewlines),
-                  !coverUrlString.isEmpty {
-            if let image = ImageCache.shared.get(coverUrlString) {
+                  !coverUrlString.isEmpty,
+                  let coverUrl = Self.makeArtworkURL(coverUrlString) {
+            let routedCoverURL = coverUrl.absoluteString
+            if let image = ImageCache.shared.get(routedCoverURL) {
                 currentCoverImage = image
                 nowPlayingInfo[MPMediaItemPropertyArtwork] =
                     MPMediaItemArtwork(boundsSize: image.size) { _ in image }
                 MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
             } else {
                 MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
-                let requestKey = "\(currentBookId ?? "")|\(coverUrlString)"
-                if artworkLoadKey != requestKey,
-                   let coverUrl = Self.makeArtworkURL(coverUrlString) {
+                let requestKey = "\(currentBookId ?? "")|\(routedCoverURL)"
+                if artworkLoadKey != requestKey {
                     loadArtwork(
                         from: coverUrl,
-                        sourceURL: coverUrlString,
+                        sourceURL: routedCoverURL,
                         requestKey: requestKey
                     )
                 }
@@ -756,19 +758,58 @@ class AudioPlayerService: NSObject, ObservableObject {
         }
     }
 
-    /// 本地封面文件（路径确定，不依赖 @MainActor 的 HistoryStore，避免跨 actor）。
+    /// Reads only the active route x account History partition. The opaque
+    /// scope pointer is shared with extensions and validated before it becomes
+    /// a path component; a signed-out process deliberately has no local cover.
     static func localCoverImage(forID id: String) -> UIImage? {
+        let cleanedID = id.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanedID.isEmpty,
+              cleanedID != ".",
+              cleanedID != "..",
+              cleanedID.utf8.count <= 255,
+              !cleanedID.contains("/"),
+              !cleanedID.contains("\\"),
+              !cleanedID.unicodeScalars.contains(where: {
+                  CharacterSet.controlCharacters.contains($0)
+              }) else { return nil }
+
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let url = docs.appendingPathComponent("History/\(id).cover.jpg")
+        let historyDirectory: URL
+        #if DEBUG
+        if AccountContentScopeBridge.usesLegacyTestingStorage {
+            historyDirectory = docs.appendingPathComponent("History", isDirectory: true)
+        } else {
+            guard let storageID = AccountContentScopeBridge.activeStorageID else { return nil }
+            historyDirectory = docs
+                .appendingPathComponent("AccountData", isDirectory: true)
+                .appendingPathComponent(storageID, isDirectory: true)
+                .appendingPathComponent("History", isDirectory: true)
+        }
+        #else
+        guard let storageID = AccountContentScopeBridge.activeStorageID else { return nil }
+        historyDirectory = docs
+            .appendingPathComponent("AccountData", isDirectory: true)
+            .appendingPathComponent(storageID, isDirectory: true)
+            .appendingPathComponent("History", isDirectory: true)
+        #endif
+
+        let url = historyDirectory
+            .appendingPathComponent("\(cleanedID).cover.jpg")
+            .standardizedFileURL
+        guard url.deletingLastPathComponent().standardizedFileURL
+                == historyDirectory.standardizedFileURL else { return nil }
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         return UIImage(contentsOfFile: url.path)
     }
 
     private static func makeArtworkURL(_ raw: String) -> URL? {
-        URL(string: raw)
+        let parsed = URL(string: raw)
             ?? raw.addingPercentEncoding(
                 withAllowedCharacters: .urlQueryAllowed
             ).flatMap(URL.init(string:))
+        return parsed.flatMap {
+            OwnedAPIRedirectPolicy.routedResponseURL($0)
+        }
     }
 
     private func loadArtwork(
@@ -779,7 +820,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         cancelArtworkLoad()
         artworkLoadKey = requestKey
         let expectedGeneration = artworkRequestGeneration
-        let request = URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        let request = OwnedAPIURLSession.shared.dataTask(with: url) { [weak self] data, response, error in
             guard let data,
                   error == nil,
                   !data.isEmpty,
@@ -852,8 +893,9 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     private var currentArtworkRequestKey: String {
-        let coverURL = currentCoverUrl?
+        let rawCoverURL = currentCoverUrl?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let coverURL = Self.makeArtworkURL(rawCoverURL)?.absoluteString ?? rawCoverURL
         return "\(currentBookId ?? "")|\(coverURL)"
     }
 
@@ -1266,6 +1308,32 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     func stop() {
         stop(preservingPrestagedIDs: [])
+    }
+
+    /// Hard privacy boundary used before publishing a different or signed-out
+    /// account. `stop()` intentionally preserves queue/book presentation for a
+    /// normal pause/reader dismissal, so it is insufficient here: every title,
+    /// cover, caption, callback and lock-screen field must disappear together.
+    func clearForAccountBoundary() {
+        cancelArtworkLoad()
+        stop(preservingPrestagedIDs: [])
+        segmentsQueue.removeAll()
+        currentSegmentIndex = 0
+        gatedSegmentIndex = nil
+        moreSegmentsExpected = false
+        isWaitingForNextSegment = false
+        canStartQueuedSegment = nil
+        onSegmentComplete = nil
+        onPlaybackComplete = nil
+        onPlaybackError = nil
+        currentBookId = nil
+        currentBookTitle = nil
+        currentChapterTitle = nil
+        currentCoverUrl = nil
+        currentCaption = nil
+        currentCoverImage = nil
+        playbackOwnership = AudioPlaybackOwnershipState()
+        clearNowPlayingInfo()
     }
 
     private func stop(preservingPrestagedIDs: Set<String>) {

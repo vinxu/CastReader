@@ -81,7 +81,9 @@ final class KindleLibraryRecoveryService {
         in webView: WKWebView,
         onProgress: (String) -> Void
     ) async -> Result {
-        guard !isRecovering else { return .notFound }
+        guard !Task.isCancelled,
+              let accountBoundaryToken = AccountContentIsolation.captureBoundaryToken(),
+              !isRecovering else { return .notFound }
         isRecovering = true
         defer { isRecovering = false }
 
@@ -106,6 +108,9 @@ final class KindleLibraryRecoveryService {
             ))
             for _ in 0..<40 {
                 try Task.checkCancellation()
+                guard AccountContentIsolation.isCurrent(accountBoundaryToken) else {
+                    return .notFound
+                }
                 if navigationGate.hasBlockedNavigation { return .notFound }
                 if !webView.isLoading {
                     switch Self.landingKind(webView.url, expectedStorefront: storefront) {
@@ -135,6 +140,10 @@ final class KindleLibraryRecoveryService {
             var initialPayload: RecoveryPayload?
             onProgress(AppLocalized("正在等待 Kindle 书架加载…"))
             for readinessAttempt in 0..<24 {
+                guard !Task.isCancelled,
+                      AccountContentIsolation.isCurrent(accountBoundaryToken) else {
+                    return .notFound
+                }
                 if navigationGate.hasBlockedNavigation { return .notFound }
                 let payload = try await scrape(webView, expectedStorefront: storefront)
                 let rowCount = payload.books?.count ?? 0
@@ -160,6 +169,10 @@ final class KindleLibraryRecoveryService {
             var idlePasses = 0
             onProgress(AppLocalized("正在同步 Kindle 书架…"))
             for pass in 0..<12 {
+                guard !Task.isCancelled,
+                      AccountContentIsolation.isCurrent(accountBoundaryToken) else {
+                    return .notFound
+                }
                 if navigationGate.hasBlockedNavigation { return .notFound }
                 let before = Set(recoveredBooks.map(\.id)).count
                 let payload: RecoveryPayload
@@ -193,6 +206,9 @@ final class KindleLibraryRecoveryService {
             }
 
             guard !authRequired else { return .signInRequired }
+            guard AccountContentIsolation.isCurrent(accountBoundaryToken) else {
+                return .notFound
+            }
             let unique = Dictionary(grouping: recoveredBooks, by: \.id).compactMap(\.value.first)
             if !unique.isEmpty { KindleLibraryStore.shared.mergeScrapedBooks(unique) }
             guard let latest = matchingBook(book, in: unique) else { return .notFound }

@@ -2,7 +2,7 @@
 //  Quickread.swift
 //  CastReader
 //
-//  解读（QuickRead）API 数据模型 —— 对齐扩展 quickread.castreader.ai:8444 的三段式协议。
+//  解读（QuickRead）API 数据模型 —— 对齐 global / cn 网关后的三段式协议。
 //  extract-plan(SSE) → extract-block(JSON) → compose-block(JSON, 回填 mark.at)
 //
 

@@ -88,6 +88,45 @@ enum VoiceBrowserLanguage {
     }
 }
 
+/// Voice metadata can contain absolute media URLs. The catalog endpoint alone
+/// is not a sufficient route boundary: on the CN route, known legacy API media
+/// is rewritten through the filed gateway and every other legacy owned host is
+/// rejected. Third-party HTTPS CDNs remain usable.
+enum VoiceCatalogAssetURL {
+    static func resolve(
+        _ rawValue: String?,
+        route: ServiceRoute = ServiceRouting.current
+    ) -> URL? {
+        guard let raw = rawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else { return nil }
+
+        if raw.hasPrefix("/"), !raw.hasPrefix("//"),
+           let relative = URLComponents(string: raw),
+           OwnedAPIRedirectPolicy.isChinaGatewayBackedResponsePath(relative.path) {
+            return URL(
+                string: raw,
+                relativeTo: URL(string: route.apiGatewayBaseURL)
+            )?.absoluteURL
+        }
+
+        guard let components = URLComponents(string: raw),
+              let scheme = components.scheme?.lowercased(),
+              scheme == "https",
+              let host = components.host?.lowercased(), !host.isEmpty else {
+            return nil
+        }
+        if OwnedAPIRedirectPolicy.isCastReaderOwnedHost(host) {
+            return components.url.flatMap {
+                OwnedAPIRedirectPolicy.routedResponseURL(
+                    $0,
+                    route: route
+                )
+            }
+        }
+        return components.url
+    }
+}
+
 enum VoiceBrowserFilter {
     static func apply(
         voices: [VoiceOption],
@@ -210,12 +249,11 @@ final class VoiceSamplePlayer: ObservableObject {
         if resumeSuspendedPlayback { VoicePreviewPlaybackCoordinator.shared.end() }
     }
 
-    nonisolated static func validSampleURL(_ value: String?) -> URL? {
-        guard let value,
-              let url = URL(string: value),
-              let scheme = url.scheme?.lowercased(),
-              scheme == "https" || scheme == "http" else { return nil }
-        return url
+    nonisolated static func validSampleURL(
+        _ value: String?,
+        route: ServiceRoute = ServiceRouting.current
+    ) -> URL? {
+        VoiceCatalogAssetURL.resolve(value, route: route)
     }
 }
 

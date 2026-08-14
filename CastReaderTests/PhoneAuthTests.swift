@@ -117,8 +117,24 @@ final class PhoneAuthTests: XCTestCase {
             .codeExpired
         )
         XCTAssertEqual(
+            PhoneAuthError.from(status: 410, code: "challenge_consumed", message: nil),
+            .codeExpired
+        )
+        XCTAssertEqual(
+            PhoneAuthError.from(status: 410, code: nil, message: "Gone"),
+            .codeExpired
+        )
+        XCTAssertEqual(
             PhoneAuthError.from(status: 429, code: nil, message: nil),
             .tooManyRequests(retryAfter: 0)
+        )
+        XCTAssertEqual(
+            PhoneAuthError.from(
+                status: 503,
+                code: "sms_unavailable",
+                message: "短信服务尚未开放，请稍后再试"
+            ),
+            .smsUnavailable(message: "短信服务尚未开放，请稍后再试")
         )
     }
 
@@ -137,9 +153,61 @@ final class PhoneAuthTests: XCTestCase {
         XCTAssertEqual(error, .tooManyRequests(retryAfter: 42))
     }
 
+    func testRateLimitDescriptionUsesFriendlyRoundedUnits() {
+        XCTAssertEqual(
+            PhoneAuthError.rateLimitDescription(retryAfter: 0),
+            "操作太频繁，请稍后再试"
+        )
+        XCTAssertEqual(
+            PhoneAuthError.rateLimitDescription(retryAfter: 59),
+            "操作太频繁，请 59 秒后再试"
+        )
+        XCTAssertEqual(
+            PhoneAuthError.rateLimitDescription(retryAfter: 60),
+            "操作太频繁，请 1 分钟后再试"
+        )
+        XCTAssertEqual(
+            PhoneAuthError.rateLimitDescription(retryAfter: 61),
+            "操作太频繁，请 2 分钟后再试"
+        )
+        XCTAssertEqual(
+            PhoneAuthError.rateLimitDescription(retryAfter: 3_600),
+            "操作太频繁，请 1 小时后再试"
+        )
+        XCTAssertEqual(
+            PhoneAuthError.rateLimitDescription(retryAfter: 3_601),
+            "操作太频繁，请 2 小时后再试"
+        )
+    }
+
     func testDecodeErrorHandlesNonJSONBody() {
         let error = PhoneAuthService.decodeError(status: 502, data: Data("bad gateway".utf8))
         XCTAssertEqual(error, .server(status: 502, message: nil))
+    }
+
+    func testConsumedVerificationCodeShowsExplicitExpiryMessage() {
+        let error = PhoneAuthService.decodeError(
+            status: 410,
+            data: Data(#"{"code":"challenge_consumed"}"#.utf8)
+        )
+        XCTAssertEqual(error, .codeExpired)
+        XCTAssertEqual(error.errorDescription, "验证码已过期，请重新获取")
+    }
+
+    func testOnlySMSVerificationGetsExtendedTimeout() throws {
+        let verify = try XCTUnwrap(
+            URL(string: "https://api.castreader.cn/api/mobile-auth/sms/verify")
+        )
+        let send = try XCTUnwrap(
+            URL(string: "https://api.castreader.cn/api/mobile-auth/sms/send")
+        )
+        let deletion = try XCTUnwrap(
+            URL(string: "https://api.castreader.cn/api/mobile-auth/account/delete")
+        )
+
+        XCTAssertEqual(URLSessionPhoneAuthTransport.timeoutInterval(for: verify), 30)
+        XCTAssertEqual(URLSessionPhoneAuthTransport.timeoutInterval(for: send), 12)
+        XCTAssertEqual(URLSessionPhoneAuthTransport.timeoutInterval(for: deletion), 12)
     }
 
     func testDataObjectUnwrapsEnvelopeAndFallsBackToRoot() throws {
@@ -152,6 +220,37 @@ final class PhoneAuthTests: XCTestCase {
         XCTAssertEqual(PhoneAuthService.dataObject(from: bare)?["ttl"] as? Int, 120)
     }
 
+    func testAccountDeletionReceiptParsesGraceAndManualAppleRevocation() throws {
+        let wrapped = try JSONSerialization.data(withJSONObject: [
+            "code": 0,
+            "data": [
+                "status": "pending_deletion",
+                "graceDays": 7,
+                "manualAppleRevocationRequired": true,
+            ],
+        ])
+        XCTAssertEqual(
+            PhoneAuthService.decodeAccountDeletionReceipt(data: wrapped),
+            AccountDeletionReceipt(
+                status: "pending_deletion",
+                graceDays: 7,
+                manualAppleRevocationRequired: true
+            )
+        )
+
+        let snakeCase = Data(
+            #"{"status":"accepted","grace_days":"99999","manual_apple_revocation_required":"yes"}"#.utf8
+        )
+        XCTAssertEqual(
+            PhoneAuthService.decodeAccountDeletionReceipt(data: snakeCase),
+            AccountDeletionReceipt(
+                status: "accepted",
+                graceDays: 3_650,
+                manualAppleRevocationRequired: true
+            )
+        )
+    }
+
     /// 服务端的明确业务拒绝不能被本地兜底掩盖，否则用户会以为随便输都能进。
     func testDefinitiveRejectionsAreNeverMaskedByFallback() {
         for error in [
@@ -159,6 +258,7 @@ final class PhoneAuthTests: XCTestCase {
             .invalidCode,
             .codeExpired,
             .tooManyRequests(retryAfter: 10),
+            .smsUnavailable(message: nil),
             .notAvailableInRegion,
         ] {
             XCTAssertTrue(
@@ -166,9 +266,44 @@ final class PhoneAuthTests: XCTestCase {
                 "\(error) 必须如实报错"
             )
         }
-        // 网络/服务端不可用才允许走兜底。
+        // 这两类不是明确的输入/频控拒绝，但生产路径仍会如实上抛。
         XCTAssertFalse(PhoneAuthService.isDefinitiveRejection(.network))
         XCTAssertFalse(PhoneAuthService.isDefinitiveRejection(.server(status: 500, message: nil)))
+    }
+
+    func testLocalFallbackRequiresExplicitDebugLaunchArgument() {
+        let flag = "-CastReaderPhoneAuthLocalFallback"
+
+        XCTAssertFalse(
+            PhoneAuthService.LocalFallback.isEnabled(
+                arguments: [],
+                region: .cn,
+                isDebugBuild: true
+            ),
+            "普通 Debug 真机不得默认启用 888888"
+        )
+        XCTAssertTrue(
+            PhoneAuthService.LocalFallback.isEnabled(
+                arguments: [flag],
+                region: .cn,
+                isDebugBuild: true
+            )
+        )
+        XCTAssertFalse(
+            PhoneAuthService.LocalFallback.isEnabled(
+                arguments: [flag],
+                region: .global,
+                isDebugBuild: true
+            )
+        )
+        XCTAssertFalse(
+            PhoneAuthService.LocalFallback.isEnabled(
+                arguments: [flag],
+                region: .cn,
+                isDebugBuild: false
+            ),
+            "Release 即使收到启动参数也必须 fail closed"
+        )
     }
 
     // MARK: - 区域门禁
@@ -179,10 +314,14 @@ final class PhoneAuthTests: XCTestCase {
     func testPhoneAuthIsRejectedOutsideChina() async {
         let key = "appRegion.v1.storefrontCountryCode"
         let overrideKey = "appRegion.v1.override"
+        let serviceOverrideKey = "serviceRouting.v1.override"
         let saved = UserDefaults.standard.string(forKey: key)
         let savedOverride = UserDefaults.standard.string(forKey: overrideKey)
+        let savedServiceOverride = UserDefaults.standard.string(forKey: serviceOverrideKey)
         UserDefaults.standard.removeObject(forKey: overrideKey)
         UserDefaults.standard.set("USA", forKey: key)
+        UserDefaults.standard.set(ServiceRoute.chinaGateway.rawValue, forKey: serviceOverrideKey)
+        ServiceRouting.resetProcessSnapshotForTesting()
         defer {
             if let saved {
                 UserDefaults.standard.set(saved, forKey: key)
@@ -191,7 +330,15 @@ final class PhoneAuthTests: XCTestCase {
             }
             if let savedOverride {
                 UserDefaults.standard.set(savedOverride, forKey: overrideKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: overrideKey)
             }
+            if let savedServiceOverride {
+                UserDefaults.standard.set(savedServiceOverride, forKey: serviceOverrideKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: serviceOverrideKey)
+            }
+            ServiceRouting.resetProcessSnapshotForTesting()
         }
 
         let transport = FailIfCalledTransport()
@@ -209,7 +356,71 @@ final class PhoneAuthTests: XCTestCase {
         XCTAssertFalse(transport.wasCalled, "非中国区不得发出任何请求")
     }
 
+    /// 手机号是中国产品能力。global / cn 网关都写同一 canonical
+    /// identity DB；区域与线路独立时也不得丢失该登录通道。
+    @MainActor
+    func testPhoneAuthUsesGlobalGatewayForChinaProduct() async throws {
+        let storefrontKey = "appRegion.v1.storefrontCountryCode"
+        let regionOverrideKey = "appRegion.v1.override"
+        let serviceOverrideKey = "serviceRouting.v1.override"
+        let savedStorefront = UserDefaults.standard.string(forKey: storefrontKey)
+        let savedRegionOverride = UserDefaults.standard.string(forKey: regionOverrideKey)
+        let savedServiceOverride = UserDefaults.standard.string(forKey: serviceOverrideKey)
+        defer {
+            restore(savedStorefront, key: storefrontKey)
+            restore(savedRegionOverride, key: regionOverrideKey)
+            restore(savedServiceOverride, key: serviceOverrideKey)
+            ServiceRouting.resetProcessSnapshotForTesting()
+        }
+
+        UserDefaults.standard.removeObject(forKey: regionOverrideKey)
+        UserDefaults.standard.set("CHN", forKey: storefrontKey)
+        UserDefaults.standard.set(ServiceRoute.globalGateway.rawValue, forKey: serviceOverrideKey)
+        ServiceRouting.resetProcessSnapshotForTesting()
+
+        XCTAssertEqual(AppRegion.current, .cn)
+        XCTAssertEqual(ServiceRouting.current, .globalGateway)
+        let transport = StubTransport(
+            status: 200,
+            body: ["data": ["ttl": 300, "resendAfter": 60]]
+        )
+        let service = PhoneAuthService(transport: transport)
+        XCTAssertTrue(service.isAvailable)
+
+        _ = try await service.sendCode(phone: "13800138000")
+        XCTAssertEqual(transport.lastURL?.host, "api.castreader.ai")
+        XCTAssertEqual(transport.lastURL?.path, "/api/mobile-auth/sms/send")
+    }
+
     // MARK: - 网络往返
+
+    @MainActor
+    func testAccountDeletionReturnsGenericServerReceipt() async throws {
+        try await withChinaRegion {
+            let transport = StubTransport(
+                status: 200,
+                body: [
+                    "code": 0,
+                    "data": [
+                        "status": "pending_deletion",
+                        "graceDays": 7,
+                        "manualAppleRevocationRequired": false,
+                    ],
+                ]
+            )
+            let service = PhoneAuthService(transport: transport)
+            let receipt = try await service.deleteAccount(
+                sessionToken: "cms_account_delete_test"
+            )
+
+            XCTAssertEqual(receipt.status, "pending_deletion")
+            XCTAssertEqual(receipt.graceDays, 7)
+            XCTAssertFalse(receipt.manualAppleRevocationRequired)
+            XCTAssertEqual(transport.lastURL?.host, "api.castreader.cn")
+            XCTAssertEqual(transport.lastURL?.path, "/api/mobile-auth/account/delete")
+            XCTAssertEqual(transport.lastBearer, "cms_account_delete_test")
+        }
+    }
 
     @MainActor
     func testSendCodeParsesChallenge() async throws {
@@ -227,6 +438,8 @@ final class PhoneAuthTests: XCTestCase {
             // 号码必须以 E.164 发出。
             XCTAssertEqual(transport.lastBody?["phone"] as? String, "+8613800138000")
             XCTAssertEqual(transport.lastBody?["scene"] as? String, "sign_in")
+            XCTAssertEqual(transport.lastURL?.host, "api.castreader.cn")
+            XCTAssertEqual(transport.lastURL?.path, "/api/mobile-auth/sms/send")
         }
     }
 
@@ -250,6 +463,8 @@ final class PhoneAuthTests: XCTestCase {
             XCTAssertEqual(result.userId, "user_42")
             XCTAssertTrue(result.isNewUser)
             XCTAssertFalse(result.usedLocalFallback)
+            XCTAssertEqual(transport.lastURL?.host, "api.castreader.cn")
+            XCTAssertEqual(transport.lastURL?.path, "/api/mobile-auth/sms/verify")
         }
     }
 
@@ -268,13 +483,59 @@ final class PhoneAuthTests: XCTestCase {
         }
     }
 
+    /// 后端已经返回 HTTP `sms_unavailable` 时，必须保留业务错误；
+    /// 即使单元测试注入了断网兜底，也不能把服务端 503 掩盖成 888888。
+    @MainActor
+    func testSendCodePreservesSMSUnavailableServerError() async throws {
+        try await withChinaRegion {
+            let message = "短信服务尚未开放，请稍后再试"
+            let transport = StubTransport(
+                status: 503,
+                body: ["code": "sms_unavailable", "message": message]
+            )
+            let service = PhoneAuthService(
+                transport: transport,
+                localFallbackEnabledForTesting: true
+            )
+
+            do {
+                _ = try await service.sendCode(phone: "13800138000")
+                XCTFail("HTTP 503 sms_unavailable 不得进入本地兜底")
+            } catch let error as PhoneAuthError {
+                XCTAssertEqual(error, .smsUnavailable(message: message))
+                XCTAssertEqual(error.errorDescription, message)
+            }
+        }
+    }
+
+    /// 普通 Debug 真机不带 UI 测试参数；传输层失败必须报网络错误，
+    /// 不能显示体验码。显式 `false` 注入使用例不受 XCTest 启动参数影响。
+    @MainActor
+    func testSendCodeDoesNotFallbackForOrdinaryDebugRun() async throws {
+        try await withChinaRegion {
+            let service = PhoneAuthService(
+                transport: UnreachableTransport(),
+                localFallbackEnabledForTesting: false
+            )
+            do {
+                _ = try await service.sendCode(phone: "13800138000")
+                XCTFail("普通 Debug 进程后端不可达时不应启用 888888")
+            } catch let error as PhoneAuthError {
+                XCTAssertEqual(error, .network)
+            }
+        }
+    }
+
     // MARK: - 本地预设直通
 
     /// 后端不可达时，预设码放行——否则境内后端上线前整个中国区停在登录页。
     @MainActor
     func testPresetCodeSignsInWhenBackendUnreachable() async throws {
         try await withChinaRegion {
-            let service = PhoneAuthService(transport: UnreachableTransport())
+            let service = PhoneAuthService(
+                transport: UnreachableTransport(),
+                localFallbackEnabledForTesting: true
+            )
             let result = try await service.verify(
                 phone: "13800138000",
                 code: PhoneAuthService.LocalFallback.presetCode
@@ -306,7 +567,10 @@ final class PhoneAuthTests: XCTestCase {
     @MainActor
     func testNonPresetCodeStillFailsWhenBackendUnreachable() async throws {
         try await withChinaRegion {
-            let service = PhoneAuthService(transport: UnreachableTransport())
+            let service = PhoneAuthService(
+                transport: UnreachableTransport(),
+                localFallbackEnabledForTesting: true
+            )
             do {
                 _ = try await service.verify(phone: "13800138000", code: "123456")
                 XCTFail("普通验证码在后端不可达时不应登录成功")
@@ -321,7 +585,10 @@ final class PhoneAuthTests: XCTestCase {
     func testServerRejectionBeatsPresetCode() async throws {
         try await withChinaRegion {
             let transport = StubTransport(status: 400, body: ["code": "invalid_code"])
-            let service = PhoneAuthService(transport: transport)
+            let service = PhoneAuthService(
+                transport: transport,
+                localFallbackEnabledForTesting: true
+            )
             do {
                 _ = try await service.verify(
                     phone: "13800138000",
@@ -337,7 +604,10 @@ final class PhoneAuthTests: XCTestCase {
     @MainActor
     func testSendCodeFallsBackWhenBackendUnreachable() async throws {
         try await withChinaRegion {
-            let service = PhoneAuthService(transport: UnreachableTransport())
+            let service = PhoneAuthService(
+                transport: UnreachableTransport(),
+                localFallbackEnabledForTesting: true
+            )
             let challenge = try await service.sendCode(phone: "13800138000")
             XCTAssertTrue(challenge.usedLocalFallback)
             // 兜底时不该让用户等 60 秒才能重试。
@@ -356,11 +626,15 @@ final class PhoneAuthTests: XCTestCase {
     private func withChinaRegion(_ body: () async throws -> Void) async throws {
         let storefrontKey = "appRegion.v1.storefrontCountryCode"
         let overrideKey = "appRegion.v1.override"
+        let serviceOverrideKey = "serviceRouting.v1.override"
         let savedStorefront = UserDefaults.standard.string(forKey: storefrontKey)
         let savedOverride = UserDefaults.standard.string(forKey: overrideKey)
+        let savedServiceOverride = UserDefaults.standard.string(forKey: serviceOverrideKey)
 
         UserDefaults.standard.removeObject(forKey: overrideKey)
         UserDefaults.standard.set("CHN", forKey: storefrontKey)
+        UserDefaults.standard.set(ServiceRoute.chinaGateway.rawValue, forKey: serviceOverrideKey)
+        ServiceRouting.resetProcessSnapshotForTesting()
         defer {
             if let savedStorefront {
                 UserDefaults.standard.set(savedStorefront, forKey: storefrontKey)
@@ -372,8 +646,22 @@ final class PhoneAuthTests: XCTestCase {
             } else {
                 UserDefaults.standard.removeObject(forKey: overrideKey)
             }
+            if let savedServiceOverride {
+                UserDefaults.standard.set(savedServiceOverride, forKey: serviceOverrideKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: serviceOverrideKey)
+            }
+            ServiceRouting.resetProcessSnapshotForTesting()
         }
         try await body()
+    }
+
+    private func restore(_ value: String?, key: String) {
+        if let value {
+            UserDefaults.standard.set(value, forKey: key)
+        } else {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
     }
 }
 
@@ -383,6 +671,8 @@ private final class StubTransport: PhoneAuthTransport, @unchecked Sendable {
     let status: Int
     let body: [String: Any]
     private(set) var lastBody: [String: Any]?
+    private(set) var lastURL: URL?
+    private(set) var lastBearer: String?
 
     init(status: Int, body: [String: Any]) {
         self.status = status
@@ -390,7 +680,9 @@ private final class StubTransport: PhoneAuthTransport, @unchecked Sendable {
     }
 
     func post(url: URL, body requestBody: [String: Any], bearer: String?) async throws -> (Int, Data) {
+        lastURL = url
         lastBody = requestBody
+        lastBearer = bearer
         return (status, try JSONSerialization.data(withJSONObject: body))
     }
 }

@@ -149,7 +149,6 @@ struct HomeView: View {
     @ObservedObject private var pro = ProManager.shared
     @ObservedObject private var auth = AuthService.shared
     @StateObject private var captureVM = CaptureFlowViewModel()
-    @StateObject private var importVM = ImportViewModel()
     @ObservedObject private var cloudStorage = CloudStorageCenter.shared
     @ObservedObject private var kindleStore = KindleLibraryStore.shared
     @ObservedObject private var weReadStore = WeReadLibraryStore.shared
@@ -212,6 +211,7 @@ struct HomeView: View {
     @State private var cloudHistoryProgress: CloudHistoryReopenProgress?
     @State private var cloudHistoryTask: Task<Void, Never>?
     @State private var cloudHistoryAttemptID: UUID?
+    @State private var accountScopedImportTask: Task<Void, Never>?
     @State private var isLoadingProProducts = false
     @State private var didAttemptProProductLoad = false
     @State private var isPurchasingAnnual = false
@@ -288,6 +288,8 @@ struct HomeView: View {
             // A pushed Home destination is not the stable Home root either.
             onReviewPresentationBlockedChanged(true)
             cancelCloudHistoryReopen()
+            accountScopedImportTask?.cancel()
+            accountScopedImportTask = nil
         }
         // ➕（底部）→ 快速导入面板。默认通用导入，也可在面板里选择场景。
         .onChange(of: importRouter.generalToken) { _ in
@@ -478,7 +480,7 @@ struct HomeView: View {
         let action = HomeProPurchaseContract.primaryAction(
             isPro: pro.isPro,
             hasYearlyProduct: pro.yearly != nil,
-            hasEmailAccount: auth.hasSyncableAccount,
+            hasSyncableAccount: auth.hasSyncableAccount,
             isLoadingProducts: isLoadingProProducts || (!didAttemptProProductLoad && pro.yearly == nil),
             isPurchaseInFlight: isPurchasingAnnual || pro.purchaseInFlight
         )
@@ -506,7 +508,7 @@ struct HomeView: View {
 
         if pendingAnnualPurchaseAfterLogin {
             pendingAnnualPurchaseAfterLogin = false
-            guard auth.hasEmailAccount, !pro.isPro else { return }
+            guard auth.hasSyncableAccount, !pro.isPro else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                 purchaseAnnualProduct()
             }
@@ -517,7 +519,7 @@ struct HomeView: View {
         guard !pro.isPro,
               !isPurchasingAnnual,
               !pro.purchaseInFlight,
-              auth.hasEmailAccount,
+              auth.hasSyncableAccount,
               let yearly = pro.yearly else { return }
         isPurchasingAnnual = true
         Task { @MainActor in
@@ -543,8 +545,9 @@ struct HomeView: View {
     // MARK: - 继续看
 
     private var showsWeReadModule: Bool {
-        // 中国大陆版把微信读书当作唯一书库，始终展示；其他地区沿用既有的
-        // 语言/时区可用性判定，行为不变。
+        // 中国大陆版把微信读书作为默认书库入口并始终展示；Kindle、
+        // Google Books、Kobo、O'Reilly 与 YouTube 仍保留原入口。
+        // 其他地区沿用既有的语言/时区可用性判定，行为不变。
         if AppRegion.current == .cn { return true }
         return WeReadAvailability.isAvailable(
             appLanguage: appLanguage.selectedLanguage,
@@ -569,8 +572,8 @@ struct HomeView: View {
             || (showsWeReadModule && !weReadStore.needsConnection)
     }
 
-    /// 中国区只有微信读书一个书库，泛称「电子书书架」反而让人不知道点进去会发生什么，
-    /// 直接点名。其他地区有五个来源，保持泛称。
+    /// 中国区空状态优先引导微信读书，但统一书架页仍保留全部五个平台；
+    /// 其他地区保持既有泛称。
     private var librarySourcesEmptyCardTitle: String {
         if AppRegion.current == .cn {
             return hasConnectedShelf
@@ -962,7 +965,9 @@ struct HomeView: View {
               let text = String(data: data, encoding: .utf8),
               !text.isEmpty else { return }
         Once.done = true
+        guard let boundary = AccountContentIsolation.captureBoundaryToken() else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            guard AccountContentIsolation.isCurrent(boundary) else { return }
             let doc = DocumentBuilder.fromPlainText(text, title: "")
             if !doc.isEmpty { finishImport(doc) }
         }
@@ -981,7 +986,13 @@ struct HomeView: View {
                     onScan: { pages in
                         captureStage = nil
                         confirmImport(format: .photo)
-                        Task { await runCapture { await captureVM.processScannedPages(pages) } }
+                        guard let boundary = AccountContentIsolation.captureBoundaryToken() else { return }
+                        accountScopedImportTask?.cancel()
+                        accountScopedImportTask = Task {
+                            await runCapture(expectedBoundary: boundary) {
+                                await captureVM.processScannedPages(pages)
+                            }
+                        }
                     },
                     onCancel: {
                         captureStage = nil
@@ -999,7 +1010,13 @@ struct HomeView: View {
                     onImage: { image in
                         captureStage = nil
                         confirmImport(format: .photo)
-                        Task { await runCapture { await captureVM.process(image: image) } }
+                        guard let boundary = AccountContentIsolation.captureBoundaryToken() else { return }
+                        accountScopedImportTask?.cancel()
+                        accountScopedImportTask = Task {
+                            await runCapture(expectedBoundary: boundary) {
+                                await captureVM.process(image: image)
+                            }
+                        }
                     },
                     onCancel: {
                         captureStage = nil
@@ -1018,8 +1035,15 @@ struct HomeView: View {
 
     /// 拍照 / 选图 / 扫描的共同收尾：识别成功就开阅读器，否则记一次失败。
     /// 多栏页面（报纸/杂志）先问一次「只读哪一块」—— 一次拍摄常包含好几篇文章。
-    private func runCapture(_ recognize: () async -> Void) async {
+    private func runCapture(
+        expectedBoundary: AccountContentBoundaryToken,
+        _ recognize: () async -> Void
+    ) async {
+        guard !Task.isCancelled,
+              AccountContentIsolation.isCurrent(expectedBoundary) else { return }
         await recognize()
+        guard !Task.isCancelled,
+              AccountContentIsolation.isCurrent(expectedBoundary) else { return }
         guard let doc = captureVM.document else {
             failImport(stage: "ocr", code: captureVM.error == nil ? "empty_content" : "recognition_failed")
             return
@@ -1028,12 +1052,19 @@ struct HomeView: View {
         if PhotoRegionCropper.shouldOfferSelection(for: doc) {
             captureStage = .regionSelection(doc)
         } else {
-            finishImport(doc)
+            finishImport(doc, expectedBoundary: expectedBoundary)
         }
     }
 
     /// 落地：打开方式与场景正交。场景只注入 ExplainVM，朗读/解读由用户在入口选择。
-    private func finishImport(_ doc: ReadingDocument) {
+    private func finishImport(
+        _ doc: ReadingDocument,
+        expectedBoundary: AccountContentBoundaryToken? = nil
+    ) {
+        if let expectedBoundary,
+           !AccountContentIsolation.isCurrent(expectedBoundary) {
+            return
+        }
         let scenario = importScenario
         let mode = importMode
         let analyticsContext = importAnalyticsContext
@@ -1151,7 +1182,6 @@ struct HomeView: View {
         var types: [UTType] = [.pdf, .plainText, .image, .text]
         if let epub = UTType("org.idpf.epub-container") { types.append(epub) }
         if let docx = UTType("org.openxmlformats.wordprocessingml.document") { types.append(docx) }
-        types.append(.data)
         return types
     }
 
@@ -1167,7 +1197,13 @@ struct HomeView: View {
 
         if ["png", "jpg", "jpeg", "heic", "heif", "webp", "gif", "tiff"].contains(ext) {
             if let data = try? Data(contentsOf: url), let img = UIImage(data: data) {
-                Task { await runCapture { await captureVM.process(image: img) } }
+                guard let boundary = AccountContentIsolation.captureBoundaryToken() else { return }
+                accountScopedImportTask?.cancel()
+                accountScopedImportTask = Task {
+                    await runCapture(expectedBoundary: boundary) {
+                        await captureVM.process(image: img)
+                    }
+                }
             } else {
                 failImport(stage: "file_read", code: "unreadable_image")
                 notice = AppLocalized("无法读取图片")
@@ -1179,36 +1215,22 @@ struct HomeView: View {
                 notice = AppLocalized("无法读取文本文件")
             }
         } else {
-            // 其他未知格式 → 暂仍走后端处理
-            let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(url.lastPathComponent)
-            try? FileManager.default.removeItem(at: tmp)
-            do {
-                try FileManager.default.copyItem(at: url, to: tmp)
-                Task {
-                    await importVM.uploadFile(tmp)
-                    if let error = importVM.error {
-                        failImport(stage: "upload", code: "backend_upload_failed")
-                        notice = error
-                    } else {
-                        if let context = importAnalyticsContext {
-                            ProductAnalytics.shared.contentInputCompleted(context)
-                        }
-                        resetImportState()
-                        notice = AppLocalized("已上传，处理完成后在「文库」查看")
-                    }
-                }
-            } catch {
-                failImport(stage: "file_read", code: "copy_failed")
-                notice = String(format: AppLocalized("无法读取文件：%@"), error.localizedDescription)
-            }
+            // The retired remote reader/COS fallback is not a product surface in
+            // this release. Every advertised format is parsed on-device; an
+            // unknown extension fails locally instead of crossing an unfinished
+            // storage boundary or silently relying on legacy infrastructure.
+            failImport(stage: "parse", code: "unsupported_file_format")
+            notice = AppLocalized("文件格式与扩展名不一致")
         }
     }
 
     private func handleUnifiedDocumentFile(_ url: URL, format: SupportedDocumentFormat) {
         let scenario = importScenario
         let mode = importMode
+        guard let boundary = AccountContentIsolation.captureBoundaryToken() else { return }
         isProcessingPDF = true
-        Task {
+        accountScopedImportTask?.cancel()
+        accountScopedImportTask = Task {
             defer { isProcessingPDF = false }
             do {
                 let result = try await DocumentImportPipeline().importDocument(
@@ -1218,10 +1240,14 @@ struct HomeView: View {
                         requiresSecurityScopedAccess: true
                     )
                 )
+                guard !Task.isCancelled,
+                      AccountContentIsolation.isCurrent(boundary) else { return }
                 importScenario = scenario
                 importMode = mode
-                finishImport(result.document)
+                finishImport(result.document, expectedBoundary: boundary)
             } catch {
+                guard !Task.isCancelled,
+                      AccountContentIsolation.isCurrent(boundary) else { return }
                 importScenario = scenario
                 importMode = mode
                 failImport(stage: "parse", code: "local_\(format.rawValue)_import_failed")
@@ -1314,13 +1340,13 @@ struct HomeView: View {
     }
 
     private var isProcessingContent: Bool {
-        captureVM.isProcessing || importVM.isUploading || isProcessingPDF
+        captureVM.isProcessing || isProcessingPDF
             || cloudHistoryProgress != nil
     }
 
     private var processingStatusText: String {
         guard let progress = cloudHistoryProgress else {
-            return importVM.isUploading ? AppLocalized("上传中…") : AppLocalized("识别中…")
+            return AppLocalized("识别中…")
         }
         switch progress {
         case .validatingAccount:
@@ -6361,7 +6387,7 @@ private struct KindleProbeWebView: UIViewRepresentable {
         ))
 
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = .default()
+        config.websiteDataStore = CommercialWebSession.websiteDataStore
         config.userContentController = controller
         config.allowsInlineMediaPlayback = true
 

@@ -1420,7 +1420,7 @@ enum KindleSessionProbe {
     @MainActor
     static func logCookies(reason: String) {
         #if DEBUG
-        WKWebsiteDataStore.default().httpCookieStore.getAllCookies { cookies in
+        CommercialWebSession.websiteDataStore.httpCookieStore.getAllCookies { cookies in
             let amazon = cookies
                 .filter { KindleStorefront.isAmazonWebsiteDataDomain($0.domain) }
             guard !amazon.isEmpty else {
@@ -2742,7 +2742,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             storefront: readerStorefront
         )
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = .default()
+        config.websiteDataStore = CommercialWebSession.websiteDataStore
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         let userContentController = WKUserContentController()
         // These are the only scripts that must run before Amazon's renderer:
@@ -3914,7 +3914,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         // particular, do not set the desktop reader UA and do not inject reader
         // scripts; Amazon uses the shelf client to refresh its book session.
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = .default()
+        config.websiteDataStore = CommercialWebSession.websiteDataStore
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         let recovery = WKWebView(frame: .zero, configuration: config)
 #if DEBUG
@@ -5955,6 +5955,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         // hammering the same host turned a 1s redirect into 13s, then 31s, then
         // four timeouts — and each one independently started its own session
         // recovery. Tear the transport down with the view model.
+        staleBookRecoveryTask?.cancel()
+        staleBookRecoveryTask = nil
         authRecoveryTask?.cancel()
         authRecoveryTask = nil
         contentCover = nil

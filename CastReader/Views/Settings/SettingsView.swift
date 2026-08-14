@@ -39,6 +39,10 @@ struct SettingsView: View {
     @State private var restoreMessage = ""
     /// 绑定 `AppRegion` 的覆盖值，这样内部开关切换后界面能立即反映。
     @AppStorage("appRegion.v1.override") private var regionOverrideRaw: String = ""
+    /// 空值表示跟随后台；线路只在下次完整启动时重新解析。
+    @AppStorage("serviceRouting.v1.override") private var serviceRouteOverrideRaw: String = ""
+    @State private var isRefreshingServiceRoute = false
+    @State private var serviceRouteRefreshMessage: String?
 
     init(
         shareInboxUnreadCount: Int = 0,
@@ -70,6 +74,9 @@ struct SettingsView: View {
                 explainSection
                 appearanceSection
                 supportSection
+                if AppRegion.current == .cn {
+                    chinaAboutSection
+                }
                 dataSection
                 if showsInternalRegionSwitcher {
                     internalRegionSection
@@ -177,9 +184,16 @@ struct SettingsView: View {
             Button(AppLocalized("确认注销"), role: .destructive) {
                 Task { await deleteAccount() }
             }
+            Button(AppLocalized("管理订阅")) {
+                Task { await pro.openManageSubscriptions() }
+            }
             Button(AppLocalized("取消"), role: .cancel) {}
         } message: {
-            Text(AppLocalized("注销后将删除你的账号与个人信息，已购买的订阅不会自动退款。此操作无法撤销。"))
+            Text(
+                AppLocalized(
+                    "提交后会立即退出登录，账号与个人信息将按服务端告知的期限删除。Apple 自动续订和退款不会随账号注销自动处理。"
+                )
+            )
         }
 
         if let deleteAccountError {
@@ -192,7 +206,7 @@ struct SettingsView: View {
 
     private func deleteAccount() async {
         do {
-            try await auth.deleteAccount()
+            _ = try await auth.deleteAccount()
             deleteAccountError = nil
         } catch let error as PhoneAuthError {
             deleteAccountError = error.errorDescription
@@ -211,6 +225,29 @@ struct SettingsView: View {
         }
         .frame(width: 40, height: 40)
         .clipShape(Circle())
+        // 会员标识放在这里而不是工具栏：40pt 头像放得下皇冠，右下角也不会跟
+        // 未读提醒的红点位置混淆。工具栏那颗头像只用一圈描边表示 Pro——这里
+        // 不再叠描边，同色的圈会跟皇冠糊在一起。
+        .overlay(alignment: .bottomTrailing) {
+            if pro.isPro { proCrownBadge }
+        }
+    }
+
+    /// 描边画在底层而不是 `.overlay`：叠在上面会从皇冠头顶切过去。
+    private var proCrownBadge: some View {
+        ZStack {
+            Circle()
+                .fill(AppTheme.systemBackground)
+                .frame(width: 21, height: 21)
+            Circle()
+                .fill(AppTheme.primary)
+                .frame(width: 17, height: 17)
+            Image(systemName: "crown.fill")
+                .font(.system(size: 8.5, weight: .semibold))
+                .foregroundStyle(AppTheme.primaryForeground)
+        }
+        .offset(x: 3, y: 3)
+        .accessibilityIdentifier("settingsProBadge")
     }
 
     private func initialCircle(_ acc: UserAccount) -> some View {
@@ -289,6 +326,7 @@ struct SettingsView: View {
                     }
                 }
             }
+            .accessibilityIdentifier("settingsProLink")
             if pro.isPro {
                 Button("管理订阅") { Task { await pro.openManageSubscriptions() } }
             }
@@ -297,7 +335,7 @@ struct SettingsView: View {
             Button("恢复购买") { restorePurchases() }
                 .disabled(isRestoring)
             if pro.needsEmailSync && !auth.hasSyncableAccount {
-                Button("登录邮箱同步 Pro") { showLogin = true }
+                Button("登录账号同步 Pro") { showLogin = true }
             }
             if auth.needsAppleRelink && !pro.isPro {
                 appleRelinkRow
@@ -346,10 +384,7 @@ struct SettingsView: View {
         }
         if pro.needsEmailSync {
             if auth.hasSyncableAccount { return "本机已解锁，跨平台同步待完成" }
-            // 中国区用手机号登录，提示里不能说「邮箱」。
-            return AppRegion.current == .cn
-                ? "已检测到购买，请登录后同步会员"
-                : "已检测到购买，请登录邮箱同步 Pro"
+            return "已检测到购买，请登录账号同步 Pro"
         }
         return "已解锁"
     }
@@ -524,6 +559,30 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: 关于 / 中国大陆合规信息
+
+    private var chinaAboutSection: some View {
+        Section {
+            Link(destination: URL(string: "https://beian.miit.gov.cn/")!) {
+                HStack(spacing: 12) {
+                    Label(AppLocalized("ICP备案"), systemImage: "checkmark.shield")
+                    Spacer()
+                    Text("沪ICP备14008512号-12A")
+                        .font(.subheadline)
+                        .multilineTextAlignment(.trailing)
+                }
+            }
+            .accessibilityIdentifier("settingsICPLink")
+            .accessibilityLabel(
+                Text("\(AppLocalized("ICP备案"))，沪ICP备14008512号-12A")
+            )
+        } header: {
+            Text(AppLocalized("关于"))
+        } footer: {
+            Text(AppLocalized("点击备案号可前往工业和信息化部备案管理系统查询。"))
+        }
+    }
+
     // MARK: 数据（历史管理——「清除全部」下沉到此，避免文库列表页误触）
 
     private var dataSection: some View {
@@ -562,25 +621,17 @@ struct SettingsView: View {
     }
     #endif
 
-    // MARK: - 内部：发行区域切换
-
-    /// 内部测试用的邮箱。只有这个账号（或 Debug 构建）能看到区域开关。
-    private static let internalTesterEmail = "vinxu.cn@gmail.com"
+    // MARK: - 内部：发行体验与服务线路
 
     private var showsInternalRegionSwitcher: Bool {
-        #if DEBUG
-        return true
-        #else
-        // 已经手动切过区域的设备必须始终能看到开关，否则切到中国区之后
-        // Google 登录入口消失，就再也没有办法切回来了。
-        if AppRegion.overrideRegion != nil { return true }
-        return auth.normalizedEmail == Self.internalTesterEmail
-        #endif
+        // Route controls are a build/distribution testing capability, not an
+        // account entitlement. A production account must never unlock them.
+        ServiceRouting.allowsLocalOverride || AppRegion.overrideRegion != nil
     }
 
     private var internalRegionSection: some View {
         Section {
-            Picker("发行区域", selection: $regionOverrideRaw) {
+            Picker("产品发行区域", selection: $regionOverrideRaw) {
                 Text("跟随 App Store 地区").tag("")
                 Text("中国大陆（CHN）").tag(AppRegion.cn.rawValue)
                 Text("全球（Global）").tag(AppRegion.global.rawValue)
@@ -589,7 +640,7 @@ struct SettingsView: View {
             .accessibilityIdentifier("settingsRegionOverride")
 
             HStack {
-                Text("当前生效")
+                Text("当前产品体验")
                 Spacer()
                 Text(AppRegion.current == .cn ? "中国大陆" : "全球")
                     .foregroundColor(AppTheme.mutedForeground)
@@ -599,7 +650,7 @@ struct SettingsView: View {
             .accessibilityValue(AppRegion.current.rawValue)
 
             HStack {
-                Text("判据来源")
+                Text("产品判据来源")
                 Spacer()
                 Text(AppRegion.provenance.rawValue)
                     .foregroundColor(AppTheme.mutedForeground)
@@ -611,19 +662,130 @@ struct SettingsView: View {
                     .foregroundColor(AppTheme.mutedForeground)
             }
 
+            if ServiceRouting.allowsLocalOverride {
+                Divider()
+
+                Picker("自有 API 服务线路", selection: $serviceRouteOverrideRaw) {
+                    Text("跟随后台（默认全球网关）").tag("")
+                    Text(ServiceRoute.globalGateway.displayName).tag(ServiceRoute.globalGateway.rawValue)
+                    Text(ServiceRoute.chinaGateway.displayName).tag(ServiceRoute.chinaGateway.rawValue)
+                }
+                .pickerStyle(.inline)
+                .accessibilityIdentifier("settingsServiceRouteOverride")
+
+                HStack {
+                    Text("当前进程线路")
+                    Spacer()
+                    Text(ServiceRouting.current.displayName)
+                        .foregroundColor(AppTheme.mutedForeground)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("settingsServiceRouteEffective")
+                .accessibilityValue(ServiceRouting.current.rawValue)
+
+                HStack {
+                    Text("下次启动线路")
+                    Spacer()
+                    Text(ServiceRouting.nextLaunchSnapshot.route.displayName)
+                        .foregroundColor(AppTheme.mutedForeground)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("settingsServiceRouteNextLaunch")
+                .accessibilityValue(ServiceRouting.nextLaunchSnapshot.route.rawValue)
+
+                HStack {
+                    Text("下次启动来源")
+                    Spacer()
+                    Text(ServiceRouting.nextLaunchSnapshot.provenance.rawValue)
+                        .foregroundColor(AppTheme.mutedForeground)
+                }
+
+                HStack {
+                    Text("后台缓存")
+                    Spacer()
+                    Text(backendServiceRouteDescription)
+                        .foregroundColor(AppTheme.mutedForeground)
+                        .multilineTextAlignment(.trailing)
+                }
+
+                Button {
+                    refreshBackendServiceRoute()
+                } label: {
+                    HStack {
+                        Label("刷新后台线路配置", systemImage: "arrow.clockwise")
+                        Spacer()
+                        if isRefreshingServiceRoute { ProgressView() }
+                    }
+                }
+                .disabled(isRefreshingServiceRoute)
+                .accessibilityIdentifier("settingsServiceRouteRefresh")
+
+                if let serviceRouteRefreshMessage {
+                    Text(serviceRouteRefreshMessage)
+                        .font(.caption)
+                        .foregroundColor(AppTheme.mutedForeground)
+                        .accessibilityIdentifier("settingsServiceRouteRefreshResult")
+                }
+
+                serviceRouteEndpointDiagnostics
+            }
+
             Button {
                 reopenLibraryOnboarding(reset: true)
             } label: {
                 Label("重置首启引导", systemImage: "arrow.counterclockwise")
             }
         } header: {
-            Text("内部测试 · 发行区域")
+            Text("内部测试 · 区域与网络")
         } footer: {
             Text(
-                "切换后请完全退出并重新打开 App：书库入口、登录方式与后端地址会随区域变化，"
-                + "部分已初始化的状态需要重启才会刷新。中国大陆版隐藏 Kindle / Google 图书 / Kobo / "
-                + "O’Reilly 与 Google 登录，改用微信读书与手机号登录。"
+                "两项开关彼此独立，切换后请完全退出并重新打开 App。当前进程固定使用一条网络线路，"
+                + "避免登录、支付、上传或朗读中途混用后端。配置缺失、过期或拉取失败时默认全球网关。"
+                + "中国产品体验仅把微信读书设为默认；Kindle、YouTube、Google 图书、Kobo、O’Reilly "
+                + "等书架连接仍全部保留，但登录页隐藏 Google，提供手机号、Apple 与邮箱。服务线路只选择入口域名；"
+                + "全球与中国线路的登录会话和本地数据完全隔离，首次切到目标线路需登录该线路账号，切回后可恢复原线路账号。"
             )
+        }
+    }
+
+    private var backendServiceRouteDescription: String {
+        guard let route = ServiceRouting.cachedBackendRoute else {
+            return "未获取（默认全球网关）"
+        }
+        guard ServiceRouting.isBackendCacheValid else {
+            return "已过期（默认全球网关）"
+        }
+        return route.displayName
+    }
+
+    @ViewBuilder
+    private var serviceRouteEndpointDiagnostics: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("当前进程实际 Host")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(AppTheme.mutedForeground)
+            Text("账号 / Pro：\(host(of: Constants.API.webURL))")
+            Text("文档 / 上传：\(host(of: Constants.API.readerServiceURL))")
+            Text("TTS：\(host(of: TTSEndpoint.primaryBase()))")
+            Text("QuickRead：\(host(of: QuickReadEndpoint.base()))")
+        }
+        .font(.caption.monospaced())
+        .foregroundColor(AppTheme.mutedForeground)
+        .textSelection(.enabled)
+        .accessibilityIdentifier("settingsServiceRouteHosts")
+    }
+
+    private func host(of rawURL: String) -> String {
+        URL(string: rawURL)?.host ?? rawURL
+    }
+
+    private func refreshBackendServiceRoute() {
+        isRefreshingServiceRoute = true
+        serviceRouteRefreshMessage = nil
+        Task {
+            let outcome = await ServiceRouting.refreshBackendConfiguration()
+            serviceRouteRefreshMessage = outcome.displayMessage
+            isRefreshingServiceRoute = false
         }
     }
 

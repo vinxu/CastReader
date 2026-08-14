@@ -23,18 +23,61 @@ final class KindleLibraryStore: ObservableObject {
     @Published var isRefreshing = false
     @Published var lastError: String?
 
-    private let booksKey = "kindle.library.books.v1"
-    private let connectedKey = "kindle.library.connected.v1"
-    private let accountLabelKey = "kindle.library.account.label.v1"
-    private let accountEmailKey = "kindle.library.account.email.v1"
-    private let listeningAnchorsKey = "kindle.listening.anchors.v1"
-    private let boundStorefrontKey = "kindle.library.bound-storefront.v1"
-    private let authoritativeStorefrontKey = "kindle.library.bound-storefront-authoritative.v1"
+    private enum Storage {
+        static let books = "kindle.library.books.v1"
+        static let connected = "kindle.library.connected.v1"
+        static let accountLabel = "kindle.library.account.label.v1"
+        static let accountEmail = "kindle.library.account.email.v1"
+        static let listeningAnchors = "kindle.listening.anchors.v1"
+        static let boundStorefront = "kindle.library.bound-storefront.v1"
+        static let authoritativeStorefront = "kindle.library.bound-storefront-authoritative.v1"
+    }
+
+    private let defaults: UserDefaults
+    /// The production singleton must remain empty until AuthService selects an
+    /// account. Injected instances keep the legacy keys for contract tests and
+    /// migration tooling that deliberately construct a device-global store.
+    private let usesLegacyStorageWhenUnscoped: Bool
+    private var accountScope: AccountContentScope?
+    private var isLegacyTestingScopeActive = false
     private var hasAuthoritativeStorefrontBinding = false
 
     private init() {
+        defaults = .standard
+        usesLegacyStorageWhenUnscoped = false
+        resetInMemory()
+    }
+
+    init(defaults: UserDefaults) {
+        self.defaults = defaults
+        usesLegacyStorageWhenUnscoped = true
         load()
     }
+
+    func activateAccountScope(_ scope: AccountContentScope) {
+        guard accountScope != scope || !hasActiveStorage else { return }
+        resetInMemory()
+        isLegacyTestingScopeActive = false
+        accountScope = scope
+        load()
+    }
+
+    func deactivateAccountScope() {
+        resetInMemory()
+        isLegacyTestingScopeActive = false
+        accountScope = nil
+    }
+
+#if DEBUG
+    /// UI tests intentionally seed the pre-account UserDefaults keys. Production
+    /// code has no way to activate this compatibility path.
+    func activateLegacyTestingScope() {
+        resetInMemory()
+        accountScope = nil
+        isLegacyTestingScopeActive = true
+        load()
+    }
+#endif
 
     var homeBooks: [KindleBook] {
         Array(sortedBooks(sort: .recent, query: "").prefix(8))
@@ -321,31 +364,32 @@ final class KindleLibraryStore: ObservableObject {
     }
 
     func load() {
-        let defaults = UserDefaults.standard
+        resetInMemory()
+        guard hasActiveStorage else { return }
         let hasPersistedConnectionState = defaults.object(
-            forKey: connectedKey
+            forKey: storageKey(Storage.connected)
         ) != nil
-        hasConnected = defaults.bool(forKey: connectedKey)
-        accountLabel = defaults.string(forKey: accountLabelKey)
-        accountEmail = defaults.string(forKey: accountEmailKey)
-        if let anchorData = defaults.data(forKey: listeningAnchorsKey),
+        hasConnected = defaults.bool(forKey: storageKey(Storage.connected))
+        accountLabel = defaults.string(forKey: storageKey(Storage.accountLabel))
+        accountEmail = defaults.string(forKey: storageKey(Storage.accountEmail))
+        if let anchorData = defaults.data(forKey: storageKey(Storage.listeningAnchors)),
            let decodedAnchors = try? JSONDecoder.kindle.decode([String: KindleListeningAnchor].self, from: anchorData) {
             listeningAnchors = decodedAnchors
-        } else {
-            listeningAnchors = [:]
         }
         let decoded: [KindleBook]
-        if let data = defaults.data(forKey: booksKey),
+        if let data = defaults.data(forKey: storageKey(Storage.books)),
            let restored = try? JSONDecoder.kindle.decode([KindleBook].self, from: data) {
             decoded = restored
         } else {
             decoded = []
         }
 
-        let persisted = defaults.string(forKey: boundStorefrontKey)
+        let persisted = defaults.string(forKey: storageKey(Storage.boundStorefront))
             .flatMap { KindleStorefront.storefront(id: $0) }
             .flatMap { $0.isSelectable ? $0 : nil }
-        let persistedIsAuthoritative = defaults.bool(forKey: authoritativeStorefrontKey)
+        let persistedIsAuthoritative = defaults.bool(
+            forKey: storageKey(Storage.authoritativeStorefront)
+        )
             || hasConnected
             || !decoded.isEmpty
         let inferredID = KindleStorefront.inferredID(from: decoded)
@@ -398,18 +442,41 @@ final class KindleLibraryStore: ObservableObject {
     }
 
     private func save() {
-        let defaults = UserDefaults.standard
-        defaults.set(hasConnected, forKey: connectedKey)
-        defaults.set(accountLabel, forKey: accountLabelKey)
-        defaults.set(accountEmail, forKey: accountEmailKey)
-        defaults.set(boundStorefrontID, forKey: boundStorefrontKey)
-        defaults.set(hasAuthoritativeStorefrontBinding, forKey: authoritativeStorefrontKey)
+        guard hasActiveStorage else { return }
+        defaults.set(hasConnected, forKey: storageKey(Storage.connected))
+        defaults.set(accountLabel, forKey: storageKey(Storage.accountLabel))
+        defaults.set(accountEmail, forKey: storageKey(Storage.accountEmail))
+        defaults.set(boundStorefrontID, forKey: storageKey(Storage.boundStorefront))
+        defaults.set(
+            hasAuthoritativeStorefrontBinding,
+            forKey: storageKey(Storage.authoritativeStorefront)
+        )
         if let anchorData = try? JSONEncoder.kindle.encode(listeningAnchors) {
-            defaults.set(anchorData, forKey: listeningAnchorsKey)
+            defaults.set(anchorData, forKey: storageKey(Storage.listeningAnchors))
         }
         if let data = try? JSONEncoder.kindle.encode(books) {
-            defaults.set(data, forKey: booksKey)
+            defaults.set(data, forKey: storageKey(Storage.books))
         }
+    }
+
+    private var hasActiveStorage: Bool {
+        accountScope != nil || usesLegacyStorageWhenUnscoped || isLegacyTestingScopeActive
+    }
+
+    private func storageKey(_ legacyKey: String) -> String {
+        accountScope?.storageKey(legacyKey) ?? legacyKey
+    }
+
+    private func resetInMemory() {
+        books = []
+        hasConnected = false
+        accountLabel = nil
+        accountEmail = nil
+        boundStorefrontID = KindleStorefront.us.id
+        listeningAnchors = [:]
+        isRefreshing = false
+        lastError = nil
+        hasAuthoritativeStorefrontBinding = false
     }
 
     private func sanitized(_ input: [KindleBook]) -> [KindleBook] {
@@ -452,7 +519,7 @@ final class KindleLibraryStore: ObservableObject {
     private func clearAmazonWebsiteData(
         for storefront: KindleStorefront? = nil
     ) async {
-        let dataStore = WKWebsiteDataStore.default()
+        let dataStore = CommercialWebSession.websiteDataStore
         let types = WKWebsiteDataStore.allWebsiteDataTypes()
         await withCheckedContinuation { continuation in
             dataStore.fetchDataRecords(ofTypes: types) { records in

@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
-  "name": "__MSG_name__",
-  "description": "__MSG_description__",
+  "name": "__MSG_extName__",
+  "description": "__MSG_extDescription__",
   "version": "1.2.24",
   "icons": {
     "16": "/icon-16.png",
@@ -17,6 +17,8 @@
     "contextMenus",
     "alarms",
     "*://api.castreader.ai/*",
+    "*://api.castreader.cn/*",
+    "*://quickread.castreader.cn/*",
     "*://castreader.ai/*",
     "*://*.cos.accelerate.myqcloud.com/*",
     "*://weread.qq.com/*",
@@ -142,6 +144,6 @@
     }
   ],
   "browser_action": {
-    "default_title": "__MSG_name__"
+    "default_title": "__MSG_extName__"
   }
 }

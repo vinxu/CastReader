@@ -803,7 +803,7 @@ struct VoiceAvatarView: View {
 
     private var avatarURL: URL? {
         [voice.avatarURL64, voice.avatarURL256]
-            .compactMap { $0.flatMap(URL.init(string:)) }
+            .compactMap { VoiceCatalogAssetURL.resolve($0) }
             .first
     }
 

@@ -120,6 +120,92 @@ enum ShareInboxLinkMetadataLoader {
     }
 }
 
+/// Cross-process pointer to the currently authenticated route x account
+/// namespace. Only the opaque SHA-256 storage id is shared; provider ids,
+/// backend ids, phone numbers and emails never enter this value.
+///
+/// The containing app updates the pointer synchronously at the authentication
+/// boundary. Share/Safari extensions then write or read only that account's
+/// App Group partition. Missing or malformed state deliberately fails closed
+/// into an unassigned partition rather than reopening legacy shared content.
+enum AccountContentScopeBridge {
+    static let appGroup = "group.com.same.castreader"
+    private static let activeStorageIDKey = "account.content.activeStorageID.v1"
+    private static let activeBoundaryNonceKey = "account.content.activeBoundaryNonce.v1"
+    private static let unassignedStorageID = "unassigned"
+
+    #if DEBUG
+    private static let legacyTestingStorageID = "debug-legacy"
+    #endif
+
+    @discardableResult
+    static func activate(storageID: String) -> Bool {
+        guard isValid(storageID),
+              let defaults = UserDefaults(suiteName: appGroup) else { return false }
+        if defaults.string(forKey: activeStorageIDKey) != storageID
+            || defaults.string(forKey: activeBoundaryNonceKey) == nil {
+            defaults.set(UUID().uuidString, forKey: activeBoundaryNonceKey)
+        }
+        defaults.set(storageID, forKey: activeStorageIDKey)
+        return defaults.synchronize()
+    }
+
+    static func deactivate() {
+        guard let defaults = UserDefaults(suiteName: appGroup) else { return }
+        defaults.removeObject(forKey: activeStorageIDKey)
+        defaults.removeObject(forKey: activeBoundaryNonceKey)
+        defaults.synchronize()
+    }
+
+    static var activeStorageID: String? {
+        guard let value = UserDefaults(suiteName: appGroup)?
+            .string(forKey: activeStorageIDKey),
+              isValid(value) else { return nil }
+        return value
+    }
+
+    static var storagePartition: String {
+        #if DEBUG
+        if usesLegacyTestingStorage { return legacyTestingStorageID }
+        #endif
+        return activeStorageID ?? unassignedStorageID
+    }
+
+    static var crossProcessBoundaryToken: String {
+        let nonce = UserDefaults(suiteName: appGroup)?
+            .string(forKey: activeBoundaryNonceKey) ?? "none"
+        return "\(storagePartition).\(nonce)"
+    }
+
+    static func scopedDefaultsKey(_ baseKey: String) -> String {
+        #if DEBUG
+        if usesLegacyTestingStorage { return baseKey }
+        #endif
+        return "\(baseKey).account.\(storagePartition)"
+    }
+
+    #if DEBUG
+    static func activateLegacyTestingScope() {
+        guard let defaults = UserDefaults(suiteName: appGroup) else { return }
+        if defaults.string(forKey: activeStorageIDKey) != legacyTestingStorageID
+            || defaults.string(forKey: activeBoundaryNonceKey) == nil {
+            defaults.set(UUID().uuidString, forKey: activeBoundaryNonceKey)
+        }
+        defaults.set(legacyTestingStorageID, forKey: activeStorageIDKey)
+        defaults.synchronize()
+    }
+
+    static var usesLegacyTestingStorage: Bool {
+        UserDefaults(suiteName: appGroup)?
+            .string(forKey: activeStorageIDKey) == legacyTestingStorageID
+    }
+    #endif
+
+    private static func isValid(_ value: String) -> Bool {
+        value.count == 64 && value.allSatisfy(\.isHexDigit)
+    }
+}
+
 /// App Group-backed handoff shared by the Share Extension and the containing app.
 /// Each record is an independent atomic JSON file, so an extension and the app never rewrite
 /// the same queue manifest concurrently.
@@ -129,6 +215,10 @@ enum ShareInboxStore {
     private static let maximumItemCount = 50
     private static let maximumPayloadBytes: Int64 = 300 * 1024 * 1024
     private static let lastSeenDefaultsKey = "shareInbox.lastSeenAt"
+
+    private static var scopedLastSeenDefaultsKey: String {
+        AccountContentScopeBridge.scopedDefaultsKey(lastSeenDefaultsKey)
+    }
 
     static func enqueue(
         kind: ShareInboxKind,
@@ -186,7 +276,8 @@ enum ShareInboxStore {
     /// Keeping the read cursor in the App Group makes the state survive app relaunches
     /// without deleting anything from the inbox.
     static func unreadCount(in records: [ShareInboxRecord]) -> Int {
-        let lastSeenAt = UserDefaults(suiteName: appGroup)?.object(forKey: lastSeenDefaultsKey) as? Date
+        let lastSeenAt = UserDefaults(suiteName: appGroup)?
+            .object(forKey: scopedLastSeenDefaultsKey) as? Date
         return unreadCount(in: records, lastSeenAt: lastSeenAt)
     }
 
@@ -200,9 +291,10 @@ enum ShareInboxStore {
     static func markAllSeen(_ records: [ShareInboxRecord]) {
         guard let newestCreatedAt = records.map(\.createdAt).max(),
               let defaults = UserDefaults(suiteName: appGroup) else { return }
-        let existing = defaults.object(forKey: lastSeenDefaultsKey) as? Date
+        let key = scopedLastSeenDefaultsKey
+        let existing = defaults.object(forKey: key) as? Date
         if existing.map({ newestCreatedAt > $0 }) ?? true {
-            defaults.set(newestCreatedAt, forKey: lastSeenDefaultsKey)
+            defaults.set(newestCreatedAt, forKey: key)
         }
     }
 
@@ -282,7 +374,24 @@ enum ShareInboxStore {
         ) else {
             throw CocoaError(.fileNoSuchFile)
         }
-        let directory = root.appendingPathComponent(directoryName, isDirectory: true)
+        let baseDirectory = root.appendingPathComponent(directoryName, isDirectory: true)
+        #if DEBUG
+        let directory = AccountContentScopeBridge.usesLegacyTestingStorage
+            ? baseDirectory
+            : baseDirectory
+                .appendingPathComponent("Accounts", isDirectory: true)
+                .appendingPathComponent(
+                    AccountContentScopeBridge.storagePartition,
+                    isDirectory: true
+                )
+        #else
+        let directory = baseDirectory
+            .appendingPathComponent("Accounts", isDirectory: true)
+            .appendingPathComponent(
+                AccountContentScopeBridge.storagePartition,
+                isDirectory: true
+            )
+        #endif
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         return directory
     }

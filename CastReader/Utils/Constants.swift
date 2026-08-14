@@ -14,28 +14,19 @@ enum Constants {
         /// The provider adapters are not part of this release target.
         static let cloudStorageEnabled = false
 
-        /// 中国大陆账号、手机号、Pro 与埋点后端已在备案域名
-        /// `api.castreader.cn` 上线并通过生产接口预检。
-        static let chinaBackendEnabled = true
-
-        /// `api.castreader.cn` 已由 Nginx 透明代理 TTS 与音色目录，并通过真实合成冒烟。
-        static let chinaTTSBackendEnabled = true
-
-        /// QuickRead 也统一从备案域名进入，再由中国服务器转发到现有上游。
-        static let chinaQuickReadBackendEnabled = true
+        /// 中国备案网关的代码能力已编入，但是否使用由 ServiceRouting 的启动快照
+        /// 决定。不能再用编译期开关把 CHN storefront 自动切到新线路。
+        static let chinaGatewayAvailable = true
     }
 
     enum API {
         static let globalServiceBaseURL = "https://api.castreader.ai"
 
-        /// App 自有的 TTS、文档和上传网关。中国区客户端只连接备案域名；全球版
-        /// 继续使用 `.ai` 网关。平台书架（Kindle、微信读书、YouTube 等）仍按各自
-        /// 原有域名连接，不属于这层自有 API 路由。
+        /// App 自有的 TTS、文档和上传网关。它读取本次进程已经冻结的线路，
+        /// 不再跟随 AppRegion 动态变化。平台书架（Kindle、微信读书、YouTube 等）
+        /// 仍按各自原有域名连接，不属于这层自有 API 路由。
         static var baseURL: String {
-            guard Features.chinaBackendEnabled, AppRegion.current == .cn else {
-                return globalServiceBaseURL
-            }
-            return AppRegion.cn.apiGatewayBaseURL
+            ServiceRouting.current.apiGatewayBaseURL
         }
         /// The reader service is exposed through the same TLS reverse proxy as
         /// TTS. Never send document metadata or uploads to the legacy plaintext
@@ -43,57 +34,58 @@ enum Constants {
         static var readerServiceURL: String { baseURL }
 
         // Library
-        static var documents: String { "\(readerServiceURL)/documents" }
+        /// Authenticated, route-scoped document list.  New clients must never
+        /// fall back to the historical anonymous `/documents?user_id=...`
+        /// contract: the server derives ownership exclusively from the cms_
+        /// session presented to this endpoint.
+        static var documents: String { "\(readerServiceURL)/api/mobile/documents" }
 
         // Upload
-        static var sts: String { "\(baseURL)/sts" }
-        static var asyncUpload: String { "\(readerServiceURL)/async-md-upload-by-url" }
-        static var syncUpload: String { "\(readerServiceURL)/upload" }  // EPUB sync upload
+        /// New clients obtain temporary COS credentials only from the
+        /// authenticated, route-scoped mobile upload endpoint. The historical
+        /// anonymous `/sts` path remains a server-side compatibility contract
+        /// for already released binaries and must never be used as a fallback.
+        static var sts: String { "\(baseURL)/api/mobile/upload/sts" }
+        static var asyncUpload: String { "\(readerServiceURL)/api/mobile/upload/notify" }
 
         // TTS
         static var tts: String { "\(baseURL)/api/captioned_speech_partly" }
         static var ttsCatalog: String { "\(baseURL)/api/tts/catalog?contract=tts-voice-catalog-v1" }
 
-        // 解读 / QuickRead（独立后端）
-        /// 解读后端鉴权 key（对齐扩展的 QUICKREAD_API_KEY）。留空则不发送 x-api-key，后端会返回 401。
-        /// 构建期注入：值来自 Secrets.xcconfig 的 QUICKREAD_API_KEY → Info.plist $(QUICKREAD_API_KEY) → 此处读取。
-        /// 不进 git；缺失时为空（解读会 401，其余功能不受影响）。
-        static var quickReadAPIKey: String {
-            (Bundle.main.object(forInfoDictionaryKey: "QuickReadAPIKey") as? String) ?? ""
-        }
-        /// ⚠️ 运行时实际后端地址走 `QuickReadEndpoint`（COS 远程配置优先，兜底 qr.castreader.ai）。
-        /// 下面这些常量已不再被调用（QuickReadService 改用 QuickReadEndpoint），仅保留兜底值供参考。
-        static let quickReadBaseURL = "https://qr.castreader.ai"
-        static let quickReadPlan = "\(quickReadBaseURL)/api/quickread/extract-plan"          // SSE
-        static let quickReadExtractBlock = "\(quickReadBaseURL)/api/quickread/extract-block" // JSON
-        static let quickReadComposeBlock = "\(quickReadBaseURL)/api/quickread/compose-block" // JSON
-        static let quickReadFastBlock0 = "\(quickReadBaseURL)/api/quickread/fast-block0"     // 快道：直出 block_0 秒开
+        // 解读 / QuickRead。新版客户端不再内置上游 API key。global 保持
+        // api.castreader.ai；cn 直接进入 quickread.castreader.cn，避免先到
+        // api.castreader.cn 再绕境外 QuickRead。两个入口都必须直接验证 cms_
+        // session，客户端禁止携带模型供应商或 QuickRead 服务端密钥。
+        static var quickReadBaseURL: String { ServiceRouting.current.quickReadBaseURL }
+        static var quickReadPlan: String { "\(quickReadBaseURL)/api/quickread/extract-plan" }
+        static var quickReadExtractBlock: String { "\(quickReadBaseURL)/api/quickread/extract-block" }
+        static var quickReadComposeBlock: String { "\(quickReadBaseURL)/api/quickread/compose-block" }
+        static var quickReadFastBlock0: String { "\(quickReadBaseURL)/api/quickread/fast-block0" }
 
         // 账号 / Pro 后端（Web，readout-web）
-        static let globalWebURL = "https://castreader.ai"
+        static let globalWebURL = "https://api.castreader.ai"
 
-        /// 中国大陆 storefront 使用备案后的境内账号后端；其他 storefront 的地址
-        /// 与改动前一致。按需计算，避免首启 Storefront 尚未解析时固化错误区域。
+        /// 账号、Pro、埋点与手机号后端同样读取进程级固定线路。新版的
+        /// 全球/中国自有业务分别统一进入 api.castreader.ai / api.castreader.cn。
         static var webURL: String {
-            guard Features.chinaBackendEnabled, AppRegion.current == .cn else {
-                return globalWebURL
-            }
-            return AppRegion.cn.webBaseURL
+            ServiceRouting.current.webBaseURL
         }
 
         static var proStatus: String { "\(webURL)/api/pro/status" }               // GET ?device_id=&user_id=&local_date=
         static var proListenTrack: String { "\(webURL)/api/pro/listen-track" }    // POST {device_id|user_id, seconds}
+        /// Build-39 native contract: cms_ session is the only Pro identity;
+        /// the server derives quota from canonical user + ingress route. The
+        /// route-scoped device id is compatibility/diagnostic data only.
+        static var mobileProStatusV2: String { "\(webURL)/api/mobile/pro/status/v2" }
+        static var mobileProListenTrackV2: String { "\(webURL)/api/mobile/pro/listen-track/v2" }
         static var proVerifyApple: String { "\(webURL)/api/pro/verify-apple" }    // POST signed StoreKit 2 transaction
         static var authSocialSignIn: String { "\(webURL)/api/auth/sign-in/social" } // POST {provider, idToken:{token}} (better-auth)
         static var analyticsEvents: String { "\(webURL)/api/events" }
         static var pricingURL: String { "\(webURL)/pricing" }
 
-        /// 邮箱验证码登录（better-auth email-otp）走 castreader.com。
-        ///
-        /// 两站共用同一个 Supabase（user 表是同一份），但 auth 的正式归属是 .com，
-        /// 插件也只装在那边——所以只有这条链路换域名，Pro / 额度 / 埋点仍走
-        /// `webURL`（castreader.ai），避免为一个登录方式动整个 API 基址。
-        static let emailOTPBaseURL = "https://castreader.com"
+        /// 邮箱验证码也走当前网关；两入口最终解析到同一 canonical
+        /// user.id 与共享账本，但 session 和本地缓存仍按线路隔离。
+        static var emailOTPBaseURL: String { webURL }
 
         /// 法务页面在 castreader.com（与 API 所在的 castreader.ai 是两个站点）。
         ///

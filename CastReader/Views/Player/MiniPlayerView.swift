@@ -149,15 +149,17 @@ private struct MiniPlayerBar: View {
         }
         guard let raw = audio.currentCoverUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
               !raw.isEmpty else { return nil }
-        if let cached = ImageCache.shared.get(raw) {
+        let parsedURL = URL(string: raw)
+            ?? raw.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed).flatMap(URL.init(string:))
+        guard let parsedURL,
+              let url = OwnedAPIRedirectPolicy.routedResponseURL(parsedURL) else { return nil }
+        let cacheKey = url.absoluteString
+        if let cached = ImageCache.shared.get(cacheKey) {
             return cached
         }
-        let url = URL(string: raw)
-            ?? raw.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed).flatMap(URL.init(string:))
-        guard let url else { return nil }
-        guard let data = try? await URLSession.shared.data(from: url).0 else { return nil }
+        guard let data = try? await OwnedAPIURLSession.data(from: url).0 else { return nil }
         guard let image = UIImage(data: data) else { return nil }
-        ImageCache.shared.set(raw, image: image, data: data)
+        ImageCache.shared.set(cacheKey, image: image, data: data)
         return image
     }
 

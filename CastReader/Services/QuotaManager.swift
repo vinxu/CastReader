@@ -29,15 +29,44 @@ final class QuotaManager: ObservableObject {
 
     private let d = UserDefaults.standard
     private var day: String = ""
+    private var activeStorageID: String?
 
     private init() {
-        day = d.string(forKey: K.day) ?? Self.localDay()
-        listenSeconds = d.double(forKey: K.listen)
-        explainCount = d.integer(forKey: K.explain)
+        day = Self.localDay()
+    }
+
+    func activateAccountScope(storageID: String) {
+        guard Self.isValidStorageID(storageID) else {
+            deactivateAccountScope()
+            return
+        }
+        guard activeStorageID != storageID else { return }
+        activeStorageID = storageID
+        loadLocalState()
+        clearServerProjection()
         rollIfNewDay()
     }
 
+    func deactivateAccountScope() {
+        activeStorageID = nil
+        day = Self.localDay()
+        listenSeconds = 0
+        explainCount = 0
+        clearServerProjection()
+    }
+
+    #if DEBUG
+    func activateLegacyTestingScope() {
+        guard activeStorageID != "debug-legacy" else { return }
+        activeStorageID = "debug-legacy"
+        loadLocalState()
+        clearServerProjection()
+        rollIfNewDay()
+    }
+    #endif
+
     func rollIfNewDay() {
+        guard activeStorageID != nil else { return }
         let today = Self.localDay()
         if today != day {
             day = today
@@ -70,6 +99,7 @@ final class QuotaManager: ObservableObject {
 
     /// 用服务端 /api/pro/status 回填额度。
     func applyServerStatus(_ s: ProStatusDTO) {
+        guard activeStorageID != nil else { return }
         rollIfNewDay()
         if let r = s.listenRemaining { serverListenRemaining = Double(max(0, r)) }
         if let sec = s.listenSeconds { listenSeconds = Double(max(0, sec)) }
@@ -83,23 +113,22 @@ final class QuotaManager: ObservableObject {
 
     /// 累计已朗读秒数（仅正向），并上报服务端。
     func addListen(_ seconds: Double) {
-        guard seconds > 0 else { return }
+        guard activeStorageID != nil, seconds > 0 else { return }
         rollIfNewDay()
         listenSeconds += seconds
         if let r = serverListenRemaining { serverListenRemaining = max(0, r - seconds) }
         persist()
-        let email = AuthService.shared.normalizedEmail
         let secs = Int(seconds.rounded())
         Task { @MainActor in
-            let userId = await AuthService.shared.ensureBackendUserIdForPro()
-            await ProBackendService.shared.trackListen(seconds: secs, userId: userId, email: email)
+            guard await AuthService.shared.ensureMobileSession() else { return }
+            await ProBackendService.shared.trackListen(seconds: secs)
         }
     }
 
     /// 解读开始一次。服务端额度由 extract-plan 的 entitlement consume 负责；
     /// 本地只在服务端状态不可用时做 fallback 计数，避免一次会话双扣。
     func noteExplainStarted(isPro: Bool) {
-        guard !isPro else { return }
+        guard activeStorageID != nil, !isPro else { return }
         rollIfNewDay()
         guard serverExplainRemaining == nil else { return }
         explainCount += 1
@@ -109,6 +138,7 @@ final class QuotaManager: ObservableObject {
     /// 服务端已经接受本次 extract-plan 后，同步递减内存中的服务端额度投影。
     /// 只更新客户端缓存，不会再次请求服务端消费；失败请求不会调用这里。
     func noteExplainAcceptedByServer(isPro: Bool) {
+        guard activeStorageID != nil else { return }
         rollIfNewDay()
         guard !isPro, let remaining = serverExplainRemaining else { return }
         let projected = max(0, remaining - 1)
@@ -119,9 +149,48 @@ final class QuotaManager: ObservableObject {
     // MARK: 持久化
 
     private func persist() {
-        d.set(day, forKey: K.day)
-        d.set(listenSeconds, forKey: K.listen)
-        d.set(explainCount, forKey: K.explain)
+        guard let keys = storageKeys else { return }
+        d.set(day, forKey: keys.day)
+        d.set(listenSeconds, forKey: keys.listen)
+        d.set(explainCount, forKey: keys.explain)
+    }
+
+    private func loadLocalState() {
+        guard let keys = storageKeys else {
+            day = Self.localDay()
+            listenSeconds = 0
+            explainCount = 0
+            return
+        }
+        day = d.string(forKey: keys.day) ?? Self.localDay()
+        listenSeconds = d.double(forKey: keys.listen)
+        explainCount = d.integer(forKey: keys.explain)
+    }
+
+    private func clearServerProjection() {
+        serverListenRemaining = nil
+        serverExplainRemaining = nil
+        serverExplainProjectionCeiling = nil
+    }
+
+    private struct StorageKeys {
+        let day: String
+        let listen: String
+        let explain: String
+    }
+
+    private var storageKeys: StorageKeys? {
+        guard let activeStorageID else { return nil }
+        #if DEBUG
+        if activeStorageID == "debug-legacy" {
+            return StorageKeys(day: K.day, listen: K.listen, explain: K.explain)
+        }
+        #endif
+        return StorageKeys(
+            day: "\(K.day).account.\(activeStorageID)",
+            listen: "\(K.listen).account.\(activeStorageID)",
+            explain: "\(K.explain).account.\(activeStorageID)"
+        )
     }
 
     static func localDay() -> String {
@@ -136,6 +205,7 @@ final class QuotaManager: ObservableObject {
     #if DEBUG
     /// 测试用：清空当日额度计数与服务端覆盖，回到干净起点。
     func resetForTesting() {
+        if activeStorageID == nil { activateLegacyTestingScope() }
         listenSeconds = 0
         explainCount = 0
         serverListenRemaining = nil
@@ -147,8 +217,16 @@ final class QuotaManager: ObservableObject {
     #endif
 
     private enum K {
-        static let day = "quota_day"
-        static let listen = "quota_listen_seconds"
-        static let explain = "quota_explain_count"
+        static var day: String { ServiceRouting.current.isolatedStorageKey("quota_day") }
+        static var listen: String {
+            ServiceRouting.current.isolatedStorageKey("quota_listen_seconds")
+        }
+        static var explain: String {
+            ServiceRouting.current.isolatedStorageKey("quota_explain_count")
+        }
+    }
+
+    private static func isValidStorageID(_ value: String) -> Bool {
+        value.count == 64 && value.allSatisfy(\.isHexDigit)
     }
 }

@@ -2,15 +2,65 @@
 //  LoginView.swift
 //  CastReader
 //
-//  登录页：Google + Apple（见 AuthService+Apple）+ 邮箱验证码（better-auth email-otp）。
-//  既作 sheet（付费墙「登录邮箱同步 Pro」等入口），也作 RootAuthGate 的全屏硬登录墙。
+//  登录页：全球区 Google + Apple + 邮箱验证码；中国区手机号 + Apple。
+//  既作 sheet（付费墙「登录账号同步 Pro」等入口），也作 RootAuthGate 的全屏硬登录墙。
 //
 
 import SwiftUI
 
+enum LoginAction: Equatable {
+    case phone
+    case google
+    case apple
+    case expandEmail
+    case sendEmailCode
+    case verifyEmailCode
+}
+
+enum LoginConsentDecision: Equatable {
+    case execute(LoginAction)
+    case requestConsent
+}
+
+/// 中国区登录前的显式协议同意状态机。
+///
+/// pending action 只保存动作类型，不保存闭包或账号数据。用户在弹窗中同意后，
+/// LoginView 才执行原先点下的登录方式；拒绝则清空，避免下一次误触发旧动作。
+struct LoginConsentGate: Equatable {
+    private(set) var hasAgreed = false
+    private(set) var pendingAction: LoginAction?
+
+    mutating func request(
+        _ action: LoginAction,
+        requiresExplicitConsent: Bool
+    ) -> LoginConsentDecision {
+        guard requiresExplicitConsent, !hasAgreed else {
+            pendingAction = nil
+            return .execute(action)
+        }
+        pendingAction = action
+        return .requestConsent
+    }
+
+    mutating func setAgreement(_ agreed: Bool) {
+        hasAgreed = agreed
+        pendingAction = nil
+    }
+
+    mutating func acceptPendingAction() -> LoginAction? {
+        hasAgreed = true
+        defer { pendingAction = nil }
+        return pendingAction
+    }
+
+    mutating func declinePendingAction() {
+        pendingAction = nil
+    }
+}
+
 struct LoginView: View {
     /// 作为根登录墙时为 true：展示价值主张（可听的内容源）。
-    /// sheet 场景（付费墙「登录邮箱同步 Pro」等入口）保持原有的紧凑形态。
+    /// sheet 场景（付费墙「登录账号同步 Pro」等入口）保持原有的紧凑形态。
     var isRootGate = false
 
     @ObservedObject private var auth = AuthService.shared
@@ -23,6 +73,9 @@ struct LoginView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var errorMessage: String?
     @State private var showsPhoneSignIn = false
+    @State private var consentGate = LoginConsentGate()
+    @State private var showsConsentPrompt = false
+    @State private var appleCoordinator: AppleSignInCoordinator?
 
     // 邮箱验证码流
     @State private var emailFlowExpanded = false
@@ -55,7 +108,18 @@ struct LoginView: View {
         }
         .onReceive(cooldownTimer) { _ in if resendCooldown > 0 { resendCooldown -= 1 } }
         .sheet(isPresented: $showsPhoneSignIn) {
-            PhoneSignInView()
+            PhoneSignInView(hasAcceptedTerms: consentGate.hasAgreed)
+        }
+        .alert(AppLocalized("服务条款与隐私政策"), isPresented: $showsConsentPrompt) {
+            Button(AppLocalized("不同意"), role: .cancel) {
+                consentGate.declinePendingAction()
+            }
+            Button(AppLocalized("同意")) {
+                guard let action = consentGate.acceptPendingAction() else { return }
+                execute(action)
+            }
+        } message: {
+            Text(AppLocalized("我已阅读并同意《服务条款》和《隐私政策》"))
         }
     }
 
@@ -87,17 +151,15 @@ struct LoginView: View {
         }
     }
 
-    /// 手机号（中国区）、Google 与 Apple 都使用等高的完整按钮；Apple 不能降级
-    /// 成更小的次要入口，否则会触发 App Store 4.8 的等价登录选项风险。
+    /// 手机号是中国区首选完整按钮；Google 与邮箱仅在全球版展示。
+    /// Apple 在两套区域中都保持小图标入口。
     private var channelStack: some View {
         VStack(spacing: 14) {
             phoneButton
             googleButton
-            appleButton
-            if emailFlowExpanded {
+            secondaryChannelRow
+            if AppRegion.current.showsEmailSignIn, emailFlowExpanded {
                 emailSection
-            } else {
-                emailSecondaryChannel
             }
         }
         .animation(.easeInOut(duration: 0.2), value: emailFlowExpanded)
@@ -160,7 +222,7 @@ struct LoginView: View {
         .padding(.top, 2)
     }
 
-    /// sheet 场景（付费墙里点「登录邮箱同步 Pro」等）：用户已经在用 App 了，
+    /// sheet 场景（付费墙里点「登录账号同步 Pro」等）：用户已经在用 App 了，
     /// 此处只需说明这次登录能带来什么，不要再卖一遍产品。
     private var sheetHeader: some View {
         VStack(spacing: 8) {
@@ -190,8 +252,8 @@ struct LoginView: View {
 
     @ViewBuilder
     private var phoneButton: some View {
-        if AppRegion.current.showsPhoneSignIn {
-            Button { showsPhoneSignIn = true } label: {
+        if PhoneAuthService.shared.isAvailable {
+            Button { request(.phone) } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "iphone").font(.system(size: 18, weight: .bold))
                     Text(AppLocalized("使用手机号继续")).fontWeight(.semibold)
@@ -209,11 +271,11 @@ struct LoginView: View {
 
     // MARK: 按钮
 
-    /// Google 登录保留为完整可选通道，中国区也不移除。
+    /// Google 只在全球产品体验展示；中国大陆登录页不暴露不可用入口。
     @ViewBuilder
     private var googleButton: some View {
-        if Constants.GoogleOAuth.isConfigured {
-            Button { signInGoogle() } label: {
+        if AppRegion.current.showsGoogleSignIn && Constants.GoogleOAuth.isConfigured {
+            Button { request(.google) } label: {
                 HStack(spacing: 10) {
                     // Google 品牌规范要求用官方四色 G 标志，不能用通用图标代替。
                     // 资源取自 developers.google.com/identity/images/g-logo.png。
@@ -233,7 +295,7 @@ struct LoginView: View {
                 .cornerRadius(12)
             }
             .disabled(auth.isWorking)
-        } else {
+        } else if AppRegion.current.showsGoogleSignIn {
             Text("Google 登录未配置（需填入 Constants.GoogleOAuth.clientID）")
                 .font(.caption2).foregroundColor(AppTheme.mutedForeground)
                 .multilineTextAlignment(.center)
@@ -248,27 +310,22 @@ struct LoginView: View {
             .background(AppTheme.background.opacity(0.22), in: Capsule())
     }
 
-    private var appleButton: some View {
-        AppleSignInButton(
-            onSuccess: { dismiss() },
-            onError: { errorMessage = $0 }
-        )
-        .frame(height: 50)
-        .disabled(auth.isWorking)
-        .accessibilityIdentifier("login.apple")
-    }
-
-    /// 邮箱验证码保留为兜底入口，展开后原地显示表单。
-    private var emailSecondaryChannel: some View {
-        HStack {
-            emailIconButton
+    /// Apple 两区均展示；邮箱小图标仅作为全球区兜底通道。
+    private var secondaryChannelRow: some View {
+        HStack(spacing: 18) {
+            AppleSignInIconButton(action: { request(.apple) })
+            .disabled(auth.isWorking)
+            .accessibilityIdentifier("login.apple")
+            if AppRegion.current.showsEmailSignIn {
+                emailIconButton
+            }
         }
         .frame(maxWidth: .infinity)
     }
 
     /// 邮箱验证码的收起态：兜底通道（Google/Apple 都不可用时才需要），点开展成表单。
     private var emailIconButton: some View {
-        Button { withAnimation { emailFlowExpanded = true } } label: {
+        Button { request(.expandEmail) } label: {
             Image(systemName: "envelope")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(AppTheme.foreground)
@@ -279,6 +336,7 @@ struct LoginView: View {
         }
         .disabled(auth.isWorking)
         .accessibilityLabel(Text(AppLocalized("使用邮箱验证码登录")))
+        .accessibilityIdentifier("login.email")
     }
 
     // MARK: 邮箱验证码
@@ -309,14 +367,14 @@ struct LoginView: View {
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppTheme.border))
                         .onChange(of: otpCode) { _ in errorMessage = nil }
 
-                    Button { verifyEmailCode() } label: {
+                    Button { request(.verifyEmailCode) } label: {
                         Text(AppLocalized("登录")).fontWeight(.bold).frame(maxWidth: .infinity).padding(.vertical, 6)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(AppTheme.primary)
                     .disabled(auth.isWorking || otpCode.trimmingCharacters(in: .whitespaces).isEmpty)
 
-                    Button { sendEmailCode() } label: {
+                    Button { request(.sendEmailCode) } label: {
                         if isSendingEmailCode {
                             sendingEmailCodeLabel(font: .caption.weight(.semibold))
                         } else {
@@ -328,7 +386,7 @@ struct LoginView: View {
                     }
                     .disabled(auth.isWorking || resendCooldown > 0)
                 } else {
-                    Button { sendEmailCode() } label: {
+                    Button { request(.sendEmailCode) } label: {
                         if isSendingEmailCode {
                             sendingEmailCodeLabel(font: .body.weight(.bold))
                                 .frame(maxWidth: .infinity)
@@ -370,19 +428,110 @@ struct LoginView: View {
         }
     }
 
+    @ViewBuilder
     private var termsFooter: some View {
-        VStack(spacing: 4) {
-            Text("继续即表示同意")
-            HStack(spacing: 4) {
-                Link("服务条款", destination: URL(string: Constants.API.termsURL)!)
-                Text("与")
-                Link("隐私政策", destination: URL(string: Constants.API.privacyURL)!)
+        if AppRegion.current == .cn {
+            HStack(alignment: .center, spacing: 8) {
+                Button {
+                    consentGate.setAgreement(!consentGate.hasAgreed)
+                } label: {
+                    Image(systemName: consentGate.hasAgreed ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 19, weight: .semibold))
+                        .foregroundColor(
+                            consentGate.hasAgreed ? AppTheme.primary : AppTheme.mutedForeground
+                        )
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(AppLocalized("我已阅读并同意《服务条款》和《隐私政策》")))
+                .accessibilityValue(consentGate.hasAgreed ? "checked" : "unchecked")
+                .accessibilityIdentifier("login.chinaConsent")
+
+                Text(chinaConsentAttributedText)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .font(.caption)
+        } else {
+            VStack(spacing: 4) {
+                Text("继续即表示同意")
+                HStack(spacing: 4) {
+                    Link("服务条款", destination: URL(string: Constants.API.termsURL)!)
+                    Text("与")
+                    Link("隐私政策", destination: URL(string: Constants.API.privacyURL)!)
+                }
+            }
+            .font(.caption2).foregroundColor(AppTheme.mutedForeground)
         }
-        .font(.caption2).foregroundColor(AppTheme.mutedForeground)
+    }
+
+    /// 中国区协议说明只渲染一次；两个协议名称在原句中直接作为可点击链接。
+    /// 使用本地化格式串组合，避免不同语言词序变化后依赖硬编码字符范围。
+    private var chinaConsentAttributedText: AttributedString {
+        let termsTitle = AppLocalized("服务条款")
+        let privacyTitle = AppLocalized("隐私政策")
+        let sentence = String(
+            format: AppLocalized("我已阅读并同意《%@》和《%@》"),
+            termsTitle,
+            privacyTitle
+        )
+        var attributed = AttributedString(sentence)
+        attributed.foregroundColor = AppTheme.mutedForeground
+
+        let links: [(String, String)] = [
+            (termsTitle, Constants.API.termsURL),
+            (privacyTitle, Constants.API.privacyURL)
+        ]
+        for (title, urlString) in links {
+            guard
+                let range = attributed.range(of: title),
+                let url = URL(string: urlString)
+            else { continue }
+            attributed[range].link = url
+            attributed[range].foregroundColor = AppTheme.primaryText
+            attributed[range].underlineStyle = .single
+        }
+        return attributed
     }
 
     // MARK: 动作
+
+    private func request(_ action: LoginAction) {
+        errorMessage = nil
+        switch consentGate.request(
+            action,
+            requiresExplicitConsent: AppRegion.current == .cn
+        ) {
+        case .execute(let action):
+            execute(action)
+        case .requestConsent:
+            showsConsentPrompt = true
+        }
+    }
+
+    private func execute(_ action: LoginAction) {
+        switch action {
+        case .phone:
+            showsPhoneSignIn = true
+        case .google:
+            signInGoogle()
+        case .apple:
+            signInApple()
+        case .expandEmail:
+            guard AppRegion.current.showsEmailSignIn else {
+                emailFlowExpanded = false
+                return
+            }
+            withAnimation { emailFlowExpanded = true }
+        case .sendEmailCode:
+            guard AppRegion.current.showsEmailSignIn else { return }
+            sendEmailCode()
+        case .verifyEmailCode:
+            guard AppRegion.current.showsEmailSignIn else { return }
+            verifyEmailCode()
+        }
+    }
 
     private func signInGoogle() {
         errorMessage = nil
@@ -391,6 +540,16 @@ struct LoginView: View {
             catch AuthError.cancelled {}
             catch { errorMessage = error.localizedDescription }
         }
+    }
+
+    private func signInApple() {
+        errorMessage = nil
+        let session = AppleSignInCoordinator(
+            onSuccess: { dismiss() },
+            onError: { errorMessage = $0 }
+        )
+        appleCoordinator = session
+        session.start()
     }
 
     private func sendEmailCode() {

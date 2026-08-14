@@ -7,11 +7,9 @@
 //  设计前提：**默认必须是 global**。只有明确判定为中国大陆才返回 `.cn`，
 //  任何判据缺失、超时或异常都退回 global —— 中国区适配不得影响其他国家用户。
 //
-//  与 `TTSEndpoint.isMainlandChina()` 的区别（不要混用）：
-//  - `TTSEndpoint` 按**时区**做网络就近路由，回答「现在人在哪，哪个节点快」；
-//    海外用户到中国出差也应该走 CN 节点，这是正确行为。
-//  - `AppRegion` 按 **App Store storefront** 做发行区域判定，回答「这台设备属于
+//  `AppRegion` 按 **App Store storefront** 做发行区域判定，回答「这台设备属于
 //    哪个发行版本，适用哪套合规与商业规则」；出差不改变发行区域。
+//  自有 API 节点由与之独立的 `ServiceRouting` 决定，不再按时区直连上游。
 //
 
 import Foundation
@@ -23,6 +21,12 @@ enum AppRegion: String, CaseIterable {
 }
 
 extension AppRegion {
+
+    struct Resolution: Equatable {
+        let region: AppRegion
+        let isAuthoritative: Bool
+        let provenance: Provenance
+    }
 
     // MARK: - 存储
 
@@ -42,13 +46,13 @@ extension AppRegion {
     ]
 
     private static var defaults: UserDefaults { .standard }
+    private static let launchRuntime = AppRegionLaunchRuntime()
 
     // MARK: - 启动参数（UI 测试用）
 
     /// `-CastReaderRegion cn` / `-CastReaderRegion global` 强制区域，便于 UI 测试
     /// 两套引导而不必换 App Store 账号。
-    private static var launchArgumentRegion: AppRegion? {
-        let arguments = ProcessInfo.processInfo.arguments
+    private static func launchArgumentRegion(_ arguments: [String]) -> AppRegion? {
         guard let index = arguments.firstIndex(of: "-CastReaderRegion"),
               index + 1 < arguments.count else { return nil }
         return AppRegion(rawValue: arguments[index + 1])
@@ -60,14 +64,7 @@ extension AppRegion {
     ///
     /// 优先级：启动参数 → 用户覆盖 → storefront 缓存（权威）→ 时区兜底 → global。
     static var current: AppRegion {
-        if let forced = launchArgumentRegion { return forced }
-        if let override = overrideRegion { return override }
-        if let code = defaults.string(forKey: Key.storefrontCountryCode), !code.isEmpty {
-            // 权威判据已就绪：只有 CHN 是 cn，其余一律 global。
-            return code == mainlandStorefrontCode ? .cn : .global
-        }
-        // 权威判据尚未就绪，用时区兜底，避免首帧无值。
-        return mainlandTimeZones.contains(TimeZone.current.identifier) ? .cn : .global
+        currentResolution.region
     }
 
     /// 权威判据（storefront）是否已就绪。
@@ -75,18 +72,20 @@ extension AppRegion {
     /// 首启引导必须等这个为 true 之后再决定呈现哪一套，否则在中国出差的海外
     /// 用户会先闪一下中国区引导。启动参数与用户覆盖本身就是确定值，直接算就绪。
     static var isAuthoritative: Bool {
-        if launchArgumentRegion != nil { return true }
-        if overrideRegion != nil { return true }
-        let code = defaults.string(forKey: Key.storefrontCountryCode) ?? ""
-        return !code.isEmpty
+        currentResolution.isAuthoritative
     }
 
     /// 用户在设置页显式选择的区域；nil 表示跟随自动判定。
     static var overrideRegion: AppRegion? {
         get {
-            defaults.string(forKey: Key.override).flatMap(AppRegion.init(rawValue:))
+            guard DistributionTestingPolicy.allowsPersistedOverrides else { return nil }
+            return defaults.string(forKey: Key.override).flatMap(AppRegion.init(rawValue:))
         }
         set {
+            guard DistributionTestingPolicy.allowsPersistedOverrides else {
+                defaults.removeObject(forKey: Key.override)
+                return
+            }
             if let newValue {
                 defaults.set(newValue.rawValue, forKey: Key.override)
             } else {
@@ -106,19 +105,75 @@ extension AppRegion {
         case userOverride = "手动切换"
         case storefront = "App Store 地区"
         case timeZone = "时区推断（未就绪）"
+        case safeDefault = "安全默认"
     }
 
     static var provenance: Provenance {
-        if launchArgumentRegion != nil { return .launchArgument }
-        if overrideRegion != nil { return .userOverride }
-        let code = defaults.string(forKey: Key.storefrontCountryCode) ?? ""
-        return code.isEmpty ? .timeZone : .storefront
+        currentResolution.provenance
     }
 
     /// 已解析到的 App Store 国家码，未就绪时为 nil。
     static var resolvedStorefrontCode: String? {
         let code = defaults.string(forKey: Key.storefrontCountryCode) ?? ""
         return code.isEmpty ? nil : code
+    }
+
+    /// Pure distribution resolution used by production-upgrade regression
+    /// tests. Invalid or disallowed persisted overrides are ignored; they can
+    /// never manufacture an authoritative China storefront.
+    static func resolve(
+        defaults: UserDefaults = .standard,
+        arguments: [String] = ProcessInfo.processInfo.arguments,
+        timeZoneIdentifier: String = TimeZone.current.identifier,
+        allowLocalOverride: Bool = DistributionTestingPolicy.allowsPersistedOverrides
+    ) -> Resolution {
+        if let forced = launchArgumentRegion(arguments) {
+            return Resolution(
+                region: forced,
+                isAuthoritative: true,
+                provenance: .launchArgument
+            )
+        }
+        if allowLocalOverride,
+           let raw = defaults.string(forKey: Key.override),
+           let override = AppRegion(rawValue: raw) {
+            return Resolution(
+                region: override,
+                isAuthoritative: true,
+                provenance: .userOverride
+            )
+        }
+        if let code = defaults.string(forKey: Key.storefrontCountryCode), !code.isEmpty {
+            return Resolution(
+                region: code == mainlandStorefrontCode ? .cn : .global,
+                isAuthoritative: true,
+                provenance: .storefront
+            )
+        }
+        return Resolution(
+            region: mainlandTimeZones.contains(timeZoneIdentifier) ? .cn : .global,
+            isAuthoritative: false,
+            provenance: .timeZone
+        )
+    }
+
+    static func discardDisallowedOverride(
+        defaults: UserDefaults = .standard,
+        allowLocalOverride: Bool = DistributionTestingPolicy.allowsPersistedOverrides
+    ) {
+        guard !allowLocalOverride else { return }
+        defaults.removeObject(forKey: Key.override)
+    }
+
+    /// The distribution decision used by live UI. Before the launch bootstrap
+    /// completes this is the ordinary persisted/argument resolution. If StoreKit
+    /// cannot provide a storefront on first launch, the bootstrap installs an
+    /// in-memory authoritative global fallback so a mainland timezone alone can
+    /// never expose the CN product or authorize the CN service route.
+    private static var currentResolution: Resolution {
+        let resolved = resolve()
+        if resolved.isAuthoritative { return resolved }
+        return launchRuntime.safeFallback ?? resolved
     }
 
     // MARK: - 解析
@@ -132,6 +187,82 @@ extension AppRegion {
         let code = storefront.countryCode
         guard !code.isEmpty else { return }
         defaults.set(code, forKey: Key.storefrontCountryCode)
+    }
+
+    /// Resolve the signed distribution region before any route-dependent object
+    /// is created. Explicit Debug/UI-test instrumentation remains highest
+    /// priority and avoids a StoreKit/network wait. Production otherwise requires
+    /// a current storefront result. If StoreKit is temporarily unavailable, a
+    /// previously cached storefront is retained to preserve account namespace;
+    /// only a first launch with no signed-distribution evidence fails global.
+    static func prepareForCurrentProcess(
+        arguments: [String] = ProcessInfo.processInfo.arguments,
+        storefrontTimeout: TimeInterval = 5,
+        storefrontCountryCode: @escaping @Sendable () async -> String? = {
+            guard let storefront = await Storefront.current else { return nil }
+            return storefront.countryCode
+        }
+    ) async -> Resolution {
+        let initial = resolve(arguments: arguments)
+        if initial.provenance == .launchArgument || initial.provenance == .userOverride {
+            launchRuntime.safeFallback = nil
+            return initial
+        }
+
+        // `Storefront.current` is backed by StoreKit and can take an unbounded
+        // amount of time while the App Store account or network is unavailable.
+        // Route-dependent services must still start deterministically, so race
+        // it against a real five-second deadline. The race does not await the
+        // losing task; even an uncooperative StoreKit call cannot hold launch.
+        if let rawCode = await lookupStorefrontCountryCode(
+            timeout: storefrontTimeout,
+            provider: storefrontCountryCode
+        ) {
+            let code = rawCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            if !code.isEmpty {
+                defaults.set(code, forKey: Key.storefrontCountryCode)
+                launchRuntime.safeFallback = nil
+                return resolve(arguments: arguments)
+            }
+        }
+
+        // StoreKit may be temporarily unavailable while the device is offline.
+        // A previously resolved storefront remains the best signed-distribution
+        // evidence and, critically, preserves the same account/route namespace.
+        if initial.isAuthoritative, initial.provenance == .storefront {
+            launchRuntime.safeFallback = nil
+            return initial
+        }
+
+        // Only a genuine first launch with no cached storefront fails closed.
+        // The fallback is process-local and authoritative, preventing MainTab
+        // from retrying later and creating product/route drift mid-session.
+        let fallback = Resolution(
+            region: .global,
+            isAuthoritative: true,
+            provenance: .safeDefault
+        )
+        launchRuntime.safeFallback = fallback
+        return fallback
+    }
+
+    private static func lookupStorefrontCountryCode(
+        timeout: TimeInterval,
+        provider: @escaping @Sendable () async -> String?
+    ) async -> String? {
+        await withCheckedContinuation { continuation in
+            let race = StorefrontLookupRace(continuation: continuation)
+            let lookupTask = Task {
+                race.finish(await provider())
+            }
+            let timeoutTask = Task {
+                let duration = max(0, timeout)
+                try? await Task.sleep(for: .seconds(duration))
+                guard !Task.isCancelled else { return }
+                race.finish(nil)
+            }
+            race.install(lookupTask: lookupTask, timeoutTask: timeoutTask)
+        }
     }
 
     /// 等待权威判据就绪后返回区域，最多等 `timeout` 秒。
@@ -148,6 +279,12 @@ extension AppRegion {
         }
         return current
     }
+
+    #if DEBUG
+    static func resetProcessResolutionForTesting() {
+        launchRuntime.safeFallback = nil
+    }
+    #endif
 
     // MARK: - 能力矩阵
 
@@ -177,31 +314,15 @@ extension AppRegion {
         }
     }
 
-    /// Google 登录在中国区仍保留为可选通道；手机号只是默认首选，不删除既有入口。
-    var showsGoogleSignIn: Bool { true }
+    /// Google 账号登录只在全球版展示。中国大陆网络不可用且已有手机号、Apple，
+    /// 不在登录页暴露一个无法完成的入口。
+    var showsGoogleSignIn: Bool { self == .global }
 
     /// 是否展示手机号登录（CN 首选）。
     var showsPhoneSignIn: Bool { self == .cn }
 
-    /// 账号 / Pro / 埋点的 Web 后端。
-    ///
-    /// 中国区是 `api.` 子域而不是裸域：境内服务部署在上海的 CVM 上
-    /// （2026-08-08 上线），裸域 `castreader.cn` 暂无解析记录。
-    /// 备案通过后可以再把裸域指过来做落地页，接口地址不受影响。
-    var webBaseURL: String {
-        switch self {
-        case .global: return "https://castreader.ai"
-        case .cn: return "https://api.castreader.cn"
-        }
-    }
-
-    /// TTS、文档、上传与解读使用的自有 API 网关。
-    var apiGatewayBaseURL: String {
-        switch self {
-        case .global: return "https://api.castreader.ai"
-        case .cn: return "https://api.castreader.cn"
-        }
-    }
+    /// 邮箱验证码当前只作为全球区兜底登录通道；中国区只保留手机号与 Apple。
+    var showsEmailSignIn: Bool { self == .global }
 
     /// 订阅货币符号。中国区展示人民币。
     var currencySymbol: String {
@@ -209,5 +330,74 @@ extension AppRegion {
         case .global: return "$"
         case .cn: return "¥"
         }
+    }
+}
+
+private final class AppRegionLaunchRuntime: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storedSafeFallback: AppRegion.Resolution?
+
+    var safeFallback: AppRegion.Resolution? {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return storedSafeFallback
+        }
+        set {
+            lock.lock()
+            storedSafeFallback = newValue
+            lock.unlock()
+        }
+    }
+}
+
+/// A lock-backed one-shot continuation lets launch return as soon as either
+/// StoreKit or the deadline wins. `withTaskGroup` is intentionally not used:
+/// its scope waits for cancelled children to exit, which would turn a hung
+/// StoreKit lookup back into a hung launch.
+private final class StorefrontLookupRace: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<String?, Never>?
+    private var lookupTask: Task<Void, Never>?
+    private var timeoutTask: Task<Void, Never>?
+    private var isFinished = false
+
+    init(continuation: CheckedContinuation<String?, Never>) {
+        self.continuation = continuation
+    }
+
+    func install(
+        lookupTask: Task<Void, Never>,
+        timeoutTask: Task<Void, Never>
+    ) {
+        lock.lock()
+        if isFinished {
+            lock.unlock()
+            lookupTask.cancel()
+            timeoutTask.cancel()
+            return
+        }
+        self.lookupTask = lookupTask
+        self.timeoutTask = timeoutTask
+        lock.unlock()
+    }
+
+    func finish(_ countryCode: String?) {
+        lock.lock()
+        guard !isFinished, let continuation else {
+            lock.unlock()
+            return
+        }
+        isFinished = true
+        self.continuation = nil
+        let lookupTask = self.lookupTask
+        let timeoutTask = self.timeoutTask
+        self.lookupTask = nil
+        self.timeoutTask = nil
+        lock.unlock()
+
+        lookupTask?.cancel()
+        timeoutTask?.cancel()
+        continuation.resume(returning: countryCode)
     }
 }

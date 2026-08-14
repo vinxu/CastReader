@@ -133,164 +133,261 @@ struct RootAuthGate: View {
         .contains("-CastReaderSkipSignInGate")
 
     var body: some View {
-        if auth.isSignedIn || bypassesGate {
-            MainTabView()
-        } else {
-            LoginView(isRootGate: true)
+        Group {
+            if auth.isSignedIn || bypassesGate {
+                MainTabView()
+                    .id(auth.accountBoundaryID)
+            } else {
+                LoginView(isRootGate: true)
+            }
         }
+        .alert(
+            AppLocalized("注销申请已提交"),
+            isPresented: Binding(
+                get: { auth.lastAccountDeletionReceipt != nil },
+                set: { if !$0 { auth.dismissAccountDeletionReceipt() } }
+            ),
+            presenting: auth.lastAccountDeletionReceipt
+        ) { _ in
+            Button(AppLocalized("知道了")) {
+                auth.dismissAccountDeletionReceipt()
+            }
+        } message: { receipt in
+            Text(receipt.userFacingMessage)
+        }
+    }
+}
+
+/// Owns the asynchronous distribution bootstrap without touching any singleton
+/// whose identity, cache namespace or endpoint depends on `ServiceRouting`.
+/// `RouteReadyRoot` is not constructed until this coordinator publishes ready.
+@MainActor
+final class AppStartupCoordinator: ObservableObject {
+    @Published private(set) var isReady = false
+
+    private var didStart = false
+    private var notificationObservers: [NSObjectProtocol] = []
+
+    func start() async {
+        guard !didStart else { return }
+        didStart = true
+
+        let region = await AppRegion.prepareForCurrentProcess()
+        _ = await ServiceRouting.bootstrapForCurrentProcess(
+            appRegionResolution: region
+        )
+        _ = TTSEndpoint.freezeForCurrentProcess()
+        _ = QuickReadEndpoint.freezeForCurrentProcess()
+
+        // Everything below may capture the frozen route or its isolated storage
+        // namespace. None of it may move above the bootstrap calls.
+        SafariExtensionBridge.syncFromApp()
+        _ = AudioPlaybackTemporaryFiles.prepare()
+        installLifecycleObservers()
+
+        let launchType = SystemActionStore.shared.peekPendingOrigin()?.launchType ?? "cold"
+        ProductAnalytics.shared.startAppSession(launchType: launchType)
+        ProManager.shared.start()
+        QuotaManager.shared.rollIfNewDay()
+        VoiceCatalogService.shared.start()
+        NetworkReachability.shared.start()
+        YouTubeTranscriptService.resetWebsiteDataStoreIfNeeded()
+        ResumeReminderManager.shared.start()
+
+        isReady = true
+    }
+
+    private func installLifecycleObservers() {
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: UIApplication.didReceiveMemoryWarningNotification,
+                object: nil,
+                queue: .main
+            ) { _ in
+                print("⚠️ Memory warning received")
+                Task { @MainActor in
+                    guard !AudioPlayerService.shared.hasActivePlayback else {
+                        print("⚠️ Keeping active audio queue during memory warning")
+                        return
+                    }
+                    AudioPlayerService.shared.clearQueue()
+                }
+            }
+        )
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: UIApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { _ in
+                Task { @MainActor in
+                    ProductAnalytics.shared.didBecomeActive()
+                    QuotaManager.shared.rollIfNewDay()
+                    await AuthService.shared.refreshAppleCredentialState()
+                    await ProManager.shared.refresh()
+                    await VoiceCatalogService.shared.refreshIfStale()
+                }
+            }
+        )
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: UIApplication.didEnterBackgroundNotification,
+                object: nil,
+                queue: .main
+            ) { _ in
+                Task { @MainActor in ProductAnalytics.shared.didEnterBackground() }
+            }
+        )
+    }
+
+    deinit {
+        for observer in notificationObservers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+}
+
+/// Constructing this view is the first permitted access to Visitor/Auth/UI
+/// route-dependent state. SwiftUI only evaluates this branch after bootstrap.
+struct RouteReadyRoot: View {
+    @StateObject private var visitorService = VisitorService.shared
+
+    var body: some View {
+        RootAuthGate()
+            .environmentObject(visitorService)
     }
 }
 
 @main
 struct CastReaderApp: App {
     @UIApplicationDelegateAdaptor(CastReaderAppDelegate.self) private var appDelegate
-    @StateObject private var visitorService = VisitorService.shared
+    @StateObject private var startup = AppStartupCoordinator()
     @StateObject private var appLanguage = AppLanguageManager.shared
     @State private var showSafariPro = false
     @State private var showSafariAccount = false
     @State private var showSignOutConfirm = false
     @State private var pendingSafariLibraryOnboardingReset: Bool?
+    @State private var pendingOpenURLs: [URL] = []
 
     init() {
-        // Reclaim playback artifacts left by a previous process before any
-        // reader is opened. AudioPlayerService is lazy, so putting this only in
-        // its initializer would let legacy segment/prestage files survive on
-        // the login and home surfaces indefinitely.
-        _ = AudioPlaybackTemporaryFiles.prepare()
+        // App Store upgrades keep UserDefaults from earlier Debug/internal
+        // installs. Production must discard those testing-only region/route
+        // values before any endpoint-capturing singleton freezes the process.
+        AppRegion.discardDisallowedOverride()
+        ServiceRouting.discardDisallowedLocalOverride()
+        ServiceRouting.migratePersistedAliases()
 
-        // 简单的内存警告监听
-        NotificationCenter.default.addObserver(
-            forName: UIApplication.didReceiveMemoryWarningNotification,
-            object: nil,
-            queue: .main
-        ) { _ in
-            print("⚠️ Memory warning received")
-            Task { @MainActor in
-                // Never turn an ordinary memory warning into a playback stop.
-                // The queue is the active spoken-audio pipeline, not a disposable
-                // cache; iOS background audio must remain uninterrupted.
-                guard !AudioPlayerService.shared.hasActivePlayback else {
-                    print("⚠️ Keeping active audio queue during memory warning")
-                    return
-                }
-                AudioPlayerService.shared.clearQueue()
-            }
+        #if DEBUG
+        // UI tests must not inherit a service-route override written by an earlier
+        // run. This flag is intentionally unavailable in release builds and runs
+        // before the process snapshot is frozen.
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderResetServiceRouteState") {
+            ServiceRouting.overrideRoute = nil
+            ServiceRouting.clearBackendConfiguration()
         }
 
-        // Pro 订阅状态 + 每日额度初始化
-        // An App Intent runs in its own process and deposits the action before
-        // launching us, so the pending slot already says which system surface
-        // opened this session. Peeking never consumes it — MainTab still routes.
-        let launchType = SystemActionStore.shared.peekPendingOrigin()?.launchType ?? "cold"
-        Task { @MainActor in
-            ProductAnalytics.shared.startAppSession(launchType: launchType)
-            ProManager.shared.start()
-            QuotaManager.shared.rollIfNewDay()
-            VoiceCatalogService.shared.start()
-            NetworkReachability.shared.start()
-            YouTubeTranscriptService.resetWebsiteDataStoreIfNeeded()
+        // Seed a writable persisted region for the root-login recovery UI test.
+        // Unlike `-CastReaderRegion`, this does not remain the highest-priority
+        // process argument, so the picker can genuinely change AppRegion.current.
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "-CastReaderSeedRegionOverride"),
+           index + 1 < arguments.count,
+           let region = AppRegion(rawValue: arguments[index + 1]) {
+            AppRegion.overrideRegion = region
         }
-        // 解析发行区域（App Store storefront）。首启引导会等这个结果，
-        // 所以要尽早发起；失败保留上次缓存，默认 global。
-        Task { await AppRegion.refreshStorefront() }
-        // 刷新云端 TTS 节点配置（CN/US 路由）
-        Task { await TTSEndpoint.refreshRemoteConfig() }
-        // 刷新云端解读(quickread)后端地址（换后端零发版；兜底 qr.castreader.ai）
-        Task { await QuickReadEndpoint.refreshRemoteConfig() }
+        #endif
 
-        // 回前台刷新 Pro/额度
-        NotificationCenter.default.addObserver(
-            forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
-        ) { _ in
-            Task { @MainActor in
-                ProductAnalytics.shared.didBecomeActive()
-                QuotaManager.shared.rollIfNewDay()
-                await ProManager.shared.refresh()
-                await VoiceCatalogService.shared.refreshIfStale()
-            }
-        }
-
-        NotificationCenter.default.addObserver(
-            forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main
-        ) { _ in
-            Task { @MainActor in ProductAnalytics.shared.didEnterBackground() }
-        }
-
-        ResumeReminderManager.shared.start()   // 「继续听」召回：进后台调度、回前台取消
     }
 
     var body: some Scene {
         WindowGroup {
-            RootAuthGate()
-                .environmentObject(visitorService)
-                .environment(\.locale, appLanguage.locale)
-                // 深色/浅色跟随系统（AppTheme 已全动态化，见 Utils/AppTheme.swift）
-                .onOpenURL { url in
-                    if StudyBoostDeepLink.matches(url) {
-                        StudyBoostRouter.shared.open()
-                    } else if url.scheme == "castreader", url.host == "youtube" {
-                        let components = URLComponents(
-                            url: url,
-                            resolvingAgainstBaseURL: false
-                        )
-                        if let rawURL = components?.queryItems?
-                            .first(where: { $0.name == "url" })?.value {
-                            let entryValue = components?.queryItems?
-                                .first(where: { $0.name == "entry" })?.value
-                            let entry = entryValue.flatMap(YouTubeListenEntry.init(rawValue:))
-                                ?? .scheme
-                            _ = YouTubeRouteCenter.shared.open(
-                                rawURL,
-                                entry: entry
+            Group {
+                if startup.isReady {
+                    RouteReadyRoot()
+                        .environment(\.locale, appLanguage.locale)
+                        .alert(AppLocalized("退出登录"), isPresented: $showSignOutConfirm) {
+                            Button(AppLocalized("退出登录"), role: .destructive) {
+                                AuthService.shared.signOut()
+                                SafariExtensionBridge.syncFromApp()
+                                showSafariAccount = false
+                            }
+                            Button(AppLocalized("取消"), role: .cancel) {}
+                        } message: {
+                            Text(AppLocalized("退出登录后需要重新登录才能继续使用 CastReader。"))
+                        }
+                        .sheet(isPresented: $showSafariPro) {
+                            PaywallView(
+                                reason: AppLocalized("从 Safari 解锁完整朗读与解读"),
+                                analyticsTrigger: "safari_extension",
+                                analyticsSurface: "safari_extension"
                             )
                         }
-                    } else if let systemAction = SystemAction.from(url: url) {
-                        SystemActionStore.shared.enqueue(systemAction, origin: .deepLink)
-                    } else if url.scheme == "castreader", url.host == "share-inbox" {
-                        NotificationCenter.default.post(name: .castReaderShareInboxChanged, object: nil)
-                    } else if url.scheme == "castreader", url.host == "pro" {
-                        showSafariPro = true
-                    } else if url.scheme == "castreader", url.host == "account" {
-                        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-                        let action = components?.queryItems?.first(where: { $0.name == "action" })?.value
-                        if action == "signout" {
-                            // 硬登录墙下登出 = App 回到登录页。深链是外部输入
-                            // （Safari 扩展页面），不能未经确认直接执行。
-                            showSignOutConfirm = true
-                        } else {
-                            showSafariAccount = true
+                        .sheet(
+                            isPresented: $showSafariAccount,
+                            onDismiss: presentSafariRequestedLibraryOnboarding
+                        ) {
+                            if AuthService.shared.isSignedIn {
+                                SettingsView(onRequestLibraryOnboarding: { reset in
+                                    pendingSafariLibraryOnboardingReset = reset
+                                })
+                            } else {
+                                LoginView()
+                            }
                         }
-                    }
+                } else {
+                    Color(uiColor: .systemBackground)
+                        .ignoresSafeArea()
+                        .accessibilityIdentifier("distribution_bootstrap")
                 }
-                .alert(AppLocalized("退出登录"), isPresented: $showSignOutConfirm) {
-                    Button(AppLocalized("退出登录"), role: .destructive) {
-                        AuthService.shared.signOut()
-                        SafariExtensionBridge.syncFromApp()
-                        showSafariAccount = false
-                    }
-                    Button(AppLocalized("取消"), role: .cancel) {}
-                } message: {
-                    Text(AppLocalized("退出登录后需要重新登录才能继续使用 CastReader。"))
+            }
+            .task {
+                await startup.start()
+            }
+            .onOpenURL { url in
+                if startup.isReady {
+                    handleOpenURL(url)
+                } else {
+                    pendingOpenURLs.append(url)
                 }
-                .sheet(isPresented: $showSafariPro) {
-                    PaywallView(
-                        reason: AppLocalized("从 Safari 解锁完整朗读与解读"),
-                        analyticsTrigger: "safari_extension",
-                        analyticsSurface: "safari_extension"
-                    )
+            }
+            .onChange(of: startup.isReady) { _, isReady in
+                guard isReady, !pendingOpenURLs.isEmpty else { return }
+                let urls = pendingOpenURLs
+                pendingOpenURLs.removeAll()
+                for url in urls {
+                    handleOpenURL(url)
                 }
-                .sheet(
-                    isPresented: $showSafariAccount,
-                    onDismiss: presentSafariRequestedLibraryOnboarding
-                ) {
-                    if AuthService.shared.isSignedIn {
-                        SettingsView { reset in
-                            pendingSafariLibraryOnboardingReset = reset
-                        }
-                    } else {
-                        LoginView()
-                    }
-                }
+            }
+        }
+    }
+
+    private func handleOpenURL(_ url: URL) {
+        if StudyBoostDeepLink.matches(url) {
+            StudyBoostRouter.shared.open()
+        } else if url.scheme == "castreader", url.host == "youtube" {
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            if let rawURL = components?.queryItems?
+                .first(where: { $0.name == "url" })?.value {
+                let entryValue = components?.queryItems?
+                    .first(where: { $0.name == "entry" })?.value
+                let entry = entryValue.flatMap(YouTubeListenEntry.init(rawValue:)) ?? .scheme
+                _ = YouTubeRouteCenter.shared.open(rawURL, entry: entry)
+            }
+        } else if let systemAction = SystemAction.from(url: url) {
+            SystemActionStore.shared.enqueue(systemAction, origin: .deepLink)
+        } else if url.scheme == "castreader", url.host == "share-inbox" {
+            NotificationCenter.default.post(name: .castReaderShareInboxChanged, object: nil)
+        } else if url.scheme == "castreader", url.host == "pro" {
+            showSafariPro = true
+        } else if url.scheme == "castreader", url.host == "account" {
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            let action = components?.queryItems?.first(where: { $0.name == "action" })?.value
+            if action == "signout" {
+                // Safari is external input; never sign out without confirmation.
+                showSignOutConfirm = true
+            } else {
+                showSafariAccount = true
+            }
         }
     }
 

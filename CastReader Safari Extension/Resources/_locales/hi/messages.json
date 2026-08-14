@@ -1,10 +1,4 @@
 {
-  "name": {
-    "message": "CastReader – पढ़ें और AI समझें"
-  },
-  "description": {
-    "message": "वेब पेज, PDF और Kindle को सिंक हाइलाइट व AI व्याख्या के साथ 9 भाषाओं में सुनें।"
-  },
   "extName": {
     "message": "CastReader — ज़ोर से पढ़ें + AI समझाएँ"
   },

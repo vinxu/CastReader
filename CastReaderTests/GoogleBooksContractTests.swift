@@ -1738,17 +1738,50 @@ final class GoogleBooksContractTests: XCTestCase {
     }
 
     @MainActor
-    func testSharedGoogleWebSessionKeepsItsPersistentProfileIdentifier() {
+    func testSharedGoogleWebSessionIsPersistentAndAccountScoped() throws {
+        let accountA = UserAccount(
+            id: "provider-a",
+            provider: "google",
+            backendUserId: "backend-a"
+        )
+        let accountB = UserAccount(
+            id: "provider-b",
+            provider: "google",
+            backendUserId: "backend-b"
+        )
+        let scopeA = try XCTUnwrap(AccountContentScope(account: accountA))
+        let scopeB = try XCTUnwrap(AccountContentScope(account: accountB))
+        let chinaScopeA = try XCTUnwrap(
+            AccountContentScope(account: accountA, route: .chinaGateway)
+        )
+        defer { CommercialWebSession.deactivateAccountScope() }
+
+        CommercialWebSession.activateAccountScope(scopeA)
         let first = GoogleWebSession.websiteDataStore
         let second = GoogleWebSession.websiteDataStore
-
         XCTAssertTrue(first.isPersistent)
         XCTAssertEqual(first.identifier, GoogleWebSession.websiteDataStoreIdentifier)
         XCTAssertEqual(second.identifier, first.identifier)
-        XCTAssertEqual(
-            first.identifier?.uuidString,
-            "739ED7D6-8C70-4D85-971C-5DDAE87C6C6F"
+
+        CommercialWebSession.activateAccountScope(scopeB)
+        let accountBIdentifier = GoogleWebSession.websiteDataStore.identifier
+        XCTAssertNotEqual(accountBIdentifier, first.identifier)
+
+        CommercialWebSession.activateAccountScope(chinaScopeA)
+        let chinaAccountAIdentifier = GoogleWebSession.websiteDataStore.identifier
+        XCTAssertNotEqual(
+            chinaAccountAIdentifier,
+            first.identifier,
+            "The same canonical account must not share cookies across gateways"
         )
+        XCTAssertNotEqual(
+            chinaAccountAIdentifier,
+            YouTubeTranscriptService.websiteDataStoreIdentifier,
+            "Commercial-session cleanup must never select YouTube's extraction profile"
+        )
+
+        CommercialWebSession.activateAccountScope(scopeA)
+        XCTAssertEqual(GoogleWebSession.websiteDataStore.identifier, first.identifier)
     }
 
     @MainActor
@@ -1893,23 +1926,23 @@ final class GoogleBooksContractTests: XCTestCase {
 
     @MainActor
     func testHistorySourceURLCanAdvanceWithoutCreatingAnotherRecord() {
-        let id = "googlebooks-history-\(UUID().uuidString)"
-        let history = HistoryStore.shared
-        let document = ReadingDocument(
-            id: id,
-            title: "History URL Contract",
-            sourceKind: .text,
-            paragraphs: [],
-            sourceURL: "https://play.google.com/books/reader?id=b_40EQAAQBAJ"
-        )
-        history.record(document)
-        defer { history.delete(id) }
+        withIsolatedStoreAndHistory { _, history in
+            let id = "googlebooks-history-\(UUID().uuidString)"
+            let document = ReadingDocument(
+                id: id,
+                title: "History URL Contract",
+                sourceKind: .text,
+                paragraphs: [],
+                sourceURL: "https://play.google.com/books/reader?id=b_40EQAAQBAJ"
+            )
+            history.record(document)
 
-        let resume = "https://play.google.com/books/reader?id=b_40EQAAQBAJ&pg=GBS.PT12"
-        history.updateSourceURL(documentID: id, sourceURL: resume)
+            let resume = "https://play.google.com/books/reader?id=b_40EQAAQBAJ&pg=GBS.PT12"
+            history.updateSourceURL(documentID: id, sourceURL: resume)
 
-        XCTAssertEqual(history.records.first(where: { $0.id == id })?.sourceURL, resume)
-        XCTAssertEqual(history.records.filter { $0.id == id }.count, 1)
+            XCTAssertEqual(history.records.first(where: { $0.id == id })?.sourceURL, resume)
+            XCTAssertEqual(history.records.filter { $0.id == id }.count, 1)
+        }
     }
 
     @MainActor
@@ -2070,20 +2103,27 @@ final class GoogleBooksContractTests: XCTestCase {
         _ cookie: HTTPCookie,
         in store: WKHTTPCookieStore
     ) async {
-        await withCheckedContinuation { continuation in
-            store.setCookie(cookie) {
-                continuation.resume()
-            }
+        let callback = expectation(
+            description: "WKHTTPCookieStore.setCookie callback for \(cookie.domain)"
+        )
+        store.setCookie(cookie) {
+            callback.fulfill()
         }
+        await fulfillment(of: [callback], timeout: 10)
     }
 
     @MainActor
     private func allCookies(in store: WKHTTPCookieStore) async -> [HTTPCookie] {
-        await withCheckedContinuation { continuation in
-            store.getAllCookies { cookies in
-                continuation.resume(returning: cookies)
-            }
+        let callback = expectation(
+            description: "WKHTTPCookieStore.getAllCookies callback"
+        )
+        var receivedCookies: [HTTPCookie] = []
+        store.getAllCookies { cookies in
+            receivedCookies = cookies
+            callback.fulfill()
         }
+        await fulfillment(of: [callback], timeout: 10)
+        return receivedCookies
     }
 }
 

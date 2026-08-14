@@ -813,6 +813,64 @@
         }
       }
     },
+    "我已阅读并同意《%@》和《%@》" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ich habe die %@ und die %@ gelesen und stimme zu"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I have read and agree to the %@ and %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "He leído y acepto los %@ y la %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "J'ai lu et j'accepte les %@ et la %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "मैंने %@ और %@ पढ़ ली हैं और उनसे सहमत हूँ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ho letto e accetto i %@ e l'%@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」と「%@」に同意します"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Li e concordo com os %@ e a %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我已阅读并同意《%@》和《%@》"
+          }
+        }
+      }
+    },
     "请先阅读并同意服务条款和隐私政策" : {
       "localizations" : {
         "de" : {
@@ -1041,6 +1099,122 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "操作太频繁，请 %d 秒后再试"
+          }
+        }
+      }
+    },
+    "操作太频繁，请 %d 分钟后再试" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu viele Versuche. Versuch es in %d Min. erneut"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too many attempts. Try again in %d min"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demasiados intentos. Inténtalo de nuevo en %d min"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trop de tentatives. Réessayez dans %d min"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "बहुत ज़्यादा कोशिशें। %d मिनट बाद फिर कोशिश करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Troppi tentativi. Riprova tra %d min"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作が多すぎます。%d 分後にお試しください"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muitas tentativas. Tente de novo em %d min"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作太频繁，请 %d 分钟后再试"
+          }
+        }
+      }
+    },
+    "操作太频繁，请 %d 小时后再试" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu viele Versuche. Versuch es in %d Std. erneut"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too many attempts. Try again in %d hr"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demasiados intentos. Inténtalo de nuevo en %d h"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trop de tentatives. Réessayez dans %d h"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "बहुत ज़्यादा कोशिशें। %d घंटे बाद फिर कोशिश करें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Troppi tentativi. Riprova tra %d h"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作が多すぎます。%d 時間後にお試しください"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muitas tentativas. Tente de novo em %d h"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作太频繁，请 %d 小时后再试"
           }
         }
       }
@@ -9565,7 +9739,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Google を続ける"
+            "value" : "Google で続ける"
           }
         },
         "pt-BR" : {
@@ -17775,60 +17949,60 @@
         }
       }
     },
-    "已检测到购买，请登录邮箱同步 Pro" : {
+    "已检测到购买，请登录账号同步 Pro" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kauf erkannt. Melde dich mit deiner E-Mail-Adresse an, um Pro zu synchronisieren."
+            "value" : "Kauf erkannt. Melde dich mit deinem Konto an, um Pro zu synchronisieren."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Purchase detected. Log in with your email to sync Pro."
+            "value" : "Purchase detected. Sign in to your account to sync Pro."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Compra detectada. Inicie sesión con su correo electrónico para sincronizar Pro."
+            "value" : "Compra detectada. Inicia sesión en tu cuenta para sincronizar Pro."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Achat détecté. Connectez-vous avec votre e-mail pour synchroniser Pro."
+            "value" : "Achat détecté. Connectez-vous à votre compte pour synchroniser Pro."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "खरीदारी का पता चला. प्रो को सिंक करने के लिए अपने ईमेल से लॉग इन करें।"
+            "value" : "खरीदारी का पता चला। Pro सिंक करने के लिए अपने खाते में साइन इन करें।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Acquisto rilevato. Accedi con la tua email per sincronizzare Pro."
+            "value" : "Acquisto rilevato. Accedi al tuo account per sincronizzare Pro."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "購入が検出されました。 Pro を同期するには、電子メールでログインします。"
+            "value" : "購入が検出されました。アカウントにログインして Pro を同期してください。"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Compra detectada. Faça login com seu e-mail para sincronizar o Pro."
+            "value" : "Compra detectada. Entre na sua conta para sincronizar o Pro."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已检测到购买，请登录邮箱同步 Pro"
+            "value" : "已检测到购买，请登录账号同步 Pro"
           }
         }
       }
@@ -20151,6 +20325,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "登录邮箱账号后，Pro 可跨设备同步。"
+          }
+        }
+      }
+    },
+    "登录可同步的账号后，Pro 可跨设备同步。" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Melde dich mit einem synchronisierbaren Konto an, um Pro geräteübergreifend zu synchronisieren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in with a sync-enabled account to sync Pro across devices."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia sesión con una cuenta sincronizable para sincronizar Pro entre dispositivos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connectez-vous avec un compte synchronisable pour synchroniser Pro entre vos appareils."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "उपकरणों के बीच Pro सिंक करने के लिए सिंक समर्थित खाते से साइन इन करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accedi con un account sincronizzabile per sincronizzare Pro su tutti i dispositivi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期対応アカウントでログインすると、Pro をデバイス間で同期できます。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faça login com uma conta sincronizável para sincronizar o Pro entre dispositivos."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录可同步的账号后，Pro 可跨设备同步。"
           }
         }
       }
@@ -25498,6 +25730,10 @@
         }
       }
     },
+    "服务条款与隐私政策" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Nutzungsbedingungen und Datenschutzerklärung"}},"en":{"stringUnit":{"state":"translated","value":"Terms of Service and Privacy Policy"}},"es":{"stringUnit":{"state":"translated","value":"Términos del servicio y Política de privacidad"}},"fr":{"stringUnit":{"state":"translated","value":"Conditions d’utilisation et Politique de confidentialité"}},"hi":{"stringUnit":{"state":"translated","value":"सेवा की शर्तें और गोपनीयता नीति"}},"it":{"stringUnit":{"state":"translated","value":"Termini di servizio e Informativa sulla privacy"}},"ja":{"stringUnit":{"state":"translated","value":"利用規約とプライバシーポリシー"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Termos de Serviço e Política de Privacidade"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"服务条款与隐私政策"}}}},
+    "不同意" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Ablehnen"}},"en":{"stringUnit":{"state":"translated","value":"Disagree"}},"es":{"stringUnit":{"state":"translated","value":"No aceptar"}},"fr":{"stringUnit":{"state":"translated","value":"Refuser"}},"hi":{"stringUnit":{"state":"translated","value":"असहमत"}},"it":{"stringUnit":{"state":"translated","value":"Non accetto"}},"ja":{"stringUnit":{"state":"translated","value":"同意しない"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Não concordo"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"不同意"}}}},
+    "同意" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Zustimmen"}},"en":{"stringUnit":{"state":"translated","value":"Agree"}},"es":{"stringUnit":{"state":"translated","value":"Aceptar"}},"fr":{"stringUnit":{"state":"translated","value":"Accepter"}},"hi":{"stringUnit":{"state":"translated","value":"सहमत"}},"it":{"stringUnit":{"state":"translated","value":"Accetto"}},"ja":{"stringUnit":{"state":"translated","value":"同意する"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Concordo"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"同意"}}}},
+    "邮箱登录暂未开放，请使用其他登录方式" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Die E-Mail-Anmeldung ist noch nicht verfügbar. Bitte nutze eine andere Anmeldemethode"}},"en":{"stringUnit":{"state":"translated","value":"Email sign-in isn't available yet. Use another sign-in method"}},"es":{"stringUnit":{"state":"translated","value":"El acceso por correo aún no está disponible. Usa otro método de inicio de sesión"}},"fr":{"stringUnit":{"state":"translated","value":"La connexion par e-mail n'est pas encore disponible. Utilisez une autre méthode"}},"hi":{"stringUnit":{"state":"translated","value":"ईमेल साइन इन अभी उपलब्ध नहीं है। किसी अन्य साइन-इन तरीके का उपयोग करें"}},"it":{"stringUnit":{"state":"translated","value":"L'accesso via email non è ancora disponibile. Usa un altro metodo di accesso"}},"ja":{"stringUnit":{"state":"translated","value":"メールログインは現在ご利用いただけません。別のログイン方法をお試しください"}},"pt-BR":{"stringUnit":{"state":"translated","value":"O login por e-mail ainda não está disponível. Use outro método de login"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"邮箱登录暂未开放，请使用其他登录方式"}}}},
     "朗读" : {
       "localizations" : {
         "de" : {
@@ -32530,60 +32766,60 @@
         }
       }
     },
-    "登录邮箱同步 Pro" : {
+    "登录账号同步 Pro" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mit E-Mail-Adresse anmelden, um Pro zu synchronisieren"
+            "value" : "Mit Konto anmelden, um Pro zu synchronisieren"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Log in with email to sync Pro"
+            "value" : "Sign in to sync Pro"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inicie sesión con su correo electrónico para sincronizar Pro"
+            "value" : "Inicia sesión para sincronizar Pro"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connectez-vous avec e-mail pour synchroniser Pro"
+            "value" : "Connectez-vous pour synchroniser Pro"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "प्रो को सिंक करने के लिए ईमेल से लॉग इन करें"
+            "value" : "Pro सिंक करने के लिए साइन इन करें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accedi con l'e-mail per sincronizzare Pro"
+            "value" : "Accedi per sincronizzare Pro"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pro を同期するには電子メールでログインしてください"
+            "value" : "Pro を同期するにはログインしてください"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Faça login com e-mail para sincronizar o Pro"
+            "value" : "Faça login para sincronizar o Pro"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "登录邮箱同步 Pro"
+            "value" : "登录账号同步 Pro"
           }
         }
       }
@@ -43430,6 +43666,18 @@
     "请求超时，请检查网络后重试" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Zeitüberschreitung. Prüfe deine Verbindung und versuche es erneut"}},"en":{"stringUnit":{"state":"translated","value":"The request timed out. Check your connection and try again"}},"es":{"stringUnit":{"state":"translated","value":"La solicitud agotó el tiempo. Comprueba tu conexión e inténtalo de nuevo"}},"fr":{"stringUnit":{"state":"translated","value":"La demande a expiré. Vérifiez votre connexion et réessayez"}},"hi":{"stringUnit":{"state":"translated","value":"अनुरोध का समय समाप्त हो गया। कनेक्शन जाँचें और फिर कोशिश करें"}},"it":{"stringUnit":{"state":"translated","value":"Richiesta scaduta. Controlla la connessione e riprova"}},"ja":{"stringUnit":{"state":"translated","value":"リクエストがタイムアウトしました。接続を確認してもう一度お試しください"}},"pt-BR":{"stringUnit":{"state":"translated","value":"A solicitação expirou. Verifique sua conexão e tente novamente"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"请求超时，请检查网络后重试"}}}},
     "无法连接网络，请检查网络后重试" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Keine Verbindung. Prüfe dein Netzwerk und versuche es erneut"}},"en":{"stringUnit":{"state":"translated","value":"Couldn't connect. Check your network and try again"}},"es":{"stringUnit":{"state":"translated","value":"No se pudo conectar. Comprueba tu red e inténtalo de nuevo"}},"fr":{"stringUnit":{"state":"translated","value":"Connexion impossible. Vérifiez votre réseau et réessayez"}},"hi":{"stringUnit":{"state":"translated","value":"कनेक्ट नहीं हो सका। नेटवर्क जाँचें और फिर कोशिश करें"}},"it":{"stringUnit":{"state":"translated","value":"Connessione non riuscita. Controlla la rete e riprova"}},"ja":{"stringUnit":{"state":"translated","value":"接続できません。ネットワークを確認してもう一度お試しください"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Não foi possível conectar. Verifique sua rede e tente novamente"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"无法连接网络，请检查网络后重试"}}}},
     "登录失败，请稍后重试" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Anmeldung fehlgeschlagen. Bitte später erneut versuchen"}},"en":{"stringUnit":{"state":"translated","value":"Sign-in failed. Try again later"}},"es":{"stringUnit":{"state":"translated","value":"No se pudo iniciar sesión. Inténtalo más tarde"}},"fr":{"stringUnit":{"state":"translated","value":"Échec de la connexion. Réessayez plus tard"}},"hi":{"stringUnit":{"state":"translated","value":"साइन इन विफल रहा। बाद में पुनः प्रयास करें"}},"it":{"stringUnit":{"state":"translated","value":"Accesso non riuscito. Riprova più tardi"}},"ja":{"stringUnit":{"state":"translated","value":"ログインに失敗しました。後でもう一度お試しください"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Falha no login. Tente novamente mais tarde"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"登录失败，请稍后重试"}}}},
+    "Apple 授权还需手动撤销：请打开系统设置中的 Apple 账号，进入“使用 Apple 登录”并停止对 CastReader 的授权。" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Die Apple-Autorisierung muss außerdem manuell widerrufen werden: Öffne in den Systemeinstellungen deinen Apple-Account, gehe zu „Mit Apple anmelden“ und beende die Autorisierung für CastReader."}},"en":{"stringUnit":{"state":"translated","value":"Apple authorization must also be revoked manually: open your Apple Account in Settings, go to “Sign in with Apple,” and stop using CastReader."}},"es":{"stringUnit":{"state":"translated","value":"La autorización de Apple también debe revocarse manualmente: abre tu cuenta de Apple en Ajustes, ve a «Iniciar sesión con Apple» y deja de usar CastReader."}},"fr":{"stringUnit":{"state":"translated","value":"L’autorisation Apple doit aussi être révoquée manuellement : ouvrez votre compte Apple dans Réglages, accédez à « Se connecter avec Apple », puis cessez d’utiliser CastReader."}},"hi":{"stringUnit":{"state":"translated","value":"Apple प्राधिकरण भी मैन्युअल रूप से रद्द करना होगा: सेटिंग्स में अपना Apple खाता खोलें, “Apple से साइन इन करें” पर जाएँ और CastReader का उपयोग बंद करें।"}},"it":{"stringUnit":{"state":"translated","value":"Anche l’autorizzazione Apple deve essere revocata manualmente: apri il tuo account Apple in Impostazioni, vai su “Accedi con Apple” e interrompi l’uso di CastReader."}},"ja":{"stringUnit":{"state":"translated","value":"Apple の認証は手動でも取り消す必要があります。設定で Apple Account を開き、「Apple でサインイン」に進んで CastReader の使用を停止してください。"}},"pt-BR":{"stringUnit":{"state":"translated","value":"A autorização da Apple também precisa ser revogada manualmente: abra sua Conta Apple nos Ajustes, acesse “Iniciar sessão com a Apple” e pare de usar o CastReader."}},"zh-Hans":{"stringUnit":{"state":"translated","value":"Apple 授权还需手动撤销：请打开系统设置中的 Apple 账号，进入“使用 Apple 登录”并停止对 CastReader 的授权。"}}}},
+    "Apple 自动续订不会随账号删除自动取消，如有需要请在 App Store 中管理订阅。" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Automatisch verlängernde Apple-Abonnements werden beim Löschen des Accounts nicht automatisch gekündigt. Verwalte dein Abonnement bei Bedarf im App Store."}},"en":{"stringUnit":{"state":"translated","value":"Apple auto-renewable subscriptions are not canceled automatically when you delete your account. If needed, manage your subscription in the App Store."}},"es":{"stringUnit":{"state":"translated","value":"Las suscripciones de Apple con renovación automática no se cancelan al eliminar la cuenta. Si es necesario, administra tu suscripción en App Store."}},"fr":{"stringUnit":{"state":"translated","value":"Les abonnements Apple à renouvellement automatique ne sont pas annulés lors de la suppression du compte. Si nécessaire, gérez votre abonnement dans l’App Store."}},"hi":{"stringUnit":{"state":"translated","value":"खाता हटाने पर Apple की अपने-आप नवीनीकृत होने वाली सदस्यताएँ रद्द नहीं होतीं। ज़रूरत हो तो App Store में अपनी सदस्यता प्रबंधित करें।"}},"it":{"stringUnit":{"state":"translated","value":"Gli abbonamenti Apple con rinnovo automatico non vengono annullati quando elimini l’account. Se necessario, gestisci l’abbonamento nell’App Store."}},"ja":{"stringUnit":{"state":"translated","value":"アカウントを削除しても Apple の自動更新サブスクリプションは自動的に解約されません。必要に応じて App Store でサブスクリプションを管理してください。"}},"pt-BR":{"stringUnit":{"state":"translated","value":"As assinaturas Apple com renovação automática não são canceladas ao excluir a conta. Se necessário, gerencie sua assinatura na App Store."}},"zh-Hans":{"stringUnit":{"state":"translated","value":"Apple 自动续订不会随账号删除自动取消，如有需要请在 App Store 中管理订阅。"}}}},
+    "你已退出登录。账号与个人信息预计在 %d 天内完成删除。" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Du wurdest abgemeldet. Dein Account und deine personenbezogenen Daten werden voraussichtlich innerhalb von %d Tagen gelöscht."}},"en":{"stringUnit":{"state":"translated","value":"You have been signed out. Your account and personal information are expected to be deleted within %d days."}},"es":{"stringUnit":{"state":"translated","value":"Has cerrado sesión. Se espera que tu cuenta y tus datos personales se eliminen en un plazo de %d días."}},"fr":{"stringUnit":{"state":"translated","value":"Vous avez été déconnecté. Votre compte et vos informations personnelles devraient être supprimés sous %d jours."}},"hi":{"stringUnit":{"state":"translated","value":"आप साइन आउट हो गए हैं। आपका खाता और व्यक्तिगत जानकारी %d दिनों के भीतर हटाए जाने की उम्मीद है।"}},"it":{"stringUnit":{"state":"translated","value":"Hai effettuato la disconnessione. L’account e le informazioni personali dovrebbero essere eliminati entro %d giorni."}},"ja":{"stringUnit":{"state":"translated","value":"サインアウトしました。アカウントと個人情報は %d 日以内に削除される予定です。"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Você saiu da conta. Sua conta e suas informações pessoais devem ser excluídas em até %d dias."}},"zh-Hans":{"stringUnit":{"state":"translated","value":"你已退出登录。账号与个人信息预计在 %d 天内完成删除。"}}}},
+    "你已退出登录，账号删除请求已受理。" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Du wurdest abgemeldet. Dein Antrag auf Accountlöschung wurde angenommen."}},"en":{"stringUnit":{"state":"translated","value":"You have been signed out. Your account deletion request has been accepted."}},"es":{"stringUnit":{"state":"translated","value":"Has cerrado sesión. Se aceptó tu solicitud de eliminación de la cuenta."}},"fr":{"stringUnit":{"state":"translated","value":"Vous avez été déconnecté. Votre demande de suppression de compte a été acceptée."}},"hi":{"stringUnit":{"state":"translated","value":"आप साइन आउट हो गए हैं। आपका खाता हटाने का अनुरोध स्वीकार कर लिया गया है।"}},"it":{"stringUnit":{"state":"translated","value":"Hai effettuato la disconnessione. La richiesta di eliminazione dell’account è stata accettata."}},"ja":{"stringUnit":{"state":"translated","value":"サインアウトしました。アカウント削除リクエストを受け付けました。"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Você saiu da conta. Sua solicitação de exclusão da conta foi aceita."}},"zh-Hans":{"stringUnit":{"state":"translated","value":"你已退出登录，账号删除请求已受理。"}}}},
+    "提交后会立即退出登录，账号与个人信息将按服务端告知的期限删除。Apple 自动续订和退款不会随账号注销自动处理。" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Nach dem Absenden wirst du sofort abgemeldet. Account und personenbezogene Daten werden innerhalb der vom Server angegebenen Frist gelöscht. Automatische Apple-Verlängerungen und Erstattungen werden durch die Accountlöschung nicht automatisch bearbeitet."}},"en":{"stringUnit":{"state":"translated","value":"After submitting, you will be signed out immediately. Your account and personal information will be deleted within the timeframe provided by the server. Apple auto-renewals and refunds are not handled automatically when you delete your account."}},"es":{"stringUnit":{"state":"translated","value":"Después de enviar la solicitud, cerrarás sesión de inmediato. Tu cuenta y tus datos personales se eliminarán en el plazo indicado por el servidor. Las renovaciones automáticas y los reembolsos de Apple no se procesan automáticamente al eliminar la cuenta."}},"fr":{"stringUnit":{"state":"translated","value":"Après l’envoi, vous serez immédiatement déconnecté. Votre compte et vos informations personnelles seront supprimés dans le délai indiqué par le serveur. Les renouvellements automatiques et remboursements Apple ne sont pas traités automatiquement lors de la suppression du compte."}},"hi":{"stringUnit":{"state":"translated","value":"सबमिट करने के बाद आप तुरंत साइन आउट हो जाएँगे। आपका खाता और व्यक्तिगत जानकारी सर्वर द्वारा बताई गई अवधि में हटा दी जाएगी। खाता हटाने पर Apple के स्वतः नवीनीकरण और रिफ़ंड अपने-आप संसाधित नहीं होते।"}},"it":{"stringUnit":{"state":"translated","value":"Dopo l’invio verrai disconnesso immediatamente. L’account e le informazioni personali saranno eliminati entro il termine indicato dal server. I rinnovi automatici e i rimborsi Apple non vengono gestiti automaticamente con l’eliminazione dell’account."}},"ja":{"stringUnit":{"state":"translated","value":"送信後すぐにサインアウトします。アカウントと個人情報はサーバーが案内する期間内に削除されます。Apple の自動更新や返金は、アカウントを削除しても自動処理されません。"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Após o envio, você sairá da conta imediatamente. Sua conta e suas informações pessoais serão excluídas no prazo informado pelo servidor. As renovações automáticas e os reembolsos Apple não são processados automaticamente com a exclusão da conta."}},"zh-Hans":{"stringUnit":{"state":"translated","value":"提交后会立即退出登录，账号与个人信息将按服务端告知的期限删除。Apple 自动续订和退款不会随账号注销自动处理。"}}}},
+    "注销申请已提交" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Antrag auf Accountlöschung gesendet"}},"en":{"stringUnit":{"state":"translated","value":"Account deletion request submitted"}},"es":{"stringUnit":{"state":"translated","value":"Solicitud de eliminación de la cuenta enviada"}},"fr":{"stringUnit":{"state":"translated","value":"Demande de suppression de compte envoyée"}},"hi":{"stringUnit":{"state":"translated","value":"खाता हटाने का अनुरोध सबमिट किया गया"}},"it":{"stringUnit":{"state":"translated","value":"Richiesta di eliminazione dell’account inviata"}},"ja":{"stringUnit":{"state":"translated","value":"アカウント削除リクエストを送信しました"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Solicitação de exclusão da conta enviada"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"注销申请已提交"}}}},
+    "知道了" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Verstanden"}},"en":{"stringUnit":{"state":"translated","value":"Got It"}},"es":{"stringUnit":{"state":"translated","value":"Entendido"}},"fr":{"stringUnit":{"state":"translated","value":"Compris"}},"hi":{"stringUnit":{"state":"translated","value":"समझ गया"}},"it":{"stringUnit":{"state":"translated","value":"Ho capito"}},"ja":{"stringUnit":{"state":"translated","value":"了解"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Entendi"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"知道了"}}}},
+    "关于" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Über"}},"en":{"stringUnit":{"state":"translated","value":"About"}},"es":{"stringUnit":{"state":"translated","value":"Acerca de"}},"fr":{"stringUnit":{"state":"translated","value":"À propos"}},"hi":{"stringUnit":{"state":"translated","value":"परिचय"}},"it":{"stringUnit":{"state":"translated","value":"Informazioni"}},"ja":{"stringUnit":{"state":"translated","value":"このアプリについて"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Sobre"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"关于"}}}},
+    "ICP备案" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"ICP-Registrierung"}},"en":{"stringUnit":{"state":"translated","value":"ICP Filing"}},"es":{"stringUnit":{"state":"translated","value":"Registro ICP"}},"fr":{"stringUnit":{"state":"translated","value":"Enregistrement ICP"}},"hi":{"stringUnit":{"state":"translated","value":"ICP फ़ाइलिंग"}},"it":{"stringUnit":{"state":"translated","value":"Registrazione ICP"}},"ja":{"stringUnit":{"state":"translated","value":"ICP 登録"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Registro ICP"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"ICP备案"}}}},
+    "点击备案号可前往工业和信息化部备案管理系统查询。" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Tippe auf die Registrierungsnummer, um sie im ICP-System des chinesischen Ministeriums für Industrie und Informationstechnologie nachzuschlagen."}},"en":{"stringUnit":{"state":"translated","value":"Tap the filing number to look it up in China’s Ministry of Industry and Information Technology ICP system."}},"es":{"stringUnit":{"state":"translated","value":"Toca el número de registro para consultarlo en el sistema ICP del Ministerio de Industria y Tecnología de la Información de China."}},"fr":{"stringUnit":{"state":"translated","value":"Touchez le numéro d’enregistrement pour le consulter dans le système ICP du ministère chinois de l’Industrie et des Technologies de l’information."}},"hi":{"stringUnit":{"state":"translated","value":"चीन के उद्योग और सूचना प्रौद्योगिकी मंत्रालय की ICP प्रणाली में जाँचने के लिए फ़ाइलिंग नंबर पर टैप करें।"}},"it":{"stringUnit":{"state":"translated","value":"Tocca il numero di registrazione per consultarlo nel sistema ICP del Ministero cinese dell’Industria e della Tecnologia dell’informazione."}},"ja":{"stringUnit":{"state":"translated","value":"登録番号をタップすると、中国工業情報化部の ICP 登録管理システムで確認できます。"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Toque no número de registro para consultá-lo no sistema ICP do Ministério da Indústria e Tecnologia da Informação da China."}},"zh-Hans":{"stringUnit":{"state":"translated","value":"点击备案号可前往工业和信息化部备案管理系统查询。"}}}},
+    "购买未完成" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Kauf nicht abgeschlossen"}},"en":{"stringUnit":{"state":"translated","value":"Purchase Not Completed"}},"es":{"stringUnit":{"state":"translated","value":"Compra no completada"}},"fr":{"stringUnit":{"state":"translated","value":"Achat non terminé"}},"hi":{"stringUnit":{"state":"translated","value":"खरीद पूरी नहीं हुई"}},"it":{"stringUnit":{"state":"translated","value":"Acquisto non completato"}},"ja":{"stringUnit":{"state":"translated","value":"購入が完了していません"}},"pt-BR":{"stringUnit":{"state":"translated","value":"Compra não concluída"}},"zh-Hans":{"stringUnit":{"state":"translated","value":"购买未完成"}}}},
+    "购买尚未完成。请稍后重试；若交易正在等待批准，获批后会员会自动生效。" : {"localizations":{"de":{"stringUnit":{"state":"translated","value":"Der Kauf ist noch nicht abgeschlossen. Versuche es später erneut. Wenn die Transaktion auf eine Genehmigung wartet, wird Pro nach der Freigabe automatisch aktiviert."}},"en":{"stringUnit":{"state":"translated","value":"The purchase has not completed. Try again later. If the transaction is awaiting approval, Pro will activate automatically once approved."}},"es":{"stringUnit":{"state":"translated","value":"La compra no se ha completado. Inténtalo más tarde. Si la transacción espera aprobación, Pro se activará automáticamente cuando se apruebe."}},"fr":{"stringUnit":{"state":"translated","value":"L’achat n’est pas terminé. Réessayez plus tard. Si la transaction attend une approbation, Pro s’activera automatiquement après validation."}},"hi":{"stringUnit":{"state":"translated","value":"खरीद अभी पूरी नहीं हुई है। बाद में फिर कोशिश करें। यदि लेन-देन अनुमोदन की प्रतीक्षा में है, तो मंज़ूरी मिलते ही Pro अपने-आप सक्रिय हो जाएगा।"}},"it":{"stringUnit":{"state":"translated","value":"L’acquisto non è stato completato. Riprova più tardi. Se la transazione è in attesa di approvazione, Pro si attiverà automaticamente dopo l’approvazione."}},"ja":{"stringUnit":{"state":"translated","value":"購入はまだ完了していません。後でもう一度お試しください。承認待ちの場合は、承認後に Pro が自動で有効になります。"}},"pt-BR":{"stringUnit":{"state":"translated","value":"A compra ainda não foi concluída. Tente novamente mais tarde. Se a transação estiver aguardando aprovação, o Pro será ativado automaticamente após a aprovação."}},"zh-Hans":{"stringUnit":{"state":"translated","value":"购买尚未完成。请稍后重试；若交易正在等待批准，获批后会员会自动生效。"}}}},
     "快捷指令文本" : {
       "localizations" : {
         "de" : { "stringUnit" : { "state" : "translated", "value" : "Kurzbefehle-Text" } },

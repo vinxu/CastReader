@@ -1,10 +1,4 @@
 {
-  "name": {
-    "message": "CastReader – Read Aloud & AI Explain"
-  },
-  "description": {
-    "message": "Read webpages, PDFs and Kindle aloud with synced highlights and AI explanations in 9 languages."
-  },
   "extName": {
     "message": "CastReader — Text to Speech, Read Aloud + AI Explain"
   },

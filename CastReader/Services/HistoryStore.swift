@@ -230,42 +230,232 @@ final class HistoryStore: ObservableObject {
         records.filter { HistoryVisibilityContract.includes($0) }
     }
 
-    private let dir: URL
-    private let indexURL: URL
+    private enum StorageConfiguration {
+        case accountScoped(root: URL)
+        case fixed
+    }
+
+    /// A unique token is issued for every activation, including reactivating
+    /// the same storage ID. Async work must carry this value all the way to its
+    /// final write so a response started for one account can never land in a
+    /// subsequently activated account's directory.
+    private struct ActiveStorageScope: Equatable {
+        let token: UUID
+        let directory: URL
+
+        var indexURL: URL { directory.appendingPathComponent("index.json") }
+    }
+
+    private let storageConfiguration: StorageConfiguration
+    private var activeScope: ActiveStorageScope?
+    private var coverTasks: [UUID: Task<Void, Never>] = [:]
     private let performsCoverWork: Bool
+    private let coverDataLoader: @Sendable (URL) async -> Data?
 
     private convenience init() {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         self.init(
-            directory: docs.appendingPathComponent("History", isDirectory: true),
+            accountDataRoot: docs.appendingPathComponent("AccountData", isDirectory: true),
             performsCoverWork: true
         )
+    }
+
+    /// Account-scoped stores deliberately start inactive. In particular, this
+    /// initializer never opens the legacy Documents/History directory. The
+    /// caller must provide an opaque account storage ID before any history is
+    /// read or written.
+    init(
+        accountDataRoot: URL,
+        performsCoverWork: Bool = false,
+        coverDataLoader: (@Sendable (URL) async -> Data?)? = nil
+    ) {
+        storageConfiguration = .accountScoped(root: accountDataRoot)
+        activeScope = nil
+        self.performsCoverWork = performsCoverWork
+        self.coverDataLoader = coverDataLoader ?? { url in
+            try? await OwnedAPIURLSession.data(from: url).0
+        }
+        if performsCoverWork {
+            // Do not leave another account's Continue projection visible while
+            // the app is waiting for authentication to select a storage scope.
+            syncContinueSnapshots()
+        }
     }
 
     /// An isolated directory keeps HistoryStore contract tests away from the
     /// app's real Documents/History data. Cover work defaults off so tests do
     /// not launch unrelated metadata requests.
-    init(directory: URL, performsCoverWork: Bool = false) {
-        dir = directory
-        indexURL = dir.appendingPathComponent("index.json")
+    init(
+        directory: URL,
+        performsCoverWork: Bool = false,
+        coverDataLoader: (@Sendable (URL) async -> Data?)? = nil
+    ) {
+        storageConfiguration = .fixed
+        activeScope = ActiveStorageScope(token: UUID(), directory: directory)
         self.performsCoverWork = performsCoverWork
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        load()
+        self.coverDataLoader = coverDataLoader ?? { url in
+            try? await OwnedAPIURLSession.data(from: url).0
+        }
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        if let activeScope {
+            load(in: activeScope)
+        }
         if performsCoverWork {
             syncContinueSnapshots()
-            Task { await backfillCovers() }   // 给升级前的旧记录补封面 + web 真实标题（best-effort）
+            scheduleCoverWork { store, scope in
+                await store.backfillCovers(in: scope)
+            }
         }
     }
 
-    private func payloadURL(_ id: String) -> URL { dir.appendingPathComponent("\(id).payload") }
-    private func coverFileURL(_ id: String) -> URL { dir.appendingPathComponent("\(id).cover.jpg") }
+    /// Selects AccountData/<storageID>/History for the shared account-scoped
+    /// store. The ID is intentionally opaque here; HistoryStore only verifies
+    /// that it is one safe path component and never derives it from PII.
+    @discardableResult
+    func activateAccountScope(storageID: String) -> Bool {
+        guard case .accountScoped(let root) = storageConfiguration,
+              let directory = Self.accountHistoryDirectory(
+                  accountDataRoot: root,
+                  storageID: storageID
+            ) else {
+            if case .accountScoped = storageConfiguration {
+                deactivateAccountScope()
+            }
+            return false
+        }
+
+        activate(directory: directory)
+        return true
+    }
+
+    /// Compatibility spelling for callers adopting the generic activate /
+    /// deactivate store contract. Both entry points enforce the same scope.
+    @discardableResult
+    func activate(storageID: String) -> Bool {
+        activateAccountScope(storageID: storageID)
+    }
+
+#if DEBUG
+    /// Explicit compatibility hook for Debug UI tests that intentionally skip
+    /// the sign-in gate. Production builds have no API capable of activating
+    /// Documents/History, and normal Debug startup remains inactive too.
+    @discardableResult
+    func activateLegacyTestingScope() -> Bool {
+        guard case .accountScoped(let root) = storageConfiguration else {
+            return false
+        }
+        let legacyDirectory = root
+            .deletingLastPathComponent()
+            .appendingPathComponent("History", isDirectory: true)
+        activate(directory: legacyDirectory)
+        return true
+    }
+#endif
+
+    private func activate(directory: URL) {
+        invalidateCoverWork()
+        records = []
+        let scope = ActiveStorageScope(token: UUID(), directory: directory)
+        activeScope = scope
+        try? FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        load(in: scope)
+        if performsCoverWork {
+            syncContinueSnapshots()
+            scheduleCoverWork { store, capturedScope in
+                await store.backfillCovers(in: capturedScope)
+            }
+        }
+    }
+
+    /// Clears all in-memory account history without deleting any account or
+    /// legacy files. Fixed-directory stores are test/dependency injections and
+    /// retain their historical always-active behavior.
+    func deactivateAccountScope() {
+        guard case .accountScoped = storageConfiguration else { return }
+        invalidateCoverWork()
+        activeScope = nil
+        records = []
+        if performsCoverWork {
+            syncContinueSnapshots()
+        }
+    }
+
+    func deactivate() {
+        deactivateAccountScope()
+    }
+
+    nonisolated static func accountHistoryDirectory(
+        accountDataRoot: URL,
+        storageID: String
+    ) -> URL? {
+        guard !storageID.isEmpty,
+              storageID != ".",
+              storageID != "..",
+              storageID.utf8.count <= 255,
+              !storageID.contains("/"),
+              !storageID.contains("\\"),
+              !storageID.unicodeScalars.contains(where: {
+                  CharacterSet.controlCharacters.contains($0)
+              }) else {
+            return nil
+        }
+
+        let normalizedRoot = accountDataRoot.standardizedFileURL
+        let accountDirectory = normalizedRoot
+            .appendingPathComponent(storageID, isDirectory: true)
+            .standardizedFileURL
+        guard accountDirectory.deletingLastPathComponent().standardizedFileURL
+                == normalizedRoot else {
+            return nil
+        }
+        return accountDirectory.appendingPathComponent("History", isDirectory: true)
+    }
+
+    private func payloadURL(_ id: String, in scope: ActiveStorageScope) -> URL {
+        scope.directory.appendingPathComponent("\(id).payload")
+    }
+
+    private func coverFileURL(_ id: String, in scope: ActiveStorageScope) -> URL {
+        scope.directory.appendingPathComponent("\(id).cover.jpg")
+    }
+
+    private func isCurrent(_ scope: ActiveStorageScope) -> Bool {
+        activeScope?.token == scope.token
+    }
+
+    private func scheduleCoverWork(
+        _ operation: @escaping @MainActor (HistoryStore, ActiveStorageScope) async -> Void
+    ) {
+        guard let scope = activeScope else { return }
+        let taskID = UUID()
+        let task = Task { [weak self] in
+            guard let self else { return }
+            await operation(self, scope)
+            self.coverTasks.removeValue(forKey: taskID)
+        }
+        coverTasks[taskID] = task
+    }
+
+    private func invalidateCoverWork() {
+        coverTasks.values.forEach { $0.cancel() }
+        coverTasks.removeAll()
+    }
 
     /// Reads a legacy local payload only after checking its logical file size.
     /// `fileSize` remains the expanded logical size for sparse files, so an
     /// attacker cannot bypass this guard with a tiny on-disk allocation and
     /// force `Data(contentsOf:)` to reserve hundreds of megabytes.
     private func localPayloadData(_ id: String) -> Data? {
-        let url = payloadURL(id)
+        guard let scope = activeScope else { return nil }
+        return localPayloadData(id, in: scope)
+    }
+
+    private func localPayloadData(_ id: String, in scope: ActiveStorageScope) -> Data? {
+        guard isCurrent(scope) else { return nil }
+        let url = payloadURL(id, in: scope)
         guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
               values.isRegularFile == true,
               let fileSize = values.fileSize,
@@ -280,18 +470,20 @@ final class HistoryStore: ObservableObject {
     func coverURL(for rec: HistoryRecord) -> URL? {
         guard !rec.isRemoteReference,
               rec.sourceKind != .youtube,
-              let name = rec.coverPath, !name.isEmpty else { return nil }
-        let url = dir.appendingPathComponent(name)
+              let name = rec.coverPath, !name.isEmpty,
+              let scope = activeScope else { return nil }
+        let url = scope.directory.appendingPathComponent(name)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
-    private func load() {
-        guard let values = try? indexURL.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
+    private func load(in scope: ActiveStorageScope) {
+        guard isCurrent(scope),
+              let values = try? scope.indexURL.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
               values.isRegularFile == true,
               let fileSize = values.fileSize,
               fileSize >= 0,
               Int64(fileSize) <= DocumentResourceLimits.maximumInputBytes,
-              let data = try? Data(contentsOf: indexURL, options: .mappedIfSafe) else { return }
+              let data = try? Data(contentsOf: scope.indexURL, options: .mappedIfSafe) else { return }
 
         // Decode one envelope at a time. JSONDecoder's normal array witness is
         // all-or-nothing, which historically made one malformed record (or a
@@ -315,15 +507,19 @@ final class HistoryStore: ObservableObject {
             // Enforce bounded/private storage invariants during migration too.
             // Remote files stay provider-owned; YouTube transcripts and artwork
             // stay exclusively in the bounded YouTube cache.
-            try? FileManager.default.removeItem(at: payloadURL(records[index].id))
-            try? FileManager.default.removeItem(at: coverFileURL(records[index].id))
+            try? FileManager.default.removeItem(at: payloadURL(records[index].id, in: scope))
+            try? FileManager.default.removeItem(at: coverFileURL(records[index].id, in: scope))
             records[index].coverPath = nil
         }
     }
 
-    private func save(syncSystemContinue: Bool = true) {
+    private func save(
+        in scope: ActiveStorageScope? = nil,
+        syncSystemContinue: Bool = true
+    ) {
+        guard let scope = scope ?? activeScope, isCurrent(scope) else { return }
         if let data = try? JSONEncoder().encode(records) {
-            try? data.write(to: indexURL, options: .atomic)
+            try? data.write(to: scope.indexURL, options: .atomic)
         }
         if performsCoverWork, syncSystemContinue { syncContinueSnapshots() }
     }
@@ -351,6 +547,7 @@ final class HistoryStore: ObservableObject {
 
     /// 记录一次打开：新文档新增、已存在则更新时间并置顶。原始数据存 payload 供重开（web 仅记 URL）。
     func record(_ doc: ReadingDocument) {
+        guard let scope = activeScope else { return }
         let resolvedPersistencePolicy: DocumentPersistencePolicy = doc.origin == nil
             ? doc.persistencePolicy
             : .remoteReference
@@ -369,14 +566,14 @@ final class HistoryStore: ObservableObject {
             }
         }()
         if let payload {
-            try? payload.write(to: payloadURL(doc.id))
+            try? payload.write(to: payloadURL(doc.id, in: scope))
         } else if resolvedPersistencePolicy == .remoteReference
                     || doc.sourceKind == .youtube {
             // Cloud downloads are ephemeral parser inputs, while YouTube text
             // belongs to its bounded cache. Remove any stale duplicate payload
             // left by an older build or an ID collision.
-            try? FileManager.default.removeItem(at: payloadURL(doc.id))
-            try? FileManager.default.removeItem(at: coverFileURL(doc.id))
+            try? FileManager.default.removeItem(at: payloadURL(doc.id, in: scope))
+            try? FileManager.default.removeItem(at: coverFileURL(doc.id, in: scope))
         }
 
         let now = Date()
@@ -408,13 +605,15 @@ final class HistoryStore: ObservableObject {
         if let t = existing?.title, !t.isEmpty, rec.coverPath != nil { rec.title = t }  // 已抓到真实标题则保留
         records.removeAll { $0.id == doc.id }
         records.insert(rec, at: 0)
-        save()
+        save(in: scope)
 
         if performsCoverWork,
            !rec.isRemoteReference,
            rec.sourceKind != .youtube,
            rec.coverPath == nil {   // 首次记录 → 异步生成封面（+ web 抓取真实标题），best-effort，不阻塞打开
-            Task { await generateCover(for: doc) }
+            scheduleCoverWork { store, capturedScope in
+                await store.generateCover(for: doc, in: capturedScope)
+            }
         }
     }
 
@@ -478,10 +677,11 @@ final class HistoryStore: ObservableObject {
     /// Kindle 书本级历史：点击朗读/解读后写入顶部 Continue。这里保存的是书架 metadata，
     /// 不是某一页 OCR 临时文档，避免 MiniPlayer/锁屏/首页拿不到书封和真实书名。
     func recordKindleBook(_ book: KindleBook, language: String = Constants.TTS.defaultLanguage) {
+        guard let scope = activeScope else { return }
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         if let payload = try? encoder.encode(book) {
-            try? payload.write(to: payloadURL(book.id))
+            try? payload.write(to: payloadURL(book.id, in: scope))
         }
 
         let now = Date()
@@ -498,10 +698,16 @@ final class HistoryStore: ObservableObject {
         rec.coverPath = existing?.coverPath
         records.removeAll { $0.id == book.id }
         records.insert(rec, at: 0)
-        save()
+        save(in: scope)
 
         if performsCoverWork, rec.coverPath == nil || rec.coverPath == "" {
-            Task { await generateCoverFromURL(book.coverURL, id: book.id) }
+            scheduleCoverWork { store, capturedScope in
+                await store.generateCoverFromURL(
+                    book.coverURL,
+                    id: book.id,
+                    in: capturedScope
+                )
+            }
         }
     }
 
@@ -514,32 +720,35 @@ final class HistoryStore: ObservableObject {
     }
 
     func delete(_ id: String) {
+        guard let scope = activeScope else { return }
         records.removeAll { $0.id == id }
-        try? FileManager.default.removeItem(at: payloadURL(id))
-        try? FileManager.default.removeItem(at: coverFileURL(id))
-        save()
+        try? FileManager.default.removeItem(at: payloadURL(id, in: scope))
+        try? FileManager.default.removeItem(at: coverFileURL(id, in: scope))
+        save(in: scope)
     }
 
     /// Removes one library source without touching History records or payloads
     /// owned by any other reader channel.
     func deleteAll(sourceKind: ReadingSourceKind) {
+        guard let scope = activeScope else { return }
         let removed = records.filter { $0.sourceKind == sourceKind }
         guard !removed.isEmpty else { return }
         for record in removed {
-            try? FileManager.default.removeItem(at: payloadURL(record.id))
-            try? FileManager.default.removeItem(at: coverFileURL(record.id))
+            try? FileManager.default.removeItem(at: payloadURL(record.id, in: scope))
+            try? FileManager.default.removeItem(at: coverFileURL(record.id, in: scope))
         }
         records.removeAll { $0.sourceKind == sourceKind }
-        save()
+        save(in: scope)
     }
 
     func clearAll() {
+        guard let scope = activeScope else { return }
         for r in records {
-            try? FileManager.default.removeItem(at: payloadURL(r.id))
-            try? FileManager.default.removeItem(at: coverFileURL(r.id))
+            try? FileManager.default.removeItem(at: payloadURL(r.id, in: scope))
+            try? FileManager.default.removeItem(at: coverFileURL(r.id, in: scope))
         }
         records.removeAll()
-        save()
+        save(in: scope)
     }
 
     // MARK: - 封面 + 标题生成
@@ -547,26 +756,39 @@ final class HistoryStore: ObservableObject {
     /// 启动回填：给所有还没封面的历史项补封面 + web 真实标题（best-effort、串行、不阻塞 UI）。
     /// 让升级前已有的「继续看」卡片（如微信文章链接）也自动从 demo 的 host 文字升级为封面+标题。
     func backfillCovers() async {
-        for rec in records where !rec.isRemoteReference
-            && rec.sourceKind != .youtube
-            && rec.coverPath == nil {
-            await generateCoverFromRecord(rec)
+        guard let scope = activeScope else { return }
+        await backfillCovers(in: scope)
+    }
+
+    private func backfillCovers(in scope: ActiveStorageScope) async {
+        let candidates = records.filter { !$0.isRemoteReference
+            && $0.sourceKind != .youtube
+            && $0.coverPath == nil
+        }
+        for rec in candidates {
+            guard isCurrent(scope), !Task.isCancelled else { return }
+            await generateCoverFromRecord(rec, in: scope)
         }
     }
 
     /// 新打开文档时生成封面：用内存中的数据（含 epub 已解析的封面图段），最快。
-    private func generateCover(for doc: ReadingDocument) async {
-        guard doc.sourceKind != .youtube,
+    private func generateCover(
+        for doc: ReadingDocument,
+        in scope: ActiveStorageScope
+    ) async {
+        guard isCurrent(scope),
+              !Task.isCancelled,
+              doc.sourceKind != .youtube,
               doc.origin == nil,
               doc.persistencePolicy == .localPayload else { return }
         var imageData: Data?
         var title: String?
         if let coverURL = Self.makeURL(doc.coverURL) {
-            imageData = try? await URLSession.shared.data(from: coverURL).0
+            imageData = await coverDataLoader(coverURL)
             // A temporary CDN/network failure is not proof that this book has
             // no cover. Keep coverPath nil so opening it again can retry.
-            guard imageData != nil else { return }
-            finishCover(id: doc.id, imageData: imageData, title: nil)
+            guard imageData != nil, !Task.isCancelled else { return }
+            finishCover(id: doc.id, imageData: imageData, title: nil, in: scope)
             return
         }
         switch doc.sourceKind {
@@ -578,22 +800,30 @@ final class HistoryStore: ObservableObject {
         case .epub:  imageData = doc.paragraphs.first(where: { $0.type == .image && $0.imageData != nil })?.imageData
         case .text, .docx, .youtube: break
         }
-        finishCover(id: doc.id, imageData: imageData, title: title)
+        guard !Task.isCancelled else { return }
+        finishCover(id: doc.id, imageData: imageData, title: title, in: scope)
     }
 
     /// 回填路径：从历史记录 + payload 文件生成（无内存文档）。epub/docx/text 用渐变占位（不重解析大书）。
-    private func generateCoverFromRecord(_ rec: HistoryRecord) async {
-        guard !rec.isRemoteReference, rec.sourceKind != .youtube else { return }
+    private func generateCoverFromRecord(
+        _ rec: HistoryRecord,
+        in scope: ActiveStorageScope
+    ) async {
+        guard isCurrent(scope),
+              !Task.isCancelled,
+              !rec.isRemoteReference,
+              rec.sourceKind != .youtube else { return }
         var imageData: Data?
         var title: String?
         switch rec.sourceKind {
         case .web, .weread, .googleBooks, .kobo, .oreilly:
             (title, imageData) = await webCover(rec.sourceURL)
-        case .pdf:   if let d = localPayloadData(rec.id) { imageData = await Task.detached { Self.pdfFirstPageJPEG(d) }.value }
-        case .photo: imageData = localPayloadData(rec.id)
+        case .pdf:   if let d = localPayloadData(rec.id, in: scope) { imageData = await Task.detached { Self.pdfFirstPageJPEG(d) }.value }
+        case .photo: imageData = localPayloadData(rec.id, in: scope)
         case .epub, .docx, .kindle, .text, .youtube: break
         }
-        finishCover(id: rec.id, imageData: imageData, title: title)
+        guard !Task.isCancelled else { return }
+        finishCover(id: rec.id, imageData: imageData, title: title, in: scope)
     }
 
     /// web：抓 og:title + 下载 og:image 字节。
@@ -601,18 +831,25 @@ final class HistoryStore: ObservableObject {
         guard let urlString else { return (nil, nil) }
         let meta = await LinkMetadata.fetch(urlString)
         var img: Data?
-        if let s = meta.imageURL, let u = URL(string: s) { img = try? await URLSession.shared.data(from: u).0 }
+        if let s = meta.imageURL, let u = URL(string: s) {
+            img = await coverDataLoader(u)
+        }
         return (meta.title, img)
     }
 
-    private func generateCoverFromURL(_ urlString: String?, id: String) async {
+    private func generateCoverFromURL(
+        _ urlString: String?,
+        id: String,
+        in scope: ActiveStorageScope
+    ) async {
+        guard isCurrent(scope), !Task.isCancelled else { return }
         guard let url = Self.makeURL(urlString) else {
-            finishCover(id: id, imageData: nil, title: nil)
+            finishCover(id: id, imageData: nil, title: nil, in: scope)
             return
         }
-        let imageData = try? await URLSession.shared.data(from: url).0
-        guard imageData != nil else { return }
-        finishCover(id: id, imageData: imageData, title: nil)
+        let imageData = await coverDataLoader(url)
+        guard imageData != nil, !Task.isCancelled else { return }
+        finishCover(id: id, imageData: imageData, title: nil, in: scope)
     }
 
     private nonisolated static func makeURL(_ raw: String?) -> URL? {
@@ -623,32 +860,41 @@ final class HistoryStore: ObservableObject {
     }
 
     /// 落地封面 + 标题：写降采样 jpeg、置 coverPath（无图时置 "" 标记已尝试，用占位、不再重复抓取）。
-    private func finishCover(id: String, imageData: Data?, title: String?) {
-        guard let record = records.first(where: { $0.id == id }),
+    private func finishCover(
+        id: String,
+        imageData: Data?,
+        title: String?,
+        in scope: ActiveStorageScope
+    ) {
+        guard isCurrent(scope),
+              let record = records.first(where: { $0.id == id }),
               !record.isRemoteReference,
               record.sourceKind != .youtube else { return }
-        if let t = title { applyTitle(t, id: id) }
+        if let t = title { applyTitle(t, id: id, in: scope) }
         var savedName = ""
         if let data = imageData, let down = EpubImageDecoder.downsampled(data, maxPixel: 640),
            let jpeg = down.jpegData(compressionQuality: 0.72) {
-            try? jpeg.write(to: coverFileURL(id))
-            savedName = coverFileURL(id).lastPathComponent
+            let url = coverFileURL(id, in: scope)
+            try? jpeg.write(to: url)
+            savedName = url.lastPathComponent
         }
-        applyCover(savedName, id: id)
+        applyCover(savedName, id: id, in: scope)
     }
 
-    private func applyTitle(_ title: String, id: String) {
-        guard let idx = records.firstIndex(where: { $0.id == id }) else { return }
+    private func applyTitle(_ title: String, id: String, in scope: ActiveStorageScope) {
+        guard isCurrent(scope),
+              let idx = records.firstIndex(where: { $0.id == id }) else { return }
         let clean = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return }
         records[idx].title = clean
-        save()
+        save(in: scope)
     }
 
-    private func applyCover(_ name: String, id: String) {
-        guard let idx = records.firstIndex(where: { $0.id == id }) else { return }
+    private func applyCover(_ name: String, id: String, in scope: ActiveStorageScope) {
+        guard isCurrent(scope),
+              let idx = records.firstIndex(where: { $0.id == id }) else { return }
         records[idx].coverPath = name
-        save()
+        save(in: scope)
     }
 
     /// PDF 首页渲染为 JPEG（白底、长边 640）。
@@ -671,6 +917,7 @@ final class HistoryStore: ObservableObject {
     /// 从历史项重建可播放文档（id 沿用 rec.id，保证重开后 record 是更新而非新增）。photo 需重新 OCR，故 async。
     func reopen(_ rec: HistoryRecord) async throws -> ReadingDocument? {
         try Task.checkCancellation()
+        guard let scope = activeScope, records.contains(rec) else { return nil }
         // Cloud records deliberately have no local payload. Returning nil is
         // an explicit contract for the caller to invoke its provider reopen
         // flow instead of treating the missing payload as file corruption.
@@ -684,6 +931,7 @@ final class HistoryStore: ObservableObject {
                   let transcript = await cache.transcript(for: key) else {
                 return nil
             }
+            guard isCurrent(scope), records.contains(rec) else { return nil }
             var document = YouTubeReadingDocumentBuilder.make(
                 transcript: transcript,
                 cacheHit: true
@@ -793,6 +1041,7 @@ final class HistoryStore: ObservableObject {
                 title: rec.title,
                 fallbackTitle: rec.title
             ) else { return nil }
+            guard isCurrent(scope), records.contains(rec) else { return nil }
             return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .pdf, language: built.language,
                                    paragraphs: built.paragraphs, fileData: data)
         case .docx:
@@ -816,7 +1065,9 @@ final class HistoryStore: ObservableObject {
             guard let data = localPayloadData(rec.id), let img = UIImage(data: data) else { return nil }
             let cap = CaptureFlowViewModel()
             await cap.process(image: img)
-            guard let built = cap.document else { return nil }
+            guard isCurrent(scope), records.contains(rec), let built = cap.document else {
+                return nil
+            }
             return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .photo, language: built.language,
                                    paragraphs: built.paragraphs, imageData: built.imageData, imagePixelSize: built.imagePixelSize)
         }
@@ -832,7 +1083,13 @@ enum LinkMetadata {
         var req = URLRequest(url: url, timeoutInterval: 12)
         req.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/604.1",
                      forHTTPHeaderField: "User-Agent")
-        guard let (data, resp) = try? await URLSession.shared.data(for: req) else { return (nil, nil) }
+        guard let routedURL = OwnedAPIRedirectPolicy.routedResponseURL(url) else {
+            return (nil, nil)
+        }
+        req.url = routedURL
+        guard let (data, resp) = try? await OwnedAPIURLSession.shared.data(for: req) else {
+            return (nil, nil)
+        }
         let finalURL = resp.url ?? url
         // 仅取前 ~400KB（<head> 足够），兼容非 UTF-8 用 lossy 解码。
         let head = data.prefix(400_000)

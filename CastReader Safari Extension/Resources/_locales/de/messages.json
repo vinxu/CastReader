@@ -1,10 +1,4 @@
 {
-  "name": {
-    "message": "CastReader – Vorlesen & KI-Erklärung"
-  },
-  "description": {
-    "message": "Webseiten, PDFs und Kindle mit synchronen Hervorhebungen vorlesen und per KI erklären lassen."
-  },
   "extName": {
     "message": "CastReader — Vorlesen + KI-Erklärung"
   },

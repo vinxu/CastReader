@@ -434,6 +434,7 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     let webView: WKWebView
     private var didLoad = false
     private let store = KindleLibraryStore.shared
+    private let accountBoundaryToken = AccountContentIsolation.captureBoundaryToken()
     private var onboardingAutomationTask: Task<Void, Never>?
     private var onboardingAttemptID = 0
     private var onboardingAutomationEnabled = false
@@ -458,7 +459,7 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         entryTapAlreadyTracked: Bool
     ) {
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = .default()
+        config.websiteDataStore = CommercialWebSession.websiteDataStore
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         webView = WKWebView(frame: .zero, configuration: config)
         connectionAnalytics = AnalyticsLibraryConnectionRecorder(
@@ -692,6 +693,10 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         lightPass: Bool = false,
         expectedOnboardingAttemptID: Int? = nil
     ) async {
+        guard let accountBoundaryToken,
+              AccountContentIsolation.isCurrent(accountBoundaryToken) else {
+            return
+        }
         if let expectedOnboardingAttemptID,
            expectedOnboardingAttemptID != onboardingAttemptID {
             return
@@ -822,7 +827,8 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             }
 
             let books = Array(byID.values)
-            guard store.boundStorefrontID == expectedStorefrontID,
+            guard AccountContentIsolation.isCurrent(accountBoundaryToken),
+                  store.boundStorefrontID == expectedStorefrontID,
                   expectedOnboardingAttemptID.map({ $0 == onboardingAttemptID }) ?? true else {
                 return
             }

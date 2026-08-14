@@ -355,6 +355,7 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     @Published private(set) var onboardingState: BoundLibraryOnboardingConnectionState = .idle
     let webView: WKWebView
     private let store = WeReadLibraryStore.shared
+    private let accountBoundaryToken = AccountContentIsolation.captureBoundaryToken()
     private var didLoad = false
     private var pendingBooks: [String: WeReadBook] = [:]
     private var pendingAccount: WeReadAccountInfo?
@@ -403,7 +404,7 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             session: analyticsSession,
             entryTapAlreadyTracked: entryTapAlreadyTracked
         )
-        let config = WKWebViewConfiguration(); config.websiteDataStore = .default(); config.defaultWebpagePreferences.preferredContentMode = .desktop
+        let config = WKWebViewConfiguration(); config.websiteDataStore = CommercialWebSession.websiteDataStore; config.defaultWebpagePreferences.preferredContentMode = .desktop
         config.userContentController.addUserScript(
             WKUserScript(
                 source: WeReadWebScripts.serverPolledLoginPresentation,
@@ -788,9 +789,16 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     }
 
     func syncLibrary() async -> Bool {
+        guard let accountBoundaryToken,
+              AccountContentIsolation.isCurrent(accountBoundaryToken) else {
+            return false
+        }
         guard !isSyncing else { return false }
         connectionAnalytics.record(.syncStarted, result: .started)
         if pendingBooks.isEmpty { await refreshPreview() }
+        guard AccountContentIsolation.isCurrent(accountBoundaryToken) else {
+            return false
+        }
         guard !pendingBooks.isEmpty else {
             connectionAnalytics.record(
                 .failed,

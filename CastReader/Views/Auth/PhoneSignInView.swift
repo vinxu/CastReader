@@ -5,7 +5,7 @@
 //  中国区手机号登录。
 //
 //  合规要点（国内应用商店会逐条检查）：
-//  - 隐私协议勾选框**默认不勾选**，未勾选时「获取验证码」不可点；
+//  - 仅能从已完成协议确认的中国区登录页进入；这里再次防御性校验；
 //  - 页面上不展示完整手机号以外的任何身份信息，日志与埋点不含号码；
 //  - 提供明确的错误原因与重试路径。
 //
@@ -13,12 +13,13 @@
 import SwiftUI
 
 struct PhoneSignInView: View {
+    let hasAcceptedTerms: Bool
+
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var auth = AuthService.shared
 
     @State private var phone = ""
     @State private var code = ""
-    @State private var agreedToTerms = false
     @State private var countdown = PhoneResendCountdown()
     @State private var remainingSeconds = 0
     @State private var hasRequestedCode = false
@@ -40,10 +41,13 @@ struct PhoneSignInView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     header
                     phoneField
-                    if hasRequestedCode { codeField }
+                    // Keep verification available independently of the send
+                    // request. A user may already have a valid SMS while a
+                    // resend is rate-limited or the gateway is temporarily
+                    // unreachable.
+                    codeField
                     if let noticeMessage { noticeBanner(noticeMessage) }
                     if let errorMessage { errorBanner(errorMessage) }
-                    agreementRow
                     primaryButton
                 }
                 .padding(20)
@@ -121,8 +125,18 @@ struct PhoneSignInView: View {
                 }
                 .accessibilityIdentifier("phoneSignIn.codeField")
 
-            Button(resendTitle) {
+            Button {
                 Task { await requestCode() }
+            } label: {
+                HStack(spacing: 6) {
+                    if isSending {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(AppTheme.primaryText)
+                    }
+                    Text(resendTitle)
+                        .lineLimit(1)
+                }
             }
             .font(.subheadline.weight(.semibold))
             .foregroundColor(canResend ? AppTheme.primaryText : AppTheme.mutedForeground)
@@ -160,37 +174,17 @@ struct PhoneSignInView: View {
         .accessibilityIdentifier("phoneSignIn.notice")
     }
 
-    private var agreementRow: some View {
-        Button {
-            agreedToTerms.toggle()
-        } label: {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: agreedToTerms ? "checkmark.square.fill" : "square")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(agreedToTerms ? AppTheme.primary : AppTheme.mutedForeground)
-                Text(AppLocalized("我已阅读并同意《服务条款》和《隐私政策》"))
-                    .font(.footnote)
-                    .foregroundColor(AppTheme.mutedForeground)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("phoneSignIn.agreement")
-        .accessibilityValue(agreedToTerms ? "checked" : "unchecked")
-    }
-
     @ViewBuilder
     private var primaryButton: some View {
         VStack(spacing: 10) {
             Button {
-                Task { hasRequestedCode ? await submit() : await requestCode() }
+                Task { await submit() }
             } label: {
                 HStack(spacing: 8) {
-                    if auth.isWorking || isSending {
+                    if auth.isWorking {
                         ProgressView().tint(AppTheme.buttonPrimaryForeground)
                     }
-                    Text(hasRequestedCode ? AppLocalized("登录") : AppLocalized("获取验证码"))
+                    Text(AppLocalized("登录"))
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
@@ -218,27 +212,38 @@ struct PhoneSignInView: View {
         ChinaPhoneNumber.normalize(phone) != nil
     }
 
-    /// 未勾选协议一律不可点——这是合规硬要求，不能只做提示。
+    /// The outcome of a prior send is deliberately not part of this gate, so an
+    /// existing code remains usable after failure/rate-limit. Only an in-flight
+    /// send pauses submission to avoid racing a challenge replacement.
     private var primaryEnabled: Bool {
-        guard agreedToTerms, isPhoneValid, !auth.isWorking, !isSending else { return false }
-        if hasRequestedCode { return PhoneVerificationCode.isComplete(code) }
-        return countdown.canResend()
+        hasAcceptedTerms
+            && isPhoneValid
+            && PhoneVerificationCode.isComplete(code)
+            && !auth.isWorking
+            && !isSending
     }
 
     private var canResend: Bool {
-        agreedToTerms && isPhoneValid && remainingSeconds == 0 && !isSending
+        hasAcceptedTerms
+            && isPhoneValid
+            && remainingSeconds == 0
+            && !auth.isWorking
+            && !isSending
     }
 
     private var resendTitle: String {
-        remainingSeconds > 0
-            ? String(format: AppLocalized("%d 秒后重发"), remainingSeconds)
-            : AppLocalized("重新获取")
+        if remainingSeconds > 0 {
+            return String(format: AppLocalized("%d 秒后重发"), remainingSeconds)
+        }
+        return hasRequestedCode
+            ? AppLocalized("重新获取")
+            : AppLocalized("获取验证码")
     }
 
     // MARK: - 动作
 
     private func requestCode() async {
-        guard agreedToTerms else {
+        guard hasAcceptedTerms else {
             errorMessage = AppLocalized("请先阅读并同意服务条款和隐私政策")
             return
         }
@@ -275,6 +280,14 @@ struct PhoneSignInView: View {
     }
 
     private func submit() async {
+        guard hasAcceptedTerms else {
+            errorMessage = AppLocalized("请先阅读并同意服务条款和隐私政策")
+            return
+        }
+        guard isPhoneValid else {
+            errorMessage = PhoneAuthError.invalidPhone.errorDescription
+            return
+        }
         guard PhoneVerificationCode.isComplete(code) else {
             errorMessage = PhoneAuthError.invalidCode.errorDescription
             return
@@ -288,6 +301,8 @@ struct PhoneSignInView: View {
                 code = ""
                 focusedField = .code
             }
+        } catch let error as AuthError {
+            errorMessage = error.errorDescription
         } catch {
             errorMessage = PhoneAuthError.network.errorDescription
         }

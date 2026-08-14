@@ -2,8 +2,9 @@
 //  ProBackendService.swift
 //  CastReader
 //
-//  账号/Pro 后端（readout-web，公开端点）。device_id 即可查询；登录后附带 user_id。
-//  /api/pro/status（GET）、/api/pro/listen-track（POST）。
+//  Build-39 原生账号/Pro 后端。cms_ session 是唯一账号权威；客户端不再把
+//  user_id/email 送到旧公开接口。服务端只从 cms_ 的 canonical user 和 ingress
+//  route 派生额度主体；客户端 device id 仅作为向后兼容字段，不能改变额度归属。
 //
 
 import Foundation
@@ -23,6 +24,29 @@ struct ProStatusDTO: Decodable, Equatable {
     let listenSeconds: Int?
     let listenLimit: Int?
     let listenRemaining: Int?
+    let resolvedUserId: String?
+
+    init(
+        pro: Bool,
+        plan: String?,
+        account: ProAccountDTO?,
+        freeRemaining: Int?,
+        freeMax: Int?,
+        listenSeconds: Int?,
+        listenLimit: Int?,
+        listenRemaining: Int?,
+        resolvedUserId: String? = nil
+    ) {
+        self.pro = pro
+        self.plan = plan
+        self.account = account
+        self.freeRemaining = freeRemaining
+        self.freeMax = freeMax
+        self.listenSeconds = listenSeconds
+        self.listenLimit = listenLimit
+        self.listenRemaining = listenRemaining
+        self.resolvedUserId = resolvedUserId
+    }
 }
 
 private struct ProStatusEnvelopeDTO: Decodable {
@@ -39,48 +63,76 @@ extension ProStatusDTO {
     }
 }
 
+enum ProStatusFetchOutcome: Equatable {
+    case success(ProStatusDTO)
+    case unauthorized(rejectedToken: String?)
+    case unavailable
+}
+
 actor ProBackendService {
     static let shared = ProBackendService()
-    private init() {}
+    private let session: URLSession
+
+    private init(session: URLSession = OwnedAPIURLSession.shared) {
+        self.session = session
+    }
 
     /// 稳定设备 id（复用 visitor id）。
     static var deviceId: String {
         StableDeviceID.current
     }
 
-    /// 查询 Pro/额度。登录后同时传 user_id 和 email，避免跨端订阅只绑定在 Web user/device 上时漏判。
-    func fetchStatus(userId: String?, email: String?) async -> ProStatusDTO? {
-        var comps = URLComponents(string: Constants.API.proStatus)
-        var items = [
+    /// 查询 Pro/额度。账号只由 cms_ session 解析；query 不包含 user_id/email，
+    /// 服务端也不会把可轮换的 device_id 当作 v2 额度主键。
+    func fetchStatus() async -> ProStatusFetchOutcome {
+        guard var comps = URLComponents(string: Constants.API.mobileProStatusV2) else {
+            return .unavailable
+        }
+        comps.queryItems = [
             URLQueryItem(name: "device_id", value: Self.deviceId),
             URLQueryItem(name: "local_date", value: Self.localDay())
         ]
-        if let userId = userId, !userId.isEmpty {
-            items.append(URLQueryItem(name: "user_id", value: userId))
+        guard let url = comps.url else { return .unavailable }
+        return await performStatus(url: url, canRefreshSession: true)
+    }
+
+    private func performStatus(
+        url: URL,
+        canRefreshSession: Bool
+    ) async -> ProStatusFetchOutcome {
+        var token = await MobileSessionStore.shared.sessionToken()
+        if token == nil, canRefreshSession {
+            token = await MobileSessionStore.shared.refreshSession()
         }
-        if let email = email?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !email.isEmpty {
-            items.append(URLQueryItem(name: "email", value: email.lowercased()))
+        guard let token, !token.isEmpty else {
+            Self.debugLog("status BLOCK mobile-session-missing")
+            return .unauthorized(rejectedToken: nil)
         }
-        comps?.queryItems = items
-        guard let url = comps?.url else { return nil }
-        Self.debugLog("status START device=\(Self.redact(Self.deviceId)) user=\(Self.redact(userId)) email=\(Self.redactEmail(email))")
-        if email?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true {
-            Self.debugLog("status EMAIL missing; request is anonymous/quota-only")
-        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+        Self.debugLog("status-v2 START device=\(Self.redact(Self.deviceId))")
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
-            guard let http = response as? HTTPURLResponse else { return nil }
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return .unavailable }
+            if http.statusCode == 401 {
+                if canRefreshSession,
+                   await MobileSessionStore.shared.refreshSession() != nil {
+                    return await performStatus(url: url, canRefreshSession: false)
+                }
+                return .unauthorized(rejectedToken: token)
+            }
             guard (200..<300).contains(http.statusCode) else {
                 Self.debugLog("status HTTP \(http.statusCode) body=\(Self.preview(data))")
-                return nil
+                return .unavailable
             }
             let status = try ProStatusDTO.decodeServerResponse(from: data)
             Self.debugLog("status DONE pro=\(status.pro ? "Y" : "N") plan=\(status.plan ?? "nil") free=\(status.freeRemaining.map(String.init) ?? "nil") listen=\(status.listenRemaining.map(String.init) ?? "nil")")
-            return status
+            return .success(status)
         } catch {
             Self.debugLog("status FAIL error=\(error.localizedDescription)")
-            return nil   // fail-open
+            return .unavailable
         }
     }
 
@@ -121,7 +173,7 @@ actor ProBackendService {
             "local_date": Self.localDay()
         ])
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse else { return false }
             if http.statusCode == 401, canRefreshSession,
                await MobileSessionStore.shared.refreshSession() != nil {
@@ -130,6 +182,10 @@ actor ProBackendService {
                     url: url,
                     canRefreshSession: false
                 )
+            }
+            if http.statusCode == 401 {
+                await MobileSessionStore.shared.rejectSession(token)
+                return false
             }
             guard (200..<300).contains(http.statusCode) else {
                 Self.debugLog("verify-apple HTTP \(http.statusCode) body=\(Self.preview(data))")
@@ -149,30 +205,54 @@ actor ProBackendService {
         }
     }
 
-    /// 上报朗读秒数（增量）。fire-and-forget。
-    func trackListen(seconds: Int, userId: String?, email: String?) async {
-        guard seconds > 0, let url = URL(string: Constants.API.proListenTrack) else { return }
+    /// 上报朗读秒数（增量）。cms_ 过期时不回退旧公开 user_id 合同。
+    func trackListen(seconds: Int) async {
+        guard seconds > 0,
+              let url = URL(string: Constants.API.mobileProListenTrackV2) else { return }
+        await performListenTrack(seconds: seconds, url: url, canRefreshSession: true)
+    }
+
+    private func performListenTrack(
+        seconds: Int,
+        url: URL,
+        canRefreshSession: Bool
+    ) async {
+        var token = await MobileSessionStore.shared.sessionToken()
+        if token == nil, canRefreshSession {
+            token = await MobileSessionStore.shared.refreshSession()
+        }
+        guard let token, !token.isEmpty else {
+            Self.debugLog("track-v2 BLOCK mobile-session-missing")
+            return
+        }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        var body: [String: Any] = [
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+        let body: [String: Any] = [
             "device_id": Self.deviceId,
             "seconds": seconds,
             "local_date": Self.localDay()
         ]
-        if let userId = userId, !userId.isEmpty { body["user_id"] = userId }
-        if let email = email?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !email.isEmpty {
-            body["email"] = email.lowercased()
-        }
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        Self.debugLog("track START seconds=\(seconds) device=\(Self.redact(Self.deviceId)) user=\(Self.redact(userId)) email=\(Self.redactEmail(email))")
-        if email?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true {
-            Self.debugLog("track EMAIL missing; listen attribution is anonymous/quota-only")
-        }
+        Self.debugLog("track-v2 START seconds=\(seconds) device=\(Self.redact(Self.deviceId))")
         do {
-            let (data, response) = try await URLSession.shared.data(for: req)
+            let (data, response) = try await session.data(for: req)
             guard let http = response as? HTTPURLResponse else { return }
+            if http.statusCode == 401, canRefreshSession,
+               await MobileSessionStore.shared.refreshSession() != nil {
+                await performListenTrack(
+                    seconds: seconds,
+                    url: url,
+                    canRefreshSession: false
+                )
+                return
+            }
+            if http.statusCode == 401 {
+                await MobileSessionStore.shared.rejectSession(token)
+                return
+            }
             if !(200..<300).contains(http.statusCode) {
                 Self.debugLog("track HTTP \(http.statusCode) body=\(Self.preview(data))")
             }

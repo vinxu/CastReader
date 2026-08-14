@@ -10,6 +10,7 @@
 import Foundation
 import WebKit
 
+@MainActor
 enum KoboWebSession {
     /// Product requirement: commercial reading platforms that offer Google
     /// sign-in share the same browser profile. Cookie domain isolation remains
@@ -21,7 +22,12 @@ enum KoboWebSession {
 
 @MainActor
 final class KoboLibraryStore: ObservableObject {
-    static let shared = KoboLibraryStore()
+    static let shared = KoboLibraryStore(
+        defaults: .standard,
+        historyStore: .shared,
+        websiteDataStore: KoboWebSession.websiteDataStore,
+        usesLegacyStorageWhenUnscoped: false
+    )
 
     @Published private(set) var books: [KoboBook] = []
     @Published private(set) var hasConnected = false
@@ -31,14 +37,20 @@ final class KoboLibraryStore: ObservableObject {
     @Published var isRefreshing = false
     @Published var lastError: String?
 
-    private let booksKey = "kobo.library.books.v1"
-    private let connectedKey = "kobo.library.connected.v1"
-    private let accountKey = "kobo.library.account.v1"
-    private let accountIdentityKey = "kobo.library.accountIdentity.v1"
-    private let anchorsKey = "kobo.library.anchors.v1"
+    private enum Storage {
+        static let books = "kobo.library.books.v1"
+        static let connected = "kobo.library.connected.v1"
+        static let account = "kobo.library.account.v1"
+        static let accountIdentity = "kobo.library.accountIdentity.v1"
+        static let anchors = "kobo.library.anchors.v1"
+    }
+
     private let defaults: UserDefaults
     private let historyStore: HistoryStore
     private let sharedWebsiteDataStore: WKWebsiteDataStore
+    private let usesLegacyStorageWhenUnscoped: Bool
+    private var accountScope: AccountContentScope?
+    private var isLegacyTestingScopeActive = false
 
     convenience init(defaults: UserDefaults = .standard) {
         self.init(
@@ -62,13 +74,42 @@ final class KoboLibraryStore: ObservableObject {
     init(
         defaults: UserDefaults,
         historyStore: HistoryStore,
-        websiteDataStore: WKWebsiteDataStore
+        websiteDataStore: WKWebsiteDataStore,
+        usesLegacyStorageWhenUnscoped: Bool = true
     ) {
         self.defaults = defaults
         self.historyStore = historyStore
         self.sharedWebsiteDataStore = websiteDataStore
+        self.usesLegacyStorageWhenUnscoped = usesLegacyStorageWhenUnscoped
+        if usesLegacyStorageWhenUnscoped {
+            load()
+        } else {
+            resetInMemory()
+        }
+    }
+
+    func activateAccountScope(_ scope: AccountContentScope) {
+        guard accountScope != scope || !hasActiveStorage else { return }
+        resetInMemory()
+        isLegacyTestingScopeActive = false
+        accountScope = scope
         load()
     }
+
+    func deactivateAccountScope() {
+        resetInMemory()
+        isLegacyTestingScopeActive = false
+        accountScope = nil
+    }
+
+#if DEBUG
+    func activateLegacyTestingScope() {
+        resetInMemory()
+        accountScope = nil
+        isLegacyTestingScopeActive = true
+        load()
+    }
+#endif
 
     var needsConnection: Bool { !hasConnected && books.isEmpty }
 
@@ -313,16 +354,18 @@ final class KoboLibraryStore: ObservableObject {
     }
 
     private func load() {
-        hasConnected = defaults.bool(forKey: connectedKey)
-        accountLabel = defaults.string(forKey: accountKey)
-        let storedIdentity = defaults.string(forKey: accountIdentityKey)
+        resetInMemory()
+        guard hasActiveStorage else { return }
+        hasConnected = defaults.bool(forKey: storageKey(Storage.connected))
+        accountLabel = defaults.string(forKey: storageKey(Storage.account))
+        let storedIdentity = defaults.string(forKey: storageKey(Storage.accountIdentity))
         accountIdentity =
             KoboAccountIdentity.isValidStoredIdentity(storedIdentity)
                 ? storedIdentity
                 : nil
 
         var decodedBooks: [KoboBook] = []
-        if let data = defaults.data(forKey: booksKey),
+        if let data = defaults.data(forKey: storageKey(Storage.books)),
            let decoded = try? JSONDecoder().decode(
                [KoboBook].self,
                from: data
@@ -355,7 +398,7 @@ final class KoboLibraryStore: ObservableObject {
         }
 
         var sanitizedAnchors: [String: KoboReadingAnchor] = [:]
-        if let data = defaults.data(forKey: anchorsKey),
+        if let data = defaults.data(forKey: storageKey(Storage.anchors)),
            let decoded = try? JSONDecoder().decode(
                [String: KoboReadingAnchor].self,
                from: data
@@ -390,14 +433,33 @@ final class KoboLibraryStore: ObservableObject {
     }
 
     private func save() {
-        defaults.set(hasConnected, forKey: connectedKey)
-        defaults.set(accountLabel, forKey: accountKey)
-        defaults.set(accountIdentity, forKey: accountIdentityKey)
+        guard hasActiveStorage else { return }
+        defaults.set(hasConnected, forKey: storageKey(Storage.connected))
+        defaults.set(accountLabel, forKey: storageKey(Storage.account))
+        defaults.set(accountIdentity, forKey: storageKey(Storage.accountIdentity))
         if let data = try? JSONEncoder().encode(books) {
-            defaults.set(data, forKey: booksKey)
+            defaults.set(data, forKey: storageKey(Storage.books))
         }
         if let data = try? JSONEncoder().encode(anchors) {
-            defaults.set(data, forKey: anchorsKey)
+            defaults.set(data, forKey: storageKey(Storage.anchors))
         }
+    }
+
+    private var hasActiveStorage: Bool {
+        accountScope != nil || usesLegacyStorageWhenUnscoped || isLegacyTestingScopeActive
+    }
+
+    private func storageKey(_ legacyKey: String) -> String {
+        accountScope?.storageKey(legacyKey) ?? legacyKey
+    }
+
+    private func resetInMemory() {
+        books = []
+        hasConnected = false
+        accountLabel = nil
+        accountIdentity = nil
+        anchors = [:]
+        isRefreshing = false
+        lastError = nil
     }
 }

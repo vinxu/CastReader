@@ -197,9 +197,14 @@ final class EvalTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(rate, 0.75, "mark 锚定命中率 \(String(format: "%.2f", rate)) < 0.75（含归一化/【】/容错）")
     }
 
-    // MARK: - E 解读实网冒烟（best-effort：用全新 device 拿额度；402=额度用满→skip）
+    // MARK: - E 解读实网冒烟（显式 opt-in；用全新 device 拿额度；402=额度用满→skip）
 
     func testExplainAnchorRate_Live() async throws {
+        try XCTSkipUnless(
+            ProcessInfo.processInfo.environment["CASTREADER_LIVE_EVAL"] == "1",
+            "需要真实网络与已认证会话；仅在 CASTREADER_LIVE_EVAL=1 时手动运行"
+        )
+
         // 用全新 device-id 规避「免费每日额度用满返回 402」，跑完恢复原 visitor id 避免污染。
         let key = Constants.Storage.visitorIdKey
         let original = UserDefaults.standard.string(forKey: key)
@@ -249,6 +254,10 @@ final class EvalTests: XCTestCase {
     func testPrefetch_GeneratesNextParagraph() async throws {
         let doc = DocumentBuilder.fromMarkdown(prefetchMd, title: "t", sourceURL: nil, language: "zh")
         let vm = ReadAloudViewModel(document: doc)
+        defer {
+            _ = vm.stop()
+            vm.deactivate()
+        }
         let readable = vm.dbgReadableIndices
         guard readable.count >= 2 else { return XCTFail("[P] 可朗读段不足 2") }
 
@@ -269,6 +278,10 @@ final class EvalTests: XCTestCase {
     func testPrefetch_PromoteReusesCacheNoRegen() async throws {
         let doc = DocumentBuilder.fromMarkdown(prefetchMd, title: "t", sourceURL: nil, language: "zh")
         let vm = ReadAloudViewModel(document: doc)
+        defer {
+            _ = vm.stop()
+            vm.deactivate()
+        }
         let readable = vm.dbgReadableIndices
         guard readable.count >= 2 else { return XCTFail("[P] 可朗读段不足 2") }
 
@@ -294,6 +307,10 @@ final class EvalTests: XCTestCase {
     func testPrefetch_GenerateAutoTriggersPreload() async throws {
         let doc = DocumentBuilder.fromMarkdown(prefetchMd, title: "t", sourceURL: nil, language: "zh")
         let vm = ReadAloudViewModel(document: doc)
+        defer {
+            _ = vm.stop()
+            vm.deactivate()
+        }
         let readable = vm.dbgReadableIndices
         guard readable.count >= 2 else { return XCTFail("[P] 可朗读段不足 2") }
 

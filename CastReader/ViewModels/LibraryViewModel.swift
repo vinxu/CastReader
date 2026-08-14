@@ -11,20 +11,13 @@ class LibraryViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var error: String?
 
-    private let visitorService: VisitorService
-
-    init(visitorService: VisitorService = .shared) {
-        self.visitorService = visitorService
-    }
-
     func loadDocuments() async {
         print("📚 [LibraryViewModel] loadDocuments called")
-        print("📚 [LibraryViewModel] visitorId: \(visitorService.visitorId)")
         isLoading = true
         error = nil
 
         do {
-            documents = try await APIService.shared.fetchDocuments(userId: visitorService.visitorId)
+            documents = try await APIService.shared.fetchDocuments()
             print("📚 [LibraryViewModel] Loaded \(documents.count) documents")
         } catch {
             print("📚 [LibraryViewModel] Error: \(error)")

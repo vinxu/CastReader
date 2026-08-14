@@ -17,12 +17,52 @@ final class WeReadLibraryStore: ObservableObject {
     @Published var isRefreshing = false
     @Published var lastError: String?
 
-    private let booksKey = "weread.library.books.v1"
-    private let connectedKey = "weread.library.connected.v1"
-    private let accountKey = "weread.library.account.v1"
-    private let anchorsKey = "weread.library.anchors.v1"
+    private enum Storage {
+        static let books = "weread.library.books.v1"
+        static let connected = "weread.library.connected.v1"
+        static let account = "weread.library.account.v1"
+        static let anchors = "weread.library.anchors.v1"
+    }
 
-    private init() { load() }
+    private let defaults: UserDefaults
+    private let usesLegacyStorageWhenUnscoped: Bool
+    private var accountScope: AccountContentScope?
+    private var isLegacyTestingScopeActive = false
+
+    private init() {
+        defaults = .standard
+        usesLegacyStorageWhenUnscoped = false
+        resetInMemory()
+    }
+
+    init(defaults: UserDefaults) {
+        self.defaults = defaults
+        usesLegacyStorageWhenUnscoped = true
+        load()
+    }
+
+    func activateAccountScope(_ scope: AccountContentScope) {
+        guard accountScope != scope || !hasActiveStorage else { return }
+        resetInMemory()
+        isLegacyTestingScopeActive = false
+        accountScope = scope
+        load()
+    }
+
+    func deactivateAccountScope() {
+        resetInMemory()
+        isLegacyTestingScopeActive = false
+        accountScope = nil
+    }
+
+#if DEBUG
+    func activateLegacyTestingScope() {
+        resetInMemory()
+        accountScope = nil
+        isLegacyTestingScopeActive = true
+        load()
+    }
+#endif
 
     var needsConnection: Bool { !hasConnected && books.isEmpty }
     var homeBooks: [WeReadBook] { Array(sortedBooks(sort: .recent, query: "").prefix(8)) }
@@ -158,12 +198,13 @@ final class WeReadLibraryStore: ObservableObject {
 
     func disconnectAccount() async {
         books = []; anchors = [:]; hasConnected = false; accountLabel = nil; lastError = nil; save()
+        let dataStore = CommercialWebSession.websiteDataStore
         let types = WKWebsiteDataStore.allWebsiteDataTypes()
         await withCheckedContinuation { continuation in
-            WKWebsiteDataStore.default().fetchDataRecords(ofTypes: types) { records in
+            dataStore.fetchDataRecords(ofTypes: types) { records in
                 let targets = records.filter { $0.displayName.lowercased().contains("weread") || $0.displayName.lowercased().contains("qq.com") }
                 guard !targets.isEmpty else { continuation.resume(); return }
-                WKWebsiteDataStore.default().removeData(ofTypes: types, for: targets) { continuation.resume() }
+                dataStore.removeData(ofTypes: types, for: targets) { continuation.resume() }
             }
         }
     }
@@ -174,28 +215,54 @@ final class WeReadLibraryStore: ObservableObject {
     }
 
     private func load() {
-        let d = UserDefaults.standard
-        hasConnected = d.bool(forKey: connectedKey)
-        accountLabel = d.string(forKey: accountKey)
+        resetInMemory()
+        guard hasActiveStorage else { return }
+        hasConnected = defaults.bool(forKey: storageKey(Storage.connected))
+        accountLabel = defaults.string(forKey: storageKey(Storage.account))
         let legacyAccountFallbacks: Set<String> = [
             "WeRead account", "微信读书账号", "WeRead アカウント", "Cuenta de WeRead",
             "Compte WeRead", "Conta do WeRead", "Account WeRead", "WeRead खाता",
         ]
         if let accountLabel, legacyAccountFallbacks.contains(accountLabel) {
             self.accountLabel = nil
-            d.removeObject(forKey: accountKey)
+            defaults.removeObject(forKey: storageKey(Storage.account))
         }
-        if let data = d.data(forKey: booksKey), let decoded = try? JSONDecoder().decode([WeReadBook].self, from: data) {
+        if let data = defaults.data(forKey: storageKey(Storage.books)),
+           let decoded = try? JSONDecoder().decode([WeReadBook].self, from: data) {
             books = decoded.filter(WeReadBookValidator.isLikelyLibraryBook)
         }
-        if let data = d.data(forKey: anchorsKey), let decoded = try? JSONDecoder().decode([String: WeReadReadingAnchor].self, from: data) { anchors = decoded }
+        if let data = defaults.data(forKey: storageKey(Storage.anchors)),
+           let decoded = try? JSONDecoder().decode([String: WeReadReadingAnchor].self, from: data) {
+            anchors = decoded
+        }
     }
 
     private func save() {
-        let d = UserDefaults.standard
-        d.set(hasConnected, forKey: connectedKey)
-        d.set(accountLabel, forKey: accountKey)
-        if let data = try? JSONEncoder().encode(books) { d.set(data, forKey: booksKey) }
-        if let data = try? JSONEncoder().encode(anchors) { d.set(data, forKey: anchorsKey) }
+        guard hasActiveStorage else { return }
+        defaults.set(hasConnected, forKey: storageKey(Storage.connected))
+        defaults.set(accountLabel, forKey: storageKey(Storage.account))
+        if let data = try? JSONEncoder().encode(books) {
+            defaults.set(data, forKey: storageKey(Storage.books))
+        }
+        if let data = try? JSONEncoder().encode(anchors) {
+            defaults.set(data, forKey: storageKey(Storage.anchors))
+        }
+    }
+
+    private var hasActiveStorage: Bool {
+        accountScope != nil || usesLegacyStorageWhenUnscoped || isLegacyTestingScopeActive
+    }
+
+    private func storageKey(_ legacyKey: String) -> String {
+        accountScope?.storageKey(legacyKey) ?? legacyKey
+    }
+
+    private func resetInMemory() {
+        books = []
+        hasConnected = false
+        accountLabel = nil
+        anchors = [:]
+        isRefreshing = false
+        lastError = nil
     }
 }

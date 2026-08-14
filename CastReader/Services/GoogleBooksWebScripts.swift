@@ -12,26 +12,110 @@
 import Foundation
 import WebKit
 
-/// App-wide persistent browser profile for commercial web readers.
+/// Persistent browser profile shared by the commercial readers of the *active
+/// CastReader account only*.
 ///
-/// Keep the identifier stable across releases. Google Play Books, Kobo and
-/// future commercial readers deliberately opt into the same persistent profile:
-/// cookies remain origin-isolated, while a Google account already confirmed in
-/// one embedded browser can be offered quickly by another platform's Google
-/// sign-in page. Disconnecting a library never clears this shared profile.
+/// The earlier implementation used one device-global profile. That made an
+/// Amazon/WeRead/Google/Kobo/O'Reilly login created by account A immediately
+/// available after CastReader switched to account B (or from the global route
+/// to the CN route). The profile identifier is now derived from the already
+/// opaque `route x canonical-account` storage scope. A different CastReader
+/// identity therefore receives a different WebKit cookie/local-storage jar,
+/// while the same identity can still resume its own browser session after an
+/// app relaunch.
+@MainActor
 enum CommercialWebSession {
-    static let websiteDataStoreIdentifier =
+    /// The device-global profile used by previous builds. New production code
+    /// never selects it; it remains named so we can erase its unowned data once
+    /// without ever attaching it to a newly signed-in account.
+    private static let legacyWebsiteDataStoreIdentifier =
         UUID(uuidString: "739ED7D6-8C70-4D85-971C-5DDAE87C6C6F")!
+    private static let signedOutWebsiteDataStoreIdentifier =
+        UUID(uuidString: "5B6649F4-E15B-43E1-A90B-44B411A84A42")!
+
+    private static var activeIdentifier = signedOutWebsiteDataStoreIdentifier
+    private static var didScheduleLegacyPurge = false
+
+    static var websiteDataStoreIdentifier: UUID { activeIdentifier }
 
     static var websiteDataStore: WKWebsiteDataStore {
-        WKWebsiteDataStore(forIdentifier: websiteDataStoreIdentifier)
+        WKWebsiteDataStore(forIdentifier: activeIdentifier)
+    }
+
+    static func activateAccountScope(_ scope: AccountContentScope) {
+        activeIdentifier = scopedIdentifier(storageID: scope.storageID)
+        purgeLegacyUnownedWebsiteDataOnce()
+    }
+
+    static func deactivateAccountScope() {
+        activeIdentifier = signedOutWebsiteDataStoreIdentifier
+    }
+
+    #if DEBUG
+    /// UI fixtures that intentionally exercise pre-account browser behavior
+    /// can opt into the historical profile. Production has no such path.
+    static func activateLegacyTestingScope() {
+        activeIdentifier = legacyWebsiteDataStoreIdentifier
+    }
+    #endif
+
+    private static func scopedIdentifier(storageID: String) -> UUID {
+        var bytes = stride(from: 0, to: min(storageID.count, 32), by: 2).compactMap { offset -> UInt8? in
+            let start = storageID.index(storageID.startIndex, offsetBy: offset)
+            let end = storageID.index(start, offsetBy: 2, limitedBy: storageID.endIndex)
+                ?? storageID.endIndex
+            return UInt8(storageID[start..<end], radix: 16)
+        }
+        guard bytes.count == 16 else { return signedOutWebsiteDataStoreIdentifier }
+        // RFC 4122 variant + deterministic v5 marker. The input is already a
+        // SHA-256 digest, so no raw account identifier enters WebKit's path.
+        bytes[6] = (bytes[6] & 0x0f) | 0x50
+        bytes[8] = (bytes[8] & 0x3f) | 0x80
+        return UUID(uuid: (
+            bytes[0], bytes[1], bytes[2], bytes[3],
+            bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[8], bytes[9], bytes[10], bytes[11],
+            bytes[12], bytes[13], bytes[14], bytes[15]
+        ))
+    }
+
+    /// Both historical jars were device-global and have no trustworthy owner.
+    /// New account-scoped readers never use either jar, so this asynchronous
+    /// cleanup cannot race with a newly opened shelf or reader.
+    private static func purgeLegacyUnownedWebsiteDataOnce() {
+        guard !didScheduleLegacyPurge else { return }
+        didScheduleLegacyPurge = true
+        let legacyCommercial = WKWebsiteDataStore(
+            forIdentifier: legacyWebsiteDataStoreIdentifier
+        )
+        let legacyDefault = WKWebsiteDataStore.default()
+        Task {
+            await removeAllWebsiteData(from: legacyCommercial)
+            await removeAllWebsiteData(from: legacyDefault)
+        }
+    }
+
+    private static func removeAllWebsiteData(
+        from dataStore: WKWebsiteDataStore
+    ) async {
+        let types = WKWebsiteDataStore.allWebsiteDataTypes()
+        await withCheckedContinuation { continuation in
+            dataStore.removeData(
+                ofTypes: types,
+                modifiedSince: Date(timeIntervalSince1970: 0)
+            ) {
+                continuation.resume()
+            }
+        }
     }
 }
 
 /// Source compatibility for the already-shipped Google Books integration.
+@MainActor
 enum GoogleWebSession {
-    static let websiteDataStoreIdentifier =
+    static var websiteDataStoreIdentifier: UUID {
         CommercialWebSession.websiteDataStoreIdentifier
+    }
     static var websiteDataStore: WKWebsiteDataStore {
         CommercialWebSession.websiteDataStore
     }

@@ -21,14 +21,14 @@ enum HomeProPurchaseContract {
     static func primaryAction(
         isPro: Bool,
         hasYearlyProduct: Bool,
-        hasEmailAccount: Bool,
+        hasSyncableAccount: Bool,
         isLoadingProducts: Bool,
         isPurchaseInFlight: Bool
     ) -> HomeProPrimaryAction {
         guard !isPro, !isPurchaseInFlight else { return .none }
         if isLoadingProducts { return .none }
         guard hasYearlyProduct else { return .showPlans }
-        return hasEmailAccount ? .purchaseYearly : .requireLogin
+        return hasSyncableAccount ? .purchaseYearly : .requireLogin
     }
 }
 

@@ -9,6 +9,7 @@
 import Foundation
 import WebKit
 
+@MainActor
 enum OReillyWebSession {
     static var websiteDataStore: WKWebsiteDataStore {
         CommercialWebSession.websiteDataStore
@@ -17,7 +18,12 @@ enum OReillyWebSession {
 
 @MainActor
 final class OReillyLibraryStore: ObservableObject {
-    static let shared = OReillyLibraryStore()
+    static let shared = OReillyLibraryStore(
+        defaults: .standard,
+        historyStore: .shared,
+        websiteDataStore: OReillyWebSession.websiteDataStore,
+        usesLegacyStorageWhenUnscoped: false
+    )
 
     @Published private(set) var books: [OReillyBook] = []
     @Published private(set) var hasConnected = false
@@ -27,14 +33,20 @@ final class OReillyLibraryStore: ObservableObject {
     @Published var isRefreshing = false
     @Published var lastError: String?
 
-    private let booksKey = "oreilly.library.books.v1"
-    private let connectedKey = "oreilly.library.connected.v1"
-    private let accountKey = "oreilly.library.account.v1"
-    private let accountIdentityKey = "oreilly.library.accountIdentity.v1"
-    private let anchorsKey = "oreilly.library.anchors.v1"
+    private enum Storage {
+        static let books = "oreilly.library.books.v1"
+        static let connected = "oreilly.library.connected.v1"
+        static let account = "oreilly.library.account.v1"
+        static let accountIdentity = "oreilly.library.accountIdentity.v1"
+        static let anchors = "oreilly.library.anchors.v1"
+    }
+
     private let defaults: UserDefaults
     private let historyStore: HistoryStore
     private let sharedWebsiteDataStore: WKWebsiteDataStore
+    private let usesLegacyStorageWhenUnscoped: Bool
+    private var accountScope: AccountContentScope?
+    private var isLegacyTestingScopeActive = false
 
     convenience init(defaults: UserDefaults = .standard) {
         self.init(
@@ -58,13 +70,42 @@ final class OReillyLibraryStore: ObservableObject {
     init(
         defaults: UserDefaults,
         historyStore: HistoryStore,
-        websiteDataStore: WKWebsiteDataStore
+        websiteDataStore: WKWebsiteDataStore,
+        usesLegacyStorageWhenUnscoped: Bool = true
     ) {
         self.defaults = defaults
         self.historyStore = historyStore
         self.sharedWebsiteDataStore = websiteDataStore
+        self.usesLegacyStorageWhenUnscoped = usesLegacyStorageWhenUnscoped
+        if usesLegacyStorageWhenUnscoped {
+            load()
+        } else {
+            resetInMemory()
+        }
+    }
+
+    func activateAccountScope(_ scope: AccountContentScope) {
+        guard accountScope != scope || !hasActiveStorage else { return }
+        resetInMemory()
+        isLegacyTestingScopeActive = false
+        accountScope = scope
         load()
     }
+
+    func deactivateAccountScope() {
+        resetInMemory()
+        isLegacyTestingScopeActive = false
+        accountScope = nil
+    }
+
+#if DEBUG
+    func activateLegacyTestingScope() {
+        resetInMemory()
+        accountScope = nil
+        isLegacyTestingScopeActive = true
+        load()
+    }
+#endif
 
     var needsConnection: Bool { !hasConnected && books.isEmpty }
 
@@ -356,9 +397,11 @@ final class OReillyLibraryStore: ObservableObject {
     }
 
     private func load() {
-        hasConnected = defaults.bool(forKey: connectedKey)
-        accountLabel = defaults.string(forKey: accountKey)
-        let storedIdentity = defaults.string(forKey: accountIdentityKey)
+        resetInMemory()
+        guard hasActiveStorage else { return }
+        hasConnected = defaults.bool(forKey: storageKey(Storage.connected))
+        accountLabel = defaults.string(forKey: storageKey(Storage.account))
+        let storedIdentity = defaults.string(forKey: storageKey(Storage.accountIdentity))
         accountIdentity =
             OReillyAccountIdentity.isValidStoredIdentity(storedIdentity)
                 ? storedIdentity
@@ -372,7 +415,7 @@ final class OReillyLibraryStore: ObservableObject {
 
         var decodedBooks: [OReillyBook] = []
         if accountIdentity != nil,
-           let data = defaults.data(forKey: booksKey),
+           let data = defaults.data(forKey: storageKey(Storage.books)),
            let decoded = try? JSONDecoder().decode(
                [OReillyBook].self,
                from: data
@@ -410,7 +453,7 @@ final class OReillyLibraryStore: ObservableObject {
         }
 
         var sanitizedAnchors: [String: OReillyReadingAnchor] = [:]
-        if let data = defaults.data(forKey: anchorsKey),
+        if let data = defaults.data(forKey: storageKey(Storage.anchors)),
            let decoded = try? JSONDecoder().decode(
                [String: OReillyReadingAnchor].self,
                from: data
@@ -446,15 +489,34 @@ final class OReillyLibraryStore: ObservableObject {
     }
 
     private func save() {
-        defaults.set(hasConnected, forKey: connectedKey)
-        defaults.set(accountLabel, forKey: accountKey)
-        defaults.set(accountIdentity, forKey: accountIdentityKey)
+        guard hasActiveStorage else { return }
+        defaults.set(hasConnected, forKey: storageKey(Storage.connected))
+        defaults.set(accountLabel, forKey: storageKey(Storage.account))
+        defaults.set(accountIdentity, forKey: storageKey(Storage.accountIdentity))
         if let data = try? JSONEncoder().encode(books) {
-            defaults.set(data, forKey: booksKey)
+            defaults.set(data, forKey: storageKey(Storage.books))
         }
         if let data = try? JSONEncoder().encode(anchors) {
-            defaults.set(data, forKey: anchorsKey)
+            defaults.set(data, forKey: storageKey(Storage.anchors))
         }
+    }
+
+    private var hasActiveStorage: Bool {
+        accountScope != nil || usesLegacyStorageWhenUnscoped || isLegacyTestingScopeActive
+    }
+
+    private func storageKey(_ legacyKey: String) -> String {
+        accountScope?.storageKey(legacyKey) ?? legacyKey
+    }
+
+    private func resetInMemory() {
+        books = []
+        hasConnected = false
+        accountLabel = nil
+        accountIdentity = nil
+        anchors = [:]
+        isRefreshing = false
+        lastError = nil
     }
 
     private nonisolated static func nonnegativeFinite(

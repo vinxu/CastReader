@@ -11,29 +11,95 @@ import SwiftUI
 import UIKit
 
 enum YouTubeCacheProvider {
-    static let shared: YouTubeCacheStore? = {
+    private final class State: @unchecked Sendable {
+        let lock = NSLock()
+        var storageID: String?
+        var store: YouTubeCacheStore?
+        var maintenanceTask: Task<Void, Never>?
+    }
+
+    private static let state = State()
+
+    static var shared: YouTubeCacheStore? {
+        state.lock.lock()
+        defer { state.lock.unlock() }
+        return state.store
+    }
+
+    @discardableResult
+    static func activateAccountScope(storageID: String) -> Bool {
+        guard storageID.count == 64,
+              storageID.allSatisfy(\.isHexDigit) else {
+            deactivateAccountScope()
+            return false
+        }
+        return activate(storageID: storageID, legacyTesting: false)
+    }
+
+    static func deactivateAccountScope() {
+        state.lock.lock()
+        state.maintenanceTask?.cancel()
+        state.maintenanceTask = nil
+        state.storageID = nil
+        state.store = nil
+        state.lock.unlock()
+    }
+
+    #if DEBUG
+    static func activateLegacyTestingScope() {
+        _ = activate(storageID: "debug-legacy", legacyTesting: true)
+    }
+    #endif
+
+    @discardableResult
+    private static func activate(
+        storageID: String,
+        legacyTesting: Bool
+    ) -> Bool {
+        state.lock.lock()
+        if state.storageID == storageID, state.store != nil {
+            state.lock.unlock()
+            return true
+        }
+        state.lock.unlock()
+
         guard let base = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
-        ).first else { return nil }
-        let root = base.appendingPathComponent(
-            "YouTubeTranscriptCache",
-            isDirectory: true
-        )
-        guard let store = try? YouTubeCacheStore(rootDirectory: root) else {
-            return nil
+        ).first else { return false }
+        let root: URL
+        if legacyTesting {
+            root = base.appendingPathComponent(
+                "YouTubeTranscriptCache",
+                isDirectory: true
+            )
+        } else {
+            root = base
+                .appendingPathComponent("AccountData", isDirectory: true)
+                .appendingPathComponent(storageID, isDirectory: true)
+                .appendingPathComponent("YouTubeTranscriptCache", isDirectory: true)
         }
+        guard let store = try? YouTubeCacheStore(rootDirectory: root) else {
+            deactivateAccountScope()
+            return false
+        }
+
+        state.lock.lock()
+        state.maintenanceTask?.cancel()
+        state.storageID = storageID
+        state.store = store
         // Exact byte accounting, orphan cleanup and pruning run once on the
         // cache actor after the first-listen window. Starting that recursive
         // walk immediately could place cache lookups behind it and delay a cold
         // share even though the filesystem work itself is off MainActor.
-        Task.detached(priority: .utility) {
+        state.maintenanceTask = Task.detached(priority: .utility) {
             try? await Task.sleep(nanoseconds: 20_000_000_000)
             guard !Task.isCancelled else { return }
             try? await store.performStartupMaintenance()
         }
-        return store
-    }()
+        state.lock.unlock()
+        return true
+    }
 }
 
 struct YouTubeListenRequest: Identifiable, Equatable {
@@ -89,6 +155,14 @@ final class YouTubeRouteCenter: ObservableObject {
     private var inFlightPendingItemID: UUID?
 
     private init() {}
+
+    /// Drops an unconsumed route when authentication changes. Durable share
+    /// links remain in their account-scoped App Group queue and can be retried
+    /// only after that same account becomes active again.
+    func resetForAccountBoundary() {
+        request = nil
+        inFlightPendingItemID = nil
+    }
 
     @discardableResult
     func open(

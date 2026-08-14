@@ -8,6 +8,7 @@
 
 import Foundation
 import Combine
+import CryptoKit
 
 enum ExplainOwnershipRecoveryPlan: Equatable {
     case preparedBlock(index: Int)
@@ -28,6 +29,103 @@ enum ExplainOwnershipRecoveryPlan: Equatable {
             return .replayBlock(index: index)
         }
         return .restartPlanning(reusingStartedSession: statusIsActive)
+    }
+}
+
+/// Pure hand-off contract between the fast opening and the quality plan.
+///
+/// The quality lane must receive only the physical suffix after `opening`.
+/// Keeping this as a small value type makes the no-overlap/index contract
+/// independently testable without starting networking or TTS.
+struct QuickReadFastLaneHandoff {
+    struct ScopeDigest: Equatable {
+        let paragraphCount: Int
+        let characterCount: Int
+        let fingerprint: String
+    }
+
+    let opening: [ReadingParagraph]
+    let qualityInput: [ReadingParagraph]
+    let previousSummary: String
+    let indexBase: Int
+
+    init?(
+        readableParagraphs: [ReadingParagraph],
+        selectedOpening: [ReadingParagraph],
+        fastNarration: String
+    ) {
+        let trimmedNarration = fastNarration.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !selectedOpening.isEmpty,
+              selectedOpening.count < readableParagraphs.count,
+              !trimmedNarration.isEmpty,
+              Array(readableParagraphs.prefix(selectedOpening.count)) == selectedOpening else {
+            return nil
+        }
+
+        let suffix = Array(readableParagraphs.dropFirst(selectedOpening.count))
+        let openingIDs = Set(selectedOpening.map(\.id))
+        let suffixIDs = Set(suffix.map(\.id))
+        guard openingIDs.isDisjoint(with: suffixIDs) else { return nil }
+
+        opening = selectedOpening
+        qualityInput = suffix
+        previousSummary = fastNarration
+        indexBase = 1
+    }
+
+    var reindexedQualityInput: [ReadingParagraph] {
+        qualityInput.enumerated().map {
+            ReadingParagraph(id: $0.offset, text: $0.element.text, type: $0.element.type)
+        }
+    }
+
+    var openingDigest: ScopeDigest { Self.scopeDigest(opening) }
+    var qualityDigest: ScopeDigest { Self.scopeDigest(qualityInput) }
+
+    static func qualityBlockIndex(
+        forPlaybackBlockIndex playbackBlockIndex: Int,
+        indexBase: Int
+    ) -> Int? {
+        guard playbackBlockIndex >= indexBase else { return nil }
+        return playbackBlockIndex - indexBase
+    }
+
+    static func playbackBlockIndex(
+        forQualityBlockIndex qualityBlockIndex: Int,
+        indexBase: Int
+    ) -> Int? {
+        guard qualityBlockIndex >= 0, indexBase >= 0 else { return nil }
+        return qualityBlockIndex + indexBase
+    }
+
+    static func continuitySummary(
+        explicitPreviousSummary: String?,
+        fastNarration: String?
+    ) -> String? {
+        if let explicitPreviousSummary,
+           !explicitPreviousSummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return explicitPreviousSummary
+        }
+        if let fastNarration,
+           !fastNarration.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return fastNarration
+        }
+        return nil
+    }
+
+    static func scopeDigest(_ paragraphs: [ReadingParagraph]) -> ScopeDigest {
+        // IDs are intentionally excluded: the quality suffix is reindexed
+        // before transport, while its content fingerprint must remain stable.
+        let canonical = paragraphs.map(\.text).joined(separator: "\u{1e}")
+        let fingerprint = SHA256.hash(data: Data(canonical.utf8))
+            .prefix(8)
+            .map { String(format: "%02x", $0) }
+            .joined()
+        return ScopeDigest(
+            paragraphCount: paragraphs.count,
+            characterCount: paragraphs.reduce(0) { $0 + $1.text.count },
+            fingerprint: fingerprint
+        )
     }
 }
 
@@ -642,10 +740,13 @@ final class ExplainViewModel: ObservableObject {
             duration += effectiveDuration(segment)
         }
 
-        let qualityBlockIndex = blockIndex - idxBase
+        let qualityBlockIndex = QuickReadFastLaneHandoff.qualityBlockIndex(
+            forPlaybackBlockIndex: blockIndex,
+            indexBase: idxBase
+        )
         let recomposed: [QuickreadEvent]?
         if !jobId.isEmpty,
-           qualityBlockIndex >= 0,
+           let qualityBlockIndex,
            let composed = try? await QuickReadService.shared.composeBlock(
                 jobId: jobId,
                 blockIdx: qualityBlockIndex,
@@ -1010,10 +1111,8 @@ final class ExplainViewModel: ObservableObject {
     /// 快道激活后，质道吃 rest **全部、单次** extract-plan（对齐文档 §4.7：在 rest 上正常顺序分块、running_summary
     /// 自洽，无需再分批）。重索引 0-based 让质道当成「从开头的一篇文章」；mark 锚定独立、锚 doc 全集不受影响。
     /// 注意：不能再对 rest 分批——分批会破坏 rest 块间连续性，与 prev_summary 承接冲突（实测导致跳段）。
-    private func setupQuoteScope(rest: [ReadingParagraph]) {
-        pdfScopedParagraphs = rest.enumerated().map {
-            ReadingParagraph(id: $0.offset, text: $0.element.text, type: $0.element.type)
-        }
+    private func setupQuoteScope(_ handoff: QuickReadFastLaneHandoff) {
+        pdfScopedParagraphs = handoff.reindexedQualityInput
         pdfBatchCursor = nil   // 不续批：rest 一次喂完
     }
 
@@ -1043,30 +1142,49 @@ final class ExplainViewModel: ObservableObject {
             guard self.contentGeneration == generation else { return }
             self.forcedExplainLang = lang
         }
-        var fastPB: PreparedBlock?
+        var fastResult: (section: QuickreadSection, block: PreparedBlock)?
         if let section = try? await QuickReadService.shared.fastBlock0(
                 title: doc.title, openingParas: opening.map { $0.text },
                 lang: lang, depth: requestDepth, prevSummary: nil, contentType: scenario),
            let pb = try? await prepareFastBlock(section, language: lang) {
-            await MainActor.run {
-                guard self.contentGeneration == generation else { return }
-                self.fastSection = section
-            }
-            fastPB = pb
+            fastResult = (section, pb)
         }
         await MainActor.run {
             guard self.contentGeneration == generation,
                   self.isActive,
                   case .planning = self.status else { return }
-            if let pb = fastPB {
-                self.idxBase = 1
+            let readable = self.doc.readableParagraphs
+            if let result = fastResult,
+               let handoff = QuickReadFastLaneHandoff(
+                    readableParagraphs: readable,
+                    selectedOpening: opening,
+                    fastNarration: result.section.text
+               ) {
+                self.fastSection = result.section
+                self.batchPrevSummary = handoff.previousSummary
+                self.idxBase = handoff.indexBase
                 self.block0Claimed = true
-                let readable = self.doc.readableParagraphs
-                self.setupQuoteScope(rest: Array(readable.dropFirst(opening.count)))
+                self.setupQuoteScope(handoff)
                 self.totalBlocks = max(1, self.idxBase + 1)   // 预估，handlePlan 收到质道总块数后修正
-                self.enqueue(pb, idx: 0)                       // 秒开
-                self.debugLog("fastlane block_0 emit (opening=%d marks=%d)", opening.count, pb.marks.count)
+                self.enqueue(result.block, idx: 0)                       // 秒开
+                let openingDigest = handoff.openingDigest
+                let qualityDigest = handoff.qualityDigest
+                let diagnostic = String(
+                    format: "fastlane handoff openingParas=%d openingChars=%d openingFP=%@ qualityParas=%d qualityChars=%d qualityFP=%@ prevSummaryChars=%d idxBase=%d",
+                    openingDigest.paragraphCount,
+                    openingDigest.characterCount,
+                    openingDigest.fingerprint,
+                    qualityDigest.paragraphCount,
+                    qualityDigest.characterCount,
+                    qualityDigest.fingerprint,
+                    handoff.previousSummary.count,
+                    handoff.indexBase
+                )
+                self.debugLog("%@ marks=%d", diagnostic, result.block.marks.count)
+                ReaderRunLog.write("EXPLAIN \(diagnostic)")
             } else {
+                self.fastSection = nil
+                self.batchPrevSummary = nil
                 self.idxBase = 0
                 self.setupBatchScopeIfLarge()                  // 快道失败兜底：质道吃全量
                 self.debugLog("fastlane failed -> quote full")
@@ -1396,6 +1514,18 @@ final class ExplainViewModel: ObservableObject {
     private func runPlan(generation: UInt64) async {
         guard generation == contentGeneration, !Task.isCancelled else { return }
         let req = buildPlanRequest()
+        let requestScope = pdfScopedParagraphs ?? doc.paragraphs
+        let requestDigest = QuickReadFastLaneHandoff.scopeDigest(requestScope)
+        let requestDiagnostic = String(
+            format: "plan request idxBase=%d paras=%d chars=%d fp=%@ prevSummaryChars=%d",
+            idxBase,
+            requestDigest.paragraphCount,
+            requestDigest.characterCount,
+            requestDigest.fingerprint,
+            req.prev_summary?.count ?? 0
+        )
+        debugLog("%@", requestDiagnostic)
+        ReaderRunLog.write("EXPLAIN \(requestDiagnostic)")
         do {
             let done = try await QuickReadService.shared.extractPlan(
                 req,
@@ -1453,7 +1583,7 @@ final class ExplainViewModel: ObservableObject {
                             ? AppLocalized("本机已解锁；跨平台同步等待 Apple 验证接口。")
                             : (AppRegion.current == .cn
                                 ? AppLocalized("已检测到购买，请登录后同步会员")
-                                : AppLocalized("已检测到购买，请登录邮箱同步 Pro")))
+                                : AppLocalized("已检测到购买，请登录账号同步 Pro")))
                         self.stageText = AppLocalized("解读失败")
                     } else if self.pro.isPro {
                         self.status = .error(AppLocalized("解读服务暂未识别 Pro 会员，请稍后重试"))
@@ -1639,7 +1769,14 @@ final class ExplainViewModel: ObservableObject {
         // 快道占 block_0（idxBase=1）→ iOS idx 映射到质道块 qIdx = idx - idxBase。
         // 质道首块（qIdx<=0）用 plan 的 section0；快道占位时 block_0 播放期间质道 plan 通常已返回，
         // 极端未到则短暂等待（block_0 narration 音频较长，足够质道 plan 完成）。其余拉 extract-block。
-        let qIdx = idx - idxBase
+        guard let qIdx = QuickReadFastLaneHandoff.qualityBlockIndex(
+            forPlaybackBlockIndex: idx,
+            indexBase: idxBase
+        ) else {
+            // The fast block is prepared independently and must never enter
+            // the quality extract/compose pipeline.
+            throw CancellationError()
+        }
         let section: QuickreadSection
         let sectionStartedAt = Date()
         if qIdx <= 0 {
@@ -2263,7 +2400,10 @@ final class ExplainViewModel: ObservableObject {
         let paras = sourceParas.map { QuickreadParagraphDTO(text: $0.text, type: typeString($0.type)) }
         let fullText = sourceParas.map(\.text).joined(separator: "\n\n")
         let src = Self.quickReadSourceURL(for: targetDoc)
-        let continuity = prevSummary ?? fastSection?.text
+        let continuity = QuickReadFastLaneHandoff.continuitySummary(
+            explicitPreviousSummary: prevSummary,
+            fastNarration: fastSection?.text
+        )
         return ExtractPlanRequest(
             source_url: src,
             title: Self.quickReadTitle(for: targetDoc),

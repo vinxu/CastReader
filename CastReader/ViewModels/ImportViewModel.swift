@@ -50,7 +50,14 @@ class ImportViewModel: ObservableObject {
     @Published var epubUploadResult: EPUBUploadResult?  // For EPUB -> PlayerView navigation
     @Published var textUploadResult: TextUploadResult?  // For text -> PlayerView navigation
 
-    private let visitorService = VisitorService.shared
+    /// Release builds emit no import diagnostics. Debug builds deliberately
+    /// accept only compile-time categories, so a future edit cannot interpolate
+    /// filenames, document IDs, COS object keys/URLs, response bodies or tokens.
+    private func debugLog(_ category: StaticString) {
+        #if DEBUG
+        print("[Import] \(category)")
+        #endif
+    }
 
     /// Upload file - automatically detects EPUB vs PDF and uses appropriate upload method
     func uploadFile(_ url: URL) async {
@@ -65,7 +72,7 @@ class ImportViewModel: ObservableObject {
 
     /// Upload EPUB file - same flow as PDF (COS + notify), but backend processes synchronously
     private func uploadEPUB(_ url: URL) async {
-        print("📗 [ImportViewModel] uploadEPUB started: \(url.lastPathComponent)")
+        debugLog("epub.started")
         isUploading = true
         error = nil
         uploadSuccess = false
@@ -79,27 +86,24 @@ class ImportViewModel: ObservableObject {
             // Read file data
             let data = try Data(contentsOf: url)
             let filename = url.lastPathComponent
-            print("📗 [ImportViewModel] File read: \(filename), size: \(data.count) bytes")
+            debugLog("epub.file-read")
 
             // Get STS credentials (same as PDF)
-            print("📗 [ImportViewModel] Fetching STS credentials...")
+            debugLog("epub.sts-requested")
             let sts = try await APIService.shared.fetchSTSCredentials()
-            print("📗 [ImportViewModel] STS received: bucket=\(sts.bucket), region=\(sts.region), prefix=\(sts.prefix)")
+            debugLog("epub.sts-received")
 
             // Upload to COS (same as PDF)
-            print("📗 [ImportViewModel] Uploading to COS...")
+            debugLog("epub.object-upload-started")
             let (key, _) = try await uploadToCOS(data: data, filename: filename, sts: sts)
-            print("📗 [ImportViewModel] COS upload success: \(key)")
+            debugLog("epub.object-upload-completed")
 
             // Notify backend - EPUB is processed synchronously and returns document info
-            print("📗 [ImportViewModel] Notifying backend...")
+            debugLog("epub.notify-started")
             let response = try await APIService.shared.notifyUpload(
                 filename: filename,
-                filepath: key,
-                userId: visitorService.visitorId
+                filepath: key
             )
-
-            print("📗 [ImportViewModel] Backend response: success=\(response.success), docId=\(response.documentId ?? "nil")")
 
             if response.success, let doc = response.document {
                 // EPUB processed synchronously - we have document info for playback
@@ -111,27 +115,27 @@ class ImportViewModel: ObservableObject {
                     language: doc.language ?? "en"
                 )
                 uploadSuccess = true
-                print("📗 [ImportViewModel] EPUB ready for playback: \(doc.id), mdUrl: \(doc.mdUrl ?? "nil"), language: \(doc.language ?? "nil")")
+                debugLog("epub.ready")
             } else if response.success {
                 // Backend returned success but no document - treat as async (like PDF)
                 uploadSuccess = true
-                print("📗 [ImportViewModel] EPUB uploaded, waiting for async processing")
+                debugLog("epub.processing")
             } else {
                 throw UploadError.uploadFailed
             }
 
         } catch {
-            print("📗 [ImportViewModel] ❌ Error: \(error)")
+            debugLog("epub.failed")
             self.error = error.localizedDescription
         }
 
         isUploading = false
-        print("📗 [ImportViewModel] uploadEPUB completed, success=\(uploadSuccess)")
+        debugLog(uploadSuccess ? "epub.finished-success" : "epub.finished-failure")
     }
 
     /// Upload PDF file asynchronously - uploads to COS and notifies backend for async processing
     private func uploadPDF(_ url: URL) async {
-        print("📤 [ImportViewModel] uploadPDF started: \(url.lastPathComponent)")
+        debugLog("pdf.started")
         isUploading = true
         error = nil
         uploadSuccess = false
@@ -144,40 +148,38 @@ class ImportViewModel: ObservableObject {
             // Read file data
             let data = try Data(contentsOf: url)
             let filename = url.lastPathComponent
-            print("📤 [ImportViewModel] File read: \(filename), size: \(data.count) bytes")
+            debugLog("pdf.file-read")
 
             // Get STS credentials
-            print("📤 [ImportViewModel] Fetching STS credentials...")
+            debugLog("pdf.sts-requested")
             let sts = try await APIService.shared.fetchSTSCredentials()
-            print("📤 [ImportViewModel] STS received: bucket=\(sts.bucket), region=\(sts.region), prefix=\(sts.prefix)")
+            debugLog("pdf.sts-received")
 
             // Upload to COS
-            print("📤 [ImportViewModel] Uploading to COS...")
-            let (key, fullUrl) = try await uploadToCOS(data: data, filename: filename, sts: sts)
-            print("📤 [ImportViewModel] COS upload success: \(key)")
-            print("📤 [ImportViewModel] COS full URL: \(fullUrl)")
+            debugLog("pdf.object-upload-started")
+            let (key, _) = try await uploadToCOS(data: data, filename: filename, sts: sts)
+            debugLog("pdf.object-upload-completed")
 
             // Notify backend - use COS key as filepath (same as web)
-            print("📤 [ImportViewModel] Notifying backend...")
+            debugLog("pdf.notify-started")
             let response = try await APIService.shared.notifyUpload(
                 filename: filename,
-                filepath: key,
-                userId: visitorService.visitorId
+                filepath: key
             )
-            print("📤 [ImportViewModel] Backend notified: success=\(response.success), docId=\(response.documentId ?? "nil")")
             uploadSuccess = true
+            debugLog(response.success ? "pdf.notify-succeeded" : "pdf.notify-failed")
 
         } catch {
-            print("📤 [ImportViewModel] ❌ Error: \(error)")
+            debugLog("pdf.failed")
             self.error = error.localizedDescription
         }
 
         isUploading = false
-        print("📤 [ImportViewModel] uploadPDF completed, success=\(uploadSuccess)")
+        debugLog(uploadSuccess ? "pdf.finished-success" : "pdf.finished-failure")
     }
 
     func uploadText(_ text: String, title: String) async {
-        print("📝 [ImportViewModel] uploadText started: title=\(title), length=\(text.count)")
+        debugLog("text.started")
         isUploading = true
         error = nil
         textUploadResult = nil
@@ -189,23 +191,20 @@ class ImportViewModel: ObservableObject {
             }
 
             // Get STS credentials
-            print("📝 [ImportViewModel] Fetching STS credentials...")
+            debugLog("text.sts-requested")
             let sts = try await APIService.shared.fetchSTSCredentials()
 
             // Upload to COS
-            print("📝 [ImportViewModel] Uploading to COS...")
+            debugLog("text.object-upload-started")
             let (key, _) = try await uploadToCOS(data: data, filename: filename, sts: sts)
-            print("📝 [ImportViewModel] COS upload success: \(key)")
+            debugLog("text.object-upload-completed")
 
             // Notify backend - use COS key as filepath (same as web)
-            print("📝 [ImportViewModel] Notifying backend...")
+            debugLog("text.notify-started")
             let response = try await APIService.shared.notifyUpload(
                 filename: filename,
-                filepath: key,
-                userId: visitorService.visitorId
+                filepath: key
             )
-
-            print("📝 [ImportViewModel] Backend response: success=\(response.success), docId=\(response.documentId ?? "nil")")
 
             if response.success, let doc = response.document, let mdUrl = doc.mdUrl, !mdUrl.isEmpty {
                 // Server processed synchronously - we have mdUrl for playback
@@ -215,60 +214,58 @@ class ImportViewModel: ObservableObject {
                     mdUrl: mdUrl,
                     language: doc.language ?? "en"
                 )
-                print("📝 [ImportViewModel] Text ready for playback: \(doc.id), mdUrl: \(mdUrl), language: \(doc.language ?? "nil")")
+                debugLog("text.ready")
             } else if response.success {
                 // Backend returned success but no mdUrl - treat as async
-                print("📝 [ImportViewModel] Text uploaded, but mdUrl not ready yet")
+                debugLog("text.processing")
                 self.error = "Processing... Please check Library later."
             } else {
                 throw UploadError.uploadFailed
             }
 
         } catch {
-            print("📝 [ImportViewModel] ❌ Error: \(error)")
+            debugLog("text.failed")
             self.error = error.localizedDescription
         }
 
         isUploading = false
-        print("📝 [ImportViewModel] uploadText completed, result=\(textUploadResult?.documentId ?? "nil")")
+        debugLog(textUploadResult == nil ? "text.finished-failure" : "text.finished-success")
     }
 
     /// Upload image for OCR - same flow as PDF (COS + notify), backend processes asynchronously
     func uploadImage(imageData: Data, filename: String) async {
-        print("📷 [ImportViewModel] uploadImage started: \(filename), size: \(imageData.count) bytes")
+        debugLog("image.started")
         isUploading = true
         error = nil
         uploadSuccess = false
 
         do {
             // Get STS credentials
-            print("📷 [ImportViewModel] Fetching STS credentials...")
+            debugLog("image.sts-requested")
             let sts = try await APIService.shared.fetchSTSCredentials()
-            print("📷 [ImportViewModel] STS received: bucket=\(sts.bucket), region=\(sts.region), prefix=\(sts.prefix)")
+            debugLog("image.sts-received")
 
             // Upload to COS
-            print("📷 [ImportViewModel] Uploading to COS...")
-            let (key, fullUrl) = try await uploadToCOS(data: imageData, filename: filename, sts: sts)
-            print("📷 [ImportViewModel] COS upload success: \(key)")
-            print("📷 [ImportViewModel] COS full URL: \(fullUrl)")
+            debugLog("image.object-upload-started")
+            let (key, _) = try await uploadToCOS(data: imageData, filename: filename, sts: sts)
+            debugLog("image.object-upload-completed")
 
             // Notify backend - OCR is processed asynchronously like PDF
-            print("📷 [ImportViewModel] Notifying backend...")
+            debugLog("image.notify-started")
             let response = try await APIService.shared.notifyUpload(
                 filename: filename,
-                filepath: key,
-                userId: visitorService.visitorId
+                filepath: key
             )
-            print("📷 [ImportViewModel] Backend notified: success=\(response.success), docId=\(response.documentId ?? "nil")")
             uploadSuccess = true
+            debugLog(response.success ? "image.notify-succeeded" : "image.notify-failed")
 
         } catch {
-            print("📷 [ImportViewModel] ❌ Error: \(error)")
+            debugLog("image.failed")
             self.error = error.localizedDescription
         }
 
         isUploading = false
-        print("📷 [ImportViewModel] uploadImage completed, success=\(uploadSuccess)")
+        debugLog(uploadSuccess ? "image.finished-success" : "image.finished-failure")
     }
 
     private func uploadToCOS(data: Data, filename: String, sts: STSCredentials) async throws -> (key: String, fullUrl: String) {
@@ -283,11 +280,8 @@ class ImportViewModel: ObservableObject {
         }
         let urlString = "https://\(host)/\(encodedKey)"
 
-        print("📤 [COS] key: \(key)")
-        print("📤 [COS] url: \(urlString)")
-
         guard let url = URL(string: urlString) else {
-            print("📤 [COS] ❌ Invalid URL")
+            debugLog("object-upload.invalid-url")
             throw UploadError.invalidURL
         }
 
@@ -321,7 +315,7 @@ class ImportViewModel: ObservableObject {
 
         let authorization = "q-sign-algorithm=sha1&q-ak=\(sts.accessKeyId)&q-sign-time=\(keyTime)&q-key-time=\(keyTime)&q-header-list=\(headerList)&q-url-param-list=&q-signature=\(signature)"
 
-        print("📤 [COS] Authorization generated")
+        debugLog("object-upload.request-signed")
 
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
@@ -331,24 +325,21 @@ class ImportViewModel: ObservableObject {
         request.setValue(sts.sessionToken, forHTTPHeaderField: "x-cos-security-token")
         request.setValue(authorization, forHTTPHeaderField: "Authorization")
 
-        print("📤 [COS] Sending PUT request with \(data.count) bytes...")
+        debugLog("object-upload.request-started")
 
-        let (responseData, response) = try await URLSession.shared.data(for: request)
+        let (_, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            print("📤 [COS] ❌ Invalid response type")
+            debugLog("object-upload.invalid-response")
             throw UploadError.uploadFailed
-        }
-
-        print("📤 [COS] Response status: \(httpResponse.statusCode)")
-        if let responseStr = String(data: responseData, encoding: .utf8), !responseStr.isEmpty {
-            print("📤 [COS] Response body: \(responseStr.prefix(500))")
         }
 
         guard 200..<300 ~= httpResponse.statusCode else {
-            print("📤 [COS] ❌ Upload failed with status \(httpResponse.statusCode)")
+            debugLog("object-upload.http-failure")
             throw UploadError.uploadFailed
         }
+
+        debugLog("object-upload.succeeded")
 
         return (key, urlString)
     }

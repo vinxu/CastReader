@@ -4,8 +4,8 @@
 //
 //  中国区手机号短信登录。
 //
-//  只在 `AppRegion.current == .cn` 时对用户可见；其他地区的登录路径
-//  （Google / Apple）完全不经过这里。
+//  只由 `AppRegion.current == .cn` 决定是否对用户可见；服务线路只选择入口域名。
+//  新版 globalGateway 与 chinaGateway 的 mobile-auth 端点共享 canonical 账号库。
 //
 //  隐私边界：手机号只在请求体里出现，**绝不**写日志、绝不进埋点
 //  （`ProductAnalytics` 的禁用字段已包含 phone/smsCode 等，出现即抛错）。
@@ -19,16 +19,22 @@ protocol PhoneAuthTransport: Sendable {
 }
 
 struct URLSessionPhoneAuthTransport: PhoneAuthTransport {
+    static let defaultTimeout: TimeInterval = 12
+    static let verificationTimeout: TimeInterval = 30
+
     let session: URLSession
 
-    init(session: URLSession = .shared) {
-        self.session = session
+    init(
+        session: URLSession? = nil,
+        route: ServiceRoute = ServiceRouting.current
+    ) {
+        self.session = session ?? OwnedAPIURLSession.make(route: route)
     }
 
     func post(url: URL, body: [String: Any], bearer: String?) async throws -> (Int, Data) {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.timeoutInterval = 12
+        request.timeoutInterval = Self.timeoutInterval(for: url)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let bearer, !bearer.isEmpty {
             request.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
@@ -46,6 +52,16 @@ struct URLSessionPhoneAuthTransport: PhoneAuthTransport {
             throw PhoneAuthError.network
         }
     }
+
+    /// Verifying an SMS code may create/link the canonical identity before the
+    /// gateway can return its first `cms_` session. Give that one operation
+    /// enough time to complete; send/resend and account deletion remain tightly
+    /// bounded so an unavailable endpoint still fails quickly.
+    nonisolated static func timeoutInterval(for url: URL) -> TimeInterval {
+        url.path == "/api/mobile-auth/sms/verify"
+            ? verificationTimeout
+            : defaultTimeout
+    }
 }
 
 @MainActor
@@ -53,13 +69,38 @@ final class PhoneAuthService: ObservableObject {
     static let shared = PhoneAuthService()
 
     private let transport: PhoneAuthTransport
+    private let localFallbackPolicy: LocalFallbackPolicy
 
-    init(transport: PhoneAuthTransport = URLSessionPhoneAuthTransport()) {
+    /// `localFallbackEnabledForTesting` 只供单元测试注入“后端断网时允许兜底”。
+    /// 真实 App 进程只认显式 UI 测试启动参数，普通 Debug 真机不会启用。
+    init(
+        transport: PhoneAuthTransport = URLSessionPhoneAuthTransport(),
+        localFallbackEnabledForTesting: Bool? = nil
+    ) {
         self.transport = transport
+        if let localFallbackEnabledForTesting {
+            self.localFallbackPolicy = localFallbackEnabledForTesting
+                ? .backendUnavailable
+                : .disabled
+        } else {
+            self.localFallbackPolicy = LocalFallback.isForcedForUITests
+                ? .forced
+                : .disabled
+        }
     }
 
-    /// 中国区之外不开放手机号登录。
-    var isAvailable: Bool { AppRegion.current == .cn }
+    private enum LocalFallbackPolicy: Equatable {
+        case disabled
+        /// 单元测试可注入：只在传输层确实不可达时兜底。
+        case backendUnavailable
+        /// UI 自动化显式启用：跳过真实短信端点，保证测试确定性。
+        case forced
+    }
+
+    /// 手机号是中国产品能力；网络线路只决定同一账号服务从哪个入口进入。
+    var isAvailable: Bool {
+        AppRegion.current == .cn
+    }
 
     private var baseURL: String { Constants.API.webURL }
 
@@ -74,9 +115,8 @@ final class PhoneAuthService: ObservableObject {
 
     /// 后端不可达时，用预设验证码在本地完成登录。
     ///
-    /// 存在的理由：境内后端（`castreader.cn`）备案未完成、短信通道也未接通，
-    /// 但中国区版本必须能被完整走查——引导、登录、Pro 态、付费页缺一不可。
-    /// 没有这条兜底，整个中国区就只能停在登录页。
+    /// 存在的理由：开发与 UI 自动化需要在不消耗真实短信、不依赖外部网络时
+    /// 完整走查中国区引导、登录、Pro 态与付费页。
     ///
     /// 生效条件极窄：**仅中国区** + **仅预设码** + **仅在后端确实不可达时**。
     /// 后端一旦可用，真实流程优先，这条路径不会被触发。
@@ -86,29 +126,56 @@ final class PhoneAuthService: ObservableObject {
 
         /// 是否允许本地直通。
         ///
-        /// 2026-08-08 起 Release 构建**一律关闭**：境内后端
-        /// （`api.castreader.cn`）已上线，真实短信通道也已打通，
-        /// 这条兜底已经没有存在理由。留着反而是个洞 —— 攻击者只要断网，
+        /// Release 构建**一律关闭**。这条兜底只用于尚未部署完整中国线路时的
+        /// Debug/模拟器界面走查；进入任何 TestFlight/App Store 验收包都会失效。
+        /// 把它带进生产会形成安全洞 —— 攻击者只要断网，
         /// 输入预设码就能以任意手机号进入本地态。
         ///
-        /// Debug 构建保留，便于模拟器上不依赖真实短信走查完整引导流程。
+        /// Debug 构建也不默认开启。只有 UI 自动化显式传入
+        /// `-CastReaderPhoneAuthLocalFallback` 才会生效；这样 Debug 真机
+        /// 能看到真实的网关/短信错误，不会被 888888 掩盖。
         /// 应用商店审核员用的是后端的 `PHONE_AUTH_REVIEW_PHONES` 白名单，
         /// 不走这条路径。
         static var isEnabled: Bool {
             #if DEBUG
-            return AppRegion.current == .cn
+            let isDebugBuild = true
             #else
-            return false
+            let isDebugBuild = false
             #endif
+            return isEnabled(
+                arguments: ProcessInfo.processInfo.arguments,
+                region: AppRegion.current,
+                isDebugBuild: isDebugBuild
+            )
+        }
+
+        /// 纯策略入口，便于单测覆盖 Debug / Release、中国/全球与
+        /// 启动参数组合，不依赖当前 XCTest 进程的真实参数。
+        nonisolated static func isEnabled(
+            arguments: [String],
+            region: AppRegion,
+            isDebugBuild: Bool
+        ) -> Bool {
+            isDebugBuild
+                && region == .cn
+                && arguments.contains("-CastReaderPhoneAuthLocalFallback")
         }
 
         /// UI 自动化显式要求本地链路时跳过真实短信端点，避免频控、运营商延迟
         /// 或审核白名单让测试变得不确定。该参数只存在于 Debug 构建。
         static var isForcedForUITests: Bool {
+            isEnabled
+        }
+
+        /// Deterministic UI-test hook for the exact recovery path where SMS
+        /// send fails but the user already owns a valid code. It is compiled
+        /// out of Release and never changes ordinary Debug launches.
+        static var isForcedSendFailureForUITests: Bool {
             #if DEBUG
-            return isEnabled && ProcessInfo.processInfo.arguments.contains(
-                "-CastReaderPhoneAuthLocalFallback"
-            )
+            return AppRegion.current == .cn
+                && ProcessInfo.processInfo.arguments.contains(
+                    "-CastReaderPhoneAuthForceSendFailure"
+                )
             #else
             return false
             #endif
@@ -139,7 +206,11 @@ final class PhoneAuthService: ObservableObject {
             throw PhoneAuthError.invalidPhone
         }
 
-        if LocalFallback.isForcedForUITests {
+        if LocalFallback.isForcedSendFailureForUITests {
+            throw PhoneAuthError.network
+        }
+
+        if localFallbackPolicy == .forced {
             return PhoneCodeChallenge(
                 ttlSeconds: PhoneCodeChallenge.fallback.ttlSeconds,
                 resendAfterSeconds: 0,
@@ -160,9 +231,9 @@ final class PhoneAuthService: ObservableObject {
 
             guard 200..<300 ~= status else {
                 let error = Self.decodeError(status: status, data: data)
-                // 服务端明确拒绝（号码非法、频控）时如实报错，不要用兜底掩盖。
-                if Self.isDefinitiveRejection(error) { throw error }
-                throw PhoneAuthError.network
+                // HTTP 响应已证明后端可达。号码、频控、sms_unavailable
+                // 与其他服务端错误都必须原样上抛，不得伪装成断网。
+                throw error
             }
 
             let payload = Self.dataObject(from: data)
@@ -172,9 +243,10 @@ final class PhoneAuthService: ObservableObject {
                     ?? PhoneCodeChallenge.fallback.resendAfterSeconds
             )
         } catch let error as PhoneAuthError {
-            if Self.isDefinitiveRejection(error) { throw error }
-            // 后端不可达：允许用户用预设码继续。
-            guard LocalFallback.isEnabled else { throw error }
+            // 只有单元测试显式注入时，才可在传输层不可达后兜底。
+            // 普通 Debug 真机与所有 HTTP 服务端错误都如实上抛。
+            guard localFallbackPolicy == .backendUnavailable,
+                  error == .network else { throw error }
             return PhoneCodeChallenge(
                 ttlSeconds: PhoneCodeChallenge.fallback.ttlSeconds,
                 resendAfterSeconds: 0,
@@ -195,7 +267,7 @@ final class PhoneAuthService: ObservableObject {
             throw PhoneAuthError.invalidCode
         }
 
-        if LocalFallback.isForcedForUITests, LocalFallback.matches(code) {
+        if localFallbackPolicy == .forced, code == LocalFallback.presetCode {
             return PhoneSignInResult(
                 sessionToken: LocalFallback.localSessionToken(for: local),
                 userId: LocalFallback.localUserId(for: local),
@@ -218,8 +290,7 @@ final class PhoneAuthService: ObservableObject {
 
             guard 200..<300 ~= status else {
                 let error = Self.decodeError(status: status, data: data)
-                if Self.isDefinitiveRejection(error) { throw error }
-                throw PhoneAuthError.network
+                throw error
             }
 
             guard let payload = Self.dataObject(from: data),
@@ -235,10 +306,10 @@ final class PhoneAuthService: ObservableObject {
                 displayName: (payload["displayName"] as? String)?.trimmed
             )
         } catch let error as PhoneAuthError {
-            if Self.isDefinitiveRejection(error) { throw error }
-            // 后端不可达：只有预设码才放行，普通验证码仍然报网络错误，
-            // 避免让用户以为「随便输都能进」。
-            guard LocalFallback.matches(code) else { throw error }
+            // 只有测试注入 + 传输层不可达 + 预设码才放行。
+            guard localFallbackPolicy == .backendUnavailable,
+                  error == .network,
+                  code == LocalFallback.presetCode else { throw error }
             return PhoneSignInResult(
                 sessionToken: LocalFallback.localSessionToken(for: local),
                 userId: LocalFallback.localUserId(for: local),
@@ -251,10 +322,11 @@ final class PhoneAuthService: ObservableObject {
 
     // MARK: - 账号注销
 
-    /// 提交注销申请。后端按冷静期删除个人信息；客户端在本地立即登出。
-    func deleteAccount(sessionToken: String) async throws {
+    /// 提交 provider-neutral 注销申请。后端返回实际冷静期，以及旧 Apple
+    /// 账号是否需要用户手动撤销授权；客户端不得用硬编码文案覆盖该事实。
+    func deleteAccount(sessionToken: String) async throws -> AccountDeletionReceipt {
         // 本地直通签发的会话没有服务端记录，直接本地登出即可。
-        if sessionToken.hasPrefix("cms_local_") { return }
+        if sessionToken.hasPrefix("cms_local_") { return .localOnly }
 
         let (status, data) = try await transport.post(
             url: try endpoint("/api/mobile-auth/account/delete"),
@@ -264,6 +336,46 @@ final class PhoneAuthService: ObservableObject {
         guard 200..<300 ~= status else {
             throw Self.decodeError(status: status, data: data)
         }
+        return Self.decodeAccountDeletionReceipt(data: data)
+    }
+
+    nonisolated static func decodeAccountDeletionReceipt(
+        data: Data
+    ) -> AccountDeletionReceipt {
+        let payload = dataObject(from: data) ?? [:]
+        let status = ((payload["status"] as? String)?.trimmed).flatMap {
+            $0.isEmpty ? nil : String($0.prefix(80))
+        } ?? "accepted"
+        let rawGraceDays: Int
+        if let value = payload["graceDays"] as? NSNumber {
+            rawGraceDays = value.intValue
+        } else if let value = payload["grace_days"] as? NSNumber {
+            rawGraceDays = value.intValue
+        } else if let value = payload["graceDays"] as? String {
+            rawGraceDays = Int(value) ?? 0
+        } else if let value = payload["grace_days"] as? String {
+            rawGraceDays = Int(value) ?? 0
+        } else {
+            rawGraceDays = 0
+        }
+        let manual = boolean(
+            payload["manualAppleRevocationRequired"]
+                ?? payload["manual_apple_revocation_required"]
+        )
+        return AccountDeletionReceipt(
+            status: status,
+            graceDays: min(max(rawGraceDays, 0), 3_650),
+            manualAppleRevocationRequired: manual
+        )
+    }
+
+    private nonisolated static func boolean(_ value: Any?) -> Bool {
+        if let value = value as? Bool { return value }
+        if let value = value as? NSNumber { return value.boolValue }
+        if let value = value as? String {
+            return ["true", "1", "yes"].contains(value.trimmed.lowercased())
+        }
+        return false
     }
 
     // MARK: - 解析
@@ -272,7 +384,8 @@ final class PhoneAuthService: ObservableObject {
     /// 否则用户会以为随便一个号码/验证码都能登录。
     nonisolated static func isDefinitiveRejection(_ error: PhoneAuthError) -> Bool {
         switch error {
-        case .invalidPhone, .invalidCode, .codeExpired, .tooManyRequests, .notAvailableInRegion:
+        case .invalidPhone, .invalidCode, .codeExpired, .tooManyRequests,
+             .smsUnavailable, .notAvailableInRegion:
             return true
         case .network, .server:
             return false

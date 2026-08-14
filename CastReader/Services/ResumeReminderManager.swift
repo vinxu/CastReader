@@ -110,10 +110,50 @@ final class ResumeReminderManager {
 
     private let policy = ResumeReminderPolicy()
     private var state = ResumeReminderState()
+    private var activeStorageID: String?
+    private var scopeGeneration: UInt64 = 0
     private var appInBackground = false
     private var lastBackgroundReschedule = Date.distantPast
 
-    private init() { load() }
+    private init() {}
+
+    /// Selects a route x account state before any title or playback duration is
+    /// recorded. Switching accounts also cancels the old account's pending
+    /// notification immediately, so its title can never surface later.
+    func activateAccountScope(storageID: String) {
+        guard Self.isValidStorageID(storageID) else {
+            deactivateAccountScope()
+            return
+        }
+        guard activeStorageID != storageID else { return }
+        clearPendingNotifications()
+        scopeGeneration &+= 1
+        activeStorageID = storageID
+        state = ResumeReminderState()
+        lastPersist = .distantPast
+        load()
+    }
+
+    func deactivateAccountScope() {
+        clearPendingNotifications()
+        scopeGeneration &+= 1
+        activeStorageID = nil
+        state = ResumeReminderState()
+        lastPersist = .distantPast
+    }
+
+    #if DEBUG
+    /// UI tests that explicitly bypass the sign-in wall keep the historical
+    /// unscoped reminder state. Normal Debug launches remain fail-closed.
+    func activateLegacyTestingScope() {
+        clearPendingNotifications()
+        scopeGeneration &+= 1
+        activeStorageID = "debug-legacy"
+        state = ResumeReminderState()
+        lastPersist = .distantPast
+        load()
+    }
+    #endif
 
     func start() {
         NotificationCenter.default.addObserver(
@@ -126,7 +166,8 @@ final class ResumeReminderManager {
     // MARK: 播放时长（与评分/引导同一 tick 管线，主线程回调）
 
     func recordPlayback(documentID: String, title: String, seconds: Double) {
-        guard seconds.isFinite, seconds > 0, seconds <= ResumeReminderPolicy.maxTrustedDelta,
+        guard activeStorageID != nil,
+              seconds.isFinite, seconds > 0, seconds <= ResumeReminderPolicy.maxTrustedDelta,
               !documentID.isEmpty else { return }
         let now = Date()
         state.totalListenedSeconds += seconds
@@ -158,11 +199,12 @@ final class ResumeReminderManager {
     func appBecameActive() {
         appInBackground = false
         // 人回来了，待发的「回来听」提醒全部作废。
-        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        clearPendingNotifications()
         promptPermissionIfNeeded()
     }
 
     private func appDidEnterBackground() {
+        guard activeStorageID != nil else { return }
         appInBackground = true
         lastBackgroundReschedule = Date()
         persist()
@@ -182,6 +224,8 @@ final class ResumeReminderManager {
     // MARK: 调度
 
     private func scheduleIfEligible() {
+        guard let storageID = activeStorageID else { return }
+        let expectedGeneration = scopeGeneration
         let now = Date()
         let candidates = state.perDoc.map { id, doc in
             ResumeReminderCandidate(
@@ -197,6 +241,7 @@ final class ResumeReminderManager {
                   lastSentAny: state.lastSentAt
               ) else { return }
 
+        let requestIdentifier = Self.requestPrefix + storageID + "." + candidate.id
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
             guard settings.authorizationStatus == .authorized else { return }
@@ -208,12 +253,19 @@ final class ResumeReminderManager {
                 timeInterval: max(60, fire.timeIntervalSince(now)), repeats: false
             )
             let request = UNNotificationRequest(
-                identifier: Self.requestPrefix + candidate.id, content: content, trigger: trigger
+                identifier: requestIdentifier,
+                content: content,
+                trigger: trigger
             )
-            center.removeAllPendingNotificationRequests()   // 同时只保留一条
-            center.add(request) { error in
+            let callbackCenter = UNUserNotificationCenter.current()
+            callbackCenter.removeAllPendingNotificationRequests()   // 同时只保留一条
+            callbackCenter.add(request) { error in
                 guard error == nil else { return }
-                Task { @MainActor in self.markScheduled(docID: candidate.id, fireAt: fire) }
+                Task { @MainActor in
+                    guard self.scopeGeneration == expectedGeneration,
+                          self.activeStorageID == storageID else { return }
+                    self.markScheduled(docID: candidate.id, fireAt: fire)
+                }
             }
         }
     }
@@ -245,14 +297,31 @@ final class ResumeReminderManager {
     }
 
     private func persist() {
-        if let data = try? JSONEncoder().encode(state) {
-            UserDefaults.standard.set(data, forKey: Self.stateKey)
-        }
+        guard let key = scopedStateKey,
+              let data = try? JSONEncoder().encode(state) else { return }
+        UserDefaults.standard.set(data, forKey: key)
     }
 
     private func load() {
-        guard let data = UserDefaults.standard.data(forKey: Self.stateKey),
+        guard let key = scopedStateKey,
+              let data = UserDefaults.standard.data(forKey: key),
               let decoded = try? JSONDecoder().decode(ResumeReminderState.self, from: data) else { return }
         state = decoded
+    }
+
+    private var scopedStateKey: String? {
+        guard let activeStorageID else { return nil }
+        #if DEBUG
+        if activeStorageID == "debug-legacy" { return Self.stateKey }
+        #endif
+        return "\(Self.stateKey).account.\(activeStorageID)"
+    }
+
+    private func clearPendingNotifications() {
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+    }
+
+    private static func isValidStorageID(_ value: String) -> Bool {
+        value.count == 64 && value.allSatisfy(\.isHexDigit)
     }
 }

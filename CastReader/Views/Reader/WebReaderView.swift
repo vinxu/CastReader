@@ -321,7 +321,7 @@ struct WebReaderView: UIViewRepresentable {
             config.defaultWebpagePreferences.preferredContentMode = .mobile
         }
         if document.sourceKind == .weread {
-            config.websiteDataStore = .default()
+            config.websiteDataStore = CommercialWebSession.websiteDataStore
             // Desktop identity and viewport sizing are separate concerns.
             // The custom desktop UA below keeps WeRead on its web reader, while
             // mobile content mode makes its existing `width=device-width` meta

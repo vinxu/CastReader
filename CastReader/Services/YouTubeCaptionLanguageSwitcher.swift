@@ -100,6 +100,10 @@ final class YouTubeCaptionLanguageSwitcher: ObservableObject {
         YouTubeTranscriptService.shared.cancel()
 
         let target = option.languageCode
+        guard let accountBoundary = AccountContentIsolation.captureBoundaryToken() else {
+            failureMessage = YouTubeTranscriptFailure.network.errorDescription
+            return
+        }
         phase = .resolving(targetLanguage: target)
         failureMessage = nil
         armOverlay(for: target)
@@ -113,6 +117,9 @@ final class YouTubeCaptionLanguageSwitcher: ObservableObject {
                     cache: cache
                 )
                 try Task.checkCancellation()
+                guard AccountContentIsolation.isCurrent(accountBoundary) else {
+                    throw CancellationError()
+                }
                 // Retire the overlay timer before the session swap: `apply`
                 // awaits cache reads, and a grace window that fires mid-swap
                 // would raise the overlay just as playback is starting.
@@ -144,6 +151,12 @@ final class YouTubeCaptionLanguageSwitcher: ObservableObject {
         overlayTask = nil
         YouTubeTranscriptService.shared.cancel()
         phase = .idle
+    }
+
+    func resetForAccountBoundary() {
+        cancel()
+        presentedPickerVideoID = nil
+        failureMessage = nil
     }
 
     private func finishOverlay() {

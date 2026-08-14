@@ -11,7 +11,12 @@ import WebKit
 
 @MainActor
 final class GoogleBooksLibraryStore: ObservableObject {
-    static let shared = GoogleBooksLibraryStore()
+    static let shared = GoogleBooksLibraryStore(
+        defaults: .standard,
+        historyStore: .shared,
+        websiteDataStore: GoogleWebSession.websiteDataStore,
+        usesLegacyStorageWhenUnscoped: false
+    )
 
     @Published private(set) var books: [GoogleBooksBook] = []
     @Published private(set) var hasConnected = false
@@ -23,11 +28,14 @@ final class GoogleBooksLibraryStore: ObservableObject {
     @Published var isRefreshing = false
     @Published var lastError: String?
 
-    private let booksKey = "googlebooks.library.books.v1"
-    private let connectedKey = "googlebooks.library.connected.v1"
-    private let accountKey = "googlebooks.library.account.v1"
-    private let accountIdentityKey = "googlebooks.library.accountIdentity.v1"
-    private let anchorsKey = "googlebooks.library.anchors.v1"
+    private enum Storage {
+        static let books = "googlebooks.library.books.v1"
+        static let connected = "googlebooks.library.connected.v1"
+        static let account = "googlebooks.library.account.v1"
+        static let accountIdentity = "googlebooks.library.accountIdentity.v1"
+        static let anchors = "googlebooks.library.anchors.v1"
+    }
+
     private let defaults: UserDefaults
     private let historyStore: HistoryStore
     /// Kept as an explicit dependency so the disconnect contract can verify
@@ -35,6 +43,9 @@ final class GoogleBooksLibraryStore: ObservableObject {
     /// Only an independently named "Sign out of Google web session" action may
     /// ever erase it.
     private let sharedGoogleWebSessionDataStore: WKWebsiteDataStore
+    private let usesLegacyStorageWhenUnscoped: Bool
+    private var accountScope: AccountContentScope?
+    private var isLegacyTestingScopeActive = false
 
     convenience init(defaults: UserDefaults = .standard) {
         self.init(
@@ -60,13 +71,42 @@ final class GoogleBooksLibraryStore: ObservableObject {
     init(
         defaults: UserDefaults,
         historyStore: HistoryStore,
-        websiteDataStore: WKWebsiteDataStore
+        websiteDataStore: WKWebsiteDataStore,
+        usesLegacyStorageWhenUnscoped: Bool = true
     ) {
         self.defaults = defaults
         self.historyStore = historyStore
         self.sharedGoogleWebSessionDataStore = websiteDataStore
+        self.usesLegacyStorageWhenUnscoped = usesLegacyStorageWhenUnscoped
+        if usesLegacyStorageWhenUnscoped {
+            load()
+        } else {
+            resetInMemory()
+        }
+    }
+
+    func activateAccountScope(_ scope: AccountContentScope) {
+        guard accountScope != scope || !hasActiveStorage else { return }
+        resetInMemory()
+        isLegacyTestingScopeActive = false
+        accountScope = scope
         load()
     }
+
+    func deactivateAccountScope() {
+        resetInMemory()
+        isLegacyTestingScopeActive = false
+        accountScope = nil
+    }
+
+#if DEBUG
+    func activateLegacyTestingScope() {
+        resetInMemory()
+        accountScope = nil
+        isLegacyTestingScopeActive = true
+        load()
+    }
+#endif
 
     var needsConnection: Bool { !hasConnected && books.isEmpty }
     var homeBooks: [GoogleBooksBook] { Array(sortedBooks(sort: .recent, query: "").prefix(8)) }
@@ -256,15 +296,17 @@ final class GoogleBooksLibraryStore: ObservableObject {
     }
 
     private func load() {
-        hasConnected = defaults.bool(forKey: connectedKey)
-        accountLabel = defaults.string(forKey: accountKey)
-        let storedIdentity = defaults.string(forKey: accountIdentityKey)
+        resetInMemory()
+        guard hasActiveStorage else { return }
+        hasConnected = defaults.bool(forKey: storageKey(Storage.connected))
+        accountLabel = defaults.string(forKey: storageKey(Storage.account))
+        let storedIdentity = defaults.string(forKey: storageKey(Storage.accountIdentity))
         accountIdentity = GoogleBooksAccountIdentity.isValidStoredIdentity(storedIdentity)
             ? storedIdentity
             : nil
 
         var decodedBooks: [GoogleBooksBook] = []
-        if let data = defaults.data(forKey: booksKey),
+        if let data = defaults.data(forKey: storageKey(Storage.books)),
            let decoded = try? JSONDecoder().decode([GoogleBooksBook].self, from: data) {
             decodedBooks = decoded
         }
@@ -289,7 +331,7 @@ final class GoogleBooksLibraryStore: ObservableObject {
         }
 
         var sanitizedAnchors: [String: GoogleBooksReadingAnchor] = [:]
-        if let data = defaults.data(forKey: anchorsKey),
+        if let data = defaults.data(forKey: storageKey(Storage.anchors)),
            let decoded = try? JSONDecoder().decode([String: GoogleBooksReadingAnchor].self, from: data) {
             for (key, var anchor) in decoded {
                 guard anchor.bookID == key,
@@ -316,10 +358,33 @@ final class GoogleBooksLibraryStore: ObservableObject {
     }
 
     private func save() {
-        defaults.set(hasConnected, forKey: connectedKey)
-        defaults.set(accountLabel, forKey: accountKey)
-        defaults.set(accountIdentity, forKey: accountIdentityKey)
-        if let data = try? JSONEncoder().encode(books) { defaults.set(data, forKey: booksKey) }
-        if let data = try? JSONEncoder().encode(anchors) { defaults.set(data, forKey: anchorsKey) }
+        guard hasActiveStorage else { return }
+        defaults.set(hasConnected, forKey: storageKey(Storage.connected))
+        defaults.set(accountLabel, forKey: storageKey(Storage.account))
+        defaults.set(accountIdentity, forKey: storageKey(Storage.accountIdentity))
+        if let data = try? JSONEncoder().encode(books) {
+            defaults.set(data, forKey: storageKey(Storage.books))
+        }
+        if let data = try? JSONEncoder().encode(anchors) {
+            defaults.set(data, forKey: storageKey(Storage.anchors))
+        }
+    }
+
+    private var hasActiveStorage: Bool {
+        accountScope != nil || usesLegacyStorageWhenUnscoped || isLegacyTestingScopeActive
+    }
+
+    private func storageKey(_ legacyKey: String) -> String {
+        accountScope?.storageKey(legacyKey) ?? legacyKey
+    }
+
+    private func resetInMemory() {
+        books = []
+        hasConnected = false
+        accountLabel = nil
+        accountIdentity = nil
+        anchors = [:]
+        isRefreshing = false
+        lastError = nil
     }
 }

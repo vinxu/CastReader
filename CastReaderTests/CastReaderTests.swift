@@ -8,6 +8,7 @@
 import XCTest
 import UIKit
 import WebKit
+import AuthenticationServices
 @testable import CastReader
 
 class CastReaderTests: XCTestCase {
@@ -1954,7 +1955,7 @@ final class LocalizationCatalogTests: XCTestCase {
             HomeProPurchaseContract.primaryAction(
                 isPro: true,
                 hasYearlyProduct: true,
-                hasEmailAccount: true,
+                hasSyncableAccount: true,
                 isLoadingProducts: false,
                 isPurchaseInFlight: false
             ),
@@ -1964,7 +1965,7 @@ final class LocalizationCatalogTests: XCTestCase {
             HomeProPurchaseContract.primaryAction(
                 isPro: false,
                 hasYearlyProduct: true,
-                hasEmailAccount: true,
+                hasSyncableAccount: true,
                 isLoadingProducts: true,
                 isPurchaseInFlight: false
             ),
@@ -1974,7 +1975,7 @@ final class LocalizationCatalogTests: XCTestCase {
             HomeProPurchaseContract.primaryAction(
                 isPro: false,
                 hasYearlyProduct: false,
-                hasEmailAccount: true,
+                hasSyncableAccount: true,
                 isLoadingProducts: false,
                 isPurchaseInFlight: false
             ),
@@ -1984,7 +1985,7 @@ final class LocalizationCatalogTests: XCTestCase {
             HomeProPurchaseContract.primaryAction(
                 isPro: false,
                 hasYearlyProduct: true,
-                hasEmailAccount: false,
+                hasSyncableAccount: false,
                 isLoadingProducts: false,
                 isPurchaseInFlight: false
             ),
@@ -1994,7 +1995,7 @@ final class LocalizationCatalogTests: XCTestCase {
             HomeProPurchaseContract.primaryAction(
                 isPro: false,
                 hasYearlyProduct: true,
-                hasEmailAccount: true,
+                hasSyncableAccount: true,
                 isLoadingProducts: false,
                 isPurchaseInFlight: false
             ),
@@ -2004,7 +2005,7 @@ final class LocalizationCatalogTests: XCTestCase {
             HomeProPurchaseContract.primaryAction(
                 isPro: false,
                 hasYearlyProduct: true,
-                hasEmailAccount: true,
+                hasSyncableAccount: true,
                 isLoadingProducts: false,
                 isPurchaseInFlight: true
             ),
@@ -3659,42 +3660,117 @@ final class AudioPlaybackOwnershipTests: XCTestCase {
 }
 
 final class TTSEndpointSecurityTests: XCTestCase {
-    func testLegacyPlaintextUSRouteIsUpgradedToHTTPS() {
-        XCTAssertEqual(
-            TTSEndpoint.normalizedSecureBase("http://api.castreader.ai:8123"),
-            "https://api.castreader.ai"
-        )
-    }
-
-    func testHTTPSRoutesAreAcceptedAndTrailingSlashIsRemoved() {
-        XCTAssertEqual(
-            TTSEndpoint.normalizedSecureBase(" https://example.com:8443/ "),
-            "https://example.com:8443"
-        )
-    }
-
-    func testUnknownPlaintextAndMalformedRoutesAreRejected() {
-        XCTAssertNil(TTSEndpoint.normalizedSecureBase("http://example.com:8123"))
-        XCTAssertNil(TTSEndpoint.normalizedSecureBase("not a URL"))
-        XCTAssertNil(TTSEndpoint.normalizedSecureBase(""))
+    func testNewTTSContractContainsOnlyTheTwoHTTPSGatewaysAndNoCrossLineFallback() {
+        XCTAssertEqual(TTSEndpoint.globalBase, "https://api.castreader.ai")
+        XCTAssertEqual(TTSEndpoint.chinaMainlandBase, "https://api.castreader.cn")
+        XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: true))
+        XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: false))
     }
 }
 
 final class QuickReadEndpointSecurityTests: XCTestCase {
-    func testAcceptsOnlyNormalizedHTTPSBases() {
+    func testNewQuickReadContractPinsGlobalAndDedicatedChinaIngresses() {
+        XCTAssertEqual(QuickReadEndpoint.defaultBase, "https://api.castreader.ai")
+        XCTAssertEqual(QuickReadEndpoint.chinaBase, "https://quickread.castreader.cn")
+        XCTAssertFalse(QuickReadEndpoint.defaultBase.contains("qr.castreader.ai"))
+        XCTAssertFalse(QuickReadEndpoint.chinaBase.contains(".ai"))
+    }
+}
+
+final class QuickReadFastLaneHandoffTests: XCTestCase {
+    private func paragraphs() -> [ReadingParagraph] {
+        (0..<7).map { index in
+            ReadingParagraph(
+                id: index,
+                text: "paragraph-\(index)-" + String(repeating: "x", count: index + 1),
+                type: index == 0 ? .heading(1) : .paragraph
+            )
+        }
+    }
+
+    func testOpeningAndQualityInputArePhysicalPrefixAndDisjointSuffix() throws {
+        let source = paragraphs()
+        let opening = Array(source.prefix(2))
+        let handoff = try XCTUnwrap(QuickReadFastLaneHandoff(
+            readableParagraphs: source,
+            selectedOpening: opening,
+            fastNarration: "fast narration"
+        ))
+
+        XCTAssertEqual(handoff.opening + handoff.qualityInput, source)
+        XCTAssertTrue(
+            Set(handoff.opening.map(\.id)).isDisjoint(with: Set(handoff.qualityInput.map(\.id)))
+        )
+        XCTAssertEqual(handoff.reindexedQualityInput.map(\.id), Array(0..<5))
+        XCTAssertEqual(handoff.reindexedQualityInput.map(\.text), Array(source.dropFirst(2)).map(\.text))
+        XCTAssertNotEqual(handoff.openingDigest.fingerprint, handoff.qualityDigest.fingerprint)
         XCTAssertEqual(
-            QuickReadEndpoint.normalizedSecureBase(" https://qr.castreader.ai/ "),
-            "https://qr.castreader.ai"
+            handoff.qualityDigest,
+            QuickReadFastLaneHandoff.scopeDigest(handoff.reindexedQualityInput),
+            "reindexing for transport must not change the logged quality-scope fingerprint"
+        )
+
+        XCTAssertNil(QuickReadFastLaneHandoff(
+            readableParagraphs: source,
+            selectedOpening: Array(source[1...2]),
+            fastNarration: "fast narration"
+        ), "a non-prefix opening must fall back instead of sending overlapping scopes")
+    }
+
+    func testFastNarrationIsTheQualityPlanPreviousSummary() throws {
+        let source = paragraphs()
+        let narration = "The already-played opening explanation."
+        let handoff = try XCTUnwrap(QuickReadFastLaneHandoff(
+            readableParagraphs: source,
+            selectedOpening: Array(source.prefix(2)),
+            fastNarration: narration
+        ))
+
+        XCTAssertEqual(handoff.previousSummary, narration)
+        XCTAssertEqual(
+            QuickReadFastLaneHandoff.continuitySummary(
+                explicitPreviousSummary: handoff.previousSummary,
+                fastNarration: "stale fallback"
+            ),
+            narration
         )
         XCTAssertEqual(
-            QuickReadEndpoint.normalizedSecureBase("https://example.com:8443/service/"),
-            "https://example.com:8443/service"
+            QuickReadFastLaneHandoff.continuitySummary(
+                explicitPreviousSummary: nil,
+                fastNarration: narration
+            ),
+            narration
         )
-        XCTAssertNil(QuickReadEndpoint.normalizedSecureBase("http://example.com:8443"))
-        XCTAssertNil(QuickReadEndpoint.normalizedSecureBase("https://user@example.com"))
-        XCTAssertNil(QuickReadEndpoint.normalizedSecureBase("https://example.com?token=value"))
-        XCTAssertNil(QuickReadEndpoint.normalizedSecureBase("not a URL"))
-        XCTAssertNil(QuickReadEndpoint.normalizedSecureBase(""))
+    }
+
+    func testFastLanePlaybackAndQualityBlockIndexesRoundTrip() {
+        let indexBase = 1
+        XCTAssertNil(QuickReadFastLaneHandoff.qualityBlockIndex(
+            forPlaybackBlockIndex: 0,
+            indexBase: indexBase
+        ))
+
+        for qualityIndex in 0..<4 {
+            let playbackIndex = QuickReadFastLaneHandoff.playbackBlockIndex(
+                forQualityBlockIndex: qualityIndex,
+                indexBase: indexBase
+            )
+            XCTAssertEqual(playbackIndex, qualityIndex + 1)
+            XCTAssertEqual(
+                playbackIndex.flatMap {
+                    QuickReadFastLaneHandoff.qualityBlockIndex(
+                        forPlaybackBlockIndex: $0,
+                        indexBase: indexBase
+                    )
+                },
+                qualityIndex
+            )
+        }
+
+        XCTAssertEqual(QuickReadFastLaneHandoff.qualityBlockIndex(
+            forPlaybackBlockIndex: 0,
+            indexBase: 0
+        ), 0, "the original single-lane path keeps block zero unchanged")
     }
 }
 
@@ -3833,6 +3909,43 @@ final class StudyBoostTests: XCTestCase {
 }
 
 final class AppleAccountLinkTests: XCTestCase {
+
+    @MainActor
+    func testAppleCredentialStateFailsClosedWhenAuthorizationIsGone() {
+        XCTAssertFalse(
+            AuthService.appleCredentialRequiresLocalSignOut(.authorized)
+        )
+        XCTAssertTrue(
+            AuthService.appleCredentialRequiresLocalSignOut(.revoked)
+        )
+        XCTAssertTrue(
+            AuthService.appleCredentialRequiresLocalSignOut(.notFound)
+        )
+        XCTAssertTrue(
+            AuthService.appleCredentialRequiresLocalSignOut(.transferred)
+        )
+    }
+
+    @MainActor
+    func testRemovingAppleArchiveDeletesUserAcrossRouteFields() {
+        let userID = "apple-delete-test-\(UUID().uuidString)"
+        defer { AuthService.removeArchivedAppleProfile(for: userID) }
+
+        AuthService.archiveAppleProfile(
+            id: userID,
+            name: "Delete Me",
+            email: "delete@example.com",
+            backendUserId: "backend-delete-test"
+        )
+        XCTAssertEqual(AuthService.archivedAppleProfile(for: userID).name, "Delete Me")
+
+        AuthService.removeArchivedAppleProfile(for: userID)
+
+        let removed = AuthService.archivedAppleProfile(for: userID)
+        XCTAssertNil(removed.name)
+        XCTAssertNil(removed.email)
+        XCTAssertNil(removed.backendUserId)
+    }
 
     /// `needsAppleRelink` 是付费用户被当成免费用户时唯一的自救提示，误报会骚扰
     /// 正常用户，漏报会让人永远卡住——两个方向都要钉住。

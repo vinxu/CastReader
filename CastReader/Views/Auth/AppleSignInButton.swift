@@ -43,28 +43,16 @@ struct AppleSignInButton: View {
 ///
 /// 按 Apple 品牌规范：纯黑/纯白 Apple 标志、周围留足空白、不加描边以外的装饰。
 struct AppleSignInIconButton: View {
-    var onSuccess: () -> Void
-    var onError: (String) -> Void
-    /// 上次登录用的就是 Apple：描主色边提示（图标放不下文字标签）。
-    var isLastUsed = false
-
-    /// 必须持有 coordinator：`ASAuthorizationController` 只弱引用 delegate，
-    /// 不留强引用的话面板还没弹出来它就被释放了，回调永远不来。
-    @State private var coordinator: AppleSignInCoordinator?
+    var action: () -> Void
 
     var body: some View {
-        Button {
-            let session = AppleSignInCoordinator(onSuccess: onSuccess, onError: onError)
-            coordinator = session
-            session.start()
-        } label: {
+        Button(action: action) {
             Image(systemName: "apple.logo")
                 .font(.system(size: 19, weight: .medium))
                 .foregroundColor(AppTheme.foreground)
                 .frame(width: 44, height: 44)
                 .background(AppTheme.surface, in: Circle())
                 .overlay(Circle().stroke(AppTheme.border))
-                .lastUsedBubble(isLastUsed)
         }
         .accessibilityLabel(Text(AppLocalized("使用 Apple 登录")))
     }

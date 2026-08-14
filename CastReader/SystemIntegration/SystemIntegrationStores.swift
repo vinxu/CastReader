@@ -108,6 +108,27 @@ extension Notification.Name {
     )
 }
 
+/// Extension-safe mirror of the opaque account partition pointer maintained by
+/// the containing app. This file also ships in the Widget target, where the
+/// app-only `AccountContentScopeBridge` type is intentionally unavailable.
+private enum SystemActionAccountBoundary {
+    private static let activeStorageIDKey = "account.content.activeStorageID.v1"
+    private static let activeBoundaryNonceKey = "account.content.activeBoundaryNonce.v1"
+
+    static var current: String {
+        let defaults = UserDefaults(
+            suiteName: CastReaderSystemIntegration.appGroupIdentifier
+        )
+        let storageID = defaults?.string(forKey: activeStorageIDKey) ?? "unassigned"
+        let nonce = defaults?.string(forKey: activeBoundaryNonceKey) ?? "none"
+        return "\(storageID).\(nonce)"
+    }
+
+    static func matches(_ token: String) -> Bool {
+        !token.isEmpty && token == current
+    }
+}
+
 final class SystemActionStore: @unchecked Sendable {
     static let shared = SystemActionStore(
         sharedDefaults: UserDefaults(suiteName: CastReaderSystemIntegration.appGroupIdentifier)
@@ -116,6 +137,7 @@ final class SystemActionStore: @unchecked Sendable {
     private enum Storage {
         static let pendingActionKey = "systemIntegration.pendingAction.v1"
         static let pendingOriginKey = "systemIntegration.pendingActionOrigin.v1"
+        static let pendingBoundaryKey = "systemIntegration.pendingActionBoundary.v1"
     }
 
     private let defaults: UserDefaults?
@@ -142,6 +164,10 @@ final class SystemActionStore: @unchecked Sendable {
         }
         defaults.set(data, forKey: Storage.pendingActionKey)
         defaults.set(origin.rawValue, forKey: Storage.pendingOriginKey)
+        defaults.set(
+            SystemActionAccountBoundary.current,
+            forKey: Storage.pendingBoundaryKey
+        )
         lock.unlock()
 
         NotificationCenter.default.post(name: .castReaderSystemActionPending, object: nil)
@@ -158,6 +184,8 @@ final class SystemActionStore: @unchecked Sendable {
         defer { lock.unlock() }
         guard let defaults,
               defaults.data(forKey: Storage.pendingActionKey) != nil,
+              let boundary = defaults.string(forKey: Storage.pendingBoundaryKey),
+              SystemActionAccountBoundary.matches(boundary),
               let raw = defaults.string(forKey: Storage.pendingOriginKey) else { return nil }
         return SystemActionOrigin(rawValue: raw)
     }
@@ -172,11 +200,14 @@ final class SystemActionStore: @unchecked Sendable {
             return nil
         }
         let data = defaults.data(forKey: Storage.pendingActionKey)
+        let boundary = defaults.string(forKey: Storage.pendingBoundaryKey)
         defaults.removeObject(forKey: Storage.pendingActionKey)
         defaults.removeObject(forKey: Storage.pendingOriginKey)
+        defaults.removeObject(forKey: Storage.pendingBoundaryKey)
         lock.unlock()
 
-        guard let data else { return nil }
+        guard let data, let boundary,
+              SystemActionAccountBoundary.matches(boundary) else { return nil }
         return try? JSONDecoder().decode(SystemAction.self, from: data)
     }
 }

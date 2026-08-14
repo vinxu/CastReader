@@ -12,6 +12,7 @@
 //
 
 import XCTest
+import UIKit
 @testable import CastReader
 
 final class SystemIntegrationTests: XCTestCase {
@@ -237,5 +238,241 @@ final class SystemIntegrationTests: XCTestCase {
         store.replace(with: [])
 
         XCTAssertTrue(store.snapshots().isEmpty)
+    }
+}
+
+@MainActor
+final class HistoryStoreAccountScopeTests: XCTestCase {
+    func testAccountScopesStartInactivePreserveLegacyAndRemainIndependent() async throws {
+        let container = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: container) }
+
+        let legacyDirectory = container.appendingPathComponent("History", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: legacyDirectory,
+            withIntermediateDirectories: true
+        )
+        let now = Date(timeIntervalSinceReferenceDate: 779_000_000)
+        let legacy = HistoryRecord(
+            id: "legacy-document",
+            title: "Legacy",
+            sourceKindRaw: ReadingSourceKind.text.rawValue,
+            sourceURL: nil,
+            language: "en",
+            createdAt: now,
+            lastOpenedAt: now,
+            coverPath: nil
+        )
+        let legacyIndexURL = legacyDirectory.appendingPathComponent("index.json")
+        let legacyPayloadURL = legacyDirectory.appendingPathComponent("legacy-document.payload")
+        let legacyIndexData = try JSONEncoder().encode([legacy])
+        try legacyIndexData.write(to: legacyIndexURL, options: .atomic)
+        try Data("legacy bytes".utf8).write(to: legacyPayloadURL, options: .atomic)
+
+        // Existing dependency/test injection remains immediately active.
+        XCTAssertEqual(HistoryStore(directory: legacyDirectory).records.map(\.id), [legacy.id])
+
+        let accountDataRoot = container.appendingPathComponent("AccountData", isDirectory: true)
+        let store = HistoryStore(accountDataRoot: accountDataRoot)
+        XCTAssertTrue(store.records.isEmpty)
+        store.record(textDocument(id: "inactive", title: "Inactive", text: "ignored"))
+        XCTAssertTrue(store.records.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: accountDataRoot.path))
+        XCTAssertEqual(try Data(contentsOf: legacyIndexURL), legacyIndexData)
+        XCTAssertEqual(try Data(contentsOf: legacyPayloadURL), Data("legacy bytes".utf8))
+
+#if DEBUG
+        XCTAssertTrue(store.activateLegacyTestingScope())
+        XCTAssertEqual(store.records.map(\.id), [legacy.id])
+        store.deactivateAccountScope()
+        XCTAssertTrue(store.records.isEmpty)
+#endif
+
+        XCTAssertTrue(store.activateAccountScope(storageID: "opaque-account-a"))
+        store.record(textDocument(
+            id: "same-document-id",
+            title: "Account A",
+            text: "account a bytes"
+        ))
+        XCTAssertEqual(store.records.map(\.title), ["Account A"])
+
+        let accountADirectory = try XCTUnwrap(HistoryStore.accountHistoryDirectory(
+            accountDataRoot: accountDataRoot,
+            storageID: "opaque-account-a"
+        ))
+        XCTAssertEqual(
+            try Data(contentsOf: accountADirectory.appendingPathComponent("same-document-id.payload")),
+            Data("account a bytes".utf8)
+        )
+
+        XCTAssertTrue(store.activateAccountScope(storageID: "opaque-account-b"))
+        XCTAssertTrue(store.records.isEmpty)
+        store.record(textDocument(
+            id: "same-document-id",
+            title: "Account B",
+            text: "account b bytes"
+        ))
+        XCTAssertEqual(store.records.map(\.title), ["Account B"])
+
+        let accountBDirectory = try XCTUnwrap(HistoryStore.accountHistoryDirectory(
+            accountDataRoot: accountDataRoot,
+            storageID: "opaque-account-b"
+        ))
+        XCTAssertEqual(
+            try Data(contentsOf: accountBDirectory.appendingPathComponent("same-document-id.payload")),
+            Data("account b bytes".utf8)
+        )
+
+        XCTAssertTrue(store.activateAccountScope(storageID: "opaque-account-a"))
+        let accountARecord = try XCTUnwrap(store.records.first)
+        XCTAssertEqual(accountARecord.title, "Account A")
+        let reopenedAccountA = try await store.reopen(accountARecord)
+        XCTAssertEqual(reopenedAccountA?.fullText, "account a bytes")
+
+        store.deactivateAccountScope()
+        XCTAssertTrue(store.records.isEmpty)
+        store.clearAll()
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: accountADirectory.appendingPathComponent("index.json").path
+        ))
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: accountBDirectory.appendingPathComponent("index.json").path
+        ))
+        XCTAssertEqual(try Data(contentsOf: legacyIndexURL), legacyIndexData)
+        XCTAssertEqual(try Data(contentsOf: legacyPayloadURL), Data("legacy bytes".utf8))
+    }
+
+    func testInvalidStorageIDDeactivatesWithoutEscapingRoot() {
+        let container = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: container) }
+        let accountDataRoot = container.appendingPathComponent("AccountData", isDirectory: true)
+        let store = HistoryStore(accountDataRoot: accountDataRoot)
+
+        XCTAssertTrue(store.activateAccountScope(storageID: "valid-scope"))
+        store.record(textDocument(id: "valid", title: "Valid", text: "valid"))
+        XCTAssertFalse(store.records.isEmpty)
+
+        XCTAssertFalse(store.activateAccountScope(storageID: "../escaped"))
+        XCTAssertTrue(store.records.isEmpty)
+        XCTAssertNil(HistoryStore.accountHistoryDirectory(
+            accountDataRoot: accountDataRoot,
+            storageID: "../escaped"
+        ))
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: container.appendingPathComponent("escaped", isDirectory: true).path
+        ))
+    }
+
+    func testPendingCoverFromPreviousScopeCannotWriteIntoCurrentAccount() async throws {
+        let container = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: container) }
+        let accountDataRoot = container.appendingPathComponent("AccountData", isDirectory: true)
+        let accountBDirectory = try XCTUnwrap(HistoryStore.accountHistoryDirectory(
+            accountDataRoot: accountDataRoot,
+            storageID: "account-b"
+        ))
+        try FileManager.default.createDirectory(
+            at: accountBDirectory,
+            withIntermediateDirectories: true
+        )
+        let now = Date(timeIntervalSinceReferenceDate: 780_000_000)
+        let accountBRecord = HistoryRecord(
+            id: "shared-id",
+            title: "Account B",
+            sourceKindRaw: ReadingSourceKind.text.rawValue,
+            sourceURL: nil,
+            language: "en",
+            createdAt: now,
+            lastOpenedAt: now,
+            // Prevent account B from starting its own cover task while keeping
+            // this record eligible for an accidental old-scope write.
+            coverPath: ""
+        )
+        try JSONEncoder().encode([accountBRecord]).write(
+            to: accountBDirectory.appendingPathComponent("index.json"),
+            options: .atomic
+        )
+
+        let gate = SuspendedHistoryCoverLoader()
+        let store = HistoryStore(
+            accountDataRoot: accountDataRoot,
+            performsCoverWork: true,
+            coverDataLoader: { _ in await gate.load() }
+        )
+        XCTAssertTrue(store.activateAccountScope(storageID: "account-a"))
+        store.record(ReadingDocument(
+            id: "shared-id",
+            title: "Account A",
+            sourceKind: .text,
+            language: "en",
+            paragraphs: [ReadingParagraph(id: 0, text: "Account A")],
+            coverURL: "https://example.invalid/account-a-cover.png"
+        ))
+        await gate.waitUntilStarted()
+
+        XCTAssertTrue(store.activateAccountScope(storageID: "account-b"))
+        XCTAssertEqual(store.records.first, accountBRecord)
+
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4))
+        let image = renderer.image { context in
+            UIColor.red.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+        }
+        await gate.resume(with: image.pngData())
+        await gate.waitUntilFinished()
+        for _ in 0..<10 { await Task.yield() }
+
+        XCTAssertEqual(store.records.first, accountBRecord)
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: accountBDirectory.appendingPathComponent("shared-id.cover.jpg").path
+        ))
+    }
+
+    private func makeDirectory() -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("HistoryStoreAccountScopeTests-\(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        return directory
+    }
+
+    private func textDocument(id: String, title: String, text: String) -> ReadingDocument {
+        ReadingDocument(
+            id: id,
+            title: title,
+            sourceKind: .text,
+            language: "en",
+            paragraphs: [ReadingParagraph(id: 0, text: text)]
+        )
+    }
+}
+
+private actor SuspendedHistoryCoverLoader {
+    private var continuation: CheckedContinuation<Data?, Never>?
+    private var didStart = false
+    private var didFinish = false
+
+    func load() async -> Data? {
+        didStart = true
+        let data = await withCheckedContinuation { continuation in
+            self.continuation = continuation
+        }
+        didFinish = true
+        return data
+    }
+
+    func waitUntilStarted() async {
+        while !didStart { await Task.yield() }
+    }
+
+    func resume(with data: Data?) {
+        continuation?.resume(returning: data)
+        continuation = nil
+    }
+
+    func waitUntilFinished() async {
+        while !didFinish { await Task.yield() }
     }
 }

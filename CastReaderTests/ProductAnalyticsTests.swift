@@ -47,6 +47,11 @@ final class ProductAnalyticsTests: XCTestCase {
         }
 
         let domains = try XCTUnwrap(object["value_domains"] as? [String: [String]])
+        XCTAssertEqual(
+            Set(domains["serviceRoute"] ?? []),
+            Set(["legacy", "global", "cn"]),
+            "ingest accepts historical queued legacy, while new clients emit global/cn"
+        )
         let contractContentSources = Set(domains["contentSource"] ?? [])
         // This contract is shared by both mobile clients. The App Store target
         // deliberately omits the unfinished cloud adapters, so their canonical
@@ -109,7 +114,44 @@ final class ProductAnalyticsTests: XCTestCase {
             XCTAssertEqual(envelope.timestamp, envelope.occurredAt)
             XCTAssertFalse(envelope.event.isEmpty)
             XCTAssertEqual(envelope.eventVersion, 2)
+            XCTAssertEqual(envelope.serviceRoute, ServiceRoute.globalGateway.rawValue)
         }
+    }
+
+    func testEnvelopeCarriesServiceRouteIndependentlyFromProductRegion() throws {
+        let global = try makeEnvelope(name: .appSessionStart, serviceRoute: "global")
+        let china = try makeEnvelope(name: .appSessionStart, serviceRoute: "cn")
+
+        XCTAssertEqual(global.clientRegion, "global")
+        XCTAssertEqual(china.clientRegion, "global")
+        XCTAssertEqual(global.serviceRoute, "global")
+        XCTAssertEqual(china.serviceRoute, "cn")
+
+        let encoded = try JSONEncoder().encode(china)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        XCTAssertEqual(object["serviceRoute"] as? String, "cn")
+    }
+
+    func testCurrentServiceRouteRawValuesExcludeHistoricalLegacyAlias() {
+        XCTAssertEqual(Set(ServiceRoute.allCases.map(\.rawValue)), Set(["global", "cn"]))
+        XCTAssertFalse(ServiceRoute.allCases.map(\.rawValue).contains("legacy"))
+    }
+
+    func testEnvelopeStillDecodesQueuedEventCreatedBeforeServiceRouteField() throws {
+        let event = try makeEnvelope(name: .appSessionStart, serviceRoute: "legacy")
+        let encoded = try JSONEncoder().encode(event)
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        object.removeValue(forKey: "serviceRoute")
+        let legacyQueueData = try JSONSerialization.data(withJSONObject: object)
+
+        let decoded = try JSONDecoder().decode(AnalyticsEventEnvelope.self, from: legacyQueueData)
+
+        XCTAssertNil(decoded.serviceRoute)
+        XCTAssertEqual(decoded.eventId, event.eventId)
     }
 
     func testSchemaRejectsMissingAndUnknownProperties() throws {
@@ -627,7 +669,8 @@ final class ProductAnalyticsTests: XCTestCase {
 
     private func makeEnvelope(
         name: AnalyticsEventName,
-        properties: AnalyticsProperties? = nil
+        properties: AnalyticsProperties? = nil,
+        serviceRoute: String = ServiceRoute.globalGateway.rawValue
     ) throws -> AnalyticsEventEnvelope {
         try AnalyticsEnvelopeFactory.make(
             name: name,
@@ -648,7 +691,8 @@ final class ProductAnalyticsTests: XCTestCase {
                 version: "1.0",
                 build: "1",
                 anonymousId: "22222222-2222-2222-2222-222222222222",
-                region: "global"
+                region: "global",
+                serviceRoute: serviceRoute
             ),
             appSessionId: "app-session",
             backendUserId: "backend-user",

@@ -3615,7 +3615,7 @@ enum YouTubePendingLinkStore {
         // while holding the App Group file lock before decoding its queue.
         defaults.synchronize()
         guard
-              let data = defaults.data(forKey: storageKey),
+              let data = defaults.data(forKey: scopedStorageKey),
               let decoded = try? JSONDecoder().decode([Item].self, from: data) else {
             return []
         }
@@ -3655,7 +3655,7 @@ enum YouTubePendingLinkStore {
     static func clear() {
         withExclusiveAccess {
             let defaults = UserDefaults(suiteName: appGroup)
-            defaults?.removeObject(forKey: storageKey)
+            defaults?.removeObject(forKey: scopedStorageKey)
             defaults?.synchronize()
         }
     }
@@ -3663,8 +3663,15 @@ enum YouTubePendingLinkStore {
     private static func persistUnlocked(_ items: [Item]) -> Bool {
         guard let defaults = UserDefaults(suiteName: appGroup),
               let data = try? JSONEncoder().encode(items) else { return false }
-        defaults.set(data, forKey: storageKey)
+        defaults.set(data, forKey: scopedStorageKey)
         return defaults.synchronize()
+    }
+
+    /// The extension queue follows the active opaque account namespace. An
+    /// item shared while explicitly signed out stays in the fail-closed
+    /// `unassigned` partition and is never surfaced to the next account.
+    private static var scopedStorageKey: String {
+        AccountContentScopeBridge.scopedDefaultsKey(storageKey)
     }
 
     /// UserDefaults has no atomic read-modify-write primitive across the app

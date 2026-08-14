@@ -518,26 +518,38 @@ final class VoiceCatalogService: ObservableObject {
     @Published private(set) var source: VoiceCatalogSource = .fallback
     @Published private(set) var isRefreshing = false
 
-    private static let cacheKey = "tts_voice_catalog_v2_nine_language_cache"
+    /// legacy 继续使用历史 key，升级后不会丢目录；中国线路使用独立缓存，
+    /// 防止网关刷新失败时加载并长期沿用全球线路的音色目录。
+    private static let legacyCacheKey = "tts_voice_catalog_v2_nine_language_cache"
     private static let minimumRefreshInterval: TimeInterval = 15 * 60
 
     private let session: URLSession
     private let defaults: UserDefaults
     private let endpoint: URL
+    private let cacheKey: String
     private let now: () -> Date
     private var started = false
     private var lastNetworkRefreshAt: Date?
 
     init(
-        session: URLSession = .shared,
+        session: URLSession? = nil,
         defaults: UserDefaults = .standard,
-        endpoint: URL = URL(string: Constants.API.ttsCatalog)!,
+        endpoint: URL? = nil,
+        route: ServiceRoute = ServiceRouting.current,
         now: @escaping () -> Date = Date.init
     ) {
-        self.session = session
+        self.session = session ?? OwnedAPIURLSession.make(route: route)
         self.defaults = defaults
         self.endpoint = endpoint
+            ?? URL(
+                string: "\(route.apiGatewayBaseURL)/api/tts/catalog?contract=tts-voice-catalog-v1"
+            )!
+        self.cacheKey = Self.cacheKey(for: route)
         self.now = now
+    }
+
+    static func cacheKey(for route: ServiceRoute) -> String {
+        route.isolatedStorageKey(legacyCacheKey)
     }
 
     func start() {
@@ -575,7 +587,7 @@ final class VoiceCatalogService: ObservableObject {
             let catalog = try TTSVoiceCatalogDocument.decodeServerResponse(from: data)
             try VoiceCatalog.install(catalog)
             let record = VoiceCatalogCacheRecord(savedAt: now(), catalog: catalog)
-            defaults.set(try JSONEncoder().encode(record), forKey: Self.cacheKey)
+            defaults.set(try JSONEncoder().encode(record), forKey: cacheKey)
             lastNetworkRefreshAt = now()
             source = .network
             revision &+= 1
@@ -587,7 +599,7 @@ final class VoiceCatalogService: ObservableObject {
 
     @discardableResult
     func loadCachedCatalog() -> Bool {
-        guard let data = defaults.data(forKey: Self.cacheKey) else { return false }
+        guard let data = defaults.data(forKey: cacheKey) else { return false }
         do {
             let record = try JSONDecoder().decode(VoiceCatalogCacheRecord.self, from: data)
             try VoiceCatalog.install(record.catalog)
@@ -597,14 +609,14 @@ final class VoiceCatalogService: ObservableObject {
             debugLog("cache version=\(record.catalog.version) voices=\(record.catalog.voices.count)")
             return true
         } catch {
-            defaults.removeObject(forKey: Self.cacheKey)
+            defaults.removeObject(forKey: cacheKey)
             debugLog("cache rejected error=\(error.localizedDescription)")
             return false
         }
     }
 
     func clearCacheForTesting() {
-        defaults.removeObject(forKey: Self.cacheKey)
+        defaults.removeObject(forKey: cacheKey)
         VoiceCatalog.resetForTesting()
         source = .fallback
         lastNetworkRefreshAt = nil

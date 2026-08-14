@@ -15,16 +15,41 @@ final class VoiceCloneStore: ObservableObject {
 
     private let service: VoiceCloneService
     private let defaults: UserDefaults
-    private var labels: [String: String]
-    private var referenceLanguages: [String: String]
+    private var labels: [String: String] = [:]
+    private var referenceLanguages: [String: String] = [:]
+    private var activeStorageID: String?
 
     init(service: VoiceCloneService = .shared, defaults: UserDefaults = .standard) {
         self.service = service
         self.defaults = defaults
-        labels = defaults.dictionary(forKey: Keys.labels)?.compactMapValues { $0 as? String } ?? [:]
-        referenceLanguages = defaults.dictionary(forKey: Keys.referenceLanguages)?
-            .compactMapValues { $0 as? String } ?? [:]
     }
+
+    func activateAccountScope(storageID: String) {
+        guard storageID.count == 64,
+              storageID.allSatisfy(\.isHexDigit) else {
+            deactivateAccountScope()
+            return
+        }
+        guard activeStorageID != storageID else { return }
+        clearTransientState()
+        activeStorageID = storageID
+        loadLocalMetadata()
+    }
+
+    func deactivateAccountScope() {
+        clearTransientState()
+        activeStorageID = nil
+        labels = [:]
+        referenceLanguages = [:]
+    }
+
+    #if DEBUG
+    func activateLegacyTestingScope() {
+        clearTransientState()
+        activeStorageID = "debug-legacy"
+        loadLocalMetadata()
+    }
+    #endif
 
     var canCreateNow: Bool { nextCreateAt.map { $0 <= Date() } ?? true }
 
@@ -179,9 +204,48 @@ final class VoiceCloneStore: ObservableObject {
         persistReferenceLanguages()
     }
 
-    private func persistLabels() { defaults.set(labels, forKey: Keys.labels) }
+    private func clearTransientState() {
+        voices = []
+        nextCreateAt = nil
+        isLoading = false
+        isCreating = false
+        uploadProgress = 0
+        deletingVoiceId = nil
+        errorMessage = nil
+    }
+
+    private func loadLocalMetadata() {
+        guard let keys = scopedKeys else {
+            labels = [:]
+            referenceLanguages = [:]
+            return
+        }
+        labels = defaults.dictionary(forKey: keys.labels)?
+            .compactMapValues { $0 as? String } ?? [:]
+        referenceLanguages = defaults.dictionary(forKey: keys.referenceLanguages)?
+            .compactMapValues { $0 as? String } ?? [:]
+    }
+
+    private func persistLabels() {
+        guard let key = scopedKeys?.labels else { return }
+        defaults.set(labels, forKey: key)
+    }
     private func persistReferenceLanguages() {
-        defaults.set(referenceLanguages, forKey: Keys.referenceLanguages)
+        guard let key = scopedKeys?.referenceLanguages else { return }
+        defaults.set(referenceLanguages, forKey: key)
+    }
+
+    private var scopedKeys: (labels: String, referenceLanguages: String)? {
+        guard let activeStorageID else { return nil }
+        #if DEBUG
+        if activeStorageID == "debug-legacy" {
+            return (Keys.labels, Keys.referenceLanguages)
+        }
+        #endif
+        return (
+            "\(Keys.labels).account.\(activeStorageID)",
+            "\(Keys.referenceLanguages).account.\(activeStorageID)"
+        )
     }
 
     private enum Keys {

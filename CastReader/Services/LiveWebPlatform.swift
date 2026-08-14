@@ -71,6 +71,7 @@ enum LiveWebPlatformID: String, Equatable {
 
     /// All bound commercial readers share this app-owned persistent browser
     /// profile. Cookies are still scoped by the web origin.
+    @MainActor
     var websiteDataStore: WKWebsiteDataStore {
         CommercialWebSession.websiteDataStore
     }

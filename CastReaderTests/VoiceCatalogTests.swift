@@ -291,17 +291,101 @@ final class VoiceCatalogTests: XCTestCase {
 
     func testSampleURLAcceptsHTTPAndRejectsUnsupportedSchemes() {
         XCTAssertEqual(
-            VoiceSamplePlayer.validSampleURL("https://cdn.example/sample.mp3")?.absoluteString,
+            VoiceSamplePlayer.validSampleURL(
+                "https://cdn.example/sample.mp3",
+                route: .globalGateway
+            )?.absoluteString,
             "https://cdn.example/sample.mp3"
         )
-        XCTAssertNotNil(VoiceSamplePlayer.validSampleURL("http://localhost/sample.mp3"))
-        XCTAssertNil(VoiceSamplePlayer.validSampleURL("file:///tmp/sample.mp3"))
-        XCTAssertNil(VoiceSamplePlayer.validSampleURL("not a url"))
-        XCTAssertNil(VoiceSamplePlayer.validSampleURL(nil))
+        XCTAssertNil(VoiceSamplePlayer.validSampleURL(
+            "http://localhost/sample.mp3",
+            route: .globalGateway
+        ), "new gateway media responses require HTTPS even on the global route")
+        XCTAssertNil(VoiceSamplePlayer.validSampleURL(
+            "file:///tmp/sample.mp3",
+            route: .globalGateway
+        ))
+        XCTAssertNil(VoiceSamplePlayer.validSampleURL(
+            "not a url",
+            route: .globalGateway
+        ))
+        XCTAssertNil(VoiceSamplePlayer.validSampleURL(nil, route: .globalGateway))
         XCTAssertNil(VoiceOption(
             code: "empty", name: "Empty", isPro: false, lang: "en", gender: "female",
             sampleURL: "  "
         ).sampleURL)
+    }
+
+    func testVoiceAssetsCannotLeakAcrossGatewayOrRetiredOwnedHosts() {
+        XCTAssertEqual(
+            VoiceSamplePlayer.validSampleURL(
+                "https://api.castreader.ai/api/tts/assets/voice.mp3?version=2",
+                route: .chinaGateway
+            )?.absoluteString,
+            "https://api.castreader.cn/api/tts/assets/voice.mp3?version=2"
+        )
+        XCTAssertEqual(
+            VoiceCatalogAssetURL.resolve(
+                "/api/tts/assets/avatar.png",
+                route: .chinaGateway
+            )?
+                .absoluteString,
+            "https://api.castreader.cn/api/tts/assets/avatar.png"
+        )
+        XCTAssertEqual(
+            VoiceCatalogAssetURL.resolve(
+                "/api/tts/assets/avatar.png",
+                route: .globalGateway
+            )?.absoluteString,
+            "https://api.castreader.ai/api/tts/assets/avatar.png"
+        )
+        XCTAssertNil(
+            VoiceCatalogAssetURL.resolve(
+                "https://api.castreader.ai/media/voice.mp3",
+                route: .chinaGateway
+            ),
+            "owned media paths without an explicit gateway contract must fail closed"
+        )
+        XCTAssertNil(
+            VoiceCatalogAssetURL.resolve(
+                "/media/avatar.png",
+                route: .chinaGateway
+            ),
+            "relative media paths without an explicit gateway contract must fail closed"
+        )
+        XCTAssertNil(
+            VoiceCatalogAssetURL.resolve(
+                "//api.castreader.ai/media/avatar.png",
+                route: .chinaGateway
+            ),
+            "protocol-relative URLs must not escape the China gateway"
+        )
+        XCTAssertNil(
+            VoiceCatalogAssetURL.resolve(
+                "https://qr.castreader.ai/media/voice.mp3",
+                route: .chinaGateway
+            )
+        )
+        XCTAssertNil(
+            VoiceCatalogAssetURL.resolve(
+                "http://cdn.example/voice.mp3",
+                route: .chinaGateway
+            )
+        )
+        XCTAssertEqual(
+            VoiceCatalogAssetURL.resolve(
+                "https://cdn.example/voice.mp3",
+                route: .chinaGateway
+            )?.host,
+            "cdn.example"
+        )
+        XCTAssertNil(
+            VoiceCatalogAssetURL.resolve(
+                "http://api.castreader.ai/legacy.mp3",
+                route: .globalGateway
+            ),
+            "new global gateway responses must not preserve plaintext legacy media"
+        )
     }
 
     @MainActor
@@ -486,6 +570,63 @@ final class VoiceCatalogTests: XCTestCase {
         XCTAssertEqual(VoiceCatalog.voices(for: "zh").map(\.code), ["zf_001"])
         VoiceCatalog.resetForTesting()
         VoiceCatalogTestURLProtocol.handler = nil
+    }
+
+    @MainActor
+    func testVoiceCatalogCacheIsIsolatedByServiceRouteWithoutChangingGlobalUpgradeKey() async throws {
+        let defaults = isolatedDefaults()
+        let session = URLSession(configuration: .voiceCatalogTest)
+        VoiceCatalogTestURLProtocol.handler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, try self.fixture("tts-voice-catalog-direct"))
+        }
+        defer {
+            VoiceCatalog.resetForTesting()
+            VoiceCatalogTestURLProtocol.handler = nil
+        }
+
+        XCTAssertEqual(
+            VoiceCatalogService.cacheKey(for: .globalGateway),
+            "tts_voice_catalog_v2_nine_language_cache"
+        )
+        XCTAssertEqual(
+            VoiceCatalogService.cacheKey(for: .chinaGateway),
+            "tts_voice_catalog_v2_nine_language_cache.cn"
+        )
+
+        let endpoint = URL(string: "https://example.com/api/tts/catalog")!
+        let global = VoiceCatalogService(
+            session: session,
+            defaults: defaults,
+            endpoint: endpoint,
+            route: .globalGateway
+        )
+        await global.refresh()
+        XCTAssertNotNil(
+            defaults.data(forKey: VoiceCatalogService.cacheKey(for: .globalGateway))
+        )
+        XCTAssertNil(
+            defaults.data(forKey: VoiceCatalogService.cacheKey(for: .chinaGateway))
+        )
+
+        VoiceCatalog.resetForTesting()
+        let china = VoiceCatalogService(
+            session: session,
+            defaults: defaults,
+            endpoint: endpoint,
+            route: .chinaGateway
+        )
+        XCTAssertFalse(
+            china.loadCachedCatalog(),
+            "中国线路不能加载 global 音色目录缓存"
+        )
+        await china.refresh()
+        XCTAssertNotNil(
+            defaults.data(forKey: VoiceCatalogService.cacheKey(for: .chinaGateway))
+        )
     }
 
     @MainActor

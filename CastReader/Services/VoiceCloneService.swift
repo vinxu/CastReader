@@ -8,14 +8,19 @@ actor VoiceCloneService {
     private let baseURL: URL
     private let session: URLSession
     private let sessionProvider: any MobileSessionProviding
+    private let route: ServiceRoute
 
     init(
-        baseURL: URL = URL(string: Constants.API.webURL) ?? URL(string: "https://castreader.ai")!,
-        session: URLSession = .shared,
+        baseURL: URL? = nil,
+        session: URLSession? = nil,
+        route: ServiceRoute = ServiceRouting.current,
         sessionProvider: any MobileSessionProviding
     ) {
         self.baseURL = baseURL
-        self.session = session
+            ?? URL(string: route.webBaseURL)
+            ?? URL(string: ServiceRoute.globalGateway.apiGatewayBaseURL)!
+        self.session = session ?? OwnedAPIURLSession.make(route: route)
+        self.route = route
         self.sessionProvider = sessionProvider
     }
 
@@ -61,7 +66,7 @@ actor VoiceCloneService {
 
         var token = try await requireToken()
         var request = createUploadRequest(boundary: boundary, token: token)
-        let uploader = VoiceCloneUploader()
+        let uploader = VoiceCloneUploader(route: route)
         var (data, response) = try await uploader.upload(request: request, body: body, onProgress: onProgress)
         if let http = response as? HTTPURLResponse, http.statusCode == 401,
            let refreshed = await sessionProvider.refreshSession() {
@@ -114,6 +119,7 @@ actor VoiceCloneService {
 
     private func requireToken() async throws -> String {
         guard let token = await sessionProvider.sessionToken(), !token.isEmpty else {
+            await sessionProvider.rejectSession(nil)
             throw VoiceCloneError.sessionUnavailable
         }
         return token
@@ -139,7 +145,13 @@ actor VoiceCloneService {
         let message = VoiceCloneResponseParser.serverMessage(from: data)
         switch http.statusCode {
         case 401:
-            await sessionProvider.invalidateSession()
+            let authorization = originalRequest.value(
+                forHTTPHeaderField: "Authorization"
+            ) ?? ""
+            let rejectedToken = authorization.hasPrefix("Bearer ")
+                ? String(authorization.dropFirst("Bearer ".count))
+                : nil
+            await sessionProvider.rejectSession(rejectedToken)
             throw VoiceCloneError.signInRequired
         case 403: throw VoiceCloneError.proRequired
         case 404: throw VoiceCloneError.voiceNotFound
@@ -157,6 +169,11 @@ actor VoiceCloneService {
 
 private final class VoiceCloneUploader: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
     private var progress: (@Sendable (Double) -> Void)?
+    private let route: ServiceRoute
+
+    init(route: ServiceRoute) {
+        self.route = route
+    }
 
     func upload(
         request: URLRequest,
@@ -178,6 +195,23 @@ private final class VoiceCloneUploader: NSObject, URLSessionTaskDelegate, @unche
     ) {
         guard totalBytesExpectedToSend > 0 else { return }
         progress?(min(1, Double(totalBytesSent) / Double(totalBytesExpectedToSend)))
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        let originalURL = task.originalRequest?.url ?? task.currentRequest?.url
+        completionHandler(
+            OwnedAPIRedirectPolicy.allowsRedirect(
+                route: route,
+                originalURL: originalURL,
+                proposedURL: request.url
+            ) ? request : nil
+        )
     }
 }
 

@@ -2,110 +2,41 @@
 //  TTSEndpoint.swift
 //  CastReader
 //
-//  云端 TTS 节点路由（对齐扩展 tts-service.ts）：
-//  中国大陆时区 → CN 节点；其他 → US 节点；CN 失败回退 US。
-//  端点可由 COS 远程配置覆盖（24h 缓存），否则用硬编码默认值。
+//  新版云端 TTS 只走当前进程已冻结的统一 API 网关。上游节点选择、
+//  容灾与旧已发布二进制的历史路径兼容均由服务端负责。客户端不再按时区
+//  直连上游，也不在 global / cn 之间 fallback。
 //
 
 import Foundation
 
 enum TTSEndpoint {
-    /// 硬编码默认（与扩展 config/tts-endpoints.json 一致；CN 实例轮换时远程配置会覆盖）。
-    static let cnDefault = "https://uu122431-80b4-9c6a8f65.bjb1.seetacloud.com:8443"
-    static let usDefault = "https://api.castreader.ai"
-    private static let legacyUSDefault = "http://api.castreader.ai:8123"
+    static let globalBase = ServiceRoute.globalGateway.apiGatewayBaseURL
+    static let chinaMainlandBase = ServiceRoute.chinaGateway.apiGatewayBaseURL
 
-    static let remoteConfigURL = "https://zqxgmqygirtpttnrvjpf.supabase.co/storage/v1/object/public/castreader-public/config/tts-endpoints-v2.json"
-    private static let cacheKey = "tts_endpoints_v1"
-    private static let cacheTimeKey = "tts_endpoints_v1_time"
-
-    /// 中国大陆 IANA 时区（港台不含）。
-    private static let mainlandTimeZones: Set<String> = [
-        "Asia/Shanghai", "Asia/Urumqi", "Asia/Chongqing", "Asia/Harbin", "Asia/Kashgar"
-    ]
-
-    static func isMainlandChina() -> Bool {
-        mainlandTimeZones.contains(TimeZone.current.identifier)
-    }
-
-    /// 当前端点（远程配置缓存优先，否则默认）。
-    static func endpoints() -> (cn: String, us: String) {
-        if let d = UserDefaults.standard.dictionary(forKey: cacheKey) as? [String: String],
-           let cn = d["cn_url"].flatMap(normalizedSecureBase),
-           let us = d["us_url"].flatMap(normalizedSecureBase) {
-            return (cn, us)
-        }
-        return (cnDefault, usDefault)
-    }
-
-    /// Accept only HTTPS endpoint bases. The public route configuration still
-    /// contains the historical plaintext US origin, so upgrade it locally
-    /// instead of allowing cached configuration to weaken transport security.
-    static func normalizedSecureBase(_ rawValue: String) -> String? {
-        var raw = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        while raw.hasSuffix("/") { raw.removeLast() }
-        if raw == legacyUSDefault {
-            return usDefault
-        }
-        guard let components = URLComponents(string: raw),
-              components.scheme?.lowercased() == "https",
-              components.host?.isEmpty == false else {
-            return nil
-        }
-        return raw
-    }
-
-    /// 中国大陆版的 TTS 入口（备案网关；服务器侧转发现有 TTS 上游）。
-    static let chinaMainlandBase = "https://api.castreader.cn"
-
-    /// 主用节点。
-    ///
-    /// 中国大陆版（境内后端就绪后）固定走 `api.castreader.cn`；其余情况沿用既有的
-    /// 时区就近路由：大陆时区→CN 节点，否则→US。
-    ///
-    /// 注意这里有两个不同的「中国」概念，不要合并：
-    /// - `AppRegion == .cn` 是**发行区域**，决定合规与商业规则；
-    /// - `isMainlandChina()` 是**当前所在地**，决定哪个节点快。
-    ///   海外用户到中国出差仍应走 CN 节点，这是正确行为。
     static func primaryBase() -> String {
-        if Constants.Features.chinaTTSBackendEnabled, AppRegion.current == .cn {
-            return chinaMainlandBase
-        }
-        let e = endpoints()
-        return isMainlandChina() ? e.cn : e.us
+        ServiceRouting.current.apiGatewayBaseURL
     }
 
-    /// 回退节点：仅当主用是 CN 时回退到 US；否则无回退。
-    ///
-    /// 中国大陆版**没有**回退——境内版本不得把请求打到境外节点。
-    static func fallbackBase() -> String? {
-        if Constants.Features.chinaTTSBackendEnabled, AppRegion.current == .cn {
-            return nil
-        }
-        guard isMainlandChina() else { return nil }
-        return endpoints().us
+    /// 保留可注入签名供路由合同测试；新架构不再让所在地改变自有 API 入口。
+    static func primaryBase(isMainlandChina _: Bool) -> String {
+        primaryBase()
     }
 
-    static func partlyURL(base: String) -> String { "\(base)/api/captioned_speech_partly" }
+    /// 严禁客户端跨线回退。网关内部容灾不改变用户看到的入口域名。
+    static func fallbackBase() -> String? { nil }
+    static func fallbackBase(isMainlandChina _: Bool) -> String? { nil }
 
-    /// 启动时刷新远程配置（非阻塞；失败保留缓存/默认）。24h 缓存。
-    static func refreshRemoteConfig() async {
-        let last = UserDefaults.standard.double(forKey: cacheTimeKey)
-        let hasCache = UserDefaults.standard.dictionary(forKey: cacheKey) != nil
-        if hasCache, Date().timeIntervalSince1970 - last < 24 * 3600 { return }
-        guard let url = URL(string: remoteConfigURL) else { return }
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            if let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let rawCN = obj["cn_url"] as? String,
-               let rawUS = obj["us_url"] as? String,
-               let cn = normalizedSecureBase(rawCN),
-               let us = normalizedSecureBase(rawUS) {
-                UserDefaults.standard.set(["cn_url": cn, "us_url": us], forKey: cacheKey)
-                UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: cacheTimeKey)
-            }
-        } catch {
-            // 保留缓存/默认
-        }
+    static func partlyURL(base: String) -> String {
+        "\(base)/api/captioned_speech_partly"
     }
+
+    @discardableResult
+    static func freezeForCurrentProcess() -> String { primaryBase() }
+
+    /// 旧客户端的远程节点配置已退出新版路径；保留签名便于渐进清理启动调用。
+    static func refreshRemoteConfig() async {}
+
+    #if DEBUG
+    static func resetProcessSnapshotForTesting() {}
+    #endif
 }
