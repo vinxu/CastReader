@@ -30,17 +30,33 @@ final class ProManager: ObservableObject {
     @Published private(set) var needsEmailSync = false
 
     #if DEBUG
-    /// 仅 DEBUG：模拟 Pro 解锁开关（设置→调试可切换）。默认 true 保持开发期全解锁（方便反复测朗读/解读）；
-    /// **关闭后 isPro 走真实内购/服务端权益**，用于本地测试付费流程与跨平台继承。发布构建不含此开关。
-    /// `-CastReaderDisableDebugPro` 可在启动时强制关闭，供 UI 测试与商店素材采集走真实的免费用户视角
-    /// （UserDefaults 启动参数覆盖不了这里：`-debug_force_pro NO` 会被当成字符串，`as? Bool` 取不到）。
+    /// 仅 DEBUG：模拟 Pro 解锁开关（设置→调试可切换）。默认关闭，测试包也必须先展示
+    /// 当前账号的真实内购/服务端权益，避免把普通账号误标成会员。只有显式传入
+    /// `-CastReaderForceDebugPro` 或由开发者手动打开开关时才模拟解锁；发布构建不含此逻辑。
+    private static let debugForceProDefaultsKey = "debug_force_pro_v2"
+
     @Published var debugForcePro = ProManager.initialDebugForcePro() {
-        didSet { UserDefaults.standard.set(debugForcePro, forKey: "debug_force_pro") }
+        didSet {
+            UserDefaults.standard.set(debugForcePro, forKey: Self.debugForceProDefaultsKey)
+        }
     }
 
     private static func initialDebugForcePro() -> Bool {
-        if ProcessInfo.processInfo.arguments.contains("-CastReaderDisableDebugPro") { return false }
-        return UserDefaults.standard.object(forKey: "debug_force_pro") as? Bool ?? true
+        resolvedDebugForcePro(
+            arguments: ProcessInfo.processInfo.arguments,
+            persistedValue: UserDefaults.standard.object(
+                forKey: debugForceProDefaultsKey
+            ) as? Bool
+        )
+    }
+
+    nonisolated static func resolvedDebugForcePro(
+        arguments: [String],
+        persistedValue: Bool?
+    ) -> Bool {
+        if arguments.contains("-CastReaderDisableDebugPro") { return false }
+        if arguments.contains("-CastReaderForceDebugPro") { return true }
+        return persistedValue ?? false
     }
     #endif
 
@@ -157,6 +173,15 @@ final class ProManager: ObservableObject {
         serverAccount = nil
         serverIdentity = nil
         refreshSyncState(reason: "clear-server")
+    }
+
+    /// A StoreKit snapshot is evaluated for the account that was active when
+    /// `refreshEntitlements()` ran. Clear it synchronously at an account
+    /// boundary so the next account cannot briefly inherit a crown while its
+    /// own transaction tokens and server entitlement are still refreshing.
+    func clearEntitlementsForAccountTransition() {
+        setStoreKitLocalPro(false, reason: "account-transition")
+        clearServerEntitlement()
     }
 
     /// 规范化账号 id，避免仅含空白的后端字段被当作可同步身份。
@@ -289,6 +314,13 @@ final class ProManager: ObservableObject {
     /// （StoreKitTest 的 buyProduct 在本仓库测试宿主下抛 notEntitled，无法用真实购买驱动翻转）。
     func setIntroOfferEligibilityForTesting(_ ids: Set<String>) {
         introOfferEligibleIDs = ids
+    }
+
+    /// 仅测试：构造账号切换前的内存权益快照，验证新账号不会继承旧账号会员。
+    func setEntitlementsForTesting(storeKit: Bool, server: Bool) {
+        setStoreKitLocalPro(storeKit, reason: "test-injection")
+        serverPro = server
+        refreshSyncState(reason: "test-injection")
     }
     #endif
 

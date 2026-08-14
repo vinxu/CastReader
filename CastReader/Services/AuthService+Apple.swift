@@ -56,8 +56,9 @@ extension AuthService {
               !token.trimmed.isEmpty else {
             return false
         }
+        let sessionExchange: MobileSessionStore.ExchangeResult
         do {
-            _ = try await MobileSessionStore.shared.exchange(
+            sessionExchange = try await MobileSessionStore.shared.exchange(
                 provider: "apple",
                 idToken: token,
                 authorizationCode: authorizationCode
@@ -66,15 +67,15 @@ extension AuthService {
             return false
         }
 
-        // canonical user id 用于跨端 Pro 归属；它的辅助换取失败不会
-        // 降级 cms_ 会话，后续仍可用同一 identity token 重试。
-        acc.backendUserId = await exchangeAppleIdentityToken(token) ?? prior?.backendUserId
+        // canonical user id 与 cms_ 会话来自同一个一方网关响应。只有两者都有效
+        // 才发布账号，避免 Apple 二次登录没有 email 时出现“已登录但查不到会员”。
+        acc.backendUserId = sessionExchange.canonicalUserId
 
         // backendUserId 换到了就一并存档，省得下次登录又退回 device_id 维度查 Pro。
         Self.archiveAppleProfile(id: id, name: name, email: email, backendUserId: acc.backendUserId)
 
         applyAccount(acc)
-        await ProManager.shared.refreshServer()
+        await ProManager.shared.refresh()
         return true
     }
 
@@ -202,20 +203,4 @@ extension AuthService {
         }
     }
 
-    /// Apple 的 identity token 只在这一次授权回调里存在，而且是短期 JWT——换不到后端
-    /// user id 就没有第二次机会：不像 Google 能从 Keychain 取回 id_token 重试（见
-    /// `ensureBackendUserIdForPro`），Apple 用户只能重新走一遍登录。所以趁 token 还
-    /// 有效时多试几次，别让一次网络抖动变成永久的 `backendUserId == nil`——那会让
-    /// Pro 查询退回 device_id 维度，Web 端付费和换设备的订阅都查不到。
-    private func exchangeAppleIdentityToken(_ token: String) async -> String? {
-        let backoff: [UInt64] = [0, 700_000_000, 1_800_000_000]
-        for delay in backoff {
-            if delay > 0 { try? await Task.sleep(nanoseconds: delay) }
-            if let id = try? await exchangeWithBackend(provider: "apple", idToken: token),
-               !id.isEmpty {
-                return id
-            }
-        }
-        return nil
-    }
 }

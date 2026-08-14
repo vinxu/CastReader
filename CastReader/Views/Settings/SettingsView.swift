@@ -377,6 +377,7 @@ struct SettingsView: View {
     }
 
     private var proSubtitle: LocalizedStringKey {
+        guard pro.isPro else { return "解锁全部朗读与解读能力" }
         if pro.isCrossPlatformPro {
             return pro.serverPlan == "yearly" ? "年度订阅" : (pro.serverPlan == "monthly" ? "月度订阅" : "已解锁")
         }
@@ -614,7 +615,7 @@ struct SettingsView: View {
         } header: {
             Text("调试")
         } footer: {
-            Text("开发期默认解锁全部能力。测试真实付费 / 跨平台权益时请关闭，并在 Xcode 中运行（StoreKit 本地配置才会生效）。")
+            Text(verbatim: "默认显示当前账号的真实会员状态。仅在需要模拟会员功能时手动开启；StoreKit 本地购买测试需在 Xcode 中运行。")
         }
     }
     #endif

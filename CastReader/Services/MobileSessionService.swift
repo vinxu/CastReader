@@ -73,6 +73,15 @@ actor MobileSessionStore: MobileSessionProviding {
         let identityToken: String
     }
 
+    /// One authoritative exchange result. The canonical user id is signed into
+    /// the same first-party response that issued the route-local `cms_` token;
+    /// clients must not perform a second, best-effort identity lookup and risk
+    /// publishing a half-authenticated account.
+    struct ExchangeResult: Equatable, Sendable {
+        let token: String
+        let canonicalUserId: String
+    }
+
     private let overrideEndpoint: URL?
     private let session: URLSession
     private let route: ServiceRoute
@@ -183,7 +192,7 @@ actor MobileSessionStore: MobileSessionProviding {
         authorizationCode: String? = nil,
         deviceId: String = StableDeviceID.current,
         expectedBoundaryGeneration: UInt64? = nil
-    ) async throws -> String {
+    ) async throws -> ExchangeResult {
         guard provider == "google" || provider == "apple" || provider == "email",
               !idToken.trimmed.isEmpty else {
             throw VoiceCloneError.signInRequired
@@ -222,7 +231,10 @@ actor MobileSessionStore: MobileSessionProviding {
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let payload = root["data"] as? [String: Any],
               let token = normalized(payload["token"] as? String),
-              Self.isServerSessionToken(token) else {
+              Self.isServerSessionToken(token),
+              let canonicalUserId = Self.normalizedCanonicalUserId(
+                  payload["userId"] as? String
+              ) else {
             throw VoiceCloneError.invalidResponse
         }
         try persistSession(
@@ -231,7 +243,7 @@ actor MobileSessionStore: MobileSessionProviding {
             identityToken: idToken,
             expectedBoundaryGeneration: boundaryGeneration
         )
-        return token
+        return ExchangeResult(token: token, canonicalUserId: canonicalUserId)
     }
 
     /// 收下由其他登录方式（中国区手机号）直接下发的会话 token。
@@ -255,6 +267,14 @@ actor MobileSessionStore: MobileSessionProviding {
     }
 
     func refreshSession() async -> String? {
+        await refreshSessionExchange()?.token
+    }
+
+    /// Re-exchanges the saved provider credential and returns both the fresh
+    /// route-local bearer and its canonical account id. This repairs profiles
+    /// created by older builds that persisted a valid `cms_` token but dropped
+    /// `data.userId` from the same response.
+    func refreshSessionExchange() async -> ExchangeResult? {
         let boundaryGeneration = MobileSessionBoundaryClock.shared.snapshot(for: route)
         guard let provider = normalized(KeychainStore.get(storageKeys.provider)),
               let idToken = normalized(KeychainStore.get(storageKeys.identityToken)) else { return nil }
@@ -329,6 +349,15 @@ actor MobileSessionStore: MobileSessionProviding {
 
     private func normalized(_ value: String?) -> String? {
         guard let value = value?.trimmed, !value.isEmpty else { return nil }
+        return value
+    }
+
+    nonisolated static func normalizedCanonicalUserId(_ value: String?) -> String? {
+        guard let value = value?.trimmed,
+              !value.isEmpty,
+              value.count <= 512 else {
+            return nil
+        }
         return value
     }
 }

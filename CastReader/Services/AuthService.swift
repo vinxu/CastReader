@@ -314,12 +314,10 @@ final class AuthService: NSObject, ObservableObject {
         return value
     }
 
-    /// Apple 登录未能关联后端 user id 的状态——需要用户重新登录一次才能修复。
-    ///
-    /// Apple 的 identity token 只在授权回调期间存在，`ensureBackendUserIdForPro()` 对
-    /// Apple 账号无能为力（拿不到可重放的 token）。未关联时 Pro 只能按 device_id 查，
-    /// 于是 Web 端（Stripe）付费和换过设备的订阅都会被当成未订阅。重新走一遍
-    /// Sign in with Apple 会重新换取，是唯一的自救路径，所以要让用户看得见。
+    /// Apple 账号尚未关联 canonical backend user id 的状态。新版会优先用
+    /// 按线路保存的 provider credential 自动修复；凭据已失效时，用户仍可通过
+    /// 重新执行 Sign in with Apple 完成关联。设置页保留该提示，避免用户
+    /// 在修复前误以为跨设备会员已同步。
     var needsAppleRelink: Bool {
         guard let acc = account, acc.provider == "apple" else { return false }
         return (acc.backendUserId ?? "").isEmpty
@@ -541,16 +539,23 @@ final class AuthService: NSObject, ObservableObject {
     func applyAccount(_ acc: UserAccount) {
         lastAccountDeletionReceipt = nil
         let nextStorageID = AccountContentIsolation.activate(for: acc)
-        if activeContentStorageID != nextStorageID {
+        let changedAccountBoundary = activeContentStorageID != nextStorageID
+        if changedAccountBoundary {
             accountBoundaryID = UUID()
         }
         activeContentStorageID = nextStorageID
         accountTransitionEpoch &+= 1
         account = acc
-        // `serverPro` is account-owned memory. Clear it only after publishing
-        // the new account, so Safari's synchronous bridge can never pair the
-        // new scope with the previous identity while the refresh is pending.
-        ProManager.shared.clearServerEntitlement()
+        // Entitlement snapshots are account-owned memory. Clear them only
+        // after publishing the new account so Safari's synchronous bridge can
+        // never pair the new scope with the previous identity while refresh
+        // is pending. Profile-only updates inside the same scope retain the
+        // current StoreKit snapshot.
+        if changedAccountBoundary {
+            ProManager.shared.clearEntitlementsForAccountTransition()
+        } else {
+            ProManager.shared.clearServerEntitlement()
+        }
         persist()
     }
 
@@ -639,27 +644,32 @@ final class AuthService: NSObject, ObservableObject {
         return receipt
     }
 
-    /// Pro 查询需要 readout-web / better-auth 的 user id。旧版本若登录时换取失败，
-    /// 会持久化成 backendUserId=nil；刷新 Pro 前用已保存的 Google id_token 轻量重试一次。
+    /// Pro 查询需要 canonical backend user id。旧版本可能已经持久化了有效 `cms_`
+    /// 会话，却丢掉同一响应里的 userId；刷新 Pro 前用按线路保存的 provider credential
+    /// 重新交换一次，并在账号边界未变化时补齐本地 profile。
     func ensureBackendUserIdForPro() async -> String? {
         guard var acc = account else { return nil }
         if let id = proUserId { return id }
-        guard acc.provider == "google",
-              let idToken = KeychainStore.get(credentialKeys.googleIDToken),
-              !idToken.isEmpty else {
+        let expectedEpoch = accountTransitionEpoch
+        let expectedProvider = acc.provider
+        let expectedProviderID = acc.id
+        guard let result = await MobileSessionStore.shared.refreshSessionExchange(),
+              accountTransitionEpoch == expectedEpoch,
+              account?.provider == expectedProvider,
+              account?.id == expectedProviderID else {
             return nil
         }
-        do {
-            guard let id = try await exchangeWithBackend(provider: "google", idToken: idToken),
-                  !id.isEmpty else {
-                return nil
-            }
-            acc.backendUserId = id
-            applyAccount(acc)
-            return id
-        } catch {
-            return nil
+        acc.backendUserId = result.canonicalUserId
+        if acc.provider == "apple" {
+            Self.archiveAppleProfile(
+                id: acc.id,
+                name: acc.name,
+                email: acc.email,
+                backendUserId: result.canonicalUserId
+            )
         }
+        applyAccount(acc)
+        return result.canonicalUserId
     }
 
     // MARK: - Google 登录
@@ -694,18 +704,17 @@ final class AuthService: NSObject, ObservableObject {
             provider: "google",
             backendUserId: nil
         )
-        // best-effort：换后端 user id（失败不影响登录，Pro 退回 device_id）
-        acc.backendUserId = try? await exchangeWithBackend(provider: "google", idToken: idToken)
 
         // The account is not published until the selected first-party gateway
         // has issued and durably stored a cms_ session. Otherwise Home would
         // look signed in while Documents/QuickRead were anonymous, and could
         // continue showing another account's locally cached state.
         do {
-            _ = try await MobileSessionStore.shared.exchange(
+            let result = try await MobileSessionStore.shared.exchange(
                 provider: "google",
                 idToken: idToken
             )
+            acc.backendUserId = result.canonicalUserId
         } catch {
             Self.clearProviderCredentials(for: ServiceRouting.current)
             throw AuthError.secureSessionUnavailable
@@ -720,7 +729,7 @@ final class AuthService: NSObject, ObservableObject {
         }
 
         applyAccount(acc)
-        await ProManager.shared.refreshServer()   // 按账号刷新 Pro
+        await ProManager.shared.refresh()   // 按新账号重算 StoreKit + 服务端 Pro
     }
 
     // MARK: - 邮箱验证码登录（better-auth email-otp）
@@ -766,8 +775,8 @@ final class AuthService: NSObject, ObservableObject {
             operation: .verify
         )
         let user = obj["user"] as? [String: Any]
-        guard let backendId = (user?["id"] as? String) ?? (obj["userId"] as? String),
-              !backendId.isEmpty else {
+        let rawBackendId = (user?["id"] as? String) ?? (obj["userId"] as? String)
+        guard let backendId = MobileSessionStore.normalizedCanonicalUserId(rawBackendId) else {
             throw AuthError.invalidIDToken
         }
 
@@ -777,10 +786,14 @@ final class AuthService: NSObject, ObservableObject {
             throw AuthError.secureSessionUnavailable
         }
         do {
-            _ = try await MobileSessionStore.shared.exchange(
+            let result = try await MobileSessionStore.shared.exchange(
                 provider: "email",
                 idToken: token
             )
+            guard result.canonicalUserId == backendId else {
+                _ = MobileSessionStore.detachLocalSession(for: ServiceRouting.current)
+                throw AuthError.secureSessionUnavailable
+            }
         } catch {
             throw AuthError.secureSessionUnavailable
         }
@@ -799,7 +812,7 @@ final class AuthService: NSObject, ObservableObject {
             backendUserId: backendId
         )
         applyAccount(signedInAccount)
-        await ProManager.shared.refreshServer()   // 按账号刷新 Pro + 额度
+        await ProManager.shared.refresh()   // 按新账号重算 StoreKit + 服务端 Pro + 额度
     }
 
     /// Builds the native OTP request without accepting or replaying browser

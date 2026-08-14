@@ -4,7 +4,7 @@
 //
 //  StoreKitTest 端到端付费流程自检（加载 Configuration.storekit，禁用弹窗自动成交）：
 //  付费前限制 → 购买解锁 → 付费后无限 → 扣费 → 恢复 → 过期回落。
-//  关键：关闭 ProManager.debugForcePro，使 isPro 走真实内购权益（否则 DEBUG 恒 true，测试无意义）。
+//  关键：保持 ProManager.debugForcePro 关闭，使 isPro 走真实内购权益。
 //
 
 import XCTest
@@ -34,9 +34,33 @@ final class PaymentTests: XCTestCase {
         session = nil
         await MainActor.run {
             AuthService.shared.signOut()
-            ProManager.shared.debugForcePro = true       // 恢复开发期解锁
+            ProManager.shared.debugForcePro = false      // 测试包默认也走真实账号权益
             QuotaManager.shared.resetForTesting()
         }
+    }
+
+    func testDebugProIsFailClosedUnlessExplicitlyEnabled() {
+        XCTAssertFalse(
+            ProManager.resolvedDebugForcePro(arguments: [], persistedValue: nil)
+        )
+        XCTAssertFalse(
+            ProManager.resolvedDebugForcePro(
+                arguments: ["-CastReaderDisableDebugPro", "-CastReaderForceDebugPro"],
+                persistedValue: true
+            )
+        )
+        XCTAssertTrue(
+            ProManager.resolvedDebugForcePro(
+                arguments: ["-CastReaderForceDebugPro"],
+                persistedValue: nil
+            )
+        )
+        XCTAssertFalse(
+            ProManager.resolvedDebugForcePro(arguments: [], persistedValue: false)
+        )
+        XCTAssertTrue(
+            ProManager.resolvedDebugForcePro(arguments: [], persistedValue: true)
+        )
     }
 
     @MainActor
@@ -347,6 +371,43 @@ final class PaymentTests: XCTestCase {
         try await seedStoreKitPurchase(ProManager.monthlyID)
         XCTAssertTrue(ProManager.shared.storeKitPro, "购买后 storeKitPro=true")
         XCTAssertTrue(ProManager.shared.isPro, "购买后 isPro=true")
+    }
+
+    @MainActor
+    func testAccountBoundaryClearsEntitlementSnapshotsButProfileUpdateKeepsStoreKit() {
+        let account = UserAccount(
+            id: "current-provider-user",
+            email: "current@example.com",
+            name: "Current Account",
+            pictureURL: nil,
+            provider: "google",
+            backendUserId: "current-canonical-user"
+        )
+        AuthService.shared.applyAccount(account)
+        ProManager.shared.setEntitlementsForTesting(storeKit: true, server: true)
+
+        var profileUpdate = account
+        profileUpdate.name = "Updated Profile"
+        AuthService.shared.applyAccount(profileUpdate)
+        XCTAssertTrue(
+            ProManager.shared.storeKitLocalPro,
+            "同一账号范围内的资料补全不能清除 StoreKit 快照"
+        )
+
+        AuthService.shared.applyAccount(UserAccount(
+            id: "next-provider-user",
+            email: "next@example.com",
+            name: "Next Account",
+            pictureURL: nil,
+            provider: "google",
+            backendUserId: "next-canonical-user"
+        ))
+
+        XCTAssertFalse(
+            ProManager.shared.storeKitLocalPro,
+            "账号边界发布时必须同步清除上一账号的 StoreKit 快照"
+        )
+        XCTAssertFalse(ProManager.shared.serverPro)
     }
 
     // MARK: 4. 付费后无限（额度闸门解除）

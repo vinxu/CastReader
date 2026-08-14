@@ -2212,8 +2212,8 @@ final class AppStoreCaptureUITests: XCTestCase {
 
     /// 付费页：验证 7 天免费试用文案在真机 UI 上的最终呈现，同时产出商店可用的订阅页截图。
     ///
-    /// DEBUG 构建默认 `debugForcePro = true`（开发期全解锁），那样首页 Pro 卡片和付费墙都不会出现，
-    /// 所以这里必须显式关掉，才能看到真实的免费用户视角。
+    /// DEBUG 构建默认按真实账号权益运行；这里仍显式关闭模拟 Pro，避免开发者上次手动开启的
+    /// 持久化调试开关污染免费用户截图。
     func testCapturePaywallWithFreeTrial() throws {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()

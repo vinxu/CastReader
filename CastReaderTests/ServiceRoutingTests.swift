@@ -1701,7 +1701,7 @@ final class ServiceRoutingTests: XCTestCase {
                 session: makeRoutingSession(),
                 route: route
             )
-            _ = try await store.exchange(
+            let exchange = try await store.exchange(
                 provider: "apple",
                 idToken: "apple-identity-token",
                 authorizationCode: "apple-one-time-code",
@@ -1712,6 +1712,8 @@ final class ServiceRoutingTests: XCTestCase {
             XCTAssertEqual(capturedBody["idToken"] as? String, "apple-identity-token")
             XCTAssertEqual(capturedBody["authorizationCode"] as? String, "apple-one-time-code")
             XCTAssertEqual(capturedBody["deviceId"] as? String, "device-test")
+            XCTAssertEqual(exchange.token, "cms_apple_exchange_test")
+            XCTAssertEqual(exchange.canonicalUserId, "user-test")
             XCTAssertEqual(KeychainStore.get(keys.identityToken), "apple-identity-token")
             XCTAssertNotEqual(KeychainStore.get(keys.identityToken), "apple-one-time-code")
         }
@@ -1745,7 +1747,7 @@ final class ServiceRoutingTests: XCTestCase {
             )!
             return (
                 response,
-                Data(#"{"code":0,"data":{"token":"cms_google_exchange_test"}}"#.utf8)
+                Data(#"{"code":0,"data":{"token":"cms_google_exchange_test","userId":"user-google-test"}}"#.utf8)
             )
         }
         let store = MobileSessionStore(session: makeRoutingSession(), route: route)
@@ -1754,6 +1756,64 @@ final class ServiceRoutingTests: XCTestCase {
             idToken: "google-id-token",
             authorizationCode: "must-never-leak",
             deviceId: "device-test"
+        )
+    }
+
+    func testSessionExchangeRejectsMissingCanonicalUserIdBeforePersistingToken() async {
+        let route = ServiceRoute.globalGateway
+        let keys = MobileSessionStore.storageKeys(for: route)
+        let saved = [
+            keys.session: KeychainStore.get(keys.session),
+            keys.provider: KeychainStore.get(keys.provider),
+            keys.identityToken: KeychainStore.get(keys.identityToken),
+        ]
+        defer {
+            for (key, value) in saved {
+                if let value {
+                    KeychainStore.set(value, for: key)
+                } else {
+                    KeychainStore.delete(key)
+                }
+            }
+        }
+        _ = MobileSessionStore.detachLocalSession(for: route)
+        RoutingURLProtocol.handler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil
+            )!
+            return (
+                response,
+                Data(#"{"code":0,"data":{"token":"cms_missing_user_id"}}"#.utf8)
+            )
+        }
+
+        let store = MobileSessionStore(session: makeRoutingSession(), route: route)
+        do {
+            _ = try await store.exchange(
+                provider: "apple",
+                idToken: "apple-id-token",
+                deviceId: "device-test"
+            )
+            XCTFail("A session without canonical userId must fail closed")
+        } catch {}
+
+        let persistedToken = await store.sessionToken()
+        XCTAssertNil(persistedToken)
+        XCTAssertNil(KeychainStore.get(keys.provider))
+        XCTAssertNil(KeychainStore.get(keys.identityToken))
+    }
+
+    func testCanonicalUserIdNormalizationRejectsEmptyAndOversizedValues() {
+        XCTAssertEqual(
+            MobileSessionStore.normalizedCanonicalUserId("  canonical-user  "),
+            "canonical-user"
+        )
+        XCTAssertNil(MobileSessionStore.normalizedCanonicalUserId(nil))
+        XCTAssertNil(MobileSessionStore.normalizedCanonicalUserId(" \n "))
+        XCTAssertNil(
+            MobileSessionStore.normalizedCanonicalUserId(
+                String(repeating: "a", count: 513)
+            )
         )
     }
 
@@ -1846,7 +1906,7 @@ final class ServiceRoutingTests: XCTestCase {
             )!
             return (
                 response,
-                Data(#"{"code":0,"data":{"token":"cms_account_a_refreshed"}}"#.utf8)
+                Data(#"{"code":0,"data":{"token":"cms_account_a_refreshed","userId":"account-a"}}"#.utf8)
             )
         }
 
