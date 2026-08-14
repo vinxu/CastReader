@@ -27,6 +27,14 @@ const libraryViewsSource = fs.readFileSync(
   path.join(root, 'CastReader/Views/WeRead/WeReadLibraryViews.swift'),
   'utf8',
 );
+const constantsSource = fs.readFileSync(
+  path.join(root, 'CastReader/Utils/Constants.swift'),
+  'utf8',
+);
+const serviceRoutingSource = fs.readFileSync(
+  path.join(root, 'CastReader/Services/ServiceRouting.swift'),
+  'utf8',
+);
 const readAloudSource = fs.readFileSync(
   path.join(root, 'CastReader/ViewModels/ReadAloudViewModel.swift'),
   'utf8',
@@ -77,13 +85,27 @@ new vm.Script(resumeServerPolledLogin, { filename: 'WeRead.resumeServerPolledLog
 let loginClickCount = 0;
 let loginShowCount = 0;
 let qrMounted = false;
+class MockLoginMouseEvent {
+  constructor(type, options) {
+    this.type = type;
+    Object.assign(this, options);
+  }
+}
 const loginControl = {
   innerText: ' 登录 ',
   textContent: ' 登录 ',
   __vueParentComponent: {},
-  getBoundingClientRect() { return { width: 64, height: 32 }; },
+  getBoundingClientRect() { return { left: 10, top: 20, width: 64, height: 32 }; },
   closest() { return this; },
-  click() { loginClickCount += 1; },
+  dispatchEvent(event) {
+    assert.equal(event.type, 'click');
+    assert.equal(event.bubbles, true);
+    assert.equal(event.cancelable, true);
+    assert.equal(event.clientX, 42);
+    assert.equal(event.clientY, 36);
+    loginClickCount += 1;
+    return true;
+  },
 };
 const loginQRCode = {
   getBoundingClientRect() { return qrMounted ? { width: 172, height: 172 } : { width: 0, height: 0 }; },
@@ -117,6 +139,8 @@ const nuxtRoot = {
 };
 const loginContext = {
   console,
+  Date,
+  MouseEvent: MockLoginMouseEvent,
   getComputedStyle() { return { display: 'block', visibility: 'visible' }; },
   __castreaderWeReadLoginSession: loginSession,
   document: {
@@ -136,9 +160,12 @@ const loginContext = {
 loginContext.window = loginContext;
 const loginResult = vm.runInNewContext(loginQR, loginContext, { filename: 'WeRead.openLoginQRCode.runtime.js' });
 assert.equal(loginResult.state, 'requesting-uid');
-assert.equal(loginResult.strategy, 'vue-exposed-show');
-assert.equal(loginShowCount, 1, 'logged-out WeRead entry must call LoginModal.show exactly once');
-assert.equal(loginClickCount, 0, 'Vue LoginModal.show must be preferred over a synthetic DOM click');
+assert.equal(loginResult.strategy, 'hydrated-semantic-mouse-event');
+assert.equal(loginShowCount, 0, 'the public hydrated login action avoids an expensive private Vue walk');
+assert.equal(loginClickCount, 1, 'the official login action must receive one coordinate-bearing MouseEvent');
+loginSession.uidRequestStartedAt = loginSession.presentationRequestedAt;
+loginSession.uid = 'server-login-uid';
+qrMounted = true;
 const repeatedLoginResult = vm.runInNewContext(loginQR, loginContext, { filename: 'WeRead.openLoginQRCode.repeated.js' });
 assert.equal(repeatedLoginResult.state, 'visible');
 assert.equal(repeatedLoginResult.uidPresent, true);
@@ -147,8 +174,54 @@ assert.equal(
   'server-login-uid',
   'the issued QR UID must be returned to Swift before the app enters WeChat',
 );
-assert.equal(loginShowCount, 1, 'the same QR login UID must never be replaced by a second presentation');
-assert.equal(loginClickCount, 0);
+assert.equal(loginShowCount, 0, 'the same QR login UID must never be replaced by a second presentation');
+assert.equal(loginClickCount, 1);
+
+// If WeRead removes the visible homepage action, its exposed LoginModal is the
+// fallback. This path still owns UID creation and polling inside the same page.
+let modalOnlyShowCount = 0;
+const modalOnlySession = {
+  uid: '',
+  presentationRequestedAt: 0,
+  presentationAttempts: 0,
+  presentationStrategy: '',
+  uidRequestStartedAt: 0,
+};
+const modalOnly = {
+  exposed: {
+    show() { modalOnlyShowCount += 1; },
+    close() {},
+    handleLoginSuccess() {},
+  },
+  subTree: null,
+  parent: null,
+};
+const modalOnlyRoot = {
+  exposed: null,
+  subTree: { component: modalOnly, children: [] },
+  parent: null,
+};
+const modalOnlyContext = {
+  Date,
+  MouseEvent: MockLoginMouseEvent,
+  getComputedStyle() { return { display: 'none', visibility: 'hidden' }; },
+  __castreaderWeReadLoginSession: modalOnlySession,
+  document: {
+    head: { appendChild() {} },
+    documentElement: { appendChild() {} },
+    createElement() { return { id: '', textContent: '' }; },
+    getElementById() { return null; },
+    querySelector(selector) {
+      if (selector === '#__nuxt') return { __vue_app__: { _instance: modalOnlyRoot } };
+      return null;
+    },
+    querySelectorAll() { return []; },
+  },
+};
+modalOnlyContext.window = modalOnlyContext;
+const modalOnlyResult = vm.runInNewContext(loginQR, modalOnlyContext);
+assert.equal(modalOnlyResult.strategy, 'vue-exposed-show');
+assert.equal(modalOnlyShowCount, 1);
 
 // Generated homepage classes are not a stable WeRead contract. If Vue's
 // exposed LoginModal cannot be discovered, the exact visible "登录" action is
@@ -156,9 +229,9 @@ assert.equal(loginClickCount, 0);
 let fallbackClickCount = 0;
 const fallbackLoginControl = {
   textContent: ' 登录 ',
-  getBoundingClientRect() { return { width: 64, height: 32 }; },
+  getBoundingClientRect() { return { left: 0, top: 0, width: 64, height: 32 }; },
   closest() { return null; },
-  click() { fallbackClickCount += 1; },
+  dispatchEvent() { fallbackClickCount += 1; },
 };
 const fallbackSession = {
   uid: '',
@@ -168,6 +241,8 @@ const fallbackSession = {
 };
 const fallbackContext = {
   console,
+  Date,
+  MouseEvent: MockLoginMouseEvent,
   getComputedStyle() { return { display: 'block', visibility: 'visible' }; },
   __castreaderWeReadLoginSession: fallbackSession,
   document: {
@@ -189,12 +264,66 @@ const fallbackResult = vm.runInNewContext(
   { filename: 'WeRead.openLoginQRCode.semantic-fallback.js' },
 );
 assert.equal(fallbackResult.state, 'requesting-uid');
-assert.equal(fallbackResult.strategy, 'hydrated-semantic-control');
+assert.equal(fallbackResult.strategy, 'hydrated-semantic-mouse-event');
 assert.equal(
   fallbackClickCount,
   1,
   'the visible exact login action must be tapped even when WeRead hides its private Nuxt root',
 );
+
+// A delegated click that did not start getLoginUid must be eligible for a
+// subsecond retry. The previous six-second lockout was the visible QR delay.
+const retrySession = {
+  uid: '',
+  presentationRequestedAt: 1_000,
+  presentationAttempts: 1,
+  presentationStrategy: 'hydrated-semantic-mouse-event',
+  uidRequestStartedAt: 0,
+};
+const retryContext = {
+  Date: { now: () => 1_701 },
+  MouseEvent: MockLoginMouseEvent,
+  getComputedStyle() { return { display: 'block', visibility: 'visible' }; },
+  __castreaderWeReadLoginSession: retrySession,
+  document: fallbackContext.document,
+};
+retryContext.window = retryContext;
+const retryResult = vm.runInNewContext(loginQR, retryContext);
+assert.equal(retryResult.state, 'retrying-login-control');
+assert.equal(retrySession.presentationRequestedAt, 0);
+assert.equal(retrySession.uid, '', 'an unissued UID may be retried, never replaced');
+
+for (const scenario of [
+  {
+    name: 'completed-without-uid',
+    now: 1_100,
+    session: { uidRequestStartedAt: 1_010, uidRequestCompletedAt: 1_090 },
+  },
+  {
+    name: 'hung-request',
+    now: 5_011,
+    session: { uidRequestStartedAt: 1_010, uidRequestCompletedAt: 0 },
+  },
+]) {
+  const session = {
+    uid: '',
+    presentationRequestedAt: 1_000,
+    presentationAttempts: 1,
+    presentationStrategy: 'hydrated-semantic-mouse-event',
+    ...scenario.session,
+  };
+  const context = {
+    Date: { now: () => scenario.now },
+    MouseEvent: MockLoginMouseEvent,
+    getComputedStyle() { return { display: 'block', visibility: 'visible' }; },
+    __castreaderWeReadLoginSession: session,
+    document: fallbackContext.document,
+  };
+  context.window = context;
+  const result = vm.runInNewContext(loginQR, context, { filename: `WeRead.${scenario.name}.js` });
+  assert.equal(result.state, 'retrying-login-control', `${scenario.name} must not lock QR presentation forever`);
+  assert.equal(session.presentationRequestedAt, 0);
+}
 
 assert.match(loginQR, /wr_login_modal_qr_wrapper/);
 assert.match(loginQR, /wr_index_page_top_section_header_action_link/);
@@ -207,7 +336,11 @@ assert.match(loginQR, /wxlogin-container/);
 assert.match(loginQR, /server-polled/);
 assert.match(loginQR, /handleLoginSuccess/);
 assert.match(loginQR, /modalInstance\.exposed\.show/);
+assert.match(loginQR, /dispatchEvent\(new MouseEvent/);
+assert.match(loginQR, /clientX,\s*clientY/);
+assert.match(loginQR, /uidRequestStartedAt/);
 assert.match(loginQR, /uidPresent/);
+assert.doesNotMatch(loginQR, /6_000/);
 assert.doesNotMatch(loginQR, /location\.(?:assign|replace)|document\.cookie/);
 assert.match(loginSessionBridge, /getLoginUid/);
 assert.match(loginSessionBridge, /getLoginInfo/);
@@ -215,10 +348,99 @@ assert.match(loginSessionBridge, /#login_container/);
 assert.match(loginSessionBridge, /\.login_qrcode_container/);
 assert.match(loginSessionBridge, /\.wxlogin-container/);
 assert.match(loginSessionBridge, /\.wr_login_modal_qr_wrapper_old/);
+assert.match(loginSessionBridge, /castReaderWeReadLogin\.postMessage/);
+assert.doesNotMatch(loginSessionBridge, /document\.cookie/);
 assert.match(resumeServerPolledLogin, /handleLoginSuccess/);
 assert.match(resumeServerPolledLogin, /session\.uid/);
 assert.match(resumeServerPolledLogin, /providedUID/);
 assert.doesNotMatch(resumeServerPolledLogin, /document\.cookie|wr_vid|wr_skey/);
+
+// The page's official getLoginInfo Promise must be resolved by the native
+// in-memory poll, while getLoginUid remains WeRead's untouched request. This
+// is what prevents WebKit background suspension from consuming the scan result.
+const nativeBridgeMessages = [];
+const nativeBridgeOriginalRequests = [];
+const nativeBridgeContext = {
+  URL,
+  Date,
+  Headers,
+  Response,
+  location: { href: 'https://weread.qq.com/', origin: 'https://weread.qq.com' },
+  document: {
+    head: { appendChild() {} },
+    documentElement: { appendChild() {} },
+    createElement() { return { id: '', textContent: '' }; },
+  },
+  async fetch(input) {
+    nativeBridgeOriginalRequests.push(String(input));
+    return new Response(JSON.stringify({ uid: 'synthetic-login-uid' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  },
+  webkit: {
+    messageHandlers: {
+      castReaderWeReadLogin: {
+        async postMessage(payload) {
+          nativeBridgeMessages.push(payload);
+          return { succeed: true, accessToken: 'synthetic-token', webLoginVid: 42 };
+        },
+      },
+    },
+  },
+};
+nativeBridgeContext.window = nativeBridgeContext;
+vm.runInNewContext(loginSessionBridge, nativeBridgeContext, {
+  filename: 'WeRead.loginSessionBridge.runtime.js',
+});
+await nativeBridgeContext.fetch('https://weread.qq.com/api/auth/getLoginUid');
+await new Promise(resolve => setTimeout(resolve, 0));
+const bridgedResponse = await nativeBridgeContext.fetch(
+  'https://weread.qq.com/api/auth/getLoginInfo?uid=synthetic-login-uid&otp=',
+  { headers: { 'X-SSR-Request-Id': 'synthetic-request' } },
+);
+assert.equal(nativeBridgeOriginalRequests.length, 1, 'only getLoginUid stays page-owned');
+assert.equal(nativeBridgeMessages.length, 1, 'getLoginInfo must cross the reply bridge exactly once');
+assert.deepEqual(
+  Object.keys(nativeBridgeMessages[0]).sort(),
+  ['otp', 'requestID', 'uid'],
+  'the bridge must not export document cookies',
+);
+const nativeBridgeResult = await bridgedResponse.json();
+let officialSuccessHandlerCount = 0;
+let duplicateManualHandlerCount = 0;
+officialSuccessHandlerCount += 1; // WeRead's original fetch `.then(N)` owner.
+nativeBridgeContext.loginUID = 'synthetic-login-uid';
+nativeBridgeContext.nativeLoginResult = nativeBridgeResult;
+nativeBridgeContext.document.querySelector = selector => {
+  if (selector !== '#__nuxt') return null;
+  return {
+    __vue_app__: {
+      _instance: {
+        exposed: null,
+        subTree: {
+          component: {
+            exposed: {
+              async handleLoginSuccess() { duplicateManualHandlerCount += 1; },
+            },
+            subTree: null,
+            parent: null,
+          },
+          children: [],
+        },
+        parent: null,
+      },
+    },
+  };
+};
+const duplicateGuardState = await vm.runInNewContext(
+  resumeServerPolledLogin,
+  nativeBridgeContext,
+  { filename: 'WeRead.resumeServerPolledLogin.exactly-once.js' },
+);
+assert.equal(duplicateGuardState.state, 'official-reply-delivered');
+assert.equal(officialSuccessHandlerCount, 1);
+assert.equal(duplicateManualHandlerCount, 0, 'successful native reply must never call LoginModal twice');
 let recoveredLoginResult = null;
 const recoveryModal = {
   exposed: {
@@ -278,7 +500,7 @@ assert.match(
 );
 assert.match(libraryViewsSource, /@Environment\(\\\.scenePhase\)/);
 assert.match(libraryViewsSource, /model\.resumeAfterExternalLogin\(\)/);
-assert.match(libraryViewsSource, /WeReadWebScripts\.serverPolledLoginPresentation/);
+assert.match(libraryViewsSource, /source: WeReadWebScripts\.loginSessionBridge/);
 assert.match(libraryViewsSource, /showsLoginGuide/);
 assert.match(libraryViewsSource, /weReadLoginGuide/);
 assert.match(libraryViewsSource, /WeReadWebScripts\.openLoginQRCode/);
@@ -287,10 +509,25 @@ assert.match(
   /func webView\(_ webView: WKWebView, didCommit navigation: WKNavigation!\)[\s\S]*?presentLoginQRCodeIfNeeded\(\)/,
   'QR presentation must begin when WeRead starts painting, not wait for slow didFinish resources',
 );
-assert.doesNotMatch(
+assert.match(
   libraryViewsSource,
   /addScriptMessageHandler\([\s\S]*castReaderWeReadLogin/,
-  'the official WeRead QR poll must not be intercepted by a native reply bridge',
+  'the official WeRead QR poll must survive same-phone backgrounding through the in-memory reply bridge',
+);
+assert.match(libraryViewsSource, /case \.inactive, \.background:[\s\S]*preserveLoginSessionBeforeBackground\(\)/);
+assert.match(libraryViewsSource, /URLSessionConfiguration\.ephemeral/);
+assert.match(libraryViewsSource, /httpShouldSetCookies = false/);
+assert.match(libraryViewsSource, /httpCookieStorage = nil/);
+assert.match(libraryViewsSource, /urlCache = nil/);
+assert.match(libraryViewsSource, /nativeLoginSession\.data\(for: request\)/);
+assert.doesNotMatch(libraryViewsSource, /URLSession\.shared\.data\(for: request\)/);
+assert.match(libraryViewsSource, /beginBackgroundTask/);
+assert.match(libraryViewsSource, /endBackgroundTask/);
+assert.match(libraryViewsSource, /nativeLoginSession\.invalidateAndCancel\(\)/);
+assert.doesNotMatch(
+  libraryViewsSource,
+  /NSLog\([^\n]*(?:uid|otp|cookie)|print\([^\n]*(?:uid|otp|cookie)/i,
+  'diagnostics must never print WeRead UID, OTP, or cookie values',
 );
 const loginPresentationSource =
   libraryViewsSource.match(/private func presentLoginQRCodeIfNeeded\(\)[\s\S]*?private func isShelfURL/)?.[0] || '';
@@ -309,6 +546,16 @@ assert.doesNotMatch(
   /webView\.load|\.reload\(|location\.(?:assign|replace)/,
   'automatic QR guidance must preserve the current page document and login UID',
 );
+
+// WeRead is a platform connector, not an owned API route. Its login recovery
+// must be identical under Global and CN product modes and must not mutate the
+// dual-route contract used by TTS/auth/QuickRead.
+assert.match(constantsSource, /globalServiceBaseURL = "https:\/\/api\.castreader\.ai"/);
+assert.match(constantsSource, /globalWebURL = "https:\/\/api\.castreader\.ai"/);
+assert.match(serviceRoutingSource, /case \.chinaGateway: return "https:\/\/api\.castreader\.cn"/);
+assert.match(serviceRoutingSource, /case \.chinaGateway: return "https:\/\/quickread\.castreader\.cn"/);
+assert.doesNotMatch(source, /api\.castreader\.(?:ai|cn)|quickread\.castreader\.cn|ServiceRouting/);
+assert.doesNotMatch(libraryViewsSource, /ServiceRouting\.(?:select|set|override|reset)/);
 
 assert.match(toc, /chapterInfos/);
 assert.match(toc, /chapterUid/);

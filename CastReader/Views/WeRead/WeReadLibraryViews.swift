@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import UIKit
 import WebKit
 
 extension Notification.Name {
@@ -132,8 +133,13 @@ struct WeReadLibraryConnectView: View {
                 model.updateTheme(isDark: scheme == .dark)
             }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active {
+                switch phase {
+                case .active:
                     model.resumeAfterExternalLogin()
+                case .inactive, .background:
+                    model.preserveLoginSessionBeforeBackground()
+                @unknown default:
+                    break
                 }
             }
             .onDisappear { model.closeConnection() }
@@ -339,7 +345,20 @@ private struct WeReadDeferredLoginRequest {
     let uid: String
     let otp: String
     let requestID: String
-    let cookie: String
+}
+
+private actor WeReadCookieHeaderGate {
+    private var continuation: CheckedContinuation<String?, Never>?
+
+    init(_ continuation: CheckedContinuation<String?, Never>) {
+        self.continuation = continuation
+    }
+
+    func resolve(_ value: String?) {
+        guard let continuation else { return }
+        self.continuation = nil
+        continuation.resume(returning: value)
+    }
 }
 
 @MainActor
@@ -367,10 +386,13 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     private var pendingLoginUID: String?
     private var pendingNativeLoginResult: [String: Any]?
     private var nativeLoginTask: Task<Void, Never>?
+    private var nativeLoginRetryTask: Task<Void, Never>?
+    private var nativeLoginBackgroundTaskID = UIBackgroundTaskIdentifier.invalid
     private var deferredNativeLoginRequest: WeReadDeferredLoginRequest?
     private var deferredNativeLoginReply: ((Any?, String?) -> Void)?
-    private var shouldResolveNativeLoginInForeground = false
+    private var shouldResolveNativeLoginInForeground = true
     private let loginReplyProxy: WeReadLoginReplyProxy
+    private let nativeLoginSession: URLSession
     private let connectionAnalytics: AnalyticsLibraryConnectionRecorder
     private var onboardingAutomationEnabled = false
     private var onboardingAttemptID = 0
@@ -399,7 +421,13 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         entryTapAlreadyTracked: Bool
     ) {
         let replyProxy = WeReadLoginReplyProxy()
+        let nativeSessionConfiguration = URLSessionConfiguration.ephemeral
+        nativeSessionConfiguration.httpShouldSetCookies = false
+        nativeSessionConfiguration.httpCookieStorage = nil
+        nativeSessionConfiguration.urlCache = nil
+        nativeSessionConfiguration.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         loginReplyProxy = replyProxy
+        nativeLoginSession = URLSession(configuration: nativeSessionConfiguration)
         connectionAnalytics = AnalyticsLibraryConnectionRecorder(
             session: analyticsSession,
             entryTapAlreadyTracked: entryTapAlreadyTracked
@@ -407,10 +435,15 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         let config = WKWebViewConfiguration(); config.websiteDataStore = CommercialWebSession.websiteDataStore; config.defaultWebpagePreferences.preferredContentMode = .desktop
         config.userContentController.addUserScript(
             WKUserScript(
-                source: WeReadWebScripts.serverPolledLoginPresentation,
+                source: WeReadWebScripts.loginSessionBridge,
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true
             )
+        )
+        config.userContentController.addScriptMessageHandler(
+            replyProxy,
+            contentWorld: .page,
+            name: "castReaderWeReadLogin"
         )
         webView = WKWebView(frame:.zero, configuration:config); super.init()
         replyProxy.owner = self
@@ -485,6 +518,19 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         loginPresentationTask = nil
         previewTask?.cancel()
         previewTask = nil
+        foregroundResumeTask?.cancel()
+        foregroundResumeTask = nil
+        nativeLoginRetryTask?.cancel()
+        nativeLoginRetryTask = nil
+        nativeLoginTask?.cancel()
+        nativeLoginTask = nil
+        nativeLoginSession.invalidateAndCancel()
+        deferredNativeLoginReply?(nil, "The WeRead login session ended.")
+        deferredNativeLoginRequest = nil
+        deferredNativeLoginReply = nil
+        pendingLoginUID = nil
+        pendingNativeLoginResult = nil
+        endNativeLoginBackgroundTask()
     }
 
     func resumeOfficialLoginObservation() {
@@ -498,7 +544,13 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     }
 
     func preserveLoginSessionBeforeBackground() {
-        shouldResolveNativeLoginInForeground = false
+        guard didLoad else { return }
+        // `getLoginInfo` is a one-shot long poll. WebKit suspends page-owned
+        // requests as soon as the user opens WeChat, so keep that exact
+        // in-memory request alive natively for the short screenshot round trip.
+        shouldResolveNativeLoginInForeground = true
+        startDeferredNativeLoginPollIfNeeded()
+        beginNativeLoginBackgroundTaskIfNeeded()
         Task { [weak self] in
             await self?.capturePendingLoginUID()
         }
@@ -513,59 +565,82 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         foregroundResumeTask = Task { [weak self] in
             guard let self else { return }
             self.shouldResolveNativeLoginInForeground = true
+            self.endNativeLoginBackgroundTask()
             await self.capturePendingLoginUID()
             guard self.pendingLoginUID != nil else {
                 self.resumeOfficialLoginObservation()
                 return
             }
+            self.startDeferredNativeLoginPollIfNeeded()
+            self.startLoginPolling()
 
-            for attempt in 0..<12 {
+            // The document-start bridge keeps WeRead's original Vue promise
+            // pending while URLSession owns the exact same UID poll. Give that
+            // poll time to publish its result; never start a competing request
+            // that could consume the one-shot confirmation first.
+            var didProbeNativeResult = false
+            for attempt in 0..<80 {
                 guard !Task.isCancelled else { return }
-                let value = try? await self.webView.callAsyncJavaScript(
-                    "return await \(WeReadWebScripts.resumeServerPolledLogin);",
-                    arguments: [
-                        "loginUID": self.pendingLoginUID ?? "",
-                        "nativeLoginResult": self.pendingNativeLoginResult ?? [:],
-                    ],
-                    in: nil,
-                    contentWorld: .page
-                )
-                let payload = value as? [String: Any]
-                let state = payload?["state"] as? String ?? "unknown"
-                NSLog(
-                    "CRDBG WEREAD login native-resume state=%@ logic=%@ attempt=%d",
-                    state,
-                    payload?["logicCode"] as? String ?? "",
-                    attempt + 1
-                )
-                if state == "handled" {
-                    self.shouldResolveNativeLoginInForeground = false
-                    // The foreground WebView recovery has already handed the
-                    // successful response to WeRead's own Vue handler. Loading
-                    // the shelf destroys the old suspended fetch context, so
-                    // release our in-memory bridge references as well.
-                    self.deferredNativeLoginRequest = nil
-                    self.deferredNativeLoginReply = nil
-                    self.pendingLoginUID = nil
-                    self.pendingNativeLoginResult = nil
-                    self.loginPollingTask?.cancel()
-                    self.loginPollingTask = nil
-                    self.statusText = AppLocalized("登录成功，正在进入书架…")
-                    self.showsLoginGuide = false
-                    self.showsSyncBar = false
-                    self.webView.load(
-                        URLRequest(
-                            url: WeReadNativeTheme.themedURL(
-                                WeReadWebScripts.shelfURL,
-                                isDark: self.isDarkMode
-                            )
+                guard self.showsLoginGuide else { return }
+                if let result = self.pendingNativeLoginResult {
+                    if let scan = try? await self.evaluate(WeReadWebScripts.libraryScan),
+                       scan.authenticated,
+                       !scan.authRequired {
+                        self.finishRecoveredLogin()
+                        return
+                    }
+                    if !didProbeNativeResult {
+                        didProbeNativeResult = true
+                        let value = try? await self.webView.callAsyncJavaScript(
+                            "return await \(WeReadWebScripts.resumeServerPolledLogin);",
+                            arguments: [
+                                "loginUID": self.pendingLoginUID ?? "",
+                                "nativeLoginResult": result,
+                            ],
+                            in: nil,
+                            contentWorld: .page
                         )
-                    )
-                    return
+                        let payload = value as? [String: Any]
+                        let state = payload?["state"] as? String ?? "unknown"
+                        NSLog(
+                            "CRDBG WEREAD login resume state=%@ credentials=Y attempt=%d",
+                            state,
+                            attempt + 1
+                        )
+                        if state == "handled" {
+                            self.finishRecoveredLogin()
+                            return
+                        }
+                    }
+                } else if self.nativeLoginTask == nil,
+                          self.deferredNativeLoginRequest != nil {
+                    self.startDeferredNativeLoginPollIfNeeded()
                 }
-                try? await Task.sleep(for: .milliseconds(650))
+                try? await Task.sleep(for: .milliseconds(250))
             }
+            self.resumeOfficialLoginObservation()
         }
+    }
+
+    private func finishRecoveredLogin() {
+        shouldResolveNativeLoginInForeground = false
+        deferredNativeLoginRequest = nil
+        deferredNativeLoginReply = nil
+        pendingLoginUID = nil
+        pendingNativeLoginResult = nil
+        loginPollingTask?.cancel()
+        loginPollingTask = nil
+        statusText = AppLocalized("登录成功，正在进入书架…")
+        showsLoginGuide = false
+        showsSyncBar = false
+        webView.load(
+            URLRequest(
+                url: WeReadNativeTheme.themedURL(
+                    WeReadWebScripts.shelfURL,
+                    isDark: isDarkMode
+                )
+            )
+        )
     }
 
     fileprivate func handleNativeLoginPoll(
@@ -588,26 +663,27 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let requestID = (payload["requestID"] as? String ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        let cookie = payload["cookie"] as? String ?? ""
+        guard otp.count <= 16, requestID.count <= 512 else {
+            replyHandler(nil, "The WeRead login request metadata is invalid.")
+            return
+        }
         pendingLoginUID = uid
-        if let previousReply = deferredNativeLoginReply,
-           deferredNativeLoginRequest?.uid != uid {
+        if let previousReply = deferredNativeLoginReply {
+            nativeLoginTask?.cancel()
+            nativeLoginTask = nil
             previousReply(nil, "A newer WeRead login session replaced this request.")
         }
         deferredNativeLoginRequest = WeReadDeferredLoginRequest(
             uid: uid,
             otp: otp,
-            requestID: requestID,
-            cookie: cookie
+            requestID: requestID
         )
         deferredNativeLoginReply = replyHandler
         NSLog("CRDBG WEREAD login native-poll deferred")
 
-        // The user must leave CastReader to scan the QR code in WeChat. Do not
-        // start the one-shot getLoginInfo request here: iOS suspends/cancels it
-        // in the background and the successful result can be lost. Keep the
-        // page's fetch promise pending, then resolve it after CastReader is
-        // active again.
+        // Start in URLSession while the app is active. When the user opens
+        // WeChat, a short background task keeps this exact one-shot request
+        // alive instead of allowing WebKit to suspend and lose its response.
         if shouldResolveNativeLoginInForeground {
             startDeferredNativeLoginPollIfNeeded()
         }
@@ -621,14 +697,11 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             let replyHandler = deferredNativeLoginReply
         else { return }
 
-        deferredNativeLoginRequest = nil
-        deferredNativeLoginReply = nil
         nativeLoginTask = Task { [weak self] in
             guard let self else {
                 replyHandler(nil, "The WeRead login session ended.")
                 return
             }
-            defer { self.nativeLoginTask = nil }
 
             var components = URLComponents(
                 url: URL(string: "https://weread.qq.com/api/auth/getLoginInfo")!,
@@ -647,36 +720,63 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             request.timeoutInterval = 65
             request.setValue(WeReadWebScripts.desktopUserAgent, forHTTPHeaderField: "User-Agent")
             request.setValue("application/json", forHTTPHeaderField: "Accept")
+            request.setValue("https://weread.qq.com/", forHTTPHeaderField: "Referer")
             if !loginRequest.requestID.isEmpty, loginRequest.requestID.count <= 512 {
                 request.setValue(loginRequest.requestID, forHTTPHeaderField: "X-SSR-Request-Id")
             }
-            if !loginRequest.cookie.isEmpty, loginRequest.cookie.count <= 16_384 {
-                request.setValue(loginRequest.cookie, forHTTPHeaderField: "Cookie")
+            if let cookieHeader = await self.currentWeReadCookieHeader(),
+               cookieHeader.count <= 16_384 {
+                request.setValue(cookieHeader, forHTTPHeaderField: "Cookie")
             }
             request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 
             do {
-                let (data, response) = try await URLSession.shared.data(for: request)
+                let (data, response) = try await self.nativeLoginSession.data(for: request)
                 guard
                     let http = response as? HTTPURLResponse,
                     (200..<300).contains(http.statusCode),
                     let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
                 else {
-                    replyHandler(nil, "WeRead did not return a valid login response.")
+                    self.nativeLoginTask = nil
+                    self.endNativeLoginBackgroundTask()
+                    self.scheduleNativeLoginRetryIfNeeded()
                     return
                 }
-                self.pendingNativeLoginResult = json
                 let succeeded = (json["succeed"] as? Bool) == true
                 let hasToken = !(json["accessToken"] as? String ?? "").isEmpty
                 let hasVID = json["webLoginVid"] != nil && !(json["webLoginVid"] is NSNull)
+                let logicCode = json["logicCode"] as? String ?? ""
+                let terminalLogicCodes = Set([
+                    "NEED_OTP",
+                    "OTP_EXPIRED",
+                    "OTP_NOT_MATCH",
+                    "LOGIN_TIMEOUT",
+                ])
+                let hasCredentials = hasToken && hasVID
+                let terminal = hasCredentials || terminalLogicCodes.contains(logicCode)
+                if hasToken && hasVID {
+                    self.pendingNativeLoginResult = json
+                }
                 NSLog(
-                    "CRDBG WEREAD login native-poll completed success=%@ credentials=%@",
+                    "CRDBG WEREAD login native-poll completed success=%@ credentials=%@ terminal=%@",
                     succeeded ? "Y" : "N",
-                    (hasToken && hasVID) ? "Y" : "N"
+                    hasCredentials ? "Y" : "N",
+                    terminal ? "Y" : "N"
                 )
-                replyHandler(json, nil)
+                if terminal,
+                   self.deferredNativeLoginRequest?.uid == loginRequest.uid {
+                    self.deferredNativeLoginRequest = nil
+                    self.deferredNativeLoginReply = nil
+                    replyHandler(json, nil)
+                }
+                self.nativeLoginTask = nil
+                self.endNativeLoginBackgroundTask()
+                if !terminal {
+                    self.scheduleNativeLoginRetryIfNeeded()
+                }
             } catch is CancellationError {
-                replyHandler(nil, "The WeRead login request was cancelled.")
+                self.nativeLoginTask = nil
+                self.endNativeLoginBackgroundTask()
             } catch {
                 let nsError = error as NSError
                 NSLog(
@@ -684,9 +784,65 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                     nsError.domain,
                     nsError.code
                 )
-                replyHandler(nil, "The WeRead login request failed.")
+                self.nativeLoginTask = nil
+                self.endNativeLoginBackgroundTask()
+                self.scheduleNativeLoginRetryIfNeeded()
             }
         }
+    }
+
+    private func currentWeReadCookieHeader() async -> String? {
+        await withCheckedContinuation { continuation in
+            let gate = WeReadCookieHeaderGate(continuation)
+            webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { cookies in
+                let scoped = cookies.filter {
+                    let domain = $0.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+                    return domain == "weread.qq.com" || domain.hasSuffix(".weread.qq.com")
+                }
+                // Cookie values stay inside this ephemeral request header.
+                // They are never persisted or included in diagnostics.
+                let header = scoped.isEmpty
+                    ? nil
+                    : HTTPCookie.requestHeaderFields(with: scoped)["Cookie"]
+                Task { await gate.resolve(header) }
+            }
+            Task {
+                try? await Task.sleep(for: .milliseconds(500))
+                await gate.resolve(nil)
+            }
+        }
+    }
+
+    private func scheduleNativeLoginRetryIfNeeded() {
+        nativeLoginRetryTask?.cancel()
+        guard shouldResolveNativeLoginInForeground,
+              deferredNativeLoginRequest != nil,
+              UIApplication.shared.applicationState == .active else { return }
+        nativeLoginRetryTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            self?.nativeLoginRetryTask = nil
+            self?.startDeferredNativeLoginPollIfNeeded()
+        }
+    }
+
+    private func beginNativeLoginBackgroundTaskIfNeeded() {
+        guard nativeLoginBackgroundTaskID == .invalid,
+              nativeLoginTask != nil || deferredNativeLoginRequest != nil else { return }
+        nativeLoginBackgroundTaskID = UIApplication.shared.beginBackgroundTask(
+            withName: "CastReader.WeReadLogin"
+        ) { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.nativeLoginTask?.cancel()
+                self?.endNativeLoginBackgroundTask()
+            }
+        }
+    }
+
+    private func endNativeLoginBackgroundTask() {
+        guard nativeLoginBackgroundTaskID != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(nativeLoginBackgroundTaskID)
+        nativeLoginBackgroundTaskID = .invalid
     }
 
     // MARK: - 首启引导自动化

@@ -82,7 +82,15 @@ enum WeReadWebScripts {
           if (url && /\/api\/auth\/getLoginInfo(?:[?#]|$)/.test(url.href)) {
             session.otp = String(url.searchParams.get('otp') || '');
           }
-          const response = await originalFetch(...args);
+          let response;
+          try {
+            response = await originalFetch(...args);
+          } catch (error) {
+            if (/\/api\/auth\/getLoginUid(?:[?#]|$)/.test(url)) {
+              session.uidRequestCompletedAt = Date.now();
+            }
+            throw error;
+          }
           if (url && /\/api\/auth\/getLogin(?:Uid|Info)(?:[?#]|$)/.test(url.href)) {
             response.clone().json().then(value => inspect(url, value)).catch(() => {});
           }
@@ -127,12 +135,16 @@ enum WeReadWebScripts {
 
       const session = window.__castreaderWeReadLoginSession = {
         uid: '',
+        otp: '',
         loginResult: null,
         lastLogicCode: '',
         nativePollActive: false,
         presentationRequestedAt: 0,
         presentationAttempts: 0,
         presentationStrategy: '',
+        uidRequestStartedAt: 0,
+        uidRequestCompletedAt: 0,
+        nativeReplyDeliveredAt: 0,
       };
       const urlString = input => {
         try {
@@ -163,6 +175,9 @@ enum WeReadWebScripts {
         session.originalFetch = originalFetch;
         window.fetch = async function(...args) {
           const url = urlString(args[0]);
+          if (/\/api\/auth\/getLoginUid(?:[?#]|$)/.test(url)) {
+            session.uidRequestStartedAt = Date.now();
+          }
           if (/\/api\/auth\/getLoginInfo(?:[?#]|$)/.test(url) &&
               window.webkit?.messageHandlers?.castReaderWeReadLogin) {
             const endpoint = new URL(url);
@@ -174,19 +189,24 @@ enum WeReadWebScripts {
               requestID = String(headers.get('X-SSR-Request-Id') || '');
             } catch (_) {}
             if (uid) session.uid = uid;
+            session.otp = otp;
             session.nativePollActive = true;
             try {
               const value = await window.webkit.messageHandlers.castReaderWeReadLogin.postMessage({
                 uid,
                 otp,
                 requestID,
-                cookie: String(document.cookie || ''),
               });
               inspect(url, value);
+              session.nativeReplyDeliveredAt = Date.now();
               return new Response(JSON.stringify(value || {}), {
                 status: 200,
                 headers: { 'Content-Type': 'application/json' },
               });
+            } catch (_) {
+              // If the native bridge is unavailable, retain WeRead's official
+              // same-document behavior instead of leaving LoginModal hung.
+              return originalFetch(...args);
             } finally {
               session.nativePollActive = false;
             }
@@ -194,7 +214,12 @@ enum WeReadWebScripts {
 
           const response = await originalFetch(...args);
           if (/\/api\/auth\/getLogin(?:Uid|Info)(?:[?#]|$)/.test(url)) {
-            response.clone().json().then(value => inspect(url, value)).catch(() => {});
+            response.clone().json().then(value => {
+              inspect(url, value);
+              if (/\/api\/auth\/getLoginUid(?:[?#]|$)/.test(url)) {
+                session.uidRequestCompletedAt = Date.now();
+              }
+            }).catch(() => {});
           }
           return response;
         };
@@ -215,9 +240,10 @@ enum WeReadWebScripts {
     })();
     """#
 
-    /// Opens WeRead's own QR-code sign-in dialog through LoginModal's exposed
-    /// `show` contract. A rendered QR is not considered usable until WeRead
-    /// has returned the UID used by its `/api/auth/getLoginInfo` long poll.
+    /// Opens WeRead's own QR-code sign-in dialog through its visible hydrated
+    /// login action (the same contract as Android), with LoginModal.show as a
+    /// fallback. A rendered QR is not considered usable until WeRead has
+    /// returned the UID used by its `/api/auth/getLoginInfo` long poll.
     static let openLoginQRCode = #"""
     (() => {
       const clean = value => String(value || '').replace(/\s+/g, ' ').trim();
@@ -342,25 +368,74 @@ enum WeReadWebScripts {
         };
       }
 
-      const modalInstance = findLoginModal();
-      const nuxtInstance = document.querySelector('#__nuxt')?.__vue_app__?._instance;
+      const now = Date.now();
+      const requestedAt = Number(session.presentationRequestedAt || 0);
+      if (requestedAt > 0) {
+        const uidRequestStartedAt = Number(session.uidRequestStartedAt || 0);
+        const uidRequestCompletedAt = Number(session.uidRequestCompletedAt || 0);
+        const uidRequestStarted = uidRequestStartedAt >= requestedAt;
+        const uidRequestCompleted = uidRequestStarted && uidRequestCompletedAt >= uidRequestStartedAt;
+        if (uidRequestStarted && !uidRequestCompleted && now - uidRequestStartedAt < 4_000) {
+          return {
+            state: 'requesting-uid',
+            uidPresent: false,
+            uidRequestStarted: true,
+            vueReady: true,
+            strategy: session.presentationStrategy || 'unknown',
+          };
+        }
+        if (!uidRequestStarted && now - requestedAt < 700) {
+          return {
+            state: 'dispatching-login',
+            uidPresent: false,
+            uidRequestStarted: false,
+            vueReady: true,
+            strategy: session.presentationStrategy || 'unknown',
+          };
+        }
+
+        // A click that never started getLoginUid, a response completed without
+        // a UID, or a request that has made no progress for four seconds is not
+        // a valid QR session. Retry the same official control without navigating
+        // and without ever replacing an issued UID.
+        session.presentationRequestedAt = 0;
+        session.presentationStrategy = '';
+        session.uidRequestStartedAt = 0;
+        session.uidRequestCompletedAt = 0;
+        return {
+          state: 'retrying-login-control',
+          uidPresent: false,
+          uidRequestStarted,
+          uidRequestCompleted,
+          vueReady: true,
+        };
+      }
+
       // WeRead has changed the homepage login link's generated class more than
       // once. Prefer the known selector, then fall back to the same visible
       // semantic control a user would tap. Some versions render "登录" as a
-      // span/div while Vue owns the click on an ancestor; clicking that exact
-      // visible node still bubbles through the official handler.
-      const exactLoginTextNodes = Array.from(document.querySelectorAll('body *')).filter(element =>
-        visible(element) && clean(element.textContent) === '登录'
-      );
-      const textLoginControl = exactLoginTextNodes.map(element =>
-        element.closest('a,button,[role="button"],[tabindex]') || element
-      ).find(visible);
-      const explicit =
-        document.querySelector('.wr_index_page_top_section_header_action_link') ||
-        Array.from(document.querySelectorAll('a,button,[role="button"]')).find(element =>
+      // span/div while Vue owns the click on an ancestor. Dispatch the same
+      // coordinate-bearing MouseEvent as Android's working connector so the
+      // delegated Vue handler receives a real bubbling pointer action.
+      const knownLoginControl = document.querySelector('.wr_index_page_top_section_header_action_link');
+      let exactLoginTextNodes = [];
+      let explicit = visible(knownLoginControl) ? knownLoginControl : null;
+      if (!explicit) {
+        exactLoginTextNodes = Array.from(document.querySelectorAll('body *')).filter(element =>
           visible(element) && clean(element.textContent) === '登录'
-        ) ||
-        textLoginControl;
+        );
+        const textLoginControl = exactLoginTextNodes.map(element =>
+          element.closest('a,button,[role="button"],[tabindex]') || element
+        ).find(visible);
+        explicit = Array.from(document.querySelectorAll('a,button,[role="button"]')).find(element =>
+          visible(element) && clean(element.textContent) === '登录'
+        ) || textLoginControl;
+      }
+      // The visible official action is the fastest and most stable contract.
+      // Traverse Vue's private tree only when that public semantic action is
+      // unavailable; walking thousands of VNodes on every 100 ms probe made
+      // iOS perceptibly slower than Android.
+      const modalInstance = visible(explicit) ? null : findLoginModal();
       // Do not require a discoverable Nuxt root for the DOM fallback.
       // WeRead's current production homepage keeps the visible "登录" action
       // working while no longer exposing `#__nuxt.__vue_app__` to page
@@ -379,41 +454,27 @@ enum WeReadWebScripts {
         };
       }
 
-      const now = Date.now();
-      const requestedAt = Number(session.presentationRequestedAt || 0);
-      if (requestedAt > 0 && now - requestedAt < 6_000) {
-        return {
-          state: 'requesting-uid',
-          uidPresent: false,
-          vueReady: true,
-          strategy: session.presentationStrategy || 'unknown',
-        };
-      }
-
-      // A stale attempt never produced a UID, so it was not a valid QR
-      // session. Close that incomplete modal before starting exactly one new
-      // semantic attempt. This avoids replacing a valid, scannable UID.
-      if (requestedAt > 0) {
-        try { modalInstance?.exposed?.close(); } catch (_) {}
-        session.presentationRequestedAt = 0;
-        session.presentationStrategy = '';
-        return { state: 'resetting-invalid-session', uidPresent: false, vueReady: true };
-      }
-
       session.presentationRequestedAt = now;
       session.presentationAttempts = Number(session.presentationAttempts || 0) + 1;
-      if (modalInstance) {
+      if (visible(explicit)) {
+        session.presentationStrategy = 'hydrated-semantic-mouse-event';
+        const rect = explicit.getBoundingClientRect();
+        const clientX = rect.left + rect.width / 2;
+        const clientY = rect.top + rect.height / 2;
+        explicit.dispatchEvent(new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          composed: true,
+          view: window,
+          clientX,
+          clientY,
+        }));
+      } else {
         session.presentationStrategy = 'vue-exposed-show';
         modalInstance.exposed.show({
           langHtml: '使用微信扫一扫登录\n"微信读书"',
           successCb: null,
         });
-      } else {
-        // This fallback is allowed only after the real Vue-bound login control
-        // exists. It mirrors a human tap after hydration, not a pre-hydration
-        // DOM click.
-        session.presentationStrategy = 'hydrated-semantic-control';
-        explicit.click();
       }
       return {
         state: 'requesting-uid',
@@ -458,6 +519,13 @@ enum WeReadWebScripts {
         session.lastLogicCode = String(
           result?.logicCode || (hasCredentials(result) ? 'SUCCEED' : '')
         );
+      }
+      if (hasCredentials(result) && Number(session?.nativeReplyDeliveredAt || 0) > 0) {
+        // The reply bridge has already resolved WeRead's original fetch
+        // promise. Its own `.then(handleLoginSuccess)` is the single owner of
+        // cookie/store mutation; a second manual handler call would duplicate
+        // login completion and user-info loading.
+        return { state: 'official-reply-delivered', logicCode: 'SUCCEED' };
       }
       if (!hasCredentials(result)) {
         const controller = new AbortController();
