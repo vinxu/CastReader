@@ -13,7 +13,7 @@ import CryptoKit
 import UIKit
 import Combine
 
-enum AuthError: Error, LocalizedError {
+enum AuthError: Error, LocalizedError, Equatable {
     case notConfigured
     case cancelled
     case invalidCallback
@@ -22,6 +22,9 @@ enum AuthError: Error, LocalizedError {
     case invalidEmail
     case emailOTPUnavailable
     case invalidOTP
+    case emailOTPTimeout
+    case emailOTPNetwork
+    case emailOTPFailed
 
     var errorDescription: String? {
         switch self {
@@ -33,6 +36,9 @@ enum AuthError: Error, LocalizedError {
         case .invalidEmail: return AppLocalized("请输入有效的邮箱地址")
         case .emailOTPUnavailable: return AppLocalized("邮箱登录暂未开放，请使用 Google 或 Apple 登录")
         case .invalidOTP: return AppLocalized("验证码错误或已过期，请重试")
+        case .emailOTPTimeout: return AppLocalized("请求超时，请检查网络后重试")
+        case .emailOTPNetwork: return AppLocalized("无法连接网络，请检查网络后重试")
+        case .emailOTPFailed: return AppLocalized("登录失败，请稍后重试")
         }
     }
 }
@@ -40,6 +46,26 @@ enum AuthError: Error, LocalizedError {
 @MainActor
 final class AuthService: NSObject, ObservableObject {
     static let shared = AuthService()
+
+    enum EmailOTPOperation: Equatable {
+        case send
+        case verify
+    }
+
+    /// Email OTP is a bearer-token JSON flow, not a browser-cookie flow.  A
+    /// dedicated stateless client also mirrors Android's no-CookieJar client and
+    /// bounds the complete request to the same 20 seconds.
+    static var emailOTPSessionConfiguration: URLSessionConfiguration {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.httpShouldSetCookies = false
+        configuration.httpCookieStorage = nil
+        configuration.httpCookieAcceptPolicy = .never
+        configuration.timeoutIntervalForRequest = 20
+        configuration.timeoutIntervalForResource = 20
+        return configuration
+    }
+
+    private static let emailOTPSession = URLSession(configuration: emailOTPSessionConfiguration)
 
     @Published private(set) var account: UserAccount?
     @Published var isWorking = false
@@ -306,7 +332,8 @@ final class AuthService: NSObject, ObservableObject {
         defer { isWorking = false }
         _ = try await postEmailOTP(
             path: "email-otp/send-verification-otp",
-            body: ["email": normalized, "type": "sign-in"]
+            body: ["email": normalized, "type": "sign-in"],
+            operation: .send
         )
     }
 
@@ -321,7 +348,8 @@ final class AuthService: NSObject, ObservableObject {
 
         let obj = try await postEmailOTP(
             path: "sign-in/email-otp",
-            body: ["email": normalized, "otp": otp]
+            body: ["email": normalized, "otp": otp],
+            operation: .verify
         )
         let user = obj["user"] as? [String: Any]
         guard let backendId = (user?["id"] as? String) ?? (obj["userId"] as? String),
@@ -352,28 +380,90 @@ final class AuthService: NSObject, ObservableObject {
         await ProManager.shared.refreshServer()   // 按账号刷新 Pro + 额度
     }
 
-    /// better-auth email-otp 的两个 POST。404 = 插件未启用；sign-in 的 400/401 = 验证码错。
-    private func postEmailOTP(path: String, body: [String: String]) async throws -> [String: Any] {
+    /// Builds the native OTP request without accepting or replaying browser
+    /// cookies. A stale Better Auth cookie makes its CSRF middleware require an
+    /// Origin header, which native clients intentionally do not synthesize.
+    static func makeEmailOTPRequest(url: URL, body: [String: String]) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.httpShouldHandleCookies = false
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        return request
+    }
+
+    /// Maps Better Auth and the delivery wrapper without calling every 4xx an
+    /// invalid code. In particular, a send-stage 403 is never an OTP error.
+    static func mapEmailOTPFailure(
+        statusCode: Int,
+        data: Data,
+        operation: EmailOTPOperation
+    ) -> AuthError {
+        let payload = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        let code = (payload?["code"] as? String)?.uppercased() ?? ""
+
+        if code == "INVALID_EMAIL" { return .invalidEmail }
+        if operation == .verify,
+           code == "INVALID_OTP" || code == "OTP_EXPIRED" || code == "TOO_MANY_ATTEMPTS" {
+            return .invalidOTP
+        }
+        if operation == .verify, [400, 401, 403].contains(statusCode) {
+            return .invalidOTP
+        }
+        switch statusCode {
+        case 404:
+            return .emailOTPUnavailable
+        case 504:
+            return .emailOTPTimeout
+        default:
+            return .emailOTPFailed
+        }
+    }
+
+    static func mapEmailOTPTransportError(_ error: Error) -> AuthError {
+        guard let urlError = error as? URLError else { return .emailOTPFailed }
+        switch urlError.code {
+        case .timedOut:
+            return .emailOTPTimeout
+        case .notConnectedToInternet, .networkConnectionLost, .cannotConnectToHost,
+             .cannotFindHost, .dnsLookupFailed, .internationalRoamingOff,
+             .dataNotAllowed:
+            return .emailOTPNetwork
+        default:
+            return .emailOTPFailed
+        }
+    }
+
+    /// better-auth email-otp 的两个 POST。发码与验码使用同一个无 Cookie
+    /// 客户端，但错误语义必须按阶段分开。
+    private func postEmailOTP(
+        path: String,
+        body: [String: String],
+        operation: EmailOTPOperation
+    ) async throws -> [String: Any] {
         guard let url = URL(string: "\(Constants.API.emailOTPBaseURL)/api/auth/\(path)") else {
             throw AuthError.tokenExchangeFailed("invalid endpoint")
         }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        let (data, response) = try await URLSession.shared.data(for: req)
+        let request = Self.makeEmailOTPRequest(url: url, body: body)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await Self.emailOTPSession.data(for: request)
+        } catch {
+            throw Self.mapEmailOTPTransportError(error)
+        }
         guard let http = response as? HTTPURLResponse else {
-            throw AuthError.tokenExchangeFailed("no response")
+            throw AuthError.emailOTPFailed
         }
         switch http.statusCode {
         case 200..<300:
             return (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
-        case 404:
-            throw AuthError.emailOTPUnavailable
-        case 400, 401, 403:
-            throw AuthError.invalidOTP
         default:
-            throw AuthError.tokenExchangeFailed("HTTP \(http.statusCode)")
+            throw Self.mapEmailOTPFailure(
+                statusCode: http.statusCode,
+                data: data,
+                operation: operation
+            )
         }
     }
 

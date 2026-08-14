@@ -94,25 +94,22 @@ final class AppRegionTests: XCTestCase {
         XCTAssertTrue(AppRegion.global.showsGoogleSignIn)
         XCTAssertFalse(AppRegion.global.showsPhoneSignIn)
         XCTAssertEqual(AppRegion.global.webBaseURL, "https://castreader.ai")
+        XCTAssertEqual(AppRegion.global.apiGatewayBaseURL, "https://api.castreader.ai")
         XCTAssertEqual(AppRegion.global.currencySymbol, "$")
     }
 
-    /// 中国区把微信读书排第一，但 Kindle / Kobo / O'Reilly 仍可手动绑定——
-    /// 国内用户可能持有这些账号。只有境内打不开的 Google 图书被排除。
+    /// 中国区把微信读书排第一，但所有既有书库仍可手动绑定。
     func testChinaPrefersWeReadButStillAllowsManualBinding() {
         XCTAssertEqual(
             AppRegion.cn.availableBoundLibraries,
-            [.weread, .kindle, .kobo, .oreilly]
-        )
-        XCTAssertFalse(
-            AppRegion.cn.availableBoundLibraries.contains(.googleBooks),
-            "play.google.com 在境内不可访问，不该给入口"
+            [.weread, .kindle, .googleBooks, .kobo, .oreilly]
         )
         // 默认书库仍是微信读书——可绑定不等于默认。
         XCTAssertEqual(AppRegion.cn.onboardingSource, .weread)
-        XCTAssertFalse(AppRegion.cn.showsGoogleSignIn)
+        XCTAssertTrue(AppRegion.cn.showsGoogleSignIn)
         XCTAssertTrue(AppRegion.cn.showsPhoneSignIn)
         XCTAssertEqual(AppRegion.cn.webBaseURL, "https://api.castreader.cn")
+        XCTAssertEqual(AppRegion.cn.apiGatewayBaseURL, "https://api.castreader.cn")
         XCTAssertEqual(AppRegion.cn.currencySymbol, "¥")
     }
 
@@ -136,6 +133,28 @@ final class AppRegionTests: XCTestCase {
         XCTAssertEqual(Constants.API.analyticsEvents, "https://castreader.ai/api/events")
     }
 
+    func testChinaRoutesEveryOwnedServiceThroughFiledGateway() {
+        UserDefaults.standard.set("CHN", forKey: storefrontKey)
+
+        XCTAssertEqual(Constants.API.baseURL, "https://api.castreader.cn")
+        XCTAssertEqual(Constants.API.documents, "https://api.castreader.cn/documents")
+        XCTAssertEqual(Constants.API.sts, "https://api.castreader.cn/sts")
+        XCTAssertEqual(Constants.API.asyncUpload, "https://api.castreader.cn/async-md-upload-by-url")
+        XCTAssertEqual(Constants.API.syncUpload, "https://api.castreader.cn/upload")
+        XCTAssertEqual(Constants.API.ttsCatalog, "https://api.castreader.cn/api/tts/catalog?contract=tts-voice-catalog-v1")
+        XCTAssertEqual(TTSEndpoint.primaryBase(), "https://api.castreader.cn")
+        XCTAssertNil(TTSEndpoint.fallbackBase())
+        XCTAssertEqual(QuickReadEndpoint.base(), "https://api.castreader.cn")
+    }
+
+    func testGlobalServiceGatewayStaysOnDotAI() {
+        UserDefaults.standard.set("USA", forKey: storefrontKey)
+
+        XCTAssertEqual(Constants.API.baseURL, "https://api.castreader.ai")
+        XCTAssertEqual(Constants.API.documents, "https://api.castreader.ai/documents")
+        XCTAssertEqual(Constants.API.tts, "https://api.castreader.ai/api/captioned_speech_partly")
+    }
+
     // MARK: - 引导步骤
 
     /// 微信读书是单站点，引导比 Kindle 少一屏。
@@ -151,11 +170,10 @@ final class AppRegionTests: XCTestCase {
 
     // MARK: - 跨区域持久化选择（首页死按钮回归）
 
-    /// global 下绑了 Google Play 图书、之后区域解析为 CN：持久化选择在 CN
-    /// 不可用，读取层必须视同未选择并回退微信读书。否则首页引导卡会渲染
-    /// 「绑定 Google Play 图书」，点击被 MainTabView 的区域闸门吞掉，按钮死掉。
+    /// global 下绑定过 Google Play 图书、之后区域解析为 CN：选择仍然保留。
+    /// 微信读书只是中国区默认引导，不会覆盖用户已明确选择的平台。
     @MainActor
-    func testPersistedGoogleBooksSelectionIsIgnoredInChina() {
+    func testPersistedGoogleBooksSelectionSurvivesInChina() {
         let suiteName = "AppRegionTests.crossRegionSelection"
         let defaults = UserDefaults(suiteName: suiteName)!
         defaults.removePersistentDomain(forName: suiteName)
@@ -169,11 +187,8 @@ final class AppRegionTests: XCTestCase {
         let store = BoundLibraryOnboardingStore(defaults: defaults, arguments: [])
 
         XCTAssertEqual(store.selectedSource, .googleBooks, "持久化值本身要保留，不能清除")
-        XCTAssertNil(
-            store.regionAvailableSelectedSource,
-            "CN 下 Google 图书不可绑定，必须视同未选择"
-        )
-        XCTAssertEqual(store.flowSource, .weread, "首页卡片与引导流程回退区域默认书库")
+        XCTAssertEqual(store.regionAvailableSelectedSource, .googleBooks)
+        XCTAssertEqual(store.flowSource, .googleBooks)
 
         // 区域切回 global（例如时区兜底误判被 storefront 纠正）后选择自动恢复。
         AppRegion.overrideRegion = .global

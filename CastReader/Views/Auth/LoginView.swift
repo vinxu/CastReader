@@ -29,6 +29,7 @@ struct LoginView: View {
     @State private var email = ""
     @State private var otpCode = ""
     @State private var codeSent = false
+    @State private var isSendingEmailCode = false
     @State private var resendCooldown = 0
     private let cooldownTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -40,7 +41,11 @@ struct LoginView: View {
             .frame(maxWidth: .infinity)
             .padding(24)
             .background(AppTheme.background.ignoresSafeArea())
-        .overlay { if auth.isWorking { ProgressView().scaleEffect(1.2) } }
+        .overlay {
+            if auth.isWorking && !isSendingEmailCode {
+                ProgressView().scaleEffect(1.2)
+            }
+        }
         // sheet 场景下已登录用户重新登录（如 Apple 无 email → 邮箱补登）时
         // isSignedIn 不发生 false→true 跳变，所以按 account 变化收面板。
         .onChange(of: auth.account) { acc in
@@ -82,16 +87,17 @@ struct LoginView: View {
         }
     }
 
-    /// Google 主推（实心大按钮），Apple 与邮箱作为次要通道并排成小图标。
-    /// 邮箱流展开后占据整块区域，此时不再显示图标行。
+    /// 手机号（中国区）、Google 与 Apple 都使用等高的完整按钮；Apple 不能降级
+    /// 成更小的次要入口，否则会触发 App Store 4.8 的等价登录选项风险。
     private var channelStack: some View {
         VStack(spacing: 14) {
             phoneButton
             googleButton
+            appleButton
             if emailFlowExpanded {
                 emailSection
             } else {
-                secondaryChannels
+                emailSecondaryChannel
             }
         }
         .animation(.easeInOut(duration: 0.2), value: emailFlowExpanded)
@@ -190,7 +196,8 @@ struct LoginView: View {
                     Image(systemName: "iphone").font(.system(size: 18, weight: .bold))
                     Text(AppLocalized("使用手机号继续")).fontWeight(.semibold)
                 }
-                .frame(maxWidth: .infinity).padding()
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
                 .background(AppTheme.buttonPrimary)
                 .foregroundColor(AppTheme.buttonPrimaryForeground)
                 .cornerRadius(12)
@@ -202,11 +209,7 @@ struct LoginView: View {
 
     // MARK: 按钮
 
-    /// 主推通道：实心主色 + 「上次登录」标签，Apple 与邮箱降为下方的小图标。
-    ///
-    /// ⚠️ 已知合规风险：Apple 审核 4.8 要求 Sign in with Apple 作为「等价选项」，
-    /// HIG 写明它不应排在同类选项下方或更小。此处是产品明确决策（对齐元宝等
-    /// 竞品的做法），若审核被拒，把 Apple 恢复成与 Google 同尺寸的按钮即可。
+    /// Google 登录保留为完整可选通道，中国区也不移除。
     @ViewBuilder
     private var googleButton: some View {
         if Constants.GoogleOAuth.isConfigured {
@@ -245,15 +248,19 @@ struct LoginView: View {
             .background(AppTheme.background.opacity(0.22), in: Capsule())
     }
 
-    /// 次要通道：Apple 与邮箱验证码。两者都是圆形图标，与主推的 Google 拉开层级。
-    /// 上次用过的那个描主色边——图标放不下文字标签，用颜色提示。
-    private var secondaryChannels: some View {
-        HStack(spacing: 16) {
-            AppleSignInIconButton(
-                onSuccess: { dismiss() },
-                onError: { errorMessage = $0 },
-                isLastUsed: isRootGate && lastProvider == "apple"
-            )
+    private var appleButton: some View {
+        AppleSignInButton(
+            onSuccess: { dismiss() },
+            onError: { errorMessage = $0 }
+        )
+        .frame(height: 50)
+        .disabled(auth.isWorking)
+        .accessibilityIdentifier("login.apple")
+    }
+
+    /// 邮箱验证码保留为兜底入口，展开后原地显示表单。
+    private var emailSecondaryChannel: some View {
+        HStack {
             emailIconButton
         }
         .frame(maxWidth: .infinity)
@@ -290,6 +297,7 @@ struct LoginView: View {
                     .background(AppTheme.surface)
                     .cornerRadius(12)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppTheme.border))
+                    .onChange(of: email) { _ in errorMessage = nil }
 
                 if codeSent {
                     TextField(AppLocalized("验证码"), text: $otpCode)
@@ -299,6 +307,7 @@ struct LoginView: View {
                         .background(AppTheme.surface)
                         .cornerRadius(12)
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppTheme.border))
+                        .onChange(of: otpCode) { _ in errorMessage = nil }
 
                     Button { verifyEmailCode() } label: {
                         Text(AppLocalized("登录")).fontWeight(.bold).frame(maxWidth: .infinity).padding(.vertical, 6)
@@ -308,15 +317,28 @@ struct LoginView: View {
                     .disabled(auth.isWorking || otpCode.trimmingCharacters(in: .whitespaces).isEmpty)
 
                     Button { sendEmailCode() } label: {
-                        Text(resendCooldown > 0
-                             ? String(format: AppLocalized("重新发送（%d 秒）"), resendCooldown)
-                             : AppLocalized("重新发送验证码"))
-                            .font(.caption.weight(.semibold))
+                        if isSendingEmailCode {
+                            sendingEmailCodeLabel(font: .caption.weight(.semibold))
+                        } else {
+                            Text(resendCooldown > 0
+                                 ? String(format: AppLocalized("重新发送（%d 秒）"), resendCooldown)
+                                 : AppLocalized("重新发送验证码"))
+                                .font(.caption.weight(.semibold))
+                        }
                     }
                     .disabled(auth.isWorking || resendCooldown > 0)
                 } else {
                     Button { sendEmailCode() } label: {
-                        Text(AppLocalized("发送验证码")).fontWeight(.bold).frame(maxWidth: .infinity).padding(.vertical, 6)
+                        if isSendingEmailCode {
+                            sendingEmailCodeLabel(font: .body.weight(.bold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                        } else {
+                            Text(AppLocalized("发送验证码"))
+                                .fontWeight(.bold)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(AppTheme.primary)
@@ -336,6 +358,16 @@ struct LoginView: View {
                 }
                 .disabled(auth.isWorking)
             }
+    }
+
+    private func sendingEmailCodeLabel(font: Font) -> some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .controlSize(.small)
+                .tint(codeSent ? AppTheme.primary : AppTheme.primaryForeground)
+            Text(AppLocalized("正在发送…"))
+                .font(font)
+        }
     }
 
     private var termsFooter: some View {
@@ -363,7 +395,9 @@ struct LoginView: View {
 
     private func sendEmailCode() {
         errorMessage = nil
+        isSendingEmailCode = true
         Task {
+            defer { isSendingEmailCode = false }
             do {
                 try await auth.sendEmailOTP(to: email)
                 codeSent = true

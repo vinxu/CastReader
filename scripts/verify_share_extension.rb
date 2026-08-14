@@ -55,9 +55,10 @@ app_catalog = JSON.parse(File.read(File.join(root, "CastReader/Localizable.xcstr
 end
 
 home = File.read(File.join(root, "CastReader/Views/Home/HomeView.swift"))
-abort "Content inbox entry must live in the home navigation bar" unless home.include?("contentInboxButton")
-abort "Content inbox entry must use a native inbox symbol" unless home.include?("tray.full")
-abort "Content inbox badge must represent unread items" unless home.include?("shareInboxUnreadCount")
+settings_view = File.read(File.join(root, "CastReader/Views/Settings/SettingsView.swift"))
+abort "Content inbox entry must be reachable from the home settings button" unless home.include?("SettingsToolbarButton") && settings_view.include?("shareInboxRow")
+abort "Content inbox entry must use a native inbox symbol" unless settings_view.include?("tray.full.fill")
+abort "Content inbox badge must represent unread items" unless home.include?("shareInboxUnreadCount") && settings_view.include?("shareInboxUnreadCount")
 
 main_tab = File.read(File.join(root, "CastReader/Views/MainTabView.swift"))
 abort "Inbox retry behavior is missing" unless main_tab.include?("shareInboxErrors")

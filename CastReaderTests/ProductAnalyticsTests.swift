@@ -83,6 +83,21 @@ final class ProductAnalyticsTests: XCTestCase {
             KindleStorefront.all.filter(\.entryEnabled).map(\.id),
             "analytics may use only the 13 entry-enabled storefront IDs"
         )
+        XCTAssertEqual(Set(domains["youtubeEntry"] ?? []), AnalyticsSchema.youTubeEntries)
+        XCTAssertEqual(Set(domains["youtubeFailure"] ?? []), AnalyticsSchema.youTubeFailureReasons)
+        XCTAssertEqual(Set(domains["youtubeCaptionKind"] ?? []), AnalyticsSchema.youTubeCaptionKinds)
+
+        let captionOpen = try XCTUnwrap(events.first { $0["name"] as? String == "yt_caption_language_open" })
+        XCTAssertEqual(captionOpen["required_properties"] as? [String], ["trackCount"])
+        XCTAssertEqual(captionOpen["optional_properties"] as? [String], ["playableTrackCount"])
+        let captionSwitch = try XCTUnwrap(events.first { $0["name"] as? String == "yt_caption_language_switch" })
+        XCTAssertEqual(
+            captionSwitch["required_properties"] as? [String],
+            ["fromLanguage", "toLanguage", "kind"]
+        )
+        XCTAssertEqual(captionSwitch["optional_properties"] as? [String], ["cacheHit", "elapsedMs"])
+        let extractDone = try XCTUnwrap(events.first { $0["name"] as? String == "yt_extract_done" })
+        XCTAssertEqual(extractDone["optional_properties"] as? [String], ["warmSession"])
     }
 
     func testEveryEventBuildsAValidDualEnvelope() throws {
@@ -125,7 +140,7 @@ final class ProductAnalyticsTests: XCTestCase {
                 )
             )
         )
-        for entry in ["share", "clipboard", "scheme", "paste", "sample"] {
+        for entry in AnalyticsSchema.youTubeEntries {
             XCTAssertNoThrow(
                 try AnalyticsSchema.validate(
                     .youtubeShareReceived,
@@ -150,18 +165,19 @@ final class ProductAnalyticsTests: XCTestCase {
                 )
             )
         )
-        for reason in [
-            "no_captions",
-            "live",
-            "restricted",
-            "unavailable",
-            "caption_access",
-            "player_bootstrap_failed",
-            "youtube_access_limited",
-            "track_unavailable",
-            "timeout",
-            "unsupported_language",
-        ] {
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .youtubeExtractDone,
+                properties: .init(
+                    language: "en",
+                    cueCount: 120,
+                    paragraphCount: 24,
+                    elapsedMs: 1_234,
+                    warmSession: true
+                )
+            )
+        )
+        for reason in AnalyticsSchema.youTubeFailureReasons {
             XCTAssertNoThrow(
                 try AnalyticsSchema.validate(
                     .youtubeExtractFail,
@@ -175,6 +191,26 @@ final class ProductAnalyticsTests: XCTestCase {
                 properties: .init(trackCount: 4, playableTrackCount: 3)
             )
         )
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .youtubeCaptionLanguageOpen,
+                properties: .init(trackCount: 1)
+            )
+        )
+        for kind in AnalyticsSchema.youTubeCaptionKinds {
+            XCTAssertNoThrow(
+                try AnalyticsSchema.validate(
+                    .youtubeCaptionLanguageSwitch,
+                    properties: .init(
+                        elapsedMs: 420,
+                        fromLanguage: "en",
+                        toLanguage: "zh-Hans",
+                        kind: kind,
+                        cacheHit: true
+                    )
+                )
+            )
+        }
         XCTAssertNoThrow(
             try AnalyticsSchema.validate(
                 .youtubeCaptionLanguageSwitch,

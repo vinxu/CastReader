@@ -154,6 +154,8 @@ struct MainTabView: View {
             TabView(selection: $selectedTab) {
                 HomeView(
                     shareInboxUnreadCount: shareInboxUnreadCount,
+                    isSurfaceActive: selectedTab == 0
+                        && !coordinator.isReaderPresented,
                     onOpenShareInbox: {
                         reloadShareInbox(showWhenPending: false)
                         markShareInboxSeen()
@@ -983,17 +985,9 @@ struct MainTabView: View {
                         $0 / 1_000
                     }
             )
-        let applicableProgress = savedProgress.flatMap { progress in
-            progress.paragraphIndex == paragraphIndex
-                && progress.resolvedParagraphFractionalProgress < 0.999
-                ? progress
-                : nil
-        }
         return await beginYouTubeAudio(
             transcript: transcript,
-            cacheKey: cacheKey,
             paragraphIndex: paragraphIndex,
-            progress: applicableProgress,
             readVM: readVM
         ) {
             armYouTubePlaybackAcceptance(
@@ -1005,15 +999,13 @@ struct MainTabView: View {
         }
     }
 
-    /// Shared tail of every YouTube open: cached audio when the exact
-    /// transcript + voice + language triple is on disk, a fresh generation
-    /// otherwise. `acceptance` is evaluated immediately before playback so a
-    /// session that changed while the cache was read cannot be started into.
+    /// Shared tail of every YouTube open. Audio is intentionally session-only,
+    /// matching book playback; only transcript/progress/artwork survive a
+    /// reader session. `acceptance` is evaluated immediately before generation
+    /// so a session that changed while progress was read cannot be started into.
     private func beginYouTubeAudio(
         transcript: YouTubeTranscriptDocument,
-        cacheKey: YouTubeTranscriptCacheKey,
         paragraphIndex: Int,
-        progress: YouTubePlaybackProgress?,
         readVM: ReadAloudViewModel,
         acceptance: () -> Bool
     ) async -> Bool {
@@ -1023,32 +1015,6 @@ struct MainTabView: View {
             return true
         }
 
-        let playbackLanguage = readVM.playbackLanguage
-        let voice = AppSettings.shared.voice(for: playbackLanguage)
-        if let cache = YouTubeCacheProvider.shared {
-            let audioKey = YouTubeTTSAudioCacheKey(
-                transcriptFingerprint: cacheKey.transcriptFingerprint,
-                voiceCode: voice,
-                playbackLanguage: playbackLanguage,
-                schemaVersion: YouTubeTTSAudioCacheSchema.current,
-                paragraphIndex: paragraphIndex
-            )
-            if let cached = await cache.cachedAudioPlayback(
-                for: audioKey,
-                transcriptKey: cacheKey
-            ), !cached.segments.isEmpty {
-                guard acceptance() else { return false }
-                readVM.startWithCachedSegments(
-                    cached.segments,
-                    paragraphIndex: paragraphIndex,
-                    segmentID: progress?.segmentId,
-                    progress: progress?.fractionalProgress ?? 0,
-                    isReplayEligible: cached.isReplayEligible,
-                    autoplay: true
-                )
-                return true
-            }
-        }
         guard acceptance() else { return false }
         readVM.jump(to: paragraphIndex)
         return true
@@ -1145,9 +1111,7 @@ struct MainTabView: View {
         )
         _ = await beginYouTubeAudio(
             transcript: resolution.transcript,
-            cacheKey: resolution.cacheKey,
             paragraphIndex: paragraphIndex,
-            progress: nil,
             readVM: session.readVM
         ) {
             coordinator.session?.id == document.contentSessionKey
@@ -1593,9 +1557,8 @@ struct MainTabView: View {
         _ source: BoundLibraryOnboardingSource,
         entryPoint: String
     ) {
-        // 区域闸门：中国大陆版只允许微信读书。
-        // 隐藏 UI 入口还不够——这里挡住所有程序化触发（例如阅读器重连），
-        // 保证境外书库在 CN 下是真正不可达的代码路径，而不只是看不见。
+        // 所有 UI 与程序化触发都统一经过区域能力矩阵。中国区当前保留全部
+        // 既有书架平台，仅把微信读书设为默认引导来源。
         guard AppRegion.current.availableBoundLibraries.contains(source) else { return }
         selectedTab = 0
         if let superseded = pendingLibraryConnection {

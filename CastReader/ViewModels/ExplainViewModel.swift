@@ -1094,6 +1094,13 @@ final class ExplainViewModel: ObservableObject {
         }
         clearPagePrefetch()
         preparingBlocks.removeAll()
+        // `PreparedBlock` owns raw MP3 Data. A closed/superseded document can
+        // never replay these blocks, so keeping both caches alive makes A -> B
+        // -> C -> D depend on ARC timing and any late orchestration task.
+        prepared.removeAll(keepingCapacity: false)
+        replayBlocks.removeAll(keepingCapacity: false)
+        marksByBlock.removeAll(keepingCapacity: false)
+        firedMarks.removeAll(keepingCapacity: false)
         isReplayingCached = false
         isContinuingLivePage = false
         status = .idle

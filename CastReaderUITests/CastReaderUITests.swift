@@ -832,6 +832,7 @@ class CastReaderUITests: XCTestCase {
             "-AppleLanguages", "(zh-Hans)",
             "-AppleLocale", "zh_CN",
             "-CastReaderResetLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
             "-CastReaderRegion", "cn",
             "-boundLibraryOnboarding.v1.isActivated", "NO",
             "-boundLibraryOnboarding.v1.hasSeenChooser", "NO",
@@ -896,53 +897,21 @@ class CastReaderUITests: XCTestCase {
             "-AppleLocale", "zh_CN",
             "-CastReaderRegion", "cn",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderPhoneAuthLocalFallback",
+            "-auth_account_v1", "RESET",
         ]
         app.launch()
         dismissSelfOpenSystemAlertIfPresent()
 
-        // 设置 → 登录
-        app.tabBars.buttons["音色"].tap()
-        XCTAssertTrue(app.buttons["settingsGearButton"].waitForExistence(timeout: 8))
-        app.buttons["settingsGearButton"].tap()
-        XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 6))
-
-        let signIn = app.buttons["登录 / 注册"]
-        XCTAssertTrue(signIn.waitForExistence(timeout: 6))
-        signIn.tap()
-
         let phoneEntry = app.buttons["login.phone"]
         XCTAssertTrue(phoneEntry.waitForExistence(timeout: 6), "中国区必须提供手机号登录入口")
-        XCTAssertFalse(
-            app.buttons["使用 Google 继续"].exists,
-            "中国区不得展示 Google 登录"
-        )
-        phoneEntry.tap()
-
-        let phoneField = app.textFields["phoneSignIn.phoneField"]
-        XCTAssertTrue(phoneField.waitForExistence(timeout: 6))
-        phoneField.tap()
-        phoneField.typeText("13800138000")
-
-        // 协议未勾选时主按钮必须不可点——这是合规硬要求。
-        let primary = app.buttons["phoneSignIn.primary"]
-        XCTAssertTrue(primary.exists)
-        XCTAssertFalse(primary.isEnabled, "未同意协议时不得允许获取验证码")
-
-        app.buttons["phoneSignIn.agreement"].tap()
-        XCTAssertTrue(primary.isEnabled, "勾选协议后应可获取验证码")
-        primary.tap()
-
-        let codeField = app.textFields["phoneSignIn.codeField"]
-        XCTAssertTrue(codeField.waitForExistence(timeout: 15), "应进入验证码输入步骤")
-        codeField.tap()
-        codeField.typeText("888888")
-        primary.tap()
-
-        // 登录成功后回到设置页，账号区出现「退出登录」。
         XCTAssertTrue(
-            app.buttons["退出登录"].waitForExistence(timeout: 20),
-            "预设验证码必须能完成登录"
+            app.buttons["使用 Google 继续"].exists,
+            "手机号是中国区首选，但不得删除既有 Google 登录入口"
         )
+        XCTAssertTrue(app.buttons["login.apple"].exists, "Apple 登录必须与其他通道等价展示")
+
+        signInWithPresetPhoneCode(app)
 
         let screenshot = XCTAttachment(screenshot: app.screenshot())
         screenshot.name = "CN phone sign-in completed"
@@ -961,6 +930,8 @@ class CastReaderUITests: XCTestCase {
             "-AppleLocale", "zh_CN",
             "-CastReaderRegion", "cn",
             "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderPhoneAuthLocalFallback",
+            "-auth_account_v1", "RESET",
         ]
         app.launch()
         dismissSelfOpenSystemAlertIfPresent()
@@ -991,15 +962,6 @@ class CastReaderUITests: XCTestCase {
 
     /// 用预设验证码完成中国区手机号登录，停在设置页。
     private func signInWithPresetPhoneCode(_ app: XCUIApplication) {
-        app.tabBars.buttons["音色"].tap()
-        XCTAssertTrue(app.buttons["settingsGearButton"].waitForExistence(timeout: 8))
-        app.buttons["settingsGearButton"].tap()
-        XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 6))
-
-        let signIn = app.buttons["登录 / 注册"]
-        guard signIn.waitForExistence(timeout: 6) else { return }   // 已登录
-        signIn.tap()
-
         let phoneEntry = app.buttons["login.phone"]
         XCTAssertTrue(phoneEntry.waitForExistence(timeout: 6))
         phoneEntry.tap()
@@ -1008,9 +970,13 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(phoneField.waitForExistence(timeout: 6))
         phoneField.tap()
         phoneField.typeText("13800138000")
-        app.buttons["phoneSignIn.agreement"].tap()
 
         let primary = app.buttons["phoneSignIn.primary"]
+        XCTAssertTrue(primary.exists)
+        XCTAssertFalse(primary.isEnabled, "未同意协议时不得允许获取验证码")
+
+        app.buttons["phoneSignIn.agreement"].tap()
+        XCTAssertTrue(primary.isEnabled, "勾选协议后应可获取验证码")
         primary.tap()
 
         let codeField = app.textFields["phoneSignIn.codeField"]
@@ -1019,6 +985,10 @@ class CastReaderUITests: XCTestCase {
         codeField.typeText("888888")
         primary.tap()
 
+        let settings = app.buttons["settingsGearButton"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 20), "手机号登录后必须进入主界面")
+        settings.tap()
+        XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 6))
         XCTAssertTrue(
             app.buttons["退出登录"].waitForExistence(timeout: 20),
             "预设验证码必须能完成登录"

@@ -27,15 +27,10 @@ struct YouTubeListenView: View {
                     YouTubeArtworkHeader(
                         transcript: transcript,
                         paragraphStartMs: currentStartMs,
-                        cacheKey: YouTubeCacheStore.cacheKey(for: transcript),
-                        paragraphIndexes: document.paragraphs
-                            .filter {
-                                $0.type.isReadable &&
-                                    SpeechTextSanitizer.containsSpeakableContent(
-                                        $0.resolvedSpeechText
-                                    )
-                            }
-                            .map(\.id),
+                        cacheKey: readVM.youtubeTranscriptCacheKey
+                            ?? YouTubeCacheStore.cacheKey(for: transcript),
+                        paragraphIndexes:
+                            readVM.youtubeReadableParagraphIndexes,
                         documentLanguage: document.language
                     )
                     Divider()
@@ -351,7 +346,10 @@ private struct YouTubeArtworkHeader: View {
             // it immediately even while TTS segment writes are still arriving.
             scheduleCacheBadgeRefresh(debounceNanoseconds: 0)
         }
-        .onDisappear { cacheBadge.cancel() }
+        .onDisappear {
+            loader.cancel()
+            cacheBadge.cancel()
+        }
     }
 
     /// The picker only earns its place when there is somewhere else to go.
@@ -407,6 +405,7 @@ private struct YouTubeArtworkHeader: View {
     ) {
         cacheBadge.schedule(
             cacheKey: cacheKey,
+            transcript: transcript,
             voiceCode: selectedVoiceCode,
             paragraphIndexes: paragraphIndexes,
             identity: cacheBadgeTaskID,
@@ -533,10 +532,17 @@ private struct YouTubeArtworkHeader: View {
     }
 
     private var artworkTaskID: String {
+        let resourceIdentity: String
         if let frame {
-            return "\(frame.sheetIndex)-\(Int(frame.cropRect.minX))-\(Int(frame.cropRect.minY))"
+            resourceIdentity =
+                "\(frame.sheetIndex)-\(Int(frame.cropRect.minX))-\(Int(frame.cropRect.minY))"
+        } else {
+            resourceIdentity = "thumbnail"
         }
-        return "thumbnail"
+        // A new video commonly starts at the same storyboard coordinates as
+        // the previous one. Include the cache identity so SwiftUI cancels the
+        // old request instead of reusing its task and images across videos.
+        return "\(cacheKey.storageKey)|\(resourceIdentity)"
     }
 }
 
@@ -555,6 +561,7 @@ private final class YouTubeCacheBadgeLoader: ObservableObject {
 
     func schedule(
         cacheKey: YouTubeTranscriptCacheKey,
+        transcript: YouTubeTranscriptDocument,
         voiceCode: String,
         paragraphIndexes: [Int],
         identity: String,
@@ -599,8 +606,9 @@ private final class YouTubeCacheBadgeLoader: ObservableObject {
                 self.refreshPending = false
                 let refreshed: YouTubeOfflineCacheCoverage
                 if let cache = YouTubeCacheProvider.shared {
-                    refreshed = await cache.offlineCacheCoverage(
+                    refreshed = await cache.declaredOfflineCacheCoverage(
                         for: cacheKey,
+                        transcript: transcript,
                         voiceCode: voiceCode,
                         paragraphIndexes: paragraphIndexes
                     )
@@ -638,15 +646,30 @@ private final class YouTubeArtworkLoader: ObservableObject {
     @Published private(set) var isLoading = true
     @Published private(set) var frameToken = ""
     private var task: Task<Void, Never>?
-    /// Unlike `task`, this lifetime is not tied to the current paragraph. A
-    /// frame change may cancel its foreground image request, but must not abort
-    /// the all-sheets offline warmup halfway through.
+    private var requestGeneration: UInt64 = 0
+    private var contentIdentity: String?
+    /// Unlike `task`, this lifetime is not tied to the current paragraph. It is
+    /// still strictly tied to the current video and the visible reader.
     private var offlineWarmTask: Task<Void, Never>?
     private var offlineWarmIdentity: String?
 
     deinit {
         task?.cancel()
         offlineWarmTask?.cancel()
+    }
+
+    func cancel() {
+        requestGeneration &+= 1
+        task?.cancel()
+        task = nil
+        offlineWarmTask?.cancel()
+        offlineWarmTask = nil
+        offlineWarmIdentity = nil
+        contentIdentity = nil
+        coverImage = nil
+        frameImage = nil
+        frameToken = ""
+        isLoading = false
     }
 
     func load(
@@ -656,9 +679,25 @@ private final class YouTubeArtworkLoader: ObservableObject {
         cacheKey: YouTubeTranscriptCacheKey,
         requestToken: String
     ) async {
+        let nextContentIdentity = cacheKey.storageKey
+        if contentIdentity != nextContentIdentity {
+            requestGeneration &+= 1
+            task?.cancel()
+            task = nil
+            offlineWarmTask?.cancel()
+            offlineWarmTask = nil
+            offlineWarmIdentity = nil
+            contentIdentity = nextContentIdentity
+            coverImage = nil
+            frameImage = nil
+            frameToken = ""
+        }
+
+        requestGeneration &+= 1
+        let expectedGeneration = requestGeneration
         task?.cancel()
         isLoading = coverImage == nil && frameImage == nil
-        let task = Task { [weak self] in
+        let operation = Task { [weak self] in
             if self?.coverImage == nil,
                let data = await Self.thumbnailData(
                    remoteURL: thumbnailURL,
@@ -666,6 +705,8 @@ private final class YouTubeArtworkLoader: ObservableObject {
                ),
                !Task.isCancelled,
                let cover = UIImage(data: data) {
+                guard self?.requestGeneration == expectedGeneration,
+                      self?.contentIdentity == nextContentIdentity else { return }
                 self?.coverImage = cover
             }
 
@@ -683,7 +724,9 @@ private final class YouTubeArtworkLoader: ObservableObject {
             } else {
                 storyboardImage = nil
             }
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled,
+                  self?.requestGeneration == expectedGeneration,
+                  self?.contentIdentity == nextContentIdentity else { return }
             // A transient sheet failure must keep the last visible frame rather
             // than flashing the placeholder on every paragraph boundary.
             if let storyboardImage {
@@ -704,8 +747,16 @@ private final class YouTubeArtworkLoader: ObservableObject {
                 }
             }
         }
-        self.task = task
-        await task.value
+        task = operation
+        await withTaskCancellationHandler {
+            await operation.value
+        } onCancel: {
+            operation.cancel()
+        }
+        guard !Task.isCancelled,
+              requestGeneration == expectedGeneration,
+              contentIdentity == nextContentIdentity else { return }
+        task = nil
         scheduleOfflineWarm(
             storyboard: storyboard,
             thumbnailURL: thumbnailURL,
@@ -718,7 +769,10 @@ private final class YouTubeArtworkLoader: ObservableObject {
         thumbnailURL: String?,
         cacheKey: YouTubeTranscriptCacheKey
     ) {
-        let identity = "\(cacheKey.storageKey)|\(storyboard?.sheetCount ?? -1)"
+        let expectedContentIdentity = cacheKey.storageKey
+        guard contentIdentity == expectedContentIdentity else { return }
+        let identity = "\(expectedContentIdentity)|\(storyboard?.sheetCount ?? -1)|" +
+            (thumbnailURL ?? "")
         guard offlineWarmIdentity != identity else { return }
         offlineWarmTask?.cancel()
         offlineWarmIdentity = identity
@@ -728,6 +782,20 @@ private final class YouTubeArtworkLoader: ObservableObject {
         // backoff during the same reader session. A storyboard pass emits one
         // cache notification instead of one full badge rescan per sheet.
         offlineWarmTask = Task { [weak self] in
+            var completed = false
+            defer {
+                if let self,
+                   self.contentIdentity == expectedContentIdentity,
+                   self.offlineWarmIdentity == identity {
+                    self.offlineWarmTask = nil
+                    if !completed {
+                        // A later visible frame may start a fresh bounded retry
+                        // series after failure. Cancellation caused by a video
+                        // switch cannot clear the replacement video's identity.
+                        self.offlineWarmIdentity = nil
+                    }
+                }
+            }
             let retryDelays: [UInt64] = [
                 0,
                 2_000_000_000,
@@ -752,6 +820,10 @@ private final class YouTubeArtworkLoader: ObservableObject {
                         for: storyboard,
                         cacheKey: cacheKey
                     )
+                    guard !Task.isCancelled,
+                          self?.contentIdentity == expectedContentIdentity else {
+                        return
+                    }
                     var changed = false
                     var failed = false
                     for sheetIndex in missing {
@@ -768,6 +840,7 @@ private final class YouTubeArtworkLoader: ObservableObject {
                         changed = true
                     }
                     if changed {
+                        guard !Task.isCancelled else { return }
                         await cache.notifyArtworkCacheChanged(for: cacheKey)
                     }
                     storyboardIsComplete = !failed
@@ -783,12 +856,14 @@ private final class YouTubeArtworkLoader: ObservableObject {
                 } else {
                     thumbnailIsComplete = true
                 }
-                if storyboardIsComplete && thumbnailIsComplete { return }
-            }
-
-            // Allow a later frame/load event to start a fresh retry series.
-            if self?.offlineWarmIdentity == identity {
-                self?.offlineWarmIdentity = nil
+                guard !Task.isCancelled,
+                      self?.contentIdentity == expectedContentIdentity else {
+                    return
+                }
+                if storyboardIsComplete && thumbnailIsComplete {
+                    completed = true
+                    return
+                }
             }
         }
     }
@@ -799,15 +874,20 @@ private final class YouTubeArtworkLoader: ObservableObject {
         cacheKey: YouTubeTranscriptCacheKey,
         notifyChange: Bool = true
     ) async -> Data? {
-        if let cache = YouTubeCacheProvider.shared,
-           let cached = await cache.storyboardSheet(
+        guard !Task.isCancelled else { return nil }
+        if let cache = YouTubeCacheProvider.shared {
+            let cached = await cache.storyboardSheet(
                sheetIndex: sheetIndex,
                for: cacheKey
-           ), UIImage(data: cached) != nil {
-            return cached
+            )
+            guard !Task.isCancelled else { return nil }
+            if let cached, UIImage(data: cached) != nil {
+                return cached
+            }
         }
         guard let rawURL = storyboard.sheetURLString(for: sheetIndex),
               let data = await downloadStillImage(rawURL) else { return nil }
+        guard !Task.isCancelled else { return nil }
         if let cache = YouTubeCacheProvider.shared {
             do {
                 try await cache.storeStoryboardSheet(
@@ -816,6 +896,7 @@ private final class YouTubeArtworkLoader: ObservableObject {
                     for: cacheKey,
                     notifyChange: notifyChange
                 )
+                guard !Task.isCancelled else { return nil }
             } catch {
                 return nil
             }
@@ -827,14 +908,17 @@ private final class YouTubeArtworkLoader: ObservableObject {
         remoteURL: String?,
         cacheKey: YouTubeTranscriptCacheKey
     ) async -> Data? {
-        if let cache = YouTubeCacheProvider.shared,
-           let cached = await cache.thumbnail(
+        guard !Task.isCancelled else { return nil }
+        if let cache = YouTubeCacheProvider.shared {
+            let cached = await cache.thumbnail(
                for: cacheKey,
                minimumPixelWidth: 640,
                minimumPixelHeight: 360
-           ),
-           UIImage(data: cached) != nil {
-            return cached
+            )
+            guard !Task.isCancelled else { return nil }
+            if let cached, UIImage(data: cached) != nil {
+                return cached
+            }
         }
 
         // Prefer the page-selected URL here; extraction already chooses the
@@ -846,8 +930,10 @@ private final class YouTubeArtworkLoader: ObservableObject {
             remoteURL,
             minimumPixels: (width: 640, height: 360)
         ) {
+            guard !Task.isCancelled else { return nil }
             if let cache = YouTubeCacheProvider.shared {
                 try? await cache.storeThumbnail(data, for: cacheKey)
+                guard !Task.isCancelled else { return nil }
             }
             return data
         }
@@ -855,8 +941,10 @@ private final class YouTubeArtworkLoader: ObservableObject {
         // publishers did not provide HD artwork; it is still preferable to a
         // blank header and remains visually separate from the dynamic frame.
         guard let data = await downloadStillImage(remoteURL) else { return nil }
+        guard !Task.isCancelled else { return nil }
         if let cache = YouTubeCacheProvider.shared {
             try? await cache.storeThumbnail(data, for: cacheKey)
+            guard !Task.isCancelled else { return nil }
         }
         return data
     }
@@ -865,13 +953,15 @@ private final class YouTubeArtworkLoader: ObservableObject {
         _ rawURL: String,
         minimumPixels: (width: Int, height: Int)? = nil
     ) async -> Data? {
+        guard !Task.isCancelled else { return nil }
         guard let components = URLComponents(string: rawURL),
               components.scheme?.lowercased() == "https",
               components.host?.isEmpty == false,
               components.user == nil,
               components.password == nil,
-              let url = components.url,
-              let (data, response) = try? await URLSession.shared.data(from: url),
+              let url = components.url else { return nil }
+        guard let (data, response) = try? await URLSession.shared.data(from: url),
+              !Task.isCancelled,
               let http = response as? HTTPURLResponse,
               (200..<300).contains(http.statusCode),
               !data.isEmpty,

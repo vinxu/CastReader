@@ -14,16 +14,62 @@ enum YouTubeHistoryRefreshIdentity {
         var identities: [String] = []
         identities.reserveCapacity(records.count)
         for record in records {
-            let duration = record.youtubeDurationMs.map { String($0) } ?? "-"
-            let resume = record.youtubeResumeStartMs.map { String($0) } ?? "-"
-            let progress = record.youtubeProgressFraction.map { String($0) } ?? "-"
             identities.append(
                 record.id + ":" +
                 String(record.lastOpenedAt.timeIntervalSince1970) + ":" +
-                duration + ":" + resume + ":" + progress
+                (record.sourceURL ?? "-")
             )
         }
         return identities.joined(separator: "|")
+    }
+}
+
+enum YouTubeHistoryMonitoringPolicy {
+    static func isActive(
+        isVisible: Bool,
+        isSurfaceEnabled: Bool,
+        isSceneActive: Bool
+    ) -> Bool {
+        isVisible && isSurfaceEnabled && isSceneActive
+    }
+}
+
+/// A zero-layout probe owns the NotificationCenter subscription only while the
+/// surface is active. Keeping it behind the page avoids waking a hidden Home
+/// without changing the page's own structural identity.
+private struct YouTubeCacheChangeListener: ViewModifier {
+    let isActive: Bool
+    let onArtworkChanged: (Notification) -> Void
+
+    func body(content: Content) -> some View {
+        content.background {
+            if isActive {
+                YouTubeCacheChangeProbe(
+                    onArtworkChanged: onArtworkChanged
+                )
+            }
+        }
+    }
+}
+
+/// Keep the page's structural identity stable while monitoring is toggled.
+/// Wrapping `content` in an if/else modifier here creates an appearance loop:
+/// `onAppear` enables the wrapper, replacing the page, whose `onDisappear`
+/// disables it again. A zero-layout sibling owns the subscription instead.
+private struct YouTubeCacheChangeProbe: View {
+    let onArtworkChanged: (Notification) -> Void
+
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: .castReaderYouTubeArtworkCacheChanged
+                ),
+                perform: onArtworkChanged
+            )
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 }
 
@@ -111,9 +157,9 @@ private func youtubeHistoryDetail(
        durationMs > 0 {
         parts.append(YouTubeListenView.timestamp(durationMs))
     }
-    if let percent = status?.percent ?? record.youtubeProgressFraction.map({
+    if let percent = record.youtubeProgressFraction.map({
         min(100, max(0, Int(($0 * 100).rounded())))
-    }) {
+    }) ?? status?.percent {
         parts.append(String(format: AppLocalized("已听 %d%%"), percent))
     }
     if let status {
@@ -135,6 +181,12 @@ private final class YouTubeHistoryStatusLoader: ObservableObject {
     private var task: Task<Void, Never>?
     private var generation: UInt64 = 0
     private var currentIdentity: String?
+    private struct Request {
+        let records: [HistoryRecord]
+        let identity: String
+        let debounceNanoseconds: UInt64
+    }
+    private var pendingRequest: Request?
 
     deinit { task?.cancel() }
 
@@ -144,27 +196,52 @@ private final class YouTubeHistoryStatusLoader: ObservableObject {
         debounceNanoseconds: UInt64 = 450_000_000
     ) {
         generation &+= 1
-        let expectedGeneration = generation
         currentIdentity = identity
-        task?.cancel()
-        task = Task { [weak self] in
-            if debounceNanoseconds > 0 {
-                try? await Task.sleep(nanoseconds: debounceNanoseconds)
-            }
-            guard !Task.isCancelled else { return }
-            let refreshed = await Self.load(records: records)
-            guard !Task.isCancelled,
-                  let self,
-                  self.generation == expectedGeneration,
-                  self.currentIdentity == identity else { return }
-            self.statuses = refreshed
-        }
+        pendingRequest = Request(
+            records: records,
+            identity: identity,
+            debounceNanoseconds: debounceNanoseconds
+        )
+        startWorkerIfNeeded()
     }
 
     func cancel() {
         generation &+= 1
         task?.cancel()
         task = nil
+        pendingRequest = nil
+    }
+
+    private func startWorkerIfNeeded() {
+        guard task == nil else { return }
+        task = Task { [weak self] in
+            await self?.drain()
+        }
+    }
+
+    private func drain() async {
+        while !Task.isCancelled, let request = pendingRequest {
+            pendingRequest = nil
+            let expectedGeneration = generation
+            if request.debounceNanoseconds > 0 {
+                try? await Task.sleep(
+                    nanoseconds: request.debounceNanoseconds
+                )
+            }
+            guard !Task.isCancelled else { break }
+            // A newer request received during the debounce supersedes this one
+            // before any disk/cache work begins.
+            if pendingRequest != nil { continue }
+            let refreshed = await Self.load(records: request.records)
+            guard !Task.isCancelled else { break }
+            if generation == expectedGeneration,
+               currentIdentity == request.identity,
+               pendingRequest == nil {
+                statuses = refreshed
+            }
+        }
+        task = nil
+        if pendingRequest != nil { startWorkerIfNeeded() }
     }
 
     private static func load(
@@ -189,23 +266,9 @@ private final class YouTubeHistoryStatusLoader: ObservableObject {
                   let reference = YouTubeURLParser.parse(rawURL),
                   let key = await cache.mostRecentKey(videoId: reference.videoId),
                   let transcript = await cache.peekTranscript(for: key) else { continue }
-            let progress = await cache.peekProgress(for: key)
             let readingDocument = YouTubeReadingDocumentBuilder.make(
                 transcript: transcript,
                 cacheHit: true
-            )
-            let paragraphIndexes = readingDocument.paragraphs
-                .filter {
-                    $0.type.isReadable &&
-                        SpeechTextSanitizer.containsSpeakableContent(
-                            $0.resolvedSpeechText
-                        )
-                }
-                .map(\.id)
-            let offlineCoverage = await cache.offlineCacheCoverage(
-                for: key,
-                voiceCode: AppSettings.shared.voice(for: readingDocument.language),
-                paragraphIndexes: paragraphIndexes
             )
             let readableParagraphs = readingDocument.paragraphs
                 .filter {
@@ -214,25 +277,16 @@ private final class YouTubeHistoryStatusLoader: ObservableObject {
                             $0.resolvedSpeechText
                         )
                 }
-            let paragraphCount = readableParagraphs.count
-            let percent: Int?
-            if let progress,
-               paragraphCount > 0,
-               let position = readableParagraphs.firstIndex(
-                   where: { $0.id == progress.paragraphIndex }
-               ) {
-                let completed = Double(position)
-                    + progress.resolvedParagraphFractionalProgress
-                percent = min(
-                    100,
-                    max(0, Int((completed / Double(paragraphCount) * 100).rounded()))
-                )
-            } else {
-                percent = persistedPercent
-            }
+            let paragraphIndexes = readableParagraphs.map(\.id)
+            let offlineCoverage = await cache.declaredOfflineCacheCoverage(
+                for: key,
+                transcript: transcript,
+                voiceCode: AppSettings.shared.voice(for: readingDocument.language),
+                paragraphIndexes: paragraphIndexes
+            )
             result[record.id] = YouTubeHistoryStatus(
                 durationMs: transcript.metadata.durationMs ?? record.youtubeDurationMs,
-                percent: percent,
+                percent: persistedPercent,
                 offlineCoverage: offlineCoverage
             )
         }
@@ -242,7 +296,10 @@ private final class YouTubeHistoryStatusLoader: ObservableObject {
 
 struct YouTubeHomeSection: View {
     let activeDocumentID: String?
+    var isSurfaceEnabled = true
 
+    @Environment(\.scenePhase) private var scenePhase
+    @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var history = HistoryStore.shared
     @StateObject private var historyStatusLoader = YouTubeHistoryStatusLoader()
     @State private var isVisible = false
@@ -258,6 +315,15 @@ struct YouTubeHomeSection: View {
     private var homeRecords: [HistoryRecord] {
         guard case .content(let items, _) = projection else { return [] }
         return items
+    }
+
+    private var isMonitoringActive: Bool {
+        YouTubeHistoryMonitoringPolicy.isActive(
+            isVisible: isVisible,
+            isSurfaceEnabled: isSurfaceEnabled
+                && !coordinator.isReaderPresented,
+            isSceneActive: scenePhase == .active
+        )
     }
 
     var body: some View {
@@ -284,32 +350,31 @@ struct YouTubeHomeSection: View {
         .accessibilityIdentifier("homeShelfSection.youtube")
         .onAppear {
             isVisible = true
-            scheduleHistoryStatusRefresh(debounceNanoseconds: 0)
+            if isMonitoringActive {
+                scheduleHistoryStatusRefresh(debounceNanoseconds: 0)
+            }
         }
         .onDisappear {
             isVisible = false
             historyStatusLoader.cancel()
         }
+        .onChange(of: isMonitoringActive) { active in
+            if active {
+                scheduleHistoryStatusRefresh(debounceNanoseconds: 0)
+            } else {
+                historyStatusLoader.cancel()
+            }
+        }
         .onChange(of: historyRefreshID) { _ in
-            guard isVisible else { return }
+            guard isMonitoringActive else { return }
             scheduleHistoryStatusRefresh(debounceNanoseconds: 0)
         }
-        .onReceive(
-            NotificationCenter.default.publisher(
-                for: .castReaderYouTubeAudioCacheChanged
+        .modifier(
+            YouTubeCacheChangeListener(
+                isActive: isMonitoringActive,
+                onArtworkChanged: { _ in scheduleHistoryStatusRefresh() }
             )
-        ) { _ in
-            guard isVisible else { return }
-            scheduleHistoryStatusRefresh()
-        }
-        .onReceive(
-            NotificationCenter.default.publisher(
-                for: .castReaderYouTubeArtworkCacheChanged
-            )
-        ) { _ in
-            guard isVisible else { return }
-            scheduleHistoryStatusRefresh()
-        }
+        )
         .alert(
             AppLocalized("无法打开"),
             isPresented: Binding(
@@ -478,6 +543,8 @@ private struct YouTubeHomeShelfRow: View {
 }
 
 struct YouTubeHomeView: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @EnvironmentObject private var coordinator: PlayerCoordinator
     @ObservedObject private var history = HistoryStore.shared
     @AppStorage("youtube.didCompleteFirstListen") private var didCompleteFirstListen = false
     @State private var linkText = ""
@@ -492,6 +559,14 @@ struct YouTubeHomeView: View {
 
     private var historyStatuses: [String: YouTubeHistoryStatus] {
         historyStatusLoader.statuses
+    }
+
+    private var isMonitoringActive: Bool {
+        YouTubeHistoryMonitoringPolicy.isActive(
+            isVisible: isVisible,
+            isSurfaceEnabled: !coordinator.isReaderPresented,
+            isSceneActive: scenePhase == .active
+        )
     }
 
     var body: some View {
@@ -511,32 +586,31 @@ struct YouTubeHomeView: View {
         .onAppear {
             isVisible = true
             trackViewIfNeeded()
-            scheduleHistoryStatusRefresh(debounceNanoseconds: 0)
+            if isMonitoringActive {
+                scheduleHistoryStatusRefresh(debounceNanoseconds: 0)
+            }
         }
         .onDisappear {
             isVisible = false
             historyStatusLoader.cancel()
         }
+        .onChange(of: isMonitoringActive) { active in
+            if active {
+                scheduleHistoryStatusRefresh(debounceNanoseconds: 0)
+            } else {
+                historyStatusLoader.cancel()
+            }
+        }
         .onChange(of: historyRefreshID) { _ in
-            guard isVisible else { return }
+            guard isMonitoringActive else { return }
             scheduleHistoryStatusRefresh(debounceNanoseconds: 0)
         }
-        .onReceive(
-            NotificationCenter.default.publisher(
-                for: .castReaderYouTubeAudioCacheChanged
+        .modifier(
+            YouTubeCacheChangeListener(
+                isActive: isMonitoringActive,
+                onArtworkChanged: { _ in scheduleHistoryStatusRefresh() }
             )
-        ) { _ in
-            guard isVisible else { return }
-            scheduleHistoryStatusRefresh()
-        }
-        .onReceive(
-            NotificationCenter.default.publisher(
-                for: .castReaderYouTubeArtworkCacheChanged
-            )
-        ) { _ in
-            guard isVisible else { return }
-            scheduleHistoryStatusRefresh()
-        }
+        )
         .alert(
             AppLocalized("无法打开"),
             isPresented: Binding(

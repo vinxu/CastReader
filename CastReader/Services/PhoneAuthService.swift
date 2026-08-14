@@ -102,6 +102,18 @@ final class PhoneAuthService: ObservableObject {
             #endif
         }
 
+        /// UI 自动化显式要求本地链路时跳过真实短信端点，避免频控、运营商延迟
+        /// 或审核白名单让测试变得不确定。该参数只存在于 Debug 构建。
+        static var isForcedForUITests: Bool {
+            #if DEBUG
+            return isEnabled && ProcessInfo.processInfo.arguments.contains(
+                "-CastReaderPhoneAuthLocalFallback"
+            )
+            #else
+            return false
+            #endif
+        }
+
         static func matches(_ code: String) -> Bool {
             isEnabled && code == presetCode
         }
@@ -125,6 +137,14 @@ final class PhoneAuthService: ObservableObject {
         guard isAvailable else { throw PhoneAuthError.notAvailableInRegion }
         guard let local = ChinaPhoneNumber.normalize(rawPhone) else {
             throw PhoneAuthError.invalidPhone
+        }
+
+        if LocalFallback.isForcedForUITests {
+            return PhoneCodeChallenge(
+                ttlSeconds: PhoneCodeChallenge.fallback.ttlSeconds,
+                resendAfterSeconds: 0,
+                usedLocalFallback: true
+            )
         }
 
         do {
@@ -173,6 +193,16 @@ final class PhoneAuthService: ObservableObject {
         let code = PhoneVerificationCode.sanitize(rawCode)
         guard PhoneVerificationCode.isComplete(code) else {
             throw PhoneAuthError.invalidCode
+        }
+
+        if LocalFallback.isForcedForUITests, LocalFallback.matches(code) {
+            return PhoneSignInResult(
+                sessionToken: LocalFallback.localSessionToken(for: local),
+                userId: LocalFallback.localUserId(for: local),
+                isNewUser: false,
+                displayName: ChinaPhoneNumber.masked(rawPhone),
+                usedLocalFallback: true
+            )
         }
 
         do {

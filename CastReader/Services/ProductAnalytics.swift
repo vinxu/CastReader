@@ -662,6 +662,26 @@ enum AnalyticsSchema {
 
     static var eventNames: Set<String> { Set(AnalyticsEventName.allCases.map(\.rawValue)) }
 
+    static let youTubeEntries: Set<String> = ["share", "clipboard", "scheme", "paste", "sample"]
+
+    // 客户端两端的失败面在 canonical 里统一登记：unsupported_webview 只有 Android 会发，
+    // iOS 侧保留该值以便后端与看板共用同一套 reason 枚举。
+    static let youTubeFailureReasons: Set<String> = [
+        "no_captions",
+        "live",
+        "restricted",
+        "unavailable",
+        "caption_access",
+        "player_bootstrap_failed",
+        "youtube_access_limited",
+        "unsupported_webview",
+        "track_unavailable",
+        "timeout",
+        "unsupported_language",
+    ]
+
+    static let youTubeCaptionKinds: Set<String> = ["asr", "manual"]
+
     private static func encodedKeys(_ properties: AnalyticsProperties) throws -> Set<String> {
         let data = try JSONEncoder().encode(properties)
         let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -835,7 +855,7 @@ enum AnalyticsSchema {
     ) throws {
         if name == .youtubeShareReceived {
             guard let entry = properties.entry,
-                  ["share", "clipboard", "scheme", "paste", "sample"].contains(entry) else {
+                  youTubeEntries.contains(entry) else {
                 throw AnalyticsSchemaError.invalidPropertyValue(
                     property: "entry",
                     value: properties.entry ?? "nil"
@@ -870,18 +890,7 @@ enum AnalyticsSchema {
         }
         if name == .youtubeExtractFail {
             guard let reason = properties.reason,
-                  [
-                    "no_captions",
-                    "live",
-                    "restricted",
-                    "unavailable",
-                    "caption_access",
-                    "player_bootstrap_failed",
-                    "youtube_access_limited",
-                    "track_unavailable",
-                    "timeout",
-                    "unsupported_language",
-                  ].contains(reason) else {
+                  youTubeFailureReasons.contains(reason) else {
                 throw AnalyticsSchemaError.invalidPropertyValue(
                     property: "reason",
                     value: properties.reason ?? "nil"
@@ -916,7 +925,7 @@ enum AnalyticsSchema {
                     )
                 }
             }
-            guard let kind = properties.kind, ["asr", "manual"].contains(kind) else {
+            guard let kind = properties.kind, youTubeCaptionKinds.contains(kind) else {
                 throw AnalyticsSchemaError.invalidPropertyValue(
                     property: "kind",
                     value: properties.kind ?? "nil"

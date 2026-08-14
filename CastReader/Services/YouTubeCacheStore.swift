@@ -2,9 +2,10 @@
 //  YouTubeCacheStore.swift
 //  CastReader
 //
-//  App-owned cache for YouTube caption text, CastReader-generated TTS audio,
-//  progress, thumbnails and storyboard still images. This cache deliberately
-//  has no API for storing YouTube video or audio streams.
+//  App-owned cache for YouTube caption text, progress, thumbnails and
+//  storyboard still images. YouTube TTS now follows the same session-only
+//  audio lifecycle as books; the legacy audio API remains only long enough to
+//  read old tests/migrations and is disabled by default.
 //
 
 import CryptoKit
@@ -286,13 +287,30 @@ enum YouTubeAudioCacheCoverage: Equatable, Sendable {
 struct YouTubeCaptionLanguageAvailability: Equatable, Sendable {
     let hasTranscript: Bool
     let audio: YouTubeAudioCacheCoverage
+    /// Compatibility for manifests/tests written while generated TTS was part
+    /// of the offline contract. Production YouTube playback never requires or
+    /// inspects a persistent audio variant.
+    let requiresAudioCache: Bool
+
+    init(
+        hasTranscript: Bool,
+        audio: YouTubeAudioCacheCoverage,
+        requiresAudioCache: Bool = true
+    ) {
+        self.hasTranscript = hasTranscript
+        self.audio = audio
+        self.requiresAudioCache = requiresAudioCache
+    }
 
     static let unavailable = YouTubeCaptionLanguageAvailability(
         hasTranscript: false,
-        audio: .none(totalParagraphs: 0)
+        audio: .none(totalParagraphs: 0),
+        requiresAudioCache: false
     )
 
-    var isFullyDownloaded: Bool { hasTranscript && audio.isComplete }
+    var isFullyDownloaded: Bool {
+        hasTranscript && (!requiresAudioCache || audio.isComplete)
+    }
 }
 
 /// A truthful "available offline" projection for the native YouTube reader.
@@ -307,23 +325,41 @@ struct YouTubeOfflineCacheCoverage: Equatable, Sendable {
     let hasTranscript: Bool
     let cachedArtworkResourceCount: Int
     let requiredArtworkResourceCount: Int
+    let requiresAudioCache: Bool
+
+    init(
+        audio: YouTubeAudioCacheCoverage,
+        hasTranscript: Bool,
+        cachedArtworkResourceCount: Int,
+        requiredArtworkResourceCount: Int,
+        requiresAudioCache: Bool = true
+    ) {
+        self.audio = audio
+        self.hasTranscript = hasTranscript
+        self.cachedArtworkResourceCount = cachedArtworkResourceCount
+        self.requiredArtworkResourceCount = requiredArtworkResourceCount
+        self.requiresAudioCache = requiresAudioCache
+    }
 
     static func none(totalParagraphs: Int) -> Self {
         YouTubeOfflineCacheCoverage(
             audio: .none(totalParagraphs: totalParagraphs),
             hasTranscript: false,
             cachedArtworkResourceCount: 0,
-            requiredArtworkResourceCount: 0
+            requiredArtworkResourceCount: 0,
+            requiresAudioCache: false
         )
     }
 
     var hasAny: Bool {
-        hasTranscript || audio.hasAny || cachedArtworkResourceCount > 0
+        hasTranscript
+            || (requiresAudioCache && audio.hasAny)
+            || cachedArtworkResourceCount > 0
     }
 
     var isComplete: Bool {
         hasTranscript
-            && audio.isComplete
+            && (!requiresAudioCache || audio.isComplete)
             && cachedArtworkResourceCount == requiredArtworkResourceCount
     }
 }
@@ -368,7 +404,7 @@ enum YouTubeCacheError: Error, Equatable {
     case unsafePath
 }
 
-private enum YouTubeCacheDigest {
+enum YouTubeCacheDigest {
     static func sha256(_ value: String) -> String {
         sha256(Data(value.utf8))
     }
@@ -413,6 +449,11 @@ private struct YouTubeCacheManifestEntry: Codable {
     var storyboardSheetIndexes: Set<Int>
     var audioVariantKeys: Set<String>
     var progress: YouTubePlaybackProgress?
+    /// A paragraph can finish playback before its asynchronous audio-cache
+    /// write reaches this actor. Keep that terminal fact in the root manifest
+    /// until `storeAudioSegments` publishes the matching variant as replay
+    /// eligible. Optional storage keeps manifests from older builds decodable.
+    var pendingAudioCompletions: [String: YouTubePlaybackProgress]?
     /// Base UI languages for which the live selector deliberately chose this
     /// transcript, including cross-language fallback selections.
     var selectionLanguageBases: Set<String>?
@@ -481,14 +522,24 @@ actor YouTubeCacheStore {
     private let limits: YouTubeCacheLimits
     private let clock: any YouTubeCacheClock
     private let fileManager: FileManager
+    private let audioCachingEnabled: Bool
     private var manifest: YouTubeCacheManifest
     private var didPerformStartupMaintenance = false
+    /// Read-side LRU touches are useful for eviction order but do not need to
+    /// rewrite the global manifest for every thumbnail, storyboard sheet or
+    /// audio hit. A progress/resource mutation still persists immediately and
+    /// naturally absorbs any pending touches.
+    private var hasDeferredManifestTouches = false
+    private var deferredManifestFlushTask: Task<Void, Never>?
+    private static let deferredManifestFlushNanoseconds: UInt64 =
+        20_000_000_000
 
     init(
         rootDirectory requestedRoot: URL,
         limits: YouTubeCacheLimits = .production,
         clock: any YouTubeCacheClock = SystemYouTubeCacheClock(),
-        fileManager: FileManager = .default
+        fileManager: FileManager = .default,
+        audioCachingEnabled: Bool = false
     ) throws {
         guard limits.maxVideoCount > 0, limits.maxBytes > 0 else {
             throw YouTubeCacheError.invalidLimits
@@ -526,6 +577,7 @@ actor YouTubeCacheStore {
         self.limits = limits
         self.clock = clock
         self.fileManager = fileManager
+        self.audioCachingEnabled = audioCachingEnabled
 
         try fileManager.createDirectory(
             at: entriesDirectory,
@@ -539,6 +591,17 @@ actor YouTubeCacheStore {
             YouTubeCacheDigest.isDigest(storageKey)
                 && storageKey == entry.key.storageKey
                 && Self.valid(key: entry.key)
+        }
+        if !audioCachingEnabled {
+            // Hide all legacy audio declarations immediately, before delayed
+            // startup maintenance physically removes their directories. This
+            // guarantees list rendering and playback never scan old MP3s.
+            for storageKey in Array(manifest.entries.keys) {
+                guard var entry = manifest.entries[storageKey] else { continue }
+                entry.audioVariantKeys.removeAll()
+                entry.pendingAudioCompletions = nil
+                manifest.entries[storageKey] = entry
+            }
         }
     }
 
@@ -658,7 +721,7 @@ actor YouTubeCacheStore {
         }
         entry.lastAccessAt = clock.now()
         manifest.entries[storageKey] = entry
-        try? persistManifest()
+        scheduleDeferredManifestFlush()
         return document
     }
 
@@ -886,7 +949,9 @@ actor YouTubeCacheStore {
                 }
                 .map(\.id)
             let audio: YouTubeAudioCacheCoverage
-            if let voiceCode = voiceCodeByLanguage[base], !readableIndexes.isEmpty {
+            if audioCachingEnabled,
+               let voiceCode = voiceCodeByLanguage[base],
+               !readableIndexes.isEmpty {
                 audio = audioCacheCoverage(
                     for: candidate.key,
                     voiceCode: voiceCode,
@@ -897,7 +962,8 @@ actor YouTubeCacheStore {
             }
             result[base] = YouTubeCaptionLanguageAvailability(
                 hasTranscript: true,
-                audio: audio
+                audio: audio,
+                requiresAudioCache: audioCachingEnabled
             )
         }
         return result
@@ -939,7 +1005,9 @@ actor YouTubeCacheStore {
                 }
                 .map(\.id)
             let audio: YouTubeAudioCacheCoverage
-            if let voiceCode = voiceCodeByLanguage[base], !readableIndexes.isEmpty {
+            if audioCachingEnabled,
+               let voiceCode = voiceCodeByLanguage[base],
+               !readableIndexes.isEmpty {
                 audio = audioCacheCoverage(
                     for: selected.entry.key,
                     voiceCode: voiceCode,
@@ -950,7 +1018,8 @@ actor YouTubeCacheStore {
             }
             result[option.selectionKey] = YouTubeCaptionLanguageAvailability(
                 hasTranscript: true,
-                audio: audio
+                audio: audio,
+                requiresAudioCache: audioCachingEnabled
             )
         }
         return result
@@ -982,7 +1051,7 @@ actor YouTubeCacheStore {
               entry.hasTranscript else { return }
         entry.lastAccessAt = clock.now()
         manifest.entries[storageKey] = entry
-        try? persistManifest()
+        scheduleDeferredManifestFlush()
     }
 
     // MARK: TTS audio generated by CastReader
@@ -992,6 +1061,10 @@ actor YouTubeCacheStore {
         for audioKey: YouTubeTTSAudioCacheKey,
         transcriptKey: YouTubeTranscriptCacheKey
     ) throws {
+        try Task.checkCancellation()
+        // Production policy: generated TTS is session-owned exactly like book
+        // playback. Never retain its Data in this actor or write it to disk.
+        guard audioCachingEnabled else { return }
         guard !segments.isEmpty,
               audioKey.schemaVersion > 0,
               audioKey.transcriptFingerprint == transcriptKey.transcriptFingerprint,
@@ -1006,6 +1079,7 @@ actor YouTubeCacheStore {
 
         var totalAudioBytes: Int64 = 0
         for segment in segments {
+            try Task.checkCancellation()
             let added = totalAudioBytes.addingReportingOverflow(Int64(segment.audioData.count))
             guard !added.overflow else { throw YouTubeCacheError.resourceTooLarge }
             totalAudioBytes = added.partialValue
@@ -1016,6 +1090,15 @@ actor YouTubeCacheStore {
 
         let storageKey = try validatedStorageKey(transcriptKey.storageKey)
         let variantKey = try validatedStorageKey(audioKey.storageKey)
+        var entry = try ensuredEntry(for: transcriptKey)
+        let pendingCompletion = entry.pendingAudioCompletions?[variantKey]
+        let consumesPendingCompletion = pendingCompletion.map {
+            Self.isValidPendingAudioCompletion(
+                $0,
+                for: audioKey,
+                segments: segments
+            )
+        } ?? false
         let entryDir = try entryDirectory(storageKey, create: true)
         let audioRoot = try safeURL(
             entryDir.appendingPathComponent(Self.audioDirectoryName, isDirectory: true)
@@ -1039,6 +1122,7 @@ actor YouTubeCacheStore {
             cached.key == audioKey else { return false }
             return cached.isReplayEligible
         }()
+        try Task.checkCancellation()
 
         let stagingName = "staging-\(UUID().uuidString.lowercased())"
         let staging = try safeURL(audioRoot.appendingPathComponent(stagingName, isDirectory: true))
@@ -1048,10 +1132,12 @@ actor YouTubeCacheStore {
 
         do {
             for (position, segment) in segments.enumerated() {
+                try Task.checkCancellation()
                 let ext = segment.isWavFormat ? "wav" : "mp3"
                 let filename = String(format: "segment-%06d.%@", position, ext)
                 let audioURL = try safeURL(staging.appendingPathComponent(filename))
                 try segment.audioData.write(to: audioURL, options: .atomic)
+                try Task.checkCancellation()
                 cachedSegments.append(
                     YouTubeCachedAudioSegment(
                         id: segment.id,
@@ -1072,7 +1158,9 @@ actor YouTubeCacheStore {
                 key: audioKey,
                 segments: cachedSegments,
                 isReplayEligible: existingReplayEligibility
+                    || consumesPendingCompletion
             )
+            try Task.checkCancellation()
             let metadata = try Self.encode(audioManifest)
             let combined = totalAudioBytes.addingReportingOverflow(Int64(metadata.count))
             guard !combined.overflow, combined.partialValue <= limits.maxBytes else {
@@ -1083,7 +1171,12 @@ actor YouTubeCacheStore {
                 to: try safeURL(staging.appendingPathComponent(Self.audioManifestFilename)),
                 options: .atomic
             )
+            try Task.checkCancellation()
 
+            // This is the commit boundary. Once the staging directory replaces
+            // the visible variant, finish the manifest mutation even if the
+            // caller is cancelled a moment later, so no unindexed audio is
+            // left behind.
             if fileManager.fileExists(atPath: finalDirectory.path) {
                 try safeRemove(finalDirectory)
             }
@@ -1093,8 +1186,13 @@ actor YouTubeCacheStore {
             throw error
         }
 
-        var entry = try ensuredEntry(for: transcriptKey)
         entry.audioVariantKeys.insert(variantKey)
+        if pendingCompletion != nil {
+            entry.pendingAudioCompletions?[variantKey] = nil
+            if entry.pendingAudioCompletions?.isEmpty == true {
+                entry.pendingAudioCompletions = nil
+            }
+        }
         entry.lastAccessAt = clock.now()
         manifest.entries[storageKey] = entry
         try finalizeMutation(
@@ -1122,6 +1220,7 @@ actor YouTubeCacheStore {
         for audioKey: YouTubeTTSAudioCacheKey,
         transcriptKey: YouTubeTranscriptCacheKey
     ) -> YouTubeCachedAudioPlayback? {
+        guard audioCachingEnabled else { return nil }
         guard !Task.isCancelled else { return nil }
         guard audioKey.schemaVersion > 0,
               audioKey.transcriptFingerprint == transcriptKey.transcriptFingerprint,
@@ -1195,7 +1294,7 @@ actor YouTubeCacheStore {
         guard !Task.isCancelled else { return nil }
         entry.lastAccessAt = clock.now()
         manifest.entries[storageKey] = entry
-        try? persistManifest()
+        scheduleDeferredManifestFlush()
         return YouTubeCachedAudioPlayback(
             segments: rebuilt,
             isReplayEligible: cached.isReplayEligible
@@ -1208,6 +1307,7 @@ actor YouTubeCacheStore {
         for audioKey: YouTubeTTSAudioCacheKey,
         transcriptKey: YouTubeTranscriptCacheKey
     ) throws {
+        guard audioCachingEnabled else { return }
         guard audioKey.transcriptFingerprint == transcriptKey.transcriptFingerprint,
               let storageKey = try? validatedStorageKey(transcriptKey.storageKey),
               let variantKey = try? validatedStorageKey(audioKey.storageKey),
@@ -1263,6 +1363,9 @@ actor YouTubeCacheStore {
         paragraphIndexes: [Int]
     ) -> YouTubeAudioCacheCoverage {
         let indexes = Array(Set(paragraphIndexes.filter { $0 >= 0 })).sorted()
+        guard audioCachingEnabled else {
+            return .none(totalParagraphs: indexes.count)
+        }
         guard !indexes.isEmpty else { return .none(totalParagraphs: 0) }
         guard let storageKey = try? validatedStorageKey(transcriptKey.storageKey),
               let entry = manifest.entries[storageKey],
@@ -1316,18 +1419,21 @@ actor YouTubeCacheStore {
         voiceCode: String,
         paragraphIndexes: [Int]
     ) -> YouTubeOfflineCacheCoverage {
-        let audio = audioCacheCoverage(
-            for: transcriptKey,
-            voiceCode: voiceCode,
-            paragraphIndexes: paragraphIndexes
-        )
+        let audio: YouTubeAudioCacheCoverage = audioCachingEnabled
+            ? audioCacheCoverage(
+                for: transcriptKey,
+                voiceCode: voiceCode,
+                paragraphIndexes: paragraphIndexes
+            )
+            : .none(totalParagraphs: paragraphIndexes.count)
         guard let transcript = transcriptWithoutTouch(for: transcriptKey) else {
             markTranscriptCorrupt(for: transcriptKey)
             return YouTubeOfflineCacheCoverage(
                 audio: audio,
                 hasTranscript: false,
                 cachedArtworkResourceCount: 0,
-                requiredArtworkResourceCount: 0
+                requiredArtworkResourceCount: 0,
+                requiresAudioCache: audioCachingEnabled
             )
         }
 
@@ -1349,7 +1455,8 @@ actor YouTubeCacheStore {
                 audio: audio,
                 hasTranscript: true,
                 cachedArtworkResourceCount: cachedSheetCount + (hasThumbnail ? 1 : 0),
-                requiredArtworkResourceCount: requiredCount
+                requiredArtworkResourceCount: requiredCount,
+                requiresAudioCache: audioCachingEnabled
             )
         }
 
@@ -1364,7 +1471,82 @@ actor YouTubeCacheStore {
             audio: audio,
             hasTranscript: true,
             cachedArtworkResourceCount: hasThumbnail ? 1 : 0,
-            requiredArtworkResourceCount: requiresThumbnail ? 1 : 0
+            requiredArtworkResourceCount: requiresThumbnail ? 1 : 0,
+            requiresAudioCache: audioCachingEnabled
+        )
+    }
+
+    /// Lightweight UI projection based on the manifest declarations that are
+    /// updated transactionally with every cache write. Actual playback reads
+    /// and startup maintenance still validate files and repair corruption; a
+    /// badge render must not synchronously read every MP3 manifest and image.
+    func declaredOfflineCacheCoverage(
+        for transcriptKey: YouTubeTranscriptCacheKey,
+        transcript: YouTubeTranscriptDocument,
+        voiceCode: String,
+        paragraphIndexes: [Int]
+    ) -> YouTubeOfflineCacheCoverage {
+        let indexes = Array(Set(paragraphIndexes.filter { $0 >= 0 })).sorted()
+        guard let storageKey = try? validatedStorageKey(
+            transcriptKey.storageKey
+        ),
+        let entry = manifest.entries[storageKey],
+        entry.key == transcriptKey else {
+            return YouTubeOfflineCacheCoverage(
+                audio: .none(totalParagraphs: indexes.count),
+                hasTranscript: false,
+                cachedArtworkResourceCount: 0,
+                requiredArtworkResourceCount: 0,
+                requiresAudioCache: audioCachingEnabled
+            )
+        }
+
+        let cachedAudioCount = audioCachingEnabled
+            ? indexes.reduce(into: 0) { count, paragraphIndex in
+            let audioKey = YouTubeTTSAudioCacheKey(
+                transcriptFingerprint: transcriptKey.transcriptFingerprint,
+                voiceCode: voiceCode,
+                playbackLanguage: transcriptKey.trackLanguage,
+                schemaVersion: YouTubeTTSAudioCacheSchema.current,
+                paragraphIndex: paragraphIndex
+            )
+            if entry.audioVariantKeys.contains(audioKey.storageKey) {
+                count += 1
+            }
+        } : 0
+        let audio: YouTubeAudioCacheCoverage
+        if indexes.isEmpty {
+            audio = .none(totalParagraphs: 0)
+        } else if cachedAudioCount == indexes.count {
+            audio = .complete(totalParagraphs: indexes.count)
+        } else if cachedAudioCount > 0 {
+            audio = .partial(
+                cachedParagraphs: cachedAudioCount,
+                totalParagraphs: indexes.count
+            )
+        } else {
+            audio = .none(totalParagraphs: indexes.count)
+        }
+
+        let requiresThumbnail = transcript.metadata.thumbnailURL?.isEmpty == false
+        let requiredStoryboardSheets = transcript.storyboard?.sheetCount ?? 0
+        let cachedStoryboardSheets: Int
+        if let storyboard = transcript.storyboard {
+            cachedStoryboardSheets = entry.storyboardSheetIndexes.filter {
+                $0 >= 0 && $0 < storyboard.sheetCount
+            }.count
+        } else {
+            cachedStoryboardSheets = 0
+        }
+        let cachedArtworkCount = cachedStoryboardSheets
+            + (requiresThumbnail && entry.hasThumbnail ? 1 : 0)
+        return YouTubeOfflineCacheCoverage(
+            audio: audio,
+            hasTranscript: entry.hasTranscript,
+            cachedArtworkResourceCount: cachedArtworkCount,
+            requiredArtworkResourceCount: requiredStoryboardSheets
+                + (requiresThumbnail ? 1 : 0),
+            requiresAudioCache: audioCachingEnabled
         )
     }
 
@@ -1410,6 +1592,118 @@ actor YouTubeCacheStore {
         return progress
     }
 
+    /// One terminal transaction: commit 100% progress and, if needed, flip the
+    /// already-stored paragraph to replay-safe. When the asynchronous audio
+    /// write has not arrived yet, the manifest retains a pending completion;
+    /// the matching store consumes it while publishing replay-safe metadata.
+    /// MP3 payloads are never rewritten here.
+    @discardableResult
+    func completeAudioPlayback(
+        paragraphIndex: Int,
+        segmentId: String,
+        segmentIndex: Int,
+        for audioKey: YouTubeTTSAudioCacheKey,
+        transcriptKey: YouTubeTranscriptCacheKey
+    ) throws -> YouTubePlaybackProgress {
+        guard paragraphIndex >= 0,
+              segmentIndex >= 0,
+              !segmentId.isEmpty,
+              audioKey.paragraphIndex == paragraphIndex,
+              audioKey.transcriptFingerprint
+                == transcriptKey.transcriptFingerprint else {
+            throw YouTubeCacheError.invalidProgress
+        }
+        guard audioCachingEnabled else {
+            // Completion remains a resume/history checkpoint. It no longer
+            // creates replay provenance or waits for a persistent MP3 write.
+            return try saveProgress(
+                paragraphIndex: paragraphIndex,
+                segmentId: segmentId,
+                segmentIndex: segmentIndex,
+                fractionalProgress: 1,
+                paragraphFractionalProgress: 1,
+                for: transcriptKey
+            )
+        }
+        let storageKey = try validatedStorageKey(transcriptKey.storageKey)
+        let variantKey = try validatedStorageKey(audioKey.storageKey)
+        _ = try entryDirectory(storageKey, create: true)
+        let progress = YouTubePlaybackProgress(
+            paragraphIndex: paragraphIndex,
+            segmentId: segmentId,
+            segmentIndex: segmentIndex,
+            fractionalProgress: 1,
+            paragraphFractionalProgress: 1,
+            updatedAt: clock.now()
+        )
+        var entry = try ensuredEntry(for: transcriptKey)
+        var replacingBytes: Int64 = 0
+        var storedBytes: Int64 = 0
+        var eligibilityChanged = false
+        var hasUsableStoredAudio = false
+        if entry.audioVariantKeys.contains(variantKey),
+           let entryDir = try? entryDirectory(storageKey, create: false),
+           let variantDir = try? safeURL(
+               entryDir
+                   .appendingPathComponent(
+                       Self.audioDirectoryName,
+                       isDirectory: true
+                   )
+                   .appendingPathComponent(variantKey, isDirectory: true)
+           ),
+           let metadataURL = try? safeURL(
+               variantDir.appendingPathComponent(Self.audioManifestFilename)
+           ),
+           let metadata = try? Data(contentsOf: metadataURL),
+           let cached = try? Self.decode(
+               YouTubeCachedAudioManifest.self,
+               from: metadata
+           ),
+           cached.key == audioKey,
+           !cached.segments.isEmpty {
+            hasUsableStoredAudio = true
+            eligibilityChanged = !cached.isReplayEligible
+            if eligibilityChanged {
+                let updated = YouTubeCachedAudioManifest(
+                    key: cached.key,
+                    segments: cached.segments,
+                    isReplayEligible: true
+                )
+                let updatedMetadata = try Self.encode(updated)
+                try updatedMetadata.write(to: metadataURL, options: .atomic)
+                replacingBytes = Int64(metadata.count)
+                storedBytes = Int64(updatedMetadata.count)
+            }
+        }
+
+        if hasUsableStoredAudio {
+            entry.pendingAudioCompletions?[variantKey] = nil
+            if entry.pendingAudioCompletions?.isEmpty == true {
+                entry.pendingAudioCompletions = nil
+            }
+        } else {
+            var pending = entry.pendingAudioCompletions ?? [:]
+            pending[variantKey] = progress
+            entry.pendingAudioCompletions = pending
+        }
+
+        entry.progress = progress
+        entry.lastAccessAt = progress.updatedAt
+        manifest.entries[storageKey] = entry
+        try finalizeMutation(
+            for: storageKey,
+            replacing: replacingBytes,
+            with: storedBytes
+        )
+        if eligibilityChanged {
+            NotificationCenter.default.post(
+                name: .castReaderYouTubeAudioCacheChanged,
+                object: transcriptKey.storageKey
+            )
+        }
+        return progress
+    }
+
     func progress(for key: YouTubeTranscriptCacheKey) -> YouTubePlaybackProgress? {
         guard let storageKey = try? validatedStorageKey(key.storageKey),
               var entry = manifest.entries[storageKey],
@@ -1426,7 +1720,7 @@ actor YouTubeCacheStore {
               }) ?? true else { return nil }
         entry.lastAccessAt = clock.now()
         manifest.entries[storageKey] = entry
-        try? persistManifest()
+        scheduleDeferredManifestFlush()
         return progress
     }
 
@@ -1467,7 +1761,7 @@ actor YouTubeCacheStore {
         }
         NotificationCenter.default.post(
             name: .castReaderYouTubeThumbnailCacheChanged,
-            object: key.storageKey
+            object: key.videoIdHash
         )
         NotificationCenter.default.post(
             name: .castReaderYouTubeArtworkCacheChanged,
@@ -1504,6 +1798,7 @@ actor YouTubeCacheStore {
                 filename: Self.thumbnailFilename,
                 for: candidate.key,
                 touchAccess: false,
+                requiresDecodeProof: false,
                 isDeclared: { $0.hasThumbnail },
                 markMissing: { $0.hasThumbnail = false }
             ) {
@@ -1607,7 +1902,8 @@ actor YouTubeCacheStore {
             entriesDirectory: entriesDirectory,
             manifestURL: manifestURL,
             limits: limits,
-            fileManager: fileManager
+            fileManager: fileManager,
+            audioCachingEnabled: audioCachingEnabled
         )
         didPerformStartupMaintenance = true
     }
@@ -1677,6 +1973,7 @@ actor YouTubeCacheStore {
         for key: YouTubeTranscriptCacheKey,
         touchAccess: Bool = true,
         minimumPixels: (width: Int, height: Int)? = nil,
+        requiresDecodeProof: Bool = true,
         isDeclared: (YouTubeCacheManifestEntry) -> Bool,
         markMissing: (inout YouTubeCacheManifestEntry) -> Void
     ) -> Data? {
@@ -1696,7 +1993,12 @@ actor YouTubeCacheStore {
         let resourceURL = try? safeURL(directory.appendingPathComponent(filename))
         guard let resourceURL,
               let data = try? Data(contentsOf: resourceURL),
-              Self.isUsableStillImage(data, minimumPixels: minimumPixels) else {
+              requiresDecodeProof
+                ? Self.isUsableStillImage(data, minimumPixels: minimumPixels)
+                : Self.hasUsableStillImageHeader(
+                    data,
+                    minimumPixels: minimumPixels
+                ) else {
             if let resourceURL {
                 try? safeRemove(resourceURL)
             }
@@ -1709,7 +2011,7 @@ actor YouTubeCacheStore {
         if touchAccess {
             entry.lastAccessAt = clock.now()
             manifest.entries[storageKey] = entry
-            try? persistManifest()
+            scheduleDeferredManifestFlush()
         }
         return data
     }
@@ -1758,17 +2060,17 @@ actor YouTubeCacheStore {
 
     // MARK: Manifest / LRU
 
-    /// Remove only cache-owned opaque entry directories that the manifest can
-    /// no longer account for, plus crash-left audio staging directories. This
-    /// keeps the physical 500 MB ceiling meaningful after a corrupt manifest
-    /// or an interrupted atomic audio replacement.
+    /// Remove cache-owned opaque entry directories the manifest cannot account
+    /// for. Production additionally purges the retired `audio` subtree while
+    /// preserving transcript, artwork and progress in the same entry.
     private nonisolated static func reconcileOnDiskCache(
         manifest: inout YouTubeCacheManifest,
         rootDirectory: URL,
         entriesDirectory: URL,
         manifestURL: URL,
         limits: YouTubeCacheLimits,
-        fileManager: FileManager
+        fileManager: FileManager,
+        audioCachingEnabled: Bool
     ) throws {
         func safeURL(_ candidate: URL) throws -> URL {
             let standardized = candidate.standardizedFileURL
@@ -1833,6 +2135,19 @@ actor YouTubeCacheStore {
                 Self.audioDirectoryName,
                 isDirectory: true
             )
+            if !audioCachingEnabled {
+                // This is an idempotent migration: the first updated launch
+                // removes every legacy MP3/segments.json payload; later launches
+                // find no directory. Transcript/artwork/progress are siblings
+                // and remain untouched.
+                try? safeRemove(audioDirectory)
+                if var entry = manifest.entries[name] {
+                    entry.audioVariantKeys.removeAll()
+                    entry.pendingAudioCompletions = nil
+                    manifest.entries[name] = entry
+                }
+                continue
+            }
             guard let audioChildren = try? fileManager.contentsOfDirectory(
                 at: try safeURL(audioDirectory),
                 includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
@@ -1929,8 +2244,29 @@ actor YouTubeCacheStore {
             storyboardSheetIndexes: [],
             audioVariantKeys: [],
             progress: nil,
+            pendingAudioCompletions: nil,
             selectionLanguageBases: nil
         )
+    }
+
+    private nonisolated static func isValidPendingAudioCompletion(
+        _ progress: YouTubePlaybackProgress,
+        for audioKey: YouTubeTTSAudioCacheKey,
+        segments: [AudioSegment]
+    ) -> Bool {
+        guard let paragraphIndex = audioKey.paragraphIndex,
+              progress.paragraphIndex == paragraphIndex,
+              progress.segmentIndex >= 0,
+              !progress.segmentId.isEmpty,
+              progress.fractionalProgress == 1,
+              progress.resolvedParagraphFractionalProgress == 1,
+              progress.semanticSchemaVersion
+                == YouTubeCaptionSemanticSchema.current else { return false }
+        return segments.contains {
+            $0.paragraphIndex == paragraphIndex
+                && $0.segmentIndex == progress.segmentIndex
+                && $0.id == progress.segmentId
+        }
     }
 
     /// Normal writes update only the bytes they replaced. Startup, explicit
@@ -2069,9 +2405,34 @@ actor YouTubeCacheStore {
         }?.0
     }
 
+    private func scheduleDeferredManifestFlush() {
+        hasDeferredManifestTouches = true
+        guard deferredManifestFlushTask == nil else { return }
+        deferredManifestFlushTask = Task { [weak self] in
+            try? await Task.sleep(
+                nanoseconds: Self.deferredManifestFlushNanoseconds
+            )
+            guard !Task.isCancelled else { return }
+            await self?.flushDeferredManifestUpdates()
+        }
+    }
+
+    /// Called at the debounce boundary and explicitly at reader lifecycle
+    /// edges. The method is intentionally non-throwing: an LRU timestamp is
+    /// advisory and must never make playback fail.
+    func flushDeferredManifestUpdates() {
+        deferredManifestFlushTask?.cancel()
+        deferredManifestFlushTask = nil
+        guard hasDeferredManifestTouches else { return }
+        try? persistManifest()
+    }
+
     private func persistManifest() throws {
         let data = try Self.encode(manifest)
         try data.write(to: try safeURL(manifestURL), options: .atomic)
+        hasDeferredManifestTouches = false
+        deferredManifestFlushTask?.cancel()
+        deferredManifestFlushTask = nil
     }
 
     private static func loadManifest(from url: URL) -> YouTubeCacheManifest? {
@@ -2183,7 +2544,40 @@ actor YouTubeCacheStore {
         _ data: Data,
         minimumPixels: (width: Int, height: Int)? = nil
     ) -> Bool {
+        guard let source = usableStillImageSource(
+                  data,
+                  minimumPixels: minimumPixels
+              ) else { return false }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: 64,
+            kCGImageSourceShouldCacheImmediately: true,
+        ]
+        return CGImageSourceCreateThumbnailAtIndex(
+            source,
+            0,
+            options as CFDictionary
+        ) != nil
+    }
+
+    /// History cards only need a cheap header check before their shared,
+    /// serial downsampler proves the pixels. Re-decoding every cached cover in
+    /// the cache actor during scene restoration can exceed SpringBoard's
+    /// 10-second scene-update watchdog on a mature YouTube history.
+    private nonisolated static func hasUsableStillImageHeader(
+        _ data: Data,
+        minimumPixels: (width: Int, height: Int)? = nil
+    ) -> Bool {
+        usableStillImageSource(data, minimumPixels: minimumPixels) != nil
+    }
+
+    private nonisolated static func usableStillImageSource(
+        _ data: Data,
+        minimumPixels: (width: Int, height: Int)?
+    ) -> CGImageSource? {
         guard !data.isEmpty,
+              data.count <= 20 * 1_024 * 1_024,
               let source = CGImageSourceCreateWithData(
                   data as CFData,
                   [kCGImageSourceShouldCache: false] as CFDictionary
@@ -2198,22 +2592,12 @@ actor YouTubeCacheStore {
               let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue,
               (1...8_192).contains(width),
               (1...8_192).contains(height),
-              Int64(width) * Int64(height) <= 32_000_000 else { return false }
+              Int64(width) * Int64(height) <= 32_000_000 else { return nil }
         if let minimumPixels,
            (width < minimumPixels.width || height < minimumPixels.height) {
-            return false
+            return nil
         }
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: 64,
-            kCGImageSourceShouldCacheImmediately: true,
-        ]
-        return CGImageSourceCreateThumbnailAtIndex(
-            source,
-            0,
-            options as CFDictionary
-        ) != nil
+        return source
     }
 
     private nonisolated static func requiredStoryboardPixels(

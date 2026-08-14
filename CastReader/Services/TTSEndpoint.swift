@@ -55,8 +55,7 @@ enum TTSEndpoint {
         return raw
     }
 
-    /// 中国大陆版的 TTS 节点（境内备案实例）。
-    /// 只有 `Constants.Features.chinaBackendEnabled` 打开后才会被使用。
+    /// 中国大陆版的 TTS 入口（备案网关；服务器侧转发现有 TTS 上游）。
     static let chinaMainlandBase = "https://api.castreader.cn"
 
     /// 主用节点。

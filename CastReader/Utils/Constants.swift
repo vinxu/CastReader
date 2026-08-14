@@ -18,33 +18,41 @@ enum Constants {
         /// `api.castreader.cn` 上线并通过生产接口预检。
         static let chinaBackendEnabled = true
 
-        /// 上海账号后端目前没有 TTS 兼容路由；保持既有 TTS 节点选择，避免中国区
-        /// 因区域开关误打到 Next.js 404。后端补齐并通过合成冒烟后再单独开启。
-        static let chinaTTSBackendEnabled = false
+        /// `api.castreader.cn` 已由 Nginx 透明代理 TTS 与音色目录，并通过真实合成冒烟。
+        static let chinaTTSBackendEnabled = true
 
-        /// `qr.castreader.cn` 当前尚未提供可验证的 TLS/QuickRead 服务。中国区暂时
-        /// 沿用现有 QuickRead 路由，保证“其他保持不变”。
-        static let chinaQuickReadBackendEnabled = false
+        /// QuickRead 也统一从备案域名进入，再由中国服务器转发到现有上游。
+        static let chinaQuickReadBackendEnabled = true
     }
 
     enum API {
-        static let baseURL = "https://api.castreader.ai"
+        static let globalServiceBaseURL = "https://api.castreader.ai"
+
+        /// App 自有的 TTS、文档和上传网关。中国区客户端只连接备案域名；全球版
+        /// 继续使用 `.ai` 网关。平台书架（Kindle、微信读书、YouTube 等）仍按各自
+        /// 原有域名连接，不属于这层自有 API 路由。
+        static var baseURL: String {
+            guard Features.chinaBackendEnabled, AppRegion.current == .cn else {
+                return globalServiceBaseURL
+            }
+            return AppRegion.cn.apiGatewayBaseURL
+        }
         /// The reader service is exposed through the same TLS reverse proxy as
         /// TTS. Never send document metadata or uploads to the legacy plaintext
         /// `:8123` origin.
-        static let readerServiceURL = baseURL
+        static var readerServiceURL: String { baseURL }
 
         // Library
-        static let documents = "\(readerServiceURL)/documents"
+        static var documents: String { "\(readerServiceURL)/documents" }
 
         // Upload
-        static let sts = "\(baseURL)/sts"
-        static let asyncUpload = "\(readerServiceURL)/async-md-upload-by-url"
-        static let syncUpload = "\(readerServiceURL)/upload"  // EPUB sync upload
+        static var sts: String { "\(baseURL)/sts" }
+        static var asyncUpload: String { "\(readerServiceURL)/async-md-upload-by-url" }
+        static var syncUpload: String { "\(readerServiceURL)/upload" }  // EPUB sync upload
 
         // TTS
-        static let tts = "\(baseURL)/api/captioned_speech_partly"
-        static let ttsCatalog = "\(baseURL)/api/tts/catalog?contract=tts-voice-catalog-v1"
+        static var tts: String { "\(baseURL)/api/captioned_speech_partly" }
+        static var ttsCatalog: String { "\(baseURL)/api/tts/catalog?contract=tts-voice-catalog-v1" }
 
         // 解读 / QuickRead（独立后端）
         /// 解读后端鉴权 key（对齐扩展的 QUICKREAD_API_KEY）。留空则不发送 x-api-key，后端会返回 401。

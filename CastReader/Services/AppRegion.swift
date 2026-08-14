@@ -160,8 +160,8 @@ extension AppRegion {
     /// 正常登录 read.amazon.com）。默认与首页一级入口是另一回事，见
     /// `onboardingSource` 与首页的 `showsOverseasLibraryModules`。
     ///
-    /// 唯一排除的是 Google Play 图书：`play.google.com` 在境内不可访问，
-    /// 放出入口只会让用户点进去卡在白屏。
+    /// 包括 Google Play 图书在内的既有入口全部保留；网络不可达时由各连接页
+    /// 继续使用原有的错误与重试路径，不在发行区域层面删除功能。
     var availableBoundLibraries: [BoundLibraryOnboardingSource] {
         switch self {
         case .global: return [.kindle, .weread, .googleBooks, .kobo, .oreilly]
@@ -191,6 +191,14 @@ extension AppRegion {
     var webBaseURL: String {
         switch self {
         case .global: return "https://castreader.ai"
+        case .cn: return "https://api.castreader.cn"
+        }
+    }
+
+    /// TTS、文档、上传与解读使用的自有 API 网关。
+    var apiGatewayBaseURL: String {
+        switch self {
+        case .global: return "https://api.castreader.ai"
         case .cn: return "https://api.castreader.cn"
         }
     }

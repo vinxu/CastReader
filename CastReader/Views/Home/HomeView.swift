@@ -137,6 +137,7 @@ private struct CloudFlowRoute {
 
 struct HomeView: View {
     let shareInboxUnreadCount: Int
+    let isSurfaceActive: Bool
     let onOpenShareInbox: () -> Void
     let onReviewPresentationBlockedChanged: (Bool) -> Void
     let onRequestLibraryConnection: (BoundLibraryOnboardingSource) -> Void
@@ -159,11 +160,13 @@ struct HomeView: View {
 
     init(
         shareInboxUnreadCount: Int = 0,
+        isSurfaceActive: Bool = true,
         onOpenShareInbox: @escaping () -> Void = {},
         onReviewPresentationBlockedChanged: @escaping (Bool) -> Void = { _ in },
         onRequestLibraryConnection: @escaping (BoundLibraryOnboardingSource) -> Void
     ) {
         self.shareInboxUnreadCount = shareInboxUnreadCount
+        self.isSurfaceActive = isSurfaceActive
         self.onOpenShareInbox = onOpenShareInbox
         self.onReviewPresentationBlockedChanged = onReviewPresentationBlockedChanged
         self.onRequestLibraryConnection = onRequestLibraryConnection
@@ -237,7 +240,8 @@ struct HomeView: View {
                     YouTubeHomeSection(
                         activeDocumentID: coordinator.session?.document.sourceKind == .youtube
                             ? coordinator.session?.document.id
-                            : nil
+                            : nil,
+                        isSurfaceEnabled: isSurfaceActive
                     )
                     GoogleBooksHomeSection()
                     KoboHomeSection()

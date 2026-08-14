@@ -322,7 +322,9 @@ final class HistoryStore: ObservableObject {
     }
 
     private func save(syncSystemContinue: Bool = true) {
-        if let data = try? JSONEncoder().encode(records) { try? data.write(to: indexURL) }
+        if let data = try? JSONEncoder().encode(records) {
+            try? data.write(to: indexURL, options: .atomic)
+        }
         if performsCoverWork, syncSystemContinue { syncContinueSnapshots() }
     }
 
@@ -428,8 +430,18 @@ final class HistoryStore: ObservableObject {
               let index = records.firstIndex(where: {
                   $0.id == documentID && $0.sourceKind == .youtube
               }) else { return }
-        if let durationMs, durationMs >= 0 {
-            records[index].youtubeDurationMs = durationMs
+        let resolvedDuration = durationMs.flatMap { $0 >= 0 ? $0 : nil }
+        let prior = records[index]
+        let durationChanged = resolvedDuration.map {
+            $0 != prior.youtubeDurationMs
+        } ?? false
+        guard durationChanged
+                || resumeStartMs != prior.youtubeResumeStartMs
+                || prior.youtubeProgressFraction.map({
+                    abs($0 - progressFraction) >= 0.000_001
+                }) != false else { return }
+        if let resolvedDuration {
+            records[index].youtubeDurationMs = resolvedDuration
         }
         records[index].youtubeResumeStartMs = resumeStartMs
         records[index].youtubeProgressFraction = progressFraction

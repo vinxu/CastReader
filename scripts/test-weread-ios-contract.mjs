@@ -734,7 +734,8 @@ assert.match(
 assert.match(appSource, /supportedInterfaceOrientationsFor/);
 assert.match(appSource, /requestGeometryUpdate/);
 assert.match(appSource, /static func lockCurrent/);
-assert.match(playerCoordinatorSource, /document\.sourceKind == \.weread[\s\S]*AppOrientationLock\.lockPortrait/);
+assert.match(playerCoordinatorSource, /private static func isPortraitOnly[\s\S]*sourceKind == \.weread/);
+assert.match(playerCoordinatorSource, /func updateOrientationForExpandedReader[\s\S]*Self\.isPortraitOnly[\s\S]*AppOrientationLock\.lockPortrait/);
 assert.match(playerCoordinatorSource, /func minimize\(\)[\s\S]*AppOrientationLock\.lockCurrent/);
 assert.match(playerCoordinatorSource, /func expand\(\)[\s\S]*updateOrientationForExpandedReader/);
 assert.match(kindleReaderSource, /func minimize\(\)[\s\S]*AppOrientationLock\.lockCurrent/);

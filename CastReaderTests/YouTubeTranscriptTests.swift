@@ -2369,6 +2369,11 @@ final class YouTubeHistoryPersistenceTests: XCTestCase {
         record.youtubeProgressFraction = 0.6
         record.youtubeResumeStartMs = 6_000
 
+        XCTAssertEqual(
+            initial,
+            YouTubeHistoryRefreshIdentity.value(for: [record])
+        )
+        record.lastOpenedAt = now.addingTimeInterval(1)
         XCTAssertNotEqual(
             initial,
             YouTubeHistoryRefreshIdentity.value(for: [record])
@@ -2452,4 +2457,292 @@ final class YouTubeHistoryPersistenceTests: XCTestCase {
             youtubeProgressFraction: progress
         )
     }
+}
+
+private actor YouTubePersistenceWorkRecorder {
+    private(set) var sequences: [UInt64] = []
+    private(set) var paragraphIndexes: [Int] = []
+    private(set) var completionParagraphIndexes: [Int] = []
+    private(set) var didFinalize = false
+
+    func record(_ work: YouTubePlaybackPersistenceWork) async {
+        sequences.append(work.checkpoint.sequence)
+        paragraphIndexes.append(work.checkpoint.paragraphIndex)
+        if case .completion(let checkpoint) = work {
+            completionParagraphIndexes.append(checkpoint.paragraphIndex)
+        }
+        if sequences.count == 1 {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+    }
+
+    func finalize() {
+        didFinalize = true
+    }
+}
+
+final class YouTubePlaybackLifecycleTests: XCTestCase {
+    func testProgressWriterIsSingleFlightAndLatestWins() async {
+        let recorder = YouTubePersistenceWorkRecorder()
+        let coordinator = YouTubePlaybackPersistenceCoordinator { work in
+            await recorder.record(work)
+        }
+        let key = makeKey(videoID: "aaaaaaaaaaa")
+
+        await coordinator.submit(.progress(checkpoint(1, key: key)))
+        try? await Task.sleep(nanoseconds: 20_000_000)
+        for sequence in 2...100 {
+            await coordinator.submit(
+                .progress(checkpoint(UInt64(sequence), key: key))
+            )
+        }
+        await coordinator.waitUntilIdle()
+
+        let sequences = await recorder.sequences
+        XCTAssertEqual(sequences, [1, 100])
+        let metrics = await coordinator.metrics()
+        XCTAssertEqual(metrics.completedWork, 2)
+        XCTAssertLessThanOrEqual(metrics.maximumQueuedWork, 1)
+    }
+
+    func testCrossVideoCompletionsAreNeverCoalescedAway() async {
+        let recorder = YouTubePersistenceWorkRecorder()
+        let coordinator = YouTubePlaybackPersistenceCoordinator { work in
+            await recorder.record(work)
+        }
+        let videoIDs = ["aaaaaaaaaaa", "bbbbbbbbbbb", "ccccccccccc", "ddddddddddd"]
+        for (offset, videoID) in videoIDs.enumerated() {
+            let key = makeKey(videoID: videoID)
+            let completion = checkpoint(UInt64(offset + 1), key: key)
+            await coordinator.submit(.completion(completion))
+        }
+        await coordinator.waitUntilIdle()
+        let sequences = await recorder.sequences
+        XCTAssertEqual(sequences, [1, 2, 3, 4])
+    }
+
+    func testLatestSequenceRejectsLateCheckpointFromOlderParagraph() async {
+        let recorder = YouTubePersistenceWorkRecorder()
+        let coordinator = YouTubePlaybackPersistenceCoordinator { work in
+            await recorder.record(work)
+        }
+        let blockerKey = makeKey(videoID: "bbbbbbbbbbb")
+        let transcriptKey = makeKey(videoID: "aaaaaaaaaaa")
+
+        await coordinator.submit(
+            .progress(checkpoint(1, key: blockerKey))
+        )
+        try? await Task.sleep(nanoseconds: 20_000_000)
+        await coordinator.submit(
+            .progress(checkpoint(2, key: transcriptKey, paragraphIndex: 1))
+        )
+        await coordinator.submit(
+            .progress(checkpoint(1, key: transcriptKey, paragraphIndex: 0))
+        )
+        await coordinator.waitUntilIdle()
+
+        let sequences = await recorder.sequences
+        let paragraphIndexes = await recorder.paragraphIndexes
+        XCTAssertEqual(sequences, [1, 2])
+        XCTAssertEqual(paragraphIndexes, [0, 1])
+        let metrics = await coordinator.metrics()
+        XCTAssertEqual(metrics.acceptedWork, 2)
+        XCTAssertEqual(metrics.completedWork, 2)
+    }
+
+    func testParagraphCompletionsRemainOrderedBarriersForOneTranscript() async {
+        let recorder = YouTubePersistenceWorkRecorder()
+        let coordinator = YouTubePlaybackPersistenceCoordinator { work in
+            await recorder.record(work)
+        }
+        let blockerKey = makeKey(videoID: "bbbbbbbbbbb")
+        let transcriptKey = makeKey(videoID: "aaaaaaaaaaa")
+
+        await coordinator.submit(
+            .progress(checkpoint(1, key: blockerKey))
+        )
+        try? await Task.sleep(nanoseconds: 20_000_000)
+        await coordinator.submit(
+            .completion(
+                checkpoint(
+                    1,
+                    key: transcriptKey,
+                    paragraphIndex: 0
+                )
+            )
+        )
+        await coordinator.submit(
+            .completion(
+                checkpoint(
+                    2,
+                    key: transcriptKey,
+                    paragraphIndex: 1
+                )
+            )
+        )
+        await coordinator.waitUntilIdle()
+
+        let completionParagraphIndexes =
+            await recorder.completionParagraphIndexes
+        XCTAssertEqual(completionParagraphIndexes, [0, 1])
+    }
+
+    @MainActor
+    func testSubmissionLaneFlushIsAwaitableAndRunsAfterWriter() async {
+        let recorder = YouTubePersistenceWorkRecorder()
+        let coordinator = YouTubePlaybackPersistenceCoordinator { work in
+            await recorder.record(work)
+        }
+        let lane = YouTubePlaybackPersistenceSubmissionLane(
+            coordinator: coordinator
+        )
+        let key = makeKey(videoID: "aaaaaaaaaaa")
+
+        lane.submit(
+            .completion(
+                checkpoint(1, key: key, paragraphIndex: 0)
+            )
+        )
+        lane.submit(
+            .completion(
+                checkpoint(2, key: key, paragraphIndex: 1)
+            )
+        )
+        let flush = lane.flush {
+            await recorder.finalize()
+        }
+        await flush.value
+
+        let completionParagraphIndexes =
+            await recorder.completionParagraphIndexes
+        let didFinalize = await recorder.didFinalize
+        XCTAssertEqual(completionParagraphIndexes, [0, 1])
+        XCTAssertTrue(didFinalize)
+        let metrics = await coordinator.metrics()
+        XCTAssertEqual(metrics.completedWork, 2)
+    }
+
+    func testLongYouTubeRetainsOnlyCurrentParagraphAudio() {
+        var paragraphs = Dictionary(
+            uniqueKeysWithValues: (0..<974).map {
+                ($0, Data(repeating: UInt8($0 % 255), count: 64))
+            }
+        )
+        YouTubeAudioMemoryWindow.prune(
+            &paragraphs,
+            sourceKind: .youtube,
+            keeping: 973
+        )
+        XCTAssertEqual(paragraphs.keys.sorted(), [973])
+
+        var ordinary = [0: Data(), 1: Data()]
+        YouTubeAudioMemoryWindow.prune(
+            &ordinary,
+            sourceKind: .text,
+            keeping: 1
+        )
+        XCTAssertEqual(ordinary.count, 2)
+    }
+
+    func testPersistenceCadenceAndHiddenSurfacePolicy() {
+        let start = Date(timeIntervalSince1970: 1_000)
+        XCTAssertTrue(
+            YouTubePlaybackPersistencePolicy.shouldPersistProgress(
+                now: start,
+                lastWriteAt: nil,
+                force: false
+            )
+        )
+        XCTAssertFalse(
+            YouTubePlaybackPersistencePolicy.shouldPersistProgress(
+                now: start.addingTimeInterval(9),
+                lastWriteAt: start,
+                force: false
+            )
+        )
+        XCTAssertTrue(
+            YouTubePlaybackPersistencePolicy.shouldPersistProgress(
+                now: start.addingTimeInterval(10),
+                lastWriteAt: start,
+                force: false
+            )
+        )
+        XCTAssertFalse(
+            YouTubeHistoryMonitoringPolicy.isActive(
+                isVisible: true,
+                isSurfaceEnabled: false,
+                isSceneActive: true
+            )
+        )
+        XCTAssertTrue(
+            YouTubeHistoryMonitoringPolicy.isActive(
+                isVisible: true,
+                isSurfaceEnabled: true,
+                isSceneActive: true
+            )
+        )
+    }
+
+    func testPlaybackTempPreparationRemovesOnlyOwnedAndLegacyAudio() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "youtube-player-temp-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: root,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let oldOwned = root
+            .appendingPathComponent(
+                AudioPlaybackTemporaryFiles.directoryName,
+                isDirectory: true
+            )
+        try FileManager.default.createDirectory(
+            at: oldOwned,
+            withIntermediateDirectories: true
+        )
+        let ownedFile = oldOwned.appendingPathComponent("stale.mp3")
+        let legacySegment = root.appendingPathComponent("segment_0-0_old.mp3")
+        let legacyPrestage = root.appendingPathComponent("prestage_0-1_old.wav")
+        let unrelated = root.appendingPathComponent("import-preview.mp3")
+        try Data([1]).write(to: ownedFile)
+        try Data([2]).write(to: legacySegment)
+        try Data([3]).write(to: legacyPrestage)
+        try Data([4]).write(to: unrelated)
+
+        let prepared = AudioPlaybackTemporaryFiles.prepare(root: root)
+
+        XCTAssertEqual(prepared, oldOwned)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: ownedFile.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: legacySegment.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: legacyPrestage.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: unrelated.path))
+    }
+
+    private func makeKey(videoID: String) -> YouTubeTranscriptCacheKey {
+        YouTubeTranscriptCacheKey(
+            videoId: videoID,
+            trackLanguage: "en",
+            trackIdentity: "manual-en",
+            transcriptFingerprint: String(repeating: "a", count: 64)
+        )
+    }
+
+    private func checkpoint(
+        _ sequence: UInt64,
+        key: YouTubeTranscriptCacheKey,
+        paragraphIndex: Int = 0
+    ) -> YouTubePlaybackCheckpoint {
+        YouTubePlaybackCheckpoint(
+            sequence: sequence,
+            transcriptKey: key,
+            paragraphIndex: paragraphIndex,
+            segmentID: "\(paragraphIndex)-0",
+            segmentIndex: 0,
+            segmentFraction: 0.5,
+            paragraphFraction: 0.5
+        )
+    }
+
 }

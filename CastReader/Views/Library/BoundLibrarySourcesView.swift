@@ -247,9 +247,8 @@ struct LibrarySourcesView: View {
         } else {
             preferred = [.kindle, .googleBooks, .kobo, .oreilly, .weread]
         }
-        // 中国大陆版把微信读书排到第一，其余书库仍可手动绑定（只有在境内
-        // 打不开的 Google Play 图书被排除）。按发行区域过滤，不按界面语言，
-        // 所以界面是中文的海外用户不受影响。
+        // 中国大陆版把微信读书排到第一，其余书库仍全部保留。按发行区域排序，
+        // 不按界面语言，所以界面是中文的海外用户不受影响。
         let available = AppRegion.current.availableBoundLibraries
         let availableSet = Set(available)
         if AppRegion.current == .cn {

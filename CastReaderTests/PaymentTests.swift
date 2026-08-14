@@ -182,14 +182,14 @@ final class PaymentTests: XCTestCase {
     // MARK: 3. 购买解锁 Pro
 
     @MainActor
-    func testPurchase_requiresEmail() async throws {
+    func testPurchase_requiresSignIn() async throws {
         let products = try await Product.products(for: [ProManager.monthlyID])
         let product = try XCTUnwrap(products.first, "未加载月度产品")
-        XCTAssertFalse(AuthService.shared.hasEmailAccount, "测试起点应为未登录邮箱")
+        XCTAssertFalse(AuthService.shared.isSignedIn, "测试起点应为未登录")
 
         let unlocked = await ProManager.shared.purchase(product)
 
-        XCTAssertFalse(unlocked, "未登录邮箱时不允许发起新购买")
+        XCTAssertFalse(unlocked, "未登录时不允许发起新购买")
         XCTAssertFalse(ProManager.shared.storeKitPro, "购买被拦截时不应产生本地 StoreKit 权益")
         XCTAssertFalse(ProManager.shared.isPro, "未登录且未购买时不是 Pro")
     }

@@ -6,18 +6,6 @@
 import SwiftUI
 import WebKit
 
-/// Shared onboarding states expected by the existing Kindle first-launch flow.
-/// The original shared declaration is absent from this checkout, so keep the
-/// state contract beside its only remaining production consumer.
-enum BoundLibraryOnboardingConnectionState: Equatable {
-    case idle
-    case awaitingLogin
-    case scanning(found: Int)
-    case ready
-    case empty
-    case failed(message: String)
-}
-
 /// 连接状态机已提升为与书库无关的共享类型（见
 /// `BoundLibraryOnboardingComponents.swift`），微信读书引导复用同一组语义。
 /// 保留这个名字以免改动 Kindle 侧既有调用点。

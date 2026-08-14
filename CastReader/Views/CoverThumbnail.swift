@@ -8,6 +8,175 @@
 
 import SwiftUI
 import UIKit
+import ImageIO
+
+private enum CoverThumbnailDecodeSource {
+    case data(Data)
+    case file(URL)
+}
+
+private final class CoverThumbnailDecodeCancellation: @unchecked Sendable {
+    private let lock = NSLock()
+    private var cancelled = false
+
+    var isCancelled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return cancelled
+    }
+
+    func cancel() {
+        lock.lock()
+        cancelled = true
+        lock.unlock()
+    }
+}
+
+/// ImageIO decoding is deliberately serialized and always downsamples. A
+/// restored Home can contain the same YouTube cover in multiple rails; decoding
+/// all originals concurrently caused a real-device scene-update watchdog kill.
+private enum CoverThumbnailDecoder {
+    private static let queue = DispatchQueue(
+        label: "com.same.castreader.cover-thumbnail-decode",
+        qos: .utility
+    )
+
+    static func image(
+        from source: CoverThumbnailDecodeSource,
+        maxPixelSize: Int = 480
+    ) async -> UIImage? {
+        let cancellation = CoverThumbnailDecodeCancellation()
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                queue.async {
+                    guard !cancellation.isCancelled else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                    let imageSource: CGImageSource?
+                    switch source {
+                    case .data(let data):
+                        imageSource = CGImageSourceCreateWithData(
+                            data as CFData,
+                            [kCGImageSourceShouldCache: false] as CFDictionary
+                        )
+                    case .file(let url):
+                        imageSource = CGImageSourceCreateWithURL(
+                            url as CFURL,
+                            [kCGImageSourceShouldCache: false] as CFDictionary
+                        )
+                    }
+                    guard let imageSource, !cancellation.isCancelled else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                    let options: [CFString: Any] = [
+                        kCGImageSourceCreateThumbnailFromImageAlways: true,
+                        kCGImageSourceCreateThumbnailWithTransform: true,
+                        kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+                        kCGImageSourceShouldCacheImmediately: true,
+                    ]
+                    let image = CGImageSourceCreateThumbnailAtIndex(
+                        imageSource,
+                        0,
+                        options as CFDictionary
+                    ).map(UIImage.init(cgImage:))
+                    continuation.resume(
+                        returning: cancellation.isCancelled ? nil : image
+                    )
+                }
+            }
+        } onCancel: {
+            cancellation.cancel()
+        }
+    }
+}
+
+@MainActor
+private final class CoverThumbnailImageLoader {
+    static let shared = CoverThumbnailImageLoader()
+
+    private struct InFlight {
+        let token: UUID
+        let task: Task<UIImage?, Never>
+    }
+
+    private let cache = NSCache<NSString, UIImage>()
+    private var inFlight: [String: InFlight] = [:]
+    private var missing = Set<String>()
+
+    private init() {
+        cache.countLimit = 48
+        cache.totalCostLimit = 24 * 1_024 * 1_024
+    }
+
+    func image(
+        for record: HistoryRecord,
+        identity: String,
+        forceReload: Bool
+    ) async -> UIImage? {
+        let key = identity as NSString
+        if forceReload {
+            cache.removeObject(forKey: key)
+            missing.remove(identity)
+            inFlight.removeValue(forKey: identity)?.task.cancel()
+        }
+        if let cached = cache.object(forKey: key) { return cached }
+        if missing.contains(identity) { return nil }
+        if let existing = inFlight[identity] {
+            return await existing.task.value
+        }
+
+        let source: CoverThumbnailDecodeSource?
+        if record.sourceKind == .youtube {
+            guard let sourceURL = record.sourceURL,
+                  let reference = YouTubeURLParser.parse(sourceURL) else {
+                missing.insert(identity)
+                return nil
+            }
+            let videoID = reference.videoId
+            let task = Task<UIImage?, Never> {
+                guard let data = await YouTubeCacheProvider.shared?
+                    .peekThumbnail(videoId: videoID),
+                      !Task.isCancelled else { return nil }
+                return await CoverThumbnailDecoder.image(from: .data(data))
+            }
+            return await finish(task, identity: identity, key: key)
+        } else if let url = HistoryStore.shared.coverURL(for: record) {
+            source = .file(url)
+        } else {
+            source = nil
+        }
+        guard let source else {
+            missing.insert(identity)
+            return nil
+        }
+        let task = Task<UIImage?, Never> {
+            guard !Task.isCancelled else { return nil }
+            return await CoverThumbnailDecoder.image(from: source)
+        }
+        return await finish(task, identity: identity, key: key)
+    }
+
+    private func finish(
+        _ task: Task<UIImage?, Never>,
+        identity: String,
+        key: NSString
+    ) async -> UIImage? {
+        let token = UUID()
+        inFlight[identity] = InFlight(token: token, task: task)
+        let image = await task.value
+        guard inFlight[identity]?.token == token else { return image }
+        inFlight.removeValue(forKey: identity)
+        if let image {
+            let cost = image.cgImage.map { $0.bytesPerRow * $0.height } ?? 0
+            cache.setObject(image, forKey: key, cost: cost)
+        } else if !task.isCancelled {
+            missing.insert(identity)
+        }
+        return image
+    }
+}
 
 struct CoverThumbnail: View {
     let record: HistoryRecord
@@ -15,6 +184,7 @@ struct CoverThumbnail: View {
     var cornerRadius: CGFloat = 12
 
     @State private var image: UIImage?
+    @State private var reloadRevision = 0
 
     var body: some View {
         GeometryReader { proxy in
@@ -33,37 +203,43 @@ struct CoverThumbnail: View {
             .clipped()
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         }
-        .task(id: loadIdentity) { await load() }
+        .task(id: taskIdentity) {
+            await load(forceReload: reloadRevision > 0)
+        }
         .onReceive(
             NotificationCenter.default.publisher(
                 for: .castReaderYouTubeThumbnailCacheChanged
             )
-        ) { _ in
-            guard record.sourceKind == .youtube else { return }
-            Task { await load() }
+        ) { notification in
+            guard record.sourceKind == .youtube,
+                  let videoIDHash,
+                  notification.object as? String == videoIDHash else { return }
+            reloadRevision &+= 1
         }
     }
 
-    private func load() async {
-        if record.sourceKind == .youtube {
-            guard let sourceURL = record.sourceURL,
-                  let reference = YouTubeURLParser.parse(sourceURL),
-                  let cache = YouTubeCacheProvider.shared,
-                  let data = await cache.peekThumbnail(videoId: reference.videoId) else {
-                image = nil
-                return
-            }
-            let decoded = await Task.detached { UIImage(data: data) }.value
-            guard !Task.isCancelled else { return }
-            image = decoded
-            return
-        }
-        guard let url = HistoryStore.shared.coverURL(for: record) else { image = nil; return }
-        image = await Task.detached { UIImage(contentsOfFile: url.path) }.value
+    private func load(forceReload: Bool = false) async {
+        let decoded = await CoverThumbnailImageLoader.shared.image(
+            for: record,
+            identity: loadIdentity,
+            forceReload: forceReload
+        )
+        guard !Task.isCancelled else { return }
+        image = decoded
     }
 
     private var loadIdentity: String {
         [record.id, record.sourceURL ?? "", record.coverPath ?? ""].joined(separator: "|")
+    }
+
+    private var taskIdentity: String {
+        "\(loadIdentity)|\(reloadRevision)"
+    }
+
+    private var videoIDHash: String? {
+        guard let sourceURL = record.sourceURL,
+              let reference = YouTubeURLParser.parse(sourceURL) else { return nil }
+        return YouTubeCacheDigest.sha256(reference.videoId)
     }
 
     private var placeholder: some View {

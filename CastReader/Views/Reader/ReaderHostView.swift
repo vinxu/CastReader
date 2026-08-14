@@ -473,8 +473,11 @@ struct ReaderHostView: View {
             scheduleRefocusBurst(reason: "surfaceSize")
         }
         .onChange(of: scenePhase) { phase in
-            guard phase == .active, coordinator.isReaderPresented else { return }
-            scheduleRefocusBurst(reason: "foreground")
+            if phase == .active, coordinator.isReaderPresented {
+                scheduleRefocusBurst(reason: "foreground")
+            } else if phase != .active {
+                readVM.flushYouTubeProgressForLifecycle()
+            }
         }
         .onChange(of: coordinator.isReaderPresented) { isPresented in
             if isPresented {

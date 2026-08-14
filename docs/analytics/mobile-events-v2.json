@@ -34,7 +34,10 @@
     "contentInputStage": ["source_opened", "input_confirmed", "processing_started", "processing_completed", "cancelled", "failed"],
     "flowResult": ["started", "success", "cancelled", "failed"],
     "bookCountBucket": ["none", "1", "2_5", "6_20", "21_50", "51_plus", "unknown"],
-    "transactionEnvironment": ["production", "sandbox", "xcode", "unknown"]
+    "transactionEnvironment": ["production", "sandbox", "xcode", "unknown"],
+    "youtubeEntry": ["share", "clipboard", "scheme", "paste", "sample"],
+    "youtubeFailure": ["no_captions", "live", "restricted", "unavailable", "caption_access", "player_bootstrap_failed", "youtube_access_limited", "unsupported_webview", "track_unavailable", "timeout", "unsupported_language"],
+    "youtubeCaptionKind": ["asr", "manual"]
   },
   "events": [
     {

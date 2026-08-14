@@ -3885,3 +3885,167 @@ private final class KindleTestMessageCollector: NSObject, WKScriptMessageHandler
         }
     }
 }
+
+@MainActor
+final class EmailOTPNetworkPolicyTests: XCTestCase {
+
+    func testDedicatedSessionIsBoundedAndDoesNotStoreCookies() {
+        let configuration = AuthService.emailOTPSessionConfiguration
+
+        XCTAssertEqual(configuration.timeoutIntervalForRequest, 20, accuracy: 0.001)
+        XCTAssertEqual(configuration.timeoutIntervalForResource, 20, accuracy: 0.001)
+        XCTAssertFalse(configuration.httpShouldSetCookies)
+        XCTAssertNil(configuration.httpCookieStorage)
+        XCTAssertEqual(configuration.httpCookieAcceptPolicy, .never)
+    }
+
+    func testOTPRequestIsCookieFreeJSONPost() throws {
+        let url = try XCTUnwrap(URL(string: "https://castreader.com/api/auth/email-otp/send-verification-otp"))
+        let request = AuthService.makeEmailOTPRequest(
+            url: url,
+            body: ["email": "reader@example.com", "type": "sign-in"]
+        )
+
+        XCTAssertEqual(request.url, url)
+        XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertFalse(request.httpShouldHandleCookies)
+        XCTAssertNil(request.value(forHTTPHeaderField: "Cookie"))
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
+
+        let body = try XCTUnwrap(request.httpBody)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: String])
+        XCTAssertEqual(json["email"], "reader@example.com")
+        XCTAssertEqual(json["type"], "sign-in")
+    }
+
+    func testSendAndVerifyMapClientErrorsByOperation() {
+        let csrfPayload = Data(#"{"code":"MISSING_OR_NULL_ORIGIN"}"#.utf8)
+        XCTAssertEqual(
+            kind(of: AuthService.mapEmailOTPFailure(
+                statusCode: 403,
+                data: csrfPayload,
+                operation: .send
+            )),
+            .failed,
+            "发码阶段的 CSRF 403 不能误报成验证码错误"
+        )
+
+        for statusCode in [400, 401, 403] {
+            XCTAssertEqual(
+                kind(of: AuthService.mapEmailOTPFailure(
+                    statusCode: statusCode,
+                    data: Data(),
+                    operation: .send
+                )),
+                .failed,
+                "发码阶段 HTTP \(statusCode) 不能映射为 invalidOTP"
+            )
+            XCTAssertEqual(
+                kind(of: AuthService.mapEmailOTPFailure(
+                    statusCode: statusCode,
+                    data: Data(),
+                    operation: .verify
+                )),
+                .invalidOTP,
+                "验码阶段 HTTP \(statusCode) 应提示验证码无效"
+            )
+        }
+
+        let invalidEmail = Data(#"{"code":"INVALID_EMAIL"}"#.utf8)
+        XCTAssertEqual(
+            kind(of: AuthService.mapEmailOTPFailure(
+                statusCode: 400,
+                data: invalidEmail,
+                operation: .send
+            )),
+            .invalidEmail
+        )
+    }
+
+    func testEndpointAndGatewayFailuresKeepActionableMeaning() {
+        for operation in [AuthService.EmailOTPOperation.send, .verify] {
+            XCTAssertEqual(
+                kind(of: AuthService.mapEmailOTPFailure(
+                    statusCode: 404,
+                    data: Data(),
+                    operation: operation
+                )),
+                .unavailable
+            )
+            XCTAssertEqual(
+                kind(of: AuthService.mapEmailOTPFailure(
+                    statusCode: 504,
+                    data: Data(),
+                    operation: operation
+                )),
+                .timeout
+            )
+            XCTAssertEqual(
+                kind(of: AuthService.mapEmailOTPFailure(
+                    statusCode: 503,
+                    data: Data(),
+                    operation: operation
+                )),
+                .failed
+            )
+        }
+    }
+
+    func testTransportFailuresDistinguishTimeoutAndNetwork() {
+        XCTAssertEqual(
+            kind(of: AuthService.mapEmailOTPTransportError(URLError(.timedOut))),
+            .timeout
+        )
+
+        let networkCodes: [URLError.Code] = [
+            .notConnectedToInternet,
+            .networkConnectionLost,
+            .cannotConnectToHost,
+            .cannotFindHost,
+            .dnsLookupFailed,
+            .internationalRoamingOff,
+            .dataNotAllowed,
+        ]
+        for code in networkCodes {
+            XCTAssertEqual(
+                kind(of: AuthService.mapEmailOTPTransportError(URLError(code))),
+                .network,
+                "\(code) 应保留为可操作的网络错误"
+            )
+        }
+
+        XCTAssertEqual(
+            kind(of: AuthService.mapEmailOTPTransportError(URLError(.cancelled))),
+            .failed
+        )
+        XCTAssertEqual(
+            kind(of: AuthService.mapEmailOTPTransportError(NSError(
+                domain: "EmailOTPNetworkPolicyTests",
+                code: 1
+            ))),
+            .failed
+        )
+    }
+
+    private enum ErrorKind: Equatable {
+        case unavailable
+        case invalidEmail
+        case invalidOTP
+        case timeout
+        case network
+        case failed
+        case other
+    }
+
+    private func kind(of error: AuthError) -> ErrorKind {
+        switch error {
+        case .emailOTPUnavailable: return .unavailable
+        case .invalidEmail: return .invalidEmail
+        case .invalidOTP: return .invalidOTP
+        case .emailOTPTimeout: return .timeout
+        case .emailOTPNetwork: return .network
+        case .emailOTPFailed: return .failed
+        default: return .other
+        }
+    }
+}

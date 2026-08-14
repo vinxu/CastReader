@@ -262,6 +262,265 @@ enum YouTubePlaybackAcceptancePolicy {
     }
 }
 
+/// Disk checkpoints are deliberately much slower than the 20 Hz playback
+/// clock. The visible reader still receives every tick for highlighting, while
+/// durable state is written at a bounded cadence and once at lifecycle edges.
+enum YouTubePlaybackPersistencePolicy {
+    static let progressInterval: TimeInterval = 10
+    static let historyInterval: TimeInterval = 30
+
+    static func shouldPersistProgress(
+        now: Date,
+        lastWriteAt: Date?,
+        force: Bool
+    ) -> Bool {
+        force || lastWriteAt.map {
+            now.timeIntervalSince($0) >= progressInterval
+        } ?? true
+    }
+
+    static func shouldPersistHistory(
+        now: Date,
+        lastWriteAt: Date?,
+        force: Bool
+    ) -> Bool {
+        force || lastWriteAt.map {
+            now.timeIntervalSince($0) >= historyInterval
+        } ?? true
+    }
+}
+
+struct YouTubePlaybackCheckpoint: Equatable, Sendable {
+    let sequence: UInt64
+    let transcriptKey: YouTubeTranscriptCacheKey
+    let paragraphIndex: Int
+    let segmentID: String
+    let segmentIndex: Int
+    let segmentFraction: Double
+    let paragraphFraction: Double
+
+    var identity: String {
+        transcriptKey.storageKey
+    }
+}
+
+enum YouTubePlaybackPersistenceWork: Equatable, Sendable {
+    case progress(YouTubePlaybackCheckpoint)
+    case completion(YouTubePlaybackCheckpoint)
+
+    var checkpoint: YouTubePlaybackCheckpoint {
+        switch self {
+        case .progress(let checkpoint), .completion(let checkpoint):
+            return checkpoint
+        }
+    }
+}
+
+/// One serial lane shared by every reader session. Ordinary checkpoints are
+/// latest-wins for the whole transcript, while paragraph completions are
+/// barriers that cannot be overwritten by the following paragraph. Work
+/// carries only metadata, never MP3 bytes, so a slow cache actor cannot keep an
+/// old video's audio alive after A -> B -> C -> D.
+actor YouTubePlaybackPersistenceCoordinator {
+    typealias Writer = @Sendable (YouTubePlaybackPersistenceWork) async -> Void
+
+    struct Metrics: Equatable, Sendable {
+        let maximumQueuedWork: Int
+        let acceptedWork: Int
+        let completedWork: Int
+    }
+
+    private let writer: Writer
+    private var queue: [YouTubePlaybackPersistenceWork] = []
+    private var latestAcceptedSequence: [String: UInt64] = [:]
+    private var worker: Task<Void, Never>?
+    private var idleWaiters: [CheckedContinuation<Void, Never>] = []
+    private var maximumQueuedWork = 0
+    private var acceptedWork = 0
+    private var completedWork = 0
+
+    init(writer: @escaping Writer) {
+        self.writer = writer
+    }
+
+    func submit(_ work: YouTubePlaybackPersistenceWork) {
+        let checkpoint = work.checkpoint
+        let identity = checkpoint.identity
+        guard checkpoint.sequence > (latestAcceptedSequence[identity] ?? 0) else {
+            return
+        }
+        latestAcceptedSequence[identity] = checkpoint.sequence
+        acceptedWork += 1
+
+        switch work {
+        case .progress:
+            if let last = queue.indices.last,
+               case .progress(let pending) = queue[last],
+               pending.identity == identity {
+                queue[last] = work
+            } else {
+                queue.append(work)
+            }
+        case .completion:
+            if let last = queue.indices.last,
+               case .progress(let pending) = queue[last],
+               pending.identity == identity {
+                // Completion contains the terminal progress and supersedes an
+                // ordinary checkpoint for the same transcript. A preceding
+                // completion is a barrier and must never be coalesced away.
+                queue[last] = work
+            } else {
+                queue.append(work)
+            }
+        }
+        maximumQueuedWork = max(maximumQueuedWork, queue.count)
+        startWorkerIfNeeded()
+    }
+
+    func waitUntilIdle() async {
+        guard worker != nil || !queue.isEmpty else { return }
+        await withCheckedContinuation { continuation in
+            idleWaiters.append(continuation)
+        }
+    }
+
+    func metrics() -> Metrics {
+        Metrics(
+            maximumQueuedWork: maximumQueuedWork,
+            acceptedWork: acceptedWork,
+            completedWork: completedWork
+        )
+    }
+
+    private func startWorkerIfNeeded() {
+        guard worker == nil else { return }
+        worker = Task { await self.drain() }
+    }
+
+    private func drain() async {
+        while !queue.isEmpty {
+            let next = queue.removeFirst()
+            await writer(next)
+            completedWork += 1
+        }
+        worker = nil
+        let waiters = idleWaiters
+        idleWaiters.removeAll()
+        waiters.forEach { $0.resume() }
+    }
+}
+
+/// Sequence values are assigned synchronously on the main actor, before any
+/// async hop. They therefore describe user-visible playback order even when an
+/// older reader session reaches the shared persistence actor later.
+@MainActor
+enum YouTubePlaybackPersistenceSequence {
+    private static var value: UInt64 = 0
+
+    static func next() -> UInt64 {
+        value &+= 1
+        if value == 0 { value = 1 }
+        return value
+    }
+}
+
+/// The process-wide coordinator closes the A -> B -> A race between separate
+/// reader VMs. The transcript-level sequence gate rejects a late checkpoint
+/// from an older session, while the actor keeps all disk writes single-flight.
+enum YouTubePlaybackPersistenceRuntime {
+    static let coordinator = YouTubePlaybackPersistenceCoordinator { work in
+        guard let cache = YouTubeCacheProvider.shared else { return }
+        do {
+            switch work {
+            case .progress(let checkpoint):
+                try await cache.saveProgress(
+                    paragraphIndex: checkpoint.paragraphIndex,
+                    segmentId: checkpoint.segmentID,
+                    segmentIndex: checkpoint.segmentIndex,
+                    fractionalProgress: checkpoint.segmentFraction,
+                    paragraphFractionalProgress:
+                        checkpoint.paragraphFraction,
+                    for: checkpoint.transcriptKey
+                )
+            case .completion(let checkpoint):
+                // Completion is durable transcript progress, not an audio
+                // cache eligibility signal. Saving it must succeed even when
+                // the app intentionally keeps no full YouTube MP3 on disk.
+                try await cache.saveProgress(
+                    paragraphIndex: checkpoint.paragraphIndex,
+                    segmentId: checkpoint.segmentID,
+                    segmentIndex: checkpoint.segmentIndex,
+                    fractionalProgress: 1,
+                    paragraphFractionalProgress: 1,
+                    for: checkpoint.transcriptKey
+                )
+            }
+        } catch {
+            // Cache persistence is best-effort and cannot interrupt playback.
+        }
+    }
+}
+
+/// Main-actor submissions are chained before entering the actor. This removes
+/// the untracked-Task reorder window and gives lifecycle edges a concrete Task
+/// they can await until both the writer and deferred manifest flush are done.
+@MainActor
+final class YouTubePlaybackPersistenceSubmissionLane {
+    typealias Finalizer = @Sendable () async -> Void
+
+    private let coordinator: YouTubePlaybackPersistenceCoordinator
+    private var tail: Task<Void, Never>?
+
+    init(coordinator: YouTubePlaybackPersistenceCoordinator) {
+        self.coordinator = coordinator
+    }
+
+    @discardableResult
+    func submit(_ work: YouTubePlaybackPersistenceWork) -> Task<Void, Never> {
+        let predecessor = tail
+        let coordinator = coordinator
+        let task = Task {
+            await predecessor?.value
+            await coordinator.submit(work)
+        }
+        tail = task
+        return task
+    }
+
+    @discardableResult
+    func flush(
+        finalizer: Finalizer? = nil
+    ) -> Task<Void, Never> {
+        let predecessor = tail
+        let coordinator = coordinator
+        let task = Task {
+            await predecessor?.value
+            await coordinator.waitUntilIdle()
+            if let finalizer { await finalizer() }
+        }
+        tail = task
+        return task
+    }
+}
+
+/// YouTube raw audio is ephemeral/regenerable. Keep only the current paragraph
+/// in the VM; the separately bounded prefetch buffer owns the next paragraph.
+/// Other reader sources retain their established replay model.
+enum YouTubeAudioMemoryWindow {
+    static func prune<Value>(
+        _ values: inout [Int: Value],
+        sourceKind: ReadingSourceKind,
+        keeping paragraphIndex: Int?
+    ) {
+        guard sourceKind == .youtube else { return }
+        guard let paragraphIndex else {
+            values.removeAll(keepingCapacity: false)
+            return
+        }
+        values = values.filter { $0.key == paragraphIndex }
+    }
+}
+
 @MainActor
 final class ReadAloudViewModel: ObservableObject {
 
@@ -287,6 +546,9 @@ final class ReadAloudViewModel: ObservableObject {
     private let quota = QuotaManager.shared
     private let analyticsSessionCoordinator: ReadAnalyticsSessionCoordinator
     private let analyticsSessionOwnerID = UUID()
+    let youtubeTranscriptCacheKey: YouTubeTranscriptCacheKey?
+    let youtubeReadableParagraphIndexes: [Int]
+    private let youtubePersistenceLane: YouTubePlaybackPersistenceSubmissionLane
     private var audioSessionToken: AudioPlaybackSessionToken?
 
     private var segmentsByParagraph: [Int: [AudioSegment]] = [:]
@@ -298,7 +560,6 @@ final class ReadAloudViewModel: ObservableObject {
     /// activate this VM or mutate the shared player after a mode/page change.
     private var accessRetryTask: Task<Void, Never>?
     private var accessRetryEpoch: UInt64 = 0
-    private var preloaded = Set<Int>()
     private var cancellables = Set<AnyCancellable>()
     private var readableIndices: [Int] = []
     private var generationEpoch: UInt64 = 0
@@ -358,8 +619,9 @@ final class ReadAloudViewModel: ObservableObject {
     private var lastSegmentMaxTime: Double = 0
     private var lastYouTubeProgressWriteAt: Date?
     private var lastYouTubeHistoryProgressWriteAt: Date?
-    private var lastYouTubeProgressSegmentID = ""
     private var lastYouTubePlaybackSignalSegmentID = ""
+    private var didRecordYouTubeFirstListen: Bool
+    private var youtubeCompletionSubmittedParagraph: Int?
     /// Paragraphs loaded from the persistent YouTube audio cache. All segments
     /// of one paragraph have one origin, so this survives queue reconstruction
     /// without relying on globally reusable `paragraph-segment` IDs.
@@ -367,6 +629,8 @@ final class ReadAloudViewModel: ObservableObject {
     private var graceSeconds: Double = 0
     private(set) var isActive = false
     private var lastNowPlayingCaption: String?
+    private var lastCaptionEvaluationSegmentID = ""
+    private var lastCaptionEvaluationTime: Double = -.greatestFiniteMagnitude
 
     private var ownsAudioQueue: Bool {
         guard isActive, let token = audioSessionToken else { return false }
@@ -456,6 +720,24 @@ final class ReadAloudViewModel: ObservableObject {
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         self.analyticsSessionCoordinator = analyticsSessionCoordinator
             ?? ReadAnalyticsSessionCoordinator()
+        self.youtubeTranscriptCacheKey = document.youtubeTranscript.map {
+            YouTubeCacheStore.cacheKey(for: $0)
+        }
+        self.youtubeReadableParagraphIndexes = document.sourceKind == .youtube
+            ? document.paragraphs.filter {
+                $0.type.isReadable &&
+                    SpeechTextSanitizer.containsSpeakableContent(
+                        $0.resolvedSpeechText
+                    )
+            }.map(\.id)
+            : []
+        self.youtubePersistenceLane =
+            YouTubePlaybackPersistenceSubmissionLane(
+                coordinator: YouTubePlaybackPersistenceRuntime.coordinator
+            )
+        self.didRecordYouTubeFirstListen = UserDefaults.standard.bool(
+            forKey: "youtube.didCompleteFirstListen"
+        )
         // A correction the user made for this book outlives the session: reopening
         // it must not hand the book back to whatever the first page detects.
         // YouTube is the exception to book-level identity: each selected caption
@@ -1218,6 +1500,14 @@ final class ReadAloudViewModel: ObservableObject {
         // even when this VM has not yet acquired playback ownership.
         invalidateAccessRetry()
         let wasActive = isActive
+        if wasActive,
+           youtubeCompletionSubmittedParagraph != currentParagraphIndex {
+            saveYouTubeProgress(
+                audio.currentTime,
+                force: true,
+                waitForPersistence: true
+            )
+        }
         isActive = false
         if let token = audioSessionToken {
             audio.releasePlaybackSession(token)
@@ -1432,6 +1722,15 @@ final class ReadAloudViewModel: ObservableObject {
             applyPlaybackMetadata()
             applySpeed()
         }
+        if document.sourceKind == .youtube,
+           currentParagraphIndex >= 0,
+           currentParagraphIndex != paragraphIndex {
+            saveYouTubeProgress(
+                audio.currentTime,
+                force: true,
+                waitForPersistence: false
+            )
+        }
         beginAnalyticsReadSessionIfNeeded(resume: currentParagraphIndex >= 0)
         generate(
             paragraphIndex,
@@ -1533,7 +1832,9 @@ final class ReadAloudViewModel: ObservableObject {
             paragraphIndex: paragraphIndex,
             persistentCacheHit: persistentYouTubeCacheHit
         )
+        retainYouTubeAudioMemory(for: paragraphIndex)
         segmentsByParagraph[paragraphIndex] = segments
+        youtubeCompletionSubmittedParagraph = nil
         currentParagraphIndex = paragraphIndex
         processedDisplayText = segments.map { $0.text }.joined()
         highlightRange = nil
@@ -1695,8 +1996,25 @@ final class ReadAloudViewModel: ObservableObject {
         audio.setPlaybackRate(Float(settings.effectiveSpeed(isPro: pro.isPro)))
     }
 
-    func stop() {
-        saveYouTubeProgress(audio.currentTime, force: true)
+    /// Stops playback synchronously and returns the final YouTube persistence
+    /// fence. Callers that own a lifecycle boundary may await the task; legacy
+    /// UI call sites can safely ignore it because the VM retains the lane tail.
+    @discardableResult
+    func stop() -> Task<Void, Never>? {
+        if !isFinished,
+           youtubeCompletionSubmittedParagraph != currentParagraphIndex {
+            saveYouTubeProgress(
+                audio.currentTime,
+                force: true,
+                waitForPersistence: false
+            )
+        } else if document.sourceKind == .youtube {
+            persistYouTubeHistorySummary(
+                paragraphFraction: 1,
+                now: Date(),
+                force: true
+            )
+        }
         invalidateAccessRetry()
         generationEpoch &+= 1
         liveWebTurnIntentSuspended = false
@@ -1711,6 +2029,14 @@ final class ReadAloudViewModel: ObservableObject {
             _ = audio.setMoreSegmentsExpected(false, session: token)
             _ = audio.clearBook(session: token)
         }
+        YouTubeAudioMemoryWindow.prune(
+            &segmentsByParagraph,
+            sourceKind: document.sourceKind,
+            keeping: nil
+        )
+        if document.sourceKind == .youtube {
+            youtubeQuotaExemptParagraphs.removeAll(keepingCapacity: false)
+        }
         status = .pending
         if let switchID = activeVoiceSwitchID {
             VoiceSwitchStatusCenter.shared.finish(switchID)
@@ -1718,6 +2044,31 @@ final class ReadAloudViewModel: ObservableObject {
         }
         commitListen()
         endAnalyticsReadSession(result: .cancelled, reason: "closed")
+        return document.sourceKind == .youtube
+            ? waitForYouTubePersistence()
+            : nil
+    }
+
+    /// Final lifecycle checkpoint for app backgrounding. Unlike the periodic
+    /// cadence, this waits inside the persistence lane and also commits any
+    /// deferred cache LRU touches before iOS suspends the process.
+    @discardableResult
+    func flushYouTubeProgressForLifecycle() -> Task<Void, Never>? {
+        guard document.sourceKind == .youtube else { return nil }
+        if isFinished {
+            persistYouTubeHistorySummary(
+                paragraphFraction: 1,
+                now: Date(),
+                force: true
+            )
+        } else {
+            saveYouTubeProgress(
+                audio.currentTime,
+                force: true,
+                waitForPersistence: false
+            )
+        }
+        return waitForYouTubePersistence()
     }
 
     // MARK: - Generation
@@ -1742,6 +2093,16 @@ final class ReadAloudViewModel: ObservableObject {
         } else {
             youtubeQuotaExemptParagraphs.remove(paragraphIndex)
         }
+    }
+
+    private func retainYouTubeAudioMemory(for paragraphIndex: Int) {
+        YouTubeAudioMemoryWindow.prune(
+            &segmentsByParagraph,
+            sourceKind: document.sourceKind,
+            keeping: paragraphIndex
+        )
+        guard document.sourceKind == .youtube else { return }
+        youtubeQuotaExemptParagraphs.formIntersection([paragraphIndex])
     }
 
     private func isYouTubeAudioQuotaExempt(paragraphIndex: Int) -> Bool {
@@ -1798,68 +2159,6 @@ final class ReadAloudViewModel: ObservableObject {
         return false
     }
 
-    private var youtubeTranscriptCacheKey: YouTubeTranscriptCacheKey? {
-        document.youtubeTranscript.map(YouTubeCacheStore.cacheKey(for:))
-    }
-
-    private func youtubeAudioCacheKey(
-        paragraphIndex: Int,
-        voice: String
-    ) -> YouTubeTTSAudioCacheKey? {
-        guard let transcriptKey = youtubeTranscriptCacheKey else { return nil }
-        return YouTubeTTSAudioCacheKey(
-            transcriptFingerprint: transcriptKey.transcriptFingerprint,
-            voiceCode: voice,
-            playbackLanguage: playbackLanguage,
-            schemaVersion: YouTubeTTSAudioCacheSchema.current,
-            paragraphIndex: paragraphIndex
-        )
-    }
-
-    private func cachedYouTubeAudio(
-        paragraphIndex: Int,
-        voice: String
-    ) async -> YouTubeCachedAudioPlayback? {
-        guard document.sourceKind == .youtube,
-              let cache = YouTubeCacheProvider.shared,
-              let transcriptKey = youtubeTranscriptCacheKey,
-              let audioKey = youtubeAudioCacheKey(
-                paragraphIndex: paragraphIndex,
-                voice: voice
-              ),
-              let playback = await cache.cachedAudioPlayback(
-                for: audioKey,
-                transcriptKey: transcriptKey
-              ),
-              !playback.segments.isEmpty,
-              playback.segments.allSatisfy({
-                  $0.paragraphIndex == paragraphIndex
-              }) else {
-            return nil
-        }
-        return playback
-    }
-
-    private func persistYouTubeAudio(
-        _ segments: [AudioSegment],
-        paragraphIndex: Int,
-        voice: String
-    ) async {
-        guard document.sourceKind == .youtube,
-              !segments.isEmpty,
-              let cache = YouTubeCacheProvider.shared,
-              let transcriptKey = youtubeTranscriptCacheKey,
-              let audioKey = youtubeAudioCacheKey(
-                paragraphIndex: paragraphIndex,
-                voice: voice
-              ) else { return }
-        try? await cache.storeAudioSegments(
-            segments,
-            for: audioKey,
-            transcriptKey: transcriptKey
-        )
-    }
-
     private func generate(
         _ index: Int,
         voiceOverride: String? = nil,
@@ -1900,7 +2199,9 @@ final class ReadAloudViewModel: ObservableObject {
             paragraphIndex: index,
             persistentCacheHit: false
         )
+        retainYouTubeAudioMemory(for: index)
         segmentsByParagraph[index] = []
+        youtubeCompletionSubmittedParagraph = nil
         currentParagraphIndex = index
         processedDisplayText = nil
         highlightRange = nil
@@ -1917,48 +2218,6 @@ final class ReadAloudViewModel: ObservableObject {
             guard let self = self else { return }
             do {
                 try Task.checkCancellation()
-                if let cached = await self.cachedYouTubeAudio(
-                    paragraphIndex: index,
-                    voice: voice
-                ) {
-                    if !cached.isReplayEligible {
-                        guard await self.authorizeFreshYouTubeGeneration(
-                            paragraphIndex: index,
-                            epoch: epoch,
-                            session: session,
-                            allowAccessRefresh: allowAccessRefresh
-                        ) else { return }
-                    }
-                    guard self.generationEpoch == epoch,
-                          self.currentParagraphIndex == index,
-                          self.audioSessionToken == session,
-                          self.audio.isPlaybackSessionActive(session) else {
-                        return
-                    }
-                    self.setYouTubeAudioQuotaOrigin(
-                        paragraphIndex: index,
-                        persistentCacheHit: cached.isReplayEligible
-                    )
-                    for segment in cached.segments {
-                        self.appendSegment(
-                            segment,
-                            paragraph: index,
-                            epoch: epoch,
-                            session: session,
-                            autoPlay: autoPlay,
-                            voiceSwitchID: voiceSwitchID
-                        )
-                    }
-                    _ = self.audio.finishStreamingProducer(session: session)
-                    self.status = .ready
-                    ReaderRunLog.write(
-                        "READ cache hit para=\(index) epoch=\(epoch) " +
-                        "segs=\(cached.segments.count) " +
-                        "replay=\(cached.isReplayEligible ? "Y" : "N")"
-                    )
-                    self.preloadNext(after: index)
-                    return
-                }
                 guard await self.authorizeFreshYouTubeGeneration(
                     paragraphIndex: index,
                     epoch: epoch,
@@ -2025,16 +2284,10 @@ final class ReadAloudViewModel: ObservableObject {
                    self.audioSessionToken == session,
                    self.audio.isPlaybackSessionActive(session),
                    self.isActive {
-                    let generated = self.segmentsByParagraph[index] ?? []
-                    // Publish/start the next prefetch before cache persistence.
-                    // A large LRU scan must never consume the audible lead time,
-                    // and no stale task can resurrect an old paragraph prefetch.
+                    // Audio remains session-only; keep one paragraph prefetched
+                    // in memory and never hand the generated MP3 Data to the
+                    // persistent transcript/artwork cache actor.
                     self.preloadNext(after: index)
-                    await self.persistYouTubeAudio(
-                        generated,
-                        paragraphIndex: index,
-                        voice: voice
-                    )
                 }
             } catch is CancellationError {
                 ReaderRunLog.write(
@@ -2248,6 +2501,13 @@ final class ReadAloudViewModel: ObservableObject {
             currentParagraphIndex,
             shouldAutoPlay ? "Y" : "N"
         )
+        if document.sourceKind == .youtube {
+            saveYouTubeProgress(
+                audio.currentTime,
+                force: true,
+                waitForPersistence: false
+            )
+        }
         generate(
             currentParagraphIndex,
             voiceOverride: newVoiceID,
@@ -2259,7 +2519,6 @@ final class ReadAloudViewModel: ObservableObject {
     /// 当前段生成完后调用：后台预生成下一段 TTS 到缓存（不入队播放），advance 命中时秒接，消除段间等首字节的 gap。
     private func preloadNext(after index: Int) {
         guard isActive else { return }
-        _ = preloaded.insert(index)
         guard let pos = readableIndices.firstIndex(of: index) else { return }
         let nextPos = pos + 1
         guard nextPos < readableIndices.count else { return }
@@ -2289,51 +2548,26 @@ final class ReadAloudViewModel: ObservableObject {
         )
         prefetchTask = Task { [weak self] in
             do {
-                let cached = await self?.cachedYouTubeAudio(
-                    paragraphIndex: nextIndex,
-                    voice: voice
-                )
-                let collected: [AudioSegment]
-                let cachedIsReplayEligible: Bool
-                if let cached {
-                    if !cached.isReplayEligible,
-                       let self,
-                       self.document.sourceKind == .youtube,
-                       !self.canStartAudio(persistentYouTubeCacheHit: false) {
-                        if self.generationEpoch == epoch,
-                           self.prefetchingIndex == nextIndex {
-                            self.prefetchingIndex = nil
-                        }
-                        return
+                if let self,
+                   self.document.sourceKind == .youtube,
+                   !self.canStartAudio(persistentYouTubeCacheHit: false) {
+                    if self.generationEpoch == epoch,
+                       self.prefetchingIndex == nextIndex {
+                        self.prefetchingIndex = nil
                     }
-                    collected = cached.segments
-                    cachedIsReplayEligible = cached.isReplayEligible
-                } else {
-                    // Persistent-cache replay can continue after quota is
-                    // exhausted, but background prefetch must never create new
-                    // billable audio without fresh-listen allowance.
-                    if let self,
-                       self.document.sourceKind == .youtube,
-                       !self.canStartAudio(persistentYouTubeCacheHit: false) {
-                        if self.generationEpoch == epoch,
-                           self.prefetchingIndex == nextIndex {
-                            self.prefetchingIndex = nil
-                        }
-                        return
-                    }
-                    collected = try await TTSService.shared.generatePrefetchSegments(
-                        paragraphIndex: nextIndex,
-                        text: SpeechTextSanitizer.sanitizedForTTS(
-                            para.resolvedSpeechText
-                        ),
-                        voice: voice,
-                        speed: 1.0,
-                        language: lang,
-                        includeVoiceCode: includeVoiceCode,
-                        speaker: para.speaker
-                    )
-                    cachedIsReplayEligible = false
+                    return
                 }
+                let collected = try await TTSService.shared.generatePrefetchSegments(
+                    paragraphIndex: nextIndex,
+                    text: SpeechTextSanitizer.sanitizedForTTS(
+                        para.resolvedSpeechText
+                    ),
+                    voice: voice,
+                    speed: 1.0,
+                    language: lang,
+                    includeVoiceCode: includeVoiceCode,
+                    speaker: para.speaker
+                )
                 guard let self,
                       !Task.isCancelled,
                       self.isActive,
@@ -2349,20 +2583,12 @@ final class ReadAloudViewModel: ObservableObject {
                 // paragraph is still playing. At the boundary this is the
                 // difference between ~70ms of silence and almost none.
                 self.audio.prestageSegments(collected)
-                self.prefetchedYouTubeAudioIsQuotaExempt =
-                    self.document.sourceKind == .youtube && cachedIsReplayEligible
+                self.prefetchedYouTubeAudioIsQuotaExempt = false
                 NSLog("CRDBG prefetch done para=%d segs=%d", nextIndex, collected.count)
                 ReaderRunLog.write(
                     "READ prefetch done para=\(nextIndex) epoch=\(epoch) " +
                     "segs=\(collected.count)"
                 )
-                if cached == nil {
-                    await self.persistYouTubeAudio(
-                        collected,
-                        paragraphIndex: nextIndex,
-                        voice: voice
-                    )
-                }
             } catch {
                 guard let self,
                       self.generationEpoch == epoch,
@@ -2412,7 +2638,9 @@ final class ReadAloudViewModel: ObservableObject {
             paragraphIndex: index,
             persistentCacheHit: persistentYouTubeCacheHit
         )
+        retainYouTubeAudioMemory(for: index)
         segmentsByParagraph[index] = segs
+        youtubeCompletionSubmittedParagraph = nil
         currentParagraphIndex = index
         processedDisplayText = segs.map { $0.text }.joined()
         highlightRange = nil
@@ -2437,52 +2665,42 @@ final class ReadAloudViewModel: ObservableObject {
         preloadNext(after: index)
     }
 
-    /// Persist the completed paragraph and only then mark it as replay-safe.
-    /// Generation, prefetch, pause and manual jumps never grant this bit.
+    /// Persist the terminal checkpoint and replay bit through the same serial
+    /// lane as ordinary progress. Audio bytes were already stored exactly once
+    /// by generation/prefetch, so natural completion must never rewrite them.
     private func persistCompletedYouTubeParagraphIfNeeded() {
         let completedParagraphIndex = currentParagraphIndex
         guard document.sourceKind == .youtube,
-              completedParagraphIndex >= 0 else { return }
+              completedParagraphIndex >= 0,
+              youtubeCompletionSubmittedParagraph != completedParagraphIndex
+        else { return }
+        youtubeCompletionSubmittedParagraph = completedParagraphIndex
         persistYouTubeHistorySummary(
             paragraphFraction: 1,
             now: Date(),
-            force: true
+            force: completedParagraphIndex == readableIndices.last
         )
 
         guard let segments = segmentsByParagraph[completedParagraphIndex],
               !segments.isEmpty,
-              let cache = YouTubeCacheProvider.shared,
               let transcriptKey = youtubeTranscriptCacheKey,
-              let audioKey = youtubeAudioCacheKey(
-                  paragraphIndex: completedParagraphIndex,
-                  voice: playbackVoiceID
-              ) else { return }
+              let finalSegment = segments.last else { return }
 
-        Task {
-            do {
-                if let finalSegment = segments.last {
-                    try await cache.saveProgress(
-                        paragraphIndex: completedParagraphIndex,
-                        segmentId: finalSegment.id,
-                        segmentIndex: finalSegment.segmentIndex,
-                        fractionalProgress: 1,
-                        paragraphFractionalProgress: 1,
-                        for: transcriptKey
-                    )
-                }
-                try await cache.storeAudioSegments(
-                    segments,
-                    for: audioKey,
-                    transcriptKey: transcriptKey
-                )
-                try await cache.markAudioReplayEligible(
-                    for: audioKey,
-                    transcriptKey: transcriptKey
-                )
-            } catch {
-                // Cache failure must never interrupt playback progression.
-            }
-        }
+        let checkpoint = YouTubePlaybackCheckpoint(
+            sequence: YouTubePlaybackPersistenceSequence.next(),
+            transcriptKey: transcriptKey,
+            paragraphIndex: completedParagraphIndex,
+            segmentID: finalSegment.id,
+            segmentIndex: finalSegment.segmentIndex,
+            segmentFraction: 1,
+            paragraphFraction: 1
+        )
+        submitYouTubePersistence(
+            .completion(checkpoint),
+            waitForPersistence: completedParagraphIndex == readableIndices.last
+        )
+        segmentsByParagraph.removeValue(forKey: completedParagraphIndex)
+        youtubeQuotaExemptParagraphs.remove(completedParagraphIndex)
     }
 
     private func advance() {
@@ -2730,7 +2948,11 @@ final class ReadAloudViewModel: ObservableObject {
         signalPageBoundaryIfNeeded(t)
     }
 
-    private func saveYouTubeProgress(_ currentTime: Double, force: Bool = false) {
+    private func saveYouTubeProgress(
+        _ currentTime: Double,
+        force: Bool = false,
+        waitForPersistence: Bool = false
+    ) {
         guard document.sourceKind == .youtube,
               let segment = audio.currentSegment,
               segment.paragraphIndex == currentParagraphIndex else { return }
@@ -2748,17 +2970,24 @@ final class ReadAloudViewModel: ObservableObject {
                 object: document.contentSessionKey
             )
         }
-        if YouTubePlaybackAcceptancePolicy.didCompleteFirstListen(
-            currentTime: currentTime
-        ) {
+        if !didRecordYouTubeFirstListen,
+           YouTubePlaybackAcceptancePolicy.didCompleteFirstListen(
+               currentTime: currentTime
+           ) {
+            didRecordYouTubeFirstListen = true
             UserDefaults.standard.set(
                 true,
                 forKey: "youtube.didCompleteFirstListen"
             )
         }
 
-        guard let cache = YouTubeCacheProvider.shared,
-              let transcriptKey = youtubeTranscriptCacheKey else { return }
+        let now = Date()
+        guard YouTubePlaybackPersistencePolicy.shouldPersistProgress(
+            now: now,
+            lastWriteAt: lastYouTubeProgressWriteAt,
+            force: force
+        ) else { return }
+        guard let transcriptKey = youtubeTranscriptCacheKey else { return }
         let duration = audio.duration > 0.01 ? audio.duration : segment.duration
         guard duration > 0.01 else { return }
         guard let playbackPosition = YouTubeParagraphProgressContract.position(
@@ -2768,29 +2997,45 @@ final class ReadAloudViewModel: ObservableObject {
             currentSegmentDuration: duration
         ) else { return }
 
-        let now = Date()
-        let segmentChanged = lastYouTubeProgressSegmentID != segment.id
-        let elapsed = lastYouTubeProgressWriteAt.map { now.timeIntervalSince($0) }
-            ?? .greatestFiniteMagnitude
-        guard force || segmentChanged || elapsed >= 1 else { return }
-        lastYouTubeProgressSegmentID = segment.id
         lastYouTubeProgressWriteAt = now
-        Task {
-            try? await cache.saveProgress(
-                paragraphIndex: segment.paragraphIndex,
-                segmentId: segment.id,
-                segmentIndex: segment.segmentIndex,
-                fractionalProgress: playbackPosition.segmentFraction,
-                paragraphFractionalProgress: playbackPosition.paragraphFraction,
-                for: transcriptKey
-            )
-        }
+        let checkpoint = YouTubePlaybackCheckpoint(
+            sequence: YouTubePlaybackPersistenceSequence.next(),
+            transcriptKey: transcriptKey,
+            paragraphIndex: segment.paragraphIndex,
+            segmentID: segment.id,
+            segmentIndex: segment.segmentIndex,
+            segmentFraction: playbackPosition.segmentFraction,
+            paragraphFraction: playbackPosition.paragraphFraction
+        )
+        submitYouTubePersistence(
+            .progress(checkpoint),
+            waitForPersistence: waitForPersistence
+        )
         persistYouTubeHistorySummary(
             paragraphFraction: playbackPosition.paragraphFraction,
             now: now,
-            force: force || segmentChanged
+            force: force
         )
 
+    }
+
+    private func submitYouTubePersistence(
+        _ work: YouTubePlaybackPersistenceWork,
+        waitForPersistence: Bool
+    ) {
+        youtubePersistenceLane.submit(work)
+        if waitForPersistence {
+            waitForYouTubePersistence()
+        }
+    }
+
+    /// Enqueues a barrier after every submission made by this VM, then waits
+    /// for the process-wide writer and its batched manifest touches. Returning
+    /// the retained task gives stop/background paths real awaitable semantics.
+    private func waitForYouTubePersistence() -> Task<Void, Never> {
+        youtubePersistenceLane.flush {
+            await YouTubeCacheProvider.shared?.flushDeferredManifestUpdates()
+        }
     }
 
     private func persistYouTubeHistorySummary(
@@ -2804,10 +3049,11 @@ final class ReadAloudViewModel: ObservableObject {
               let paragraph = paras.first(where: { $0.id == currentParagraphIndex }) else {
             return
         }
-        let elapsed = lastYouTubeHistoryProgressWriteAt.map {
-            now.timeIntervalSince($0)
-        } ?? .greatestFiniteMagnitude
-        guard force || elapsed >= 5 else { return }
+        guard YouTubePlaybackPersistencePolicy.shouldPersistHistory(
+            now: now,
+            lastWriteAt: lastYouTubeHistoryProgressWriteAt,
+            force: force
+        ) else { return }
         lastYouTubeHistoryProgressWriteAt = now
         let completed = Double(position) + min(1, max(0, paragraphFraction))
         let overall = min(1, max(0, completed / Double(readableIndices.count)))
@@ -2850,6 +3096,11 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func updateNowPlayingCaption(_ t: Double) {
         guard let seg = audio.currentSegment, seg.paragraphIndex == currentParagraphIndex else { return }
+        guard seg.id != lastCaptionEvaluationSegmentID
+                || t < lastCaptionEvaluationTime
+                || t - lastCaptionEvaluationTime >= 0.5 else { return }
+        lastCaptionEvaluationSegmentID = seg.id
+        lastCaptionEvaluationTime = t
         let caption = Self.caption(for: seg, at: t, duration: audio.duration)
         guard caption != lastNowPlayingCaption else { return }
         lastNowPlayingCaption = caption
@@ -3014,7 +3265,11 @@ final class ReadAloudViewModel: ObservableObject {
         if !hasReliableWordHighlight(seg) {
             if document.usesNativeTextRendering {
                 let content = contentRange(in: seg.text as NSString)
-                highlightRange = NSRange(location: base + content.location, length: content.length)
+                let range = NSRange(
+                    location: base + content.location,
+                    length: content.length
+                )
+                if highlightRange != range { highlightRange = range }
             } else if document.sourceKind.isOCRImageRendered {
                 // Segment highlight is derived from the segment's own text and
                 // the OCR word stream. It must not depend on `segs.count`: that
@@ -3026,7 +3281,9 @@ final class ReadAloudViewModel: ObservableObject {
                     segmentTexts: segs.map(\.text),
                     segPos: segPos
                 ) {
-                    photoHighlightWordRange = range
+                    if photoHighlightWordRange != range {
+                        photoHighlightWordRange = range
+                    }
                     if range.lowerBound != photoHighlightWordIndex { photoHighlightWordIndex = range.lowerBound }
                 }
             }
@@ -3046,14 +3303,17 @@ final class ReadAloudViewModel: ObservableObject {
             ensureWordAligned()
             let gIdx = wordHighlightSegments(segs).prefix(segPos).reduce(0) { $0 + $1.timestamps.count } + localIdx
             if gIdx >= 0, gIdx < wordRanges.count, let r = wordRanges[gIdx] {
-                highlightRange = r
+                if highlightRange != r { highlightRange = r }
             }
         } else if document.sourceKind.isOCRImageRendered {
             ensureOCRWordAligned()
             let gIdx = wordHighlightSegments(segs).prefix(segPos).reduce(0) { $0 + $1.timestamps.count } + localIdx
             if gIdx >= 0, gIdx < ocrWordIndexes.count, let idx = ocrWordIndexes[gIdx] {
                 let next = max(photoHighlightWordIndex ?? -1, idx)
-                photoHighlightWordRange = next..<(next + 1)
+                let range = next..<(next + 1)
+                if photoHighlightWordRange != range {
+                    photoHighlightWordRange = range
+                }
                 if next != photoHighlightWordIndex { photoHighlightWordIndex = next }
             } else if document.sourceKind != .kindle, wordKey != lastWordKey {
                 // Fallback only when the timestamp word cannot be resolved to paragraph text.

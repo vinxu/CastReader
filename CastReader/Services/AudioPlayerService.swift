@@ -28,6 +28,85 @@ struct AudioPlaybackResumeHandle: Equatable, Sendable {
     fileprivate let bookID: String?
 }
 
+/// The player owns one narrowly scoped temporary directory. Cleaning it never
+/// touches imports, previews or any other subsystem's files. Legacy root-level
+/// names are removed only when they match the old exact prefix + extension.
+enum AudioPlaybackTemporaryFiles {
+    static let directoryName = "CastReaderPlaybackAudio"
+    private static let legacyPrefixes = ["segment_", "prestage_"]
+    private static let audioExtensions: Set<String> = ["mp3", "wav"]
+
+    static func prepare(
+        root: URL = FileManager.default.temporaryDirectory,
+        fileManager: FileManager = .default
+    ) -> URL {
+        let standardizedRoot = root.standardizedFileURL
+        let directory = standardizedRoot
+            .appendingPathComponent(directoryName, isDirectory: true)
+            .standardizedFileURL
+        if directory.deletingLastPathComponent() == standardizedRoot,
+           directory.lastPathComponent == directoryName {
+            try? fileManager.removeItem(at: directory)
+            try? fileManager.createDirectory(
+                at: directory,
+                withIntermediateDirectories: true
+            )
+        }
+
+        guard let children = try? fileManager.contentsOfDirectory(
+            at: standardizedRoot,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        ) else { return directory }
+        for candidate in children {
+            let name = candidate.lastPathComponent
+            guard legacyPrefixes.contains(where: { name.hasPrefix($0) }),
+                  audioExtensions.contains(
+                      candidate.pathExtension.lowercased()
+                  ),
+                  (try? candidate.resourceValues(
+                      forKeys: [.isRegularFileKey]
+                  ).isRegularFile) == true else { continue }
+            try? fileManager.removeItem(at: candidate)
+        }
+        return directory
+    }
+
+    static func removeOwnedContents(
+        in directory: URL,
+        preserving preservedURLs: Set<URL> = [],
+        fileManager: FileManager = .default
+    ) {
+        let directory = directory.standardizedFileURL
+        guard directory.lastPathComponent == directoryName,
+              directory.path != "/" else { return }
+        let preserved = Set(preservedURLs.map(\.standardizedFileURL))
+        let children = (try? fileManager.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: nil
+        )) ?? []
+        for child in children
+            where !preserved.contains(child.standardizedFileURL) {
+            try? fileManager.removeItem(at: child)
+        }
+        try? fileManager.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+    }
+
+    static func fileURL(
+        in directory: URL,
+        prefix: String,
+        segmentID: String,
+        fileExtension: String
+    ) -> URL {
+        directory.appendingPathComponent(
+            "\(prefix)\(segmentID)_\(UUID().uuidString).\(fileExtension)"
+        )
+    }
+}
+
 /// A streaming TTS producer can finish just after the last audio item has
 /// already drained. In that ordering the player is waiting for an item that
 /// will never arrive, so producer completion must resolve the paragraph exactly
@@ -135,6 +214,9 @@ class AudioPlayerService: NSObject, ObservableObject {
     @Published var currentCaption: String?
     private var currentCoverImage: UIImage?   // 本地封面（Now Playing artwork）
     private var artworkLoadKey: String?
+    private var artworkDataTask: URLSessionDataTask?
+    private var artworkDecodeTask: Task<Void, Never>?
+    private var artworkRequestGeneration: UInt64 = 0
 
     // MARK: - Private Properties
     private var player: AVPlayer?
@@ -146,8 +228,8 @@ class AudioPlayerService: NSObject, ObservableObject {
     private var playerItemSession: AudioPlaybackSessionToken?
     private var reportedPlaybackFailureItemID: ObjectIdentifier?
     private var timeObserver: Any?
-    private var cancellables = Set<AnyCancellable>()
     private var playerStateCancellable: AnyCancellable?
+    private var playerItemStatusCancellable: AnyCancellable?
     private var playerItemReadinessWorkItem: DispatchWorkItem?
     private var wasInterrupted = false
     private var playbackSuspendedByInterruption = false
@@ -159,6 +241,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     private var playbackOwnership = AudioPlaybackOwnershipState()
 
     // 临时文件管理
+    private let playbackTemporaryDirectory: URL
     private var currentTempFileURL: URL?
 
     // Callbacks
@@ -423,6 +506,7 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     // MARK: - Initialization
     private override init() {
+        playbackTemporaryDirectory = AudioPlaybackTemporaryFiles.prepare()
         super.init()
         setupAudioSession()
         setupRemoteCommandCenter()
@@ -660,7 +744,6 @@ class AudioPlayerService: NSObject, ObservableObject {
                 let requestKey = "\(currentBookId ?? "")|\(coverUrlString)"
                 if artworkLoadKey != requestKey,
                    let coverUrl = Self.makeArtworkURL(coverUrlString) {
-                    artworkLoadKey = requestKey
                     loadArtwork(
                         from: coverUrl,
                         sourceURL: coverUrlString,
@@ -693,30 +776,94 @@ class AudioPlayerService: NSObject, ObservableObject {
         sourceURL: String,
         requestKey: String
     ) {
-        URLSession.shared.dataTask(with: url) { data, _, error in
-            guard let data = data, error == nil,
-                  let image = UIImage(data: data) else {
-                DispatchQueue.main.async {
-                    if self.artworkLoadKey == requestKey {
-                        self.artworkLoadKey = nil
-                    }
+        cancelArtworkLoad()
+        artworkLoadKey = requestKey
+        let expectedGeneration = artworkRequestGeneration
+        let request = URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            guard let data,
+                  error == nil,
+                  !data.isEmpty,
+                  data.count <= 20 * 1_024 * 1_024,
+                  let http = response as? HTTPURLResponse,
+                  (200..<300).contains(http.statusCode) else {
+                DispatchQueue.main.async { [weak self] in
+                    guard let self,
+                          self.artworkRequestGeneration == expectedGeneration,
+                          self.artworkLoadKey == requestKey else { return }
+                    self.artworkDataTask = nil
+                    self.artworkLoadKey = nil
                 }
                 return
             }
-            ImageCache.shared.set(sourceURL, image: image, data: data)
-            DispatchQueue.main.async {
-                let currentCoverURL = self.currentCoverUrl?
-                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                guard self.artworkLoadKey == requestKey,
-                      "\(self.currentBookId ?? "")|\(currentCoverURL)"
-                        == requestKey else {
-                    return
+
+            // Confirm this is still the current video before starting image
+            // decode. The detached task is tracked as well, so switching videos
+            // or closing the reader cancels both network and decode work.
+            DispatchQueue.main.async { [weak self] in
+                guard let self,
+                      self.artworkRequestGeneration == expectedGeneration,
+                      self.artworkLoadKey == requestKey,
+                      self.currentArtworkRequestKey == requestKey else { return }
+                self.artworkDataTask = nil
+                let decodeTask = Task.detached(priority: .utility) { [weak self] in
+                    guard !Task.isCancelled else { return }
+                    let image = UIImage(data: data)
+                    guard !Task.isCancelled else { return }
+
+                    guard let image else {
+                        await MainActor.run { [weak self] in
+                            guard let self,
+                                  self.artworkRequestGeneration == expectedGeneration,
+                                  self.artworkLoadKey == requestKey else { return }
+                            self.artworkDecodeTask = nil
+                            self.artworkLoadKey = nil
+                        }
+                        return
+                    }
+
+                    let remainsCurrent = await MainActor.run { [weak self] in
+                        guard let self else { return false }
+                        return self.artworkRequestGeneration == expectedGeneration
+                            && self.artworkLoadKey == requestKey
+                            && self.currentArtworkRequestKey == requestKey
+                    }
+                    guard remainsCurrent, !Task.isCancelled else { return }
+                    ImageCache.shared.set(sourceURL, image: image, data: data)
+                    guard !Task.isCancelled else { return }
+
+                    await MainActor.run { [weak self] in
+                        guard let self,
+                              self.artworkRequestGeneration == expectedGeneration,
+                              self.artworkLoadKey == requestKey,
+                              self.currentArtworkRequestKey == requestKey else {
+                            return
+                        }
+                        self.currentCoverImage = image
+                        self.artworkDecodeTask = nil
+                        self.artworkLoadKey = nil
+                        self.updateNowPlayingInfo()
+                    }
                 }
-                self.currentCoverImage = image
-                self.artworkLoadKey = nil
-                self.updateNowPlayingInfo()
+                self.artworkDecodeTask = decodeTask
             }
-        }.resume()
+        }
+        artworkDataTask = request
+        request.resume()
+    }
+
+    private var currentArtworkRequestKey: String {
+        let coverURL = currentCoverUrl?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return "\(currentBookId ?? "")|\(coverURL)"
+    }
+
+    private func cancelArtworkLoad() {
+        artworkRequestGeneration &+= 1
+        artworkDataTask?.cancel()
+        artworkDataTask = nil
+        artworkDecodeTask?.cancel()
+        artworkDecodeTask = nil
+        artworkLoadKey = nil
     }
 
     private func clearNowPlayingInfo() {
@@ -726,6 +873,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     // MARK: - Public Methods
 
     func setBook(id: String, title: String, chapterTitle: String?, coverUrl: String?) {
+        cancelArtworkLoad()
         if currentBookId != id {
             currentCaption = nil
         }
@@ -734,7 +882,6 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentChapterTitle = chapterTitle
         currentCoverUrl = coverUrl
         currentCoverImage = Self.localCoverImage(forID: id)   // 本地封面（锁屏/控制中心 artwork）
-        artworkLoadKey = nil
     }
 
     func setNowPlayingCaption(_ caption: String?) {
@@ -748,6 +895,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     func clearBook(session token: AudioPlaybackSessionToken? = nil) -> Bool {
         let effectiveSession = token
         guard playbackOwnership.permitsQueueMutation(effectiveSession) else { return false }
+        cancelArtworkLoad()
         stop()
         currentBookId = nil
         currentBookTitle = nil
@@ -755,7 +903,6 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentCoverUrl = nil
         currentCaption = nil
         currentCoverImage = nil
-        artworkLoadKey = nil
         segmentsQueue.removeAll()
         currentSegmentIndex = 0
         canStartQueuedSegment = nil
@@ -847,8 +994,9 @@ class AudioPlayerService: NSObject, ObservableObject {
         guard playbackOwnership.permitsQueueMutation(effectiveSession) else { return false }
         print("🔊 loadSegments: Received \(segments.count) segments")
 
-        // Clear existing queue and stop current playback
-        stop()
+        // Clear existing queue and stop current playback, while retaining the
+        // exact files pre-staged for this incoming paragraph.
+        stop(preservingPrestagedIDs: Set(segments.map(\.id)))
         segmentsQueue.removeAll()
         currentSegmentIndex = 0
         _ = playbackOwnership.attachQueue(to: effectiveSession)
@@ -916,6 +1064,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// asset parse — and that shows up as a gap between paragraphs. Both can
     /// happen while the previous paragraph is still playing.
     private var stagedFiles: [String: URL] = [:]
+    private var stagedWarmupTasks: [String: Task<Void, Never>] = [:]
     /// Bounded so a long prefetch chain cannot accumulate temp files.
     private static let maximumStagedFiles = 6
 
@@ -930,8 +1079,12 @@ class AudioPlayerService: NSObject, ObservableObject {
             guard stagedFiles[segment.id] == nil, !segment.audioData.isEmpty else { continue }
             if stagedFiles.count >= Self.maximumStagedFiles { break }
             let ext = segment.isWavFormat ? "wav" : "mp3"
-            let url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("prestage_\(segment.id)_\(UUID().uuidString).\(ext)")
+            let url = AudioPlaybackTemporaryFiles.fileURL(
+                in: playbackTemporaryDirectory,
+                prefix: "prestage_",
+                segmentID: segment.id,
+                fileExtension: ext
+            )
             do {
                 try segment.audioData.write(to: url)
             } catch {
@@ -941,7 +1094,8 @@ class AudioPlayerService: NSObject, ObservableObject {
             // Parsing the asset is the expensive half. Doing it here means the
             // item created at the boundary reaches `readyToPlay` almost at once.
             let asset = AVURLAsset(url: url)
-            Task.detached(priority: .utility) {
+            stagedWarmupTasks[segment.id]?.cancel()
+            stagedWarmupTasks[segment.id] = Task.detached(priority: .utility) {
                 _ = try? await asset.load(.duration, .tracks)
             }
         }
@@ -949,17 +1103,24 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     private func takeStagedFile(for segment: AudioSegment) -> URL? {
         guard let url = stagedFiles.removeValue(forKey: segment.id) else { return nil }
+        // The warmup is normally already complete. Dropping our handle lets it
+        // finish without making it part of the next playback session.
+        stagedWarmupTasks.removeValue(forKey: segment.id)
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         return url
     }
 
     /// Drop staged files that playback will never reach (jump, stop, new
     /// generation). Temp files are cheap but not free.
-    func discardPrestagedSegments() {
-        for url in stagedFiles.values {
+    func discardPrestagedSegments(
+        preserving preservedIDs: Set<String> = []
+    ) {
+        let discardedIDs = Set(stagedFiles.keys).subtracting(preservedIDs)
+        for id in discardedIDs {
+            stagedWarmupTasks.removeValue(forKey: id)?.cancel()
+            guard let url = stagedFiles.removeValue(forKey: id) else { continue }
             try? FileManager.default.removeItem(at: url)
         }
-        stagedFiles.removeAll()
     }
 
     /// Remove only not-yet-played handoff items. The current and historical
@@ -1104,12 +1265,18 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     func stop() {
+        stop(preservingPrestagedIDs: [])
+    }
+
+    private func stop(preservingPrestagedIDs: Set<String>) {
         print("🔊 stop(): Stopping playback, player=\(player != nil ? "exists" : "nil")")
         removeTimeObserver()
         player?.pause()
         player = nil
         playerItem = nil
         playerItemSession = nil
+        playerItemStatusCancellable?.cancel()
+        playerItemStatusCancellable = nil
         playerStateCancellable?.cancel()
         playerStateCancellable = nil
         playerItemReadinessWorkItem?.cancel()
@@ -1122,13 +1289,16 @@ class AudioPlayerService: NSObject, ObservableObject {
         gatedSegmentIndex = nil
         isBuffering = false
         isWaitingForNextSegment = false
-        // Clear Combine subscriptions to prevent stale observers
-        cancellables.removeAll()
         // 清理临时文件
         if let tempURL = currentTempFileURL {
             try? FileManager.default.removeItem(at: tempURL)
             currentTempFileURL = nil
         }
+        discardPrestagedSegments(preserving: preservingPrestagedIDs)
+        AudioPlaybackTemporaryFiles.removeOwnedContents(
+            in: playbackTemporaryDirectory,
+            preserving: Set(stagedFiles.values)
+        )
         print("🔊 stop(): Playback stopped, currentSegment is now nil")
     }
 
@@ -1299,7 +1469,12 @@ class AudioPlayerService: NSObject, ObservableObject {
         // Create temporary file for audio data
         // Use .wav extension for local TTS (WAV format) or .mp3 for cloud TTS
         let fileExtension = segment.isWavFormat ? "wav" : "mp3"
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("segment_\(segment.id)_\(UUID().uuidString).\(fileExtension)")
+        let tempURL = AudioPlaybackTemporaryFiles.fileURL(
+            in: playbackTemporaryDirectory,
+            prefix: "segment_",
+            segmentID: segment.id,
+            fileExtension: fileExtension
+        )
         currentTempFileURL = tempURL
 
         do {
@@ -1361,7 +1536,8 @@ class AudioPlayerService: NSObject, ObservableObject {
 
         // Observe player item status
         guard let observedItem = playerItem else { return }
-        observedItem.publisher(for: \.status)
+        playerItemStatusCancellable?.cancel()
+        playerItemStatusCancellable = observedItem.publisher(for: \.status)
             .receive(on: DispatchQueue.main)
             .sink { [weak self, weak observedItem] status in
                 guard let self = self else { return }
@@ -1435,7 +1611,6 @@ class AudioPlayerService: NSObject, ObservableObject {
                     break
                 }
             }
-            .store(in: &cancellables)
 
         let readinessItemID = ObjectIdentifier(observedItem)
         let readinessWorkItem = DispatchWorkItem { [weak self, weak observedItem] in

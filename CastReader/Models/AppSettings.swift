@@ -305,12 +305,8 @@ final class BoundLibraryOnboardingStore: ObservableObject {
 
     /// 当前发行区域下仍然可用的已选书库；不可用时为 nil。
     ///
-    /// `selectedSource` 可能是在别的区域（或 storefront 解析完成前）持久化的：
-    /// 例如 global 下绑了 Google Play 图书，区域解析为 CN 后该书库被
-    /// `AppRegion.availableBoundLibraries` 排除，MainTabView 的区域闸门会吞掉
-    /// 一切绑定请求。UI 读取选择必须经由本属性，把不可用值视同未选择——
-    /// 否则首页会渲染一个点了没反应的死入口。持久化值保留不清除：区域可能
-    /// 只是时区兜底的临时误判，切回后选择自动恢复。
+    /// `selectedSource` 可能是在其他发行配置下持久化的；UI 统一通过本属性
+    /// 校验能力矩阵，避免以后调整区域能力时出现点了没反应的入口。
     var regionAvailableSelectedSource: BoundLibraryOnboardingSource? {
         guard let selectedSource,
               AppRegion.current.availableBoundLibraries.contains(selectedSource)
@@ -349,12 +345,6 @@ final class BoundLibraryOnboardingStore: ObservableObject {
             && phase == .postponed
             && resumePhase.isActiveFlow
             && selectedSource == AppRegion.current.onboardingSource
-    }
-
-    /// Generic name used by the migration contract. The global build's guided
-    /// onboarding provider remains Kindle, so both accessors share one rule.
-    var shouldResumeDeferredLibraryFlow: Bool {
-        shouldResumeDeferredKindleFlow
     }
 
     func select(_ source: BoundLibraryOnboardingSource) {

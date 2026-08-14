@@ -148,7 +148,7 @@ iOS 在这里栽过一次，Android 必须原样实现：
 
 ### 1.8 埋点
 
-新增两个事件，Android 需要在 `AnalyticsContract.kt` 同步（目前 `scripts/verify_mobile_analytics_contract.rb` 会报这两个 missing，属预期）：
+新增两个事件，iOS / Android / 后端三端契约已同步登记（`scripts/verify_mobile_analytics_contract.rb` 现在应当通过）：
 
 | 事件 | required | optional |
 |---|---|---|
@@ -156,6 +156,8 @@ iOS 在这里栽过一次，Android 必须原样实现：
 | `yt_caption_language_switch` | `fromLanguage`, `toLanguage`, `kind` | `cacheHit`, `elapsedMs` |
 
 另外 `yt_extract_fail` 的 reason 白名单新增 `track_unavailable`，`yt_extract_done` 新增可选字段 `warmSession`。
+
+`youtubeEntry` / `youtubeFailure` / `youtubeCaptionKind` 三个值域已写进 canonical `docs/analytics/mobile-events-v2.json`，两端枚举与后端 `mobile-event-contract.ts` 都从这份值域对齐。Android 侧 `AnalyticsContract.kt` 的事件、属性与边界校验，以及 `ProductAnalytics.kt` 的 `youtubeCaptionLanguageOpen` / `youtubeCaptionLanguageSwitch` 封装都已就位，尚缺的只是 UI 层的调用点（面板打开时、切换完成时）。
 
 **隐私红线不变**：不得带 `title` / `url` / `videoId` / 字幕正文。`language` / `kind` / 计数是安全的。
 
@@ -205,13 +207,9 @@ promote para=2
 
 （iOS 若要根治，路径是保存预热好的 asset/item 给播放路径复用，或改用 `AVQueuePlayer`；两者都未做。）
 
-### 3.3 未解决：分段不尊重句子边界
+### 3.3 已由 YouTube 字幕语义与 TTS 断句规范取代
 
-`cuesIntoParagraphs` 按「间隔 >2000ms 或累计 >150 字符」切段，**切点落在字幕行边界上**，而字幕行是按显示时长断的、与句子无关。于是一句话可能被切成两段，朗读时在句子中间停住 —— 叠加每段独立 TTS 的首尾静音与句末降调，听感上就是「明显停顿」。
-
-iOS 尚未修改，因为代价明确：分段变了等于段落编号变了，**已缓存的 TTS 音频按 paragraphIndex 存会全部失效重新生成，阅读进度也要迁移或重置**。
-
-若 Android 决定修（让切点回退到最近的句末标点），请**先与 iOS 对齐**再动手 —— 双端分段必须一致，否则同一视频在两端的段落编号、进度与缓存都会错位。注意自动生成字幕通常没有标点，这个优化对 ASR 轨无效。
+本节旧的「>2000ms 或 >150 字符」方案与「尚未解决」结论已过期。iOS P0 已实现专用语义预处理，Android 也已完成对齐实施；现在一律以 `docs/YouTube字幕语义预处理与TTS断句-跨端实现规范.md` 为准。新合同同时覆盖 raw/speech/speaker 数据模型、环境音与角色标签剥离、rolling 去重、基于时间与标点的 utterance 断句，以及 audio/progress cache schema 迁移。
 
 ---
 

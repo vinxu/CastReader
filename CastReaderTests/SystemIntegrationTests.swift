@@ -226,7 +226,7 @@ final class SystemIntegrationTests: XCTestCase {
     /// An older build could have written an entry that today's contract excludes.
     func testStoredValuesAreFilteredAgainWhenRead() throws {
         let stale = [snapshot("legacy", sourceKind: "kindle"), snapshot("ok")]
-        defaults.set(try JSONEncoder().encode(stale), forKey: "systemIntegration.continueSnapshots.v1")
+        defaults.set(try JSONEncoder().encode(stale), forKey: "systemIntegration.continueSnapshots.v2")
 
         XCTAssertEqual(ContinueSnapshotStore(defaults: defaults).snapshots().map(\.id), ["ok"])
     }

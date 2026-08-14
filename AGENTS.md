@@ -98,9 +98,14 @@ xcodebuild test -workspace CastReader.xcworkspace -scheme CastReader -destinatio
 ### 后端端点（`Utils/Constants.swift`）
 
 ```
-baseURL          = https://api.castreader.ai          # 云端 TTS
-readerServiceURL = http://api.castreader.ai:8123       # 文档/上传（注意 http，已在 ATS 例外）
-quickReadBaseURL = https://quickread.castreader.ai:8444 # 解读（独立后端）
+全球：
+baseURL          = https://api.castreader.ai  # 云端 TTS + 文档/上传
+quickReadBaseURL = https://qr.castreader.ai   # 解读（独立后端）
+webURL           = https://castreader.ai      # 账号 / Pro / 埋点
+
+中国大陆 App Store storefront：
+baseURL / quickReadBaseURL / webURL = https://api.castreader.cn
+# 客户端自有 API 全部进入备案网关；Nginx 再转发 TTS、文档和 QuickRead 上游。
 
 /api/captioned_speech_partly         # 单声道云端 TTS（partly 流式，带时间戳）
 /sts /async-md-upload-by-url /upload # STS 凭证 + 文件上传

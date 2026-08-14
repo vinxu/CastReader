@@ -54,44 +54,19 @@ final class YouTubeCacheStoreTests: XCTestCase {
         XCTAssertGreaterThan(stats.totalBytes, 0)
     }
 
-    func testAudioRoundTripRebuildsEveryAudioSegmentField() async throws {
+    func testGeneratedAudioIsSessionOnlyAndNeverWrittenOrReloaded() async throws {
         let fixture = try makeFixture()
         let store = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
         let document = makeDocument(videoId: "aaaaaaaaaaa", text: "audio")
         let transcriptKey = YouTubeCacheStore.cacheKey(for: document)
+        try await store.storeTranscript(document, for: transcriptKey)
         let audioKey = YouTubeTTSAudioCacheKey(
             transcriptFingerprint: transcriptKey.transcriptFingerprint,
             voiceCode: "af_heart",
             playbackLanguage: "en",
             schemaVersion: YouTubeTTSAudioCacheSchema.current
         )
-        let segments = [
-            AudioSegment(
-                paragraphIndex: 2,
-                segmentIndex: 0,
-                audioData: Data([0x49, 0x44, 0x33, 0x01]),
-                timestamps: [
-                    TTSTimestamp(word: "hello", startTime: 0, endTime: 0.4),
-                    TTSTimestamp(word: "world", startTime: 0.4, endTime: 0.9),
-                ],
-                duration: 0.9,
-                text: "hello world",
-                isWavFormat: false,
-                unprocessedText: "remaining",
-                speaker: "narrator"
-            ),
-            AudioSegment(
-                paragraphIndex: 2,
-                segmentIndex: 1,
-                audioData: Data([0x52, 0x49, 0x46, 0x46]),
-                timestamps: [],
-                duration: 1.25,
-                text: "second",
-                isWavFormat: true,
-                unprocessedText: "",
-                speaker: nil
-            ),
-        ]
+        let segments = [makeAudioSegment(paragraphIndex: 2, text: "session only")]
 
         try await store.storeAudioSegments(
             segments,
@@ -102,28 +77,7 @@ final class YouTubeCacheStoreTests: XCTestCase {
             for: audioKey,
             transcriptKey: transcriptKey
         )
-        let rebuilt = try XCTUnwrap(cachedSegments)
-        XCTAssertEqual(rebuilt.count, segments.count)
-        for (actual, expected) in zip(rebuilt, segments) {
-            XCTAssertEqual(actual.id, expected.id)
-            XCTAssertEqual(actual.paragraphIndex, expected.paragraphIndex)
-            XCTAssertEqual(actual.segmentIndex, expected.segmentIndex)
-            XCTAssertEqual(actual.audioData, expected.audioData)
-            XCTAssertEqual(actual.timestamps.map(\.word), expected.timestamps.map(\.word))
-            XCTAssertEqual(actual.timestamps.map(\.startTime), expected.timestamps.map(\.startTime))
-            XCTAssertEqual(actual.timestamps.map(\.endTime), expected.timestamps.map(\.endTime))
-            XCTAssertEqual(actual.duration, expected.duration)
-            XCTAssertEqual(actual.text, expected.text)
-            XCTAssertEqual(actual.isWavFormat, expected.isWavFormat)
-            XCTAssertEqual(actual.unprocessedText, expected.unprocessedText)
-            XCTAssertEqual(actual.speaker, expected.speaker)
-        }
-
-        let firstPlayback = await store.cachedAudioPlayback(
-            for: audioKey,
-            transcriptKey: transcriptKey
-        )
-        XCTAssertEqual(firstPlayback?.isReplayEligible, false)
+        XCTAssertNil(cachedSegments)
         try await store.markAudioReplayEligible(
             for: audioKey,
             transcriptKey: transcriptKey
@@ -134,21 +88,14 @@ final class YouTubeCacheStoreTests: XCTestCase {
             for: audioKey,
             transcriptKey: transcriptKey
         )
-        XCTAssertEqual(replay?.segments.map(\.text), segments.map(\.text))
-        XCTAssertEqual(replay?.isReplayEligible, true)
-
-        // A late generation-cache write racing the completion marker must not
-        // turn an already-listened paragraph back into billable first audio.
-        try await reopened.storeAudioSegments(
-            segments,
-            for: audioKey,
-            transcriptKey: transcriptKey
-        )
-        let afterRewrite = await reopened.cachedAudioPlayback(
-            for: audioKey,
-            transcriptKey: transcriptKey
-        )
-        XCTAssertEqual(afterRewrite?.isReplayEligible, true)
+        XCTAssertNil(replay)
+        let audioDirectory = fixture.cacheRoot
+            .appendingPathComponent("entries")
+            .appendingPathComponent(transcriptKey.storageKey)
+            .appendingPathComponent("audio")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: audioDirectory.path))
+        let summary = await store.summary(for: transcriptKey)
+        XCTAssertEqual(summary?.audioVariantCount, 0)
     }
 
     func testNeverGeneratedAudioVariantIsACleanMissWithoutManifestMutation() async throws {
@@ -180,7 +127,7 @@ final class YouTubeCacheStoreTests: XCTestCase {
         XCTAssertEqual(after, before)
     }
 
-    func testParagraphScopedAudioKeysCannotOverwriteEachOther() async throws {
+    func testParagraphScopedAudioKeysRemainPureIdentifiersWithoutPersistence() async throws {
         let fixture = try makeFixture()
         let store = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
         let document = makeDocument(videoId: "aaaaaaaaaaa", text: "two paragraphs")
@@ -222,8 +169,13 @@ final class YouTubeCacheStoreTests: XCTestCase {
             for: secondKey,
             transcriptKey: transcriptKey
         )
-        XCTAssertEqual(restoredFirst?.map(\.text), ["first"])
-        XCTAssertEqual(restoredSecond?.map(\.text), ["second"])
+        XCTAssertNil(restoredFirst)
+        XCTAssertNil(restoredSecond)
+        XCTAssertFalse(
+            recursiveRelativePaths(in: fixture.cacheRoot).contains {
+                $0.contains("/audio/") || $0.hasSuffix("/audio")
+            }
+        )
     }
 
     func testVoiceFingerprintAndSchemaChangesInvalidateAudio() async throws {
@@ -703,7 +655,7 @@ final class YouTubeCacheStoreTests: XCTestCase {
         XCTAssertEqual(selected, olderKey)
     }
 
-    func testAudioCoverageDistinguishesNonePartialCompleteAndCorruption() async throws {
+    func testAudioCoverageAlwaysReportsNoneAfterSessionOnlyMigration() async throws {
         let fixture = try makeFixture()
         let store = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
         let document = makeDocument(videoId: "aaaaaaaaaaa", text: "coverage")
@@ -729,15 +681,12 @@ final class YouTubeCacheStoreTests: XCTestCase {
             for: firstKey,
             transcriptKey: transcriptKey
         )
-        let partial = await store.audioCacheCoverage(
+        let afterFirstWriteAttempt = await store.audioCacheCoverage(
             for: transcriptKey,
             voiceCode: "af_heart",
             paragraphIndexes: [0, 1]
         )
-        XCTAssertEqual(
-            partial,
-            .partial(cachedParagraphs: 1, totalParagraphs: 2)
-        )
+        XCTAssertEqual(afterFirstWriteAttempt, .none(totalParagraphs: 2))
 
         let secondKey = YouTubeTTSAudioCacheKey(
             transcriptFingerprint: transcriptKey.transcriptFingerprint,
@@ -751,34 +700,22 @@ final class YouTubeCacheStoreTests: XCTestCase {
             for: secondKey,
             transcriptKey: transcriptKey
         )
-        let complete = await store.audioCacheCoverage(
+        let afterSecondWriteAttempt = await store.audioCacheCoverage(
             for: transcriptKey,
             voiceCode: "af_heart",
             paragraphIndexes: [0, 1]
         )
-        XCTAssertEqual(complete, .complete(totalParagraphs: 2))
-
-        let secondAudioURL = fixture.cacheRoot
-            .appendingPathComponent("entries")
-            .appendingPathComponent(transcriptKey.storageKey)
-            .appendingPathComponent("audio")
-            .appendingPathComponent(secondKey.storageKey)
-            .appendingPathComponent("segment-000000.mp3")
-        try Data().write(to: secondAudioURL, options: .atomic)
-        let afterCorruption = await store.audioCacheCoverage(
-            for: transcriptKey,
-            voiceCode: "af_heart",
-            paragraphIndexes: [0, 1]
+        XCTAssertEqual(afterSecondWriteAttempt, .none(totalParagraphs: 2))
+        let summary = await store.summary(for: transcriptKey)
+        XCTAssertEqual(summary?.audioVariantCount, 0)
+        XCTAssertFalse(
+            recursiveRelativePaths(in: fixture.cacheRoot).contains {
+                $0.contains("/audio/") || $0.hasSuffix("/audio")
+            }
         )
-        XCTAssertEqual(
-            afterCorruption,
-            .partial(cachedParagraphs: 1, totalParagraphs: 2)
-        )
-        let summaryAfterCorruption = await store.summary(for: transcriptKey)
-        XCTAssertEqual(summaryAfterCorruption?.audioVariantCount, 1)
     }
 
-    func testOfflineCoverageRequiresStoryboardSheetsAndHDThumbnailAfterAudioCompletes() async throws {
+    func testOfflineCoverageRequiresStoryboardSheetsAndHDThumbnailButNotAudio() async throws {
         let fixture = try makeFixture()
         let store = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
         let base = makeDocument(videoId: "aaaaaaaaaaa", text: "storyboard offline")
@@ -817,7 +754,8 @@ final class YouTubeCacheStoreTests: XCTestCase {
             voiceCode: "af_heart",
             paragraphIndexes: [0]
         )
-        XCTAssertTrue(audioOnly.audio.isComplete)
+        XCTAssertEqual(audioOnly.audio, .none(totalParagraphs: 1))
+        XCTAssertFalse(audioOnly.requiresAudioCache)
         XCTAssertFalse(audioOnly.isComplete)
         XCTAssertEqual(audioOnly.cachedArtworkResourceCount, 0)
         XCTAssertEqual(audioOnly.requiredArtworkResourceCount, 3)
@@ -1088,31 +1026,7 @@ final class YouTubeCacheStoreTests: XCTestCase {
         XCTAssertNil(secondCorruptRead)
         XCTAssertEqual(summaryAfterTranscriptCorruption?.hasTranscript, false)
 
-        let audioKey = YouTubeTTSAudioCacheKey(
-            transcriptFingerprint: key.transcriptFingerprint,
-            voiceCode: "af_heart",
-            playbackLanguage: "en",
-            schemaVersion: 1
-        )
-        try await store.storeAudioSegments(
-            [makeAudioSegment()],
-            for: audioKey,
-            transcriptKey: key
-        )
-        let audioDirectory = fixture.cacheRoot
-            .appendingPathComponent("entries")
-            .appendingPathComponent(key.storageKey)
-            .appendingPathComponent("audio")
-            .appendingPathComponent(audioKey.storageKey)
-        try FileManager.default.removeItem(
-            at: audioDirectory.appendingPathComponent("segment-000000.mp3")
-        )
-        let corruptAudioRead = await store.audioSegments(
-            for: audioKey,
-            transcriptKey: key
-        )
         let summaryAfterAudioCorruption = await store.summary(for: key)
-        XCTAssertNil(corruptAudioRead)
         XCTAssertEqual(summaryAfterAudioCorruption?.audioVariantCount, 0)
     }
 
@@ -1204,6 +1118,67 @@ final class YouTubeCacheStoreTests: XCTestCase {
         )
         try await reopened.performStartupMaintenance()
         XCTAssertFalse(FileManager.default.fileExists(atPath: staging.path))
+    }
+
+    func testStartupPurgesLegacyAudioAndPreservesTranscriptArtworkAndProgress() async throws {
+        let fixture = try makeFixture()
+        let document = makeDocument(videoId: "aaaaaaaaaaa", text: "legacy audio")
+        let key = YouTubeCacheStore.cacheKey(for: document)
+        let audioKey = YouTubeTTSAudioCacheKey(
+            transcriptFingerprint: key.transcriptFingerprint,
+            voiceCode: "af_heart",
+            playbackLanguage: "en",
+            schemaVersion: YouTubeTTSAudioCacheSchema.current,
+            paragraphIndex: 0
+        )
+        // Simulate an on-disk cache created by the previous app version.
+        let legacy = try YouTubeCacheStore(
+            rootDirectory: fixture.cacheRoot,
+            audioCachingEnabled: true
+        )
+        try await legacy.storeTranscript(document, for: key)
+        let thumbnail = makeStillImageData(marker: 7)
+        try await legacy.storeThumbnail(thumbnail, for: key)
+        try await legacy.storeAudioSegments(
+            [makeAudioSegment()],
+            for: audioKey,
+            transcriptKey: key
+        )
+        _ = try await legacy.saveProgress(
+            paragraphIndex: 0,
+            segmentId: "0-0",
+            segmentIndex: 0,
+            fractionalProgress: 0.42,
+            paragraphFractionalProgress: 0.42,
+            for: key
+        )
+
+        let audioDirectory = fixture.cacheRoot
+            .appendingPathComponent("entries")
+            .appendingPathComponent(key.storageKey)
+            .appendingPathComponent("audio")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: audioDirectory.path))
+
+        let migrated = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
+        let migratedAudio = await migrated.cachedAudioPlayback(
+            for: audioKey,
+            transcriptKey: key
+        )
+        XCTAssertNil(migratedAudio)
+        try await migrated.performStartupMaintenance()
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: audioDirectory.path))
+        let migratedTranscript = await migrated.transcript(for: key)
+        let migratedThumbnail = await migrated.thumbnail(for: key)
+        let migratedProgress = await migrated.peekProgress(for: key)
+        let migratedSummary = await migrated.summary(for: key)
+        XCTAssertEqual(migratedTranscript, document)
+        XCTAssertEqual(migratedThumbnail, thumbnail)
+        XCTAssertEqual(
+            migratedProgress?.resolvedParagraphFractionalProgress,
+            0.42
+        )
+        XCTAssertEqual(migratedSummary?.audioVariantCount, 0)
     }
 
     func testStartupReconcilesPhysicalBytesBeforePruning() async throws {
@@ -1493,6 +1468,147 @@ final class YouTubeCacheStoreTests: XCTestCase {
 
     // MARK: Fixtures
 
+    func testCompletionPersistsProgressWithoutCreatingAudioFiles() async throws {
+        let fixture = try makeFixture()
+        let store = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
+        let document = makeDocument(videoId: "aaaaaaaaaaa", text: "complete")
+        let transcriptKey = YouTubeCacheStore.cacheKey(for: document)
+        try await store.storeTranscript(document, for: transcriptKey)
+        let audioKey = YouTubeTTSAudioCacheKey(
+            transcriptFingerprint: transcriptKey.transcriptFingerprint,
+            voiceCode: "af_heart",
+            playbackLanguage: "en",
+            schemaVersion: YouTubeTTSAudioCacheSchema.current,
+            paragraphIndex: 0
+        )
+        let completed = try await store.completeAudioPlayback(
+            paragraphIndex: 0,
+            segmentId: "0-0",
+            segmentIndex: 0,
+            for: audioKey,
+            transcriptKey: transcriptKey
+        )
+        XCTAssertEqual(completed.fractionalProgress, 1)
+        XCTAssertEqual(completed.paragraphFractionalProgress, 1)
+        let storedProgress = await store.peekProgress(for: transcriptKey)
+        XCTAssertEqual(storedProgress?.resolvedParagraphFractionalProgress, 1)
+        let audioDirectory = fixture.cacheRoot
+            .appendingPathComponent("entries")
+            .appendingPathComponent(transcriptKey.storageKey)
+            .appendingPathComponent("audio")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: audioDirectory.path))
+    }
+
+    func testCompletionSurvivesReopenAndLateAudioStoreRemainsNoOp() async throws {
+        let fixture = try makeFixture()
+        let document = makeDocument(
+            videoId: "aaaaaaaaaaa",
+            text: "completion wins the cache race"
+        )
+        let transcriptKey = YouTubeCacheStore.cacheKey(for: document)
+        let audioKey = YouTubeTTSAudioCacheKey(
+            transcriptFingerprint: transcriptKey.transcriptFingerprint,
+            voiceCode: "af_heart",
+            playbackLanguage: "en",
+            schemaVersion: YouTubeTTSAudioCacheSchema.current,
+            paragraphIndex: 0
+        )
+
+        let firstStore = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
+        try await firstStore.storeTranscript(document, for: transcriptKey)
+        let completed = try await firstStore.completeAudioPlayback(
+            paragraphIndex: 0,
+            segmentId: "0-0",
+            segmentIndex: 0,
+            for: audioKey,
+            transcriptKey: transcriptKey
+        )
+        XCTAssertEqual(completed.resolvedParagraphFractionalProgress, 1)
+        let missingBeforeStore = await firstStore.cachedAudioPlayback(
+            for: audioKey,
+            transcriptKey: transcriptKey
+        )
+        XCTAssertNil(
+            missingBeforeStore,
+            "completion must not invent audio bytes before the store arrives"
+        )
+
+        // Recreate the actor to prove the ordinary progress checkpoint is in
+        // the root manifest rather than only retained in process memory.
+        let reopened = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
+        let reopenedProgress = await reopened.peekProgress(for: transcriptKey)
+        XCTAssertEqual(
+            reopenedProgress?.resolvedParagraphFractionalProgress,
+            1
+        )
+        try await reopened.storeAudioSegments(
+            [makeAudioSegment()],
+            for: audioKey,
+            transcriptKey: transcriptKey
+        )
+        let replay = await reopened.cachedAudioPlayback(
+            for: audioKey,
+            transcriptKey: transcriptKey
+        )
+        XCTAssertNil(replay)
+
+        let reopenedAgain = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
+        let persistedReplay = await reopenedAgain.cachedAudioPlayback(
+            for: audioKey,
+            transcriptKey: transcriptKey
+        )
+        XCTAssertNil(persistedReplay)
+        let finalProgress = await reopenedAgain.peekProgress(for: transcriptKey)
+        XCTAssertEqual(finalProgress?.resolvedParagraphFractionalProgress, 1)
+        XCTAssertFalse(
+            recursiveRelativePaths(in: fixture.cacheRoot).contains {
+                $0.contains("/audio/") || $0.hasSuffix("/audio")
+            }
+        )
+    }
+
+    func testCancelledAudioStoreStopsBeforePublishingVariant() async throws {
+        let fixture = try makeFixture()
+        let store = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
+        let document = makeDocument(
+            videoId: "aaaaaaaaaaa",
+            text: "cancel stale video write"
+        )
+        let transcriptKey = YouTubeCacheStore.cacheKey(for: document)
+        try await store.storeTranscript(document, for: transcriptKey)
+        let audioKey = YouTubeTTSAudioCacheKey(
+            transcriptFingerprint: transcriptKey.transcriptFingerprint,
+            voiceCode: "af_heart",
+            playbackLanguage: "en",
+            schemaVersion: YouTubeTTSAudioCacheSchema.current,
+            paragraphIndex: 0
+        )
+
+        let write = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            try await store.storeAudioSegments(
+                [makeAudioSegment(audioByteCount: 1_024 * 1_024)],
+                for: audioKey,
+                transcriptKey: transcriptKey
+            )
+        }
+        do {
+            try await write.value
+            XCTFail("Expected the cancelled cache write to stop")
+        } catch is CancellationError {
+            // Expected: the actor observes the caller Task before touching MP3.
+        }
+
+        let cancelledPlayback = await store.cachedAudioPlayback(
+            for: audioKey,
+            transcriptKey: transcriptKey
+        )
+        XCTAssertNil(cancelledPlayback)
+        let paths = recursiveRelativePaths(in: fixture.cacheRoot)
+        XCTAssertFalse(paths.contains { $0.contains(audioKey.storageKey) })
+        XCTAssertFalse(paths.contains { $0.contains("/staging-") })
+    }
+
     private struct Fixture {
         let containerRoot: URL
         let cacheRoot: URL
@@ -1511,7 +1627,7 @@ final class YouTubeCacheStoreTests: XCTestCase {
 
     // MARK: Caption language availability
 
-    func testCaptionLanguageAvailabilityReportsPerLanguageOfflineState() async throws {
+    func testCaptionLanguageAvailabilityDependsOnTranscriptNotAudio() async throws {
         let fixture = try makeFixture()
         let store = try YouTubeCacheStore(rootDirectory: fixture.cacheRoot)
         let videoId = "aaaaaaaaaaa"
@@ -1519,8 +1635,8 @@ final class YouTubeCacheStoreTests: XCTestCase {
         let english = makeDocument(videoId: videoId, text: "hello world", trackLanguage: "en")
         let englishKey = YouTubeCacheStore.cacheKey(for: english)
         try await store.storeTranscript(english, for: englishKey)
-        // German transcript only: switching to it is instant, but it cannot be
-        // listened to offline yet.
+        // Both language switches are locally available from their transcripts;
+        // generated speech is intentionally session-only.
         let german = makeDocument(
             videoId: videoId,
             text: "hallo welt",
@@ -1550,11 +1666,11 @@ final class YouTubeCacheStoreTests: XCTestCase {
         XCTAssertEqual(availability["en"]?.hasTranscript, true)
         XCTAssertEqual(availability["en"]?.isFullyDownloaded, true)
         XCTAssertEqual(availability["de"]?.hasTranscript, true)
-        XCTAssertEqual(
-            availability["de"]?.isFullyDownloaded,
-            false,
-            "a transcript without its audio is instant to switch to, not offline-ready"
-        )
+        XCTAssertEqual(availability["de"]?.isFullyDownloaded, true)
+        XCTAssertEqual(availability["en"]?.audio, .none(totalParagraphs: 1))
+        XCTAssertEqual(availability["de"]?.audio, .none(totalParagraphs: 1))
+        XCTAssertEqual(availability["en"]?.requiresAudioCache, false)
+        XCTAssertEqual(availability["de"]?.requiresAudioCache, false)
         XCTAssertNil(availability["ja"], "languages never cached must not appear")
     }
 

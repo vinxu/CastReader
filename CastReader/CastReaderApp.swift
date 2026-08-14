@@ -152,6 +152,12 @@ struct CastReaderApp: App {
     @State private var pendingSafariLibraryOnboardingReset: Bool?
 
     init() {
+        // Reclaim playback artifacts left by a previous process before any
+        // reader is opened. AudioPlayerService is lazy, so putting this only in
+        // its initializer would let legacy segment/prestage files survive on
+        // the login and home surfaces indefinitely.
+        _ = AudioPlaybackTemporaryFiles.prepare()
+
         // 简单的内存警告监听
         NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
