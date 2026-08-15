@@ -616,6 +616,27 @@ final class ReadAloudViewModel: ObservableObject {
     private var pendingLiveWebResume: PendingLiveWebResume?
     private var isAwaitingLiveWebCarryCompletion = false
     private var pendingLiveWebCarryStartIndex: Int?
+    /// Exact, confirmed WeRead-page audio prepared while the immutable
+    /// cross-page sentence is still playing.  This buffer deliberately does
+    /// not touch the shared player queue or `moreSegmentsExpected` until the
+    /// carry item has completed.
+    private var liveWebCarryPrewarmIndex: Int?
+    private var liveWebCarryPrewarmEpoch: UInt64?
+    private var liveWebCarryPrewarmSession: AudioPlaybackSessionToken?
+    private var liveWebCarryPrewarmSourceText = ""
+    private var liveWebCarryPrewarmVoiceID = ""
+    private var liveWebCarryPrewarmLanguage = ""
+    private var liveWebCarryPrewarmSegments: [AudioSegment] = []
+    private var liveWebCarryPrewarmProducerFinished = false
+    private var liveWebCarryPrewarmPlaybackDue = false
+    private var liveWebCarryPrewarmPlaybackStarted = false
+    /// First exact-page segment staged while a manual turn gesture has paused
+    /// autoplay.  Resuming the cancelled gesture must start this queued item,
+    /// not try to replay the already-ended carry item.
+    private var liveWebCarryPrewarmDeferredStartSegmentID: String?
+    private var liveWebCarryPrewarmDeferredPredecessorSegmentID: String?
+    private var liveWebCarryPrewarmError: String?
+    private var liveWebCarryPrewarmSerial: UInt64 = 0
     /// 用户亲手更正的朗读语言，压过逐页检测与文档自带语言。
     /// 检测每翻一页重判一次，而章节标题/题记/图注这类稀疏页证据不足会回落英语，
     /// 于是一本意大利语书读到那样一页就换成英语音色；用户的选择不能被下一页推翻。
@@ -873,6 +894,7 @@ final class ReadAloudViewModel: ObservableObject {
             consumedCursor: boundary.sourceParagraphIndex.flatMap { sourceParagraphIndex in
                 boundary.sourceSpeechEnd.map {
                     WeReadConsumedTextCursor(
+                        sourceLayoutFingerprint: boundary.sourceLayoutFingerprint,
                         sourceParagraphIndex: sourceParagraphIndex,
                         sourceUTF16End: $0
                     )
@@ -948,6 +970,31 @@ final class ReadAloudViewModel: ObservableObject {
         }
         if audio.currentSegment != nil || audio.hasQueuedSegments {
             if let token = audioSessionToken {
+                if let deferredID = liveWebCarryPrewarmDeferredStartSegmentID {
+                    let predecessorID = liveWebCarryPrewarmDeferredPredecessorSegmentID
+                    let currentID = audio.currentSegment?.id
+                    let stillWaitingAtDeferredBoundary = predecessorID.map {
+                        currentID == $0
+                    } ?? (currentID == nil)
+                    if stillWaitingAtDeferredBoundary {
+                        let didStart = audio.startQueuedSegment(
+                           id: deferredID,
+                           progress: 0,
+                           autoPlay: true,
+                           session: token
+                        )
+                        if didStart {
+                            liveWebCarryPrewarmDeferredStartSegmentID = nil
+                            liveWebCarryPrewarmDeferredPredecessorSegmentID = nil
+                        }
+                        return
+                    }
+                    // Another explicit playback action already advanced to this
+                    // item (or beyond it). Consume the stale resume marker, but
+                    // never seek the finished first item back to zero.
+                    liveWebCarryPrewarmDeferredStartSegmentID = nil
+                    liveWebCarryPrewarmDeferredPredecessorSegmentID = nil
+                }
                 _ = audio.play(session: token)
             }
         }
@@ -1022,6 +1069,7 @@ final class ReadAloudViewModel: ObservableObject {
         audioSessionToken = nil
         generationTask?.cancel()
         generationTask = nil
+        resetLiveWebCarryPrewarmState()
         listenCapRefreshTask?.cancel()
         listenCapRefreshTask = nil
         clearPrefetch()
@@ -1097,6 +1145,7 @@ final class ReadAloudViewModel: ObservableObject {
         generationEpoch &+= 1
         generationTask?.cancel()
         generationTask = nil
+        resetLiveWebCarryPrewarmState()
         clearPrefetch()
 
         setMoreSegmentsExpected(false)
@@ -1244,6 +1293,7 @@ final class ReadAloudViewModel: ObservableObject {
         liveWebTurnIntentSuspended = false
         generationTask?.cancel()
         generationTask = nil
+        resetLiveWebCarryPrewarmState()
         clearPrefetch()
         webParagraphs = p
         if let language { webLanguage = language }
@@ -1304,6 +1354,7 @@ final class ReadAloudViewModel: ObservableObject {
         liveWebTurnIntentSuspended = false
         generationTask?.cancel()
         generationTask = nil
+        resetLiveWebCarryPrewarmState()
         clearPrefetch()
         if let token {
             _ = audio.setMoreSegmentsExpected(false, session: token)
@@ -1358,6 +1409,7 @@ final class ReadAloudViewModel: ObservableObject {
         generationEpoch &+= 1
         generationTask?.cancel()
         generationTask = nil
+        resetLiveWebCarryPrewarmState()
         clearPrefetch()
         isAwaitingLiveWebCarryCompletion = false
         pendingLiveWebCarryStartIndex = nil
@@ -1398,9 +1450,10 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     /// Move visual/highlight ownership to the confirmed next WeRead page while
-    /// the old page's final natural sentence is still playing. No speculative
-    /// audio is required: when that immutable carry segment completes, normal
-    /// generation begins at the first unconsumed paragraph on the new page.
+    /// the old page's final natural sentence is still playing. Unlike a
+    /// prediction, this exact committed page can safely prewarm its first
+    /// paragraph off-queue; the buffer is promoted only after the immutable
+    /// carry segment completes.
     @discardableResult
     func commitLiveWebPageDuringActiveCarry(
         _ p: [ReadingParagraph],
@@ -1415,8 +1468,10 @@ final class ReadAloudViewModel: ObservableObject {
 
         invalidateAccessRetry()
         generationEpoch &+= 1
+        let epoch = generationEpoch
         generationTask?.cancel()
         generationTask = nil
+        resetLiveWebCarryPrewarmState()
         clearPrefetch()
         webParagraphs = p
         webLanguage = language
@@ -1440,7 +1495,427 @@ final class ReadAloudViewModel: ObservableObject {
         pendingLiveWebCarryStartIndex = readableIndices.first
         setMoreSegmentsExpected(false)
         status = .ready
+        if let startIndex = pendingLiveWebCarryStartIndex,
+           let session = audioSessionToken {
+            startLiveWebCarryPrewarm(
+                paragraphIndex: startIndex,
+                epoch: epoch,
+                session: session
+            )
+        }
         return true
+    }
+
+    /// Clears page-local exact prewarm state. The caller owns cancellation of
+    /// `generationTask`; keeping cancellation explicit avoids accidentally
+    /// stopping ordinary foreground generation from an unrelated reset.
+    private func resetLiveWebCarryPrewarmState() {
+        liveWebCarryPrewarmIndex = nil
+        liveWebCarryPrewarmEpoch = nil
+        liveWebCarryPrewarmSession = nil
+        liveWebCarryPrewarmSourceText = ""
+        liveWebCarryPrewarmVoiceID = ""
+        liveWebCarryPrewarmLanguage = ""
+        liveWebCarryPrewarmSegments.removeAll(keepingCapacity: false)
+        liveWebCarryPrewarmProducerFinished = false
+        liveWebCarryPrewarmPlaybackDue = false
+        liveWebCarryPrewarmPlaybackStarted = false
+        liveWebCarryPrewarmDeferredStartSegmentID = nil
+        liveWebCarryPrewarmDeferredPredecessorSegmentID = nil
+        liveWebCarryPrewarmError = nil
+    }
+
+    private func liveWebCarryPrewarmIdentityIsCurrent(
+        paragraphIndex: Int,
+        epoch: UInt64,
+        session: AudioPlaybackSessionToken,
+        sourceText: String,
+        voiceID: String,
+        language: String,
+        serial: UInt64
+    ) -> Bool {
+        guard document.sourceKind == .weread,
+              isActive,
+              generationEpoch == epoch,
+              liveWebCarryPrewarmEpoch == epoch,
+              liveWebCarryPrewarmSession == session,
+              liveWebCarryPrewarmIndex == paragraphIndex,
+              liveWebCarryPrewarmSourceText == sourceText,
+              liveWebCarryPrewarmVoiceID == voiceID,
+              liveWebCarryPrewarmLanguage == language,
+              liveWebCarryPrewarmSerial == serial,
+              audioSessionToken == session,
+              audio.isPlaybackSessionActive(session),
+              paras.indices.contains(paragraphIndex),
+              paras[paragraphIndex].resolvedSpeechText == sourceText,
+              settings.voice(for: docLanguage) == voiceID,
+              docLanguage == language else { return false }
+        return true
+    }
+
+    private func liveWebCarryPrewarmCanAcceptCallbacks(
+        paragraphIndex: Int,
+        epoch: UInt64,
+        session: AudioPlaybackSessionToken,
+        sourceText: String,
+        voiceID: String,
+        language: String,
+        serial: UInt64
+    ) -> Bool {
+        liveWebCarryPrewarmIdentityIsCurrent(
+            paragraphIndex: paragraphIndex,
+            epoch: epoch,
+            session: session,
+            sourceText: sourceText,
+            voiceID: voiceID,
+            language: language,
+            serial: serial
+        ) && !liveWebCarryPrewarmProducerFinished
+            && liveWebCarryPrewarmError == nil
+    }
+
+    private func startLiveWebCarryPrewarm(
+        paragraphIndex: Int,
+        epoch: UInt64,
+        session: AudioPlaybackSessionToken
+    ) {
+        guard document.sourceKind == .weread,
+              isAwaitingLiveWebCarryCompletion,
+              paras.indices.contains(paragraphIndex),
+              audioSessionToken == session,
+              audio.isPlaybackSessionActive(session) else { return }
+
+        let paragraph = paras[paragraphIndex]
+        let sourceText = paragraph.resolvedSpeechText
+        let voiceID = settings.voice(for: docLanguage)
+        let language = docLanguage
+        liveWebCarryPrewarmSerial &+= 1
+        let serial = liveWebCarryPrewarmSerial
+        liveWebCarryPrewarmIndex = paragraphIndex
+        liveWebCarryPrewarmEpoch = epoch
+        liveWebCarryPrewarmSession = session
+        liveWebCarryPrewarmSourceText = sourceText
+        liveWebCarryPrewarmVoiceID = voiceID
+        liveWebCarryPrewarmLanguage = language
+        liveWebCarryPrewarmSegments = []
+        liveWebCarryPrewarmProducerFinished = false
+        liveWebCarryPrewarmPlaybackDue = false
+        liveWebCarryPrewarmPlaybackStarted = false
+        liveWebCarryPrewarmDeferredStartSegmentID = nil
+        liveWebCarryPrewarmDeferredPredecessorSegmentID = nil
+        liveWebCarryPrewarmError = nil
+        playbackVoiceID = voiceID
+        ReaderRunLog.write(
+            "WEREAD exact prewarm start para=\(paragraphIndex) epoch=\(epoch) " +
+            "serial=\(serial) chars=\(sourceText.utf16.count)"
+        )
+
+        generationTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                _ = try await TTSService.shared.generatePrefetchSegments(
+                    paragraphIndex: paragraphIndex,
+                    text: SpeechTextSanitizer.sanitizedForTTS(sourceText),
+                    voice: voiceID,
+                    speed: 1.0,
+                    language: language,
+                    includeVoiceCode: self.includeVoiceCodeForTTS,
+                    speaker: paragraph.speaker
+                ) { [weak self] rawSegment in
+                    self?.receiveLiveWebCarryPrewarmSegment(
+                        rawSegment,
+                        paragraphIndex: paragraphIndex,
+                        epoch: epoch,
+                        session: session,
+                        sourceText: sourceText,
+                        voiceID: voiceID,
+                        language: language,
+                        serial: serial
+                    )
+                }
+                try Task.checkCancellation()
+                self.finishLiveWebCarryPrewarm(
+                    paragraphIndex: paragraphIndex,
+                    epoch: epoch,
+                    session: session,
+                    sourceText: sourceText,
+                    voiceID: voiceID,
+                    language: language,
+                    serial: serial
+                )
+            } catch is CancellationError {
+                guard self.liveWebCarryPrewarmIdentityIsCurrent(
+                    paragraphIndex: paragraphIndex,
+                    epoch: epoch,
+                    session: session,
+                    sourceText: sourceText,
+                    voiceID: voiceID,
+                    language: language,
+                    serial: serial
+                ) else { return }
+                self.generationTask = nil
+                ReaderRunLog.write(
+                    "WEREAD exact prewarm cancelled para=\(paragraphIndex) " +
+                    "epoch=\(epoch) serial=\(serial)"
+                )
+            } catch {
+                self.failLiveWebCarryPrewarm(
+                    error,
+                    paragraphIndex: paragraphIndex,
+                    epoch: epoch,
+                    session: session,
+                    sourceText: sourceText,
+                    voiceID: voiceID,
+                    language: language,
+                    serial: serial
+                )
+            }
+        }
+    }
+
+    private func receiveLiveWebCarryPrewarmSegment(
+        _ rawSegment: AudioSegment,
+        paragraphIndex: Int,
+        epoch: UInt64,
+        session: AudioPlaybackSessionToken,
+        sourceText: String,
+        voiceID: String,
+        language: String,
+        serial: UInt64
+    ) {
+        guard liveWebCarryPrewarmCanAcceptCallbacks(
+            paragraphIndex: paragraphIndex,
+            epoch: epoch,
+            session: session,
+            sourceText: sourceText,
+            voiceID: voiceID,
+            language: language,
+            serial: serial
+        ), rawSegment.paragraphIndex == paragraphIndex else { return }
+
+        // Page-local paragraph/segment indexes restart at zero. Rebase this
+        // exact producer so a late callback cannot collide with a prior page's
+        // queue item or pre-staged file.
+        let segment = AudioSegment(
+            paragraphIndex: paragraphIndex,
+            segmentIndex: 850_000_000
+                + Int(serial % 5_000) * 10_000
+                + rawSegment.segmentIndex,
+            audioData: rawSegment.audioData,
+            timestamps: rawSegment.timestamps,
+            duration: rawSegment.duration,
+            text: rawSegment.text,
+            isWavFormat: rawSegment.isWavFormat,
+            unprocessedText: rawSegment.unprocessedText,
+            speaker: rawSegment.speaker
+        )
+        liveWebCarryPrewarmSegments.append(segment)
+        ReaderRunLog.write(
+            "WEREAD exact prewarm segment para=\(paragraphIndex) " +
+            "seg=\(rawSegment.segmentIndex) buffered=\(liveWebCarryPrewarmSegments.count) " +
+            "due=\(liveWebCarryPrewarmPlaybackDue ? "Y" : "N")"
+        )
+
+        if liveWebCarryPrewarmPlaybackStarted {
+            let shouldDeferDrainedQueueStart = liveWebTurnIntentSuspended
+                && audio.isWaitingForNextSegment
+            let deferredPredecessorID = shouldDeferDrainedQueueStart
+                ? audio.currentSegment?.id
+                : nil
+            segmentsByParagraph[paragraphIndex, default: []].append(segment)
+            processedDisplayText = segmentsByParagraph[paragraphIndex]?.map(\.text).joined()
+            webAudioSegments.append(segment)
+            guard audio.loadSegment(
+                segment,
+                autoPlay: !liveWebTurnIntentSuspended,
+                session: session
+            ) else {
+                failLiveWebCarryPrewarm(
+                    TTSError.generationFailed("Audio queue rejected exact page segment"),
+                    paragraphIndex: paragraphIndex,
+                    epoch: epoch,
+                    session: session,
+                    sourceText: sourceText,
+                    voiceID: voiceID,
+                    language: language,
+                    serial: serial
+                )
+                return
+            }
+            if shouldDeferDrainedQueueStart,
+               liveWebCarryPrewarmDeferredStartSegmentID == nil {
+                liveWebCarryPrewarmDeferredStartSegmentID = segment.id
+                liveWebCarryPrewarmDeferredPredecessorSegmentID = deferredPredecessorID
+            }
+            status = .streaming
+        } else if liveWebCarryPrewarmPlaybackDue {
+            startLiveWebCarryPlaybackIfReady(paragraphIndex: paragraphIndex)
+        }
+    }
+
+    private func finishLiveWebCarryPrewarm(
+        paragraphIndex: Int,
+        epoch: UInt64,
+        session: AudioPlaybackSessionToken,
+        sourceText: String,
+        voiceID: String,
+        language: String,
+        serial: UInt64
+    ) {
+        guard liveWebCarryPrewarmCanAcceptCallbacks(
+            paragraphIndex: paragraphIndex,
+            epoch: epoch,
+            session: session,
+            sourceText: sourceText,
+            voiceID: voiceID,
+            language: language,
+            serial: serial
+        ) else { return }
+        generationTask = nil
+        liveWebCarryPrewarmProducerFinished = true
+        if liveWebCarryPrewarmSegments.isEmpty {
+            liveWebCarryPrewarmError = AppLocalized("音频播放失败，请重试")
+        }
+        ReaderRunLog.write(
+            "WEREAD exact prewarm done para=\(paragraphIndex) epoch=\(epoch) " +
+            "serial=\(serial) segs=\(liveWebCarryPrewarmSegments.count)"
+        )
+        let wasAlreadyPlaying = liveWebCarryPrewarmPlaybackStarted
+        if liveWebCarryPrewarmPlaybackDue,
+           !liveWebCarryPrewarmPlaybackStarted {
+            startLiveWebCarryPlaybackIfReady(paragraphIndex: paragraphIndex)
+        }
+        if wasAlreadyPlaying {
+            _ = audio.finishStreamingProducer(session: session)
+            status = .ready
+            preloadNext(after: paragraphIndex)
+        }
+    }
+
+    private func failLiveWebCarryPrewarm(
+        _ error: Error,
+        paragraphIndex: Int,
+        epoch: UInt64,
+        session: AudioPlaybackSessionToken,
+        sourceText: String,
+        voiceID: String,
+        language: String,
+        serial: UInt64
+    ) {
+        guard liveWebCarryPrewarmCanAcceptCallbacks(
+            paragraphIndex: paragraphIndex,
+            epoch: epoch,
+            session: session,
+            sourceText: sourceText,
+            voiceID: voiceID,
+            language: language,
+            serial: serial
+        ) else { return }
+        generationTask?.cancel()
+        generationTask = nil
+        liveWebCarryPrewarmProducerFinished = true
+        liveWebCarryPrewarmDeferredStartSegmentID = nil
+        liveWebCarryPrewarmDeferredPredecessorSegmentID = nil
+        liveWebCarryPrewarmError = AppLocalized("音频播放失败，请重试")
+        if liveWebCarryPrewarmPlaybackDue {
+            currentParagraphIndex = paragraphIndex
+            status = .error(AppLocalized("音频播放失败，请重试"))
+        }
+        // If one or more exact segments are already playing, deliberately keep
+        // the producer open. Letting the queue complete would call `advance`
+        // and silently skip the missing remainder; a user retry safely
+        // regenerates the exact paragraph instead.
+        ReaderRunLog.write(
+            "WEREAD exact prewarm failed para=\(paragraphIndex) epoch=\(epoch) " +
+            "serial=\(serial) buffered=\(liveWebCarryPrewarmSegments.count) " +
+            "started=\(liveWebCarryPrewarmPlaybackStarted ? "Y" : "N") " +
+            "error=\(error.localizedDescription)"
+        )
+    }
+
+    private func startLiveWebCarryPlaybackIfReady(paragraphIndex: Int) {
+        guard liveWebCarryPrewarmPlaybackDue,
+              !liveWebCarryPrewarmPlaybackStarted,
+              liveWebCarryPrewarmIndex == paragraphIndex,
+              let epoch = liveWebCarryPrewarmEpoch,
+              let session = liveWebCarryPrewarmSession else { return }
+
+        currentParagraphIndex = paragraphIndex
+        if let error = liveWebCarryPrewarmError {
+            status = .error(error)
+            return
+        }
+        let initialSegments = liveWebCarryPrewarmSegments
+        guard !initialSegments.isEmpty else {
+            if liveWebCarryPrewarmProducerFinished {
+                status = .error(AppLocalized("音频播放失败，请重试"))
+            } else {
+                _ = audio.setMoreSegmentsExpected(true, session: session)
+                status = .loading
+            }
+            return
+        }
+        guard generationEpoch == epoch,
+              audioSessionToken == session,
+              audio.isPlaybackSessionActive(session),
+              paras.indices.contains(paragraphIndex),
+              paras[paragraphIndex].resolvedSpeechText == liveWebCarryPrewarmSourceText,
+              settings.voice(for: docLanguage) == liveWebCarryPrewarmVoiceID,
+              docLanguage == liveWebCarryPrewarmLanguage else {
+            return
+        }
+
+        liveWebCarryPrewarmPlaybackStarted = true
+        segmentsByParagraph[paragraphIndex] = initialSegments
+        processedDisplayText = initialSegments.map(\.text).joined()
+        webAudioSegments = initialSegments
+        highlightRange = nil
+        webHighlight = nil
+        pdfHighlight = nil
+        photoHighlightWordIndex = nil
+        photoHighlightWordRange = nil
+        photoCursor = 0
+        clearOCRWordAlignment()
+        lastWordKey = ""
+        lastNowPlayingCaption = nil
+        isFinished = false
+        didSignalPageBoundaryApproaching = false
+        let shouldAutoPlay = !liveWebTurnIntentSuspended
+        liveWebCarryPrewarmDeferredStartSegmentID = shouldAutoPlay
+            ? nil
+            : initialSegments.first?.id
+        liveWebCarryPrewarmDeferredPredecessorSegmentID = nil
+        guard audio.loadSegments(
+            initialSegments,
+            autoPlay: shouldAutoPlay,
+            session: session
+        ) else {
+            liveWebCarryPrewarmPlaybackStarted = false
+            failLiveWebCarryPrewarm(
+                TTSError.generationFailed("Audio queue rejected exact page buffer"),
+                paragraphIndex: paragraphIndex,
+                epoch: epoch,
+                session: session,
+                sourceText: liveWebCarryPrewarmSourceText,
+                voiceID: liveWebCarryPrewarmVoiceID,
+                language: liveWebCarryPrewarmLanguage,
+                serial: liveWebCarryPrewarmSerial
+            )
+            return
+        }
+        _ = audio.setMoreSegmentsExpected(
+            !liveWebCarryPrewarmProducerFinished,
+            session: session
+        )
+        status = liveWebCarryPrewarmProducerFinished ? .ready : .streaming
+        ReaderRunLog.write(
+            "WEREAD exact prewarm promoted para=\(paragraphIndex) epoch=\(epoch) " +
+            "buffered=\(initialSegments.count) " +
+            "producer=\(liveWebCarryPrewarmProducerFinished ? "done" : "active")"
+        )
+        if liveWebCarryPrewarmProducerFinished {
+            preloadNext(after: paragraphIndex)
+        }
     }
 
     private func setWebHighlight(_ c: WebHighlightCmd) {
@@ -1545,6 +2020,7 @@ final class ReadAloudViewModel: ObservableObject {
         generationTask?.cancel()
         listenCapRefreshTask?.cancel()
         listenCapRefreshTask = nil
+        resetLiveWebCarryPrewarmState()
         clearPrefetch()
         isAwaitingLiveWebCarryCompletion = false
         pendingLiveWebCarryStartIndex = nil
@@ -1705,6 +2181,7 @@ final class ReadAloudViewModel: ObservableObject {
             generationEpoch &+= 1
             generationTask?.cancel()
             generationTask = nil
+            resetLiveWebCarryPrewarmState()
             clearPrefetch()
             _ = audio.clearQueue(session: token)
             _ = audio.setMoreSegmentsExpected(false, session: token)
@@ -1849,6 +2326,7 @@ final class ReadAloudViewModel: ObservableObject {
         isFinished = false
         generationEpoch &+= 1
         generationTask?.cancel()
+        resetLiveWebCarryPrewarmState()
         clearPrefetch()
 
         _ = audio.clearQueue(session: token)
@@ -2045,6 +2523,7 @@ final class ReadAloudViewModel: ObservableObject {
         liveWebTurnIntentSuspended = false
         generationTask?.cancel()
         generationTask = nil
+        resetLiveWebCarryPrewarmState()
         listenCapRefreshTask?.cancel()
         listenCapRefreshTask = nil
         clearPrefetch()
@@ -2216,6 +2695,7 @@ final class ReadAloudViewModel: ObservableObject {
         isFinished = false   // 开始播放某段 → 未完成
         didSignalPageBoundaryApproaching = false
         generationTask?.cancel()
+        resetLiveWebCarryPrewarmState()
         clearPrefetch()   // 重新生成某段 → 作废旧预取
 
         _ = audio.clearQueue(session: session)
@@ -2436,7 +2916,7 @@ final class ReadAloudViewModel: ObservableObject {
         // Start the next paragraph as soon as the current paragraph has yielded
         // its first playable item. Waiting for the entire current request to
         // finish wastes most of the audible lead time on multi-part paragraphs.
-        if segs.count == 1 {
+        if segs.count == 1, document.sourceKind != .weread {
             preloadNext(after: paragraph)
         }
         if let voiceSwitchID, activeVoiceSwitchID == voiceSwitchID {
@@ -2746,9 +3226,43 @@ final class ReadAloudViewModel: ObservableObject {
             pendingLiveWebCarryStartIndex = nil
             commitListen()
             if let startIndex {
-                ReaderRunLog.write("WEREAD carry completed; continue para=\(startIndex)")
-                generate(startIndex)
+                let hasExactPrewarm: Bool
+                if let epoch = liveWebCarryPrewarmEpoch,
+                   let session = liveWebCarryPrewarmSession {
+                    hasExactPrewarm = liveWebCarryPrewarmIdentityIsCurrent(
+                        paragraphIndex: startIndex,
+                        epoch: epoch,
+                        session: session,
+                        sourceText: liveWebCarryPrewarmSourceText,
+                        voiceID: liveWebCarryPrewarmVoiceID,
+                        language: liveWebCarryPrewarmLanguage,
+                        serial: liveWebCarryPrewarmSerial
+                    )
+                } else {
+                    hasExactPrewarm = false
+                }
+                if hasExactPrewarm {
+                    liveWebCarryPrewarmPlaybackDue = true
+                    ReaderRunLog.write(
+                        "WEREAD carry completed; promote exact prewarm " +
+                        "para=\(startIndex) buffered=\(liveWebCarryPrewarmSegments.count) " +
+                        "producer=\(liveWebCarryPrewarmProducerFinished ? "done" : "active")"
+                    )
+                    startLiveWebCarryPlaybackIfReady(paragraphIndex: startIndex)
+                } else {
+                    generationTask?.cancel()
+                    generationTask = nil
+                    resetLiveWebCarryPrewarmState()
+                    ReaderRunLog.write(
+                        "WEREAD carry completed; exact prewarm unavailable; " +
+                        "foreground generate para=\(startIndex)"
+                    )
+                    generate(startIndex)
+                }
             } else {
+                generationTask?.cancel()
+                generationTask = nil
+                resetLiveWebCarryPrewarmState()
                 status = .ready
                 isFinished = true
                 ReaderRunLog.write("WEREAD carry completed; next page fully consumed")

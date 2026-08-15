@@ -2923,8 +2923,8 @@ final class LocalizationCatalogTests: XCTestCase {
             previousFingerprint: before,
             predictedContentFingerprint: after,
             visibleContentFingerprint: after,
-            predictedText: ["下一页正文"],
-            visibleText: ["下一页正文"],
+            preparedText: "下一页正文",
+            visiblePreparedText: "下一页正文",
             preparedVoiceID: "zf_xiaobei",
             selectedVoiceID: "zf_xiaobei"
         ))
@@ -2933,8 +2933,18 @@ final class LocalizationCatalogTests: XCTestCase {
             previousFingerprint: before,
             predictedContentFingerprint: after,
             visibleContentFingerprint: "unexpected-page",
-            predictedText: ["这是预测的下一页内容，连续文字必须能够对应。"],
-            visibleText: ["这是完全不同的一页，不能释放错误的预加载音频。"],
+            preparedText: "这是预测的下一页内容，连续文字必须能够对应。",
+            visiblePreparedText: "这是完全不同的一页，不能释放错误的预加载音频。",
+            preparedVoiceID: "zf_xiaobei",
+            selectedVoiceID: "zf_xiaobei"
+        ))
+        XCTAssertFalse(WeReadContinuousPageHandoffContract.canReleasePreparedAudio(
+            sourceFingerprint: before,
+            previousFingerprint: before,
+            predictedContentFingerprint: after,
+            visibleContentFingerprint: after,
+            preparedText: "少了一句的预取正文",
+            visiblePreparedText: "真实首句。少了一句的预取正文",
             preparedVoiceID: "zf_xiaobei",
             selectedVoiceID: "zf_xiaobei"
         ))
@@ -2970,6 +2980,31 @@ final class LocalizationCatalogTests: XCTestCase {
             playbackRate: 1,
             leadSeconds: 0.6
         ))
+        XCTAssertTrue(WeReadCrossPageSpeechContract.shouldApplyConsumedCursor(
+            pendingSemanticTurn: true,
+            continuationSuppressed: false
+        ))
+        XCTAssertFalse(WeReadCrossPageSpeechContract.shouldApplyConsumedCursor(
+            pendingSemanticTurn: true,
+            continuationSuppressed: true
+        ), "a manual turn or mode switch must not inherit the automatic cursor")
+        XCTAssertFalse(WeReadCrossPageSpeechContract.shouldApplyConsumedCursor(
+            pendingSemanticTurn: false,
+            continuationSuppressed: false
+        ))
+        XCTAssertFalse(
+            WeReadCrossPageSpeechContract
+                .shouldClearContinuationSuppressionWhenReturningToRead(
+                    pendingSemanticTurn: true
+                ),
+            "read → explain → read must not revive an in-flight turn's cursor"
+        )
+        XCTAssertTrue(
+            WeReadCrossPageSpeechContract
+                .shouldClearContinuationSuppressionWhenReturningToRead(
+                    pendingSemanticTurn: false
+                )
+        )
 
         // The source-DOM cursor, not speculative audio readiness, is the
         // authority for exactly-once speech across a visual page boundary.
@@ -3023,6 +3058,49 @@ final class LocalizationCatalogTests: XCTestCase {
         XCTAssertEqual(fullyConsumed.texts, ["", "真正新句。"])
         XCTAssertEqual(fullyConsumed.carryParagraphIndex, 0)
         XCTAssertEqual(fullyConsumed.carryUTF16Length, 4)
+
+        // Source paragraph indices are only local to one transient WeRead DOM
+        // layout. Reusing the same integer from a different layout must not
+        // clip real text from the newly visible page.
+        let wrongLayout = WeReadCrossPageSpeechContract.consumeAlreadySpokenPrefix(
+            in: [
+                WeReadSourceTextSlice(
+                    visibleParagraphIndex: 0,
+                    sourceLayoutFingerprint: "layout-b",
+                    sourceParagraphIndex: 7,
+                    sourceUTF16Start: 20,
+                    sourceUTF16End: 29,
+                    text: "不能被跳过的新句。"
+                ),
+            ],
+            through: WeReadConsumedTextCursor(
+                sourceLayoutFingerprint: "layout-a",
+                sourceParagraphIndex: 7,
+                sourceUTF16End: 24
+            ),
+            requireSourceLayoutIdentity: true
+        )
+        XCTAssertEqual(wrongLayout.texts, ["不能被跳过的新句。"])
+        XCTAssertNil(wrongLayout.carryParagraphIndex)
+
+        let missingIdentity = WeReadCrossPageSpeechContract.consumeAlreadySpokenPrefix(
+            in: [
+                WeReadSourceTextSlice(
+                    visibleParagraphIndex: 0,
+                    sourceParagraphIndex: 7,
+                    sourceUTF16Start: 20,
+                    sourceUTF16End: 29,
+                    text: "来源不确定时保留全文。"
+                ),
+            ],
+            through: WeReadConsumedTextCursor(
+                sourceParagraphIndex: 7,
+                sourceUTF16End: 24
+            ),
+            requireSourceLayoutIdentity: true
+        )
+        XCTAssertEqual(missingIdentity.texts, ["来源不确定时保留全文。"])
+        XCTAssertNil(missingIdentity.carryParagraphIndex)
     }
 
     func testWeReadExplainOwnsItsPageLifecycle() {
@@ -3264,6 +3342,34 @@ final class LocalizationCatalogTests: XCTestCase {
         XCTAssertFalse(WeReadBookValidator.isLikelyLibraryBook(generic))
         XCTAssertTrue(WeReadWebScripts.libraryScan.contains("bookData.author"))
         XCTAssertTrue(WeReadWebScripts.libraryScan.contains(":scope > .title"))
+    }
+
+    func testWeReadShelfPageContractRejectsHomeRecommendationsAndLooseShelfPaths() {
+        XCTAssertTrue(WeReadShelfPageContract.isExactShelfURL("https://weread.qq.com/web/shelf"))
+        XCTAssertTrue(WeReadShelfPageContract.isExactShelfURL("https://weread.qq.com/web/shelf/?wr_theme=dark"))
+        XCTAssertFalse(WeReadShelfPageContract.isExactShelfURL("http://weread.qq.com/web/shelf"))
+        XCTAssertFalse(WeReadShelfPageContract.isExactShelfURL("https://evilweread.qq.com/web/shelf"))
+        XCTAssertFalse(WeReadShelfPageContract.isExactShelfURL("https://weread.qq.com/web/shelf/archive"))
+        XCTAssertFalse(WeReadShelfPageContract.isExactShelfURL("https://weread.qq.com/?next=/web/shelf"))
+        XCTAssertFalse(WeReadShelfPageContract.isExactShelfURL("https://weread.qq.com:8443/web/shelf"))
+        XCTAssertFalse(WeReadShelfPageContract.isExactShelfURL("https://reader@weread.qq.com/web/shelf"))
+
+        let homeRecommendation: [String: Any] = [
+            "url": "https://weread.qq.com/",
+            "isShelfPage": false,
+            "authenticated": true,
+            "authRequired": false,
+            "rawBookCount": 1,
+            "books": [[
+                "bookId": "recommendation-only",
+                "title": "首页推荐",
+                "readerURL": "https://weread.qq.com/web/reader/recommendation-only",
+            ]],
+        ]
+        let result = WeReadScanResult(homeRecommendation)
+        XCTAssertFalse(result.isShelfPage)
+        XCTAssertTrue(result.books.isEmpty)
+        XCTAssertEqual(result.rawBookCount, 1)
     }
 
     func testWeReadBookEntryRecoveryRetriesCanonicalBeforeShelfScan() {

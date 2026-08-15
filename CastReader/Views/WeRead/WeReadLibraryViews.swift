@@ -6,6 +6,7 @@
 import SwiftUI
 import UIKit
 import WebKit
+import CryptoKit
 
 extension Notification.Name {
     /// Opens the existing WeRead binding flow without constructing a second
@@ -378,6 +379,11 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     private var didLoad = false
     private var pendingBooks: [String: WeReadBook] = [:]
     private var pendingAccount: WeReadAccountInfo?
+    private var hasTrustedShelfSnapshot = false
+    private var trustedSnapshotNavigationGeneration: UInt64?
+    private var trustedSnapshotSessionFingerprint: String?
+    private var shelfNavigationRequested = false
+    private var navigationGeneration: UInt64 = 0
     private var loginPollingTask: Task<Void, Never>?
     private var foregroundResumeTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
@@ -498,13 +504,18 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     }
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        navigationGeneration &+= 1
+        clearUntrustedShelfPreview()
         // `didFinish` can arrive several seconds after WeRead has already
         // painted its homepage because analytics/images are still loading.
         // Start watching for the real visible login action as soon as the main
         // document begins rendering. The JS contract still requires that exact
         // control to be visible and preserves an already-issued UID, so this
         // earlier start cannot create a duplicate QR session.
-        guard !isShelfURL(webView.url) else { return }
+        guard !isShelfURL(webView.url) else {
+            shelfNavigationRequested = false
+            return
+        }
         showsSyncBar = false
         showsLoginGuide = true
         startLoginPolling()
@@ -900,6 +911,19 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                     continue
                 }
 
+                // Authentication may complete while the retained WebView is
+                // still showing WeRead's home page. That page contains valid
+                // recommendation `/reader/` links, but it is not the user's
+                // shelf and must never feed onboarding or persistence.
+                guard self.isTrustedShelfResult(scan) else {
+                    self.clearUntrustedShelfPreview()
+                    self.onboardingState = .scanning(found: 0)
+                    self.statusText = AppLocalized("正在打开微信读书书架…")
+                    self.navigateToShelfIfNeeded()
+                    try? await Task.sleep(for: .milliseconds(700))
+                    continue
+                }
+
                 self.onboardingState = .scanning(
                     found: max(self.availableCount, scan.books.count)
                 )
@@ -933,9 +957,11 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                         )
                         return
                     }
-                } else if self.errorText != nil {
-                    // 登录成功但书架确实是空的。
+                } else if self.hasTrustedShelfSnapshot {
                     self.onboardingState = .empty
+                    return
+                } else if let errorText = self.errorText {
+                    self.onboardingState = .failed(message: errorText)
                     return
                 }
 
@@ -945,17 +971,20 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     }
 
     func syncLibrary() async -> Bool {
+        if pendingBooks.isEmpty && !hasTrustedShelfSnapshot { await refreshPreview() }
+        let observedSessionFingerprint = await currentAuthenticatedWeReadSessionFingerprint()
+        // This is the final boundary check after the final suspension point.
+        // An A→B CastReader account/route switch can occur while cookie lookup
+        // awaits WKWebView; no A-owned rows may then reach B's active store.
         guard let accountBoundaryToken,
-              AccountContentIsolation.isCurrent(accountBoundaryToken) else {
-            return false
-        }
-        guard !isSyncing else { return false }
-        connectionAnalytics.record(.syncStarted, result: .started)
-        if pendingBooks.isEmpty { await refreshPreview() }
-        guard AccountContentIsolation.isCurrent(accountBoundaryToken) else {
-            return false
-        }
-        guard !pendingBooks.isEmpty else {
+              AccountContentIsolation.isCurrent(accountBoundaryToken),
+              !isSyncing,
+              hasTrustedShelfSnapshot,
+              isShelfURL(webView.url),
+              !pendingBooks.isEmpty,
+              trustedSnapshotNavigationGeneration == navigationGeneration,
+              let trustedSnapshotSessionFingerprint,
+              trustedSnapshotSessionFingerprint == observedSessionFingerprint else {
             connectionAnalytics.record(
                 .failed,
                 result: .failed,
@@ -963,9 +992,15 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             )
             return false
         }
+        connectionAnalytics.record(.syncStarted, result: .started)
         isSyncing = true
         errorText = nil
         defer { isSyncing = false }
+        // Release synchronization is intentionally additive. A virtualised
+        // shelf or transient parse miss may omit a real row; it must never
+        // delete an existing book, reading position or anchor. The one known
+        // pre-release polluted snapshot is cleared only by the DEBUG-scoped
+        // recovery argument before this verified shelf is merged.
         store.mergeScrapedBooks(Array(pendingBooks.values), account: pendingAccount)
         statusText = String(format: AppLocalized("已同步 %d 本微信读书书籍。"), pendingBooks.count)
         connectionAnalytics.record(
@@ -995,10 +1030,11 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         loginPresentationTask?.cancel()
         loginPresentationTask = nil
         showsLoginGuide = false
-        if !isShelfURL(webView.url) {
+        if !isTrustedShelfResult(result) {
+            clearUntrustedShelfPreview()
             showsSyncBar = false
             statusText = AppLocalized("正在打开微信读书书架…")
-            webView.load(URLRequest(url: WeReadNativeTheme.themedURL(WeReadWebScripts.shelfURL, isDark: isDarkMode)))
+            navigateToShelfIfNeeded()
             return
         }
         showsSyncBar = true
@@ -1009,19 +1045,58 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         guard !isScanning else { return }
         isScanning = true
         errorText = nil
-        defer { isScanning = false }
+        hasTrustedShelfSnapshot = false
+        trustedSnapshotNavigationGeneration = nil
+        trustedSnapshotSessionFingerprint = nil
+        pendingBooks = [:]
+        pendingAccount = nil
+        availableCount = 0
+        defer {
+            isScanning = false
+            webView.evaluateJavaScript(
+                WeReadWebScripts.shelfScanResetToTop,
+                completionHandler: nil
+            )
+        }
+        guard isShelfURL(webView.url) else {
+            navigateToShelfIfNeeded()
+            return
+        }
+        let scanNavigationGeneration = navigationGeneration
+        guard let scanSessionFingerprint = await currentAuthenticatedWeReadSessionFingerprint() else {
+            resetUnauthenticatedPreview()
+            statusText = AppLocalized("请先登录微信读书，登录后会自动进入书架。")
+            startLoginPolling()
+            presentLoginQRCodeIfNeeded()
+            return
+        }
+        _ = try? await webView.evaluateJavaScript(WeReadWebScripts.shelfScanResetToTop)
+        try? await Task.sleep(for: .milliseconds(250))
         var all: [String: WeReadBook] = [:]
-        var idle = 0
+        var stableEndPasses = 0
         var account: WeReadAccountInfo?
-        for pass in 0..<9 {
-            guard !Task.isCancelled else { return }
+        var completedSnapshot = false
+        let clock = ContinuousClock()
+        let startedAt = clock.now
+        for _ in 0..<80 {
+            guard !Task.isCancelled,
+                  scanNavigationGeneration == navigationGeneration else { return }
             statusText = String(format: AppLocalized("正在扫描微信读书书架…（%d）"), all.count)
-            guard let result = try? await evaluate(WeReadWebScripts.libraryScan) else { continue }
+            guard let result = try? await evaluate(WeReadWebScripts.libraryScan) else {
+                try? await Task.sleep(for: .milliseconds(350))
+                continue
+            }
             if result.authRequired || !result.authenticated {
                 resetUnauthenticatedPreview()
                 statusText = AppLocalized("请先登录微信读书，登录后会自动进入书架。")
                 startLoginPolling()
                 presentLoginQRCodeIfNeeded()
+                return
+            }
+            guard isTrustedShelfResult(result) else {
+                clearUntrustedShelfPreview()
+                statusText = AppLocalized("正在打开微信读书书架…")
+                navigateToShelfIfNeeded()
                 return
             }
             if let label = result.account { account = WeReadAccountInfo(label: label) }
@@ -1030,13 +1105,44 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             pendingBooks = all
             pendingAccount = account
             availableCount = all.count
-            idle = all.count == before ? idle + 1 : 0
-            if pass >= 2 && idle >= 2 { break }
-            _ = try? await webView.evaluateJavaScript("window.scrollBy({top:Math.max(window.innerHeight*.82,520),behavior:'auto'})")
-            try? await Task.sleep(for: .milliseconds(650))
+            let stableAtEnd = result.documentReady
+                && result.reachedShelfEnd
+                && !result.loading
+                && result.rawBookCount == result.books.count
+                && result.books.allSatisfy(WeReadBookValidator.isLikelyLibraryBook)
+                && all.count == before
+            stableEndPasses = stableAtEnd ? stableEndPasses + 1 : 0
+            let requiredStablePasses = all.isEmpty ? 10 : 4
+            if stableEndPasses >= requiredStablePasses {
+                // An empty DOM shell is not an authoritative empty shelf.
+                guard !all.isEmpty || result.emptyShelfEvidence else {
+                    errorText = AppLocalized("暂时没能同步微信读书书架，请重试。")
+                    return
+                }
+                completedSnapshot = true
+                break
+            }
+            if startedAt.duration(to: clock.now) >= .seconds(30) { break }
+            try? await Task.sleep(for: .milliseconds(350))
         }
+        guard completedSnapshot else {
+            pendingBooks = [:]
+            pendingAccount = nil
+            availableCount = 0
+            errorText = AppLocalized("暂时没能同步微信读书书架，请重试。")
+            return
+        }
+        guard scanNavigationGeneration == navigationGeneration,
+              scanSessionFingerprint == (await currentAuthenticatedWeReadSessionFingerprint()) else {
+            clearUntrustedShelfPreview()
+            errorText = AppLocalized("暂时没能同步微信读书书架，请重试。")
+            return
+        }
+        hasTrustedShelfSnapshot = true
+        trustedSnapshotNavigationGeneration = scanNavigationGeneration
+        trustedSnapshotSessionFingerprint = scanSessionFingerprint
         guard !all.isEmpty else {
-            errorText = AppLocalized("没有找到书架书籍。请在微信读书网页的书架页登录后重试。")
+            statusText = AppLocalized("你的微信读书书架还没有书")
             return
         }
         statusText = String(format: AppLocalized("已找到 %d 本微信读书书籍。"), all.count)
@@ -1071,7 +1177,7 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                     await self.refreshPreview()
                 } else {
                     self.showsSyncBar = false
-                    self.webView.load(URLRequest(url: WeReadNativeTheme.themedURL(WeReadWebScripts.shelfURL, isDark: self.isDarkMode)))
+                    self.navigateToShelfIfNeeded()
                 }
                 return
             }
@@ -1131,17 +1237,65 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     }
 
     private func isShelfURL(_ url: URL?) -> Bool {
-        guard let url, url.host?.lowercased().hasSuffix("weread.qq.com") == true else { return false }
-        return url.path.lowercased().contains("shelf")
+        WeReadShelfPageContract.isExactShelfURL(url)
+    }
+
+    private func isTrustedShelfResult(_ result: WeReadScanResult) -> Bool {
+        result.isShelfPage
+            && WeReadShelfPageContract.isExactShelfURL(result.pageURL)
+            && isShelfURL(webView.url)
+    }
+
+    private func navigateToShelfIfNeeded() {
+        if isShelfURL(webView.url) {
+            shelfNavigationRequested = false
+            return
+        }
+        guard !shelfNavigationRequested else { return }
+        shelfNavigationRequested = true
+        webView.load(
+            URLRequest(
+                url: WeReadNativeTheme.themedURL(
+                    WeReadWebScripts.shelfURL,
+                    isDark: isDarkMode
+                )
+            )
+        )
+    }
+
+    private func clearUntrustedShelfPreview() {
+        hasTrustedShelfSnapshot = false
+        trustedSnapshotNavigationGeneration = nil
+        trustedSnapshotSessionFingerprint = nil
+        availableCount = 0
+        pendingBooks = [:]
+        pendingAccount = nil
     }
 
     private func resetUnauthenticatedPreview() {
         showsSyncBar = false
         showsLoginGuide = true
-        availableCount = 0
-        pendingBooks = [:]
-        pendingAccount = nil
+        shelfNavigationRequested = false
+        clearUntrustedShelfPreview()
         errorText = nil
+    }
+
+    /// Uses WKHTTPCookieStore so HttpOnly `wr_skey` participates in the gate.
+    /// Cookie values are hashed in memory and are never persisted or logged.
+    private func currentAuthenticatedWeReadSessionFingerprint() async -> String? {
+        guard let cookieHeader = await currentWeReadCookieHeader() else { return nil }
+        var values: [String: String] = [:]
+        for item in cookieHeader.split(separator: ";") {
+            let pair = item.split(separator: "=", maxSplits: 1).map(String.init)
+            guard pair.count == 2 else { continue }
+            values[pair[0].trimmingCharacters(in: .whitespacesAndNewlines)] = pair[1]
+        }
+        guard let vid = values["wr_vid"] ?? values["wr_localvid"],
+              !vid.isEmpty,
+              let skey = values["wr_skey"],
+              !skey.isEmpty else { return nil }
+        let digest = SHA256.hash(data: Data("vid:\(vid)|skey:\(skey)".utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
     }
 
     private func evaluate(_ js: String) async throws -> WeReadScanResult {

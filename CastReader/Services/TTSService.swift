@@ -88,7 +88,8 @@ actor TTSService {
         speed: Double = Constants.TTS.defaultSpeed,
         language: String = Constants.TTS.defaultLanguage,
         includeVoiceCode: Bool = true,
-        speaker: String? = nil
+        speaker: String? = nil,
+        onSegmentReady: ((AudioSegment) async -> Void)? = nil
     ) async throws -> [AudioSegment] {
         var segmentIndex = 0
         var segments: [AudioSegment] = []
@@ -126,7 +127,11 @@ actor TTSService {
                     unprocessedText: response.unprocessedText ?? "",
                     speaker: speaker
                 )
-                segments.append(ensureDuration(rawSegment))
+                let segment = ensureDuration(rawSegment)
+                segments.append(segment)
+                if let onSegmentReady {
+                    await onSegmentReady(segment)
+                }
                 segmentIndex += 1
 
                 if let unprocessed = response.unprocessedText,

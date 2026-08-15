@@ -249,6 +249,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let voiceID: String
         let page: [ReadingParagraph]
         let language: String
+        let preparedParagraphIndex: Int
+        let preparedText: String
         let segments: [AudioSegment]
         let segmentIDs: Set<String>
         let predecessorSegmentID: String
@@ -1476,12 +1478,16 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             )
             return
         }
-        let consumedCursor = pendingWeReadTurn && pendingWeReadBoundaryTurn?.sourceFingerprint == prior
+        let consumedCursor = WeReadCrossPageSpeechContract.shouldApplyConsumedCursor(
+            pendingSemanticTurn: pendingWeReadTurn,
+            continuationSuppressed: suppressAppReviewContinuationForPendingTurn
+        ) && pendingWeReadBoundaryTurn?.sourceFingerprint == prior
             ? pendingWeReadBoundaryTurn?.cue.consumedCursor
             : nil
         let slices = raw.enumerated().map { index, value in
             WeReadSourceTextSlice(
                 visibleParagraphIndex: index,
+                sourceLayoutFingerprint: value["sourceLayoutFingerprint"] as? String,
                 sourceParagraphIndex: Self.double(value["sourceParagraphIndex"]).map { Int($0) },
                 sourceUTF16Start: Self.double(value["sourceCharStart"]).map { Int($0) },
                 sourceUTF16End: Self.double(value["sourceCharEnd"]).map { Int($0) },
@@ -1491,7 +1497,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         }
         let consumption = WeReadCrossPageSpeechContract.consumeAlreadySpokenPrefix(
             in: slices,
-            through: consumedCursor
+            through: consumedCursor,
+            requireSourceLayoutIdentity: true
         )
         let page = consumption.texts.enumerated().map {
             ReadingParagraph(id: $0.offset, text: $0.element, type: .paragraph)
@@ -1504,6 +1511,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 paragraphIndex: value.paragraphIndex,
                 visibleUTF16Offset: max(0, value.visibleUTF16Offset - consumption.carryUTF16Length),
                 speechUTF16Length: max(0, value.speechUTF16Length - consumption.carryUTF16Length),
+                sourceLayoutFingerprint: value.sourceLayoutFingerprint,
                 sourceParagraphIndex: value.sourceParagraphIndex,
                 sourceSpeechEnd: value.sourceSpeechEnd
             )
@@ -1609,7 +1617,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         guard isWeRead,
               isReadMode,
               didInit,
-              readVM?.isActive == true,
+              let readVM,
+              readVM.isActive,
+              readVM.isOnLastReadableParagraph,
+              readVM.currentTTSCompleteForPageHandoff,
               continuousWeReadHandoff == nil,
               let preview = pendingWeReadPreview,
               preview.sourceFingerprint == lastWeReadFingerprint else { return }
@@ -1834,6 +1845,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             voiceID: prepared.voiceID,
             page: prepared.preview.page,
             language: prepared.preview.language,
+            preparedParagraphIndex: prepared.preview.preparedParagraphIndex,
+            preparedText: prepared.preview.preparedText,
             segments: rebased,
             segmentIDs: Set(rebased.map(\.id)),
             predecessorSegmentID: predecessor,
@@ -1928,22 +1941,31 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let continuous = continuousWeReadHandoff
         let boundaryTurn = pendingWeReadBoundaryTurn
         let canCommitContinuously = continuous.map {
-            candidate.isConfirmedTurn &&
+            let visiblePreparedText = candidate.page.indices.contains($0.preparedParagraphIndex)
+                ? candidate.page[$0.preparedParagraphIndex].text
+                : ""
+            return !suppressAppReviewContinuationForPendingTurn &&
+                candidate.isConfirmedTurn &&
                 WeReadContinuousPageHandoffContract.canReleasePreparedAudio(
                     sourceFingerprint: $0.sourceFingerprint,
                     previousFingerprint: candidate.priorFingerprint,
                     predictedContentFingerprint: $0.predictedContentFingerprint,
                     visibleContentFingerprint: candidate.evidence.contentFingerprint,
-                    predictedText: $0.page.map(\.text),
-                    visibleText: candidate.page.map(\.text),
+                    preparedText: $0.preparedText,
+                    visiblePreparedText: visiblePreparedText,
                     preparedVoiceID: $0.voiceID,
                     selectedVoiceID: selectedVoice
                 )
         } ?? false
-        let canCommitBoundaryCarry = candidate.isConfirmedTurn && boundaryTurn.map {
-            $0.sourceFingerprint == candidate.priorFingerprint &&
-                AudioPlayerService.shared.currentSegment?.id == $0.cue.segmentID
-        } == true
+        let canCommitBoundaryCarry = !suppressAppReviewContinuationForPendingTurn &&
+            candidate.isConfirmedTurn &&
+            candidate.carryParagraphIndex != nil &&
+            candidate.carryUTF16Length > 0 &&
+            boundaryTurn.map {
+                $0.cue.consumedCursor?.sourceLayoutFingerprint?.isEmpty == false &&
+                    $0.sourceFingerprint == candidate.priorFingerprint &&
+                    AudioPlayerService.shared.currentSegment?.id == $0.cue.segmentID
+            } == true
         let isConfirmedAutomaticReadCommit =
             isReadMode
                 && pendingWeReadTurn
@@ -2016,6 +2038,19 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         ReaderRunLog.write("WEREAD page commit prior=\(String(candidate.priorFingerprint.prefix(12))) next=\(String(candidate.fingerprint.prefix(12))) confirmed=\(candidate.isConfirmedTurn) epoch=\(candidate.evidence.canvasEpoch) cols=\(String(candidate.evidence.columnFingerprint.prefix(32))) geometry=\(candidate.geometrySource) glyphs=\(candidate.mappedGlyphs) paras=\(candidate.page.count)")
 
         if didInit {
+            // Reset the JavaScript renderer before transferring playback/highlight
+            // ownership to the confirmed page.  The carry/continuous paths can
+            // paint immediately; issuing `init` afterwards used to erase the
+            // first sentence's retained highlight, so it only flashed until the
+            // second audio segment produced a new command.
+            let segments = candidate.page.map {
+                ["paragraphIndex": $0.id, "text": $0.text] as [String: Any]
+            }
+            call("init", [
+                "segments": segments,
+                "color": AppSettings.shared.highlightColorHex,
+            ])
+
             if isReadMode {
                 if let appReviewReadSession,
                    readVM?.inheritAppReviewReadSession(appReviewReadSession) != true {
@@ -2113,10 +2148,6 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 )
                 invalidateWeReadPreview(reason: "explain-page-committed")
             }
-            let segments = candidate.page.map {
-                ["paragraphIndex": $0.id, "text": $0.text] as [String: Any]
-            }
-            call("init", ["segments": segments, "color": AppSettings.shared.highlightColorHex])
         } else {
             onRendered(candidate.page.map {
                 WebRenderedParagraph(paragraphIndex: $0.id, text: $0.text, type: "paragraph")
@@ -5828,7 +5859,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             invalidateWeReadPreview(reason: "mode-switched-to-explain", preservePrediction: true)
             activeWeReadCarry = nil
         } else if isWeRead, readMode, !isReadMode {
-            suppressAppReviewContinuationForPendingTurn = false
+            if WeReadCrossPageSpeechContract
+                .shouldClearContinuationSuppressionWhenReturningToRead(
+                    pendingSemanticTurn: pendingWeReadTurn
+                ) {
+                suppressAppReviewContinuationForPendingTurn = false
+            }
             invalidateWeReadExplainPrefetch(reason: "mode-switched-to-read")
         }
         isReadMode = readMode
@@ -6720,6 +6756,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 paragraphIndex: index,
                 visibleUTF16Offset: visible,
                 speechUTF16Length: speech,
+                sourceLayoutFingerprint: value["sourceLayoutFingerprint"] as? String,
                 sourceParagraphIndex: double(value["sourceParagraphIndex"]).map { Int($0) },
                 sourceSpeechEnd: double(value["sourceSpeechEnd"]).map { Int($0) }
             )

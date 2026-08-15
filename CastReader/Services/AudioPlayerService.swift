@@ -1232,12 +1232,11 @@ class AudioPlayerService: NSObject, ObservableObject {
             return false
         }
         guard let index = segmentsQueue.firstIndex(where: { $0.id == id }) else { return false }
-        playSegment(
+        return playSegment(
             at: index,
             initialProgress: min(0.98, max(0, progress)),
             autoPlayWhenReady: autoPlay
         )
-        return true
     }
 
     @discardableResult

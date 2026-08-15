@@ -302,6 +302,27 @@ enum WeReadBookValidator {
     }
 }
 
+/// Only the authenticated desktop shelf may author the local WeRead library.
+/// Marketing/home/reader pages also contain valid-looking `/reader/` links,
+/// so accepting a loose `contains("shelf")` check can persist recommendations
+/// as if they belonged to the signed-in user's shelf.
+enum WeReadShelfPageContract {
+    static func isExactShelfURL(_ raw: String?) -> Bool {
+        guard let raw,
+              let components = URLComponents(string: raw),
+              components.scheme?.lowercased() == "https",
+              components.host?.lowercased() == "weread.qq.com",
+              components.user == nil,
+              components.password == nil,
+              components.port == nil || components.port == 443 else { return false }
+        return components.path == "/web/shelf" || components.path == "/web/shelf/"
+    }
+
+    static func isExactShelfURL(_ url: URL?) -> Bool {
+        isExactShelfURL(url?.absoluteString)
+    }
+}
+
 enum WeReadBookEntryRecoveryContract {
     /// A fresh shelf URL is server-authored and therefore supersedes a local
     /// resume URL only when the canonical entry itself changed. Unchanged shelf
@@ -333,16 +354,35 @@ enum WeReadBookEntryRecoveryContract {
 }
 
 struct WeReadScanResult {
+    var pageURL: String?
+    var isShelfPage: Bool
+    var documentReady: Bool
+    var reachedShelfEnd: Bool
+    var loading: Bool
+    var emptyShelfEvidence: Bool
+    var rawBookCount: Int
     var authRequired: Bool
     var authenticated: Bool
     var account: String?
     var books: [WeReadBook]
 
     init(_ raw: [String: Any]) {
+        pageURL = raw["url"] as? String
+        isShelfPage = (raw["isShelfPage"] as? Bool ?? false)
+            && WeReadShelfPageContract.isExactShelfURL(pageURL)
+        documentReady = raw["documentReady"] as? Bool ?? false
+        reachedShelfEnd = raw["reachedShelfEnd"] as? Bool ?? false
+        loading = raw["loading"] as? Bool ?? true
+        emptyShelfEvidence = raw["emptyShelfEvidence"] as? Bool ?? false
+        rawBookCount = max(0, raw["rawBookCount"] as? Int ?? 0)
         authRequired = raw["authRequired"] as? Bool ?? true
         authenticated = raw["authenticated"] as? Bool ?? false
         account = raw["account"] as? String
-        books = (raw["books"] as? [[String: Any]] ?? []).compactMap { item in
+        // Defense in depth: even if page JavaScript accidentally returns
+        // reader cards for a home/recommendation page, native code discards
+        // them unless the reported URL is the exact trusted shelf URL.
+        let rawBooks = isShelfPage ? (raw["books"] as? [[String: Any]] ?? []) : []
+        books = rawBooks.compactMap { item in
             let reader = item["readerURL"] as? String ?? ""
             let title = item["title"] as? String ?? ""
             guard let url = WeReadBookValidator.usableReaderURL(reader), !title.isEmpty else { return nil }
@@ -580,18 +620,15 @@ enum WeReadContinuousPageHandoffContract {
         previousFingerprint: String,
         predictedContentFingerprint: String,
         visibleContentFingerprint: String,
-        predictedText: [String],
-        visibleText: [String],
+        preparedText: String,
+        visiblePreparedText: String,
         preparedVoiceID: String,
         selectedVoiceID: String
     ) -> Bool {
         !sourceFingerprint.isEmpty && sourceFingerprint == previousFingerprint &&
             !predictedContentFingerprint.isEmpty &&
-            (predictedContentFingerprint == visibleContentFingerprint ||
-                WeReadSpeculativeTextContract.evaluate(
-                    predicted: predictedText,
-                    visible: visibleText
-                ).isCompatible) &&
+            predictedContentFingerprint == visibleContentFingerprint &&
+            !preparedText.isEmpty && preparedText == visiblePreparedText &&
             !preparedVoiceID.isEmpty && preparedVoiceID == selectedVoiceID
     }
 }
@@ -603,6 +640,7 @@ struct WeReadPageSpeechBoundary: Equatable {
     let paragraphIndex: Int
     let visibleUTF16Offset: Int
     let speechUTF16Length: Int
+    let sourceLayoutFingerprint: String?
     let sourceParagraphIndex: Int?
     let sourceSpeechEnd: Int?
 
@@ -610,12 +648,14 @@ struct WeReadPageSpeechBoundary: Equatable {
         paragraphIndex: Int,
         visibleUTF16Offset: Int,
         speechUTF16Length: Int,
+        sourceLayoutFingerprint: String? = nil,
         sourceParagraphIndex: Int? = nil,
         sourceSpeechEnd: Int? = nil
     ) {
         self.paragraphIndex = paragraphIndex
         self.visibleUTF16Offset = visibleUTF16Offset
         self.speechUTF16Length = speechUTF16Length
+        self.sourceLayoutFingerprint = sourceLayoutFingerprint
         self.sourceParagraphIndex = sourceParagraphIndex
         self.sourceSpeechEnd = sourceSpeechEnd
     }
@@ -652,16 +692,44 @@ struct WeReadBoundaryAudioCue: Equatable {
 /// every new-page path must therefore skip source text before this cursor,
 /// regardless of whether speculative audio was ready.
 struct WeReadConsumedTextCursor: Equatable {
+    let sourceLayoutFingerprint: String?
     let sourceParagraphIndex: Int
     let sourceUTF16End: Int
+
+    init(
+        sourceLayoutFingerprint: String? = nil,
+        sourceParagraphIndex: Int,
+        sourceUTF16End: Int
+    ) {
+        self.sourceLayoutFingerprint = sourceLayoutFingerprint
+        self.sourceParagraphIndex = sourceParagraphIndex
+        self.sourceUTF16End = sourceUTF16End
+    }
 }
 
 struct WeReadSourceTextSlice: Equatable {
     let visibleParagraphIndex: Int
+    let sourceLayoutFingerprint: String?
     let sourceParagraphIndex: Int?
     let sourceUTF16Start: Int?
     let sourceUTF16End: Int?
     let text: String
+
+    init(
+        visibleParagraphIndex: Int,
+        sourceLayoutFingerprint: String? = nil,
+        sourceParagraphIndex: Int?,
+        sourceUTF16Start: Int?,
+        sourceUTF16End: Int?,
+        text: String
+    ) {
+        self.visibleParagraphIndex = visibleParagraphIndex
+        self.sourceLayoutFingerprint = sourceLayoutFingerprint
+        self.sourceParagraphIndex = sourceParagraphIndex
+        self.sourceUTF16Start = sourceUTF16Start
+        self.sourceUTF16End = sourceUTF16End
+        self.text = text
+    }
 }
 
 struct WeReadPageConsumption: Equatable {
@@ -675,9 +743,23 @@ struct WeReadPageConsumption: Equatable {
 /// per request, so a cross-page sentence remains one audio item rather than two
 /// clipped requests with an audible restart.
 enum WeReadCrossPageSpeechContract {
+    static func shouldApplyConsumedCursor(
+        pendingSemanticTurn: Bool,
+        continuationSuppressed: Bool
+    ) -> Bool {
+        pendingSemanticTurn && !continuationSuppressed
+    }
+
+    static func shouldClearContinuationSuppressionWhenReturningToRead(
+        pendingSemanticTurn: Bool
+    ) -> Bool {
+        !pendingSemanticTurn
+    }
+
     static func consumeAlreadySpokenPrefix(
         in slices: [WeReadSourceTextSlice],
-        through cursor: WeReadConsumedTextCursor?
+        through cursor: WeReadConsumedTextCursor?,
+        requireSourceLayoutIdentity: Bool = false
     ) -> WeReadPageConsumption {
         guard let cursor else {
             return WeReadPageConsumption(
@@ -690,7 +772,14 @@ enum WeReadCrossPageSpeechContract {
         var carryParagraphIndex: Int?
         var carryUTF16Length = 0
         let texts = slices.map { slice -> String in
-            guard slice.sourceParagraphIndex == cursor.sourceParagraphIndex,
+            let sourceIdentityMatches: Bool
+            if let identity = cursor.sourceLayoutFingerprint, !identity.isEmpty {
+                sourceIdentityMatches = slice.sourceLayoutFingerprint == identity
+            } else {
+                sourceIdentityMatches = !requireSourceLayoutIdentity
+            }
+            guard sourceIdentityMatches,
+                  slice.sourceParagraphIndex == cursor.sourceParagraphIndex,
                   let sourceStart = slice.sourceUTF16Start,
                   let sourceEnd = slice.sourceUTF16End,
                   sourceStart < cursor.sourceUTF16End,

@@ -2788,6 +2788,105 @@ final class AccountScopedLibraryStoreTests: XCTestCase {
         }
     }
 
+    func testWeReadDebugSnapshotResetClearsOnlyTheActiveAccountScope() {
+        withDefaults { defaults in
+            let (accountA, accountB) = makeScopes()
+            let store = WeReadLibraryStore(defaults: defaults)
+            let now = Date()
+            func book(_ id: String, _ title: String) -> WeReadBook {
+                WeReadBook(
+                    id: "weread:\(id)",
+                    title: title,
+                    author: "",
+                    coverURL: nil,
+                    readerURL: "https://weread.qq.com/web/reader/\(id)",
+                    progressLabel: "",
+                    bookID: id,
+                    lastOpenedAt: nil,
+                    lastSyncedAt: now,
+                    lastPageFingerprint: nil,
+                    lastReaderURL: nil
+                )
+            }
+
+            store.activateAccountScope(accountA)
+            let polluted = book("home-card", "首页推荐")
+            store.mergeScrapedBooks([polluted])
+
+            store.activateAccountScope(accountB)
+            let accountBBook = book("account-b", "账号 B 的书")
+            store.mergeScrapedBooks([accountBBook])
+            store.activateAccountScope(accountA)
+            store.resetCurrentAccountSnapshotForTesting()
+            XCTAssertTrue(store.books.isEmpty)
+            XCTAssertFalse(store.hasConnected)
+
+            store.activateAccountScope(accountB)
+            XCTAssertEqual(store.books.map(\.id), [accountBBook.id])
+            XCTAssertTrue(store.hasConnected)
+        }
+    }
+
+    func testWeReadAdditiveShelfMergeNeverDeletesExistingRowsOrAnchors() {
+        withDefaults { defaults in
+            let (accountA, _) = makeScopes()
+            let store = WeReadLibraryStore(defaults: defaults)
+            store.activateAccountScope(accountA)
+            let existing = WeReadBook(
+                id: "weread:existing",
+                title: "原有真实书",
+                author: "",
+                coverURL: nil,
+                readerURL: "https://weread.qq.com/web/reader/existing",
+                progressLabel: "",
+                bookID: "existing",
+                lastOpenedAt: nil,
+                lastSyncedAt: Date(),
+                lastPageFingerprint: nil,
+                lastReaderURL: nil
+            )
+            let validNew = WeReadBook(
+                id: "weread:new",
+                title: "新书",
+                author: "",
+                coverURL: nil,
+                readerURL: "https://weread.qq.com/web/reader/new",
+                progressLabel: "",
+                bookID: "new",
+                lastOpenedAt: nil,
+                lastSyncedAt: Date(),
+                lastPageFingerprint: nil,
+                lastReaderURL: nil
+            )
+            let invalidRow = WeReadBook(
+                id: "weread:invalid",
+                title: "书籍封面",
+                author: "",
+                coverURL: nil,
+                readerURL: "https://weread.qq.com/web/reader/invalid",
+                progressLabel: "",
+                bookID: "invalid",
+                lastOpenedAt: nil,
+                lastSyncedAt: Date(),
+                lastPageFingerprint: nil,
+                lastReaderURL: nil
+            )
+            store.mergeScrapedBooks([existing])
+            store.updateProgress(
+                bookID: existing.id,
+                readerURL: existing.readerURL + "?chapter=8",
+                fingerprint: "page-8",
+                progressLabel: "读到 8%"
+            )
+
+            store.mergeScrapedBooks([validNew, invalidRow])
+            XCTAssertEqual(Set(store.books.map(\.id)), [existing.id, validNew.id])
+            XCTAssertNil(store.book(for: invalidRow.id))
+            XCTAssertEqual(store.book(for: existing.id)?.lastReaderURL, existing.readerURL + "?chapter=8")
+            XCTAssertEqual(store.anchor(for: existing.id)?.pageFingerprint, "page-8")
+        }
+    }
+
     func testGoogleBooksStoreSwitchesScopesWithoutLeakingLegacyOrPriorAccount() {
         withDefaultsAndHistory { defaults, history in
             let (accountA, accountB) = makeScopes()

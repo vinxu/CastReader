@@ -632,9 +632,30 @@ enum WeReadWebScripts {
         const style = getComputedStyle(el), rect = el.getBoundingClientRect();
         return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
       };
-      const readerURL = (href) => /weread\.qq\.com/.test(href) && /(?:web\/)?reader/.test(href);
+      const pageURL = (() => { try { return new URL(location.href); } catch (_) { return null; } })();
+      const isShelfPage = Boolean(
+        pageURL && pageURL.protocol === 'https:' && pageURL.hostname === 'weread.qq.com' &&
+        /^\/web\/shelf\/?$/.test(pageURL.pathname)
+      );
+      const readerURL = (href) => {
+        try {
+          const url = new URL(href, location.href);
+          return url.protocol === 'https:' && url.hostname === 'weread.qq.com' &&
+            /\/(?:web\/)?reader(?:\/|$)/i.test(url.pathname);
+        } catch (_) { return false; }
+      };
+      const shelfContainer = isShelfPage
+        ? document.querySelector('#routerView.shelf_container .shelf_list')
+        : null;
       const seen = new Set(); const books = [];
-      for (const link of Array.from(document.querySelectorAll('a[href]'))) {
+      // Home, search and recommendation pages also expose valid reader links.
+      // They are never shelf evidence and must never reach native persistence.
+      // On the official shelf, only direct `shelfBook` rows belong to the
+      // user's library. Archive/add/placeholder/loading/error tiles do not.
+      const shelfLinks = shelfContainer ? Array.from(shelfContainer.querySelectorAll(
+        ':scope > a.shelfBook[href]:not(.shelfBook_add):not(.shelfArchive):not(.shelfBook_placeholder)'
+      )) : [];
+      for (const link of shelfLinks) {
         const url = absolute(link.getAttribute('href'));
         if (!readerURL(url)) continue;
         const card = link.closest('li,article,[class*=book],[class*=shelf],[class*=Book]') || link.parentElement || link;
@@ -664,15 +685,128 @@ enum WeReadWebScripts {
         const cover = clean(bookData.cover) || clean(bookData.coverURL) || clean(image && (image.currentSrc || image.getAttribute('src')));
         books.push({ id, bookId, title, author, coverURL: absolute(cover), readerURL: url, progressLabel: progress });
       }
-      const accountNode = document.querySelector('[class*=avatar] img,[class*=userName],[class*=nickname]');
+      // Restrict account evidence to the page header. Recommendation cards can
+      // contain author avatars and must not make an anonymous home page appear
+      // authenticated.
+      const accountArea = document.querySelector([
+        '.wr_index_page_top_section_header',
+        '.wr_index_page_top_section_header [class*="user" i]',
+        '.wr_index_page_top_section_header [class*="avatar" i]',
+        '[class*="header" i] [class*="user" i]',
+        '[class*="header" i] [class*="avatar" i]'
+      ].join(','));
+      const accountNode = accountArea && (accountArea.matches('img') ? accountArea : accountArea.querySelector('img,[class*=userName],[class*=nickname]'));
       const account = clean(accountNode && (accountNode.alt || accountNode.innerText));
-      const loginVisible = Array.from(document.querySelectorAll('a,button,[role=button]'))
-        .some(el => visible(el) && /^(登录|扫码登录|Log\s*in|Sign\s*in)$/i.test(clean(el.innerText || el.textContent)));
-      // Anonymous WeRead sessions only carry wr_gid.  A signed-in desktop
-      // session carries wr_vid/wr_skey (or exposes the account avatar).
-      const hasSessionCookie = /(?:^|;\s*)(?:wr_vid|wr_skey)=/.test(document.cookie || '');
-      const authenticated = !loginVisible && (Boolean(accountNode) || hasSessionCookie || books.length > 0);
-      return { url: location.href, title: document.title, authRequired: !authenticated, authenticated, books, account: account || null };
+      const controls = Array.from(document.querySelectorAll('a,button,[role=button]'));
+      const loginVisible = controls.some(el => visible(el) && /^(登录|扫码登录|Log\s*in|Sign\s*in)$/i.test(clean(el.innerText || el.textContent)));
+      const qrVisible = [
+        '.wr_login_modal_wrapper','.login_qrcode_container','.wr_login_modal_qr_wrapper',
+        '.wxlogin-container','[class*=login][class*=qr]','[class*=qrcode]'
+      ].some(selector => Array.from(document.querySelectorAll(selector)).some(visible));
+      // Anonymous sessions carry wr_gid/wr_fp. wr_vid/wr_localvid is the
+      // signed-in account identity cookie, but a vid can also exist in the
+      // anonymous page state. Require the profile half of the cookie pair or
+      // an explicit header account affordance; never return/log cookie values.
+      const cookieNames = new Set(String(document.cookie || '').split(';').map(item => item.split('=')[0].trim()).filter(Boolean));
+      const hasVid = cookieNames.has('wr_vid') || cookieNames.has('wr_localvid');
+      const hasProfile = cookieNames.has('wr_skey') || cookieNames.has('wr_name') || cookieNames.has('wr_avatar');
+      const hasSessionIdentity = hasVid && hasProfile;
+      // Header imagery is presentation-only: an anonymous header may contain
+      // the product logo, and recommendation cards contain author avatars.
+      // Only the signed-in cookie-name pair can make the page authenticated in
+      // JavaScript. Native code independently requires wr_vid + HttpOnly
+      // wr_skey from WKHTTPCookieStore before any local shelf write.
+      const authenticated = !loginVisible && !qrVisible && hasSessionIdentity;
+
+      const scrollRoot = (() => {
+        if (!isShelfPage) return null;
+        // Only an actual scrollable ancestor of the exact shelf list can own
+        // its virtual rows. Never choose a similarly named recommendation or
+        // carousel elsewhere in the document.
+        let node = shelfContainer;
+        while (node && node !== document.body && node !== document.documentElement) {
+          const style = getComputedStyle(node);
+          if (/(auto|scroll|overlay)/i.test(style.overflowY || '') &&
+              node.scrollHeight > node.clientHeight + 96 && node.clientHeight > 220) return node;
+          node = node.parentElement;
+        }
+        return document.scrollingElement || document.documentElement;
+      })();
+      const rootTop = scrollRoot === document.scrollingElement || scrollRoot === document.documentElement || scrollRoot === document.body
+        ? window.scrollY : Number(scrollRoot && scrollRoot.scrollTop || 0);
+      const rootHeight = scrollRoot === document.scrollingElement || scrollRoot === document.documentElement || scrollRoot === document.body
+        ? window.innerHeight : Number(scrollRoot && scrollRoot.clientHeight || 0);
+      const rootScrollHeight = Number(scrollRoot && scrollRoot.scrollHeight || 0);
+      const reachedShelfEnd = Boolean(isShelfPage && scrollRoot && rootTop + rootHeight >= rootScrollHeight - 8);
+      const loading = Boolean(isShelfPage && shelfContainer && shelfContainer.querySelector('.shelfBook_loadingView'));
+      const loadError = Boolean(isShelfPage && shelfContainer && shelfContainer.querySelector('.shelfBook_errorView'));
+      // The official component renders the add tile only after hasMore=false
+      // and no loading error. Combined with physical end + stable passes this
+      // is the page's positive complete-snapshot evidence.
+      const addTile = isShelfPage && shelfContainer && shelfContainer.querySelector(':scope > a.shelfBook_add');
+      const emptyShelfEvidence = Boolean(addTile && books.length === 0 && !loading && !loadError);
+      const documentReady = document.readyState === 'complete';
+
+      // Advance only the real shelf's scroll owner. Native code accumulates
+      // virtualised rows across passes and commits only after the end is stable.
+      if (isShelfPage && authenticated && scrollRoot && !reachedShelfEnd && !loading) {
+        // Keep substantial overlap between passes so a virtualised shelf row
+        // cannot be skipped between two DOM observations.
+        const distance = Math.max(160, Math.min(420, Math.round(rootHeight * 0.55)));
+        if (scrollRoot === document.scrollingElement || scrollRoot === document.documentElement || scrollRoot === document.body) {
+          window.scrollBy({ top: distance, behavior: 'auto' });
+        } else {
+          scrollRoot.scrollTop += distance;
+        }
+      }
+      return {
+        url: location.href,
+        title: document.title,
+        isShelfPage,
+        documentReady,
+        reachedShelfEnd: Boolean(reachedShelfEnd && addTile && !loadError),
+        loading: Boolean(loading || loadError),
+        emptyShelfEvidence,
+        // Native compares this candidate count with successfully parsed rows;
+        // a not-yet-hydrated row therefore blocks completion instead of being
+        // silently treated as absent.
+        rawBookCount: shelfLinks.length,
+        authRequired: !authenticated,
+        authenticated,
+        books,
+        account: account || null
+      };
+    })()
+    """#
+
+    static let shelfScanResetToTop = #"""
+    (() => {
+      let page;
+      try { page = new URL(location.href); } catch (_) { return false; }
+      if (page.protocol !== 'https:' || page.hostname !== 'weread.qq.com' || !/^\/web\/shelf\/?$/.test(page.pathname)) return false;
+      const visible = node => {
+        if (!node) return false;
+        const style = getComputedStyle(node), rect = node.getBoundingClientRect();
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      };
+      const shelfContainer = document.querySelector('#routerView.shelf_container .shelf_list');
+      if (!shelfContainer) return false;
+      let root = shelfContainer;
+      while (root && root !== document.body && root !== document.documentElement) {
+        const style = getComputedStyle(root);
+        if (/(auto|scroll|overlay)/i.test(style.overflowY || '') &&
+            root.scrollHeight > root.clientHeight + 96 && root.clientHeight > 220) break;
+        root = root.parentElement;
+      }
+      if (!root || root === document.body || root === document.documentElement) {
+        root = document.scrollingElement || document.documentElement;
+      }
+      if (root === document.scrollingElement || root === document.documentElement || root === document.body) {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      } else {
+        root.scrollTop = 0;
+      }
+      return true;
     })()
     """#
 
@@ -902,12 +1036,17 @@ enum WeReadWebScripts {
       function textMetricBox(c,baseline,signedScaleY,fallbackFontSize){
         const dir=signedScaleY<0?-1:1,scale=Math.abs(signedScaleY);
         const box=(ascent,descent,source)=>{const y1=baseline-ascent*scale*dir,y2=baseline+descent*scale*dir;return{y:Math.min(y1,y2),height:Math.max(1,Math.abs(y2-y1)),source};};
-        const aa=Number(c?.actualAscent),ad=Number(c?.actualDescent);
-        if(Number.isFinite(aa)&&Number.isFinite(ad)&&aa>=0&&ad>=0&&aa+ad>.5)return box(aa,ad,'actual');
+        // `actualBoundingBox*` describes one glyph's ink, not its line box.
+        // For example, the Chinese glyph “一” has only a thin horizontal ink
+        // box. Treating that as highlight geometry split it from neighbouring
+        // glyphs on the same baseline, painted a second overlapping overlay and
+        // made that glyph both shorter and visibly darker. Prefer font metrics;
+        // if WebKit does not expose them, use a stable one-em line box.
         const fa=Number(c?.fontAscent),fd=Number(c?.fontDescent);
-        if(Number.isFinite(fa)&&Number.isFinite(fd)&&fa>=0&&fd>=0&&fa+fd>.5)return box(fa,fd,'font');
+        const rawEm=fallbackFontSize/Math.max(scale,.0001),fontHeight=fa+fd;
+        if(Number.isFinite(fa)&&Number.isFinite(fd)&&fa>=0&&fd>=0&&fontHeight>=rawEm*.65&&fontHeight<=rawEm*1.5)return box(fa,fd,'font');
         let ar=.8,dr=.2;switch(String(c?.textBaseline||'alphabetic')){case'top':ar=0;dr=1;break;case'hanging':ar=.2;dr=.8;break;case'middle':ar=.5;dr=.5;break;case'ideographic':ar=.9;dr=.1;break;case'bottom':ar=1;dr=0;break;}
-        return box(ar*fallbackFontSize/Math.max(scale,.0001),dr*fallbackFontSize/Math.max(scale,.0001),'fallback');
+        return box(ar*rawEm,dr*rawEm,'em');
       }
       function glyphs(snapshot,host){
         const hr=host.getBoundingClientRect(),pageSurface=surface(host),groups=new Map();
@@ -971,9 +1110,9 @@ enum WeReadWebScripts {
       function sequentialPreview(layout,current){const starts=current.map(p=>Number(p.sourceGlobalStart)).filter(Number.isFinite),ends=current.map(p=>Number(p.sourceGlobalEnd)).filter(Number.isFinite);if(!starts.length||!ends.length)return[];const from=Math.max(...ends),count=Math.max(1,Math.max(...ends)-Math.min(...starts)),units=[];for(let pi=0;pi<layout.paragraphs.length;pi++)for(const u of compact(layout.paragraphs[pi].text))units.push({...u,paragraphIndex:pi,global:units.length});const slice=units.slice(from,from+count),grouped=new Map();for(const u of slice){const a=grouped.get(u.paragraphIndex)||[];a.push(u);grouped.set(u.paragraphIndex,a);}const out=[];for(const [pi,a]of grouped){const p=layout.paragraphs[pi],raw=p.text.slice(a[0].start,a[a.length-1].end),text=raw.trim();if(text.length>=2){const leading=raw.indexOf(text),origin=a[0].start+Math.max(0,leading);out.push({text,sourceLayoutFingerprint:layout.fingerprint,sourceParagraphIndex:pi,sourceParagraphText:p.text,sourceCharStart:origin,sourceCharEnd:origin+text.length,sourceGlobalStart:a[0].global,sourceGlobalEnd:a[a.length-1].global+1});}}return out;}
       const sentenceTerminals=new Set(['.','!','?',';','。','！','？','；','…','।','॥']),sentenceClosers=new Set(['"',"'",'»','’','”',')',']','）','】','」','』','〉','》']);
       function sentenceEndAfter(text,offset){const value=String(text||''),boundary=Math.max(0,Math.min(value.length,Number(offset)||0));let before=boundary;while(before>0){const cp=value.codePointAt(before-1),ch=String.fromCodePoint(cp);if((/\s/u.test(ch))||sentenceClosers.has(ch)){before-=ch.length;continue;}if(sentenceTerminals.has(ch))return boundary;break;}let i=boundary,seen=false;for(;i<value.length;){const cp=value.codePointAt(i),ch=String.fromCodePoint(cp),next=i+ch.length;if(seen&&!sentenceClosers.has(ch)&&!(/\s/u.test(ch)))return i;if(sentenceTerminals.has(ch))seen=true;i=next;}return seen?value.length:boundary;}
-      function speechPayloads(items){return items.map((p,index)=>{const payload={text:p.text,visibleText:p.text,prefetchText:p.text};if(Number.isFinite(Number(p.sourceParagraphIndex)))payload.sourceParagraphIndex=Number(p.sourceParagraphIndex);if(Number.isFinite(Number(p.sourceCharStart)))payload.sourceCharStart=Number(p.sourceCharStart);if(Number.isFinite(Number(p.sourceCharEnd)))payload.sourceCharEnd=Number(p.sourceCharEnd);if(index!==items.length-1||!Number.isFinite(Number(p.sourceCharEnd))||!p.sourceParagraphText)return payload;const end=sentenceEndAfter(p.sourceParagraphText,p.sourceCharEnd),extension=end-Number(p.sourceCharEnd);if(extension<=0||extension>320)return payload;const suffix=p.sourceParagraphText.slice(Number(p.sourceCharEnd),end);if(!suffix.trim())return payload;payload.text=p.text+suffix;payload.prefetchText=payload.text;payload.boundaryUTF16Offset=p.text.length;payload.extendedUTF16Length=payload.text.length;payload.sourceSpeechEnd=end;return payload;});}
+      function speechPayloads(items){return items.map((p,index)=>{const payload={text:p.text,visibleText:p.text,prefetchText:p.text};if(p.sourceLayoutFingerprint)payload.sourceLayoutFingerprint=String(p.sourceLayoutFingerprint);if(Number.isFinite(Number(p.sourceParagraphIndex)))payload.sourceParagraphIndex=Number(p.sourceParagraphIndex);if(Number.isFinite(Number(p.sourceCharStart)))payload.sourceCharStart=Number(p.sourceCharStart);if(Number.isFinite(Number(p.sourceCharEnd)))payload.sourceCharEnd=Number(p.sourceCharEnd);if(index!==items.length-1||!Number.isFinite(Number(p.sourceCharEnd))||!p.sourceParagraphText)return payload;const end=sentenceEndAfter(p.sourceParagraphText,p.sourceCharEnd),extension=end-Number(p.sourceCharEnd);if(extension<=0||extension>320)return payload;const suffix=p.sourceParagraphText.slice(Number(p.sourceCharEnd),end);if(!suffix.trim())return payload;payload.text=p.text+suffix;payload.prefetchText=payload.text;payload.boundaryUTF16Offset=p.text.length;payload.extendedUTF16Length=payload.text.length;payload.sourceSpeechEnd=end;return payload;});}
       function predictNext(snapshot,host,current){const layout=layouts.find(l=>l.fingerprint===current[0]?.sourceLayoutFingerprint);if(!layout)return null;const draws=(snapshot.draws||[]).filter(d=>d.canvas?.isConnected&&d.sw>0);if(draws.length){const min=Math.min(...draws.map(d=>d.sx)),max=Math.max(...draws.map(d=>d.sx+d.sw)),shift=max-min;if(shift>0){const shifted=draws.map(d=>({...d,sx:d.sx+shift})).filter(d=>d.sx<d.sourceWidth);const mapped=mapDraws(layout,{draws:shifted},host);if(mapped.length)return{confidence:'drawImage',paragraphs:mapped};}}const sequential=sequentialPreview(layout,current);return sequential.length?{confidence:'sequential',paragraphs:sequential}:null;}
-      function preparePreviewPayloads(currentPayloads,paragraphs){const payloads=speechPayloads(paragraphs),tail=currentPayloads[currentPayloads.length-1],first=paragraphs[0],firstPayload=payloads[0];if(tail&&firstPayload&&Number.isFinite(Number(tail.sourceSpeechEnd))&&Number(tail.sourceParagraphIndex)===Number(first.sourceParagraphIndex)&&Number.isFinite(Number(first.sourceCharStart))){const carriedEnd=Math.min(Number(tail.sourceSpeechEnd),Number(first.sourceCharEnd)),carryLength=Math.max(0,carriedEnd-Number(first.sourceCharStart));if(carryLength>0){firstPayload.carryUTF16Length=Math.min(first.text.length,carryLength);firstPayload.prefetchText=firstPayload.text.slice(carryLength);}}return payloads;}
+      function preparePreviewPayloads(currentPayloads,paragraphs){const payloads=speechPayloads(paragraphs),tail=currentPayloads[currentPayloads.length-1],first=paragraphs[0],firstPayload=payloads[0];if(tail&&firstPayload&&tail.sourceLayoutFingerprint&&tail.sourceLayoutFingerprint===first.sourceLayoutFingerprint&&Number.isFinite(Number(tail.sourceSpeechEnd))&&Number(tail.sourceParagraphIndex)===Number(first.sourceParagraphIndex)&&Number.isFinite(Number(first.sourceCharStart))){const carriedEnd=Math.min(Number(tail.sourceSpeechEnd),Number(first.sourceCharEnd)),carryLength=Math.max(0,carriedEnd-Number(first.sourceCharStart));if(carryLength>0){firstPayload.carryUTF16Length=Math.min(first.text.length,carryLength);firstPayload.prefetchText=firstPayload.text.slice(carryLength);}}return payloads;}
       function publishPreview(snapshot,host,sourceFingerprint,currentPayloads){const preview=predictNext(snapshot,host,visible);if(!preview?.paragraphs?.length){post('wereadPreviewState',{sourceFingerprint,reason:visible.some(p=>Number.isFinite(Number(p.sourceGlobalEnd)))?'chapter-end-or-no-following-text':'missing-source-anchor',geometrySource:visible[0]?.geometrySource||'unknown',layouts:layouts.length,layoutParagraphs:Math.max(0,...layouts.map(l=>l.paragraphs.length)),layoutCharacters:Math.max(0,...layouts.map(l=>l.paragraphs.reduce((n,p)=>n+compact(p.text).length,0))),pageCharacters:visible.reduce((n,p)=>n+compact(p.text).length,0)});return;}const contentFingerprint=hash(preview.paragraphs.map(p=>p.text).join('|')),key=`${sourceFingerprint}|${contentFingerprint}`;if(key===lastPreviewKey)return;lastPreviewKey=key;const payloads=preparePreviewPayloads(currentPayloads,preview.paragraphs);post('wereadPagePreview',{sourceFingerprint,contentFingerprint,confidence:preview.confidence,readerURL:location.href,paragraphs:payloads});}
 
       function ensureLayer(host){if(layer?.isConnected&&layer.parentElement===host)return layer;document.querySelectorAll('[data-castreader-weread-layer]').forEach(e=>e.remove());if(getComputedStyle(host).position==='static')host.style.position='relative';layer=document.createElement('div');layer.dataset.castreaderWereadLayer='1';layer.style.cssText='position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden;';host.appendChild(layer);return layer;}
@@ -983,7 +1122,7 @@ enum WeReadWebScripts {
         const host=root(),snapshot=window.__castReaderWeReadCanvas?.snapshot?.()||{calls:[],draws:[],epoch:0,columnFingerprint:''};if(!host)return;const next=choose(snapshot,host);if(!next.length){const state=`${layouts.length}:${(snapshot.calls||[]).length}:${(snapshot.draws||[]).length}:${Math.round(innerWidth)}x${Math.round(innerHeight)}`;if(state!==lastExtractionState){lastExtractionState=state;post('wereadExtractionState',{reason,layouts:layouts.length,fillTextCalls:(snapshot.calls||[]).length,draws:(snapshot.draws||[]).length,innerWidth,innerHeight,devicePixelRatio});}return;}lastExtractionState='';
         const progress=clean(Array.from(document.querySelectorAll('[class*=progress],[class*=Progress],.renderTarget_pager,[class*=readerFooter]')).map(e=>e.innerText).join(' ')).slice(0,120),layoutFingerprint=hash((snapshot.calls||[]).map(c=>`${c.text}:${Math.round(c.x)}:${Math.round(c.y)}:${Math.round(c.tx)}`).join('|')),columns=snapshot.columnFingerprint||'',contentFingerprint=hash(next.map(p=>p.text).join('|')),fingerprint=hash(`${contentFingerprint}|${columns}|${location.pathname}`),geometryFingerprint=hash(next.flatMap(p=>p.entries||[]).map(e=>`${e.charStart}:${Math.round(e.bbox.x)}:${Math.round(e.bbox.y)}`).join('|')),candidate=`${fingerprint}|${layoutFingerprint}|${geometryFingerprint}|${snapshot.epoch}`;if(candidate!==stableCandidate){stableCandidate=candidate;clearTimeout(stableTimer);stableTimer=setTimeout(()=>publish(reason),120);return;}stableCandidate='';visible=next;rebuild(visible,host);const hr=host.getBoundingClientRect(),bounds=visible.map(p=>p.bounds);
         if(bounds.length&&innerWidth>0){const left=hr.left+Math.min(...bounds.map(b=>b.x)),right=hr.left+Math.max(...bounds.map(b=>b.x+b.width));post('wereadViewport',{contentLeftRatio:Math.max(0,left/innerWidth),contentRightRatio:Math.min(1,right/innerWidth)});}
-        if(lastFingerprint&&fingerprint!==lastFingerprint){restoreVisualState();post('wereadPageChanging',{reason,previousFingerprint:lastFingerprint,nextFingerprint:fingerprint,canvasEpoch:snapshot.epoch});}
+        if(lastFingerprint&&fingerprint!==lastFingerprint){clearHighlight();clearMarks();post('wereadPageChanging',{reason,previousFingerprint:lastFingerprint,nextFingerprint:fingerprint,canvasEpoch:snapshot.epoch});}
         if(fingerprint===lastFingerprint){restoreVisualState();post('wereadLayoutStable',{reason,fingerprint,canvasEpoch:snapshot.epoch});return;}const previousFingerprint=lastFingerprint;lastFingerprint=fingerprint;wordState={para:-1,seg:-1,cursor:0,last:-1};
         const speechParagraphs=speechPayloads(visible);post('wereadPage',{reason,previousFingerprint,fingerprint,contentFingerprint,layoutFingerprint,columnFingerprint:columns,canvasEpoch:snapshot.epoch,geometrySource:visible[0]?.geometrySource||'unknown',mappedGlyphs:visible.reduce((n,p)=>n+(p.entries?.length||0),0),progressLabel:progress,readerURL:location.href,title:clean(document.title),paragraphs:speechParagraphs});publishPreview(snapshot,host,fingerprint,speechParagraphs);post('wereadLayoutStable',{reason,fingerprint,canvasEpoch:snapshot.epoch});
       }
@@ -995,7 +1134,7 @@ enum WeReadWebScripts {
       function computeSourceSpan(fullText,startPos,sentenceText){let fi=startPos,si=0;const look=3;while(fi<fullText.length&&si<sentenceText.length){if(fullText[fi]===sentenceText[si]){fi++;si++;continue;}const fw=/\s/.test(fullText[fi]),sw=/\s/.test(sentenceText[si]);if(fw&&sw){while(fi<fullText.length&&/\s/.test(fullText[fi]))fi++;while(si<sentenceText.length&&/\s/.test(sentenceText[si]))si++;continue;}if(fw){fi++;continue;}if(sw){si++;continue;}let skipF=-1,skipS=-1;for(let k=1;k<=look;k++){if(skipF<0&&fi+k<fullText.length&&fullText[fi+k]===sentenceText[si])skipF=k;if(skipS<0&&si+k<sentenceText.length&&fullText[fi]===sentenceText[si+k])skipS=k;}if(skipF>=0&&(skipS<0||skipF<=skipS))fi+=skipF;else if(skipS>=0)si+=skipS;else{fi++;si++;}}while(fi<fullText.length&&/\s/.test(fullText[fi]))fi++;return Math.max(1,fi-startPos);}
       function resolveSegmentRange(p,a){const texts=Array.isArray(a.segmentTexts)?a.segmentTexts:[],seq=Number(a.segSeq);if(!p||!texts.length||!Number.isInteger(seq)||seq<0||seq>=texts.length)return null;let cursor=0;for(let i=0;i<=seq;i++){const sentence=String(texts[i]||'');if(!sentence.trim())continue;let pos=p.text.indexOf(sentence,cursor);if(pos<0)pos=p.text.toLocaleLowerCase().indexOf(sentence.toLocaleLowerCase(),cursor);if(pos<0)pos=formattingMatch(p.text,sentence,cursor)?.pos??-1;if(pos<0){if(cursor>=p.text.length)return null;pos=cursor;}const end=Math.min(p.text.length,pos+computeSourceSpan(p.text,pos,sentence));if(i===seq)return{start:pos,end};cursor=Math.max(cursor,end);}return null;}
       function rectsFor(p,start,end){const exact=(p?.entries||[]).filter(e=>e.charEnd>start&&e.charStart<end);if(exact.length)return exact.map(e=>({...e.bbox}));if(p?.geometrySource==='fillText'||p?.geometrySource==='drawImage'||root().querySelector('canvas'))return[];const r=p?.el&&range(p.el,start,end);if(!r)return[];const hr=root().getBoundingClientRect();return Array.from(r.getClientRects()).map(v=>({x:v.left-hr.left,y:v.top-hr.top,width:v.width,height:v.height}));}
-      function lines(rects){const sorted=rects.filter(r=>r.width>.3&&r.height>.3).sort((a,b)=>a.y-b.y||a.x-b.x),groups=[];for(const r of sorted){let g=groups.find(v=>Math.abs(v.y-r.y)<=Math.max(3,Math.min(v.height,r.height)*.45));if(!g){groups.push({x:r.x,y:r.y,width:r.width,height:r.height});continue;}const right=Math.max(g.x+g.width,r.x+r.width),bottom=Math.max(g.y+g.height,r.y+r.height);g.x=Math.min(g.x,r.x);g.y=Math.min(g.y,r.y);g.width=right-g.x;g.height=bottom-g.y;}return groups;}
+      function lines(rects){const sorted=rects.filter(r=>r.width>.3&&r.height>.3).sort((a,b)=>(a.y+a.height)-(b.y+b.height)||a.x-b.x),groups=[];for(const r of sorted){const baseline=r.y+r.height;let g=groups.find(v=>Math.abs(v.referenceBaseline-baseline)<=Math.max(3,Math.min(v.referenceHeight,r.height)*.45));if(!g){groups.push({x:r.x,y:r.y,width:r.width,height:r.height,referenceBaseline:baseline,referenceHeight:r.height});continue;}const right=Math.max(g.x+g.width,r.x+r.width),bottom=Math.max(g.y+g.height,r.y+r.height);g.x=Math.min(g.x,r.x);g.y=Math.min(g.y,r.y);g.width=right-g.x;g.height=bottom-g.y;}return groups.sort((a,b)=>a.referenceBaseline-b.referenceBaseline||a.x-b.x);}
       const rgba=(hex,a)=>{const h=String(hex||'#FD5F01').replace('#','');return/^[0-9a-f]{6}$/i.test(h)?`rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`:`rgba(253,95,1,${a})`;};
       function removeHighlight(){layer?.querySelectorAll('[data-cr-weread-highlight]').forEach(e=>e.remove());}
       function clearHighlight(){currentHighlight=null;removeHighlight();}
@@ -1020,7 +1159,7 @@ enum WeReadWebScripts {
       function scrollToParagraph(a){const p=visible[a.paragraphIndex];if(!p?.bounds)return;const host=root();if(host.querySelector('canvas'))return;const hr=host.getBoundingClientRect(),top=hr.top+p.bounds.y,bottom=top+p.bounds.height;if(top>innerHeight*.15&&bottom<innerHeight*.72)return;let s=host;while(s&&s!==document.body){const cs=getComputedStyle(s);if(/auto|scroll/.test(cs.overflowY)&&s.scrollHeight>s.clientHeight+4)break;s=s.parentElement;}const delta=top-innerHeight*(Number(a.anchor)||.3);if(s&&s!==document.body)s.scrollBy({top:delta,behavior:'smooth'});else window.scrollBy({top:delta,behavior:'smooth'});}
 
       function highlightWord(a){const p=visible[a.paragraphIndex];if(!p){clearHighlight();return;}if(wordState.para!==a.paragraphIndex)wordState={para:a.paragraphIndex,seg:a.segSeq,cursor:0,last:-1};const word=String((a.words||[])[a.wordIndex]||'').trim();if(!word)return;if(a.segSeq<wordState.seg||a.wordIndex<wordState.last)wordState.cursor=0;let at=p.text.toLocaleLowerCase().indexOf(word.toLocaleLowerCase(),wordState.cursor),length=word.length;if(at<0){const stripped=word.replace(/^[\s.,!?;:'“”‘’()\[\]]+|[\s.,!?;:'“”‘’()\[\]]+$/g,'');if(stripped.length>1){at=p.text.toLocaleLowerCase().indexOf(stripped.toLocaleLowerCase(),wordState.cursor);length=stripped.length;}}if(at>=0){wordState.cursor=at+length;currentHighlight={kind:'range',paragraphIndex:a.paragraphIndex,charStart:at,charEnd:at+length};applyHighlight(currentHighlight);}wordState.seg=a.segSeq;wordState.last=a.wordIndex;}
-      window.CR={init(){wordState={para:-1,seg:-1,cursor:0,last:-1};currentHighlight=null;currentMarks.clear();},setActive(a){if(!a.active)clearHighlight();},setColor(a){if(a?.hex)color=a.hex;},clearHighlight,highlightRange(a){const resolved=resolveSegmentRange(visible[a.paragraphIndex],a);if(Array.isArray(a.segmentTexts)&&a.segmentTexts.length&&!resolved){clearHighlight();return;}currentHighlight={...a,kind:'range',charStart:resolved?.start??a.charStart,charEnd:resolved?.end??a.charEnd};applyHighlight(currentHighlight);},highlightWord,scrollTo:scrollToParagraph,clearMarks,showMark};
+      window.CR={init(){wordState={para:-1,seg:-1,cursor:0,last:-1};clearHighlight();currentMarks.clear();},setActive(a){if(!a.active)clearHighlight();},setColor(a){if(a?.hex)color=a.hex;},clearHighlight,highlightRange(a){const resolved=resolveSegmentRange(visible[a.paragraphIndex],a);if(Array.isArray(a.segmentTexts)&&a.segmentTexts.length&&!resolved){clearHighlight();return;}currentHighlight={...a,kind:'range',charStart:resolved?.start??a.charStart,charEnd:resolved?.end??a.charEnd};applyHighlight(currentHighlight);},highlightWord,scrollTo:scrollToParagraph,clearMarks,showMark};
       function pageButton(direction){const next=direction==='next',label=next?'下一页':'上一页',selectors=next?['.renderTarget_pager_button_right','.renderTarget_pager .renderTarget_pager_button:last-of-type','.readerFooter_button:last-child','.readerFooter .nextBtn']:['.renderTarget_pager_button_left','.renderTarget_pager .renderTarget_pager_button:first-of-type','.readerFooter_button:first-child','.readerFooter .prevBtn'];for(const sel of selectors){const candidate=document.querySelector(sel);if(candidate&&clean(candidate.textContent)===label&&!candidate.disabled&&candidate.getAttribute('aria-disabled')!=='true')return candidate;}return Array.from(document.querySelectorAll('.renderTarget_pager button,button[class*=footer],button[class*=Footer]')).find(e=>clean(e.textContent)===label&&!e.disabled&&e.getAttribute('aria-disabled')!=='true')||null;}
       function turnPage(direction,manual){const button=pageButton(direction);if(!button){if(!manual)post('wereadTurnRejected',{reason:`${direction}-page-not-found`});else post('log',{message:`native ${direction} page control not found`});return false;}clearHighlight();clearMarks();const canvasEpoch=window.__castReaderWeReadCanvas?.snapshot?.().epoch||0;if(manual){post('wereadPageChanging',{reason:'manual-intent',intent:'native-control',direction:direction==='next'?'next':'previous',previousFingerprint:lastFingerprint,canvasEpoch});}else{const id=`wr-${Date.now()}-${++turnID}`;post('wereadTurnRequested',{actionID:id,fingerprint:lastFingerprint,canvasEpoch});}button.click();return true;}
       window.CastReaderWeRead={nextPage(){return turnPage('next',false);},userPage(direction){return turnPage(direction==='prev'?'prev':'next',true);},snapshot(){schedule('manual');return{fingerprint:lastFingerprint,ready:!!visible.length};},relayout(a){clearHighlight();clearMarks();stableCandidate='';lastPreviewKey='';const reason=String(a?.reason||'orientation');try{window.dispatchEvent(new Event('resize'));}catch(_){}schedule(reason);setTimeout(()=>schedule(reason+'-settled'),360);return true;},resumeAfterForeground(a){restoreVisualState();schedule(String(a?.reason||'foreground'));return true;}};

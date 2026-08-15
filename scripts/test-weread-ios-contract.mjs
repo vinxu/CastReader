@@ -39,6 +39,14 @@ const readAloudSource = fs.readFileSync(
   path.join(root, 'CastReader/ViewModels/ReadAloudViewModel.swift'),
   'utf8',
 );
+const ttsServiceSource = fs.readFileSync(
+  path.join(root, 'CastReader/Services/TTSService.swift'),
+  'utf8',
+);
+const audioPlayerSource = fs.readFileSync(
+  path.join(root, 'CastReader/Services/AudioPlayerService.swift'),
+  'utf8',
+);
 const appSource = fs.readFileSync(
   path.join(root, 'CastReader/CastReaderApp.swift'),
   'utf8',
@@ -72,12 +80,16 @@ const toc = rawSwiftString('tocBridge');
 const loginQR = rawSwiftString('openLoginQRCode');
 const loginSessionBridge = rawSwiftString('loginSessionBridge');
 const resumeServerPolledLogin = rawSwiftString('resumeServerPolledLogin');
+const libraryScan = rawSwiftString('libraryScan');
+const shelfScanResetToTop = rawSwiftString('shelfScanResetToTop');
 
 // Syntax is verified independently from Swift compilation because WKUserScript
 // only reports malformed JavaScript at runtime.
 new vm.Script(canvas, { filename: 'WeRead.canvasIntercept.js' });
 new vm.Script(bridge, { filename: 'WeRead.readerBridge.js' });
 new vm.Script(toc, { filename: 'WeRead.tocBridge.js' });
+new vm.Script(libraryScan, { filename: 'WeRead.libraryScan.js' });
+new vm.Script(shelfScanResetToTop, { filename: 'WeRead.shelfScanResetToTop.js' });
 new vm.Script(loginQR, { filename: 'WeRead.openLoginQRCode.js' });
 new vm.Script(loginSessionBridge, { filename: 'WeRead.loginSessionBridge.js' });
 new vm.Script(resumeServerPolledLogin, { filename: 'WeRead.resumeServerPolledLogin.js' });
@@ -871,11 +883,15 @@ assert.match(bridge, /stableTimer=setTimeout\(\(\)=>publish\(reason\),120\)/);
 assert.match(bridge, /restoreVisualState\(\)/);
 assert.match(
   bridge,
-  /if\(lastFingerprint&&fingerprint!==lastFingerprint\)\{restoreVisualState\(\);post\('wereadPageChanging'/,
+  /if\(lastFingerprint&&fingerprint!==lastFingerprint\)\{clearHighlight\(\);clearMarks\(\);post\('wereadPageChanging'/,
 );
 assert.doesNotMatch(
   bridge,
-  /if\(lastFingerprint&&fingerprint!==lastFingerprint\)\{currentHighlight=null;currentMarks\.clear\(\)/,
+  /if\(lastFingerprint&&fingerprint!==lastFingerprint\)\{restoreVisualState\(\)/,
+);
+assert.match(
+  bridge,
+  /window\.CR=\{init\(\)\{wordState=\{para:-1,seg:-1,cursor:0,last:-1\};clearHighlight\(\);currentMarks\.clear\(\);\}/,
 );
 assert.match(bridge, /post\('wereadLayoutStable'/);
 assert.match(bridge, /relayout\(a\)/);
@@ -903,6 +919,32 @@ assert.match(bridge, /sourceFingerprint,contentFingerprint/);
 assert.match(bridge, /sourceCharStart/);
 assert.match(bridge, /sourceCharEnd/);
 assert.match(bridge, /sourceSpeechEnd/);
+assert.match(bridge, /sourceLayoutFingerprint/);
+assert.match(nativeBridgeSource, /requireSourceLayoutIdentity: true/);
+assert.match(nativeBridgeSource, /preparedText: \$0\.preparedText/);
+assert.match(nativeBridgeSource, /visiblePreparedText: visiblePreparedText/);
+assert.match(nativeBridgeSource, /candidate\.carryParagraphIndex != nil/);
+assert.match(nativeBridgeSource, /candidate\.carryUTF16Length > 0/);
+assert.match(nativeBridgeSource, /continuationSuppressed: suppressAppReviewContinuationForPendingTurn/);
+const pageCommitStart = nativeBridgeSource.indexOf('private func commitWeReadPage');
+const pageCommitEnd = nativeBridgeSource.indexOf(
+  'private func updateWeReadCarryHighlightIfNeeded',
+  pageCommitStart,
+);
+assert.ok(pageCommitStart >= 0 && pageCommitEnd > pageCommitStart, 'native WeRead page commit block missing');
+const pageCommit = nativeBridgeSource.slice(pageCommitStart, pageCommitEnd);
+assert.ok(
+  pageCommit.indexOf('call("init"') < pageCommit.indexOf('commitContinuousLiveWebPage'),
+  'the confirmed page must initialize JavaScript before continuous playback can paint its first highlight',
+);
+assert.ok(
+  pageCommit.indexOf('call("init"') < pageCommit.indexOf('commitLiveWebPageDuringActiveCarry'),
+  'the confirmed page must initialize JavaScript before carry playback can paint its first highlight',
+);
+assert.match(
+  nativeBridgeSource,
+  /shouldClearContinuationSuppressionWhenReturningToRead\([\s\S]*?pendingSemanticTurn: pendingWeReadTurn/,
+);
 assert.match(bridge, /resolveSegmentRange/);
 assert.match(bridge, /computeSourceSpan/);
 assert.match(bridge, /formattingMatch/);
@@ -945,6 +987,121 @@ assert.match(nativeBridgeSource, /consumeAlreadySpokenPrefix/);
 assert.match(nativeBridgeSource, /commitLiveWebPageDuringActiveCarry/);
 assert.match(nativeBridgeSource, /requestWeReadNextPage\(\)/);
 assert.match(readAloudSource, /isAwaitingLiveWebCarryCompletion/);
+assert.match(
+  ttsServiceSource,
+  /func generatePrefetchSegments\([\s\S]*?onSegmentReady: \(\(AudioSegment\) async -> Void\)\? = nil/,
+  'off-queue TTS prefetch must publish exact-page segments progressively without changing existing callers',
+);
+assert.match(
+  ttsServiceSource,
+  /segments\.append\(segment\)[\s\S]*?await onSegmentReady\(segment\)[\s\S]*?segmentIndex \+= 1/,
+  'each exact-page segment must be published as soon as it is generated',
+);
+const exactCarryCommit = readAloudSource.slice(
+  readAloudSource.indexOf('func commitLiveWebPageDuringActiveCarry'),
+  readAloudSource.indexOf('private func setWebHighlight'),
+);
+assert.match(exactCarryCommit, /startLiveWebCarryPrewarm\(/);
+assert.match(exactCarryCommit, /generatePrefetchSegments\(/);
+assert.match(exactCarryCommit, /liveWebCarryPrewarmIdentityIsCurrent\(/);
+assert.match(exactCarryCommit, /liveWebCarryPrewarmCanAcceptCallbacks\(/);
+assert.match(exactCarryCommit, /audio\.loadSegments\(/);
+assert.match(exactCarryCommit, /audio\.finishStreamingProducer\(/);
+const exactReceiveStart = exactCarryCommit.indexOf(
+  'private func receiveLiveWebCarryPrewarmSegment',
+);
+const exactFinishStart = exactCarryCommit.indexOf(
+  'private func finishLiveWebCarryPrewarm',
+);
+const exactFailStart = exactCarryCommit.indexOf(
+  'private func failLiveWebCarryPrewarm',
+);
+const exactPlaybackStart = exactCarryCommit.indexOf(
+  'private func startLiveWebCarryPlaybackIfReady',
+);
+assert.ok(
+  exactReceiveStart >= 0
+    && exactFinishStart > exactReceiveStart
+    && exactFailStart > exactFinishStart
+    && exactPlaybackStart > exactFailStart,
+  'exact carry prewarm state handlers must remain independently auditable',
+);
+const exactReceive = exactCarryCommit.slice(exactReceiveStart, exactFinishStart);
+const exactFinish = exactCarryCommit.slice(exactFinishStart, exactFailStart);
+const exactFail = exactCarryCommit.slice(exactFailStart, exactPlaybackStart);
+const exactPlayback = exactCarryCommit.slice(exactPlaybackStart);
+assert.match(
+  exactReceive,
+  /liveWebCarryPrewarmCanAcceptCallbacks\([\s\S]*?if liveWebCarryPrewarmPlaybackStarted[\s\S]*?audio\.loadSegment\([\s\S]*?else if liveWebCarryPrewarmPlaybackDue[\s\S]*?startLiveWebCarryPlaybackIfReady/,
+  'a segment arriving after carry completion must join the active stream; an early segment remains buffered',
+);
+assert.match(
+  exactReceive,
+  /audio\.isWaitingForNextSegment[\s\S]*?audio\.currentSegment\?\.id[\s\S]*?liveWebCarryPrewarmDeferredStartSegmentID = segment\.id[\s\S]*?liveWebCarryPrewarmDeferredPredecessorSegmentID = deferredPredecessorID/,
+  'a segment arriving while a manual turn pauses a drained queue must retain an explicit resume target',
+);
+assert.match(exactFinish, /liveWebCarryPrewarmCanAcceptCallbacks\(/);
+assert.match(exactFinish, /liveWebCarryPrewarmProducerFinished = true/);
+assert.match(exactFinish, /audio\.finishStreamingProducer\(session: session\)/);
+assert.match(exactFail, /liveWebCarryPrewarmCanAcceptCallbacks\(/);
+assert.match(exactFail, /generationTask\?\.cancel\(\)/);
+assert.match(exactFail, /liveWebCarryPrewarmDeferredStartSegmentID = nil/);
+assert.match(exactFail, /liveWebCarryPrewarmDeferredPredecessorSegmentID = nil/);
+assert.match(exactFail, /status = \.error/);
+assert.doesNotMatch(exactFail, /advance\(|finishStreamingProducer|setMoreSegmentsExpected\(false|preloadNext/);
+assert.match(
+  exactPlayback,
+  /audio\.loadSegments\([\s\S]*?audio\.setMoreSegmentsExpected\(/,
+  'model state and the initial exact-page audio must be installed before the streaming producer flag is published',
+);
+assert.match(
+  exactPlayback,
+  /liveWebCarryPrewarmDeferredStartSegmentID = shouldAutoPlay[\s\S]*?initialSegments\.first\?\.id[\s\S]*?liveWebCarryPrewarmDeferredPredecessorSegmentID = nil[\s\S]*?audio\.loadSegments\([\s\S]*?autoPlay: shouldAutoPlay/,
+  'a first exact-page buffer promoted under a paused turn must retain its first queued item for an exact resume',
+);
+assert.match(
+  exactFail,
+  /If one or more exact segments are already playing,[\s\S]*?keep[\s\S]*?the producer open/,
+  'a partial exact-page TTS failure must wait for retry instead of advancing past missing text',
+);
+assert.match(
+  readAloudSource,
+  /if segs\.count == 1, document\.sourceKind != \.weread/,
+  'WeRead must finish the current natural-sentence producer before competing for the next paragraph',
+);
+const cancelledTurnResume = readAloudSource.slice(
+  readAloudSource.indexOf('func resumeAfterCancelledLiveWebTurnIntent'),
+  readAloudSource.indexOf('var playbackLanguage'),
+);
+assert.match(
+  cancelledTurnResume,
+  /liveWebCarryPrewarmDeferredStartSegmentID[\s\S]*?liveWebCarryPrewarmDeferredPredecessorSegmentID[\s\S]*?currentID == \$0[\s\S]*?currentID == nil[\s\S]*?let didStart = audio\.startQueuedSegment\([\s\S]*?progress: 0[\s\S]*?autoPlay: true[\s\S]*?if didStart[\s\S]*?liveWebCarryPrewarmDeferredStartSegmentID = nil[\s\S]*?liveWebCarryPrewarmDeferredPredecessorSegmentID = nil[\s\S]*?return[\s\S]*?never seek the finished first item back to zero[\s\S]*?liveWebCarryPrewarmDeferredStartSegmentID = nil/,
+  'cancelling a manual turn must start the staged post-carry item instead of replaying the ended carry item',
+);
+const queuedStart = audioPlayerSource.slice(
+  audioPlayerSource.indexOf('func startQueuedSegment'),
+  audioPlayerSource.indexOf('func play(', audioPlayerSource.indexOf('func startQueuedSegment')),
+);
+assert.match(
+  queuedStart,
+  /return playSegment\(/,
+  'deferred exact-page resume must observe a real staging failure instead of reporting unconditional success',
+);
+const finishProducer = audioPlayerSource.slice(
+  audioPlayerSource.indexOf('func finishStreamingProducer'),
+  audioPlayerSource.indexOf('// MARK: - Initialization'),
+);
+assert.match(
+  finishProducer,
+  /DispatchQueue\.main\.async[\s\S]*?playbackOwnership\.permitsCallback[\s\S]*?currentSegment\?\.id == terminalSegmentID[\s\S]*?StreamingQueueDrainContract\.shouldCompletePlayback[\s\S]*?onPlaybackComplete\?\(\)/,
+  'a drained exact producer must revalidate owner, terminal item, and queue state before completing asynchronously',
+);
+const previewPrefetch = nativeBridgeSource.slice(
+  nativeBridgeSource.indexOf('private func maybeStartWeReadPreviewPrefetch'),
+  nativeBridgeSource.indexOf('private func maybeArmWeReadContinuousHandoff'),
+);
+assert.match(previewPrefetch, /readVM\.isOnLastReadableParagraph/);
+assert.match(previewPrefetch, /readVM\.currentTTSCompleteForPageHandoff/);
 assert.match(nativeBridgeSource, /scheduleWeReadForegroundProbe/);
 assert.doesNotMatch(nativeBridgeSource, /reason: "orientation"|weReadSurfaceDidChange|weReadSurfaceRelayoutTask/);
 assert.match(nativeBridgeSource, /foreground probe inconclusive preserve-live-webview/);
@@ -990,9 +1147,11 @@ assert.match(kindleReaderSource, /func expand\(\)[\s\S]*AppOrientationLock\.unlo
 assert.match(readerHostSource, /onChange\(of: verticalSizeClass\)[\s\S]*guard coordinator\.isReaderPresented/);
 assert.match(kindleReaderSource, /onChange\(of: verticalSizeClass\)[\s\S]*guard playbackCenter\.isPresented/);
 
-// Canvas fillText y is a baseline, not a glyph top.  Modern WKWebView exposes
-// the exact ascent/descent used for that draw call; those metrics must win over
-// any font-size ratio so the overlay stays on the painted glyphs at every zoom.
+// Canvas fillText y is a baseline, not a glyph top. Glyph-specific
+// actualBoundingBox metrics are deliberately not highlight geometry: a glyph
+// such as Chinese “一” has a very short ink box and used to create a second,
+// overlapping overlay on the same line. Stable font/em metrics keep every
+// glyph on the same visual line at every zoom.
 const metricStart = bridge.indexOf('function textMetricBox');
 const metricEnd = bridge.indexOf('function glyphs', metricStart);
 assert.ok(metricStart >= 0 && metricEnd > metricStart, 'text metric mapper missing');
@@ -1001,15 +1160,30 @@ new vm.Script(`
   ${bridge.slice(metricStart, metricEnd)}
   globalThis.textMetricBoxForTest=textMetricBox;
 `).runInContext(metricContext);
-const actualMetric = metricContext.textMetricBoxForTest(
-  { actualAscent: 12, actualDescent: 4, textBaseline: 'alphabetic' },
+const fontMetric = metricContext.textMetricBoxForTest(
+  {
+    actualAscent: 1,
+    actualDescent: 0,
+    fontAscent: 14,
+    fontDescent: 6,
+    textBaseline: 'alphabetic',
+  },
   100,
   2,
-  36,
+  40,
 );
-assert.equal(actualMetric.y, 76);
-assert.equal(actualMetric.height, 32);
-assert.equal(actualMetric.source, 'actual');
+assert.equal(fontMetric.y, 72);
+assert.equal(fontMetric.height, 40);
+assert.equal(fontMetric.source, 'font');
+const shortInkMetric = metricContext.textMetricBoxForTest(
+  { actualAscent: 1, actualDescent: 0, textBaseline: 'alphabetic' },
+  100,
+  1,
+  20,
+);
+assert.equal(shortInkMetric.y, 84);
+assert.equal(shortInkMetric.height, 20);
+assert.equal(shortInkMetric.source, 'em');
 const fallbackMetric = metricContext.textMetricBoxForTest(
   { textBaseline: 'middle' },
   100,
@@ -1018,7 +1192,44 @@ const fallbackMetric = metricContext.textMetricBoxForTest(
 );
 assert.equal(fallbackMetric.y, 90);
 assert.equal(fallbackMetric.height, 20);
-assert.equal(fallbackMetric.source, 'fallback');
+assert.equal(fallbackMetric.source, 'em');
+
+// Even if a legacy/drawImage path supplies ink-sized boxes, line coalescing
+// uses the shared baseline rather than top/height. The thin middle glyph must
+// become one overlay with its neighbours, never a darker overlapping layer.
+const linesStart = bridge.indexOf('function lines(rects)');
+const linesEnd = bridge.indexOf('const rgba=', linesStart);
+assert.ok(linesStart >= 0 && linesEnd > linesStart, 'highlight line coalescer missing');
+const linesContext = vm.createContext({});
+new vm.Script(`
+  ${bridge.slice(linesStart, linesEnd)}
+  globalThis.linesForTest=lines;
+`).runInContext(linesContext);
+const coalesced = linesContext.linesForTest([
+  { x: 10, y: 10, width: 12, height: 20 },
+  { x: 22, y: 24, width: 12, height: 3 },
+  { x: 34, y: 10, width: 12, height: 20 },
+]);
+assert.equal(coalesced.length, 1);
+assert.equal(coalesced[0].x, 10);
+assert.equal(coalesced[0].y, 10);
+assert.equal(coalesced[0].width, 36);
+assert.equal(coalesced[0].height, 20);
+
+// A tall title or one malformed legacy rect must never enlarge the matching
+// tolerance and chain several physical lines into one giant overlay. The line
+// reference remains fixed even though the painted union grows.
+const separatePhysicalLines = linesContext.linesForTest([
+  { x: 10, y: 10, width: 20, height: 40 },
+  { x: 30, y: 30, width: 10, height: 20 },
+  { x: 10, y: 58, width: 40, height: 20 },
+  { x: 10, y: 86, width: 40, height: 20 },
+]);
+assert.equal(separatePhysicalLines.length, 3);
+assert.deepEqual(
+  Array.from(separatePhysicalLines, line => Math.round(line.referenceBaseline)),
+  [50, 78, 106],
+);
 
 // Execute the exact alignment functions embedded in the WKUserScript.  TTS
 // frequently normalizes CJK curly quotes/full-width punctuation; replaying all
@@ -1341,6 +1552,7 @@ const currentVisible = '第一页开头，这句话跨';
 const nextVisible = '到下一页才结束。第二句。';
 const currentSpeech = speechContext.speechPayloadsForTest([{
   text: currentVisible,
+  sourceLayoutFingerprint: 'chapter-layout-a',
   sourceParagraphIndex: 0,
   sourceParagraphText: logicalSentence,
   sourceCharStart: 0,
@@ -1350,6 +1562,7 @@ assert.equal(currentSpeech[0].text, '第一页开头，这句话跨到下一页�
 assert.equal(currentSpeech[0].boundaryUTF16Offset, currentVisible.length);
 const previewSpeech = speechContext.preparePreviewPayloadsForTest(currentSpeech, [{
   text: nextVisible,
+  sourceLayoutFingerprint: 'chapter-layout-a',
   sourceParagraphIndex: 0,
   sourceParagraphText: logicalSentence,
   sourceCharStart: currentVisible.length,
@@ -1357,6 +1570,20 @@ const previewSpeech = speechContext.preparePreviewPayloadsForTest(currentSpeech,
 }]);
 assert.equal(previewSpeech[0].carryUTF16Length, '到下一页才结束。'.length);
 assert.equal(previewSpeech[0].prefetchText, '第二句。');
+const otherLayoutSpeech = speechContext.preparePreviewPayloadsForTest(currentSpeech, [{
+  text: nextVisible,
+  sourceLayoutFingerprint: 'chapter-layout-b',
+  sourceParagraphIndex: 0,
+  sourceParagraphText: logicalSentence,
+  sourceCharStart: currentVisible.length,
+  sourceCharEnd: logicalSentence.length,
+}]);
+assert.equal(
+  otherLayoutSpeech[0].carryUTF16Length,
+  undefined,
+  'a paragraph index from another transient layout must not clip the visible page',
+);
+assert.equal(otherLayoutSpeech[0].prefetchText, nextVisible);
 
 const alreadyComplete = speechContext.speechPayloadsForTest([{
   text: '已经完整结束。',
@@ -1366,6 +1593,64 @@ const alreadyComplete = speechContext.speechPayloadsForTest([{
   sourceCharEnd: '已经完整结束。'.length,
 }]);
 assert.equal(alreadyComplete[0].text, '已经完整结束。', 'must not pull in the next complete sentence');
+
+// Login completion and shelf authorship are separate contracts. The WeRead
+// home page contains real reader links, so only direct rows from the exact
+// official shelf may reach native persistence.
+assert.match(libraryScan, /pageURL\.protocol === 'https:'/);
+assert.match(libraryScan, /pageURL\.hostname === 'weread\.qq\.com'/);
+assert.ok(
+  libraryScan.includes("/^\\/web\\/shelf\\/?$/.test(pageURL.pathname)"),
+  'the scan must require the exact /web/shelf path',
+);
+assert.match(libraryScan, /#routerView\.shelf_container \.shelf_list/);
+assert.match(libraryScan, /:scope > a\.shelfBook\[href\]:not\(\.shelfBook_add\)/);
+assert.match(libraryScan, /const shelfLinks = shelfContainer \?/);
+assert.doesNotMatch(
+  libraryScan,
+  /authenticated[^;\n]*books\.length/,
+  'reader/recommendation cards must never be treated as authentication evidence',
+);
+assert.match(libraryScan, /reachedShelfEnd: Boolean\(reachedShelfEnd && addTile && !loadError\)/);
+assert.match(libraryScan, /rawBookCount: shelfLinks\.length/);
+assert.doesNotMatch(
+  libraryScan,
+  /querySelectorAll\('\[class\*=\"shelf\" i\],\[class\*=\"book\" i\],\[class\*=\"list\" i\]'/,
+  'the scan must not guess a scroll owner from unrelated class names',
+);
+assert.match(libraryScan, /node = node\.parentElement/);
+assert.match(libraryViewsSource, /guard self\.isTrustedShelfResult\(scan\) else/);
+assert.match(
+  libraryViewsSource,
+  /result\.rawBookCount == result\.books\.count/,
+  'every direct shelf row must parse before a scan can be trusted',
+);
+assert.match(
+  libraryViewsSource,
+  /func webView\(_ webView: WKWebView, didCommit navigation: WKNavigation!\) \{[\s\S]*?navigationGeneration &\+= 1[\s\S]*?clearUntrustedShelfPreview\(\)/,
+  'every main-frame commit must invalidate the previous scan generation',
+);
+assert.match(
+  libraryViewsSource,
+  /let observedSessionFingerprint = await currentAuthenticatedWeReadSessionFingerprint\(\)[\s\S]*?guard let accountBoundaryToken,[\s\S]*?AccountContentIsolation\.isCurrent\(accountBoundaryToken\),[\s\S]*?hasTrustedShelfSnapshot,[\s\S]*?trustedSnapshotNavigationGeneration == navigationGeneration,[\s\S]*?trustedSnapshotSessionFingerprint == observedSessionFingerprint/,
+  'account, navigation and HttpOnly-cookie ownership must be rechecked after the final await',
+);
+assert.match(
+  libraryViewsSource,
+  /values\["wr_vid"\] \?\? values\["wr_localvid"\][\s\S]*?values\["wr_skey"\]/,
+  'native shelf persistence must require the signed-in vid + HttpOnly skey pair',
+);
+assert.match(libraryViewsSource, /store\.mergeScrapedBooks/);
+assert.doesNotMatch(
+  libraryViewsSource,
+  /replaceWithAuthoritativeShelf/,
+  'a DOM scan must never prune a local shelf or its reading anchors',
+);
+assert.match(
+  librarySource,
+  /#if DEBUG[\s\S]*-CastReaderResetWeReadLibrarySnapshot[\s\S]*#endif/,
+  'test-device cleanup must be explicit and absent from App Store builds',
+);
 
 console.log('WeRead iOS JavaScript contracts passed');
 // Several extracted production bridges intentionally schedule observers and

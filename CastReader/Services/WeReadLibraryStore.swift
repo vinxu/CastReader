@@ -28,6 +28,14 @@ final class WeReadLibraryStore: ObservableObject {
     private let usesLegacyStorageWhenUnscoped: Bool
     private var accountScope: AccountContentScope?
     private var isLegacyTestingScopeActive = false
+#if DEBUG
+    /// Explicit test-device recovery for snapshots produced by an unreleased
+    /// build. Consumed once, after the signed-in account scope is active. It
+    /// never clears WeRead cookies and is not compiled into App Store builds.
+    private var resetsCurrentSnapshotOnFirstActivation = ProcessInfo.processInfo.arguments.contains(
+        "-CastReaderResetWeReadLibrarySnapshot"
+    )
+#endif
 
     private init() {
         defaults = .standard
@@ -47,6 +55,12 @@ final class WeReadLibraryStore: ObservableObject {
         isLegacyTestingScopeActive = false
         accountScope = scope
         load()
+#if DEBUG
+        if resetsCurrentSnapshotOnFirstActivation {
+            resetsCurrentSnapshotOnFirstActivation = false
+            clearCurrentSnapshot()
+        }
+#endif
     }
 
     func deactivateAccountScope() {
@@ -264,5 +278,21 @@ final class WeReadLibraryStore: ObservableObject {
         anchors = [:]
         isRefreshing = false
         lastError = nil
+    }
+
+#if DEBUG
+    func resetCurrentAccountSnapshotForTesting() {
+        clearCurrentSnapshot()
+    }
+#endif
+
+    private func clearCurrentSnapshot() {
+        guard hasActiveStorage else { return }
+        books = []
+        anchors = [:]
+        hasConnected = false
+        accountLabel = nil
+        lastError = nil
+        save()
     }
 }
