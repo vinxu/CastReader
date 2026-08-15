@@ -781,8 +781,8 @@ class CastReaderUITests: XCTestCase {
         XCTFail("\(message)（实际：\(String(describing: element.value))）")
     }
 
-    /// 产品发行区域和自有 API 服务线路必须是两个独立开关。线路切换只写给
-    /// 下次启动，当前进程保持 global，避免一次会话混用后端。
+    /// 产品发行区域与账号域必须原子绑定。切换只写给下次启动，当前进程保持
+    /// 原账号域，避免一次会话中途混用登录、支付与本地数据命名空间。
     func testInternalRegionSwitcherIsReachableAndSwitchesRegion() {
         let app = XCUIApplication()
         app.launchArguments = [
@@ -828,6 +828,16 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(effective.waitForExistence(timeout: 4))
         expect(effective, toHaveValue: "cn", "切到 CHN 后当前生效区域应为 cn")
 
+        let currentRoute = app.descendants(matching: .any)["settingsServiceRouteEffective"]
+        let nextRoute = app.descendants(matching: .any)["settingsServiceRouteNextLaunch"]
+        for _ in 0..<8 where !currentRoute.exists || !nextRoute.exists {
+            app.swipeUp()
+        }
+        XCTAssertTrue(currentRoute.exists)
+        XCTAssertTrue(nextRoute.exists)
+        expect(currentRoute, toHaveValue: "global", "当前进程必须保持原账号域")
+        expect(nextRoute, toHaveValue: "cn", "选择中国产品区必须同步中国账号域")
+
         // 必须能切回来——否则测试机会被锁死在中国区。
         let globalOption = app.buttons["全球（Global）"]
         for _ in 0..<6 where !globalOption.isHittable {
@@ -842,43 +852,10 @@ class CastReaderUITests: XCTestCase {
             app.swipeDown()
         }
         expect(effective, toHaveValue: "global", "切回后当前生效区域应为 global")
-
-        let chinaRouteOption = app.buttons["中国备案网关"]
-        for _ in 0..<8 where !chinaRouteOption.isHittable {
-            app.swipeUp()
-        }
-        XCTAssertTrue(chinaRouteOption.isHittable, "必须提供独立的中国服务线路开关")
-        let currentRoute = app.descendants(matching: .any)["settingsServiceRouteEffective"]
-        let nextRoute = app.descendants(matching: .any)["settingsServiceRouteNextLaunch"]
-        for _ in 0..<6 where !currentRoute.exists || !nextRoute.exists {
-            app.swipeUp()
-        }
-        XCTAssertTrue(currentRoute.exists)
-        XCTAssertTrue(nextRoute.exists)
-        expect(currentRoute, toHaveValue: "global", "当前进程应保持全球网关")
-        for _ in 0..<6 where !chinaRouteOption.isHittable {
-            app.swipeDown()
-        }
-        XCTAssertTrue(chinaRouteOption.isHittable)
-        chinaRouteOption.tap()
-        for _ in 0..<6 where !currentRoute.exists || !nextRoute.exists {
-            app.swipeUp()
-        }
-        expect(currentRoute, toHaveValue: "global", "设置后当前进程不得中途切线")
-        expect(nextRoute, toHaveValue: "cn", "中国网关应在下次启动生效")
-
-        // Restore the persistent override so this test cannot change the route
-        // observed by a later UI test or a developer's next manual launch.
-        let globalRouteOption = app.buttons["全球网关"]
-        for _ in 0..<8 where !globalRouteOption.isHittable {
-            app.swipeDown()
-        }
-        XCTAssertTrue(globalRouteOption.isHittable, "必须保留切回全球网关的入口")
-        globalRouteOption.tap()
         for _ in 0..<6 where !nextRoute.exists {
             app.swipeUp()
         }
-        expect(nextRoute, toHaveValue: "global", "测试结束前必须恢复全球网关")
+        expect(nextRoute, toHaveValue: "global", "切回全球产品区必须同步全球账号域")
     }
 
     /// 产品区域与服务线路只放在设置页，登录页不重复暴露内部测试控件。

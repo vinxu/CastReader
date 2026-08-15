@@ -108,6 +108,12 @@ struct SettingsView: View {
             } message: { Text(restoreMessage) }
         }
         .navigationViewStyle(.stack)
+        .onAppear {
+            synchronizeAccountRouteWithProductRegion(showMessage: false)
+        }
+        .onChange(of: regionOverrideRaw) { _, _ in
+            synchronizeAccountRouteWithProductRegion(showMessage: true)
+        }
     }
 
     // MARK: 应用语言
@@ -664,16 +670,8 @@ struct SettingsView: View {
             if ServiceRouting.allowsLocalOverride {
                 Divider()
 
-                Picker("自有 API 服务线路", selection: $serviceRouteOverrideRaw) {
-                    Text("跟随后台（默认全球网关）").tag("")
-                    Text(ServiceRoute.globalGateway.displayName).tag(ServiceRoute.globalGateway.rawValue)
-                    Text(ServiceRoute.chinaGateway.displayName).tag(ServiceRoute.chinaGateway.rawValue)
-                }
-                .pickerStyle(.inline)
-                .accessibilityIdentifier("settingsServiceRouteOverride")
-
                 HStack {
-                    Text("当前进程线路")
+                    Text("当前登录账号域")
                     Spacer()
                     Text(ServiceRouting.current.displayName)
                         .foregroundColor(AppTheme.mutedForeground)
@@ -683,7 +681,7 @@ struct SettingsView: View {
                 .accessibilityValue(ServiceRouting.current.rawValue)
 
                 HStack {
-                    Text("下次启动线路")
+                    Text("下次启动账号域")
                     Spacer()
                     Text(ServiceRouting.nextLaunchSnapshot.route.displayName)
                         .foregroundColor(AppTheme.mutedForeground)
@@ -693,9 +691,26 @@ struct SettingsView: View {
                 .accessibilityValue(ServiceRouting.nextLaunchSnapshot.route.rawValue)
 
                 HStack {
-                    Text("下次启动来源")
+                    Text("账号域判据")
                     Spacer()
                     Text(ServiceRouting.nextLaunchSnapshot.provenance.rawValue)
+                        .foregroundColor(AppTheme.mutedForeground)
+                }
+
+                HStack {
+                    Text("朗读 / 解读生成线路")
+                    Spacer()
+                    Text(ComputeRouting.current.displayName)
+                        .foregroundColor(AppTheme.mutedForeground)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("settingsComputeRouteEffective")
+                .accessibilityValue(ComputeRouting.current.rawValue)
+
+                HStack {
+                    Text("生成线路判据")
+                    Spacer()
+                    Text(computeRouteProvenanceDescription)
                         .foregroundColor(AppTheme.mutedForeground)
                 }
 
@@ -738,12 +753,35 @@ struct SettingsView: View {
             Text("内部测试 · 区域与网络")
         } footer: {
             Text(
-                "两项开关彼此独立，切换后请完全退出并重新打开 App。当前进程固定使用一条网络线路，"
-                + "避免登录、支付、上传或朗读中途混用后端。配置缺失、过期或拉取失败时默认全球网关。"
+                "发行区域与登录账号域原子绑定：中国对应中国账号域，全球对应全球账号域。切换后请完全退出并重新打开 App，"
+                + "重启后会加载目标账号域中原来登录的账号；若该域尚未登录，则进入登录页。账号、支付、上传在进程内不会热切换。"
+                + "朗读、解读和音色物料使用独立的智能生成线路，按当前网络位置选择，不会切换登录账号。"
                 + "中国产品体验把微信读书设为默认，并隐藏 YouTube 主动入口；Kindle、Google 图书、Kobo、O’Reilly "
-                + "等书架连接仍全部保留，但登录页隐藏 Google 与邮箱，提供手机号和 Apple。服务线路只选择入口域名；"
-                + "全球与中国线路的登录会话和本地数据完全隔离，首次切到目标线路需登录该线路账号，切回后可恢复原线路账号。"
+                + "等书架连接仍全部保留，但登录页隐藏 Google 与邮箱，提供手机号和 Apple。全球与中国账号域的登录会话和本地数据"
+                + "完全隔离，切回原账号域后会恢复原账号及其内容。"
             )
+        }
+    }
+
+    private func synchronizeAccountRouteWithProductRegion(showMessage: Bool) {
+        guard ServiceRouting.allowsLocalOverride else { return }
+        let region = AppRegion(rawValue: regionOverrideRaw)
+        let route = ServiceRouting.accountRouteOverride(for: region)
+        let desiredRaw = route?.rawValue ?? ""
+        guard serviceRouteOverrideRaw != desiredRaw else { return }
+        serviceRouteOverrideRaw = desiredRaw
+        if showMessage, let route {
+            serviceRouteRefreshMessage = "账号域已同步为\(route.displayName)，完整退出并重新打开 App 后切换账号"
+        }
+    }
+
+    private var computeRouteProvenanceDescription: String {
+        switch ComputeRouting.provenance {
+        case .debugOverride: return "调试覆盖"
+        case .networkCountry: return "当前网络国家"
+        case .simCountry: return "SIM 国家"
+        case .mainlandTimeZone: return "中国大陆时区"
+        case .safeGlobal: return "安全默认全球"
         }
     }
 

@@ -278,6 +278,20 @@ enum ServiceRouting {
     static var overrideDefaultsKey: String { Key.override }
     static var backendConfigurationDefaultsKey: String { Key.backendConfiguration }
 
+    /// Internal distribution testing must model the production contract: the
+    /// product distribution and account namespace move together. Compute
+    /// routing remains independent and is resolved from the user's location.
+    static func accountRouteOverride(for appRegionOverride: AppRegion?) -> ServiceRoute? {
+        switch appRegionOverride {
+        case .cn:
+            return .chinaGateway
+        case .global:
+            return .globalGateway
+        case nil:
+            return nil
+        }
+    }
+
     static var overrideRoute: ServiceRoute? {
         get {
             guard allowsLocalOverride else { return nil }

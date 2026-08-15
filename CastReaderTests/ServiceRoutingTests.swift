@@ -214,6 +214,18 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(launch, .init(route: .chinaGateway, provenance: .launchArgument))
     }
 
+    func testExplicitProductRegionCouplesAccountRouteWhileAutomaticModeClearsOverride() {
+        XCTAssertEqual(
+            ServiceRouting.accountRouteOverride(for: .cn),
+            .chinaGateway
+        )
+        XCTAssertEqual(
+            ServiceRouting.accountRouteOverride(for: .global),
+            .globalGateway
+        )
+        XCTAssertNil(ServiceRouting.accountRouteOverride(for: nil))
+    }
+
     func testAppStoreUpgradeIgnoresPersistedTestFlightChinaOverride() throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         suite.set(ServiceRoute.chinaGateway.rawValue, forKey: ServiceRouting.overrideDefaultsKey)
