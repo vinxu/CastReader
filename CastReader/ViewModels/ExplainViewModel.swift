@@ -334,6 +334,14 @@ final class ExplainViewModel: ObservableObject {
 
     private var prepared: [Int: PreparedBlock] = [:]
     private var preparingBlocks = Set<Int>()
+    /// Background preparation is scheduled before `prepareBlock` gets a chance
+    /// to enter `preparingBlocks`. Track that short gap explicitly so multiple
+    /// plan/enqueue callbacks cannot launch the same block twice.
+    private var scheduledBackgroundBlocks = Set<Int>()
+    /// Keep two complete explanation blocks ahead of playback. At 1.5-2.0x a
+    /// single block is routinely consumed before DeepSeek + TTS + compose can
+    /// finish its successor, which presents as a silent stall between blocks.
+    private let rollingPrefetchDepth = 2
     private var marksByBlock: [Int: [QuickreadEvent]] = [:]
     private var replayBlocks: [PreparedBlock] = []   // 完整解读播放轨道；跨 PDF/长文批次保留，供「重播」从头顺序播放
     private var isReplayingCached = false
@@ -1066,6 +1074,7 @@ final class ExplainViewModel: ObservableObject {
         fastTask?.cancel()
         fastTask = nil
         clearPagePrefetch()
+        scheduledBackgroundBlocks.removeAll()
     }
 
     /// Kindle uses this to avoid spending the shared QuickRead slot on the
@@ -1674,10 +1683,6 @@ final class ExplainViewModel: ObservableObject {
             }
             guard contentGeneration == generation else { return }
             kindlePerfLog("prepare-enqueue ready idx=\(idx) totalMs=\(elapsedMs(since: startedAt)) segs=\(pb.segments.count) text=\(pb.text.count)")
-            // 预取下一块
-            if idx + 1 < totalBlocks {
-                startBackgroundPrepare(block: idx + 1, reason: "after-enqueue-\(idx)")
-            }
         } catch is CancellationError {
             await MainActor.run {
                 guard self.contentGeneration == generation else { return }
@@ -1701,10 +1706,13 @@ final class ExplainViewModel: ObservableObject {
 
     private func startBackgroundPrepare(block idx: Int, reason: String) {
         guard idx >= 0, idx < totalBlocks else { return }
-        guard prepared[idx] == nil, !preparingBlocks.contains(idx) else {
-            kindlePerfLog("background-prepare skip reason=\(reason) idx=\(idx) cached=\(prepared[idx] == nil ? "N" : "Y") preparing=\(preparingBlocks.contains(idx) ? "Y" : "N")")
+        guard prepared[idx] == nil,
+              !preparingBlocks.contains(idx),
+              !scheduledBackgroundBlocks.contains(idx) else {
+            kindlePerfLog("background-prepare skip reason=\(reason) idx=\(idx) cached=\(prepared[idx] == nil ? "N" : "Y") preparing=\(preparingBlocks.contains(idx) ? "Y" : "N") scheduled=\(scheduledBackgroundBlocks.contains(idx) ? "Y" : "N")")
             return
         }
+        scheduledBackgroundBlocks.insert(idx)
         kindlePerfLog("background-prepare schedule reason=\(reason) idx=\(idx) total=\(totalBlocks)")
         kindlePerfLog("kindleExplainBlockPrefetch start reason=\(reason) idx=\(idx) total=\(totalBlocks)")
         let generation = contentGeneration
@@ -1714,23 +1722,46 @@ final class ExplainViewModel: ObservableObject {
                 let pb = try await self.prepareBlock(idx, detachedTTS: true, generation: generation)
                 await MainActor.run {
                     guard self.contentGeneration == generation else { return }
+                    self.scheduledBackgroundBlocks.remove(idx)
                     if self.prepared[idx] == nil {
                         self.prepared[idx] = pb
                     }
                     self.kindlePerfLog("background-prepare ready reason=\(reason) idx=\(idx) segs=\(pb.segments.count) text=\(pb.text.count)")
                     self.kindlePerfLog("kindleExplainBlockPrefetch ready reason=\(reason) idx=\(idx) segs=\(pb.segments.count) text=\(pb.text.count)")
+                    self.fillRollingPrefetchWindow(reason: "ready-\(idx)")
                 }
             } catch is CancellationError {
                 await MainActor.run {
                     guard self.contentGeneration == generation else { return }
+                    self.scheduledBackgroundBlocks.remove(idx)
                     self.kindlePerfLog("background-prepare cancelled reason=\(reason) idx=\(idx)")
                 }
             } catch {
                 await MainActor.run {
                     guard self.contentGeneration == generation else { return }
+                    self.scheduledBackgroundBlocks.remove(idx)
                     self.kindlePerfLog("background-prepare miss reason=\(reason) idx=\(idx) error=\(error.localizedDescription)")
                 }
             }
+        }
+    }
+
+    /// Advance a bounded, serial rolling buffer. A scheduled/preparing hole is
+    /// a barrier: later blocks must not overtake it because the server's block
+    /// extraction and continuity context are ordered.
+    private func fillRollingPrefetchWindow(reason: String) {
+        guard !isReplayingCached, totalBlocks > 0 else { return }
+        let first = max(0, currentBlockIndex + 1)
+        let last = min(totalBlocks - 1, currentBlockIndex + rollingPrefetchDepth)
+        guard first <= last else { return }
+
+        for idx in first...last {
+            if prepared[idx] != nil { continue }
+            if preparingBlocks.contains(idx) || scheduledBackgroundBlocks.contains(idx) {
+                return
+            }
+            startBackgroundPrepare(block: idx, reason: "rolling-\(reason)")
+            return
         }
     }
 
@@ -1886,6 +1917,7 @@ final class ExplainViewModel: ObservableObject {
             )
         }
         _ = audio.setMoreSegmentsExpected(false, session: session)
+        fillRollingPrefetchWindow(reason: "enqueue-\(idx)")
         // PDF 连续解读：当前页一开始播就后台预取下一页首块，切页时秒接（消除页间 gap）。
         if !isReplayingCached { prefetchNextPage() }
     }
