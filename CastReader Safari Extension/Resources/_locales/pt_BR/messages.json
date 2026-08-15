@@ -1,8 +1,8 @@
 {
-  "extName": {
+  "name": {
     "message": "CastReader — Ler em voz alta + IA"
   },
-  "extDescription": {
+  "description": {
     "message": "Ouça Kindle, PDFs, artigos e livros com destaque sincronizado e Explicação por IA. Vozes naturais em 9 idiomas."
   },
   "quickreadBtn": {

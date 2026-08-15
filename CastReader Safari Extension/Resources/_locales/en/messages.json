@@ -1,8 +1,8 @@
 {
-  "extName": {
-    "message": "CastReader — Text to Speech, Read Aloud + AI Explain"
+  "name": {
+    "message": "CastReader — Read Aloud + AI Explain"
   },
-  "extDescription": {
+  "description": {
     "message": "Read aloud with synced highlights and AI explanations. Supports Kindle, PDFs, articles and books in 9 languages."
   },
   "quickreadBtn": {
@@ -255,7 +255,7 @@
     "message": "Text"
   },
   "edgeExtName": {
-    "message": "CastReader — Text to Speech, Read Aloud + AI Explain"
+    "message": "CastReader — Read Aloud + AI Explain"
   },
   "edgeExtDescription": {
     "message": "Read articles, PDFs, and Kindle books aloud with synchronized highlighting and AI explanations."

@@ -350,6 +350,10 @@ final class ImageCache {
 // MARK: - Cached Async Image
 
 enum CachedAsyncImageLoadContract {
+    static func routedURL(_ url: URL?, route: ServiceRoute) -> URL? {
+        url.flatMap { OwnedAPIRedirectPolicy.routedResponseURL($0, route: route) }
+    }
+
     static func shouldCommit(
         activeRequest: String?,
         completedRequest: String,
@@ -361,14 +365,21 @@ enum CachedAsyncImageLoadContract {
 
 struct CachedAsyncImage<Placeholder: View>: View {
     let url: URL?
+    let route: ServiceRoute
     let contentMode: ContentMode
     let placeholder: () -> Placeholder
 
     @State private var image: UIImage?
     @State private var activeRequest: String?
 
-    init(url: URL?, contentMode: ContentMode = .fill, @ViewBuilder placeholder: @escaping () -> Placeholder) {
+    init(
+        url: URL?,
+        route: ServiceRoute = ServiceRouting.current,
+        contentMode: ContentMode = .fill,
+        @ViewBuilder placeholder: @escaping () -> Placeholder
+    ) {
         self.url = url
+        self.route = route
         self.contentMode = contentMode
         self.placeholder = placeholder
     }
@@ -383,10 +394,8 @@ struct CachedAsyncImage<Placeholder: View>: View {
                 placeholder()
             }
         }
-        .task(id: url?.absoluteString) {
-            let requestURL = url.flatMap {
-                OwnedAPIRedirectPolicy.routedResponseURL($0)
-            }
+        .task(id: "\(route.rawValue)|\(url?.absoluteString ?? "")") {
+            let requestURL = CachedAsyncImageLoadContract.routedURL(url, route: route)
             let requestKey = requestURL?.absoluteString
             activeRequest = requestKey
             image = nil
@@ -410,7 +419,10 @@ struct CachedAsyncImage<Placeholder: View>: View {
         }
 
         do {
-            let (data, _) = try await OwnedAPIURLSession.data(from: requestURL)
+            let (data, _) = try await OwnedAPIURLSession.data(
+                from: requestURL,
+                route: route
+            )
             try Task.checkCancellation()
             guard let uiImage = UIImage(data: data) else { return }
             // 还是可以缓存已返回的图片，但只有当它仍是当前请求时才能回写 UI。

@@ -1,8 +1,8 @@
 {
-  "extName": {
+  "name": {
     "message": "CastReader — 音声読み上げ + AI解説"
   },
-  "extDescription": {
+  "description": {
     "message": "同期ハイライト付き音声読み上げと、ページに注釈するAI解説。Kindle、PDF、記事、書籍に対応。9言語の自然なAI音声。"
   },
   "quickreadBtn": {

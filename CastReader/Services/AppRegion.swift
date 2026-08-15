@@ -9,7 +9,8 @@
 //
 //  `AppRegion` 按 **App Store storefront** 做发行区域判定，回答「这台设备属于
 //    哪个发行版本，适用哪套合规与商业规则」；出差不改变发行区域。
-//  自有 API 节点由与之独立的 `ServiceRouting` 决定，不再按时区直连上游。
+//  账号/Pro/支付/上传等账号域由独立 `ServiceRouting` 决定；TTS、QuickRead、
+//  音色目录/试听/头像由 `ComputeRouting` 按冷启动位置快照决定。
 //
 
 import Foundation
@@ -53,9 +54,13 @@ extension AppRegion {
     /// `-CastReaderRegion cn` / `-CastReaderRegion global` 强制区域，便于 UI 测试
     /// 两套引导而不必换 App Store 账号。
     private static func launchArgumentRegion(_ arguments: [String]) -> AppRegion? {
+        #if DEBUG
         guard let index = arguments.firstIndex(of: "-CastReaderRegion"),
               index + 1 < arguments.count else { return nil }
         return AppRegion(rawValue: arguments[index + 1])
+        #else
+        return nil
+        #endif
     }
 
     // MARK: - 读取

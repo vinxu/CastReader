@@ -4,7 +4,8 @@
 //
 //  自有后端线路选择。它与 AppRegion（发行体验）严格分离：
 //  - AppRegion 决定引导、默认书库与中国区功能呈现；
-//  - ServiceRoute 决定账号、Pro、埋点、文档、TTS 与 QuickRead 走哪套网络。
+//  - ServiceRoute 决定账号、Pro、埋点、文档、上传等账号业务走哪套网络；
+//  - TTS / QuickRead / 音色物料由独立 ComputeRouting 按用户位置决定。
 //
 //  安全原则：新版全球网关永远是默认值。配置缺失、过期、不可达、格式异常或
 //  当前 build 不在灰度范围内时，一律回到 globalGateway。旧已发布二进制的
@@ -25,18 +26,12 @@ enum DistributionTestingPolicy {
 
     static var allowsPersistedOverrides: Bool {
         #if DEBUG
-        let isDebugBuild = true
+        return true
         #else
-        let isDebugBuild = false
+        // App Store / Release builds ignore every local distribution override.
+        // Storefront and the signed backend rollout remain the only authorities.
+        return false
         #endif
-        return allowsPersistedOverrides(
-            isDebugBuild: isDebugBuild,
-            isInternalDistributionBuild: internalDistributionControlsEnabled(
-                Bundle.main.object(forInfoDictionaryKey: internalDistributionControlsInfoKey)
-            ),
-            appStoreReceiptURL: Bundle.main.appStoreReceiptURL,
-            arguments: ProcessInfo.processInfo.arguments
-        )
     }
 
     /// The signed build setting is the primary authorization for non-Debug
@@ -389,13 +384,14 @@ enum ServiceRouting {
         buildNumber: Int = currentBuildNumber,
         allowLocalOverride: Bool = allowsLocalOverride
     ) -> Snapshot {
-        if let index = arguments.firstIndex(of: "-CastReaderServiceRoute"),
-           index + 1 < arguments.count {
-            guard let route = ServiceRoute(rawValue: arguments[index + 1]) else {
+        #if DEBUG
+        if arguments.contains("-CastReaderServiceRoute") {
+            guard let route = launchArgumentRoute(arguments) else {
                 return Snapshot(route: .globalGateway, provenance: .safeDefault)
             }
             return Snapshot(route: route, provenance: .launchArgument)
         }
+        #endif
 
         if allowLocalOverride,
            let raw = defaults.string(forKey: Key.override), !raw.isEmpty {
@@ -422,9 +418,13 @@ enum ServiceRouting {
     }
 
     static func launchArgumentRoute(_ arguments: [String]) -> ServiceRoute? {
+        #if DEBUG
         guard let index = arguments.firstIndex(of: "-CastReaderServiceRoute"),
               index + 1 < arguments.count else { return nil }
         return ServiceRoute(rawValue: arguments[index + 1])
+        #else
+        return nil
+        #endif
     }
 
     static var cachedBackendRoute: ServiceRoute? {

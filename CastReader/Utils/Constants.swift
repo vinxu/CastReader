@@ -22,9 +22,10 @@ enum Constants {
     enum API {
         static let globalServiceBaseURL = "https://api.castreader.ai"
 
-        /// App 自有的 TTS、文档和上传网关。它读取本次进程已经冻结的线路，
-        /// 不再跟随 AppRegion 动态变化。平台书架（Kindle、微信读书、YouTube 等）
-        /// 仍按各自原有域名连接，不属于这层自有 API 路由。
+        /// App 的账号域、文档和上传网关。它读取本次进程已经冻结的账号线路，
+        /// 不再跟随 AppRegion 动态变化。TTS、QuickRead 与音色物料必须改读
+        /// ComputeRouting；平台书架（Kindle、微信读书、YouTube 等）仍按各自
+        /// 原有域名连接，不属于这层自有 API 路由。
         static var baseURL: String {
             ServiceRouting.current.apiGatewayBaseURL
         }
@@ -50,13 +51,15 @@ enum Constants {
 
         // TTS
         static var tts: String { "\(baseURL)/api/captioned_speech_partly" }
-        static var ttsCatalog: String { "\(baseURL)/api/tts/catalog?contract=tts-voice-catalog-v1" }
+        static var ttsCatalog: String {
+            "\(ComputeRouting.current.apiGatewayBaseURL)/api/tts/catalog?contract=tts-voice-catalog-v1"
+        }
 
         // 解读 / QuickRead。新版客户端不再内置上游 API key。global 保持
         // api.castreader.ai；cn 直接进入 quickread.castreader.cn，避免先到
         // api.castreader.cn 再绕境外 QuickRead。两个入口都必须直接验证 cms_
         // session，客户端禁止携带模型供应商或 QuickRead 服务端密钥。
-        static var quickReadBaseURL: String { ServiceRouting.current.quickReadBaseURL }
+        static var quickReadBaseURL: String { ComputeRouting.current.quickReadBaseURL }
         static var quickReadPlan: String { "\(quickReadBaseURL)/api/quickread/extract-plan" }
         static var quickReadExtractBlock: String { "\(quickReadBaseURL)/api/quickread/extract-block" }
         static var quickReadComposeBlock: String { "\(quickReadBaseURL)/api/quickread/compose-block" }

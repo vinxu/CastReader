@@ -766,7 +766,7 @@ struct SettingsView: View {
             Text("账号 / Pro：\(host(of: Constants.API.webURL))")
             Text("文档 / 上传：\(host(of: Constants.API.readerServiceURL))")
             Text("TTS：\(host(of: TTSEndpoint.primaryBase()))")
-            Text("QuickRead：\(host(of: QuickReadEndpoint.base()))")
+            Text("QuickRead：\(host(of: QuickReadEndpoint.preferredComputeBase()))")
         }
         .font(.caption.monospaced())
         .foregroundColor(AppTheme.mutedForeground)

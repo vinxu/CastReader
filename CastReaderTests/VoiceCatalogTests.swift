@@ -388,6 +388,30 @@ final class VoiceCatalogTests: XCTestCase {
         )
     }
 
+    func testGlobalAccountCanLoadVoiceAvatarThroughFrozenChinaComputeRoute() throws {
+        let computeAsset = try XCTUnwrap(
+            VoiceCatalogAssetURL.resolve(
+                "https://api.castreader.ai/api/tts/assets/avatar.png",
+                route: .chinaGateway
+            )
+        )
+        XCTAssertEqual(computeAsset.host, "api.castreader.cn")
+        XCTAssertEqual(
+            CachedAsyncImageLoadContract.routedURL(
+                computeAsset,
+                route: .chinaGateway
+            )?.host,
+            "api.castreader.cn"
+        )
+        XCTAssertNil(
+            CachedAsyncImageLoadContract.routedURL(
+                computeAsset,
+                route: .globalGateway
+            ),
+            "the account route would reject the valid compute asset; the view must pass computeRoute"
+        )
+    }
+
     @MainActor
     func testFavoritesAndRecentPersistWithDedupAndLimit() {
         let defaults = isolatedDefaults()

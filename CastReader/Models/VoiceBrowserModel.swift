@@ -95,7 +95,7 @@ enum VoiceBrowserLanguage {
 enum VoiceCatalogAssetURL {
     static func resolve(
         _ rawValue: String?,
-        route: ServiceRoute = ServiceRouting.current
+        route: ServiceRoute = ComputeRouting.current
     ) -> URL? {
         guard let raw = rawValue?.trimmingCharacters(in: .whitespacesAndNewlines),
               !raw.isEmpty else { return nil }
@@ -198,18 +198,40 @@ final class VoiceSamplePlayer: ObservableObject {
     private var player: AVPlayer?
     private var endObserver: NSObjectProtocol?
     private var statusCancellable: AnyCancellable?
+    private var sampleLoadTask: Task<Void, Never>?
+    private var sampleFileURL: URL?
 
     func toggle(voiceID: String, sampleURL: String?) {
         if playingVoiceID == voiceID || loadingVoiceID == voiceID {
             stop()
             return
         }
-        guard let url = Self.validSampleURL(sampleURL) else { return }
+        let route = ComputeRouting.current
+        guard let url = Self.validSampleURL(sampleURL, route: route) else { return }
 
         stop(resumeSuspendedPlayback: false)
         VoiceClonePreviewPlayer.shared.stop(resumeSuspendedPlayback: false)
         VoicePreviewPlaybackCoordinator.shared.begin()
         loadingVoiceID = voiceID
+        sampleLoadTask = Task { [weak self] in
+            do {
+                let localURL = try await Self.downloadSample(url: url, route: route)
+                try Task.checkCancellation()
+                guard let self,
+                      self.loadingVoiceID == voiceID else {
+                    try? FileManager.default.removeItem(at: localURL)
+                    return
+                }
+                self.sampleFileURL = localURL
+                self.installPlayer(voiceID: voiceID, url: localURL)
+            } catch {
+                guard let self, self.loadingVoiceID == voiceID else { return }
+                self.stop()
+            }
+        }
+    }
+
+    private func installPlayer(voiceID: String, url: URL) {
         let item = AVPlayerItem(url: url)
         let player = AVPlayer(playerItem: item)
         self.player = player
@@ -238,12 +260,18 @@ final class VoiceSamplePlayer: ObservableObject {
     }
 
     func stop(resumeSuspendedPlayback: Bool = true) {
+        sampleLoadTask?.cancel()
+        sampleLoadTask = nil
         player?.pause()
         player = nil
         statusCancellable?.cancel()
         statusCancellable = nil
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         endObserver = nil
+        if let sampleFileURL {
+            try? FileManager.default.removeItem(at: sampleFileURL)
+        }
+        sampleFileURL = nil
         playingVoiceID = nil
         loadingVoiceID = nil
         if resumeSuspendedPlayback { VoicePreviewPlaybackCoordinator.shared.end() }
@@ -251,9 +279,34 @@ final class VoiceSamplePlayer: ObservableObject {
 
     nonisolated static func validSampleURL(
         _ value: String?,
-        route: ServiceRoute = ServiceRouting.current
+        route: ServiceRoute = ComputeRouting.current
     ) -> URL? {
         VoiceCatalogAssetURL.resolve(value, route: route)
+    }
+
+    private nonisolated static func downloadSample(
+        url: URL,
+        route: ServiceRoute
+    ) async throws -> URL {
+        let (data, response) = try await OwnedAPIURLSession.data(from: url, route: route)
+        guard let http = response as? HTTPURLResponse,
+              (200..<300).contains(http.statusCode),
+              !data.isEmpty,
+              data.count <= 12 * 1_024 * 1_024 else {
+            throw URLError(.badServerResponse)
+        }
+        let rawExtension = url.pathExtension.lowercased()
+        let safeExtension = rawExtension.range(
+            of: #"^[a-z0-9]{1,5}$"#,
+            options: .regularExpression
+        ) == nil ? "mp3" : rawExtension
+        let destination = FileManager.default.temporaryDirectory
+            .appendingPathComponent("castreader-voice-\(UUID().uuidString)")
+            .appendingPathExtension(safeExtension)
+        return try await Task.detached(priority: .utility) {
+            try data.write(to: destination, options: [.atomic])
+            return destination
+        }.value
     }
 }
 

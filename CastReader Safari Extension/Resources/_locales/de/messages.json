@@ -1,8 +1,8 @@
 {
-  "extName": {
+  "name": {
     "message": "CastReader — Vorlesen + KI-Erklärung"
   },
-  "extDescription": {
+  "description": {
     "message": "Kindle, PDFs und Webseiten synchron vorlesen. Volle Deutsch-Unterstützung mit 27 Stimmen und KI-Erklärungen."
   },
   "quickreadBtn": {

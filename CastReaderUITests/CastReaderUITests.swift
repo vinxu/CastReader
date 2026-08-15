@@ -819,6 +819,12 @@ class CastReaderUITests: XCTestCase {
         for _ in 0..<6 where !effective.exists {
             app.swipeUp()
         }
+        // On compact devices the inline picker can virtualize the status row
+        // above the viewport after several fast upward swipes. Search back
+        // toward the picker before declaring the internal control missing.
+        for _ in 0..<8 where !effective.exists {
+            app.swipeDown()
+        }
         XCTAssertTrue(effective.waitForExistence(timeout: 4))
         expect(effective, toHaveValue: "cn", "切到 CHN 后当前生效区域应为 cn")
 
@@ -831,6 +837,9 @@ class CastReaderUITests: XCTestCase {
         globalOption.tap()
         for _ in 0..<6 where !effective.exists {
             app.swipeUp()
+        }
+        for _ in 0..<8 where !effective.exists {
+            app.swipeDown()
         }
         expect(effective, toHaveValue: "global", "切回后当前生效区域应为 global")
 

@@ -15,7 +15,17 @@ enum QuickReadEndpoint {
     static let defaultBase = ServiceRoute.globalGateway.quickReadBaseURL
     static let chinaBase = ServiceRoute.chinaGateway.quickReadBaseURL
 
-    static func base() -> String { ServiceRouting.current.quickReadBaseURL }
+    static func base() -> String { ComputeRouting.current.quickReadBaseURL }
+
+    /// QuickRead正文 always follows the frozen compute route. When it differs
+    /// from the account route, QuickReadService exchanges cms_ at the account
+    /// gateway for a target-bound cmc_ ticket in either direction.
+    static func preferredComputeBase(
+        accountRoute: ServiceRoute = ServiceRouting.current,
+        computeRoute: ServiceRoute = ComputeRouting.current
+    ) -> String {
+        computeRoute.quickReadBaseURL
+    }
 
     @discardableResult
     static func freezeForCurrentProcess() -> String { base() }
@@ -33,12 +43,177 @@ enum QuickReadEndpoint {
     #endif
 }
 
+struct QuickReadComputeTicket: Equatable, Sendable {
+    let token: String
+    let expiresAt: Date
+}
+
+protocol QuickReadComputeSessionProviding: Sendable {
+    func ticket(forceRefresh: Bool) async throws -> QuickReadComputeTicket
+    func invalidateTicket() async
+}
+
+/// Exchanges a route-local cms_ bearer for an in-memory-only ticket targeting
+/// the opposite QuickRead ingress. The cmc_ token is audience/target bound by
+/// the server; it is never persisted and is never accepted by account, Pro or
+/// content APIs.
+actor QuickReadComputeSessionStore: QuickReadComputeSessionProviding {
+    private struct Envelope: Decodable {
+        let code: Int
+        let data: Payload
+    }
+
+    private struct Payload: Decodable {
+        let token: String
+        let expiresAt: String
+        let audience: String
+        let targetRoute: String
+    }
+
+    private struct RequestBody: Encodable {
+        let audience: String
+        let targetRoute: String
+    }
+
+    private let accountRoute: ServiceRoute
+    private let targetRoute: ServiceRoute
+    private let session: URLSession
+    private let mobileSessionProvider: MobileSessionProviding
+    private let now: @Sendable () -> Date
+    private var cached: QuickReadComputeTicket?
+    private var cachedSourceCMS: String?
+
+    init(
+        accountRoute: ServiceRoute = ServiceRouting.current,
+        targetRoute: ServiceRoute = ComputeRouting.current,
+        session: URLSession? = nil,
+        mobileSessionProvider: MobileSessionProviding = MobileSessionStore.shared,
+        now: @escaping @Sendable () -> Date = { Date() }
+    ) {
+        self.accountRoute = accountRoute
+        self.targetRoute = targetRoute
+        self.session = session ?? OwnedAPIURLSession.makeExplicitCredentialSession(
+            route: accountRoute,
+            requestTimeout: 30,
+            resourceTimeout: 45
+        )
+        self.mobileSessionProvider = mobileSessionProvider
+        self.now = now
+    }
+
+    func ticket(forceRefresh: Bool = false) async throws -> QuickReadComputeTicket {
+        guard targetRoute != accountRoute else {
+            throw QuickReadError.httpError(422)
+        }
+        var didRefreshCMS = false
+        var cms = await mobileSessionProvider.sessionToken()
+        if cachedSourceCMS != cms {
+            cached = nil
+            cachedSourceCMS = nil
+        }
+        if cms.map(MobileSessionStore.isServerSessionToken) != true {
+            cached = nil
+            cachedSourceCMS = nil
+            didRefreshCMS = true
+            cms = await mobileSessionProvider.refreshSession()
+        }
+        guard let cms, MobileSessionStore.isServerSessionToken(cms) else {
+            throw QuickReadError.httpError(401)
+        }
+        if !forceRefresh,
+           cachedSourceCMS == cms,
+           let cached,
+           cached.expiresAt.timeIntervalSince(now()) > 60 {
+            return cached
+        }
+
+        do {
+            let exchanged = try await exchange(cms: cms)
+            cached = exchanged
+            cachedSourceCMS = cms
+            return exchanged
+        } catch {
+            guard Self.isUnauthorized(error), !didRefreshCMS,
+                  let refreshed = await mobileSessionProvider.refreshSession(),
+                  MobileSessionStore.isServerSessionToken(refreshed) else {
+                throw error
+            }
+            cached = nil
+            cachedSourceCMS = nil
+            let exchanged = try await exchange(cms: refreshed)
+            cached = exchanged
+            cachedSourceCMS = refreshed
+            return exchanged
+        }
+    }
+
+    func invalidateTicket() {
+        cached = nil
+        cachedSourceCMS = nil
+    }
+
+    private func exchange(cms: String) async throws -> QuickReadComputeTicket {
+        guard let url = URL(
+            string: accountRoute.webBaseURL + "/api/mobile-auth/compute-session"
+        ) else { throw QuickReadError.invalidURL }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(cms)", forHTTPHeaderField: "Authorization")
+        request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+        request.httpBody = try JSONEncoder().encode(
+            RequestBody(audience: "quickread", targetRoute: targetRoute.rawValue)
+        )
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw QuickReadError.serverError("invalid compute-session response")
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            throw QuickReadError.httpError(http.statusCode)
+        }
+        let envelope = try JSONDecoder().decode(Envelope.self, from: data)
+        guard envelope.code == 0,
+              envelope.data.audience == "quickread",
+              envelope.data.targetRoute == targetRoute.rawValue,
+              envelope.data.token.hasPrefix("cmc_"),
+              envelope.data.token.count > 4,
+              envelope.data.token.count <= 4_096,
+              let expiry = Self.parseISO8601(envelope.data.expiresAt),
+              expiry > now() else {
+            throw QuickReadError.serverError("invalid compute-session contract")
+        }
+        return QuickReadComputeTicket(token: envelope.data.token, expiresAt: expiry)
+    }
+
+    private static func parseISO8601(_ value: String) -> Date? {
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let parsed = fractional.date(from: value) { return parsed }
+        return ISO8601DateFormatter().date(from: value)
+    }
+
+    private static func isUnauthorized(_ error: Error) -> Bool {
+        if case QuickReadError.httpError(let status) = error { return status == 401 }
+        return false
+    }
+}
+
+private enum QuickReadTransportKind: String, Sendable {
+    case account
+    case computeTicket
+}
+
 enum QuickReadError: Error, LocalizedError {
     case invalidURL
     case httpError(Int)
     case serverError(String)
     case decodeError(String)
     case noBlock0
+    case computeSessionExpired
+    case missingJobTransport
 
     var errorDescription: String? {
         switch self {
@@ -47,6 +222,8 @@ enum QuickReadError: Error, LocalizedError {
         case .serverError(let m): return AppLocalized("解读失败：\(m)")
         case .decodeError(let m): return AppLocalized("解读数据解析失败：\(m)")
         case .noBlock0: return AppLocalized("解读未返回首块内容")
+        case .computeSessionExpired: return AppLocalized("解读算力凭据已过期")
+        case .missingJobTransport: return AppLocalized("解读任务线路状态已丢失，请重新开始解读")
         }
     }
 }
@@ -59,6 +236,14 @@ enum QuickReadSSEErrorMapper {
 
         let nested = root["error"] as? [String: Any]
         let containers = [root, nested].compactMap { $0 }
+        for container in containers {
+            for key in ["errorCode", "error_code", "code", "error"] {
+                if let code = container[key] as? String,
+                   code == "COMPUTE_SESSION_EXPIRED" {
+                    return .computeSessionExpired
+                }
+            }
+        }
         let statusKeys = ["code", "status", "statusCode", "http_status", "httpStatus"]
         for container in containers {
             for key in statusKeys {
@@ -85,27 +270,92 @@ actor QuickReadService {
     static let shared = QuickReadService()
 
     private init() {
-        let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 90
-        configuration.timeoutIntervalForResource = 120
-        self.session = OwnedAPIURLSession.make(configuration: configuration)
+        let accountRoute = ServiceRouting.current
+        let computeSnapshot = ComputeRouting.currentSnapshot
+        self.session = OwnedAPIURLSession.makeExplicitCredentialSession(
+            route: accountRoute,
+            requestTimeout: 90,
+            resourceTimeout: 120
+        )
+        self.computeSession = OwnedAPIURLSession.makeExplicitCredentialSession(
+            route: computeSnapshot.primary,
+            requestTimeout: 90,
+            resourceTimeout: 120
+        )
         self.mobileSessionProvider = MobileSessionStore.shared
+        self.computeSessionProvider = QuickReadComputeSessionStore(
+            accountRoute: accountRoute,
+            targetRoute: computeSnapshot.primary,
+            mobileSessionProvider: MobileSessionStore.shared
+        )
+        self.accountRoute = accountRoute
+        self.computeRoute = computeSnapshot.primary
     }
 
     /// Test-only dependency seam used by transport-boundary contract tests.
     /// Production continues to use `shared` and the default pinned timeouts.
     init(
         session: URLSession,
-        mobileSessionProvider: MobileSessionProviding = MobileSessionStore.shared
+        mobileSessionProvider: MobileSessionProviding = MobileSessionStore.shared,
+        computeSession: URLSession? = nil,
+        computeSessionProvider: QuickReadComputeSessionProviding? = nil,
+        accountRoute: ServiceRoute = ServiceRouting.current,
+        computeRoute: ServiceRoute? = nil
     ) {
+        let resolvedComputeRoute = computeRoute ?? accountRoute
         self.session = session
+        self.computeSession = computeSession ?? session
         self.mobileSessionProvider = mobileSessionProvider
+        self.computeSessionProvider = computeSessionProvider
+            ?? QuickReadComputeSessionStore(
+                accountRoute: accountRoute,
+                targetRoute: resolvedComputeRoute,
+                session: session,
+                mobileSessionProvider: mobileSessionProvider
+            )
+        self.accountRoute = accountRoute
+        self.computeRoute = resolvedComputeRoute
     }
 
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
     private let session: URLSession
+    private let computeSession: URLSession
     private let mobileSessionProvider: MobileSessionProviding
+    private let computeSessionProvider: QuickReadComputeSessionProviding
+    private let accountRoute: ServiceRoute
+    private let computeRoute: ServiceRoute
+    private var jobTransports: [String: QuickReadTransportKind] = [:]
+
+    #if DEBUG
+    /// Narrow test seam for continuation-only authorization tests. Production
+    /// jobs are bound exclusively by extract-plan block0/done events.
+    func bindCurrentTransportForTesting(jobID: String) {
+        jobTransports[jobID] = preferredTransport
+    }
+    #endif
+
+    private var preferredTransport: QuickReadTransportKind {
+        accountRoute == computeRoute ? .account : .computeTicket
+    }
+
+    private func base(for transport: QuickReadTransportKind) -> String {
+        switch transport {
+        case .account: return accountRoute.quickReadBaseURL
+        case .computeTicket: return computeRoute.quickReadBaseURL
+        }
+    }
+
+    private func url(path: String, transport: QuickReadTransportKind) throws -> URL {
+        guard let url = URL(string: base(for: transport) + path) else {
+            throw QuickReadError.invalidURL
+        }
+        return url
+    }
+
+    private func networkSession(for transport: QuickReadTransportKind) -> URLSession {
+        transport == .computeTicket ? computeSession : session
+    }
 
     private func debugLog(_ message: String) {
         #if DEBUG
@@ -145,10 +395,15 @@ actor QuickReadService {
     /// user 与不可轮换的线路额度主体；客户端输入不得覆盖两者。
     private func applyAuthHeaders(
         _ req: inout URLRequest,
-        sessionToken: String
+        sessionToken: String,
+        transport: QuickReadTransportKind = .account
     ) throws {
         applyBaseHeaders(&req)
-        try applyGatewaySessionHeaders(&req, sessionToken: sessionToken)
+        try applyGatewaySessionHeaders(
+            &req,
+            sessionToken: sessionToken,
+            transport: transport
+        )
     }
 
     private func applyBaseHeaders(_ req: inout URLRequest) {
@@ -163,22 +418,61 @@ actor QuickReadService {
     /// a new explain.
     private func applyContinuationHeaders(
         _ req: inout URLRequest,
-        sessionToken: String
+        sessionToken: String,
+        transport: QuickReadTransportKind = .account
     ) throws {
         applyBaseHeaders(&req)
-        try applyGatewaySessionHeaders(&req, sessionToken: sessionToken)
+        try applyGatewaySessionHeaders(
+            &req,
+            sessionToken: sessionToken,
+            transport: transport
+        )
         req.setValue("true", forHTTPHeaderField: "x-quickread-continuation")
     }
 
     private func applyGatewaySessionHeaders(
         _ req: inout URLRequest,
-        sessionToken: String
+        sessionToken: String,
+        transport: QuickReadTransportKind
     ) throws {
-        guard MobileSessionStore.isServerSessionToken(sessionToken) else {
-            throw QuickReadError.httpError(401)
+        switch transport {
+        case .account:
+            guard MobileSessionStore.isServerSessionToken(sessionToken) else {
+                throw QuickReadError.httpError(401)
+            }
+            req.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+        case .computeTicket:
+            guard sessionToken.hasPrefix("cmc_"),
+                  sessionToken.count > 4,
+                  sessionToken.count <= 4_096 else {
+                throw QuickReadError.httpError(401)
+            }
+            req.setValue("compute-session", forHTTPHeaderField: "X-Auth-Provider")
         }
         req.setValue("Bearer \(sessionToken)", forHTTPHeaderField: "Authorization")
-        req.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+    }
+
+    private func withAuthorization<T>(
+        transport: QuickReadTransportKind,
+        _ operation: (String) async throws -> T
+    ) async throws -> T {
+        switch transport {
+        case .account:
+            return try await withGatewaySessionRefresh(operation)
+        case .computeTicket:
+            var ticket = try await computeSessionProvider.ticket(forceRefresh: false)
+            do {
+                return try await operation(ticket.token)
+            } catch {
+                guard case QuickReadError.computeSessionExpired = error else { throw error }
+                // Only the server's exact EXPIRED code may mint once more.
+                // Scope/provider/contract failures remain explicit and never
+                // reject the account cms_ or move the document to another route.
+                await computeSessionProvider.invalidateTicket()
+                ticket = try await computeSessionProvider.ticket(forceRefresh: true)
+                return try await operation(ticket.token)
+            }
+        }
     }
 
     /// Resolve one route-bound server session for an entire QuickRead operation.
@@ -268,7 +562,7 @@ actor QuickReadService {
         return String(data: data.prefix(2048), encoding: .utf8) ?? "<\(data.count) bytes>"
     }
 
-    private static func errorPreview(from bytes: URLSession.AsyncBytes, limit: Int = 2048) async -> String {
+    private static func errorData(from bytes: URLSession.AsyncBytes, limit: Int = 2048) async -> Data {
         var data = Data()
         do {
             for try await byte in bytes {
@@ -276,9 +570,47 @@ actor QuickReadService {
                 if data.count >= limit { break }
             }
         } catch {
-            return "read-error:\(error.localizedDescription)"
+            return Data("read-error:\(error.localizedDescription)".utf8)
         }
-        return errorPreview(data)
+        return data
+    }
+
+    /// Compute tickets are refreshed only for the backend's exact expiration
+    /// contract. A generic 401, scope mismatch or missing provider is not an
+    /// expiration signal and must remain visible to the caller.
+    private static func responseError(
+        status: Int,
+        data: Data,
+        transport: QuickReadTransportKind
+    ) -> QuickReadError {
+        if transport == .computeTicket,
+           status == 401,
+           structuredErrorCode(in: data) == "COMPUTE_SESSION_EXPIRED" {
+            return .computeSessionExpired
+        }
+        return .httpError(status)
+    }
+
+    private static func structuredErrorCode(in data: Data) -> String? {
+        guard !data.isEmpty,
+              let root = try? JSONSerialization.jsonObject(with: data) else { return nil }
+
+        func find(in value: Any) -> String? {
+            guard let object = value as? [String: Any] else { return nil }
+            for key in ["errorCode", "error_code", "code", "error"] {
+                if let code = object[key] as? String,
+                   code == "COMPUTE_SESSION_EXPIRED" {
+                    return code
+                }
+            }
+            for key in ["error", "data", "details"] {
+                if let nested = object[key], let code = find(in: nested) {
+                    return code
+                }
+            }
+            return nil
+        }
+        return find(in: root)
     }
 
     // MARK: - 重试（网络波动 / 后端瞬时错误自愈，指数退避）
@@ -308,6 +640,17 @@ actor QuickReadService {
         return false
     }
 
+    /// Freeze the transport before sending正文. A cross-route operation must
+    /// acquire its ticket successfully; every failure is fail-closed and is
+    /// never converted into an account-route payload request.
+    private func preparedTransportForNewPayload() async throws -> QuickReadTransportKind {
+        let transport = preferredTransport
+        if transport == .computeTicket {
+            _ = try await computeSessionProvider.ticket(forceRefresh: false)
+        }
+        return transport
+    }
+
     // MARK: - extract-plan（SSE）
 
     /// 通读全文生成大纲 + 首块。onStage/onBlock0 在事件到达时回调；返回 done 载荷。
@@ -315,33 +658,64 @@ actor QuickReadService {
     func extractPlan(_ body: ExtractPlanRequest,
                      onStage: @escaping (String) -> Void,
                      onBlock0: @escaping (PlanBlock0) -> Void) async throws -> PlanDone {
-        guard let url = URL(string: QuickReadEndpoint.planURL) else { throw QuickReadError.invalidURL }
         let payload = try encoder.encode(body)
-        debugLog("extract-plan START base=\(QuickReadEndpoint.base()) source=\(body.source_url) scenario=\(body.content_type ?? "general") depth=\(body.depth) lang=\(body.lang ?? "auto") paras=\(body.paragraphs.count) chars=\(body.text.count) bytes=\(payload.count)")
+        let transport = try await preparedTransportForNewPayload()
+        debugLog("extract-plan START base=\(base(for: transport)) source=\(body.source_url) scenario=\(body.content_type ?? "general") depth=\(body.depth) lang=\(body.lang ?? "auto") paras=\(body.paragraphs.count) chars=\(body.text.count) bytes=\(payload.count)")
         // 重试整条 SSE（重连重建流）；onBlock0/onStage 在 ExplainViewModel 端幂等（box 覆盖 / 仅更新 UI 文字）。
         let startedAt = Date()
         do {
-            let done = try await withGatewaySessionRefresh { sessionToken in
-                try await self.withRetry {
-                    try await self.runExtractPlanOnce(
-                        url: url,
-                        payload: payload,
-                        sessionToken: sessionToken,
-                        onStage: onStage,
-                        onBlock0: onBlock0
-                    )
-                }
-            }
-            debugLog("extract-plan DONE job=\(done.job_id ?? "nil") total=\(done.total_blocks.map(String.init) ?? "nil") model=\(done.model_used ?? "nil") elapsed=\(Self.elapsed(startedAt))")
-            return done
+            return try await performExtractPlan(
+                payload: payload,
+                transport: transport,
+                startedAt: startedAt,
+                onStage: onStage,
+                onBlock0: onBlock0
+            )
         } catch {
             debugLog("extract-plan FAIL elapsed=\(Self.elapsed(startedAt)) error=\(error.localizedDescription)")
             throw error
         }
     }
 
+    private func performExtractPlan(
+        payload: Data,
+        transport: QuickReadTransportKind,
+        startedAt: Date,
+        onStage: @escaping (String) -> Void,
+        onBlock0: @escaping (PlanBlock0) -> Void
+    ) async throws -> PlanDone {
+        let endpoint = try url(path: "/api/quickread/extract-plan", transport: transport)
+        var observedJobID: String?
+        let done = try await withAuthorization(transport: transport) { sessionToken in
+            try await self.withRetry {
+                try await self.runExtractPlanOnce(
+                    url: endpoint,
+                    payload: payload,
+                    sessionToken: sessionToken,
+                    transport: transport,
+                    onStage: onStage,
+                    onBlock0: { block in
+                        observedJobID = block.job_id
+                        // Bind before invoking the external callback. The
+                        // callback may immediately launch extract-block, so a
+                        // later `done` binding races and could leak the
+                        // continuation to the account ingress.
+                        self.jobTransports[block.job_id] = transport
+                        onBlock0(block)
+                    }
+                )
+            }
+        }
+        if let jobID = done.job_id ?? observedJobID, !jobID.isEmpty {
+            jobTransports[jobID] = transport
+        }
+        debugLog("extract-plan DONE job=\(done.job_id ?? observedJobID ?? "nil") total=\(done.total_blocks.map(String.init) ?? "nil") model=\(done.model_used ?? "nil") route=\(transport.rawValue) elapsed=\(Self.elapsed(startedAt))")
+        return done
+    }
+
     private func runExtractPlanOnce(url: URL, payload: Data,
                                     sessionToken: String,
+                                    transport: QuickReadTransportKind,
                                     onStage: @escaping (String) -> Void,
                                     onBlock0: @escaping (PlanBlock0) -> Void) async throws -> PlanDone {
         var req = URLRequest(url: url)
@@ -349,16 +723,20 @@ actor QuickReadService {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         let identity = await authHeaderIdentity()
-        try applyAuthHeaders(&req, sessionToken: sessionToken)
+        try applyAuthHeaders(
+            &req,
+            sessionToken: sessionToken,
+            transport: transport
+        )
         debugAuth("extract-plan", identity: identity)
         req.httpBody = payload
 
         let startedAt = Date()
-        let (bytes, response) = try await session.bytes(for: req)
+        let (bytes, response) = try await networkSession(for: transport).bytes(for: req)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            let body = await Self.errorPreview(from: bytes)
-            debugLog("extract-plan HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(body)")
-            throw QuickReadError.httpError(http.statusCode)
+            let bodyData = await Self.errorData(from: bytes)
+            debugLog("extract-plan HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(Self.errorPreview(bodyData))")
+            throw Self.responseError(status: http.statusCode, data: bodyData, transport: transport)
         }
 
         var eventName = ""
@@ -428,15 +806,31 @@ actor QuickReadService {
     // MARK: - extract-block / compose-block（JSON）
 
     func extractBlock(jobId: String, blockIdx: Int) async throws -> QuickreadSection {
+        guard let transport = jobTransports[jobId] else {
+            throw QuickReadError.missingJobTransport
+        }
         let body = ExtractBlockRequest(job_id: jobId, block_idx: blockIdx)
-        return try await postSection(QuickReadEndpoint.extractBlockURL, body: body, label: "extract-block[\(blockIdx)]")
+        return try await postSection(
+            path: "/api/quickread/extract-block",
+            body: body,
+            label: "extract-block[\(blockIdx)]",
+            transport: transport
+        )
     }
 
     func composeBlock(jobId: String, blockIdx: Int,
                       timestamps: [ComposeTimestamp], duration: Double) async throws -> QuickreadSection {
+        guard let transport = jobTransports[jobId] else {
+            throw QuickReadError.missingJobTransport
+        }
         let body = ComposeBlockRequest(job_id: jobId, block_idx: blockIdx,
                                        timestamps: timestamps, duration: duration)
-        return try await postSection(QuickReadEndpoint.composeBlockURL, body: body, label: "compose-block[\(blockIdx)] ts=\(timestamps.count) dur=\(String(format: "%.1f", duration))")
+        return try await postSection(
+            path: "/api/quickread/compose-block",
+            body: body,
+            label: "compose-block[\(blockIdx)] ts=\(timestamps.count) dur=\(String(format: "%.1f", duration))",
+            transport: transport
+        )
     }
 
     // MARK: - 快道（fast-block0）
@@ -446,27 +840,44 @@ actor QuickReadService {
     /// 返回精简 section（text=narration、events=过滤后的 marks）。
     func fastBlock0(title: String, openingParas: [String], lang: String?,
                     depth: String, prevSummary: String?, contentType: String?) async throws -> QuickreadSection {
-        guard let url = URL(string: QuickReadEndpoint.fastBlock0URL) else { throw QuickReadError.invalidURL }
         let body = FastBlock0Request(title: title,
                                      openingParas: openingParas.map { FastBlock0OpeningPara(text: $0) },
                                      lang: lang, depth: depth, prev_summary: prevSummary, content_type: contentType)
         let startedAt = Date()
         debugLog("fast-block0 START scenario=\(contentType ?? "general") depth=\(depth) lang=\(lang ?? "auto") opening=\(openingParas.count) chars=\(openingParas.reduce(0) { $0 + $1.count })")
         let payload = try encoder.encode(body)
-        return try await withGatewaySessionRefresh { sessionToken in
-            var req = URLRequest(url: url)
+        let transport = try await preparedTransportForNewPayload()
+        return try await performFastBlock0(
+            payload: payload,
+            transport: transport,
+            startedAt: startedAt
+        )
+    }
+
+    private func performFastBlock0(
+        payload: Data,
+        transport: QuickReadTransportKind,
+        startedAt: Date
+    ) async throws -> QuickreadSection {
+        let endpoint = try url(path: "/api/quickread/fast-block0", transport: transport)
+        return try await withAuthorization(transport: transport) { sessionToken in
+            var req = URLRequest(url: endpoint)
             req.httpMethod = "POST"
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             let identity = await self.authHeaderIdentity()
-            try self.applyAuthHeaders(&req, sessionToken: sessionToken)
+            try self.applyAuthHeaders(
+                &req,
+                sessionToken: sessionToken,
+                transport: transport
+            )
             self.debugAuth("fast-block0", identity: identity)
             req.httpBody = payload
             req.timeoutInterval = 8   // 快道超时即放弃，走质道
 
-            let (data, response) = try await self.session.data(for: req)
+            let (data, response) = try await self.networkSession(for: transport).data(for: req)
             if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
                 self.debugLog("fast-block0 HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(Self.errorPreview(data))")
-                throw QuickReadError.httpError(http.statusCode)
+                throw Self.responseError(status: http.statusCode, data: data, transport: transport)
             }
             let resp = try self.decoder.decode(FastBlock0Response.self, from: data)
             guard let b0 = resp.block_0,
@@ -490,24 +901,33 @@ actor QuickReadService {
         }
     }
 
-    private func postSection<Body: Encodable>(_ urlString: String, body: Body, label: String) async throws -> QuickreadSection {
-        guard let url = URL(string: urlString) else { throw QuickReadError.invalidURL }
+    private func postSection<Body: Encodable>(
+        path: String,
+        body: Body,
+        label: String,
+        transport: QuickReadTransportKind
+    ) async throws -> QuickreadSection {
+        let endpoint = try url(path: path, transport: transport)
         let payload = try encoder.encode(body)
         debugLog("\(label) START bytes=\(payload.count)")
         let startedAt = Date()
-        return try await withGatewaySessionRefresh { sessionToken in
+        return try await withAuthorization(transport: transport) { sessionToken in
             try await self.withRetry {
-                var req = URLRequest(url: url)
+                var req = URLRequest(url: endpoint)
                 req.httpMethod = "POST"
                 req.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 let identity = await self.authHeaderIdentity()
-                try self.applyContinuationHeaders(&req, sessionToken: sessionToken)
+                try self.applyContinuationHeaders(
+                    &req,
+                    sessionToken: sessionToken,
+                    transport: transport
+                )
                 self.debugContinuationAuth(label, identity: identity)
                 req.httpBody = payload
-                let (data, response) = try await self.session.data(for: req)
+                let (data, response) = try await self.networkSession(for: transport).data(for: req)
                 if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
                     self.debugLog("\(label) HTTP \(http.statusCode) elapsed=\(Self.elapsed(startedAt)) body=\(Self.errorPreview(data))")
-                    throw QuickReadError.httpError(http.statusCode)
+                    throw Self.responseError(status: http.statusCode, data: data, transport: transport)
                 }
                 do {
                     let section = try self.decoder.decode(QuickreadSectionResponse.self, from: data).section

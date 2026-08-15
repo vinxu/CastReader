@@ -389,6 +389,8 @@ final class ServiceRoutingTests: XCTestCase {
         )
         XCTAssertTrue(source.contains("let region = await AppRegion.prepareForCurrentProcess()"))
         XCTAssertTrue(source.contains("await ServiceRouting.bootstrapForCurrentProcess("))
+        XCTAssertTrue(source.contains("async let computeProbe = ComputeRouting.probeFirstPartyGateways"))
+        XCTAssertTrue(source.contains("await ComputeRouting.bootstrapForCurrentProcess("))
         XCTAssertTrue(source.contains("if startup.isReady {\n                    RouteReadyRoot()"))
         XCTAssertTrue(source.contains("@StateObject private var visitorService = VisitorService.shared"))
 
@@ -398,11 +400,16 @@ final class ServiceRoutingTests: XCTestCase {
         let endpointFreeze = try XCTUnwrap(
             source.range(of: "_ = TTSEndpoint.freezeForCurrentProcess()")?.lowerBound
         )
+        let computeFreeze = try XCTUnwrap(
+            source.range(of: "_ = await ComputeRouting.bootstrapForCurrentProcess(")?.lowerBound
+        )
         let serviceStart = try XCTUnwrap(
             source.range(of: "ProductAnalytics.shared.startAppSession")?.lowerBound
         )
         let ready = try XCTUnwrap(source.range(of: "isReady = true")?.lowerBound)
         XCTAssertLessThan(bootstrap, endpointFreeze)
+        XCTAssertLessThan(bootstrap, computeFreeze)
+        XCTAssertLessThan(computeFreeze, endpointFreeze)
         XCTAssertLessThan(endpointFreeze, serviceStart)
         XCTAssertLessThan(serviceStart, ready)
     }
@@ -509,20 +516,33 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(ServiceRouting.current, .globalGateway)
     }
 
-    func testRetiredUpstreamCachesCannotChangeNewGatewayEndpoints() {
+    func testRetiredUpstreamCachesCannotChangeNewGatewayEndpoints() async {
         ServiceRouting.overrideRoute = .globalGateway
         resetSnapshots()
+        _ = await ComputeRouting.bootstrapForCurrentProcess(
+            timeZoneIdentifier: "America/Los_Angeles",
+            arguments: [],
+            simCountryCodes: [],
+            precomputedProbe: .init(
+                china: .unavailable,
+                global: .init(isReachable: true, latency: 0.01),
+                country: .init(countryCode: "US")
+            )
+        )
 
         UserDefaults.standard.set(
             ["cn_url": "https://cn-a.example", "us_url": "https://us-a.example"],
             forKey: "tts_endpoints_v1"
         )
-        XCTAssertEqual(TTSEndpoint.primaryBase(), "https://api.castreader.ai")
+        let frozenTTSBase = TTSEndpoint.primaryBase()
+        XCTAssertTrue(
+            ["https://api.castreader.ai", "https://api.castreader.cn"].contains(frozenTTSBase)
+        )
         UserDefaults.standard.set(
             ["cn_url": "https://cn-b.example", "us_url": "https://us-b.example"],
             forKey: "tts_endpoints_v1"
         )
-        XCTAssertEqual(TTSEndpoint.primaryBase(), "https://api.castreader.ai")
+        XCTAssertEqual(TTSEndpoint.primaryBase(), frozenTTSBase)
 
         UserDefaults.standard.set("https://qr-a.example", forKey: "quickread_base_v1")
         XCTAssertEqual(QuickReadEndpoint.base(), "https://api.castreader.ai")
@@ -530,12 +550,336 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(QuickReadEndpoint.base(), "https://api.castreader.ai")
     }
 
+    // MARK: - 独立计算线路
+
+    func testComputeRouteUsesAuthoritativeNetworkCountryBeforeSIMAndTimeZone() {
+        let chinaNetwork = ComputeRouting.resolve(
+            timeZoneIdentifier: "America/Los_Angeles",
+            networkCountry: .init(countryCode: "CN"),
+            simCountryCodes: ["US"]
+        )
+        XCTAssertEqual(chinaNetwork.primary, .chinaGateway)
+        XCTAssertEqual(chinaNetwork.provenance, .networkCountry)
+
+        let overseasNetwork = ComputeRouting.resolve(
+            timeZoneIdentifier: "Asia/Shanghai",
+            networkCountry: .init(countryCode: "US"),
+            simCountryCodes: ["CN"]
+        )
+        XCTAssertEqual(overseasNetwork.primary, .globalGateway)
+        XCTAssertEqual(overseasNetwork.provenance, .networkCountry)
+    }
+
+    func testComputeRouteUsesSIMBeforeTimeZoneAndMixedSIMFailsGlobal() {
+        let mainlandSIM = ComputeRouting.resolve(
+            timeZoneIdentifier: "America/Los_Angeles",
+            simCountryCodes: ["cn"]
+        )
+        XCTAssertEqual(mainlandSIM.primary, .chinaGateway)
+        XCTAssertEqual(mainlandSIM.provenance, .simCountry)
+
+        let overseasSIM = ComputeRouting.resolve(
+            timeZoneIdentifier: "Asia/Shanghai",
+            simCountryCodes: ["US"]
+        )
+        XCTAssertEqual(overseasSIM.primary, .globalGateway)
+        XCTAssertEqual(overseasSIM.provenance, .simCountry)
+
+        let mixedSIM = ComputeRouting.resolve(
+            timeZoneIdentifier: "Asia/Shanghai",
+            simCountryCodes: ["CN", "US"]
+        )
+        XCTAssertEqual(mixedSIM.primary, .globalGateway)
+        XCTAssertEqual(mixedSIM.provenance, .simCountry)
+    }
+
+    func testComputeRouteDebugOverridePrecedesEveryLocationSignal() {
+        #if DEBUG
+        let overridden = ComputeRouting.resolve(
+            timeZoneIdentifier: "Asia/Shanghai",
+            networkCountry: .init(countryCode: "CN"),
+            simCountryCodes: ["CN"],
+            arguments: ["CastReader", "-CastReaderComputeRoute", "global"]
+        )
+        XCTAssertEqual(overridden.primary, .globalGateway)
+        XCTAssertEqual(overridden.provenance, .debugOverride)
+        #else
+        XCTAssertNil(
+            ComputeRouting.debugOverrideRoute(
+                ["CastReader", "-CastReaderComputeRoute", "cn"]
+            )
+        )
+        #endif
+    }
+
+    func testComputeRouteMainlandTimezoneAliasesExcludeNearbyRegions() {
+        for identifier in [
+            "Asia/Shanghai", "Asia/Urumqi", "Asia/Chongqing",
+            "Asia/Harbin", "Asia/Kashgar", "PRC",
+        ] {
+            XCTAssertEqual(
+                ComputeRouting.resolve(
+                    timeZoneIdentifier: identifier
+                ).primary,
+                .chinaGateway,
+                identifier
+            )
+        }
+
+        for identifier in ["Asia/Hong_Kong", "Asia/Macau", "Asia/Taipei"] {
+            XCTAssertEqual(
+                ComputeRouting.resolve(
+                    timeZoneIdentifier: identifier
+                ).primary,
+                .globalGateway,
+                identifier
+            )
+        }
+    }
+
+    func testComputeProbeHasSharedHardDeadline() async {
+        let startedAt = Date()
+        let result = await ComputeRouting.probeFirstPartyGateways(timeout: 0.25) {
+            route, _ in
+            if route == .chinaGateway {
+                do {
+                    try await Task.sleep(nanoseconds: 10_000_000_000)
+                } catch {
+                    return .init(endpoint: .unavailable, country: nil)
+                }
+            }
+            return .init(
+                endpoint: .init(isReachable: true, latency: 0.01),
+                country: route == .globalGateway ? .init(countryCode: "US") : nil
+            )
+        }
+
+        XCTAssertLessThan(Date().timeIntervalSince(startedAt), 0.75)
+        XCTAssertFalse(result.china.isReachable)
+        XCTAssertTrue(result.global.isReachable)
+        XCTAssertEqual(result.country?.countryCode, "US")
+    }
+
+    func testComputeRouteFreezesForEntireColdLaunch() async {
+        let unavailable = ComputeRouting.NetworkProbe(
+            china: .unavailable,
+            global: .unavailable,
+            country: nil
+        )
+        let first = await ComputeRouting.bootstrapForCurrentProcess(
+            timeZoneIdentifier: "Asia/Shanghai",
+            arguments: [],
+            simCountryCodes: [],
+            precomputedProbe: unavailable
+        )
+        let laterConflictingSignal = await ComputeRouting.bootstrapForCurrentProcess(
+            timeZoneIdentifier: "America/Los_Angeles",
+            arguments: [],
+            simCountryCodes: ["US"],
+            precomputedProbe: .init(
+                china: .unavailable,
+                global: .init(isReachable: true, latency: 0.01),
+                country: .init(countryCode: "US")
+            )
+        )
+
+        XCTAssertEqual(first.primary, .chinaGateway)
+        XCTAssertEqual(laterConflictingSignal, first)
+    }
+
+    func testAnonymousTTSNeverResendsPayloadAcrossComputeRoutes() async {
+        let unavailable = ComputeRouting.NetworkProbe(
+            china: .unavailable,
+            global: .unavailable,
+            country: nil
+        )
+        _ = await ComputeRouting.bootstrapForCurrentProcess(
+            timeZoneIdentifier: "Asia/Shanghai",
+            arguments: [],
+            simCountryCodes: [],
+            precomputedProbe: unavailable
+        )
+
+        var requestedHosts: [String] = []
+        RoutingURLProtocol.handler = { request in
+            requestedHosts.append(request.url?.host ?? "")
+            let status = 503
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: status,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data(#"{"error":"temporarily unavailable"}"#.utf8))
+        }
+        let routingSession = makeRoutingSession()
+        let service = APIService(
+            session: routingSession,
+            ttsSessions: [
+                .chinaGateway: routingSession,
+                .globalGateway: routingSession,
+            ]
+        )
+
+        do {
+            _ = try await service.generateTTS(text: "hello", language: "en")
+            XCTFail("a failed CN TTS payload must not be resent globally")
+        } catch APIError.httpError(let status) {
+            XCTAssertEqual(status, 503)
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+        XCTAssertEqual(requestedHosts, ["api.castreader.cn"])
+    }
+
+    func testAnonymousTTSDoesNotFallbackForRateLimitOrAuthContractFailure() async {
+        for status in [401, 422, 429, 500] {
+            resetSnapshots()
+            let unavailable = ComputeRouting.NetworkProbe(
+                china: .unavailable,
+                global: .unavailable,
+                country: nil
+            )
+            _ = await ComputeRouting.bootstrapForCurrentProcess(
+                timeZoneIdentifier: "Asia/Shanghai",
+                arguments: [],
+                simCountryCodes: [],
+                precomputedProbe: unavailable
+            )
+            var requestedHosts: [String] = []
+            RoutingURLProtocol.handler = { request in
+                requestedHosts.append(request.url?.host ?? "")
+                let response = HTTPURLResponse(
+                    url: request.url!, statusCode: status, httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                return (response, Data(#"{"error":"rejected"}"#.utf8))
+            }
+            let routingSession = makeRoutingSession()
+            let service = APIService(
+                session: routingSession,
+                ttsSessions: [
+                    .chinaGateway: routingSession,
+                    .globalGateway: routingSession,
+                ]
+            )
+
+            do {
+                _ = try await service.generateTTS(text: "hello", language: "en")
+                XCTFail("HTTP \(status) must not cross compute ingress")
+            } catch APIError.httpError(let observed) {
+                XCTAssertEqual(observed, status)
+            } catch {
+                XCTFail("unexpected error for HTTP \(status): \(error)")
+            }
+            XCTAssertEqual(requestedHosts, ["api.castreader.cn"])
+        }
+    }
+
+    func testDisabledCloneVoiceFallsBackToAnonymousFrozenComputeTTS() async throws {
+        XCTAssertFalse(Constants.Features.voiceCloningEnabled)
+        _ = await ComputeRouting.bootstrapForCurrentProcess(
+            timeZoneIdentifier: "Asia/Shanghai",
+            arguments: [],
+            simCountryCodes: [],
+            precomputedProbe: .init(
+                china: .init(isReachable: true, latency: 0.01),
+                global: .init(isReachable: true, latency: 0.02),
+                country: .init(countryCode: "CN")
+            )
+        )
+
+        var requestCount = 0
+        RoutingURLProtocol.handler = { request in
+            requestCount += 1
+            XCTAssertEqual(request.url?.host, "api.castreader.cn")
+            XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+            XCTAssertNil(request.value(forHTTPHeaderField: "X-Auth-Provider"))
+            let body = try XCTUnwrap(request.httpBody)
+            let object = try XCTUnwrap(
+                try JSONSerialization.jsonObject(with: body) as? [String: Any]
+            )
+            let voice = try XCTUnwrap(object["voice"] as? String)
+            XCTAssertFalse(voice.hasPrefix("vc_"))
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data(#"{"audio":"","timestamps":[]}"#.utf8))
+        }
+        let routingSession = makeRoutingSession()
+        let service = APIService(
+            session: routingSession,
+            ttsSessions: [
+                .chinaGateway: routingSession,
+                .globalGateway: routingSession,
+            ]
+        )
+
+        _ = try await service.generateTTS(
+            text: "hello",
+            voice: "vc_disabled_clone",
+            language: "en"
+        )
+
+        XCTAssertEqual(requestCount, 1)
+    }
+
+    func testExplicitCredentialSessionsNeverPersistOrSendCookies() async throws {
+        let configuration = OwnedAPIURLSession.explicitCredentialConfiguration(
+            requestTimeout: 5,
+            resourceTimeout: 5
+        )
+        XCTAssertFalse(configuration.httpShouldSetCookies)
+        XCTAssertNil(configuration.httpCookieStorage)
+        XCTAssertEqual(configuration.httpCookieAcceptPolicy, .never)
+        XCTAssertNil(configuration.urlCredentialStorage)
+        configuration.protocolClasses = [RoutingURLProtocol.self]
+
+        var observedCookies: [String?] = []
+        var requestCount = 0
+        RoutingURLProtocol.handler = { request in
+            requestCount += 1
+            observedCookies.append(request.value(forHTTPHeaderField: "Cookie"))
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: requestCount == 1
+                    ? ["Set-Cookie": "route_identity=must-not-persist; Path=/; Secure"]
+                    : nil
+            )!
+            return (response, Data())
+        }
+        let session = OwnedAPIURLSession.make(
+            configuration: configuration,
+            route: .globalGateway
+        )
+        defer { session.invalidateAndCancel() }
+
+        _ = try await session.data(from: URL(string: "https://api.castreader.ai/first")!)
+        _ = try await session.data(from: URL(string: "https://api.castreader.ai/second")!)
+
+        XCTAssertEqual(requestCount, 2)
+        XCTAssertEqual(observedCookies.count, 2)
+        XCTAssertNil(observedCookies[0])
+        XCTAssertNil(observedCookies[1])
+    }
+
     // MARK: - 完整端点合同
 
-    func testGlobalRouteSendsEveryOwnedBusinessAPIThroughGlobalGateway() {
+    func testGlobalRouteSendsEveryOwnedBusinessAPIThroughGlobalGateway() async {
         UserDefaults.standard.set("CHN", forKey: "appRegion.v1.storefrontCountryCode")
         ServiceRouting.overrideRoute = .globalGateway
         resetSnapshots()
+        _ = await ComputeRouting.bootstrapForCurrentProcess(
+            timeZoneIdentifier: "America/Los_Angeles",
+            arguments: [],
+            simCountryCodes: [],
+            precomputedProbe: .init(
+                china: .unavailable,
+                global: .init(isReachable: true, latency: 0.01),
+                country: .init(countryCode: "US")
+            )
+        )
 
         XCTAssertEqual(Constants.API.baseURL, "https://api.castreader.ai")
         XCTAssertEqual(Constants.API.readerServiceURL, "https://api.castreader.ai")
@@ -552,7 +896,7 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(Constants.API.analyticsEvents, "https://api.castreader.ai/api/events")
         XCTAssertEqual(Constants.API.emailOTPBaseURL, "https://api.castreader.ai")
 
-        XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: true), "https://api.castreader.ai")
+        XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: true), "https://api.castreader.cn")
         XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: true))
         XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: false), "https://api.castreader.ai")
         XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: false))
@@ -564,10 +908,20 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(URL(string: Constants.API.termsURL)?.host, "castreader.com")
     }
 
-    func testChinaRouteUsesFiledGeneralGatewayAndDedicatedQuickReadIngress() {
+    func testChinaRouteUsesFiledGeneralGatewayAndDedicatedQuickReadIngress() async {
         UserDefaults.standard.set("CHN", forKey: "appRegion.v1.storefrontCountryCode")
         ServiceRouting.overrideRoute = .chinaGateway
         resetSnapshots()
+        _ = await ComputeRouting.bootstrapForCurrentProcess(
+            timeZoneIdentifier: "Asia/Shanghai",
+            arguments: [],
+            simCountryCodes: [],
+            precomputedProbe: .init(
+                china: .init(isReachable: true, latency: 0.01),
+                global: .init(isReachable: true, latency: 0.02),
+                country: .init(countryCode: "CN")
+            )
+        )
 
         XCTAssertEqual(Constants.API.baseURL, "https://api.castreader.cn")
         XCTAssertEqual(Constants.API.documents, "https://api.castreader.cn/api/mobile/documents")
@@ -584,7 +938,7 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(Constants.API.emailOTPBaseURL, "https://api.castreader.cn")
 
         XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: true), "https://api.castreader.cn")
-        XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: false), "https://api.castreader.cn")
+        XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: false), "https://api.castreader.ai")
         XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: true))
         XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: false))
 
@@ -1214,6 +1568,627 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertFalse(requestedURLs.contains { URL(string: $0)?.host == "api.castreader.ai" })
     }
 
+    func testComputeTicketExchangeHasExactContractAndIsBoundToCurrentCMS() async throws {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let provider = RoutingMobileSessionProvider(currentToken: "cms_account_A")
+        var exchangeAuthorization: [String] = []
+        RoutingURLProtocol.handler = { request in
+            XCTAssertEqual(
+                request.url?.absoluteString,
+                "https://api.castreader.ai/api/mobile-auth/compute-session"
+            )
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-Auth-Provider"), "session")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "application/json")
+            let authorization = request.value(forHTTPHeaderField: "Authorization") ?? ""
+            exchangeAuthorization.append(authorization)
+            let object = try XCTUnwrap(
+                try JSONSerialization.jsonObject(with: try XCTUnwrap(request.httpBody))
+                    as? [String: String]
+            )
+            XCTAssertEqual(object, ["audience": "quickread", "targetRoute": "cn"])
+            let suffix = authorization.hasSuffix("account_B") ? "B" : "A"
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: [
+                    "Content-Type": "application/json",
+                    "Cache-Control": "no-store",
+                ]
+            )!
+            return (
+                response,
+                Self.makeComputeTicketData(
+                    token: "cmc_ticket_\(suffix)",
+                    expiresAt: now.addingTimeInterval(15 * 60)
+                )
+            )
+        }
+        let store = QuickReadComputeSessionStore(
+            accountRoute: .globalGateway,
+            targetRoute: .chinaGateway,
+            session: makeRoutingSession(),
+            mobileSessionProvider: provider,
+            now: { now }
+        )
+
+        let firstATicket = try await store.ticket(forceRefresh: false)
+        let cachedATicket = try await store.ticket(forceRefresh: false)
+        XCTAssertEqual(firstATicket.token, "cmc_ticket_A")
+        XCTAssertEqual(cachedATicket.token, "cmc_ticket_A")
+        XCTAssertEqual(exchangeAuthorization, ["Bearer cms_account_A"])
+
+        await provider.setCurrentToken(nil)
+        do {
+            _ = try await store.ticket(forceRefresh: false)
+            XCTFail("a signed-out account must never reuse the previous account's cmc ticket")
+        } catch QuickReadError.httpError(let status) {
+            XCTAssertEqual(status, 401)
+        }
+        XCTAssertEqual(exchangeAuthorization, ["Bearer cms_account_A"])
+
+        await provider.setCurrentToken("cms_account_B")
+        let bTicket = try await store.ticket(forceRefresh: false)
+        XCTAssertEqual(bTicket.token, "cmc_ticket_B")
+        XCTAssertEqual(
+            exchangeAuthorization,
+            ["Bearer cms_account_A", "Bearer cms_account_B"]
+        )
+    }
+
+    func testComputeTicketExchangeIsSymmetricFromChinaAccountToGlobal() async throws {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let provider = RoutingMobileSessionProvider(currentToken: "cms_cn_account")
+        var observedBody: [String: String] = [:]
+        RoutingURLProtocol.handler = { request in
+            XCTAssertEqual(
+                request.url?.absoluteString,
+                "https://api.castreader.cn/api/mobile-auth/compute-session"
+            )
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer cms_cn_account")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "X-Auth-Provider"), "session")
+            observedBody = try XCTUnwrap(
+                try JSONSerialization.jsonObject(with: try XCTUnwrap(request.httpBody))
+                    as? [String: String]
+            )
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (
+                response,
+                Self.makeComputeTicketData(
+                    token: "cmc_global_quickread",
+                    expiresAt: now.addingTimeInterval(15 * 60),
+                    targetRoute: .globalGateway
+                )
+            )
+        }
+        let store = QuickReadComputeSessionStore(
+            accountRoute: .chinaGateway,
+            targetRoute: .globalGateway,
+            session: makeRoutingSession(),
+            mobileSessionProvider: provider,
+            now: { now }
+        )
+
+        let ticket = try await store.ticket(forceRefresh: false)
+
+        XCTAssertEqual(ticket.token, "cmc_global_quickread")
+        XCTAssertEqual(observedBody, ["audience": "quickread", "targetRoute": "global"])
+    }
+
+    func testComputeTicketRotatesSourceBindingAfterCMSRefresh() async throws {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let provider = RoutingMobileSessionProvider(
+            currentToken: "cms_expired_A",
+            refreshedToken: "cms_refreshed_B"
+        )
+        var authorizations: [String] = []
+        RoutingURLProtocol.handler = { request in
+            let authorization = request.value(forHTTPHeaderField: "Authorization") ?? ""
+            authorizations.append(authorization)
+            let isRefreshed = authorization == "Bearer cms_refreshed_B"
+            let status = isRefreshed ? 200 : 401
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: status, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (
+                response,
+                isRefreshed
+                    ? Self.makeComputeTicketData(
+                        token: "cmc_for_B",
+                        expiresAt: now.addingTimeInterval(15 * 60)
+                    )
+                    : Data(#"{"error":"expired"}"#.utf8)
+            )
+        }
+        let store = QuickReadComputeSessionStore(
+            accountRoute: .globalGateway,
+            targetRoute: .chinaGateway,
+            session: makeRoutingSession(),
+            mobileSessionProvider: provider,
+            now: { now }
+        )
+
+        let refreshedTicket = try await store.ticket(forceRefresh: false)
+        let cachedRefreshedTicket = try await store.ticket(forceRefresh: false)
+        XCTAssertEqual(refreshedTicket.token, "cmc_for_B")
+        XCTAssertEqual(cachedRefreshedTicket.token, "cmc_for_B")
+        XCTAssertEqual(authorizations, ["Bearer cms_expired_A", "Bearer cms_refreshed_B"])
+        let refreshCount = await provider.refreshCallCount()
+        let rejected = await provider.rejectedSessionTokens()
+        XCTAssertEqual(refreshCount, 1)
+        XCTAssertTrue(rejected.isEmpty)
+    }
+
+    func testGlobalAccountChinaComputeUsesOnlyCMCTicketAndFreezesContinuationTransport() async throws {
+        let provider = RoutingMobileSessionProvider(currentToken: "cms_global_account")
+        let computeProvider = RoutingComputeSessionProvider(token: "cmc_cn_quickread")
+        var requestedURLs: [String] = []
+        RoutingURLProtocol.handler = { request in
+            requestedURLs.append(request.url?.absoluteString ?? "")
+            XCTAssertEqual(request.url?.host, "quickread.castreader.cn")
+            XCTAssertEqual(
+                request.value(forHTTPHeaderField: "Authorization"),
+                "Bearer cmc_cn_quickread"
+            )
+            XCTAssertEqual(
+                request.value(forHTTPHeaderField: "X-Auth-Provider"),
+                "compute-session"
+            )
+            XCTAssertFalse(
+                request.value(forHTTPHeaderField: "Authorization")?.contains("cms_") == true
+            )
+            let isPlan = request.url?.path == "/api/quickread/extract-plan"
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: [
+                    "Content-Type": isPlan ? "text/event-stream" : "application/json",
+                ]
+            )!
+            return (
+                response,
+                isPlan
+                    ? Self.makeQuickReadSSEData(id: "cn-compute")
+                    : Self.makeQuickReadSectionData(id: "cn-continuation")
+            )
+        }
+        let session = makeRoutingSession()
+        let service = QuickReadService(
+            session: session,
+            mobileSessionProvider: provider,
+            computeSession: session,
+            computeSessionProvider: computeProvider,
+            accountRoute: .globalGateway,
+            computeRoute: .chinaGateway
+        )
+
+        let done = try await service.extractPlan(
+            Self.makeExtractPlanRequest(),
+            onStage: { _ in },
+            onBlock0: { _ in }
+        )
+        let section = try await service.extractBlock(
+            jobId: try XCTUnwrap(done.job_id),
+            blockIdx: 1
+        )
+
+        XCTAssertEqual(section.id, "cn-continuation")
+        XCTAssertEqual(
+            requestedURLs,
+            [
+                "https://quickread.castreader.cn/api/quickread/extract-plan",
+                "https://quickread.castreader.cn/api/quickread/extract-block",
+            ]
+        )
+        let refreshCount = await provider.refreshCallCount()
+        let rejected = await provider.rejectedSessionTokens()
+        XCTAssertEqual(refreshCount, 0)
+        XCTAssertTrue(rejected.isEmpty)
+    }
+
+    func testChinaAccountGlobalComputeUsesOnlyCMCTicketAndFreezesContinuationTransport() async throws {
+        let provider = RoutingMobileSessionProvider(currentToken: "cms_cn_account")
+        let computeProvider = RoutingComputeSessionProvider(token: "cmc_global_quickread")
+        var requestedURLs: [String] = []
+        RoutingURLProtocol.handler = { request in
+            requestedURLs.append(request.url?.absoluteString ?? "")
+            XCTAssertEqual(request.url?.host, "api.castreader.ai")
+            XCTAssertEqual(
+                request.value(forHTTPHeaderField: "Authorization"),
+                "Bearer cmc_global_quickread"
+            )
+            XCTAssertEqual(
+                request.value(forHTTPHeaderField: "X-Auth-Provider"),
+                "compute-session"
+            )
+            let isPlan = request.url?.path == "/api/quickread/extract-plan"
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: [
+                    "Content-Type": isPlan ? "text/event-stream" : "application/json",
+                ]
+            )!
+            return (
+                response,
+                isPlan
+                    ? Self.makeQuickReadSSEData(id: "global-compute")
+                    : Self.makeQuickReadSectionData(id: "global-continuation")
+            )
+        }
+        let session = makeRoutingSession()
+        let service = QuickReadService(
+            session: session,
+            mobileSessionProvider: provider,
+            computeSession: session,
+            computeSessionProvider: computeProvider,
+            accountRoute: .chinaGateway,
+            computeRoute: .globalGateway
+        )
+
+        let done = try await service.extractPlan(
+            Self.makeExtractPlanRequest(id: "cn-account-global-compute"),
+            onStage: { _ in },
+            onBlock0: { _ in }
+        )
+        let section = try await service.extractBlock(
+            jobId: try XCTUnwrap(done.job_id),
+            blockIdx: 1
+        )
+
+        XCTAssertEqual(section.id, "global-continuation")
+        XCTAssertEqual(
+            requestedURLs,
+            [
+                "https://api.castreader.ai/api/quickread/extract-plan",
+                "https://api.castreader.ai/api/quickread/extract-block",
+            ]
+        )
+        let refreshCount = await provider.refreshCallCount()
+        let rejected = await provider.rejectedSessionTokens()
+        XCTAssertEqual(refreshCount, 0)
+        XCTAssertTrue(rejected.isEmpty)
+    }
+
+    func testBlock0BindsCrossRouteJobBeforeImmediateContinuationCallback() async throws {
+        let provider = RoutingMobileSessionProvider(currentToken: "cms_global_account")
+        let computeProvider = RoutingComputeSessionProvider(token: "cmc_cn_race")
+        var continuationHosts: [String] = []
+        RoutingURLProtocol.handler = { request in
+            let isPlan = request.url?.path == "/api/quickread/extract-plan"
+            if !isPlan {
+                continuationHosts.append(request.url?.host ?? "")
+                XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer cmc_cn_race")
+                XCTAssertEqual(request.value(forHTTPHeaderField: "X-Auth-Provider"), "compute-session")
+            }
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: [
+                    "Content-Type": isPlan ? "text/event-stream" : "application/json",
+                ]
+            )!
+            return (
+                response,
+                isPlan
+                    ? Self.makeQuickReadSSEData(id: "immediate")
+                    : Self.makeQuickReadSectionData(id: "immediate-continuation")
+            )
+        }
+        let session = makeRoutingSession()
+        let service = QuickReadService(
+            session: session,
+            mobileSessionProvider: provider,
+            computeSession: session,
+            computeSessionProvider: computeProvider,
+            accountRoute: .globalGateway,
+            computeRoute: .chinaGateway
+        )
+        var continuationTask: Task<QuickreadSection, Error>?
+
+        _ = try await service.extractPlan(
+            Self.makeExtractPlanRequest(id: "immediate-continuation"),
+            onStage: { _ in },
+            onBlock0: { block in
+                continuationTask = Task {
+                    try await service.extractBlock(jobId: block.job_id, blockIdx: 1)
+                }
+            }
+        )
+        let task = try XCTUnwrap(continuationTask)
+        let section = try await task.value
+
+        XCTAssertEqual(section.id, "immediate-continuation")
+        XCTAssertEqual(continuationHosts, ["quickread.castreader.cn"])
+    }
+
+    func testUnknownQuickReadJobTransportFailsClosedBeforeNetwork() async {
+        var didTouchNetwork = false
+        RoutingURLProtocol.handler = { request in
+            didTouchNetwork = true
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil
+            )!
+            return (response, Self.makeQuickReadSectionData(id: "forbidden"))
+        }
+        let service = QuickReadService(
+            session: makeRoutingSession(),
+            mobileSessionProvider: RoutingMobileSessionProvider(currentToken: "cms_account"),
+            accountRoute: .globalGateway,
+            computeRoute: .chinaGateway
+        )
+
+        do {
+            _ = try await service.extractBlock(jobId: "unknown-job", blockIdx: 1)
+            XCTFail("an unbound continuation must never guess an ingress")
+        } catch QuickReadError.missingJobTransport {
+            // Expected fail-closed boundary.
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+        XCTAssertFalse(didTouchNetwork)
+    }
+
+    func testComputePayloadFailureNeverCrossesToGlobalIngress() async {
+        let provider = RoutingMobileSessionProvider(currentToken: "cms_must_stay_private")
+        let computeProvider = RoutingComputeSessionProvider(token: "cmc_failed_cn_job")
+        var requestedHosts: [String] = []
+        RoutingURLProtocol.handler = { request in
+            requestedHosts.append(request.url?.host ?? "")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer cmc_failed_cn_job")
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 503, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data(#"{"error":"unavailable"}"#.utf8))
+        }
+        let session = makeRoutingSession()
+        let service = QuickReadService(
+            session: session,
+            mobileSessionProvider: provider,
+            computeSession: session,
+            computeSessionProvider: computeProvider,
+            accountRoute: .globalGateway,
+            computeRoute: .chinaGateway
+        )
+
+        do {
+            _ = try await service.extractPlan(
+                Self.makeExtractPlanRequest(id: "no-cross-replay"),
+                onStage: { _ in },
+                onBlock0: { _ in }
+            )
+            XCTFail("CN payload failure must surface without sending the body globally")
+        } catch QuickReadError.httpError(let status) {
+            XCTAssertEqual(status, 503)
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+        XCTAssertEqual(requestedHosts, Array(repeating: "quickread.castreader.cn", count: 3))
+        XCTAssertFalse(requestedHosts.contains("api.castreader.ai"))
+        let rejected = await provider.rejectedSessionTokens()
+        XCTAssertTrue(rejected.isEmpty)
+    }
+
+    func testComputeTicketPreflightFailureNeverSendsPayloadToAccountIngress() async {
+        let provider = RoutingMobileSessionProvider(currentToken: "cms_global_account")
+        let computeProvider = RoutingComputeSessionProvider(failure: .cannotConnect)
+        var requestedHosts: [String] = []
+        RoutingURLProtocol.handler = { request in
+            requestedHosts.append(request.url?.host ?? "")
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: ["Content-Type": "text/event-stream"]
+            )!
+            return (response, Self.makeQuickReadSSEData(id: "forbidden"))
+        }
+        let session = makeRoutingSession()
+        let service = QuickReadService(
+            session: session,
+            mobileSessionProvider: provider,
+            computeSession: session,
+            computeSessionProvider: computeProvider,
+            accountRoute: .globalGateway,
+            computeRoute: .chinaGateway
+        )
+
+        do {
+            _ = try await service.extractPlan(
+                Self.makeExtractPlanRequest(id: "preflight"),
+                onStage: { _ in },
+                onBlock0: { _ in }
+            )
+            XCTFail("ticket failure must fail closed before any正文 request")
+        } catch {
+            XCTAssertFalse(error is CancellationError)
+        }
+        XCTAssertTrue(requestedHosts.isEmpty)
+    }
+
+    func testChinaProductComputeTicketFailureIsFailClosed() async {
+        let provider = RoutingMobileSessionProvider(currentToken: "cms_staged_global_route")
+        let computeProvider = RoutingComputeSessionProvider(failure: .cannotConnect)
+        var didSendPayload = false
+        RoutingURLProtocol.handler = { request in
+            didSendPayload = true
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: ["Content-Type": "text/event-stream"]
+            )!
+            return (response, Self.makeQuickReadSSEData(id: "forbidden"))
+        }
+        let session = makeRoutingSession()
+        let service = QuickReadService(
+            session: session,
+            mobileSessionProvider: provider,
+            computeSession: session,
+            computeSessionProvider: computeProvider,
+            accountRoute: .globalGateway,
+            computeRoute: .chinaGateway
+        )
+
+        do {
+            _ = try await service.extractPlan(
+                Self.makeExtractPlanRequest(id: "china-product"),
+                onStage: { _ in },
+                onBlock0: { _ in }
+            )
+            XCTFail("China product must fail closed when its CN compute ticket is unavailable")
+        } catch {
+            XCTAssertFalse(error is CancellationError)
+        }
+        XCTAssertFalse(didSendPayload)
+    }
+
+    func testComputeTicketAuthAndContractFailuresNeverFallback() async {
+        for status in [401, 422] {
+            let provider = RoutingMobileSessionProvider(currentToken: "cms_global_\(status)")
+            let computeProvider = RoutingComputeSessionProvider(failure: .http(status))
+            var didSendPayload = false
+            RoutingURLProtocol.handler = { request in
+                didSendPayload = true
+                let response = HTTPURLResponse(
+                    url: request.url!, statusCode: 200, httpVersion: nil,
+                    headerFields: nil
+                )!
+                return (response, Data())
+            }
+            let session = makeRoutingSession()
+            let service = QuickReadService(
+                session: session,
+                mobileSessionProvider: provider,
+                computeSession: session,
+                computeSessionProvider: computeProvider,
+                accountRoute: .globalGateway,
+                computeRoute: .chinaGateway
+            )
+
+            do {
+                _ = try await service.extractPlan(
+                    Self.makeExtractPlanRequest(id: "fail-closed-\(status)"),
+                    onStage: { _ in },
+                    onBlock0: { _ in }
+                )
+                XCTFail("ticket HTTP \(status) must fail closed")
+            } catch QuickReadError.httpError(let observed) {
+                XCTAssertEqual(observed, status)
+            } catch {
+                XCTFail("unexpected error: \(error)")
+            }
+            XCTAssertFalse(didSendPayload)
+        }
+    }
+
+    func testComputeTicket401RefreshesOnlyCMCAndNeverRejectsGlobalCMS() async throws {
+        let provider = RoutingMobileSessionProvider(currentToken: "cms_global_survives")
+        let computeProvider = RoutingComputeSessionProvider(
+            token: "cmc_expired",
+            refreshedToken: "cmc_refreshed"
+        )
+        var authorizations: [String] = []
+        RoutingURLProtocol.handler = { request in
+            let authorization = request.value(forHTTPHeaderField: "Authorization") ?? ""
+            authorizations.append(authorization)
+            XCTAssertEqual(request.url?.host, "quickread.castreader.cn")
+            let refreshed = authorization == "Bearer cmc_refreshed"
+            let status = refreshed ? 200 : 401
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: status, httpVersion: nil,
+                headerFields: [
+                    "Content-Type": refreshed ? "text/event-stream" : "application/json",
+                ]
+            )!
+            return (
+                response,
+                refreshed
+                    ? Self.makeQuickReadSSEData(id: "refreshed-cmc")
+                    : Data(#"{"error":"COMPUTE_SESSION_EXPIRED"}"#.utf8)
+            )
+        }
+        let session = makeRoutingSession()
+        let service = QuickReadService(
+            session: session,
+            mobileSessionProvider: provider,
+            computeSession: session,
+            computeSessionProvider: computeProvider,
+            accountRoute: .globalGateway,
+            computeRoute: .chinaGateway
+        )
+
+        _ = try await service.extractPlan(
+            Self.makeExtractPlanRequest(id: "cmc-refresh"),
+            onStage: { _ in },
+            onBlock0: { _ in }
+        )
+
+        XCTAssertEqual(authorizations, ["Bearer cmc_expired", "Bearer cmc_refreshed"])
+        let invalidations = await computeProvider.invalidations()
+        let refreshCount = await provider.refreshCallCount()
+        let rejected = await provider.rejectedSessionTokens()
+        let survivingCMS = await provider.sessionToken()
+        XCTAssertEqual(invalidations, 1)
+        XCTAssertEqual(refreshCount, 0)
+        XCTAssertTrue(rejected.isEmpty)
+        XCTAssertEqual(survivingCMS, "cms_global_survives")
+    }
+
+    func testComputeTicketGeneric401DoesNotRemintOrRejectAccountCMS() async {
+        let provider = RoutingMobileSessionProvider(currentToken: "cms_global_survives_scope_error")
+        let computeProvider = RoutingComputeSessionProvider(
+            token: "cmc_scope_mismatch",
+            refreshedToken: "cmc_must_not_be_minted"
+        )
+        var authorizations: [String] = []
+        RoutingURLProtocol.handler = { request in
+            authorizations.append(
+                request.value(forHTTPHeaderField: "Authorization") ?? ""
+            )
+            XCTAssertEqual(request.url?.host, "quickread.castreader.cn")
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 401, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (
+                response,
+                Data(#"{"code":"COMPUTE_SESSION_SCOPE_MISMATCH"}"#.utf8)
+            )
+        }
+        let session = makeRoutingSession()
+        let service = QuickReadService(
+            session: session,
+            mobileSessionProvider: provider,
+            computeSession: session,
+            computeSessionProvider: computeProvider,
+            accountRoute: .globalGateway,
+            computeRoute: .chinaGateway
+        )
+
+        do {
+            _ = try await service.extractPlan(
+                Self.makeExtractPlanRequest(id: "cmc-scope-mismatch"),
+                onStage: { _ in },
+                onBlock0: { _ in }
+            )
+            XCTFail("a non-expiration 401 must fail without minting another compute ticket")
+        } catch QuickReadError.httpError(let status) {
+            XCTAssertEqual(status, 401)
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+
+        XCTAssertEqual(authorizations, ["Bearer cmc_scope_mismatch"])
+        let invalidations = await computeProvider.invalidations()
+        let forceRefreshValues = await computeProvider.requestedForceRefreshValues()
+        let refreshCount = await provider.refreshCallCount()
+        let rejected = await provider.rejectedSessionTokens()
+        let survivingCMS = await provider.sessionToken()
+        XCTAssertEqual(invalidations, 0)
+        XCTAssertEqual(forceRefreshValues, [false, false])
+        XCTAssertEqual(refreshCount, 0)
+        XCTAssertTrue(rejected.isEmpty)
+        XCTAssertEqual(survivingCMS, "cms_global_survives_scope_error")
+    }
+
     func testQuickReadContinuationUsesSelectedGatewayAndOnlyServerSessionIdentity() async throws {
         let cases: [(ServiceRoute, String)] = [
             (.globalGateway, "https://api.castreader.ai/api/quickread/extract-block"),
@@ -1257,6 +2232,7 @@ final class ServiceRoutingTests: XCTestCase {
                 session: makeRoutingSession(),
                 mobileSessionProvider: provider
             )
+            await service.bindCurrentTransportForTesting(jobID: "job-test")
             let section = try await service.extractBlock(jobId: "job-test", blockIdx: 1)
 
             XCTAssertEqual(section.id, route.rawValue)
@@ -1284,6 +2260,7 @@ final class ServiceRoutingTests: XCTestCase {
                 session: makeRoutingSession(),
                 mobileSessionProvider: provider
             )
+            await service.bindCurrentTransportForTesting(jobID: "job-test")
 
             do {
                 _ = try await service.extractBlock(jobId: "job-test", blockIdx: 1)
@@ -1414,6 +2391,7 @@ final class ServiceRoutingTests: XCTestCase {
                     session: makeRoutingSession(),
                     mobileSessionProvider: provider
                 )
+                await service.bindCurrentTransportForTesting(jobID: "job-test")
 
                 let section: QuickreadSection
                 if operation == "extract" {
@@ -1538,6 +2516,7 @@ final class ServiceRoutingTests: XCTestCase {
             session: makeRoutingSession(),
             mobileSessionProvider: provider
         )
+        await service.bindCurrentTransportForTesting(jobID: "job-test")
 
         do {
             _ = try await service.extractBlock(jobId: "job-test", blockIdx: 1)
@@ -1585,6 +2564,7 @@ final class ServiceRoutingTests: XCTestCase {
             session: makeRoutingSession(),
             mobileSessionProvider: provider
         )
+        await service.bindCurrentTransportForTesting(jobID: "job-test")
 
         do {
             _ = try await service.extractBlock(jobId: "job-test", blockIdx: 1)
@@ -2553,6 +3533,36 @@ final class ServiceRoutingTests: XCTestCase {
         )
     }
 
+    private static func makeComputeTicketData(
+        token: String,
+        expiresAt: Date,
+        targetRoute: ServiceRoute = .chinaGateway
+    ) -> Data {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return try! JSONSerialization.data(withJSONObject: [
+            "code": 0,
+            "data": [
+                "token": token,
+                "expiresAt": formatter.string(from: expiresAt),
+                "audience": "quickread",
+                "targetRoute": targetRoute.rawValue,
+            ],
+        ])
+    }
+
+    private static func makeExtractPlanRequest(id: String = "compute") -> ExtractPlanRequest {
+        ExtractPlanRequest(
+            source_url: "castreader://test/\(id)",
+            title: "Compute route",
+            lang: "en",
+            depth: "standard",
+            text: "A paragraph.",
+            fullText: "A paragraph.",
+            paragraphs: [QuickreadParagraphDTO(text: "A paragraph.", type: "paragraph")]
+        )
+    }
+
     private func makePinnedControlPlaneSession(route: ServiceRoute) -> URLSession {
         makeRedirectSession(route: route, rejectsEveryRedirect: true)
     }
@@ -2654,8 +3664,56 @@ private actor RoutingMobileSessionProvider: MobileSessionProviding {
         rejectedTokens.append(rejectedToken)
     }
 
+    func setCurrentToken(_ token: String?) {
+        currentToken = token
+    }
+
     func refreshCallCount() -> Int { refreshCalls }
     func rejectedSessionTokens() -> [String?] { rejectedTokens }
+}
+
+private actor RoutingComputeSessionProvider: QuickReadComputeSessionProviding {
+    enum Failure: Sendable {
+        case cannotConnect
+        case http(Int)
+    }
+
+    private let token: String
+    private let refreshedToken: String
+    private let failure: Failure?
+    private var forceRefreshValues: [Bool] = []
+    private var invalidationCount = 0
+
+    init(
+        token: String = "cmc_initial_compute_ticket",
+        refreshedToken: String = "cmc_refreshed_compute_ticket",
+        failure: Failure? = nil
+    ) {
+        self.token = token
+        self.refreshedToken = refreshedToken
+        self.failure = failure
+    }
+
+    func ticket(forceRefresh: Bool) throws -> QuickReadComputeTicket {
+        forceRefreshValues.append(forceRefresh)
+        if let failure {
+            switch failure {
+            case .cannotConnect: throw URLError(.cannotConnectToHost)
+            case .http(let status): throw QuickReadError.httpError(status)
+            }
+        }
+        return QuickReadComputeTicket(
+            token: forceRefresh ? refreshedToken : token,
+            expiresAt: Date().addingTimeInterval(15 * 60)
+        )
+    }
+
+    func invalidateTicket() {
+        invalidationCount += 1
+    }
+
+    func requestedForceRefreshValues() -> [Bool] { forceRefreshValues }
+    func invalidations() -> Int { invalidationCount }
 }
 
 private final class RoutingRedirectURLProtocol: URLProtocol {

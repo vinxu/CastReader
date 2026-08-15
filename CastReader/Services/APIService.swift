@@ -44,14 +44,31 @@ actor APIService {
     static let shared = APIService()
 
     private let session: URLSession
+    private let ttsSessions: [ServiceRoute: URLSession]
     private let decoder: JSONDecoder
     private let mobileSessionProvider: any MobileSessionProviding
 
     private init() {
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 30
-        config.timeoutIntervalForResource = 60
-        self.session = OwnedAPIURLSession.make(configuration: config)
+        // APIService APIs use explicit bearer credentials (or are intentionally
+        // anonymous). Keep them isolated from Better Auth's shared cookie jar so
+        // an account/route cookie can never shadow the request's explicit auth.
+        self.session = OwnedAPIURLSession.makeExplicitCredentialSession(
+            route: ServiceRouting.current,
+            requestTimeout: 30,
+            resourceTimeout: 60
+        )
+        self.ttsSessions = Dictionary(
+            uniqueKeysWithValues: ServiceRoute.allCases.map { route in
+                (
+                    route,
+                    OwnedAPIURLSession.makeExplicitCredentialSession(
+                        route: route,
+                        requestTimeout: 30,
+                        resourceTimeout: 60
+                    )
+                )
+            }
+        )
 
         self.decoder = JSONDecoder()
         self.mobileSessionProvider = MobileSessionStore.shared
@@ -61,16 +78,25 @@ actor APIService {
     /// Production continues to use `shared` and the default pinned timeouts.
     init(
         session: URLSession,
+        ttsSessions: [ServiceRoute: URLSession]? = nil,
         mobileSessionProvider: any MobileSessionProviding = MobileSessionStore.shared
     ) {
         self.session = session
+        self.ttsSessions = ttsSessions ?? Dictionary(
+            uniqueKeysWithValues: ServiceRoute.allCases.map { ($0, session) }
+        )
         self.decoder = JSONDecoder()
         self.mobileSessionProvider = mobileSessionProvider
     }
 
     // MARK: - Generic Request
 
-    private func request<T: Decodable>(_ url: URL, method: String = "GET", body: Data? = nil) async throws -> T {
+    private func request<T: Decodable>(
+        _ url: URL,
+        method: String = "GET",
+        body: Data? = nil,
+        session requestSession: URLSession? = nil
+    ) async throws -> T {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -79,7 +105,7 @@ actor APIService {
             request.httpBody = body
         }
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await (requestSession ?? session).data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
@@ -407,7 +433,9 @@ actor APIService {
         language: String = Constants.TTS.defaultLanguage,
         includeVoiceCode: Bool = true
     ) async throws -> TTSResponse {
-        // 新版只使用本次进程冻结的统一网关；不再按时区选择旧节点，也不跨线回退。
+        // Compute locality is independent from the account/content route. TTS
+        // is anonymous, so a mainland user may use the filed CN compute ingress
+        // without moving or exposing the account's cms_ session.
         let sanitized = SpeechTextSanitizer.sanitizedForTTS(text)
         guard SpeechTextSanitizer.containsSpeakableContent(sanitized) else {
             throw APIError.serverError("No speakable text for TTS")
@@ -437,14 +465,25 @@ actor APIService {
         apiDebugLog("[TTSRoute] language=\(canonicalLanguage) voice=\(resolvedVoice) clone=\(resolvedVoice.hasPrefix("vc_") ? "Y" : "N")")
 
         if resolvedVoice.hasPrefix("vc_") {
+            // Voice cloning is disabled in this release. If it is re-enabled,
+            // this account-scoped compatibility path must first receive a
+            // dedicated cross-route compute authorization contract; a cms_
+            // token must never be sent to a different compute ingress.
             return try await requestClonedVoiceTTS(body: bodyData, voiceID: resolvedVoice)
         }
 
-        let primary = TTSEndpoint.primaryBase()
-        guard let url = URL(string: TTSEndpoint.partlyURL(base: primary)) else {
+        let route = ComputeRouting.current
+        guard let url = URL(
+            string: TTSEndpoint.partlyURL(base: route.apiGatewayBaseURL)
+        ) else {
             throw APIError.invalidURL
         }
-        return try await request(url, method: "POST", body: bodyData)
+        return try await request(
+            url,
+            method: "POST",
+            body: bodyData,
+            session: ttsSessions[route]
+        )
     }
 
     private func requestClonedVoiceTTS(body: Data, voiceID: String, canRefresh: Bool = true) async throws -> TTSResponse {

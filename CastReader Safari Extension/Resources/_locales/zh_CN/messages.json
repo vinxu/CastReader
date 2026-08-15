@@ -1,8 +1,8 @@
 {
-  "extName": {
+  "name": {
     "message": "CastReader — 文字转语音·朗读 + AI 解读"
   },
-  "extDescription": {
+  "description": {
     "message": "两大功能:朗读(段落高亮跟读+自动翻页)+ AI 解读(原页面智能批注导读)。微信读书/Kindle/公号/PDF,更多高级真人语音。"
   },
   "quickreadBtn": {

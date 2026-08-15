@@ -187,13 +187,55 @@ enum OwnedAPIURLSession {
     /// Shared production client for short JSON requests. Initialization is lazy
     /// and therefore observes the app process's already-frozen service route.
     static let shared = make()
+    private static let responseSessions: [ServiceRoute: URLSession] = Dictionary(
+        uniqueKeysWithValues: ServiceRoute.allCases.map { route in
+            (route, makeExplicitCredentialSession(route: route))
+        }
+    )
+
+    /// Cookie-free transport for requests whose identity contract is explicit
+    /// (`Authorization: Bearer cms_|cmc_`) or anonymous (TTS/catalog/media).
+    /// Better Auth and provider sign-in sessions deliberately do not use this
+    /// factory because their account flows may require their own cookie state.
+    static func explicitCredentialConfiguration(
+        requestTimeout: TimeInterval? = nil,
+        resourceTimeout: TimeInterval? = nil
+    ) -> URLSessionConfiguration {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.httpShouldSetCookies = false
+        configuration.httpCookieStorage = nil
+        configuration.httpCookieAcceptPolicy = .never
+        configuration.urlCredentialStorage = nil
+        if let requestTimeout {
+            configuration.timeoutIntervalForRequest = requestTimeout
+        }
+        if let resourceTimeout {
+            configuration.timeoutIntervalForResource = resourceTimeout
+        }
+        return configuration
+    }
+
+    static func makeExplicitCredentialSession(
+        route: ServiceRoute,
+        requestTimeout: TimeInterval? = nil,
+        resourceTimeout: TimeInterval? = nil,
+        rejectsEveryRedirect: Bool = false
+    ) -> URLSession {
+        make(
+            configuration: explicitCredentialConfiguration(
+                requestTimeout: requestTimeout,
+                resourceTimeout: resourceTimeout
+            ),
+            route: route,
+            rejectsEveryRedirect: rejectsEveryRedirect
+        )
+    }
 
     /// Runtime configuration is mirrored on both public gateways. Bind the
     /// no-redirect control-plane session to the process's already-frozen route
     /// so even its first request cannot cross global/CN ingress.
     static func controlPlane(for route: ServiceRoute = ServiceRouting.current) -> URLSession {
-        make(
-            configuration: .ephemeral,
+        makeExplicitCredentialSession(
             route: route,
             rejectsEveryRedirect: true
         )
@@ -218,10 +260,19 @@ enum OwnedAPIURLSession {
     /// Safe convenience for response-provided URLs. This both rewrites the
     /// initial CN first-party destination and applies the no-cross-line
     /// redirect delegate. Third-party URLs retain normal URLSession behavior.
-    static func data(from responseURL: URL) async throws -> (Data, URLResponse) {
-        guard let routedURL = OwnedAPIRedirectPolicy.routedResponseURL(responseURL) else {
+    static func data(
+        from responseURL: URL,
+        route: ServiceRoute = ServiceRouting.current
+    ) async throws -> (Data, URLResponse) {
+        guard let routedURL = OwnedAPIRedirectPolicy.routedResponseURL(
+            responseURL,
+            route: route
+        ) else {
             throw URLError(.unsupportedURL)
         }
-        return try await shared.data(from: routedURL)
+        guard let session = responseSessions[route] else {
+            throw URLError(.unsupportedURL)
+        }
+        return try await session.data(from: routedURL)
     }
 }

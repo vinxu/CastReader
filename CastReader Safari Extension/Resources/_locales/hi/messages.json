@@ -1,8 +1,8 @@
 {
-  "extName": {
+  "name": {
     "message": "CastReader — ज़ोर से पढ़ें + AI समझाएँ"
   },
-  "extDescription": {
+  "description": {
     "message": "सिंक हाइलाइट के साथ सुनें और AI व्याख्या पाएँ। Kindle, PDF, लेख और किताबें। 9 भाषाओं में AI आवाज़ें।"
   },
   "quickreadBtn": {

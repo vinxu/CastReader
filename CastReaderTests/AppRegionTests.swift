@@ -326,10 +326,21 @@ final class AppRegionTests: XCTestCase {
         XCTAssertEqual(Constants.API.analyticsEvents, "https://api.castreader.ai/api/events")
     }
 
-    func testChinaUsesFiledGeneralGatewayAndDedicatedQuickReadIngress() {
+    func testChinaUsesFiledGeneralGatewayAndDedicatedQuickReadIngress() async {
         UserDefaults.standard.set("CHN", forKey: storefrontKey)
         ServiceRouting.overrideRoute = .chinaGateway
         ServiceRouting.resetProcessSnapshotForTesting()
+        TTSEndpoint.resetProcessSnapshotForTesting()
+        _ = await ComputeRouting.bootstrapForCurrentProcess(
+            timeZoneIdentifier: "Asia/Shanghai",
+            arguments: [],
+            simCountryCodes: [],
+            precomputedProbe: .init(
+                china: .init(isReachable: true, latency: 0.01),
+                global: .init(isReachable: true, latency: 0.02),
+                country: .init(countryCode: "CN")
+            )
+        )
 
         XCTAssertEqual(Constants.API.baseURL, "https://api.castreader.cn")
         XCTAssertEqual(Constants.API.documents, "https://api.castreader.cn/api/mobile/documents")
@@ -344,16 +355,30 @@ final class AppRegionTests: XCTestCase {
         XCTAssertEqual(QuickReadEndpoint.base(), "https://quickread.castreader.cn")
     }
 
-    func testGlobalServiceGatewayStaysOnDotAI() {
+    func testGlobalServiceGatewayStaysOnDotAI() async {
         UserDefaults.standard.set("USA", forKey: storefrontKey)
         ServiceRouting.overrideRoute = .globalGateway
         ServiceRouting.resetProcessSnapshotForTesting()
+        TTSEndpoint.resetProcessSnapshotForTesting()
+        _ = await ComputeRouting.bootstrapForCurrentProcess(
+            timeZoneIdentifier: "Asia/Shanghai",
+            arguments: [],
+            simCountryCodes: [],
+            precomputedProbe: .init(
+                china: .unavailable,
+                global: .unavailable,
+                country: nil
+            )
+        )
 
         XCTAssertEqual(Constants.API.baseURL, "https://api.castreader.ai")
         XCTAssertEqual(Constants.API.documents, "https://api.castreader.ai/api/mobile/documents")
         XCTAssertEqual(Constants.API.tts, "https://api.castreader.ai/api/captioned_speech_partly")
         XCTAssertEqual(Constants.API.webURL, "https://api.castreader.ai")
-        XCTAssertEqual(QuickReadEndpoint.base(), "https://api.castreader.ai")
+        XCTAssertEqual(QuickReadEndpoint.base(), "https://quickread.castreader.cn")
+        // Account/content remains .ai while generation follows mainland
+        // locality. The正文 is never resent across compute routes.
+        XCTAssertEqual(TTSEndpoint.primaryBase(), "https://api.castreader.cn")
         XCTAssertNil(TTSEndpoint.fallbackBase())
     }
 

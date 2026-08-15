@@ -790,7 +790,8 @@ struct VoiceAvatarView: View {
     let voice: VoiceOption
 
     var body: some View {
-        CachedAsyncImage(url: avatarURL) {
+        let route = ComputeRouting.current
+        CachedAsyncImage(url: avatarURL(route: route), route: route) {
             ZStack {
                 Circle().fill(fallbackColor.opacity(0.18))
                 Text(initial)
@@ -801,9 +802,9 @@ struct VoiceAvatarView: View {
         .clipShape(Circle())
     }
 
-    private var avatarURL: URL? {
+    private func avatarURL(route: ServiceRoute) -> URL? {
         [voice.avatarURL64, voice.avatarURL256]
-            .compactMap { VoiceCatalogAssetURL.resolve($0) }
+            .compactMap { VoiceCatalogAssetURL.resolve($0, route: route) }
             .first
     }
 

@@ -35907,6 +35907,122 @@
         }
       }
     },
+    "解读任务线路状态已丢失，请重新开始解读" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Routenstatus für die Erklärung ist verloren gegangen. Bitte starte die Erklärung erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The explanation route state was lost. Please start the explanation again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se perdió el estado de la ruta de explicación. Vuelve a iniciar la explicación."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’état de la route d’explication a été perdu. Relancez l’explication."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "व्याख्या रूट की स्थिति खो गई है। कृपया व्याख्या फिर से शुरू करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo stato del percorso di spiegazione è andato perso. Riavvia la spiegazione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解説ルートの状態が失われました。解説をもう一度開始してください。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O estado da rota de explicação foi perdido. Inicie a explicação novamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解读任务线路状态已丢失，请重新开始解读"
+          }
+        }
+      }
+    },
+    "解读算力凭据已过期" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Rechenzugang für die Erklärung ist abgelaufen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The explanation compute credential has expired."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La autorización de cómputo de la explicación ha caducado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’autorisation de calcul pour l’explication a expiré."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "व्याख्या कंप्यूट क्रेडेंशियल की समय-सीमा समाप्त हो गई है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La credenziale di calcolo della spiegazione è scaduta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解説用コンピュート認証情報の有効期限が切れました。"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A credencial de computação da explicação expirou."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "解读算力凭据已过期"
+          }
+        }
+      }
+    },
     "解读失败" : {
       "localizations" : {
         "de" : {

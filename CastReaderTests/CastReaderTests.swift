@@ -3935,7 +3935,7 @@ final class AudioPlaybackOwnershipTests: XCTestCase {
 }
 
 final class TTSEndpointSecurityTests: XCTestCase {
-    func testNewTTSContractContainsOnlyTheTwoHTTPSGatewaysAndNoCrossLineFallback() {
+    func testNewTTSContractContainsOnlyTheTwoHTTPSGatewaysAndNoCrossRouteFallback() {
         XCTAssertEqual(TTSEndpoint.globalBase, "https://api.castreader.ai")
         XCTAssertEqual(TTSEndpoint.chinaMainlandBase, "https://api.castreader.cn")
         XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: true))

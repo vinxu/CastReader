@@ -535,10 +535,14 @@ final class VoiceCatalogService: ObservableObject {
         session: URLSession? = nil,
         defaults: UserDefaults = .standard,
         endpoint: URL? = nil,
-        route: ServiceRoute = ServiceRouting.current,
+        route: ServiceRoute = ComputeRouting.current,
         now: @escaping () -> Date = Date.init
     ) {
-        self.session = session ?? OwnedAPIURLSession.make(route: route)
+        self.session = session ?? OwnedAPIURLSession.makeExplicitCredentialSession(
+            route: route,
+            requestTimeout: 12,
+            resourceTimeout: 20
+        )
         self.defaults = defaults
         self.endpoint = endpoint
             ?? URL(
