@@ -237,12 +237,14 @@ struct HomeView: View {
                         librarySourcesEmptyCard
                     }
                     KindleHomeSection(store: kindleStore)
-                    YouTubeHomeSection(
-                        activeDocumentID: coordinator.session?.document.sourceKind == .youtube
-                            ? coordinator.session?.document.id
-                            : nil,
-                        isSurfaceEnabled: isSurfaceActive
-                    )
+                    if AppRegion.current.showsYouTubeEntry {
+                        YouTubeHomeSection(
+                            activeDocumentID: coordinator.session?.document.sourceKind == .youtube
+                                ? coordinator.session?.document.id
+                                : nil,
+                            isSurfaceEnabled: isSurfaceActive
+                        )
+                    }
                     GoogleBooksHomeSection()
                     KoboHomeSection()
                     OReillyHomeSection()
@@ -546,7 +548,8 @@ struct HomeView: View {
 
     private var showsWeReadModule: Bool {
         // 中国大陆版把微信读书作为默认书库入口并始终展示；Kindle、
-        // Google Books、Kobo、O'Reilly 与 YouTube 仍保留原入口。
+        // Google Books、Kobo 与 O'Reilly 仍保留原入口。YouTube 的主动入口
+        // 由 `showsYouTubeEntry` 单独控制。
         // 其他地区沿用既有的语言/时区可用性判定，行为不变。
         if AppRegion.current == .cn { return true }
         return WeReadAvailability.isAvailable(

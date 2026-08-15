@@ -1752,7 +1752,7 @@ class CastReaderUITests: XCTestCase {
         }
     }
 
-    func testChinaRegionStillOffersAllFiveShelfPlatforms() {
+    func testChinaRegionHidesYouTubeEntryButStillOffersAllFiveShelfPlatforms() {
         let app = XCUIApplication()
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
@@ -1765,10 +1765,10 @@ class CastReaderUITests: XCTestCase {
         app.launch()
         dismissSelfOpenSystemAlertIfPresent()
 
-        XCTAssertTrue(
+        XCTAssertFalse(
             app.descendants(matching: .any)["homeShelfSection.youtube"]
-                .waitForExistence(timeout: 5),
-            "中国发行体验仍必须保留 YouTube 首页入口"
+                .waitForExistence(timeout: 1),
+            "中国发行体验不应展示 YouTube 首页入口"
         )
         openShelfSources(in: app)
 
@@ -1779,6 +1779,26 @@ class CastReaderUITests: XCTestCase {
                 "中国发行体验仍必须保留平台：\(source)"
             )
         }
+    }
+
+    func testGlobalRegionKeepsYouTubeHomeEntry() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderRegion", "global",
+            "-CastReaderServiceRoute", "cn",
+            "-CastReaderSkipSignInGate",
+            "-CastReaderSkipLibraryOnboarding",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        XCTAssertTrue(
+            app.descendants(matching: .any)["homeShelfSection.youtube"]
+                .waitForExistence(timeout: 5),
+            "全球发行体验必须继续展示 YouTube 首页入口，且不应受服务线路影响"
+        )
     }
 
     /// 首页和中间 ➕ 保持不变，只把右侧 Settings 替换成 Voice。

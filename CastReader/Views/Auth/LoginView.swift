@@ -200,13 +200,15 @@ struct LoginView: View {
 
     /// 内容源图标行。名称是产品专名（Kindle / PDF 等），不进本地化表。
     private var sourceChips: some View {
-        let sources: [(String, String)] = [
+        var sources: [(String, String)] = [
             ("book.closed", "Kindle"),
             ("book", AppLocalized("微信读书")),
             ("doc.richtext", "PDF"),
             ("globe", AppLocalized("网页")),
-            ("play.rectangle", "YouTube"),
         ]
+        if AppRegion.current.showsYouTubeEntry {
+            sources.append(("play.rectangle", "YouTube"))
+        }
         return HStack(spacing: 8) {
             ForEach(sources, id: \.1) { source in
                 HStack(spacing: 4) {

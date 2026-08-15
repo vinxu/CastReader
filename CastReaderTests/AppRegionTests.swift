@@ -232,6 +232,7 @@ final class AppRegionTests: XCTestCase {
         XCTAssertTrue(AppRegion.global.showsGoogleSignIn)
         XCTAssertFalse(AppRegion.global.showsPhoneSignIn)
         XCTAssertTrue(AppRegion.global.showsEmailSignIn)
+        XCTAssertTrue(AppRegion.global.showsYouTubeEntry)
         XCTAssertEqual(AppRegion.global.currencySymbol, "$")
     }
 
@@ -246,6 +247,7 @@ final class AppRegionTests: XCTestCase {
         XCTAssertFalse(AppRegion.cn.showsGoogleSignIn)
         XCTAssertTrue(AppRegion.cn.showsPhoneSignIn)
         XCTAssertFalse(AppRegion.cn.showsEmailSignIn)
+        XCTAssertFalse(AppRegion.cn.showsYouTubeEntry)
         XCTAssertEqual(AppRegion.cn.currencySymbol, "¥")
     }
 

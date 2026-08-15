@@ -324,6 +324,13 @@ extension AppRegion {
     /// 邮箱验证码当前只作为全球区兜底登录通道；中国区只保留手机号与 Apple。
     var showsEmailSignIn: Bool { self == .global }
 
+    /// YouTube 的主动入口仅在全球发行体验中展示。
+    ///
+    /// 这里只控制登录页宣传标签和首页入口，不删除用户已经保存的历史记录，
+    /// 也不改变外部分享/深链兼容路径。产品区域由 App Store storefront 决定，
+    /// 与当前冻结的服务线路无关，避免测试中国网关时误伤全球发行体验。
+    var showsYouTubeEntry: Bool { self == .global }
+
     /// 订阅货币符号。中国区展示人民币。
     var currencySymbol: String {
         switch self {
