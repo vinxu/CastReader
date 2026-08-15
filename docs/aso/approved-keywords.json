@@ -1,15 +1,15 @@
 {
-  "_comment": "ASO 关键词字段唯一真相源（v3，2026-08-06）。发版前后跑 scripts/verify_aso_keywords.rb 比对线上。改词必须先改本文件并在 keyword-corpus.md 记录理由。",
-  "_version": "v3-1.2.18",
-  "en-US": "tts,listen,audiobook,voice,reader,ocr,epub,ebook,book,kindle,kobo,novel,dyslexia,adhd,study",
-  "zh-Hans": "听书,文字转语音,英语听力,有声书,网页阅读,文档,学习,无障碍,summarize,textbook,paper,news,notes",
-  "zh-Hant": "聽書,文字轉語音,英語聽力,有聲書,網頁閱讀,文件,學習,無障礙,課本,論文,唸書,語音",
-  "ja": "テキスト読み上げ,朗読,オーディオブック,音声合成,リスニング,勉強,論文,電子書籍,リーダー,OCR,教科書,ニュース,英語,Kindle",
-  "de-DE": "tts,ocr,sprachausgabe,hörbuch,ebook,epub,lernen,studium,zusammenfassung,legasthenie,dokument,kindle",
-  "es-ES": "tts,ocr,leer,lector,audiolibro,ebook,epub,estudio,resumen,dislexia,documentos,aprender,escanear",
-  "es-MX": "summary,summarizer,textbook,paper,notes,narrator,speak,news,homework,lecture",
-  "fr-FR": "tts,ocr,lire,lecteur,voix,haute,livre audio,ebook,epub,étude,résumé,dyslexie,document,apprendre",
-  "pt-BR": "tts,ocr,ler,leitor,audiolivro,ebook,epub,estudo,resumo,dislexia,documentos,aprender,escanear",
-  "it": "tts,ocr,leggere,lettore,audiolibro,ebook,epub,studio,riassunto,dislessia,documenti,voce,alta",
-  "hi": "टीटीएस,ओसीआर,ऑडियोबुक,ईबुक,अध्ययन,पीडीएफ,सुनना,पढ़ना,बोलना,किताब,वेब,अंग्रेज़ी"
+  "_comment": "ASO 关键词字段唯一真相源（v4，2026-08-15）。与 1.2.23 已发布关键词及 1.2.24 元数据源对齐；每个 locale 均满足 Apple 的 100 字节限制。发版前后跑 scripts/verify_aso_keywords.rb 比对线上。",
+  "_version": "v4-1.2.24",
+  "en-US": "tts,video,caption,transcript,subtitle,voice,reader,ocr,scan,pdf,epub,article,dyslexia,study",
+  "zh-Hans": "视频字幕,字幕朗读,转录稿,文字转语音,英语听力,网页阅读,文档朗读,有声书",
+  "zh-Hant": "影片字幕,字幕朗讀,逐字稿,文字轉語音,英語聽力,網頁閱讀,文件朗讀,有聲書",
+  "ja": "動画字幕,字幕読み上げ,文字起こし,音声朗読,電子書籍,語学学習,OCR,PDF",
+  "de-DE": "video,untertitel,transkript,vorlesen,stimme,ocr,pdf,epub,lernen,hörbuch,dokument",
+  "es-ES": "video,subtítulos,transcripción,leer,voz,lector,ocr,pdf,epub,estudio,dislexia,documentos",
+  "es-MX": "video,subtítulos,transcripción,leer,voz,lector,ocr,pdf,epub,estudio,dislexia,documentos",
+  "fr-FR": "vidéo,sous-titres,transcription,lire,voix,lecteur,ocr,pdf,epub,étude,dyslexie,document",
+  "pt-BR": "vídeo,legendas,transcrição,ler,voz,leitor,ocr,pdf,epub,estudo,dislexia,documentos",
+  "it": "video,sottotitoli,trascrizione,leggere,voce,lettore,ocr,pdf,epub,studio,dislessia",
+  "hi": "video,caption,transcript,subtitle,listen,टीटीएस,ओसीआर,pdf,ebook"
 }
