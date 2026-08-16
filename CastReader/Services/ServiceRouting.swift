@@ -28,9 +28,18 @@ enum DistributionTestingPolicy {
         #if DEBUG
         return true
         #else
-        // App Store / Release builds ignore every local distribution override.
-        // Storefront and the signed backend rollout remain the only authorities.
-        return false
+        // App Store / Release 构建默认忽略一切本地覆盖；唯一例外是
+        // 「内部分发构建（Info.plist 签名开关 YES）+ 沙盒收据（TestFlight）」
+        // 的组合——契约见下方参数版注释。生产商店收据（"receipt"）无论开关
+        // 如何都返回 false，App Review 跑 Release 归档时开关为 NO 也为 false。
+        return allowsPersistedOverrides(
+            isDebugBuild: false,
+            isInternalDistributionBuild: internalDistributionControlsEnabled(
+                Bundle.main.object(forInfoDictionaryKey: internalDistributionControlsInfoKey)
+            ),
+            appStoreReceiptURL: Bundle.main.appStoreReceiptURL,
+            arguments: ProcessInfo.processInfo.arguments
+        )
         #endif
     }
 
