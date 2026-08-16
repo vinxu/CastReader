@@ -98,24 +98,23 @@ xcodebuild test -workspace CastReader.xcworkspace -scheme CastReader -destinatio
 ### 后端端点（`Utils/Constants.swift`）
 
 ```
-全球：
-baseURL          = https://api.castreader.ai  # 云端 TTS + 文档/上传
-quickReadBaseURL = https://qr.castreader.ai   # 解读（独立后端）
-webURL           = https://castreader.ai      # 账号 / Pro / 埋点
-
-中国大陆 App Store storefront：
-baseURL / quickReadBaseURL / webURL = https://api.castreader.cn
-# 客户端自有 API 全部进入备案网关；Nginx 再转发 TTS、文档和 QuickRead 上游。
+全球线路：baseURL / quickReadBaseURL / webURL = https://api.castreader.ai
+中国线路：baseURL / webURL = https://api.castreader.cn
+中国 QuickRead：quickReadBaseURL = https://quickread.castreader.cn
+# ServiceRouting 在进程启动时冻结；产品区域与服务线路可在测试包中独立切换。
+# CN QuickRead 直连专用备案入口；上游切换和容灾仅在对应入口服务端完成。
 
 /api/captioned_speech_partly         # 单声道云端 TTS（partly 流式，带时间戳）
-/sts /async-md-upload-by-url /upload # STS 凭证 + 文件上传
+/api/mobile/upload/sts               # 新版受保护 STS（cms_ session）
+/api/mobile/upload/notify            # COS 上传完成通知（cms_ session；服务端注入 canonical user）
+# /async-md-upload-by-url 与 /upload 仅供旧已发布二进制兼容，新版不得调用
 /documents                            # 文库文档列表
 /api/quickread/extract-plan          # 解读：SSE，事件 stage/block0/done/error
 /api/quickread/extract-block         # 解读：逐块讲解文本
 /api/quickread/compose-block         # 解读：用 TTS timestamps 回填 mark.at
 ```
 
-> **解读鉴权**：quickread 后端要求 `x-api-key`（对齐扩展的 `QUICKREAD_API_KEY`）+ `x-device-id`。`Constants.API.quickReadAPIKey` 留空时不发 key → 后端返回 **401**（解读控制条显示「重试解读」）。上线前填入真实 key。
+> **受保护 API 鉴权**：新版 QuickRead 与 STS 都只发送所选线路的服务端 `cms_` session（`Authorization: Bearer` + `X-Auth-Provider: session`）。客户端不得内置上游 API key，也不得用 `device_id` 或可伪造的 user/email 代替账号身份。历史 `/sts` 仅由服务端为已发布旧版保留兼容，新版不得回退。
 
 ## 核心子系统细节
 
@@ -165,7 +164,6 @@ baseURL / quickReadBaseURL / webURL = https://api.castreader.cn
 
 ### 上线前必填配置清单
 - `Constants.GoogleOAuth.clientID`：Google iOS OAuth client id。
-- `Constants.API.quickReadAPIKey`：解读后端 `x-api-key`（否则 401）。
 - App Store Connect 订阅产品 + scheme 关联 `Configuration.storekit`。
 - Apple 开发者后台为 App ID 开启 Sign in with Apple capability。
 

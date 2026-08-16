@@ -494,6 +494,41 @@ final class CloudStorageCoreTests: XCTestCase {
         XCTAssertNil(afterRemoval)
     }
 
+    func testCredentialOwnershipIsProviderScopedPersistentAndFailsClosed()
+        throws
+    {
+        let suite = "CloudCredentialOwnershipTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let keyPrefix = "credential-owner"
+        let scopeA = String(repeating: "a", count: 64)
+        let scopeB = String(repeating: "b", count: 64)
+
+        var store = CloudCredentialOwnershipStore(
+            defaults: defaults,
+            keyPrefix: keyPrefix
+        )
+        store.setOwnerStorageID(scopeA, for: .googleDrive)
+        store.setOwnerStorageID(scopeB, for: .dropbox)
+        XCTAssertEqual(store.ownerStorageID(for: .googleDrive), scopeA)
+        XCTAssertEqual(store.ownerStorageID(for: .dropbox), scopeB)
+        XCTAssertNil(store.ownerStorageID(for: .oneDrive))
+
+        store = CloudCredentialOwnershipStore(
+            defaults: defaults,
+            keyPrefix: keyPrefix
+        )
+        XCTAssertEqual(store.ownerStorageID(for: .googleDrive), scopeA)
+        store.removeOwner(for: .googleDrive)
+        XCTAssertNil(store.ownerStorageID(for: .googleDrive))
+
+        defaults.set("raw-user@example.com", forKey: "\(keyPrefix).onedrive")
+        XCTAssertNil(
+            store.ownerStorageID(for: .oneDrive),
+            "Raw or malformed identities must never become credential owners"
+        )
+    }
+
     func testConnectionStoreRecoversProviderCommitAcrossProcessDeath() async throws {
         let suite = "CloudConnectionStoreCrashRecovery.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))

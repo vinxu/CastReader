@@ -636,6 +636,13 @@ actor OneDriveProvider: CloudDriveListingProvider {
         }
     }
 
+    /// MSAL `signOut` removes only this app's local cache entry; it does not
+    /// revoke Microsoft consent. Reuse the crash-safe cleanup transaction for
+    /// an account/route privacy boundary without touching remote data.
+    func clearLocalAuthorizationForAccountBoundary() async {
+        _ = await disconnect()
+    }
+
     func disconnect() async -> CloudDisconnectResult {
         generation &+= 1
         let activeIdentifier = activeRecord?.cacheAccountIdentifier

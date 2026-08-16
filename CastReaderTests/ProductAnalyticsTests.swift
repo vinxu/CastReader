@@ -13,7 +13,7 @@ final class ProductAnalyticsTests: XCTestCase {
         let data = try Data(contentsOf: contractURL)
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let events = try XCTUnwrap(object["events"] as? [[String: Any]])
-        XCTAssertEqual(events.count, 31)
+        XCTAssertEqual(events.count, 32)
         let names = Set(events.compactMap { $0["name"] as? String })
         let legacy = Dictionary(uniqueKeysWithValues: events.compactMap { row -> (String, String)? in
             guard let name = row["name"] as? String,
@@ -704,7 +704,7 @@ final class ProductAnalyticsTests: XCTestCase {
     private func area(for name: AnalyticsEventName) -> AnalyticsProductArea {
         switch name {
         case .appSessionStart, .onboardingStep, .reviewPromptEligible, .reviewRequestAttempted,
-             .reviewStoreLinkOpened:
+             .reviewStoreLinkOpened, .adAttribution:
             return .app
         case .libraryConnection, .contentInputStage, .contentIntent, .contentReady,
              .contentFailed, .youtubeShareReceived, .youtubeHomeView,
@@ -808,6 +808,13 @@ final class ProductAnalyticsTests: XCTestCase {
             )
         case .reviewStoreLinkOpened:
             return .init(trigger: "settings", store: "app_store")
+        case .adAttribution:
+            return .init(
+                provider: "apple_ads",
+                attributionResult: "token",
+                attributionToken: "sample-token",
+                attemptCount: 1
+            )
         }
     }
 

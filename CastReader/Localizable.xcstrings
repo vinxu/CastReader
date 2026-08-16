@@ -25034,6 +25034,238 @@
         }
       }
     },
+    "你的整个书库，全部可听" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine ganze Bibliothek, komplett hörbar"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your entire library, all listenable"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toda tu biblioteca, lista para escuchar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toute votre bibliothèque, à écouter"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपकी पूरी लाइब्रेरी, सब सुनने योग्य"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutta la tua libreria, da ascoltare"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "蔵書すべてを音声で聴ける"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toda a sua biblioteca, pronta para ouvir"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的整个书库，全部可听"
+          }
+        }
+      }
+    },
+    "一本有声书的价格，够你听整个书库一个月——低至 %@/月" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Preis eines Hörbuchs reicht für einen Monat deiner ganzen Bibliothek – ab %@/Monat"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The price of one audiobook covers your whole library for a month — from %@/month"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El precio de un audiolibro te da un mes de toda tu biblioteca: desde %@/mes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le prix d’un livre audio couvre un mois de toute votre bibliothèque — dès %@/mois"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "एक ऑडियोबुक की कीमत में पूरी लाइब्रेरी एक महीने सुनें — %@/माह से"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il prezzo di un audiolibro copre un mese di tutta la tua libreria — da %@/mese"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オーディオブック1冊の値段で、蔵書まるごと1か月聴ける——月あたり%@から"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O preço de um audiolivro cobre um mês de toda a sua biblioteca — a partir de %@/mês"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一本有声书的价格，够你听整个书库一个月——低至 %@/月"
+          }
+        }
+      }
+    },
+    "你的书，变成有声书" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Bücher als Hörbücher"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your books, as audiobooks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus libros, como audiolibros"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres, en livres audio"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपकी किताबें, ऑडियोबुक के रूप में"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I tuoi libri, come audiolibri"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あなたの本を、オーディオブックに"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seus livros, como audiolivros"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的书，变成有声书"
+          }
+        }
+      }
+    },
+    "连接 Kindle、Kobo 或 Google Play 图书，整个书架变可听" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbinde Kindle, Kobo oder Google Play Bücher und höre dein ganzes Regal"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Kindle, Kobo, or Google Play Books and listen to your whole shelf"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conecta Kindle, Kobo o Google Play Libros y escucha toda tu estantería"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connectez Kindle, Kobo ou Google Play Livres et écoutez toute votre étagère"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle, Kobo या Google Play Books जोड़ें और पूरी शेल्फ़ सुनें"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collega Kindle, Kobo o Google Play Libri e ascolta tutto il tuo scaffale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle・Kobo・Google Play ブックスをつなげて、本棚まるごと聴けます"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conecte Kindle, Kobo ou Google Play Livros e ouça toda a sua estante"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接 Kindle、Kobo 或 Google Play 图书，整个书架变可听"
+          }
+        }
+      }
+    },
     "无限解读次数" : {
       "localizations" : {
         "de" : {

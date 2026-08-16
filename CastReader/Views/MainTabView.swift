@@ -1486,16 +1486,9 @@ struct MainTabView: View {
     }
 
     private var hasBlockingSystemPresentation: Bool {
-        let activeScenes = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .filter { $0.activationState == .foregroundActive }
-        guard let window = activeScenes
-            .flatMap(\.windows)
-            .first(where: \.isKeyWindow),
-              let root = window.rootViewController else {
-            return true
-        }
-        return root.presentedViewController != nil
+        // 语义保持不变：unknown（拿不到 key window）保守按遮挡处理。
+        // 三态探针供呈现等待门的超时兜底区分「真遮挡」与「假阳性」。
+        systemPresentationProbe != .clear
     }
 
     private func handleKindleOnboardingStartBook(_ book: KindleBook) {
@@ -1582,13 +1575,47 @@ struct MainTabView: View {
         presentPendingLibraryConnectionWhenReady()
     }
 
+    /// 呈现等待门的三段兜底（2026-08 实机：任一门条件残留即「点击无声无反应」）：
+    /// ① `activeLibraryConnection` 残留但屏幕无呈现 → 判定 sheet 已消失、状态未清，
+    ///    清掉后继续，本次 tap 不再被入口 guard 吞掉；
+    /// ② 软门（chooser/剪贴板/分享收件箱/声音克隆提示）等满 `gateTimeout` 秒 →
+    ///    清掉我们自己的残留标志并只认「真有 VC 挂着」这一个硬条件强制呈现——
+    ///    覆盖 key window 拿不到的 iOS 26 假阳性；
+    /// ③ 硬遮挡（真实 presented VC）持续到 `hardCap` 秒 → 放弃 pending 并以
+    ///    stage=failed/errorCode=presentation_gate_timeout 记入漏斗，卡死可观测。
     private func presentPendingLibraryConnectionWhenReady() {
-        guard activeLibraryConnection == nil,
-              pendingLibraryConnection != nil else { return }
+        guard pendingLibraryConnection != nil else { return }
+        if let staleActive = activeLibraryConnection {
+            // 真有 sheet 挂着就等它的 onDismiss 正常接力；只有屏幕确认无呈现
+            // 时才认定残留。
+            guard systemPresentationProbe == .clear else { return }
+            ProductAnalytics.shared.trackLibraryConnection(
+                staleActive.analyticsSession,
+                stage: .cancelled,
+                result: .cancelled,
+                errorCode: "stale_active_route"
+            )
+            activeLibraryConnection = nil
+        }
         libraryConnectionPresentationTask?.cancel()
         libraryConnectionPresentationTask = Task { @MainActor in
+            let gateTimeout = Date().addingTimeInterval(8)
+            let hardCap = Date().addingTimeInterval(20)
+            var clearedStaleBlockers = false
             while !Task.isCancelled, pendingLibraryConnection != nil {
-                if canPresentPendingLibraryConnection {
+                let timedOut = Date() >= gateTimeout
+                if timedOut, !clearedStaleBlockers {
+                    clearedStaleBlockers = true
+                    if systemPresentationProbe != .presented {
+                        if clipboard.detected != nil { clipboard.consume() }
+                        if showShareInbox { showShareInbox = false }
+                        if libraryOnboarding.isChooserPresented { libraryOnboarding.postpone() }
+                    }
+                }
+                let gatePassed = timedOut
+                    ? systemPresentationProbe != .presented
+                    : canPresentPendingLibraryConnection
+                if gatePassed {
                     // Require a short, continuously clear window. A sheet's
                     // state can change one run-loop before UIKit actually
                     // installs/removes its presented controller.
@@ -1597,11 +1624,27 @@ struct MainTabView: View {
                     } catch {
                         return
                     }
+                    let stillPassed = timedOut
+                        ? systemPresentationProbe != .presented
+                        : canPresentPendingLibraryConnection
                     guard !Task.isCancelled,
-                          canPresentPendingLibraryConnection,
+                          stillPassed,
                           let route = pendingLibraryConnection else { continue }
                     pendingLibraryConnection = nil
                     activeLibraryConnection = route
+                    libraryConnectionPresentationTask = nil
+                    return
+                }
+                if Date() >= hardCap {
+                    if let route = pendingLibraryConnection {
+                        pendingLibraryConnection = nil
+                        ProductAnalytics.shared.trackLibraryConnection(
+                            route.analyticsSession,
+                            stage: .failed,
+                            result: .failed,
+                            errorCode: "presentation_gate_timeout"
+                        )
+                    }
                     libraryConnectionPresentationTask = nil
                     return
                 }
@@ -1621,6 +1664,29 @@ struct MainTabView: View {
             && !showShareInbox
             && voiceCloneAccess.prompt == nil
             && !hasBlockingSystemPresentation
+    }
+
+    private enum SystemPresentationProbe {
+        /// 确认有 presented VC 挂着（真实遮挡或残留，均按遮挡处理）。
+        case presented
+        /// 确认无遮挡。
+        case clear
+        /// 拿不到 foregroundActive key window（iOS 26 上的 OS 敏感点）——
+        /// 常规路径按遮挡保守处理，超时兜底按无遮挡处理。
+        case unknown
+    }
+
+    private var systemPresentationProbe: SystemPresentationProbe {
+        let activeScenes = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .filter { $0.activationState == .foregroundActive }
+        guard let window = activeScenes
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow),
+              let root = window.rootViewController else {
+            return .unknown
+        }
+        return root.presentedViewController != nil ? .presented : .clear
     }
 
     @ViewBuilder

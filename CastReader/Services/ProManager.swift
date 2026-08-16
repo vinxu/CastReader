@@ -16,9 +16,16 @@ final class ProManager: ObservableObject {
     static let shared = ProManager()
 
     /// 订阅产品 id（生产需在 App Store Connect 配置；本地用 Configuration.storekit）。
+    ///
+    /// v2 = 美区提价档（$9.99/$59.99，书库有声书主轴，见 docs/美区增长-书库有声书主轴落地方案.md §5.3）。
+    /// 老订阅者继续持有 v1 产品永久保价；权益识别（`productIDs`）覆盖全部四个 id，
+    /// 但付费页只渲染 `displayProducts`——美区 storefront 展示 v2，其余展示 v1。
     static let monthlyID = "ai.castreader.pro.monthly"
     static let yearlyID = "ai.castreader.pro.yearly"
-    static let productIDs: Set<String> = [monthlyID, yearlyID]
+    static let monthlyV2ID = "ai.castreader.pro.monthly.v2"
+    static let yearlyV2ID = "ai.castreader.pro.yearly.v2"
+    static let productIDs: Set<String> = [monthlyID, yearlyID, monthlyV2ID, yearlyV2ID]
+    private static let v2ProductIDs: Set<String> = [monthlyV2ID, yearlyV2ID]
 
     @Published private(set) var storeKitLocalPro = false
     @Published private(set) var storeKitPro = false
@@ -278,8 +285,24 @@ final class ProManager: ObservableObject {
         try? await AppStore.showManageSubscriptions(in: scene)
     }
 
-    var monthly: Product? { products.first { $0.id == Self.monthlyID } }
-    var yearly: Product? { products.first { $0.id == Self.yearlyID } }
+    var monthly: Product? { displayProducts.first { $0.subscription?.subscriptionPeriod.unit == .month } }
+    var yearly: Product? { displayProducts.first { $0.subscription?.subscriptionPeriod.unit == .year } }
+
+    // MARK: - 展示产品选择（v1/v2 按 storefront）
+
+    /// App Store storefront 三位国家码（如 "USA"）。加载产品时刷新；拿不到时为 nil。
+    @Published private(set) var storefrontCountryCode: String?
+
+    /// 付费页应渲染的产品对。美区展示 v2 提价档；其余 storefront（以及
+    /// storefront 未知时）保守展示 v1 现价档。所选档位缺货时回退另一档，
+    /// 保证付费页永远有可买产品。
+    var displayProducts: [Product] {
+        let wantV2 = storefrontCountryCode == "USA"
+        let preferred = products.filter {
+            Self.v2ProductIDs.contains($0.id) == wantV2
+        }
+        return preferred.isEmpty ? products : preferred
+    }
 
     // MARK: - 免费试用资格
 
@@ -340,6 +363,7 @@ final class ProManager: ObservableObject {
     // MARK: - 加载与刷新
 
     func loadProducts() async {
+        storefrontCountryCode = await Storefront.current?.countryCode
         do {
             let loaded = try await Product.products(for: Self.productIDs)
             // 按价格排序（月在前）
@@ -473,6 +497,7 @@ final class ProManager: ObservableObject {
                 case .verified(let t):
                     debugTransaction("purchase verified", t)
                     let transactionEnvironment = Self.analyticsEnvironment(for: t)
+                    let offerType = Self.analyticsOfferType(for: t)
                     if Self.shouldFinishStoreKitTransaction(isVerified: true) {
                         await t.finish()
                     }
@@ -488,7 +513,8 @@ final class ProManager: ObservableObject {
                             trigger: analyticsTrigger,
                             store: "app_store",
                             productId: product.id,
-                            transactionEnvironment: transactionEnvironment
+                            transactionEnvironment: transactionEnvironment,
+                            offerType: offerType
                         )
                     )
                     if isPro {
@@ -500,7 +526,8 @@ final class ProManager: ObservableObject {
                                 store: "app_store",
                                 productId: product.id,
                                 activationSource: "storekit_verified",
-                                transactionEnvironment: transactionEnvironment
+                                transactionEnvironment: transactionEnvironment,
+                                offerType: offerType
                             )
                         )
                     }
@@ -665,6 +692,18 @@ final class ProManager: ObservableObject {
         return ["production", "sandbox", "xcode"].contains(value)
             ? value
             : "unknown"
+    }
+
+    /// 区分试用启动与直购——试用→付费漏斗读数依赖它。
+    /// `transaction.offer` 需 iOS 17.2+（部署目标 17.6 满足）。
+    nonisolated private static func analyticsOfferType(for transaction: Transaction) -> String {
+        guard let type = transaction.offer?.type else { return "none" }
+        switch type {
+        case .introductory: return "introductory"
+        case .promotional: return "promotional"
+        case .code: return "code"
+        default: return "other"
+        }
     }
 
     private func debugLog(_ message: String) {

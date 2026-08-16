@@ -41,6 +41,7 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
     case reviewPromptEligible = "review_prompt_eligible"
     case reviewRequestAttempted = "review_request_attempted"
     case reviewStoreLinkOpened = "review_store_link_opened"
+    case adAttribution = "ad_attribution"
 
     var legacyEvent: String {
         switch self {
@@ -75,6 +76,7 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
         case .reviewPromptEligible: return "rating_prompt_eligible"
         case .reviewRequestAttempted: return "rating_prompt"
         case .reviewStoreLinkOpened: return "rating_store_link_opened"
+        case .adAttribution: return "ad_attribution"
         }
     }
 }
@@ -230,6 +232,11 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
     var kind: String?
     var cacheHit: Bool?
     var warmSession: Bool?
+    var provider: String?
+    var attributionResult: String?
+    var attributionToken: String?
+    var attemptCount: Int?
+    var offerType: String?
 
     init(
         launchType: String? = nil,
@@ -281,7 +288,12 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         kind: String? = nil,
         cacheHit: Bool? = nil,
         warmSession: Bool? = nil,
-        storefront: String? = nil
+        storefront: String? = nil,
+        provider: String? = nil,
+        attributionResult: String? = nil,
+        attributionToken: String? = nil,
+        attemptCount: Int? = nil,
+        offerType: String? = nil
     ) {
         self.launchType = launchType
         self.step = step
@@ -333,6 +345,11 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         self.kind = kind
         self.cacheHit = cacheHit
         self.warmSession = warmSession
+        self.provider = provider
+        self.attributionResult = attributionResult
+        self.attributionToken = attributionToken
+        self.attemptCount = attemptCount
+        self.offerType = offerType
     }
 }
 
@@ -624,15 +641,19 @@ enum AnalyticsSchema {
         ),
         .purchaseResult: .init(
             required: ["store", "productId", "trigger", "result"],
-            optional: ["errorCode", "transactionEnvironment"]
+            optional: ["errorCode", "transactionEnvironment", "offerType"]
         ),
         .entitlementActivated: .init(
             required: ["store", "productId", "trigger", "activationSource"],
-            optional: ["syncState", "transactionEnvironment"]
+            optional: ["syncState", "transactionEnvironment", "offerType"]
         ),
         .reviewPromptEligible: .init(required: ["trigger", "store"], optional: []),
         .reviewRequestAttempted: .init(required: ["trigger", "store", "result"], optional: ["errorCode"]),
         .reviewStoreLinkOpened: .init(required: ["trigger", "store"], optional: []),
+        .adAttribution: .init(
+            required: ["provider", "attributionResult"],
+            optional: ["attributionToken", "attemptCount"]
+        ),
     ]
 
     private static let forbidden = Set([
@@ -726,6 +747,30 @@ enum AnalyticsSchema {
                     value: properties.launchType ?? "nil"
                 )
             }
+        }
+
+        if name == .adAttribution {
+            guard properties.provider == "apple_ads" else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "provider",
+                    value: properties.provider ?? "nil"
+                )
+            }
+            guard let attributionResult = properties.attributionResult,
+                  ["token", "unavailable", "unsupported"].contains(attributionResult) else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "attributionResult",
+                    value: properties.attributionResult ?? "nil"
+                )
+            }
+            // token 结果必带 token；非 token 结果不得带（避免误传空串占位）。
+            if (attributionResult == "token") != (properties.attributionToken?.isEmpty == false) {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "attributionToken",
+                    value: properties.attributionToken ?? "nil"
+                )
+            }
+            return
         }
 
         if name == .libraryConnection {
@@ -1370,6 +1415,21 @@ final class ProductAnalytics {
             .appSessionStart,
             context: .init(productArea: .app, surface: "app", entryPoint: nil),
             properties: .init(launchType: launchType)
+        )
+    }
+
+    /// Apple Ads 归因：token 由服务端调用 Apple 归因 API 换取 campaign/keyword，
+    /// 支撑投放的词级 CAC 读数。每台设备一生只上报一次（AdAttributionService 门控）。
+    func adAttribution(result: String, token: String?, attemptCount: Int) {
+        track(
+            .adAttribution,
+            context: .init(productArea: .app, surface: "attribution", entryPoint: nil),
+            properties: .init(
+                provider: "apple_ads",
+                attributionResult: result,
+                attributionToken: token,
+                attemptCount: attemptCount
+            )
         )
     }
 

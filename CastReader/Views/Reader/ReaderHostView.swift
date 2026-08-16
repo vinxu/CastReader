@@ -521,7 +521,9 @@ struct ReaderHostView: View {
         // 收起阅读器（minimize）不停播放，由 Mini Player 接管；真正停止只在 Mini Player ✕（coordinator.close）。
         .sheet(isPresented: paywallBinding) {
             PaywallView(
-                analyticsTrigger: readVM.showPaywall ? "listen_quota" : "explain_quota",
+                analyticsTrigger: QuotaManager.shared.paywallTrigger(
+                    replacing: readVM.showPaywall ? "listen_quota" : "explain_quota"
+                ),
                 analyticsSurface: "reader"
             )
         }

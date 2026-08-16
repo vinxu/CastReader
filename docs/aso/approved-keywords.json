@@ -1,7 +1,7 @@
 {
-  "_comment": "ASO 关键词字段唯一真相源（v4，2026-08-15）。与 1.2.23 已发布关键词及 1.2.24 元数据源对齐；每个 locale 均满足 Apple 的 100 字节限制。发版前后跑 scripts/verify_aso_keywords.rb 比对线上。",
-  "_version": "v4-1.2.24",
-  "en-US": "tts,video,caption,transcript,subtitle,voice,reader,ocr,scan,pdf,epub,article,dyslexia,study",
+  "_comment": "ASO 关键词字段唯一真相源（v5，2026-08-16）。en-US 随 1.2.25 切换书库有声书主轴（audiobook 进副标题、pdf/epub 移入副标题、删 video/subtitle、增 ebook/listen/library/text，见 docs/美区增长-书库有声书主轴落地方案.md §4）；其余 locale 沿用 v4。每个 locale 均满足 Apple 的 100 字节限制。发版前后跑 scripts/verify_aso_keywords.rb 比对线上。",
+  "_version": "v5-1.2.25",
+  "en-US": "tts,voice,reader,ocr,scan,article,dyslexia,study,ebook,listen,transcript,caption,library,text",
   "zh-Hans": "视频字幕,字幕朗读,转录稿,文字转语音,英语听力,网页阅读,文档朗读,有声书",
   "zh-Hant": "影片字幕,字幕朗讀,逐字稿,文字轉語音,英語聽力,網頁閱讀,文件朗讀,有聲書",
   "ja": "動画字幕,字幕読み上げ,文字起こし,音声朗読,電子書籍,語学学習,OCR,PDF",

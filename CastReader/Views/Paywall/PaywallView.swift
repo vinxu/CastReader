@@ -87,17 +87,36 @@ struct ProUpsellContent: View {
     @State private var selectedProductID: String?
 
     private let benefits: [(String, String)] = [
+        ("books.vertical.fill", AppLocalized("你的整个书库，全部可听")),
         ("infinity", AppLocalized("无限朗读时长")),
         ("sparkles", AppLocalized("无限解读次数")),
         ("waveform", AppLocalized("全部高级音色")),
         ("hare.fill", AppLocalized("最高 3x 语速")),
     ]
 
+    /// 价值锚点：把参照物从「免费 TTS」换成「单本有声书」。动态取年付的
+    /// 月均价（本币格式化），避免在静态文案里写死任何币种数字。
+    @ViewBuilder
+    private var priceAnchorLine: some View {
+        if let yearly = pro.displayProducts.first(where: {
+            $0.subscription?.subscriptionPeriod.unit == .year
+        }) {
+            let monthlyEquivalent = yearly.priceFormatStyle.format(yearly.price / 12)
+            Text(String(format: AppLocalized("一本有声书的价格，够你听整个书库一个月——低至 %@/月"), monthlyEquivalent))
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(AppTheme.primary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
                 header
                 if let reason, !reason.isEmpty { reasonBanner(reason) }
+                priceAnchorLine
                 benefitList
                 buySection
                 Button("恢复购买") {
@@ -127,7 +146,7 @@ struct ProUpsellContent: View {
             Text(purchaseMessage)
         }
         .onAppear { Task { await reloadProducts(); syncDefaultSelection(); await pro.refresh() } }
-        .onChange(of: pro.products.map(\.id)) { _ in syncDefaultSelection() }
+        .onChange(of: pro.displayProducts.map(\.id)) { _ in syncDefaultSelection() }
         .task {
             if pro.isCrossPlatformPro { onPurchased() }
         }
@@ -137,10 +156,10 @@ struct ProUpsellContent: View {
     /// 默认选中年付。必须在 onAppear 也调一次：产品已缓存时 `onChange` 不会触发，
     /// 选择留在 nil 会让购买按钮一直是禁用的灰色状态，试用文案也不显示。
     private func syncDefaultSelection() {
-        let ids = pro.products.map(\.id)
+        let ids = pro.displayProducts.map(\.id)
         guard selectedProductID == nil || !ids.contains(selectedProductID ?? "") else { return }
-        selectedProductID = pro.products.first { $0.subscription?.subscriptionPeriod.unit == .year }?.id
-            ?? pro.products.first?.id
+        selectedProductID = pro.displayProducts.first { $0.subscription?.subscriptionPeriod.unit == .year }?.id
+            ?? pro.displayProducts.first?.id
     }
 
     /// 加载产品；加载后仍为空标记 loadFailed，供付费墙显示「重试」而非永久转圈。
@@ -281,7 +300,7 @@ struct ProUpsellContent: View {
             // 套餐与试用文案对未登录用户同样可见——把价格和「7 天免费试用」藏在登录之后，
             // 等于这个试用没上线。登录门槛只保留在「购买」这个动作上。
             VStack(spacing: 12) {
-                ForEach(pro.products, id: \.id) { product in
+                ForEach(pro.displayProducts, id: \.id) { product in
                     Button {
                         selectedProductID = product.id
                     } label: {
@@ -321,7 +340,7 @@ struct ProUpsellContent: View {
                     // 手机号账号也没有 email；StoreKit 购买只要求已有账号身份，
                     // email / backend user id 只决定跨平台同步何时可用。
                     guard auth.isSignedIn else { showLogin = true; return }
-                    guard let product = pro.products.first(where: { $0.id == selectedProductID }) else { return }
+                    guard let product = pro.displayProducts.first(where: { $0.id == selectedProductID }) else { return }
                     busy = true
                     Task {
                         let purchased = await pro.purchase(
@@ -367,7 +386,7 @@ struct ProUpsellContent: View {
     }
 
     private var selectedProduct: Product? {
-        pro.products.first { $0.id == selectedProductID }
+        pro.displayProducts.first { $0.id == selectedProductID }
     }
 
     /// 有资格才显示试用天数；没资格的老用户走原有价格文案。

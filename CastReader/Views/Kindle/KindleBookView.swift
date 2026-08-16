@@ -197,9 +197,11 @@ struct KindleBookView: View {
         }
         .sheet(isPresented: kindlePaywallBinding) {
             PaywallView(
-                analyticsTrigger: KindlePaywallPresentationContract.analyticsTrigger(
-                    requestedMode: model.paywallMode,
-                    currentMode: model.mode
+                analyticsTrigger: QuotaManager.shared.paywallTrigger(
+                    replacing: KindlePaywallPresentationContract.analyticsTrigger(
+                        requestedMode: model.paywallMode,
+                        currentMode: model.mode
+                    )
                 ),
                 analyticsSurface: "kindle_reader"
             )
@@ -1452,6 +1454,24 @@ enum KindleSessionProbe {
         #endif
     }
 
+    /// `id_pk`/`id_pkel` 是 Amazon 深链 reader 会话的配对 cookie（14 分钟 TTL，
+    /// 仅认证域/书架加载补发）。在→开书成功、缺→被打回登录页，为 2026-07 真机
+    /// 采样的 100% 相关指标。留 30s 余量，避免带着即将过期的 cookie 起跳。
+    @MainActor
+    static func hasFreshAuthPairingCookie(for storefront: KindleStorefront) async -> Bool {
+        await withCheckedContinuation { continuation in
+            CommercialWebSession.websiteDataStore.httpCookieStore.getAllCookies { cookies in
+                let deadline = Date().addingTimeInterval(30)
+                let fresh = cookies.contains { cookie in
+                    (cookie.name == "id_pk" || cookie.name == "id_pkel")
+                        && KindleStorefront.isAmazonWebsiteDataDomain(cookie.domain, for: storefront)
+                        && (cookie.expiresDate.map { $0 > deadline } ?? true)
+                }
+                continuation.resume(returning: fresh)
+            }
+        }
+    }
+
 }
 
 /// Tracks when the reader and the shelf were last known-good, so a failing open
@@ -1523,6 +1543,8 @@ enum KindleModeSwitchAccessContract {
 }
 
 enum KindlePaywallPresentationContract {
+    /// 纯函数：模式 → 基础 trigger（保持可测）。two_tier 的层级化换名由
+    /// 调用点经 `QuotaManager.paywallTrigger(replacing:)` 完成。
     static func analyticsTrigger(requestedMode: ReaderMode?, currentMode: ReaderMode) -> String {
         switch requestedMode ?? currentMode {
         case .read:
@@ -1937,6 +1959,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var authRecoveryAttempted = false
     private var lastMainFrameStatus: Int?
     private var authRecoveryTask: Task<Void, Never>?
+    /// 首次开书前的会话预检（id_pk 缺失 → 先预热书架），见 openBookWithSessionPreflight。
+    private var openPreflightTask: Task<Void, Never>?
     private let cookieConsentRuntimeToken: String
     private var cookieConsentDocumentToken: String?
     private var retiredCookieConsentDocumentTokens = Set<String>()
@@ -3429,8 +3453,40 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
         didLoad = true
         restoreReaderViewportCrop(reason: "preload-surface")
-        load(book.effectiveReaderURL, reason: "open-book")
+        openBookWithSessionPreflight()
         store.markOpened(book)
+    }
+
+    /// Amazon 用 `id_pk`/`id_pkel`（www 域，14 分钟 TTL）配对深链 reader 会话：
+    /// 实测（2026-07 真机采样）它们在则开书必成、不在则必被 302 到 OpenID 登录页，
+    /// 且只有书架/认证域的加载会补发——深链开书永远不会。所以开书前先查这组
+    /// cookie，缺失就静默预热一次书架再开书，用户不再撞见登录页或"恢复会话"中断。
+    /// cookie 在但会话仍被拒的残余情况，didFinish 的 landing == "auth" 反应式
+    /// 恢复（startAuthRecovery）继续兜底，行为不变。
+    private func openBookWithSessionPreflight() {
+        openPreflightTask?.cancel()
+        openPreflightTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let storefront = KindleStorefront.entry(id: self.book.storefrontID)
+                ?? self.store.boundStorefront
+            let fresh = await KindleSessionProbe.hasFreshAuthPairingCookie(for: storefront)
+            guard !Task.isCancelled else { return }
+            if !fresh {
+                KindleRunLog.write(
+                    "KINDLE open-preflight id_pk=missing warming shelf book=\(Self.keyLog(self.book.id)) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)"
+                )
+                let warmed = await self.warmShelfSession()
+                guard !Task.isCancelled else { return }
+                KindleRunLog.write(
+                    "KINDLE open-preflight shelf-warm \(warmed ? "ok" : "failed") book=\(Self.keyLog(self.book.id))"
+                )
+            } else {
+                KindleRunLog.write("KINDLE open-preflight id_pk=fresh book=\(Self.keyLog(self.book.id))")
+            }
+            guard !Task.isCancelled else { return }
+            self.openPreflightTask = nil
+            self.load(self.book.effectiveReaderURL, reason: "open-book")
+        }
     }
 
     func requestContinueListening() {
@@ -5959,6 +6015,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         staleBookRecoveryTask = nil
         authRecoveryTask?.cancel()
         authRecoveryTask = nil
+        openPreflightTask?.cancel()
+        openPreflightTask = nil
         contentCover = nil
         webView.stopLoading()
         webView.navigationDelegate = nil

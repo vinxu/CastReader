@@ -281,9 +281,11 @@ final class PaymentTests: XCTestCase {
     @MainActor
     func testProductsLoad() async throws {
         let products = try await Product.products(for: ProManager.productIDs)
-        XCTAssertEqual(products.count, 2, "应加载月度+年度两个产品")
+        XCTAssertEqual(products.count, 4, "应加载 v1+v2 各月度/年度共四个产品")
         XCTAssertTrue(products.contains { $0.id == ProManager.monthlyID })
         XCTAssertTrue(products.contains { $0.id == ProManager.yearlyID })
+        XCTAssertTrue(products.contains { $0.id == ProManager.monthlyV2ID })
+        XCTAssertTrue(products.contains { $0.id == ProManager.yearlyV2ID })
     }
 
     // MARK: 2. 付费前限制
@@ -550,5 +552,114 @@ final class PaymentTests: XCTestCase {
             plainNotice,
             "拿不到价格时不能只承诺试用而不说到期价格"
         )
+    }
+}
+
+/// 两层额度策略（two_tier_v1）单元测试。独立于 SKTestSession（该环境在部分
+/// 模拟器上会 crash），只测 QuotaManager 纯逻辑。
+final class QuotaTwoTierTests: XCTestCase {
+
+    @MainActor
+    override func setUp() async throws {
+        QuotaManager.shared.resetForTesting()
+    }
+
+    @MainActor
+    override func tearDown() async throws {
+        QuotaManager.shared.resetForTesting()
+    }
+
+    private func twoTierStatus(
+        listenRemaining: Int,
+        explainRemaining: Int,
+        grantListen: Int,
+        grantExplain: Int
+    ) -> ProStatusDTO {
+        ProStatusDTO(
+            pro: false, plan: nil, account: nil,
+            freeRemaining: explainRemaining, freeMax: nil,
+            listenSeconds: nil, listenLimit: nil,
+            listenRemaining: listenRemaining,
+            quotaPolicy: "two_tier_v1",
+            grantListenRemaining: grantListen,
+            grantExplainRemaining: grantExplain
+        )
+    }
+
+    /// 服务端未下发 quotaPolicy 时，一切行为必须与 daily 完全一致（实验隔离）。
+    @MainActor
+    func testDefaultPolicyStaysDaily() {
+        let q = QuotaManager.shared
+        XCTAssertEqual(q.policy, .daily)
+        XCTAssertEqual(q.paywallTrigger(replacing: "listen_quota"), "listen_quota")
+        XCTAssertEqual(q.paywallTrigger(replacing: "explain_quota"), "explain_quota")
+        XCTAssertEqual(q.listenRemaining, q.dailyListenLimit, accuracy: 0.5)
+    }
+
+    @MainActor
+    func testTwoTierActivationUsesServerBalancesAndSkipsDailyReset() {
+        let q = QuotaManager.shared
+        q.applyServerStatus(twoTierStatus(
+            listenRemaining: 12_000, explainRemaining: 11,
+            grantListen: 10_800, grantExplain: 10
+        ))
+        XCTAssertEqual(q.policy, .twoTier)
+        XCTAssertEqual(q.listenRemaining, 12_000, accuracy: 0.5)
+        XCTAssertEqual(q.explainRemaining, 11)
+        // rollIfNewDay 在 twoTier 下不得重置任何余额
+        q.rollIfNewDay()
+        XCTAssertEqual(q.listenRemaining, 12_000, accuracy: 0.5)
+    }
+
+    @MainActor
+    func testTwoTierListenConsumptionDrainsGrantFirstAndFlipsTrigger() {
+        let q = QuotaManager.shared
+        q.applyServerStatus(twoTierStatus(
+            listenRemaining: 1_500, explainRemaining: 2,
+            grantListen: 1_000, grantExplain: 1
+        ))
+        // 赠额层未耗尽：额度类 trigger 仍按月度归因（赠额未曾归零）
+        XCTAssertEqual(q.paywallTrigger(replacing: "listen_quota"), "monthly_exhausted")
+        q.addListen(1_200)   // 烧穿赠额层（1000）+ 月度 200
+        XCTAssertEqual(q.listenRemaining, 300, accuracy: 0.5)
+        // 赠额层刚归零 → onboarding_exhausted（价值峰值触点）
+        XCTAssertEqual(q.paywallTrigger(replacing: "listen_quota"), "onboarding_exhausted")
+        // 非额度 trigger 原样透传
+        XCTAssertEqual(q.paywallTrigger(replacing: "pro_speed"), "pro_speed")
+    }
+
+    @MainActor
+    func testTwoTierExplainConsumptionOnlyAfterServerAccepts() {
+        let q = QuotaManager.shared
+        q.applyServerStatus(twoTierStatus(
+            listenRemaining: 1_000, explainRemaining: 2,
+            grantListen: 0, grantExplain: 1
+        ))
+        q.noteExplainStarted(isPro: false)      // twoTier 下不预扣
+        XCTAssertEqual(q.explainRemaining, 2)
+        q.noteExplainAcceptedByServer(isPro: false)
+        XCTAssertEqual(q.explainRemaining, 1)
+        q.noteExplainAcceptedByServer(isPro: false)
+        XCTAssertEqual(q.explainRemaining, 0)
+        XCTAssertFalse(q.canStartExplain(isPro: false))
+    }
+
+    /// fail-close：策略已激活但镜像缺失（如 Keychain 写失败后重启）时按 0 处理，
+    /// 绝不回落到 daily 的本地无限日重置。
+    @MainActor
+    func testTwoTierWithoutMirrorFailsClosed() {
+        let q = QuotaManager.shared
+        // 只下发策略、不下发任何余额字段 → 镜像被建为全 0
+        q.applyServerStatus(ProStatusDTO(
+            pro: false, plan: nil, account: nil,
+            freeRemaining: nil, freeMax: nil,
+            listenSeconds: nil, listenLimit: nil, listenRemaining: nil,
+            quotaPolicy: "two_tier_v1"
+        ))
+        XCTAssertEqual(q.policy, .twoTier)
+        XCTAssertEqual(q.listenRemaining, 0, accuracy: 0.5)
+        XCTAssertEqual(q.explainRemaining, 0)
+        XCTAssertFalse(q.canStartListen(isPro: false))
+        XCTAssertTrue(q.canStartListen(isPro: true), "Pro 不受额度限制")
     }
 }

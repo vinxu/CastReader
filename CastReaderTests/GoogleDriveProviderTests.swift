@@ -1766,6 +1766,36 @@ final class GoogleDriveProviderTests: XCTestCase {
     }
 
     @MainActor
+    func testAccountBoundaryClearsLocalCredentialWithoutRemoteRevocation()
+        async throws
+    {
+        let account = testAccount()
+        let store = GoogleDriveTestCredentialStore(
+            credential: credential(account: account, accessToken: "local-only")
+        )
+        let revocationStore = GoogleDriveTestRevocationStore()
+        let transport = GoogleDriveTestTransport(dataHandler: { request in
+            XCTFail("Account isolation must not make a remote request: \(request)")
+            return .json("{}")
+        })
+        let provider = makeProvider(
+            transport: transport,
+            store: store,
+            revocationStore: revocationStore,
+            web: GoogleDriveImmediateWebAuthenticator.unused
+        )
+
+        await provider.clearLocalAuthorizationForAccountBoundary()
+
+        let savedCredential = await store.load()
+        let state = await provider.connectionState()
+        let pendingRevocations = await revocationStore.loadRecords()
+        XCTAssertNil(savedCredential)
+        XCTAssertEqual(state, .disconnected)
+        XCTAssertTrue(pendingRevocations.isEmpty)
+    }
+
+    @MainActor
     func testPendingAccountARevocationSurvivesAccountBAuthorizationWithoutDisconnectingB()
         async throws
     {

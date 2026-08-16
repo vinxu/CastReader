@@ -232,24 +232,29 @@ struct HomeView: View {
                         libraryOnboardingReminder
                     }
                     if !continueRecords.isEmpty { continueSection }
-                    scenarioSection
-                    if !hasShelfBooks && !libraryOnboarding.shouldShowReminder {
-                        librarySourcesEmptyCard
-                    }
-                    KindleHomeSection(store: kindleStore)
-                    if AppRegion.current.showsYouTubeEntry {
-                        YouTubeHomeSection(
-                            activeDocumentID: coordinator.session?.document.sourceKind == .youtube
-                                ? coordinator.session?.document.id
-                                : nil,
-                            isSurfaceEnabled: isSurfaceActive
-                        )
-                    }
-                    GoogleBooksHomeSection()
-                    KoboHomeSection()
-                    OReillyHomeSection()
-                    if showsWeReadModule {
-                        WeReadHomeSection()
+                    if AppRegion.current == .cn {
+                        // 中国区维持既有布局：场景入口在前、书库在后（该区无 YouTube 模块）。
+                        scenarioSection
+                        if !hasShelfBooks && !libraryOnboarding.shouldShowReminder {
+                            librarySourcesEmptyCard
+                        }
+                        shelfSourceSections
+                    } else {
+                        // 书库优先（循环验证协议②环：绑书库是首屏第一动作）；
+                        // YouTube 降位到场景区之后，不再占首屏。
+                        if !hasShelfBooks && !libraryOnboarding.shouldShowReminder {
+                            librarySourcesEmptyCard
+                        }
+                        shelfSourceSections
+                        scenarioSection
+                        if AppRegion.current.showsYouTubeEntry {
+                            YouTubeHomeSection(
+                                activeDocumentID: coordinator.session?.document.sourceKind == .youtube
+                                    ? coordinator.session?.document.id
+                                    : nil,
+                                isSurfaceEnabled: isSurfaceActive
+                            )
+                        }
                     }
                     if !pro.isPro { homeProCard }
                 }
@@ -585,13 +590,29 @@ struct HomeView: View {
         }
         return hasConnectedShelf
             ? AppLocalized("同步你的电子书书架")
-            : AppLocalized("连接你的电子书书架")
+            : AppLocalized("你的书，变成有声书")
     }
 
     private var librarySourcesEmptyCardSubtitle: String {
-        AppRegion.current == .cn
-            ? AppLocalized("用微信登录，把书架变成有声书")
-            : AppLocalized("登录后同步书架与阅读进度")
+        if AppRegion.current == .cn {
+            return AppLocalized("用微信登录，把书架变成有声书")
+        }
+        return hasConnectedShelf
+            ? AppLocalized("登录后同步书架与阅读进度")
+            : AppLocalized("连接 Kindle、Kobo 或 Google Play 图书，整个书架变可听")
+    }
+
+    /// 五个书库平台区块（相对顺序保持 Kindle → Google Play 图书 → Kobo →
+    /// O'Reilly → 微信读书）。抽出来是为了让 CN / 非 CN 两种首页排布共用。
+    @ViewBuilder
+    private var shelfSourceSections: some View {
+        KindleHomeSection(store: kindleStore)
+        GoogleBooksHomeSection()
+        KoboHomeSection()
+        OReillyHomeSection()
+        if showsWeReadModule {
+            WeReadHomeSection()
+        }
     }
 
     private var librarySourcesEmptyCard: some View {

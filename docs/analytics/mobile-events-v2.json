@@ -1,9 +1,9 @@
 {
   "contract_version": 2,
   "transport": {
-    "endpoint": "https://castreader.ai/api/events",
+    "endpoint": "https://api.castreader.ai/api/events",
     "endpoint_cn": "https://api.castreader.cn/api/events",
-    "endpoint_comment": "按 AppRegion 分派；中国大陆后端就绪前 cn 设备仍走 endpoint（见 Constants.Features.chinaBackendEnabled）",
+    "endpoint_comment": "新版按启动时冻结的 ServiceRouting 分派到 api.castreader.ai / api.castreader.cn；legacy 仅为历史已落盘事件的入库兼容值",
     "batch_max": 20,
     "compatibility": "dual_v2_legacy"
   },
@@ -17,6 +17,7 @@
     "clientVariant",
     "clientVersion",
     "clientRegion",
+    "serviceRoute",
     "anonymousId",
     "appSessionId",
     "productArea",
@@ -24,19 +25,112 @@
     "properties"
   ],
   "value_domains": {
-    "clientVariant": ["app_store", "testflight", "internal", "internal_debug", "simulator", "google_play"],
+    "clientVariant": [
+      "app_store",
+      "testflight",
+      "internal",
+      "internal_debug",
+      "simulator",
+      "google_play"
+    ],
     "clientRegion": ["global", "cn"],
-    "contentSource": ["camera", "photo_library", "file", "url", "text", "clipboard", "share_sheet", "system", "history", "kindle", "weread", "google_books", "kobo", "oreilly", "google_drive", "dropbox", "onedrive", "youtube_ios", "youtube_android", "unknown"],
-    "contentFormat": ["photo", "pdf", "epub", "docx", "text", "web", "kindle", "weread", "google_books", "kobo", "oreilly", "youtube", "unknown"],
-    "storefront": ["us", "uk", "ca", "au", "jp", "de", "fr", "it", "es", "in", "br", "mx", "nl"],
+    "serviceRoute": ["legacy", "global", "cn"],
+    "contentSource": [
+      "camera",
+      "photo_library",
+      "file",
+      "url",
+      "text",
+      "clipboard",
+      "share_sheet",
+      "system",
+      "history",
+      "kindle",
+      "weread",
+      "google_books",
+      "kobo",
+      "oreilly",
+      "google_drive",
+      "dropbox",
+      "onedrive",
+      "youtube_ios",
+      "youtube_android",
+      "unknown"
+    ],
+    "contentFormat": [
+      "photo",
+      "pdf",
+      "epub",
+      "docx",
+      "text",
+      "web",
+      "kindle",
+      "weread",
+      "google_books",
+      "kobo",
+      "oreilly",
+      "youtube",
+      "unknown"
+    ],
+    "storefront": [
+      "us",
+      "uk",
+      "ca",
+      "au",
+      "jp",
+      "de",
+      "fr",
+      "it",
+      "es",
+      "in",
+      "br",
+      "mx",
+      "nl"
+    ],
     "librarySource": ["kindle", "weread", "google_books", "kobo", "oreilly"],
-    "libraryConnectionStage": ["entry_tapped", "connection_presented", "login_started", "login_succeeded", "sync_started", "sync_completed", "cancelled", "failed"],
-    "contentInputStage": ["source_opened", "input_confirmed", "processing_started", "processing_completed", "cancelled", "failed"],
+    "libraryConnectionStage": [
+      "entry_tapped",
+      "connection_presented",
+      "login_started",
+      "login_succeeded",
+      "sync_started",
+      "sync_completed",
+      "cancelled",
+      "failed"
+    ],
+    "contentInputStage": [
+      "source_opened",
+      "input_confirmed",
+      "processing_started",
+      "processing_completed",
+      "cancelled",
+      "failed"
+    ],
     "flowResult": ["started", "success", "cancelled", "failed"],
-    "bookCountBucket": ["none", "1", "2_5", "6_20", "21_50", "51_plus", "unknown"],
+    "bookCountBucket": [
+      "none",
+      "1",
+      "2_5",
+      "6_20",
+      "21_50",
+      "51_plus",
+      "unknown"
+    ],
     "transactionEnvironment": ["production", "sandbox", "xcode", "unknown"],
     "youtubeEntry": ["share", "clipboard", "scheme", "paste", "sample"],
-    "youtubeFailure": ["no_captions", "live", "restricted", "unavailable", "caption_access", "player_bootstrap_failed", "youtube_access_limited", "unsupported_webview", "track_unavailable", "timeout", "unsupported_language"],
+    "youtubeFailure": [
+      "no_captions",
+      "live",
+      "restricted",
+      "unavailable",
+      "caption_access",
+      "player_bootstrap_failed",
+      "youtube_access_limited",
+      "unsupported_webview",
+      "track_unavailable",
+      "timeout",
+      "unsupported_language"
+    ],
     "youtubeCaptionKind": ["asr", "manual"]
   },
   "events": [
@@ -65,8 +159,18 @@
       "name": "content_input_stage",
       "legacy_event": "content_input_stage",
       "product_area": "reader",
-      "required_properties": ["contentSource", "contentFormat", "stage", "result"],
-      "optional_properties": ["intendedMode", "durationMs", "errorCode", "storefront"]
+      "required_properties": [
+        "contentSource",
+        "contentFormat",
+        "stage",
+        "result"
+      ],
+      "optional_properties": [
+        "intendedMode",
+        "durationMs",
+        "errorCode",
+        "storefront"
+      ]
     },
     {
       "name": "content_intent",
@@ -79,14 +183,25 @@
       "name": "content_ready",
       "legacy_event": "reader_file_loaded",
       "product_area": "reader",
-      "required_properties": ["contentSource", "contentFormat", "lengthBucket", "paragraphCountBucket"],
+      "required_properties": [
+        "contentSource",
+        "contentFormat",
+        "lengthBucket",
+        "paragraphCountBucket"
+      ],
       "optional_properties": ["latencyMs", "storefront"]
     },
     {
       "name": "content_failed",
       "legacy_event": "reader_file_error",
       "product_area": "reader",
-      "required_properties": ["contentSource", "contentFormat", "result", "errorStage", "errorCode"],
+      "required_properties": [
+        "contentSource",
+        "contentFormat",
+        "result",
+        "errorStage",
+        "errorCode"
+      ],
       "optional_properties": ["latencyMs", "storefront"]
     },
     {
@@ -107,7 +222,12 @@
       "name": "yt_extract_done",
       "legacy_event": "yt_extract_done",
       "product_area": "reader",
-      "required_properties": ["cueCount", "paragraphCount", "language", "elapsedMs"],
+      "required_properties": [
+        "cueCount",
+        "paragraphCount",
+        "language",
+        "elapsedMs"
+      ],
       "optional_properties": ["warmSession"]
     },
     {
@@ -135,7 +255,14 @@
       "name": "read_start",
       "legacy_event": "reading_start",
       "product_area": "read_aloud",
-      "required_properties": ["contentSource", "contentFormat", "language", "voiceId", "speed", "resume"],
+      "required_properties": [
+        "contentSource",
+        "contentFormat",
+        "language",
+        "voiceId",
+        "speed",
+        "resume"
+      ],
       "optional_properties": ["storefront"]
     },
     {
@@ -156,14 +283,24 @@
       "name": "read_end",
       "legacy_event": "reading_end",
       "product_area": "read_aloud",
-      "required_properties": ["result", "endReason", "playbackSeconds", "completionBucket"],
+      "required_properties": [
+        "result",
+        "endReason",
+        "playbackSeconds",
+        "completionBucket"
+      ],
       "optional_properties": ["errorStage", "errorCode", "storefront"]
     },
     {
       "name": "explain_start",
       "legacy_event": "quickread_pipeline_start",
       "product_area": "explain",
-      "required_properties": ["contentSource", "contentFormat", "language", "scenario"],
+      "required_properties": [
+        "contentSource",
+        "contentFormat",
+        "language",
+        "scenario"
+      ],
       "optional_properties": ["storefront"]
     },
     {
@@ -184,7 +321,13 @@
       "name": "explain_end",
       "legacy_event": "quickread_pipeline_done",
       "product_area": "explain",
-      "required_properties": ["result", "endReason", "blocksStarted", "blocksCompleted", "completionBucket"],
+      "required_properties": [
+        "result",
+        "endReason",
+        "blocksStarted",
+        "blocksCompleted",
+        "completionBucket"
+      ],
       "optional_properties": ["errorStage", "errorCode", "storefront"]
     },
     {
@@ -234,14 +377,19 @@
       },
       "product_area": "billing",
       "required_properties": ["store", "productId", "trigger", "result"],
-      "optional_properties": ["errorCode", "transactionEnvironment"]
+      "optional_properties": ["errorCode", "transactionEnvironment", "offerType"]
     },
     {
       "name": "entitlement_activated",
       "legacy_event": "pro_activated",
       "product_area": "billing",
-      "required_properties": ["store", "productId", "trigger", "activationSource"],
-      "optional_properties": ["syncState", "transactionEnvironment"]
+      "required_properties": [
+        "store",
+        "productId",
+        "trigger",
+        "activationSource"
+      ],
+      "optional_properties": ["syncState", "transactionEnvironment", "offerType"]
     },
     {
       "name": "review_prompt_eligible",
@@ -263,6 +411,14 @@
       "product_area": "app",
       "required_properties": ["trigger", "store"],
       "optional_properties": []
+    },
+    {
+      "name": "ad_attribution",
+      "legacy_event": "ad_attribution",
+      "product_area": "app",
+      "required_properties": ["provider", "attributionResult"],
+      "optional_properties": ["attributionToken", "attemptCount"],
+      "comment": "Apple Ads 归因：provider 恒为 apple_ads；attributionResult=token 时必带 attributionToken（服务端调 Apple 归因 API 换 campaign/keyword），unavailable/unsupported 时不带。每设备一生上报一次。"
     }
   ],
   "privacy_forbidden_keys": [

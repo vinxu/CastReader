@@ -25,6 +25,12 @@ struct ProStatusDTO: Decodable, Equatable {
     let listenLimit: Int?
     let listenRemaining: Int?
     let resolvedUserId: String?
+    /// 额度策略（two_tier_v1 实验开关，服务端按美区新用户下发）。
+    /// two_tier 语义下 listenRemaining / freeRemaining 为总剩余（赠额+月度）。
+    let quotaPolicy: String?
+    /// 首装赠额层剩余（秒 / 次）。仅 two_tier 下发。
+    let grantListenRemaining: Int?
+    let grantExplainRemaining: Int?
 
     init(
         pro: Bool,
@@ -35,7 +41,10 @@ struct ProStatusDTO: Decodable, Equatable {
         listenSeconds: Int?,
         listenLimit: Int?,
         listenRemaining: Int?,
-        resolvedUserId: String? = nil
+        resolvedUserId: String? = nil,
+        quotaPolicy: String? = nil,
+        grantListenRemaining: Int? = nil,
+        grantExplainRemaining: Int? = nil
     ) {
         self.pro = pro
         self.plan = plan
@@ -46,6 +55,9 @@ struct ProStatusDTO: Decodable, Equatable {
         self.listenLimit = listenLimit
         self.listenRemaining = listenRemaining
         self.resolvedUserId = resolvedUserId
+        self.quotaPolicy = quotaPolicy
+        self.grantListenRemaining = grantListenRemaining
+        self.grantExplainRemaining = grantExplainRemaining
     }
 }
 

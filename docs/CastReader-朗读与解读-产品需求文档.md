@@ -519,13 +519,16 @@ Content-Type: application/json
 
 ### 9.2 解读 QuickRead（三段式）
 
-**Base**：`https://quickread.castreader.ai:8444`
+**Base**：当前进程冻结的统一网关（全球 `https://api.castreader.ai` / 中国 `https://api.castreader.cn`）
 **鉴权头（所有 QuickRead 请求必带）**：
 ```
-x-api-key: <QUICKREAD_API_KEY>      // 缺失 → 401
-x-device-id: <设备唯一 id>           // 复用 visitor id；登录后可附 user
+Authorization: Bearer <cms_ session> // 由所选线路登录交换得到
+X-Auth-Provider: session
 Content-Type: application/json
 ```
+
+上游 API key 只存在服务端网关；iOS 不内置、不发送。额度主体由网关根据 session
+解析 canonical user，客户端不得用 device/user/email 请求头覆盖。
 
 #### (1) extract-plan —— SSE 流式
 
@@ -635,8 +638,8 @@ POST /api/quickread/compose-block
 
 ## 十一、上线前配置清单
 
-- **QuickRead `x-api-key`**：解读后端鉴权，缺失全部解读 401。
-- **TTS 节点**：远程配置 `tts-endpoints.json` 的 cn_url/us_url；CN 实例会轮换。
+- **服务线路**：测试包分别验证 global / cn 网关；App Store 包只接受服务端灰度配置，进程内不热切换。
+- **网关密钥**：QuickRead 上游 key 与 TTS 上游路由只配置在服务端，不进入客户端构建。
 - **音色列表**：基础音色 vs Pro 音色。
 - **额度参数**：每日朗读分钟数 / 解读次数 / 速度上限（与 iOS 对齐：20min / 3次 / 2.0x）。
 - **付费**：Android 用 Google Play Billing（iOS 是 StoreKit）；Web 已付费者经服务端 `serverPro` 同步。

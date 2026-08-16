@@ -35,6 +35,53 @@ final class CloudOAuthCallbackDeduplicator {
     }
 }
 
+/// Non-secret ownership marker for native cloud credentials.
+///
+/// Provider SDKs keep their actual tokens in Keychain/MSAL. This marker binds
+/// that single device-local credential set to CastReader's opaque
+/// `route x account` scope, so another signed-in identity can never silently
+/// restore it. Missing markers are treated as legacy/unowned and fail closed.
+struct CloudCredentialOwnershipStore {
+    private let defaults: UserDefaults
+    private let keyPrefix: String
+
+    init(
+        defaults: UserDefaults = .standard,
+        keyPrefix: String = "castreader.cloud.credential-owner.v1"
+    ) {
+        self.defaults = defaults
+        self.keyPrefix = keyPrefix
+    }
+
+    func ownerStorageID(for provider: CloudProviderID) -> String? {
+        guard let value = defaults.string(forKey: key(for: provider)),
+              Self.isOpaqueStorageID(value) else { return nil }
+        return value
+    }
+
+    func setOwnerStorageID(
+        _ storageID: String,
+        for provider: CloudProviderID
+    ) {
+        guard Self.isOpaqueStorageID(storageID) else { return }
+        defaults.set(storageID, forKey: key(for: provider))
+    }
+
+    func removeOwner(for provider: CloudProviderID) {
+        defaults.removeObject(forKey: key(for: provider))
+    }
+
+    private func key(for provider: CloudProviderID) -> String {
+        "\(keyPrefix).\(provider.rawValue)"
+    }
+
+    private static func isOpaqueStorageID(_ value: String) -> Bool {
+        value.count == 64 && value.unicodeScalars.allSatisfy {
+            (48...57).contains($0.value) || (97...102).contains($0.value)
+        }
+    }
+}
+
 @MainActor
 final class CloudStorageCenter: ObservableObject {
     static let shared = CloudStorageCenter()
@@ -44,8 +91,10 @@ final class CloudStorageCenter: ObservableObject {
     private let googleDrive: GoogleDriveProvider?
     private let dropbox: DropboxProvider?
     private let oneDrive: OneDriveProvider?
+    private let credentialOwnership = CloudCredentialOwnershipStore()
     private var lifecycleEpochs: [CloudProviderID: UInt64] = [:]
     private var disconnectingProviders = Set<CloudProviderID>()
+    private var activeAccountStorageID: String?
 
     private init() {
         if Constants.CloudStorage.GoogleDrive.isConfigured {
@@ -87,6 +136,55 @@ final class CloudStorageCenter: ObservableObject {
         }
     }
 
+    /// Opens the native-cloud gate for one CastReader account. Credentials
+    /// owned by another route/account (or by an old unscoped build) are hidden
+    /// synchronously, then removed locally before this account can connect.
+    func activateAccountScope(storageID: String) {
+        guard storageID.count == 64 else {
+            deactivateAccountScope()
+            return
+        }
+        guard activeAccountStorageID != storageID else { return }
+        activeAccountStorageID = storageID
+
+        for provider in CloudProviderID.allCases {
+            connectionStates[provider] = .disconnected
+            let lifecycleEpoch = beginLifecycleOperation(provider)
+            if credentialOwnership.ownerStorageID(for: provider) == storageID {
+                disconnectingProviders.remove(provider)
+                continue
+            }
+
+            // Remove the owner marker before awaiting SDK cleanup. Every API
+            // remains closed by `disconnectingProviders` during this window.
+            credentialOwnership.removeOwner(for: provider)
+            disconnectingProviders.insert(provider)
+            Task { [weak self] in
+                await self?.clearUnownedLocalAuthorization(
+                    for: provider,
+                    lifecycleEpoch: lifecycleEpoch
+                )
+            }
+        }
+    }
+
+    /// Signed-out UI must not display or use a provider connection. The local
+    /// token may remain dormant so signing back into the exact same CastReader
+    /// account can resume it; a different scope will clear it on activation.
+    func deactivateAccountScope() {
+        activeAccountStorageID = nil
+        disconnectingProviders.removeAll()
+        for provider in CloudProviderID.allCases {
+            _ = beginLifecycleOperation(provider)
+            connectionStates[provider] = .disconnected
+        }
+        Task {
+            for provider in CloudProviderID.allCases {
+                _ = await CloudImportCoordinator.shared.cancel(provider: provider)
+            }
+        }
+    }
+
     func isConfigured(_ provider: CloudProviderID) -> Bool {
         switch provider {
         case .googleDrive: return googleDrive != nil
@@ -99,6 +197,7 @@ final class CloudStorageCenter: ObservableObject {
     func resetGoogleDriveLocalStateForDeviceTesting() async {
         _ = beginLifecycleOperation(.googleDrive)
         disconnectingProviders.remove(.googleDrive)
+        credentialOwnership.removeOwner(for: .googleDrive)
         if let googleDrive {
             await googleDrive.resetLocalStateForDeviceTesting()
         }
@@ -113,7 +212,14 @@ final class CloudStorageCenter: ObservableObject {
     }
 
     func refreshConnectionStates() async {
-        if let googleDrive {
+        guard activeAccountStorageID != nil else {
+            for provider in CloudProviderID.allCases {
+                connectionStates[provider] = .disconnected
+            }
+            return
+        }
+
+        if hasActiveCredentialOwnership(.googleDrive), let googleDrive {
             let epoch = lifecycleEpochs[.googleDrive, default: 0]
             let storeEpoch = await CloudConnectionStore.shared.connectionEpoch(
                 for: .googleDrive
@@ -132,7 +238,7 @@ final class CloudStorageCenter: ObservableObject {
         } else {
             connectionStates[.googleDrive] = .disconnected
         }
-        if let dropbox {
+        if hasActiveCredentialOwnership(.dropbox), let dropbox {
             let epoch = lifecycleEpochs[.dropbox, default: 0]
             let storeEpoch = await CloudConnectionStore.shared.connectionEpoch(for: .dropbox)
             let providerState = await restoredPersistentProviderState(
@@ -147,7 +253,7 @@ final class CloudStorageCenter: ObservableObject {
         } else {
             connectionStates[.dropbox] = .disconnected
         }
-        if let oneDrive {
+        if hasActiveCredentialOwnership(.oneDrive), let oneDrive {
             let epoch = lifecycleEpochs[.oneDrive, default: 0]
             let storeEpoch = await CloudConnectionStore.shared.connectionEpoch(for: .oneDrive)
             let providerState = await restoredPersistentProviderState(
@@ -169,6 +275,7 @@ final class CloudStorageCenter: ObservableObject {
         expectedAccount: CloudAccount? = nil
     ) async throws -> CloudAtomicPickResult {
         guard let googleDrive else { throw configurationError(.googleDrive) }
+        try ensureAccountScopeCanAuthorize(.googleDrive)
         guard !disconnectingProviders.contains(.googleDrive) else {
             throw CloudStorageError.staleSession
         }
@@ -188,6 +295,7 @@ final class CloudStorageCenter: ObservableObject {
             } else {
                 _ = await CloudConnectionStore.shared.setActive(result.account)
                 try ensureCurrentLifecycle(.googleDrive, epoch: lifecycleEpoch)
+                try bindCredentialsToActiveAccountScope(.googleDrive)
                 connectionStates[.googleDrive] = .connected(result.account)
             }
             return result
@@ -195,6 +303,7 @@ final class CloudStorageCenter: ObservableObject {
             if isCurrentLifecycle(.googleDrive, epoch: lifecycleEpoch) {
                 let recovered = await googleDrive.connectionState()
                 if isCurrentLifecycle(.googleDrive, epoch: lifecycleEpoch),
+                   hasActiveCredentialOwnership(.googleDrive),
                    !disconnectingProviders.contains(.googleDrive) {
                     connectionStates[.googleDrive] = recovered
                 }
@@ -205,6 +314,7 @@ final class CloudStorageCenter: ObservableObject {
 
     func commitStagedGoogleDriveAccount() async throws -> (CloudAccount, CloudItem) {
         guard let googleDrive else { throw configurationError(.googleDrive) }
+        try ensureActiveCredentialOwner(.googleDrive)
         guard !disconnectingProviders.contains(.googleDrive) else {
             throw CloudStorageError.staleSession
         }
@@ -215,6 +325,7 @@ final class CloudStorageCenter: ObservableObject {
             try ensureCurrentLifecycle(.googleDrive, epoch: lifecycleEpoch)
             _ = await CloudConnectionStore.shared.setActive(result.account)
             try ensureCurrentLifecycle(.googleDrive, epoch: lifecycleEpoch)
+            try bindCredentialsToActiveAccountScope(.googleDrive)
             connectionStates[.googleDrive] = .connected(result.account)
             return result
         } catch {
@@ -226,6 +337,7 @@ final class CloudStorageCenter: ObservableObject {
     }
 
     func discardStagedGoogleDriveAccount() async {
+        guard hasActiveCredentialOwnership(.googleDrive) else { return }
         await googleDrive?.discardStagedAccount()
         await CloudConnectionStore.shared.discardCandidate(for: .googleDrive)
         await refreshState(for: .googleDrive)
@@ -236,6 +348,7 @@ final class CloudStorageCenter: ObservableObject {
         expectedAccount: CloudAccount? = nil,
         forceAccountSelection: Bool = false
     ) async throws -> CloudAccount {
+        try ensureAccountScopeCanAuthorize(provider)
         guard !disconnectingProviders.contains(provider) else {
             throw CloudStorageError.staleSession
         }
@@ -281,6 +394,7 @@ final class CloudStorageCenter: ObservableObject {
             try ensureCurrentLifecycle(provider, epoch: lifecycleEpoch)
             _ = await CloudConnectionStore.shared.setActive(account)
             try ensureCurrentLifecycle(provider, epoch: lifecycleEpoch)
+            try bindCredentialsToActiveAccountScope(provider)
             connectionStates[provider] = .connected(account)
             return account
         } catch {
@@ -304,6 +418,7 @@ final class CloudStorageCenter: ObservableObject {
         _ provider: CloudProviderID,
         expectedAccountKey: String
     ) async throws -> CloudAccount {
+        try ensureActiveCredentialOwner(provider)
         guard !disconnectingProviders.contains(provider) else {
             throw CloudStorageError.staleSession
         }
@@ -348,6 +463,7 @@ final class CloudStorageCenter: ObservableObject {
     }
 
     func stagedCandidateAccount(for provider: CloudProviderID) async -> CloudAccount? {
+        guard hasActiveCredentialOwnership(provider) else { return nil }
         switch provider {
         case .googleDrive:
             return await googleDrive?.stagedCandidateAccount()
@@ -361,6 +477,7 @@ final class CloudStorageCenter: ObservableObject {
     /// Authorizes a candidate account while preserving the current account as
     /// active. The caller must explicitly commit or discard the candidate.
     func stageAnotherAccount(_ provider: CloudProviderID) async throws -> CloudAccount {
+        try ensureActiveCredentialOwner(provider)
         guard !disconnectingProviders.contains(provider) else {
             throw CloudStorageError.staleSession
         }
@@ -396,6 +513,7 @@ final class CloudStorageCenter: ObservableObject {
     }
 
     func commitStagedAccount(_ provider: CloudProviderID) async throws -> CloudAccount {
+        try ensureActiveCredentialOwner(provider)
         guard !disconnectingProviders.contains(provider) else {
             throw CloudStorageError.staleSession
         }
@@ -417,6 +535,7 @@ final class CloudStorageCenter: ObservableObject {
             try ensureCurrentLifecycle(provider, epoch: lifecycleEpoch)
             _ = await CloudConnectionStore.shared.setActive(account)
             try ensureCurrentLifecycle(provider, epoch: lifecycleEpoch)
+            try bindCredentialsToActiveAccountScope(provider)
             connectionStates[provider] = .connected(account)
             return account
         } catch {
@@ -428,6 +547,7 @@ final class CloudStorageCenter: ObservableObject {
     }
 
     func discardStagedAccount(_ provider: CloudProviderID) async {
+        guard hasActiveCredentialOwnership(provider) else { return }
         switch provider {
         case .googleDrive:
             await googleDrive?.discardCandidate()
@@ -445,6 +565,7 @@ final class CloudStorageCenter: ObservableObject {
         folder: CloudFolder?,
         cursor: CloudCursor?
     ) async throws -> CloudPage {
+        try ensureActiveCredentialOwner(provider)
         switch provider {
         case .googleDrive:
             guard let googleDrive else { throw configurationError(provider) }
@@ -459,6 +580,7 @@ final class CloudStorageCenter: ObservableObject {
     }
 
     func listDrives(provider: CloudProviderID) async throws -> [CloudDrive] {
+        try ensureActiveCredentialOwner(provider)
         switch provider {
         case .googleDrive:
             guard let googleDrive else { throw configurationError(provider) }
@@ -477,6 +599,7 @@ final class CloudStorageCenter: ObservableObject {
         driveID: String? = nil,
         cursor: CloudCursor?
     ) async throws -> CloudPage {
+        try ensureActiveCredentialOwner(provider)
         switch provider {
         case .googleDrive:
             guard let googleDrive else { throw configurationError(provider) }
@@ -505,6 +628,7 @@ final class CloudStorageCenter: ObservableObject {
         destination: URL,
         progress: @escaping CloudDownloadProgressHandler
     ) async throws -> CloudDownloadReceipt {
+        try ensureActiveCredentialOwner(provider)
         let destinationAllowed = CloudDownloadDestinationPolicy.allows(destination)
         #if DEBUG
         print(
@@ -565,6 +689,7 @@ final class CloudStorageCenter: ObservableObject {
         connectionStates[provider] = .disconnected
         _ = await CloudImportCoordinator.shared.cancel(provider: provider)
         _ = await CloudConnectionStore.shared.removeActive(for: provider)
+        credentialOwnership.removeOwner(for: provider)
 
         let result: CloudDisconnectResult
         switch provider {
@@ -602,6 +727,10 @@ final class CloudStorageCenter: ObservableObject {
     }
 
     private func refreshState(for provider: CloudProviderID) async {
+        guard hasActiveCredentialOwnership(provider) else {
+            connectionStates[provider] = .disconnected
+            return
+        }
         // Recovery paths can outlive the operation that started them. Publish
         // only if no disconnect or newer account lifecycle won while the
         // provider and durable connection actors were being awaited.
@@ -710,6 +839,78 @@ final class CloudStorageCenter: ObservableObject {
             )
         }
         return .connected(reconciled)
+    }
+
+    private func clearUnownedLocalAuthorization(
+        for provider: CloudProviderID,
+        lifecycleEpoch: UInt64
+    ) async {
+        _ = await CloudImportCoordinator.shared.cancel(provider: provider)
+        _ = await CloudConnectionStore.shared.removeActive(for: provider)
+        switch provider {
+        case .googleDrive:
+            await googleDrive?.clearLocalAuthorizationForAccountBoundary()
+        case .dropbox:
+            await dropbox?.clearLocalAuthorizationForAccountBoundary()
+        case .oneDrive:
+            await oneDrive?.clearLocalAuthorizationForAccountBoundary()
+        }
+
+        guard isCurrentLifecycle(provider, epoch: lifecycleEpoch),
+              activeAccountStorageID != nil else { return }
+        disconnectingProviders.remove(provider)
+        connectionStates[provider] = .disconnected
+    }
+
+    /// Explicit connect/authorize is allowed when this account has no owner
+    /// marker yet, but never while signed out or while another account's local
+    /// credential is still being erased.
+    private func ensureAccountScopeCanAuthorize(
+        _ provider: CloudProviderID
+    ) throws {
+        guard let activeAccountStorageID,
+              !disconnectingProviders.contains(provider) else {
+            throw CloudStorageError.staleSession
+        }
+        if let owner = credentialOwnership.ownerStorageID(for: provider),
+           owner != activeAccountStorageID {
+            throw CloudStorageError.staleSession
+        }
+    }
+
+    private func hasActiveCredentialOwnership(
+        _ provider: CloudProviderID
+    ) -> Bool {
+        guard let activeAccountStorageID,
+              !disconnectingProviders.contains(provider) else { return false }
+        return credentialOwnership.ownerStorageID(for: provider)
+            == activeAccountStorageID
+    }
+
+    /// Silent restore/list/search/download paths require an exact owner match;
+    /// an unowned SDK token can never bootstrap itself into the new account.
+    private func ensureActiveCredentialOwner(
+        _ provider: CloudProviderID
+    ) throws {
+        try ensureAccountScopeCanAuthorize(provider)
+        guard let activeAccountStorageID,
+              credentialOwnership.ownerStorageID(for: provider)
+                == activeAccountStorageID else {
+            throw CloudStorageError.notConnected
+        }
+    }
+
+    private func bindCredentialsToActiveAccountScope(
+        _ provider: CloudProviderID
+    ) throws {
+        guard let activeAccountStorageID,
+              !disconnectingProviders.contains(provider) else {
+            throw CloudStorageError.staleSession
+        }
+        credentialOwnership.setOwnerStorageID(
+            activeAccountStorageID,
+            for: provider
+        )
     }
 
     private func configurationError(_ provider: CloudProviderID) -> CloudStorageError {

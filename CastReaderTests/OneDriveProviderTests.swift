@@ -983,6 +983,19 @@ final class OneDriveProviderTests: XCTestCase {
         XCTAssertEqual(state, .disconnected)
     }
 
+    func testAccountBoundaryUsesOnlyMSALLocalSignout() async throws {
+        let adapter = OneDriveMockAdapter(account: Self.account)
+        let provider = makeProvider(adapter: adapter)
+        _ = try await provider.ensureConnected()
+
+        await provider.clearLocalAuthorizationForAccountBoundary()
+
+        let signedOut = await adapter.signedOutIdentifiers
+        let state = await provider.connectionState()
+        XCTAssertEqual(signedOut, [Self.account.cacheAccountIdentifier])
+        XCTAssertEqual(state, .disconnected)
+    }
+
     func testDownloadRejectsNonFileDestinationBeforeAdapterCall() async throws {
         let adapter = OneDriveMockAdapter(account: Self.account)
         let provider = makeProvider(adapter: adapter)

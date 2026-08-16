@@ -724,20 +724,28 @@ actor GoogleDriveProvider: CloudAtomicPickerProvider, CloudDriveListingProvider 
         return .needsReauthorization(credential.account)
     }
 
-    #if DEBUG
-    /// Device-test escape hatch used only by an explicit launch argument. It
-    /// clears Google Drive's local OAuth state without touching reading history
-    /// or any other provider/account data.
-    func resetLocalStateForDeviceTesting() async {
+    /// Removes every device-local credential that could authorize Drive after
+    /// CastReader changes account/route. Unlike the user-facing disconnect,
+    /// this privacy boundary deliberately makes no revocation request: it does
+    /// not alter files, consent or sessions on Google's servers.
+    func clearLocalAuthorizationForAccountBoundary() async {
         epoch &+= 1
         authorizingEpoch = nil
         refreshOperation?.task.cancel()
         refreshOperation = nil
         stagedPick = nil
         candidateCredential = nil
-        volatilePendingRevocations.removeAll()
         await webAuthenticator.cancel()
         await credentialStore.delete()
+    }
+
+    #if DEBUG
+    /// Device-test escape hatch used only by an explicit launch argument. It
+    /// clears Google Drive's local OAuth state without touching reading history
+    /// or any other provider/account data.
+    func resetLocalStateForDeviceTesting() async {
+        await clearLocalAuthorizationForAccountBoundary()
+        volatilePendingRevocations.removeAll()
         try? await revocationStore.saveRecords([])
     }
     #endif

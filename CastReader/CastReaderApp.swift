@@ -194,6 +194,7 @@ final class AppStartupCoordinator: ObservableObject {
 
         let launchType = SystemActionStore.shared.peekPendingOrigin()?.launchType ?? "cold"
         ProductAnalytics.shared.startAppSession(launchType: launchType)
+        AdAttributionService.shared.reportOnceIfNeeded()
         ProManager.shared.start()
         QuotaManager.shared.rollIfNewDay()
         VoiceCatalogService.shared.start()

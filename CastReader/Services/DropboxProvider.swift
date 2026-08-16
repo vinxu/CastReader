@@ -594,6 +594,31 @@ actor DropboxProvider: CloudBrowsableProvider {
         }
     }
 
+    /// Clears the SDK's local token cache and CastReader's token identifiers
+    /// when the owning CastReader account/route changes. This must not call
+    /// Dropbox's revoke endpoint: an account-isolation boundary is a local
+    /// logout, not a destructive change to the user's remote authorization.
+    func clearLocalAuthorizationForAccountBoundary() async {
+        generation &+= 1
+        let tokenUIDs = Set([
+            activeRecord?.tokenUID,
+            candidateRecord?.tokenUID,
+            defaults.string(forKey: tokenUIDKey),
+            defaults.string(forKey: candidateTokenUIDKey),
+            defaults.string(forKey: retiredTokenUIDKey),
+        ].compactMap { $0 })
+        activeRecord = nil
+        candidateRecord = nil
+        state = .disconnected
+        sdkAccountTransitionInProgress = false
+        clearPersistedValue(forKey: tokenUIDKey)
+        clearPersistedValue(forKey: candidateTokenUIDKey)
+        clearPersistedValue(forKey: retiredTokenUIDKey)
+        for tokenUID in tokenUIDs {
+            await adapter.clearLocalToken(tokenUID: tokenUID)
+        }
+    }
+
     func disconnect() async -> CloudDisconnectResult {
         generation &+= 1
         let activeTokenUID = activeRecord?.tokenUID ?? defaults.string(forKey: tokenUIDKey)

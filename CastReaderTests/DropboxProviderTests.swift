@@ -508,6 +508,22 @@ final class DropboxProviderTests: XCTestCase {
         XCTAssertEqual(state, .disconnected)
     }
 
+    func testAccountBoundaryClearsLocalTokenWithoutRemoteRevoke() async throws {
+        let account = Self.account(root: "root-1")
+        let adapter = DropboxMockAdapter(account: account)
+        let provider = makeProvider(adapter: adapter)
+        _ = try await provider.ensureConnected()
+
+        await provider.clearLocalAuthorizationForAccountBoundary()
+
+        let cleared = await adapter.clearedTokenUIDs
+        let revoked = await adapter.revokedTokenUIDs
+        let state = await provider.connectionState()
+        XCTAssertEqual(cleared, [account.tokenUID])
+        XCTAssertTrue(revoked.isEmpty)
+        XCTAssertEqual(state, .disconnected)
+    }
+
     func testDownloadRejectsNonFileDestinationBeforeAdapterCall() async throws {
         let adapter = DropboxMockAdapter(account: Self.account(root: "root-1"))
         let provider = makeProvider(adapter: adapter)
