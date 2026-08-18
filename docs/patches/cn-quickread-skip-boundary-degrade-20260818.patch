@@ -1,0 +1,20 @@
+--- a/tools/extract-content.mjs
++++ b/tools/extract-content.mjs
+@@ restoreDeepSeekSubstantiveSkips @@
+   const nextBlocks = blocks.map(block => ({ ...block, paras: [...(block.paras || [])] }));
+   const streamedBoundary = Math.max(...nextBlocks[0].paras);
+   for (const idx of restore) {
+     if (idx <= streamedBoundary || nextBlocks.length === 1) {
+-      throw new Error(`invalid QuickRead plan: substantive paragraph ${idx} skipped inside streamed block boundary`);
++      // Block 0 has already streamed; this paragraph cannot be restored into
++      // a later block. Keep the model's skip instead of failing the whole
++      // plan — papers open with attribution notices / author lists /
++      // equal-contribution footnotes that DeepSeek correctly skips while the
++      // bio-shaped isClearlySkippableParagraph heuristic does not recognise
++      // them as skippable. A retained skip loses at most one paragraph's
++      // narration; the throw loses the entire explain session.
++      retainedSkip.push(idx);
++      continue;
+     }
+     let target = nextBlocks.findIndex((block, blockIndex) => blockIndex > 0 && block.paras[0] > idx);
+     if (target < 0) target = nextBlocks.length - 1;
