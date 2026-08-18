@@ -2030,6 +2030,12 @@ final class ExplainViewModel: ObservableObject {
         let prefetchedForBatch = prefetchedBatch.flatMap {
             $0.startIndex == start ? $0 : nil
         }
+        // 在途的下一批预取不随旧 generation 作废：把任务摘出 clearPagePrefetch
+        // 的取消范围。批边界 miss 时等它收尾（通常只差几秒），而不是把快出
+        // 炉的 plan 丢掉从零重打——那正是「批间长 loading」的主要成因。
+        let inflightPrefetch: Task<Void, Never>? =
+            (prefetchedForBatch == nil && prefetchingBatchStart == start) ? pagePrefetchTask : nil
+        if inflightPrefetch != nil { pagePrefetchTask = nil }
         // A new batch reuses the same user session, but none of the previous
         // batch's delayed block tasks may write into its page-local block keys.
         beginFreshContentGeneration()
@@ -2052,23 +2058,24 @@ final class ExplainViewModel: ObservableObject {
 
         // 命中批间预取 → 已规划好（跳过 extract-plan「通读」那段 gap）；block0 TTS 在此生成（此刻 TTS 空闲、不冲突）。
         if let pf = prefetchedForBatch {
-            jobId = pf.jobId
-            totalBlocks = pf.totalBlocks
-            setOutputLanguage(pf.outputLanguage)
-            section0 = pf.section0       // prepareBlock(0) 直接用、跳过 extract-block
-            batchPrevSummary = pf.prevSummary ?? batchPrevSummary
+            applyPrefetchedBatch(pf, generation: generation)
+            return
+        }
+        if let inflight = inflightPrefetch {
+            // 在途预取只差临门一脚：等它（受 plan 自身超时/重试预算约束）。
+            section0 = nil
+            jobId = ""
+            totalBlocks = 0
             isPreparingNext = true
             stageText = AppLocalized("继续讲解…")
             status = .planning
-            if let pb0 = pf.preparedBlock0 {
-                isPreparingNext = false
-                enqueue(pb0, idx: 0)
-                if totalBlocks > 1 {
-                    startBackgroundPrepare(block: 1, reason: "batch-prefetched-block0")
-                }
-            } else {
-                orchestrationTask = Task { [weak self] in
-                    await self?.prepareAndEnqueue(block: 0, generation: generation)
+            orchestrationTask = Task { [weak self] in
+                _ = await inflight.value
+                guard let self, generation == self.contentGeneration else { return }
+                if let pf = self.prefetchedBatch, pf.startIndex == start {
+                    self.applyPrefetchedBatch(pf, generation: generation)
+                } else {
+                    await self.runPlan(generation: generation)
                 }
             }
             return
@@ -2082,6 +2089,30 @@ final class ExplainViewModel: ObservableObject {
         status = .planning
         orchestrationTask = Task { [weak self] in
             await self?.runPlan(generation: generation)
+        }
+    }
+
+    /// 消费一份预规划好的批：设批状态并启动 block0（预生成过 TTS 则秒接）。
+    private func applyPrefetchedBatch(_ pf: BatchPlan, generation: UInt64) {
+        jobId = pf.jobId
+        totalBlocks = pf.totalBlocks
+        setOutputLanguage(pf.outputLanguage)
+        section0 = pf.section0       // prepareBlock(0) 直接用、跳过 extract-block
+        batchPrevSummary = pf.prevSummary ?? batchPrevSummary
+        prefetchedBatch = nil
+        isPreparingNext = true
+        stageText = AppLocalized("继续讲解…")
+        status = .planning
+        if let pb0 = pf.preparedBlock0 {
+            isPreparingNext = false
+            enqueue(pb0, idx: 0)
+            if totalBlocks > 1 {
+                startBackgroundPrepare(block: 1, reason: "batch-prefetched-block0")
+            }
+        } else {
+            orchestrationTask = Task { [weak self] in
+                await self?.prepareAndEnqueue(block: 0, generation: generation)
+            }
         }
     }
 
@@ -2154,8 +2185,14 @@ final class ExplainViewModel: ObservableObject {
             return
         }
 
+        // 迟到写入可能留下错批的缓存；发现即丢弃，不许它堵住后续预取。
+        if let stale = prefetchedBatch, stale.startIndex != start { prefetchedBatch = nil }
         guard prefetchedBatch == nil, prefetchingBatchStart == nil else { return }
-        guard currentBlockIndex >= max(0, totalBlocks - 2) else { return }
+        // 起跑要赛得过 DS：plan 常要 16-30s，而尾部块平均只播 10-20s。
+        // 倒数第 4 块就开始预规划，给 plan 留 ~40-60s 窗口；小批（≤4 块）
+        // 从首块就起跑。prevSummary 因此少覆盖尾部几块——活性优先于质量
+        // 是明确的产品决策（2026-08-18）。
+        guard currentBlockIndex >= max(0, totalBlocks - 4) else { return }
         prefetchingBatchStart = start
         let generation = contentGeneration
         pagePrefetchTask = Task { [weak self] in
@@ -2163,16 +2200,17 @@ final class ExplainViewModel: ObservableObject {
             guard generation == self.contentGeneration, !Task.isCancelled else { return }
             do {
                 let plan = try await self.planBatch(startIndex: start, paras: batch.paras, prevSummary: prevSummary)
-                guard generation == self.contentGeneration,
-                      !Task.isCancelled else { return }
-                if self.prefetchingBatchStart == start {
-                    self.prefetchedBatch = plan
-                    self.debugLog("prefetchBatch PLAN start=%d total=%d prevSummary=%d",
-                                  start, plan.totalBlocks, plan.prevSummary?.count ?? 0)
-                }
-                self.prefetchingBatchStart = nil
+                guard !Task.isCancelled else { return }
+                // 写缓存不看 generation：BatchPlan 按 startIndex 消费，批边界
+                // miss 后 advanceBatch 会等这个任务收尾再消费——generation 已
+                // 推进也必须让迟到几秒的 plan 落袋，而不是作废重打。
+                self.prefetchedBatch = plan
+                self.debugLog("prefetchBatch PLAN start=%d total=%d prevSummary=%d",
+                              start, plan.totalBlocks, plan.prevSummary?.count ?? 0)
+                if self.prefetchingBatchStart == start { self.prefetchingBatchStart = nil }
                 self.pagePrefetchTask = nil
-                if self.currentBlockIndex >= max(0, self.totalBlocks - 1) {
+                if generation == self.contentGeneration,
+                   self.currentBlockIndex >= max(0, self.totalBlocks - 1) {
                     self.prefetchNextPage()
                 }
             } catch {
