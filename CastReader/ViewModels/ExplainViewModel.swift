@@ -1509,6 +1509,11 @@ final class ExplainViewModel: ObservableObject {
         return value.isEmpty ? "general" : value
     }
 
+    private static func isCancelledTTS(_ error: Error) -> Bool {
+        if case TTSError.cancelled = error { return true }
+        return false
+    }
+
     private static func analyticsErrorCode(_ error: Error) -> String {
         if error is URLError { return "network" }
         if error is CancellationError { return "cancelled" }
@@ -1618,6 +1623,8 @@ final class ExplainViewModel: ObservableObject {
                         errorStage: "plan",
                         errorCode: "http_400"
                     )
+                } else if error is CancellationError || Self.isCancelledTTS(error) {
+                    // 取消不是错误：新一代内容已接管或用户主动切换，静默退出。
                 } else {
                     self.status = .error(error.localizedDescription)
                     self.stageText = AppLocalized("解读失败")

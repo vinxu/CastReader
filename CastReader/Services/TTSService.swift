@@ -18,9 +18,18 @@ private func ttsDebugLog(_ message: @autoclosure () -> String) {
 
 // MARK: - TTS Error
 
-enum TTSError: Error {
+enum TTSError: Error, LocalizedError {
     case cancelled
     case generationFailed(String)
+
+    /// Without LocalizedError, surfacing this enum bridges to the system's
+    /// "未能完成操作。(CastReader.TTSError 错误 0。)" — meaningless to users.
+    /// Cancellations should never reach the UI at all (callers catch them),
+    /// but any residual leak now degrades to a retriable message instead.
+    /// The generationFailed payload is server/internal text; never show it raw.
+    var errorDescription: String? {
+        AppLocalized("声音服务暂时不可用，请稍后重试")
+    }
 }
 
 // MARK: - TTS Service
