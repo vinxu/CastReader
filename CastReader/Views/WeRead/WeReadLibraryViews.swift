@@ -1076,9 +1076,11 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         var stableEndPasses = 0
         var account: WeReadAccountInfo?
         var completedSnapshot = false
+        var lastScan: WeReadScanResult?
         let clock = ContinuousClock()
         let startedAt = clock.now
-        for _ in 0..<80 {
+        var lastProgressAt = startedAt
+        for _ in 0..<280 {
             guard !Task.isCancelled,
                   scanNavigationGeneration == navigationGeneration else { return }
             statusText = String(format: AppLocalized("正在扫描微信读书书架…（%d）"), all.count)
@@ -1099,44 +1101,68 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                 navigateToShelfIfNeeded()
                 return
             }
+            lastScan = result
             if let label = result.account { account = WeReadAccountInfo(label: label) }
             let before = all.count
-            result.books.forEach { all[$0.id] = $0 }
+            // Rows the native validator rejects are definitively not library
+            // books; drop them from the sync set instead of vetoing the pass.
+            result.books
+                .filter(WeReadBookValidator.isLikelyLibraryBook)
+                .forEach { all[$0.id] = $0 }
             pendingBooks = all
             pendingAccount = account
             availableCount = all.count
-            let stableAtEnd = result.documentReady
-                && result.reachedShelfEnd
-                && !result.loading
-                && result.rawBookCount == result.books.count
-                && result.books.allSatisfy(WeReadBookValidator.isLikelyLibraryBook)
-                && all.count == before
+            if all.count > before { lastProgressAt = clock.now }
+            let stableAtEnd = WeReadShelfSnapshotContract.isStableEndPass(
+                result,
+                accumulatedUnchanged: all.count == before
+            )
             stableEndPasses = stableAtEnd ? stableEndPasses + 1 : 0
-            let requiredStablePasses = all.isEmpty ? 10 : 4
+            let requiredStablePasses = WeReadShelfSnapshotContract.requiredStablePasses(
+                accumulatedIsEmpty: all.isEmpty,
+                hasAddTile: result.hasAddTile
+            )
             if stableEndPasses >= requiredStablePasses {
                 // An empty DOM shell is not an authoritative empty shelf.
                 guard !all.isEmpty || result.emptyShelfEvidence else {
-                    errorText = AppLocalized("暂时没能同步微信读书书架，请重试。")
+                    finishFailedScan(reason: "empty_without_evidence", lastScan: result)
                     return
                 }
                 completedSnapshot = true
                 break
             }
-            if startedAt.duration(to: clock.now) >= .seconds(30) { break }
+            if startedAt.duration(to: clock.now) >= WeReadShelfSnapshotContract.hardBudget
+                || lastProgressAt.duration(to: clock.now) >= WeReadShelfSnapshotContract.idleBudget {
+                break
+            }
             try? await Task.sleep(for: .milliseconds(350))
         }
         guard completedSnapshot else {
             pendingBooks = [:]
             pendingAccount = nil
             availableCount = 0
-            errorText = AppLocalized("暂时没能同步微信读书书架，请重试。")
+            finishFailedScan(
+                reason: WeReadShelfSnapshotContract.failureReason(lastScan: lastScan),
+                lastScan: lastScan
+            )
             return
         }
         guard scanNavigationGeneration == navigationGeneration,
               scanSessionFingerprint == (await currentAuthenticatedWeReadSessionFingerprint()) else {
             clearUntrustedShelfPreview()
-            errorText = AppLocalized("暂时没能同步微信读书书架，请重试。")
+            finishFailedScan(reason: "session_changed", lastScan: lastScan)
             return
+        }
+        if let lastScan {
+            NSLog(
+                "CRDBG WEREAD shelf-scan complete books=%d raw=%d pending=%d excluded=%d addTile=%@ passes=%d",
+                all.count,
+                lastScan.rawBookCount,
+                lastScan.pendingRowCount,
+                lastScan.excludedRowCount,
+                lastScan.hasAddTile ? "Y" : "N",
+                stableEndPasses
+            )
         }
         hasTrustedShelfSnapshot = true
         trustedSnapshotNavigationGeneration = scanNavigationGeneration
@@ -1146,6 +1172,33 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             return
         }
         statusText = String(format: AppLocalized("已找到 %d 本微信读书书籍。"), all.count)
+    }
+
+    /// One place for scan-failure exit: reason-coded analytics + log (counts
+    /// only, never titles/URLs/account data) and a user-facing message that
+    /// distinguishes network trouble from an unrecognised shelf.
+    private func finishFailedScan(reason: String, lastScan: WeReadScanResult?) {
+        NSLog(
+            "CRDBG WEREAD shelf-scan failed reason=%@ raw=%d parsed=%d pending=%d excluded=%d addTile=%@ ready=%@ end=%@ loading=%@ err=%@",
+            reason,
+            lastScan?.rawBookCount ?? -1,
+            lastScan?.books.count ?? -1,
+            lastScan?.pendingRowCount ?? -1,
+            lastScan?.excludedRowCount ?? -1,
+            (lastScan?.hasAddTile ?? false) ? "Y" : "N",
+            (lastScan?.documentReady ?? false) ? "Y" : "N",
+            (lastScan?.reachedShelfEnd ?? false) ? "Y" : "N",
+            (lastScan?.loading ?? false) ? "Y" : "N",
+            (lastScan?.loadError ?? false) ? "Y" : "N"
+        )
+        connectionAnalytics.record(
+            .failed,
+            result: .failed,
+            errorCode: "shelf_scan_\(reason)"
+        )
+        errorText = WeReadShelfSnapshotContract.isNetworkShapedFailure(reason)
+            ? AppLocalized("书架仍在加载，请稍后重试。")
+            : AppLocalized("暂时没能同步微信读书书架，请重试。")
     }
 
     private func capturePendingLoginUID() async {
@@ -1290,11 +1343,13 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             guard pair.count == 2 else { continue }
             values[pair[0].trimmingCharacters(in: .whitespacesAndNewlines)] = pair[1]
         }
+        // wr_skey must exist (HttpOnly session evidence) but rotates during
+        // long scans; the fingerprint compares only the stable account vid so
+        // a mid-scan skey refresh cannot fail an unchanged account.
         guard let vid = values["wr_vid"] ?? values["wr_localvid"],
               !vid.isEmpty,
-              let skey = values["wr_skey"],
-              !skey.isEmpty else { return nil }
-        let digest = SHA256.hash(data: Data("vid:\(vid)|skey:\(skey)".utf8))
+              values["wr_skey"]?.isEmpty == false else { return nil }
+        let digest = SHA256.hash(data: Data("vid:\(vid)".utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
     }
 

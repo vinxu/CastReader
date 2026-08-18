@@ -323,6 +323,59 @@ enum WeReadShelfPageContract {
     }
 }
 
+/// Completion criteria for one shelf-scan pass. Extracted so the veto logic
+/// stays testable: rows that can never become library books (audio/video
+/// tiles, banners, duplicates) must not block the snapshot forever, while
+/// reader rows that simply have not hydrated yet still do.
+enum WeReadShelfSnapshotContract {
+    /// Keep scanning while rows keep arriving; stop after `idleBudget`
+    /// without progress or `hardBudget` overall. The old fixed 30-second cap
+    /// cut off large virtualised shelves mid-scroll.
+    static let idleBudget: Duration = .seconds(30)
+    static let hardBudget: Duration = .seconds(90)
+
+    static func isStableEndPass(
+        _ result: WeReadScanResult,
+        accumulatedUnchanged: Bool
+    ) -> Bool {
+        result.documentReady
+            && result.reachedShelfEnd
+            && !result.loading
+            && !result.loadError
+            && result.pendingRowCount == 0
+            && result.books.count == result.parsedBookCount
+            && accumulatedUnchanged
+    }
+
+    /// The add tile is WeRead's positive end-of-shelf evidence. Without it
+    /// (markup drift, A/B variants) a physical end still completes, but only
+    /// after twice as many stable passes.
+    static func requiredStablePasses(accumulatedIsEmpty: Bool, hasAddTile: Bool) -> Int {
+        if accumulatedIsEmpty { return 10 }
+        return hasAddTile ? 4 : 8
+    }
+
+    /// Reason code for analytics and logs when a snapshot did not complete.
+    /// Counts only — never book titles, URLs or account data.
+    static func failureReason(lastScan: WeReadScanResult?) -> String {
+        guard let scan = lastScan else { return "scan_unavailable" }
+        if scan.loadError { return "load_error" }
+        if scan.loading { return "still_loading" }
+        if scan.pendingRowCount > 0 { return "rows_pending" }
+        if !scan.documentReady { return "doc_not_ready" }
+        if !scan.reachedShelfEnd { return "shelf_end_unreached" }
+        if scan.books.count != scan.parsedBookCount { return "parse_mismatch" }
+        if !scan.hasAddTile { return "no_add_tile" }
+        return "unstable"
+    }
+
+    /// Reasons whose user-facing message should point at the network rather
+    /// than a generic retry.
+    static func isNetworkShapedFailure(_ reason: String) -> Bool {
+        reason == "load_error" || reason == "still_loading" || reason == "doc_not_ready"
+    }
+}
+
 enum WeReadBookEntryRecoveryContract {
     /// A fresh shelf URL is server-authored and therefore supersedes a local
     /// resume URL only when the canonical entry itself changed. Unchanged shelf
@@ -358,9 +411,20 @@ struct WeReadScanResult {
     var isShelfPage: Bool
     var documentReady: Bool
     var reachedShelfEnd: Bool
+    var hasAddTile: Bool
     var loading: Bool
+    var loadError: Bool
     var emptyShelfEvidence: Bool
     var rawBookCount: Int
+    /// Reader-linked shelf rows whose title has not hydrated yet. These block
+    /// snapshot completion; rows that can never become books do not.
+    var pendingRowCount: Int
+    /// Rows that can never become library books (audio/video/banner tiles,
+    /// duplicates). Diagnostics only.
+    var excludedRowCount: Int
+    /// Rows the page script itself accepted as books; cross-checked against
+    /// native parsing so a native-side drop still blocks completion.
+    var parsedBookCount: Int
     var authRequired: Bool
     var authenticated: Bool
     var account: String?
@@ -372,9 +436,13 @@ struct WeReadScanResult {
             && WeReadShelfPageContract.isExactShelfURL(pageURL)
         documentReady = raw["documentReady"] as? Bool ?? false
         reachedShelfEnd = raw["reachedShelfEnd"] as? Bool ?? false
+        hasAddTile = raw["hasAddTile"] as? Bool ?? false
         loading = raw["loading"] as? Bool ?? true
+        loadError = raw["loadError"] as? Bool ?? false
         emptyShelfEvidence = raw["emptyShelfEvidence"] as? Bool ?? false
         rawBookCount = max(0, raw["rawBookCount"] as? Int ?? 0)
+        pendingRowCount = max(0, raw["pendingRowCount"] as? Int ?? 0)
+        excludedRowCount = max(0, raw["excludedRowCount"] as? Int ?? 0)
         authRequired = raw["authRequired"] as? Bool ?? true
         authenticated = raw["authenticated"] as? Bool ?? false
         account = raw["account"] as? String
@@ -382,6 +450,7 @@ struct WeReadScanResult {
         // reader cards for a home/recommendation page, native code discards
         // them unless the reported URL is the exact trusted shelf URL.
         let rawBooks = isShelfPage ? (raw["books"] as? [[String: Any]] ?? []) : []
+        parsedBookCount = max(0, raw["parsedBookCount"] as? Int ?? rawBooks.count)
         books = rawBooks.compactMap { item in
             let reader = item["readerURL"] as? String ?? ""
             let title = item["title"] as? String ?? ""

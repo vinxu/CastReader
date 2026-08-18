@@ -3372,6 +3372,90 @@ final class LocalizationCatalogTests: XCTestCase {
         XCTAssertEqual(result.rawBookCount, 1)
     }
 
+    func testWeReadShelfSnapshotContractExcludedRowsDoNotVetoCompletion() {
+        func shelfScan(
+            pendingRows: Int = 0,
+            excludedRows: Int = 0,
+            loading: Bool = false,
+            loadError: Bool = false,
+            documentReady: Bool = true,
+            reachedShelfEnd: Bool = true,
+            hasAddTile: Bool = true,
+            parsedBookCount: Int? = nil,
+            bookCount: Int = 4
+        ) -> WeReadScanResult {
+            let books: [[String: Any]] = (0..<bookCount).map { index in
+                [
+                    "bookId": "book\(index)",
+                    "title": "书 \(index)",
+                    "readerURL": "https://weread.qq.com/web/reader/book\(index)",
+                ]
+            }
+            return WeReadScanResult([
+                "url": "https://weread.qq.com/web/shelf",
+                "isShelfPage": true,
+                "documentReady": documentReady,
+                "reachedShelfEnd": reachedShelfEnd,
+                "hasAddTile": hasAddTile,
+                "loading": loading,
+                "loadError": loadError,
+                "rawBookCount": bookCount + pendingRows + excludedRows,
+                "pendingRowCount": pendingRows,
+                "excludedRowCount": excludedRows,
+                "parsedBookCount": parsedBookCount ?? bookCount,
+                "authenticated": true,
+                "authRequired": false,
+                "books": books,
+            ])
+        }
+
+        // A shelf containing audio/video/banner tiles (excluded rows) must
+        // still complete — this was the permanent veto behind the field
+        // reports of "暂时没能同步微信读书书架，请重试".
+        XCTAssertTrue(WeReadShelfSnapshotContract.isStableEndPass(
+            shelfScan(excludedRows: 2), accumulatedUnchanged: true
+        ))
+        // Reader rows that have not hydrated yet keep blocking completion.
+        XCTAssertFalse(WeReadShelfSnapshotContract.isStableEndPass(
+            shelfScan(pendingRows: 1), accumulatedUnchanged: true
+        ))
+        // A native-side parse drop still blocks (page accepted more rows than
+        // native parsed).
+        XCTAssertFalse(WeReadShelfSnapshotContract.isStableEndPass(
+            shelfScan(parsedBookCount: 5), accumulatedUnchanged: true
+        ))
+        XCTAssertFalse(WeReadShelfSnapshotContract.isStableEndPass(
+            shelfScan(loadError: true), accumulatedUnchanged: true
+        ))
+        XCTAssertFalse(WeReadShelfSnapshotContract.isStableEndPass(
+            shelfScan(), accumulatedUnchanged: false
+        ))
+
+        // Without the add tile the physical end still completes after extra
+        // stable passes instead of stranding the user on markup drift.
+        XCTAssertEqual(
+            WeReadShelfSnapshotContract.requiredStablePasses(accumulatedIsEmpty: false, hasAddTile: true), 4
+        )
+        XCTAssertEqual(
+            WeReadShelfSnapshotContract.requiredStablePasses(accumulatedIsEmpty: false, hasAddTile: false), 8
+        )
+        XCTAssertEqual(
+            WeReadShelfSnapshotContract.requiredStablePasses(accumulatedIsEmpty: true, hasAddTile: true), 10
+        )
+
+        XCTAssertEqual(
+            WeReadShelfSnapshotContract.failureReason(lastScan: shelfScan(loadError: true)), "load_error"
+        )
+        XCTAssertEqual(
+            WeReadShelfSnapshotContract.failureReason(lastScan: shelfScan(pendingRows: 3)), "rows_pending"
+        )
+        XCTAssertEqual(
+            WeReadShelfSnapshotContract.failureReason(lastScan: nil), "scan_unavailable"
+        )
+        XCTAssertTrue(WeReadShelfSnapshotContract.isNetworkShapedFailure("load_error"))
+        XCTAssertFalse(WeReadShelfSnapshotContract.isNetworkShapedFailure("parse_mismatch"))
+    }
+
     func testWeReadBookEntryRecoveryRetriesCanonicalBeforeShelfScan() {
         let canonical = "https://weread.qq.com/web/reader/book123"
         let resume = "https://weread.qq.com/web/reader/book123?chapter=9"

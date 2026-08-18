@@ -655,9 +655,17 @@ enum WeReadWebScripts {
       const shelfLinks = shelfContainer ? Array.from(shelfContainer.querySelectorAll(
         ':scope > a.shelfBook[href]:not(.shelfBook_add):not(.shelfArchive):not(.shelfBook_placeholder)'
       )) : [];
+      // Row triage keeps the anti-truncation property without a permanent
+      // veto: a reader-linked row whose title has not hydrated yet is
+      // `pending` and blocks snapshot completion; a row that can never become
+      // a library book (audio/video/mp tiles link outside `/reader/`, banner
+      // rows, duplicate ids) is `excluded` and must not block the sync of the
+      // remaining real books.
+      let pendingRowCount = 0;
+      let excludedRowCount = 0;
       for (const link of shelfLinks) {
         const url = absolute(link.getAttribute('href'));
-        if (!readerURL(url)) continue;
+        if (!readerURL(url)) { excludedRowCount += 1; continue; }
         const card = link.closest('li,article,[class*=book],[class*=shelf],[class*=Book]') || link.parentElement || link;
         // The desktop shelf is a Vue 2 component.  Its rendered DOM exposes
         // title and cover, while author remains in the component's `book`
@@ -673,11 +681,13 @@ enum WeReadWebScripts {
         const usableImageAlt = /^(书籍封面|图书封面|封面|book\s*cover|cover)$/i.test(imageAlt) ? '' : imageAlt;
         const title = clean(bookData.title) || clean(titleNode && (titleNode.getAttribute('title') || titleNode.innerText)) ||
           clean(link.getAttribute('title')) || usableImageAlt || texts.find(t => t.length > 1 && t.length < 80) || clean(link.innerText);
-        if (!title || /^(登录|书架|微信读书|下一页|上一页|书籍封面|图书封面|封面|book\s*cover|cover)$/i.test(title)) continue;
+        if (!title) { pendingRowCount += 1; continue; }
+        if (/^(登录|书架|微信读书|下一页|上一页|书籍封面|图书封面|封面|book\s*cover|cover)$/i.test(title)) { excludedRowCount += 1; continue; }
         const match = url.match(/(?:bookId|bookId=|reader\/)([A-Za-z0-9_-]+)/i);
         const bookId = clean(bookData.bookId) || (match ? match[1] : '');
         const id = bookId || url;
-        if (seen.has(id)) continue; seen.add(id);
+        if (seen.has(id)) { excludedRowCount += 1; continue; }
+        seen.add(id);
         const authorNode = card.querySelector('[class*=author],[class*=Author]');
         const author = clean(bookData.author) || clean(authorNode && authorNode.innerText) || '';
         const rawProgress = bookData.readingProgress ?? bookData.progress ?? bookData.progressLabel;
@@ -741,15 +751,31 @@ enum WeReadWebScripts {
       const loading = Boolean(isShelfPage && shelfContainer && shelfContainer.querySelector('.shelfBook_loadingView'));
       const loadError = Boolean(isShelfPage && shelfContainer && shelfContainer.querySelector('.shelfBook_errorView'));
       // The official component renders the add tile only after hasMore=false
-      // and no loading error. Combined with physical end + stable passes this
-      // is the page's positive complete-snapshot evidence.
+      // and no loading error. It is the strongest complete-snapshot evidence,
+      // but markup drift must not strand users: native accepts a physical end
+      // without the add tile after extra stable passes.
       const addTile = isShelfPage && shelfContainer && shelfContainer.querySelector(':scope > a.shelfBook_add');
-      const emptyShelfEvidence = Boolean(addTile && books.length === 0 && !loading && !loadError);
-      const documentReady = document.readyState === 'complete';
+      const emptyShelfEvidence = Boolean(addTile && books.length === 0 && pendingRowCount === 0 && !loading && !loadError);
+      // Cover images may keep readyState away from 'complete' for minutes on a
+      // slow CDN; shelf-row hydration is tracked by pendingRowCount instead.
+      const documentReady = document.readyState !== 'loading';
+
+      // A failed shelf page owns its retry affordance. Click it (throttled)
+      // instead of waiting forever; this never navigates the document.
+      if (isShelfPage && loadError) {
+        const errorView = shelfContainer.querySelector('.shelfBook_errorView');
+        const now = Date.now();
+        const lastRetryAt = Number(window.__castreaderWeReadShelfRetryAt || 0);
+        if (errorView && now - lastRetryAt > 2500) {
+          window.__castreaderWeReadShelfRetryAt = now;
+          const control = errorView.querySelector('a,button,[role=button]') || errorView;
+          try { control.click(); } catch (_) {}
+        }
+      }
 
       // Advance only the real shelf's scroll owner. Native code accumulates
       // virtualised rows across passes and commits only after the end is stable.
-      if (isShelfPage && authenticated && scrollRoot && !reachedShelfEnd && !loading) {
+      if (isShelfPage && authenticated && scrollRoot && !reachedShelfEnd && !loading && !loadError) {
         // Keep substantial overlap between passes so a virtualised shelf row
         // cannot be skipped between two DOM observations.
         const distance = Math.max(160, Math.min(420, Math.round(rootHeight * 0.55)));
@@ -764,13 +790,18 @@ enum WeReadWebScripts {
         title: document.title,
         isShelfPage,
         documentReady,
-        reachedShelfEnd: Boolean(reachedShelfEnd && addTile && !loadError),
-        loading: Boolean(loading || loadError),
+        reachedShelfEnd: Boolean(reachedShelfEnd && !loadError),
+        hasAddTile: Boolean(addTile),
+        loading: Boolean(loading),
+        loadError: Boolean(loadError),
         emptyShelfEvidence,
-        // Native compares this candidate count with successfully parsed rows;
-        // a not-yet-hydrated row therefore blocks completion instead of being
-        // silently treated as absent.
+        // Diagnostics-only candidate count. Completion is gated on
+        // pendingRowCount (reader rows not hydrated yet) and the native/JS
+        // parsed-count cross-check, never on rows that can never be books.
         rawBookCount: shelfLinks.length,
+        pendingRowCount,
+        excludedRowCount,
+        parsedBookCount: books.length,
         authRequired: !authenticated,
         authenticated,
         books,

@@ -27,6 +27,10 @@ const libraryViewsSource = fs.readFileSync(
   path.join(root, 'CastReader/Views/WeRead/WeReadLibraryViews.swift'),
   'utf8',
 );
+const modelsSource = fs.readFileSync(
+  path.join(root, 'CastReader/Models/WeReadModels.swift'),
+  'utf8',
+);
 const constantsSource = fs.readFileSync(
   path.join(root, 'CastReader/Utils/Constants.swift'),
   'utf8',
@@ -1611,7 +1615,22 @@ assert.doesNotMatch(
   /authenticated[^;\n]*books\.length/,
   'reader/recommendation cards must never be treated as authentication evidence',
 );
-assert.match(libraryScan, /reachedShelfEnd: Boolean\(reachedShelfEnd && addTile && !loadError\)/);
+// Row triage: rows that can never become library books (audio/video tiles,
+// banners, duplicates) are excluded and must not veto the snapshot; reader
+// rows that have not hydrated yet stay pending and still block completion.
+assert.match(libraryScan, /if \(!readerURL\(url\)\) \{ excludedRowCount \+= 1; continue; \}/);
+assert.match(libraryScan, /if \(!title\) \{ pendingRowCount \+= 1; continue; \}/);
+assert.match(libraryScan, /if \(seen\.has\(id\)\) \{ excludedRowCount \+= 1; continue; \}/);
+assert.match(libraryScan, /reachedShelfEnd: Boolean\(reachedShelfEnd && !loadError\)/);
+assert.match(libraryScan, /hasAddTile: Boolean\(addTile\)/);
+assert.match(libraryScan, /pendingRowCount,\n\s*excludedRowCount,\n\s*parsedBookCount: books\.length/);
+// Cover images must not gate completion on slow CDNs; row hydration is
+// tracked by pendingRowCount instead of document.readyState === 'complete'.
+assert.match(libraryScan, /documentReady = document\.readyState !== 'loading'/);
+// A failed shelf load owns its retry affordance; clicking is throttled and
+// never navigates the document.
+assert.match(libraryScan, /__castreaderWeReadShelfRetryAt/);
+assert.match(libraryScan, /now - lastRetryAt > 2500/);
 assert.match(libraryScan, /rawBookCount: shelfLinks\.length/);
 assert.doesNotMatch(
   libraryScan,
@@ -1621,9 +1640,29 @@ assert.doesNotMatch(
 assert.match(libraryScan, /node = node\.parentElement/);
 assert.match(libraryViewsSource, /guard self\.isTrustedShelfResult\(scan\) else/);
 assert.match(
+  modelsSource,
+  /result\.pendingRowCount == 0[\s\S]*?result\.books\.count == result\.parsedBookCount/,
+  'unhydrated reader rows must block a snapshot; native parsing must keep pace with page-accepted rows',
+);
+assert.match(
+  modelsSource,
+  /hasAddTile \? 4 : 8/,
+  'a missing add tile widens the stable-pass requirement instead of stranding the sync',
+);
+assert.match(
   libraryViewsSource,
-  /result\.rawBookCount == result\.books\.count/,
-  'every direct shelf row must parse before a scan can be trusted',
+  /WeReadShelfSnapshotContract\.isStableEndPass\(/,
+  'the scan loop must use the extracted snapshot contract',
+);
+assert.match(
+  libraryViewsSource,
+  /hardBudget[\s\S]*?idleBudget/,
+  'the scan budget must be progress-adaptive, not a fixed cap',
+);
+assert.match(
+  libraryViewsSource,
+  /connectionAnalytics\.record\(\s*\.failed,\s*result: \.failed,\s*errorCode: "shelf_scan_\\\(reason\)"/,
+  'scan failures must reach analytics with a reason code',
 );
 assert.match(
   libraryViewsSource,
@@ -1639,6 +1678,11 @@ assert.match(
   libraryViewsSource,
   /values\["wr_vid"\] \?\? values\["wr_localvid"\][\s\S]*?values\["wr_skey"\]/,
   'native shelf persistence must require the signed-in vid + HttpOnly skey pair',
+);
+assert.doesNotMatch(
+  libraryViewsSource,
+  /skey:\\\(/,
+  'the session fingerprint must not hash the rotating skey; only the stable vid identifies the account',
 );
 assert.match(libraryViewsSource, /store\.mergeScrapedBooks/);
 assert.doesNotMatch(
