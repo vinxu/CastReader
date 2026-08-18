@@ -686,7 +686,7 @@ final class ExplainViewModel: ObservableObject {
                 )
                 VoiceSwitchStatusCenter.shared.finish(switchID)
                 self.activeVoiceSwitchID = nil
-            } catch is CancellationError {
+            } catch is CancellationError, TTSError.cancelled {
                 guard self.activeVoiceSwitchID == switchID,
                       self.audioSessionToken == session,
                       self.audio.isPlaybackSessionActive(session) else { return }
@@ -1683,7 +1683,7 @@ final class ExplainViewModel: ObservableObject {
             }
             guard contentGeneration == generation else { return }
             kindlePerfLog("prepare-enqueue ready idx=\(idx) totalMs=\(elapsedMs(since: startedAt)) segs=\(pb.segments.count) text=\(pb.text.count)")
-        } catch is CancellationError {
+        } catch is CancellationError, TTSError.cancelled {
             await MainActor.run {
                 guard self.contentGeneration == generation else { return }
                 self.isPreparingNext = false
@@ -1730,7 +1730,7 @@ final class ExplainViewModel: ObservableObject {
                     self.kindlePerfLog("kindleExplainBlockPrefetch ready reason=\(reason) idx=\(idx) segs=\(pb.segments.count) text=\(pb.text.count)")
                     self.fillRollingPrefetchWindow(reason: "ready-\(idx)")
                 }
-            } catch is CancellationError {
+            } catch is CancellationError, TTSError.cancelled {
                 await MainActor.run {
                     guard self.contentGeneration == generation else { return }
                     self.scheduledBackgroundBlocks.remove(idx)

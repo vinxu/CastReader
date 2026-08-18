@@ -1646,7 +1646,7 @@ final class ReadAloudViewModel: ObservableObject {
                     language: language,
                     serial: serial
                 )
-            } catch is CancellationError {
+            } catch is CancellationError, TTSError.cancelled {
                 guard self.liveWebCarryPrewarmIdentityIsCurrent(
                     paragraphIndex: paragraphIndex,
                     epoch: epoch,
