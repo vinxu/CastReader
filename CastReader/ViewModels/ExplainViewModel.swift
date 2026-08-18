@@ -1813,7 +1813,22 @@ final class ExplainViewModel: ObservableObject {
         if qIdx <= 0 {
             // 等质道 plan 返回 section0；plan 失败（planFailed）或失活则跳出，避免快道占位后死等挂起。
             // 失败时静默抛 CancellationError——错误/付费墙状态已由 runPlan 的 catch 设置，prepareAndEnqueue 不覆盖。
+            // 硬 deadline 兜底：任何失败路径漏设 planFailed 时，用户也绝不会
+            // 永久转圈——活性由结构保证，不依赖每条路径都记得收尾。
+            let section0Deadline = Date().addingTimeInterval(150)
             while section0 == nil, isActive, !planFailed {
+                if Date() >= section0Deadline {
+                    planFailed = true
+                    status = .error(AppLocalized("请求超时，请检查网络后重试"))
+                    stageText = AppLocalized("解读失败")
+                    endAnalyticsExplainSession(
+                        result: .failed,
+                        reason: "plan_failed",
+                        errorStage: "plan",
+                        errorCode: "section0_deadline"
+                    )
+                    throw CancellationError()
+                }
                 try await Task.sleep(nanoseconds: 200_000_000)
                 guard generation == contentGeneration else { throw CancellationError() }
             }

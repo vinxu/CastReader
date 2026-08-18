@@ -615,15 +615,26 @@ actor QuickReadService {
 
     // MARK: - 重试（网络波动 / 后端瞬时错误自愈，指数退避）
 
-    /// 对网络层错误 / 5xx / 429 / 408 / 瞬时 400 / 流式截断自动重试（最多 3 次，0.6→1.2→2.4s 退避）。
+    /// 对网络层错误 / 5xx / 429 / 408 / 瞬时 400 / 流式截断自动重试（0.6→1.2→2.4s 退避）。
     /// 让一次抖动不至于打断整条解读链路，用户无需手动 Retry。
-    private func withRetry<T>(_ operation: () async throws -> T) async throws -> T {
+    ///
+    /// `retryBudget`：重试的墙钟预算。慢失败（worker 跑完 LLM 才断流）每次
+    /// 就要几十秒，盲目重试会把一次确定性失败放大成几分钟的静默转圈——
+    /// 首次尝试已经烧掉预算时不再重试，让错误尽快到达用户。
+    private func withRetry<T>(
+        maxAttempts: Int = 3,
+        retryBudget: TimeInterval = .infinity,
+        _ operation: () async throws -> T
+    ) async throws -> T {
         var attempt = 0
+        let startedAt = Date()
         while true {
             do { return try await operation() }
             catch {
                 attempt += 1
-                guard attempt < 3, Self.isRetryable(error) else { throw error }
+                guard attempt < maxAttempts,
+                      Date().timeIntervalSince(startedAt) < retryBudget,
+                      Self.isRetryable(error) else { throw error }
                 let backoff = min(4.0, 0.6 * pow(2.0, Double(attempt - 1)))
                 try? await Task.sleep(nanoseconds: UInt64(backoff * 1_000_000_000))
             }
@@ -687,7 +698,10 @@ actor QuickReadService {
         let endpoint = try url(path: "/api/quickread/extract-plan", transport: transport)
         var observedJobID: String?
         let done = try await withAuthorization(transport: transport) { sessionToken in
-            try await self.withRetry {
+            // Plan 是链路里最贵的一跳：一次「慢失败」（worker 跑完 LLM 才断流）
+            // 就是 30-120 秒。最多再试一次，且首次已超 60s 就直接把错误交给
+            // 用户——活性优先于成功率（产品决策 2026-08-18）。
+            try await self.withRetry(maxAttempts: 2, retryBudget: 60) {
                 try await self.runExtractPlanOnce(
                     url: endpoint,
                     payload: payload,
