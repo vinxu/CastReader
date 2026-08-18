@@ -36,6 +36,10 @@ struct HistoryRecord: Identifiable, Codable, Equatable {
     var youtubeDurationMs: Int? = nil
     var youtubeProgressFraction: Double? = nil
     var youtubeResumeStartMs: Int? = nil
+    /// Own-content read-aloud resume position (paragraph index). Live-bridge
+    /// libraries (Kindle/WeRead/…) keep their own anchors and YouTube resumes
+    /// by time above, so both stay nil here.
+    var lastParagraphIndex: Int? = nil
 
     var sourceKind: ReadingSourceKind { ReadingSourceKind(rawValue: sourceKindRaw) ?? .text }
 
@@ -91,6 +95,7 @@ extension HistoryRecord {
         case youtubeDurationMs
         case youtubeProgressFraction
         case youtubeResumeStartMs
+        case lastParagraphIndex
     }
 
     init(from decoder: Decoder) throws {
@@ -145,6 +150,11 @@ extension HistoryRecord {
             forKey: .youtubeResumeStartMs
         )) ?? nil
         youtubeResumeStartMs = decodedResumeStart.flatMap { $0 >= 0 ? $0 : nil }
+        let decodedParagraph = (try? container.decodeIfPresent(
+            Int.self,
+            forKey: .lastParagraphIndex
+        )) ?? nil
+        lastParagraphIndex = decodedParagraph.flatMap { $0 >= 0 ? $0 : nil }
     }
 
     func encode(to encoder: Encoder) throws {
@@ -169,6 +179,7 @@ extension HistoryRecord {
         try container.encodeIfPresent(youtubeDurationMs, forKey: .youtubeDurationMs)
         try container.encodeIfPresent(youtubeProgressFraction, forKey: .youtubeProgressFraction)
         try container.encodeIfPresent(youtubeResumeStartMs, forKey: .youtubeResumeStartMs)
+        try container.encodeIfPresent(lastParagraphIndex, forKey: .lastParagraphIndex)
     }
 }
 
@@ -597,7 +608,8 @@ final class HistoryStore: ObservableObject {
             youtubeDurationMs: doc.youtubeTranscript?.metadata.durationMs
                 ?? existing?.youtubeDurationMs,
             youtubeProgressFraction: existing?.youtubeProgressFraction,
-            youtubeResumeStartMs: existing?.youtubeResumeStartMs
+            youtubeResumeStartMs: existing?.youtubeResumeStartMs,
+            lastParagraphIndex: existing?.lastParagraphIndex
         )
         rec.coverPath = rec.isRemoteReference || doc.sourceKind == .youtube
             ? nil
@@ -649,6 +661,30 @@ final class HistoryStore: ObservableObject {
         // index metadata; rebuilding the unchanged projection and reloading a
         // widget timeline every five seconds wastes foreground playback work.
         save(syncSystemContinue: false)
+    }
+
+    /// Sources whose read-aloud position lives in the History index. Live
+    /// bridges (Kindle/WeRead/Google/Kobo/O'Reilly) own their anchors, .web
+    /// pages can change between loads, and YouTube resumes by time.
+    static let resumableSourceKinds: Set<ReadingSourceKind> = [.text, .epub, .pdf, .docx, .photo]
+
+    /// Persist the read-aloud position so reopening from the library resumes
+    /// where the user left off instead of restarting at the top.
+    func updateReadingPosition(documentID: String, paragraphIndex: Int) {
+        guard paragraphIndex >= 0,
+              let index = records.firstIndex(where: { $0.id == documentID }),
+              Self.resumableSourceKinds.contains(records[index].sourceKind),
+              records[index].lastParagraphIndex != paragraphIndex else { return }
+        records[index].lastParagraphIndex = paragraphIndex
+        // Frequent playback checkpoint: metadata-only save, same as the
+        // YouTube summary above — no projection/widget-timeline rebuild.
+        save(syncSystemContinue: false)
+    }
+
+    func resumeParagraphIndex(for documentID: String) -> Int? {
+        guard let rec = records.first(where: { $0.id == documentID }),
+              Self.resumableSourceKinds.contains(rec.sourceKind) else { return nil }
+        return rec.lastParagraphIndex
     }
 
     /// Web/DOCX language is only known after DOM extraction. Persist the final

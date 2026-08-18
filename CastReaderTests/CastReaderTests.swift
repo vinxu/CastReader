@@ -152,6 +152,47 @@ class CastReaderTests: XCTestCase {
         XCTAssertNil(SystemContinueContract.record(in: records, itemID: "kindle"))
     }
 
+    func testHistoryRecordPersistsReadingPositionAcrossEncodeDecode() throws {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        var record = HistoryRecord(
+            id: "resume-doc",
+            title: "Imported PDF",
+            sourceKindRaw: ReadingSourceKind.pdf.rawValue,
+            sourceURL: nil,
+            language: "zh",
+            createdAt: now,
+            lastOpenedAt: now,
+            coverPath: nil
+        )
+        record.lastParagraphIndex = 12
+
+        let decoded = try JSONDecoder().decode(
+            HistoryRecord.self,
+            from: JSONEncoder().encode(record)
+        )
+        XCTAssertEqual(decoded.lastParagraphIndex, 12)
+
+        // Old-index records without the field and corrupt negatives stay nil.
+        var legacy = record
+        legacy.lastParagraphIndex = nil
+        let decodedLegacy = try JSONDecoder().decode(
+            HistoryRecord.self,
+            from: JSONEncoder().encode(legacy)
+        )
+        XCTAssertNil(decodedLegacy.lastParagraphIndex)
+
+        // Live-bridge and time-based sources never persist a paragraph resume.
+        for kind in [ReadingSourceKind.kindle, .weread, .googleBooks, .youtube, .web] {
+            XCTAssertFalse(
+                HistoryStore.resumableSourceKinds.contains(kind),
+                "\(kind) must keep its own resume mechanism"
+            )
+        }
+        for kind in [ReadingSourceKind.text, .epub, .pdf, .docx, .photo] {
+            XCTAssertTrue(HistoryStore.resumableSourceKinds.contains(kind))
+        }
+    }
+
     func testPausedCloudFeatureHidesRemoteHistoryFromAppAndSystemContinue() {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         let cloudRecord = HistoryRecord(

@@ -104,6 +104,9 @@ final class PlayerCoordinator: ObservableObject {
                 title: document.title,
                 coverURL: document.coverURL
             )
+            if let resumeIndex = HistoryStore.shared.resumeParagraphIndex(for: document.id) {
+                readVM.restoreReadingPosition(resumeIndex)
+            }
             session = Session(id: document.contentSessionKey,
                               document: document,
                               analyticsContext: analyticsContext,

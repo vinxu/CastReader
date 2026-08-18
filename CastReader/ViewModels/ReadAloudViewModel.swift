@@ -609,6 +609,9 @@ final class ReadAloudViewModel: ObservableObject {
     private var webLanguage: String? = nil
     private var deferredWebAutoplay = DeferredAutoplayGate()
     private var preferredLiveWebStartIndex: Int?
+    /// History-restored start position for own-content documents. Consumed by
+    /// the first `start()`; a manual paragraph tap (`jump`) simply ignores it.
+    private var pendingResumeParagraphIndex: Int?
     private struct PendingLiveWebResume {
         let anchor: WeReadPlaybackResumeAnchor
         let paragraphIndex: Int
@@ -1952,6 +1955,19 @@ final class ReadAloudViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] t in self?.onTick(t) }
             .store(in: &cancellables)
+        // Persist the read-aloud position for own-content documents so a
+        // closed session resumes instead of restarting. HistoryStore ignores
+        // non-resumable source kinds and unchanged values.
+        $currentParagraphIndex
+            .receive(on: RunLoop.main)
+            .sink { [weak self] index in
+                guard let self, index >= 0 else { return }
+                HistoryStore.shared.updateReadingPosition(
+                    documentID: self.document.id,
+                    paragraphIndex: index
+                )
+            }
+            .store(in: &cancellables)
         audio.$isPlaying
             .receive(on: RunLoop.main)
             .sink { [weak self] p in self?.handlePlaybackState(p) }
@@ -2068,10 +2084,19 @@ final class ReadAloudViewModel: ObservableObject {
         applySpeed()
         let preferred = preferredLiveWebStartIndex.flatMap { readableIndices.contains($0) ? $0 : nil }
         preferredLiveWebStartIndex = nil
+        let resume = pendingResumeParagraphIndex.flatMap { readableIndices.contains($0) ? $0 : nil }
+        pendingResumeParagraphIndex = nil
         generate(
-            preferred ?? readableIndices[0],
+            preferred ?? resume ?? readableIndices[0],
             allowAccessRefresh: allowAccessRefresh
         )
+    }
+
+    /// Seed the start position from the History index (own-content documents
+    /// reopened from the library). Only effective before the first playback.
+    func restoreReadingPosition(_ paragraphIndex: Int) {
+        guard currentParagraphIndex < 0, paragraphIndex >= 0 else { return }
+        pendingResumeParagraphIndex = paragraphIndex
     }
 
     func togglePlayPause() {
