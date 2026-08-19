@@ -644,7 +644,9 @@ actor QuickReadService {
     private static func isRetryable(_ error: Error) -> Bool {
         if error is URLError { return true }                        // 网络层（超时 / 断连 / DNS）
         if case QuickReadError.httpError(let code) = error {
-            return code >= 500 || code == 429 || code == 408 || code == 400   // 服务端临时 / 限流 / 网关瞬时
+            // 429 明确不重试：服务器在要求退避，亚秒级盲重试只会把限流窗口
+            // 越打越满（2026-08-19 实测：多路预取叠加重试 = 19 秒 17 连发）。
+            return code >= 500 || code == 408 || code == 400   // 服务端临时 / 网关瞬时
         }
         if case QuickReadError.decodeError = error { return true }   // 流式截断 / 部分响应
         if case QuickReadError.noBlock0 = error { return true }      // SSE 中途断、没拿到首块
