@@ -1,0 +1,159 @@
+--- /opt/castreader-quickread-cn/current/tools/extract-content.mjs.bak-orig	2026-08-18 12:31:49.422497735 +0800
++++ /opt/castreader-quickread-cn/current/tools/extract-content.mjs	2026-08-18 14:32:25.072554131 +0800
+@@ -1110,6 +1110,15 @@
+   return [...selected, ...imageMarks];
+ }
+ 
++// [DIAG] 临时诊断:mark 管线各阶段留痕(定位中国区场景化解读丢 mark)。验收后移除。
++function _diagMarks(tag, scene) {
++  try {
++    const ms = (scene && scene.marks) || [];
++    console.log(`  [diag-marks] ${tag} n=${ms.length} ` +
++      ms.map(m => `${m.action || m.style}:${String(m.text || '').length}`).join(','));
++  } catch {}
++}
++
+ function adaptBlock(b, idx, sourceText = '', shouldLimitMarks = true) {
+   const narration = String(b?.narration || '').trim();
+   if (!narration) return null;
+@@ -1196,6 +1205,12 @@
+   const mark = String(markText || '').toLocaleLowerCase('en-US');
+   const spoken = String(narration || '').toLocaleLowerCase('en-US');
+   if (!/[A-Za-z]/.test(mark)) return true;
++  // 跨语言解读(英文菜单/规格页 + 中文旁白):英文词根本不会出现在中文旁白里,
++  // 按词重合判「有没有讲到」会把每一条英文 mark 都误杀——这正是英文菜单在中国区
++  // 只剩一个价格圈的原因。旁白以 CJK 为主时无法用这种方式验证,放行。
++  const spokenLatin = (spoken.match(/[a-z0-9]+/g) || []).length;
++  const spokenCjk = (spoken.match(/[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/g) || []).length;
++  if (spokenCjk > 0 && spokenCjk >= spokenLatin) return true;
+   const stop = new Set(['the', 'and', 'that', 'this', 'with', 'from', 'into', 'your', 'their', 'there', 'than', 'when', 'what', 'which', 'while', 'have', 'has', 'was', 'were', 'are', 'for', 'not']);
+   const tokens = (mark.match(/[a-z0-9]+/g) || []).filter(token => token.length >= 3 && !stop.has(token));
+   if (!tokens.length) return true;
+@@ -1227,9 +1242,13 @@
+       style: mark.style === 'highlight' && text !== original ? 'underline' : mark.style,
+     });
+   }
+-  scene.marks = candidates
+-    .sort((a, b) => src.indexOf(a.text) - src.indexOf(b.text))
+-    .slice(0, 3);
++  // 编号是成组语义:整组保留(上限 6),其余样式再取前 3,避免「1、2」缺 3。
++  const numbers = candidates.filter(m => m.style === 'number').slice(0, 6);
++  const others = candidates.filter(m => m.style !== 'number')
++    .slice(0, Math.max(1, 3 - (numbers.length ? 1 : 0)));
++  const kept = [...numbers, ...others].sort((a, b) => src.indexOf(a.text) - src.indexOf(b.text));
++  let seq = 0;
++  scene.marks = kept.map(m => (m.style === 'number' ? { ...m, n: ++seq } : m));
+   return scene;
+ }
+ 
+@@ -1346,6 +1365,8 @@
+   return t;
+ }
+ 
++const CJK_ANCHOR_CHAR = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
++
+ function hasWholeMarkAnchor(sourceText, text) {
+   const src = String(sourceText || '');
+   const t = String(text || '');
+@@ -1354,8 +1375,14 @@
+   while (pos >= 0) {
+     const before = pos > 0 ? src[pos - 1] : '';
+     const after = pos + t.length < src.length ? src[pos + t.length] : '';
+-    const partialLeft = before && /[\p{L}\p{N}_$]/u.test(before) && /^[\p{L}\p{N}_$]/u.test(t);
+-    const partialRight = after && /[\p{L}\p{N}_]/u.test(after) && /[\p{L}\p{N}_]$/u.test(t);
++    // 中日韩没有分词空白,相邻字符照样是「字母」。英文那套「粘连=片段」的判定
++    // 搬到中文上会把合法短语误杀:源文「以及任命一个智能体担任统一调度者」里,
++    // 「任命一个…」因为前面挨着「及」就被判成部分匹配,整条 mark 被丢。
++    // 故只要边界任一侧是 CJK,就不施加这条要求。
++    const partialLeft = before && /[\p{L}\p{N}_$]/u.test(before) && /^[\p{L}\p{N}_$]/u.test(t)
++      && !(CJK_ANCHOR_CHAR.test(before) || CJK_ANCHOR_CHAR.test(t[0]));
++    const partialRight = after && /[\p{L}\p{N}_]/u.test(after) && /[\p{L}\p{N}_]$/u.test(t)
++      && !(CJK_ANCHOR_CHAR.test(after) || CJK_ANCHOR_CHAR.test(t[t.length - 1]));
+     const partialNumber = /\d$/.test(t) && /[\d,.]/.test(after);
+     const partialNumberLeft = /^\d/.test(t) && /[\d,.]/.test(before);
+     if (!partialLeft && !partialRight && !partialNumber && !partialNumberLeft) return true;
+@@ -1386,11 +1413,22 @@
+     const style = depth === 'overview' && mark.style === 'highlight' && text.length > 80 ? 'underline' : mark.style;
+     candidates.push({ mark: { ...mark, text, style }, idx, score: markCandidateScore(text, depth, contentType) });
+   }
+-  const selected = [];
++  // 编号 mark 是成组语义:一串「1、2、3」要么整组呈现,要么不呈现。此前它和
++  // 普通 mark 一起按分数/字符预算竞争,结果被腰斩成「1、2」缺 3,读者看到的是
++  // 坏掉的序列。故先整组落位(不受预算裁剪),其余样式再用剩下的名额竞争。
++  const numberGroup = candidates
++    .filter(c => c.mark.style === 'number')
++    .sort((a, b) => a.idx - b.idx)
++    .slice(0, 6)
++    .map(c => ({ ...c, score: 999 }));
++  const rest = candidates.filter(c => c.mark.style !== 'number');
++  const otherCap = numberGroup.length ? Math.max(1, maxMarks - numberGroup.length) : maxMarks;
++  const selected = [...numberGroup];
++  // 编号项短且成组,不占普通 mark 的字符预算——否则一串编号会把本段主旨句挤掉。
+   let used = 0;
+   let fallback = null;
+-  for (const c of candidates.sort((a, b) => b.score - a.score || a.idx - b.idx)) {
+-    if (selected.length >= maxMarks) break;
++  for (const c of rest.sort((a, b) => b.score - a.score || a.idx - b.idx)) {
++    if (selected.length - numberGroup.length >= otherCap) break;
+     const len = String(c.mark.text || '').length;
+     if (len > budget) {
+       if (!fallback || len < String(fallback.mark.text || '').length) fallback = c;
+@@ -1422,9 +1460,13 @@
+   if (!selected.length && fallback && String(fallback.mark.text || '').length <= quickReadMarkLimit(depth, contentType)) {
+     selected.push(fallback);
+   }
+-  selected
+-    .sort((a, b) => src.indexOf(a.mark.text) - src.indexOf(b.mark.text))
+-    .forEach(c => out.push(c.mark));
++  const ordered = selected.sort((a, b) => src.indexOf(a.mark.text) - src.indexOf(b.mark.text));
++  // 组内可能因去重/预算少了成员,按最终顺序重排 n,避免出现 1、3 这种断号。
++  let seq = 0;
++  for (const c of ordered) {
++    if (c.mark.style === 'number') c.mark = { ...c.mark, n: ++seq };
++    out.push(c.mark);
++  }
+   scene.marks = out;
+   return scene;
+ }
+@@ -1637,9 +1679,12 @@
+ 
+   const block0 = adaptBlock(parsed.block_0 || (Array.isArray(parsed.blocks) ? parsed.blocks[0] : null), 0, sceneTexts[0]?.text || '', !spec.content_type);
+   if (!block0) throw new Error('extractPlan produced no first block');
++  _diagMarks(`plan raw ct=${spec.content_type || 'none'}`, block0);
+   normalizeScenarioMarks(block0, sceneTexts[0]?.text || '', depth, spec.content_type || null);
++  _diagMarks('plan afterScenario', block0);
+   if (runtime.provider === 'deepseek' && !spec.content_type) {
+     normalizeDeepSeekGenericMarks(block0, sceneTexts[0]?.text || '');
++    _diagMarks('plan afterDeepSeekFix', block0);
+   }
+   const summary = String(parsed.summary || '').trim();
+   return { outline, block0, summary, sceneTexts, total: sceneTexts.length, meta, lang, depth, imagesById, sourceImage, model, llm_ms, usage, first_block_ms };
+@@ -1697,9 +1742,12 @@
+   }
+   const scene = adaptBlock(rawBlock, idx, blockText, !contentType);
+   if (!scene) throw new Error(`extractBlock(${idx}) produced no block`);
++  _diagMarks(`block${idx} raw ct=${contentType || 'none'}`, scene);
+   normalizeScenarioMarks(scene, blockText, depth, contentType);
++  _diagMarks(`block${idx} afterScenario`, scene);
+   if (runtime.provider === 'deepseek' && !contentType) {
+     normalizeDeepSeekGenericMarks(scene, blockText);
++    _diagMarks(`block${idx} afterDeepSeekFix`, scene);
+   }
+   if (imgMarks.length) {
+     scene.marks = [...scene.marks, ...imgMarks];
+@@ -2454,12 +2502,13 @@
+ DEEPSEEK PRO SPOKEN-DIGEST DISCIPLINE (MANDATORY):
+ - Treat the already-grouped SCENE as one idea, not as paragraphs to paraphrase one by one. First identify its single takeaway, then say that takeaway plus only the indispensable condition, contrast, number, or consequence. Never split source more finely merely to satisfy this narration limit.
+ - ${lengthGuide} The selected DEPTH still controls the task; these are anti-rambling targets, not quotas. Never add words to hit a target.
+-- A list, directory, chronology, appendix, or collection of unrelated links must NOT become an item-by-item recital. State its organizing point and at most one or two representative specifics unless the list itself is the core claim.
++- A list, directory, chronology, appendix, or collection of unrelated links must NOT become an item-by-item recital. State its organizing point and at most one or two representative specifics unless the list itself is the core claim. This governs the SPOKEN narration only — it is not a limit on marks; what you do point at is fixed by the mark rules below.
+ - Sound like direct speech to the listener. State the substance directly; do not report on the document with phrases such as "the author/article says, introduces, tracks, asks, or warns". Do not say "this scene/section/block discusses", announce your process, or use repetitive stage directions such as "here is", "now we get to", or "next we move to".
+ - Preserve exact numbers, negations, states, causes, conditions, ordered sequences, and which option owns which trait. For comparisons or multiple test cases, keep the cases separate, make the mapping explicit and compact, and never swap attributes or event orders. If an exact sequence is not necessary to the takeaway, omit it rather than reconstruct it from memory.
+ - The length target is a real ceiling, not permission to expand. At STANDARD depth, rewrite any draft longer than 100 English words or 180 Chinese characters; select the central claim instead of enumerating more details.
+ - Every sentence must add a new idea. Do not replay the running summary, restate the same conclusion, or end with a second summary of the scene.
+-- Choose 1-3 marks in source order. Each mark must be the shortest exact contiguous source phrase that still carries the discussed claim (never over 120 characters). Avoid generic anchors such as a bare "important", "purpose", or person/name when the load-bearing phrase is available.
++- Choose 1-3 marks in source order for ordinary prose, and up to 5 when the page is item-dense — a menu, price list, spec sheet, ingredient or step list, table of options — because there the items ARE the content, not filler around it: point at every item you actually mention, not only at a price or a heading. Each mark must be the shortest exact contiguous source phrase that still carries the discussed claim (never over 120 characters). Avoid generic anchors such as a bare "important", "purpose", or person/name when the load-bearing phrase is available.
++- EXCEPTION — parallel sets must be numbered, not collapsed: when this block walks through a set of parallel items the source lays out (steps, reasons, options, methods, conditions, a list), emit one "number" mark per item, "n" = its 1-based position in source order, "text" = that item's own verbatim phrase. Up to 5 marks total in that case. Marking only the sentence that introduces the set, or only one of its items, is wrong — the reader must see every item numbered while you walk through them.
+ - Every mark must correspond to an idea explicitly spoken in this block's narration. If using numbered marks, explicitly walk through those same numbered items in narration and in the same order.
+ - Silently verify these constraints, then output JSON only; never output the verification or reasoning.`;
+ }
