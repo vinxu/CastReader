@@ -1371,6 +1371,58 @@ enum KindleWebScripts {
     })();
     """
 
+
+    /// 在 document-start 注入：劫持 fetch/XHR，记录**书架相关请求**的在途数量。
+    ///
+    /// 这是判断「Amazon 是不是还在取下一批」的唯一确定信号。任何基于时间的
+    /// 观察窗都是猜测——猜短了截断慢网络用户，猜长了拖慢所有人；而自适应窗口
+    /// 有冷启动死锁（要调宽窗口得先量到一次补货，可第一次等待用的正是那个太
+    /// 短的窗口）。必须在页面任何代码之前安装，`inflight` 才可信。
+    static let shelfNetworkProbeBootstrap = """
+    (function() {
+      if (window.__crNet) return;
+      var st = { inflight: 0, total: 0, lastEndAt: 0 };
+      window.__crNet = st;
+      function isShelfRequest(u) {
+        try {
+          return /kindle-library|panels|collections|itemList|library|search/i.test(String(u || ''));
+        } catch (_) { return false; }
+      }
+      function start() { st.inflight++; st.total++; }
+      function end() { st.inflight = Math.max(0, st.inflight - 1); st.lastEndAt = Date.now(); }
+      try {
+        var of = window.fetch;
+        if (of) {
+          window.fetch = function() {
+            var u = arguments[0] && arguments[0].url ? arguments[0].url : arguments[0];
+            if (!isShelfRequest(u)) return of.apply(this, arguments);
+            start();
+            return of.apply(this, arguments).then(
+              function(r) { end(); return r; },
+              function(e) { end(); throw e; }
+            );
+          };
+        }
+      } catch (_) {}
+      try {
+        var oo = XMLHttpRequest.prototype.open;
+        var os = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.open = function(m, u) {
+          this.__crUrl = u;
+          return oo.apply(this, arguments);
+        };
+        XMLHttpRequest.prototype.send = function() {
+          var self = this;
+          if (isShelfRequest(self.__crUrl)) {
+            start();
+            self.addEventListener('loadend', end);
+          }
+          return os.apply(this, arguments);
+        };
+      } catch (_) {}
+    })();
+    """
+
     static let scrapeLibrary = """
     (function() {
       var kindleHosts = \(KindleStorefront.javaScriptHostArray);
@@ -1484,10 +1536,30 @@ enum KindleWebScripts {
         return false;
       }
       function shelfScrollState() {
+        // 容器一旦定位就不会变，但这里要 querySelectorAll('*') 扫全 DOM，
+        // 大书架下每轮要花几十毫秒。命中缓存且仍在文档里就直接复用。
+        try {
+          var cached = window.__crScrollEl;
+          if (cached && cached.isConnected) {
+            var cv = Math.max(0, Number(cached.clientHeight || 0));
+            var cx = Math.max(0, Number(cached.scrollHeight || 0));
+            var cm = Math.max(0, cx - cv);
+            var ct = cached === document.scrollingElement || cached === document.documentElement ||
+              cached === document.body
+                ? Math.max(Number(window.scrollY || 0), Number(cached.scrollTop || 0))
+                : Math.max(0, Number(cached.scrollTop || 0));
+            if (cm > 4) {
+              var cthr = Math.max(96, Math.floor(cv * 0.08));
+              var crem = Math.max(0, cm - ct);
+              return { atEnd: crem <= cthr };
+            }
+          }
+        } catch (_) {}
         var candidates = [document.scrollingElement, document.documentElement, document.body];
         try { candidates = candidates.concat(Array.from(document.querySelectorAll('*'))); } catch (_) {}
         var seen = [];
         var best = { top:0, max:0, remaining:0, viewport:0 };
+        var bestEl = null;
         candidates.filter(Boolean).forEach(function(el) {
           if (seen.indexOf(el) >= 0) return;
           seen.push(el);
@@ -1497,16 +1569,21 @@ enum KindleWebScripts {
             var max = Math.max(0, extent - viewport);
             var isRoot = el === document.scrollingElement ||
               el === document.documentElement || el === document.body;
-            if (!isRoot) {
-              var overflowY = String(getComputedStyle(el).overflowY || '').toLowerCase();
-              var isScrollableContainer = /^(?:auto|scroll|overlay)$/.test(overflowY) &&
-                viewport >= 48 && max > 4;
-              if (!isScrollableContainer) return;
-            }
+            // 容器识别必须和 scrollLibraryForward 用同一套规则，否则会出现
+            // 「滚的是 A、判定的是 B」：实测 Amazon 书架真正可滚的容器有 1706px
+            // 行程，却因为 overflowY 不匹配被筛掉，只剩一个 clientHeight=0 的
+            // 塌陷 body（max=49），导致 atScrollEnd 恒为 true。
+            // 有真实滚动行程就算候选。实测 Amazon 书架的主滚动容器 clientHeight
+            // 就是 0（行程 1706px），要求 viewport > 0 会把它筛掉，只剩下小容器。
+            if (!isRoot && max <= 4) return;
+            // 但「clientHeight=0 且行程很小」是塌陷元素（实测 body max=49），
+            // 它测不出真实滚动位置，不能拿来判定「到底了」。
+            if (viewport <= 0 && max <= 96) return;
             if (max < best.max) return;
             var top = isRoot
               ? Math.max(Number(window.scrollY || 0), Number(el.scrollTop || 0))
               : Math.max(0, Number(el.scrollTop || 0));
+            bestEl = el;
             best = {
               top:top,
               max:max,
@@ -1520,6 +1597,7 @@ enum KindleWebScripts {
         // final 96pt (or 8% of the viewport) as the end; Amazon lazy-loading
         // triggers before this boundary and the following stable-snapshot pass
         // still prevents premature completion.
+        try { if (bestEl) window.__crScrollEl = bestEl; } catch (_) {}
         var threshold = Math.max(96, Math.floor(best.viewport * 0.08));
         return {
           atEnd:best.max <= 4 || best.remaining <= threshold,
@@ -1645,21 +1723,32 @@ enum KindleWebScripts {
         }
       }
       function badTitle(raw) {
-        var v = String(raw || '').toLowerCase();
-        return /download|app store|kindle app|learn more|read on any device|help|support|settings|notebook|privacy|terms|descargar|tienda de aplicaciones|más información|ayuda|configuración|privacidad|términos|baixar|loja de aplicativos|saiba mais|ajuda|configurações|privacidade|termos|ダウンロード|アプリストア|詳細|ヘルプ|設定|プライバシー|規約|herunterladen|app-store|mehr erfahren|hilfe|einstellungen|datenschutz|bedingungen|télécharger|en savoir plus|aide|paramètres|confidentialité|conditions|scarica|ulteriori informazioni|aiuto|impostazioni|privacy|termini|meer informatie|lezen op elk apparaat|ondersteuning|instellingen|notitieboek|voorwaarden|डाउनलोड|ऐप स्टोर|और जानें|सहायता|सेटिंग|गोपनीयता|शर्तें|下载|应用商店|了解更多|任何设备|帮助|支持|设置|笔记/.test(v);
+        var v = String(raw || '').toLowerCase().trim();
+        // 通用单词：整条标题正好是它才算功能入口（《The Help》是书，不是帮助入口）。
+        if (/^(?:download|help|support|settings|notebook|privacy|terms|descargar|ayuda|soporte|configuración|cuaderno|privacidad|términos|baixar|ajuda|suporte|configurações|caderno|privacidade|termos|ダウンロード|詳細|ヘルプ|サポート|設定|ノートブック|プライバシー|規約|herunterladen|hilfe|einstellungen|notizbuch|datenschutz|bedingungen|télécharger|aide|assistance|paramètres|carnet|confidentialité|conditions|scarica|aiuto|impostazioni|taccuino|termini|downloaden|ondersteuning|instellingen|notitieboek|voorwaarden|डाउनलोड|सहायता|समर्थन|सेटिंग|नोटबुक|गोपनीयता|शर्तें|下载|帮助|支持|设置|笔记)$/.test(v)) return true;
+        // 完整营销短语：真书标题不会包含它们。
+        return /app store|kindle app|learn more|read on any device|tienda de aplicaciones|aplicación kindle|más información|leer en cualquier dispositivo|loja de aplicativos|aplicativo kindle|saiba mais|leia em qualquer dispositivo|アプリストア|kindleアプリ|どの端末でも読む|app-store|kindle-app|mehr erfahren|auf jedem gerät lesen|application kindle|en savoir plus|lire sur n’importe quel appareil|app kindle|ulteriori informazioni|leggi su qualsiasi dispositivo|meer informatie|lezen op elk apparaat|ऐप स्टोर|किंडल ऐप|और जानें|किसी भी डिवाइस पर पढ़ें|应用商店|了解更多|任何设备/.test(v);
       }
       function nearestCard(a) {
+        // a → card 的从属关系在 DOM 里不会变，但这个函数要向上遍历八层、
+        // 每层取一次 textContent。大书架下它被调用近千次，是抓取的主要开销，
+        // 所以结果直接缓存在元素上（页面重载即失效）。
+        try { if (a.__crCard) return a.__crCard; } catch (_) {}
+        function done(node) {
+          try { a.__crCard = node; } catch (_) {}
+          return node;
+        }
         var node = a;
         for (var depth = 0; node && depth < 8; depth++, node = node.parentElement) {
           var label = [node.getAttribute('role'), node.getAttribute('class'), node.getAttribute('data-asin'), node.getAttribute('aria-label')]
             .filter(Boolean).join(' ').toLowerCase();
+          if (node.getAttribute('data-asin')) return done(node);
           var t = text(node);
-          if (node.getAttribute('data-asin')) return node;
-          if (/listitem|book|library|cover|asin|title|item|card/.test(label) && t.length > 2 && node.querySelector('img')) return node;
-          if (node.tagName === 'LI' && t.length > 2) return node;
-          if (node.querySelector && node.querySelector('img') && t.length > 8 && depth >= 2) return node;
+          if (/listitem|book|library|cover|asin|title|item|card/.test(label) && t.length > 2 && node.querySelector('img')) return done(node);
+          if (node.tagName === 'LI' && t.length > 2) return done(node);
+          if (node.querySelector && node.querySelector('img') && t.length > 8 && depth >= 2) return done(node);
         }
-        return a.parentElement || a;
+        return done(a.parentElement || a);
       }
       function titleFrom(card, a, img) {
         var labelled = attr(card, 'aria-label') || attr(a, 'aria-label') || attr(img, 'alt') || '';
@@ -1776,16 +1865,44 @@ enum KindleWebScripts {
       var seen = {};
       var books = [];
       var candidates = candidateLinks();
+      // 同一张卡片会被 a[href] / [data-asin] / img 三条路径各收一次。此前重复项
+      // 要完整解析完才在 seen 里被丢掉——白花的恰恰是最贵的那段。
+      var __scanId = 'scan' + Date.now();
+      window.__crBookCache = window.__crBookCache || {};
+      var __cache = window.__crBookCache;
       candidates.forEach(function(a) {
-        var href = abs(attr(a, 'href'));
         var card = nearestCard(a);
+        if (card.__crScanId === __scanId) return;
+        card.__crScanId = __scanId;
+        var href = abs(attr(a, 'href'));
+        var asin = attr(card, 'data-asin') || attr(a, 'data-asin') || asinFrom(href);
+        // 这本书在之前的轮次已经解析过；分批加载时每轮只有新到的一批要真解析。
+        if (asin && __cache[asin]) {
+          var __hit = __cache[asin];
+          // 封面是懒加载的：首轮抓取时 img 常常还没出来，解析结果是空字符串。
+          // 缓存了空封面就会一直空下去（书能同步进来但全是无图占位），所以
+          // 命中缓存时若封面仍为空，就再解析一次补上。
+          if (!__hit.coverURL) {
+            try {
+              var __im = card.querySelector('img') || a.querySelector('img');
+              var __cv = attr(__im, 'src') || attr(__im, 'data-src') ||
+                attr(__im, 'srcset').split(' ')[0] || bgURL(card);
+              if (__cv) __hit.coverURL = abs(__cv);
+            } catch (_) {}
+          }
+          if (!seen[asin]) { seen[asin] = true; books.push(__hit); }
+          return;
+        }
         var img = card.querySelector('img') || a.querySelector('img');
-        var asin = attr(card, 'data-asin') || attr(a, 'data-asin') || asinFrom(href) || asinFrom(nodeSignature(card)) || asinFrom(text(card));
+        // nodeSignature 会拼接 6000 字符 outerHTML，只在前面都拿不到时才用。
+        if (!asin) asin = asinFrom(nodeSignature(card)) || asinFrom(text(card));
         var canonicalReader = asin ? readerURLForASIN(asin) : '';
         if (canonicalReader) href = canonicalReader;
         var title = titleFrom(card, a, img);
         if (!title || title.length < 2) return;
-        if (badTitle(title) || badTitle(text(a))) return;
+        // badTitle 只判标题本身：连锚点全文一起判的话，卡片里一个「下载」
+        // 按钮就足以吃掉整本书。
+        if (badTitle(title)) return;
         if (!asinFrom(asin) && !isReaderHref(href)) return;
         if (!isReaderHref(href)) return;
         var id = asin || href || title;
@@ -1793,7 +1910,7 @@ enum KindleWebScripts {
         seen[id] = true;
         var cover = attr(img, 'src') || attr(img, 'data-src') || attr(img, 'srcset').split(' ')[0] || bgURL(card);
         var language = languageFrom(card);
-        books.push({
+        var __book = {
           id: id,
           asin: asin,
           title: title,
@@ -1803,7 +1920,9 @@ enum KindleWebScripts {
           progressLabel: progressFrom(card),
           language: language,
           languageSource: language ? 'library-hint' : ''
-        });
+        };
+        books.push(__book);
+        if (asin) __cache[asin] = __book;
       });
       var authState = authenticationState();
       var signin = !!authState;
@@ -1832,6 +1951,8 @@ enum KindleWebScripts {
               pageReady: pageReady,
               shelfLoading: shelfLoading,
               atScrollEnd: scrollState.atEnd,
+              shelfRequestInFlight: !!(window.__crNet && window.__crNet.inflight > 0),
+              shelfRequestTotal: (window.__crNet && window.__crNet.total) || 0,
               snapshotKey: snapshotKey,
               isReaderPage: readerPage,
               account: accountInfo(),
@@ -1839,7 +1960,7 @@ enum KindleWebScripts {
               userAgent: navigator.userAgent || '',
               title: document.title || '',
               count: books.length,
-        books: books.slice(0, 120)
+        books: books.slice(0, 2000)
       });
     })();
     """

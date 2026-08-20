@@ -461,6 +461,15 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         let config = WKWebViewConfiguration()
         config.websiteDataStore = CommercialWebSession.websiteDataStore
         config.defaultWebpagePreferences.allowsContentJavaScript = true
+        // 必须在页面任何脚本之前安装，才能拦到 Amazon 取下一批书的请求；
+        // 「还有请求在途」是判断书架有没有扫完的唯一确定信号。
+        config.userContentController.addUserScript(
+            WKUserScript(
+                source: KindleWebScripts.shelfNetworkProbeBootstrap,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: false
+            )
+        )
         webView = WKWebView(frame: .zero, configuration: config)
         connectionAnalytics = AnalyticsLibraryConnectionRecorder(
             session: analyticsSession,
@@ -713,8 +722,13 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         do {
             statusText = AppLocalized("正在扫描 Kindle 书架…")
             var byID: [String: KindleBook] = [:]
-            let maxPasses = lightPass ? 2 : 12
+            let maxPasses = lightPass ? 2 : KindleShelfScanPolicy.maxPasses
             var idlePasses = 0
+            var lastNewBookAt = Date()
+            // 观察窗从「刚滚到底」起算：Amazon 是到底之后才去请求下一批的。
+            var lastReachedEndAt = Date()
+            var wasAtScrollEnd = false
+            var observedRestock: TimeInterval = 0
             var sawAuthRequired = false
             var sawReaderPage = false
             var sawLibrarySignals = false
@@ -727,7 +741,7 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             var lastPayload: KindleScrapeResult?
             var accountInfo: KindleAccountInfo?
 
-            for pass in 0..<maxPasses {
+            passLoop: for pass in 0..<maxPasses {
                 let payload = try await scrapeCurrentViewport()
                 lastPayload = payload
                 guard !Task.isCancelled,
@@ -742,7 +756,7 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                         expectedStorefrontID: store.boundStorefrontID
                     )
                 KindleRunLog.write(
-                    "KINDLE shelf sync pass=\(pass) storefront=\(expectedStorefrontID) landing=\(landing) books=\(payload.books.count) auth=\(payload.authRequired == true ? "Y" : "N") authState=\(payload.authState ?? "none") reader=\(payload.isReaderPage == true ? "Y" : "N") signals=\(payload.hasReaderSignals == true ? "Y" : "N") empty=\(payload.hasEmptyShelfSignal == true ? "Y" : "N") loading=\(payload.shelfLoading == true ? "Y" : "N") end=\(payload.atScrollEnd == true ? "Y" : "N")"
+                    "KINDLE shelf sync pass=\(pass) storefront=\(expectedStorefrontID) landing=\(landing) books=\(byID.count) scraped=\(payload.books.count) idle=\(idlePasses) sinceNew=\(String(format: "%.1f", Date().timeIntervalSince(lastNewBookAt)))s auth=\(payload.authRequired == true ? "Y" : "N") authState=\(payload.authState ?? "none") reader=\(payload.isReaderPage == true ? "Y" : "N") signals=\(payload.hasReaderSignals == true ? "Y" : "N") empty=\(payload.hasEmptyShelfSignal == true ? "Y" : "N") loading=\(payload.shelfLoading == true ? "Y" : "N") end=\(payload.atScrollEnd == true ? "Y" : "N")"
                 )
                 sawAuthRequired = sawAuthRequired || payload.authRequired == true
                 if let observedStorefrontID = KindleStorefront.storefront(
@@ -787,7 +801,14 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                 if byID.count == before {
                     idlePasses += 1
                 } else {
+                    // 从「滚到底」到「拿到新书」就是 Amazon 这一批的真实补货耗时，
+                    // 用它把观察窗调到与当前网络相称。
+                    if wasAtScrollEnd {
+                        let restock = Date().timeIntervalSince(lastReachedEndAt)
+                        if restock > 0 { observedRestock = max(observedRestock, restock) }
+                    }
                     idlePasses = 0
+                    lastNewBookAt = Date()
                 }
                 if payload.authRequired == true {
                     statusText = AppLocalized("请登录 Amazon Kindle，然后点同步。")
@@ -799,26 +820,51 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                 } else {
                     statusText = String(format: AppLocalized("已找到 %d 本 Kindle 书…"), byID.count)
                 }
+                // 空书架有自己的证据链（连续稳定的空态文案），与补货观察窗无关。
                 let structurallyComplete = isExactBoundLibrary
                     && payload.pageReady == true
                     && payload.shelfLoading != true
                     && payload.atScrollEnd == true
                     && stableSnapshotPasses >= 1
-                if !byID.isEmpty,
-                   pass >= 1,
-                   idlePasses >= 1,
-                   structurallyComplete {
-                    completedShelfScan = true
-                    break
-                }
                 if byID.isEmpty,
                    stableEmptyEvidencePasses >= 2,
                    structurallyComplete {
                     completedShelfScan = true
-                    break
+                    break passLoop
                 }
-                try await scrollLibraryForward()
-                try await Task.sleep(nanoseconds: 650_000_000)
+                if payload.atScrollEnd == true, !wasAtScrollEnd {
+                    lastReachedEndAt = Date()
+                }
+                wasAtScrollEnd = payload.atScrollEnd == true
+                let decision = KindleShelfScanPolicy.decide(
+                    KindleShelfScanPolicy.Input(
+                        pass: pass,
+                        bookCount: byID.count,
+                        idlePasses: idlePasses,
+                        stableSnapshotPasses: stableSnapshotPasses,
+                        secondsSinceLastNewBook: Date().timeIntervalSince(lastNewBookAt),
+                        secondsSinceReachedEnd: Date().timeIntervalSince(lastReachedEndAt),
+                        observedRestock: observedRestock,
+                        shelfRequestInFlight: payload.shelfRequestInFlight == true,
+                        shelfRequestTotal: payload.shelfRequestTotal ?? 0,
+                        atScrollEnd: payload.atScrollEnd == true,
+                        shelfLoading: payload.shelfLoading == true,
+                        pageReady: payload.pageReady == true,
+                        isExactBoundLibrary: isExactBoundLibrary
+                    )
+                )
+                switch decision {
+                case .scanComplete:
+                    completedShelfScan = true
+                    break passLoop
+                case .exhausted:
+                    break passLoop
+                case .keepScrolling(let waitSeconds):
+                    try await scrollLibraryForward()
+                    try await Task.sleep(
+                        nanoseconds: UInt64(waitSeconds * 1_000_000_000)
+                    )
+                }
                 guard !Task.isCancelled,
                       store.boundStorefrontID == expectedStorefrontID,
                       expectedOnboardingAttemptID.map({ $0 == onboardingAttemptID }) ?? true else {
@@ -1056,6 +1102,8 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             pageReady: payload.pageReady,
             shelfLoading: payload.shelfLoading,
             atScrollEnd: payload.atScrollEnd,
+            shelfRequestInFlight: payload.shelfRequestInFlight,
+            shelfRequestTotal: payload.shelfRequestTotal,
             snapshotKey: payload.snapshotKey,
             isReaderPage: payload.isReaderPage,
             account: payload.account,
@@ -1109,11 +1157,15 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             } catch (_) { return false; }
           }).concat(roots);
           all.sort(function(a,b){ return ((b.scrollHeight||0)-(b.clientHeight||0))-((a.scrollHeight||0)-(a.clientHeight||0)); });
-          var delta = Math.max(520, Math.floor((window.innerHeight || 700) * 0.82));
+          // 一次滚到已渲染内容的底部。滚动的唯一目的是让 Amazon 去请求下一批，
+          // 逐屏挪只会让一批 50 本的书架要滚 8 次；正文抓取本来就是整个 DOM，
+          // 不会因为跳过中间位置而漏书。
           for (var i=0; i<Math.min(8, all.length); i++) {
-            try { all[i].scrollTop = (all[i].scrollTop || 0) + delta; } catch(e) {}
+            try {
+              all[i].scrollTop = Math.max(0, (all[i].scrollHeight || 0) - (all[i].clientHeight || 0));
+            } catch(e) {}
           }
-          try { window.scrollBy(0, delta); } catch(e) {}
+          try { window.scrollTo(0, Math.max(0, (document.body.scrollHeight || 0))); } catch(e) {}
           return true;
         })();
         """)
@@ -1152,6 +1204,8 @@ private struct KindleScrapePayload: Decodable {
     let pageReady: Bool?
     let shelfLoading: Bool?
     let atScrollEnd: Bool?
+    let shelfRequestInFlight: Bool?
+    let shelfRequestTotal: Int?
     let snapshotKey: String?
     let isReaderPage: Bool?
     let account: KindleAccountInfo?
@@ -1167,6 +1221,9 @@ private struct KindleScrapeResult {
     let pageReady: Bool?
     let shelfLoading: Bool?
     let atScrollEnd: Bool?
+    /// Amazon 是否还有取书架数据的请求在途（document-start 探针提供）。
+    let shelfRequestInFlight: Bool?
+    let shelfRequestTotal: Int?
     let snapshotKey: String?
     let isReaderPage: Bool?
     let account: KindleAccountInfo?

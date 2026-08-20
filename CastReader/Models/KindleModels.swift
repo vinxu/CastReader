@@ -971,31 +971,43 @@ struct KindleSyncDialogEvent: Equatable {
 }
 
 enum KindleBookValidator {
-    private static let blockedTitlePhrases = [
-        "download", "app store", "kindle app", "learn more", "read on any device",
-        "help", "support", "settings", "notebook", "privacy", "terms",
-        "descargar", "tienda de aplicaciones", "aplicación kindle", "más información",
-        "leer en cualquier dispositivo", "ayuda", "soporte", "configuración", "cuaderno",
+    /// 通用单词：**整条标题正好是它**才算功能入口卡片。
+    /// 用子串匹配会把《The Help》《Life Support》《Terms of Endearment》
+    /// 一起误杀——书架上真有这些书。
+    private static let blockedTitleWords: Set<String> = [
+        "download", "help", "support", "settings", "notebook", "privacy", "terms",
+        "descargar", "ayuda", "soporte", "configuración", "cuaderno",
         "privacidad", "términos",
-        "baixar", "loja de aplicativos", "aplicativo kindle", "saiba mais",
-        "leia em qualquer dispositivo", "ajuda", "suporte", "configurações", "caderno",
+        "baixar", "ajuda", "suporte", "configurações", "caderno",
         "privacidade", "termos",
-        "ダウンロード", "アプリストア", "kindleアプリ", "詳細", "どの端末でも読む",
-        "ヘルプ", "サポート", "設定", "ノートブック", "プライバシー", "規約",
-        "herunterladen", "app-store", "kindle-app", "mehr erfahren",
-        "auf jedem gerät lesen", "hilfe", "einstellungen", "notizbuch",
+        "ダウンロード", "詳細", "ヘルプ", "サポート", "設定", "ノートブック",
+        "プライバシー", "規約",
+        "herunterladen", "hilfe", "einstellungen", "notizbuch",
         "datenschutz", "bedingungen",
-        "télécharger", "application kindle", "en savoir plus",
-        "lire sur n’importe quel appareil", "aide", "assistance", "paramètres",
-        "carnet", "confidentialité", "conditions",
-        "scarica", "app kindle", "ulteriori informazioni",
-        "leggi su qualsiasi dispositivo", "aiuto", "impostazioni", "taccuino",
-        "termini",
-        "downloaden", "kindle-app", "meer informatie", "lezen op elk apparaat",
-        "ondersteuning", "instellingen", "notitieboek", "voorwaarden",
-        "डाउनलोड", "ऐप स्टोर", "किंडल ऐप", "और जानें", "किसी भी डिवाइस पर पढ़ें",
-        "सहायता", "समर्थन", "सेटिंग", "नोटबुक", "गोपनीयता", "शर्तें",
-        "下载", "应用商店", "了解更多", "任何设备", "帮助", "支持", "设置", "笔记"
+        "télécharger", "aide", "assistance", "paramètres", "carnet",
+        "confidentialité", "conditions",
+        "scarica", "aiuto", "impostazioni", "taccuino", "termini",
+        "downloaden", "ondersteuning", "instellingen", "notitieboek", "voorwaarden",
+        "डाउनलोड", "सहायता", "समर्थन", "सेटिंग", "नोटबुक", "गोपनीयता", "शर्तें",
+        "下载", "帮助", "支持", "设置", "笔记"
+    ]
+
+    /// 完整营销短语：真书标题不会包含它们，子串匹配是安全的。
+    /// Amazon 的推广卡片有时**带 ASIN**，所以这一层不能因为有 ASIN 就跳过。
+    private static let blockedTitlePhrases = [
+        "app store", "kindle app", "learn more", "read on any device",
+        "tienda de aplicaciones", "aplicación kindle", "más información",
+        "leer en cualquier dispositivo",
+        "loja de aplicativos", "aplicativo kindle", "saiba mais",
+        "leia em qualquer dispositivo",
+        "アプリストア", "kindleアプリ", "どの端末でも読む",
+        "app-store", "kindle-app", "mehr erfahren", "auf jedem gerät lesen",
+        "application kindle", "en savoir plus",
+        "lire sur n’importe quel appareil",
+        "app kindle", "ulteriori informazioni", "leggi su qualsiasi dispositivo",
+        "meer informatie", "lezen op elk apparaat",
+        "ऐप स्टोर", "किंडल ऐप", "और जानें", "किसी भी डिवाइस पर पढ़ें",
+        "应用商店", "了解更多", "任何设备"
     ]
 
     private static let blockedURLPhrases = [
@@ -1006,11 +1018,6 @@ enum KindleBookValidator {
     static func isLikelyLibraryBook(_ book: KindleBook) -> Bool {
         let title = book.title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard title.count >= 2 else { return false }
-
-        let lowerTitle = title.lowercased()
-        if blockedTitlePhrases.contains(where: { lowerTitle.contains($0) }) {
-            return false
-        }
 
         // A valid ASIN is not proof that the surrounding URL came from Kindle.
         // Preserve legacy ASIN-only records, but reject any absolute URL whose
@@ -1037,7 +1044,13 @@ enum KindleBookValidator {
 
         guard hasASIN || isReaderPath else { return false }
 
-        if !hasASIN && blockedURLPhrases.contains(where: { lowerURL.contains($0) }) {
+        let lowerTitle = title.lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if blockedTitleWords.contains(lowerTitle) { return false }
+        if blockedTitlePhrases.contains(where: { lowerTitle.contains($0) }) {
+            return false
+        }
+        if !hasASIN, blockedURLPhrases.contains(where: { lowerURL.contains($0) }) {
             return false
         }
         return true

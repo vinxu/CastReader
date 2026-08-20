@@ -167,8 +167,12 @@ final class KindleLibraryRecoveryService {
             }
 
             var idlePasses = 0
+            var lastNewBookAt = Date()
+            var lastReachedEndAt = Date()
+            var wasAtScrollEnd = false
+            var observedRestock: TimeInterval = 0
             onProgress(AppLocalized("正在同步 Kindle 书架…"))
-            for pass in 0..<12 {
+            for pass in 0..<KindleShelfScanPolicy.maxPasses {
                 guard !Task.isCancelled,
                       AccountContentIsolation.isCurrent(accountBoundaryToken) else {
                     return .notFound
@@ -195,14 +199,49 @@ final class KindleLibraryRecoveryService {
                     $0.book(storefrontID: ingressStorefrontID)
                 })
                 let uniqueCount = Set(recoveredBooks.map(\.id)).count
-                idlePasses = uniqueCount == before ? idlePasses + 1 : 0
+                if uniqueCount == before {
+                    idlePasses += 1
+                } else {
+                    if wasAtScrollEnd {
+                        let restock = Date().timeIntervalSince(lastReachedEndAt)
+                        if restock > 0 { observedRestock = max(observedRestock, restock) }
+                    }
+                    idlePasses = 0
+                    lastNewBookAt = Date()
+                }
                 let matched = matchingBook(book, in: recoveredBooks) != nil
                 KindleRunLog.write("KINDLE library auto-recovery pass=\(pass) rows=\(payload.books?.count ?? 0) unique=\(uniqueCount) matched=\(matched ? "Y" : "N") auth=\(authRequired ? "Y" : "N")")
                 // Recovery is deliberately two-phase: finish syncing the shelf first,
                 // then resolve and open the target book from that completed snapshot.
-                if uniqueCount > 0 && pass >= 2 && idlePasses >= 2 { break }
-                try await scrollLibraryForward(in: webView)
-                try? await Task.sleep(nanoseconds: 650_000_000)
+                // 这里提前收工的后果是把「还没同步到的书」报成「书已失效」，
+                // 所以判据必须和手动同步完全一致。
+                if payload.atScrollEnd == true, !wasAtScrollEnd {
+                    lastReachedEndAt = Date()
+                }
+                wasAtScrollEnd = payload.atScrollEnd == true
+                let decision = KindleShelfScanPolicy.decide(
+                    KindleShelfScanPolicy.Input(
+                        pass: pass,
+                        bookCount: uniqueCount,
+                        idlePasses: idlePasses,
+                        // 恢复扫描的 payload 不解 snapshotKey；idlePasses 是更严的
+                        // 近似（收工另外要求 idlePasses >= 3，已蕴含这一条）。
+                        stableSnapshotPasses: idlePasses,
+                        secondsSinceLastNewBook: Date().timeIntervalSince(lastNewBookAt),
+                        secondsSinceReachedEnd: Date().timeIntervalSince(lastReachedEndAt),
+                        observedRestock: observedRestock,
+                        atScrollEnd: payload.atScrollEnd == true,
+                        shelfLoading: payload.shelfLoading == true,
+                        pageReady: payload.pageReady == true,
+                        isExactBoundLibrary: payload.landing == .library
+                    )
+                )
+                if case .keepScrolling(let waitSeconds) = decision {
+                    try await scrollLibraryForward(in: webView)
+                    try? await Task.sleep(nanoseconds: UInt64(waitSeconds * 1_000_000_000))
+                } else {
+                    break
+                }
             }
 
             guard !authRequired else { return .signInRequired }
@@ -267,6 +306,9 @@ final class KindleLibraryRecoveryService {
             books: books,
             authRequired: object["authRequired"] as? Bool,
             hasReaderSignals: object["hasReaderSignals"] as? Bool,
+            atScrollEnd: object["atScrollEnd"] as? Bool,
+            shelfLoading: object["shelfLoading"] as? Bool,
+            pageReady: object["pageReady"] as? Bool,
             userAgent: Self.string(object["userAgent"]),
             storefrontID: actualStorefrontID == expectedStorefront.id ? actualStorefrontID : nil,
             landing: landing
@@ -288,11 +330,12 @@ final class KindleLibraryRecoveryService {
         (function() {
           var all = Array.from(document.querySelectorAll('*')).concat([document.scrollingElement, document.body, document.documentElement]).filter(Boolean);
           all.sort(function(a,b){ return ((b.scrollHeight||0)-(b.clientHeight||0))-((a.scrollHeight||0)-(a.clientHeight||0)); });
-          var delta = Math.max(520, Math.floor((window.innerHeight || 700) * 0.82));
           for (var i=0; i<Math.min(8, all.length); i++) {
-            try { all[i].scrollTop = (all[i].scrollTop || 0) + delta; } catch(e) {}
+            try {
+              all[i].scrollTop = Math.max(0, (all[i].scrollHeight || 0) - (all[i].clientHeight || 0));
+            } catch(e) {}
           }
-          try { window.scrollBy(0, delta); } catch(e) {}
+          try { window.scrollTo(0, Math.max(0, (document.body.scrollHeight || 0))); } catch(e) {}
           return true;
         })();
         """, in: webView)
@@ -706,6 +749,9 @@ private struct RecoveryPayload {
     let books: [RecoveryScrapedBook]?
     let authRequired: Bool?
     let hasReaderSignals: Bool?
+    let atScrollEnd: Bool?
+    let shelfLoading: Bool?
+    let pageReady: Bool?
     let userAgent: String?
     let storefrontID: String?
     let landing: KindleLibraryRecoveryService.LandingKind
