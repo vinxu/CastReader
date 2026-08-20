@@ -5460,6 +5460,18 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         } catch {
             statusText = error.localizedDescription
             KindleRunLog.write("KINDLE page turn dispatch-only error \(direction.logName) \(error.localizedDescription)")
+            // 翻页失败时抓一次现场：hasNext=0 / pagination-component-unavailable 只
+            // 说明「按现有规则找不到」，不说明页面变成了什么样。每次会话只抓一次。
+            if !Self.didCapturePageTurnForensics {
+                Self.didCapturePageTurnForensics = true
+                Task { @MainActor in
+                    if let dump = try? await self.evaluate(
+                        KindleWebScripts.readerPageTurnForensics
+                    ) {
+                        KindleRunLog.write("KINDLE_TURN_FORENSICS \(dump)")
+                    }
+                }
+            }
             #if DEBUG
             NSLog("CRDBG KINDLE page turn dispatch-only %@ error %@", direction.logName, error.localizedDescription)
             #endif
@@ -13068,6 +13080,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let height = viewportHeight ?? 690
         return max(8, min(18, height * 0.018))
     }
+
+    /// 翻页取证每个进程只抓一次，避免连续失败时刷屏。
+    private static var didCapturePageTurnForensics = false
 
     private func evaluateJSON(_ script: String) async throws -> [String: Any] {
         let result = try await evaluate(script)

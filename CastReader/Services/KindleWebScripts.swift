@@ -833,6 +833,62 @@ enum KindleWebScripts {
       }
     """
 
+
+    /// 翻页失败时的现场取证：把 Amazon 阅读页上所有**可能是翻页控件**的元素
+    /// 连同它们的真实属性 dump 出来。
+    ///
+    /// `hasNext=0` 与 `pagination-component-unavailable` 只说明「按现有规则找不到」，
+    /// 却不告诉我们页面究竟变成了什么样。没有这份现场，改选择器就是猜。
+    static let readerPageTurnForensics = """
+    (function() {
+      function txt(el) {
+        try { return String(el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 40); }
+        catch (_) { return ''; }
+      }
+      function attrs(el) {
+        var out = [];
+        try {
+          ['aria-label','title','data-testid','data-action','role','id','class','dir'].forEach(function(k) {
+            var v = el.getAttribute && el.getAttribute(k);
+            if (v) out.push(k + '=' + String(v).slice(0, 60));
+          });
+        } catch (_) {}
+        return out.join(' ');
+      }
+      function box(el) {
+        try {
+          var r = el.getBoundingClientRect();
+          return Math.round(r.x) + ',' + Math.round(r.y) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height);
+        } catch (_) { return '?'; }
+      }
+      var sel = 'button,[role="button"],[role="option"],[role="menuitem"],ion-button,' +
+        '[data-testid],[data-action],[aria-label],[title],a[href="#"]';
+      var rows = [];
+      try {
+        Array.from(document.querySelectorAll(sel)).forEach(function(el) {
+          try {
+            var r = el.getBoundingClientRect();
+            if (r.width < 8 || r.height < 8) return;
+            var st = getComputedStyle(el);
+            if (st.display === 'none' || st.visibility === 'hidden') return;
+            rows.push('<' + el.tagName.toLowerCase() + '> [' + box(el) + '] ' + attrs(el) + ' | ' + txt(el));
+          } catch (_) {}
+        });
+      } catch (_) {}
+      var frames = 0;
+      try { frames = document.querySelectorAll('iframe').length; } catch (_) {}
+      return JSON.stringify({
+        url: location.href,
+        dir: (document.documentElement && document.documentElement.getAttribute('dir')) || '',
+        bodyDir: (document.body && getComputedStyle(document.body).direction) || '',
+        writingMode: (document.body && getComputedStyle(document.body).writingMode) || '',
+        iframes: frames,
+        viewport: (window.innerWidth || 0) + 'x' + (window.innerHeight || 0),
+        candidates: rows.slice(0, 40)
+      });
+    })();
+    """
+
     static let readerLayoutProbe = """
     (function() {
       \(uiSemanticHelpers)
@@ -4652,12 +4708,32 @@ enum KindleWebScripts {
               return false;
             }
           }
+          // 含翻页控件的容器绝不能整个隐藏。Amazon 把返回按钮、进度条和翻页按钮
+          // 放在同一个 toolbar 里，隐藏返回按钮时 chromeTarget 会向上选中那个容器，
+          // 翻页控件被连坐 display:none——它自己的 opacity:0/visibility:visible 保护
+          // 在父容器 display:none 面前无效，于是 crKindleUIFind 找不到任何控件
+          // （hasNext=0），React 分页组件也不可达（pagination-component-unavailable）。
+          function hasPageTurnControl(el) {
+            try {
+              if (!el || !el.querySelector) return false;
+              if (el.querySelector('[data-cr-kindle-page-turn-control="1"],#kr-chevron-left,#kr-chevron-right,button[aria-label="Previous page"],button[aria-label="Next page"],button[title="Previous page"],button[title="Next page"]')) {
+                return true;
+              }
+              return Array.from(el.querySelectorAll('button,[role="button"],ion-button')).some(function(b) {
+                return crKindleUISemanticScore(b, 'previous') >= 45 ||
+                  crKindleUISemanticScore(b, 'next') >= 45;
+              });
+            } catch (_) {
+              return false;
+            }
+          }
           function chromeTarget(el) {
             var best = el;
             try {
               var label = textOf(el).toLowerCase();
               for (var node = el, depth = 0; node && depth < 7 && node !== document.body && node !== document.documentElement; depth++, node = node.parentElement) {
                 if (hasReaderContent(node)) continue;
+                if (node !== el && hasPageTurnControl(node)) continue;
                 var r = node.getBoundingClientRect && node.getBoundingClientRect();
                 if (!r || r.width <= 0 || r.height <= 0) continue;
                 var nodeLabel = textOf(node).toLowerCase();
@@ -4767,6 +4843,7 @@ enum KindleWebScripts {
             'html.cr-kindle-page-mode-locked button[title="Previous page"],',
             'html.cr-kindle-page-mode-locked button[title="Next page"],',
             'html.cr-kindle-page-mode-locked [data-cr-kindle-page-turn-control="1"] {',
+            '  display: revert !important;',
             '  opacity: 0 !important;',
             '  visibility: visible !important;',
             '  pointer-events: none !important;',
@@ -5074,7 +5151,7 @@ enum KindleWebScripts {
     static let pageCaptureBootstrap = """
     (function() {
       \(uiSemanticHelpers)
-      var crKindleInstallVersion = 40;
+      var crKindleInstallVersion = 41;
       // OCR keeps the source glyphs lossless. Kindle pages are mostly flat-color
       // text surfaces, so PNG is often no larger than JPEG and avoids destroying
       // CJK punctuation / Devanagari combining marks. 2048px is only a safety cap;
@@ -5370,12 +5447,32 @@ enum KindleWebScripts {
               return false;
             }
           }
+          // 含翻页控件的容器绝不能整个隐藏。Amazon 把返回按钮、进度条和翻页按钮
+          // 放在同一个 toolbar 里，隐藏返回按钮时 chromeTarget 会向上选中那个容器，
+          // 翻页控件被连坐 display:none——它自己的 opacity:0/visibility:visible 保护
+          // 在父容器 display:none 面前无效，于是 crKindleUIFind 找不到任何控件
+          // （hasNext=0），React 分页组件也不可达（pagination-component-unavailable）。
+          function hasPageTurnControl(el) {
+            try {
+              if (!el || !el.querySelector) return false;
+              if (el.querySelector('[data-cr-kindle-page-turn-control="1"],#kr-chevron-left,#kr-chevron-right,button[aria-label="Previous page"],button[aria-label="Next page"],button[title="Previous page"],button[title="Next page"]')) {
+                return true;
+              }
+              return Array.from(el.querySelectorAll('button,[role="button"],ion-button')).some(function(b) {
+                return crKindleUISemanticScore(b, 'previous') >= 45 ||
+                  crKindleUISemanticScore(b, 'next') >= 45;
+              });
+            } catch (_) {
+              return false;
+            }
+          }
           function chromeTarget(el) {
             var best = el;
             try {
               var label = textOf(el).toLowerCase();
               for (var node = el, depth = 0; node && depth < 7 && node !== document.body && node !== document.documentElement; depth++, node = node.parentElement) {
                 if (hasReaderContent(node)) continue;
+                if (node !== el && hasPageTurnControl(node)) continue;
                 var r = node.getBoundingClientRect && node.getBoundingClientRect();
                 if (!r || r.width <= 0 || r.height <= 0) continue;
                 var nodeLabel = textOf(node).toLowerCase();
@@ -5484,6 +5581,7 @@ enum KindleWebScripts {
             'html.cr-kindle-page-mode-locked button[title="Previous page"],',
             'html.cr-kindle-page-mode-locked button[title="Next page"],',
             'html.cr-kindle-page-mode-locked [data-cr-kindle-page-turn-control="1"] {',
+            '  display: revert !important;',
             '  opacity: 0 !important;',
             '  visibility: visible !important;',
             '  pointer-events: none !important;',
@@ -5882,28 +5980,142 @@ enum KindleWebScripts {
         return null;
       }
       window.__crKindleFindPaginationActions = crKindleFindPaginationActions;
-      window.__crKindleSemanticPageTurn = function(direction, fallbackProgression) {
+      // ── 翻页能力层 ─────────────────────────────────────────────────────
+      // 结构原则：**先捕获能力，再允许界面消失**。
+      //
+      // 旧实现每次翻页都重新在 DOM 里找 React 分页组件，失败即放弃
+      // （pagination-component-unavailable）。而 Amazon 的阅读器会自动隐藏
+      // 工具栏并卸载其组件，CastReader 的沉浸模式又拦掉了能让它重新出现的
+      // 点击——两者叠加后 DOM 查找必然间歇性失败，朗读的整条翻页/捕获管线
+      // 随之瘫痪，一次会话建立不了任何页面锚点，表现为「翻页失灵 + 进度丢失」。
+      //
+      // 现在：fiber 捕获一旦成功就把 action 闭包缓存到 window——这些闭包指向
+      // 阅读器控制器，组件从 DOM 卸载后依然可调。翻页按「新鲜捕获 → 缓存能力
+      // → 键盘事件」三级降级，只有全部失败才报错；键盘一级完全不依赖任何
+      // DOM 元素的存在。
+      function crKindleResolveProgression(props, fallbackProgression) {
+        var progression = String((props && props.pageProgressionDirection) || '').toLowerCase();
+        if (progression === 'rtl' || progression === 'ltr') {
+          return { value: progression, source: 'react-component' };
+        }
+        var cached = window.__crKindleTurnCapability;
+        var cachedProgression = String((cached && cached.progression) || '').toLowerCase();
+        if (cachedProgression === 'rtl' || cachedProgression === 'ltr') {
+          return { value: cachedProgression, source: 'cached-component' };
+        }
+        return {
+          value: String(fallbackProgression || '').toLowerCase() === 'rtl' ? 'rtl' : 'ltr',
+          source: 'language-fallback'
+        };
+      }
+      function crKindleCacheTurnCapability(match, progression) {
+        try {
+          window.__crKindleTurnCapability = {
+            props: match.props,
+            component: match.component,
+            progression: progression,
+            capturedAt: Date.now()
+          };
+        } catch (_) {}
+      }
+      function crKindleDispatchPairedAction(props, progression, direction) {
+        var next = String(direction || 'next').toLowerCase() !== 'previous';
+        var useLeft = next ? progression === 'rtl' : progression !== 'rtl';
+        var action = useLeft ? props.leftAction : props.rightAction;
+        if (typeof action !== 'function') throw new Error('paired-action-missing');
+        action.call(props);
+        return useLeft ? 'leftAction' : 'rightAction';
+      }
+      window.__crKindlePrimeTurnCapability = function() {
         try {
           var match = crKindleFindPaginationActions();
-          if (!match) return JSON.stringify({ ok:false, reason:'pagination-component-unavailable', dispatchCount:0 });
-          var progression = String(match.props.pageProgressionDirection || '').toLowerCase();
-          var progressionSource = 'react-component';
-          if (progression !== 'rtl' && progression !== 'ltr') {
-            progression = String(fallbackProgression || '').toLowerCase() === 'rtl' ? 'rtl' : 'ltr';
-            progressionSource = 'language-fallback';
-          }
-          var next = String(direction || 'next').toLowerCase() !== 'previous';
-          var useLeft = next ? progression === 'rtl' : progression !== 'rtl';
-          var action = useLeft ? match.props.leftAction : match.props.rightAction;
-          var fingerprint = crKindleVisiblePixelFingerprint(currentReadingCandidate());
-          action.call(match.props);
-          return JSON.stringify({ ok:true, strategy:'react-paired-action', semanticAction:useLeft ? 'leftAction' : 'rightAction',
-            progressionDirection:progression, progressionSource:progressionSource, component:match.component, fiberDepth:match.fiberDepth,
-            propsSource:match.propsSource, dispatchCount:1, beforeFingerprint:fingerprint });
-        } catch (e) {
-          return JSON.stringify({ ok:false, reason:'semantic-action-error:' + String(e && e.message || e), dispatchCount:0 });
+          if (!match) return false;
+          var progression = crKindleResolveProgression(match.props, '').value;
+          crKindleCacheTurnCapability(match, progression);
+          return true;
+        } catch (_) {
+          return false;
         }
       };
+      window.__crKindleSemanticPageTurn = function(direction, fallbackProgression) {
+        var attempts = [];
+        var fingerprint = '';
+        try { fingerprint = crKindleVisiblePixelFingerprint(currentReadingCandidate()); } catch (_) {}
+        function success(strategy, semanticAction, progression, extra) {
+          var payload = {
+            ok: true, strategy: strategy, semanticAction: semanticAction,
+            progressionDirection: progression.value, progressionSource: progression.source,
+            dispatchCount: 1, tried: attempts.join('|'), beforeFingerprint: fingerprint
+          };
+          if (extra) for (var k in extra) payload[k] = extra[k];
+          return JSON.stringify(payload);
+        }
+        // 1) 新鲜捕获：组件在场时是最权威的一级，成功即刷新缓存。
+        try {
+          var match = crKindleFindPaginationActions();
+          if (match) {
+            var progression = crKindleResolveProgression(match.props, fallbackProgression);
+            crKindleCacheTurnCapability(match, progression.value);
+            var semanticAction = crKindleDispatchPairedAction(match.props, progression.value, direction);
+            return success('react-paired-action', semanticAction, progression, {
+              component: match.component, fiberDepth: match.fiberDepth, propsSource: match.propsSource
+            });
+          }
+          attempts.push('fiber-unavailable');
+        } catch (eFresh) {
+          attempts.push('fiber-error:' + String(eFresh && eFresh.message || eFresh).slice(0, 60));
+        }
+        // 2) 缓存能力：组件已从 DOM 卸载，但捕获过的闭包仍指向阅读器控制器。
+        try {
+          var cached = window.__crKindleTurnCapability;
+          if (cached && cached.props) {
+            var cachedProgression = crKindleResolveProgression(cached.props, fallbackProgression);
+            var cachedAction = crKindleDispatchPairedAction(cached.props, cachedProgression.value, direction);
+            return success('react-cached-action', cachedAction, cachedProgression, {
+              component: cached.component,
+              capabilityAgeMs: Date.now() - (cached.capturedAt || Date.now())
+            });
+          }
+          attempts.push('no-cached-capability');
+        } catch (eCached) {
+          attempts.push('cached-error:' + String(eCached && eCached.message || eCached).slice(0, 60));
+        }
+        // 3) 键盘事件：不依赖任何 DOM 元素的存在，Amazon 怎么改版都拦不住。
+        try {
+          var kbProgression = crKindleResolveProgression(null, fallbackProgression);
+          var kbNext = String(direction || 'next').toLowerCase() !== 'previous';
+          var useLeftKey = kbNext ? kbProgression.value === 'rtl' : kbProgression.value !== 'rtl';
+          var keyName = useLeftKey ? 'ArrowLeft' : 'ArrowRight';
+          var keyCode = useLeftKey ? 37 : 39;
+          var ae = document.activeElement;
+          if (ae && ae !== document.body && ae !== document.documentElement && ae.blur) ae.blur();
+          var opts = { key: keyName, code: keyName, keyCode: keyCode, which: keyCode, bubbles: true, cancelable: true };
+          var target = document.activeElement || document.body || document;
+          target.dispatchEvent(new KeyboardEvent('keydown', opts));
+          target.dispatchEvent(new KeyboardEvent('keyup', opts));
+          return success('keyboard-fallback', keyName, kbProgression, {});
+        } catch (eKb) {
+          attempts.push('keyboard-error:' + String(eKb && eKb.message || eKb).slice(0, 60));
+        }
+        return JSON.stringify({
+          ok: false, reason: 'pagination-component-unavailable',
+          tried: attempts.join('|'), dispatchCount: 0
+        });
+      };
+      // 自预热：安装脚本时工具栏还在场（didFinish 后立即注入），趁它没被
+      // Amazon 卸载先把能力抓到手。多试几次以等 React 挂载完成。
+      try {
+        if (!window.__crKindleTurnCapabilityPrimeScheduled) {
+          window.__crKindleTurnCapabilityPrimeScheduled = true;
+          [400, 1600, 4000].forEach(function(delay) {
+            setTimeout(function() {
+              try {
+                if (!window.__crKindleTurnCapability) window.__crKindlePrimeTurnCapability();
+              } catch (_) {}
+            }, delay);
+          });
+        }
+      } catch (_) {}
       window.__crKindleTurnPage = window.__crKindleSemanticPageTurn;
       window.__crKindleTurnNativePage = window.__crKindleSemanticPageTurn;
       window.__crKindleDirectPage = function(direction, anchorKey) {
