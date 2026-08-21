@@ -17,6 +17,11 @@ struct PDFReaderView: UIViewRepresentable {
     @ObservedObject var explainVM: ExplainViewModel
     let mode: ReaderMode
     let refocusToken: Int
+    /// 阅读器是否展开。收起时 PDFView 只是被移出屏幕、并没有被销毁，
+    /// 而 PDFKit 的 tile 渲染不看位置照跑不误——真机日志里它在首页
+    /// 静置时仍以 10Hz 重绘了 26 秒。隐藏视图不参与绘制，document 与
+    /// 滚动位置都留在原地，所以这是最省事的停机方式。
+    var isActive: Bool = true
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -40,6 +45,7 @@ struct PDFReaderView: UIViewRepresentable {
     }
 
     func updateUIView(_ v: PDFView, context: Context) {
+        if v.isHidden == isActive { v.isHidden = !isActive }
         context.coordinator.setMode(mode)
         context.coordinator.refocusIfNeeded(refocusToken, mode: mode)
     }

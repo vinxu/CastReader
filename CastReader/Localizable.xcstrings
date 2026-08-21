@@ -27653,6 +27653,7 @@
         }
       }
     },
+    "正在识别文字…" : { "localizations" : { "de" : { "stringUnit" : { "state" : "translated", "value" : "Text wird erkannt …" } }, "en" : { "stringUnit" : { "state" : "translated", "value" : "Recognizing text…" } }, "es" : { "stringUnit" : { "state" : "translated", "value" : "Reconociendo el texto…" } }, "fr" : { "stringUnit" : { "state" : "translated", "value" : "Reconnaissance du texte…" } }, "hi" : { "stringUnit" : { "state" : "translated", "value" : "टेक्स्ट पहचाना जा रहा है…" } }, "it" : { "stringUnit" : { "state" : "translated", "value" : "Riconoscimento del testo…" } }, "ja" : { "stringUnit" : { "state" : "translated", "value" : "テキストを認識中…" } }, "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Reconhecendo o texto…" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在识别文字…" } } } },
     "正在准备…" : {
       "localizations" : {
         "de" : {

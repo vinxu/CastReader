@@ -655,12 +655,25 @@ struct ReaderHostView: View {
             )
         case .pdf:
             if document.usesNativePDFRendering {
-                PDFReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode, refocusToken: refocusToken)
+                PDFReaderView(
+                    document: document,
+                    readVM: readVM,
+                    explainVM: explainVM,
+                    mode: mode,
+                    refocusToken: refocusToken,
+                    isActive: coordinator.isReaderPresented
+                )
             } else {
                 TextReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode, refocusToken: refocusToken)
             }
         case .photo:
             PhotoReaderCanvas(document: document, readVM: readVM, explainVM: explainVM, mode: mode, refocusToken: refocusToken)
+                // 页面先开、识别后补：段落还空着时说明这一步还在跑。
+                .overlay(alignment: .top) {
+                    if document.paragraphs.isEmpty {
+                        PhotoRecognitionBadge()
+                    }
+                }
         case .kindle:
             KindleReaderView(document: document, readVM: readVM, explainVM: explainVM, mode: mode, refocusToken: refocusToken)
         case .epub, .text:
@@ -1832,5 +1845,23 @@ struct SpeedMenu: View {
               Double(effective),
               audio.isPlaying ? "Y" : "N")
         #endif
+    }
+}
+
+/// 照片识别进行中的轻提示。图已经在屏幕上了，这里只交代「文字还在识别」，
+/// 不遮挡内容、不阻断操作。
+private struct PhotoRecognitionBadge: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            ProgressView().scaleEffect(0.8)
+            Text(AppLocalized("正在识别文字…"))
+                .font(.caption.weight(.medium))
+                .foregroundColor(AppTheme.foreground)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.regularMaterial, in: Capsule())
+        .padding(.top, 12)
+        .transition(.opacity)
     }
 }

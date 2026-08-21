@@ -319,3 +319,133 @@ final class CapturePipelineTests: XCTestCase {
         }
     }
 }
+
+// MARK: - 照片 OCR 快照（重开不再重跑识别）
+
+@MainActor
+final class PhotoOCRSnapshotTests: XCTestCase {
+
+    private func makeDirectory() -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("photo-ocr-\(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+
+    private func makeImageData() -> Data {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 40, height: 60))
+        let image = renderer.image { ctx in
+            UIColor.white.set()
+            ctx.fill(CGRect(x: 0, y: 0, width: 40, height: 60))
+        }
+        return image.jpegData(compressionQuality: 0.9) ?? Data()
+    }
+
+    private func makeRecognizedPhoto(id: String, imageData: Data) -> ReadingDocument {
+        ReadingDocument(
+            id: id,
+            title: "La Costanera",
+            sourceKind: .photo,
+            language: "en",
+            paragraphs: [
+                ReadingParagraph(
+                    id: 0,
+                    text: "Passion Ardiente",
+                    words: [
+                        OCRWord(id: 0, text: "Passion",
+                                bboxNorm: CGRect(x: 0.1, y: 0.8, width: 0.2, height: 0.03)),
+                        OCRWord(id: 1, text: "Ardiente",
+                                bboxNorm: CGRect(x: 0.32, y: 0.8, width: 0.2, height: 0.03)),
+                    ],
+                    bboxNorm: CGRect(x: 0.1, y: 0.8, width: 0.42, height: 0.03)
+                )
+            ],
+            imageData: imageData,
+            imagePixelSize: CGSize(width: 40, height: 60),
+            layoutColumnCount: 2
+        )
+    }
+
+    func testRecognizedPhotoReopensFromSnapshotWithoutReRecognition() throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let imageData = makeImageData()
+        let store = HistoryStore(directory: directory)
+        store.record(makeRecognizedPhoto(id: "photo-1", imageData: imageData))
+
+        // 快照与 payload 同目录落盘
+        let snapshotURL = directory.appendingPathComponent("photo-1.ocr.json")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: snapshotURL.path))
+
+        // 冷启动（新 store 实例）也能直接拿到完整结果，不需要跑 OCR
+        let reloaded = HistoryStore(directory: directory)
+        let record = try XCTUnwrap(reloaded.records.first(where: { $0.id == "photo-1" }))
+        let document = try XCTUnwrap(reloaded.instantPhotoDocument(record))
+        XCTAssertEqual(document.paragraphs.count, 1)
+        XCTAssertEqual(document.paragraphs.first?.words.count, 2)
+        XCTAssertEqual(document.paragraphs.first?.words.first?.bboxNorm.origin.x ?? 0, 0.1, accuracy: 0.0001)
+        XCTAssertEqual(document.language, "en")
+        XCTAssertEqual(document.layoutColumnCount, 2)
+        XCTAssertEqual(document.imageData, imageData)
+    }
+
+    func testPhotoWithoutSnapshotOpensImmediatelyWithNoParagraphs() throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let imageData = makeImageData()
+        let store = HistoryStore(directory: directory)
+        store.record(makeRecognizedPhoto(id: "photo-2", imageData: imageData))
+        // 模拟升级前的老记录：只有 payload，没有识别快照
+        try FileManager.default.removeItem(at: directory.appendingPathComponent("photo-2.ocr.json"))
+
+        let reloaded = HistoryStore(directory: directory)
+        let record = try XCTUnwrap(reloaded.records.first(where: { $0.id == "photo-2" }))
+        let document = try XCTUnwrap(reloaded.instantPhotoDocument(record))
+        // 页面照样立刻打开：图在，段落留空等后台识别补
+        XCTAssertTrue(document.paragraphs.isEmpty)
+        XCTAssertEqual(document.imageData, imageData)
+    }
+
+    func testSnapshotIsRejectedWhenPayloadChanged() throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let store = HistoryStore(directory: directory)
+        store.record(makeRecognizedPhoto(id: "photo-3", imageData: makeImageData()))
+
+        // 同 id 换了一张图（重新导入）：旧快照的几何不再代表这张图
+        let replacement = Data(repeating: 0x42, count: 999)
+        try replacement.write(to: directory.appendingPathComponent("photo-3.payload"), options: .atomic)
+
+        let reloaded = HistoryStore(directory: directory)
+        let record = try XCTUnwrap(reloaded.records.first(where: { $0.id == "photo-3" }))
+        let document = try XCTUnwrap(reloaded.instantPhotoDocument(record))
+        XCTAssertTrue(document.paragraphs.isEmpty, "payload 变了就必须重识别，不能用旧几何")
+    }
+
+    func testSnapshotSurvivesPlaceholderReopen() throws {
+        let directory = makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let imageData = makeImageData()
+        let store = HistoryStore(directory: directory)
+        store.record(makeRecognizedPhoto(id: "photo-4", imageData: imageData))
+
+        // 占位文档（段落为空）再次入历史时，不得抹掉已有的好快照
+        store.record(ReadingDocument(
+            id: "photo-4",
+            title: "La Costanera",
+            sourceKind: .photo,
+            language: "en",
+            paragraphs: [],
+            imageData: imageData
+        ))
+
+        let reloaded = HistoryStore(directory: directory)
+        let record = try XCTUnwrap(reloaded.records.first(where: { $0.id == "photo-4" }))
+        let document = try XCTUnwrap(reloaded.instantPhotoDocument(record))
+        XCTAssertEqual(document.paragraphs.count, 1)
+    }
+}

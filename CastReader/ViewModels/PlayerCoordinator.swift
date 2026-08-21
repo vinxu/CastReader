@@ -144,6 +144,51 @@ final class PlayerCoordinator: ObservableObject {
         }
     }
 
+    /// 用识别完成的内容替换当前会话的文档（照片先开页面、后补 OCR 用）。
+    ///
+    /// 只在「同一份文档、且当前还没有段落」时生效：段落一旦存在，会话里
+    /// 就可能已经有播放位置和解读 mark，替换会把它们抹掉。会话 id 保持不变，
+    /// 所以 ReaderHostView 不重建，页面上的图片不会闪。
+    func upgradeSessionContent(_ document: ReadingDocument) {
+        guard let current = session,
+              current.document.id == document.id,
+              current.document.paragraphs.isEmpty,
+              !document.paragraphs.isEmpty else { return }
+        current.readVM.stop()
+        current.explainVM.stop()
+        let readVM = ReadAloudViewModel(
+            document: document,
+            analyticsContext: current.analyticsContext
+        )
+        let explainVM = ExplainViewModel(
+            document: document,
+            analyticsContext: current.analyticsContext
+        )
+        explainVM.scenario = current.explainVM.scenario
+        readVM.configurePlaybackMetadata(
+            id: document.id,
+            title: document.title,
+            coverURL: document.coverURL
+        )
+        explainVM.configurePlaybackMetadata(
+            id: document.id,
+            title: document.title,
+            coverURL: document.coverURL
+        )
+        if let resumeIndex = HistoryStore.shared.resumeParagraphIndex(for: document.id) {
+            readVM.restoreReadingPosition(resumeIndex)
+        }
+        session = Session(
+            id: current.id,
+            document: document,
+            analyticsContext: current.analyticsContext,
+            readVM: readVM,
+            explainVM: explainVM
+        )
+        ProductAnalytics.shared.contentReady(current.analyticsContext, document: document)
+        HistoryStore.shared.record(document)
+    }
+
     /// 收起阅读器（不停播放）→ Mini Player 接管。
     func minimize() {
         guard let document = session?.document else { return }

@@ -87,7 +87,7 @@ struct LibraryView: View {
                     Button(CloudLocalized("连接云盘")) {
                         cloudFailure = nil
                         importRouter.reconnectCloud(
-                            failure.record.origin?.provider ?? .unavailableA,
+                            failure.record.origin?.provider ?? .googleDrive,
                             forceAccountSelection: forceAccountSelection,
                             expectedAccount: failure.record.origin.map {
                                 CloudAccount(
@@ -355,6 +355,20 @@ struct LibraryView: View {
                         record: rec,
                         error: error
                     )
+                }
+                return
+            }
+
+            // 与首页「继续看」同一条约定：照片先开页面，识别在页内后台补。
+            if rec.sourceKind == .photo, let instant = history.instantPhotoDocument(rec) {
+                guard !Task.isCancelled,
+                      openingAttemptID == attemptID else { return }
+                coordinator.open(instant, analyticsContext: context)
+                if instant.paragraphs.isEmpty {
+                    Task { @MainActor in
+                        guard let recognized = await history.recognizePhoto(rec) else { return }
+                        coordinator.upgradeSessionContent(recognized)
+                    }
                 }
                 return
             }

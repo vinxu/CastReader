@@ -433,8 +433,40 @@ final class HistoryStore: ObservableObject {
         scope.directory.appendingPathComponent("\(id).cover.jpg")
     }
 
+    /// 照片 OCR 快照：与 payload 同目录、同生命周期（删记录即删快照）。
+    private func ocrSnapshotURL(_ id: String, in scope: ActiveStorageScope) -> URL {
+        scope.directory.appendingPathComponent("\(id).ocr.json")
+    }
+
     private func isCurrent(_ scope: ActiveStorageScope) -> Bool {
         activeScope?.token == scope.token
+    }
+
+    /// 写入照片 OCR 快照。识别结果没有词级 bbox（例如失败兜底）时不落盘，
+    /// 免得把一次坏识别固化成「已缓存」。
+    private func writeOCRSnapshot(
+        for doc: ReadingDocument,
+        payloadByteCount: Int,
+        in scope: ActiveStorageScope
+    ) {
+        // 只写、不删：先开页面时保存的是「还没识别」的占位文档，它不该
+        // 抹掉磁盘上已有的好快照。过期快照由 payload 字节数与版本号判定。
+        guard let snapshot = PhotoOCRSnapshot(document: doc, payloadByteCount: payloadByteCount),
+              let data = try? JSONEncoder().encode(snapshot) else { return }
+        try? data.write(to: ocrSnapshotURL(doc.id, in: scope), options: .atomic)
+    }
+
+    /// 读取仍然匹配当前 payload 的照片 OCR 快照。
+    private func ocrSnapshot(
+        _ id: String,
+        payloadByteCount: Int,
+        in scope: ActiveStorageScope
+    ) -> PhotoOCRSnapshot? {
+        guard isCurrent(scope),
+              let data = try? Data(contentsOf: ocrSnapshotURL(id, in: scope)),
+              let snapshot = try? JSONDecoder().decode(PhotoOCRSnapshot.self, from: data),
+              snapshot.matches(payloadByteCount: payloadByteCount) else { return nil }
+        return snapshot
     }
 
     private func scheduleCoverWork(
@@ -520,6 +552,7 @@ final class HistoryStore: ObservableObject {
             // stay exclusively in the bounded YouTube cache.
             try? FileManager.default.removeItem(at: payloadURL(records[index].id, in: scope))
             try? FileManager.default.removeItem(at: coverFileURL(records[index].id, in: scope))
+            try? FileManager.default.removeItem(at: ocrSnapshotURL(records[index].id, in: scope))
             records[index].coverPath = nil
         }
     }
@@ -578,6 +611,10 @@ final class HistoryStore: ObservableObject {
         }()
         if let payload {
             try? payload.write(to: payloadURL(doc.id, in: scope))
+            // 照片的识别产物随 payload 一起落盘，重开时不必再跑一遍 OCR。
+            if doc.sourceKind == .photo {
+                writeOCRSnapshot(for: doc, payloadByteCount: payload.count, in: scope)
+            }
         } else if resolvedPersistencePolicy == .remoteReference
                     || doc.sourceKind == .youtube {
             // Cloud downloads are ephemeral parser inputs, while YouTube text
@@ -585,6 +622,7 @@ final class HistoryStore: ObservableObject {
             // left by an older build or an ID collision.
             try? FileManager.default.removeItem(at: payloadURL(doc.id, in: scope))
             try? FileManager.default.removeItem(at: coverFileURL(doc.id, in: scope))
+            try? FileManager.default.removeItem(at: ocrSnapshotURL(doc.id, in: scope))
         }
 
         let now = Date()
@@ -760,6 +798,7 @@ final class HistoryStore: ObservableObject {
         records.removeAll { $0.id == id }
         try? FileManager.default.removeItem(at: payloadURL(id, in: scope))
         try? FileManager.default.removeItem(at: coverFileURL(id, in: scope))
+        try? FileManager.default.removeItem(at: ocrSnapshotURL(id, in: scope))
         save(in: scope)
     }
 
@@ -772,6 +811,7 @@ final class HistoryStore: ObservableObject {
         for record in removed {
             try? FileManager.default.removeItem(at: payloadURL(record.id, in: scope))
             try? FileManager.default.removeItem(at: coverFileURL(record.id, in: scope))
+            try? FileManager.default.removeItem(at: ocrSnapshotURL(record.id, in: scope))
         }
         records.removeAll { $0.sourceKind == sourceKind }
         save(in: scope)
@@ -782,6 +822,7 @@ final class HistoryStore: ObservableObject {
         for r in records {
             try? FileManager.default.removeItem(at: payloadURL(r.id, in: scope))
             try? FileManager.default.removeItem(at: coverFileURL(r.id, in: scope))
+            try? FileManager.default.removeItem(at: ocrSnapshotURL(r.id, in: scope))
         }
         records.removeAll()
         save(in: scope)
@@ -950,6 +991,53 @@ final class HistoryStore: ObservableObject {
         return img.jpegData(compressionQuality: 0.8)
     }
 
+    /// 立刻可打开的照片文档：命中快照就是完整结果，否则先只带原图、段落留空。
+    ///
+    /// 「点开要等识别」在产品上说不通——图早就在本地了，先把页面打开，
+    /// 文字随后补。返回值的 `paragraphs.isEmpty` 即「还欠一次识别」。
+    func instantPhotoDocument(_ rec: HistoryRecord) -> ReadingDocument? {
+        guard rec.sourceKind == .photo,
+              let scope = activeScope, records.contains(rec),
+              let data = localPayloadData(rec.id) else { return nil }
+        if let snapshot = ocrSnapshot(rec.id, payloadByteCount: data.count, in: scope) {
+            return snapshot.document(id: rec.id, title: rec.title, imageData: data)
+        }
+        return ReadingDocument(
+            id: rec.id,
+            title: rec.title,
+            sourceKind: .photo,
+            language: rec.language,
+            paragraphs: [],
+            imageData: data,
+            imagePixelSize: UIImage(data: data).map {
+                CGSize(width: $0.size.width * $0.scale, height: $0.size.height * $0.scale)
+            }
+        )
+    }
+
+    /// 给还没有快照的照片补一次识别，并把产物落盘。
+    func recognizePhoto(_ rec: HistoryRecord) async -> ReadingDocument? {
+        guard rec.sourceKind == .photo,
+              let scope = activeScope, records.contains(rec),
+              let data = localPayloadData(rec.id),
+              let image = UIImage(data: data) else { return nil }
+        let capture = CaptureFlowViewModel()
+        await capture.process(image: image)
+        guard isCurrent(scope), records.contains(rec), let built = capture.document else { return nil }
+        let document = ReadingDocument(
+            id: rec.id,
+            title: rec.title,
+            sourceKind: .photo,
+            language: built.language,
+            paragraphs: built.paragraphs,
+            imageData: built.imageData,
+            imagePixelSize: built.imagePixelSize,
+            layoutColumnCount: built.layoutColumnCount
+        )
+        writeOCRSnapshot(for: document, payloadByteCount: data.count, in: scope)
+        return document
+    }
+
     /// 从历史项重建可播放文档（id 沿用 rec.id，保证重开后 record 是更新而非新增）。photo 需重新 OCR，故 async。
     func reopen(_ rec: HistoryRecord) async throws -> ReadingDocument? {
         try Task.checkCancellation()
@@ -1098,14 +1186,26 @@ final class HistoryStore: ObservableObject {
             return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .epub, language: built.language,
                                    paragraphs: built.paragraphs, fileData: data)
         case .photo:
-            guard let data = localPayloadData(rec.id), let img = UIImage(data: data) else { return nil }
+            guard let data = localPayloadData(rec.id) else { return nil }
+            // 识别过的照片直接用快照重开。真机上重跑一次采集管线要 6.7 秒
+            // （方向探测 + 多语言 probe + 单语言全图复跑），而产物是不变的。
+            if let snapshot = ocrSnapshot(rec.id, payloadByteCount: data.count, in: scope) {
+                return snapshot.document(id: rec.id, title: rec.title, imageData: data)
+            }
+            guard let img = UIImage(data: data) else { return nil }
             let cap = CaptureFlowViewModel()
             await cap.process(image: img)
             guard isCurrent(scope), records.contains(rec), let built = cap.document else {
                 return nil
             }
-            return ReadingDocument(id: rec.id, title: rec.title, sourceKind: .photo, language: built.language,
-                                   paragraphs: built.paragraphs, imageData: built.imageData, imagePixelSize: built.imagePixelSize)
+            let document = ReadingDocument(id: rec.id, title: rec.title, sourceKind: .photo,
+                                           language: built.language,
+                                           paragraphs: built.paragraphs, imageData: built.imageData,
+                                           imagePixelSize: built.imagePixelSize,
+                                           layoutColumnCount: built.layoutColumnCount)
+            // 首次补上快照：老记录（升级前存的）也只需要再识别这一次。
+            writeOCRSnapshot(for: document, payloadByteCount: data.count, in: scope)
+            return document
         }
     }
 }

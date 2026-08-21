@@ -357,7 +357,8 @@ struct HomeView: View {
                     mode: importMode,
                     analyticsContext: importAnalyticsContext,
                     forceAccountSelection: route.action == .switchAccount,
-                    showsDisclosureOnStart: route.action == .privacy,
+                    showsDisclosureOnStart: route.action == .privacy
+                        || !CloudPrivacyAcknowledgementStore.hasAcknowledged(route.provider),
                     privacyReviewOnly: route.action == .privacy,
                     expectedAccount: route.expectedAccount,
                     onComplete: { result in
@@ -417,7 +418,7 @@ struct HomeView: View {
                 Button(CloudLocalized("连接云盘")) {
                     cloudHistoryFailure = nil
                     importRouter.reconnectCloud(
-                        failure.record.origin?.provider ?? .unavailableA,
+                        failure.record.origin?.provider ?? .googleDrive,
                         forceAccountSelection: forceAccountSelection,
                         expectedAccount: failure.record.origin.map {
                             CloudAccount(
@@ -951,9 +952,9 @@ struct HomeView: View {
 
     private func analyticsSource(for provider: CloudProviderID) -> AnalyticsContentSource {
         switch provider {
-        case .unavailableA: return .unavailableCloudA
-        case .unavailableB: return .unavailableCloudB
-        case .unavailableC: return .unavailableCloudC
+        case .googleDrive: return .googleDrive
+        case .dropbox: return .dropbox
+        case .oneDrive: return .oneDrive
         }
     }
 
@@ -1181,6 +1182,21 @@ struct HomeView: View {
                         record: rec,
                         error: error
                     )
+                }
+                return
+            }
+
+            // 照片：本地原图早就在手上，页面立刻开；文字识别在页内后台补。
+            // 命中快照时 instant 文档已经是完整结果，一步到位。
+            if rec.sourceKind == .photo, let instant = history.instantPhotoDocument(rec) {
+                guard !Task.isCancelled,
+                      cloudHistoryAttemptID == attemptID else { return }
+                coordinator.open(instant, analyticsContext: context)
+                if instant.paragraphs.isEmpty {
+                    Task { @MainActor in
+                        guard let recognized = await history.recognizePhoto(rec) else { return }
+                        coordinator.upgradeSessionContent(recognized)
+                    }
                 }
                 return
             }
@@ -1611,7 +1627,7 @@ private struct ImportOptionsSheet: View {
             )
         ) {
             if let recovery = disconnectRecovery,
-               recovery.provider == .unavailableA,
+               recovery.provider == .googleDrive,
                recovery.remoteRevocationStatus == .unconfirmed {
                 if recovery.retryable {
                     Button(CloudLocalized("重试")) {
@@ -1646,7 +1662,7 @@ private struct ImportOptionsSheet: View {
         disconnectRecovery = nil
         Task {
             let result = await cloudStorage.retryPendingRemoteRevocation(
-                for: .unavailableA
+                for: .googleDrive
             )
             disconnectRecovery = result.remoteRevocationStatus == .unconfirmed
                 ? result
