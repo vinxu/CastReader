@@ -125,7 +125,7 @@ enum ShareInboxLinkMetadataLoader {
 /// backend ids, phone numbers and emails never enter this value.
 ///
 /// The containing app updates the pointer synchronously at the authentication
-/// boundary. Share/Safari extensions then write or read only that account's
+/// boundary. The Share extension then writes or reads only that account's
 /// App Group partition. Missing or malformed state deliberately fails closed
 /// into an unassigned partition rather than reopening legacy shared content.
 enum AccountContentScopeBridge {

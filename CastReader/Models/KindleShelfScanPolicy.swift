@@ -158,7 +158,7 @@ enum KindleShelfScanPolicy {
     /// 所以没必要再用秒级间隔去省开销——补货一落地就该被发现。收工的安全
     /// 边际由 `restockObservationWindow` 保证，与轮询快慢无关。
     static func waitSeconds(after input: Input) -> TimeInterval {
-        if input.idlePasses == 0 { return 0.45 }
-        return 0.4
+        if input.idlePasses == 0 { return 0.4 }
+        return 0.45
     }
 }

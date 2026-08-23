@@ -188,7 +188,6 @@ final class AppStartupCoordinator: ObservableObject {
 
         // Everything below may capture the frozen route or its isolated storage
         // namespace. None of it may move above the bootstrap calls.
-        SafariExtensionBridge.syncFromApp()
         _ = AudioPlaybackTemporaryFiles.prepare()
         installLifecycleObservers()
 
@@ -275,10 +274,6 @@ struct CastReaderApp: App {
     @UIApplicationDelegateAdaptor(CastReaderAppDelegate.self) private var appDelegate
     @StateObject private var startup = AppStartupCoordinator()
     @StateObject private var appLanguage = AppLanguageManager.shared
-    @State private var showSafariPro = false
-    @State private var showSafariAccount = false
-    @State private var showSignOutConfirm = false
-    @State private var pendingSafariLibraryOnboardingReset: Bool?
     @State private var pendingOpenURLs: [URL] = []
 
     init() {
@@ -317,35 +312,6 @@ struct CastReaderApp: App {
                 if startup.isReady {
                     RouteReadyRoot()
                         .environment(\.locale, appLanguage.locale)
-                        .alert(AppLocalized("退出登录"), isPresented: $showSignOutConfirm) {
-                            Button(AppLocalized("退出登录"), role: .destructive) {
-                                AuthService.shared.signOut()
-                                SafariExtensionBridge.syncFromApp()
-                                showSafariAccount = false
-                            }
-                            Button(AppLocalized("取消"), role: .cancel) {}
-                        } message: {
-                            Text(AppLocalized("退出登录后需要重新登录才能继续使用 CastReader。"))
-                        }
-                        .sheet(isPresented: $showSafariPro) {
-                            PaywallView(
-                                reason: AppLocalized("从 Safari 解锁完整朗读与解读"),
-                                analyticsTrigger: "safari_extension",
-                                analyticsSurface: "safari_extension"
-                            )
-                        }
-                        .sheet(
-                            isPresented: $showSafariAccount,
-                            onDismiss: presentSafariRequestedLibraryOnboarding
-                        ) {
-                            if AuthService.shared.isSignedIn {
-                                SettingsView(onRequestLibraryOnboarding: { reset in
-                                    pendingSafariLibraryOnboardingReset = reset
-                                })
-                            } else {
-                                LoginView()
-                            }
-                        }
                 } else {
                     Color(uiColor: .systemBackground)
                         .ignoresSafeArea()
@@ -389,27 +355,6 @@ struct CastReaderApp: App {
             SystemActionStore.shared.enqueue(systemAction, origin: .deepLink)
         } else if url.scheme == "castreader", url.host == "share-inbox" {
             NotificationCenter.default.post(name: .castReaderShareInboxChanged, object: nil)
-        } else if url.scheme == "castreader", url.host == "pro" {
-            showSafariPro = true
-        } else if url.scheme == "castreader", url.host == "account" {
-            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let action = components?.queryItems?.first(where: { $0.name == "action" })?.value
-            if action == "signout" {
-                // Safari is external input; never sign out without confirmation.
-                showSignOutConfirm = true
-            } else {
-                showSafariAccount = true
-            }
-        }
-    }
-
-    private func presentSafariRequestedLibraryOnboarding() {
-        guard let reset = pendingSafariLibraryOnboardingReset else { return }
-        pendingSafariLibraryOnboardingReset = nil
-        if reset {
-            BoundLibraryOnboardingStore.shared.reset()
-        } else {
-            BoundLibraryOnboardingStore.shared.presentChooser()
         }
     }
 }

@@ -7,7 +7,6 @@ project_path = File.expand_path("../CastReader.xcodeproj", __dir__)
 project = Xcodeproj::Project.open(project_path)
 
 unshipped_files = %w[
-  CloudStorageModels.swift
   CloudStorageProvider.swift
   CloudConnectionStore.swift
   CloudImportCoordinator.swift
@@ -18,7 +17,6 @@ unshipped_files = %w[
   CloudHistoryReopenService.swift
   CloudStorageFlowViewModel.swift
   CloudStorageViews.swift
-  DocumentImportPipeline.swift
   CloudStorage.xcstrings
   MSAL-LICENSE.txt
   CloudStorageCoreTests.swift
@@ -49,5 +47,15 @@ end
 project.root_object.package_references.select do |package|
   %w[SwiftyDropbox MSALBinaryPackage].any? { |name| package.display_name.include?(name) }
 end.each(&:remove_from_project)
+
+app_target = project.targets.find { |target| target.name == "CastReader" }
+raise "Missing CastReader target" unless app_target
+
+stubs = project.files.find { |file| file.path == "UnshippedIntegrationStubs.swift" }
+raise "Missing UnshippedIntegrationStubs.swift reference" unless stubs
+
+unless app_target.source_build_phase.files_references.include?(stubs)
+  app_target.add_file_references([stubs])
+end
 
 project.save

@@ -81,13 +81,13 @@ struct LibraryView: View {
                 ),
                 titleVisibility: .visible,
                 presenting: cloudFailure
-            ) { failure in
+            ) { (failure: CloudHistoryFailurePresentation) in
                 switch failure.recovery {
                 case .reconnect(let forceAccountSelection):
                     Button(CloudLocalized("连接云盘")) {
                         cloudFailure = nil
                         importRouter.reconnectCloud(
-                            failure.record.origin?.provider ?? .googleDrive,
+                            failure.record.origin?.provider ?? .unavailableA,
                             forceAccountSelection: forceAccountSelection,
                             expectedAccount: failure.record.origin.map {
                                 CloudAccount(
@@ -112,7 +112,7 @@ struct LibraryView: View {
                     EmptyView()
                 }
                 Button(CloudLocalized("取消"), role: .cancel) { cloudFailure = nil }
-            } message: { failure in
+            } message: { (failure: CloudHistoryFailurePresentation) in
                 Text(failure.message)
             }
             .task {

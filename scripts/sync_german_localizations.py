@@ -445,7 +445,6 @@ A secure CastReader mobile session is required.	Eine sichere mobile CastReader-S
 Voice	Stimme
 Voice Category	Stimmenkategorie
 Home	Start
-Unlock full Read Aloud and Explain from Safari	Vollständiges Vorlesen und Erklären über Safari freischalten
 System OCR does not support these languages: %@	Die System-OCR unterstützt diese Sprachen nicht: %@
 Failed to initialize Kindle multilingual OCR: %@	Mehrsprachige Kindle-OCR konnte nicht initialisiert werden: %@
 The next page is cached, but Kindle page sync failed. Playback is paused.	Die nächste Seite ist zwischengespeichert, aber die Kindle-Seitensynchronisierung ist fehlgeschlagen. Die Wiedergabe wurde pausiert.

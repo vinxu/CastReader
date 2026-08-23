@@ -27,7 +27,7 @@ Skill 路径：`/Users/xuxuheng/.codex/skills/submit-castreader-ios-to-app-store
 ## 完成链路
 
 1. 读取现有版本、审核状态、最大 Build、待处理 Review Submission。
-2. 确定未占用的版本号和更大的 Build，统一 App 与 Safari Extension 版本字段。
+2. 确定未占用的版本号和更大的 Build，统一 App、Share Extension 与 Widget 版本字段，并确认 Safari Extension target 不存在。
 3. 校验 11 语功能声明、元数据长度和真实代码差异，运行测试。
 4. Release archive，检查 Bundle ID、版本、Build、entitlements 和加密声明。
 5. 使用 `xcodebuild -exportArchive` 的 App Store Connect upload 方式上传；等待 `COMPLETE / VALID / APP_STORE_ELIGIBLE`。

@@ -363,8 +363,7 @@ struct HomeView: View {
                     mode: importMode,
                     analyticsContext: importAnalyticsContext,
                     forceAccountSelection: route.action == .switchAccount,
-                    showsDisclosureOnStart: route.action == .privacy
-                        || !CloudPrivacyAcknowledgementStore.hasAcknowledged(route.provider),
+                    showsDisclosureOnStart: route.action == .privacy,
                     privacyReviewOnly: route.action == .privacy,
                     expectedAccount: route.expectedAccount,
                     onComplete: { result in
@@ -424,7 +423,7 @@ struct HomeView: View {
                 Button(CloudLocalized("连接云盘")) {
                     cloudHistoryFailure = nil
                     importRouter.reconnectCloud(
-                        failure.record.origin?.provider ?? .googleDrive,
+                        failure.record.origin?.provider ?? .unavailableA,
                         forceAccountSelection: forceAccountSelection,
                         expectedAccount: failure.record.origin.map {
                             CloudAccount(
@@ -958,9 +957,9 @@ struct HomeView: View {
 
     private func analyticsSource(for provider: CloudProviderID) -> AnalyticsContentSource {
         switch provider {
-        case .googleDrive: return .googleDrive
-        case .dropbox: return .dropbox
-        case .oneDrive: return .oneDrive
+        case .unavailableA: return .unavailableCloudA
+        case .unavailableB: return .unavailableCloudB
+        case .unavailableC: return .unavailableCloudC
         }
     }
 
@@ -1635,7 +1634,7 @@ private struct ImportOptionsSheet: View {
             )
         ) {
             if let recovery = disconnectRecovery,
-               recovery.provider == .googleDrive,
+               recovery.provider == .unavailableA,
                recovery.remoteRevocationStatus == .unconfirmed {
                 if recovery.retryable {
                     Button(CloudLocalized("重试")) {
@@ -1670,7 +1669,7 @@ private struct ImportOptionsSheet: View {
         disconnectRecovery = nil
         Task {
             let result = await cloudStorage.retryPendingRemoteRevocation(
-                for: .googleDrive
+                for: .unavailableA
             )
             disconnectRecovery = result.remoteRevocationStatus == .unconfirmed
                 ? result

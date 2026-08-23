@@ -10,7 +10,7 @@ CastReader iOS 是**工具型 TTS 应用**（不是图书 app）。两大产品�
 - **解读（Explain / QuickRead）**：TTS 朗读 LLM 生成的**讲解**（非原文），同时在**原文**上按时间点动画绘制**手写体标注**（高亮/下划线/圈/序号）。
 
 内容入口分两类：
-- **自带内容**：拍照/相册（Vision OCR）、文件（PDF/EPUB/DOCX/TXT/MD）、输入文本、粘贴板、网址、系统分享（Share Extension）、Safari 扩展。
+- **自带内容**：拍照/相册（Vision OCR）、文件（PDF/EPUB/DOCX/TXT/MD）、输入文本、粘贴板、网址、系统分享（Share Extension）。
 - **绑定书库**：**Kindle Cloud Reader**（read.amazon.com）与**微信读书**（weread.qq.com）—— 都在用户已登录的 WKWebView 里实时取页，**不落库正文、不存凭据**。
 
 外加 **九语全量本地化**、**音色浏览器**、**Pro 付费（StoreKit 2）+ 免费额度闸门**。
@@ -41,21 +41,18 @@ xcodebuild test -workspace CastReader.xcworkspace -scheme CastReader -destinatio
 ```
 或 Xcode：⌘B / ⌘R / ⌘U。
 
-### 6 个 target（`CastReader` scheme 会连扩展一起构建）
+### 5 个 target（`CastReader` scheme 会连已发布扩展一起构建）
 
 | target | bundle id | 说明 |
 |---|---|---|
 | CastReader | `com.same.castreader` | 主 app，部署目标 **iOS 17.6** |
-| CastReader Safari Extension | `com.same.castreader.SafariExtension` | Safari Web Extension |
 | CastReader Share Extension | `com.same.castreader.ShareExtension` | 系统分享入口 |
 | CastReader Widget | `com.same.castreader.Widget` | 主屏小组件 |
 | CastReaderTests / CastReaderUITests | — | 单测 / UI 测试 |
 
-主 app **依赖并 embed 三个扩展**，所以扩展坏了主 app 也编不过。App Group = `group.com.same.castreader`（Share/Safari 扩展与主 app 交换数据的唯一通道）。
+主 app **依赖并 embed Share Extension 与 Widget 两个扩展**，所以扩展坏了主 app 也编不过。App Group = `group.com.same.castreader`（Share Extension 与主 app 交换数据的通道）。
 
-> **Safari 扩展的网页资源已入本仓库**：`CastReader Safari Extension/Resources/`（manifest.json / background.js / content-scripts / _locales 九语 / assets …），随包发布，克隆仓库即可编译，**不再依赖兄弟仓库 readout-desktop**。
->
-> 这些资源在 pbxproj 里是 **folder reference**（`lastKnownFileType = folder`，如 `assets` / `chunks` / `brainrot-bg`），所以增删目录内的网页文件**不需要改 pbxproj**——与主 app 每个 `.swift` 必须登记 4 处的规则相反。资源本身仍由扩展仓库 readout-desktop 构建产出，更新时把产物整体覆盖进 `Resources/` 即可。
+> Safari 扩展尚未达到支持标准，已从项目 target、主 app 调用和发行包中移除。没有完成跨端登录、Pro 权益与全链路验收前，不得重新加入发布 target。
 
 ### WebReader JS bundle（改了 TS 才需要重新构建）
 
@@ -247,10 +244,9 @@ Constants.API.webURL           = https://castreader.ai                # 账号 /
 - `HtmlParser.parse(xhtml)`：SwiftSoup 递归遍历 body 按 tag 分派（img/figure/h1-6/p/blockquote/pre/li/div），跳过 script/style/nav/toc/pageno；parse 开头全局 `remove` 噪声(linenum/pageno/dropcap)以免 per-element clone（SwiftSoup `copy()` 返 Node 非 Element）。
 - 走 **TextReaderView 原生渲染**：图片段用 `EpubImageDecoder.downsampled`(ImageIO 缩略图降采样) 渲染。**图片段 text 置空但占 id**（保 index 连续 → mark 锚定/分批不错位），`isReadable=false` 朗读自动跳过封面图。大书 `Task.detached` 后台解析。自检 `CastReaderTests/EpubNativeEngineTests`。
 
-### 系统分享 / Safari 扩展（`Services/ShareInbox.swift`、`SafariExtensionBridge.swift`、两个 extension target）
+### 系统分享（`Services/ShareInbox.swift`、Share Extension target）
 
 - **Share Extension**：`ShareViewController` 收 URL/文本/图片/PDF/EPUB/DOCX 写入 App Group 的 Share Inbox（`ShareInboxRecord`，带 `mode: read|explain`），主 app 经 `castreader://share-inbox` 唤起并在首页显示未读数。扩展自己也读 App Group 里的 `interfaceLanguage` 做本地化（与主 app 的 in-app 语言一致）。**占位标题存语义枚举而非译好的字符串**，这样切语言时历史记录跟着变。
-- **Safari Extension**：`SafariExtensionBridge.syncFromApp()` 只往 App Group 写**最小身份/权益快照**（`isPro` 等）；**StoreKit 校验永远留在主 app**。
 - 校验脚本：`scripts/verify_share_extension.rb`。
 
 ### 登录 / 账号（`Services/AuthService.swift`(+Apple)、`Models/UserAccount.swift`、`Views/Auth/`）

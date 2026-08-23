@@ -1118,6 +1118,7 @@ class CastReaderTests: XCTestCase {
                 leftAction:function(){ window.leftActionCount += 1; },
                 rightAction:function(){ window.rightActionCount += 1; }
               }, pendingProps:{}, return:null, type:{name:'KindlePagination'} };
+              window.__crKindleTurnCapability = null;
               return window.__crKindleSemanticPageTurn('next', 'rtl');
             })()
             """
@@ -1150,13 +1151,18 @@ class CastReaderTests: XCTestCase {
             (function() {
               var leaf = document.querySelector('#kr-chevron-right span');
               leaf.__reactFiber$test = { memoizedProps:{ onClick:function(){} }, pendingProps:{}, return:null };
+              window.__crKindleTurnCapability = null;
               return window.__crKindleSemanticPageTurn('next');
             })()
             """
         )
         let singleHandlerData = try XCTUnwrap((singleHandlerRaw as? String)?.data(using: .utf8))
         let singleHandler = try XCTUnwrap(JSONSerialization.jsonObject(with: singleHandlerData) as? [String: Any])
-        XCTAssertEqual(singleHandler["ok"] as? Bool, false, "单个 click handler 不能冒充 paired pagination actions")
+        XCTAssertEqual(singleHandler["strategy"] as? String, "keyboard-fallback", "单个 click handler 不能冒充 paired pagination actions")
+        XCTAssertEqual(singleHandler["semanticAction"] as? String, "ArrowRight")
+        XCTAssertEqual(singleHandler["dispatchCount"] as? Int, 1)
+        let fallbackKeyboardTurnCount = try await webView.evaluateJavaScript("window.hiddenKeyboardTurnCount") as? Int
+        XCTAssertEqual(fallbackKeyboardTurnCount, 1)
     }
 
     @MainActor
@@ -2108,12 +2114,17 @@ final class LocalizationCatalogTests: XCTestCase {
     }
 
     private func formatSignature(_ value: String) throws -> [String] {
+        // `%%` is a literal percent sign in printf-style localized strings.
+        // Remove those pairs before matching conversions so the second `%`
+        // cannot combine with following prose (for example `%% frente`) and
+        // be misread as a floating-point placeholder.
+        let formatOnly = value.replacingOccurrences(of: "%%", with: "")
         let pattern = #"%(?:\d+\$)?[-+0 #']*(?:\d+|\*)?(?:\.\d+)?(?:hh|ll|h|l|z|t|j)?([@diuoxXfFeEgGaAcCsSp])"#
         let regex = try NSRegularExpression(pattern: pattern)
-        let range = NSRange(value.startIndex..<value.endIndex, in: value)
-        return regex.matches(in: value, range: range).compactMap { match in
-            guard let scalarRange = Range(match.range(at: 1), in: value) else { return nil }
-            let scalar = String(value[scalarRange])
+        let range = NSRange(formatOnly.startIndex..<formatOnly.endIndex, in: formatOnly)
+        return regex.matches(in: formatOnly, range: range).compactMap { match in
+            guard let scalarRange = Range(match.range(at: 1), in: formatOnly) else { return nil }
+            let scalar = String(formatOnly[scalarRange])
             if "diuoxXc".contains(scalar) { return "integer" }
             if "fFeEgGaA".contains(scalar) { return "float" }
             if scalar == "@" { return "object" }

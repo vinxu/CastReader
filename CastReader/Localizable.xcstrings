@@ -9001,64 +9001,6 @@
         }
       }
     },
-    "从 Safari 解锁完整朗读与解读" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vollständiges Vorlesen und Erklären über Safari freischalten"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unlock full Read Aloud and Explain from Safari"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desbloquea todas las funciones de Leer en voz alta y Explicar desde Safari"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Débloquez toutes les fonctions Lire à voix haute et Expliquer depuis Safari"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Safari से ज़ोर से पढ़ें और व्याख्या की सभी सुविधाएँ अनलॉक करें"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sblocca tutte le funzioni Leggi ad alta voce e Spiega da Safari"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Safariから「読み上げ」と「解説」の全機能を利用できます"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desbloqueie todos os recursos de Ler em voz alta e Explicar pelo Safari"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "从 Safari 解锁完整朗读与解读"
-          }
-        }
-      }
-    },
     "从其他应用分享网页、文字、文档或图片到 CastReader，内容会保存在这里。" : {
       "localizations" : {
         "de" : {

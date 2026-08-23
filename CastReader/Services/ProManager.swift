@@ -732,7 +732,6 @@ final class ProManager: ObservableObject {
         if pending {
             debugLog("sync-needed reason=\(reason) hasEmail=\(hasEmail ? "Y" : "N") localStoreKit=Y server=N")
         }
-        SafariExtensionBridge.syncFromApp()
     }
 
     private func debugTransaction(_ label: String, _ transaction: Transaction) {
