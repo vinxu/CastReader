@@ -11,6 +11,7 @@ import Foundation
 
 enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
     case appSessionStart = "app_session_start"
+    case appFirstOpen = "app_first_open"
     case onboardingStep = "onboarding_step"
     case libraryConnection = "library_connection"
     case contentInputStage = "content_input_stage"
@@ -32,6 +33,8 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
     case explainMilestone = "explain_milestone"
     case explainEnd = "explain_end"
     case paywallShown = "paywall_shown"
+    case paywallAction = "paywall_action"
+    case accountGateResult = "account_gate_result"
     case homeProCardImpression = "home_pro_card_impression"
     case homeProCardYearlyPurchaseTap = "home_pro_card_yearly_purchase_tap"
     case homeProCardSecondaryTap = "home_pro_card_secondary_tap"
@@ -41,11 +44,16 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
     case reviewPromptEligible = "review_prompt_eligible"
     case reviewRequestAttempted = "review_request_attempted"
     case reviewStoreLinkOpened = "review_store_link_opened"
+    case adAttributionAttempt = "ad_attribution_attempt"
     case adAttribution = "ad_attribution"
+    case growthConfigAssigned = "growth_config_assigned"
+    case paywallPlanSelected = "paywall_plan_selected"
+    case resumeReminder = "resume_reminder"
 
     var legacyEvent: String {
         switch self {
         case .appSessionStart: return "session_start"
+        case .appFirstOpen: return "app_first_open"
         case .onboardingStep: return "onboarding_step"
         case .libraryConnection: return "library_connection"
         case .contentInputStage: return "content_input_stage"
@@ -67,6 +75,8 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
         case .explainMilestone: return "quickread_video_complete"
         case .explainEnd: return "quickread_pipeline_done"
         case .paywallShown: return "paywall_shown"
+        case .paywallAction: return "paywall_action"
+        case .accountGateResult: return "account_gate_result"
         case .homeProCardImpression: return "home_pro_card_impression"
         case .homeProCardYearlyPurchaseTap: return "home_pro_card_yearly_purchase_tap"
         case .homeProCardSecondaryTap: return "home_pro_card_secondary_tap"
@@ -76,7 +86,11 @@ enum AnalyticsEventName: String, Codable, CaseIterable, Sendable {
         case .reviewPromptEligible: return "rating_prompt_eligible"
         case .reviewRequestAttempted: return "rating_prompt"
         case .reviewStoreLinkOpened: return "rating_store_link_opened"
+        case .adAttributionAttempt: return "ad_attribution_attempt"
         case .adAttribution: return "ad_attribution"
+        case .growthConfigAssigned: return "growth_config_assigned"
+        case .paywallPlanSelected: return "paywall_plan_selected"
+        case .resumeReminder: return "resume_reminder"
         }
     }
 }
@@ -96,6 +110,134 @@ enum AnalyticsResult: String, Codable, Sendable {
     case blocked
     case failed
     case pending
+}
+
+enum AnalyticsOnboardingStep: String, Codable, CaseIterable, Sendable {
+    case authGateViewed = "auth_gate_viewed"
+    case authProviderTapped = "auth_provider_tapped"
+    case authSucceeded = "auth_succeeded"
+    case authFailed = "auth_failed"
+    case sourceChooserShown = "source_chooser_shown"
+    case sourceSelected = "source_selected"
+    case libraryReady = "library_ready"
+    case firstBookOpened = "first_book_opened"
+    case firstAudio = "first_audio"
+    case listened30Seconds = "listen_30s"
+    case listened300Seconds = "listen_300s"
+    case trialOfferShown = "trial_offer_shown"
+    case trialStarted = "trial_started"
+    // Android storefront onboarding values are part of the shared canonical
+    // contract even though iOS does not currently emit them.
+    case value
+    case storefront
+    case login
+    case scan
+    case firstListen = "first_listen"
+}
+
+enum AnalyticsFirstOpenKind: String, Codable, CaseIterable, Sendable {
+    case freshInstall = "fresh_install"
+    case instrumentationBackfill = "instrumentation_backfill"
+    case unknown
+}
+
+enum AnalyticsOnboardingOutcome: String, Codable, CaseIterable, Sendable {
+    case shown
+    case tapped
+    case started
+    case success
+    case failed
+    case skipped
+    case done
+}
+
+enum AnalyticsOnboardingSource: String, Codable, CaseIterable, Sendable {
+    case app
+    case apple
+    case google
+    case email
+    case phone
+    case kindle
+    case weread
+    case googleBooks = "google_books"
+    case kobo
+    case oreilly
+    case file
+    case camera
+    case photoLibrary = "photo_library"
+    case clipboard
+    case url
+    case text
+    case unknown
+    case other
+}
+
+enum AnalyticsAdAttributionAttemptOutcome: String, Codable, CaseIterable, Sendable {
+    case tokenAcquired = "token_acquired"
+    case referrerAcquired = "referrer_acquired"
+    case retryableError = "retryable_error"
+    case unsupported
+    case failed
+    case windowExpired = "window_expired"
+    case deliveryNotAccepted = "delivery_not_accepted"
+}
+
+enum AnalyticsGrowthEligibility: String, Codable, CaseIterable, Sendable {
+    case eligible
+    case ineligible
+}
+
+enum AnalyticsGrowthMarket: String, Codable, CaseIterable, Sendable {
+    case us
+    case gb
+    case other
+}
+
+enum AnalyticsPlanSelectionSource: String, Codable, CaseIterable, Sendable {
+    case defaultSelection = "default"
+    case user
+}
+
+enum AnalyticsPlanInterval: String, Codable, CaseIterable, Sendable {
+    case monthly
+    case yearly
+}
+
+enum AnalyticsPaywallAction: String, Codable, CaseIterable, Sendable {
+    case ctaTapped = "cta_tapped"
+    case dismissed
+}
+
+enum AnalyticsOfferType: String, Codable, CaseIterable, Sendable {
+    case introductory
+    case promotional
+    case code
+    case other
+    case none
+}
+
+enum AnalyticsResumeReminderAction: String, Codable, CaseIterable, Sendable {
+    case permissionRequested = "permission_requested"
+    case scheduled
+    case opened
+    case cancelled
+}
+
+enum AnalyticsResumeReminderOutcome: String, Codable, CaseIterable, Sendable {
+    case success
+    case denied
+    case failed
+    case unavailable
+    case cancelled
+}
+
+enum AnalyticsNotificationPermissionStatus: String, Codable, CaseIterable, Sendable {
+    case notDetermined = "not_determined"
+    case denied
+    case authorized
+    case provisional
+    case ephemeral
+    case unknown
 }
 
 /// How a session started. The three system-surface values mirror
@@ -237,6 +379,29 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
     var attributionToken: String?
     var attemptCount: Int?
     var offerType: String?
+    var outcome: String?
+    var configId: String?
+    var market: String?
+    var eligibility: String?
+    var valueMilestone: String?
+    var offerEligible: Bool?
+    var selectedProductId: String?
+    var selectionSource: String?
+    var interval: String?
+    var action: String?
+    var permissionStatus: String?
+    var daysSinceLastRead: Int?
+    var firstOpenKind: String?
+    var campaignSource: String?
+    var campaignMedium: String?
+    var campaignId: String?
+    var adGroupId: String?
+    var creativeId: String?
+    var choiceSurface: String?
+    var recommendationSignal: String?
+    var matched: Bool?
+    var gatePresented: Bool?
+    var trialDays: Int?
 
     init(
         launchType: String? = nil,
@@ -293,7 +458,30 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         attributionResult: String? = nil,
         attributionToken: String? = nil,
         attemptCount: Int? = nil,
-        offerType: String? = nil
+        offerType: String? = nil,
+        outcome: String? = nil,
+        configId: String? = nil,
+        market: String? = nil,
+        eligibility: String? = nil,
+        valueMilestone: String? = nil,
+        offerEligible: Bool? = nil,
+        selectedProductId: String? = nil,
+        selectionSource: String? = nil,
+        interval: String? = nil,
+        action: String? = nil,
+        permissionStatus: String? = nil,
+        daysSinceLastRead: Int? = nil,
+        firstOpenKind: String? = nil,
+        campaignSource: String? = nil,
+        campaignMedium: String? = nil,
+        campaignId: String? = nil,
+        adGroupId: String? = nil,
+        creativeId: String? = nil,
+        choiceSurface: String? = nil,
+        recommendationSignal: String? = nil,
+        matched: Bool? = nil,
+        gatePresented: Bool? = nil,
+        trialDays: Int? = nil
     ) {
         self.launchType = launchType
         self.step = step
@@ -350,6 +538,29 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         self.attributionToken = attributionToken
         self.attemptCount = attemptCount
         self.offerType = offerType
+        self.outcome = outcome
+        self.configId = configId
+        self.market = market
+        self.eligibility = eligibility
+        self.valueMilestone = valueMilestone
+        self.offerEligible = offerEligible
+        self.selectedProductId = selectedProductId
+        self.selectionSource = selectionSource
+        self.interval = interval
+        self.action = action
+        self.permissionStatus = permissionStatus
+        self.daysSinceLastRead = daysSinceLastRead
+        self.firstOpenKind = firstOpenKind
+        self.campaignSource = campaignSource
+        self.campaignMedium = campaignMedium
+        self.campaignId = campaignId
+        self.adGroupId = adGroupId
+        self.creativeId = creativeId
+        self.choiceSurface = choiceSurface
+        self.recommendationSignal = recommendationSignal
+        self.matched = matched
+        self.gatePresented = gatePresented
+        self.trialDays = trialDays
     }
 }
 
@@ -435,6 +646,11 @@ final class AnalyticsLibraryConnectionRecorder: @unchecked Sendable {
                 bookCount: bookCount,
                 occurredAt: occurredAt
             )
+            if stage == .syncCompleted, result == .success {
+                GrowthLoopConversionCoordinator.shared.libraryDidSync(
+                    source: analyticsSession.source
+                )
+            }
         }
     }
 
@@ -596,7 +812,14 @@ enum AnalyticsSchema {
 
     private static let definitions: [AnalyticsEventName: Definition] = [
         .appSessionStart: .init(required: ["launchType"], optional: []),
-        .onboardingStep: .init(required: ["step", "result", "source"], optional: []),
+        .appFirstOpen: .init(required: ["firstOpenKind"], optional: []),
+        .onboardingStep: .init(
+            required: ["step", "result", "source"],
+            optional: [
+                "durationMs", "errorCode", "bindSessionId", "configId", "storefront",
+                "choiceSurface", "recommendationSignal", "matched",
+            ]
+        ),
         .libraryConnection: .init(
             required: ["bindSessionId", "source", "stage", "result"],
             optional: ["errorCode", "durationMs", "bookCountBucket"]
@@ -631,7 +854,21 @@ enum AnalyticsSchema {
         .explainFirstBlock: .init(required: ["latencyMs", "scenario"], optional: ["storefront"]),
         .explainMilestone: .init(required: ["milestone", "blocksStarted", "blocksCompleted"], optional: ["storefront"]),
         .explainEnd: .init(required: ["result", "endReason", "blocksStarted", "blocksCompleted", "completionBucket"], optional: ["errorStage", "errorCode", "storefront"]),
-        .paywallShown: .init(required: ["trigger", "entitlementState"], optional: ["hadMeaningfulReading"]),
+        .paywallShown: .init(
+            required: ["trigger", "entitlementState"],
+            optional: [
+                "hadMeaningfulReading", "valueMilestone", "offerEligible",
+                "selectedProductId", "configId",
+            ]
+        ),
+        .paywallAction: .init(
+            required: ["trigger", "productId", "action"],
+            optional: ["offerEligible", "trialDays"]
+        ),
+        .accountGateResult: .init(
+            required: ["trigger", "productId", "result", "gatePresented"],
+            optional: ["durationMs", "errorCode"]
+        ),
         .homeProCardImpression: .init(required: [], optional: []),
         .homeProCardYearlyPurchaseTap: .init(required: [], optional: []),
         .homeProCardSecondaryTap: .init(required: [], optional: []),
@@ -641,18 +878,37 @@ enum AnalyticsSchema {
         ),
         .purchaseResult: .init(
             required: ["store", "productId", "trigger", "result"],
-            optional: ["errorCode", "transactionEnvironment", "offerType"]
+            optional: ["errorCode", "transactionEnvironment", "offerType", "trialDays"]
         ),
         .entitlementActivated: .init(
             required: ["store", "productId", "trigger", "activationSource"],
-            optional: ["syncState", "transactionEnvironment", "offerType"]
+            optional: ["syncState", "transactionEnvironment", "offerType", "trialDays"]
         ),
         .reviewPromptEligible: .init(required: ["trigger", "store"], optional: []),
         .reviewRequestAttempted: .init(required: ["trigger", "store", "result"], optional: ["errorCode"]),
         .reviewStoreLinkOpened: .init(required: ["trigger", "store"], optional: []),
+        .adAttributionAttempt: .init(
+            required: ["provider", "attemptCount", "outcome", "latencyMs"],
+            optional: ["errorCode"]
+        ),
         .adAttribution: .init(
             required: ["provider", "attributionResult"],
-            optional: ["attributionToken", "attemptCount"]
+            optional: [
+                "attributionToken", "attemptCount", "campaignSource", "campaignMedium",
+                "campaignId", "adGroupId", "creativeId",
+            ]
+        ),
+        .growthConfigAssigned: .init(
+            required: ["configId", "market", "eligibility"],
+            optional: []
+        ),
+        .paywallPlanSelected: .init(
+            required: ["productId", "selectionSource", "interval"],
+            optional: ["trigger", "configId", "offerEligible"]
+        ),
+        .resumeReminder: .init(
+            required: ["action", "result"],
+            optional: ["permissionStatus", "trigger", "daysSinceLastRead", "errorCode"]
         ),
     ]
 
@@ -662,6 +918,7 @@ enum AnalyticsSchema {
         // 中国区新增的身份与支付凭据字段：手机号登录与支付宝订阅都不得进入埋点。
         "phone", "phoneNumber", "smsCode", "verificationCode",
         "wechatUid", "wereadUid", "agreementNo",
+        "userId", "backendUserId", "transactionId", "originalTransactionId",
     ])
 
     static func validate(_ name: AnalyticsEventName, properties: AnalyticsProperties) throws {
@@ -706,6 +963,46 @@ enum AnalyticsSchema {
 
     static let youTubeCaptionKinds: Set<String> = ["asr", "manual"]
 
+    static let adAttributionDiagnosticCodes: Set<String> = [
+        "simulator",
+        "token_empty",
+        "network_unavailable",
+        "request_timed_out",
+        "adservices_unavailable",
+        "unsupported_platform",
+        "unknown",
+        "window_expired",
+        "analytics_rejected",
+        "analytics_unavailable",
+        "service_unavailable",
+        "service_disconnected",
+        "feature_not_supported",
+        "permission_error",
+        "developer_error",
+        "client_error",
+        "distribution_not_play",
+    ]
+
+    static let attributionProviders: Set<String> = ["apple_ads", "play_install_referrer"]
+    static let installCampaignSources: Set<String> = [
+        "google_ads", "meta_ads", "tiktok_ads", "microsoft_ads", "organic", "unknown",
+    ]
+    static let installCampaignMediums: Set<String> = [
+        "cpc", "paid_social", "display", "video", "affiliate", "organic", "unknown",
+    ]
+    static let storefrontChoiceSurfaces: Set<String> = ["inline", "chooser"]
+    static let storefrontRecommendationSignals: Set<String> = [
+        "persisted_onboarding", "bound_library", "local_signals", "default",
+    ]
+
+    static let paywallValueMilestones: Set<String> = [
+        "library_ready",
+        "first_audio",
+        "listen_30s",
+        "listen_300s",
+        "quota_exhausted",
+    ]
+
     private static func encodedKeys(_ properties: AnalyticsProperties) throws -> Set<String> {
         let data = try JSONEncoder().encode(properties)
         let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -738,6 +1035,20 @@ enum AnalyticsSchema {
                 value: properties.storefront ?? "nil"
             )
         }
+        if let trialDays = properties.trialDays,
+           !(1...3_650).contains(trialDays) {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "trialDays",
+                value: String(trialDays)
+            )
+        }
+        if let offerType = properties.offerType,
+           AnalyticsOfferType(rawValue: offerType) == nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "offerType",
+                value: offerType
+            )
+        }
 
         if name == .appSessionStart {
             guard let launchType = properties.launchType,
@@ -749,27 +1060,74 @@ enum AnalyticsSchema {
             }
         }
 
+        if name == .appFirstOpen {
+            guard let firstOpenKind = properties.firstOpenKind,
+                  AnalyticsFirstOpenKind(rawValue: firstOpenKind) != nil else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "firstOpenKind",
+                    value: properties.firstOpenKind ?? "nil"
+                )
+            }
+            return
+        }
+
+        if name == .onboardingStep {
+            try validateOnboardingStep(properties)
+            return
+        }
+
+        if name == .adAttributionAttempt {
+            try validateAdAttributionAttempt(properties)
+            return
+        }
+
         if name == .adAttribution {
-            guard properties.provider == "apple_ads" else {
+            try validateAdAttribution(properties)
+            return
+        }
+
+        if name == .growthConfigAssigned {
+            guard let configId = properties.configId,
+                  !configId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw AnalyticsSchemaError.invalidPropertyValue(
-                    property: "provider",
-                    value: properties.provider ?? "nil"
+                    property: "configId",
+                    value: properties.configId ?? "nil"
                 )
             }
-            guard let attributionResult = properties.attributionResult,
-                  ["token", "unavailable", "unsupported"].contains(attributionResult) else {
+            guard let market = properties.market,
+                  AnalyticsGrowthMarket(rawValue: market) != nil else {
                 throw AnalyticsSchemaError.invalidPropertyValue(
-                    property: "attributionResult",
-                    value: properties.attributionResult ?? "nil"
+                    property: "market",
+                    value: properties.market ?? "nil"
                 )
             }
-            // token 结果必带 token；非 token 结果不得带（避免误传空串占位）。
-            if (attributionResult == "token") != (properties.attributionToken?.isEmpty == false) {
+            guard let eligibility = properties.eligibility,
+                  AnalyticsGrowthEligibility(rawValue: eligibility) != nil else {
                 throw AnalyticsSchemaError.invalidPropertyValue(
-                    property: "attributionToken",
-                    value: properties.attributionToken ?? "nil"
+                    property: "eligibility",
+                    value: properties.eligibility ?? "nil"
                 )
             }
+            return
+        }
+
+        if name == .paywallShown || name == .paywallPlanSelected {
+            try validatePaywallEvent(name, properties: properties)
+            return
+        }
+
+        if name == .paywallAction {
+            try validatePaywallAction(properties)
+            return
+        }
+
+        if name == .accountGateResult {
+            try validateAccountGateResult(properties)
+            return
+        }
+
+        if name == .resumeReminder {
+            try validateResumeReminder(properties)
             return
         }
 
@@ -796,6 +1154,9 @@ enum AnalyticsSchema {
                 property: "transactionEnvironment",
                 value: transactionEnvironment
             )
+        }
+        if name == .purchaseResult || name == .entitlementActivated {
+            try validatePurchaseOffer(properties)
         }
         guard name == .reviewPromptEligible
                 || name == .reviewRequestAttempted
@@ -835,6 +1196,422 @@ enum AnalyticsSchema {
             throw AnalyticsSchemaError.invalidPropertyValue(
                 property: "result",
                 value: properties.result ?? "nil"
+            )
+        }
+    }
+
+    private static func validateOnboardingStep(_ properties: AnalyticsProperties) throws {
+        guard let step = properties.step,
+              AnalyticsOnboardingStep(rawValue: step) != nil else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "step",
+                value: properties.step ?? "nil"
+            )
+        }
+        guard let result = properties.result,
+              AnalyticsOnboardingOutcome(rawValue: result) != nil else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "result",
+                value: properties.result ?? "nil"
+            )
+        }
+        guard let source = properties.source,
+              AnalyticsOnboardingSource(rawValue: source) != nil else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "source",
+                value: properties.source ?? "nil"
+            )
+        }
+        if let durationMs = properties.durationMs, durationMs < 0 {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "durationMs",
+                value: String(durationMs)
+            )
+        }
+        if let bindSessionId = properties.bindSessionId,
+           UUID(uuidString: bindSessionId) == nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "bindSessionId",
+                value: bindSessionId
+            )
+        }
+        if result == AnalyticsOnboardingOutcome.failed.rawValue,
+           properties.errorCode?.isEmpty != false {
+            throw AnalyticsSchemaError.invalidPropertyValue(property: "errorCode", value: "nil")
+        }
+        if result != AnalyticsOnboardingOutcome.failed.rawValue,
+           properties.errorCode != nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "errorCode",
+                value: properties.errorCode ?? "nil"
+            )
+        }
+
+        let hasStorefrontDecision = properties.storefront != nil
+            || properties.choiceSurface != nil
+            || properties.recommendationSignal != nil
+            || properties.matched != nil
+        if hasStorefrontDecision {
+            guard step == AnalyticsOnboardingStep.storefront.rawValue else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "step",
+                    value: step
+                )
+            }
+            guard properties.storefront != nil else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "storefront",
+                    value: "nil"
+                )
+            }
+            guard let surface = properties.choiceSurface,
+                  storefrontChoiceSurfaces.contains(surface) else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "choiceSurface",
+                    value: properties.choiceSurface ?? "nil"
+                )
+            }
+            guard let signal = properties.recommendationSignal,
+                  storefrontRecommendationSignals.contains(signal) else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "recommendationSignal",
+                    value: properties.recommendationSignal ?? "nil"
+                )
+            }
+            if properties.matched != nil,
+               result != AnalyticsOnboardingOutcome.done.rawValue {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "matched",
+                    value: String(properties.matched ?? false)
+                )
+            }
+        }
+    }
+
+    private static func validateAdAttributionAttempt(
+        _ properties: AnalyticsProperties
+    ) throws {
+        guard let provider = properties.provider,
+              attributionProviders.contains(provider) else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "provider",
+                value: properties.provider ?? "nil"
+            )
+        }
+        guard let attemptCount = properties.attemptCount, (1...8).contains(attemptCount) else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "attemptCount",
+                value: properties.attemptCount.map(String.init) ?? "nil"
+            )
+        }
+        guard let latencyMs = properties.latencyMs, (0...120_000).contains(latencyMs) else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "latencyMs",
+                value: properties.latencyMs.map(String.init) ?? "nil"
+            )
+        }
+        let validOutcomes: Set<String> = provider == "apple_ads"
+            ? [
+                AnalyticsAdAttributionAttemptOutcome.tokenAcquired.rawValue,
+                AnalyticsAdAttributionAttemptOutcome.retryableError.rawValue,
+                AnalyticsAdAttributionAttemptOutcome.unsupported.rawValue,
+                AnalyticsAdAttributionAttemptOutcome.windowExpired.rawValue,
+                AnalyticsAdAttributionAttemptOutcome.deliveryNotAccepted.rawValue,
+            ]
+            : [
+                AnalyticsAdAttributionAttemptOutcome.referrerAcquired.rawValue,
+                AnalyticsAdAttributionAttemptOutcome.retryableError.rawValue,
+                AnalyticsAdAttributionAttemptOutcome.unsupported.rawValue,
+                AnalyticsAdAttributionAttemptOutcome.failed.rawValue,
+            ]
+        guard let outcome = properties.outcome, validOutcomes.contains(outcome) else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "outcome",
+                value: properties.outcome ?? "nil"
+            )
+        }
+        if let errorCode = properties.errorCode,
+           !adAttributionDiagnosticCodes.contains(errorCode) {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "errorCode",
+                value: errorCode
+            )
+        }
+        let successOutcomes: Set<String> = [
+            AnalyticsAdAttributionAttemptOutcome.tokenAcquired.rawValue,
+            AnalyticsAdAttributionAttemptOutcome.referrerAcquired.rawValue,
+        ]
+        let requiresError = !successOutcomes.contains(outcome)
+        if requiresError != (properties.errorCode != nil) {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "errorCode",
+                value: properties.errorCode ?? "nil"
+            )
+        }
+    }
+
+    private static func validateAdAttribution(
+        _ properties: AnalyticsProperties
+    ) throws {
+        guard let provider = properties.provider,
+              attributionProviders.contains(provider) else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "provider",
+                value: properties.provider ?? "nil"
+            )
+        }
+        if let attemptCount = properties.attemptCount,
+           !(1...8).contains(attemptCount) {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "attemptCount",
+                value: String(attemptCount)
+            )
+        }
+
+        if provider == "apple_ads" {
+            guard let result = properties.attributionResult,
+                  ["token", "unavailable", "unsupported"].contains(result) else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "attributionResult",
+                    value: properties.attributionResult ?? "nil"
+                )
+            }
+            let hasToken = properties.attributionToken?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .isEmpty == false
+            guard (result == "token") == hasToken else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "attributionToken",
+                    value: properties.attributionToken ?? "nil"
+                )
+            }
+            let campaignFields = [
+                properties.campaignSource,
+                properties.campaignMedium,
+                properties.campaignId,
+                properties.adGroupId,
+                properties.creativeId,
+            ]
+            guard campaignFields.allSatisfy({ $0 == nil }) else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "campaignSource",
+                    value: properties.campaignSource ?? "unexpected_play_campaign_fields"
+                )
+            }
+            return
+        }
+
+        let playResults: Set<String> = [
+            "attributed", "organic", "unavailable", "unsupported", "failed",
+        ]
+        guard let result = properties.attributionResult,
+              playResults.contains(result) else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "attributionResult",
+                value: properties.attributionResult ?? "nil"
+            )
+        }
+        guard properties.attributionToken == nil else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "attributionToken",
+                value: "play_token_forbidden"
+            )
+        }
+
+        let attributed = result == "attributed"
+        if attributed {
+            guard let source = properties.campaignSource,
+                  installCampaignSources.contains(source) else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "campaignSource",
+                    value: properties.campaignSource ?? "nil"
+                )
+            }
+            guard let medium = properties.campaignMedium,
+                  installCampaignMediums.contains(medium) else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "campaignMedium",
+                    value: properties.campaignMedium ?? "nil"
+                )
+            }
+        } else if properties.campaignSource != nil || properties.campaignMedium != nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "campaignSource",
+                value: properties.campaignSource ?? "unexpected_campaign_medium"
+            )
+        }
+
+        for (key, value) in [
+            ("campaignId", properties.campaignId),
+            ("adGroupId", properties.adGroupId),
+            ("creativeId", properties.creativeId),
+        ] where value != nil {
+            let value = value ?? ""
+            guard attributed,
+                  value.range(
+                    of: "^[0-9]{1,32}$",
+                    options: .regularExpression
+                  ) != nil else {
+                throw AnalyticsSchemaError.invalidPropertyValue(property: key, value: value)
+            }
+        }
+    }
+
+    private static func validatePaywallEvent(
+        _ name: AnalyticsEventName,
+        properties: AnalyticsProperties
+    ) throws {
+        if let milestone = properties.valueMilestone,
+           !paywallValueMilestones.contains(milestone) {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "valueMilestone",
+                value: milestone
+            )
+        }
+        if name == .paywallPlanSelected {
+            guard let productId = properties.productId,
+                  isSafeAnalyticsIdentifier(productId) else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "productId",
+                    value: properties.productId ?? "nil"
+                )
+            }
+            guard let source = properties.selectionSource,
+                  AnalyticsPlanSelectionSource(rawValue: source) != nil else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "selectionSource",
+                    value: properties.selectionSource ?? "nil"
+                )
+            }
+            guard let interval = properties.interval,
+                  AnalyticsPlanInterval(rawValue: interval) != nil else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "interval",
+                    value: properties.interval ?? "nil"
+                )
+            }
+        }
+    }
+
+    private static func validatePaywallAction(
+        _ properties: AnalyticsProperties
+    ) throws {
+        guard let productId = properties.productId,
+              isSafeAnalyticsIdentifier(productId) else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "productId",
+                value: properties.productId ?? "nil"
+            )
+        }
+        guard let action = properties.action,
+              AnalyticsPaywallAction(rawValue: action) != nil else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "action",
+                value: properties.action ?? "nil"
+            )
+        }
+        if properties.trialDays != nil, properties.offerEligible != true {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "trialDays",
+                value: properties.trialDays.map(String.init) ?? "nil"
+            )
+        }
+    }
+
+    private static func validateAccountGateResult(
+        _ properties: AnalyticsProperties
+    ) throws {
+        guard let productId = properties.productId,
+              isSafeAnalyticsIdentifier(productId) else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "productId",
+                value: properties.productId ?? "nil"
+            )
+        }
+        let allowedResults: Set<String> = ["success", "cancelled", "failed"]
+        guard let result = properties.result, allowedResults.contains(result) else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "result",
+                value: properties.result ?? "nil"
+            )
+        }
+        if let durationMs = properties.durationMs, durationMs < 0 {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "durationMs",
+                value: String(durationMs)
+            )
+        }
+        let safeError = properties.errorCode.map(isSafeAnalyticsIdentifier) ?? false
+        if result == "success", properties.errorCode != nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "errorCode",
+                value: properties.errorCode ?? "nil"
+            )
+        }
+        if result != "success", !safeError {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "errorCode",
+                value: properties.errorCode ?? "nil"
+            )
+        }
+    }
+
+    private static func validatePurchaseOffer(
+        _ properties: AnalyticsProperties
+    ) throws {
+        if properties.trialDays != nil,
+           properties.offerType != AnalyticsOfferType.introductory.rawValue {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "trialDays",
+                value: properties.trialDays.map(String.init) ?? "nil"
+            )
+        }
+    }
+
+    private static func isSafeAnalyticsIdentifier(_ value: String) -> Bool {
+        value.range(
+            of: "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$",
+            options: .regularExpression
+        ) != nil
+    }
+
+    private static func validateResumeReminder(_ properties: AnalyticsProperties) throws {
+        guard let action = properties.action,
+              AnalyticsResumeReminderAction(rawValue: action) != nil else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "action",
+                value: properties.action ?? "nil"
+            )
+        }
+        guard let result = properties.result,
+              AnalyticsResumeReminderOutcome(rawValue: result) != nil else {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "result",
+                value: properties.result ?? "nil"
+            )
+        }
+        if let status = properties.permissionStatus,
+           AnalyticsNotificationPermissionStatus(rawValue: status) == nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "permissionStatus",
+                value: status
+            )
+        }
+        if let days = properties.daysSinceLastRead, days < 0 || days > 365 {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "daysSinceLastRead",
+                value: String(days)
+            )
+        }
+        if result == AnalyticsResumeReminderOutcome.failed.rawValue,
+           properties.errorCode?.isEmpty != false {
+            throw AnalyticsSchemaError.invalidPropertyValue(property: "errorCode", value: "nil")
+        }
+        if result != AnalyticsResumeReminderOutcome.failed.rawValue,
+           properties.errorCode != nil {
+            throw AnalyticsSchemaError.invalidPropertyValue(
+                property: "errorCode",
+                value: properties.errorCode ?? "nil"
             )
         }
     }
@@ -1145,6 +1922,13 @@ struct AnalyticsTransportResult: Equatable, Sendable {
     }
 }
 
+enum AnalyticsDeliveryDisposition: Equatable, Sendable {
+    case accepted
+    case rejected(reason: String)
+    case transportUnavailable
+    case invalidEvent
+}
+
 struct AnalyticsDeadLetterRecord: Codable, Equatable, Sendable {
     let eventId: String
     let eventName: String
@@ -1279,6 +2063,17 @@ actor AnalyticsPipeline {
     private var queue: [AnalyticsEventEnvelope]
     private var deadLetters: [AnalyticsDeadLetterRecord]
     private var isFlushing = false
+    private var deliveryWaiters: [
+        String: [CheckedContinuation<AnalyticsDeliveryDisposition, Never>]
+    ] = [:]
+    /// Process-local delivery receipts close a narrow race where a fire-and-
+    /// forget enqueue reaches the actor after an acknowledgement waiter has
+    /// already delivered the same id. Server idempotency remains authoritative
+    /// across launches; this bounded cache prevents an avoidable duplicate in
+    /// the current process.
+    private var resolvedDeliveries: [String: AnalyticsDeliveryDisposition] = [:]
+    private var resolvedDeliveryOrder: [String] = []
+    private let maxResolvedDeliveries = 256
 
     init(
         store: AnalyticsQueueStore,
@@ -1299,12 +2094,49 @@ actor AnalyticsPipeline {
     }
 
     func enqueue(_ event: AnalyticsEventEnvelope) async {
+        guard resolvedDeliveries[event.eventId] == nil else { return }
         if !queue.contains(where: { $0.eventId == event.eventId }) {
             queue.append(event)
-            if queue.count > maxQueueSize { queue.removeFirst(queue.count - maxQueueSize) }
+            if queue.count > maxQueueSize {
+                let removed = queue.prefix(queue.count - maxQueueSize).map(\.eventId)
+                queue.removeFirst(queue.count - maxQueueSize)
+                for eventId in removed {
+                    resolveWaiters(for: eventId, with: .transportUnavailable)
+                }
+            }
             store.save(queue)
         }
         if queue.count >= batchSize { await flush() }
+    }
+
+    /// Enqueue an idempotent event and wait until the collector explicitly
+    /// accepts or rejects that exact event id. A transport failure leaves the
+    /// event in the durable queue but wakes the caller as unavailable, so
+    /// lifecycle code can retry without falsely sealing local state.
+    func enqueueAndAwaitAcknowledgement(
+        _ event: AnalyticsEventEnvelope
+    ) async -> AnalyticsDeliveryDisposition {
+        if let disposition = resolvedDeliveries[event.eventId] {
+            return disposition
+        }
+        if let rejected = deadLetters.last(where: { $0.eventId == event.eventId }) {
+            return .rejected(reason: rejected.reason)
+        }
+        if !queue.contains(where: { $0.eventId == event.eventId }) {
+            queue.append(event)
+            if queue.count > maxQueueSize {
+                let removed = queue.prefix(queue.count - maxQueueSize).map(\.eventId)
+                queue.removeFirst(queue.count - maxQueueSize)
+                for eventId in removed {
+                    resolveWaiters(for: eventId, with: .transportUnavailable)
+                }
+            }
+            store.save(queue)
+        }
+        return await withCheckedContinuation { continuation in
+            deliveryWaiters[event.eventId, default: []].append(continuation)
+            Task { await self.flush() }
+        }
     }
 
     func flush() async {
@@ -1316,8 +2148,14 @@ actor AnalyticsPipeline {
             let batch = Array(queue.prefix(batchSize))
             do {
                 let result = try await transport.send(batch)
-                let resolved = result.acceptedEventIds.union(result.rejectedEventIds)
-                guard !resolved.isEmpty else { return }
+                let batchEventIds = Set(batch.map(\.eventId))
+                let resolved = result.acceptedEventIds
+                    .union(result.rejectedEventIds)
+                    .intersection(batchEventIds)
+                guard !resolved.isEmpty else {
+                    resolveAllWaiters(with: .transportUnavailable)
+                    return
+                }
                 if !result.rejectedEventIds.isEmpty {
                     retainRejectedEvents(
                         batch,
@@ -1327,10 +2165,25 @@ actor AnalyticsPipeline {
                 }
                 queue.removeAll { resolved.contains($0.eventId) }
                 store.save(queue)
+                for eventId in result.acceptedEventIds where resolved.contains(eventId) {
+                    rememberResolved(.accepted, for: eventId)
+                    resolveWaiters(for: eventId, with: .accepted)
+                }
+                for eventId in result.rejectedEventIds where resolved.contains(eventId) {
+                    let disposition = AnalyticsDeliveryDisposition.rejected(
+                        reason: result.rejectionReasons[eventId] ?? "server_rejected"
+                    )
+                    rememberResolved(disposition, for: eventId)
+                    resolveWaiters(
+                        for: eventId,
+                        with: disposition
+                    )
+                }
             } catch {
                 #if DEBUG
                 print("⚠️ [Analytics] flush retained \(queue.count) events: \(error.localizedDescription)")
                 #endif
+                resolveAllWaiters(with: .transportUnavailable)
                 return
             }
         }
@@ -1338,6 +2191,39 @@ actor AnalyticsPipeline {
 
     func queuedEvents() -> [AnalyticsEventEnvelope] { queue }
     func rejectedEvents() -> [AnalyticsDeadLetterRecord] { deadLetters }
+
+    private func resolveWaiters(
+        for eventId: String,
+        with disposition: AnalyticsDeliveryDisposition
+    ) {
+        let continuations = deliveryWaiters.removeValue(forKey: eventId) ?? []
+        continuations.forEach { $0.resume(returning: disposition) }
+    }
+
+    private func resolveAllWaiters(with disposition: AnalyticsDeliveryDisposition) {
+        let pending = deliveryWaiters
+        deliveryWaiters.removeAll()
+        for continuations in pending.values {
+            continuations.forEach { $0.resume(returning: disposition) }
+        }
+    }
+
+    private func rememberResolved(
+        _ disposition: AnalyticsDeliveryDisposition,
+        for eventId: String
+    ) {
+        if resolvedDeliveries[eventId] == nil {
+            resolvedDeliveryOrder.append(eventId)
+        }
+        resolvedDeliveries[eventId] = disposition
+        if resolvedDeliveryOrder.count > maxResolvedDeliveries {
+            let overflow = resolvedDeliveryOrder.count - maxResolvedDeliveries
+            for staleId in resolvedDeliveryOrder.prefix(overflow) {
+                resolvedDeliveries.removeValue(forKey: staleId)
+            }
+            resolvedDeliveryOrder.removeFirst(overflow)
+        }
+    }
 
     private func retainRejectedEvents(
         _ batch: [AnalyticsEventEnvelope],
@@ -1373,10 +2259,13 @@ final class ProductAnalytics {
     static let shared = ProductAnalytics()
 
     private static let anonymousIdKey = "product_analytics_anonymous_id_v1"
+    private static let growthAssignmentKey = "growth_config_assignment_analytics_v1"
     private let pipeline: AnalyticsPipeline
     private let client: AnalyticsClientInfo
     private(set) var appSessionId = UUID().uuidString
     private var appSessionStarted = false
+    private var appSessionStartEnvelope: AnalyticsEventEnvelope?
+    private var appSessionEnqueueTask: Task<Void, Never>?
     private var backgroundAt: Date?
     private var meaningfulReadReached = false
     private var scheduledFlushTask: Task<Void, Never>?
@@ -1411,17 +2300,73 @@ final class ProductAnalytics {
     func startAppSession(launchType: String = "cold") {
         guard !appSessionStarted else { return }
         appSessionStarted = true
+        do {
+            let event = try AnalyticsEnvelopeFactory.make(
+                name: .appSessionStart,
+                context: .init(productArea: .app, surface: "app", entryPoint: nil),
+                properties: .init(launchType: launchType),
+                client: client,
+                appSessionId: appSessionId,
+                backendUserId: AuthService.shared.proUserId
+            )
+            appSessionStartEnvelope = event
+            appSessionEnqueueTask = Task { [pipeline] in
+                await pipeline.enqueue(event)
+            }
+            scheduleFlush()
+        } catch {
+#if DEBUG
+            print("[Analytics] dropped invalid app session: \(error.localizedDescription)")
+#endif
+        }
+    }
+
+    /// Growth assignment depends on the collector having observed this
+    /// anonymous install/session. Awaiting the exact event id removes the
+    /// startup race between the normal two-second batch flush and status/v2.
+    /// Other product paths remain fail-open; callers decide how to degrade when
+    /// the collector is unavailable.
+    func ensureCurrentAppSessionDelivered() async -> AnalyticsDeliveryDisposition {
+        startAppSession()
+        guard let event = appSessionStartEnvelope else { return .invalidEvent }
+        scheduledFlushTask?.cancel()
+        await appSessionEnqueueTask?.value
+        return await pipeline.enqueueAndAwaitAcknowledgement(event)
+    }
+
+    /// Privacy-safe install identifier used by first-party growth identity
+    /// linking. It is intentionally not an account id and contains no profile
+    /// or content data.
+    var privacySafeAnonymousId: String { client.anonymousId }
+
+    func adAttributionAttempt(
+        attemptCount: Int,
+        outcome: AnalyticsAdAttributionAttemptOutcome,
+        latencyMs: Int,
+        errorCode: String?
+    ) {
         track(
-            .appSessionStart,
-            context: .init(productArea: .app, surface: "app", entryPoint: nil),
-            properties: .init(launchType: launchType)
+            .adAttributionAttempt,
+            context: .init(productArea: .app, surface: "attribution", entryPoint: nil),
+            properties: .init(
+                latencyMs: latencyMs,
+                errorCode: errorCode,
+                provider: "apple_ads",
+                attemptCount: attemptCount,
+                outcome: outcome.rawValue
+            )
         )
     }
 
-    /// Apple Ads 归因：token 由服务端调用 Apple 归因 API 换取 campaign/keyword，
-    /// 支撑投放的词级 CAC 读数。每台设备一生只上报一次（AdAttributionService 门控）。
-    func adAttribution(result: String, token: String?, attemptCount: Int) {
-        track(
+    /// The terminal Apple Ads fact bypasses the ordinary delayed flush. The
+    /// caller may seal its durable state only after this returns `.accepted`.
+    func adAttribution(
+        result: String,
+        token: String?,
+        attemptCount: Int,
+        eventId: String
+    ) async -> AnalyticsDeliveryDisposition {
+        await trackAndAwaitAcknowledgement(
             .adAttribution,
             context: .init(productArea: .app, surface: "attribution", entryPoint: nil),
             properties: .init(
@@ -1429,6 +2374,75 @@ final class ProductAnalytics {
                 attributionResult: result,
                 attributionToken: token,
                 attemptCount: attemptCount
+            ),
+            eventId: eventId
+        )
+    }
+
+    @discardableResult
+    func trackGrowthConfigAssigned(
+        configId: String,
+        market: String,
+        eligibility: String
+    ) -> String? {
+        let signature = "\(configId)|\(market)|\(eligibility)"
+        let defaultsKey = ServiceRouting.current.isolatedStorageKey(Self.growthAssignmentKey)
+        guard UserDefaults.standard.string(forKey: defaultsKey) != signature else { return nil }
+        let eventId = track(
+            .growthConfigAssigned,
+            context: .init(productArea: .app, surface: "growth_config", entryPoint: nil),
+            properties: .init(
+                configId: configId,
+                market: market,
+                eligibility: eligibility
+            )
+        )
+        if eventId != nil { UserDefaults.standard.set(signature, forKey: defaultsKey) }
+        return eventId
+    }
+
+    @discardableResult
+    func trackPaywallPlanSelected(
+        productId: String,
+        selectionSource: AnalyticsPlanSelectionSource,
+        interval: AnalyticsPlanInterval,
+        trigger: String? = nil,
+        configId: String? = nil,
+        offerEligible: Bool? = nil
+    ) -> String? {
+        track(
+            .paywallPlanSelected,
+            context: .init(productArea: .billing, surface: "paywall", entryPoint: trigger),
+            properties: .init(
+                trigger: trigger,
+                productId: productId,
+                configId: configId,
+                offerEligible: offerEligible,
+                selectionSource: selectionSource.rawValue,
+                interval: interval.rawValue
+            )
+        )
+    }
+
+    @discardableResult
+    func trackResumeReminder(
+        action: AnalyticsResumeReminderAction,
+        result: AnalyticsResumeReminderOutcome,
+        permissionStatus: AnalyticsNotificationPermissionStatus? = nil,
+        trigger: String? = nil,
+        daysSinceLastRead: Int? = nil,
+        errorCode: String? = nil
+    ) -> String? {
+        track(
+            .resumeReminder,
+            context: .init(productArea: .app, surface: "resume_reminder", entryPoint: trigger),
+            properties: .init(
+                result: result.rawValue,
+                errorCode: errorCode,
+                trigger: trigger,
+                action: action.rawValue,
+                permissionStatus: permissionStatus?.rawValue,
+                daysSinceLastRead: daysSinceLastRead
             )
         )
     }
@@ -1443,6 +2457,8 @@ final class ProductAnalytics {
         if let backgroundAt, date.timeIntervalSince(backgroundAt) >= 30 * 60 {
             appSessionId = UUID().uuidString
             appSessionStarted = false
+            appSessionStartEnvelope = nil
+            appSessionEnqueueTask = nil
             startAppSession(launchType: "foreground_after_30m")
         } else {
             startAppSession()
@@ -1717,6 +2733,35 @@ final class ProductAnalytics {
             print("[Analytics] dropped invalid event \(name.rawValue): \(error.localizedDescription)")
 #endif
             return nil
+        }
+    }
+
+    private func trackAndAwaitAcknowledgement(
+        _ name: AnalyticsEventName,
+        context: AnalyticsEventContext,
+        properties: AnalyticsProperties,
+        eventId: String,
+        occurredAt: Date = Date()
+    ) async -> AnalyticsDeliveryDisposition {
+        startAppSession()
+        do {
+            let event = try AnalyticsEnvelopeFactory.make(
+                name: name,
+                context: context,
+                properties: properties,
+                client: client,
+                appSessionId: appSessionId,
+                backendUserId: AuthService.shared.proUserId,
+                eventId: eventId,
+                occurredAt: occurredAt
+            )
+            scheduledFlushTask?.cancel()
+            return await pipeline.enqueueAndAwaitAcknowledgement(event)
+        } catch {
+#if DEBUG
+            print("[Analytics] dropped invalid immediate event \(name.rawValue): \(error.localizedDescription)")
+#endif
+            return .invalidEvent
         }
     }
 

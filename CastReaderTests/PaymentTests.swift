@@ -128,6 +128,167 @@ final class PaymentTests: XCTestCase {
         XCTAssertEqual(status.listenSeconds, 60)
     }
 
+    func testGrowthStatusDecodesServerAssignmentAndFiveMinuteGrant() throws {
+        let json = """
+        {
+          "code": 0,
+          "data": {
+            "pro": false,
+            "listenLimit": 300,
+            "listenRemaining": 300,
+            "quotaPolicy": "two_tier_v1",
+            "grantListenMax": 300,
+            "grantListenRemaining": 300,
+            "grantExplainMax": 0,
+            "grantExplainRemaining": 0,
+            "monthlyListenMax": 0,
+            "monthlyListenRemaining": 0,
+            "monthlyExplainMax": 0,
+            "monthlyExplainRemaining": 0,
+            "growthConfig": {
+              "configId": "us_growth_loop_v1",
+              "market": "US",
+              "eligible": true,
+              "assignedAt": "2026-08-23T00:00:00.000Z",
+              "killSwitch": false
+            }
+          }
+        }
+        """.data(using: .utf8)!
+
+        let status = try ProStatusDTO.decodeServerResponse(from: json)
+
+        XCTAssertEqual(status.quotaPolicy, "two_tier_v1")
+        XCTAssertEqual(status.grantListenMax, 300)
+        XCTAssertEqual(status.monthlyListenRemaining, 0)
+        XCTAssertEqual(status.growthConfig?.configId, "us_growth_loop_v1")
+        XCTAssertEqual(status.growthConfig?.market, "US")
+        XCTAssertTrue(status.growthConfig?.eligible == true)
+        XCTAssertFalse(status.growthConfig?.killSwitch == true)
+    }
+
+    func testGrowthStatusURLKeepsAnalyticsAndStableDeviceIdentitiesDistinct() throws {
+        let context = ProBackendService.GrowthClientContext(
+            analyticsAnonymousId: "11111111-1111-4111-8111-111111111111",
+            stableDeviceId: "22222222-2222-4222-8222-222222222222",
+            appVersion: "1.2.28",
+            appBuild: "47",
+            storefrontCountry: "US"
+        )
+        let url = try XCTUnwrap(ProBackendService.makeStatusURL(
+            endpoint: "https://api.castreader.ai/api/mobile/pro/status/v2",
+            context: context,
+            localDate: "2026-08-23"
+        ))
+        let items = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems)
+        let values = Dictionary(uniqueKeysWithValues: items.map { ($0.name, $0.value) })
+
+        XCTAssertEqual(values["analytics_anonymous_id"], context.analyticsAnonymousId)
+        XCTAssertEqual(values["device_id"], context.stableDeviceId)
+        XCTAssertNotEqual(values["analytics_anonymous_id"], values["device_id"])
+        XCTAssertEqual(values["storefront_country"], "US")
+        XCTAssertEqual(values["app_version"], "1.2.28")
+        XCTAssertEqual(values["app_build"], "47")
+        XCTAssertNil(values["user_id"] ?? nil)
+    }
+
+    func testStorefrontCountryNormalizesStoreKitAlphaThreeToGrowthAlphaTwo() {
+        XCTAssertEqual(ProBackendService.normalizedStorefrontCountry("USA"), "US")
+        XCTAssertEqual(ProBackendService.normalizedStorefrontCountry("GBR"), "GB")
+        XCTAssertEqual(ProBackendService.normalizedStorefrontCountry("gb"), "GB")
+        XCTAssertNil(ProBackendService.normalizedStorefrontCountry("CHN"))
+    }
+
+    func testGrowthIdentityRequestIsSignedAndNeverCarriesAUserID() throws {
+        let context = ProBackendService.GrowthClientContext(
+            analyticsAnonymousId: "11111111-1111-4111-8111-111111111111",
+            stableDeviceId: "stable-device-id",
+            appVersion: "1.2.28",
+            appBuild: "47",
+            storefrontCountry: "GB"
+        )
+        let request = try ProBackendService.makeGrowthIdentityLinkRequest(
+            url: URL(string: "https://api.castreader.ai/api/mobile/growth/identity-link")!,
+            bearerToken: "cms_signed_session",
+            context: context
+        )
+        let body = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: XCTUnwrap(request.httpBody)) as? [String: Any]
+        )
+
+        XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer cms_signed_session")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "X-Auth-Provider"), "session")
+        XCTAssertEqual(body["analytics_anonymous_id"] as? String, context.analyticsAnonymousId)
+        XCTAssertEqual(body["stable_device_id"] as? String, context.stableDeviceId)
+        XCTAssertNil(body["user_id"])
+        XCTAssertNil(body["backend_user_id"])
+        XCTAssertNil(body["email"])
+    }
+
+    func testListenRetryRequestReusesCallerOwnedUsageEventID() throws {
+        let url = URL(string: "https://api.castreader.ai/api/mobile/pro/listen-track/v2")!
+        let usageEventId = "33333333-3333-4333-8333-333333333333"
+        let first = try ProBackendService.makeListenTrackRequest(
+            url: url,
+            bearerToken: "cms_session_a",
+            analyticsAnonymousId: "11111111-1111-4111-8111-111111111111",
+            usageEventId: usageEventId,
+            seconds: 13
+        )
+        let retry = try ProBackendService.makeListenTrackRequest(
+            url: url,
+            bearerToken: "cms_refreshed_session",
+            analyticsAnonymousId: "11111111-1111-4111-8111-111111111111",
+            usageEventId: usageEventId,
+            seconds: 13
+        )
+        let firstBody = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: XCTUnwrap(first.httpBody)) as? [String: Any]
+        )
+        let retryBody = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: XCTUnwrap(retry.httpBody)) as? [String: Any]
+        )
+
+        XCTAssertEqual(firstBody["usage_event_id"] as? String, usageEventId)
+        XCTAssertEqual(retryBody["usage_event_id"] as? String, usageEventId)
+        XCTAssertEqual(firstBody["analytics_anonymous_id"] as? String, retryBody["analytics_anonymous_id"] as? String)
+        XCTAssertEqual(firstBody["seconds"] as? Int, 13)
+        XCTAssertNil(firstBody["device_id"], "stable device id cannot replace analytics identity")
+        XCTAssertNil(firstBody["user_id"])
+    }
+
+    func testListenTrackDecodesAuthoritativeGrowthRemaining() throws {
+        let data = """
+        {"code":0,"data":{"seconds":13,"limit":300,"remaining":287,"grantListenRemaining":287,"quotaPolicy":"two_tier_v1"}}
+        """.data(using: .utf8)!
+
+        let result = try XCTUnwrap(ProBackendService.decodeListenTrackResponse(data))
+
+        XCTAssertEqual(result.seconds, 13)
+        XCTAssertEqual(result.remaining, 287)
+        XCTAssertEqual(result.grantListenRemaining, 287)
+        XCTAssertEqual(result.quotaPolicy, "two_tier_v1")
+    }
+
+    func testListenTrackRecognizesFailClosedBackendErrorShapes() {
+        let identityRequired = """
+        {"code":"GROWTH_USAGE_IDENTITY_REQUIRED","message":"identity required"}
+        """.data(using: .utf8)!
+        let usageConflict = """
+        {"code":-1,"error":"GROWTH_USAGE_EVENT_CONFLICT","message":"conflict"}
+        """.data(using: .utf8)!
+
+        XCTAssertEqual(
+            ProBackendService.serverErrorCode(from: identityRequired),
+            "GROWTH_USAGE_IDENTITY_REQUIRED"
+        )
+        XCTAssertEqual(
+            ProBackendService.serverErrorCode(from: usageConflict),
+            "GROWTH_USAGE_EVENT_CONFLICT"
+        )
+    }
+
     func testPhoneBackendUserCanAdoptServerProWithoutEmail() {
         XCTAssertEqual(
             ProManager.serverIdentityKey(userId: "  phone-user-42  ", email: nil),
@@ -493,9 +654,9 @@ final class PaymentTests: XCTestCase {
 
     // MARK: 8. 首购免费试用
 
-    func testBothProductsOfferSevenDayFreeTrial() async throws {
+    func testAllProductsOfferSevenDayFreeTrial() async throws {
         let products = try await Product.products(for: ProManager.productIDs)
-        XCTAssertEqual(products.count, 2)
+        XCTAssertEqual(products.count, ProManager.productIDs.count)
         for product in products {
             let offer = try XCTUnwrap(product.subscription?.introductoryOffer, "\(product.id) 缺少首购优惠")
             XCTAssertEqual(offer.paymentMode, .freeTrial, "\(product.id) 应为免费试用而非首期折扣")
@@ -517,7 +678,7 @@ final class PaymentTests: XCTestCase {
         let yearly = try XCTUnwrap(pro.yearly)
         XCTAssertNotNil(yearly.subscription?.introductoryOffer, "本地配置应带 7 天试用 offer")
 
-        pro.setIntroOfferEligibilityForTesting([ProManager.yearlyID, ProManager.monthlyID])
+        pro.setIntroOfferEligibilityForTesting([yearly.id])
         XCTAssertTrue(pro.showsFreeTrial(for: yearly), "有 offer 且有资格 → 展示试用")
 
         pro.setIntroOfferEligibilityForTesting([])

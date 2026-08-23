@@ -74,6 +74,7 @@ final class QuotaManager: ObservableObject {
             return
         }
         guard activeStorageID != storageID else { return }
+        GrowthLoopConversionCoordinator.shared.clearServerAssignment()
         activeStorageID = storageID
         loadLocalState()
         loadTwoTierState()
@@ -82,6 +83,7 @@ final class QuotaManager: ObservableObject {
     }
 
     func deactivateAccountScope() {
+        GrowthLoopConversionCoordinator.shared.clearServerAssignment()
         activeStorageID = nil
         day = Self.localDay()
         listenSeconds = 0
@@ -145,6 +147,9 @@ final class QuotaManager: ObservableObject {
     /// 用服务端 /api/pro/status 回填额度。
     func applyServerStatus(_ s: ProStatusDTO) {
         guard activeStorageID != nil else { return }
+        GrowthLoopConversionCoordinator.shared.applyServerAssignment(
+            s.growthConfig.map { GrowthProductAssignment(serverDTO: $0) }
+        )
         if let rawPolicy = s.quotaPolicy, let parsed = QuotaPolicy(rawValue: rawPolicy) {
             policy = parsed
             persistPolicy()
@@ -220,8 +225,73 @@ final class QuotaManager: ObservableObject {
         let secs = Int(seconds.rounded())
         Task { @MainActor in
             guard await AuthService.shared.ensureMobileSession() else { return }
-            await ProBackendService.shared.trackListen(seconds: secs)
+            let outcome = await ProBackendService.shared.trackListen(seconds: secs)
+            switch outcome {
+            case .success(let response):
+                applyListenTrackResponse(response)
+            case .growthIdentityRequired:
+                // The server could not bind this usage to the signed growth
+                // assignment. Keep the already-decremented two-tier mirror
+                // fail-closed, and refresh the authoritative status/identity.
+                if policy == .twoTier {
+                    await AuthService.shared.linkGrowthIdentityIfAuthenticated()
+                    await ProManager.shared.refreshServer()
+                }
+            case .usageEventConflict, .unauthorized, .unavailable:
+                // Do not retry a 409 or fall back to daily accounting. The
+                // conservative local decrement remains until the next status.
+                break
+            }
         }
+    }
+
+    private func applyListenTrackResponse(_ response: ProListenTrackDTO) {
+        if let rawPolicy = response.quotaPolicy,
+           let parsed = QuotaPolicy(rawValue: rawPolicy) {
+            policy = parsed
+            persistPolicy()
+        }
+        guard policy == .twoTier else {
+            serverListenRemaining = Double(max(0, response.remaining))
+            return
+        }
+        var mirror = twoTier ?? TwoTierMirror(
+            listenRemaining: 0,
+            explainRemaining: 0,
+            grantListenRemaining: 0,
+            grantExplainRemaining: 0,
+            grantListenExhaustedAt: nil,
+            grantExplainExhaustedAt: nil,
+            updatedAt: Date()
+        )
+        // Multiple paragraph-boundary consumption requests can complete out
+        // of order. A consumption ACK may only keep or lower the optimistic
+        // local mirror; only a fresh status generation is allowed to grant or
+        // restore quota.
+        mirror.listenRemaining = Self.monotonicConsumptionProjection(
+            current: mirror.listenRemaining,
+            reported: response.remaining
+        )
+        if let grantRemaining = response.grantListenRemaining {
+            mirror.grantListenRemaining = Self.monotonicConsumptionProjection(
+                current: mirror.grantListenRemaining,
+                reported: grantRemaining
+            )
+            if grantRemaining <= 0, mirror.grantListenExhaustedAt == nil {
+                mirror.grantListenExhaustedAt = Date()
+            }
+        }
+        mirror.updatedAt = Date()
+        twoTier = mirror
+        persistTwoTierState()
+        objectWillChange.send()
+    }
+
+    nonisolated static func monotonicConsumptionProjection(
+        current: Double,
+        reported: Int
+    ) -> Double {
+        min(max(0, current), Double(max(0, reported)))
     }
 
     /// 解读开始一次。服务端额度由 extract-plan 的 entitlement consume 负责；

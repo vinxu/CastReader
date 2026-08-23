@@ -13,7 +13,7 @@ final class ProductAnalyticsTests: XCTestCase {
         let data = try Data(contentsOf: contractURL)
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let events = try XCTUnwrap(object["events"] as? [[String: Any]])
-        XCTAssertEqual(events.count, 32)
+        XCTAssertEqual(events.count, 39)
         let names = Set(events.compactMap { $0["name"] as? String })
         let legacy = Dictionary(uniqueKeysWithValues: events.compactMap { row -> (String, String)? in
             guard let name = row["name"] as? String,
@@ -91,6 +91,58 @@ final class ProductAnalyticsTests: XCTestCase {
         XCTAssertEqual(Set(domains["youtubeEntry"] ?? []), AnalyticsSchema.youTubeEntries)
         XCTAssertEqual(Set(domains["youtubeFailure"] ?? []), AnalyticsSchema.youTubeFailureReasons)
         XCTAssertEqual(Set(domains["youtubeCaptionKind"] ?? []), AnalyticsSchema.youTubeCaptionKinds)
+        XCTAssertEqual(
+            Set(domains["firstOpenKind"] ?? []),
+            Set(AnalyticsFirstOpenKind.allCases.map(\.rawValue))
+        )
+        XCTAssertEqual(
+            Set(domains["attributionProvider"] ?? []),
+            AnalyticsSchema.attributionProviders
+        )
+        XCTAssertEqual(
+            Set(domains["campaignSource"] ?? []),
+            AnalyticsSchema.installCampaignSources
+        )
+        XCTAssertEqual(
+            Set(domains["campaignMedium"] ?? []),
+            AnalyticsSchema.installCampaignMediums
+        )
+        XCTAssertEqual(
+            Set(domains["storefrontChoiceSurface"] ?? []),
+            AnalyticsSchema.storefrontChoiceSurfaces
+        )
+        XCTAssertEqual(
+            Set(domains["storefrontRecommendationSignal"] ?? []),
+            AnalyticsSchema.storefrontRecommendationSignals
+        )
+        XCTAssertEqual(
+            Set(domains["paywallAction"] ?? []),
+            Set(AnalyticsPaywallAction.allCases.map(\.rawValue))
+        )
+        XCTAssertEqual(
+            Set(domains["offerType"] ?? []),
+            Set(AnalyticsOfferType.allCases.map(\.rawValue))
+        )
+        XCTAssertEqual(
+            Set(domains["onboardingStep"] ?? []),
+            Set(AnalyticsOnboardingStep.allCases.map(\.rawValue))
+        )
+        XCTAssertEqual(
+            Set(domains["onboardingOutcome"] ?? []),
+            Set(AnalyticsOnboardingOutcome.allCases.map(\.rawValue))
+        )
+        XCTAssertEqual(
+            Set(domains["onboardingSource"] ?? []),
+            Set(AnalyticsOnboardingSource.allCases.map(\.rawValue))
+        )
+        XCTAssertEqual(
+            Set(domains["adAttributionAttemptOutcome"] ?? []),
+            Set(AnalyticsAdAttributionAttemptOutcome.allCases.map(\.rawValue))
+        )
+        XCTAssertEqual(
+            Set(domains["adAttributionDiagnosticCode"] ?? []),
+            AnalyticsSchema.adAttributionDiagnosticCodes
+        )
 
         let captionOpen = try XCTUnwrap(events.first { $0["name"] as? String == "yt_caption_language_open" })
         XCTAssertEqual(captionOpen["required_properties"] as? [String], ["trackCount"])
@@ -651,6 +703,222 @@ final class ProductAnalyticsTests: XCTestCase {
         XCTAssertEqual(rejected.first?.reason, "invalid_property_value:contentSource")
     }
 
+    func testImmediateDeliveryWaitsForExactCollectorAcknowledgement() async throws {
+        let event = try makeEnvelope(name: .adAttribution)
+        let transport = TestTransport(failuresRemaining: 0)
+        let pipeline = AnalyticsPipeline(
+            store: TestQueueStore(),
+            transport: transport,
+            batchSize: 20
+        )
+
+        let disposition = await pipeline.enqueueAndAwaitAcknowledgement(event)
+        let queued = await pipeline.queuedEvents()
+        let sent = await transport.sentEventIDs()
+
+        XCTAssertEqual(disposition, .accepted)
+        XCTAssertTrue(queued.isEmpty)
+        XCTAssertEqual(sent, [fixedEventId])
+    }
+
+    func testImmediateDeliveryFailureRetainsEventWithoutAcknowledgingIt() async throws {
+        let event = try makeEnvelope(name: .adAttribution)
+        let pipeline = AnalyticsPipeline(
+            store: TestQueueStore(),
+            transport: TestTransport(failuresRemaining: 1),
+            batchSize: 20
+        )
+
+        let disposition = await pipeline.enqueueAndAwaitAcknowledgement(event)
+        let queued = await pipeline.queuedEvents()
+
+        XCTAssertEqual(disposition, .transportUnavailable)
+        XCTAssertEqual(queued.map(\.eventId), [fixedEventId])
+    }
+
+    func testAcceptedReceiptPreventsLateFireAndForgetDuplicate() async throws {
+        let event = try makeEnvelope(name: .appSessionStart)
+        let transport = TestTransport(failuresRemaining: 0)
+        let pipeline = AnalyticsPipeline(
+            store: TestQueueStore(),
+            transport: transport,
+            batchSize: 20
+        )
+
+        let disposition = await pipeline.enqueueAndAwaitAcknowledgement(event)
+        XCTAssertEqual(disposition, .accepted)
+        await pipeline.enqueue(event)
+        await pipeline.flush()
+
+        let sent = await transport.sentEventIDs()
+        let queued = await pipeline.queuedEvents()
+        XCTAssertEqual(sent, [fixedEventId])
+        XCTAssertTrue(queued.isEmpty)
+    }
+
+    func testInstallAttributionContractIsCrossPlatformAndPrivacyBounded() {
+        for kind in AnalyticsFirstOpenKind.allCases {
+            XCTAssertNoThrow(
+                try AnalyticsSchema.validate(
+                    .appFirstOpen,
+                    properties: .init(firstOpenKind: kind.rawValue)
+                )
+            )
+        }
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .adAttributionAttempt,
+                properties: .init(
+                    latencyMs: 20,
+                    provider: "play_install_referrer",
+                    attemptCount: 1,
+                    outcome: "referrer_acquired"
+                )
+            )
+        )
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .adAttribution,
+                properties: .init(
+                    provider: "play_install_referrer",
+                    attributionResult: "attributed",
+                    attemptCount: 1,
+                    campaignSource: "google_ads",
+                    campaignMedium: "cpc",
+                    campaignId: "123456789"
+                )
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .adAttribution,
+                properties: .init(
+                    provider: "play_install_referrer",
+                    attributionResult: "organic",
+                    campaignSource: "organic",
+                    campaignMedium: "organic"
+                )
+            ),
+            "non-attributed results cannot smuggle campaign metadata"
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .adAttribution,
+                properties: .init(
+                    provider: "play_install_referrer",
+                    attributionResult: "attributed",
+                    campaignSource: "google_ads",
+                    campaignMedium: "cpc",
+                    campaignId: "gclid=user-controlled"
+                )
+            ),
+            "campaign identifiers are numeric-only"
+        )
+    }
+
+    func testGrowthLoopEventsRejectUnboundedOrPrivacyUnsafeValues() {
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .adAttributionAttempt,
+                properties: .init(
+                    latencyMs: 12,
+                    errorCode: "network_unavailable",
+                    provider: "apple_ads",
+                    attemptCount: 2,
+                    outcome: "retryable_error"
+                )
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .adAttributionAttempt,
+                properties: .init(
+                    latencyMs: 12,
+                    errorCode: "NSError: raw provider response",
+                    provider: "apple_ads",
+                    attemptCount: 2,
+                    outcome: "retryable_error"
+                )
+            )
+        )
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .onboardingStep,
+                properties: .init(step: "listen_30s", source: "kindle", result: "success")
+            )
+        )
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .paywallPlanSelected,
+                properties: .init(
+                    productId: "ai.castreader.pro.yearly.v2",
+                    selectionSource: "user",
+                    interval: "yearly"
+                )
+            )
+        )
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .paywallAction,
+                properties: .init(
+                    trigger: "first_value",
+                    productId: "ai.castreader.pro.yearly.v2",
+                    offerEligible: true,
+                    action: "cta_tapped",
+                    trialDays: 7
+                )
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .paywallAction,
+                properties: .init(
+                    trigger: "first_value",
+                    productId: "ai.castreader.pro.yearly.v2",
+                    offerEligible: false,
+                    action: "cta_tapped",
+                    trialDays: 7
+                )
+            )
+        )
+        XCTAssertNoThrow(
+            try AnalyticsSchema.validate(
+                .accountGateResult,
+                properties: .init(
+                    result: "cancelled",
+                    errorCode: "user_cancelled",
+                    trigger: "first_value",
+                    productId: "ai.castreader.pro.yearly.v2",
+                    gatePresented: true
+                )
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .purchaseResult,
+                properties: .init(
+                    result: "success",
+                    trigger: "first_value",
+                    store: "app_store",
+                    productId: "ai.castreader.pro.yearly.v2",
+                    offerType: "promotional",
+                    trialDays: 7
+                )
+            )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .resumeReminder,
+                properties: .init(
+                    result: "success",
+                    reason: "Private book title",
+                    action: "opened",
+                    daysSinceLastRead: 2
+                )
+            )
+        )
+    }
+
     func testCompletionBuckets() {
         XCTAssertEqual(ProductAnalytics.completionBucket(completed: 0, total: 10), "none")
         XCTAssertEqual(ProductAnalytics.completionBucket(completed: 2, total: 10), "lt_25")
@@ -703,8 +971,10 @@ final class ProductAnalyticsTests: XCTestCase {
 
     private func area(for name: AnalyticsEventName) -> AnalyticsProductArea {
         switch name {
-        case .appSessionStart, .onboardingStep, .reviewPromptEligible, .reviewRequestAttempted,
-             .reviewStoreLinkOpened, .adAttribution:
+        case .appSessionStart, .appFirstOpen, .onboardingStep,
+             .reviewPromptEligible, .reviewRequestAttempted,
+             .reviewStoreLinkOpened, .adAttributionAttempt, .adAttribution,
+             .growthConfigAssigned, .resumeReminder:
             return .app
         case .libraryConnection, .contentInputStage, .contentIntent, .contentReady,
              .contentFailed, .youtubeShareReceived, .youtubeHomeView,
@@ -715,7 +985,8 @@ final class ProductAnalyticsTests: XCTestCase {
         case .explainStart, .explainFirstBlock, .explainMilestone, .explainEnd: return .explain
         case .paywallShown, .homeProCardImpression, .homeProCardYearlyPurchaseTap,
              .homeProCardSecondaryTap, .purchaseStart, .purchaseResult,
-             .entitlementActivated:
+             .entitlementActivated, .paywallPlanSelected, .paywallAction,
+             .accountGateResult:
             return .billing
         }
     }
@@ -724,8 +995,10 @@ final class ProductAnalyticsTests: XCTestCase {
         switch name {
         case .appSessionStart:
             return .init(launchType: "cold")
+        case .appFirstOpen:
+            return .init(firstOpenKind: "fresh_install")
         case .onboardingStep:
-            return .init(step: "value", source: "kindle", result: "shown")
+            return .init(step: "library_ready", source: "kindle", result: "success")
         case .libraryConnection:
             return .init(
                 source: "google_books",
@@ -785,6 +1058,22 @@ final class ProductAnalyticsTests: XCTestCase {
             return .init(result: "success", completionBucket: "complete", endReason: "completed", blocksStarted: 2, blocksCompleted: 2)
         case .paywallShown:
             return .init(trigger: "listen_quota", entitlementState: "free", hadMeaningfulReading: true)
+        case .paywallAction:
+            return .init(
+                trigger: "listen_quota",
+                productId: "ai.castreader.pro.yearly.v2",
+                offerEligible: true,
+                action: "cta_tapped",
+                trialDays: 7
+            )
+        case .accountGateResult:
+            return .init(
+                durationMs: 120,
+                result: "success",
+                trigger: "listen_quota",
+                productId: "ai.castreader.pro.yearly.v2",
+                gatePresented: true
+            )
         case .homeProCardImpression, .homeProCardYearlyPurchaseTap, .homeProCardSecondaryTap:
             return .init()
         case .purchaseStart:
@@ -815,6 +1104,28 @@ final class ProductAnalyticsTests: XCTestCase {
                 attributionToken: "sample-token",
                 attemptCount: 1
             )
+        case .adAttributionAttempt:
+            return .init(
+                latencyMs: 42,
+                provider: "apple_ads",
+                attemptCount: 1,
+                outcome: "token_acquired"
+            )
+        case .growthConfigAssigned:
+            return .init(configId: "us_growth_loop_v1", market: "us", eligibility: "eligible")
+        case .paywallPlanSelected:
+            return .init(
+                productId: "ai.castreader.pro.yearly.v2",
+                selectionSource: "default",
+                interval: "yearly"
+            )
+        case .resumeReminder:
+            return .init(
+                result: "success",
+                action: "scheduled",
+                permissionStatus: "authorized",
+                daysSinceLastRead: 1
+            )
         }
     }
 
@@ -824,6 +1135,157 @@ final class ProductAnalyticsTests: XCTestCase {
             trigger: "listen_quota",
             store: "app_store",
             productId: "ai.castreader.pro.monthly"
+        )
+    }
+}
+
+@MainActor
+final class AdAttributionServiceTests: XCTestCase {
+    func testProductionRetryOffsetsAndTokenTTLStayPinned() {
+        XCTAssertEqual(AdAttributionRetryPolicy.production.foregroundOffsets, [0, 2, 10, 60])
+        XCTAssertEqual(AdAttributionRetryPolicy.production.tokenWindow, 24 * 60 * 60)
+        XCTAssertEqual(AdAttributionRetryPolicy.production.maxAttempts, 8)
+    }
+
+    func testForegroundResumeNeverExceedsCanonicalAttemptBound() async {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let store = TestAdAttributionStateStore(initial: .init(
+            firstAttemptAt: now,
+            attemptCount: 7
+        ))
+        let provider = TestAdAttributionTokenProvider(outcomes: [
+            .error(NSError(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet)),
+            .token("must-not-run"),
+        ])
+        let reporter = TestAdAttributionReporter(terminalDispositions: [])
+        let service = AdAttributionService(
+            stateStore: store,
+            tokenProvider: provider,
+            reporter: reporter,
+            policy: .production,
+            now: { now },
+            sleep: { _ in }
+        )
+
+        await service.runForegroundSequence()
+
+        let providerCalls = await provider.callCount()
+        XCTAssertEqual(store.load().attemptCount, 8)
+        XCTAssertEqual(providerCalls, 1)
+    }
+
+    func testCollectorFailureResendsSameEventAndDoesNotFetchAnotherToken() async {
+        let store = TestAdAttributionStateStore()
+        let provider = TestAdAttributionTokenProvider(outcomes: [.token("signed-token")])
+        let reporter = TestAdAttributionReporter(
+            terminalDispositions: [.transportUnavailable, .accepted]
+        )
+        let service = AdAttributionService(
+            stateStore: store,
+            tokenProvider: provider,
+            reporter: reporter,
+            policy: .init(foregroundOffsets: [0], tokenWindow: 86_400),
+            now: { Date(timeIntervalSince1970: 1_700_000_000) },
+            sleep: { _ in }
+        )
+
+        await service.runForegroundSequence()
+        let providerCallsAfterFailure = await provider.callCount()
+        XCTAssertFalse(store.load().isAcknowledged, "queue/transport failure must not seal")
+        XCTAssertEqual(providerCallsAfterFailure, 1)
+        let firstTerminal = await reporter.terminalCalls()
+        XCTAssertEqual(firstTerminal.count, 1)
+
+        await service.runForegroundSequence()
+        let sealed = store.load()
+        let providerCallsAfterAck = await provider.callCount()
+        XCTAssertTrue(sealed.isAcknowledged)
+        XCTAssertNil(sealed.terminalToken, "accepted token must be erased from local v2 state")
+        XCTAssertEqual(providerCallsAfterAck, 1, "pending delivery retries must not mint another token")
+        let terminal = await reporter.terminalCalls()
+        XCTAssertEqual(terminal.count, 2)
+        XCTAssertEqual(terminal[0].eventId, terminal[1].eventId)
+
+        await service.runForegroundSequence()
+        let finalProviderCalls = await provider.callCount()
+        let finalTerminalCalls = await reporter.terminalCalls()
+        XCTAssertEqual(finalProviderCalls, 1, "acknowledged state is terminal")
+        XCTAssertEqual(finalTerminalCalls.count, 2)
+    }
+
+    func testRetryableErrorsAreDiagnosedThenTokenIsAccepted() async {
+        let store = TestAdAttributionStateStore()
+        let provider = TestAdAttributionTokenProvider(outcomes: [
+            .error(NSError(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet)),
+            .error(NSError(domain: "AAAttributionErrorDomain", code: 1)),
+            .token("signed-token"),
+        ])
+        let reporter = TestAdAttributionReporter(terminalDispositions: [.accepted])
+        let service = AdAttributionService(
+            stateStore: store,
+            tokenProvider: provider,
+            reporter: reporter,
+            policy: .init(foregroundOffsets: [0, 0, 0], tokenWindow: 86_400),
+            now: { Date(timeIntervalSince1970: 1_700_000_000) },
+            sleep: { _ in }
+        )
+
+        await service.runForegroundSequence()
+
+        XCTAssertTrue(store.load().isAcknowledged)
+        let attempts = await reporter.attemptCalls()
+        XCTAssertEqual(attempts.map(\.outcome), [
+            .retryableError, .retryableError, .tokenAcquired,
+        ])
+        XCTAssertEqual(attempts.map(\.errorCode), [
+            .networkUnavailable, .adServicesUnavailable, nil,
+        ])
+    }
+
+    func testExpiredWindowEmitsUnavailableWithoutCallingAdServices() async {
+        let now = Date(timeIntervalSince1970: 1_700_100_000)
+        let store = TestAdAttributionStateStore(initial: .init(
+            firstAttemptAt: now.addingTimeInterval(-86_401),
+            attemptCount: 4
+        ))
+        let provider = TestAdAttributionTokenProvider(outcomes: [.token("must-not-run")])
+        let reporter = TestAdAttributionReporter(terminalDispositions: [.accepted])
+        let service = AdAttributionService(
+            stateStore: store,
+            tokenProvider: provider,
+            reporter: reporter,
+            policy: .production,
+            now: { now },
+            sleep: { _ in }
+        )
+
+        await service.runForegroundSequence()
+
+        let providerCalls = await provider.callCount()
+        let terminalCalls = await reporter.terminalCalls()
+        XCTAssertEqual(providerCalls, 0)
+        XCTAssertEqual(terminalCalls.first?.result, .unavailable)
+        XCTAssertTrue(store.load().isAcknowledged)
+    }
+
+    func testErrorMappingUsesStableEnumsOnly() {
+        XCTAssertEqual(
+            AdAttributionService.diagnosticCode(
+                for: NSError(domain: NSURLErrorDomain, code: NSURLErrorTimedOut)
+            ),
+            .requestTimedOut
+        )
+        XCTAssertEqual(
+            AdAttributionService.diagnosticCode(
+                for: NSError(domain: "AAAttributionErrorDomain", code: 99)
+            ),
+            .adServicesUnavailable
+        )
+        XCTAssertEqual(
+            AdAttributionService.diagnosticCode(
+                for: NSError(domain: "PrivateProviderMessage", code: 9)
+            ),
+            .unknown
         )
     }
 }
@@ -1456,4 +1918,106 @@ private actor TestTransport: AnalyticsTransport {
     }
 
     func sentEventIDs() -> [String] { sent }
+}
+
+private final class TestAdAttributionStateStore: AdAttributionStateStoring, @unchecked Sendable {
+    private let lock = NSLock()
+    private var state: AdAttributionPersistentStateV2
+
+    init(initial: AdAttributionPersistentStateV2 = .init()) {
+        state = initial
+    }
+
+    func load() -> AdAttributionPersistentStateV2 {
+        lock.lock()
+        defer { lock.unlock() }
+        return state
+    }
+
+    func save(_ state: AdAttributionPersistentStateV2) {
+        lock.lock()
+        self.state = state
+        lock.unlock()
+    }
+}
+
+private actor TestAdAttributionTokenProvider: AdAttributionTokenProviding {
+    enum Outcome: @unchecked Sendable {
+        case token(String)
+        case error(Error)
+    }
+
+    private var outcomes: [Outcome]
+    private var calls = 0
+
+    init(outcomes: [Outcome]) {
+        self.outcomes = outcomes
+    }
+
+    func attributionToken() async throws -> String {
+        calls += 1
+        guard !outcomes.isEmpty else { throw AdAttributionProviderError.unsupportedPlatform }
+        switch outcomes.removeFirst() {
+        case .token(let token): return token
+        case .error(let error): throw error
+        }
+    }
+
+    func callCount() -> Int { calls }
+}
+
+private actor TestAdAttributionReporter: AdAttributionReporting {
+    struct Attempt: Equatable, Sendable {
+        let attemptCount: Int
+        let outcome: AnalyticsAdAttributionAttemptOutcome
+        let latencyMs: Int
+        let errorCode: AdAttributionDiagnosticCode?
+    }
+
+    struct Terminal: Equatable, Sendable {
+        let result: AdAttributionTerminalResult
+        let token: String?
+        let attemptCount: Int
+        let eventId: String
+    }
+
+    private var attempts: [Attempt] = []
+    private var terminals: [Terminal] = []
+    private var dispositions: [AnalyticsDeliveryDisposition]
+
+    init(terminalDispositions: [AnalyticsDeliveryDisposition]) {
+        dispositions = terminalDispositions
+    }
+
+    func recordAttempt(
+        attemptCount: Int,
+        outcome: AnalyticsAdAttributionAttemptOutcome,
+        latencyMs: Int,
+        errorCode: AdAttributionDiagnosticCode?
+    ) {
+        attempts.append(.init(
+            attemptCount: attemptCount,
+            outcome: outcome,
+            latencyMs: latencyMs,
+            errorCode: errorCode
+        ))
+    }
+
+    func recordTerminal(
+        result: AdAttributionTerminalResult,
+        token: String?,
+        attemptCount: Int,
+        eventId: String
+    ) -> AnalyticsDeliveryDisposition {
+        terminals.append(.init(
+            result: result,
+            token: token,
+            attemptCount: attemptCount,
+            eventId: eventId
+        ))
+        return dispositions.isEmpty ? .transportUnavailable : dispositions.removeFirst()
+    }
+
+    func attemptCalls() -> [Attempt] { attempts }
+    func terminalCalls() -> [Terminal] { terminals }
 }

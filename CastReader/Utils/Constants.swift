@@ -81,6 +81,7 @@ enum Constants {
         /// route-scoped device id is compatibility/diagnostic data only.
         static var mobileProStatusV2: String { "\(webURL)/api/mobile/pro/status/v2" }
         static var mobileProListenTrackV2: String { "\(webURL)/api/mobile/pro/listen-track/v2" }
+        static var mobileGrowthIdentityLink: String { "\(webURL)/api/mobile/growth/identity-link" }
         static var proVerifyApple: String { "\(webURL)/api/pro/verify-apple" }    // POST signed StoreKit 2 transaction
         static var authSocialSignIn: String { "\(webURL)/api/auth/sign-in/social" } // POST {provider, idToken:{token}} (better-auth)
         static var analyticsEvents: String { "\(webURL)/api/events" }

@@ -131,7 +131,67 @@
       "timeout",
       "unsupported_language"
     ],
-    "youtubeCaptionKind": ["asr", "manual"]
+    "youtubeCaptionKind": ["asr", "manual"],
+    "firstOpenKind": ["fresh_install", "instrumentation_backfill", "unknown"],
+    "attributionProvider": ["apple_ads", "play_install_referrer"],
+    "playAttributionResult": ["attributed", "organic", "unavailable", "unsupported", "failed"],
+    "campaignSource": ["google_ads", "meta_ads", "tiktok_ads", "microsoft_ads", "organic", "unknown"],
+    "campaignMedium": ["cpc", "paid_social", "display", "video", "affiliate", "organic", "unknown"],
+    "storefrontChoiceSurface": ["inline", "chooser"],
+    "storefrontRecommendationSignal": ["persisted_onboarding", "bound_library", "local_signals", "default"],
+    "paywallAction": ["cta_tapped", "dismissed"],
+    "offerType": ["introductory", "promotional", "code", "other", "none"],
+    "paymentStore": ["app_store", "google_play", "alipay"],
+    "accountGateResult": ["success", "cancelled", "failed"],
+    "onboardingStep": [
+      "auth_gate_viewed",
+      "auth_provider_tapped",
+      "auth_succeeded",
+      "auth_failed",
+      "source_chooser_shown",
+      "source_selected",
+      "library_ready",
+      "first_book_opened",
+      "first_audio",
+      "listen_30s",
+      "listen_300s",
+      "trial_offer_shown",
+      "trial_started",
+      "value",
+      "storefront",
+      "login",
+      "scan",
+      "first_listen"
+    ],
+    "onboardingOutcome": ["shown", "tapped", "started", "success", "failed", "skipped", "done"],
+    "onboardingSource": [
+      "app", "apple", "google", "email", "phone", "kindle", "weread",
+      "google_books", "kobo", "oreilly", "file", "camera", "photo_library",
+      "clipboard", "url", "text", "unknown", "other"
+    ],
+    "adAttributionAttemptOutcome": [
+      "token_acquired", "referrer_acquired", "retryable_error", "unsupported", "failed",
+      "window_expired", "delivery_not_accepted"
+    ],
+    "adAttributionDiagnosticCode": [
+      "simulator", "token_empty", "network_unavailable", "request_timed_out",
+      "adservices_unavailable", "unsupported_platform", "unknown",
+      "window_expired", "analytics_rejected", "analytics_unavailable",
+      "service_unavailable", "service_disconnected", "feature_not_supported",
+      "permission_error", "developer_error", "client_error", "distribution_not_play"
+    ],
+    "growthMarket": ["us", "gb", "other"],
+    "growthEligibility": ["eligible", "ineligible"],
+    "paywallValueMilestone": [
+      "library_ready", "first_audio", "listen_30s", "listen_300s", "quota_exhausted"
+    ],
+    "planSelectionSource": ["default", "user"],
+    "planInterval": ["monthly", "yearly"],
+    "resumeReminderAction": ["permission_requested", "scheduled", "opened", "cancelled"],
+    "resumeReminderOutcome": ["success", "denied", "failed", "unavailable", "cancelled"],
+    "notificationPermissionStatus": [
+      "not_determined", "denied", "authorized", "provisional", "ephemeral", "unknown"
+    ]
   },
   "events": [
     {
@@ -142,11 +202,19 @@
       "optional_properties": []
     },
     {
+      "name": "app_first_open",
+      "legacy_event": "app_first_open",
+      "product_area": "app",
+      "required_properties": ["firstOpenKind"],
+      "optional_properties": [],
+      "comment": "One durable event id per install. instrumentation_backfill is excluded from new-install growth cohorts. iOS reserves the contract but does not infer this event in v2."
+    },
+    {
       "name": "onboarding_step",
       "legacy_event": "onboarding_step",
       "product_area": "app",
       "required_properties": ["step", "result", "source"],
-      "optional_properties": []
+      "optional_properties": ["durationMs", "errorCode", "bindSessionId", "configId", "storefront", "choiceSurface", "recommendationSignal", "matched"]
     },
     {
       "name": "library_connection",
@@ -335,7 +403,13 @@
       "legacy_event": "paywall_shown",
       "product_area": "billing",
       "required_properties": ["trigger", "entitlementState"],
-      "optional_properties": ["hadMeaningfulReading"]
+      "optional_properties": [
+        "hadMeaningfulReading",
+        "valueMilestone",
+        "offerEligible",
+        "selectedProductId",
+        "configId"
+      ]
     },
     {
       "name": "home_pro_card_impression",
@@ -377,7 +451,7 @@
       },
       "product_area": "billing",
       "required_properties": ["store", "productId", "trigger", "result"],
-      "optional_properties": ["errorCode", "transactionEnvironment", "offerType"]
+      "optional_properties": ["errorCode", "transactionEnvironment", "offerType", "trialDays"]
     },
     {
       "name": "entitlement_activated",
@@ -389,7 +463,7 @@
         "trigger",
         "activationSource"
       ],
-      "optional_properties": ["syncState", "transactionEnvironment", "offerType"]
+      "optional_properties": ["syncState", "transactionEnvironment", "offerType", "trialDays"]
     },
     {
       "name": "review_prompt_eligible",
@@ -413,12 +487,56 @@
       "optional_properties": []
     },
     {
+      "name": "ad_attribution_attempt",
+      "legacy_event": "ad_attribution_attempt",
+      "product_area": "app",
+      "required_properties": ["provider", "attemptCount", "outcome", "latencyMs"],
+      "optional_properties": ["errorCode"],
+      "comment": "Operational diagnostic only. Never contains an AdServices token or account identifier."
+    },
+    {
       "name": "ad_attribution",
       "legacy_event": "ad_attribution",
       "product_area": "app",
       "required_properties": ["provider", "attributionResult"],
-      "optional_properties": ["attributionToken", "attemptCount"],
-      "comment": "Apple Ads 归因：provider 恒为 apple_ads；attributionResult=token 时必带 attributionToken（服务端调 Apple 归因 API 换 campaign/keyword），unavailable/unsupported 时不带。每设备一生上报一次。"
+      "optional_properties": ["attributionToken", "attemptCount", "campaignSource", "campaignMedium", "campaignId", "adGroupId", "creativeId"],
+      "comment": "Apple uses provider=apple_ads and a terminal token that is sealed only after collector acceptance. Android uses provider=play_install_referrer and only bounded source/medium enums plus optional numeric campaign IDs. Raw Play referrer, click IDs, keywords, and campaign names are forbidden."
+    },
+    {
+      "name": "growth_config_assigned",
+      "legacy_event": "growth_config_assigned",
+      "product_area": "app",
+      "required_properties": ["configId", "market", "eligibility"],
+      "optional_properties": []
+    },
+    {
+      "name": "paywall_plan_selected",
+      "legacy_event": "paywall_plan_selected",
+      "product_area": "billing",
+      "required_properties": ["productId", "selectionSource", "interval"],
+      "optional_properties": ["trigger", "configId", "offerEligible"]
+    },
+    {
+      "name": "paywall_action",
+      "legacy_event": "paywall_action",
+      "product_area": "billing",
+      "required_properties": ["trigger", "productId", "action"],
+      "optional_properties": ["offerEligible", "trialDays"]
+    },
+    {
+      "name": "account_gate_result",
+      "legacy_event": "account_gate_result",
+      "product_area": "billing",
+      "required_properties": ["trigger", "productId", "result", "gatePresented"],
+      "optional_properties": ["durationMs", "errorCode"]
+    },
+    {
+      "name": "resume_reminder",
+      "legacy_event": "resume_reminder",
+      "product_area": "app",
+      "required_properties": ["action", "result"],
+      "optional_properties": ["permissionStatus", "trigger", "daysSinceLastRead", "errorCode"],
+      "comment": "Never contains a book title, content text, URL, or notification body."
     }
   ],
   "privacy_forbidden_keys": [
@@ -440,6 +558,10 @@
     "verificationCode",
     "wechatUid",
     "wereadUid",
-    "agreementNo"
+    "agreementNo",
+    "userId",
+    "backendUserId",
+    "transactionId",
+    "originalTransactionId"
   ]
 }

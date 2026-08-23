@@ -77,6 +77,7 @@ struct MainTabView: View {
     private enum LibraryOnboardingPostDismissAction {
         case kindleBook(KindleBook)
         case wereadBook(WeReadBook)
+        case openImport
         case restoreClipboard
     }
 
@@ -98,6 +99,7 @@ struct MainTabView: View {
     @StateObject private var reviewPrompt = AppReviewPromptManager.shared
     @StateObject private var studyBoostRouter = StudyBoostRouter.shared
     @StateObject private var youtubeRouteCenter = YouTubeRouteCenter.shared
+    @StateObject private var growthLoop = GrowthLoopConversionCoordinator.shared
     @ObservedObject private var audioPlayer = AudioPlayerService.shared
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.requestReview) private var requestReview
@@ -251,6 +253,12 @@ struct MainTabView: View {
                     .animation(.spring(response: 0.4, dampingFraction: 0.9), value: kindleCenter.isPresented)
                     .zIndex(11)
             }
+
+            GrowthTrialOfferOverlay(
+                coordinator: growthLoop,
+                onPreview: startGrowthFirstValuePreview
+            )
+            .zIndex(90)
 
             // Player voice selection is an in-app overlay, not a system sheet.
             // This keeps ReaderHost/Kindle WKWebView geometry completely stable
@@ -440,6 +448,15 @@ struct MainTabView: View {
         .onChange(of: kindleCenter.isPresented) { isPresented in
             if isPresented { coordinator.close() }
         }
+        .onChange(of: growthLoop.softOffer?.id) { _ in
+            guard let offer = growthLoop.softOffer,
+                  offer.milestone == .libraryReady,
+                  offer.documentID == nil else { return }
+            // `sync_completed` is emitted inside the connection sheet. Close
+            // that transport UI so the shared success/offer card becomes the
+            // next visible surface for every provider.
+            activeLibraryConnection = nil
+        }
     }
 
     private var presentationContent: some View {
@@ -485,6 +502,14 @@ struct MainTabView: View {
             onDismiss: presentPendingLibraryConnectionWhenReady
         ) { route in
             libraryConnectionView(for: route)
+        }
+        .sheet(isPresented: growthPaywallPresentation) {
+            PaywallView(
+                reason: AppLocalized("解锁完整朗读、解读与高级声音体验"),
+                analyticsTrigger: growthLoop.paywallTrigger,
+                analyticsSurface: "growth_loop",
+                onPurchased: growthLoop.purchaseCompleted
+            )
         }
         .fullScreenCover(
             isPresented: libraryOnboardingPresentation,
@@ -599,6 +624,15 @@ struct MainTabView: View {
         )
     }
 
+    private var growthPaywallPresentation: Binding<Bool> {
+        Binding(
+            get: { growthLoop.isPaywallPresented },
+            set: { presented in
+                if !presented { growthLoop.dismissPaywall() }
+            }
+        )
+    }
+
     private var reviewOpportunityState: AppReviewPresentationGate {
         AppReviewPresentationGate(
             pending: reviewPrompt.isPending,
@@ -612,7 +646,9 @@ struct MainTabView: View {
                 && !studyBoostRouter.isPresented
                 && activeLibraryConnection == nil
                 && pendingLibraryConnection == nil
-                && youtubeExtractionPresentation == nil,
+                && youtubeExtractionPresentation == nil
+                && growthLoop.softOffer == nil
+                && !growthLoop.isPaywallPresented,
             clipboardSheetIsHidden: clipboard.detected == nil,
             shareInboxIsHidden: !showShareInbox,
             voiceCloneSheetIsHidden: voiceCloneAccess.prompt == nil,
@@ -1500,7 +1536,9 @@ struct MainTabView: View {
     }
 
     private func handleLibraryOnboardingPostpone() {
-        pendingLibraryOnboardingAction = .restoreClipboard
+        pendingLibraryOnboardingAction = growthLoop.policy.isEnabled
+            ? .openImport
+            : .restoreClipboard
         libraryOnboarding.postpone()
     }
 
@@ -1518,8 +1556,77 @@ struct MainTabView: View {
         case .wereadBook(let book):
             selectedTab = 0
             openWeReadOnboardingBook(book)
+        case .openImport:
+            selectedTab = 0
+            DispatchQueue.main.async {
+                importRouter.openQuickImport()
+            }
         case .restoreClipboard:
             clipboard.check()
+        }
+    }
+
+    /// The shared library-ready card owns the same one-tap first-book behavior
+    /// for all five providers. EPUB/PDF are already open and autoplay via
+    /// Home.finishImport, so their secondary action simply returns to reader.
+    private func startGrowthFirstValuePreview(_ offer: GrowthTrialOffer) {
+        selectedTab = 0
+        guard offer.documentID == nil else { return }
+        switch offer.source {
+        case .kindle:
+            guard let book = KindleLibraryStore.shared.boundBooks.first else {
+                requestLibraryConnection(.kindle, entryPoint: "growth_library_ready")
+                return
+            }
+            KindlePlaybackCenter.shared.open(
+                book: book,
+                intent: .autoplayRead(requestID: UUID())
+            )
+        case .weread:
+            guard let book = WeReadLibraryStore.shared.homeBooks.first
+                    ?? WeReadLibraryStore.shared.books.first else {
+                requestLibraryConnection(.weread, entryPoint: "growth_library_ready")
+                return
+            }
+            openWeReadOnboardingBook(book)
+        case .googleBooks:
+            guard let book = GoogleBooksLibraryStore.shared.homeBooks.first
+                    ?? GoogleBooksLibraryStore.shared.books.first else {
+                requestLibraryConnection(.googleBooks, entryPoint: "growth_library_ready")
+                return
+            }
+            GoogleBooksReaderLauncher.open(
+                book,
+                using: coordinator,
+                onboarding: libraryOnboarding,
+                autoplay: true
+            )
+        case .kobo:
+            guard let book = KoboLibraryStore.shared.homeBooks.first
+                    ?? KoboLibraryStore.shared.books.first else {
+                requestLibraryConnection(.kobo, entryPoint: "growth_library_ready")
+                return
+            }
+            KoboReaderLauncher.open(
+                book,
+                using: coordinator,
+                onboarding: libraryOnboarding,
+                autoplay: true
+            )
+        case .oreilly:
+            guard let book = OReillyLibraryStore.shared.homeBooks.first
+                    ?? OReillyLibraryStore.shared.books.first else {
+                requestLibraryConnection(.oreilly, entryPoint: "growth_library_ready")
+                return
+            }
+            OReillyReaderLauncher.open(
+                book,
+                using: coordinator,
+                onboarding: libraryOnboarding,
+                autoplay: true
+            )
+        default:
+            break
         }
     }
 

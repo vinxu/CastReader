@@ -14,21 +14,29 @@ struct PaywallView: View {
     let reason: String?
     let analyticsTrigger: String
     let analyticsSurface: String
+    let onPurchased: () -> Void
     @State private var didTrackImpression = false
+    @State private var didFinishPurchaseCallback = false
 
     init(
         reason: String? = nil,
         analyticsTrigger: String = "unknown",
-        analyticsSurface: String = "paywall"
+        analyticsSurface: String = "paywall",
+        onPurchased: @escaping () -> Void = {}
     ) {
         self.reason = reason
         self.analyticsTrigger = analyticsTrigger
         self.analyticsSurface = analyticsSurface
+        self.onPurchased = onPurchased
     }
 
     var body: some View {
         NavigationStack {
-            ProUpsellContent(reason: reason, analyticsTrigger: analyticsTrigger, onPurchased: { dismiss() })
+            ProUpsellContent(
+                reason: reason,
+                analyticsTrigger: analyticsTrigger,
+                onPurchased: finishPurchase
+            )
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -43,7 +51,7 @@ struct PaywallView: View {
                 }
         }
         .task {
-            if pro.isCrossPlatformPro { dismiss() }
+            if pro.isCrossPlatformPro { finishPurchase() }
         }
         .onAppear {
             guard !didTrackImpression else { return }
@@ -54,11 +62,44 @@ struct PaywallView: View {
                 properties: .init(
                     trigger: analyticsTrigger,
                     entitlementState: Self.entitlementState(pro),
-                    hadMeaningfulReading: ProductAnalytics.shared.hadMeaningfulReading
+                    hadMeaningfulReading: ProductAnalytics.shared.hadMeaningfulReading,
+                    configId: GrowthLoopConversionCoordinator.shared.activeConfigID,
+                    valueMilestone: Self.valueMilestone(for: analyticsTrigger),
+                    offerEligible: Self.defaultOfferEligible(pro),
+                    selectedProductId: Self.defaultProduct(pro)?.id
                 )
             )
         }
-        .onChange(of: pro.isCrossPlatformPro) { isPro in if isPro { dismiss() } }
+        .onChange(of: pro.isCrossPlatformPro) { isPro in
+            if isPro { finishPurchase() }
+        }
+    }
+
+    private func finishPurchase() {
+        guard !didFinishPurchaseCallback else { return }
+        didFinishPurchaseCallback = true
+        onPurchased()
+        dismiss()
+    }
+
+    private static func defaultProduct(_ pro: ProManager) -> Product? {
+        pro.displayProducts.first {
+            $0.subscription?.subscriptionPeriod.unit == .year
+        } ?? pro.displayProducts.first
+    }
+
+    private static func defaultOfferEligible(_ pro: ProManager) -> Bool? {
+        guard let product = defaultProduct(pro) else { return nil }
+        return pro.showsFreeTrial(for: product)
+    }
+
+    private static func valueMilestone(for trigger: String) -> String? {
+        switch trigger {
+        case "growth_library_ready": return "library_ready"
+        case "growth_listen_30s": return "listen_30s"
+        case "growth_first_value_preview": return "listen_300s"
+        default: return nil
+        }
     }
 
     private static func entitlementState(_ pro: ProManager) -> String {
@@ -85,6 +126,7 @@ struct ProUpsellContent: View {
     @State private var showPurchaseAlert = false
     @State private var purchaseMessage = ""
     @State private var selectedProductID: String?
+    @State private var didTrackDefaultSelection = false
 
     private let benefits: [(String, String)] = [
         ("books.vertical.fill", AppLocalized("你的整个书库，全部可听")),
@@ -157,9 +199,23 @@ struct ProUpsellContent: View {
     /// 选择留在 nil 会让购买按钮一直是禁用的灰色状态，试用文案也不显示。
     private func syncDefaultSelection() {
         let ids = pro.displayProducts.map(\.id)
-        guard selectedProductID == nil || !ids.contains(selectedProductID ?? "") else { return }
-        selectedProductID = pro.displayProducts.first { $0.subscription?.subscriptionPeriod.unit == .year }?.id
-            ?? pro.displayProducts.first?.id
+        if selectedProductID == nil || !ids.contains(selectedProductID ?? "") {
+            selectedProductID = pro.displayProducts.first {
+                $0.subscription?.subscriptionPeriod.unit == .year
+            }?.id ?? pro.displayProducts.first?.id
+        }
+        guard !didTrackDefaultSelection,
+              let product = selectedProduct,
+              let interval = analyticsInterval(product) else { return }
+        didTrackDefaultSelection = true
+        ProductAnalytics.shared.trackPaywallPlanSelected(
+            productId: product.id,
+            selectionSource: .defaultSelection,
+            interval: interval,
+            trigger: analyticsTrigger,
+            configId: GrowthLoopConversionCoordinator.shared.activeConfigID,
+            offerEligible: pro.showsFreeTrial(for: product)
+        )
     }
 
     /// 加载产品；加载后仍为空标记 loadFailed，供付费墙显示「重试」而非永久转圈。
@@ -303,11 +359,20 @@ struct ProUpsellContent: View {
                 ForEach(pro.displayProducts, id: \.id) { product in
                     Button {
                         selectedProductID = product.id
+                        trackUserSelection(product)
                     } label: {
                         HStack(alignment: .firstTextBaseline) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(product.displayName).fontWeight(.semibold)
                                 Text(periodText(product)).font(.caption).opacity(0.85)
+                                if let savings = annualSavingsPercent(for: product) {
+                                    Text(String(
+                                        format: AppLocalized("比月付节省 %d%%"),
+                                        savings
+                                    ))
+                                    .font(.caption.weight(.bold))
+                                    .foregroundColor(.green)
+                                }
                                 if let days = trialDays(product) {
                                     Text(String(format: AppLocalized("%d 天免费试用"), days))
                                         .font(.caption.weight(.semibold))
@@ -348,7 +413,10 @@ struct ProUpsellContent: View {
                             analyticsTrigger: analyticsTrigger
                         )
                         busy = false
-                        guard !purchased else { return }
+                        if purchased {
+                            onPurchased()
+                            return
+                        }
                         purchaseMessage = AppLocalized(
                             "购买尚未完成。请稍后重试；若交易正在等待批准，获批后会员会自动生效。"
                         )
@@ -387,6 +455,37 @@ struct ProUpsellContent: View {
 
     private var selectedProduct: Product? {
         pro.displayProducts.first { $0.id == selectedProductID }
+    }
+
+    private func trackUserSelection(_ product: Product) {
+        guard let interval = analyticsInterval(product) else { return }
+        ProductAnalytics.shared.trackPaywallPlanSelected(
+            productId: product.id,
+            selectionSource: .user,
+            interval: interval,
+            trigger: analyticsTrigger,
+            configId: GrowthLoopConversionCoordinator.shared.activeConfigID,
+            offerEligible: pro.showsFreeTrial(for: product)
+        )
+    }
+
+    private func analyticsInterval(_ product: Product) -> AnalyticsPlanInterval? {
+        switch product.subscription?.subscriptionPeriod.unit {
+        case .month: return .monthly
+        case .year: return .yearly
+        default: return nil
+        }
+    }
+
+    private func annualSavingsPercent(for product: Product) -> Int? {
+        guard product.subscription?.subscriptionPeriod.unit == .year,
+              let monthly = pro.displayProducts.first(where: {
+                  $0.subscription?.subscriptionPeriod.unit == .month
+              }) else { return nil }
+        return SubscriptionPlanSavings.percentage(
+            monthlyPrice: monthly.price,
+            yearlyPrice: product.price
+        )
     }
 
     /// 有资格才显示试用天数；没资格的老用户走原有价格文案。
@@ -446,5 +545,15 @@ struct ProUpsellContent: View {
         case .day: return AppLocalized("按天订阅")
         default: return ""
         }
+    }
+}
+
+enum SubscriptionPlanSavings {
+    static func percentage(monthlyPrice: Decimal, yearlyPrice: Decimal) -> Int? {
+        let monthly = NSDecimalNumber(decimal: monthlyPrice).doubleValue
+        let yearly = NSDecimalNumber(decimal: yearlyPrice).doubleValue
+        let twelveMonths = monthly * 12
+        guard monthly > 0, yearly >= 0, yearly < twelveMonths else { return nil }
+        return max(1, min(99, Int(((twelveMonths - yearly) / twelveMonths * 100).rounded())))
     }
 }

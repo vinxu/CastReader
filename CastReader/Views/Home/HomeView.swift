@@ -156,6 +156,7 @@ struct HomeView: View {
     @ObservedObject private var koboStore = KoboLibraryStore.shared
     @ObservedObject private var oreillyStore = OReillyLibraryStore.shared
     @ObservedObject private var libraryOnboarding = BoundLibraryOnboardingStore.shared
+    @ObservedObject private var growthLoop = GrowthLoopConversionCoordinator.shared
 
     init(
         shareInboxUnreadCount: Int = 0,
@@ -256,7 +257,12 @@ struct HomeView: View {
                             )
                         }
                     }
-                    if !pro.isPro { homeProCard }
+                    if !pro.isPro,
+                       growthLoop.shouldShowGenericHomeProCard(
+                        onboardingActivated: libraryOnboarding.isActivated
+                       ) {
+                        homeProCard
+                    }
                 }
                 .padding(20)
             }
@@ -1093,7 +1099,9 @@ struct HomeView: View {
         let scenario = importScenario
         let mode = importMode
         let analyticsContext = importAnalyticsContext
-        let shouldAutoplay = scenario != nil || mode == .explain
+        let shouldAutoplay = scenario != nil
+            || mode == .explain
+            || growthLoop.shouldAutoplayFirstReadyContent(doc)
         coordinator.open(
             doc,
             mode: mode,

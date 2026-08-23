@@ -80,6 +80,7 @@ final class ProManager: ObservableObject {
     }
 
     private var updatesTask: Task<Void, Never>?
+    private var growthStatusRetryTask: Task<Void, Never>?
     /// 当前 `serverPro` 对应的账号身份。邮箱账号与纯手机号账号都必须参与，
     /// 否则两个无邮箱手机号账号之间切换且网络失败时会短暂沿用前一个人的权益。
     private var serverIdentity: String?
@@ -104,6 +105,12 @@ final class ProManager: ObservableObject {
     /// 用 cms_ 会话拉取服务端 Pro/额度；服务端从 canonical user + ingress route
     /// 派生额度主体，客户端 device_id 只保留为兼容字段，不能决定权益或额度。
     func refreshServer() async {
+        growthStatusRetryTask?.cancel()
+        growthStatusRetryTask = nil
+        await refreshServer(allowGrowthBootstrapRetry: true)
+    }
+
+    private func refreshServer(allowGrowthBootstrapRetry: Bool) async {
         let userId = Self.normalizedIdentityComponent(
             await AuthService.shared.ensureBackendUserIdForPro()
         )
@@ -134,6 +141,17 @@ final class ProManager: ObservableObject {
             clearServerEntitlement()
             return
         }
+
+        // Growth config assignment is explicitly ordered. The backend derives
+        // firstSeen from the analytics event, then joins the anonymous install
+        // to the cms_ principal, and only then evaluates status/v2. Without
+        // awaiting the collector acknowledgement, a fresh US install can race
+        // into the legacy daily quota for its first session.
+        let analyticsDelivery = await ProductAnalytics.shared
+            .ensureCurrentAppSessionDelivered()
+        let identityLinked = await AuthService.shared
+            .linkGrowthIdentityIfAuthenticated()
+
         let outcome = await ProBackendService.shared.fetchStatus()
         let status: ProStatusDTO
         switch outcome {
@@ -147,6 +165,9 @@ final class ProManager: ObservableObject {
             )
             return
         case .unavailable:
+            if allowGrowthBootstrapRetry {
+                scheduleGrowthBootstrapRetry()
+            }
             return // network/backend failure preserves the same account's last known state
         }
         guard Self.normalizedIdentityComponent(status.resolvedUserId) == userId else {
@@ -171,10 +192,32 @@ final class ProManager: ObservableObject {
         }
         QuotaManager.shared.applyServerStatus(status)
         refreshSyncState(reason: "refresh-server")
+
+        if allowGrowthBootstrapRetry,
+           status.growthConfig == nil {
+            if analyticsDelivery != .accepted || !identityLinked {
+                debugLog("growth bootstrap incomplete; retrying status once")
+            }
+            scheduleGrowthBootstrapRetry()
+        }
+    }
+
+    /// One bounded retry in the current foreground is enough to cover a
+    /// transient collector/link failure without creating a polling loop. A
+    /// later foreground refresh remains the normal recovery path.
+    private func scheduleGrowthBootstrapRetry() {
+        growthStatusRetryTask?.cancel()
+        growthStatusRetryTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard !Task.isCancelled, let self else { return }
+            await self.refreshServer(allowGrowthBootstrapRetry: false)
+        }
     }
 
     /// 登出时清服务端权益（避免 refreshServer 网络失败 fail-open 时 serverPro 滞留为旧的 true）。
     func clearServerEntitlement() {
+        growthStatusRetryTask?.cancel()
+        growthStatusRetryTask = nil
         serverPro = false
         serverPlan = nil
         serverAccount = nil
@@ -482,9 +525,17 @@ final class ProManager: ObservableObject {
             )
             return false
         }
+        // Best-effort retry immediately before StoreKit so a successful Apple
+        // transaction can always join back to the install-scoped ad cohort.
+        // Failure never blocks purchase; the signed endpoint is idempotent and
+        // the verified transaction path remains authoritative for entitlement.
+        await AuthService.shared.linkGrowthIdentityIfAuthenticated()
         let purchaseAccountToken = Self.accountBoundAppAccountToken(
             userId: backendUserId
         )
+        // Capture eligibility before StoreKit consumes the introductory offer;
+        // refresh() after verification will correctly flip it to ineligible.
+        let beganEligibleFreeTrial = showsFreeTrial(for: product)
         purchaseInFlight = true
         defer { purchaseInFlight = false }
         do {
@@ -530,6 +581,9 @@ final class ProManager: ObservableObject {
                                 offerType: offerType
                             )
                         )
+                        if beganEligibleFreeTrial, offerType == "introductory" {
+                            GrowthLoopConversionCoordinator.shared.storeKitFreeTrialStarted()
+                        }
                     }
                     return isPro
                 case .unverified(let t, _):

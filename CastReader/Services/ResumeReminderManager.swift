@@ -11,12 +11,12 @@
 //  - 权限在**首次累计 180s 有效收听后**的下一次回前台时请求（此刻用户已被产品说服），
 //    绝不在首启弹窗；用户拒绝即永久沉默。
 //
-//  刻意不做（v1）：自定义深链（点按只打开 App，首页各 rail 自带「继续」入口）、
-//  服务端推送、启动归因埋点（本地通知拿不到可靠的打开归因，宁缺毋滥）。
+//  通知携带内容 id；点按后复用统一 SystemAction 路由回到当前阅读位置，并记录
+//  permission/scheduled/opened 三段事件。服务端推送仍不在此模块范围内。
 //
 
 import Foundation
-import UserNotifications
+@preconcurrency import UserNotifications
 import UIKit
 
 // MARK: - 纯策略层（可单测，无系统依赖）
@@ -78,6 +78,54 @@ struct ResumeReminderPolicy {
     /// 多个候选时提醒哪一个：最近听过的优先（意图最新）。
     static func pick(_ candidates: [ResumeReminderCandidate]) -> ResumeReminderCandidate? {
         candidates.max { $0.lastListenedAt < $1.lastListenedAt }
+    }
+}
+
+enum ResumeReminderDeepLink {
+    static let actionKey = "castreader_action"
+    static let itemIDKey = "castreader_item_id"
+    static let continueAction = "continue_reading"
+
+    static func userInfo(documentID: String) -> [AnyHashable: Any] {
+        [actionKey: continueAction, itemIDKey: documentID]
+    }
+
+    static func action(from userInfo: [AnyHashable: Any]) -> SystemAction? {
+        guard userInfo[actionKey] as? String == continueAction else { return nil }
+        let itemID = (userInfo[itemIDKey] as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return .continueReading(
+            itemID: itemID?.isEmpty == false ? itemID : nil,
+            mode: .read
+        )
+    }
+}
+
+final class ResumeReminderNotificationRouter: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = ResumeReminderNotificationRouter()
+
+    func start() {
+        UNUserNotificationCenter.current().delegate = self
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        defer { completionHandler() }
+        guard let action = ResumeReminderDeepLink.action(
+            from: response.notification.request.content.userInfo
+        ) else { return }
+        let didEnqueue = SystemActionStore.shared.enqueue(action, origin: .deepLink)
+        Task { @MainActor in
+            ProductAnalytics.shared.trackResumeReminder(
+                action: .opened,
+                result: didEnqueue ? .success : .failed,
+                trigger: "d1_continue",
+                errorCode: didEnqueue ? nil : "action_enqueue_failed"
+            )
+        }
     }
 }
 
@@ -156,6 +204,7 @@ final class ResumeReminderManager {
     #endif
 
     func start() {
+        ResumeReminderNotificationRouter.shared.start()
         NotificationCenter.default.addObserver(
             forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main
         ) { _ in
@@ -218,7 +267,22 @@ final class ResumeReminderManager {
         state.didRequestPermission = true
         state.shouldPromptPermission = false
         persist()
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, error in
+            center.getNotificationSettings { settings in
+                Task { @MainActor in
+                    ProductAnalytics.shared.trackResumeReminder(
+                        action: .permissionRequested,
+                        result: error != nil ? .failed : (granted ? .success : .denied),
+                        permissionStatus: Self.analyticsPermissionStatus(
+                            settings.authorizationStatus
+                        ),
+                        trigger: "after_180s_value",
+                        errorCode: error == nil ? nil : "notification_permission_error"
+                    )
+                }
+            }
+        }
     }
 
     // MARK: 调度
@@ -249,6 +313,7 @@ final class ResumeReminderManager {
             content.title = candidate.title.isEmpty ? AppLocalized("继续听") : candidate.title
             content.body = AppLocalized("上次还没听完，接着听？")
             content.sound = .default
+            content.userInfo = ResumeReminderDeepLink.userInfo(documentID: candidate.id)
             let trigger = UNTimeIntervalNotificationTrigger(
                 timeInterval: max(60, fire.timeIntervalSince(now)), repeats: false
             )
@@ -264,7 +329,14 @@ final class ResumeReminderManager {
                 Task { @MainActor in
                     guard self.scopeGeneration == expectedGeneration,
                           self.activeStorageID == storageID else { return }
-                    self.markScheduled(docID: candidate.id, fireAt: fire)
+                    self.markScheduled(
+                        docID: candidate.id,
+                        fireAt: fire,
+                        daysSinceLastRead: max(
+                            0,
+                            Int(fire.timeIntervalSince(candidate.lastListenedAt) / 86_400)
+                        )
+                    )
                 }
             }
         }
@@ -272,12 +344,19 @@ final class ResumeReminderManager {
 
     /// 调度成功即计入频控。提醒可能被系统或用户回前台取消，但按「已尝试」计数
     /// 是防骚扰的正确方向：宁可少提醒，不可用「没送达」当理由重复轰炸。
-    private func markScheduled(docID: String, fireAt: Date) {
+    private func markScheduled(docID: String, fireAt: Date, daysSinceLastRead: Int) {
         var sent = state.sentAt[docID] ?? []
         sent.append(fireAt)
         state.sentAt[docID] = Array(sent.suffix(policy.perDocLifetimeCap))
         state.lastSentAt = fireAt
         persist()
+        ProductAnalytics.shared.trackResumeReminder(
+            action: .scheduled,
+            result: .success,
+            permissionStatus: .authorized,
+            trigger: "d1_continue",
+            daysSinceLastRead: daysSinceLastRead
+        )
     }
 
     // MARK: 持久化
@@ -323,5 +402,18 @@ final class ResumeReminderManager {
 
     private static func isValidStorageID(_ value: String) -> Bool {
         value.count == 64 && value.allSatisfy(\.isHexDigit)
+    }
+
+    private static func analyticsPermissionStatus(
+        _ status: UNAuthorizationStatus
+    ) -> AnalyticsNotificationPermissionStatus {
+        switch status {
+        case .notDetermined: return .notDetermined
+        case .denied: return .denied
+        case .authorized: return .authorized
+        case .provisional: return .provisional
+        case .ephemeral: return .ephemeral
+        @unknown default: return .unknown
+        }
     }
 }

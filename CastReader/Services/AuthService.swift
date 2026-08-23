@@ -416,6 +416,9 @@ final class AuthService: NSObject, ObservableObject {
             }
             activeContentStorageID = storageID
             account = acc
+            Task { @MainActor [weak self] in
+                await self?.linkGrowthIdentityIfAuthenticated()
+            }
         } else {
             discardInvalidRestoredIdentity()
         }
@@ -559,6 +562,15 @@ final class AuthService: NSObject, ObservableObject {
         persist()
     }
 
+    /// Best-effort install -> account bridge. The request carries only the two
+    /// client installation identifiers; the server derives canonical user id
+    /// exclusively from the authenticated cms_ session.
+    @discardableResult
+    func linkGrowthIdentityIfAuthenticated() async -> Bool {
+        guard isSignedIn else { return false }
+        return await ProBackendService.shared.linkGrowthIdentity()
+    }
+
     func dismissAccountDeletionReceipt() {
         lastAccountDeletionReceipt = nil
     }
@@ -619,6 +631,7 @@ final class AuthService: NSObject, ObservableObject {
         )
 
         // 登录后立刻按账号维度刷新 Pro，避免继续停留在 device_id 维度。
+        await linkGrowthIdentityIfAuthenticated()
         ProManager.shared.refreshSyncState(reason: "phone-sign-in")
         await ProManager.shared.refresh()
     }
@@ -729,6 +742,7 @@ final class AuthService: NSObject, ObservableObject {
         }
 
         applyAccount(acc)
+        await linkGrowthIdentityIfAuthenticated()
         await ProManager.shared.refresh()   // 按新账号重算 StoreKit + 服务端 Pro
     }
 
@@ -812,6 +826,7 @@ final class AuthService: NSObject, ObservableObject {
             backendUserId: backendId
         )
         applyAccount(signedInAccount)
+        await linkGrowthIdentityIfAuthenticated()
         await ProManager.shared.refresh()   // 按新账号重算 StoreKit + 服务端 Pro + 额度
     }
 

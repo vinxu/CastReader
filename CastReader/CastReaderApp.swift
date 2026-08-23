@@ -194,7 +194,7 @@ final class AppStartupCoordinator: ObservableObject {
 
         let launchType = SystemActionStore.shared.peekPendingOrigin()?.launchType ?? "cold"
         ProductAnalytics.shared.startAppSession(launchType: launchType)
-        AdAttributionService.shared.reportOnceIfNeeded()
+        AdAttributionService.shared.start()
         ProManager.shared.start()
         QuotaManager.shared.rollIfNewDay()
         VoiceCatalogService.shared.start()
@@ -230,6 +230,7 @@ final class AppStartupCoordinator: ObservableObject {
             ) { _ in
                 Task { @MainActor in
                     ProductAnalytics.shared.didBecomeActive()
+                    AdAttributionService.shared.didBecomeActive()
                     QuotaManager.shared.rollIfNewDay()
                     await AuthService.shared.refreshAppleCredentialState()
                     await ProManager.shared.refresh()
@@ -243,7 +244,10 @@ final class AppStartupCoordinator: ObservableObject {
                 object: nil,
                 queue: .main
             ) { _ in
-                Task { @MainActor in ProductAnalytics.shared.didEnterBackground() }
+                Task { @MainActor in
+                    AdAttributionService.shared.didEnterBackground()
+                    ProductAnalytics.shared.didEnterBackground()
+                }
             }
         )
     }

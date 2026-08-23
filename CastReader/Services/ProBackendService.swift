@@ -8,11 +8,20 @@
 //
 
 import Foundation
+import StoreKit
 
 struct ProAccountDTO: Decodable, Equatable {
     let name: String?
     let email: String?
     let image: String?
+}
+
+struct GrowthConfigDTO: Decodable, Equatable {
+    let configId: String
+    let market: String
+    let eligible: Bool
+    let assignedAt: String?
+    let killSwitch: Bool
 }
 
 struct ProStatusDTO: Decodable, Equatable {
@@ -31,6 +40,13 @@ struct ProStatusDTO: Decodable, Equatable {
     /// 首装赠额层剩余（秒 / 次）。仅 two_tier 下发。
     let grantListenRemaining: Int?
     let grantExplainRemaining: Int?
+    let grantListenMax: Int?
+    let grantExplainMax: Int?
+    let monthlyListenMax: Int?
+    let monthlyListenRemaining: Int?
+    let monthlyExplainMax: Int?
+    let monthlyExplainRemaining: Int?
+    let growthConfig: GrowthConfigDTO?
 
     init(
         pro: Bool,
@@ -44,7 +60,14 @@ struct ProStatusDTO: Decodable, Equatable {
         resolvedUserId: String? = nil,
         quotaPolicy: String? = nil,
         grantListenRemaining: Int? = nil,
-        grantExplainRemaining: Int? = nil
+        grantExplainRemaining: Int? = nil,
+        grantListenMax: Int? = nil,
+        grantExplainMax: Int? = nil,
+        monthlyListenMax: Int? = nil,
+        monthlyListenRemaining: Int? = nil,
+        monthlyExplainMax: Int? = nil,
+        monthlyExplainRemaining: Int? = nil,
+        growthConfig: GrowthConfigDTO? = nil
     ) {
         self.pro = pro
         self.plan = plan
@@ -58,6 +81,13 @@ struct ProStatusDTO: Decodable, Equatable {
         self.quotaPolicy = quotaPolicy
         self.grantListenRemaining = grantListenRemaining
         self.grantExplainRemaining = grantExplainRemaining
+        self.grantListenMax = grantListenMax
+        self.grantExplainMax = grantExplainMax
+        self.monthlyListenMax = monthlyListenMax
+        self.monthlyListenRemaining = monthlyListenRemaining
+        self.monthlyExplainMax = monthlyExplainMax
+        self.monthlyExplainRemaining = monthlyExplainRemaining
+        self.growthConfig = growthConfig
     }
 }
 
@@ -81,6 +111,22 @@ enum ProStatusFetchOutcome: Equatable {
     case unavailable
 }
 
+struct ProListenTrackDTO: Decodable, Equatable, Sendable {
+    let seconds: Int
+    let limit: Int
+    let remaining: Int
+    let grantListenRemaining: Int?
+    let quotaPolicy: String?
+}
+
+enum ProListenTrackOutcome: Equatable, Sendable {
+    case success(ProListenTrackDTO)
+    case growthIdentityRequired
+    case usageEventConflict
+    case unauthorized
+    case unavailable
+}
+
 actor ProBackendService {
     static let shared = ProBackendService()
     private let session: URLSession
@@ -94,18 +140,62 @@ actor ProBackendService {
         StableDeviceID.current
     }
 
+    struct GrowthClientContext: Equatable, Sendable {
+        let analyticsAnonymousId: String
+        let stableDeviceId: String
+        let appVersion: String
+        let appBuild: String?
+        let storefrontCountry: String?
+    }
+
+    private static func growthClientContext() async -> GrowthClientContext {
+        let analyticsAnonymousId = await ProductAnalytics.shared.privacySafeAnonymousId
+        let storefrontCountry = Self.normalizedStorefrontCountry(
+            await Storefront.current?.countryCode
+        )
+        return GrowthClientContext(
+            analyticsAnonymousId: analyticsAnonymousId,
+            stableDeviceId: deviceId,
+            appVersion: Bundle.main.object(
+                forInfoDictionaryKey: "CFBundleShortVersionString"
+            ) as? String ?? "0",
+            appBuild: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
+            storefrontCountry: storefrontCountry
+        )
+    }
+
     /// 查询 Pro/额度。账号只由 cms_ session 解析；query 不包含 user_id/email，
     /// 服务端也不会把可轮换的 device_id 当作 v2 额度主键。
     func fetchStatus() async -> ProStatusFetchOutcome {
-        guard var comps = URLComponents(string: Constants.API.mobileProStatusV2) else {
-            return .unavailable
-        }
-        comps.queryItems = [
-            URLQueryItem(name: "device_id", value: Self.deviceId),
-            URLQueryItem(name: "local_date", value: Self.localDay())
-        ]
-        guard let url = comps.url else { return .unavailable }
+        let context = await Self.growthClientContext()
+        guard let url = Self.makeStatusURL(
+            endpoint: Constants.API.mobileProStatusV2,
+            context: context,
+            localDate: Self.localDay()
+        ) else { return .unavailable }
         return await performStatus(url: url, canRefreshSession: true)
+    }
+
+    static func makeStatusURL(
+        endpoint: String,
+        context: GrowthClientContext,
+        localDate: String
+    ) -> URL? {
+        guard var components = URLComponents(string: endpoint) else { return nil }
+        var items = [
+            URLQueryItem(name: "device_id", value: context.stableDeviceId),
+            URLQueryItem(name: "analytics_anonymous_id", value: context.analyticsAnonymousId),
+            URLQueryItem(name: "local_date", value: localDate),
+            URLQueryItem(name: "app_version", value: context.appVersion),
+        ]
+        if let appBuild = context.appBuild, !appBuild.isEmpty {
+            items.append(URLQueryItem(name: "app_build", value: appBuild))
+        }
+        if let country = context.storefrontCountry, !country.isEmpty {
+            items.append(URLQueryItem(name: "storefront_country", value: country))
+        }
+        components.queryItems = items
+        return components.url
     }
 
     private func performStatus(
@@ -140,12 +230,136 @@ actor ProBackendService {
                 return .unavailable
             }
             let status = try ProStatusDTO.decodeServerResponse(from: data)
+            if let config = status.growthConfig {
+                await ProductAnalytics.shared.trackGrowthConfigAssigned(
+                    configId: config.configId,
+                    market: Self.analyticsGrowthMarket(config.market).rawValue,
+                    eligibility: (config.eligible && !config.killSwitch)
+                        ? AnalyticsGrowthEligibility.eligible.rawValue
+                        : AnalyticsGrowthEligibility.ineligible.rawValue
+                )
+            }
             Self.debugLog("status DONE pro=\(status.pro ? "Y" : "N") plan=\(status.plan ?? "nil") free=\(status.freeRemaining.map(String.init) ?? "nil") listen=\(status.listenRemaining.map(String.init) ?? "nil")")
             return .success(status)
         } catch {
             Self.debugLog("status FAIL error=\(error.localizedDescription)")
             return .unavailable
         }
+    }
+
+    static func analyticsGrowthMarket(_ rawValue: String) -> AnalyticsGrowthMarket {
+        switch rawValue.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() {
+        case "US", "USA": return .us
+        case "GB", "GBR", "UK": return .gb
+        default: return .other
+        }
+    }
+
+    static func normalizedStorefrontCountry(_ rawValue: String?) -> String? {
+        guard let value = rawValue?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased(), !value.isEmpty else { return nil }
+        switch value {
+        case "USA": return "US"
+        case "GBR", "UK": return "GB"
+        default: return value.count == 2 ? value : nil
+        }
+    }
+
+    /// Links the install-scoped analytics id and Keychain-stable device id to
+    /// the canonical account derived by the server from the cms_ bearer. No
+    /// client-supplied user id is present in this contract.
+    func linkGrowthIdentity() async -> Bool {
+        guard let url = URL(string: Constants.API.mobileGrowthIdentityLink) else {
+            return false
+        }
+        let context = await Self.growthClientContext()
+        return await performGrowthIdentityLink(
+            url: url,
+            context: context,
+            canRefreshSession: true
+        )
+    }
+
+    private func performGrowthIdentityLink(
+        url: URL,
+        context: GrowthClientContext,
+        canRefreshSession: Bool
+    ) async -> Bool {
+        var token = await MobileSessionStore.shared.sessionToken()
+        if token == nil, canRefreshSession {
+            token = await MobileSessionStore.shared.refreshSession()
+        }
+        guard let token, !token.isEmpty else {
+            Self.debugLog("growth-identity SKIP mobile-session-missing")
+            return false
+        }
+        let request: URLRequest
+        do {
+            request = try Self.makeGrowthIdentityLinkRequest(
+                url: url,
+                bearerToken: token,
+                context: context
+            )
+        } catch {
+            return false
+        }
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return false }
+            if http.statusCode == 401, canRefreshSession,
+               await MobileSessionStore.shared.refreshSession() != nil {
+                return await performGrowthIdentityLink(
+                    url: url,
+                    context: context,
+                    canRefreshSession: false
+                )
+            }
+            if http.statusCode == 401 {
+                await MobileSessionStore.shared.rejectSession(token)
+                return false
+            }
+            guard (200..<300).contains(http.statusCode),
+                  let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  (root["code"] as? Int) == 0,
+                  let payload = root["data"] as? [String: Any],
+                  payload["linked"] as? Bool == true else {
+                Self.debugLog(
+                    "growth-identity HTTP \(http.statusCode) body=\(Self.preview(data))"
+                )
+                return false
+            }
+            Self.debugLog("growth-identity DONE")
+            return true
+        } catch {
+            Self.debugLog("growth-identity FAIL error=\(error.localizedDescription)")
+            return false
+        }
+    }
+
+    static func makeGrowthIdentityLinkRequest(
+        url: URL,
+        bearerToken: String,
+        context: GrowthClientContext
+    ) throws -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+        var body: [String: Any] = [
+            "analytics_anonymous_id": context.analyticsAnonymousId,
+            "stable_device_id": context.stableDeviceId,
+            "app_version": context.appVersion,
+        ]
+        if let appBuild = context.appBuild, !appBuild.isEmpty {
+            body["app_build"] = appBuild
+        }
+        if let country = context.storefrontCountry, !country.isEmpty {
+            body["storefront_country"] = country
+        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        return request
     }
 
     /// Upload an Apple-signed StoreKit 2 transaction under the authenticated
@@ -218,59 +432,152 @@ actor ProBackendService {
     }
 
     /// 上报朗读秒数（增量）。cms_ 过期时不回退旧公开 user_id 合同。
-    func trackListen(seconds: Int) async {
+    @discardableResult
+    func trackListen(seconds: Int) async -> ProListenTrackOutcome {
         guard seconds > 0,
-              let url = URL(string: Constants.API.mobileProListenTrackV2) else { return }
-        await performListenTrack(seconds: seconds, url: url, canRefreshSession: true)
+              let url = URL(string: Constants.API.mobileProListenTrackV2) else {
+            return .unavailable
+        }
+        let context = await Self.growthClientContext()
+        return await performListenTrack(
+            seconds: seconds,
+            usageEventId: UUID().uuidString,
+            analyticsAnonymousId: context.analyticsAnonymousId,
+            url: url,
+            canRefreshSession: true,
+            canRetryTransport: true
+        )
     }
 
     private func performListenTrack(
         seconds: Int,
+        usageEventId: String,
+        analyticsAnonymousId: String,
         url: URL,
-        canRefreshSession: Bool
-    ) async {
+        canRefreshSession: Bool,
+        canRetryTransport: Bool
+    ) async -> ProListenTrackOutcome {
         var token = await MobileSessionStore.shared.sessionToken()
         if token == nil, canRefreshSession {
             token = await MobileSessionStore.shared.refreshSession()
         }
         guard let token, !token.isEmpty else {
             Self.debugLog("track-v2 BLOCK mobile-session-missing")
-            return
+            return .unauthorized
         }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
-        let body: [String: Any] = [
-            "device_id": Self.deviceId,
-            "seconds": seconds,
-            "local_date": Self.localDay()
-        ]
-        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        Self.debugLog("track-v2 START seconds=\(seconds) device=\(Self.redact(Self.deviceId))")
+        let request: URLRequest
         do {
-            let (data, response) = try await session.data(for: req)
-            guard let http = response as? HTTPURLResponse else { return }
+            request = try Self.makeListenTrackRequest(
+                url: url,
+                bearerToken: token,
+                analyticsAnonymousId: analyticsAnonymousId,
+                usageEventId: usageEventId,
+                seconds: seconds
+            )
+        } catch {
+            return .unavailable
+        }
+        Self.debugLog("track-v2 START seconds=\(seconds) usage=\(Self.redact(usageEventId))")
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return .unavailable }
             if http.statusCode == 401, canRefreshSession,
                await MobileSessionStore.shared.refreshSession() != nil {
-                await performListenTrack(
+                return await performListenTrack(
                     seconds: seconds,
+                    usageEventId: usageEventId,
+                    analyticsAnonymousId: analyticsAnonymousId,
                     url: url,
-                    canRefreshSession: false
+                    canRefreshSession: false,
+                    canRetryTransport: canRetryTransport
                 )
-                return
             }
             if http.statusCode == 401 {
                 await MobileSessionStore.shared.rejectSession(token)
-                return
+                return .unauthorized
+            }
+            if (200..<300).contains(http.statusCode) {
+                guard let payload = Self.decodeListenTrackResponse(data) else {
+                    return .unavailable
+                }
+                return .success(payload)
+            }
+            let serverCode = Self.serverErrorCode(from: data)
+            if http.statusCode == 422,
+               serverCode == "GROWTH_USAGE_IDENTITY_REQUIRED" {
+                return .growthIdentityRequired
+            }
+            if http.statusCode == 409,
+               serverCode == "GROWTH_USAGE_EVENT_CONFLICT" {
+                return .usageEventConflict
             }
             if !(200..<300).contains(http.statusCode) {
+                if canRetryTransport, (500..<600).contains(http.statusCode) {
+                    return await performListenTrack(
+                        seconds: seconds,
+                        usageEventId: usageEventId,
+                        analyticsAnonymousId: analyticsAnonymousId,
+                        url: url,
+                        canRefreshSession: false,
+                        canRetryTransport: false
+                    )
+                }
                 Self.debugLog("track HTTP \(http.statusCode) body=\(Self.preview(data))")
             }
+            return .unavailable
         } catch {
+            if canRetryTransport {
+                return await performListenTrack(
+                    seconds: seconds,
+                    usageEventId: usageEventId,
+                    analyticsAnonymousId: analyticsAnonymousId,
+                    url: url,
+                    canRefreshSession: false,
+                    canRetryTransport: false
+                )
+            }
             Self.debugLog("track FAIL error=\(error.localizedDescription)")
+            return .unavailable
         }
+    }
+
+    static func makeListenTrackRequest(
+        url: URL,
+        bearerToken: String,
+        analyticsAnonymousId: String,
+        usageEventId: String,
+        seconds: Int
+    ) throws -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "analytics_anonymous_id": analyticsAnonymousId,
+            "usage_event_id": usageEventId,
+            "seconds": seconds,
+        ])
+        return request
+    }
+
+    static func decodeListenTrackResponse(_ data: Data) -> ProListenTrackDTO? {
+        struct Envelope: Decodable { let data: ProListenTrackDTO }
+        let decoder = JSONDecoder()
+        return (try? decoder.decode(Envelope.self, from: data).data)
+            ?? (try? decoder.decode(ProListenTrackDTO.self, from: data))
+    }
+
+    static func serverErrorCode(from data: Data) -> String? {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        return (root["errorCode"] as? String)
+            ?? (root["code"] as? String)
+            ?? (root["error"] as? String)
+            ?? ((root["error"] as? [String: Any])?["code"] as? String)
+            ?? ((root["data"] as? [String: Any])?["code"] as? String)
+            ?? ((root["data"] as? [String: Any])?["error"] as? String)
     }
 
     static func localDay() -> String {

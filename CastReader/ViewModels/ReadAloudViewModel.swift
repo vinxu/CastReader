@@ -805,6 +805,7 @@ final class ReadAloudViewModel: ObservableObject {
             .voice(for: correctedLanguage ?? document.language)
         recomputeReadableIndices()
         bind()
+        GrowthLoopConversionCoordinator.shared.contentBecameReady(document)
     }
 
     /// Where this book's reading-language correction is filed.
@@ -2063,6 +2064,11 @@ final class ReadAloudViewModel: ObservableObject {
     private func start(allowAccessRefresh: Bool) {
         liveWebTurnIntentSuspended = false
         guard !readableIndices.isEmpty else { status = .error(AppLocalized("无可朗读内容")); return }
+        if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
+            self?.start(allowAccessRefresh: true)
+        }) {
+            return
+        }
         // YouTube must probe its persistent TTS cache before deciding whether
         // fresh-listen quota is required. Other sources keep the synchronous
         // gate and retry behavior unchanged.
@@ -2102,6 +2108,12 @@ final class ReadAloudViewModel: ObservableObject {
     func togglePlayPause() {
         liveWebTurnIntentSuspended = false
         if currentParagraphIndex < 0 { start(); return }
+        if !audio.isPlaying,
+           presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
+               self?.togglePlayPause()
+           }) {
+            return
+        }
         if case .error = status {
             generate(currentParagraphIndex)
             return
@@ -2144,6 +2156,11 @@ final class ReadAloudViewModel: ObservableObject {
     func ensurePlaying() {
         liveWebTurnIntentSuspended = false
         if ownsAudioQueue, audio.isPlaying { return }
+        if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
+            self?.ensurePlaying()
+        }) {
+            return
+        }
         if currentParagraphIndex < 0 {
             start()
             return
@@ -2317,6 +2334,19 @@ final class ReadAloudViewModel: ObservableObject {
     ) {
         guard readableIndices.contains(paragraphIndex), !segments.isEmpty else {
             jump(to: paragraphIndex)
+            return
+        }
+        if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
+            self?.startWithPrefetchedSegments(
+                segments,
+                paragraphIndex: paragraphIndex,
+                allowAccessRefresh: true,
+                initialSegmentID: initialSegmentID,
+                initialProgress: initialProgress,
+                autoplay: autoplay,
+                persistentYouTubeCacheHit: persistentYouTubeCacheHit
+            )
+        }) {
             return
         }
         guard canStartAudio(
@@ -2646,6 +2676,28 @@ final class ReadAloudViewModel: ObservableObject {
         return isYouTubeAudioQuotaExempt(paragraphIndex: currentParagraphIndex)
     }
 
+    /// Once the five-minute wall has reached a real paragraph boundary, every
+    /// explicit continuation stays fail-closed independently of a stale quota
+    /// mirror. Before that first boundary, pausing at 300 seconds may still
+    /// resume so the current paragraph can finish.
+    private func presentElapsedGrowthWallIfNeeded(
+        resumeAfterPurchase: @escaping () -> Void
+    ) -> Bool {
+        guard GrowthLoopConversionCoordinator.shared.reclaimHardWallOnUserContinue(
+            document: document,
+            resumeAfterPurchase: resumeAfterPurchase
+        ) else { return false }
+        if let token = audioSessionToken {
+            _ = audio.pause(session: token)
+        }
+        status = .ready
+        endAnalyticsReadSession(
+            result: .blocked,
+            reason: "growth_first_value_preview"
+        )
+        return true
+    }
+
     private func canStartAudio(persistentYouTubeCacheHit: Bool) -> Bool {
         YouTubePersistentAudioQuotaPolicy.canStart(
             sourceKind: document.sourceKind,
@@ -2696,6 +2748,17 @@ final class ReadAloudViewModel: ObservableObject {
         allowAccessRefresh: Bool = true
     ) {
         guard isActive, paras.indices.contains(index) else { return }
+        if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
+            self?.generate(
+                index,
+                voiceOverride: voiceOverride,
+                autoPlay: autoPlay,
+                voiceSwitchID: voiceSwitchID,
+                allowAccessRefresh: true
+            )
+        }) {
+            return
+        }
         guard let session = ensureAudioSessionClaim() else { return }
         if document.sourceKind == .youtube {
             // A manual jump or voice switch can replace the player before its
@@ -3246,10 +3309,23 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         if isAwaitingLiveWebCarryCompletion {
+            commitListen()
+            if GrowthLoopConversionCoordinator.shared.claimHardWallAtParagraphBoundary(
+                document: document,
+                resumeAfterPurchase: { [weak self] in
+                    self?.advance(allowAccessRefresh: true)
+                }
+            ) {
+                status = .ready
+                endAnalyticsReadSession(
+                    result: .blocked,
+                    reason: "growth_first_value_preview"
+                )
+                return
+            }
             let startIndex = pendingLiveWebCarryStartIndex
             isAwaitingLiveWebCarryCompletion = false
             pendingLiveWebCarryStartIndex = nil
-            commitListen()
             if let startIndex {
                 let hasExactPrewarm: Bool
                 if let epoch = liveWebCarryPrewarmEpoch,
@@ -3314,6 +3390,19 @@ final class ReadAloudViewModel: ObservableObject {
         }
         persistCompletedYouTubeParagraphIfNeeded()
         commitListen()
+        if GrowthLoopConversionCoordinator.shared.claimHardWallAtParagraphBoundary(
+            document: document,
+            resumeAfterPurchase: { [weak self] in
+                self?.advance(allowAccessRefresh: true)
+            }
+        ) {
+            status = .ready
+            endAnalyticsReadSession(
+                result: .blocked,
+                reason: "growth_first_value_preview"
+            )
+            return
+        }
         NSLog("CRDBG advance from para=%d readable=%d", currentParagraphIndex, readableIndices.count)
         ReaderRunLog.write(
             "READ advance from=\(currentParagraphIndex) readable=\(readableIndices.count) " +
@@ -4160,6 +4249,9 @@ final class ReadAloudViewModel: ObservableObject {
                 storefront: analyticsContext.storefront
             )
         )
+        GrowthLoopConversionCoordinator.shared.firstAudioBecameAudible(
+            document: document
+        )
     }
 
     private func accountAnalyticsPlayback(_ currentTime: Double) {
@@ -4184,6 +4276,10 @@ final class ReadAloudViewModel: ObservableObject {
             ResumeReminderManager.shared.recordPlayback(
                 documentID: document.id,
                 title: document.title,
+                seconds: rawPlaybackDelta
+            )
+            GrowthLoopConversionCoordinator.shared.recordPlayback(
+                document: document,
                 seconds: rawPlaybackDelta
             )
         }

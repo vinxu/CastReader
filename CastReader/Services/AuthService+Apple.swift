@@ -75,6 +75,7 @@ extension AuthService {
         Self.archiveAppleProfile(id: id, name: name, email: email, backendUserId: acc.backendUserId)
 
         applyAccount(acc)
+        await linkGrowthIdentityIfAuthenticated()
         await ProManager.shared.refresh()
         return true
     }
