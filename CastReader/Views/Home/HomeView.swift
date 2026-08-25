@@ -959,8 +959,9 @@ struct HomeView: View {
     private func analyticsSource(for provider: CloudProviderID) -> AnalyticsContentSource {
         switch provider {
         case .googleDrive: return .googleDrive
-        case .dropbox: return .dropbox
-        case .oneDrive: return .oneDrive
+        // Legacy identifiers remain decodable for old local state, but those
+        // providers are no longer product-supported or exposed in the UI.
+        case .dropbox, .oneDrive: return .unknown
         }
     }
 

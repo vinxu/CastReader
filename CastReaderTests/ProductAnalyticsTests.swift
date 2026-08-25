@@ -53,11 +53,9 @@ final class ProductAnalyticsTests: XCTestCase {
             "ingest accepts historical queued legacy, while new clients emit global/cn"
         )
         let contractContentSources = Set(domains["contentSource"] ?? [])
-        // This contract is shared by both mobile clients. The App Store target
-        // deliberately omits the unfinished cloud adapters, so their canonical
-        // source values must not be embedded in the shipping binary. Compare
-        // the enabled sources and separately verify the inert placeholders.
-        let excludedCloudSources: Set<String> = ["google_drive", "dropbox", "onedrive"]
+        // This contract is shared by both mobile clients. Google Drive ships
+        // on iOS; the unfinished Dropbox and OneDrive adapters remain absent.
+        let excludedCloudSources: Set<String> = ["dropbox", "onedrive"]
         let unavailableCloudSources: Set<String> = [
             "unavailable_cloud_a", "unavailable_cloud_b", "unavailable_cloud_c",
         ]

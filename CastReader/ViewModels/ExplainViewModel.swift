@@ -755,7 +755,7 @@ final class ExplainViewModel: ObservableObject {
         let recomposed: [QuickreadEvent]?
         if !jobId.isEmpty,
            let qualityBlockIndex,
-           let composed = try? await QuickReadService.shared.composeBlock(
+           let composed = try? await quickReadService.composeBlock(
                 jobId: jobId,
                 blockIdx: qualityBlockIndex,
                 timestamps: timeline,
@@ -1092,6 +1092,14 @@ final class ExplainViewModel: ObservableObject {
 
     private var isErrorState: Bool { if case .error = status { return true } else { return false } }
 
+    /// Workspace-derived text must never enter the China DeepSeek route. The
+    /// document keeps its cloud origin through import/reopen, so every plan,
+    /// continuation and compose request for a Google Drive document is bound
+    /// to the dedicated Limited Use service instance and its global job map.
+    private var quickReadService: QuickReadService {
+        QuickReadService.forDocument(doc)
+    }
+
     /// 解读最低内容量（提交 LLM 前预校验）：中文字符密度高、阈值低；其他语言按字符计。低于此 LLM 没东西可讲。
     private var minExplainChars: Int { doc.language.hasPrefix("zh") ? 20 : 50 }
 
@@ -1152,7 +1160,7 @@ final class ExplainViewModel: ObservableObject {
             self.forcedExplainLang = lang
         }
         var fastResult: (section: QuickreadSection, block: PreparedBlock)?
-        if let section = try? await QuickReadService.shared.fastBlock0(
+        if let section = try? await quickReadService.fastBlock0(
                 title: doc.title, openingParas: opening.map { $0.text },
                 lang: lang, depth: requestDepth, prevSummary: nil, contentType: scenario),
            let pb = try? await prepareFastBlock(section, language: lang) {
@@ -1541,7 +1549,7 @@ final class ExplainViewModel: ObservableObject {
         debugLog("%@", requestDiagnostic)
         ReaderRunLog.write("EXPLAIN \(requestDiagnostic)")
         do {
-            let done = try await QuickReadService.shared.extractPlan(
+            let done = try await quickReadService.extractPlan(
                 req,
                 onStage: { [weak self] s in
                     Task { @MainActor in
@@ -1842,7 +1850,7 @@ final class ExplainViewModel: ObservableObject {
             guard let s0 = section0 else { throw CancellationError() }
             section = s0
         } else {
-            section = try await QuickReadService.shared.extractBlock(jobId: jobId, blockIdx: qIdx)
+            section = try await quickReadService.extractBlock(jobId: jobId, blockIdx: qIdx)
         }
         let sectionMs = elapsedMs(since: sectionStartedAt)
         let pb = try await prepareSection(section, idx: idx, composeIdx: qIdx, jobId: jobId, language: outputLanguage, detachedTTS: detachedTTS)
@@ -1898,7 +1906,7 @@ final class ExplainViewModel: ObservableObject {
         var marks: [QuickreadEvent]
         var composedCount: Int?
         let composeStartedAt = Date()
-        if let composed = try? await QuickReadService.shared.composeBlock(
+        if let composed = try? await quickReadService.composeBlock(
             jobId: jobId, blockIdx: composeIdx, timestamps: timeline, duration: duration) {
             marks = composed.events
             composedCount = composed.events.count
@@ -2227,7 +2235,7 @@ final class ExplainViewModel: ObservableObject {
         let req = buildPlanRequest(paras: paras, prevSummary: prevSummary)
         // onBlock0 在 QuickReadService actor 同步回调，用 Sendable box 收集（不写当前播放状态）。
         let box = PlanBlock0Box()
-        let done = try await QuickReadService.shared.extractPlan(req, onStage: { _ in }, onBlock0: { box.set($0) })
+        let done = try await quickReadService.extractPlan(req, onStage: { _ in }, onBlock0: { box.set($0) })
         guard let b = box.value else { throw QuickReadError.noBlock0 }
         let lang = b.output_language ?? settings.explainLangOrNil ?? doc.language
         var total = max(1, b.total_blocks)
@@ -2253,7 +2261,7 @@ final class ExplainViewModel: ObservableObject {
         guard readableChars >= minExplainChars else { throw QuickReadError.noBlock0 }
         let req = buildPlanRequest(document: targetDocument, paras: targetDocument.paragraphs, prevSummary: previousSummary)
         let box = PlanBlock0Box()
-        let done = try await QuickReadService.shared.extractPlan(
+        let done = try await QuickReadService.forDocument(targetDocument).extractPlan(
             req,
             onStage: { _ in },
             onBlock0: { box.set($0) }

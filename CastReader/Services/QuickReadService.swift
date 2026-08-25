@@ -269,27 +269,36 @@ enum QuickReadSSEErrorMapper {
 actor QuickReadService {
     static let shared = QuickReadService()
 
-    private init() {
+    /// Workspace-derived content stays on the paid global inference route,
+    /// whose provider contract forbids model training with user content.
+    static let googleLimitedUse = QuickReadService(computeRouteOverride: .globalGateway)
+
+    nonisolated static func forDocument(_ document: ReadingDocument) -> QuickReadService {
+        document.origin?.provider == .googleDrive ? .googleLimitedUse : .shared
+    }
+
+    private init(computeRouteOverride: ServiceRoute? = nil) {
         let accountRoute = ServiceRouting.current
         let computeSnapshot = ComputeRouting.currentSnapshot
+        let computeRoute = computeRouteOverride ?? computeSnapshot.primary
         self.session = OwnedAPIURLSession.makeExplicitCredentialSession(
             route: accountRoute,
             requestTimeout: 90,
             resourceTimeout: 120
         )
         self.computeSession = OwnedAPIURLSession.makeExplicitCredentialSession(
-            route: computeSnapshot.primary,
+            route: computeRoute,
             requestTimeout: 90,
             resourceTimeout: 120
         )
         self.mobileSessionProvider = MobileSessionStore.shared
         self.computeSessionProvider = QuickReadComputeSessionStore(
             accountRoute: accountRoute,
-            targetRoute: computeSnapshot.primary,
+            targetRoute: computeRoute,
             mobileSessionProvider: MobileSessionStore.shared
         )
         self.accountRoute = accountRoute
-        self.computeRoute = computeSnapshot.primary
+        self.computeRoute = computeRoute
     }
 
     /// Test-only dependency seam used by transport-boundary contract tests.

@@ -300,6 +300,7 @@ enum AnalyticsContentSource: String, Codable, CaseIterable, Sendable {
     case googleBooks = "google_books"
     case kobo
     case oreilly
+    case googleDrive = "google_drive"
     case unavailableCloudA = "unavailable_cloud_a"
     case unavailableCloudB = "unavailable_cloud_b"
     case unavailableCloudC = "unavailable_cloud_c"

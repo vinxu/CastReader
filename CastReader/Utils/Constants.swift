@@ -11,8 +11,9 @@ enum Constants {
         /// but the feature is intentionally unavailable in this release.
         static let voiceCloningEnabled = false
 
-        /// The provider adapters are not part of this release target.
-        static let cloudStorageEnabled = false
+        /// The verified Google Drive read-only integration is enabled. Other
+        /// cloud providers remain unavailable and are not exposed by the app.
+        static let cloudStorageEnabled = true
 
         /// 中国备案网关的代码能力已编入，但是否使用由 ServiceRouting 的启动快照
         /// 决定。不能再用编译期开关把 CHN storefront 自动切到新线路。
@@ -126,6 +127,27 @@ enum Constants {
         static var redirectURI: String { "\(reversedClientID):/oauth2redirect" }
         /// 是否已配置真实 client id（否则隐藏 Google 登录入口）。
         static var isConfigured: Bool { !clientID.hasPrefix("YOUR_GOOGLE") }
+    }
+
+    enum CloudStorage {
+        private static func infoValue(_ key: String) -> String {
+            (Bundle.main.object(forInfoDictionaryKey: key) as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        }
+
+        enum GoogleDrive {
+            static var clientID: String { infoValue("GoogleDriveClientID") }
+            static var redirectScheme: String {
+                infoValue("GoogleDriveRedirectScheme")
+            }
+            static var redirectURI: String { "\(redirectScheme):/oauth2redirect" }
+            static var isConfigured: Bool {
+                clientID.hasSuffix(".apps.googleusercontent.com")
+                    && !clientID.contains("YOUR_")
+                    && redirectScheme.hasPrefix("com.googleusercontent.apps.")
+                    && !redirectScheme.contains("unconfigured")
+            }
+        }
     }
 
     enum Storage {

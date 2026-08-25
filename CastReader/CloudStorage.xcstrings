@@ -1,6 +1,28 @@
 {
   "sourceLanguage": "zh-Hans",
   "strings": {
+    "搜索云盘文件": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Cloud-Dateien durchsuchen"}},
+      "en": {"stringUnit": {"state": "translated", "value": "Search cloud files"}},
+      "es": {"stringUnit": {"state": "translated", "value": "Buscar archivos en la nube"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Rechercher des fichiers cloud"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "क्लाउड फ़ाइलें खोजें"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Cerca file nel cloud"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "クラウドファイルを検索"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Buscar arquivos na nuvem"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "搜索云盘文件"}}
+    }},
+    "未找到匹配的文件": {"localizations": {
+      "de": {"stringUnit": {"state": "translated", "value": "Keine passenden Dateien gefunden"}},
+      "en": {"stringUnit": {"state": "translated", "value": "No matching files found"}},
+      "es": {"stringUnit": {"state": "translated", "value": "No se encontraron archivos coincidentes"}},
+      "fr": {"stringUnit": {"state": "translated", "value": "Aucun fichier correspondant"}},
+      "hi": {"stringUnit": {"state": "translated", "value": "कोई मिलती-जुलती फ़ाइल नहीं मिली"}},
+      "it": {"stringUnit": {"state": "translated", "value": "Nessun file corrispondente trovato"}},
+      "ja": {"stringUnit": {"state": "translated", "value": "一致するファイルが見つかりません"}},
+      "pt-BR": {"stringUnit": {"state": "translated", "value": "Nenhum arquivo correspondente encontrado"}},
+      "zh-Hans": {"stringUnit": {"state": "translated", "value": "未找到匹配的文件"}}
+    }},
     "与我共享": {"localizations": {
       "de": {"stringUnit": {"state": "translated", "value": "Für mich freigegeben"}},
       "en": {"stringUnit": {"state": "translated", "value": "Shared with me"}},
@@ -1662,55 +1684,55 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nur Leseberechtigung angefordert"
+            "value": "Warum vollständiger Lesezugriff erforderlich ist"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Request read access only"
+            "value": "Why full read-only access is needed"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Solo se solicita permiso de lectura"
+            "value": "Por qué se necesita acceso completo de solo lectura"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Seule l’autorisation de lecture est demandée"
+            "value": "Pourquoi l’accès complet en lecture seule est nécessaire"
           }
         },
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "केवल पढ़ने की अनुमति माँगी जाती है"
+            "value": "पूर्ण केवल-पढ़ने की पहुँच क्यों आवश्यक है"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Viene richiesta solo l’autorizzazione alla lettura"
+            "value": "Perché serve l’accesso completo in sola lettura"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "読み取り権限のみを要求"
+            "value": "完全な読み取り専用アクセスが必要な理由"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Solicita somente permissão de leitura"
+            "value": "Por que o acesso completo somente leitura é necessário"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "仅申请读取权限"
+            "value": "为什么需要完整只读权限"
           }
         }
       }
@@ -1720,55 +1742,55 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "CastReader erstellt, ändert, verschiebt oder löscht keine Dateien in deinem Cloud-Speicher."
+            "value": "Damit du vor der Auswahl in zugänglichen Drive-Ordnern navigieren und dateiübergreifend suchen kannst. CastReader erstellt, ändert, verschiebt oder löscht keine Drive-Dateien und scannt oder indexiert Drive nicht im Hintergrund."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "CastReader will not create, modify, move, or delete files in your cloud storage."
+            "value": "This lets you browse accessible Drive folders and search across files before choosing one. CastReader never creates, modifies, moves, or deletes Drive files, and never scans or indexes Drive in the background."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "CastReader no creará, modificará, moverá ni eliminará archivos de tu almacenamiento en la nube."
+            "value": "Esto te permite explorar las carpetas accesibles de Drive y buscar entre archivos antes de elegir uno. CastReader nunca crea, modifica, mueve ni elimina archivos de Drive, ni analiza o indexa Drive en segundo plano."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "CastReader ne créera, ne modifiera, ne déplacera et ne supprimera aucun fichier dans votre stockage cloud."
+            "value": "Cela vous permet de parcourir les dossiers Drive accessibles et de rechercher parmi les fichiers avant d’en choisir un. CastReader ne crée, ne modifie, ne déplace ni ne supprime de fichiers Drive, et n’analyse ni n’indexe Drive en arrière-plan."
           }
         },
         "hi": {
           "stringUnit": {
             "state": "translated",
-            "value": "CastReader आपके क्लाउड स्टोरेज में कोई फ़ाइल बनाएगा, बदलेगा, खिसकाएगा या मिटाएगा नहीं।"
+            "value": "इससे आप किसी फ़ाइल को चुनने से पहले उपलब्ध Drive फ़ोल्डर ब्राउज़ और सभी फ़ाइलों में खोज सकते हैं। CastReader Drive फ़ाइलें बनाता, बदलता, खिसकाता या मिटाता नहीं और पृष्ठभूमि में Drive को स्कैन या इंडेक्स नहीं करता।"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "CastReader non creerà, modificherà, sposterà o eliminerà file nel tuo spazio di archiviazione cloud."
+            "value": "Consente di esplorare le cartelle Drive accessibili e cercare tra i file prima di sceglierne uno. CastReader non crea, modifica, sposta o elimina file Drive e non esegue scansioni o indicizzazioni di Drive in background."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "CastReaderがクラウドストレージ内のファイルを作成、変更、移動、削除することはありません。"
+            "value": "ファイルを選ぶ前に、アクセス可能なDriveフォルダを閲覧し、ファイル全体を検索できます。CastReaderがDriveファイルを作成、変更、移動、削除したり、バックグラウンドでDriveをスキャンまたは索引化したりすることはありません。"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "O CastReader não criará, modificará, moverá nem excluirá arquivos no seu armazenamento em nuvem."
+            "value": "Isso permite navegar pelas pastas acessíveis do Drive e pesquisar entre arquivos antes de escolher um. O CastReader nunca cria, modifica, move ou exclui arquivos do Drive e nunca verifica ou indexa o Drive em segundo plano."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "CastReader 不会在你的云盘中创建、修改、移动或删除文件。"
+            "value": "用于让你在选择文件前浏览可访问的 Drive 文件夹并跨文件搜索。CastReader 不会创建、修改、移动或删除 Drive 文件，也不会在后台扫描或索引 Drive。"
           }
         }
       }

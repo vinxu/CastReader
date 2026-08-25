@@ -11,6 +11,17 @@ import UIKit
 @MainActor
 final class CastReaderAppDelegate: NSObject, UIApplicationDelegate {
     func application(
+        _ app: UIApplication,
+        open url: URL,
+        options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+    ) -> Bool {
+        CloudStorageCenter.handleOAuthRedirect(
+            url,
+            sourceApplication: options[.sourceApplication] as? String
+        )
+    }
+
+    func application(
         _ application: UIApplication,
         supportedInterfaceOrientationsFor window: UIWindow?
     ) -> UIInterfaceOrientationMask {
@@ -282,6 +293,8 @@ struct CastReaderApp: App {
     @State private var pendingOpenURLs: [URL] = []
 
     init() {
+        CloudTemporaryFileJanitor.removeAbandonedImports()
+
         // App Store upgrades keep UserDefaults from earlier Debug/internal
         // installs. Production must discard those testing-only region/route
         // values before any endpoint-capturing singleton freezes the process.
@@ -374,7 +387,9 @@ struct CastReaderApp: App {
     }
 
     private func handleOpenURL(_ url: URL) {
-        if StudyBoostDeepLink.matches(url) {
+        if CloudStorageCenter.isOAuthRedirectURL(url) {
+            _ = CloudStorageCenter.handleOAuthRedirect(url)
+        } else if StudyBoostDeepLink.matches(url) {
             StudyBoostRouter.shared.open()
         } else if url.scheme == "castreader", url.host == "youtube" {
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)

@@ -12,22 +12,27 @@ import Foundation
 // MARK: - Provider and capability
 
 enum CloudProviderID: String, Codable, CaseIterable, Identifiable, Sendable {
-    case unavailableA = "unavailable_a"
-    case unavailableB = "unavailable_b"
-    case unavailableC = "unavailable_c"
+    case googleDrive = "google_drive"
+    case dropbox
+    case oneDrive = "onedrive"
+
+    /// This release exposes the verified Google integration only. The other
+    /// cases remain decodable so old device-local records do not become corrupt.
+    static let allCases: [CloudProviderID] = [.googleDrive]
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .unavailableA, .unavailableB, .unavailableC: return "Unavailable"
+        case .googleDrive: return "Google Drive"
+        case .dropbox: return "Dropbox"
+        case .oneDrive: return "Microsoft OneDrive"
         }
     }
 }
 
 enum CloudSelectionCapability: String, Codable, Equatable, Sendable {
-    /// Legacy Google mobile Picker capability retained for decoding local state
-    /// written by pre-browser builds.
+    /// Legacy atomic Picker capability retained for migration and tests.
     case authorizeAndPickInSystemBrowser
 
     /// Establish a durable connection, then browse with CastReader's native

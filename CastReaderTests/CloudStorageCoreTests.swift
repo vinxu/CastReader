@@ -871,6 +871,36 @@ final class CloudStorageCoreTests: XCTestCase {
         XCTAssertEqual(ExplainViewModel.quickReadTitle(for: localDocument), "Local title")
     }
 
+    func testGoogleDriveQuickReadUsesLimitedUseGlobalService() {
+        let googleOrigin = CloudDocumentOrigin(
+            provider: .googleDrive,
+            accountKey: "google-account",
+            remoteItemID: "drive-file",
+            originalName: "Document.txt",
+            mimeType: SupportedDocumentFormat.text.preferredMIMEType
+        )
+        let googleDocument = ReadingDocument(
+            title: "Document",
+            sourceKind: .text,
+            paragraphs: [ReadingParagraph(id: 0, text: "Workspace-derived text")],
+            origin: googleOrigin
+        )
+        let localDocument = ReadingDocument(
+            title: "Local",
+            sourceKind: .text,
+            paragraphs: [ReadingParagraph(id: 0, text: "Local text")]
+        )
+
+        XCTAssertTrue(
+            QuickReadService.forDocument(googleDocument)
+                === QuickReadService.googleLimitedUse
+        )
+        XCTAssertTrue(
+            QuickReadService.forDocument(localDocument)
+                === QuickReadService.shared
+        )
+    }
+
     private func makePDFData() -> Data {
         let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 320, height: 480))
         return renderer.pdfData { context in
