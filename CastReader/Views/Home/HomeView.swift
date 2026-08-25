@@ -292,6 +292,7 @@ struct HomeView: View {
             onReviewPresentationBlockedChanged(isProcessingContent)
             #if DEBUG
             handleCaptureLaunchTextIfNeeded()
+            handleGoogleDrivePickerLaunchIfNeeded()
             #endif
         }
         .onChange(of: isProcessingContent) { isProcessing in
@@ -1001,6 +1002,22 @@ struct HomeView: View {
             guard AccountContentIsolation.isCurrent(boundary) else { return }
             let doc = DocumentBuilder.fromPlainText(text, title: "")
             if !doc.isEmpty { finishImport(doc) }
+        }
+    }
+
+    /// 自动化回归入口：启动后直接打开 Google Drive 持久授权/文件浏览流程。
+    private func handleGoogleDrivePickerLaunchIfNeeded() {
+        struct Once { static var done = false }
+        guard !Once.done,
+              ProcessInfo.processInfo.arguments.contains("-CastReaderOpenGoogleDrivePicker") else { return }
+        Once.done = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            beginCloudImport(
+                .googleDrive,
+                scenario: nil,
+                mode: .read,
+                action: .open
+            )
         }
     }
     #endif

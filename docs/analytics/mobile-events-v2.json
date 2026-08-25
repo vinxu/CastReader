@@ -207,7 +207,7 @@
       "product_area": "app",
       "required_properties": ["firstOpenKind"],
       "optional_properties": [],
-      "comment": "One durable event id per install. instrumentation_backfill is excluded from new-install growth cohorts. iOS reserves the contract but does not infer this event in v2."
+      "comment": "One durable event id per install. iOS freezes fresh_install versus instrumentation_backfill before application defaults are written, retries the same envelope, and excludes backfills from new-install growth cohorts."
     },
     {
       "name": "onboarding_step",
@@ -499,7 +499,7 @@
       "legacy_event": "ad_attribution",
       "product_area": "app",
       "required_properties": ["provider", "attributionResult"],
-      "optional_properties": ["attributionToken", "attemptCount", "campaignSource", "campaignMedium", "campaignId", "adGroupId", "creativeId"],
+      "optional_properties": ["attributionToken", "attemptCount", "campaignSource", "campaignMedium", "landingTouchId", "campaignId", "adGroupId", "creativeId"],
       "comment": "Apple uses provider=apple_ads and a terminal token that is sealed only after collector acceptance. Android uses provider=play_install_referrer and only bounded source/medium enums plus optional numeric campaign IDs. Raw Play referrer, click IDs, keywords, and campaign names are forbidden."
     },
     {

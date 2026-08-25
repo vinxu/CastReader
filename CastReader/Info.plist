@@ -44,14 +44,30 @@
 	<string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CastReaderInternalDistributionControlsEnabled</key>
 	<string>$(CASTREADER_INTERNAL_DISTRIBUTION_CONTROLS)</string>
+	<key>GoogleDriveClientID</key>
+	<string>$(GOOGLE_DRIVE_CLIENT_ID)</string>
+	<key>GoogleDriveRedirectScheme</key>
+	<string>$(GOOGLE_DRIVE_REDIRECT_SCHEME)</string>
+	<key>DropboxAppKey</key>
+	<string>$(DROPBOX_APP_KEY)</string>
+	<key>MicrosoftClientID</key>
+	<string>$(MICROSOFT_CLIENT_ID)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.same.castreader.safari</string>
+			<string>com.same.castreader.deep-link</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>castreader</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.same.castreader.google-drive</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_DRIVE_REDIRECT_SCHEME)</string>
 			</array>
 		</dict>
 	</array>

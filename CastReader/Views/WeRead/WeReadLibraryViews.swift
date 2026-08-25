@@ -1002,11 +1002,27 @@ final class WeReadLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         // pre-release polluted snapshot is cleared only by the DEBUG-scoped
         // recovery argument before this verified shelf is merged.
         store.mergeScrapedBooks(Array(pendingBooks.values), account: pendingAccount)
-        statusText = String(format: AppLocalized("已同步 %d 本微信读书书籍。"), pendingBooks.count)
-        connectionAnalytics.record(
+        if let commitError = store.lastError {
+            errorText = commitError
+            connectionAnalytics.record(
+                .failed,
+                result: .failed,
+                errorCode: "local_commit_failed"
+            )
+            return false
+        }
+        let verifiedBookCount = pendingBooks.count
+        guard connectionAnalytics.record(
             .syncCompleted,
             result: .success,
-            bookCount: pendingBooks.count
+            bookCount: verifiedBookCount
+        ) else {
+            errorText = AppLocalized("书架已保存，但同步确认未完成，请重试。")
+            return false
+        }
+        statusText = String(
+            format: AppLocalized("已同步 %d 本微信读书书籍。"),
+            verifiedBookCount
         )
         return true
     }

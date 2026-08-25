@@ -1,0 +1,8 @@
+{
+  "adamId": 6757636395,
+  "currency": "RMB",
+  "campaigns": [
+    {"id": 2144343127, "name": "CR_US_Search_Discovery_2026Q3", "country": "US"},
+    {"id": 2144503591, "name": "CR_GB_Search_Discovery_2026Q3", "country": "GB"}
+  ]
+}

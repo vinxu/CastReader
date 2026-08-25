@@ -192,6 +192,8 @@ final class CloudStorageFlowViewModel: ObservableObject {
     @Published private(set) var switchCandidate: CloudAccount?
     @Published var exportPromptItem: CloudItem?
     @Published private(set) var unsupportedItem: CloudItem?
+    @Published var searchText = ""
+    @Published private(set) var isShowingSearchResults = false
 
     private let analyticsContext: AnalyticsContentContext?
     private let center: CloudStorageCenter
@@ -206,6 +208,7 @@ final class CloudStorageFlowViewModel: ObservableObject {
     /// Keeps the exact remote selection across a retryable transfer/import
     /// failure so Retry replays the same item and export choice.
     private var retrySelection: (item: CloudItem, exportFormat: CloudExportFormat?)?
+    private var activeSearchQuery: String?
     private var started = false
     private var returnsToBrowserAfterPrivacy = false
 
@@ -255,9 +258,8 @@ final class CloudStorageFlowViewModel: ObservableObject {
         if showsDisclosureOnStart {
             stage = .disclosure
         } else {
-            // A tap in the add menu immediately authorizes (when needed) and
-            // then opens the provider's persistent native file browser. The
-            // complete disclosure remains available from the account menu.
+            // A tap immediately authorizes when needed, then opens the durable
+            // native Drive browser. A valid refresh token skips OAuth entirely.
             connectAndBrowse(forceAccountSelection: forceAccountSelection)
         }
     }
@@ -410,17 +412,24 @@ final class CloudStorageFlowViewModel: ObservableObject {
         nextCursor = nil
         currentFilename = nil
         retrySelection = nil
+        clearSearchState()
         stage = .disclosure
         return result
     }
 
     func openFolder(_ folder: CloudFolder) {
         guard stage == .browsing else { return }
+        let openedFromSearch = isShowingSearchResults
+        clearSearchState()
         runOperation { [weak self] in
             guard let self else { return }
             do {
                 try await self.loadPage(folder: folder, cursor: nil, replacing: true)
-                self.folderPath.append(folder)
+                if openedFromSearch {
+                    self.folderPath = [folder]
+                } else {
+                    self.folderPath.append(folder)
+                }
             } catch {
                 self.handle(error)
             }
@@ -429,6 +438,7 @@ final class CloudStorageFlowViewModel: ObservableObject {
 
     func navigateToFolder(at index: Int?) {
         guard stage == .browsing else { return }
+        clearSearchState()
         runOperation { [weak self] in
             guard let self else { return }
             let target: CloudFolder?
@@ -455,6 +465,7 @@ final class CloudStorageFlowViewModel: ObservableObject {
               stage == .browsing,
               drives.contains(drive),
               selectedDrive?.id != drive.id else { return }
+        clearSearchState()
         runOperation { [weak self] in
             guard let self else { return }
             self.selectedDrive = drive
@@ -479,11 +490,67 @@ final class CloudStorageFlowViewModel: ObservableObject {
         runOperation { [weak self] in
             guard let self else { return }
             do {
-                try await self.loadPage(
-                    folder: self.folderPath.last ?? self.driveRootFolder,
-                    cursor: nextCursor,
-                    replacing: false
+                if let query = self.activeSearchQuery {
+                    try await self.loadSearchPage(
+                        query: query,
+                        cursor: nextCursor,
+                        replacing: false
+                    )
+                } else {
+                    try await self.loadPage(
+                        folder: self.folderPath.last ?? self.driveRootFolder,
+                        cursor: nextCursor,
+                        replacing: false
+                    )
+                }
+            } catch {
+                self.handle(error)
+            }
+        }
+    }
+
+    /// Runs a Drive-wide filename search inside the currently selected drive.
+    /// The view debounces edits before calling this method, so only the latest
+    /// query reaches the API. Clearing the field restores the current folder.
+    func updateSearchResults(for rawQuery: String) {
+        guard stage == .browsing else { return }
+        let query = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        if query.isEmpty {
+            guard activeSearchQuery != nil || isShowingSearchResults else { return }
+            activeSearchQuery = nil
+            isShowingSearchResults = false
+            runOperation { [weak self] in
+                guard let self else { return }
+                do {
+                    try await self.loadPage(
+                        folder: self.folderPath.last ?? self.driveRootFolder,
+                        cursor: nil,
+                        replacing: true
+                    )
+                } catch {
+                    self.handle(error)
+                }
+            }
+            return
+        }
+
+        guard query != activeSearchQuery || !isShowingSearchResults else { return }
+        activeSearchQuery = query
+        isShowingSearchResults = true
+        runOperation { [weak self] in
+            guard let self else { return }
+            do {
+                try await self.loadSearchPage(
+                    query: query,
+                    cursor: nil,
+                    replacing: true
                 )
+                #if DEBUG
+                print(
+                    "CloudStorageFlow provider=\(self.provider.rawValue) "
+                        + "event=search_ready query_length=\(query.count)"
+                )
+                #endif
             } catch {
                 self.handle(error)
             }
@@ -542,6 +609,7 @@ final class CloudStorageFlowViewModel: ObservableObject {
                     self.provider,
                     expectedAccount: self.expectedAccount
                 )
+                self.clearSearchState()
                 try await self.refreshDriveOptions()
                 self.folderPath = []
                 try await self.loadPage(
@@ -636,6 +704,33 @@ final class CloudStorageFlowViewModel: ObservableObject {
         let page = try await center.list(provider: provider, folder: folder, cursor: cursor)
         try Task.checkCancellation()
         apply(page, replacing: replacing)
+    }
+
+    private func loadSearchPage(
+        query: String,
+        cursor: CloudCursor?,
+        replacing: Bool
+    ) async throws {
+        isLoadingPage = true
+        defer { isLoadingPage = false }
+        let selectedDriveID = selectedDrive?.id == "root"
+            ? nil
+            : selectedDrive?.id
+        let page = try await center.search(
+            provider: provider,
+            query: query,
+            driveID: selectedDriveID,
+            cursor: cursor
+        )
+        try Task.checkCancellation()
+        guard activeSearchQuery == query else { return }
+        apply(page, replacing: replacing)
+    }
+
+    private func clearSearchState() {
+        searchText = ""
+        activeSearchQuery = nil
+        isShowingSearchResults = false
     }
 
     private func apply(_ page: CloudPage, replacing: Bool) {

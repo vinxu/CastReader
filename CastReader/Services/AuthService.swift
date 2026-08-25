@@ -139,7 +139,6 @@ enum AccountContentIsolation {
             KindlePlaybackCenter.shared.close()
             YouTubeCaptionLanguageSwitcher.shared.resetForAccountBoundary()
             YouTubeRouteCenter.shared.resetForAccountBoundary()
-            SafariExtensionBridge.invalidateForAccountBoundary()
         }
         activeStorageID = scope.storageID
         _ = AccountContentScopeBridge.activate(storageID: scope.storageID)
@@ -152,6 +151,7 @@ enum AccountContentIsolation {
         )
         CommercialWebSession.activateAccountScope(scope)
         HistoryStore.shared.activateAccountScope(storageID: scope.storageID)
+        CloudStorageCenter.shared.activateAccountScope(storageID: scope.storageID)
         YouTubeCacheProvider.activateAccountScope(storageID: scope.storageID)
         ResumeReminderManager.shared.activateAccountScope(storageID: scope.storageID)
         QuotaManager.shared.activateAccountScope(storageID: scope.storageID)
@@ -170,7 +170,6 @@ enum AccountContentIsolation {
         KindlePlaybackCenter.shared.close()
         YouTubeCaptionLanguageSwitcher.shared.resetForAccountBoundary()
         YouTubeRouteCenter.shared.resetForAccountBoundary()
-        SafariExtensionBridge.invalidateForAccountBoundary()
 
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-CastReaderSkipSignInGate") {
@@ -197,6 +196,7 @@ enum AccountContentIsolation {
         BoundLibraryOnboardingStore.shared.deactivateAccountScope()
         CommercialWebSession.deactivateAccountScope()
         HistoryStore.shared.deactivateAccountScope()
+        CloudStorageCenter.shared.deactivateAccountScope()
         YouTubeCacheProvider.deactivateAccountScope()
         ResumeReminderManager.shared.deactivateAccountScope()
         QuotaManager.shared.deactivateAccountScope()
@@ -550,10 +550,9 @@ final class AuthService: NSObject, ObservableObject {
         accountTransitionEpoch &+= 1
         account = acc
         // Entitlement snapshots are account-owned memory. Clear them only
-        // after publishing the new account so Safari's synchronous bridge can
-        // never pair the new scope with the previous identity while refresh
-        // is pending. Profile-only updates inside the same scope retain the
-        // current StoreKit snapshot.
+        // after publishing the new account so asynchronous refreshes can never
+        // pair the new scope with the previous identity. Profile-only updates
+        // inside the same scope retain the current StoreKit snapshot.
         if changedAccountBoundary {
             ProManager.shared.clearEntitlementsForAccountTransition()
         } else {

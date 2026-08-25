@@ -1976,7 +1976,7 @@ final class ServiceRoutingTests: XCTestCase {
         } catch {
             XCTFail("unexpected error: \(error)")
         }
-        XCTAssertEqual(requestedHosts, Array(repeating: "quickread.castreader.cn", count: 3))
+        XCTAssertEqual(requestedHosts, Array(repeating: "quickread.castreader.cn", count: 2))
         XCTAssertFalse(requestedHosts.contains("api.castreader.ai"))
         let rejected = await provider.rejectedSessionTokens()
         XCTAssertTrue(rejected.isEmpty)

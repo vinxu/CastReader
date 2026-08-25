@@ -2,9 +2,9 @@
 //  CloudStorageProvider.swift
 //  CastReader
 //
-//  Capability-oriented provider contracts. All three providers expose a
-//  durable connection and CastReader's native file browser. The atomic picker
-//  protocol remains only as a source-compatibility bridge for older builds.
+//  Capability-oriented provider contracts. Google Drive uses Google's One
+//  Pick browser; providers that support durable broad access may instead use
+//  CastReader's native browser.
 //
 
 import Foundation
@@ -104,8 +104,7 @@ extension CloudStorageProvider {
 }
 
 protocol CloudAtomicPickerProvider: CloudStorageProvider {
-    /// Legacy compatibility surface. New Google Drive flows authorize first
-    /// and then browse through `CloudBrowsableProvider`.
+    /// Runs provider-owned authorization and file selection as one operation.
     func authorizeAndPick() async throws -> (account: CloudAccount, item: CloudItem)
 }
 

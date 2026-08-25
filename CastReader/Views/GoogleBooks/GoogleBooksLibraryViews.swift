@@ -576,12 +576,7 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
     /// on early virtual-list passes too, so it is not sufficient on its own.
     private var hasStableShelfSnapshot = false
     private let analyticsSession: AnalyticsLibraryConnectionSession
-    private let entryTapAlreadyTracked: Bool
-    private var recordedAnalyticsStages = Set<String>()
-    /// A bind attempt has exactly one terminal analytics event. Recoverable UI
-    /// retries can continue, but they must not append a second terminal state
-    /// to the same `bind_session_id`.
-    private var didRecordConnectionTerminal = false
+    private let connectionAnalytics: AnalyticsLibraryConnectionRecorder
 
     var showsSyncBar: Bool {
         GoogleBooksBindingFlowContract.showsSyncBar(for: bindingPhase)
@@ -659,7 +654,10 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
         self.requestLoader = requestLoader
         self.signInURLResolver = signInURLResolver
         self.analyticsSession = analyticsSession
-        self.entryTapAlreadyTracked = entryTapAlreadyTracked
+        self.connectionAnalytics = AnalyticsLibraryConnectionRecorder(
+            session: analyticsSession,
+            entryTapAlreadyTracked: entryTapAlreadyTracked
+        )
         super.init()
         // Google 会用 UA 判定「不安全的浏览器」并拒绝登录 —— 必须是完整 Mobile Safari UA。
         webView.customUserAgent = GoogleBooksWebScripts.mobileSafariUserAgent
@@ -687,16 +685,11 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
     }
 
     func recordConnectionPresented() {
-        if !entryTapAlreadyTracked {
-            recordConnectionStage(.entryTapped, result: .started)
-        }
-        recordConnectionStage(.connectionPresented, result: .success)
+        connectionAnalytics.presented()
     }
 
     func closeConnection() {
-        if !didRecordConnectionTerminal {
-            recordConnectionStage(.cancelled, result: .cancelled)
-        }
+        connectionAnalytics.close()
         stop()
     }
 
@@ -1020,11 +1013,27 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
         errorText = nil
         defer { isSyncing = false }
         store.mergeScrapedBooks(Array(pendingBooks.values), account: pendingAccount)
-        statusText = String(format: AppLocalized("已同步 %d 本 Google Play 图书。"), pendingBooks.count)
-        recordConnectionStage(
+        if let commitError = store.lastError {
+            errorText = commitError
+            recordConnectionStage(
+                .failed,
+                result: .failed,
+                errorCode: "local_commit_failed"
+            )
+            return false
+        }
+        let verifiedBookCount = pendingBooks.count
+        guard recordConnectionStage(
             .syncCompleted,
             result: .success,
-            bookCount: pendingBooks.count
+            bookCount: verifiedBookCount
+        ) else {
+            errorText = AppLocalized("书架已保存，但同步确认未完成，请重试。")
+            return false
+        }
+        statusText = String(
+            format: AppLocalized("已同步 %d 本 Google Play 图书。"),
+            verifiedBookCount
         )
         return true
     }
@@ -1285,28 +1294,19 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
         bindingPhase = .signingIn
     }
 
+    @discardableResult
     private func recordConnectionStage(
         _ stage: AnalyticsLibraryConnectionStage,
         result: AnalyticsResult,
         errorCode: String? = nil,
         bookCount: Int? = nil
-    ) {
-        guard !didRecordConnectionTerminal else { return }
-        let key = "\(stage.rawValue):\(result.rawValue):\(errorCode ?? "-")"
-        guard recordedAnalyticsStages.insert(key).inserted else { return }
-        if stage == .syncCompleted || stage == .failed || stage == .cancelled {
-            didRecordConnectionTerminal = true
-        }
-        let session = analyticsSession
-        Task { @MainActor in
-            ProductAnalytics.shared.trackLibraryConnection(
-                session,
-                stage: stage,
-                result: result,
-                errorCode: errorCode,
-                bookCount: bookCount
-            )
-        }
+    ) -> Bool {
+        connectionAnalytics.record(
+            stage,
+            result: result,
+            errorCode: errorCode,
+            bookCount: bookCount
+        )
     }
 
     private func synchronizeCredentialState(for url: URL?) {

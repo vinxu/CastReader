@@ -2,7 +2,7 @@
 //  GoogleDriveProvider.swift
 //  CastReader
 //
-//  Google Drive establishes a durable read-only OAuth connection, then lists
+//  Google Drive establishes one durable read-only OAuth connection, then lists
 //  files and folders in CastReader's native browser. Downloaded bytes stay on
 //  device and flow into the shared document import pipeline.
 //
@@ -643,6 +643,10 @@ actor GoogleDriveProvider: CloudAtomicPickerProvider, CloudDriveListingProvider 
     private var stagedPick: StagedPick?
     private var candidateCredential: GoogleDriveCredential?
     private var volatilePendingRevocations = Set<GoogleDrivePendingRevocation>()
+    /// The verification-only launch flag forces exactly one visible OAuth
+    /// round-trip. A second open in the same uncut demo must prove that the
+    /// persisted refresh-token grant restores the Drive browser silently.
+    private var verificationDemoDidForceOAuth = false
 
     init(
         configuration: Configuration,
@@ -780,7 +784,17 @@ actor GoogleDriveProvider: CloudAtomicPickerProvider, CloudDriveListingProvider 
         guard candidateCredential == nil else {
             throw CloudStorageError.accountMismatch
         }
-        if !forceAccountSelection {
+        #if DEBUG
+        let verificationDemoForcesOAuth =
+            ProcessInfo.processInfo.arguments.contains("-CastReaderForceGoogleDriveOAuth")
+            && !verificationDemoDidForceOAuth
+        if verificationDemoForcesOAuth {
+            verificationDemoDidForceOAuth = true
+        }
+        #else
+        let verificationDemoForcesOAuth = false
+        #endif
+        if !forceAccountSelection && !verificationDemoForcesOAuth {
             do {
                 return try await restorePersistedAccount(
                     expectedAccountKey: expectedAccountKey
@@ -799,7 +813,7 @@ actor GoogleDriveProvider: CloudAtomicPickerProvider, CloudDriveListingProvider 
         let candidate: GoogleDriveCredential
         do {
             candidate = try await authorizeBrowsingCredential(
-                forceAccountSelection: forceAccountSelection
+                forceAccountSelection: forceAccountSelection || verificationDemoForcesOAuth
             )
         } catch is CancellationError {
             throw CloudStorageError.userCancelled
@@ -1962,6 +1976,11 @@ actor GoogleDriveProvider: CloudAtomicPickerProvider, CloudDriveListingProvider 
             URLQueryItem(name: "code_challenge_method", value: "S256"),
             URLQueryItem(name: "state", value: state),
         ]
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderGoogleOAuthEnglish") {
+            components?.queryItems?.append(URLQueryItem(name: "hl", value: "en"))
+        }
+        #endif
         guard let url = components?.url else {
             throw CloudStorageError.invalidConfiguration(
                 code: "google_authorization_url"
@@ -2025,7 +2044,8 @@ actor GoogleDriveProvider: CloudAtomicPickerProvider, CloudDriveListingProvider 
         }
     }
 
-    /// Legacy mobile Picker URL kept only for the old atomic API.
+    /// Legacy Google One Pick URL retained only for migration tests. The
+    /// user-facing Drive import entry uses the persistent read-only browser.
     func makeAuthorizationURL(
         challenge: String,
         state: String,

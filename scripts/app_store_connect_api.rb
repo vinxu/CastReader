@@ -34,19 +34,24 @@ def token
   "#{signing_input}.#{base64url(signature)}"
 end
 
-method = ARGV.fetch(0, "GET").upcase
-path = ARGV.fetch(1)
-body_path = ARGV[2]
-uri = URI.join(BASE_URL, path)
-request_class = Net::HTTP.const_get(method.capitalize)
-request = request_class.new(uri)
-request["Authorization"] = "Bearer #{token}"
-request["Content-Type"] = "application/json"
-request.body = File.read(body_path) if body_path
-
-response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
-  http.request(request)
+# 供其他脚本 require 后复用（如 asc_subscription_funnel.rb）；直接运行时走下面的 CLI。
+def asc_request(method, path, body_path = nil)
+  uri = URI.join(BASE_URL, path)
+  request = Net::HTTP.const_get(method.to_s.capitalize).new(uri)
+  request["Authorization"] = "Bearer #{token}"
+  request["Content-Type"] = "application/json"
+  request.body = File.read(body_path) if body_path
+  Net::HTTP.start(uri.hostname, uri.port, use_ssl: true, open_timeout: 15, read_timeout: 60) do |http|
+    http.request(request)
+  end
 end
 
-puts JSON.pretty_generate(JSON.parse(response.body)) unless response.body.nil? || response.body.empty?
-exit(response.is_a?(Net::HTTPSuccess) ? 0 : 1)
+if $PROGRAM_NAME == __FILE__
+  method = ARGV.fetch(0, "GET").upcase
+  path = ARGV.fetch(1)
+  body_path = ARGV[2]
+  response = asc_request(method, path, body_path)
+
+  puts JSON.pretty_generate(JSON.parse(response.body)) unless response.body.nil? || response.body.empty?
+  exit(response.is_a?(Net::HTTPSuccess) ? 0 : 1)
+end

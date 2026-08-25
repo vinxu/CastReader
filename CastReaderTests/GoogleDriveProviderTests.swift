@@ -351,6 +351,28 @@ final class GoogleDriveProviderTests: XCTestCase {
     }
 
     @MainActor
+    func testEnsureConnectedReusesPersistedReadonlyGrantWithoutOAuth() async throws {
+        let account = testAccount()
+        let store = GoogleDriveTestCredentialStore(
+            credential: browserCredential(account: account)
+        )
+        let provider = makeProvider(
+            transport: GoogleDriveTestTransport(dataHandler: { request in
+                XCTFail("A valid persisted connection must not use the network: \(request)")
+                return .json("{}", status: 500)
+            }),
+            store: store,
+            web: GoogleDriveImmediateWebAuthenticator.unused
+        )
+
+        let first = try await provider.ensureConnected()
+        let second = try await provider.ensureConnected()
+
+        XCTAssertEqual(first, account)
+        XCTAssertEqual(second, account)
+    }
+
+    @MainActor
     func testLegacyDriveFileCredentialRequiresReadonlyReauthorization() async throws {
         let account = testAccount()
         let legacy = credential(account: account, accessToken: "legacy-access")

@@ -270,6 +270,19 @@ actor ProBackendService {
     /// the canonical account derived by the server from the cms_ bearer. No
     /// client-supplied user id is present in this contract.
     func linkGrowthIdentity() async -> Bool {
+        #if DEBUG
+        // UI automation's deterministic phone-login token is intentionally
+        // local-only. Sending it to the production identity endpoint would
+        // produce a legitimate 401 and close the just-created test account,
+        // making the login flow impossible to exercise end to end. Release
+        // builds cannot enter this branch, and real cms_ sessions still use
+        // the exact same fail-closed rejection path below.
+        if let token = await MobileSessionStore.shared.sessionToken(),
+           MobileSessionStore.isExplicitUITestSessionToken(token) {
+            Self.debugLog("growth-identity SKIP explicit-ui-test-session")
+            return false
+        }
+        #endif
         guard let url = URL(string: Constants.API.mobileGrowthIdentityLink) else {
             return false
         }

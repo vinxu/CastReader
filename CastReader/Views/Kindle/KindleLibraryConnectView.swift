@@ -853,6 +853,12 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                         isExactBoundLibrary: isExactBoundLibrary
                     )
                 )
+                // 扫描收工的判据现场：书数、空转轮数、距上次新书/滚到底多久、
+                // 有没有书架请求在途、当前观察窗多长。线上「只同步到 N 本」这类
+                // 问题只能靠这一行定位——它是这轮所有根因的唯一入口。
+                KindleRunLog.write(
+                    "KINDLE shelf sync decide pass=\(pass) books=\(byID.count) idle=\(idlePasses) sinceNew=\(String(format: "%.1f", Date().timeIntervalSince(lastNewBookAt)))s sinceEnd=\(String(format: "%.1f", Date().timeIntervalSince(lastReachedEndAt)))s restock=\(String(format: "%.1f", observedRestock))s net=\(payload.shelfRequestInFlight == true ? "busy" : "idle")/\(payload.shelfRequestTotal ?? 0) win=\(String(format: "%.1f", KindleShelfScanPolicy.observationWindow(observedRestock: observedRestock, probeActive: (payload.shelfRequestTotal ?? 0) > 0)))s -> \(decision)"
+                )
                 switch decision {
                 case .scanComplete:
                     completedShelfScan = true
@@ -957,14 +963,36 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                 }
             } else {
                 store.mergeScrapedBooks(books, account: accountInfo)
-                if completedShelfScan {
+                if let commitError = store.lastError {
                     connectionAnalytics.record(
+                        .failed,
+                        result: .failed,
+                        errorCode: "local_commit_failed"
+                    )
+                    statusText = AppLocalized("同步确认未完成。")
+                    errorText = commitError
+                    if onboardingAutomationEnabled {
+                        onboardingState = .failed(message: commitError)
+                    }
+                } else if completedShelfScan {
+                    let receiptPersisted = connectionAnalytics.record(
                         .syncCompleted,
                         result: .success,
                         bookCount: books.count
                     )
-                    statusText = AppLocalized("Kindle 书架已同步。")
-                    errorText = nil
+                    if receiptPersisted {
+                        statusText = AppLocalized("Kindle 书架已同步。")
+                        errorText = nil
+                        if onboardingAutomationEnabled {
+                            onboardingState = .ready
+                        }
+                    } else {
+                        statusText = AppLocalized("同步确认未完成。")
+                        errorText = AppLocalized("书架已保存，但同步确认未完成，请重试。")
+                        if onboardingAutomationEnabled {
+                            onboardingState = .failed(message: errorText ?? statusText)
+                        }
+                    }
                 } else {
                     connectionAnalytics.record(
                         .failed,
@@ -977,9 +1005,9 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
                         books.count
                     )
                     errorText = AppLocalized("书架仍在加载，请稍后重试。")
-                }
-                if onboardingAutomationEnabled {
-                    onboardingState = .ready
+                    if onboardingAutomationEnabled {
+                        onboardingState = .failed(message: errorText ?? statusText)
+                    }
                 }
                 _ = try? await evaluate("window.scrollTo(0, 0);")
             }

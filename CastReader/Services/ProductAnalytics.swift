@@ -208,6 +208,12 @@ enum AnalyticsPaywallAction: String, Codable, CaseIterable, Sendable {
     case dismissed
 }
 
+enum AnalyticsAccountGateResult: String, Codable, CaseIterable, Sendable {
+    case success
+    case cancelled
+    case failed
+}
+
 enum AnalyticsOfferType: String, Codable, CaseIterable, Sendable {
     case introductory
     case promotional
@@ -300,9 +306,9 @@ enum AnalyticsContentSource: String, Codable, CaseIterable, Sendable {
     case googleBooks = "google_books"
     case kobo
     case oreilly
-    case unavailableCloudA = "unavailable_cloud_a"
-    case unavailableCloudB = "unavailable_cloud_b"
-    case unavailableCloudC = "unavailable_cloud_c"
+    case googleDrive = "google_drive"
+    case dropbox
+    case oneDrive = "onedrive"
     case youtubeIOS = "youtube_ios"
     case unknown
 }
@@ -394,6 +400,7 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
     var firstOpenKind: String?
     var campaignSource: String?
     var campaignMedium: String?
+    var landingTouchId: String?
     var campaignId: String?
     var adGroupId: String?
     var creativeId: String?
@@ -474,6 +481,7 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         firstOpenKind: String? = nil,
         campaignSource: String? = nil,
         campaignMedium: String? = nil,
+        landingTouchId: String? = nil,
         campaignId: String? = nil,
         adGroupId: String? = nil,
         creativeId: String? = nil,
@@ -553,6 +561,7 @@ struct AnalyticsProperties: Codable, Equatable, Sendable {
         self.firstOpenKind = firstOpenKind
         self.campaignSource = campaignSource
         self.campaignMedium = campaignMedium
+        self.landingTouchId = landingTouchId
         self.campaignId = campaignId
         self.adGroupId = adGroupId
         self.creativeId = creativeId
@@ -583,22 +592,264 @@ struct AnalyticsLibraryConnectionSession: Equatable, Sendable {
     }
 }
 
+/// Minimal, privacy-safe business receipt for a provider-verified, non-empty
+/// shelf sync. It exists because the generic analytics queue is actor-owned:
+/// calling it from a synchronous shelf commit otherwise leaves a kill-process
+/// window before the event is durably enqueued. The receipt is removed only
+/// after the collector acknowledges this exact event id.
+struct AnalyticsLibrarySyncReceiptV1: Codable, Equatable, Identifiable, Sendable {
+    let eventId: String
+    let bindSessionId: String
+    let source: AnalyticsLibrarySource
+    let entryPoint: String
+    let startedAt: Date
+    let occurredAt: Date
+    let bookCount: Int
+
+    var id: String { eventId }
+}
+
+enum AnalyticsLibrarySyncReceiptStoreError: Error, Equatable {
+    case corruptState
+    case conflictingBindSession
+    case persistenceFailed
+}
+
+protocol AnalyticsLibrarySyncReceiptStoring: Sendable {
+    func load() throws -> [AnalyticsLibrarySyncReceiptV1]
+    func persist(
+        _ receipt: AnalyticsLibrarySyncReceiptV1
+    ) throws -> AnalyticsLibrarySyncReceiptV1
+    func remove(eventId: String) throws
+}
+
+final class UserDefaultsAnalyticsLibrarySyncReceiptStore:
+    AnalyticsLibrarySyncReceiptStoring,
+    @unchecked Sendable
+{
+    private let defaults: UserDefaults
+    private let key: String
+    private let lock = NSLock()
+
+    init(
+        defaults: UserDefaults = .standard,
+        key: String = "library_sync_receipts_v1"
+    ) {
+        self.defaults = defaults
+        self.key = key
+    }
+
+    func load() throws -> [AnalyticsLibrarySyncReceiptV1] {
+        lock.lock()
+        defer { lock.unlock() }
+        return try loadUnlocked()
+    }
+
+    func persist(
+        _ receipt: AnalyticsLibrarySyncReceiptV1
+    ) throws -> AnalyticsLibrarySyncReceiptV1 {
+        lock.lock()
+        defer { lock.unlock() }
+        var receipts = try loadUnlocked()
+        if let existing = receipts.first(where: {
+            $0.bindSessionId == receipt.bindSessionId
+        }) {
+            guard existing.eventId == receipt.eventId,
+                  existing.source == receipt.source,
+                  existing.entryPoint == receipt.entryPoint else {
+                throw AnalyticsLibrarySyncReceiptStoreError.conflictingBindSession
+            }
+            return existing
+        }
+        receipts.append(receipt)
+        try saveUnlocked(receipts)
+        guard try loadUnlocked().contains(receipt) else {
+            throw AnalyticsLibrarySyncReceiptStoreError.persistenceFailed
+        }
+        return receipt
+    }
+
+    func remove(eventId: String) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        var receipts = try loadUnlocked()
+        receipts.removeAll { $0.eventId == eventId }
+        try saveUnlocked(receipts)
+    }
+
+    private func loadUnlocked() throws -> [AnalyticsLibrarySyncReceiptV1] {
+        guard let data = defaults.data(forKey: key) else { return [] }
+        guard let receipts = try? JSONDecoder().decode(
+            [AnalyticsLibrarySyncReceiptV1].self,
+            from: data
+        ) else {
+            throw AnalyticsLibrarySyncReceiptStoreError.corruptState
+        }
+        return receipts
+    }
+
+    private func saveUnlocked(_ receipts: [AnalyticsLibrarySyncReceiptV1]) throws {
+        if receipts.isEmpty {
+            defaults.removeObject(forKey: key)
+        } else {
+            guard let data = try? JSONEncoder().encode(receipts) else {
+                throw AnalyticsLibrarySyncReceiptStoreError.persistenceFailed
+            }
+            defaults.set(data, forKey: key)
+        }
+        guard defaults.synchronize() else {
+            throw AnalyticsLibrarySyncReceiptStoreError.persistenceFailed
+        }
+    }
+}
+
+protocol AnalyticsLibrarySyncReporting: Sendable {
+    func recordLibrarySync(
+        _ receipt: AnalyticsLibrarySyncReceiptV1
+    ) async -> AnalyticsDeliveryDisposition
+}
+
+struct ProductAnalyticsLibrarySyncReporter: AnalyticsLibrarySyncReporting {
+    func recordLibrarySync(
+        _ receipt: AnalyticsLibrarySyncReceiptV1
+    ) async -> AnalyticsDeliveryDisposition {
+        await ProductAnalytics.shared.librarySyncReceipt(receipt)
+    }
+}
+
+/// Synchronously owns the business receipt, then reuses ProductAnalytics'
+/// durable queue and exact-id acknowledgement for transport. Server event-id
+/// uniqueness is the final idempotency authority.
+final class AnalyticsLibrarySyncReceiptOutbox: @unchecked Sendable {
+    static let shared: AnalyticsLibrarySyncReceiptOutbox = {
+        let key = ServiceRouting.current.isolatedStorageKey(
+            "library_sync_receipts_v1"
+        )
+        return AnalyticsLibrarySyncReceiptOutbox(
+            store: UserDefaultsAnalyticsLibrarySyncReceiptStore(key: key),
+            reporter: ProductAnalyticsLibrarySyncReporter()
+        )
+    }()
+
+    private let store: AnalyticsLibrarySyncReceiptStoring
+    private let reporter: AnalyticsLibrarySyncReporting
+    private let stateLock = NSLock()
+    private var isDelivering = false
+    private var replayRequestedWhileDelivering = false
+
+    init(
+        store: AnalyticsLibrarySyncReceiptStoring,
+        reporter: AnalyticsLibrarySyncReporting
+    ) {
+        self.store = store
+        self.reporter = reporter
+    }
+
+    /// `bindSessionId` is already a UUID and a sync completion is unique within
+    /// that binding session, so reusing it as eventId gives deterministic retry
+    /// semantics without storing a second generated identifier first.
+    @discardableResult
+    func persist(
+        session: AnalyticsLibraryConnectionSession,
+        bookCount: Int,
+        occurredAt: Date
+    ) -> Bool {
+        guard bookCount > 0,
+              Self.requiresDurableReceipt(session.source),
+              UUID(uuidString: session.bindSessionId) != nil else { return false }
+        let receipt = AnalyticsLibrarySyncReceiptV1(
+            eventId: session.bindSessionId,
+            bindSessionId: session.bindSessionId,
+            source: session.source,
+            entryPoint: session.entryPoint,
+            startedAt: session.startedAt,
+            occurredAt: occurredAt,
+            bookCount: bookCount
+        )
+        do {
+            _ = try store.persist(receipt)
+            return true
+        } catch {
+#if DEBUG
+            print("[Analytics] library sync receipt persist failed: \(error)")
+#endif
+            return false
+        }
+    }
+
+    func start() {
+        stateLock.lock()
+        guard !isDelivering else {
+            replayRequestedWhileDelivering = true
+            stateLock.unlock()
+            return
+        }
+        isDelivering = true
+        stateLock.unlock()
+        Task { [weak self] in await self?.deliverClaimedSnapshot() }
+    }
+
+    /// Internal for deterministic crash/relaunch and acknowledgement tests.
+    func deliverPending() async {
+        stateLock.lock()
+        guard !isDelivering else {
+            stateLock.unlock()
+            return
+        }
+        isDelivering = true
+        stateLock.unlock()
+        await deliverClaimedSnapshot()
+    }
+
+    func pendingReceipts() -> [AnalyticsLibrarySyncReceiptV1] {
+        (try? store.load()) ?? []
+    }
+
+    private func deliverClaimedSnapshot() async {
+        let receipts = (try? store.load()) ?? []
+        for receipt in receipts {
+            let disposition = await reporter.recordLibrarySync(receipt)
+            guard disposition == .accepted else { continue }
+            // If this removal fails, the receipt intentionally survives and is
+            // replayed. The collector's exact event-id ACK makes that harmless.
+            try? store.remove(eventId: receipt.eventId)
+        }
+
+        stateLock.lock()
+        isDelivering = false
+        let shouldReplay = replayRequestedWhileDelivering
+        replayRequestedWhileDelivering = false
+        stateLock.unlock()
+        if shouldReplay { start() }
+    }
+
+    static func requiresDurableReceipt(_ source: AnalyticsLibrarySource) -> Bool {
+        switch source {
+        case .kindle, .weread, .googleBooks, .kobo: return true
+        case .oreilly: return false
+        }
+    }
+}
+
 /// Reusable, privacy-safe lifecycle recorder for every bound-library UI.
 /// It deliberately owns no account, URL, title, or credential data.
 final class AnalyticsLibraryConnectionRecorder: @unchecked Sendable {
     let session: AnalyticsLibraryConnectionSession
 
     private let lock = NSLock()
+    private let syncReceiptOutbox: AnalyticsLibrarySyncReceiptOutbox
     private var entryTapAlreadyTracked: Bool
     private var terminalRecorded = false
     private var recordedKeys = Set<String>()
 
     init(
         session: AnalyticsLibraryConnectionSession,
-        entryTapAlreadyTracked: Bool
+        entryTapAlreadyTracked: Bool,
+        syncReceiptOutbox: AnalyticsLibrarySyncReceiptOutbox = .shared
     ) {
         self.session = session
         self.entryTapAlreadyTracked = entryTapAlreadyTracked
+        self.syncReceiptOutbox = syncReceiptOutbox
     }
 
     func presented() {
@@ -616,18 +867,33 @@ final class AnalyticsLibraryConnectionRecorder: @unchecked Sendable {
         record(.connectionPresented, result: .success, occurredAt: Date())
     }
 
+    @discardableResult
     func record(
         _ stage: AnalyticsLibraryConnectionStage,
         result: AnalyticsResult,
         errorCode: String? = nil,
         bookCount: Int? = nil,
         occurredAt: Date = Date()
-    ) {
+    ) -> Bool {
         let key = "\(stage.rawValue):\(result.rawValue):\(errorCode ?? "-")"
         lock.lock()
         guard !terminalRecorded else {
             lock.unlock()
-            return
+            return false
+        }
+        let requiresReceipt = stage == .syncCompleted
+            && result == .success
+            && AnalyticsLibrarySyncReceiptOutbox.requiresDurableReceipt(session.source)
+        if requiresReceipt {
+            guard let bookCount,
+                  syncReceiptOutbox.persist(
+                    session: session,
+                    bookCount: bookCount,
+                    occurredAt: occurredAt
+                  ) else {
+                lock.unlock()
+                return false
+            }
         }
         let inserted = recordedKeys.insert(key).inserted
         if inserted,
@@ -635,8 +901,18 @@ final class AnalyticsLibraryConnectionRecorder: @unchecked Sendable {
             terminalRecorded = true
         }
         lock.unlock()
-        guard inserted else { return }
+        guard inserted else { return false }
         let analyticsSession = session
+        if requiresReceipt {
+            // Receipt is already durable before terminal state or product UX.
+            syncReceiptOutbox.start()
+            Task { @MainActor in
+                GrowthLoopConversionCoordinator.shared.libraryDidSync(
+                    source: analyticsSession.source
+                )
+            }
+            return true
+        }
         Task { @MainActor in
             ProductAnalytics.shared.trackLibraryConnection(
                 analyticsSession,
@@ -652,6 +928,7 @@ final class AnalyticsLibraryConnectionRecorder: @unchecked Sendable {
                 )
             }
         }
+        return true
     }
 
     func close() {
@@ -895,7 +1172,7 @@ enum AnalyticsSchema {
             required: ["provider", "attributionResult"],
             optional: [
                 "attributionToken", "attemptCount", "campaignSource", "campaignMedium",
-                "campaignId", "adGroupId", "creativeId",
+                "landingTouchId", "campaignId", "adGroupId", "creativeId",
             ]
         ),
         .growthConfigAssigned: .init(
@@ -1388,6 +1665,7 @@ enum AnalyticsSchema {
             let campaignFields = [
                 properties.campaignSource,
                 properties.campaignMedium,
+                properties.landingTouchId,
                 properties.campaignId,
                 properties.adGroupId,
                 properties.creativeId,
@@ -1439,6 +1717,19 @@ enum AnalyticsSchema {
                 property: "campaignSource",
                 value: properties.campaignSource ?? "unexpected_campaign_medium"
             )
+        }
+
+        if let landingTouchId = properties.landingTouchId {
+            guard attributed,
+                  landingTouchId.range(
+                    of: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+                    options: .regularExpression
+                  ) != nil else {
+                throw AnalyticsSchemaError.invalidPropertyValue(
+                    property: "landingTouchId",
+                    value: landingTouchId
+                )
+            }
         }
 
         for (key, value) in [
@@ -1528,8 +1819,8 @@ enum AnalyticsSchema {
                 value: properties.productId ?? "nil"
             )
         }
-        let allowedResults: Set<String> = ["success", "cancelled", "failed"]
-        guard let result = properties.result, allowedResults.contains(result) else {
+        guard let result = properties.result,
+              AnalyticsAccountGateResult(rawValue: result) != nil else {
             throw AnalyticsSchemaError.invalidPropertyValue(
                 property: "result",
                 value: properties.result ?? "nil"
@@ -2254,6 +2545,178 @@ actor AnalyticsPipeline {
     }
 }
 
+enum AppFirstOpenAcknowledgementState: String, Codable, Equatable, Sendable {
+    case pending
+    case acknowledged
+}
+
+/// Durable install anchor for the first-party growth funnel.
+///
+/// `occurredAt`, `eventId`, and `firstOpenKind` are frozen before the current
+/// instrumentation writes any application defaults. A failed delivery can
+/// therefore be retried on a later launch without moving the install clock or
+/// minting another logical first-open event.
+struct AppFirstOpenPersistentStateV1: Codable, Equatable, Sendable {
+    let eventId: String
+    let firstOpenKind: AnalyticsFirstOpenKind
+    let occurredAt: Date
+    var ackState: AppFirstOpenAcknowledgementState
+    var acknowledgedAt: Date?
+
+    var isAcknowledged: Bool {
+        ackState == .acknowledged && acknowledgedAt != nil
+    }
+}
+
+protocol AppFirstOpenStateStoring: Sendable {
+    func load() -> AppFirstOpenPersistentStateV1?
+    func save(_ state: AppFirstOpenPersistentStateV1)
+}
+
+struct UserDefaultsAppFirstOpenStateStore: AppFirstOpenStateStoring, @unchecked Sendable {
+    static let defaultKey = "app_first_open.state.v1"
+
+    private let defaults: UserDefaults
+    private let key: String
+
+    init(
+        defaults: UserDefaults = .standard,
+        key: String = Self.defaultKey
+    ) {
+        self.defaults = defaults
+        self.key = key
+    }
+
+    func load() -> AppFirstOpenPersistentStateV1? {
+        guard let data = defaults.data(forKey: key),
+              let state = try? JSONDecoder().decode(
+                  AppFirstOpenPersistentStateV1.self,
+                  from: data
+              ),
+              UUID(uuidString: state.eventId) != nil else {
+            return nil
+        }
+        return state
+    }
+
+    func save(_ state: AppFirstOpenPersistentStateV1) {
+        guard let data = try? JSONEncoder().encode(state) else { return }
+        defaults.set(data, forKey: key)
+    }
+}
+
+protocol AppFirstOpenReporting: Sendable {
+    func recordFirstOpen(
+        kind: AnalyticsFirstOpenKind,
+        eventId: String,
+        occurredAt: Date
+    ) async -> AnalyticsDeliveryDisposition
+}
+
+struct ProductAnalyticsAppFirstOpenReporter: AppFirstOpenReporting {
+    func recordFirstOpen(
+        kind: AnalyticsFirstOpenKind,
+        eventId: String,
+        occurredAt: Date
+    ) async -> AnalyticsDeliveryDisposition {
+        await ProductAnalytics.shared.appFirstOpen(
+            kind: kind,
+            eventId: eventId,
+            occurredAt: occurredAt
+        )
+    }
+}
+
+/// Owns the exactly-once client side of `app_first_open` delivery. The server's
+/// event-id uniqueness remains the final authority; locally we seal only an
+/// explicit collector acknowledgement and otherwise retry the same envelope.
+@MainActor
+final class AppFirstOpenService {
+    static let shared = AppFirstOpenService()
+
+    typealias Clock = @Sendable () -> Date
+
+    private let stateStore: AppFirstOpenStateStoring
+    private let reporter: AppFirstOpenReporting
+    private let now: Clock
+    private var deliveryTask: Task<Void, Never>?
+
+    init(
+        stateStore: AppFirstOpenStateStoring = UserDefaultsAppFirstOpenStateStore(),
+        reporter: AppFirstOpenReporting = ProductAnalyticsAppFirstOpenReporter(),
+        now: @escaping Clock = { Date() }
+    ) {
+        self.stateStore = stateStore
+        self.reporter = reporter
+        self.now = now
+    }
+
+    /// Must be the first statement in the app initializer. Looking at the
+    /// application's persistent domain before writing this state distinguishes
+    /// a clean container from an already-used container receiving the new
+    /// instrumentation. Unknown/corrupt prior state is conservatively backfill.
+    @discardableResult
+    static func prepareInitialState(
+        defaults: UserDefaults = .standard,
+        key: String = UserDefaultsAppFirstOpenStateStore.defaultKey,
+        applicationDomainName: String? = Bundle.main.bundleIdentifier,
+        now: Date = Date(),
+        eventId: String = UUID().uuidString
+    ) -> AppFirstOpenPersistentStateV1 {
+        let store = UserDefaultsAppFirstOpenStateStore(defaults: defaults, key: key)
+        if let existing = store.load() { return existing }
+
+        let hadExistingApplicationState: Bool
+        if let applicationDomainName {
+            let domain = defaults.persistentDomain(forName: applicationDomainName)
+            hadExistingApplicationState = domain?.keys.contains { $0 != key } == true
+                || defaults.object(forKey: key) != nil
+        } else {
+            // A production app always has a bundle id. If it is unexpectedly
+            // unavailable, never inflate new-install counts.
+            hadExistingApplicationState = true
+        }
+
+        let state = AppFirstOpenPersistentStateV1(
+            eventId: UUID(uuidString: eventId)?.uuidString ?? UUID().uuidString,
+            firstOpenKind: hadExistingApplicationState
+                ? .instrumentationBackfill
+                : .freshInstall,
+            occurredAt: now,
+            ackState: .pending,
+            acknowledgedAt: nil
+        )
+        store.save(state)
+        return state
+    }
+
+    func start() {
+        guard deliveryTask == nil,
+              let state = stateStore.load(),
+              !state.isAcknowledged else { return }
+        deliveryTask = Task { [weak self] in
+            guard let self else { return }
+            await self.deliverPreparedState()
+            self.deliveryTask = nil
+        }
+    }
+
+    /// Internal so deterministic tests can exercise restart/retry semantics
+    /// without sleeping or driving UIApplication lifecycle notifications.
+    func deliverPreparedState() async {
+        guard var state = stateStore.load(), !state.isAcknowledged else { return }
+        let disposition = await reporter.recordFirstOpen(
+            kind: state.firstOpenKind,
+            eventId: state.eventId,
+            occurredAt: state.occurredAt
+        )
+        guard disposition == .accepted else { return }
+        state.ackState = .acknowledged
+        state.acknowledgedAt = now()
+        stateStore.save(state)
+    }
+}
+
 @MainActor
 final class ProductAnalytics {
     static let shared = ProductAnalytics()
@@ -2339,6 +2802,25 @@ final class ProductAnalytics {
     /// or content data.
     var privacySafeAnonymousId: String { client.anonymousId }
 
+    /// The install anchor is immediate/acknowledged rather than ordinary
+    /// fire-and-forget analytics. Its durable caller reuses the same id and
+    /// occurred-at timestamp until the collector accepts it.
+    func appFirstOpen(
+        kind: AnalyticsFirstOpenKind,
+        eventId: String,
+        occurredAt: Date
+    ) async -> AnalyticsDeliveryDisposition {
+        startAppSession()
+        await appSessionEnqueueTask?.value
+        return await trackAndAwaitAcknowledgement(
+            .appFirstOpen,
+            context: .init(productArea: .app, surface: "app", entryPoint: nil),
+            properties: .init(firstOpenKind: kind.rawValue),
+            eventId: eventId,
+            occurredAt: occurredAt
+        )
+    }
+
     func adAttributionAttempt(
         attemptCount: Int,
         outcome: AnalyticsAdAttributionAttemptOutcome,
@@ -2420,6 +2902,64 @@ final class ProductAnalytics {
                 offerEligible: offerEligible,
                 selectionSource: selectionSource.rawValue,
                 interval: interval.rawValue
+            )
+        )
+    }
+
+    @discardableResult
+    func trackPaywallAction(
+        productId: String,
+        action: AnalyticsPaywallAction,
+        trigger: String,
+        surface: String = "paywall",
+        offerEligible: Bool? = nil,
+        trialDays: Int? = nil,
+        purchaseAttemptId: String? = nil
+    ) -> String? {
+        track(
+            .paywallAction,
+            context: .init(
+                productArea: .billing,
+                surface: surface,
+                entryPoint: trigger,
+                purchaseAttemptId: purchaseAttemptId
+            ),
+            properties: .init(
+                trigger: trigger,
+                productId: productId,
+                offerEligible: offerEligible,
+                action: action.rawValue,
+                trialDays: offerEligible == true ? trialDays : nil
+            )
+        )
+    }
+
+    @discardableResult
+    func trackAccountGateResult(
+        productId: String,
+        result: AnalyticsAccountGateResult,
+        gatePresented: Bool,
+        trigger: String,
+        surface: String = "paywall",
+        durationMs: Int,
+        errorCode: String? = nil,
+        purchaseAttemptId: String? = nil
+    ) -> String? {
+        track(
+            .accountGateResult,
+            context: .init(
+                productArea: .billing,
+                surface: surface,
+                entryPoint: trigger,
+                purchaseAttemptId: purchaseAttemptId
+            ),
+            properties: .init(
+                durationMs: max(0, durationMs),
+                result: result.rawValue,
+                errorCode: result == .success ? nil : errorCode,
+                trigger: trigger,
+                productId: productId,
+                gatePresented: gatePresented
             )
         )
     }
@@ -2647,6 +3187,34 @@ final class ProductAnalytics {
                 bookCountBucket: bookCount.map(Self.bookCountBucket)
             ),
             occurredAt: occurredAt
+        )
+    }
+
+    /// Delivers a previously persisted non-empty shelf receipt and returns only
+    /// the collector's disposition for that exact bind-scoped event id.
+    func librarySyncReceipt(
+        _ receipt: AnalyticsLibrarySyncReceiptV1
+    ) async -> AnalyticsDeliveryDisposition {
+        await trackAndAwaitAcknowledgement(
+            .libraryConnection,
+            context: .init(
+                productArea: .reader,
+                surface: "library_connection",
+                entryPoint: receipt.entryPoint
+            ),
+            properties: .init(
+                source: receipt.source.rawValue,
+                bindSessionId: receipt.bindSessionId,
+                stage: AnalyticsLibraryConnectionStage.syncCompleted.rawValue,
+                durationMs: max(
+                    0,
+                    Int(receipt.occurredAt.timeIntervalSince(receipt.startedAt) * 1_000)
+                ),
+                result: AnalyticsResult.success.rawValue,
+                bookCountBucket: Self.bookCountBucket(receipt.bookCount)
+            ),
+            eventId: receipt.eventId,
+            occurredAt: receipt.occurredAt
         )
     }
 

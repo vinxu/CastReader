@@ -2,7 +2,8 @@
 
 > 生效日：2026-08-23
 > 最新路由变更：2026-08-23 11:52 CST
-> 当前 clean cohort 切点：2026-08-24 00:00（Asia/Shanghai，UTC+8）
+> 广告路由切点：2026-08-24 00:00（Asia/Shanghai，UTC+8）
+> 产品 clean cohort：1.2.29 (build 48) 上线后的首个完整 UTC 日；上线后据实填写
 > 状态：**Apple Ads 增长分析的唯一现行口径**
 
 ## 1. 目标与边界
@@ -20,7 +21,8 @@
 
 所有决策数据必须满足：
 
-- 日期不早于 `2026-08-24 00:00 Asia/Shanghai`；`2026-08-23` 是路由调整前后混合日，只作审计，不进入效果判断；
+- 获客报表日期不早于 `2026-08-24 00:00 Asia/Shanghai`；`2026-08-23` 是路由调整前后混合日，只作审计；
+- 产品漏斗不得把广告路由切点当产品版本切点。build 47 缺少首次打开调用，只可审计，不可作为 fresh-install 分母；权威产品 cohort 从 build 48 上线后的首个完整 UTC 日开始；
 - US 与 GB 分开计算，不用其他国家补样本；
 - 广告用户必须有 `mobile_ad_attributions.status = attributed` 才能进入广告闭环；
 - 自然量、全渠道 ASC 数据只能做国家趋势辅助，不能冒充广告 cohort。
@@ -88,10 +90,11 @@ install→paid = 7%
 1. `mobile_ad_attributions.environment = production`；
 2. `status = attributed`；
 3. `campaign_id` 属于 US / GB 两个目标 Campaign；
-4. `first_seen_at >= 2026-08-24 00:00 Asia/Shanghai`（即 `2026-08-23T16:00:00Z`）；
-5. 同一 `anonymous_id` 只计一次首次归因。
+4. 存在服务端接收并幂等冻结的 `app_first_open.firstOpenKind = fresh_install`；cohort 时间取服务端 `received_at`，不取客户端时间或归因首次出现时间；
+5. 经济性查询必须指定 `required_app_build = 48`，窗口内任何缺失/非 48 build 都阻断结论；`app_build = 48` 只用于版本诊断切片，不得把整条 campaign 花费分摊给产品子集；
+6. 同一 `anonymous_id` 只计一次首次打开与一次终态归因。
 
-Apple Ads API 的 `totalInstalls` 用于核对渠道报表；设备级漏斗的分母必须来自 `mobile_ad_attributions`。
+Apple Ads API 的 `totalInstalls` 与花费一并进入 `growth_ad_spend_daily`，仅用于渠道对账；设备级漏斗的安装分母必须来自 `app_first_open.fresh_install`，归因状态来自 production AdServices 服务端解析。
 
 ### 3.2 行为事件
 
@@ -179,15 +182,43 @@ ruby scripts/growth_loop.rb --full
 
 ### 5.3 策略迭代时：广告 cohort 漏斗
 
-在对应成熟节点，从 `readout-web` 生产库只读查询：
+先把已经跨过 72 小时完整性滞后的 Apple Ads 单日事实写入权威表。每个日期分别执行，脚本只覆盖两个目标 campaign，先全部 spend，成功后才写 campaign 级 coverage：
 
-1. 从 `mobile_ad_attributions` 取 US / GB attributed 设备；
-2. 用 `anonymous_id = analytics_events.device_id` 连 72h 绑定、W1、W4、试用启动；
+```bash
+GROWTH_ADMIN_SECRET=... ruby scripts/searchads_growth_spend_export.rb \
+  --date YYYY-MM-DD --post --commit
+```
+
+然后从 `readout-web` 使用唯一 cohort API。`from/to` 必须是 UTC 日边界，窗口从 build 48 上线后的首个完整 UTC 日开始：
+
+```bash
+GROWTH_ADMIN_SECRET=... pnpm growth:cohort --from YYYY-MM-DD --to YYYY-MM-DD \
+  --platform ios --provider apple_ads --country US --campaign-id 2144343127 \
+  --required-app-build 48 --horizon 10
+
+GROWTH_ADMIN_SECRET=... pnpm growth:cohort --from YYYY-MM-DD --to YYYY-MM-DD \
+  --platform ios --provider apple_ads --country GB --campaign-id 2144503591 \
+  --required-app-build 48 --horizon 10
+```
+
+兼容命令 `scripts/loop-funnel-report.mts` 已改为调用同一个 API，不再接受手工 `coverage-us/coverage-gb`，也不再固定 `spendCny=null`。
+
+权威查询按以下链路聚合：
+
+1. 从 `app_first_open.fresh_install` 冻结安装与 build 48 分母，再连 production AdServices 终态；
+2. 用 `anonymous_id` 连 72h 非空绑定、听读和试用启动；
 3. 用 Apple 订阅对账将试用连到正价 active 交易；
-4. 按 `country_or_region + campaign_id + keyword_id + first_seen_week` 分组；
-5. 用 Apple Ads 同 cohort 花费计算真实付费 CAC。
+4. 用 `growth_ad_spend_daily + growth_data_coverage` 读取同 campaign/UTC 日花费，计算安装 CPA 与真实付费 CAC；
+5. 单列 US 规划首年净 LTV ¥329 与真实 CAC 的比较；observed contribution LTV 只有逐交易 net proceeds 和完整可变成本 coverage 均到齐后才输出。
 
-若试用启动设备无法连到 Apple 正价交易，则第⑤环必须报 `UNKNOWN`，不得用 ASC 国家总付费填补。
+若试用启动设备无法连到 Apple 正价交易，CAC 必须报 `UNKNOWN`；不得用 ASC 国家总付费填补。Apple 财务报表若没有可唯一匹配 `transaction_id` 的粒度，不得伪造逐交易 proceeds；可变成本没有完整全源账本时也保持 `UNKNOWN`，两者都阻断 `SCALE`，但不阻止在 D+10 后计算真实广告 CAC 和单列的规划 LTV/CAC。
+
+### 5.4 状态解释
+
+- D+2 分母尚未成熟：`measurementStatus = WAITING_MATURITY`、覆盖率 `UNKNOWN`；不是 0%，也不是 P0。
+- D+2 已成熟且终态覆盖 `<50%`：`P0_DATA_INCIDENT`。
+- D+2 已成熟且覆盖 `50%–<80%`：`BLOCKED_INCOMPLETE`，后续漏斗/CAC 为 `UNKNOWN`。
+- build 48 窗口出现任何其他/缺失 build：`UNEXPECTED_APP_BUILD_IN_COHORT`，禁止把花费与产品漏斗合并。
 
 ## 6. 报告模板
 

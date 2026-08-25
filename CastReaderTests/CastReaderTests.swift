@@ -1124,10 +1124,10 @@ class CastReaderTests: XCTestCase {
         )
         let rtlFallbackData = try XCTUnwrap((rtlFallbackRaw as? String)?.data(using: .utf8))
         let rtlFallback = try XCTUnwrap(JSONSerialization.jsonObject(with: rtlFallbackData) as? [String: Any])
-        XCTAssertEqual(rtlFallback["semanticAction"] as? String, "leftAction")
-        XCTAssertEqual(rtlFallback["progressionSource"] as? String, "language-fallback")
-        let rtlLeftActionCount = try await webView.evaluateJavaScript("window.leftActionCount") as? Int
-        XCTAssertEqual(rtlLeftActionCount, 1)
+        XCTAssertEqual(rtlFallback["semanticAction"] as? String, "rightAction")
+        XCTAssertEqual(rtlFallback["progressionSource"] as? String, "cached-component")
+        let rtlRightActionCount = try await webView.evaluateJavaScript("window.rightActionCount") as? Int
+        XCTAssertEqual(rtlRightActionCount, 2)
 
         let compatibilityRaw = try await webView.evaluateJavaScript(
             "[window.__crKindleDirectPage('right'), window.__crKindleForceAdjacentPage('left')]"
@@ -1142,13 +1142,14 @@ class CastReaderTests: XCTestCase {
         }
         let compatibilityRightCount = try await webView.evaluateJavaScript("window.rightActionCount") as? Int
         let compatibilityLeftCount = try await webView.evaluateJavaScript("window.leftActionCount") as? Int
-        XCTAssertEqual(compatibilityRightCount, 2)
-        XCTAssertEqual(compatibilityLeftCount, 2)
+        XCTAssertEqual(compatibilityRightCount, 3)
+        XCTAssertEqual(compatibilityLeftCount, 1)
 
         let singleHandlerRaw = try await webView.evaluateJavaScript(
             """
             (function() {
               var leaf = document.querySelector('#kr-chevron-right span');
+              window.__crKindleTurnCapability = null;
               leaf.__reactFiber$test = { memoizedProps:{ onClick:function(){} }, pendingProps:{}, return:null };
               return window.__crKindleSemanticPageTurn('next');
             })()
@@ -1156,7 +1157,11 @@ class CastReaderTests: XCTestCase {
         )
         let singleHandlerData = try XCTUnwrap((singleHandlerRaw as? String)?.data(using: .utf8))
         let singleHandler = try XCTUnwrap(JSONSerialization.jsonObject(with: singleHandlerData) as? [String: Any])
-        XCTAssertEqual(singleHandler["ok"] as? Bool, false, "单个 click handler 不能冒充 paired pagination actions")
+        XCTAssertEqual(singleHandler["ok"] as? Bool, true)
+        XCTAssertEqual(singleHandler["strategy"] as? String, "keyboard-fallback",
+                       "单个 click handler 不能冒充 paired pagination actions，应降级到键盘翻页")
+        let singleHandlerKeyboardCount = try await webView.evaluateJavaScript("window.hiddenKeyboardTurnCount") as? Int
+        XCTAssertEqual(singleHandlerKeyboardCount, 1)
     }
 
     @MainActor

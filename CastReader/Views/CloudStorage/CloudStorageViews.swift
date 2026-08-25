@@ -417,35 +417,76 @@ struct CloudProviderIcon: View {
 
     var body: some View {
         ZStack {
-            if provider != .dropbox {
-                RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)
-                    .fill(Color.white)
-                RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)
-                    .strokeBorder(Color.black.opacity(0.08), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)
+                .fill(Color.white)
+            RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)
+                .strokeBorder(Color.black.opacity(0.08), lineWidth: 0.5)
+            if provider == .googleDrive {
+                GoogleDriveMark()
+                    .padding(size * 0.16)
+            } else {
+                Image(systemName: "cloud.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(AppTheme.primary)
+                    .padding(size * 0.23)
             }
-            Image(assetName)
-                .resizable()
-                .interpolation(.high)
-                .scaledToFit()
-                .padding(size * logoInset)
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
     }
 
-    private var assetName: String {
-        switch provider {
-        case .googleDrive: return "CloudProviderGoogleDrive"
-        case .dropbox: return "CloudProviderDropbox"
-        case .oneDrive: return "CloudProviderOneDrive"
+}
+
+/// Compact vector mark so the Drive browser is immediately recognizable
+/// without depending on an image asset or a web-rendered provider page.
+private struct GoogleDriveMark: View {
+    var body: some View {
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            let height = proxy.size.height
+            ZStack {
+                polygon([
+                    CGPoint(x: 0.44, y: 0.08),
+                    CGPoint(x: 0.60, y: 0.08),
+                    CGPoint(x: 0.91, y: 0.65),
+                    CGPoint(x: 0.72, y: 0.65),
+                ], width: width, height: height)
+                .fill(Color(red: 0.20, green: 0.66, blue: 0.33))
+
+                polygon([
+                    CGPoint(x: 0.44, y: 0.08),
+                    CGPoint(x: 0.09, y: 0.65),
+                    CGPoint(x: 0.28, y: 0.65),
+                    CGPoint(x: 0.53, y: 0.27),
+                ], width: width, height: height)
+                .fill(Color(red: 0.98, green: 0.73, blue: 0.04))
+
+                polygon([
+                    CGPoint(x: 0.09, y: 0.65),
+                    CGPoint(x: 0.28, y: 0.65),
+                    CGPoint(x: 0.72, y: 0.65),
+                    CGPoint(x: 0.91, y: 0.65),
+                    CGPoint(x: 0.80, y: 0.86),
+                    CGPoint(x: 0.20, y: 0.86),
+                ], width: width, height: height)
+                .fill(Color(red: 0.26, green: 0.52, blue: 0.96))
+            }
         }
     }
 
-    private var logoInset: CGFloat {
-        switch provider {
-        case .googleDrive: return 0.16
-        case .dropbox: return 0
-        case .oneDrive: return 0.12
+    private func polygon(
+        _ points: [CGPoint],
+        width: CGFloat,
+        height: CGFloat
+    ) -> Path {
+        Path { path in
+            guard let first = points.first else { return }
+            path.move(to: CGPoint(x: first.x * width, y: first.y * height))
+            for point in points.dropFirst() {
+                path.addLine(to: CGPoint(x: point.x * width, y: point.y * height))
+            }
+            path.closeSubpath()
         }
     }
 }
@@ -554,11 +595,17 @@ private struct CloudFileBrowserView: View {
 
     var body: some View {
         List {
-            if !model.folderPath.isEmpty { breadcrumbSection }
+            if !model.isShowingSearchResults, !model.folderPath.isEmpty {
+                breadcrumbSection
+            }
             if model.folders.isEmpty && model.items.isEmpty && !model.isLoadingPage {
                 ContentUnavailableView(
-                    CloudLocalized("这个文件夹是空的"),
-                    systemImage: "folder"
+                    model.isShowingSearchResults
+                        ? CloudLocalized("未找到匹配的文件")
+                        : CloudLocalized("这个文件夹是空的"),
+                    systemImage: model.isShowingSearchResults
+                        ? "magnifyingglass"
+                        : "folder"
                 )
                 .listRowBackground(Color.clear)
             }
@@ -605,6 +652,25 @@ private struct CloudFileBrowserView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .searchable(
+            text: $model.searchText,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: Text(CloudLocalized("搜索 Google Drive"))
+        )
+        .task(id: model.searchText) {
+            let trimmed = model.searchText.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            )
+            if !trimmed.isEmpty {
+                do {
+                    try await Task.sleep(nanoseconds: 350_000_000)
+                } catch {
+                    return
+                }
+            }
+            guard !Task.isCancelled else { return }
+            model.updateSearchResults(for: trimmed)
+        }
         .accessibilityIdentifier("cloudBrowser.\(model.provider.rawValue)")
     }
 

@@ -8,6 +8,220 @@
 import SwiftUI
 import StoreKit
 
+enum PaywallPurchaseCTAAction: Equatable {
+    case presentLogin
+    case beginPurchase
+}
+
+struct PaywallAccountGateCompletion: Equatable {
+    let purchaseAttemptId: String
+    let productId: String
+    let result: AnalyticsAccountGateResult
+    let gatePresented: Bool
+    let durationMs: Int
+    let errorCode: String?
+}
+
+struct PaywallPurchaseCTAResolution: Equatable {
+    let action: PaywallPurchaseCTAAction
+    let purchaseAttemptId: String
+    let accountGateCompletion: PaywallAccountGateCompletion?
+}
+
+enum PaywallPurchaseIntentPhase: String, Codable, Equatable {
+    case awaitingLogin
+    case readyToContinue
+    case purchasing
+}
+
+/// Persists correlation only; restoration never invokes StoreKit. A login or
+/// relaunch always requires another explicit CTA tap before purchase begins.
+struct PaywallPurchaseIntentState: Codable, Equatable {
+    private struct Attempt: Codable, Equatable {
+        let purchaseAttemptId: String
+        let productId: String
+        let scope: String
+        let startedAt: Date
+        var phase: PaywallPurchaseIntentPhase
+    }
+
+    private var attempt: Attempt?
+
+    var pendingProductId: String? {
+        attempt?.phase == .awaitingLogin ? attempt?.productId : nil
+    }
+
+    var activePurchaseAttemptId: String? { attempt?.purchaseAttemptId }
+    var hasActiveAttempt: Bool { attempt != nil }
+
+    func isReadyToContinue(
+        productId: String,
+        scope: String = "paywall|unknown"
+    ) -> Bool {
+        attempt?.productId == productId
+            && attempt?.scope == scope
+            && attempt?.phase == .readyToContinue
+    }
+
+    mutating func selectedProductChanged(to productId: String?) {
+        guard attempt?.productId != productId else { return }
+        attempt = nil
+    }
+
+    mutating func resolveCTA(
+        productId: String,
+        isSignedIn: Bool,
+        scope: String = "paywall|unknown",
+        now: Date = Date(),
+        newPurchaseAttemptId: String = UUID().uuidString
+    ) -> PaywallPurchaseCTAResolution {
+        if !isSignedIn {
+            if attempt?.productId != productId
+                || attempt?.scope != scope
+                || attempt?.phase != .awaitingLogin {
+                attempt = Attempt(
+                    purchaseAttemptId: normalizedAttemptId(newPurchaseAttemptId),
+                    productId: productId,
+                    scope: scope,
+                    startedAt: now,
+                    phase: .awaitingLogin
+                )
+            }
+            return .init(
+                action: .presentLogin,
+                purchaseAttemptId: attempt?.purchaseAttemptId
+                    ?? normalizedAttemptId(newPurchaseAttemptId),
+                accountGateCompletion: nil
+            )
+        }
+
+        if var current = attempt,
+           current.productId == productId,
+           current.scope == scope,
+           current.phase == .readyToContinue {
+            // The successful presented gate already emitted its one terminal
+            // result. This explicit second tap only resumes that same intent.
+            current.phase = .purchasing
+            attempt = current
+            return .init(
+                action: .beginPurchase,
+                purchaseAttemptId: current.purchaseAttemptId,
+                accountGateCompletion: nil
+            )
+        }
+
+        let id = normalizedAttemptId(newPurchaseAttemptId)
+        attempt = Attempt(
+            purchaseAttemptId: id,
+            productId: productId,
+            scope: scope,
+            startedAt: now,
+            phase: .purchasing
+        )
+        return .init(
+            action: .beginPurchase,
+            purchaseAttemptId: id,
+            accountGateCompletion: .init(
+                purchaseAttemptId: id,
+                productId: productId,
+                result: .success,
+                gatePresented: false,
+                durationMs: 0,
+                errorCode: nil
+            )
+        )
+    }
+
+    mutating func completePresentedGate(
+        isSignedIn: Bool,
+        scope: String = "paywall|unknown",
+        now: Date = Date()
+    ) -> PaywallAccountGateCompletion? {
+        guard var current = attempt,
+              current.scope == scope,
+              current.phase == .awaitingLogin else { return nil }
+        let durationMs = max(
+            0,
+            Int((now.timeIntervalSince(current.startedAt) * 1_000).rounded())
+        )
+        if isSignedIn {
+            current.phase = .readyToContinue
+            attempt = current
+            return .init(
+                purchaseAttemptId: current.purchaseAttemptId,
+                productId: current.productId,
+                result: .success,
+                gatePresented: true,
+                durationMs: durationMs,
+                errorCode: nil
+            )
+        }
+
+        attempt = nil
+        return .init(
+            purchaseAttemptId: current.purchaseAttemptId,
+            productId: current.productId,
+            result: .cancelled,
+            gatePresented: true,
+            durationMs: durationMs,
+            errorCode: "user_cancelled"
+        )
+    }
+
+    @discardableResult
+    mutating func completePurchase(purchaseAttemptId: String) -> Bool {
+        guard attempt?.purchaseAttemptId == purchaseAttemptId,
+              attempt?.phase == .purchasing else { return false }
+        attempt = nil
+        return true
+    }
+
+    /// A process cannot safely infer the StoreKit result after a crash. Keep
+    /// server/StoreKit transaction authority untouched and require a new tap.
+    mutating func discardInterruptedPurchase() {
+        guard attempt?.phase == .purchasing else { return }
+        attempt = nil
+    }
+
+    private func normalizedAttemptId(_ candidate: String) -> String {
+        UUID(uuidString: candidate)?.uuidString ?? UUID().uuidString
+    }
+}
+
+struct UserDefaultsPaywallPurchaseIntentStore: @unchecked Sendable {
+    private let defaults: UserDefaults
+    private let key: String
+
+    init(
+        defaults: UserDefaults = .standard,
+        key: String = "paywall_purchase_intent_v1"
+    ) {
+        self.defaults = defaults
+        self.key = key
+    }
+
+    func load() -> PaywallPurchaseIntentState {
+        guard let data = defaults.data(forKey: key),
+              let state = try? JSONDecoder().decode(
+                PaywallPurchaseIntentState.self,
+                from: data
+              ) else { return PaywallPurchaseIntentState() }
+        return state
+    }
+
+    @discardableResult
+    func save(_ state: PaywallPurchaseIntentState) -> Bool {
+        if !state.hasActiveAttempt {
+            defaults.removeObject(forKey: key)
+        } else if let data = try? JSONEncoder().encode(state) {
+            defaults.set(data, forKey: key)
+        } else {
+            return false
+        }
+        return defaults.synchronize()
+    }
+}
+
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var pro = ProManager.shared
@@ -17,6 +231,8 @@ struct PaywallView: View {
     let onPurchased: () -> Void
     @State private var didTrackImpression = false
     @State private var didFinishPurchaseCallback = false
+    @State private var didTrackDismissal = false
+    @State private var selectedProductID: String?
 
     init(
         reason: String? = nil,
@@ -35,12 +251,14 @@ struct PaywallView: View {
             ProUpsellContent(
                 reason: reason,
                 analyticsTrigger: analyticsTrigger,
-                onPurchased: finishPurchase
+                analyticsSurface: analyticsSurface,
+                onPurchased: finishPurchase,
+                onSelectionChanged: { selectedProductID = $0 }
             )
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button { dismiss() } label: {
+                        Button { closePaywall() } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 14, weight: .bold))
                                 .frame(width: 32, height: 32)
@@ -73,6 +291,7 @@ struct PaywallView: View {
         .onChange(of: pro.isCrossPlatformPro) { isPro in
             if isPro { finishPurchase() }
         }
+        .onDisappear { trackDismissalIfNeeded() }
     }
 
     private func finishPurchase() {
@@ -80,6 +299,30 @@ struct PaywallView: View {
         didFinishPurchaseCallback = true
         onPurchased()
         dismiss()
+    }
+
+    private func closePaywall() {
+        trackDismissalIfNeeded()
+        dismiss()
+    }
+
+    private func trackDismissalIfNeeded() {
+        guard didTrackImpression,
+              !didFinishPurchaseCallback,
+              !didTrackDismissal else { return }
+        didTrackDismissal = true
+        let product = pro.displayProducts.first {
+            $0.id == selectedProductID
+        } ?? Self.defaultProduct(pro)
+        let offerEligible = product.map { pro.showsFreeTrial(for: $0) }
+        ProductAnalytics.shared.trackPaywallAction(
+            productId: product?.id ?? "unknown",
+            action: .dismissed,
+            trigger: analyticsTrigger,
+            surface: analyticsSurface,
+            offerEligible: offerEligible,
+            trialDays: product.flatMap { offerEligible == true ? ProManager.freeTrialDays(for: $0) : nil }
+        )
     }
 
     private static func defaultProduct(_ pro: ProManager) -> Product? {
@@ -114,7 +357,11 @@ struct PaywallView: View {
 struct ProUpsellContent: View {
     var reason: String? = nil
     var analyticsTrigger: String = "unknown"
+    var analyticsSurface: String = "paywall"
     var onPurchased: () -> Void = {}
+    var onSelectionChanged: (String?) -> Void = { _ in }
+
+    private let purchaseIntentStore: UserDefaultsPaywallPurchaseIntentStore
 
     @ObservedObject private var pro = ProManager.shared
     @ObservedObject private var auth = AuthService.shared
@@ -127,6 +374,27 @@ struct ProUpsellContent: View {
     @State private var purchaseMessage = ""
     @State private var selectedProductID: String?
     @State private var didTrackDefaultSelection = false
+    @State private var purchaseIntent: PaywallPurchaseIntentState
+
+    init(
+        reason: String? = nil,
+        analyticsTrigger: String = "unknown",
+        analyticsSurface: String = "paywall",
+        onPurchased: @escaping () -> Void = {},
+        onSelectionChanged: @escaping (String?) -> Void = { _ in }
+    ) {
+        self.reason = reason
+        self.analyticsTrigger = analyticsTrigger
+        self.analyticsSurface = analyticsSurface
+        self.onPurchased = onPurchased
+        self.onSelectionChanged = onSelectionChanged
+        let key = ServiceRouting.current.isolatedStorageKey(
+            "paywall_purchase_intent_v1"
+        )
+        let store = UserDefaultsPaywallPurchaseIntentStore(key: key)
+        self.purchaseIntentStore = store
+        _purchaseIntent = State(initialValue: store.load())
+    }
 
     private let benefits: [(String, String)] = [
         ("books.vertical.fill", AppLocalized("你的整个书库，全部可听")),
@@ -178,7 +446,9 @@ struct ProUpsellContent: View {
             .padding(20)
         }
         .background(AppTheme.background.ignoresSafeArea())
-        .sheet(isPresented: $showLogin) { LoginView() }
+        .sheet(isPresented: $showLogin, onDismiss: completeLoginGateIfNeeded) {
+            LoginView()
+        }
         .alert("恢复购买", isPresented: $showRestoreAlert) {
             Button("好", role: .cancel) {}
         } message: { Text(restoreMessage) }
@@ -189,10 +459,14 @@ struct ProUpsellContent: View {
         }
         .onAppear { Task { await reloadProducts(); syncDefaultSelection(); await pro.refresh() } }
         .onChange(of: pro.displayProducts.map(\.id)) { _ in syncDefaultSelection() }
+        .onChange(of: auth.isSignedIn) { _, isSignedIn in
+            if isSignedIn { completeLoginGateIfNeeded() }
+        }
         .task {
             if pro.isCrossPlatformPro { onPurchased() }
         }
         .onChange(of: pro.isCrossPlatformPro) { isPro in if isPro { onPurchased() } }
+        .onDisappear { completeLoginGateIfNeeded() }
     }
 
     /// 默认选中年付。必须在 onAppear 也调一次：产品已缓存时 `onChange` 不会触发，
@@ -203,7 +477,10 @@ struct ProUpsellContent: View {
             selectedProductID = pro.displayProducts.first {
                 $0.subscription?.subscriptionPeriod.unit == .year
             }?.id ?? pro.displayProducts.first?.id
+            purchaseIntent.selectedProductChanged(to: selectedProductID)
+            persistPurchaseIntent()
         }
+        onSelectionChanged(selectedProductID)
         guard !didTrackDefaultSelection,
               let product = selectedProduct,
               let interval = analyticsInterval(product) else { return }
@@ -358,8 +635,7 @@ struct ProUpsellContent: View {
             VStack(spacing: 12) {
                 ForEach(pro.displayProducts, id: \.id) { product in
                     Button {
-                        selectedProductID = product.id
-                        trackUserSelection(product)
+                        selectProduct(product)
                     } label: {
                         HStack(alignment: .firstTextBaseline) {
                             VStack(alignment: .leading, spacing: 2) {
@@ -400,28 +676,14 @@ struct ProUpsellContent: View {
                     }
                     .disabled(busy)
                 }
+                if isReadyToContinueSelectedProduct {
+                    Label(AppLocalized("已登录"), systemImage: "checkmark.circle.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.green)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
                 Button {
-                    // 只要求「已登录」：Apple 登录可能没有 email（仅首次授权返回），
-                    // 手机号账号也没有 email；StoreKit 购买只要求已有账号身份，
-                    // email / backend user id 只决定跨平台同步何时可用。
-                    guard auth.isSignedIn else { showLogin = true; return }
-                    guard let product = pro.displayProducts.first(where: { $0.id == selectedProductID }) else { return }
-                    busy = true
-                    Task {
-                        let purchased = await pro.purchase(
-                            product,
-                            analyticsTrigger: analyticsTrigger
-                        )
-                        busy = false
-                        if purchased {
-                            onPurchased()
-                            return
-                        }
-                        purchaseMessage = AppLocalized(
-                            "购买尚未完成。请稍后重试；若交易正在等待批准，获批后会员会自动生效。"
-                        )
-                        showPurchaseAlert = true
-                    }
+                    handlePurchaseCTA()
                 } label: {
                     HStack {
                         if busy { ProgressView().tint(.white) }
@@ -455,6 +717,118 @@ struct ProUpsellContent: View {
 
     private var selectedProduct: Product? {
         pro.displayProducts.first { $0.id == selectedProductID }
+    }
+
+    private var isReadyToContinueSelectedProduct: Bool {
+        guard let selectedProductID else { return false }
+        return purchaseIntent.isReadyToContinue(
+            productId: selectedProductID,
+            scope: purchaseIntentScope
+        )
+    }
+
+    private var purchaseIntentScope: String {
+        "\(analyticsSurface)|\(analyticsTrigger)"
+    }
+
+    private func selectProduct(_ product: Product) {
+        selectedProductID = product.id
+        purchaseIntent.selectedProductChanged(to: product.id)
+        persistPurchaseIntent()
+        onSelectionChanged(product.id)
+        trackUserSelection(product)
+    }
+
+    private func handlePurchaseCTA() {
+        guard !busy, let product = selectedProduct else { return }
+        let resolution = purchaseIntent.resolveCTA(
+            productId: product.id,
+            isSignedIn: auth.isSignedIn,
+            scope: purchaseIntentScope
+        )
+        persistPurchaseIntent()
+        let offerEligible = pro.showsFreeTrial(for: product)
+        ProductAnalytics.shared.trackPaywallAction(
+            productId: product.id,
+            action: .ctaTapped,
+            trigger: analyticsTrigger,
+            surface: analyticsSurface,
+            offerEligible: offerEligible,
+            trialDays: offerEligible ? ProManager.freeTrialDays(for: product) : nil,
+            purchaseAttemptId: resolution.purchaseAttemptId
+        )
+        if let completion = resolution.accountGateCompletion {
+            trackAccountGateCompletion(completion)
+        }
+        switch resolution.action {
+        case .presentLogin:
+            showLogin = true
+        case .beginPurchase:
+            beginPurchase(
+                product,
+                purchaseAttemptId: resolution.purchaseAttemptId
+            )
+        }
+    }
+
+    private func beginPurchase(
+        _ product: Product,
+        purchaseAttemptId: String
+    ) {
+        // StoreKit is intentionally entered only from this explicit user tap.
+        // Login success restores the intent and CTA, but never auto-purchases.
+        busy = true
+        Task {
+            let purchased = await pro.purchase(
+                product,
+                analyticsTrigger: analyticsTrigger,
+                purchaseAttemptId: purchaseAttemptId
+            )
+            busy = false
+            _ = purchaseIntent.completePurchase(
+                purchaseAttemptId: purchaseAttemptId
+            )
+            persistPurchaseIntent()
+            if purchased {
+                onPurchased()
+                return
+            }
+            purchaseMessage = AppLocalized(
+                "购买尚未完成。请稍后重试；若交易正在等待批准，获批后会员会自动生效。"
+            )
+            showPurchaseAlert = true
+        }
+    }
+
+    private func completeLoginGateIfNeeded() {
+        guard let completion = purchaseIntent.completePresentedGate(
+            isSignedIn: auth.isSignedIn,
+            scope: purchaseIntentScope
+        ) else { return }
+        persistPurchaseIntent()
+        trackAccountGateCompletion(completion)
+    }
+
+    private func trackAccountGateCompletion(_ completion: PaywallAccountGateCompletion) {
+        ProductAnalytics.shared.trackAccountGateResult(
+            productId: completion.productId,
+            result: completion.result,
+            gatePresented: completion.gatePresented,
+            trigger: analyticsTrigger,
+            surface: analyticsSurface,
+            durationMs: completion.durationMs,
+            errorCode: completion.errorCode,
+            purchaseAttemptId: completion.purchaseAttemptId
+        )
+    }
+
+    private func persistPurchaseIntent() {
+        let persisted = purchaseIntentStore.save(purchaseIntent)
+#if DEBUG
+        if !persisted {
+            print("[Analytics] paywall purchase intent persistence failed")
+        }
+#endif
     }
 
     private func trackUserSelection(_ product: Product) {
@@ -495,10 +869,14 @@ struct ProUpsellContent: View {
     }
 
     private var primaryCTATitle: String {
-        guard let product = selectedProduct, let days = trialDays(product) else {
-            return AppLocalized("升级到 CastReader Pro")
+        let title: String
+        if let product = selectedProduct, let days = trialDays(product) {
+            title = String(format: AppLocalized("开始 %d 天免费试用"), days)
+        } else {
+            title = AppLocalized("升级到 CastReader Pro")
         }
-        return String(format: AppLocalized("开始 %d 天免费试用"), days)
+        guard isReadyToContinueSelectedProduct else { return title }
+        return "\(AppLocalized("继续")) · \(title)"
     }
 
     /// Apple 3.1.2：试用必须在购买点明示「试用时长 + 到期价格 + 自动续订 + 可取消」。

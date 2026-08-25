@@ -1665,7 +1665,8 @@ class CastReaderUITests: XCTestCase {
         }
     }
 
-    /// 底部中间 ➕ 保持导入能力，同时提供统一的阅读平台连接入口。
+    /// 底部中间 ➕ 保持导入能力，同时正式提供 Google Drive；尚未开放的
+    /// Dropbox / OneDrive 仍不得出现在发布界面。
     func testPlusOpensImportSheet() {
         let app = launchZh()
         let plus = app.buttons["plusImportButton"]
@@ -1674,9 +1675,12 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.buttons["上传文件"].waitForExistence(timeout: 5), "➕ 未弹出导入方式")
         XCTAssertTrue(app.buttons["输入网址"].exists)
         XCTAssertTrue(app.buttons["librarySourcesImportButton"].exists)
-        XCTAssertFalse(app.staticTexts["云端文件"].exists)
+        XCTAssertTrue(app.staticTexts["云端文件"].exists)
+        XCTAssertTrue(
+            app.descendants(matching: .any)["cloudProvider.google_drive"].exists,
+            "发布配置必须提供 Google Drive 导入"
+        )
         for providerID in [
-            "cloudProvider.google_drive",
             "cloudProvider.dropbox",
             "cloudProvider.onedrive",
         ] {
@@ -1687,8 +1691,9 @@ class CastReaderUITests: XCTestCase {
         }
     }
 
-    /// App Store 发布包必须保持云盘入口关闭；历史调试参数也不能重新开启。
-    func testCloudProvidersStayExcludedEvenWithLegacyDebugArgument() {
+    /// Google Drive 已正式开放，不依赖历史调试参数；尚未开放的云盘仍不能
+    /// 被该参数重新开启。
+    func testGoogleDriveStaysEnabledAndUnreleasedProvidersStayExcludedEvenWithLegacyDebugArgument() {
         let app = XCUIApplication()
         app.launchArguments = [
             "-AppleLanguages", "(zh-Hans)",
@@ -1709,19 +1714,22 @@ class CastReaderUITests: XCTestCase {
         let importOptions = app.descendants(matching: .any)["importOptions.general"]
         XCTAssertTrue(importOptions.waitForExistence(timeout: 6))
 
-        let providerIDs = [
-            "cloudProvider.google_drive",
+        XCTAssertTrue(app.staticTexts["云端文件"].exists)
+        XCTAssertTrue(
+            app.descendants(matching: .any)["cloudProvider.google_drive"].exists,
+            "Google Drive 应在发布配置中保持可见"
+        )
+
+        let unreleasedProviderIDs = [
             "cloudProvider.dropbox",
             "cloudProvider.onedrive",
         ]
-        for providerID in providerIDs {
+        for providerID in unreleasedProviderIDs {
             XCTAssertFalse(
                 app.descendants(matching: .any)[providerID].exists,
-                "发布配置不应被调试参数重新开启：\(providerID)"
+                "尚未开放的云盘不应被调试参数重新开启：\(providerID)"
             )
         }
-
-        XCTAssertFalse(app.staticTexts["云端文件"].exists)
     }
 
     /// 统一书架来源页承载所有商业阅读平台，新增平台不再挤占首页。

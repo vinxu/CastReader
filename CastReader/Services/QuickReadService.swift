@@ -269,27 +269,41 @@ enum QuickReadSSEErrorMapper {
 actor QuickReadService {
     static let shared = QuickReadService()
 
-    private init() {
+    /// Google API Services User Data Policy requires Workspace-derived content
+    /// to stay on an inference path whose provider contract forbids model
+    /// training. The China QuickRead route uses DeepSeek, whose public API
+    /// terms do not provide that guarantee, so Google Drive documents always
+    /// use the global paid Gemini route. Account/session traffic still follows
+    /// the user's frozen account route; the existing compute-ticket exchange
+    /// binds the payload to the global ingress without exposing account tokens.
+    static let googleLimitedUse = QuickReadService(computeRouteOverride: .globalGateway)
+
+    nonisolated static func forDocument(_ document: ReadingDocument) -> QuickReadService {
+        document.origin?.provider == .googleDrive ? .googleLimitedUse : .shared
+    }
+
+    private init(computeRouteOverride: ServiceRoute? = nil) {
         let accountRoute = ServiceRouting.current
         let computeSnapshot = ComputeRouting.currentSnapshot
+        let computeRoute = computeRouteOverride ?? computeSnapshot.primary
         self.session = OwnedAPIURLSession.makeExplicitCredentialSession(
             route: accountRoute,
             requestTimeout: 90,
             resourceTimeout: 120
         )
         self.computeSession = OwnedAPIURLSession.makeExplicitCredentialSession(
-            route: computeSnapshot.primary,
+            route: computeRoute,
             requestTimeout: 90,
             resourceTimeout: 120
         )
         self.mobileSessionProvider = MobileSessionStore.shared
         self.computeSessionProvider = QuickReadComputeSessionStore(
             accountRoute: accountRoute,
-            targetRoute: computeSnapshot.primary,
+            targetRoute: computeRoute,
             mobileSessionProvider: MobileSessionStore.shared
         )
         self.accountRoute = accountRoute
-        self.computeRoute = computeSnapshot.primary
+        self.computeRoute = computeRoute
     }
 
     /// Test-only dependency seam used by transport-boundary contract tests.
@@ -615,7 +629,7 @@ actor QuickReadService {
 
     // MARK: - 重试（网络波动 / 后端瞬时错误自愈，指数退避）
 
-    /// 对网络层错误 / 5xx / 429 / 408 / 瞬时 400 / 流式截断自动重试（0.6→1.2→2.4s 退避）。
+    /// 对网络层错误 / 5xx / 408 / 瞬时 400 / 流式截断自动重试（0.6→1.2→2.4s 退避）。
     /// 让一次抖动不至于打断整条解读链路，用户无需手动 Retry。
     ///
     /// `retryBudget`：重试的墙钟预算。慢失败（worker 跑完 LLM 才断流）每次

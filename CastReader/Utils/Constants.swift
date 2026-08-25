@@ -11,8 +11,9 @@ enum Constants {
         /// but the feature is intentionally unavailable in this release.
         static let voiceCloningEnabled = false
 
-        /// The provider adapters are not part of this release target.
-        static let cloudStorageEnabled = false
+        /// Google One Pick (`drive.file`) import is part of this release. The
+        /// provider is hidden when its public OAuth configuration is absent.
+        static let cloudStorageEnabled = true
 
         /// 中国备案网关的代码能力已编入，但是否使用由 ServiceRouting 的启动快照
         /// 决定。不能再用编译期开关把 CHN storefront 自动切到新线路。
@@ -126,6 +127,42 @@ enum Constants {
         static var redirectURI: String { "\(reversedClientID):/oauth2redirect" }
         /// 是否已配置真实 client id（否则隐藏 Google 登录入口）。
         static var isConfigured: Bool { !clientID.hasPrefix("YOUR_GOOGLE") }
+    }
+
+    enum CloudStorage {
+        private static func infoValue(_ key: String) -> String {
+            (Bundle.main.object(forInfoDictionaryKey: key) as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        }
+
+        enum GoogleDrive {
+            static var clientID: String { infoValue("GoogleDriveClientID") }
+            static var redirectScheme: String {
+                infoValue("GoogleDriveRedirectScheme")
+            }
+            static var redirectURI: String { "\(redirectScheme):/oauth2redirect" }
+            static var isConfigured: Bool {
+                clientID.hasSuffix(".apps.googleusercontent.com")
+                    && !clientID.contains("YOUR_")
+                    && redirectScheme.hasPrefix("com.googleusercontent.apps.")
+                    && !redirectScheme.contains("unconfigured")
+            }
+        }
+
+        // Kept as unavailable compatibility configuration for historical local
+        // records. Only Google Drive is exposed by CloudProviderID.allCases.
+        enum Dropbox {
+            static var appKey: String { infoValue("DropboxAppKey") }
+            static var callbackScheme: String { "db-\(appKey)" }
+            static var isConfigured: Bool { false }
+        }
+
+        enum Microsoft {
+            static var clientID: String { infoValue("MicrosoftClientID") }
+            static let authority = "https://login.microsoftonline.com/common"
+            static var redirectURI: String { "msauth.com.same.castreader://auth" }
+            static var isConfigured: Bool { false }
+        }
     }
 
     enum Storage {

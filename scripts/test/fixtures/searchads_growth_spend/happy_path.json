@@ -1,0 +1,111 @@
+{
+  "org_id": 987654321,
+  "plan": {
+    "adamId": 6757636395,
+    "currency": "RMB",
+    "campaigns": [
+      {"id": 2144343127, "name": "CR_US_Search_Discovery_2026Q3", "country": "US"},
+      {"id": 2144503591, "name": "CR_GB_Search_Discovery_2026Q3", "country": "GB"}
+    ]
+  },
+  "campaigns": [
+    {
+      "id": 2144343127,
+      "name": "CR_US_Search_Discovery_2026Q3",
+      "adamId": 6757636395,
+      "countriesOrRegions": ["US"],
+      "dailyBudgetAmount": {"amount": "60", "currency": "RMB"},
+      "deleted": false
+    },
+    {
+      "id": 2144503591,
+      "name": "CR_GB_Search_Discovery_2026Q3",
+      "adamId": 6757636395,
+      "countriesOrRegions": ["GB"],
+      "dailyBudgetAmount": {"amount": "60", "currency": "RMB"},
+      "deleted": false
+    },
+    {
+      "id": 2144344391,
+      "name": "CR_US_Search_Exact_2026Q3",
+      "adamId": 6757636395,
+      "countriesOrRegions": ["US"],
+      "dailyBudgetAmount": {"amount": "100", "currency": "RMB"},
+      "deleted": false
+    },
+    {
+      "id": 9990000001,
+      "name": "Another App Campaign",
+      "adamId": 1234567890,
+      "countriesOrRegions": ["US"],
+      "dailyBudgetAmount": {"amount": "5", "currency": "RMB"},
+      "deleted": false
+    }
+  ],
+  "report_rows": [
+    {
+      "metadata": {
+        "campaignId": 2144503591,
+        "campaignName": "CR_GB_Search_Discovery_2026Q3",
+        "adamId": 6757636395,
+        "orgId": 987654321,
+        "countriesOrRegions": ["GB"],
+        "countryOrRegion": "GB"
+      },
+      "total": {
+        "localSpend": {"amount": "11.1150", "currency": "RMB"},
+        "impressions": 1111,
+        "taps": 101,
+        "totalInstalls": 3
+      }
+    },
+    {
+      "metadata": {
+        "campaignId": 9990000001,
+        "campaignName": "Another App Campaign",
+        "adamId": 1234567890,
+        "orgId": 987654321,
+        "countriesOrRegions": ["US"],
+        "countryOrRegion": "US"
+      },
+      "total": {
+        "localSpend": {"amount": "1.00", "currency": "RMB"},
+        "impressions": 100,
+        "taps": 10,
+        "totalInstalls": 1
+      }
+    },
+    {
+      "metadata": {
+        "campaignId": 2144343127,
+        "campaignName": "CR_US_Search_Discovery_2026Q3",
+        "adamId": 6757636395,
+        "orgId": 987654321,
+        "countriesOrRegions": ["US"],
+        "countryOrRegion": "US"
+      },
+      "total": {
+        "localSpend": {"amount": "23.45", "currency": "CNY"},
+        "impressions": 2345,
+        "taps": 234,
+        "totalInstalls": 5
+      }
+    },
+    {
+      "metadata": {
+        "campaignId": 2144344391,
+        "campaignName": "CR_US_Search_Exact_2026Q3",
+        "adamId": 6757636395,
+        "orgId": 987654321,
+        "countriesOrRegions": ["US"],
+        "countryOrRegion": "US"
+      },
+      "total": {
+        "localSpend": {"amount": "0.00", "currency": "RMB"},
+        "impressions": 0,
+        "taps": 0,
+        "totalInstalls": 0
+      }
+    }
+  ]
+}

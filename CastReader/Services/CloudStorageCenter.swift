@@ -89,8 +89,6 @@ final class CloudStorageCenter: ObservableObject {
     @Published private(set) var connectionStates: [CloudProviderID: CloudConnectionState] = [:]
 
     private let googleDrive: GoogleDriveProvider?
-    private let dropbox: DropboxProvider?
-    private let oneDrive: OneDriveProvider?
     private let credentialOwnership = CloudCredentialOwnershipStore()
     private var lifecycleEpochs: [CloudProviderID: UInt64] = [:]
     private var disconnectingProviders = Set<CloudProviderID>()
@@ -107,28 +105,6 @@ final class CloudStorageCenter: ObservableObject {
             )
         } else {
             googleDrive = nil
-        }
-
-        let presenter: @MainActor @Sendable () -> UIViewController? = {
-            CloudPresentationContext.topViewController()
-        }
-        if Constants.CloudStorage.Dropbox.isConfigured {
-            dropbox = DropboxProvider(
-                appKey: Constants.CloudStorage.Dropbox.appKey,
-                presenter: presenter
-            )
-        } else {
-            dropbox = nil
-        }
-        if Constants.CloudStorage.Microsoft.isConfigured {
-            oneDrive = try? OneDriveProvider(
-                clientID: Constants.CloudStorage.Microsoft.clientID,
-                authority: Constants.CloudStorage.Microsoft.authority,
-                redirectURI: Constants.CloudStorage.Microsoft.redirectURI,
-                presenter: presenter
-            )
-        } else {
-            oneDrive = nil
         }
 
         for provider in CloudProviderID.allCases {
@@ -188,8 +164,7 @@ final class CloudStorageCenter: ObservableObject {
     func isConfigured(_ provider: CloudProviderID) -> Bool {
         switch provider {
         case .googleDrive: return googleDrive != nil
-        case .dropbox: return dropbox != nil
-        case .oneDrive: return oneDrive != nil
+        case .dropbox, .oneDrive: return false
         }
     }
 
@@ -237,36 +212,6 @@ final class CloudStorageCenter: ObservableObject {
             }
         } else {
             connectionStates[.googleDrive] = .disconnected
-        }
-        if hasActiveCredentialOwnership(.dropbox), let dropbox {
-            let epoch = lifecycleEpochs[.dropbox, default: 0]
-            let storeEpoch = await CloudConnectionStore.shared.connectionEpoch(for: .dropbox)
-            let providerState = await restoredPersistentProviderState(
-                provider: .dropbox,
-                initialState: await dropbox.connectionState(),
-                expectedStoreEpoch: storeEpoch
-            )
-            if isCurrentLifecycle(.dropbox, epoch: epoch),
-               !disconnectingProviders.contains(.dropbox) {
-                connectionStates[.dropbox] = providerState
-            }
-        } else {
-            connectionStates[.dropbox] = .disconnected
-        }
-        if hasActiveCredentialOwnership(.oneDrive), let oneDrive {
-            let epoch = lifecycleEpochs[.oneDrive, default: 0]
-            let storeEpoch = await CloudConnectionStore.shared.connectionEpoch(for: .oneDrive)
-            let providerState = await restoredPersistentProviderState(
-                provider: .oneDrive,
-                initialState: await oneDrive.connectionState(),
-                expectedStoreEpoch: storeEpoch
-            )
-            if isCurrentLifecycle(.oneDrive, epoch: epoch),
-               !disconnectingProviders.contains(.oneDrive) {
-                connectionStates[.oneDrive] = providerState
-            }
-        } else {
-            connectionStates[.oneDrive] = .disconnected
         }
     }
 
@@ -378,18 +323,8 @@ final class CloudStorageCenter: ObservableObject {
                     expectedAccountKey: protectedAccount?.stableAccountKey,
                     forceAccountSelection: forceAccountSelection
                 )
-            case .dropbox:
-                guard let dropbox else { throw configurationError(provider) }
-                account = try await dropbox.ensureConnected(
-                    expectedAccountKey: protectedAccount?.stableAccountKey,
-                    forceAccountSelection: forceAccountSelection
-                )
-            case .oneDrive:
-                guard let oneDrive else { throw configurationError(provider) }
-                account = try await oneDrive.ensureConnected(
-                    expectedAccountKey: protectedAccount?.stableAccountKey,
-                    forceAccountSelection: forceAccountSelection
-                )
+            case .dropbox, .oneDrive:
+                throw configurationError(provider)
             }
             try ensureCurrentLifecycle(provider, epoch: lifecycleEpoch)
             _ = await CloudConnectionStore.shared.setActive(account)
@@ -444,16 +379,8 @@ final class CloudStorageCenter: ObservableObject {
             account = try await googleDrive.restorePersistedAccount(
                 expectedAccountKey: expectedAccountKey
             )
-        case .dropbox:
-            guard let dropbox else { throw configurationError(provider) }
-            account = try await dropbox.restorePersistedAccount(
-                expectedAccountKey: expectedAccountKey
-            )
-        case .oneDrive:
-            guard let oneDrive else { throw configurationError(provider) }
-            account = try await oneDrive.restorePersistedAccount(
-                expectedAccountKey: expectedAccountKey
-            )
+        case .dropbox, .oneDrive:
+            throw configurationError(provider)
         }
         try ensureCurrentLifecycle(provider, epoch: lifecycleEpoch)
         _ = await CloudConnectionStore.shared.setActive(account)
@@ -467,10 +394,8 @@ final class CloudStorageCenter: ObservableObject {
         switch provider {
         case .googleDrive:
             return await googleDrive?.stagedCandidateAccount()
-        case .dropbox:
-            return await dropbox?.stagedCandidate()
-        case .oneDrive:
-            return await oneDrive?.stagedCandidate()
+        case .dropbox, .oneDrive:
+            return nil
         }
     }
 
@@ -490,12 +415,8 @@ final class CloudStorageCenter: ObservableObject {
             case .googleDrive:
                 guard let googleDrive else { throw configurationError(provider) }
                 candidate = try await googleDrive.stageAnotherAccount()
-            case .dropbox:
-                guard let dropbox else { throw configurationError(provider) }
-                candidate = try await dropbox.stageAnotherAccount()
-            case .oneDrive:
-                guard let oneDrive else { throw configurationError(provider) }
-                candidate = try await oneDrive.stageAnotherAccount()
+            case .dropbox, .oneDrive:
+                throw configurationError(provider)
             }
             try ensureCurrentLifecycle(provider, epoch: lifecycleEpoch)
             await CloudConnectionStore.shared.stageCandidate(candidate)
@@ -525,12 +446,8 @@ final class CloudStorageCenter: ObservableObject {
             case .googleDrive:
                 guard let googleDrive else { throw configurationError(provider) }
                 account = try await googleDrive.commitCandidate()
-            case .dropbox:
-                guard let dropbox else { throw configurationError(provider) }
-                account = try await dropbox.commitCandidate()
-            case .oneDrive:
-                guard let oneDrive else { throw configurationError(provider) }
-                account = try await oneDrive.commitCandidate()
+            case .dropbox, .oneDrive:
+                throw configurationError(provider)
             }
             try ensureCurrentLifecycle(provider, epoch: lifecycleEpoch)
             _ = await CloudConnectionStore.shared.setActive(account)
@@ -551,10 +468,8 @@ final class CloudStorageCenter: ObservableObject {
         switch provider {
         case .googleDrive:
             await googleDrive?.discardCandidate()
-        case .dropbox:
-            await dropbox?.discardCandidate()
-        case .oneDrive:
-            await oneDrive?.discardCandidate()
+        case .dropbox, .oneDrive:
+            break
         }
         await CloudConnectionStore.shared.discardCandidate(for: provider)
         await refreshState(for: provider)
@@ -570,12 +485,8 @@ final class CloudStorageCenter: ObservableObject {
         case .googleDrive:
             guard let googleDrive else { throw configurationError(provider) }
             return try await googleDrive.list(folder: folder, cursor: cursor)
-        case .dropbox:
-            guard let dropbox else { throw configurationError(provider) }
-            return try await dropbox.list(folder: folder, cursor: cursor)
-        case .oneDrive:
-            guard let oneDrive else { throw configurationError(provider) }
-            return try await oneDrive.list(folder: folder, cursor: cursor)
+        case .dropbox, .oneDrive:
+            throw configurationError(provider)
         }
     }
 
@@ -585,11 +496,8 @@ final class CloudStorageCenter: ObservableObject {
         case .googleDrive:
             guard let googleDrive else { throw configurationError(provider) }
             return try await googleDrive.listDrives()
-        case .oneDrive:
-            guard let oneDrive else { throw configurationError(provider) }
-            return try await oneDrive.listDrives()
-        case .dropbox:
-            return []
+        case .dropbox, .oneDrive:
+            throw configurationError(provider)
         }
     }
 
@@ -608,16 +516,8 @@ final class CloudStorageCenter: ObservableObject {
                 driveID: driveID,
                 cursor: cursor
             )
-        case .dropbox:
-            guard let dropbox else { throw configurationError(provider) }
-            return try await dropbox.search(query, cursor: cursor)
-        case .oneDrive:
-            guard let oneDrive else { throw configurationError(provider) }
-            return try await oneDrive.search(
-                query,
-                driveID: driveID,
-                cursor: cursor
-            )
+        case .dropbox, .oneDrive:
+            throw configurationError(provider)
         }
     }
 
@@ -654,22 +554,8 @@ final class CloudStorageCenter: ObservableObject {
                 to: destination,
                 progress: progress
             )
-        case .dropbox:
-            guard let dropbox else { throw configurationError(provider) }
-            receipt = try await dropbox.download(
-                item,
-                exportFormat: exportFormat,
-                to: destination,
-                progress: progress
-            )
-        case .oneDrive:
-            guard let oneDrive else { throw configurationError(provider) }
-            receipt = try await oneDrive.download(
-                item,
-                exportFormat: exportFormat,
-                to: destination,
-                progress: progress
-            )
+        case .dropbox, .oneDrive:
+            throw configurationError(provider)
         }
         try CloudTemporaryFileSecurity.secureFile(at: receipt.localURL)
         return receipt
@@ -696,12 +582,11 @@ final class CloudStorageCenter: ObservableObject {
         case .googleDrive:
             result = await googleDrive?.disconnect()
                 ?? CloudDisconnectResult(provider: provider, remoteRevocationStatus: .unsupported)
-        case .dropbox:
-            result = await dropbox?.disconnect()
-                ?? CloudDisconnectResult(provider: provider, remoteRevocationStatus: .unsupported)
-        case .oneDrive:
-            result = await oneDrive?.disconnect()
-                ?? CloudDisconnectResult(provider: provider, remoteRevocationStatus: .unsupported)
+        case .dropbox, .oneDrive:
+            result = CloudDisconnectResult(
+                provider: provider,
+                remoteRevocationStatus: .unsupported
+            )
         }
         if isCurrentLifecycle(provider, epoch: lifecycleEpoch) {
             connectionStates[provider] = .disconnected
@@ -749,12 +634,7 @@ final class CloudStorageCenter: ObservableObject {
                 expectedStoreEpoch: storeEpoch
             )
         case .dropbox, .oneDrive:
-            let storeEpoch = await CloudConnectionStore.shared.connectionEpoch(for: provider)
-            refreshedState = await restoredPersistentProviderState(
-                provider: provider,
-                initialState: await rawProviderState(for: provider),
-                expectedStoreEpoch: storeEpoch
-            )
+            refreshedState = .disconnected
         }
         guard isCurrentLifecycle(provider, epoch: lifecycleEpoch),
               !disconnectingProviders.contains(provider) else { return }
@@ -765,10 +645,8 @@ final class CloudStorageCenter: ObservableObject {
         switch provider {
         case .googleDrive:
             return await googleDrive?.connectionState() ?? .disconnected
-        case .dropbox:
-            return await dropbox?.connectionState() ?? .disconnected
-        case .oneDrive:
-            return await oneDrive?.connectionState() ?? .disconnected
+        case .dropbox, .oneDrive:
+            return .disconnected
         }
     }
 
@@ -788,12 +666,8 @@ final class CloudStorageCenter: ObservableObject {
                 return initialState
             case .disconnected, .needsReauthorization:
                 switch provider {
-                case .dropbox:
-                    guard let dropbox else { return .disconnected }
-                    account = try await dropbox.restorePersistedAccount()
-                case .oneDrive:
-                    guard let oneDrive else { return .disconnected }
-                    account = try await oneDrive.restorePersistedAccount()
+                case .dropbox, .oneDrive:
+                    return .disconnected
                 case .googleDrive:
                     return initialState
                 }
@@ -850,10 +724,8 @@ final class CloudStorageCenter: ObservableObject {
         switch provider {
         case .googleDrive:
             await googleDrive?.clearLocalAuthorizationForAccountBoundary()
-        case .dropbox:
-            await dropbox?.clearLocalAuthorizationForAccountBoundary()
-        case .oneDrive:
-            await oneDrive?.clearLocalAuthorizationForAccountBoundary()
+        case .dropbox, .oneDrive:
+            break
         }
 
         guard isCurrentLifecycle(provider, epoch: lifecycleEpoch),
@@ -946,8 +818,6 @@ final class CloudStorageCenter: ObservableObject {
             url,
             callbackScheme: Constants.CloudStorage.GoogleDrive.redirectScheme
         )
-            || url.scheme == Constants.CloudStorage.Dropbox.callbackScheme
-            || url.scheme == URL(string: Constants.CloudStorage.Microsoft.redirectURI)?.scheme
     }
 
     private static let oauthCallbackDeduplicator = CloudOAuthCallbackDeduplicator()
@@ -971,15 +841,6 @@ final class CloudStorageCenter: ObservableObject {
             // provider-level route/state checks run before any token exchange.
             _ = GoogleDriveSystemWebAuthenticator.handleRedirectURL(url)
             return true
-        }
-        if url.scheme == Constants.CloudStorage.Dropbox.callbackScheme {
-            return DropboxProvider.handleRedirectURL(url)
-        }
-        if url.scheme == URL(string: Constants.CloudStorage.Microsoft.redirectURI)?.scheme {
-            return OneDriveProvider.handleRedirectURL(
-                url,
-                sourceApplication: sourceApplication
-            )
         }
         return false
     }

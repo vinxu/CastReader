@@ -53,20 +53,11 @@ final class ProductAnalyticsTests: XCTestCase {
             "ingest accepts historical queued legacy, while new clients emit global/cn"
         )
         let contractContentSources = Set(domains["contentSource"] ?? [])
-        // This contract is shared by both mobile clients. The App Store target
-        // deliberately omits the unfinished cloud adapters, so their canonical
-        // source values must not be embedded in the shipping binary. Compare
-        // the enabled sources and separately verify the inert placeholders.
-        let excludedCloudSources: Set<String> = ["google_drive", "dropbox", "onedrive"]
-        let unavailableCloudSources: Set<String> = [
-            "unavailable_cloud_a", "unavailable_cloud_b", "unavailable_cloud_c",
-        ]
         XCTAssertEqual(
-            contractContentSources.subtracting(["youtube_android"]).subtracting(excludedCloudSources),
-            Set(AnalyticsContentSource.allCases.map(\.rawValue)).subtracting(unavailableCloudSources)
+            contractContentSources.subtracting(["youtube_android"]),
+            Set(AnalyticsContentSource.allCases.map(\.rawValue))
         )
         XCTAssertTrue(contractContentSources.contains("youtube_android"))
-        XCTAssertTrue(unavailableCloudSources.isSubset(of: Set(AnalyticsContentSource.allCases.map(\.rawValue))))
         XCTAssertEqual(
             Set(domains["contentFormat"] ?? []),
             Set(AnalyticsContentFormat.allCases.map(\.rawValue))
@@ -120,6 +111,10 @@ final class ProductAnalyticsTests: XCTestCase {
             Set(AnalyticsPaywallAction.allCases.map(\.rawValue))
         )
         XCTAssertEqual(
+            Set(domains["accountGateResult"] ?? []),
+            Set(AnalyticsAccountGateResult.allCases.map(\.rawValue))
+        )
+        XCTAssertEqual(
             Set(domains["offerType"] ?? []),
             Set(AnalyticsOfferType.allCases.map(\.rawValue))
         )
@@ -167,6 +162,75 @@ final class ProductAnalyticsTests: XCTestCase {
             XCTAssertFalse(envelope.event.isEmpty)
             XCTAssertEqual(envelope.eventVersion, 2)
             XCTAssertEqual(envelope.serviceRoute, ServiceRoute.globalGateway.rawValue)
+        }
+    }
+
+    func testPaywallGateAndStoreKitEnvelopesSharePurchaseAttemptId() throws {
+        let attemptID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+        let context = AnalyticsEventContext(
+            productArea: .billing,
+            surface: "paywall",
+            entryPoint: "growth_library_ready",
+            purchaseAttemptId: attemptID
+        )
+        let client = AnalyticsClientInfo(
+            environment: "test",
+            platform: "ios",
+            variant: "unit_test",
+            version: "1.0",
+            build: "1",
+            anonymousId: "22222222-2222-4222-8222-222222222222",
+            region: "global",
+            serviceRoute: "global"
+        )
+        let events: [(AnalyticsEventName, AnalyticsProperties)] = [
+            (
+                .paywallAction,
+                .init(
+                    trigger: "growth_library_ready",
+                    productId: "ai.castreader.pro.yearly.v2",
+                    action: AnalyticsPaywallAction.ctaTapped.rawValue
+                )
+            ),
+            (
+                .accountGateResult,
+                .init(
+                    durationMs: 100,
+                    result: AnalyticsAccountGateResult.success.rawValue,
+                    trigger: "growth_library_ready",
+                    productId: "ai.castreader.pro.yearly.v2",
+                    gatePresented: true
+                )
+            ),
+            (
+                .purchaseStart,
+                .init(
+                    trigger: "growth_library_ready",
+                    store: "app_store",
+                    productId: "ai.castreader.pro.yearly.v2"
+                )
+            ),
+            (
+                .purchaseResult,
+                .init(
+                    result: AnalyticsResult.success.rawValue,
+                    trigger: "growth_library_ready",
+                    store: "app_store",
+                    productId: "ai.castreader.pro.yearly.v2"
+                )
+            ),
+        ]
+
+        for (name, properties) in events {
+            let envelope = try AnalyticsEnvelopeFactory.make(
+                name: name,
+                context: context,
+                properties: properties,
+                client: client,
+                appSessionId: "app-session",
+                backendUserId: "backend-user"
+            )
+            XCTAssertEqual(envelope.purchaseAttemptId, attemptID, name.rawValue)
         }
     }
 
@@ -785,9 +849,34 @@ final class ProductAnalyticsTests: XCTestCase {
                     attemptCount: 1,
                     campaignSource: "google_ads",
                     campaignMedium: "cpc",
+                    landingTouchId: "123e4567-e89b-12d3-a456-426614174000",
                     campaignId: "123456789"
                 )
             )
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .adAttribution,
+                properties: .init(
+                    provider: "apple_ads",
+                    attributionResult: "attributed",
+                    landingTouchId: "123e4567-e89b-12d3-a456-426614174000"
+                )
+            ),
+            "the iOS Apple Ads path must never emit the Play landing bridge"
+        )
+        XCTAssertThrowsError(
+            try AnalyticsSchema.validate(
+                .adAttribution,
+                properties: .init(
+                    provider: "play_install_referrer",
+                    attributionResult: "attributed",
+                    campaignSource: "google_ads",
+                    campaignMedium: "cpc",
+                    landingTouchId: "123E4567-E89B-12D3-A456-426614174000"
+                )
+            ),
+            "the landing bridge accepts canonical lowercase UUIDs only"
         )
         XCTAssertThrowsError(
             try AnalyticsSchema.validate(
@@ -1136,6 +1225,281 @@ final class ProductAnalyticsTests: XCTestCase {
             store: "app_store",
             productId: "ai.castreader.pro.monthly"
         )
+    }
+}
+
+@MainActor
+final class AppFirstOpenServiceTests: XCTestCase {
+    func testProductionStartupFreezesClassificationBeforeAppDefaultsAndStartsDelivery() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let appURL = root.appendingPathComponent("CastReader/CastReaderApp.swift")
+        guard FileManager.default.fileExists(atPath: appURL.path) else {
+            throw XCTSkip("startup source contract requires the repository checkout")
+        }
+        let source = try String(contentsOf: appURL, encoding: .utf8)
+        let prepare = try XCTUnwrap(
+            source.range(of: "AppFirstOpenService.prepareInitialState()")?.lowerBound
+        )
+        let firstExistingStartupWrite = try XCTUnwrap(
+            source.range(of: "CloudTemporaryFileJanitor.removeAbandonedImports()")?.lowerBound
+        )
+        let session = try XCTUnwrap(
+            source.range(of: "ProductAnalytics.shared.startAppSession")?.lowerBound
+        )
+        let delivery = try XCTUnwrap(
+            source.range(of: "AppFirstOpenService.shared.start()")?.lowerBound
+        )
+
+        XCTAssertLessThan(prepare, firstExistingStartupWrite)
+        XCTAssertLessThan(session, delivery)
+    }
+
+    func testCleanApplicationDomainIsFreshInstallAndStateIsFrozen() throws {
+        let suiteName = "AppFirstOpenFresh.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let occurredAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let eventId = "11111111-1111-4111-8111-111111111111"
+
+        let state = AppFirstOpenService.prepareInitialState(
+            defaults: defaults,
+            applicationDomainName: suiteName,
+            now: occurredAt,
+            eventId: eventId
+        )
+
+        XCTAssertEqual(state.firstOpenKind, .freshInstall)
+        XCTAssertEqual(state.eventId, eventId.uppercased())
+        XCTAssertEqual(state.occurredAt, occurredAt)
+        XCTAssertEqual(state.ackState, .pending)
+        XCTAssertNil(state.acknowledgedAt)
+        XCTAssertEqual(
+            UserDefaultsAppFirstOpenStateStore(defaults: defaults).load(),
+            state
+        )
+    }
+
+    func testExistingApplicationDomainIsInstrumentationBackfill() throws {
+        let suiteName = "AppFirstOpenBackfill.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set("existing-install", forKey: "visitor_id")
+
+        let state = AppFirstOpenService.prepareInitialState(
+            defaults: defaults,
+            applicationDomainName: suiteName,
+            now: Date(timeIntervalSince1970: 1_800_000_100),
+            eventId: "22222222-2222-4222-8222-222222222222"
+        )
+
+        XCTAssertEqual(state.firstOpenKind, .instrumentationBackfill)
+    }
+
+    func testCorruptInstrumentationStateCannotBecomeFreshInstall() throws {
+        let suiteName = "AppFirstOpenCorrupt.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(
+            Data("not-json".utf8),
+            forKey: UserDefaultsAppFirstOpenStateStore.defaultKey
+        )
+
+        let state = AppFirstOpenService.prepareInitialState(
+            defaults: defaults,
+            applicationDomainName: suiteName,
+            now: Date(timeIntervalSince1970: 1_800_000_200),
+            eventId: "33333333-3333-4333-8333-333333333333"
+        )
+
+        XCTAssertEqual(state.firstOpenKind, .instrumentationBackfill)
+    }
+
+    func testPreparationIsIdempotentAcrossRelaunch() throws {
+        let suiteName = "AppFirstOpenPrepareOnce.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let first = AppFirstOpenService.prepareInitialState(
+            defaults: defaults,
+            applicationDomainName: suiteName,
+            now: Date(timeIntervalSince1970: 1_800_000_300),
+            eventId: "44444444-4444-4444-8444-444444444444"
+        )
+        defaults.set(true, forKey: "later_write")
+
+        let second = AppFirstOpenService.prepareInitialState(
+            defaults: defaults,
+            applicationDomainName: suiteName,
+            now: Date(timeIntervalSince1970: 1_900_000_000),
+            eventId: "55555555-5555-4555-8555-555555555555"
+        )
+
+        XCTAssertEqual(second, first)
+        XCTAssertEqual(second.firstOpenKind, .freshInstall)
+    }
+
+    func testDeliveryRetriesFrozenEnvelopeAndSealsOnlyCollectorAck() async {
+        let occurredAt = Date(timeIntervalSince1970: 1_800_000_400)
+        let acknowledgedAt = Date(timeIntervalSince1970: 1_800_000_500)
+        let initial = AppFirstOpenPersistentStateV1(
+            eventId: "66666666-6666-4666-8666-666666666666",
+            firstOpenKind: .instrumentationBackfill,
+            occurredAt: occurredAt,
+            ackState: .pending,
+            acknowledgedAt: nil
+        )
+        let store = TestAppFirstOpenStateStore(initial: initial)
+        let reporter = TestAppFirstOpenReporter(
+            dispositions: [.transportUnavailable, .accepted]
+        )
+        let service = AppFirstOpenService(
+            stateStore: store,
+            reporter: reporter,
+            now: { acknowledgedAt }
+        )
+
+        await service.deliverPreparedState()
+        XCTAssertEqual(store.load()?.ackState, .pending)
+
+        await service.deliverPreparedState()
+        XCTAssertEqual(store.load()?.ackState, .acknowledged)
+        XCTAssertEqual(store.load()?.acknowledgedAt, acknowledgedAt)
+
+        await service.deliverPreparedState()
+        let calls = await reporter.calls()
+        XCTAssertEqual(calls.count, 2, "acknowledged state must be terminal")
+        XCTAssertEqual(Set(calls.map(\.eventId)), Set([initial.eventId]))
+        XCTAssertEqual(Set(calls.map(\.firstOpenKind)), Set([initial.firstOpenKind]))
+        XCTAssertEqual(Set(calls.map(\.occurredAt)), Set([initial.occurredAt]))
+    }
+
+    func testLibrarySyncReceiptSurvivesRelaunchAndSealsOnlyExactAck() async throws {
+        let suiteName = "LibrarySyncReceiptRestart.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let key = "receipt-test"
+        let startedAt = Date(timeIntervalSince1970: 1_800_010_000)
+        let completedAt = startedAt.addingTimeInterval(4.2)
+        let session = AnalyticsLibraryConnectionSession(
+            bindSessionId: "77777777-7777-4777-8777-777777777777",
+            source: .kindle,
+            entryPoint: "library_onboarding",
+            startedAt: startedAt
+        )
+
+        let firstReporter = TestLibrarySyncReporter(
+            dispositions: [.transportUnavailable]
+        )
+        let firstProcess = AnalyticsLibrarySyncReceiptOutbox(
+            store: UserDefaultsAnalyticsLibrarySyncReceiptStore(
+                defaults: defaults,
+                key: key
+            ),
+            reporter: firstReporter
+        )
+        XCTAssertTrue(firstProcess.persist(
+            session: session,
+            bookCount: 12,
+            occurredAt: completedAt
+        ))
+        await firstProcess.deliverPending()
+        XCTAssertEqual(firstProcess.pendingReceipts().count, 1)
+
+        let secondReporter = TestLibrarySyncReporter(dispositions: [.accepted])
+        let relaunchedProcess = AnalyticsLibrarySyncReceiptOutbox(
+            store: UserDefaultsAnalyticsLibrarySyncReceiptStore(
+                defaults: defaults,
+                key: key
+            ),
+            reporter: secondReporter
+        )
+        let restored = try XCTUnwrap(relaunchedProcess.pendingReceipts().first)
+        XCTAssertEqual(restored.eventId, session.bindSessionId)
+        XCTAssertEqual(restored.bindSessionId, session.bindSessionId)
+        XCTAssertEqual(restored.startedAt, startedAt)
+        XCTAssertEqual(restored.occurredAt, completedAt)
+        XCTAssertEqual(restored.bookCount, 12)
+
+        await relaunchedProcess.deliverPending()
+        XCTAssertTrue(relaunchedProcess.pendingReceipts().isEmpty)
+        await relaunchedProcess.deliverPending()
+        let calls = await secondReporter.calls()
+        XCTAssertEqual(calls, [restored], "duplicate ACK/replay must stay idempotent")
+    }
+
+    func testLibrarySyncDuplicatePersistKeepsFirstFrozenReceipt() throws {
+        let store = TestLibrarySyncReceiptStore()
+        let reporter = TestLibrarySyncReporter(dispositions: [])
+        let outbox = AnalyticsLibrarySyncReceiptOutbox(
+            store: store,
+            reporter: reporter
+        )
+        let startedAt = Date(timeIntervalSince1970: 1_800_020_000)
+        let session = AnalyticsLibraryConnectionSession(
+            bindSessionId: "88888888-8888-4888-8888-888888888888",
+            source: .weread,
+            entryPoint: "weread_connect",
+            startedAt: startedAt
+        )
+
+        XCTAssertTrue(outbox.persist(
+            session: session,
+            bookCount: 4,
+            occurredAt: startedAt.addingTimeInterval(1)
+        ))
+        XCTAssertTrue(outbox.persist(
+            session: session,
+            bookCount: 99,
+            occurredAt: startedAt.addingTimeInterval(99)
+        ))
+
+        let receipt = try XCTUnwrap(outbox.pendingReceipts().first)
+        XCTAssertEqual(outbox.pendingReceipts().count, 1)
+        XCTAssertEqual(receipt.eventId, session.bindSessionId)
+        XCTAssertEqual(receipt.bookCount, 4)
+        XCTAssertEqual(receipt.occurredAt, startedAt.addingTimeInterval(1))
+    }
+
+    func testLibrarySyncReceiptFailureDoesNotSealRecorderOrAcceptEmptyShelf() {
+        let store = TestLibrarySyncReceiptStore(failPersist: true)
+        let outbox = AnalyticsLibrarySyncReceiptOutbox(
+            store: store,
+            reporter: TestLibrarySyncReporter(dispositions: [.transportUnavailable])
+        )
+        let session = AnalyticsLibraryConnectionSession(
+            bindSessionId: "99999999-9999-4999-8999-999999999999",
+            source: .googleBooks,
+            entryPoint: "google_books_connect"
+        )
+        let recorder = AnalyticsLibraryConnectionRecorder(
+            session: session,
+            entryTapAlreadyTracked: true,
+            syncReceiptOutbox: outbox
+        )
+
+        XCTAssertFalse(recorder.record(
+            .syncCompleted,
+            result: .success,
+            bookCount: 0
+        ), "an empty shelf is not the conversion")
+        XCTAssertFalse(recorder.record(
+            .syncCompleted,
+            result: .success,
+            bookCount: 3
+        ), "a failed synchronous receipt must be surfaced")
+        store.failPersist = false
+        XCTAssertTrue(recorder.record(
+            .syncCompleted,
+            result: .success,
+            bookCount: 3
+        ), "receipt failure must not silently seal the terminal state")
+        XCTAssertEqual(outbox.pendingReceipts().count, 1)
     }
 }
 
@@ -1918,6 +2282,130 @@ private actor TestTransport: AnalyticsTransport {
     }
 
     func sentEventIDs() -> [String] { sent }
+}
+
+private final class TestAppFirstOpenStateStore: AppFirstOpenStateStoring, @unchecked Sendable {
+    private let lock = NSLock()
+    private var state: AppFirstOpenPersistentStateV1?
+
+    init(initial: AppFirstOpenPersistentStateV1?) {
+        state = initial
+    }
+
+    func load() -> AppFirstOpenPersistentStateV1? {
+        lock.lock()
+        defer { lock.unlock() }
+        return state
+    }
+
+    func save(_ state: AppFirstOpenPersistentStateV1) {
+        lock.lock()
+        self.state = state
+        lock.unlock()
+    }
+}
+
+private actor TestAppFirstOpenReporter: AppFirstOpenReporting {
+    struct Call: Equatable, Sendable {
+        let firstOpenKind: AnalyticsFirstOpenKind
+        let eventId: String
+        let occurredAt: Date
+    }
+
+    private var dispositions: [AnalyticsDeliveryDisposition]
+    private var recordedCalls: [Call] = []
+
+    init(dispositions: [AnalyticsDeliveryDisposition]) {
+        self.dispositions = dispositions
+    }
+
+    func recordFirstOpen(
+        kind: AnalyticsFirstOpenKind,
+        eventId: String,
+        occurredAt: Date
+    ) -> AnalyticsDeliveryDisposition {
+        recordedCalls.append(.init(
+            firstOpenKind: kind,
+            eventId: eventId,
+            occurredAt: occurredAt
+        ))
+        return dispositions.isEmpty ? .transportUnavailable : dispositions.removeFirst()
+    }
+
+    func calls() -> [Call] { recordedCalls }
+}
+
+private final class TestLibrarySyncReceiptStore:
+    AnalyticsLibrarySyncReceiptStoring,
+    @unchecked Sendable
+{
+    private let lock = NSLock()
+    private var receipts: [AnalyticsLibrarySyncReceiptV1] = []
+    private var shouldFailPersist: Bool
+
+    init(failPersist: Bool = false) {
+        shouldFailPersist = failPersist
+    }
+
+    var failPersist: Bool {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return shouldFailPersist
+        }
+        set {
+            lock.lock()
+            shouldFailPersist = newValue
+            lock.unlock()
+        }
+    }
+
+    func load() throws -> [AnalyticsLibrarySyncReceiptV1] {
+        lock.lock()
+        defer { lock.unlock() }
+        return receipts
+    }
+
+    func persist(
+        _ receipt: AnalyticsLibrarySyncReceiptV1
+    ) throws -> AnalyticsLibrarySyncReceiptV1 {
+        lock.lock()
+        defer { lock.unlock() }
+        if shouldFailPersist {
+            throw AnalyticsLibrarySyncReceiptStoreError.persistenceFailed
+        }
+        if let existing = receipts.first(where: {
+            $0.bindSessionId == receipt.bindSessionId
+        }) {
+            return existing
+        }
+        receipts.append(receipt)
+        return receipt
+    }
+
+    func remove(eventId: String) throws {
+        lock.lock()
+        receipts.removeAll { $0.eventId == eventId }
+        lock.unlock()
+    }
+}
+
+private actor TestLibrarySyncReporter: AnalyticsLibrarySyncReporting {
+    private var dispositions: [AnalyticsDeliveryDisposition]
+    private var recorded: [AnalyticsLibrarySyncReceiptV1] = []
+
+    init(dispositions: [AnalyticsDeliveryDisposition]) {
+        self.dispositions = dispositions
+    }
+
+    func recordLibrarySync(
+        _ receipt: AnalyticsLibrarySyncReceiptV1
+    ) -> AnalyticsDeliveryDisposition {
+        recorded.append(receipt)
+        return dispositions.isEmpty ? .transportUnavailable : dispositions.removeFirst()
+    }
+
+    func calls() -> [AnalyticsLibrarySyncReceiptV1] { recorded }
 }
 
 private final class TestAdAttributionStateStore: AdAttributionStateStoring, @unchecked Sendable {

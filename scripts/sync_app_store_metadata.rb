@@ -20,6 +20,7 @@ BASE_URL = "https://api.appstoreconnect.apple.com"
 LOCALES = %w[en-US zh-Hans ja es-ES fr-FR pt-BR it hi de-DE zh-Hant es-MX].freeze
 WHATS_NEW_ONLY = ENV["ASC_WHATS_NEW_ONLY"] == "1"
 WHATS_NEW_PATH = ENV["ASC_WHATS_NEW_PATH"]
+SKIP_APP_INFO = ENV["ASC_SKIP_APP_INFO"] == "1"
 
 def base64url(value)
   Base64.urlsafe_encode64(value, padding: false)
@@ -198,7 +199,7 @@ else
 end
 exit 0 if VALIDATE_ONLY
 
-unless WHATS_NEW_ONLY
+unless WHATS_NEW_ONLY || SKIP_APP_INFO
   app_info_localizations = request("Get", "/v1/appInfos/#{APP_INFO_ID}/appInfoLocalizations?limit=50")
     .fetch("data").to_h { |item| [item.dig("attributes", "locale"), item] }
 

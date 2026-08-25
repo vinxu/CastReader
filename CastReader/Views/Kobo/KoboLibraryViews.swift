@@ -542,17 +542,22 @@ final class KoboLibrarySyncViewModel:
                 errorCode: "local_commit_failed"
             )
         } else {
+            let verifiedBookCount = pendingBooks.count
+            guard connectionAnalytics.record(
+                .syncCompleted,
+                result: .success,
+                bookCount: verifiedBookCount
+            ) else {
+                errorText = AppLocalized("书架已保存，但同步确认未完成，请重试。")
+                canSync = true
+                return
+            }
             didSync = true
             canSync = false
             statusText = AppLocalized("Kobo 书架已同步")
             detailText = String(
                 format: AppLocalized("已同步 %d 本书。"),
-                store.books.count
-            )
-            connectionAnalytics.record(
-                .syncCompleted,
-                result: .success,
-                bookCount: store.books.count
+                verifiedBookCount
             )
         }
     }

@@ -460,14 +460,22 @@ final class ProManager: ObservableObject {
     // MARK: - 购买 / 恢复
 
     @discardableResult
-    func purchase(_ product: Product, analyticsTrigger: String = "unknown") async -> Bool {
-        let purchaseAttemptId = UUID().uuidString
+    func purchase(
+        _ product: Product,
+        analyticsTrigger: String = "unknown",
+        purchaseAttemptId suppliedPurchaseAttemptId: String? = nil
+    ) async -> Bool {
+        let purchaseAttemptId = suppliedPurchaseAttemptId
+            .flatMap(UUID.init(uuidString:))?
+            .uuidString ?? UUID().uuidString
         let analyticsContext = AnalyticsEventContext(
             productArea: .billing,
             surface: "paywall",
             entryPoint: analyticsTrigger,
             purchaseAttemptId: purchaseAttemptId
         )
+        // These client events diagnose CTA/StoreKit loss only. Verified
+        // StoreKit transactions and the server order ledger remain paid truth.
         ProductAnalytics.shared.track(
             .purchaseStart,
             context: analyticsContext,
@@ -732,7 +740,6 @@ final class ProManager: ObservableObject {
         if pending {
             debugLog("sync-needed reason=\(reason) hasEmail=\(hasEmail ? "Y" : "N") localStoreKit=Y server=N")
         }
-        SafariExtensionBridge.syncFromApp()
     }
 
     private func debugTransaction(_ label: String, _ transaction: Transaction) {
