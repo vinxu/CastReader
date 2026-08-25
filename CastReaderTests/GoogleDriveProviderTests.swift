@@ -351,6 +351,49 @@ final class GoogleDriveProviderTests: XCTestCase {
     }
 
     @MainActor
+    func testSecondConnectReplacesStaleOAuthInsteadOfReturningAuthorizationInProgress()
+        async throws
+    {
+        let store = GoogleDriveTestCredentialStore()
+        let web = GoogleDriveReplacingWebAuthenticator()
+        let transport = GoogleDriveTestTransport(dataHandler: { request in
+            switch request.url?.path {
+            case "/token":
+                return .json(
+                    """
+                    {"access_token":"replacement-access","refresh_token":"replacement-refresh","expires_in":3600}
+                    """
+                )
+            case "/drive/v3/about":
+                return .json(
+                    """
+                    {"user":{"displayName":"Reader","emailAddress":"reader@example.com","permissionId":"permission-42"}}
+                    """
+                )
+            default:
+                XCTFail("Unexpected request: \(request)")
+                return .json("{}", status: 500)
+            }
+        })
+        let provider = makeProvider(transport: transport, store: store, web: web)
+
+        let stale = Task { try await provider.ensureConnected() }
+        while web.authenticationCount == 0 { await Task.yield() }
+
+        let replacement = try await provider.ensureConnected()
+
+        XCTAssertEqual(replacement.displayName, "Reader")
+        XCTAssertEqual(web.authenticationCount, 2)
+        XCTAssertEqual(web.cancellationCount, 1)
+        do {
+            _ = try await stale.value
+            XCTFail("Expected the stale authorization to be cancelled")
+        } catch let error as CloudStorageError {
+            XCTAssertEqual(error, .userCancelled)
+        }
+    }
+
+    @MainActor
     func testEnsureConnectedReusesPersistedReadonlyGrantWithoutOAuth() async throws {
         let account = testAccount()
         let store = GoogleDriveTestCredentialStore(
@@ -2365,6 +2408,48 @@ private final class GoogleDriveSuspendingWebAuthenticator:
 
     func resume(with url: URL) {
         continuation?.resume(returning: url)
+        continuation = nil
+    }
+}
+
+@MainActor
+private final class GoogleDriveReplacingWebAuthenticator:
+    GoogleDriveWebAuthenticating,
+    @unchecked Sendable
+{
+    private(set) var authenticationCount = 0
+    private(set) var cancellationCount = 0
+    private var continuation: CheckedContinuation<URL, Error>?
+
+    func authenticate(url: URL, callbackScheme: String) async throws -> URL {
+        authenticationCount += 1
+        if authenticationCount == 1 {
+            return try await withCheckedThrowingContinuation { continuation in
+                self.continuation = continuation
+            }
+        }
+
+        guard let state = url.queryDictionary["state"] else {
+            throw CloudStorageError.invalidResponse(code: "missing_test_state")
+        }
+        var components = URLComponents(string: "com.example.drive:/oauth2redirect")!
+        components.queryItems = [
+            URLQueryItem(name: "state", value: state),
+            URLQueryItem(name: "code", value: "replacement-code"),
+            URLQueryItem(
+                name: "scope",
+                value: GoogleDriveProvider.Configuration.driveReadonlyScope
+            ),
+        ]
+        guard let callback = components.url else {
+            throw CloudStorageError.invalidResponse(code: "invalid_test_callback")
+        }
+        return callback
+    }
+
+    func cancel() {
+        cancellationCount += 1
+        continuation?.resume(throwing: CloudStorageError.userCancelled)
         continuation = nil
     }
 }

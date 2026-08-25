@@ -10,6 +10,21 @@ import ZIPFoundation
 @testable import CastReader
 
 final class CloudStorageCoreTests: XCTestCase {
+    func testDriveOAuthSchemeIsOwnedByAuthenticationSessionNotAppDeepLinks() throws {
+        let urlTypes = try XCTUnwrap(
+            Bundle.main.object(forInfoDictionaryKey: "CFBundleURLTypes")
+                as? [[String: Any]]
+        )
+        let registeredSchemes = urlTypes.flatMap {
+            $0["CFBundleURLSchemes"] as? [String] ?? []
+        }
+
+        XCTAssertTrue(registeredSchemes.contains("castreader"))
+        XCTAssertFalse(
+            registeredSchemes.contains(Constants.CloudStorage.GoogleDrive.redirectScheme)
+        )
+    }
+
     func testCloudDownloadDestinationPolicyAllowsMissingLeafInCreatedTemporaryParent()
         throws
     {
@@ -162,6 +177,40 @@ final class CloudStorageCoreTests: XCTestCase {
         XCTAssertEqual(
             presentation.message,
             CloudLocalized("此 Google 文档超过 Google Drive 的导出大小限制，无法导入")
+        )
+        XCTAssertEqual(presentation.recovery, .close)
+        XCTAssertFalse(presentation.showsRetry)
+    }
+
+    func testCloudFailurePresentationDoesNotCallPendingOAuthAProviderRejection() {
+        let presentation = CloudFlowFailurePresentation.make(
+            error: CloudStorageError.provider(
+                code: "google_authorization_in_progress",
+                retryable: false
+            ),
+            hasRetrySelection: false
+        )
+
+        XCTAssertEqual(
+            presentation.message,
+            CloudLocalized("云盘暂时无法完成此操作，请重试")
+        )
+        XCTAssertEqual(presentation.recovery, .reconnect)
+        XCTAssertTrue(presentation.showsRetry)
+    }
+
+    func testCloudFailurePresentationExplainsDisabledDriveAPIAsConfiguration() {
+        let presentation = CloudFlowFailurePresentation.make(
+            error: CloudStorageError.provider(
+                code: "google_access_not_configured",
+                retryable: false
+            ),
+            hasRetrySelection: false
+        )
+
+        XCTAssertEqual(
+            presentation.message,
+            CloudLocalized("该云盘尚未完成开发者配置，请稍后再试")
         )
         XCTAssertEqual(presentation.recovery, .close)
         XCTAssertFalse(presentation.showsRetry)

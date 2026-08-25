@@ -85,6 +85,16 @@ struct CloudFlowFailurePresentation: Equatable {
                         message: CloudLocalized("此 Google 文档超过 Google Drive 的导出大小限制，无法导入"),
                         recovery: .close
                     )
+                case "google_authorization_in_progress":
+                    return Self(
+                        message: CloudLocalized("云盘暂时无法完成此操作，请重试"),
+                        recovery: .reconnect
+                    )
+                case "google_access_not_configured":
+                    return Self(
+                        message: CloudLocalized("该云盘尚未完成开发者配置，请稍后再试"),
+                        recovery: .close
+                    )
                 default:
                     if retryable {
                         return transient(CloudLocalized("云盘暂时无法完成此操作，请重试"))

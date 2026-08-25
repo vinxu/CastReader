@@ -126,9 +126,13 @@ final class GoogleDriveSystemWebAuthenticator: NSObject,
                     continuation: continuation
                 )
                 Self.activeAuthenticator = self
+                // Keep the callback owned by AuthenticationServices. Registering
+                // this scheme as a normal app deep link makes iOS relaunch the
+                // SwiftUI scene on some real devices, destroying the presenting
+                // sheet before the authentication session can finish.
                 let webSession = ASWebAuthenticationSession(
                     url: url,
-                    callback: .customScheme(callbackScheme)
+                    callbackURLScheme: callbackScheme
                 ) { [weak self] callbackURL, error in
                     Task { @MainActor [weak self] in
                         self?.finishSessionAttempt(
@@ -147,6 +151,7 @@ final class GoogleDriveSystemWebAuthenticator: NSObject,
                     } catch {
                         return
                     }
+                    Self.logger.error("oauth_callback_timeout")
                     self?.finish(
                         attemptID: attemptID,
                         result: .failure(
@@ -223,13 +228,29 @@ final class GoogleDriveSystemWebAuthenticator: NSObject,
     static func handleRedirectURL(_ url: URL) -> Bool {
         guard let authenticator = activeAuthenticator,
               let attempt = authenticator.attempt,
-              matches(
-                  url,
-                  callbackScheme: attempt.callbackScheme,
-                  redirectURI: attempt.redirectURI,
-                  expectedState: attempt.expectedState
-              ) else {
+              matches(url, callbackScheme: attempt.callbackScheme) else {
             return false
+        }
+        guard matches(
+            url,
+            callbackScheme: attempt.callbackScheme,
+            redirectURI: attempt.redirectURI,
+            expectedState: attempt.expectedState
+        ) else {
+            // Never leave a recognized callback hanging until the 180-second
+            // timeout. Reject it without exchanging a code; route and state are
+            // still mandatory security boundaries.
+            logger.error("oauth_app_callback_rejected")
+            authenticator.finish(
+                attemptID: attempt.id,
+                result: .failure(
+                    CloudStorageError.invalidResponse(
+                        code: "google_callback_contract_mismatch"
+                    )
+                ),
+                cancelSession: true
+            )
+            return true
         }
         logger.notice("oauth_app_callback_received")
         #if DEBUG
@@ -1015,11 +1036,13 @@ actor GoogleDriveProvider: CloudAtomicPickerProvider, CloudDriveListingProvider 
         expectedAccountKey: String? = nil
     ) async throws -> CloudAtomicPickResult {
         try validateConfiguration()
-        guard authorizingEpoch == nil else {
-            throw CloudStorageError.provider(
-                code: "google_authorization_in_progress",
-                retryable: false
-            )
+        if authorizingEpoch != nil {
+            // A second user-initiated open means the original UI no longer owns
+            // its authorization session. Invalidate that generation and start
+            // cleanly instead of surfacing a permanent provider rejection.
+            epoch &+= 1
+            authorizingEpoch = nil
+            await webAuthenticator.cancel()
         }
 
         let operationEpoch = epoch
@@ -1836,11 +1859,12 @@ actor GoogleDriveProvider: CloudAtomicPickerProvider, CloudDriveListingProvider 
         forceAccountSelection: Bool
     ) async throws -> GoogleDriveCredential {
         try validateConfiguration()
-        guard authorizingEpoch == nil else {
-            throw CloudStorageError.provider(
-                code: "google_authorization_in_progress",
-                retryable: false
-            )
+        if authorizingEpoch != nil {
+            // Replace a stale presentation generation. The cancelled operation
+            // keeps its old epoch and therefore cannot clear or commit this one.
+            epoch &+= 1
+            authorizingEpoch = nil
+            await webAuthenticator.cancel()
         }
 
         let operationEpoch = epoch

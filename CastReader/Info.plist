@@ -62,14 +62,6 @@
 				<string>castreader</string>
 			</array>
 		</dict>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>com.same.castreader.google-drive</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>$(GOOGLE_DRIVE_REDIRECT_SCHEME)</string>
-			</array>
-		</dict>
 	</array>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
