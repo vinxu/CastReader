@@ -10,12 +10,145 @@ import UIKit
 
 class CastReaderUITests: XCTestCase {
 
-    /// 声音克隆发布开关关闭时，不向用户暴露尚未开放的「已创建」入口。
-    func testVoiceBrowserHidesCreatedTabWhileFeatureDisabled() throws {
+    /// 声音克隆发布后必须显示「已创建」入口；未登录测试态仍由账号闸门保护。
+    func testVoiceBrowserShowsCreatedTabAndKeepsAccountGate() throws {
         let app = launchZh()
         app.tabBars.buttons["音色"].tap()
         XCTAssertTrue(app.buttons["探索"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["已创建"].exists)
+        let created = app.buttons["已创建"]
+        XCTAssertTrue(created.waitForExistence(timeout: 5))
+        created.tap()
+        XCTAssertTrue(app.staticTexts["登录后创建声音"].waitForExistence(timeout: 5))
+    }
+
+    func testHomeVoiceFeatureBannersRouteToExploreAndCreated() throws {
+        let app = launchZh()
+
+        let discover = app.buttons["homeVoiceDiscoverBanner"]
+        let clone = app.buttons["homeVoiceCloneBanner"]
+        XCTAssertTrue(discover.waitForExistence(timeout: 5))
+        XCTAssertTrue(clone.waitForExistence(timeout: 5))
+
+        // The banners intentionally live at the end of Home, immediately before
+        // the optional Pro card. Scroll to the end before inspecting their frames.
+        for _ in 0..<10 {
+            app.swipeUp()
+        }
+        XCTAssertTrue(discover.isHittable)
+        XCTAssertTrue(clone.isHittable)
+
+        XCTAssertEqual(discover.frame.width, clone.frame.width, accuracy: 0.5)
+        XCTAssertEqual(discover.frame.height, clone.frame.height, accuracy: 0.5)
+        XCTAssertEqual(discover.frame.minY, clone.frame.minY, accuracy: 0.5)
+
+        let windowFrame = app.windows.firstMatch.frame
+        let leftInset = discover.frame.minX - windowFrame.minX
+        let rightInset = windowFrame.maxX - clone.frame.maxX
+        XCTAssertEqual(leftInset, rightInset, accuracy: 1)
+        XCTAssertEqual(clone.frame.minX - discover.frame.maxX, 12, accuracy: 1)
+
+        let proCard = app.otherElements["homeProCard"]
+        if proCard.exists {
+            XCTAssertLessThan(clone.frame.maxY, proCard.frame.minY)
+        }
+
+        discover.tap()
+        XCTAssertTrue(app.buttons["探索"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["性别"].waitForExistence(timeout: 5))
+
+        app.tabBars.buttons["首页"].tap()
+        XCTAssertTrue(clone.waitForExistence(timeout: 5))
+        clone.tap()
+        XCTAssertTrue(app.buttons["已创建"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["登录后创建声音"].waitForExistence(timeout: 5))
+    }
+
+    /// Debug-only presentation hook lets UI automation verify the complete
+    /// recording shell without bypassing the production account boundary.
+    func testVoiceCloneDoubaoStyleRecordingShell() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
+            "-CastReaderOpenVoiceCloneCreation",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        app.tabBars.buttons["音色"].tap()
+        let created = app.buttons["已创建"]
+        XCTAssertTrue(created.waitForExistence(timeout: 5))
+        created.tap()
+
+        XCTAssertTrue(app.staticTexts["克隆我的声音"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["录制自己的声音"].exists)
+        XCTAssertTrue(app.staticTexts["找一处安静的地方"].exists)
+        XCTAssertTrue(app.staticTexts["严格按照文本朗读"].exists)
+        XCTAssertTrue(
+            app.staticTexts[
+                "所有用户均可创建和试听声音；Pro 可用于朗读和解读，每个会员周期 120 分钟。"
+            ].exists
+        )
+
+        XCTAssertTrue(
+            app.staticTexts[
+                "继续即表示你确认录制的是本人声音，并同意仅在 App 内用于生成语音。"
+            ].exists
+        )
+        XCTAssertFalse(app.switches.firstMatch.exists)
+        let confirm = app.buttons["voiceCloneIntroConfirmButton"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        let confirmEnabled = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "enabled == true"),
+            object: confirm
+        )
+        XCTAssertEqual(XCTWaiter().wait(for: [confirmEnabled], timeout: 3), .completed)
+        confirm.tap()
+
+        XCTAssertTrue(app.staticTexts["请朗读"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            app.staticTexts["我最喜欢的事情就是学习啦，我每天都会看书，学各种知识，希望变得更聪明！"]
+                .exists
+        )
+        XCTAssertTrue(app.descendants(matching: .any)["voiceCloneHoldButton"].exists)
+    }
+
+    /// Runtime language overrides must reach the complete clone flow rather
+    /// than only translating the surrounding Voice tab. This catches the
+    /// previous regression where every locale still received the Chinese
+    /// recording script and instructions.
+    func testVoiceCloneRecordingShellFollowsEnglishAppLanguage() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-interfaceLanguage", "en",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
+            "-CastReaderOpenVoiceCloneCreation",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        app.tabBars.buttons["Voice"].tap()
+        let created = app.buttons["Created"]
+        XCTAssertTrue(created.waitForExistence(timeout: 5))
+        created.tap()
+
+        XCTAssertTrue(app.staticTexts["Clone My Voice"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["克隆我的声音"].exists)
+        app.buttons["voiceCloneIntroConfirmButton"].tap()
+
+        XCTAssertTrue(app.staticTexts["Please Read"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            app.staticTexts[
+                "My favorite thing is learning. I read every day, discover new ideas, and hope to understand the world a little better."
+            ].exists
+        )
+        XCTAssertFalse(app.staticTexts["请朗读"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["voiceCloneHoldButton"].exists)
     }
 
     /// The Italian reader's exact path, end to end: a page narrated in English,

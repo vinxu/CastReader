@@ -401,7 +401,7 @@ final class ServiceRoutingTests: XCTestCase {
         )
         XCTAssertTrue(source.contains("let region = await AppRegion.prepareForCurrentProcess()"))
         XCTAssertTrue(source.contains("await ServiceRouting.bootstrapForCurrentProcess("))
-        XCTAssertTrue(source.contains("async let computeProbe = ComputeRouting.probeFirstPartyGateways"))
+        XCTAssertFalse(source.contains("async let computeProbe = ComputeRouting.probeFirstPartyGateways"))
         XCTAssertTrue(source.contains("await ComputeRouting.bootstrapForCurrentProcess("))
         XCTAssertTrue(source.contains("if startup.isReady {\n                    RouteReadyRoot()"))
         XCTAssertTrue(source.contains("@StateObject private var visitorService = VisitorService.shared"))
@@ -673,6 +673,8 @@ final class ServiceRoutingTests: XCTestCase {
     }
 
     func testComputeRouteFreezesForEntireColdLaunch() async {
+        ServiceRouting.overrideRoute = .chinaGateway
+        resetSnapshots()
         let unavailable = ComputeRouting.NetworkProbe(
             china: .unavailable,
             global: .unavailable,
@@ -696,10 +698,13 @@ final class ServiceRoutingTests: XCTestCase {
         )
 
         XCTAssertEqual(first.primary, .chinaGateway)
+        XCTAssertEqual(first.provenance, .accountRoute)
         XCTAssertEqual(laterConflictingSignal, first)
     }
 
     func testAnonymousTTSNeverResendsPayloadAcrossComputeRoutes() async {
+        ServiceRouting.overrideRoute = .chinaGateway
+        resetSnapshots()
         let unavailable = ComputeRouting.NetworkProbe(
             china: .unavailable,
             global: .unavailable,
@@ -746,6 +751,7 @@ final class ServiceRoutingTests: XCTestCase {
 
     func testAnonymousTTSDoesNotFallbackForRateLimitOrAuthContractFailure() async {
         for status in [401, 422, 429, 500] {
+            ServiceRouting.overrideRoute = .chinaGateway
             resetSnapshots()
             let unavailable = ComputeRouting.NetworkProbe(
                 china: .unavailable,
@@ -788,8 +794,8 @@ final class ServiceRoutingTests: XCTestCase {
         }
     }
 
-    func testDisabledCloneVoiceFallsBackToAnonymousFrozenComputeTTS() async throws {
-        XCTAssertFalse(Constants.Features.voiceCloningEnabled)
+    func testEnabledCloneVoiceNeverFallsBackToAnonymousComputeTTS() async throws {
+        XCTAssertTrue(Constants.Features.voiceCloningEnabled)
         _ = await ComputeRouting.bootstrapForCurrentProcess(
             timeZoneIdentifier: "Asia/Shanghai",
             arguments: [],
@@ -801,23 +807,11 @@ final class ServiceRoutingTests: XCTestCase {
             )
         )
 
+        _ = MobileSessionStore.detachLocalSession(for: ServiceRouting.current)
         var requestCount = 0
         RoutingURLProtocol.handler = { request in
             requestCount += 1
-            XCTAssertEqual(request.url?.host, "api.castreader.cn")
-            XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
-            XCTAssertNil(request.value(forHTTPHeaderField: "X-Auth-Provider"))
-            let body = try XCTUnwrap(request.httpBody)
-            let object = try XCTUnwrap(
-                try JSONSerialization.jsonObject(with: body) as? [String: Any]
-            )
-            let voice = try XCTUnwrap(object["voice"] as? String)
-            XCTAssertFalse(voice.hasPrefix("vc_"))
-            let response = HTTPURLResponse(
-                url: request.url!, statusCode: 200, httpVersion: nil,
-                headerFields: ["Content-Type": "application/json"]
-            )!
-            return (response, Data(#"{"audio":"","timestamps":[]}"#.utf8))
+            throw URLError(.userAuthenticationRequired)
         }
         let routingSession = makeRoutingSession()
         let service = APIService(
@@ -828,13 +822,20 @@ final class ServiceRoutingTests: XCTestCase {
             ]
         )
 
-        _ = try await service.generateTTS(
-            text: "hello",
-            voice: "vc_disabled_clone",
-            language: "en"
-        )
+        do {
+            _ = try await service.generateTTS(
+                text: "hello",
+                voice: "vc_requires_session",
+                language: "en"
+            )
+            XCTFail("a cloned voice must require a first-party mobile session")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(error, .sessionUnavailable)
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
 
-        XCTAssertEqual(requestCount, 1)
+        XCTAssertEqual(requestCount, 0, "clone synthesis must not downgrade to anonymous TTS")
     }
 
     func testExplicitCredentialSessionsNeverPersistOrSendCookies() async throws {

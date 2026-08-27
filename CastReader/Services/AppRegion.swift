@@ -9,8 +9,8 @@
 //
 //  `AppRegion` 按 **App Store storefront** 做发行区域判定，回答「这台设备属于
 //    哪个发行版本，适用哪套合规与商业规则」；出差不改变发行区域。
-//  账号/Pro/支付/上传等账号域由独立 `ServiceRouting` 决定；TTS、QuickRead、
-//  音色目录/试听/头像由 `ComputeRouting` 按冷启动位置快照决定。
+//  账号/Pro/支付/上传等账号域由 `ServiceRouting` 决定；TTS、QuickRead、
+//  音色目录/试听/头像必须跟随同一区域，不再按物理网络跨区选择。
 //
 
 import Foundation

@@ -272,7 +272,7 @@ class ImportViewModel: ObservableObject {
         // Clean up prefix - remove trailing slash if present
         let cleanPrefix = sts.prefix.hasSuffix("/") ? String(sts.prefix.dropLast()) : sts.prefix
         let key = "\(cleanPrefix)/\(UUID().uuidString)_\(filename)"
-        let host = "\(sts.bucket).cos.\(sts.region).myqcloud.com"
+        let host = sts.uploadHost
 
         // URL encode the key for the URL
         guard let encodedKey = key.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {

@@ -2004,6 +2004,23 @@ class CastReaderTests: XCTestCase {
         )
     }
 
+    func testHighlightPolicyUsesSentencesForBlockScriptsAndWordsForLetterLanguages() {
+        let sample = [TTSTimestamp(word: "test", startTime: 0.1, endTime: 0.4)]
+        for language in ["zh", "zh-Hans", "ja-JP", "ko_KR"] {
+            XCTAssertFalse(TTSHighlightPolicy.usesWordTimestamps(language: language))
+            XCTAssertTrue(
+                TTSHighlightPolicy.displayTimestamps(sample, language: language).isEmpty
+            )
+        }
+        for language in ["en", "fr-FR", "de", "es", "pt-BR", "hi"] {
+            XCTAssertTrue(TTSHighlightPolicy.usesWordTimestamps(language: language))
+            XCTAssertEqual(
+                TTSHighlightPolicy.displayTimestamps(sample, language: language).count,
+                1
+            )
+        }
+    }
+
     func testSpeechTextSanitizerConvertsMusicMarkersIntoSentenceBoundaries() {
         let lyrics = "♪ Inside we both know what's been going ♪ ♪ We know the game and we're gonna play it ♪"
         let sanitized = SpeechTextSanitizer.sanitizedForTTS(lyrics)
@@ -2113,12 +2130,15 @@ final class LocalizationCatalogTests: XCTestCase {
     }
 
     private func formatSignature(_ value: String) throws -> [String] {
+        // A literal percent (`%%`) is not a format argument. Removing it first
+        // also prevents text such as "%% left" from being misread as `%e`.
+        let normalized = value.replacingOccurrences(of: "%%", with: "")
         let pattern = #"%(?:\d+\$)?[-+0 #']*(?:\d+|\*)?(?:\.\d+)?(?:hh|ll|h|l|z|t|j)?([@diuoxXfFeEgGaAcCsSp])"#
         let regex = try NSRegularExpression(pattern: pattern)
-        let range = NSRange(value.startIndex..<value.endIndex, in: value)
-        return regex.matches(in: value, range: range).compactMap { match in
-            guard let scalarRange = Range(match.range(at: 1), in: value) else { return nil }
-            let scalar = String(value[scalarRange])
+        let range = NSRange(normalized.startIndex..<normalized.endIndex, in: normalized)
+        return regex.matches(in: normalized, range: range).compactMap { match in
+            guard let scalarRange = Range(match.range(at: 1), in: normalized) else { return nil }
+            let scalar = String(normalized[scalarRange])
             if "diuoxXc".contains(scalar) { return "integer" }
             if "fFeEgGaA".contains(scalar) { return "float" }
             if scalar == "@" { return "object" }
@@ -2477,6 +2497,64 @@ final class LocalizationCatalogTests: XCTestCase {
             missing.isEmpty,
             "Static AppLocalized literals missing from Localizable.xcstrings:\n\(report)"
         )
+    }
+
+    func testVoiceCloneAndPlayerCopyIsLocalizedInEveryAppLanguage() throws {
+        let requiredKeys = [
+            "%@ · 点击重试",
+            "%.1f 秒 · 至少 3 秒",
+            "不要增字、漏字或重复，参考文本会用于准确还原音色。",
+            "克隆我的声音",
+            "只需按当前语言录制一次，生成的声音可用于全部支持的朗读语言。",
+            "声音",
+            "声音列表暂未更新",
+            "声音已创建",
+            "实时录音音量",
+            "已创建的声音会保留显示",
+            "已使用 %@ 分钟，剩余 %@ 分钟，%@",
+            "录制一段清晰语音，即可创建一个可跨语言使用的个人音色。",
+            "录制自己的声音",
+            "录制文案已跟随你的 App 语言，生成的声音可以跨语言使用",
+            "录音中，请朗读…",
+            "找一处安静的地方",
+            "按住录制",
+            "按住录制，松手发送，上移取消",
+            "按住录制，约 10 秒完成",
+            "本月 120 分钟的克隆音色额度已用完。你可以切换到预设音色继续朗读或解读。",
+            "松手取消",
+            "松手完成",
+            "松手完成，上移取消",
+            "正在安全上传录音并提取音色，通常只需十几秒。",
+            "正在生成你的声音",
+            "正在确认声音创建名额…",
+            "正在载入声音…",
+            "确认录制",
+            "立即使用",
+            "需要 Pro 才能用于朗读和解读",
+            "可用于全部 %lld 种支持语言",
+            "第 %1$lld/%2$lld 段",
+            "第 %1$lld/%2$lld 段…",
+        ]
+        let root = try catalog(named: "Localizable")
+        let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+
+        for key in requiredKeys {
+            let entry = try XCTUnwrap(strings[key] as? [String: Any], "Missing key: \(key)")
+            let localizations = try XCTUnwrap(entry["localizations"] as? [String: Any])
+            for locale in translatedLocales {
+                let localization = try XCTUnwrap(
+                    localizations[locale] as? [String: Any],
+                    "Missing \(locale): \(key)"
+                )
+                let unit = try XCTUnwrap(localization["stringUnit"] as? [String: Any])
+                let value = try XCTUnwrap(unit["value"] as? String)
+                XCTAssertEqual(unit["state"] as? String, "translated")
+                XCTAssertFalse(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                if locale != "zh-Hans" {
+                    XCTAssertNotEqual(value, key, "\(locale) must not show the Chinese source: \(key)")
+                }
+            }
+        }
     }
 
     func testInfoPlistCatalogCoversAllAppLocales() throws {

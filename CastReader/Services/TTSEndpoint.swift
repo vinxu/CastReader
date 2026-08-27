@@ -2,10 +2,11 @@
 //  TTSEndpoint.swift
 //  CastReader
 //
-//  Compute routing is deliberately separate from ServiceRouting:
-//  - ServiceRouting owns account, Pro, document and analytics identity.
-//  - ComputeRouting selects the nearest TTS / QuickRead compute plane for the
-//    current physical network. It never changes the signed-in account scope.
+//  Compute and account routing are one regional boundary:
+//  - ServiceRouting owns account, Pro, document, upload and analytics identity.
+//  - ComputeRouting is a compatibility facade whose live snapshot is always
+//    bound to that same route. Network location must never move authenticated
+//    text or cloned-voice requests into the other region.
 //
 
 import CoreTelephony
@@ -37,6 +38,7 @@ enum ComputeRouting {
     }
 
     enum Provenance: String, Equatable, Sendable {
+        case accountRoute
         case debugOverride
         case networkCountry
         case simCountry
@@ -52,12 +54,7 @@ enum ComputeRouting {
 
     static var currentSnapshot: Snapshot {
         runtime.snapshot {
-            resolve(
-                timeZoneIdentifier: TimeZone.current.identifier,
-                networkCountry: nil,
-                simCountryCodes: currentSIMCountryCodes(),
-                arguments: ProcessInfo.processInfo.arguments
-            )
+            accountBoundSnapshot()
         }
     }
 
@@ -67,9 +64,9 @@ enum ComputeRouting {
     @discardableResult
     static func freezeForCurrentProcess() -> Snapshot { currentSnapshot }
 
-    /// Resolve and freeze the compute plane before APIService / QuickReadService
-    /// singletons are constructed. The probes are first-party, carry no account
-    /// credential or document text and have a strict shared deadline.
+    /// Freeze the compute plane before APIService / QuickReadService singletons
+    /// are constructed. The legacy signal parameters remain as a source-compatible
+    /// test seam, but they cannot change the live regional boundary.
     @discardableResult
     static func bootstrapForCurrentProcess(
         timeZoneIdentifier: String = TimeZone.current.identifier,
@@ -79,27 +76,21 @@ enum ComputeRouting {
         precomputedProbe: NetworkProbe? = nil
     ) async -> Snapshot {
         if let frozen = runtime.frozenSnapshot { return frozen }
-        let result: NetworkProbe
-        if let precomputedProbe {
-            result = precomputedProbe
-        } else {
-            result = await probeFirstPartyGateways(timeout: requestTimeout)
-        }
-        return runtime.snapshot {
-            resolve(
-                timeZoneIdentifier: timeZoneIdentifier,
-                networkCountry: result.country,
-                simCountryCodes: simCountryCodes ?? currentSIMCountryCodes(),
-                arguments: arguments
-            )
-        }
+        _ = timeZoneIdentifier
+        _ = requestTimeout
+        _ = arguments
+        _ = simCountryCodes
+        _ = precomputedProbe
+        return runtime.snapshot { accountBoundSnapshot() }
     }
 
-    /// Generation locality is independent from product/account scope. A
-    /// process freezes exactly one route using the cross-platform signal order:
-    /// Debug override -> first-party network country -> SIM -> time zone ->
-    /// global. Latency/reachability, locale and system language are never used
-    /// as geography.
+    private static func accountBoundSnapshot() -> Snapshot {
+        Snapshot(primary: ServiceRouting.current, provenance: .accountRoute)
+    }
+
+    /// Legacy pure resolver retained for diagnostic and migration tests only.
+    /// Production bootstrap does not call it: independent regional databases
+    /// require generation to follow the authenticated account route exactly.
     static func resolve(
         timeZoneIdentifier: String,
         networkCountry: NetworkCountryObservation? = nil,

@@ -104,6 +104,7 @@ struct MainTabView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.requestReview) private var requestReview
     @State private var selectedTab: Int
+    @State private var voiceBrowserLaunchRequest: VoiceBrowserLaunchRequest?
     @State private var miniPlayerTop: CGFloat?
     @State private var tabContentBottom: CGFloat?
     @State private var isImportingSharedContent = false
@@ -136,6 +137,7 @@ struct MainTabView: View {
 
     init() {
         _selectedTab = State(initialValue: 0)
+        _voiceBrowserLaunchRequest = State(initialValue: nil)
 
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
@@ -172,6 +174,10 @@ struct MainTabView: View {
                             $0,
                             entryPoint: "library_onboarding_reminder"
                         )
+                    },
+                    onOpenVoiceBrowser: { tab in
+                        voiceBrowserLaunchRequest = VoiceBrowserLaunchRequest(tab: tab)
+                        selectedTab = 2
                     }
                 )
                     .tabItem { Label("首页", systemImage: "house.fill") }
@@ -184,7 +190,10 @@ struct MainTabView: View {
                         Text("")
                     }
                     .tag(1)
-                VoiceBrowserView(presentation: .tab)
+                VoiceBrowserView(
+                    presentation: .tab,
+                    launchRequest: voiceBrowserLaunchRequest
+                )
                     .tabItem { Label("音色", systemImage: "waveform") }
                     .tag(2)
             }
@@ -485,7 +494,11 @@ struct MainTabView: View {
             case .signIn:
                 LoginView()
             case .paywall:
-                PaywallView(analyticsTrigger: "voice_clone", analyticsSurface: "voice_clone")
+                PaywallView(
+                    reason: AppLocalized("免费版可创建并试听自己的声音。Pro 可将自己的声音用于朗读和解读，每月 120 分钟。"),
+                    analyticsTrigger: "voice_clone",
+                    analyticsSurface: "voice_clone"
+                )
             case .message(let message):
                 NavigationStack {
                     ContentUnavailableView("声音克隆", systemImage: "waveform.badge.exclamationmark", description: Text(message))

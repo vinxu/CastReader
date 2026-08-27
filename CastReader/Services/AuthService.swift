@@ -629,10 +629,22 @@ final class AuthService: NSObject, ObservableObject {
             )
         )
 
-        // 登录后立刻按账号维度刷新 Pro，避免继续停留在 device_id 维度。
-        await linkGrowthIdentityIfAuthenticated()
+        // The verified first-party session and account above complete login.
+        // Entitlement/growth refreshes are follow-up work and must never keep
+        // the login sheet spinning when that control-plane dependency is slow
+        // or temporarily unavailable. Preserve the account boundary so a late
+        // response from this login cannot refresh a different account.
+        let signedInEpoch = accountTransitionEpoch
         ProManager.shared.refreshSyncState(reason: "phone-sign-in")
-        await ProManager.shared.refresh()
+        Task { @MainActor [weak self] in
+            guard let self,
+                  self.accountTransitionEpoch == signedInEpoch,
+                  self.isSignedIn else { return }
+            _ = await self.linkGrowthIdentityIfAuthenticated()
+            guard self.accountTransitionEpoch == signedInEpoch,
+                  self.isSignedIn else { return }
+            await ProManager.shared.refresh()
+        }
     }
 
     /// 注销账号：先请求后端删除，再清空本地身份。

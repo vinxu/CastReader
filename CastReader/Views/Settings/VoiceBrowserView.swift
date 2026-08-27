@@ -13,6 +13,16 @@ enum VoiceBrowserPresentation: Equatable {
     case playerOverlay
 }
 
+struct VoiceBrowserLaunchRequest: Equatable {
+    let id: UUID
+    let tab: VoiceBrowserTab
+
+    init(tab: VoiceBrowserTab) {
+        id = UUID()
+        self.tab = tab
+    }
+}
+
 /// Player-owned voice selection is rendered inside the app's root ZStack
 /// instead of a UIKit sheet. Presenting a sheet from a control embedded in the
 /// Kindle reader temporarily changes the underlying WKWebView geometry on
@@ -67,6 +77,7 @@ struct VoiceBrowserView: View {
     @ObservedObject private var library: VoiceLibraryStore
     @ObservedObject private var samplePlayer: VoiceSamplePlayer
     @ObservedObject private var voiceSwitch: VoiceSwitchStatusCenter
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     private let presentation: VoiceBrowserPresentation
     /// The reader seeds the panel with the language it is currently narrating in.
     /// It is the initial selection, not a lock: it used to filter everything —
@@ -77,6 +88,7 @@ struct VoiceBrowserView: View {
     /// Supplied by read-aloud only: picking a language re-narrates the content in it.
     private let onCorrectReadingLanguage: ((String) -> Void)?
     private let onDone: (() -> Void)?
+    private let launchRequest: VoiceBrowserLaunchRequest?
 
     @State private var tab: VoiceBrowserTab = .explore
     @State private var searchText = ""
@@ -92,14 +104,17 @@ struct VoiceBrowserView: View {
     init(
         presentation: VoiceBrowserPresentation = .sheet,
         language: String? = nil,
+        launchRequest: VoiceBrowserLaunchRequest? = nil,
         onCorrectReadingLanguage: ((String) -> Void)? = nil,
         onDone: (() -> Void)? = nil
     ) {
         self.presentation = presentation
         let normalized = language.map(VoiceCatalog.normalizedLanguage) ?? ""
         self.initialLanguage = normalized.isEmpty ? nil : normalized
+        self.launchRequest = launchRequest
         self.onCorrectReadingLanguage = onCorrectReadingLanguage
         self.onDone = onDone
+        _tab = State(initialValue: launchRequest?.tab ?? .explore)
         _settings = ObservedObject(wrappedValue: .shared)
         _pro = ObservedObject(wrappedValue: .shared)
         _catalog = ObservedObject(wrappedValue: .shared)
@@ -115,14 +130,17 @@ struct VoiceBrowserView: View {
         library: VoiceLibraryStore,
         presentation: VoiceBrowserPresentation = .sheet,
         language: String? = nil,
+        launchRequest: VoiceBrowserLaunchRequest? = nil,
         onCorrectReadingLanguage: ((String) -> Void)? = nil,
         onDone: (() -> Void)? = nil
     ) {
         self.presentation = presentation
         let normalized = language.map(VoiceCatalog.normalizedLanguage) ?? ""
         self.initialLanguage = normalized.isEmpty ? nil : normalized
+        self.launchRequest = launchRequest
         self.onCorrectReadingLanguage = onCorrectReadingLanguage
         self.onDone = onDone
+        _tab = State(initialValue: launchRequest?.tab ?? .explore)
         _settings = ObservedObject(wrappedValue: settings)
         _pro = ObservedObject(wrappedValue: pro)
         _catalog = ObservedObject(wrappedValue: catalog)
@@ -223,10 +241,11 @@ struct VoiceBrowserView: View {
         }
         .onDisappear { samplePlayer.stop() }
         .onAppear {
-            if !Constants.Features.voiceCloningEnabled, tab == .created {
-                tab = .explore
-            }
+            applyLaunchRequest(launchRequest)
             synchronizeBrowserLanguage()
+        }
+        .onChange(of: launchRequest) { request in
+            applyLaunchRequest(request)
         }
         .onChange(of: catalog.revision) { _ in synchronizeBrowserLanguage() }
         .onChange(of: library.browserLanguage) { _ in
@@ -236,6 +255,20 @@ struct VoiceBrowserView: View {
             recommendedOnly = false
             samplePlayer.stop()
         }
+    }
+
+    private func applyLaunchRequest(_ request: VoiceBrowserLaunchRequest?) {
+        guard let request else {
+            if !Constants.Features.voiceCloningEnabled, tab == .created {
+                tab = .explore
+            }
+            return
+        }
+        tab = request.tab == .created && !Constants.Features.voiceCloningEnabled
+            ? .explore
+            : request.tab
+        searchText = ""
+        samplePlayer.stop()
     }
 
     private var categoryTabs: some View {
@@ -354,7 +387,10 @@ struct VoiceBrowserView: View {
 
     private var selectedLanguageName: String {
         guard let selectedLanguage else { return library.browserLanguage.uppercased() }
-        return VoiceBrowserLanguage.displayName(for: selectedLanguage)
+        return VoiceBrowserLanguage.displayName(
+            for: selectedLanguage,
+            locale: appLanguage.locale
+        )
     }
 
     private var sourceVoices: [VoiceOption] {
@@ -609,6 +645,7 @@ struct PlaybackVoicePanelOverlay: View {
 
 private struct VoiceLanguagePickerView: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     let title: String
     let languages: [VoiceCatalogLanguageOption]
     @Binding var selection: String
@@ -623,7 +660,10 @@ private struct VoiceLanguagePickerView: View {
                 } label: {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(VoiceBrowserLanguage.displayName(for: language))
+                            Text(VoiceBrowserLanguage.displayName(
+                                for: language,
+                                locale: appLanguage.locale
+                            ))
                                 .font(.body.weight(.medium))
                                 .foregroundStyle(AppTheme.foreground)
                             Text(languageMetadata(language))
@@ -657,7 +697,11 @@ private struct VoiceLanguagePickerView: View {
 
     private var filteredLanguages: [VoiceCatalogLanguageOption] {
         languages.filter {
-            VoiceBrowserLanguage.matchesSearch($0, query: searchText)
+            VoiceBrowserLanguage.matchesSearch(
+                $0,
+                query: searchText,
+                locale: appLanguage.locale
+            )
         }
     }
 
@@ -689,6 +733,7 @@ private struct VoiceSwitchBanner: View {
 }
 
 private struct VoiceBrowserRow: View {
+    @ObservedObject private var appLanguage = AppLanguageManager.shared
     let voice: VoiceOption
     let isSelected: Bool
     let isFavorite: Bool
@@ -780,7 +825,7 @@ private struct VoiceBrowserRow: View {
     }
 
     private var localizedDescription: String? {
-        let isChinese = Locale.current.language.languageCode?.identifier == "zh"
+        let isChinese = appLanguage.selectedLanguage.resolvedLanguageCode == "zh"
         if isChinese, let value = voice.descriptionZh?.trimmed, !value.isEmpty { return value }
         return voice.description?.trimmed
     }

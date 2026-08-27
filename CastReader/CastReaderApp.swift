@@ -183,17 +183,14 @@ final class AppStartupCoordinator: ObservableObject {
         guard !didStart else { return }
         didStart = true
 
-        // Distribution/account and physical compute locality are independent.
-        // Run both first-party lookups together so the compute probe adds no
-        // serial delay to StoreKit's cold-start storefront resolution.
-        async let computeProbe = ComputeRouting.probeFirstPartyGateways(timeout: 2.5)
+        // Resolve the product/account region first. All owned compute is then
+        // frozen to the same regional boundary; no authenticated payload may
+        // select a different region from network location.
         let region = await AppRegion.prepareForCurrentProcess()
         _ = await ServiceRouting.bootstrapForCurrentProcess(
             appRegionResolution: region
         )
-        _ = await ComputeRouting.bootstrapForCurrentProcess(
-            precomputedProbe: await computeProbe
-        )
+        _ = await ComputeRouting.bootstrapForCurrentProcess()
         _ = TTSEndpoint.freezeForCurrentProcess()
         _ = QuickReadEndpoint.freezeForCurrentProcess()
 

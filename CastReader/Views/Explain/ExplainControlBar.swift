@@ -8,6 +8,19 @@
 
 import SwiftUI
 
+enum ExplainSegmentProgressCopy {
+    static func text(block: Int, total: Int, preparingNext: Bool) -> String {
+        let safeTotal = max(1, total)
+        let current = preparingNext
+            ? min(block + 2, safeTotal)
+            : min(block + 1, safeTotal)
+        let key = preparingNext
+            ? AppLocalized("第 %1$lld/%2$lld 段…")
+            : AppLocalized("第 %1$lld/%2$lld 段")
+        return String(format: key, Int64(current), Int64(safeTotal))
+    }
+}
+
 /// Shared Kindle-style single-line caption. The bubble keeps its intrinsic
 /// width while the outer frame controls center/trailing alignment.
 struct ExplainPlaybackCaptionBubble: View {
@@ -168,10 +181,11 @@ struct ExplainControlBar: View {
         case .planning:
             return vm.stageText.isEmpty ? AppLocalized("通读全文…") : vm.stageText
         case .streaming(let block, let total):
-            if vm.isPreparingNext {
-                return "第 \(min(block + 2, total))/\(total) 段…"
-            }
-            return "第 \(block + 1)/\(total) 段"
+            return ExplainSegmentProgressCopy.text(
+                block: block,
+                total: total,
+                preparingNext: vm.isPreparingNext
+            )
         case .completed:
             if vm.isContinuingLivePage {
                 return AppLocalized("继续讲解…")

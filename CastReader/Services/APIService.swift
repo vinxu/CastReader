@@ -5,6 +5,94 @@
 
 import Foundation
 
+/// Keeps the cloned-voice request below the worker's JavaScript UTF-16 limit
+/// without silently dropping the remainder. The server may split the submitted
+/// chunk again, so its continuation must precede the local remainder.
+enum ClonedTTSRequestChunker {
+    struct Chunk: Equatable {
+        let input: String
+        let remainder: String
+    }
+
+    static func split(_ text: String, maxUTF16Length: Int) -> Chunk {
+        guard maxUTF16Length > 0, text.utf16.count > maxUTF16Length else {
+            return Chunk(input: text, remainder: "")
+        }
+
+        var end = text.startIndex
+        var usedUTF16Units = 0
+        while end < text.endIndex {
+            let next = text.index(after: end)
+            let characterUnits = text[end..<next].utf16.count
+            guard usedUTF16Units + characterUnits <= maxUTF16Length else { break }
+            usedUTF16Units += characterUnits
+            end = next
+        }
+
+        // A normal speech character is always far smaller than the 600-unit
+        // production limit. Keep this defensive fallback progress-safe.
+        if end == text.startIndex {
+            end = text.index(after: end)
+        }
+        return Chunk(
+            input: String(text[..<end]),
+            remainder: String(text[end...])
+        )
+    }
+
+    static func appendingLocalRemainder(
+        to response: TTSResponse,
+        submittedInput: String,
+        localRemainder: String
+    ) -> TTSResponse {
+        guard !localRemainder.isEmpty else { return response }
+        let serverRemainder = response.unprocessedText?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let continuation = [serverRemainder, localRemainder]
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
+        return TTSResponse(
+            audio: response.audio,
+            audioFormat: response.audioFormat,
+            timestamps: response.timestamps,
+            duration: response.duration,
+            processedText: response.processedText ?? submittedInput,
+            unprocessedText: continuation
+        )
+    }
+}
+
+enum ClonedTTSRetryPolicy {
+    static let delaysNanoseconds: [UInt64] = [
+        350_000_000,
+        900_000_000,
+        1_800_000_000,
+    ]
+
+    static func isRetryable(_ error: Error) -> Bool {
+        if let cloneError = error as? VoiceCloneError {
+            switch cloneError {
+            case .workerBusy, .temporaryUnavailable:
+                return true
+            default:
+                return false
+            }
+        }
+        guard let urlError = error as? URLError else { return false }
+        return [
+            .timedOut,
+            .cannotFindHost,
+            .cannotConnectToHost,
+            .dnsLookupFailed,
+            .networkConnectionLost,
+            .notConnectedToInternet,
+            .internationalRoamingOff,
+            .callIsActive,
+            .dataNotAllowed,
+        ].contains(urlError.code)
+    }
+}
+
 private func apiDebugLog(_ message: @autoclosure () -> String) {
     #if DEBUG
     print(message())
@@ -45,6 +133,7 @@ actor APIService {
 
     private let session: URLSession
     private let ttsSessions: [ServiceRoute: URLSession]
+    private let cloneTTSSession: URLSession
     private let decoder: JSONDecoder
     private let mobileSessionProvider: any MobileSessionProviding
 
@@ -69,6 +158,14 @@ actor APIService {
                 )
             }
         )
+        // Clone requests may spend a bounded amount of time in the single-GPU
+        // scheduler. The generic 30-second session previously timed out before
+        // a queued request could receive its first byte.
+        self.cloneTTSSession = OwnedAPIURLSession.makeExplicitCredentialSession(
+            route: ServiceRouting.current,
+            requestTimeout: 75,
+            resourceTimeout: 120
+        )
 
         self.decoder = JSONDecoder()
         self.mobileSessionProvider = MobileSessionStore.shared
@@ -85,6 +182,7 @@ actor APIService {
         self.ttsSessions = ttsSessions ?? Dictionary(
             uniqueKeysWithValues: ServiceRoute.allCases.map { ($0, session) }
         )
+        self.cloneTTSSession = session
         self.decoder = JSONDecoder()
         self.mobileSessionProvider = mobileSessionProvider
     }
@@ -431,7 +529,9 @@ actor APIService {
         voice: String? = nil,
         speed: Double = Constants.TTS.defaultSpeed,
         language: String = Constants.TTS.defaultLanguage,
-        includeVoiceCode: Bool = true
+        includeVoiceCode: Bool = true,
+        priority: TTSRequestPriority = .interactive,
+        requestID: String? = nil
     ) async throws -> TTSResponse {
         // Compute locality is independent from the account/content route. TTS
         // is anonymous, so a mainland user may use the filed CN compute ingress
@@ -449,11 +549,14 @@ actor APIService {
             preferred: featureSafeVoice,
             for: canonicalLanguage
         )
-        // Clone compatibility endpoint accepts up to 600 characters and returns
-        // unprocessedText for the existing continuation loop. Never send an
-        // oversized clone request and never recover by changing narrators.
-        let maxLength = resolvedVoice.hasPrefix("vc_") ? 600 : 5000
-        let inputText = sanitized.count > maxLength ? String(sanitized.prefix(maxLength)) : sanitized
+        // Clone compatibility endpoint accepts at most 600 JavaScript UTF-16
+        // units. Preserve the local tail and append it to the server's own
+        // continuation so a long paragraph is never silently truncated.
+        let isClonedVoice = resolvedVoice.hasPrefix("vc_")
+        let requestChunk = isClonedVoice
+            ? ClonedTTSRequestChunker.split(sanitized, maxUTF16Length: 600)
+            : ClonedTTSRequestChunker.Chunk(input: sanitized, remainder: "")
+        let inputText = requestChunk.input
         let ttsRequest = TTSRequest(
             input: inputText,
             voice: resolvedVoice,
@@ -464,12 +567,21 @@ actor APIService {
         let bodyData = try JSONEncoder().encode(ttsRequest)
         apiDebugLog("[TTSRoute] language=\(canonicalLanguage) voice=\(resolvedVoice) clone=\(resolvedVoice.hasPrefix("vc_") ? "Y" : "N")")
 
-        if resolvedVoice.hasPrefix("vc_") {
-            // Voice cloning is disabled in this release. If it is re-enabled,
-            // this account-scoped compatibility path must first receive a
-            // dedicated cross-route compute authorization contract; a cms_
-            // token must never be sent to a different compute ingress.
-            return try await requestClonedVoiceTTS(body: bodyData, voiceID: resolvedVoice)
+        if isClonedVoice {
+            // Clone synthesis stays on the authenticated account gateway. The
+            // gateway owns compute authorization and returns the same captioned
+            // JSON contract as preset voices.
+            let response = try await requestClonedVoiceTTS(
+                body: bodyData,
+                voiceID: resolvedVoice,
+                priority: priority,
+                requestID: requestID ?? UUID().uuidString
+            )
+            return ClonedTTSRequestChunker.appendingLocalRemainder(
+                to: response,
+                submittedInput: inputText,
+                localRemainder: requestChunk.remainder
+            )
         }
 
         let route = ComputeRouting.current
@@ -486,13 +598,52 @@ actor APIService {
         )
     }
 
-    private func requestClonedVoiceTTS(body: Data, voiceID: String, canRefresh: Bool = true) async throws -> TTSResponse {
-        guard let url = URL(string: Constants.API.tts) else { throw APIError.invalidURL }
+    private func requestClonedVoiceTTS(
+        body: Data,
+        voiceID: String,
+        priority: TTSRequestPriority,
+        requestID: String = UUID().uuidString,
+        canRefresh: Bool = true,
+        transientAttempt: Int = 0
+    ) async throws -> TTSResponse {
+        // Authentication is the first hard boundary for cloned-voice compute.
+        // This also guarantees that a stale locally selected clone can never
+        // fall through to the anonymous preset-voice endpoint.
         guard let token = await MobileSessionStore.shared.sessionToken(), !token.isEmpty else {
             await MobileSessionStore.shared.rejectSession(nil)
             await MainActor.run { VoiceCloneAccessCoordinator.shared.prompt = .signIn }
             throw VoiceCloneError.sessionUnavailable
         }
+        let accessState = await MainActor.run {
+            (
+                isPro: ProManager.shared.isPro,
+                canApply: VoiceCloneStore.shared.canApply,
+                blocked: VoiceCloneStore.shared.isQuotaBlocked,
+                resetAt: VoiceCloneStore.shared.capability.resetAt
+            )
+        }
+        if !accessState.isPro {
+            await MainActor.run {
+                VoiceCloneAccessCoordinator.shared.prompt = .paywall
+            }
+            throw VoiceCloneError.proRequired
+        }
+        if accessState.blocked {
+            let error = VoiceCloneError.quotaExhausted(accessState.resetAt)
+            await MainActor.run {
+                VoiceCloneAccessCoordinator.shared.prompt = .message(error.localizedDescription)
+            }
+            throw error
+        }
+        if !accessState.canApply {
+            await MainActor.run {
+                VoiceCloneAccessCoordinator.shared.prompt = .message(
+                    AppLocalized("Pro 权益正在同步，请稍后重试")
+                )
+            }
+            throw VoiceCloneError.proRequired
+        }
+        guard let url = URL(string: Constants.API.tts) else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = body
@@ -500,35 +651,148 @@ actor APIService {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
+        request.setValue(priority.rawValue, forHTTPHeaderField: "X-TTS-Priority")
+        request.setValue(requestID, forHTTPHeaderField: "X-Request-ID")
 
-        let (data, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await cloneTTSSession.data(for: request)
+        } catch {
+            if let retry = try await retryClonedVoiceTTSIfNeeded(
+                error: error,
+                body: body,
+                voiceID: voiceID,
+                priority: priority,
+                requestID: requestID,
+                canRefresh: canRefresh,
+                transientAttempt: transientAttempt
+            ) {
+                return retry
+            }
+            throw error
+        }
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         if http.statusCode == 401, canRefresh,
            await MobileSessionStore.shared.refreshSession() != nil {
-            return try await requestClonedVoiceTTS(body: body, voiceID: voiceID, canRefresh: false)
+            return try await requestClonedVoiceTTS(
+                body: body,
+                voiceID: voiceID,
+                priority: priority,
+                requestID: requestID,
+                canRefresh: false,
+                transientAttempt: transientAttempt
+            )
+        }
+        let responseRequestID = http.value(forHTTPHeaderField: "X-Request-ID")
+            ?? requestID
+        let quotaMode = http.value(forHTTPHeaderField: "X-Clone-Quota-Mode")
+            ?? "unknown"
+        ReaderRunLog.write(
+            "TTS clone response request=\(responseRequestID) " +
+            "status=\(http.statusCode) quota=\(quotaMode) attempt=\(transientAttempt + 1)"
+        )
+        await MainActor.run {
+            VoiceCloneStore.shared.applyQuotaHeaders(http)
         }
         guard 200..<300 ~= http.statusCode else {
+            let code = VoiceCloneResponseParser.serverCode(from: data)?.uppercased()
+            let message = VoiceCloneResponseParser.serverMessage(from: data)
+            if code == "CLONE_QUOTA_EXHAUSTED" {
+                let resetAt = VoiceCloneResponseParser.quotaResetAt(from: data)
+                    ?? VoiceCloneResponseParser.quotaCapability(from: http).resetAt
+                let error = VoiceCloneError.quotaExhausted(resetAt)
+                await MainActor.run {
+                    VoiceCloneStore.shared.markQuotaExhausted(resetAt: resetAt)
+                    VoiceCloneAccessCoordinator.shared.prompt = .message(error.localizedDescription)
+                }
+                throw error
+            }
             switch http.statusCode {
             case 401:
                 await MobileSessionStore.shared.rejectSession(token)
                 await MainActor.run { VoiceCloneAccessCoordinator.shared.prompt = .signIn }
+                throw VoiceCloneError.sessionUnavailable
             case 403:
                 await MainActor.run {
-                    AppSettings.shared.clearActiveClonedVoice(ifMatching: voiceID)
-                    VoiceCloneAccessCoordinator.shared.prompt = .paywall
+                    if ProManager.shared.isPro {
+                        VoiceCloneAccessCoordinator.shared.prompt = .message(
+                            message ?? AppLocalized("Pro 权益正在同步，请稍后重试")
+                        )
+                    } else {
+                        VoiceCloneAccessCoordinator.shared.prompt = .paywall
+                    }
                 }
+                throw VoiceCloneError.proRequired
             case 404:
                 await MainActor.run { AppSettings.shared.clearActiveClonedVoice(ifMatching: voiceID) }
+                throw VoiceCloneError.voiceNotFound
+            case 429 where ["CLONE_WORKER_BUSY", "VOICE_WORKER_BUSY"].contains(code ?? ""):
+                let error = VoiceCloneError.workerBusy(message)
+                if let retry = try await retryClonedVoiceTTSIfNeeded(
+                    error: error,
+                    body: body,
+                    voiceID: voiceID,
+                    priority: priority,
+                    requestID: requestID,
+                    canRefresh: canRefresh,
+                    transientAttempt: transientAttempt
+                ) {
+                    return retry
+                }
+                throw error
+            case 503:
+                let error = VoiceCloneError.temporaryUnavailable
+                if let retry = try await retryClonedVoiceTTSIfNeeded(
+                    error: error,
+                    body: body,
+                    voiceID: voiceID,
+                    priority: priority,
+                    requestID: requestID,
+                    canRefresh: canRefresh,
+                    transientAttempt: transientAttempt
+                ) {
+                    return retry
+                }
+                throw error
             default:
-                break
+                throw VoiceCloneError.server(http.statusCode, message)
             }
-            throw APIError.httpError(http.statusCode)
         }
         do {
             return try decoder.decode(TTSResponse.self, from: data)
         } catch {
             throw APIError.decodingError(error)
         }
+    }
+
+    private func retryClonedVoiceTTSIfNeeded(
+        error: Error,
+        body: Data,
+        voiceID: String,
+        priority: TTSRequestPriority,
+        requestID: String,
+        canRefresh: Bool,
+        transientAttempt: Int
+    ) async throws -> TTSResponse? {
+        let delays = ClonedTTSRetryPolicy.delaysNanoseconds
+        guard transientAttempt < delays.count,
+              ClonedTTSRetryPolicy.isRetryable(error) else { return nil }
+        let nextAttempt = transientAttempt + 1
+        ReaderRunLog.write(
+            "TTS clone retry request=\(requestID) " +
+            "next=\(nextAttempt + 1) error=\(error.localizedDescription)"
+        )
+        try await Task.sleep(nanoseconds: delays[transientAttempt])
+        try Task.checkCancellation()
+        return try await requestClonedVoiceTTS(
+            body: body,
+            voiceID: voiceID,
+            priority: priority,
+            requestID: requestID,
+            canRefresh: canRefresh,
+            transientAttempt: nextAttempt
+        )
     }
 
 }

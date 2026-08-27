@@ -439,6 +439,21 @@ final class PaymentTests: XCTestCase {
 
     // MARK: 1. 产品加载
 
+    func testV2PricingFirstWaveUsesExactStorefrontCountryCodes() {
+        for code in ["USA", "GBR", "CAN", "AUS", " gbr "] {
+            XCTAssertTrue(
+                ProManager.usesV2Pricing(storefrontCountryCode: code),
+                "\(code) should use v2 pricing"
+            )
+        }
+        for code in [nil, "", "CHN", "JPN", "DEU", "GB", "CA", "AU"] as [String?] {
+            XCTAssertFalse(
+                ProManager.usesV2Pricing(storefrontCountryCode: code),
+                "\(code ?? "nil") should remain on v1 pricing"
+            )
+        }
+    }
+
     @MainActor
     func testProductsLoad() async throws {
         let products = try await Product.products(for: ProManager.productIDs)

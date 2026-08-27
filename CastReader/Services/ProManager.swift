@@ -17,9 +17,10 @@ final class ProManager: ObservableObject {
 
     /// 订阅产品 id（生产需在 App Store Connect 配置；本地用 Configuration.storekit）。
     ///
-    /// v2 = 美区提价档（$9.99/$59.99，书库有声书主轴，见 docs/美区增长-书库有声书主轴落地方案.md §5.3）。
+    /// v2 = 第一批高价值英语市场提价档（$9.99/$59.99 美区基准，
+    /// 各 storefront 使用 App Store Connect 地区价；见增长方案 §5.3/§5.6）。
     /// 老订阅者继续持有 v1 产品永久保价；权益识别（`productIDs`）覆盖全部四个 id，
-    /// 但付费页只渲染 `displayProducts`——美区 storefront 展示 v2，其余展示 v1。
+    /// 但付费页只渲染 `displayProducts`——首批 USA/GBR/CAN/AUS 展示 v2，其余展示 v1。
     static let monthlyID = "ai.castreader.pro.monthly"
     static let yearlyID = "ai.castreader.pro.yearly"
     static let monthlyV2ID = "ai.castreader.pro.monthly.v2"
@@ -191,6 +192,7 @@ final class ProManager: ObservableObject {
             AuthService.shared.fillMissingProfile(name: account.name, pictureURL: account.image)
         }
         QuotaManager.shared.applyServerStatus(status)
+        VoiceCloneStore.shared.applyServerStatus(status)
         refreshSyncState(reason: "refresh-server")
 
         if allowGrowthBootstrapRetry,
@@ -222,6 +224,7 @@ final class ProManager: ObservableObject {
         serverPlan = nil
         serverAccount = nil
         serverIdentity = nil
+        VoiceCloneStore.shared.clearEntitlementStatus()
         refreshSyncState(reason: "clear-server")
     }
 
@@ -336,15 +339,29 @@ final class ProManager: ObservableObject {
     /// App Store storefront 三位国家码（如 "USA"）。加载产品时刷新；拿不到时为 nil。
     @Published private(set) var storefrontCountryCode: String?
 
-    /// 付费页应渲染的产品对。美区展示 v2 提价档；其余 storefront（以及
-    /// storefront 未知时）保守展示 v1 现价档。所选档位缺货时回退另一档，
-    /// 保证付费页永远有可买产品。
+    /// 付费页应渲染的产品对。第一批 USA/GBR/CAN/AUS 展示 v2；其余
+    /// storefront（以及 storefront 未知时）保守展示 v1。所选档位缺货时
+    /// 仅回退另一代的月/年产品，绝不把四个产品同时暴露给用户。
     var displayProducts: [Product] {
-        let wantV2 = storefrontCountryCode == "USA"
+        let wantV2 = Self.usesV2Pricing(storefrontCountryCode: storefrontCountryCode)
         let preferred = products.filter {
             Self.v2ProductIDs.contains($0.id) == wantV2
         }
-        return preferred.isEmpty ? products : preferred
+        if !preferred.isEmpty { return preferred }
+        return products.filter {
+            Self.v2ProductIDs.contains($0.id) != wantV2
+        }
+    }
+
+    nonisolated static func usesV2Pricing(storefrontCountryCode: String?) -> Bool {
+        guard let normalized = storefrontCountryCode?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased(),
+              !normalized.isEmpty else {
+            return false
+        }
+        let firstWaveStorefronts: Set<String> = ["USA", "GBR", "CAN", "AUS"]
+        return firstWaveStorefronts.contains(normalized)
     }
 
     // MARK: - 免费试用资格

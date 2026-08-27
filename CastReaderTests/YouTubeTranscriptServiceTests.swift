@@ -423,6 +423,7 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
         )
         XCTAssertEqual(object["voice"] as? String, "jf_alpha")
         XCTAssertEqual(object["language"] as? String, "ja")
+        XCTAssertEqual(object["return_timestamps"] as? Bool, false)
         XCTAssertNil(object["voice_code"])
     }
 
@@ -453,7 +454,7 @@ final class YouTubeTranscriptServiceTests: XCTestCase {
         XCTAssertEqual(object["language"] as? String, "ja-JP")
         XCTAssertEqual(object["model"] as? String, "kokoro")
         XCTAssertEqual(object["response_format"] as? String, "mp3")
-        XCTAssertEqual(object["return_timestamps"] as? Bool, true)
+        XCTAssertEqual(object["return_timestamps"] as? Bool, false)
         XCTAssertEqual(object["speed"] as? Double, 1.25)
         XCTAssertEqual(object["stream"] as? Bool, false)
         XCTAssertEqual(object["voice"] as? String, "jf_alpha")

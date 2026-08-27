@@ -148,6 +148,21 @@ struct STSCredentials: Codable {
     let bucket: String
     let region: String
     let prefix: String
+    let endpoint: String?
+
+    var uploadHost: String {
+        let cleanEndpoint = endpoint?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "https://", with: "")
+            .replacingOccurrences(of: "http://", with: "")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard let cleanEndpoint, !cleanEndpoint.isEmpty else {
+            return "\(bucket).cos.\(region).myqcloud.com"
+        }
+        return cleanEndpoint.hasPrefix("\(bucket).")
+            ? cleanEndpoint
+            : "\(bucket).\(cleanEndpoint)"
+    }
 
     enum CodingKeys: String, CodingKey {
         case accessKeyId
@@ -156,6 +171,7 @@ struct STSCredentials: Codable {
         case bucket
         case region
         case prefix
+        case endpoint
     }
 }
 

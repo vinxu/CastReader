@@ -2,10 +2,10 @@
 //  ServiceRouting.swift
 //  CastReader
 //
-//  自有后端线路选择。它与 AppRegion（发行体验）严格分离：
+//  自有后端线路选择。它与 AppRegion（发行体验）在启动时原子绑定：
 //  - AppRegion 决定引导、默认书库与中国区功能呈现；
 //  - ServiceRoute 决定账号、Pro、埋点、文档、上传等账号业务走哪套网络；
-//  - TTS / QuickRead / 音色物料由独立 ComputeRouting 按用户位置决定。
+//  - TTS / QuickRead / 音色物料必须跟随同一个 ServiceRoute。
 //
 //  安全原则：新版全球网关永远是默认值。配置缺失、过期、不可达、格式异常或
 //  当前 build 不在灰度范围内时，一律回到 globalGateway。旧已发布二进制的
@@ -107,7 +107,7 @@ enum ServiceRoute: String, CaseIterable, Codable {
 
     /// 全球网关继续使用历史 key，保证升级不丢登录/额度/待发送事件；中国线路使用
     /// 客户端独立命名空间，避免把一个入口签发的 session、额度缓存或待发事件
-    /// 误送到另一个入口。服务端 canonical 账号与 Apple 账本仍必须共享。
+    /// 误送到另一个入口。两区服务端账号、数据库和 Apple 权益账本也完全独立。
     func isolatedStorageKey(_ legacyKey: String) -> String {
         switch self {
         case .globalGateway: return legacyKey
@@ -288,8 +288,7 @@ enum ServiceRouting {
     static var backendConfigurationDefaultsKey: String { Key.backendConfiguration }
 
     /// Internal distribution testing must model the production contract: the
-    /// product distribution and account namespace move together. Compute
-    /// routing remains independent and is resolved from the user's location.
+    /// product distribution, account namespace and owned compute move together.
     static func accountRouteOverride(for appRegionOverride: AppRegion?) -> ServiceRoute? {
         switch appRegionOverride {
         case .cn:

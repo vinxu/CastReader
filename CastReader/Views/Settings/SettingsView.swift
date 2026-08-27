@@ -753,9 +753,9 @@ struct SettingsView: View {
             Text("内部测试 · 区域与网络")
         } footer: {
             Text(
-                "发行区域与登录账号域原子绑定：中国对应中国账号域，全球对应全球账号域。切换后请完全退出并重新打开 App，"
+                "发行区域、登录账号域和朗读/解读线路原子绑定：中国对应中国区，全球对应全球区。切换后请完全退出并重新打开 App，"
                 + "重启后会加载目标账号域中原来登录的账号；若该域尚未登录，则进入登录页。账号、支付、上传在进程内不会热切换。"
-                + "朗读、解读和音色物料使用独立的智能生成线路，按当前网络位置选择，不会切换登录账号。"
+                + "朗读、解读和音色物料始终留在当前账号区域，不再按当前网络位置跨区选择。"
                 + "中国产品体验把微信读书设为默认，并隐藏 YouTube 主动入口；Kindle、Google 图书、Kobo、O’Reilly "
                 + "等书架连接仍全部保留，但登录页隐藏 Google 与邮箱，提供手机号和 Apple。全球与中国账号域的登录会话和本地数据"
                 + "完全隔离，切回原账号域后会恢复原账号及其内容。"
@@ -777,6 +777,7 @@ struct SettingsView: View {
 
     private var computeRouteProvenanceDescription: String {
         switch ComputeRouting.provenance {
+        case .accountRoute: return "跟随账号区域"
         case .debugOverride: return "调试覆盖"
         case .networkCountry: return "当前网络国家"
         case .simCountry: return "SIM 国家"

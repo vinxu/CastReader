@@ -7,9 +7,9 @@ import SwiftUI
 
 enum Constants {
     enum Features {
-        /// Voice cloning remains implemented and its persisted data is retained,
-        /// but the feature is intentionally unavailable in this release.
-        static let voiceCloningEnabled = false
+        /// Account-owned Qwen3-TTS Base voices are created and synthesized
+        /// through the authenticated CastReader gateway.
+        static let voiceCloningEnabled = true
 
         /// Google One Pick (`drive.file`) import is part of this release. The
         /// provider is hidden when its public OAuth configuration is absent.
@@ -24,8 +24,8 @@ enum Constants {
         static let globalServiceBaseURL = "https://api.castreader.ai"
 
         /// App 的账号域、文档和上传网关。它读取本次进程已经冻结的账号线路，
-        /// 不再跟随 AppRegion 动态变化。TTS、QuickRead 与音色物料必须改读
-        /// ComputeRouting；平台书架（Kindle、微信读书、YouTube 等）仍按各自
+        /// 不再跟随 AppRegion 动态变化。TTS、QuickRead 与音色物料也必须
+        /// 跟随同一账号线路；平台书架（Kindle、微信读书、YouTube 等）仍按各自
         /// 原有域名连接，不属于这层自有 API 路由。
         static var baseURL: String {
             ServiceRouting.current.apiGatewayBaseURL
@@ -53,14 +53,14 @@ enum Constants {
         // TTS
         static var tts: String { "\(baseURL)/api/captioned_speech_partly" }
         static var ttsCatalog: String {
-            "\(ComputeRouting.current.apiGatewayBaseURL)/api/tts/catalog?contract=tts-voice-catalog-v1"
+            "\(ServiceRouting.current.apiGatewayBaseURL)/api/tts/catalog?contract=tts-voice-catalog-v1"
         }
 
         // 解读 / QuickRead。新版客户端不再内置上游 API key。global 保持
         // api.castreader.ai；cn 直接进入 quickread.castreader.cn，避免先到
         // api.castreader.cn 再绕境外 QuickRead。两个入口都必须直接验证 cms_
         // session，客户端禁止携带模型供应商或 QuickRead 服务端密钥。
-        static var quickReadBaseURL: String { ComputeRouting.current.quickReadBaseURL }
+        static var quickReadBaseURL: String { ServiceRouting.current.quickReadBaseURL }
         static var quickReadPlan: String { "\(quickReadBaseURL)/api/quickread/extract-plan" }
         static var quickReadExtractBlock: String { "\(quickReadBaseURL)/api/quickread/extract-block" }
         static var quickReadComposeBlock: String { "\(quickReadBaseURL)/api/quickread/compose-block" }
@@ -88,8 +88,7 @@ enum Constants {
         static var analyticsEvents: String { "\(webURL)/api/events" }
         static var pricingURL: String { "\(webURL)/pricing" }
 
-        /// 邮箱验证码也走当前网关；两入口最终解析到同一 canonical
-        /// user.id 与共享账本，但 session 和本地缓存仍按线路隔离。
+        /// 邮箱验证码也走当前网关；两入口的账号、session、权益账本和缓存完全隔离。
         static var emailOTPBaseURL: String { webURL }
 
         /// 法务页面在 castreader.com（与 API 所在的 castreader.ai 是两个站点）。

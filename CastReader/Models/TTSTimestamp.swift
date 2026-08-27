@@ -44,10 +44,38 @@ struct TTSRequest: Codable {
         // whose backend contract accepts only the canonical `voice` field.
         self.voiceCode = includeVoiceCode ? voice : nil
         self.responseFormat = "mp3"
-        self.returnTimestamps = true
+        // Han/Kana/Hangul readers intentionally paint the natural request
+        // unit as one sentence. Asking either engine for synthetic per-glyph
+        // timing wastes work and can accidentally re-enable character chasing.
+        self.returnTimestamps = TTSHighlightPolicy.usesWordTimestamps(language: language)
         self.speed = speed
         self.stream = false
         self.language = language
+    }
+}
+
+/// Product-level highlighting contract. This is deliberately stricter than
+/// `TTSTimestampQuality`: a response can be internally well-formed while the
+/// selected reading language still calls for natural sentence highlighting.
+enum TTSHighlightPolicy {
+    private static let segmentTimedLanguageCodes: Set<String> = ["zh", "ja", "ko"]
+
+    static func usesWordTimestamps(language: String) -> Bool {
+        let primary = language.trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .replacingOccurrences(of: "_", with: "-")
+            .split(separator: "-")
+            .first
+            .map(String.init) ?? ""
+        if segmentTimedLanguageCodes.contains(primary) { return false }
+        return SupportedTTSLanguage(identifier: language)?.timestampMode != "segment"
+    }
+
+    static func displayTimestamps(
+        _ timestamps: [TTSTimestamp],
+        language: String
+    ) -> [TTSTimestamp] {
+        usesWordTimestamps(language: language) ? timestamps : []
     }
 }
 
@@ -92,10 +120,10 @@ struct TTSTimestamp: Codable {
     }
 }
 
-/// Response-level safety gate shared by every reader source. Highlight
-/// granularity is a property of the actual audio segment, never of a language
-/// allowlist. One malformed/sparse response therefore downgrades only that
-/// segment to sentence highlighting.
+/// Response-level safety gate shared by every reader source. This validates
+/// the shape and text coverage of a candidate word timeline. The separate
+/// `TTSHighlightPolicy` first decides whether the reading language is allowed
+/// to use word highlighting at all.
 enum TTSTimestampQuality {
     static func hasReliableWordGranularity(
         text: String,

@@ -135,12 +135,53 @@ private struct CloudFlowRoute {
     let expectedAccount: CloudAccount?
 }
 
+private struct HomeVoiceFeatureBanner: View {
+    let title: LocalizedStringKey
+    let imageName: String
+    let accessibilityID: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack(alignment: .topLeading) {
+                Image(imageName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                Text(title)
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .foregroundStyle(AppTheme.foreground)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.78)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 14)
+            }
+            .frame(maxWidth: .infinity)
+            .aspectRatio(1, contentMode: .fit)
+            .background(AppTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(AppTheme.border.opacity(0.72), lineWidth: 0.75)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .frame(maxWidth: .infinity)
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(title))
+        .accessibilityIdentifier(accessibilityID)
+    }
+}
+
 struct HomeView: View {
     let shareInboxUnreadCount: Int
     let isSurfaceActive: Bool
     let onOpenShareInbox: () -> Void
     let onReviewPresentationBlockedChanged: (Bool) -> Void
     let onRequestLibraryConnection: (BoundLibraryOnboardingSource) -> Void
+    let onOpenVoiceBrowser: (VoiceBrowserTab) -> Void
 
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @EnvironmentObject private var importRouter: ImportRouter
@@ -163,13 +204,15 @@ struct HomeView: View {
         isSurfaceActive: Bool = true,
         onOpenShareInbox: @escaping () -> Void = {},
         onReviewPresentationBlockedChanged: @escaping (Bool) -> Void = { _ in },
-        onRequestLibraryConnection: @escaping (BoundLibraryOnboardingSource) -> Void
+        onRequestLibraryConnection: @escaping (BoundLibraryOnboardingSource) -> Void,
+        onOpenVoiceBrowser: @escaping (VoiceBrowserTab) -> Void = { _ in }
     ) {
         self.shareInboxUnreadCount = shareInboxUnreadCount
         self.isSurfaceActive = isSurfaceActive
         self.onOpenShareInbox = onOpenShareInbox
         self.onReviewPresentationBlockedChanged = onReviewPresentationBlockedChanged
         self.onRequestLibraryConnection = onRequestLibraryConnection
+        self.onOpenVoiceBrowser = onOpenVoiceBrowser
     }
 
     /// 所有 sheet 合并到单一入口，避免「同一 View 多个 .sheet」互相抢 present。
@@ -257,6 +300,7 @@ struct HomeView: View {
                             )
                         }
                     }
+                    voiceFeatureBanners
                     if !pro.isPro,
                        growthLoop.shouldShowGenericHomeProCard(
                         onboardingActivated: libraryOnboarding.isActivated
@@ -460,6 +504,39 @@ struct HomeView: View {
         } message: { Text(captureVM.error ?? "") }
     }
 
+    // MARK: - 声音入口
+
+    private var voiceFeatureBanners: some View {
+        LazyVGrid(
+            columns: Array(
+                repeating: GridItem(
+                    .flexible(minimum: 0, maximum: .infinity),
+                    spacing: 12,
+                    alignment: .top
+                ),
+                count: Constants.Features.voiceCloningEnabled ? 2 : 1
+            ),
+            alignment: .leading,
+            spacing: 12
+        ) {
+            HomeVoiceFeatureBanner(
+                title: "找到你喜欢的声音",
+                imageName: "HomeVoiceDiscoverIllustration",
+                accessibilityID: "homeVoiceDiscoverBanner",
+                action: { onOpenVoiceBrowser(.explore) }
+            )
+
+            if Constants.Features.voiceCloningEnabled {
+                HomeVoiceFeatureBanner(
+                    title: "克隆你的声音",
+                    imageName: "HomeVoiceCloneIllustration",
+                    accessibilityID: "homeVoiceCloneBanner",
+                    action: { onOpenVoiceBrowser(.created) }
+                )
+            }
+        }
+    }
+
     // MARK: - 首页 Pro 卡片
 
     private var homeProCard: some View {
@@ -475,6 +552,7 @@ struct HomeView: View {
             onShowPlans: { activeSheet = .proDetails }
         )
         .onAppear(perform: trackHomeProCardImpressionIfNeeded)
+        .accessibilityIdentifier("homeProCard")
     }
 
     @MainActor

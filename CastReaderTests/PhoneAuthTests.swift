@@ -156,27 +156,27 @@ final class PhoneAuthTests: XCTestCase {
     func testRateLimitDescriptionUsesFriendlyRoundedUnits() {
         XCTAssertEqual(
             PhoneAuthError.rateLimitDescription(retryAfter: 0),
-            "操作太频繁，请稍后再试"
+            AppLocalized("操作太频繁，请稍后再试")
         )
         XCTAssertEqual(
             PhoneAuthError.rateLimitDescription(retryAfter: 59),
-            "操作太频繁，请 59 秒后再试"
+            String(format: AppLocalized("操作太频繁，请 %d 秒后再试"), 59)
         )
         XCTAssertEqual(
             PhoneAuthError.rateLimitDescription(retryAfter: 60),
-            "操作太频繁，请 1 分钟后再试"
+            String(format: AppLocalized("操作太频繁，请 %d 分钟后再试"), 1)
         )
         XCTAssertEqual(
             PhoneAuthError.rateLimitDescription(retryAfter: 61),
-            "操作太频繁，请 2 分钟后再试"
+            String(format: AppLocalized("操作太频繁，请 %d 分钟后再试"), 2)
         )
         XCTAssertEqual(
             PhoneAuthError.rateLimitDescription(retryAfter: 3_600),
-            "操作太频繁，请 1 小时后再试"
+            String(format: AppLocalized("操作太频繁，请 %d 小时后再试"), 1)
         )
         XCTAssertEqual(
             PhoneAuthError.rateLimitDescription(retryAfter: 3_601),
-            "操作太频繁，请 2 小时后再试"
+            String(format: AppLocalized("操作太频繁，请 %d 小时后再试"), 2)
         )
     }
 
@@ -191,7 +191,7 @@ final class PhoneAuthTests: XCTestCase {
             data: Data(#"{"code":"challenge_consumed"}"#.utf8)
         )
         XCTAssertEqual(error, .codeExpired)
-        XCTAssertEqual(error.errorDescription, "验证码已过期，请重新获取")
+        XCTAssertEqual(error.errorDescription, AppLocalized("验证码已过期，请重新获取"))
     }
 
     func testOnlySMSVerificationGetsExtendedTimeout() throws {

@@ -15,16 +15,17 @@ enum QuickReadEndpoint {
     static let defaultBase = ServiceRoute.globalGateway.quickReadBaseURL
     static let chinaBase = ServiceRoute.chinaGateway.quickReadBaseURL
 
-    static func base() -> String { ComputeRouting.current.quickReadBaseURL }
+    static func base() -> String { ServiceRouting.current.quickReadBaseURL }
 
-    /// QuickRead正文 always follows the frozen compute route. When it differs
-    /// from the account route, QuickReadService exchanges cms_ at the account
-    /// gateway for a target-bound cmc_ ticket in either direction.
+    /// QuickRead正文 always follows the frozen account region. The computeRoute
+    /// parameter is retained for source compatibility and cannot move content
+    /// into the other regional database.
     static func preferredComputeBase(
         accountRoute: ServiceRoute = ServiceRouting.current,
         computeRoute: ServiceRoute = ComputeRouting.current
     ) -> String {
-        computeRoute.quickReadBaseURL
+        _ = computeRoute
+        return accountRoute.quickReadBaseURL
     }
 
     @discardableResult
@@ -271,21 +272,21 @@ actor QuickReadService {
 
     /// Google API Services User Data Policy requires Workspace-derived content
     /// to stay on an inference path whose provider contract forbids model
-    /// training. The China QuickRead route uses DeepSeek, whose public API
-    /// terms do not provide that guarantee, so Google Drive documents always
-    /// use the global paid Gemini route. Account/session traffic still follows
-    /// the user's frozen account route; the existing compute-ticket exchange
-    /// binds the payload to the global ingress without exposing account tokens.
+    /// training. Global accounts retain the paid Gemini route. A CN account may
+    /// not cross the regional boundary; the CN product therefore must not offer
+    /// a Google Drive QuickRead path until an approved CN-local provider exists.
     static let googleLimitedUse = QuickReadService(computeRouteOverride: .globalGateway)
 
     nonisolated static func forDocument(_ document: ReadingDocument) -> QuickReadService {
-        document.origin?.provider == .googleDrive ? .googleLimitedUse : .shared
+        document.origin?.provider == .googleDrive && ServiceRouting.current == .globalGateway
+            ? .googleLimitedUse
+            : .shared
     }
 
     private init(computeRouteOverride: ServiceRoute? = nil) {
         let accountRoute = ServiceRouting.current
-        let computeSnapshot = ComputeRouting.currentSnapshot
-        let computeRoute = computeRouteOverride ?? computeSnapshot.primary
+        let computeRoute = accountRoute
+        _ = computeRouteOverride
         self.session = OwnedAPIURLSession.makeExplicitCredentialSession(
             route: accountRoute,
             requestTimeout: 90,

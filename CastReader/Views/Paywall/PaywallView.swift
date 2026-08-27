@@ -400,7 +400,8 @@ struct ProUpsellContent: View {
         ("books.vertical.fill", AppLocalized("你的整个书库，全部可听")),
         ("infinity", AppLocalized("无限朗读时长")),
         ("sparkles", AppLocalized("无限解读次数")),
-        ("waveform", AppLocalized("全部高级音色")),
+        ("waveform", AppLocalized("全部预设高级音色")),
+        ("person.wave.2.fill", AppLocalized("用自己的声音朗读和解读 · 每月 120 分钟")),
         ("hare.fill", AppLocalized("最高 3x 语速")),
     ]
 

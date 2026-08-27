@@ -599,6 +599,10 @@ final class ReadAloudViewModel: ObservableObject {
     private var prefetchingIndex: Int? = nil     // 正在预取中的段
     private var prefetchedIndex: Int? = nil       // 已预取完成、可秒接的段
     private var prefetchedSegments: [AudioSegment] = []
+    /// One cloned-voice request id survives the prefetch -> foreground fallback
+    /// for the same paragraph and voice. This keeps backend reservation and
+    /// settlement idempotent when a transient failure crosses a paragraph edge.
+    private var cloneRequestIDs: [String: String] = [:]
     /// `true` only when the prepared paragraph came from the persistent
     /// YouTube TTS cache. Freshly generated prefetches remain billable even
     /// after their bytes are persisted for a future replay.
@@ -1151,6 +1155,7 @@ final class ReadAloudViewModel: ObservableObject {
         generationTask = nil
         resetLiveWebCarryPrewarmState()
         clearPrefetch()
+        cloneRequestIDs.removeAll(keepingCapacity: false)
 
         setMoreSegmentsExpected(false)
         segmentsByParagraph[paragraphIndex] = segments
@@ -1299,6 +1304,7 @@ final class ReadAloudViewModel: ObservableObject {
         generationTask = nil
         resetLiveWebCarryPrewarmState()
         clearPrefetch()
+        cloneRequestIDs.removeAll(keepingCapacity: false)
         webParagraphs = p
         if let language { webLanguage = language }
         weReadSpeechBoundary = weReadBoundary
@@ -2039,6 +2045,7 @@ final class ReadAloudViewModel: ObservableObject {
         listenCapRefreshTask = nil
         resetLiveWebCarryPrewarmState()
         clearPrefetch()
+        cloneRequestIDs.removeAll(keepingCapacity: false)
         isAwaitingLiveWebCarryCompletion = false
         pendingLiveWebCarryStartIndex = nil
         audio.setNowPlayingCaption(nil)
@@ -2582,6 +2589,7 @@ final class ReadAloudViewModel: ObservableObject {
         listenCapRefreshTask?.cancel()
         listenCapRefreshTask = nil
         clearPrefetch()
+        cloneRequestIDs.removeAll(keepingCapacity: false)
         isAwaitingLiveWebCarryCompletion = false
         pendingLiveWebCarryStartIndex = nil
         if let token = audioSessionToken {
@@ -2773,6 +2781,10 @@ final class ReadAloudViewModel: ObservableObject {
         generationEpoch &+= 1
         let epoch = generationEpoch
         let voice = voiceOverride ?? settings.voice(for: docLanguage)
+        let cloneRequestID = stableCloneRequestID(
+            paragraphIndex: index,
+            voice: voice
+        )
         if pendingLiveWebResume?.paragraphIndex != index { pendingLiveWebResume = nil }
         playbackVoiceID = voice
         NSLog("CRDBG generate para=%d lang=%@ voice=%@ epoch=%llu web=%@", index, docLanguage, voice, epoch, document.sourceKind.isWebRendered ? "Y" : "N")
@@ -2827,7 +2839,8 @@ final class ReadAloudViewModel: ObservableObject {
                     speed: 1.0,                       // 1.0 生成，播放用 playbackRate
                     language: self.docLanguage,
                     includeVoiceCode: self.includeVoiceCodeForTTS,
-                    speaker: para.speaker
+                    speaker: para.speaker,
+                    cloneRequestID: cloneRequestID
                 ) { [weak self] segment in
                     self?.appendSegment(
                         segment,
@@ -2849,6 +2862,11 @@ final class ReadAloudViewModel: ObservableObject {
                     )
                     _ = self.audio.finishStreamingProducer(session: session)
                     self.status = .ready
+                    self.completeCloneRequestID(
+                        paragraphIndex: index,
+                        voice: voice,
+                        matching: cloneRequestID
+                    )
                     let generatedCount =
                         self.segmentsByParagraph[index]?.count ?? 0
                     ReaderRunLog.write(
@@ -3001,12 +3019,12 @@ final class ReadAloudViewModel: ObservableObject {
             }
         }
         status = .streaming
-        // Start the next paragraph as soon as the current paragraph has yielded
-        // its first playable item. Waiting for the entire current request to
-        // finish wastes most of the audible lead time on multi-part paragraphs.
-        if segs.count == 1, document.sourceKind != .weread {
-            preloadNext(after: paragraph)
-        }
+        // The clone worker is intentionally single-flight on one GPU. Starting
+        // the next paragraph after only the first segment makes prefetch race
+        // the foreground producer for the rest of this paragraph. `generate`
+        // starts prefetch immediately after the foreground request completes,
+        // preserving audible lead time without manufacturing concurrent GPU
+        // requests from one reader session.
         if let voiceSwitchID, activeVoiceSwitchID == voiceSwitchID {
             VoiceSwitchStatusCenter.shared.finish(voiceSwitchID)
             activeVoiceSwitchID = nil
@@ -3132,6 +3150,10 @@ final class ReadAloudViewModel: ObservableObject {
         let epoch = generationEpoch
         let para = paras[nextIndex]
         let voice = settings.voice(for: docLanguage)
+        let cloneRequestID = stableCloneRequestID(
+            paragraphIndex: nextIndex,
+            voice: voice
+        )
         let lang = docLanguage
         let includeVoiceCode = includeVoiceCodeForTTS
         NSLog("CRDBG prefetch start para=%d", nextIndex)
@@ -3159,7 +3181,8 @@ final class ReadAloudViewModel: ObservableObject {
                     speed: 1.0,
                     language: lang,
                     includeVoiceCode: includeVoiceCode,
-                    speaker: para.speaker
+                    speaker: para.speaker,
+                    cloneRequestID: cloneRequestID
                 )
                 guard let self,
                       !Task.isCancelled,
@@ -3172,6 +3195,11 @@ final class ReadAloudViewModel: ObservableObject {
                 self.prefetchedSegments = collected
                 self.prefetchedIndex = nextIndex
                 self.prefetchingIndex = nil
+                self.completeCloneRequestID(
+                    paragraphIndex: nextIndex,
+                    voice: voice,
+                    matching: cloneRequestID
+                )
                 // Do the disk write and asset parse now, while the current
                 // paragraph is still playing. At the boundary this is the
                 // difference between ~70ms of silence and almost none.
@@ -3193,6 +3221,29 @@ final class ReadAloudViewModel: ObservableObject {
                 )
             }
         }
+    }
+
+    private func stableCloneRequestID(
+        paragraphIndex: Int,
+        voice: String
+    ) -> String? {
+        guard voice.hasPrefix("vc_") else { return nil }
+        let key = "\(paragraphIndex)|\(voice)"
+        if let existing = cloneRequestIDs[key] { return existing }
+        let created = UUID().uuidString
+        cloneRequestIDs[key] = created
+        return created
+    }
+
+    private func completeCloneRequestID(
+        paragraphIndex: Int,
+        voice: String,
+        matching requestID: String?
+    ) {
+        guard let requestID else { return }
+        let key = "\(paragraphIndex)|\(voice)"
+        guard cloneRequestIDs[key] == requestID else { return }
+        cloneRequestIDs.removeValue(forKey: key)
     }
 
     /// 取消并清空预取缓存（jump / stop / 重新 generate 时）。
@@ -3822,7 +3873,10 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func hasReliableWordHighlight(_ segment: AudioSegment) -> Bool {
-        TTSTimestampQuality.hasReliableWordGranularity(
+        guard TTSHighlightPolicy.usesWordTimestamps(language: docLanguage) else {
+            return false
+        }
+        return TTSTimestampQuality.hasReliableWordGranularity(
             text: segment.text,
             timestamps: segment.timestamps,
             duration: segment.duration

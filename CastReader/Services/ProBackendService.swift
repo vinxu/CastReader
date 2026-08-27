@@ -47,6 +47,14 @@ struct ProStatusDTO: Decodable, Equatable {
     let monthlyExplainMax: Int?
     let monthlyExplainRemaining: Int?
     let growthConfig: GrowthConfigDTO?
+    let clonePolicy: String?
+    let cloneCanCreate: Bool?
+    let cloneCanApply: Bool?
+    let cloneFreeCreationConsumed: Bool?
+    let cloneMonthlyLimitSeconds: Int?
+    let cloneMonthlyUsedSeconds: Int?
+    let cloneMonthlyRemainingSeconds: Int?
+    let cloneQuotaResetAt: String?
 
     init(
         pro: Bool,
@@ -67,7 +75,15 @@ struct ProStatusDTO: Decodable, Equatable {
         monthlyListenRemaining: Int? = nil,
         monthlyExplainMax: Int? = nil,
         monthlyExplainRemaining: Int? = nil,
-        growthConfig: GrowthConfigDTO? = nil
+        growthConfig: GrowthConfigDTO? = nil,
+        clonePolicy: String? = nil,
+        cloneCanCreate: Bool? = nil,
+        cloneCanApply: Bool? = nil,
+        cloneFreeCreationConsumed: Bool? = nil,
+        cloneMonthlyLimitSeconds: Int? = nil,
+        cloneMonthlyUsedSeconds: Int? = nil,
+        cloneMonthlyRemainingSeconds: Int? = nil,
+        cloneQuotaResetAt: String? = nil
     ) {
         self.pro = pro
         self.plan = plan
@@ -88,6 +104,14 @@ struct ProStatusDTO: Decodable, Equatable {
         self.monthlyExplainMax = monthlyExplainMax
         self.monthlyExplainRemaining = monthlyExplainRemaining
         self.growthConfig = growthConfig
+        self.clonePolicy = clonePolicy
+        self.cloneCanCreate = cloneCanCreate
+        self.cloneCanApply = cloneCanApply
+        self.cloneFreeCreationConsumed = cloneFreeCreationConsumed
+        self.cloneMonthlyLimitSeconds = cloneMonthlyLimitSeconds
+        self.cloneMonthlyUsedSeconds = cloneMonthlyUsedSeconds
+        self.cloneMonthlyRemainingSeconds = cloneMonthlyRemainingSeconds
+        self.cloneQuotaResetAt = cloneQuotaResetAt
     }
 }
 

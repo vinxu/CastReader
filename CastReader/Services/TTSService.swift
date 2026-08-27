@@ -32,6 +32,11 @@ enum TTSError: Error, LocalizedError {
     }
 }
 
+enum TTSRequestPriority: String, Sendable {
+    case interactive
+    case prefetch
+}
+
 // MARK: - TTS Service
 
 actor TTSService {
@@ -57,6 +62,7 @@ actor TTSService {
         language: String = Constants.TTS.defaultLanguage,
         includeVoiceCode: Bool = true,
         speaker: String? = nil,
+        cloneRequestID: String? = nil,
         onSegmentReady: @escaping (AudioSegment) async -> Void
     ) async throws {
         try Task.checkCancellation()
@@ -81,6 +87,7 @@ actor TTSService {
             language: language,
             includeVoiceCode: includeVoiceCode,
             speaker: speaker,
+            cloneRequestID: cloneRequestID,
             onSegmentReady: onSegmentReady
         )
     }
@@ -98,6 +105,7 @@ actor TTSService {
         language: String = Constants.TTS.defaultLanguage,
         includeVoiceCode: Bool = true,
         speaker: String? = nil,
+        cloneRequestID: String? = nil,
         onSegmentReady: ((AudioSegment) async -> Void)? = nil
     ) async throws -> [AudioSegment] {
         var segmentIndex = 0
@@ -120,7 +128,12 @@ actor TTSService {
                     voice: resolvedVoice,
                     speed: speed,
                     language: language,
-                    includeVoiceCode: includeVoiceCode
+                    includeVoiceCode: includeVoiceCode,
+                    priority: .prefetch,
+                    requestID: cloneSubrequestID(
+                        base: cloneRequestID,
+                        segmentIndex: segmentIndex
+                    )
                 )
                 try Task.checkCancellation()
                 guard let audioData = Data(base64Encoded: response.audio) else {
@@ -130,7 +143,10 @@ actor TTSService {
                     paragraphIndex: paragraphIndex,
                     segmentIndex: segmentIndex,
                     audioData: audioData,
-                    timestamps: response.safeTimestamps,
+                    timestamps: TTSHighlightPolicy.displayTimestamps(
+                        response.safeTimestamps,
+                        language: language
+                    ),
                     duration: response.safeDuration,
                     text: response.processedText ?? remainingText,
                     unprocessedText: response.unprocessedText ?? "",
@@ -166,6 +182,7 @@ actor TTSService {
         language: String,
         includeVoiceCode: Bool,
         speaker: String?,
+        cloneRequestID: String?,
         onSegmentReady: @escaping (AudioSegment) async -> Void
     ) async throws {
         guard currentRequestId == requestId else {
@@ -192,7 +209,11 @@ actor TTSService {
                     voice: voice,
                     speed: speed,
                     language: language,
-                    includeVoiceCode: includeVoiceCode
+                    includeVoiceCode: includeVoiceCode,
+                    requestID: cloneSubrequestID(
+                        base: cloneRequestID,
+                        segmentIndex: segmentIndex
+                    )
                 )
 
                 try Task.checkCancellation()
@@ -215,7 +236,10 @@ actor TTSService {
                     throw TTSError.cancelled
                 }
 
-                let timestamps = response.safeTimestamps
+                let timestamps = TTSHighlightPolicy.displayTimestamps(
+                    response.safeTimestamps,
+                    language: language
+                )
                 let duration = response.safeDuration
                 // 用 processedText 作为本 segment 文本（不是整段剩余文本）
                 let segmentText = response.processedText ?? remainingText
@@ -249,6 +273,12 @@ actor TTSService {
 
             } catch is CancellationError {
                 throw TTSError.cancelled
+            } catch let error as VoiceCloneError {
+                // Preserve quota/reset, entitlement and cloned-voice worker
+                // semantics all the way to the reader UI. Wrapping these in a
+                // generic TTSError makes an exhausted monthly allowance look
+                // like an unexplained service failure.
+                throw error
             } catch let error as TTSError {
                 throw error
             } catch {
@@ -257,6 +287,14 @@ actor TTSService {
             }
           }
         }
+    }
+
+    nonisolated private func cloneSubrequestID(
+        base: String?,
+        segmentIndex: Int
+    ) -> String? {
+        guard let base, !base.isEmpty else { return nil }
+        return "\(base)-\(segmentIndex)"
     }
 
     // MARK: - 时间戳合成（后端对中文等语言不返回词时间戳时，按真实音频时长在字符上均匀合成）
