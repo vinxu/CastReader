@@ -4143,11 +4143,15 @@ final class AudioPlaybackOwnershipTests: XCTestCase {
 }
 
 final class TTSEndpointSecurityTests: XCTestCase {
-    func testNewTTSContractContainsOnlyTheTwoHTTPSGatewaysAndNoCrossRouteFallback() {
-        XCTAssertEqual(TTSEndpoint.globalBase, "https://api.castreader.ai")
+    func testPresetTTSUsesDedicatedGlobalIngressAndOnlySameRegionFallback() {
+        XCTAssertEqual(TTSEndpoint.globalBase, "https://tts.castreader.ai")
+        XCTAssertEqual(TTSEndpoint.globalFallbackBase, "https://api.castreader.ai")
         XCTAssertEqual(TTSEndpoint.chinaMainlandBase, "https://api.castreader.cn")
         XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: true))
-        XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: false))
+        XCTAssertEqual(
+            TTSEndpoint.fallbackBase(isMainlandChina: false),
+            "https://api.castreader.ai"
+        )
     }
 }
 

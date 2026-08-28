@@ -548,7 +548,7 @@ final class ServiceRoutingTests: XCTestCase {
         )
         let frozenTTSBase = TTSEndpoint.primaryBase()
         XCTAssertTrue(
-            ["https://api.castreader.ai", "https://api.castreader.cn"].contains(frozenTTSBase)
+            ["https://tts.castreader.ai", "https://api.castreader.cn"].contains(frozenTTSBase)
         )
         UserDefaults.standard.set(
             ["cn_url": "https://cn-b.example", "us_url": "https://us-b.example"],
@@ -794,6 +794,74 @@ final class ServiceRoutingTests: XCTestCase {
         }
     }
 
+    func testGlobalAnonymousTTSFallsBackOnceInsideGlobalRouteOnDirect5xx() async throws {
+        ServiceRouting.overrideRoute = .globalGateway
+        resetSnapshots()
+        _ = await ComputeRouting.bootstrapForCurrentProcess(
+            timeZoneIdentifier: "America/New_York",
+            arguments: [],
+            simCountryCodes: ["US"],
+            precomputedProbe: nil
+        )
+
+        var requestedHosts: [String] = []
+        var requestBodies: [Data] = []
+        var platforms: [String?] = []
+        var versions: [String?] = []
+        RoutingURLProtocol.handler = { request in
+            requestedHosts.append(request.url?.host ?? "")
+            requestBodies.append(request.httpBody ?? Data())
+            platforms.append(request.value(forHTTPHeaderField: "X-CastReader-Platform"))
+            versions.append(request.value(forHTTPHeaderField: "X-CastReader-Version"))
+            if request.url?.host == "tts.castreader.ai" {
+                let response = HTTPURLResponse(
+                    url: request.url!, statusCode: 503, httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                return (response, Data(#"{"detail":"busy"}"#.utf8))
+            }
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (
+                response,
+                Data(#"{"audio":"SUQz","audio_format":"audio/mpeg","timestamps":[]}"#.utf8)
+            )
+        }
+        let routingSession = makeRoutingSession()
+        let service = APIService(
+            session: routingSession,
+            ttsSessions: [
+                .chinaGateway: routingSession,
+                .globalGateway: routingSession,
+            ]
+        )
+
+        let result = try await service.generateTTS(text: "hello", language: "en")
+
+        XCTAssertEqual(result.audio, "SUQz")
+        XCTAssertEqual(requestedHosts, ["tts.castreader.ai", "api.castreader.ai"])
+        XCTAssertEqual(requestBodies.count, 2)
+        XCTAssertEqual(requestBodies[0], requestBodies[1])
+        XCTAssertEqual(platforms, ["ios", "ios"])
+        XCTAssertTrue(versions.allSatisfy { !($0 ?? "").isEmpty })
+    }
+
+    func testPresetTTSFallbackPolicyDoesNotRetryPolicyOrContractFailures() {
+        XCTAssertTrue(PresetTTSFallbackPolicy.shouldRetry(APIError.httpError(500)))
+        XCTAssertTrue(PresetTTSFallbackPolicy.shouldRetry(APIError.httpError(503)))
+        XCTAssertTrue(
+            PresetTTSFallbackPolicy.shouldRetry(URLError(.cannotConnectToHost))
+        )
+        XCTAssertFalse(PresetTTSFallbackPolicy.shouldRetry(APIError.httpError(401)))
+        XCTAssertFalse(PresetTTSFallbackPolicy.shouldRetry(APIError.httpError(422)))
+        XCTAssertFalse(PresetTTSFallbackPolicy.shouldRetry(APIError.httpError(429)))
+        XCTAssertFalse(PresetTTSFallbackPolicy.shouldRetry(APIError.decodingError(
+            DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "bad"))
+        )))
+    }
+
     func testEnabledCloneVoiceNeverFallsBackToAnonymousComputeTTS() async throws {
         XCTAssertTrue(Constants.Features.voiceCloningEnabled)
         _ = await ComputeRouting.bootstrapForCurrentProcess(
@@ -911,8 +979,11 @@ final class ServiceRoutingTests: XCTestCase {
 
         XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: true), "https://api.castreader.cn")
         XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: true))
-        XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: false), "https://api.castreader.ai")
-        XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: false))
+        XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: false), "https://tts.castreader.ai")
+        XCTAssertEqual(
+            TTSEndpoint.fallbackBase(isMainlandChina: false),
+            "https://api.castreader.ai"
+        )
 
         XCTAssertEqual(QuickReadEndpoint.base(), "https://api.castreader.ai")
         XCTAssertEqual(QuickReadEndpoint.planURL, "https://api.castreader.ai/api/quickread/extract-plan")
@@ -951,9 +1022,12 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(Constants.API.emailOTPBaseURL, "https://api.castreader.cn")
 
         XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: true), "https://api.castreader.cn")
-        XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: false), "https://api.castreader.ai")
+        XCTAssertEqual(TTSEndpoint.primaryBase(isMainlandChina: false), "https://tts.castreader.ai")
         XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: true))
-        XCTAssertNil(TTSEndpoint.fallbackBase(isMainlandChina: false))
+        XCTAssertEqual(
+            TTSEndpoint.fallbackBase(isMainlandChina: false),
+            "https://api.castreader.ai"
+        )
 
         XCTAssertEqual(QuickReadEndpoint.base(), "https://quickread.castreader.cn")
         XCTAssertEqual(Constants.API.quickReadBaseURL, "https://quickread.castreader.cn")

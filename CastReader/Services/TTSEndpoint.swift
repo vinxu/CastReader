@@ -341,11 +341,15 @@ private final class ComputeRoutingRuntime: @unchecked Sendable {
 }
 
 enum TTSEndpoint {
-    static let globalBase = ServiceRoute.globalGateway.apiGatewayBaseURL
+    /// Preset-voice audio uses a dedicated global HTTPS ingress so base64 MP3
+    /// bytes do not traverse Vercel. Account APIs and cloned voices continue
+    /// to use the authenticated global gateway.
+    static let globalBase = "https://tts.castreader.ai"
+    static let globalFallbackBase = ServiceRoute.globalGateway.apiGatewayBaseURL
     static let chinaMainlandBase = ServiceRoute.chinaGateway.apiGatewayBaseURL
 
     static func primaryBase() -> String {
-        ComputeRouting.current.apiGatewayBaseURL
+        primaryBase(isMainlandChina: ComputeRouting.current == .chinaGateway)
     }
 
     /// Pure compatibility seam retained for endpoint policy tests.
@@ -353,14 +357,14 @@ enum TTSEndpoint {
         isMainlandChina ? chinaMainlandBase : globalBase
     }
 
-    /// Generation flows are route-frozen. A TTS payload is never resent across
-    /// borders after a network or server failure.
+    /// The only fallback stays inside the already-frozen global route. China
+    /// remains fail-closed and a payload is never resent across borders.
     static func fallbackBase() -> String? {
-        nil
+        fallbackBase(isMainlandChina: ComputeRouting.current == .chinaGateway)
     }
 
     static func fallbackBase(isMainlandChina: Bool) -> String? {
-        nil
+        isMainlandChina ? nil : globalFallbackBase
     }
 
     static func candidateRoutes() -> [ServiceRoute] {

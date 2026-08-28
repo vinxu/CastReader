@@ -128,6 +128,35 @@ enum APIError: Error, LocalizedError {
     }
 }
 
+enum PresetTTSFallbackPolicy {
+    /// A single same-region retry is permitted only when the direct transport
+    /// is unavailable or returns a server failure. Client/auth/rate-limit and
+    /// decoding failures must not duplicate synthesis or bypass policy.
+    static func shouldRetry(_ error: Error) -> Bool {
+        if let apiError = error as? APIError,
+           case .httpError(let status) = apiError {
+            return (500..<600).contains(status)
+        }
+        guard let urlError = error as? URLError else { return false }
+        return [
+            .timedOut,
+            .cannotFindHost,
+            .cannotConnectToHost,
+            .dnsLookupFailed,
+            .networkConnectionLost,
+            .notConnectedToInternet,
+            .internationalRoamingOff,
+            .callIsActive,
+            .dataNotAllowed,
+            .secureConnectionFailed,
+            .serverCertificateUntrusted,
+            .serverCertificateHasBadDate,
+            .serverCertificateHasUnknownRoot,
+            .serverCertificateNotYetValid,
+        ].contains(urlError.code)
+    }
+}
+
 actor APIService {
     static let shared = APIService()
 
@@ -193,11 +222,15 @@ actor APIService {
         _ url: URL,
         method: String = "GET",
         body: Data? = nil,
-        session requestSession: URLSession? = nil
+        session requestSession: URLSession? = nil,
+        headers: [String: String] = [:]
     ) async throws -> T {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        for (name, value) in headers {
+            request.setValue(value, forHTTPHeaderField: name)
+        }
 
         if let body = body {
             request.httpBody = body
@@ -585,17 +618,48 @@ actor APIService {
         }
 
         let route = ComputeRouting.current
-        guard let url = URL(
-            string: TTSEndpoint.partlyURL(base: route.apiGatewayBaseURL)
-        ) else {
+        let isMainlandChina = route == .chinaGateway
+        let primaryBase = TTSEndpoint.primaryBase(isMainlandChina: isMainlandChina)
+        let transportHeaders = [
+            "X-CastReader-Platform": "ios",
+            "X-CastReader-Version": Bundle.main.object(
+                forInfoDictionaryKey: "CFBundleShortVersionString"
+            ) as? String ?? "unknown",
+        ]
+        guard let url = URL(string: TTSEndpoint.partlyURL(base: primaryBase)) else {
             throw APIError.invalidURL
         }
-        return try await request(
-            url,
-            method: "POST",
-            body: bodyData,
-            session: ttsSessions[route]
-        )
+        do {
+            return try await request(
+                url,
+                method: "POST",
+                body: bodyData,
+                session: ttsSessions[route],
+                headers: transportHeaders
+            )
+        } catch {
+            guard PresetTTSFallbackPolicy.shouldRetry(error),
+                  let fallbackBase = TTSEndpoint.fallbackBase(
+                    isMainlandChina: isMainlandChina
+                  ),
+                  fallbackBase != primaryBase,
+                  let fallbackURL = URL(
+                    string: TTSEndpoint.partlyURL(base: fallbackBase)
+                  ) else {
+                throw error
+            }
+            apiDebugLog(
+                "[TTSRoute] same-region fallback \(url.host ?? "?") → " +
+                "\(fallbackURL.host ?? "?")"
+            )
+            return try await request(
+                fallbackURL,
+                method: "POST",
+                body: bodyData,
+                session: ttsSessions[route],
+                headers: transportHeaders
+            )
+        }
     }
 
     private func requestClonedVoiceTTS(
