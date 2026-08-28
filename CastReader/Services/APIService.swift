@@ -643,7 +643,11 @@ actor APIService {
             }
             throw VoiceCloneError.proRequired
         }
-        guard let url = URL(string: Constants.API.tts) else { throw APIError.invalidURL }
+        guard let url = URL(
+            string: TTSEndpoint.voiceCloneCaptionedURL(
+                base: ServiceRouting.current.apiGatewayBaseURL
+            )
+        ) else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = body

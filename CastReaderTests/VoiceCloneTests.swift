@@ -188,6 +188,17 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(VoiceCloneReferenceTransport.usesDirectCOSUpload(for: .chinaGateway))
     }
 
+    func testCloneGenerationUsesDedicatedRouteInBothServiceRegions() {
+        XCTAssertEqual(
+            TTSEndpoint.voiceCloneCaptionedURL(base: ServiceRoute.globalGateway.apiGatewayBaseURL),
+            "https://api.castreader.ai/api/voice-clone/captioned-speech"
+        )
+        XCTAssertEqual(
+            TTSEndpoint.voiceCloneCaptionedURL(base: ServiceRoute.chinaGateway.apiGatewayBaseURL),
+            "https://api.castreader.cn/api/voice-clone/captioned-speech"
+        )
+    }
+
     func testSTSUploadHostHonorsServerEndpointAndKeepsRegionalFallback() throws {
         let accelerated = try JSONDecoder().decode(
             STSCredentials.self,

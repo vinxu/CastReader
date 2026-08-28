@@ -371,6 +371,10 @@ enum TTSEndpoint {
         "\(base)/api/captioned_speech_partly"
     }
 
+    static func voiceCloneCaptionedURL(base: String) -> String {
+        "\(base)/api/voice-clone/captioned-speech"
+    }
+
     @discardableResult
     static func freezeForCurrentProcess() -> String {
         _ = ComputeRouting.freezeForCurrentProcess()
