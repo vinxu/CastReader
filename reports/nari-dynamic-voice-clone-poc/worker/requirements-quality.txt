@@ -1,0 +1,2 @@
+silero-vad==6.2.1
+sherpa-onnx==1.13.6

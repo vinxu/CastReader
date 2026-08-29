@@ -68,6 +68,8 @@ enum VoiceCloneQualityMessage {
             return AppLocalized("房间回声太重，请靠近手机并换到较小、柔软的空间录制")
         case "VOICE_REFERENCE_MULTIPLE_SPEAKERS":
             return AppLocalized("录音中可能有多人说话，请确保只有本人朗读")
+        case "VOICE_REFERENCE_TEXT_MISMATCH":
+            return AppLocalized("有效讲话时间太短，请完整朗读文案")
         default:
             return nil
         }

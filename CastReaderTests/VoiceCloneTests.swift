@@ -293,6 +293,10 @@ final class VoiceCloneTests: XCTestCase {
             VoiceCloneQualityMessage.localized(for: "VOICE_REFERENCE_MULTIPLE_SPEAKERS"),
             AppLocalized("录音中可能有多人说话，请确保只有本人朗读")
         )
+        XCTAssertEqual(
+            VoiceCloneQualityMessage.localized(for: "VOICE_REFERENCE_TEXT_MISMATCH"),
+            AppLocalized("有效讲话时间太短，请完整朗读文案")
+        )
         XCTAssertNil(VoiceCloneQualityMessage.localized(for: "VOICE_WORKER_ERROR"))
     }
 
