@@ -17,6 +17,7 @@ import subprocess
 import threading
 import time
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -47,6 +48,14 @@ from request_coalescer import (
     IdempotencyConflict,
     IdempotencyWaitTimeout,
     RequestCoalescer,
+)
+from semantic_asr import (
+    SemanticASREvidence,
+    SemanticASRError,
+    SemanticASRUnavailable,
+    SemanticASRValidator,
+    SemanticAudioMismatch,
+    measured_word_timestamps,
 )
 
 
@@ -82,6 +91,9 @@ NARI_TEMPERATURE = float(os.environ.get("NARI_TEMPERATURE", "0.9"))
 NARI_TOP_K = int(os.environ.get("NARI_TOP_K", "50"))
 NARI_TOP_P = float(os.environ.get("NARI_TOP_P", "1.0"))
 NARI_REPETITION_PENALTY = float(os.environ.get("NARI_REPETITION_PENALTY", "1.05"))
+ASR_MODEL_DIR_VALUE = os.environ.get("CLONE_ASR_MODEL_DIR", "").strip()
+ASR_MODEL_DIR = Path(ASR_MODEL_DIR_VALUE).expanduser() if ASR_MODEL_DIR_VALUE else None
+ASR_WARMUP = os.environ.get("CLONE_ASR_WARMUP", "0").strip() == "1"
 SCHEDULER = InferenceScheduler(max_queue_size=MAX_QUEUE_SIZE)
 REQUEST_COALESCER = RequestCoalescer(max_entries=64, ttl_s=90.0)
 NARI_CLIENT = httpx.Client(timeout=NARI_REQUEST_TIMEOUT_SECONDS)
@@ -89,7 +101,9 @@ PROMPT_BUILDER_LOCK = threading.Lock()
 PROMPT_BUILDER_INSTANCE: VoicePromptBuilder | None = None
 PROMPT_SCHEMA_LOCK = threading.Lock()
 PROMPT_UPGRADE_LOCK = threading.Lock()
-PROMPT_SCHEMA_CACHE: dict[str, tuple[int, str]] = {}
+PROMPT_METADATA_CACHE: dict[str, tuple[int, "VoicePromptMetadata"]] = {}
+ASR_VALIDATOR_LOCK = threading.Lock()
+ASR_VALIDATOR_INSTANCE: SemanticASRValidator | None = None
 
 GENERATED_AUDIO_REJECTION_HEADERS = {
     "X-Voice-Retryable": "false",
@@ -98,6 +112,11 @@ GENERATED_AUDIO_REJECTION_HEADERS = {
 OUTPUT_TEXT_MISMATCH_HEADERS = {
     "X-Voice-Retryable": "false",
     "X-Voice-Error-Code": "VOICE_OUTPUT_TEXT_MISMATCH",
+}
+ASR_UNAVAILABLE_HEADERS = {
+    "Retry-After": "2",
+    "X-Voice-Retryable": "true",
+    "X-Voice-Error-Code": "VOICE_ASR_VALIDATION_UNAVAILABLE",
 }
 
 REFERENCE_FRAME_SECONDS = 1_920 / SAMPLE_RATE
@@ -135,6 +154,26 @@ class GeneratedAudioQualityError(RuntimeError):
         super().__init__(reason)
         self.metrics = metrics or {}
         self.code = code
+
+
+@dataclass(frozen=True, slots=True)
+class ValidatedVoiceAudio:
+    wav: bytes
+    asr: SemanticASREvidence
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedVoiceCandidate:
+    wav: bytes
+    mode: str
+
+
+@dataclass(frozen=True, slots=True)
+class VoicePromptMetadata:
+    schema: str
+    reference_text: str
+    speaker_embedding: torch.Tensor
+    semantic_contract_error: dict[str, object] | None
 
 
 def _is_cjk(character: str) -> bool:
@@ -240,6 +279,26 @@ def prompt_builder() -> VoicePromptBuilder:
                 load_ms=round((time.perf_counter() - started) * 1000, 2),
             )
     return PROMPT_BUILDER_INSTANCE
+
+
+def semantic_asr_validator() -> SemanticASRValidator:
+    """Return the CPU-only validator backed by a pre-provisioned checkpoint."""
+
+    global ASR_VALIDATOR_INSTANCE
+    if ASR_VALIDATOR_INSTANCE is not None:
+        return ASR_VALIDATOR_INSTANCE
+    if ASR_MODEL_DIR is None:
+        raise SemanticASRUnavailable("CLONE_ASR_MODEL_DIR is not configured")
+    with ASR_VALIDATOR_LOCK:
+        if ASR_VALIDATOR_INSTANCE is None:
+            started = time.perf_counter()
+            ASR_VALIDATOR_INSTANCE = SemanticASRValidator(ASR_MODEL_DIR)
+            structured_log(
+                "semantic_asr_validator_ready",
+                model_revision=ASR_MODEL_DIR.name,
+                load_ms=round((time.perf_counter() - started) * 1000, 2),
+            )
+    return ASR_VALIDATOR_INSTANCE
 
 
 def request_priority(value: str | None) -> int:
@@ -352,6 +411,8 @@ def prepare_storage() -> None:
     VOICE_ROOT.mkdir(parents=True, exist_ok=True, mode=0o700)
     if CLONE_WARMUP:
         prompt_builder()
+    if ASR_WARMUP:
+        semantic_asr_validator().warmup()
 
 
 @app.on_event("shutdown")
@@ -367,10 +428,19 @@ def health() -> dict[str, object]:
         nari_ready = response.status_code == 200 and response.json().get("ready") is True
     except Exception:
         nari_ready = False
+    try:
+        validator = semantic_asr_validator()
+        asr_ready = True
+        asr_loaded = validator.loaded
+    except SemanticASRUnavailable:
+        asr_ready = False
+        asr_loaded = False
     return {
-        "status": "healthy" if nari_ready else "degraded",
+        "status": "healthy" if nari_ready and asr_ready else "degraded",
         "model": MODEL_NAME,
         "nari_ready": nari_ready,
+        "semantic_asr_ready": asr_ready,
+        "semantic_asr_loaded": asr_loaded,
         **SCHEDULER.snapshot(),
     }
 
@@ -470,11 +540,7 @@ async def create_voice(
     return result.value
 
 
-def validate_prompt_bytes(raw: bytes) -> str:
-    try:
-        prompt = torch.load(io.BytesIO(raw), map_location="cpu", weights_only=True)
-    except Exception as error:
-        raise HTTPException(422, "invalid voice prompt") from error
+def validate_prompt_structure(prompt: object) -> str:
     schema = prompt.get("schema") if isinstance(prompt, dict) else None
     if (
         not isinstance(prompt, dict)
@@ -516,6 +582,14 @@ def validate_prompt_bytes(raw: bytes) -> str:
     return schema
 
 
+def validate_prompt_bytes(raw: bytes) -> str:
+    try:
+        prompt = torch.load(io.BytesIO(raw), map_location="cpu", weights_only=True)
+    except Exception as error:
+        raise HTTPException(422, "invalid voice prompt") from error
+    return validate_prompt_structure(prompt)
+
+
 def upgrade_prompt_bytes(raw: bytes) -> tuple[bytes, str]:
     schema = validate_prompt_bytes(raw)
     if schema in {
@@ -543,22 +617,58 @@ def install_prompt_bytes(voice_id: str, raw: bytes) -> None:
     temporary.write_bytes(raw)
     temporary.replace(destination / "prompt.pt")
     with PROMPT_SCHEMA_LOCK:
-        PROMPT_SCHEMA_CACHE.pop(voice_id, None)
+        PROMPT_METADATA_CACHE.pop(voice_id, None)
 
 
-def ensure_voice_prompt_decoder_context(voice_id: str) -> None:
+def voice_prompt_metadata(voice_id: str) -> VoicePromptMetadata:
+    """Load immutable per-voice runtime fields once for each prompt mtime."""
+
     prompt_path = voice_dir(voice_id) / "prompt.pt"
     if not prompt_path.is_file():
         raise HTTPException(404, "voice not found")
-    prompt = torch.load(
-        io.BytesIO(prompt_path.read_bytes()),
-        map_location="cpu",
-        weights_only=True,
-    )
-    if not isinstance(prompt, dict):
-        raise HTTPException(422, "invalid voice prompt")
-    validate_prompt_semantic_contract(prompt)
-    current_schema = voice_prompt_schema(voice_id)
+    modified_ns = prompt_path.stat().st_mtime_ns
+    with PROMPT_SCHEMA_LOCK:
+        cached = PROMPT_METADATA_CACHE.get(voice_id)
+        if cached is not None and cached[0] == modified_ns:
+            return cached[1]
+        try:
+            prompt = torch.load(
+                io.BytesIO(prompt_path.read_bytes()),
+                map_location="cpu",
+                weights_only=True,
+            )
+        except Exception as error:
+            raise HTTPException(422, "invalid voice prompt") from error
+        schema = validate_prompt_structure(prompt)
+        assert isinstance(prompt, dict)
+        reference_text = prompt["ref_text"]
+        speaker = prompt["ref_spk_embedding"]
+        assert isinstance(reference_text, str)
+        assert isinstance(speaker, torch.Tensor)
+        semantic_error: dict[str, object] | None = None
+        try:
+            validate_prompt_semantic_contract(prompt)
+        except HTTPException as error:
+            detail = error.detail
+            code = detail.get("code") if isinstance(detail, dict) else None
+            if code != "VOICE_REFERENCE_TEXT_MISMATCH":
+                raise
+            semantic_error = dict(detail)
+        metadata = VoicePromptMetadata(
+            schema=schema,
+            reference_text=reference_text,
+            speaker_embedding=speaker.detach().cpu().clone(),
+            semantic_contract_error=semantic_error,
+        )
+        PROMPT_METADATA_CACHE[voice_id] = (modified_ns, metadata)
+        return metadata
+
+
+def ensure_voice_prompt_decoder_context(voice_id: str) -> None:
+    metadata = voice_prompt_metadata(voice_id)
+    if metadata.semantic_contract_error is not None:
+        raise HTTPException(422, detail=metadata.semantic_contract_error)
+    current_schema = metadata.schema
     if current_schema in {
         "qwen3_tts_base_voice_clone_prompt_v3",
         "qwen3_tts_base_voice_clone_prompt_v4",
@@ -582,18 +692,7 @@ def ensure_voice_prompt_decoder_context(voice_id: str) -> None:
 
 
 def voice_prompt_schema(voice_id: str) -> str:
-    prompt_path = voice_dir(voice_id) / "prompt.pt"
-    if not prompt_path.is_file():
-        raise HTTPException(404, "voice not found")
-    modified_ns = prompt_path.stat().st_mtime_ns
-    with PROMPT_SCHEMA_LOCK:
-        cached = PROMPT_SCHEMA_CACHE.get(voice_id)
-        if cached is not None and cached[0] == modified_ns:
-            return cached[1]
-    schema = validate_prompt_bytes(prompt_path.read_bytes())
-    with PROMPT_SCHEMA_LOCK:
-        PROMPT_SCHEMA_CACHE[voice_id] = (modified_ns, schema)
-    return schema
+    return voice_prompt_metadata(voice_id).schema
 
 
 @app.get("/v1/voices/{voice_id}/prompt", dependencies=[Depends(require_token)])
@@ -638,7 +737,7 @@ def delete_voice(voice_id: str) -> dict[str, str]:
     def remove_voice() -> dict[str, str]:
         shutil.rmtree(destination)
         with PROMPT_SCHEMA_LOCK:
-            PROMPT_SCHEMA_CACHE.pop(voice_id, None)
+            PROMPT_METADATA_CACHE.pop(voice_id, None)
         return {"status": "deleted", "voice_id": voice_id}
 
     return schedule(
@@ -803,14 +902,7 @@ def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
     ICL cloning.
     """
 
-    prompt_path = voice_dir(request.voice_id) / "prompt.pt"
-    if not prompt_path.is_file():
-        raise HTTPException(404, "voice not found")
-    try:
-        prompt = torch.load(prompt_path, map_location="cpu", weights_only=True)
-    except Exception as error:
-        raise HTTPException(422, "invalid voice prompt") from error
-    speaker = prompt.get("ref_spk_embedding") if isinstance(prompt, dict) else None
+    speaker = voice_prompt_metadata(request.voice_id).speaker_embedding
     if (
         not isinstance(speaker, torch.Tensor)
         or speaker.ndim != 1
@@ -934,9 +1026,9 @@ def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
     )
 
 
-def request_voice(request: SpeechRequest) -> bytes:
+def request_voice_candidate(request: SpeechRequest) -> GeneratedVoiceCandidate:
     try:
-        return request_nari(request)
+        return GeneratedVoiceCandidate(wav=request_nari(request), mode="nari-icl")
     except HTTPException as error:
         code = _voice_error_code(error)
         if code not in {
@@ -945,7 +1037,182 @@ def request_voice(request: SpeechRequest) -> bytes:
             "VOICE_GENERATED_AUDIO_REJECTED",
         }:
             raise
-        return request_xvector_fallback(request, reason=code)
+        return GeneratedVoiceCandidate(
+            wav=request_xvector_fallback(request, reason=code),
+            mode="x-vector",
+        )
+
+
+def request_voice(request: SpeechRequest) -> bytes:
+    """Backward-compatible raw synthesis hook used by focused worker tests."""
+
+    return request_voice_candidate(request).wav
+
+
+def voice_reference_text(voice_id: str) -> str:
+    return voice_prompt_metadata(voice_id).reference_text
+
+
+def validate_voice_candidate(
+    request: SpeechRequest,
+    candidate: GeneratedVoiceCandidate,
+) -> ValidatedVoiceAudio:
+    voice_hash = hashlib.sha256(request.voice_id.encode("utf-8")).hexdigest()[:12]
+    evidence = semantic_asr_validator().validate(
+        candidate.wav,
+        request.text,
+        language=canonical_language_code(request.language_id),
+        reference_text=voice_reference_text(request.voice_id),
+    )
+    structured_log(
+        "generated_audio_semantic_accepted",
+        voice_hash=voice_hash,
+        generation_mode=candidate.mode,
+        transcript_sha256=hashlib.sha256(
+            evidence.transcript.encode("utf-8")
+        ).hexdigest(),
+        requested_word_count=len(evidence.requested_words),
+        observed_word_count=len(evidence.words),
+        similarity=round(evidence.similarity, 4),
+        asr_ms=round(evidence.inference_seconds * 1000, 2),
+    )
+    return ValidatedVoiceAudio(wav=candidate.wav, asr=evidence)
+
+
+def _raise_final_audio_validation_error(
+    request: SpeechRequest,
+    error: SemanticASRError,
+) -> None:
+    voice_hash = hashlib.sha256(request.voice_id.encode("utf-8")).hexdigest()[:12]
+    if isinstance(error, SemanticAudioMismatch):
+        structured_log(
+            "generated_audio_semantic_rejected",
+            voice_hash=voice_hash,
+            reason=error.reason,
+            **error.metrics,
+        )
+        raise HTTPException(
+            503,
+            detail={
+                "code": "VOICE_OUTPUT_TEXT_MISMATCH",
+                "message": "Generated audio did not match the requested text",
+                "reason": error.reason,
+            },
+            headers=OUTPUT_TEXT_MISMATCH_HEADERS,
+        ) from error
+    structured_log(
+        "generated_audio_semantic_validation_unavailable",
+        voice_hash=voice_hash,
+        error_type=type(error.__cause__ or error).__name__,
+    )
+    raise HTTPException(
+        503,
+        detail={
+            "code": "VOICE_ASR_VALIDATION_UNAVAILABLE",
+            "message": "Final audio validation is temporarily unavailable",
+        },
+        headers=ASR_UNAVAILABLE_HEADERS,
+    ) from error
+
+
+def request_validated_voice(request: SpeechRequest) -> ValidatedVoiceAudio:
+    """Synchronous synthesis helper; production endpoints use scheduled form."""
+
+    candidate = request_voice_candidate(request)
+    try:
+        return validate_voice_candidate(request, candidate)
+    except SemanticAudioMismatch as first_error:
+        if candidate.mode != "nari-icl":
+            _raise_final_audio_validation_error(request, first_error)
+        structured_log(
+            "generated_audio_semantic_fallback",
+            voice_hash=hashlib.sha256(
+                request.voice_id.encode("utf-8")
+            ).hexdigest()[:12],
+            reason=first_error.reason,
+        )
+        fallback = GeneratedVoiceCandidate(
+            wav=request_xvector_fallback(
+                request,
+                reason="VOICE_ASR_TEXT_MISMATCH",
+            ),
+            mode="x-vector",
+        )
+        try:
+            return validate_voice_candidate(request, fallback)
+        except SemanticASRError as final_error:
+            _raise_final_audio_validation_error(request, final_error)
+    except SemanticASRUnavailable as error:
+        _raise_final_audio_validation_error(request, error)
+    raise AssertionError("final-audio validation did not return or raise")
+
+
+def schedule_validated_voice(
+    request: SpeechRequest,
+    *,
+    kind: str,
+    priority: int,
+    request_id: str | None,
+) -> ScheduledResult[ValidatedVoiceAudio]:
+    """Keep CPU ASR outside the single-GPU lane and retry one safe mode."""
+
+    started = time.monotonic()
+    generated = schedule(
+        lambda: request_voice_candidate(request),
+        kind=kind,
+        priority=priority,
+        timeout_s=SYNTHESIS_TIMEOUT_SECONDS,
+        request_id=request_id,
+    )
+    try:
+        validated = validate_voice_candidate(request, generated.value)
+        return ScheduledResult(
+            value=validated,
+            request_id=generated.request_id,
+            queue_wait_s=generated.queue_wait_s,
+            run_s=generated.run_s,
+        )
+    except SemanticASRUnavailable as error:
+        _raise_final_audio_validation_error(request, error)
+    except SemanticAudioMismatch as first_error:
+        if generated.value.mode != "nari-icl":
+            _raise_final_audio_validation_error(request, first_error)
+        elapsed = time.monotonic() - started
+        remaining = SYNTHESIS_TIMEOUT_SECONDS - elapsed
+        if remaining <= 1.0:
+            _raise_final_audio_validation_error(request, first_error)
+        voice_hash = hashlib.sha256(
+            request.voice_id.encode("utf-8")
+        ).hexdigest()[:12]
+        structured_log(
+            "generated_audio_semantic_fallback",
+            voice_hash=voice_hash,
+            reason=first_error.reason,
+        )
+        fallback = schedule(
+            lambda: GeneratedVoiceCandidate(
+                wav=request_xvector_fallback(
+                    request,
+                    reason="VOICE_ASR_TEXT_MISMATCH",
+                ),
+                mode="x-vector",
+            ),
+            kind=f"{kind}-semantic-fallback",
+            priority=priority,
+            timeout_s=remaining,
+            request_id=None,
+        )
+        try:
+            validated = validate_voice_candidate(request, fallback.value)
+        except SemanticASRError as final_error:
+            _raise_final_audio_validation_error(request, final_error)
+        return ScheduledResult(
+            value=validated,
+            request_id=generated.request_id,
+            queue_wait_s=generated.queue_wait_s + fallback.queue_wait_s,
+            run_s=generated.run_s + fallback.run_s,
+        )
+    raise AssertionError("scheduled final-audio validation did not return or raise")
 
 
 def _prefix_spectral_metrics(
@@ -1543,35 +1810,52 @@ def captioned_speech(
     if request.response_format != "mp3" or request.stream:
         raise HTTPException(422, "only non-streaming MP3 is supported")
 
-    def synthesize() -> dict[str, object]:
-        wav = request_voice(
-            SpeechRequest(
-                text=request.input,
-                voice_id=request.voice,
-                language_id=request.language,
-            )
-        )
+    voice_request = SpeechRequest(
+        text=request.input,
+        voice_id=request.voice,
+        language_id=request.language,
+    )
+
+    def synthesize(validated: ValidatedVoiceAudio) -> dict[str, object]:
+        wav = validated.wav
         try:
             mp3, duration = apply_speed(wav, request.speed)
         except subprocess.SubprocessError as error:
             raise HTTPException(503, "audio conversion failed") from error
         timestamp_started = time.perf_counter()
-        timestamps = (
-            estimated_timestamps(
-                request.input,
-                duration,
-                language=request.language,
-                wav_bytes=wav,
-                speed=request.speed,
+        try:
+            timestamps = (
+                measured_word_timestamps(
+                    request.input,
+                    validated.asr,
+                    language=canonical_language_code(request.language),
+                    speed=request.speed,
+                    duration=duration,
+                )
+                if request.return_timestamps
+                and supports_word_timestamps(request.language)
+                else []
             )
-            if request.return_timestamps
-            else []
-        )
+        except SemanticAudioMismatch as error:
+            structured_log(
+                "generated_audio_word_alignment_rejected",
+                reason=error.reason,
+                **error.metrics,
+            )
+            raise HTTPException(
+                503,
+                detail={
+                    "code": "VOICE_OUTPUT_TEXT_MISMATCH",
+                    "message": "Final audio word alignment was incomplete",
+                    "reason": error.reason,
+                },
+                headers=OUTPUT_TEXT_MISMATCH_HEADERS,
+            ) from error
         structured_log(
             "captioned_timestamps_built",
             language=canonical_language_code(request.language),
             mode=(
-                "word"
+                "asr-word"
                 if request.return_timestamps
                 and supports_word_timestamps(request.language)
                 else "segment"
@@ -1590,12 +1874,17 @@ def captioned_speech(
         }
 
     def scheduled_synthesis() -> ScheduledResult[dict[str, object]]:
-        return schedule(
-            synthesize,
+        generated = schedule_validated_voice(
+            voice_request,
             kind="captioned-speech",
             priority=request_priority(x_tts_priority),
-            timeout_s=SYNTHESIS_TIMEOUT_SECONDS,
             request_id=x_request_id,
+        )
+        return ScheduledResult(
+            value=synthesize(generated.value),
+            request_id=generated.request_id,
+            queue_wait_s=generated.queue_wait_s,
+            run_s=generated.run_s,
         )
 
     idempotency_source = "disabled"
@@ -1636,15 +1925,14 @@ def speech(
     x_tts_priority: str | None = Header(default=None),
     x_request_id: str | None = Header(default=None),
 ) -> Response:
-    result = schedule(
-        lambda: request_voice(request),
+    result = schedule_validated_voice(
+        request,
         kind="speech",
         priority=request_priority(x_tts_priority),
-        timeout_s=SYNTHESIS_TIMEOUT_SECONDS,
         request_id=x_request_id,
     )
     return Response(
-        result.value,
+        result.value.wav,
         media_type="audio/wav",
         headers=timing_headers(result),
     )

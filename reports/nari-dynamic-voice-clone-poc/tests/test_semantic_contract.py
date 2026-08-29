@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,7 @@ import torch
 from fastapi import HTTPException
 
 import clone_worker
+from semantic_asr import ASRWord, SemanticASREvidence, SemanticASRUnavailable, SemanticAudioMismatch
 
 
 IOS_ENGLISH_GUIDE = (
@@ -18,6 +20,19 @@ IOS_ENGLISH_GUIDE = (
 
 
 class VoiceCloneSemanticContractTests(unittest.TestCase):
+    @staticmethod
+    def _evidence() -> SemanticASREvidence:
+        return SemanticASREvidence(
+            transcript="Azure cactus.",
+            words=(
+                ASRWord("Azure", 0.0, 0.5),
+                ASRWord("cactus", 0.5, 1.0),
+            ),
+            requested_words=("azure", "cactus"),
+            similarity=1.0,
+            inference_seconds=0.1,
+        )
+
     def test_incomplete_fixed_english_guide_is_rejected(self) -> None:
         with self.assertRaises(HTTPException) as captured:
             clone_worker.validate_reference_transcript_duration(
@@ -57,6 +72,90 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
             captured.exception.detail["code"],
             "VOICE_REFERENCE_TEXT_MISMATCH",
         )
+
+    def test_prompt_runtime_metadata_loads_once_per_mtime(self) -> None:
+        prompt = {
+            "schema": "qwen3_tts_base_voice_clone_prompt_v4",
+            "ref_text": "Azure cactus.",
+            "ref_spk_embedding": torch.zeros(1024),
+            "reference_codec_embeddings": torch.zeros((69, 1024)),
+            "decoder_reference_code": torch.zeros((69, 16), dtype=torch.long),
+            "x_vector_only_mode": False,
+            "icl_mode": True,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            voice_path = Path(directory)
+            prompt_path = voice_path / "prompt.pt"
+            torch.save(prompt, prompt_path)
+            clone_worker.PROMPT_METADATA_CACHE.clear()
+            with (
+                patch.object(clone_worker, "voice_dir", return_value=voice_path),
+                patch.object(
+                    clone_worker.torch,
+                    "load",
+                    wraps=clone_worker.torch.load,
+                ) as load,
+            ):
+                clone_worker.ensure_voice_prompt_decoder_context("vc_cache_test")
+                self.assertEqual(
+                    clone_worker.voice_reference_text("vc_cache_test"),
+                    "Azure cactus.",
+                )
+                self.assertEqual(
+                    clone_worker.voice_prompt_schema("vc_cache_test"),
+                    "qwen3_tts_base_voice_clone_prompt_v4",
+                )
+                self.assertEqual(load.call_count, 1)
+
+                prompt["ref_text"] = "Patient reader."
+                torch.save(prompt, prompt_path)
+                changed = prompt_path.stat().st_mtime_ns + 1_000_000
+                os.utime(prompt_path, ns=(changed, changed))
+                self.assertEqual(
+                    clone_worker.voice_reference_text("vc_cache_test"),
+                    "Patient reader.",
+                )
+                self.assertEqual(load.call_count, 2)
+            clone_worker.PROMPT_METADATA_CACHE.clear()
+
+    def test_quarantined_prompt_error_and_speaker_are_cached(self) -> None:
+        prompt = {
+            "schema": "qwen3_tts_base_voice_clone_prompt_v4",
+            "ref_text": IOS_ENGLISH_GUIDE,
+            "ref_spk_embedding": torch.zeros(1024),
+            "reference_codec_embeddings": torch.zeros((69, 1024)),
+            "decoder_reference_code": torch.zeros((69, 16), dtype=torch.long),
+            "x_vector_only_mode": False,
+            "icl_mode": True,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            voice_path = Path(directory)
+            torch.save(prompt, voice_path / "prompt.pt")
+            clone_worker.PROMPT_METADATA_CACHE.clear()
+            with (
+                patch.object(clone_worker, "voice_dir", return_value=voice_path),
+                patch.object(
+                    clone_worker.torch,
+                    "load",
+                    wraps=clone_worker.torch.load,
+                ) as load,
+            ):
+                for _ in range(2):
+                    with self.assertRaises(HTTPException) as captured:
+                        clone_worker.ensure_voice_prompt_decoder_context(
+                            "vc_quarantined_cache_test"
+                        )
+                    self.assertEqual(
+                        captured.exception.detail["code"],
+                        "VOICE_REFERENCE_TEXT_MISMATCH",
+                    )
+                metadata = clone_worker.voice_prompt_metadata(
+                    "vc_quarantined_cache_test"
+                )
+                self.assertEqual(metadata.reference_text, IOS_ENGLISH_GUIDE)
+                self.assertEqual(tuple(metadata.speaker_embedding.shape), (1024,))
+                self.assertEqual(load.call_count, 1)
+            clone_worker.PROMPT_METADATA_CACHE.clear()
 
     def test_short_target_has_no_twelve_second_acceptance_floor(self) -> None:
         self.assertEqual(
@@ -204,6 +303,102 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
 
         self.assertIs(captured.exception, failure)
         fallback.assert_not_called()
+
+    def test_asr_mismatch_gets_one_safe_mode_then_is_validated_again(self) -> None:
+        request = clone_worker.SpeechRequest(
+            text="Azure cactus.",
+            voice_id="vc_semantic_test",
+            language_id="en",
+        )
+        first = clone_worker.GeneratedVoiceCandidate(b"nari", "nari-icl")
+        fallback = clone_worker.GeneratedVoiceCandidate(b"safe", "x-vector")
+        accepted = clone_worker.ValidatedVoiceAudio(b"safe", self._evidence())
+        with (
+            patch.object(clone_worker, "request_voice_candidate", return_value=first),
+            patch.object(
+                clone_worker,
+                "validate_voice_candidate",
+                side_effect=[
+                    SemanticAudioMismatch("requested-text-mismatch", {}),
+                    accepted,
+                ],
+            ) as validate,
+            patch.object(
+                clone_worker,
+                "request_xvector_fallback",
+                return_value=fallback.wav,
+            ) as xvector,
+        ):
+            result = clone_worker.request_validated_voice(request)
+
+        self.assertEqual(result.wav, b"safe")
+        self.assertEqual(validate.call_count, 2)
+        xvector.assert_called_once_with(request, reason="VOICE_ASR_TEXT_MISMATCH")
+
+    def test_asr_unavailable_never_changes_generation_mode(self) -> None:
+        request = clone_worker.SpeechRequest(
+            text="Azure cactus.",
+            voice_id="vc_semantic_test",
+            language_id="en",
+        )
+        with (
+            patch.object(
+                clone_worker,
+                "request_voice_candidate",
+                return_value=clone_worker.GeneratedVoiceCandidate(b"nari", "nari-icl"),
+            ),
+            patch.object(
+                clone_worker,
+                "validate_voice_candidate",
+                side_effect=SemanticASRUnavailable("offline model unavailable"),
+            ),
+            patch.object(clone_worker, "request_xvector_fallback") as xvector,
+        ):
+            with self.assertRaises(HTTPException) as captured:
+                clone_worker.request_validated_voice(request)
+
+        self.assertEqual(
+            captured.exception.detail["code"],
+            "VOICE_ASR_VALIDATION_UNAVAILABLE",
+        )
+        xvector.assert_not_called()
+
+    def test_cpu_asr_runs_after_gpu_scheduler_releases_lane(self) -> None:
+        request = clone_worker.SpeechRequest(
+            text="Azure cactus.",
+            voice_id="vc_semantic_test",
+            language_id="en",
+        )
+        inside_gpu_lane = False
+
+        def fake_schedule(execute, **_kwargs):
+            nonlocal inside_gpu_lane
+            inside_gpu_lane = True
+            value = execute()
+            inside_gpu_lane = False
+            return clone_worker.ScheduledResult(value, "request", 0.1, 0.2)
+
+        def validate(_request, candidate):
+            self.assertFalse(inside_gpu_lane)
+            return clone_worker.ValidatedVoiceAudio(candidate.wav, self._evidence())
+
+        with (
+            patch.object(clone_worker, "schedule", side_effect=fake_schedule),
+            patch.object(
+                clone_worker,
+                "request_voice_candidate",
+                return_value=clone_worker.GeneratedVoiceCandidate(b"nari", "nari-icl"),
+            ),
+            patch.object(clone_worker, "validate_voice_candidate", side_effect=validate),
+        ):
+            result = clone_worker.schedule_validated_voice(
+                request,
+                kind="speech",
+                priority=clone_worker.PRIORITY_INTERACTIVE,
+                request_id="request",
+            )
+
+        self.assertEqual(result.value.wav, b"nari")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,28 @@
+{
+  "model": "openai/whisper-base",
+  "revision": "e37978b90ca9030d5170a5c07aadb050351a65bb",
+  "load_seconds": 3.403,
+  "sequential": [
+    {
+      "wall_seconds": 1.119,
+      "reported_asr_seconds": 1.117
+    },
+    {
+      "wall_seconds": 1.113,
+      "reported_asr_seconds": 1.111
+    }
+  ],
+  "concurrent_two": [
+    {
+      "wall_seconds": 1.081,
+      "reported_asr_seconds": 1.078
+    },
+    {
+      "wall_seconds": 2.139,
+      "reported_asr_seconds": 2.136
+    }
+  ],
+  "concurrent_wall_seconds": 2.14,
+  "peak_rss_mb": 2359.5,
+  "inference_lock": "serialized"
+}

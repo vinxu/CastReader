@@ -1,0 +1,27 @@
+{
+  "model": "openai/whisper-base",
+  "revision": "e37978b90ca9030d5170a5c07aadb050351a65bb",
+  "cases": [
+    {
+      "case": "intentional-guide-prefix",
+      "accepted": false,
+      "reason": "reference-prefix-leak",
+      "metrics": {
+        "expected_word_count": 6,
+        "observed_word_count": 27,
+        "extra_word_count": 21,
+        "similarity": 0.3784,
+        "reference_block_words": 21,
+        "transcript_sha256": "50ba0891b4a952a8f4dafb6e2f7d8a27cf40d4751d3261a7a6e0e73346722768"
+      },
+      "wav_sha256": "75321cae63b9f0b5a62971a3389c149ec50fd7dcafc32d4ca6aaa333141f274a"
+    },
+    {
+      "case": "legal-guide-word-reuse",
+      "accepted": true,
+      "similarity": 1.0,
+      "transcript_sha256": "00dcf4498ff607cbb98d8903daae350f84ba08fb9d13d8f8a275f53c480c6561",
+      "wav_sha256": "845800a9f7775b39406b9e7f7ff37f95d3c11dec2661a35e5ed98a8150e0304e"
+    }
+  ]
+}

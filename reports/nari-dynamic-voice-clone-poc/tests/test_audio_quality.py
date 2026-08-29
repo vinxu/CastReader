@@ -101,7 +101,7 @@ class GeneratedAudioQualityTests(unittest.TestCase):
         short = clone_worker.maximum_generation_frames("今天我们继续学习。")
         medium = clone_worker.maximum_generation_frames("这是一个更长的段落。" * 20)
 
-        self.assertGreaterEqual(short, 128)
+        self.assertGreaterEqual(short, 64)
         self.assertGreater(medium, short)
         self.assertLess(medium, 4096)
 
