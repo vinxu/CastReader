@@ -43,6 +43,7 @@ class VoicePromptBuilder:
         reference_text: str,
         *,
         reference_speech_duration_s: float | None = None,
+        semantic_attested: bool = False,
     ) -> dict[str, object]:
         prompts = self.model.create_voice_clone_prompt(
             ref_audio=reference_audio,
@@ -86,7 +87,10 @@ class VoicePromptBuilder:
             "icl_mode": True,
         }
         if reference_speech_duration_s is not None:
-            compiled["reference_contract_version"] = 1
+            # Only the HTTP creation path may assert v2 after it has compared
+            # the normalized recording with ref_text. Recovery/CLI builds stay
+            # on v1 and retain runtime validation until separately attested.
+            compiled["reference_contract_version"] = 2 if semantic_attested else 1
             compiled["reference_speech_duration_s"] = float(
                 reference_speech_duration_s
             )
@@ -99,6 +103,7 @@ class VoicePromptBuilder:
         output: Path,
         *,
         reference_speech_duration_s: float | None = None,
+        semantic_attested: bool = False,
     ) -> None:
         output.parent.mkdir(parents=True, exist_ok=True)
         temporary = output.with_name(f"{output.name}.tmp")
@@ -107,6 +112,7 @@ class VoicePromptBuilder:
                 reference_audio,
                 reference_text,
                 reference_speech_duration_s=reference_speech_duration_s,
+                semantic_attested=semantic_attested,
             ),
             temporary,
         )

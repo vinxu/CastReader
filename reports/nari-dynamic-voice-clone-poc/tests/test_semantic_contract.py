@@ -261,6 +261,100 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
             reason="VOICE_REFERENCE_TEXT_MISMATCH",
         )
 
+    def test_xvector_fallback_uses_nari_captured_mode(self) -> None:
+        class FakeResponse:
+            status_code = 200
+            content = b"fast-wav"
+
+        class FakeClient:
+            def __init__(self) -> None:
+                self.payload = None
+
+            def post(self, _url, *, json):
+                self.payload = json
+                return FakeResponse()
+
+        client = FakeClient()
+        metadata = clone_worker.VoicePromptMetadata(
+            schema="qwen3_tts_base_voice_clone_prompt_v4",
+            reference_text=IOS_ENGLISH_GUIDE,
+            speaker_embedding=torch.zeros(1024),
+            semantic_contract_error={"code": "VOICE_REFERENCE_TEXT_MISMATCH"},
+            semantic_attested=False,
+        )
+        request = clone_worker.SpeechRequest(
+            text="Azure cactus.",
+            voice_id="vc_semantic_test",
+            language_id="en",
+        )
+        with (
+            patch.object(clone_worker, "NARI_CLIENT", client),
+            patch.object(clone_worker, "voice_prompt_metadata", return_value=metadata),
+            patch.object(
+                clone_worker,
+                "validate_generated_wav",
+                return_value={"duration_s": 1.0},
+            ),
+        ):
+            result = clone_worker.request_xvector_fallback(
+                request,
+                reason="VOICE_REFERENCE_TEXT_MISMATCH",
+            )
+
+        self.assertEqual(result, b"fast-wav")
+        self.assertEqual(client.payload["voice_clone_mode"], "x_vector")
+
+    def test_nari_xvector_skips_per_paragraph_asr(self) -> None:
+        metadata = clone_worker.VoicePromptMetadata(
+            schema="qwen3_tts_base_voice_clone_prompt_v4",
+            reference_text=IOS_ENGLISH_GUIDE,
+            speaker_embedding=torch.zeros(1024),
+            semantic_contract_error={"code": "VOICE_REFERENCE_TEXT_MISMATCH"},
+            semantic_attested=False,
+        )
+        request = clone_worker.SpeechRequest(
+            text="Azure cactus.",
+            voice_id="vc_semantic_test",
+            language_id="en",
+        )
+        with (
+            patch.object(clone_worker, "voice_prompt_metadata", return_value=metadata),
+            patch.object(clone_worker, "semantic_asr_validator") as validator,
+        ):
+            result = clone_worker.validate_voice_candidate(
+                request,
+                clone_worker.GeneratedVoiceCandidate(b"fast-wav", "x-vector"),
+            )
+
+        self.assertEqual(result.wav, b"fast-wav")
+        self.assertIsNone(result.asr)
+        validator.assert_not_called()
+
+    def test_attested_icl_skips_per_paragraph_asr(self) -> None:
+        metadata = clone_worker.VoicePromptMetadata(
+            schema="qwen3_tts_base_voice_clone_prompt_v4",
+            reference_text="Azure cactus.",
+            speaker_embedding=torch.zeros(1024),
+            semantic_contract_error=None,
+            semantic_attested=True,
+        )
+        request = clone_worker.SpeechRequest(
+            text="Azure cactus.",
+            voice_id="vc_semantic_test",
+            language_id="en",
+        )
+        with (
+            patch.object(clone_worker, "voice_prompt_metadata", return_value=metadata),
+            patch.object(clone_worker, "semantic_asr_validator") as validator,
+        ):
+            result = clone_worker.validate_voice_candidate(
+                request,
+                clone_worker.GeneratedVoiceCandidate(b"fast-wav", "nari-icl"),
+            )
+
+        self.assertIsNone(result.asr)
+        validator.assert_not_called()
+
     def test_repeated_generated_quality_failure_uses_safe_xvector_fallback(self) -> None:
         rejection = HTTPException(
             503,

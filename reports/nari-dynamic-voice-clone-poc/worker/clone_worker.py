@@ -96,6 +96,7 @@ ASR_MODEL_DIR = Path(ASR_MODEL_DIR_VALUE).expanduser() if ASR_MODEL_DIR_VALUE el
 ASR_WARMUP = os.environ.get("CLONE_ASR_WARMUP", "0").strip() == "1"
 SCHEDULER = InferenceScheduler(max_queue_size=MAX_QUEUE_SIZE)
 REQUEST_COALESCER = RequestCoalescer(max_entries=64, ttl_s=90.0)
+CONTENT_COALESCER = RequestCoalescer(max_entries=32, ttl_s=120.0)
 NARI_CLIENT = httpx.Client(timeout=NARI_REQUEST_TIMEOUT_SECONDS)
 PROMPT_BUILDER_LOCK = threading.Lock()
 PROMPT_BUILDER_INSTANCE: VoicePromptBuilder | None = None
@@ -159,7 +160,7 @@ class GeneratedAudioQualityError(RuntimeError):
 @dataclass(frozen=True, slots=True)
 class ValidatedVoiceAudio:
     wav: bytes
-    asr: SemanticASREvidence
+    asr: SemanticASREvidence | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,6 +175,7 @@ class VoicePromptMetadata:
     reference_text: str
     speaker_embedding: torch.Tensor
     semantic_contract_error: dict[str, object] | None
+    semantic_attested: bool
 
 
 def _is_cjk(character: str) -> bool:
@@ -468,6 +470,44 @@ async def create_voice(
         transcript,
         float(reference_result.metrics["speech_duration_s"]),
     )
+    reference_wav = io.BytesIO()
+    sf.write(
+        reference_wav,
+        normalized,
+        SAMPLE_RATE,
+        format="WAV",
+        subtype="PCM_16",
+    )
+    try:
+        reference_evidence = await asyncio.to_thread(
+            semantic_asr_validator().validate,
+            reference_wav.getvalue(),
+            transcript,
+            language="",
+        )
+    except SemanticAudioMismatch as error:
+        structured_log(
+            "voice_reference_semantic_rejected",
+            reason=error.reason,
+            **error.metrics,
+        )
+        raise HTTPException(
+            422,
+            detail={
+                "code": "VOICE_REFERENCE_TEXT_MISMATCH",
+                "message": "The recording did not match the reference text.",
+                "reason": error.reason,
+            },
+        ) from error
+    except SemanticASRUnavailable as error:
+        raise HTTPException(
+            503,
+            detail={
+                "code": "VOICE_ASR_VALIDATION_UNAVAILABLE",
+                "message": "Reference validation is temporarily unavailable.",
+            },
+            headers=ASR_UNAVAILABLE_HEADERS,
+        ) from error
     voice_id = requested_voice_id or f"vc_{uuid.uuid4().hex}"
     destination = voice_dir(voice_id)
     structured_log(
@@ -496,6 +536,7 @@ async def create_voice(
                 reference_speech_duration_s=float(
                     reference_result.metrics["speech_duration_s"]
                 ),
+                semantic_attested=True,
             )
         finally:
             reference_path.unlink(missing_ok=True)
@@ -511,6 +552,10 @@ async def create_voice(
             "reference_quality": reference_result.metrics,
             "reference_quality_warnings": reference_result.warnings,
             "reference_transcript_contract": transcript_metrics,
+            "reference_semantic_similarity": round(
+                reference_evidence.similarity,
+                4,
+            ),
         }
         (destination / "metadata.json").write_text(
             json.dumps(metadata, indent=2), encoding="utf-8"
@@ -659,6 +704,7 @@ def voice_prompt_metadata(voice_id: str) -> VoicePromptMetadata:
             reference_text=reference_text,
             speaker_embedding=speaker.detach().cpu().clone(),
             semantic_contract_error=semantic_error,
+            semantic_attested=prompt.get("reference_contract_version") == 2,
         )
         PROMPT_METADATA_CACHE[voice_id] = (modified_ns, metadata)
         return metadata
@@ -754,11 +800,13 @@ def nari_request_payload(
     *,
     language: str,
     seed: int,
+    voice_clone_mode: str = "icl",
 ) -> dict[str, object]:
     return {
         "input": request.text.strip(),
         "voice": "clone",
         "voice_prompt": request.voice_id,
+        "voice_clone_mode": voice_clone_mode,
         "language": language,
         "seed": seed,
         "response_format": "wav",
@@ -892,66 +940,41 @@ def _voice_error_code(error: HTTPException) -> str | None:
 
 
 def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
-    """Synthesize only from the speaker embedding when ICL is unsafe.
+    """Use Nari's captured x-vector path when a legacy ICL prompt is unsafe.
 
-    The official Qwen Base x-vector path never receives reference text or
-    reference codec tokens, so it cannot prepend the recording guide. It is a
-    bounded compatibility path for quarantined legacy prompts and for a rare
-    runtime ICL semantic or quality failure; new incomplete recordings are
-    still rejected during voice creation so normal voices keep full-fidelity
-    ICL cloning.
+    This mode receives only the immutable speaker embedding. It cannot prepend
+    the recording guide, and unlike the former official-Qwen compatibility
+    path it stays on Nari's sub-second CUDA executor.
     """
 
-    speaker = voice_prompt_metadata(request.voice_id).speaker_embedding
-    if (
-        not isinstance(speaker, torch.Tensor)
-        or speaker.ndim != 1
-        or not speaker.is_floating_point()
-    ):
-        raise HTTPException(422, "invalid voice prompt speaker embedding")
+    # Load once here so malformed prompts fail before entering Nari's queue.
+    voice_prompt_metadata(request.voice_id)
 
     language = normalize_language(request.language_id)
     voice_hash = hashlib.sha256(request.voice_id.encode()).hexdigest()[:12]
     seeds = (request.seed, (request.seed + 104_729) % 2_147_483_647)
-    devices = [torch.cuda.current_device()] if torch.cuda.is_available() else []
     for attempt, seed in enumerate(seeds, start=1):
         try:
-            with torch.random.fork_rng(devices=devices):
-                torch.manual_seed(seed)
-                if torch.cuda.is_available():
-                    torch.cuda.manual_seed_all(seed)
-                wavs, sample_rate = prompt_builder().model.generate_voice_clone(
-                    text=request.text.strip(),
+            response = NARI_CLIENT.post(
+                f"{NARI_URL}/v1/audio/speech",
+                json=nari_request_payload(
+                    request,
                     language=language,
-                    voice_clone_prompt={
-                        "ref_code": [None],
-                        "ref_spk_embedding": [speaker],
-                        "x_vector_only_mode": [True],
-                        "icl_mode": [False],
-                    },
-                    non_streaming_mode=True,
-                    max_new_tokens=maximum_generation_frames(request.text),
-                    do_sample=True,
-                    temperature=NARI_TEMPERATURE,
-                    top_k=NARI_TOP_K,
-                    top_p=NARI_TOP_P,
-                    repetition_penalty=NARI_REPETITION_PENALTY,
-                    subtalker_dosample=True,
-                    subtalker_temperature=NARI_TEMPERATURE,
-                    subtalker_top_k=NARI_TOP_K,
-                    subtalker_top_p=NARI_TOP_P,
-                )
-            if sample_rate != SAMPLE_RATE or len(wavs) != 1:
-                raise GeneratedAudioQualityError("invalid-xvector-result")
-            output = io.BytesIO()
-            sf.write(
-                output,
-                np.asarray(wavs[0], dtype=np.float32),
-                SAMPLE_RATE,
-                format="WAV",
-                subtype="PCM_16",
+                    seed=seed,
+                    voice_clone_mode="x_vector",
+                ),
             )
-            wav = output.getvalue()
+            if response.status_code == 422:
+                raise HTTPException(422, "Nari rejected the x-vector request")
+            if response.status_code == 429:
+                raise HTTPException(
+                    429,
+                    "Nari is busy",
+                    headers={"Retry-After": "2"},
+                )
+            if response.status_code != 200:
+                raise HTTPException(503, "Nari x-vector synthesis failed")
+            wav = response.content
             metrics = validate_generated_wav(wav)
             expected_duration_limit = maximum_expected_output_duration_seconds(
                 request.text
@@ -988,7 +1011,7 @@ def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
                 },
                 headers=OUTPUT_TEXT_MISMATCH_HEADERS,
             ) from error
-        except Exception as error:
+        except httpx.HTTPError as error:
             structured_log(
                 "xvector_fallback_failed",
                 voice_hash=voice_hash,
@@ -1009,6 +1032,8 @@ def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
                     "X-Voice-Error-Code": "VOICE_XVECTOR_FALLBACK_FAILED",
                 },
             ) from error
+        except HTTPException:
+            raise
         structured_log(
             "xvector_fallback_accepted",
             voice_hash=voice_hash,
@@ -1058,11 +1083,20 @@ def validate_voice_candidate(
     candidate: GeneratedVoiceCandidate,
 ) -> ValidatedVoiceAudio:
     voice_hash = hashlib.sha256(request.voice_id.encode("utf-8")).hexdigest()[:12]
+    metadata = voice_prompt_metadata(request.voice_id)
+    if candidate.mode == "x-vector" or metadata.semantic_attested:
+        structured_log(
+            "generated_audio_fast_path_accepted",
+            voice_hash=voice_hash,
+            generation_mode=candidate.mode,
+            prompt_attested=metadata.semantic_attested,
+        )
+        return ValidatedVoiceAudio(wav=candidate.wav, asr=None)
     evidence = semantic_asr_validator().validate(
         candidate.wav,
         request.text,
         language=canonical_language_code(request.language_id),
-        reference_text=voice_reference_text(request.voice_id),
+        reference_text=metadata.reference_text,
     )
     structured_log(
         "generated_audio_semantic_accepted",
@@ -1824,18 +1858,27 @@ def captioned_speech(
             raise HTTPException(503, "audio conversion failed") from error
         timestamp_started = time.perf_counter()
         try:
-            timestamps = (
-                measured_word_timestamps(
-                    request.input,
-                    validated.asr,
-                    language=canonical_language_code(request.language),
-                    speed=request.speed,
-                    duration=duration,
-                )
-                if request.return_timestamps
-                and supports_word_timestamps(request.language)
-                else []
-            )
+            timestamps: list[dict[str, object]] = []
+            timestamp_mode = "segment"
+            if request.return_timestamps and supports_word_timestamps(request.language):
+                if validated.asr is not None:
+                    timestamps = measured_word_timestamps(
+                        request.input,
+                        validated.asr,
+                        language=canonical_language_code(request.language),
+                        speed=request.speed,
+                        duration=duration,
+                    )
+                    timestamp_mode = "asr-word"
+                else:
+                    timestamps = estimated_timestamps(
+                        request.input,
+                        duration,
+                        language=canonical_language_code(request.language),
+                        wav_bytes=wav,
+                        speed=request.speed,
+                    )
+                    timestamp_mode = "audio-estimated-word"
         except SemanticAudioMismatch as error:
             structured_log(
                 "generated_audio_word_alignment_rejected",
@@ -1854,12 +1897,7 @@ def captioned_speech(
         structured_log(
             "captioned_timestamps_built",
             language=canonical_language_code(request.language),
-            mode=(
-                "asr-word"
-                if request.return_timestamps
-                and supports_word_timestamps(request.language)
-                else "segment"
-            ),
+            mode=timestamp_mode,
             count=len(timestamps),
             first_start_s=(timestamps[0]["start_time"] if timestamps else None),
             last_end_s=(timestamps[-1]["end_time"] if timestamps else None),
@@ -1887,18 +1925,35 @@ def captioned_speech(
             run_s=generated.run_s,
         )
 
+    prompt_path = voice_dir(request.voice) / "prompt.pt"
+    try:
+        prompt_revision = prompt_path.stat().st_mtime_ns
+    except FileNotFoundError as error:
+        raise HTTPException(404, "voice not found") from error
+    fingerprint = hashlib.sha256(
+        (
+            request.model_dump_json()
+            + f"|prompt_revision={prompt_revision}"
+        ).encode("utf-8")
+    ).hexdigest()
+
+    def content_cached_synthesis():
+        return CONTENT_COALESCER.execute(
+            fingerprint,
+            fingerprint,
+            scheduled_synthesis,
+            wait_timeout_s=SYNTHESIS_TIMEOUT_SECONDS + 1.0,
+        )
+
     idempotency_source = "disabled"
     if x_request_id:
         if len(x_request_id) > 128:
             raise HTTPException(422, "request ID is too long")
-        fingerprint = hashlib.sha256(
-            request.model_dump_json().encode("utf-8")
-        ).hexdigest()
         try:
             coalesced = REQUEST_COALESCER.execute(
                 x_request_id,
                 fingerprint,
-                scheduled_synthesis,
+                content_cached_synthesis,
                 wait_timeout_s=SYNTHESIS_TIMEOUT_SECONDS + 1.0,
             )
         except IdempotencyConflict as error:
@@ -1909,13 +1964,25 @@ def captioned_speech(
                 "original request is still running",
                 headers={"Retry-After": "1"},
             ) from error
-        result = coalesced.value
+        content_result = coalesced.value
+        result = content_result.value
+        content_source = content_result.source
         idempotency_source = coalesced.source
     else:
-        result = scheduled_synthesis()
+        try:
+            content_result = content_cached_synthesis()
+        except IdempotencyWaitTimeout as error:
+            raise HTTPException(
+                503,
+                "original content request is still running",
+                headers={"Retry-After": "1"},
+            ) from error
+        result = content_result.value
+        content_source = content_result.source
     for key, value in timing_headers(result).items():
         response.headers[key] = value
     response.headers["X-TTS-Idempotency"] = idempotency_source
+    response.headers["X-TTS-Content-Cache"] = content_source
     return result.value
 
 

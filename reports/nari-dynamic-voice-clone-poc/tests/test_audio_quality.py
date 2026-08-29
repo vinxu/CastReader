@@ -95,7 +95,16 @@ class GeneratedAudioQualityTests(unittest.TestCase):
         self.assertFalse(payload["defer_codec_until_terminal"])
         self.assertFalse(payload["stream"])
         self.assertTrue(payload["non_streaming_mode"])
+        self.assertEqual(payload["voice_clone_mode"], "icl")
         self.assertLess(payload["max_new_tokens"], 4096)
+
+        xvector = clone_worker.nari_request_payload(
+            request,
+            language="english",
+            seed=23,
+            voice_clone_mode="x_vector",
+        )
+        self.assertEqual(xvector["voice_clone_mode"], "x_vector")
 
     def test_generation_cap_scales_with_requested_text(self) -> None:
         short = clone_worker.maximum_generation_frames("今天我们继续学习。")

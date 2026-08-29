@@ -415,12 +415,12 @@ class SemanticASRValidator:
         started = time.perf_counter()
         try:
             with self._inference_lock:
+                generate_kwargs = {"task": "transcribe"}
+                if language:
+                    generate_kwargs["language"] = language
                 result = recognizer(
                     {"array": mono, "sampling_rate": sample_rate},
-                    generate_kwargs={
-                        "language": language,
-                        "task": "transcribe",
-                    },
+                    generate_kwargs=generate_kwargs,
                     return_timestamps="word",
                 )
         except Exception as error:
