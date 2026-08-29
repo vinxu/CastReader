@@ -163,7 +163,7 @@ record = {
         name: digest(pathlib.Path(nari_root) / name) for name in nari_files
     },
     "hotpath": "nari-x-vector-or-attested-icl",
-    "runtime_asr": "creation-only-or-unattested-legacy",
+    "runtime_asr": "creation-only",
 }
 pathlib.Path(destination).write_text(json.dumps(record, indent=2) + "\n")
 PY
