@@ -162,6 +162,32 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
             reason="VOICE_REFERENCE_TEXT_MISMATCH",
         )
 
+    def test_repeated_generated_quality_failure_uses_safe_xvector_fallback(self) -> None:
+        rejection = HTTPException(
+            503,
+            detail={"code": "VOICE_GENERATED_AUDIO_REJECTED"},
+        )
+        request = clone_worker.SpeechRequest(
+            text="Azure cactus.",
+            voice_id="vc_semantic_test",
+            language_id="en",
+        )
+        with (
+            patch.object(clone_worker, "request_nari", side_effect=rejection),
+            patch.object(
+                clone_worker,
+                "request_xvector_fallback",
+                return_value=b"safe-wav",
+            ) as fallback,
+        ):
+            result = clone_worker.request_voice(request)
+
+        self.assertEqual(result, b"safe-wav")
+        fallback.assert_called_once_with(
+            request,
+            reason="VOICE_GENERATED_AUDIO_REJECTED",
+        )
+
     def test_unrelated_worker_failure_never_changes_voice_mode(self) -> None:
         failure = HTTPException(503, detail={"code": "VOICE_WORKER_BUSY"})
         request = clone_worker.SpeechRequest(

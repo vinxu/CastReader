@@ -798,8 +798,9 @@ def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
     The official Qwen Base x-vector path never receives reference text or
     reference codec tokens, so it cannot prepend the recording guide. It is a
     bounded compatibility path for quarantined legacy prompts and for a rare
-    runtime ICL semantic failure; new incomplete recordings are still rejected
-    during voice creation so normal voices keep full-fidelity ICL cloning.
+    runtime ICL semantic or quality failure; new incomplete recordings are
+    still rejected during voice creation so normal voices keep full-fidelity
+    ICL cloning.
     """
 
     prompt_path = voice_dir(request.voice_id) / "prompt.pt"
@@ -941,6 +942,7 @@ def request_voice(request: SpeechRequest) -> bytes:
         if code not in {
             "VOICE_REFERENCE_TEXT_MISMATCH",
             "VOICE_OUTPUT_TEXT_MISMATCH",
+            "VOICE_GENERATED_AUDIO_REJECTED",
         }:
             raise
         return request_xvector_fallback(request, reason=code)
