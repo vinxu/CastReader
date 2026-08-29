@@ -1052,6 +1052,17 @@ def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
 
 
 def request_voice_candidate(request: SpeechRequest) -> GeneratedVoiceCandidate:
+    metadata = voice_prompt_metadata(request.voice_id)
+    if not metadata.semantic_attested:
+        reason = "VOICE_PROMPT_UNATTESTED"
+        if metadata.semantic_contract_error is not None:
+            raw_code = metadata.semantic_contract_error.get("code")
+            if isinstance(raw_code, str) and raw_code:
+                reason = raw_code
+        return GeneratedVoiceCandidate(
+            wav=request_xvector_fallback(request, reason=reason),
+            mode="x-vector",
+        )
     try:
         return GeneratedVoiceCandidate(wav=request_nari(request), mode="nari-icl")
     except HTTPException as error:

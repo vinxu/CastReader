@@ -245,7 +245,15 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
             voice_id="vc_semantic_test",
             language_id="en",
         )
+        metadata = clone_worker.VoicePromptMetadata(
+            schema="qwen3_tts_base_voice_clone_prompt_v4",
+            reference_text="Azure cactus.",
+            speaker_embedding=torch.zeros(1024),
+            semantic_contract_error=None,
+            semantic_attested=True,
+        )
         with (
+            patch.object(clone_worker, "voice_prompt_metadata", return_value=metadata),
             patch.object(clone_worker, "request_nari", side_effect=mismatch),
             patch.object(
                 clone_worker,
@@ -260,6 +268,35 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
             request,
             reason="VOICE_REFERENCE_TEXT_MISMATCH",
         )
+
+    def test_unattested_legacy_prompt_uses_xvector_without_running_icl(self) -> None:
+        metadata = clone_worker.VoicePromptMetadata(
+            schema="qwen3_tts_base_voice_clone_prompt_v4",
+            reference_text="Azure cactus.",
+            speaker_embedding=torch.zeros(1024),
+            semantic_contract_error=None,
+            semantic_attested=False,
+        )
+        request = clone_worker.SpeechRequest(
+            text="Patient reader.",
+            voice_id="vc_semantic_test",
+            language_id="en",
+        )
+        with (
+            patch.object(clone_worker, "voice_prompt_metadata", return_value=metadata),
+            patch.object(clone_worker, "request_nari") as icl,
+            patch.object(
+                clone_worker,
+                "request_xvector_fallback",
+                return_value=b"fast-wav",
+            ) as xvector,
+        ):
+            result = clone_worker.request_voice_candidate(request)
+
+        self.assertEqual(result.mode, "x-vector")
+        self.assertEqual(result.wav, b"fast-wav")
+        icl.assert_not_called()
+        xvector.assert_called_once_with(request, reason="VOICE_PROMPT_UNATTESTED")
 
     def test_xvector_fallback_uses_nari_captured_mode(self) -> None:
         class FakeResponse:
@@ -365,7 +402,15 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
             voice_id="vc_semantic_test",
             language_id="en",
         )
+        metadata = clone_worker.VoicePromptMetadata(
+            schema="qwen3_tts_base_voice_clone_prompt_v4",
+            reference_text="Azure cactus.",
+            speaker_embedding=torch.zeros(1024),
+            semantic_contract_error=None,
+            semantic_attested=True,
+        )
         with (
+            patch.object(clone_worker, "voice_prompt_metadata", return_value=metadata),
             patch.object(clone_worker, "request_nari", side_effect=rejection),
             patch.object(
                 clone_worker,
@@ -388,7 +433,15 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
             voice_id="vc_semantic_test",
             language_id="en",
         )
+        metadata = clone_worker.VoicePromptMetadata(
+            schema="qwen3_tts_base_voice_clone_prompt_v4",
+            reference_text="Azure cactus.",
+            speaker_embedding=torch.zeros(1024),
+            semantic_contract_error=None,
+            semantic_attested=True,
+        )
         with (
+            patch.object(clone_worker, "voice_prompt_metadata", return_value=metadata),
             patch.object(clone_worker, "request_nari", side_effect=failure),
             patch.object(clone_worker, "request_xvector_fallback") as fallback,
         ):
