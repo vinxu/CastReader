@@ -360,6 +360,65 @@ final class VoiceCloneTests: XCTestCase {
         )
     }
 
+    func testVoiceIdentityUXCopyIsCompleteInEverySupportedLocale() throws {
+        let repositoryRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let data = try Data(
+            contentsOf: repositoryRoot
+                .appendingPathComponent("CastReader/Localizable.xcstrings")
+        )
+        let root = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+        let expectedLocales = Set([
+            "de", "en", "es", "fr", "hi", "it", "ja", "pt-BR", "zh-Hans",
+        ])
+        let identityKeys = [
+            "保存",
+            "修改名称",
+            "免费版可创建并试听多个自己的声音",
+            "创建成功后可随时修改，不影响声音使用",
+            "声音仍可正常使用，名称同步暂不可用，请稍后重试",
+            "声音名称",
+            "声音名称不能为空",
+            "声音名称不能包含换行或控制字符",
+            "声音名称不能超过 %lld 个字符",
+            "声音名称已在其他设备更新，请确认后重试",
+            "声音名称无效，请修改后重试",
+            "恢复默认名称",
+            "朗读文本不能超过 600 个字符",
+        ]
+
+        for key in identityKeys {
+            let entry = try XCTUnwrap(strings[key] as? [String: Any], key)
+            let localizations = try XCTUnwrap(
+                entry["localizations"] as? [String: Any],
+                key
+            )
+            XCTAssertEqual(Set(localizations.keys), expectedLocales, key)
+            for locale in expectedLocales {
+                let localization = try XCTUnwrap(
+                    localizations[locale] as? [String: Any],
+                    "\(key) [\(locale)]"
+                )
+                let unit = try XCTUnwrap(
+                    localization["stringUnit"] as? [String: Any],
+                    "\(key) [\(locale)]"
+                )
+                let value = try XCTUnwrap(
+                    unit["value"] as? String,
+                    "\(key) [\(locale)]"
+                )
+                XCTAssertFalse(value.isEmpty, "\(key) [\(locale)]")
+                if key.contains("%lld") {
+                    XCTAssertTrue(value.contains("%lld"), "\(key) [\(locale)]")
+                }
+            }
+        }
+    }
+
     @MainActor
     func testCreationRemainsAvailableWhenLegacyServerCapabilitySaysSlotConsumed() {
         let suite = "VoiceCloneTests-\(UUID().uuidString)"
@@ -494,6 +553,236 @@ final class VoiceCloneTests: XCTestCase {
         let result = try VoiceCloneResponseParser.list(from: data)
 
         XCTAssertEqual(result.voices.map(\.voiceId), ["vc_new", "vc_old"])
+    }
+
+    func testIdentityDecodingIsLossyWithoutHidingTheVoice() throws {
+        let data = Data(
+            ##"{"voices":[{"voiceId":"vc_old"},{"voiceId":"vc_null","identity":null},{"voiceId":"vc_bad","identity":{"schemaVersion":"v2","nameMode":"auto"}},{"voiceId":"vc_good","identity":{"schemaVersion":"v1","nameMode":"custom","autoNameIndex":4,"customName":"Bedtime","avatarToken":"v1:012345abcdef","avatar":{"styleVersion":"v1","backgroundStart":"#258BD9","backgroundEnd":"#244EC7","foreground":"#FFFFFF","glyph":"wave-bars"},"revision":3}}]}"##.utf8
+        )
+
+        let result = try VoiceCloneResponseParser.list(from: data)
+
+        XCTAssertEqual(
+            result.voices.map(\.voiceId),
+            ["vc_old", "vc_null", "vc_bad", "vc_good"]
+        )
+        XCTAssertNil(result.voices[0].identity)
+        XCTAssertNil(result.voices[1].identity)
+        XCTAssertNil(result.voices[2].identity)
+        XCTAssertEqual(result.voices[3].identity?.customName, "Bedtime")
+        XCTAssertEqual(result.voices[3].identity?.revision, 3)
+        XCTAssertEqual(result.voices[3].identity?.avatar.glyph, .waveBars)
+    }
+
+    func testCreateAndRenameIdentityParsersSupportSuccessAndRootConflict() throws {
+        let identityJSON = ##"{"schemaVersion":"v1","nameMode":"auto","autoNameIndex":2,"customName":null,"avatarToken":"v1:012345abcdef","avatar":{"styleVersion":"v1","backgroundStart":"#258BD9","backgroundEnd":"#244EC7","foreground":"#FFFFFF","glyph":"wave-ripple"},"revision":2}"##
+        let created = try VoiceCloneResponseParser.createdVoice(
+            from: Data(#"{"code":0,"data":{"voiceId":"vc_created","identity":\#(identityJSON)}}"#.utf8)
+        )
+        let renamed = try VoiceCloneResponseParser.identity(
+            from: Data(#"{"code":0,"data":{"voiceId":"vc_created","identity":\#(identityJSON)}}"#.utf8)
+        )
+        let conflict = VoiceCloneResponseParser.conflictIdentity(
+            from: Data(#"{"code":"VOICE_IDENTITY_CONFLICT","message":"changed","identity":\#(identityJSON)}"#.utf8)
+        )
+
+        XCTAssertEqual(created.identity?.autoNameIndex, 2)
+        XCTAssertEqual(renamed, created.identity)
+        XCTAssertEqual(conflict, created.identity)
+    }
+
+    func testRenameSuccessParserRejectsWrongEnvelopeVoiceRevisionOrName() throws {
+        let identity = ##"{"schemaVersion":"v1","nameMode":"custom","autoNameIndex":2,"customName":"Bedtime","avatarToken":"v1:012345abcdef","avatar":{"styleVersion":"v1","backgroundStart":"#258BD9","backgroundEnd":"#244EC7","foreground":"#FFFFFF","glyph":"wave-bars"},"revision":3}"##
+        func response(code: String, voiceID: String, identityJSON: String = identity) -> Data {
+            Data(
+                #"{"code":\#(code),"data":{"voiceId":"\#(voiceID)","identity":\#(identityJSON)}}"#.utf8
+            )
+        }
+
+        let accepted = try VoiceCloneResponseParser.renamedIdentity(
+            from: response(code: "0", voiceID: "vc_expected"),
+            expectedVoiceID: "vc_expected",
+            requestedName: "Bedtime",
+            expectedRevision: 2
+        )
+        XCTAssertEqual(accepted.revision, 3)
+
+        XCTAssertThrowsError(try VoiceCloneResponseParser.renamedIdentity(
+            from: response(code: "1", voiceID: "vc_expected"),
+            expectedVoiceID: "vc_expected",
+            requestedName: "Bedtime",
+            expectedRevision: 2
+        ))
+        XCTAssertThrowsError(try VoiceCloneResponseParser.renamedIdentity(
+            from: response(code: "0", voiceID: "vc_wrong"),
+            expectedVoiceID: "vc_expected",
+            requestedName: "Bedtime",
+            expectedRevision: 2
+        ))
+        XCTAssertThrowsError(try VoiceCloneResponseParser.renamedIdentity(
+            from: response(code: "0", voiceID: "vc_expected"),
+            expectedVoiceID: "vc_expected",
+            requestedName: "Bedtime",
+            expectedRevision: 3
+        ))
+        XCTAssertThrowsError(try VoiceCloneResponseParser.renamedIdentity(
+            from: response(code: "0", voiceID: "vc_expected"),
+            expectedVoiceID: "vc_expected",
+            requestedName: "Other Name",
+            expectedRevision: 2
+        ))
+
+        for malformedCode in ["false", "0.5"] {
+            XCTAssertThrowsError(try VoiceCloneResponseParser.renamedIdentity(
+                from: response(code: malformedCode, voiceID: "vc_expected"),
+                expectedVoiceID: "vc_expected",
+                requestedName: "Bedtime",
+                expectedRevision: 2
+            ))
+        }
+    }
+
+    func testIdentityRejectsNonASCIIHexPresentationValues() throws {
+        let fullwidthToken = Data(
+            ##"{"voices":[{"voiceId":"vc_token","identity":{"schemaVersion":"v1","nameMode":"auto","autoNameIndex":1,"customName":null,"avatarToken":"v1:０１２３４５abcdef","avatar":{"styleVersion":"v1","backgroundStart":"#258BD9","backgroundEnd":"#244EC7","foreground":"#FFFFFF","glyph":"wave-bars"},"revision":1}}]}"##.utf8
+        )
+        let fullwidthColor = Data(
+            ##"{"voices":[{"voiceId":"vc_color","identity":{"schemaVersion":"v1","nameMode":"auto","autoNameIndex":1,"customName":null,"avatarToken":"v1:012345abcdef","avatar":{"styleVersion":"v1","backgroundStart":"#１２８BD9","backgroundEnd":"#244EC7","foreground":"#FFFFFF","glyph":"wave-bars"},"revision":1}}]}"##.utf8
+        )
+
+        XCTAssertNil(try VoiceCloneResponseParser.list(from: fullwidthToken).voices.first?.identity)
+        XCTAssertNil(try VoiceCloneResponseParser.list(from: fullwidthColor).voices.first?.identity)
+    }
+
+    func testVoiceNameValidationMatchesBackendGraphemeContract() throws {
+        XCTAssertEqual(try VoiceCloneNameValidator.normalized("  爸爸读书  "), "爸爸读书")
+        XCTAssertEqual(try VoiceCloneNameValidator.normalized("\u{FEFF}Name\u{FEFF}"), "Name")
+        XCTAssertEqual(
+            try VoiceCloneNameValidator.normalized("\u{200B}Name\u{200B}"),
+            "\u{200B}Name\u{200B}"
+        )
+        XCTAssertEqual(
+            try VoiceCloneNameValidator.normalized(String(repeating: "👨‍👩‍👧‍👦", count: 40)),
+            String(repeating: "👨‍👩‍👧‍👦", count: 40)
+        )
+        XCTAssertThrowsError(
+            try VoiceCloneNameValidator.normalized(String(repeating: "🙂", count: 41))
+        )
+        XCTAssertThrowsError(try VoiceCloneNameValidator.normalized("line\nbreak"))
+        XCTAssertThrowsError(try VoiceCloneNameValidator.normalized("   "))
+        XCTAssertNil(try VoiceCloneNameValidator.normalized(nil))
+    }
+
+    func testRenameServiceSendsAuthenticatedPatchAndExplicitNullReset() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer {
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+        let recorder = VoiceCloneRequestRecorder()
+        let responseData = Data(
+            ##"{"code":0,"data":{"voiceId":"vc_http","identity":{"schemaVersion":"v1","nameMode":"auto","autoNameIndex":6,"customName":null,"avatarToken":"v1:012345abcdef","avatar":{"styleVersion":"v1","backgroundStart":"#258BD9","backgroundEnd":"#244EC7","foreground":"#FFFFFF","glyph":"wave-bars"},"revision":4}}}"##.utf8
+        )
+        VoiceCloneTestURLProtocol.handler = { request in
+            recorder.record(request)
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!,
+                responseData
+            )
+        }
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-contract.test")!,
+            session: session,
+            route: .globalGateway,
+            sessionProvider: VoiceCloneTestSessionProvider(token: "cms_contract")
+        )
+
+        let identity = try await service.renameVoice(
+            "vc_http",
+            name: nil,
+            expectedRevision: 3
+        )
+
+        XCTAssertEqual(identity.nameMode, .auto)
+        XCTAssertEqual(identity.revision, 4)
+        let request = try XCTUnwrap(recorder.lastRequest())
+        XCTAssertEqual(request.httpMethod, "PATCH")
+        XCTAssertEqual(request.url?.path, "/api/voice-clone/voices/vc_http")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer cms_contract")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "X-Auth-Provider"), "session")
+        let body = try XCTUnwrap(request.httpBody)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: body) as? [String: Any]
+        )
+        XCTAssertTrue(object["name"] is NSNull, "reset must send JSON null, not omit name")
+        XCTAssertEqual(object["expectedRevision"] as? Int, 3)
+    }
+
+    func testRenameServiceMapsConflictInvalidAndUnavailableContracts() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer {
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-contract.test")!,
+            session: session,
+            route: .globalGateway,
+            sessionProvider: VoiceCloneTestSessionProvider(token: "cms_contract")
+        )
+        let conflictIdentity = makeVoiceIdentity(
+            index: 2,
+            name: "Another Device",
+            revision: 5
+        )
+        let conflictData = Data(
+            ##"{"code":"VOICE_IDENTITY_CONFLICT","message":"changed","identity":{"schemaVersion":"v1","nameMode":"custom","autoNameIndex":2,"customName":"Another Device","avatarToken":"v1:012345abcdef","avatar":{"styleVersion":"v1","backgroundStart":"#258BD9","backgroundEnd":"#244EC7","foreground":"#FFFFFF","glyph":"wave-bars"},"revision":5}}"##.utf8
+        )
+        VoiceCloneTestURLProtocol.handler = VoiceCloneTestURLProtocol.json(
+            statusCode: 409,
+            data: conflictData
+        )
+        do {
+            _ = try await service.renameVoice("vc_http", name: "Mine", expectedRevision: 4)
+            XCTFail("expected optimistic concurrency conflict")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(error, .identityConflict(conflictIdentity))
+        }
+
+        VoiceCloneTestURLProtocol.handler = VoiceCloneTestURLProtocol.json(
+            statusCode: 422,
+            data: Data(
+                #"{"code":"VOICE_IDENTITY_INVALID","message":"name must not be empty"}"#.utf8
+            )
+        )
+        do {
+            _ = try await service.renameVoice("vc_http", name: "Valid", expectedRevision: 5)
+            XCTFail("expected identity validation error")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(error, .identityInvalid(nil))
+        }
+
+        VoiceCloneTestURLProtocol.handler = VoiceCloneTestURLProtocol.json(
+            statusCode: 503,
+            data: Data(
+                #"{"code":"VOICE_IDENTITY_UNAVAILABLE","message":"temporarily unavailable"}"#.utf8
+            )
+        )
+        do {
+            _ = try await service.renameVoice("vc_http", name: "Valid", expectedRevision: 5)
+            XCTFail("expected isolated identity availability error")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(error, .identityUnavailable)
+        }
     }
 
     func testQuotaErrorAndHeadersExposeRemainingSecondsAndReset() throws {
@@ -779,6 +1068,320 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertEqual(store.lastCreatedVoiceID, created.voiceId)
     }
 
+    @MainActor
+    func testDisplayNameUsesServerCustomThenAutoThenLegacyFallback() {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let account = String(repeating: "d", count: 64)
+        defaults.set(
+            ["vc_named": "Legacy Name", "vc_legacy": "Legacy Only"],
+            forKey: "voice_clone_labels_v1.account.\(account)"
+        )
+        let store = VoiceCloneStore(
+            service: ControlledVoiceCloneService(),
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        store.activateAccountScope(storageID: account)
+
+        let custom = ClonedVoice(
+            voiceId: "vc_named",
+            identity: makeVoiceIdentity(index: 7, name: "Server Name", revision: 2)
+        )
+        let automatic = ClonedVoice(
+            voiceId: "vc_auto",
+            identity: makeVoiceIdentity(index: 9, revision: 1)
+        )
+        let legacy = ClonedVoice(voiceId: "vc_legacy")
+
+        XCTAssertEqual(store.displayName(for: custom), "Server Name")
+        XCTAssertEqual(
+            store.displayName(for: automatic),
+            String(format: AppLocalized("我的声音 %lld"), Int64(9))
+        )
+        XCTAssertEqual(store.displayName(for: legacy), "Legacy Only")
+    }
+
+    @MainActor
+    func testRefreshNeverRegressesIdentityRevisionOrDropsKnownIdentity() async {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        store.activateAccountScope(storageID: String(repeating: "e", count: 64))
+
+        let firstRefresh = Task { await store.refresh() }
+        await service.waitForListCall(count: 1)
+        await service.completeNextList(VoiceCloneListResult(
+            voices: [ClonedVoice(
+                voiceId: "vc_merge",
+                identity: makeVoiceIdentity(index: 1, name: "Revision 2", revision: 2)
+            )],
+            nextCreateAt: nil
+        ))
+        await firstRefresh.value
+
+        let staleRefresh = Task { await store.refresh() }
+        await service.waitForListCall(count: 2)
+        await service.completeNextList(VoiceCloneListResult(
+            voices: [ClonedVoice(voiceId: "vc_merge", identity: nil)],
+            nextCreateAt: nil
+        ))
+        await staleRefresh.value
+        XCTAssertEqual(store.voice(withID: "vc_merge")?.identity?.revision, 2)
+
+        let newerRefresh = Task { await store.refresh() }
+        await service.waitForListCall(count: 3)
+        await service.completeNextList(VoiceCloneListResult(
+            voices: [ClonedVoice(
+                voiceId: "vc_merge",
+                identity: makeVoiceIdentity(index: 1, name: "Revision 3", revision: 3)
+            )],
+            nextCreateAt: nil
+        ))
+        await newerRefresh.value
+        let newestVoice = try! XCTUnwrap(store.voice(withID: "vc_merge"))
+        XCTAssertEqual(store.displayName(for: newestVoice), "Revision 3")
+    }
+
+    @MainActor
+    func testIdentityPresentationCacheSurvivesRelaunchAndStaysAccountScoped() async {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let accountA = String(repeating: "a", count: 64)
+        let accountB = String(repeating: "b", count: 64)
+        let identity = makeVoiceIdentity(
+            index: 4,
+            name: "Cached Voice",
+            revision: 2
+        )
+
+        let firstService = ControlledVoiceCloneService()
+        let firstStore = VoiceCloneStore(
+            service: firstService,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        firstStore.activateAccountScope(storageID: accountA)
+        let firstRefresh = Task { await firstStore.refresh() }
+        await firstService.waitForListCall(count: 1)
+        await firstService.completeNextList(VoiceCloneListResult(
+            voices: [ClonedVoice(voiceId: "vc_cached", identity: identity)],
+            nextCreateAt: nil
+        ))
+        await firstRefresh.value
+
+        let secondService = ControlledVoiceCloneService()
+        let relaunched = VoiceCloneStore(
+            service: secondService,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        relaunched.activateAccountScope(storageID: accountA)
+        let cached = try! XCTUnwrap(
+            relaunched.presentationVoice(withID: "vc_cached")
+        )
+        XCTAssertEqual(cached.identity, identity)
+        XCTAssertEqual(relaunched.displayName(for: cached), "Cached Voice")
+        XCTAssertTrue(relaunched.voices.isEmpty)
+
+        let refresh = Task { await relaunched.refresh() }
+        await secondService.waitForListCall(count: 1)
+        await secondService.completeNextList(VoiceCloneListResult(
+            voices: [ClonedVoice(voiceId: "vc_cached", identity: nil)],
+            nextCreateAt: nil
+        ))
+        await refresh.value
+        XCTAssertEqual(relaunched.voice(withID: "vc_cached")?.identity, identity)
+
+        relaunched.activateAccountScope(storageID: accountB)
+        XCTAssertNil(relaunched.presentationVoice(withID: "vc_cached"))
+        relaunched.activateAccountScope(storageID: accountA)
+        XCTAssertEqual(
+            relaunched.presentationVoice(withID: "vc_cached")?.identity,
+            identity
+        )
+    }
+
+    @MainActor
+    func testRenameSuccessAndConflictUseLatestRevisionWithoutChangingVoiceID() async {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        store.activateAccountScope(storageID: String(repeating: "f", count: 64))
+        let refresh = Task { await store.refresh() }
+        await service.waitForListCall(count: 1)
+        await service.completeNextList(VoiceCloneListResult(
+            voices: [ClonedVoice(
+                voiceId: "vc_rename",
+                identity: makeVoiceIdentity(index: 1, revision: 1)
+            )],
+            nextCreateAt: nil
+        ))
+        await refresh.value
+
+        let rename = Task { await store.rename("vc_rename", to: "First Name") }
+        await service.waitForRenameCall(count: 1)
+        let firstRenameCalls = await service.renameCalls()
+        XCTAssertEqual(firstRenameCalls.first?.expectedRevision, 1)
+        await service.completeNextRename(
+            returning: makeVoiceIdentity(index: 1, name: "First Name", revision: 2)
+        )
+        let renameSucceeded = await rename.value
+        XCTAssertTrue(renameSucceeded)
+        XCTAssertEqual(store.voice(withID: "vc_rename")?.voiceId, "vc_rename")
+        XCTAssertEqual(store.voice(withID: "vc_rename")?.identity?.revision, 2)
+
+        let conflict = Task { await store.rename("vc_rename", to: "My Edit") }
+        await service.waitForRenameCall(count: 2)
+        let conflictCalls = await service.renameCalls()
+        XCTAssertEqual(conflictCalls.last?.expectedRevision, 2)
+        await service.completeNextRename(
+            throwing: VoiceCloneError.identityConflict(
+                makeVoiceIdentity(index: 1, name: "Other Device", revision: 3)
+            )
+        )
+        let conflictSucceeded = await conflict.value
+        XCTAssertFalse(conflictSucceeded)
+        XCTAssertEqual(store.voice(withID: "vc_rename")?.identity?.revision, 3)
+        XCTAssertEqual(store.displayName(for: store.voice(withID: "vc_rename")!), "Other Device")
+
+        let recovered = Task { await store.rename("vc_rename", to: "Recovered Name") }
+        await service.waitForRenameCall(count: 3)
+        await service.completeNextRename(
+            throwing: VoiceCloneError.identityConflict(
+                makeVoiceIdentity(index: 1, name: "Recovered Name", revision: 4)
+            )
+        )
+        let recoveredSucceeded = await recovered.value
+        XCTAssertTrue(recoveredSucceeded)
+        XCTAssertNil(store.errorMessage)
+        XCTAssertEqual(store.voice(withID: "vc_rename")?.identity?.revision, 4)
+        XCTAssertEqual(store.displayName(for: store.voice(withID: "vc_rename")!), "Recovered Name")
+
+        let reset = Task { await store.rename("vc_rename", to: nil) }
+        await service.waitForRenameCall(count: 4)
+        let resetCalls = await service.renameCalls()
+        XCTAssertNil(resetCalls.last?.name)
+        XCTAssertEqual(resetCalls.last?.expectedRevision, 4)
+        await service.completeNextRename(
+            returning: makeVoiceIdentity(index: 1, revision: 5)
+        )
+        let resetSucceeded = await reset.value
+        XCTAssertTrue(resetSucceeded)
+        let resetVoice = try! XCTUnwrap(store.voice(withID: "vc_rename"))
+        XCTAssertEqual(resetVoice.identity?.nameMode, .auto)
+        XCTAssertEqual(store.displayName(for: resetVoice), "我的声音 1")
+    }
+
+    @MainActor
+    func testRenameResponseFromPreviousAccountCannotMutateNewAccount() async {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        let accountA = String(repeating: "1", count: 64)
+        let accountB = String(repeating: "2", count: 64)
+        store.activateAccountScope(storageID: accountA)
+        let refresh = Task { await store.refresh() }
+        await service.waitForListCall(count: 1)
+        await service.completeNextList(VoiceCloneListResult(
+            voices: [ClonedVoice(
+                voiceId: "vc_account_a",
+                identity: makeVoiceIdentity(index: 1, revision: 1)
+            )],
+            nextCreateAt: nil
+        ))
+        await refresh.value
+
+        let rename = Task { await store.rename("vc_account_a", to: "Late Name") }
+        await service.waitForRenameCall(count: 1)
+        store.activateAccountScope(storageID: accountB)
+        await service.completeNextRename(
+            returning: makeVoiceIdentity(index: 1, name: "Late Name", revision: 2)
+        )
+
+        let renameSucceeded = await rename.value
+        XCTAssertFalse(renameSucceeded)
+        XCTAssertTrue(store.voices.isEmpty)
+        XCTAssertNil(store.renamingVoiceId)
+        XCTAssertNil(store.errorMessage)
+    }
+
+    @MainActor
+    func testDeleteResponseFromPreviousAccountCannotRefreshOrMutateNewAccount() async {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        let accountA = String(repeating: "3", count: 64)
+        let accountB = String(repeating: "4", count: 64)
+        store.activateAccountScope(storageID: accountA)
+        let refreshA = Task { await store.refresh() }
+        await service.waitForListCall(count: 1)
+        await service.completeNextList(VoiceCloneListResult(
+            voices: [ClonedVoice(
+                voiceId: "vc_account_a",
+                identity: makeVoiceIdentity(index: 1, name: "A Voice", revision: 1)
+            )],
+            nextCreateAt: nil
+        ))
+        await refreshA.value
+
+        let delete = Task {
+            await store.delete(try! XCTUnwrap(store.voice(withID: "vc_account_a")))
+        }
+        await service.waitForDeleteCall(count: 1)
+
+        store.activateAccountScope(storageID: accountB)
+        let refreshB = Task { await store.refresh() }
+        await service.waitForListCall(count: 2)
+        await service.completeNextList(VoiceCloneListResult(
+            voices: [ClonedVoice(
+                voiceId: "vc_account_b",
+                identity: makeVoiceIdentity(index: 1, name: "B Voice", revision: 1)
+            )],
+            nextCreateAt: nil
+        ))
+        await refreshB.value
+        await service.enqueueImmediateList(VoiceCloneListResult(
+            voices: [],
+            nextCreateAt: nil
+        ))
+        await service.completeNextDelete()
+        await delete.value
+
+        let current = try! XCTUnwrap(store.voice(withID: "vc_account_b"))
+        XCTAssertEqual(store.displayName(for: current), "B Voice")
+        XCTAssertNil(store.deletingVoiceId)
+        XCTAssertNil(store.errorMessage)
+        let listCallCount = await service.listCalls()
+        XCTAssertEqual(listCallCount, 2)
+    }
+
     func testCreateParserSupportsEnvelope() throws {
         let data = Data(#"{"voice":{"voiceId":"vc_created","sampleUrl":"https://example.com/sample.wav","reference_language":"zh","supported_languages":["zh","en"]}}"#.utf8)
         let voice = try VoiceCloneResponseParser.createdVoice(from: data)
@@ -867,8 +1470,32 @@ final class VoiceCloneTests: XCTestCase {
     }
 }
 
+private func makeVoiceIdentity(
+    index: Int,
+    name: String? = nil,
+    revision: Int
+) -> VoiceCloneIdentity {
+    VoiceCloneIdentity(
+        schemaVersion: "v1",
+        nameMode: name == nil ? .auto : .custom,
+        autoNameIndex: index,
+        customName: name,
+        avatarToken: "v1:012345abcdef",
+        avatar: VoiceCloneAvatarPresentation(
+            styleVersion: "v1",
+            backgroundStart: "#258BD9",
+            backgroundEnd: "#244EC7",
+            foreground: "#FFFFFF",
+            glyph: .waveBars
+        ),
+        revision: revision
+    )
+}
+
 private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
     private typealias ListContinuation = CheckedContinuation<VoiceCloneListResult, Error>
+    private typealias DeleteContinuation = CheckedContinuation<Void, Error>
+    private typealias RenameContinuation = CheckedContinuation<VoiceCloneIdentity, Error>
     private typealias CallWaiter = (
         count: Int,
         continuation: CheckedContinuation<Void, Never>
@@ -877,7 +1504,20 @@ private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
     private let createdVoice: ClonedVoice
     private var listCallCount = 0
     private var pendingLists: [ListContinuation] = []
+    private var immediateListResults: [VoiceCloneListResult] = []
     private var callWaiters: [CallWaiter] = []
+    private var deleteCallValues: [String] = []
+    private var pendingDeletes: [DeleteContinuation] = []
+    private var deleteWaiters: [CallWaiter] = []
+    private var renameCallValues: [RenameCall] = []
+    private var pendingRenames: [RenameContinuation] = []
+    private var renameWaiters: [CallWaiter] = []
+
+    struct RenameCall: Equatable, Sendable {
+        let voiceID: String
+        let name: String?
+        let expectedRevision: Int
+    }
 
     init(createdVoice: ClonedVoice = ClonedVoice(voiceId: "vc_created")) {
         self.createdVoice = createdVoice
@@ -886,12 +1526,15 @@ private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
     func hasSession() async -> Bool { true }
 
     func listVoices() async throws -> VoiceCloneListResult {
-        try await withCheckedThrowingContinuation { continuation in
-            listCallCount += 1
+        listCallCount += 1
+        let ready = callWaiters.filter { listCallCount >= $0.count }
+        callWaiters.removeAll { listCallCount >= $0.count }
+        ready.forEach { $0.continuation.resume() }
+        if !immediateListResults.isEmpty {
+            return immediateListResults.removeFirst()
+        }
+        return try await withCheckedThrowingContinuation { continuation in
             pendingLists.append(continuation)
-            let ready = callWaiters.filter { listCallCount >= $0.count }
-            callWaiters.removeAll { listCallCount >= $0.count }
-            ready.forEach { $0.continuation.resume() }
         }
     }
 
@@ -906,7 +1549,41 @@ private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
         return createdVoice
     }
 
-    func deleteVoice(_ voiceId: String) async throws {}
+    func deleteVoice(_ voiceId: String) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            deleteCallValues.append(voiceId)
+            pendingDeletes.append(continuation)
+            let ready = deleteWaiters.filter {
+                deleteCallValues.count >= $0.count
+            }
+            deleteWaiters.removeAll {
+                deleteCallValues.count >= $0.count
+            }
+            ready.forEach { $0.continuation.resume() }
+        }
+    }
+
+    func renameVoice(
+        _ voiceId: String,
+        name: String?,
+        expectedRevision: Int
+    ) async throws -> VoiceCloneIdentity {
+        try await withCheckedThrowingContinuation { continuation in
+            renameCallValues.append(RenameCall(
+                voiceID: voiceId,
+                name: name,
+                expectedRevision: expectedRevision
+            ))
+            pendingRenames.append(continuation)
+            let ready = renameWaiters.filter {
+                renameCallValues.count >= $0.count
+            }
+            renameWaiters.removeAll {
+                renameCallValues.count >= $0.count
+            }
+            ready.forEach { $0.continuation.resume() }
+        }
+    }
 
     func waitForListCall(count: Int) async {
         guard listCallCount < count else { return }
@@ -919,4 +1596,137 @@ private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
         precondition(!pendingLists.isEmpty, "No pending list request")
         pendingLists.removeFirst().resume(returning: result)
     }
+
+    func enqueueImmediateList(_ result: VoiceCloneListResult) {
+        immediateListResults.append(result)
+    }
+
+    func listCalls() -> Int {
+        listCallCount
+    }
+
+    func waitForDeleteCall(count: Int) async {
+        guard deleteCallValues.count < count else { return }
+        await withCheckedContinuation { continuation in
+            deleteWaiters.append((count: count, continuation: continuation))
+        }
+    }
+
+    func completeNextDelete() {
+        precondition(!pendingDeletes.isEmpty, "No pending delete request")
+        pendingDeletes.removeFirst().resume()
+    }
+
+    func waitForRenameCall(count: Int) async {
+        guard renameCallValues.count < count else { return }
+        await withCheckedContinuation { continuation in
+            renameWaiters.append((count: count, continuation: continuation))
+        }
+    }
+
+    func renameCalls() -> [RenameCall] {
+        renameCallValues
+    }
+
+    func completeNextRename(returning identity: VoiceCloneIdentity) {
+        precondition(!pendingRenames.isEmpty, "No pending rename request")
+        pendingRenames.removeFirst().resume(returning: identity)
+    }
+
+    func completeNextRename(throwing error: Error) {
+        precondition(!pendingRenames.isEmpty, "No pending rename request")
+        pendingRenames.removeFirst().resume(throwing: error)
+    }
+}
+
+private final class VoiceCloneRequestRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var request: URLRequest?
+
+    func record(_ request: URLRequest) {
+        lock.lock()
+        self.request = request
+        lock.unlock()
+    }
+
+    func lastRequest() -> URLRequest? {
+        lock.lock()
+        defer { lock.unlock() }
+        return request
+    }
+}
+
+private final class VoiceCloneTestURLProtocol: URLProtocol {
+    static var handler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+
+    static func json(
+        statusCode: Int,
+        data: Data
+    ) -> (URLRequest) throws -> (HTTPURLResponse, Data) {
+        { request in
+            (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: statusCode,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!,
+                data
+            )
+        }
+    }
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        guard let handler = Self.handler else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+        do {
+            let (response, data) = try handler(Self.materializedRequest(request))
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
+
+    private static func materializedRequest(_ request: URLRequest) -> URLRequest {
+        guard request.httpBody == nil, let stream = request.httpBodyStream else {
+            return request
+        }
+        stream.open()
+        defer { stream.close() }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 16 * 1_024)
+        while true {
+            let count = stream.read(&buffer, maxLength: buffer.count)
+            if count > 0 {
+                data.append(contentsOf: buffer.prefix(count))
+            } else {
+                break
+            }
+        }
+        var copy = request
+        copy.httpBodyStream = nil
+        copy.httpBody = data
+        return copy
+    }
+}
+
+private actor VoiceCloneTestSessionProvider: MobileSessionProviding {
+    private var token: String?
+
+    init(token: String?) {
+        self.token = token
+    }
+
+    func sessionToken() -> String? { token }
+    func refreshSession() -> String? { token }
+    func invalidateSession() { token = nil }
 }

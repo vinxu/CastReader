@@ -893,7 +893,7 @@ final class VoiceSwitchStatusCenter: ObservableObject {
 
     private static func displayName(for voiceID: String) -> String {
         if let option = VoiceCatalog.option(for: voiceID) { return option.name }
-        if let clone = VoiceCloneStore.shared.voices.first(where: { $0.voiceId == voiceID }) {
+        if let clone = VoiceCloneStore.shared.presentationVoice(withID: voiceID) {
             return VoiceCloneStore.shared.displayName(for: clone)
         }
         return voiceID

@@ -1,4 +1,5 @@
 import Foundation
+import CoreFoundation
 
 enum VoiceCloneLanguageSupport {
     static let all = ["de", "en", "es", "fr", "it", "ja", "ko", "pt", "ru", "zh"]
@@ -98,6 +99,148 @@ enum VoiceCloneQualityMessage {
     }
 }
 
+struct VoiceCloneAvatarPresentation: Equatable, Codable {
+    enum Glyph: String, Equatable, Codable {
+        case waveBars = "wave-bars"
+        case wavePulse = "wave-pulse"
+        case waveOrbit = "wave-orbit"
+        case waveRipple = "wave-ripple"
+    }
+
+    let styleVersion: String
+    let backgroundStart: String
+    let backgroundEnd: String
+    let foreground: String
+    let glyph: Glyph
+
+    var isSupported: Bool {
+        styleVersion == "v1"
+            && Self.isHexColor(backgroundStart)
+            && Self.isHexColor(backgroundEnd)
+            && Self.isHexColor(foreground)
+    }
+
+    private static func isHexColor(_ value: String) -> Bool {
+        let bytes = Array(value.utf8)
+        guard bytes.count == 7, bytes.first == 0x23 else { return false }
+        return bytes.dropFirst().allSatisfy {
+            (0x30...0x39).contains($0)
+                || (0x41...0x46).contains($0)
+                || (0x61...0x66).contains($0)
+        }
+    }
+}
+
+struct VoiceCloneIdentity: Equatable, Codable {
+    enum NameMode: String, Equatable, Codable {
+        case auto
+        case custom
+    }
+
+    let schemaVersion: String
+    let nameMode: NameMode
+    let autoNameIndex: Int
+    let customName: String?
+    let avatarToken: String
+    let avatar: VoiceCloneAvatarPresentation
+    let revision: Int
+
+    var isSupported: Bool {
+        let tokenBytes = Array(avatarToken.utf8)
+        let validToken = tokenBytes.count == 15
+            && tokenBytes.prefix(3).elementsEqual([0x76, 0x31, 0x3A])
+            && tokenBytes.dropFirst(3).allSatisfy {
+                (0x30...0x39).contains($0) || (0x61...0x66).contains($0)
+            }
+        let validNameMode: Bool
+        switch nameMode {
+        case .auto:
+            validNameMode = customName == nil
+        case .custom:
+            if let customName,
+               let normalized = try? VoiceCloneNameValidator.normalized(customName) {
+                validNameMode = normalized == customName
+            } else {
+                validNameMode = false
+            }
+        }
+        return schemaVersion == "v1"
+            && autoNameIndex > 0
+            && autoNameIndex <= Int(Int32.max)
+            && revision > 0
+            && revision <= Int(Int32.max)
+            && validToken
+            && validNameMode
+            && avatar.isSupported
+    }
+
+    func matchesRequestedName(_ normalizedName: String?) -> Bool {
+        switch (nameMode, normalizedName) {
+        case (.auto, nil):
+            return customName == nil
+        case (.custom, .some(let value)):
+            return customName == value
+        default:
+            return false
+        }
+    }
+}
+
+enum VoiceCloneNameValidator {
+    static let maximumGraphemes = 40
+    static let maximumUnicodeScalars = 1_024
+    static let maximumExpectedRevision = 2_147_483_646
+
+    /// Matches ECMAScript String.prototype.trim, which is the canonical Web
+    /// and backend normalization contract. Foundation differs for U+200B and
+    /// U+FEFF, so using `.whitespacesAndNewlines` would make identities valid
+    /// on one client but disappear on another.
+    private static let canonicalTrimCharacters: CharacterSet = {
+        let codePoints = [
+            0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x0020, 0x00A0,
+            0x1680,
+            0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005,
+            0x2006, 0x2007, 0x2008, 0x2009, 0x200A,
+            0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF,
+        ]
+        var characters = CharacterSet()
+        for codePoint in codePoints {
+            if let scalar = UnicodeScalar(codePoint) {
+                characters.insert(charactersIn: String(scalar))
+            }
+        }
+        return characters
+    }()
+
+    static func normalized(_ value: String?) throws -> String? {
+        guard let value else { return nil }
+        let normalized = value
+            .precomposedStringWithCanonicalMapping
+            .trimmingCharacters(in: canonicalTrimCharacters)
+        guard !normalized.isEmpty else {
+            throw VoiceCloneError.identityInvalid(AppLocalized("声音名称不能为空"))
+        }
+        let containsForbiddenScalar = normalized.unicodeScalars.contains { scalar in
+            let value = scalar.value
+            return value <= 0x1F
+                || (0x7F...0x9F).contains(value)
+                || value == 0x2028
+                || value == 0x2029
+        }
+        guard !containsForbiddenScalar else {
+            throw VoiceCloneError.identityInvalid(AppLocalized("声音名称不能包含换行或控制字符"))
+        }
+        guard normalized.count <= maximumGraphemes,
+              normalized.unicodeScalars.count <= maximumUnicodeScalars else {
+            throw VoiceCloneError.identityInvalid(String(
+                format: AppLocalized("声音名称不能超过 %lld 个字符"),
+                Int64(maximumGraphemes)
+            ))
+        }
+        return normalized
+    }
+}
+
 struct ClonedVoice: Identifiable, Equatable, Decodable {
     let voiceId: String
     let createdAt: String?
@@ -107,6 +250,7 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
     let previewDurationMs: Int?
     let referenceLanguage: String?
     let supportedLanguages: [String]
+    let identity: VoiceCloneIdentity?
 
     var id: String { voiceId }
 
@@ -118,7 +262,8 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
         previewStatus: String? = nil,
         previewDurationMs: Int? = nil,
         referenceLanguage: String? = nil,
-        supportedLanguages: [String] = []
+        supportedLanguages: [String] = [],
+        identity: VoiceCloneIdentity? = nil
     ) {
         self.voiceId = voiceId
         self.createdAt = createdAt
@@ -128,6 +273,7 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
         self.previewDurationMs = previewDurationMs
         self.referenceLanguage = referenceLanguage
         self.supportedLanguages = supportedLanguages
+        self.identity = identity
     }
 
     init(from decoder: Decoder) throws {
@@ -152,10 +298,26 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
         supportedLanguages = try container.decodeIfPresent([String].self, forKey: .supportedLanguages)
             ?? container.decodeIfPresent([String].self, forKey: .supportedLanguagesSnake)
             ?? []
+        let decodedIdentity = try? container.decode(VoiceCloneIdentity.self, forKey: .identity)
+        identity = decodedIdentity?.isSupported == true ? decodedIdentity : nil
+    }
+
+    func replacingIdentity(_ identity: VoiceCloneIdentity?) -> ClonedVoice {
+        ClonedVoice(
+            voiceId: voiceId,
+            createdAt: createdAt,
+            sampleURL: sampleURL,
+            status: status,
+            previewStatus: previewStatus,
+            previewDurationMs: previewDurationMs,
+            referenceLanguage: referenceLanguage,
+            supportedLanguages: supportedLanguages,
+            identity: identity
+        )
     }
 
     private enum CodingKeys: String, CodingKey {
-        case voiceId, id, createdAt, sampleUrl, status, previewStatus, previewDurationMs, referenceLanguage, supportedLanguages
+        case voiceId, id, createdAt, sampleUrl, status, previewStatus, previewDurationMs, referenceLanguage, supportedLanguages, identity
         case voiceIdSnake = "voice_id"
         case createdAtSnake = "created_at"
         case sampleUrlSnake = "sample_url"
@@ -310,6 +472,49 @@ enum VoiceCloneResponseParser {
         let decoded = try JSONDecoder().decode(ClonedVoice.self, from: JSONSerialization.data(withJSONObject: candidate))
         guard decoded.voiceId.hasPrefix("vc_") else { throw VoiceCloneError.invalidResponse }
         return decoded
+    }
+
+    static func identity(from data: Data) throws -> VoiceCloneIdentity {
+        let object = try JSONSerialization.jsonObject(with: data)
+        guard let root = object as? [String: Any] else {
+            throw VoiceCloneError.invalidResponse
+        }
+        let payload = (root["data"] as? [String: Any]) ?? root
+        guard let object = (payload["identity"] as? [String: Any])
+            ?? (root["identity"] as? [String: Any]),
+              let encoded = try? JSONSerialization.data(withJSONObject: object),
+              let identity = try? JSONDecoder().decode(VoiceCloneIdentity.self, from: encoded),
+              identity.isSupported else {
+            throw VoiceCloneError.invalidResponse
+        }
+        return identity
+    }
+
+    static func renamedIdentity(
+        from data: Data,
+        expectedVoiceID: String,
+        requestedName: String?,
+        expectedRevision: Int
+    ) throws -> VoiceCloneIdentity {
+        let object = try JSONSerialization.jsonObject(with: data)
+        guard let root = object as? [String: Any],
+              let code = root["code"] as? NSNumber,
+              CFGetTypeID(code) != CFBooleanGetTypeID(),
+              code.doubleValue == 0,
+              let payload = root["data"] as? [String: Any],
+              payload["voiceId"] as? String == expectedVoiceID else {
+            throw VoiceCloneError.invalidResponse
+        }
+        let identity = try identity(from: data)
+        guard identity.revision > expectedRevision,
+              identity.matchesRequestedName(requestedName) else {
+            throw VoiceCloneError.invalidResponse
+        }
+        return identity
+    }
+
+    static func conflictIdentity(from data: Data) -> VoiceCloneIdentity? {
+        try? identity(from: data)
     }
 
     static func serverMessage(from data: Data) -> String? {
@@ -470,6 +675,9 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
     case creationLimit(Date?)
     case quotaExhausted(Date?)
     case workerBusy(String?)
+    case identityConflict(VoiceCloneIdentity?)
+    case identityInvalid(String?)
+    case identityUnavailable
     case temporaryUnavailable
     case server(Int, String?)
     case invalidResponse
@@ -496,6 +704,12 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
             }
             return AppLocalized("本月 120 分钟的克隆音色额度已用完。你可以切换到预设音色继续朗读或解读。")
         case .workerBusy: return AppLocalized("声音服务繁忙，请重试")
+        case .identityConflict:
+            return AppLocalized("声音名称已在其他设备更新，请确认后重试")
+        case .identityInvalid(let message):
+            return message ?? AppLocalized("声音名称无效，请修改后重试")
+        case .identityUnavailable:
+            return AppLocalized("声音仍可正常使用，名称同步暂不可用，请稍后重试")
         case .temporaryUnavailable: return AppLocalized("声音服务暂时不可用，请稍后重试")
         case .server: return AppLocalized("声音克隆请求失败")
         case .invalidResponse: return AppLocalized("声音克隆返回数据无效")

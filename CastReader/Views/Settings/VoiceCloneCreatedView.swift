@@ -13,6 +13,7 @@ struct VoiceCloneCreatedView: View {
     @State private var showPaywall = false
     @State private var showCreation = false
     @State private var pendingDelete: ClonedVoice?
+    @State private var pendingRename: ClonedVoice?
     @State private var sessionReady: Bool
     @State private var sessionCheckCompleted: Bool
 
@@ -36,16 +37,23 @@ struct VoiceCloneCreatedView: View {
                 createdContent
             }
         }
-        .task(id: auth.isSignedIn) {
+        .task(id: auth.accountBoundaryID) {
             guard auth.isSignedIn else {
                 sessionReady = false
                 sessionCheckCompleted = true
                 return
             }
+            sessionReady = false
+            sessionCheckCompleted = false
             await pro.refreshServer()
             sessionReady = await auth.ensureMobileSessionForVoiceClone()
             sessionCheckCompleted = true
             if sessionReady { await store.refresh() }
+        }
+        .onChange(of: auth.accountBoundaryID) { _ in
+            pendingRename = nil
+            pendingDelete = nil
+            showCreation = false
         }
         .sheet(isPresented: $showLogin) { LoginView() }
         .onChange(of: showLogin) { presented in
@@ -64,6 +72,9 @@ struct VoiceCloneCreatedView: View {
             )
         }
         .sheet(isPresented: $showCreation) { VoiceCloneCreationView(language: language) }
+        .sheet(item: $pendingRename) { voice in
+            VoiceCloneRenameView(voiceID: voice.voiceId)
+        }
         .onAppear {
             #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("-CastReaderOpenVoiceCloneCreation") {
@@ -338,7 +349,7 @@ struct VoiceCloneCreatedView: View {
                 .foregroundStyle(AppTheme.primary)
                 .padding(.top, 1)
             VStack(alignment: .leading, spacing: 5) {
-                Text("免费版可创建并试听一个自己的声音")
+                Text("免费版可创建并试听多个自己的声音")
                     .font(.subheadline.weight(.semibold))
                 Text("升级 Pro 后可用于朗读和解读，每月 120 分钟。")
                     .font(.caption)
@@ -467,20 +478,11 @@ struct VoiceCloneCreatedView: View {
     private func cloneRow(_ voice: ClonedVoice) -> some View {
         HStack(spacing: 14) {
             ZStack(alignment: .bottomTrailing) {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: cloneAvatarColors(voice.voiceId),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 50, height: 50)
-                    .overlay(Circle().stroke(Color.white.opacity(0.24), lineWidth: 1))
-                Image(systemName: previewPlayer.playingVoiceId == voice.voiceId ? "waveform" : "person.fill")
-                    .font(.system(size: 21, weight: .semibold))
-                    .foregroundStyle(Color.white)
-                    .symbolEffect(.variableColor.iterative, isActive: previewPlayer.playingVoiceId == voice.voiceId)
+                ClonedVoiceAvatarView(
+                    voice: voice,
+                    size: 50,
+                    isAnimating: previewPlayer.playingVoiceId == voice.voiceId
+                )
                 Button {
                     previewPlayer.toggle(voice)
                 } label: {
@@ -544,6 +546,11 @@ struct VoiceCloneCreatedView: View {
             )
 
             Menu {
+                if voice.identity != nil {
+                    Button("修改名称", systemImage: "pencil") {
+                        pendingRename = voice
+                    }
+                }
                 Button("删除", systemImage: "trash", role: .destructive) { pendingDelete = voice }
             } label: { Image(systemName: "ellipsis").frame(width: 36, height: 36) }
         }
@@ -556,22 +563,6 @@ struct VoiceCloneCreatedView: View {
             return
         }
         Task { await store.select(voice, for: language) }
-    }
-
-    private func cloneAvatarColors(_ voiceID: String) -> [Color] {
-        let seed = voiceID.unicodeScalars.reduce(0) {
-            ($0 &* 31 &+ Int($1.value)) % 4
-        }
-        switch seed {
-        case 0:
-            return [Color(red: 0.21, green: 0.68, blue: 1.00), Color(red: 0.16, green: 0.38, blue: 0.94)]
-        case 1:
-            return [Color(red: 0.47, green: 0.55, blue: 1.00), Color(red: 0.34, green: 0.25, blue: 0.84)]
-        case 2:
-            return [Color(red: 0.12, green: 0.74, blue: 0.75), Color(red: 0.05, green: 0.43, blue: 0.75)]
-        default:
-            return [Color(red: 0.33, green: 0.64, blue: 0.98), Color(red: 0.25, green: 0.32, blue: 0.78)]
-        }
     }
 
     private func cloneMetadata(_ voice: ClonedVoice) -> String {
@@ -606,6 +597,163 @@ struct VoiceCloneCreatedView: View {
     }
 }
 
+struct ClonedVoiceAvatarView: View {
+    let voice: ClonedVoice
+    var size: CGFloat = 50
+    var isAnimating = false
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: colors,
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(Circle().stroke(Color.white.opacity(0.24), lineWidth: 1))
+            Image(systemName: isAnimating ? "waveform" : symbolName)
+                .font(.system(size: size * 0.42, weight: .semibold))
+                .foregroundStyle(foreground)
+                .symbolEffect(.variableColor.iterative, isActive: isAnimating)
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+
+    private var colors: [Color] {
+        if let avatar = voice.identity?.avatar, avatar.isSupported {
+            return [
+                Color(hexString: avatar.backgroundStart),
+                Color(hexString: avatar.backgroundEnd),
+            ]
+        }
+        let seed = voice.voiceId.unicodeScalars.reduce(0) {
+            ($0 &* 31 &+ Int($1.value)) % 4
+        }
+        switch seed {
+        case 0:
+            return [Color(red: 0.21, green: 0.68, blue: 1.00), Color(red: 0.16, green: 0.38, blue: 0.94)]
+        case 1:
+            return [Color(red: 0.47, green: 0.55, blue: 1.00), Color(red: 0.34, green: 0.25, blue: 0.84)]
+        case 2:
+            return [Color(red: 0.12, green: 0.74, blue: 0.75), Color(red: 0.05, green: 0.43, blue: 0.75)]
+        default:
+            return [Color(red: 0.33, green: 0.64, blue: 0.98), Color(red: 0.25, green: 0.32, blue: 0.78)]
+        }
+    }
+
+    private var foreground: Color {
+        guard let value = voice.identity?.avatar.foreground else { return .white }
+        return Color(hexString: value)
+    }
+
+    private var symbolName: String {
+        switch voice.identity?.avatar.glyph {
+        case .waveBars: return "waveform"
+        case .wavePulse: return "waveform.path.ecg"
+        case .waveOrbit: return "dot.radiowaves.left.and.right"
+        case .waveRipple: return "wave.3.right"
+        case nil: return "person.fill"
+        }
+    }
+}
+
+@MainActor
+private struct VoiceCloneRenameView: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var store = VoiceCloneStore.shared
+    let voiceID: String
+    @State private var name = ""
+    @State private var validationMessage: String?
+
+    private var voice: ClonedVoice? { store.voice(withID: voiceID) }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField(
+                        "声音名称",
+                        text: $name,
+                        prompt: Text(voice.map(store.displayName(for:)) ?? AppLocalized("我的声音"))
+                    )
+                    .textInputAutocapitalization(.sentences)
+                    .submitLabel(.done)
+                    .accessibilityIdentifier("voiceCloneNameField")
+
+                    HStack {
+                        if let validationMessage {
+                            Text(validationMessage)
+                                .foregroundStyle(AppTheme.destructive)
+                        } else {
+                            Text("创建成功后可随时修改，不影响声音使用")
+                                .foregroundStyle(AppTheme.mutedForeground)
+                        }
+                        Spacer()
+                        Text("\(name.count)/\(VoiceCloneNameValidator.maximumGraphemes)")
+                            .monospacedDigit()
+                            .foregroundStyle(
+                                name.count > VoiceCloneNameValidator.maximumGraphemes
+                                    ? AppTheme.destructive
+                                    : AppTheme.mutedForeground
+                            )
+                    }
+                    .font(.caption)
+                }
+
+                if voice?.identity?.customName != nil {
+                    Section {
+                        Button("恢复默认名称") {
+                            Task {
+                                if await store.rename(voiceID, to: nil) { dismiss() }
+                            }
+                        }
+                        .disabled(store.renamingVoiceId != nil)
+                    }
+                }
+            }
+            .navigationTitle("修改名称")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") { save() }
+                        .disabled(store.renamingVoiceId != nil || name.isEmpty)
+                }
+            }
+            .overlay {
+                if store.renamingVoiceId == voiceID {
+                    ZStack {
+                        Color.black.opacity(0.08).ignoresSafeArea()
+                        ProgressView().controlSize(.large)
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+        .interactiveDismissDisabled(store.renamingVoiceId == voiceID)
+        .onAppear { name = voice?.identity?.customName ?? "" }
+        .onChange(of: name) { _ in validationMessage = nil }
+    }
+
+    private func save() {
+        do {
+            _ = try VoiceCloneNameValidator.normalized(name)
+            validationMessage = nil
+        } catch {
+            validationMessage = error.localizedDescription
+            return
+        }
+        Task {
+            if await store.rename(voiceID, to: name) { dismiss() }
+        }
+    }
+}
+
 @MainActor
 private struct VoiceCloneCreationView: View {
     private enum Phase: Equatable { case introduction, ready, creating, complete }
@@ -624,6 +772,7 @@ private struct VoiceCloneCreationView: View {
     @State private var submissionStarted = false
     @State private var isPreparingRecorder = false
     @State private var showPaywall = false
+    @State private var showRename = false
     @State private var selectedRecordingLanguage: String?
 
     private var recordingLanguage: String {
@@ -666,6 +815,11 @@ private struct VoiceCloneCreationView: View {
                 analyticsTrigger: "voice_clone_apply",
                 analyticsSurface: "voice_clone_complete"
             )
+        }
+        .sheet(isPresented: $showRename) {
+            if let voiceID = store.lastCreatedVoiceID {
+                VoiceCloneRenameView(voiceID: voiceID)
+            }
         }
     }
 
@@ -1028,9 +1182,23 @@ private struct VoiceCloneCreationView: View {
     private var completeScreen: some View {
         VStack(spacing: 22) {
             Spacer()
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 82))
-                .foregroundStyle(AppTheme.primary)
+            if let voice = lastCreatedVoice {
+                ClonedVoiceAvatarView(voice: voice, size: 88)
+                Text(store.displayName(for: voice))
+                    .font(.title2.weight(.semibold))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                if voice.identity != nil {
+                    Button("修改名称") { showRename = true }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.primary)
+                        .accessibilityIdentifier("voiceCloneCompleteRenameButton")
+                }
+            } else {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 82))
+                    .foregroundStyle(AppTheme.primary)
+            }
             Text("声音已创建").font(.largeTitle.bold())
             Text(completeDetail)
                 .font(.subheadline)
@@ -1061,6 +1229,11 @@ private struct VoiceCloneCreationView: View {
                 Spacer().frame(height: 24)
             }
         }
+    }
+
+    private var lastCreatedVoice: ClonedVoice? {
+        guard let voiceID = store.lastCreatedVoiceID else { return nil }
+        return store.voice(withID: voiceID)
     }
 
     private var completeDetail: String {

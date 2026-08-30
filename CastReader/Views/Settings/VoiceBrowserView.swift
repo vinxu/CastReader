@@ -900,7 +900,7 @@ struct PlaybackVoiceButton: View {
 
     private var displayName: String {
         if let selectedVoice { return selectedVoice.name }
-        if let clone = cloneStore.voices.first(where: { $0.voiceId == voiceID }) {
+        if let clone = cloneStore.presentationVoice(withID: voiceID) {
             return cloneStore.displayName(for: clone)
         }
         return AppLocalized("音色")
@@ -939,6 +939,9 @@ struct PlaybackVoiceButton: View {
     private var avatar: some View {
         if let selectedVoice {
             VoiceAvatarView(voice: selectedVoice)
+                .id(voiceID)
+        } else if let clonedVoice = cloneStore.presentationVoice(withID: voiceID) {
+            ClonedVoiceAvatarView(voice: clonedVoice, size: size)
                 .id(voiceID)
         } else {
             ZStack {

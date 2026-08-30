@@ -19,6 +19,11 @@ protocol VoiceCloneStoreServicing: Sendable {
         consentConfirmed: Bool,
         onProgress: @escaping @Sendable (Double) -> Void
     ) async throws -> ClonedVoice
+    func renameVoice(
+        _ voiceId: String,
+        name: String?,
+        expectedRevision: Int
+    ) async throws -> VoiceCloneIdentity
     func deleteVoice(_ voiceId: String) async throws
 }
 
@@ -205,6 +210,38 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         _ = try await perform(path: "/api/voice-clone/voices/\(encoded)", method: "DELETE")
     }
 
+    func renameVoice(
+        _ voiceId: String,
+        name: String?,
+        expectedRevision: Int
+    ) async throws -> VoiceCloneIdentity {
+        guard voiceId.hasPrefix("vc_"),
+              let encoded = voiceId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+            throw VoiceCloneError.voiceNotFound
+        }
+        guard expectedRevision > 0,
+              expectedRevision <= VoiceCloneNameValidator.maximumExpectedRevision else {
+            throw VoiceCloneError.identityUnavailable
+        }
+        let normalizedName = try VoiceCloneNameValidator.normalized(name)
+        let payload: [String: Any] = [
+            "name": normalizedName ?? NSNull(),
+            "expectedRevision": expectedRevision,
+        ]
+        let body = try JSONSerialization.data(withJSONObject: payload)
+        let data = try await perform(
+            path: "/api/voice-clone/voices/\(encoded)",
+            method: "PATCH",
+            body: body
+        )
+        return try VoiceCloneResponseParser.renamedIdentity(
+            from: data,
+            expectedVoiceID: voiceId,
+            requestedName: normalizedName,
+            expectedRevision: expectedRevision
+        )
+    }
+
     func preview(voiceId: String, fallbackLanguage: String?) async throws -> Data {
         guard let path = VoiceCloneEndpoint.previewPath(for: voiceId) else {
             throw VoiceCloneError.voiceNotFound
@@ -307,6 +344,19 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             from: data,
             response: http
         )?.uppercased()
+        if code == "VOICE_IDENTITY_CONFLICT" {
+            throw VoiceCloneError.identityConflict(
+                VoiceCloneResponseParser.conflictIdentity(from: data)
+            )
+        }
+        if code == "VOICE_IDENTITY_INVALID" {
+            // Server messages are diagnostic English. UI copy remains local
+            // and is keyed by the stable error code.
+            throw VoiceCloneError.identityInvalid(nil)
+        }
+        if code == "VOICE_IDENTITY_UNAVAILABLE" {
+            throw VoiceCloneError.identityUnavailable
+        }
         if code == "CLONE_QUOTA_EXHAUSTED" {
             let headerReset = VoiceCloneResponseParser.quotaCapability(from: http).resetAt
             throw VoiceCloneError.quotaExhausted(

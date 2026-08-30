@@ -11,6 +11,7 @@ final class VoiceCloneStore: ObservableObject {
     @Published private(set) var isCreating = false
     @Published private(set) var uploadProgress: Double = 0
     @Published private(set) var deletingVoiceId: String?
+    @Published private(set) var renamingVoiceId: String?
     @Published private(set) var capability: VoiceCloneCapability = .unknown
     @Published private(set) var lastCreatedVoiceID: String?
     @Published private(set) var refreshErrorMessage: String?
@@ -21,10 +22,13 @@ final class VoiceCloneStore: ObservableObject {
     private let isSignedIn: @MainActor () -> Bool
     private var labels: [String: String] = [:]
     private var referenceLanguages: [String: String] = [:]
+    private var cachedIdentities: [String: VoiceCloneIdentity] = [:]
     private var activeStorageID: String?
     private var accountGeneration: UInt64 = 0
     private var refreshGeneration: UInt64 = 0
     private var activeCreateRequestID: UUID?
+    private var activeDeleteRequestID: UUID?
+    private var activeRenameRequests: [String: UUID] = [:]
     private var reconciliationTask: Task<Void, Never>?
     private var authoritativeCreatedVoices: [String: ClonedVoice] = [:]
 
@@ -57,6 +61,7 @@ final class VoiceCloneStore: ObservableObject {
         activeStorageID = nil
         labels = [:]
         referenceLanguages = [:]
+        cachedIdentities = [:]
     }
 
     #if DEBUG
@@ -108,6 +113,15 @@ final class VoiceCloneStore: ObservableObject {
     }
 
     func displayName(for voice: ClonedVoice) -> String {
+        if let customName = voice.identity?.customName, !customName.isEmpty {
+            return customName
+        }
+        if let index = voice.identity?.autoNameIndex, index > 0 {
+            return String(
+                format: AppLocalized("我的声音 %lld"),
+                Int64(index)
+            )
+        }
         if let label = labels[voice.voiceId] { return label }
         let order = max(1, voices.sorted { ($0.createdAt ?? "") < ($1.createdAt ?? "") }
             .firstIndex(where: { $0.voiceId == voice.voiceId }).map { $0 + 1 } ?? 1)
@@ -115,6 +129,23 @@ final class VoiceCloneStore: ObservableObject {
             format: AppLocalized("我的声音 %lld"),
             Int64(order)
         )
+    }
+
+    func voice(withID voiceID: String) -> ClonedVoice? {
+        voices.first { $0.voiceId == voiceID }
+    }
+
+    /// Last-known display metadata is account-scoped and never participates in
+    /// creation, preview, selection, entitlement or TTS. It only prevents a
+    /// cold launch from replacing a selected clone's stable avatar/name with a
+    /// generic placeholder before the Created screen performs its first GET.
+    func presentationVoice(withID voiceID: String) -> ClonedVoice? {
+        if let voice = voice(withID: voiceID) {
+            if voice.identity != nil { return voice }
+            return voice.replacingIdentity(cachedIdentities[voiceID])
+        }
+        guard let identity = cachedIdentities[voiceID] else { return nil }
+        return ClonedVoice(voiceId: voiceID, identity: identity)
     }
 
     func referenceLanguage(for voice: ClonedVoice) -> String? {
@@ -156,6 +187,7 @@ final class VoiceCloneStore: ObservableObject {
                     referenceLanguages[voice.voiceId] = VoiceCatalog.normalizedLanguage(language)
                 }
             }
+            updateIdentityCache(from: voices)
             pruneLabels()
             persistReferenceLanguages()
             for active in AppSettings.shared.activeClonedVoiceIDs where !voices.contains(where: { $0.voiceId == active }) {
@@ -232,7 +264,12 @@ final class VoiceCloneStore: ObservableObject {
                 voices.insert(created, at: 0)
             }
             authoritativeCreatedVoices[created.voiceId] = created
-            assignLabelIfNeeded(created.voiceId)
+            if created.identity == nil {
+                assignLabelIfNeeded(created.voiceId)
+            } else if let identity = created.identity {
+                cachedIdentities[created.voiceId] = identity
+                persistIdentities()
+            }
             let normalized = VoiceCatalog.normalizedLanguage(referenceLanguage)
             referenceLanguages[created.voiceId] = normalized
             persistReferenceLanguages()
@@ -294,19 +331,104 @@ final class VoiceCloneStore: ObservableObject {
     func delete(_ voice: ClonedVoice) async {
         guard Constants.Features.voiceCloningEnabled else { return }
         guard deletingVoiceId == nil else { return }
+        let scopeToken = currentAccountToken
+        guard scopeToken.storageID != nil else { return }
+        let requestID = UUID()
+        activeDeleteRequestID = requestID
         deletingVoiceId = voice.voiceId
-        defer { deletingVoiceId = nil }
+        activeRenameRequests.removeValue(forKey: voice.voiceId)
+        if renamingVoiceId == voice.voiceId { renamingVoiceId = nil }
+        defer {
+            if activeDeleteRequestID == requestID {
+                activeDeleteRequestID = nil
+                if deletingVoiceId == voice.voiceId { deletingVoiceId = nil }
+            }
+        }
         do {
             try await service.deleteVoice(voice.voiceId)
+            guard isCurrent(scopeToken),
+                  activeDeleteRequestID == requestID,
+                  !Task.isCancelled else { return }
             authoritativeCreatedVoices.removeValue(forKey: voice.voiceId)
             AppSettings.shared.clearActiveClonedVoice(ifMatching: voice.voiceId)
             labels.removeValue(forKey: voice.voiceId)
             referenceLanguages.removeValue(forKey: voice.voiceId)
+            cachedIdentities.removeValue(forKey: voice.voiceId)
             persistLabels()
             persistReferenceLanguages()
+            persistIdentities()
             await refresh()
         } catch {
+            guard isCurrent(scopeToken),
+                  activeDeleteRequestID == requestID else { return }
             handle(error)
+        }
+    }
+
+    @discardableResult
+    func rename(_ voiceID: String, to name: String?) async -> Bool {
+        guard Constants.Features.voiceCloningEnabled else { return false }
+        guard renamingVoiceId == nil,
+              deletingVoiceId != voiceID,
+              let currentVoice = voice(withID: voiceID),
+              let identity = currentVoice.identity else {
+            errorMessage = VoiceCloneError.identityUnavailable.localizedDescription
+            return false
+        }
+        let normalizedName: String?
+        do {
+            normalizedName = try VoiceCloneNameValidator.normalized(name)
+        } catch {
+            handle(error)
+            return false
+        }
+        let scopeToken = currentAccountToken
+        guard scopeToken.storageID != nil else { return false }
+        let requestID = UUID()
+        activeRenameRequests[voiceID] = requestID
+        renamingVoiceId = voiceID
+        defer {
+            if activeRenameRequests[voiceID] == requestID {
+                activeRenameRequests.removeValue(forKey: voiceID)
+                if renamingVoiceId == voiceID { renamingVoiceId = nil }
+            }
+        }
+        do {
+            let updated = try await service.renameVoice(
+                voiceID,
+                name: normalizedName,
+                expectedRevision: identity.revision
+            )
+            guard isCurrent(scopeToken),
+                  activeRenameRequests[voiceID] == requestID,
+                  deletingVoiceId != voiceID,
+                  voice(withID: voiceID) != nil else { return false }
+            applyIdentity(updated, to: voiceID)
+            errorMessage = nil
+            return true
+        } catch VoiceCloneError.identityConflict(let latest) {
+            guard isCurrent(scopeToken),
+                  activeRenameRequests[voiceID] == requestID,
+                  deletingVoiceId != voiceID,
+                  voice(withID: voiceID) != nil else { return false }
+            if let latest,
+               latest.revision > identity.revision,
+               latest.matchesRequestedName(normalizedName) {
+                // The first request committed but its success response was
+                // lost. Converge by desired state instead of showing a false
+                // cross-device conflict.
+                applyIdentity(latest, to: voiceID)
+                errorMessage = nil
+                return true
+            }
+            if let latest { applyIdentity(latest, to: voiceID) }
+            handle(VoiceCloneError.identityConflict(latest))
+            return false
+        } catch {
+            guard isCurrent(scopeToken),
+                  activeRenameRequests[voiceID] == requestID else { return false }
+            handle(error)
+            return false
         }
     }
 
@@ -438,6 +560,9 @@ final class VoiceCloneStore: ObservableObject {
         accountGeneration &+= 1
         invalidateRefreshes()
         activeCreateRequestID = nil
+        activeDeleteRequestID = nil
+        activeRenameRequests = [:]
+        renamingVoiceId = nil
         authoritativeCreatedVoices = [:]
     }
 
@@ -445,14 +570,62 @@ final class VoiceCloneStore: ObservableObject {
     /// that exact ID once. This prevents an eventually-consistent or older
     /// in-flight list response from making a successful creation disappear.
     private func reconcileServerVoices(_ serverVoices: [ClonedVoice]) -> [ClonedVoice] {
-        let serverIDs = Set(serverVoices.map(\.voiceId))
+        let localByID = Dictionary(uniqueKeysWithValues: voices.map { ($0.voiceId, $0) })
+        let mergedServerVoices = serverVoices.map { serverVoice in
+            guard let localIdentity = localByID[serverVoice.voiceId]?.identity
+                    ?? cachedIdentities[serverVoice.voiceId] else {
+                return serverVoice
+            }
+            guard let serverIdentity = serverVoice.identity,
+                  serverIdentity.revision > localIdentity.revision else {
+                return serverVoice.replacingIdentity(localIdentity)
+            }
+            return serverVoice
+        }
+        let serverIDs = Set(mergedServerVoices.map(\.voiceId))
         for voiceID in serverIDs {
             authoritativeCreatedVoices.removeValue(forKey: voiceID)
         }
         let missingCreated = authoritativeCreatedVoices.values
             .filter { !serverIDs.contains($0.voiceId) }
             .sorted { ($0.createdAt ?? "") > ($1.createdAt ?? "") }
-        return missingCreated + serverVoices
+        return missingCreated + mergedServerVoices
+    }
+
+    private func applyIdentity(_ identity: VoiceCloneIdentity, to voiceID: String) {
+        guard identity.isSupported else { return }
+        var cacheChanged = false
+        if let index = voices.firstIndex(where: { $0.voiceId == voiceID }) {
+            let currentRevision = voices[index].identity?.revision ?? 0
+            if identity.revision >= currentRevision {
+                voices[index] = voices[index].replacingIdentity(identity)
+            }
+        }
+        if let created = authoritativeCreatedVoices[voiceID] {
+            let currentRevision = created.identity?.revision ?? 0
+            if identity.revision >= currentRevision {
+                authoritativeCreatedVoices[voiceID] = created.replacingIdentity(identity)
+            }
+        }
+        let cachedRevision = cachedIdentities[voiceID]?.revision ?? 0
+        if identity.revision >= cachedRevision {
+            cachedIdentities[voiceID] = identity
+            cacheChanged = true
+        }
+        if cacheChanged { persistIdentities() }
+    }
+
+    private func updateIdentityCache(from activeVoices: [ClonedVoice]) {
+        let activeIDs = Set(activeVoices.map(\.voiceId))
+        cachedIdentities = cachedIdentities.filter { activeIDs.contains($0.key) }
+        for voice in activeVoices {
+            guard let identity = voice.identity, identity.isSupported else { continue }
+            let cachedRevision = cachedIdentities[voice.voiceId]?.revision ?? 0
+            if identity.revision >= cachedRevision {
+                cachedIdentities[voice.voiceId] = identity
+            }
+        }
+        persistIdentities()
     }
 
     private func clearTransientState() {
@@ -462,6 +635,8 @@ final class VoiceCloneStore: ObservableObject {
         isCreating = false
         uploadProgress = 0
         deletingVoiceId = nil
+        renamingVoiceId = nil
+        cachedIdentities = [:]
         capability = .unknown
         lastCreatedVoiceID = nil
         refreshErrorMessage = nil
@@ -472,12 +647,24 @@ final class VoiceCloneStore: ObservableObject {
         guard let keys = scopedKeys else {
             labels = [:]
             referenceLanguages = [:]
+            cachedIdentities = [:]
             return
         }
         labels = defaults.dictionary(forKey: keys.labels)?
             .compactMapValues { $0 as? String } ?? [:]
         referenceLanguages = defaults.dictionary(forKey: keys.referenceLanguages)?
             .compactMapValues { $0 as? String } ?? [:]
+        if let data = defaults.data(forKey: keys.identities),
+           let decoded = try? JSONDecoder().decode(
+               [String: VoiceCloneIdentity].self,
+               from: data
+           ) {
+            cachedIdentities = decoded.filter {
+                $0.key.hasPrefix("vc_") && $0.value.isSupported
+            }
+        } else {
+            cachedIdentities = [:]
+        }
     }
 
     private func persistLabels() {
@@ -488,25 +675,33 @@ final class VoiceCloneStore: ObservableObject {
         guard let key = scopedKeys?.referenceLanguages else { return }
         defaults.set(referenceLanguages, forKey: key)
     }
+    private func persistIdentities() {
+        guard let key = scopedKeys?.identities,
+              let data = try? JSONEncoder().encode(cachedIdentities) else { return }
+        defaults.set(data, forKey: key)
+    }
 
     private var scopedKeys: (
         labels: String,
-        referenceLanguages: String
+        referenceLanguages: String,
+        identities: String
     )? {
         guard let activeStorageID else { return nil }
         #if DEBUG
         if activeStorageID == "debug-legacy" {
-            return (Keys.labels, Keys.referenceLanguages)
+            return (Keys.labels, Keys.referenceLanguages, Keys.identities)
         }
         #endif
         return (
             "\(Keys.labels).account.\(activeStorageID)",
-            "\(Keys.referenceLanguages).account.\(activeStorageID)"
+            "\(Keys.referenceLanguages).account.\(activeStorageID)",
+            "\(Keys.identities).account.\(activeStorageID)"
         )
     }
 
     private enum Keys {
         static let labels = "voice_clone_labels_v1"
         static let referenceLanguages = "voice_clone_reference_languages_v1"
+        static let identities = "voice_clone_identities_v1"
     }
 }
