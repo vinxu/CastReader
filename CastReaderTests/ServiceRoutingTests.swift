@@ -3356,11 +3356,12 @@ final class ServiceRoutingTests: XCTestCase {
         resetSnapshots()
         XCTAssertEqual(ServiceRouting.current, .globalGateway)
 
+        let buildNumber = ServiceRouting.currentBuildNumber
         let body: [String: Any] = [
             "schemaVersion": 1,
             "iosChinaServiceRoute": "cn",
-            "minimumBuild": 38,
-            "maximumBuild": 50,
+            "minimumBuild": buildNumber,
+            "maximumBuild": buildNumber,
             "cacheSeconds": 604_800,
         ]
         RoutingURLProtocol.handler = { request in
@@ -3368,7 +3369,10 @@ final class ServiceRoutingTests: XCTestCase {
                 request.url?.absoluteString,
                 ServiceRouting.remoteConfigurationURL(for: .chinaGateway)
             )
-            XCTAssertEqual(request.value(forHTTPHeaderField: "x-castreader-build"), "39")
+            XCTAssertEqual(
+                request.value(forHTTPHeaderField: "x-castreader-build"),
+                String(buildNumber)
+            )
             let response = HTTPURLResponse(
                 url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil
             )!
@@ -3378,7 +3382,7 @@ final class ServiceRoutingTests: XCTestCase {
         let outcome = await ServiceRouting.refreshBackendConfiguration(
             session: makeRoutingSession(),
             now: now,
-            buildNumber: 39
+            buildNumber: buildNumber
         )
 
         XCTAssertEqual(outcome, .updated(.chinaGateway))

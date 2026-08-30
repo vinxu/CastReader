@@ -85,7 +85,12 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["克隆我的声音"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["录制自己的声音"].exists)
         XCTAssertTrue(app.staticTexts["找一处安静的地方"].exists)
-        XCTAssertTrue(app.staticTexts["严格按照文本朗读"].exists)
+        XCTAssertTrue(app.staticTexts["自由朗读或自然说话"].exists)
+        XCTAssertTrue(
+            app.staticTexts[
+                "可以朗读示例，也可以用录音语言自然说一段自己的内容，无需逐字一致。"
+            ].exists
+        )
         XCTAssertTrue(
             app.staticTexts[
                 "所有用户均可创建和试听声音；Pro 可用于朗读和解读，每个会员周期 120 分钟。"
@@ -107,7 +112,14 @@ class CastReaderUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter().wait(for: [confirmEnabled], timeout: 3), .completed)
         confirm.tap()
 
-        XCTAssertTrue(app.staticTexts["请朗读"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["请开始说话"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["voiceCloneRecordingLanguagePicker"].exists)
+        XCTAssertTrue(
+            app.staticTexts[
+                "你可以朗读下面的示例，也可以自然说一段自己的内容，无需逐字一致。"
+            ].exists
+        )
+        XCTAssertTrue(app.staticTexts["示例文本（可选）"].exists)
         XCTAssertTrue(
             app.staticTexts["我最喜欢的事情就是学习啦，我每天都会看书，学各种知识，希望变得更聪明！"]
                 .exists
@@ -139,15 +151,23 @@ class CastReaderUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Clone My Voice"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["克隆我的声音"].exists)
+        XCTAssertTrue(app.staticTexts["Read Freely or Speak Naturally"].exists)
         app.buttons["voiceCloneIntroConfirmButton"].tap()
 
-        XCTAssertTrue(app.staticTexts["Please Read"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Start Speaking"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["voiceCloneRecordingLanguagePicker"].exists)
+        XCTAssertTrue(
+            app.staticTexts[
+                "You can read the sample below or speak naturally in your own words. It does not need to match exactly."
+            ].exists
+        )
+        XCTAssertTrue(app.staticTexts["Sample Text (Optional)"].exists)
         XCTAssertTrue(
             app.staticTexts[
                 "My favorite thing is learning. I read every day, discover new ideas, and hope to understand the world a little better."
             ].exists
         )
-        XCTAssertFalse(app.staticTexts["请朗读"].exists)
+        XCTAssertFalse(app.staticTexts["请开始说话"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["voiceCloneHoldButton"].exists)
     }
 
