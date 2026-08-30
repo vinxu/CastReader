@@ -58,6 +58,7 @@ from semantic_asr import (
     SemanticAudioMismatch,
     measured_word_timestamps,
 )
+from xvector_activation import marker_matches_current_release
 
 
 MODEL_NAME = "qwen3-tts-0.6b-base-nari"
@@ -465,7 +466,13 @@ def xvector_writer_enabled() -> bool:
     voice creation while preserving reads of both legacy and x-vector prompts.
     """
 
-    return XVECTOR_WRITER_MARKER.is_file()
+    worker_path = Path(__file__).resolve()
+    return marker_matches_current_release(
+        XVECTOR_WRITER_MARKER,
+        worker=worker_path,
+        builder=worker_path.with_name("build_prompt.py"),
+        activation_validator=worker_path.with_name("xvector_activation.py"),
+    )
 
 
 def normalize_language(value: str) -> str:

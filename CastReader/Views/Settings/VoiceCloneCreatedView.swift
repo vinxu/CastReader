@@ -1129,7 +1129,6 @@ private struct VoiceCloneCreationView: View {
         guard recorder.canSubmit,
               let url = recorder.recordingURL else { return }
         let language = recordingLanguage
-        let exampleText = recordingExampleText
         store.errorMessage = nil
         submissionStarted = true
         phase = .creating
@@ -1137,7 +1136,9 @@ private struct VoiceCloneCreationView: View {
             let succeeded = await store.create(
                 recordingURL: url,
                 referenceLanguage: language,
-                referenceText: exampleText,
+                // The on-screen script is optional guidance. Speaker-only
+                // creation must never claim that natural speech matched it.
+                referenceText: nil,
                 consentConfirmed: true
             )
             submissionStarted = false

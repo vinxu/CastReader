@@ -9,6 +9,59 @@ enum VoiceCloneReferenceTransport {
     }
 }
 
+protocol VoiceCloneStoreServicing: Sendable {
+    func hasSession() async -> Bool
+    func listVoices() async throws -> VoiceCloneListResult
+    func createVoice(
+        recordingURL: URL,
+        referenceLanguage: String,
+        referenceText: String?,
+        consentConfirmed: Bool,
+        onProgress: @escaping @Sendable (Double) -> Void
+    ) async throws -> ClonedVoice
+    func deleteVoice(_ voiceId: String) async throws
+}
+
+/// Normalizes the optional descriptive metadata sent with a speaker-only
+/// recording. The sample text is never a creation prerequisite: omitting it is
+/// how clients distinguish natural speech from a user-confirmed transcript.
+struct VoiceCloneCreateMetadata {
+    let referenceLanguage: String
+    let referenceText: String?
+
+    init(referenceLanguage: String, referenceText: String?) throws {
+        self.referenceLanguage = VoiceCatalog.normalizedLanguage(referenceLanguage)
+        let trimmed = referenceText?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard (trimmed?.count ?? 0) <= 600 else {
+            throw VoiceCloneError.invalidRecording(AppLocalized("朗读文本不能超过 600 个字符"))
+        }
+        self.referenceText = trimmed.flatMap { $0.isEmpty ? nil : $0 }
+    }
+
+    var multipartFields: [(name: String, value: String)] {
+        var fields = [
+            (name: "consent_confirmed", value: "true"),
+            (name: "reference_language", value: referenceLanguage),
+        ]
+        if let referenceText {
+            fields.append((name: "reference_text", value: referenceText))
+        }
+        return fields
+    }
+
+    func chinaPayload(referenceObjectKey: String) -> [String: Any] {
+        var payload: [String: Any] = [
+            "consentConfirmed": true,
+            "referenceLanguage": referenceLanguage,
+            "referenceObjectKey": referenceObjectKey,
+        ]
+        if let referenceText {
+            payload["referenceText"] = referenceText
+        }
+        return payload
+    }
+}
+
 enum VoiceCloneEndpoint {
     static func previewPath(for voiceID: String) -> String? {
         guard voiceID.hasPrefix("vc_"),
@@ -19,7 +72,7 @@ enum VoiceCloneEndpoint {
     }
 }
 
-actor VoiceCloneService {
+actor VoiceCloneService: VoiceCloneStoreServicing {
     static let shared = VoiceCloneService(sessionProvider: MobileSessionStore.shared)
 
     private let baseURL: URL
@@ -54,7 +107,7 @@ actor VoiceCloneService {
     func createVoice(
         recordingURL: URL,
         referenceLanguage: String,
-        referenceText: String,
+        referenceText: String?,
         consentConfirmed: Bool,
         onProgress: @escaping @Sendable (Double) -> Void
     ) async throws -> ClonedVoice {
@@ -64,10 +117,10 @@ actor VoiceCloneService {
         guard consentConfirmed else {
             throw VoiceCloneError.invalidRecording(AppLocalized("请先确认声音授权"))
         }
-        let spokenText = referenceText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !spokenText.isEmpty, spokenText.count <= 600 else {
-            throw VoiceCloneError.invalidRecording(AppLocalized("朗读文本无效，请重新录制"))
-        }
+        let metadata = try VoiceCloneCreateMetadata(
+            referenceLanguage: referenceLanguage,
+            referenceText: referenceText
+        )
         let values = try recordingURL.resourceValues(forKeys: [.fileSizeKey])
         guard let size = values.fileSize, size > 0, size <= 4 * 1024 * 1024 else {
             throw VoiceCloneError.invalidRecording(AppLocalized("录音文件必须不超过 4 MB"))
@@ -76,21 +129,17 @@ actor VoiceCloneService {
         if VoiceCloneReferenceTransport.usesDirectCOSUpload(for: route) {
             return try await createChinaVoice(
                 reference: reference,
-                referenceLanguage: referenceLanguage,
-                referenceText: spokenText,
+                metadata: metadata,
                 onProgress: onProgress
             )
         }
         let boundary = "CastReaderVoiceClone-\(UUID().uuidString)"
         var body = Data()
-        body.appendMultipart("--\(boundary)\r\n")
-        body.appendMultipart("Content-Disposition: form-data; name=\"consent_confirmed\"\r\n\r\ntrue\r\n")
-        body.appendMultipart("--\(boundary)\r\n")
-        body.appendMultipart("Content-Disposition: form-data; name=\"reference_language\"\r\n\r\n")
-        body.appendMultipart("\(VoiceCatalog.normalizedLanguage(referenceLanguage))\r\n")
-        body.appendMultipart("--\(boundary)\r\n")
-        body.appendMultipart("Content-Disposition: form-data; name=\"reference_text\"\r\n\r\n")
-        body.appendMultipart("\(spokenText)\r\n")
+        for field in metadata.multipartFields {
+            body.appendMultipart("--\(boundary)\r\n")
+            body.appendMultipart("Content-Disposition: form-data; name=\"\(field.name)\"\r\n\r\n")
+            body.appendMultipart("\(field.value)\r\n")
+        }
         body.appendMultipart("--\(boundary)\r\n")
         body.appendMultipart("Content-Disposition: form-data; name=\"reference\"; filename=\"reference.wav\"\r\n")
         body.appendMultipart("Content-Type: audio/wav\r\n\r\n")
@@ -113,8 +162,7 @@ actor VoiceCloneService {
 
     private func createChinaVoice(
         reference: Data,
-        referenceLanguage: String,
-        referenceText: String,
+        metadata: VoiceCloneCreateMetadata,
         onProgress: @escaping @Sendable (Double) -> Void
     ) async throws -> ClonedVoice {
         onProgress(0.03)
@@ -131,12 +179,9 @@ actor VoiceCloneService {
         ) { progress in
             onProgress(0.05 + progress * 0.75)
         }
-        let payload = try JSONSerialization.data(withJSONObject: [
-            "consentConfirmed": true,
-            "referenceLanguage": VoiceCatalog.normalizedLanguage(referenceLanguage),
-            "referenceText": referenceText,
-            "referenceObjectKey": objectKey,
-        ])
+        let payload = try JSONSerialization.data(
+            withJSONObject: metadata.chinaPayload(referenceObjectKey: objectKey)
+        )
         var token = try await requireToken()
         var request = createChinaObjectRequest(token: token, body: payload)
         onProgress(0.82)

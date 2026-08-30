@@ -13,6 +13,7 @@ import numpy as np
 import torch
 from fastapi import HTTPException, UploadFile
 
+import build_prompt
 import clone_worker
 from semantic_asr import ASRWord, SemanticASREvidence, SemanticASRUnavailable, SemanticAudioMismatch
 
@@ -92,6 +93,24 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
         self.assertIsNone(metadata.semantic_contract_error)
         self.assertFalse(metadata.semantic_attested)
         clone_worker.PROMPT_METADATA_CACHE.clear()
+
+    def test_xvector_writer_schema_dry_run_never_touches_voice_root(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            production_root = Path(directory) / "production-data"
+            production_root.mkdir()
+            sentinel = production_root / "do-not-touch"
+            sentinel.write_text("preserve", encoding="utf-8")
+            with patch.dict(os.environ, {"CLONE_DATA_ROOT": str(production_root)}):
+                result = build_prompt.dry_run_xvector_prompt_schema()
+
+            self.assertEqual(
+                result["schema"],
+                "qwen3_tts_base_voice_clone_prompt_xvector_v1",
+            )
+            self.assertEqual(result["embedding_size"], 1024)
+            self.assertEqual(result["storage"], "temporary-only")
+            self.assertEqual(sentinel.read_text(encoding="utf-8"), "preserve")
+            self.assertFalse((production_root / "voices").exists())
 
     def test_xvector_prompt_rejects_malformed_embedding_contract(self) -> None:
         base = {

@@ -93,6 +93,17 @@ enum ClonedTTSRetryPolicy {
     }
 }
 
+enum ClonedTTSNotFoundPolicy {
+    /// A regional route miss can also be an HTTP 404. Only the structured
+    /// account-gateway contract proves that the persisted voice itself is gone.
+    static func isConfirmedVoiceDeletion(statusCode: Int, data: Data) -> Bool {
+        VoiceCloneResponseParser.isVoiceNotFound(
+            statusCode: statusCode,
+            data: data
+        )
+    }
+}
+
 private func apiDebugLog(_ message: @autoclosure () -> String) {
     #if DEBUG
     print(message())
@@ -724,9 +735,14 @@ actor APIService {
                     }
                 }
                 throw VoiceCloneError.proRequired
-            case 404:
+            case 404 where ClonedTTSNotFoundPolicy.isConfirmedVoiceDeletion(
+                statusCode: http.statusCode,
+                data: data
+            ):
                 await MainActor.run { AppSettings.shared.clearActiveClonedVoice(ifMatching: voiceID) }
                 throw VoiceCloneError.voiceNotFound
+            case 404:
+                throw VoiceCloneError.server(404, message)
             case 429 where ["CLONE_WORKER_BUSY", "VOICE_WORKER_BUSY"].contains(code ?? ""):
                 let error = VoiceCloneError.workerBusy(message)
                 if let retry = try await retryClonedVoiceTTSIfNeeded(

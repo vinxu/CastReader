@@ -16,15 +16,26 @@ final class VoiceCloneStore: ObservableObject {
     @Published private(set) var refreshErrorMessage: String?
     @Published var errorMessage: String?
 
-    private let service: VoiceCloneService
+    private let service: any VoiceCloneStoreServicing
     private let defaults: UserDefaults
+    private let isSignedIn: @MainActor () -> Bool
     private var labels: [String: String] = [:]
     private var referenceLanguages: [String: String] = [:]
     private var activeStorageID: String?
+    private var accountGeneration: UInt64 = 0
+    private var refreshGeneration: UInt64 = 0
+    private var activeCreateRequestID: UUID?
+    private var reconciliationTask: Task<Void, Never>?
+    private var authoritativeCreatedVoices: [String: ClonedVoice] = [:]
 
-    init(service: VoiceCloneService = .shared, defaults: UserDefaults = .standard) {
+    init(
+        service: any VoiceCloneStoreServicing = VoiceCloneService.shared,
+        defaults: UserDefaults = .standard,
+        isSignedIn: @escaping @MainActor () -> Bool = { AuthService.shared.isSignedIn }
+    ) {
         self.service = service
         self.defaults = defaults
+        self.isSignedIn = isSignedIn
     }
 
     func activateAccountScope(storageID: String) {
@@ -34,12 +45,14 @@ final class VoiceCloneStore: ObservableObject {
             return
         }
         guard activeStorageID != storageID else { return }
+        invalidateAccountWork()
         clearTransientState()
         activeStorageID = storageID
         loadLocalMetadata()
     }
 
     func deactivateAccountScope() {
+        invalidateAccountWork()
         clearTransientState()
         activeStorageID = nil
         labels = [:]
@@ -48,6 +61,7 @@ final class VoiceCloneStore: ObservableObject {
 
     #if DEBUG
     func activateLegacyTestingScope() {
+        invalidateAccountWork()
         clearTransientState()
         activeStorageID = "debug-legacy"
         loadLocalMetadata()
@@ -111,25 +125,33 @@ final class VoiceCloneStore: ObservableObject {
 
     func refresh() async {
         guard Constants.Features.voiceCloningEnabled else {
+            invalidateRefreshes()
             voices = []
             refreshErrorMessage = nil
             errorMessage = nil
             return
         }
-        guard AuthService.shared.isSignedIn else {
+        guard isSignedIn(), activeStorageID != nil else {
+            invalidateRefreshes()
             voices = []
             refreshErrorMessage = nil
             errorMessage = nil
             return
         }
+        let token = beginRefresh()
         isLoading = true
-        defer { isLoading = false }
+        defer {
+            if isCurrent(token) {
+                isLoading = false
+            }
+        }
         do {
             let result = try await service.listVoices()
-            voices = result.voices
+            guard isCurrent(token), !Task.isCancelled else { return }
+            voices = reconcileServerVoices(result.voices)
             nextCreateAt = result.nextCreateAt
             applyCapability(result.capability)
-            for voice in result.voices {
+            for voice in voices {
                 if let language = voice.referenceLanguage {
                     referenceLanguages[voice.voiceId] = VoiceCatalog.normalizedLanguage(language)
                 }
@@ -148,6 +170,7 @@ final class VoiceCloneStore: ObservableObject {
         } catch let error as URLError where error.code == .cancelled {
             // URLSession may surface task cancellation as URLError.cancelled.
         } catch let cloneError as VoiceCloneError {
+            guard isCurrent(token) else { return }
             switch cloneError {
             case .signInRequired, .sessionUnavailable:
                 handle(cloneError)
@@ -158,6 +181,7 @@ final class VoiceCloneStore: ObservableObject {
                 refreshErrorMessage = cloneError.localizedDescription
             }
         } catch {
+            guard isCurrent(token) else { return }
             refreshErrorMessage = error.localizedDescription
         }
     }
@@ -165,14 +189,23 @@ final class VoiceCloneStore: ObservableObject {
     func create(
         recordingURL: URL,
         referenceLanguage: String,
-        referenceText: String,
+        referenceText: String?,
         consentConfirmed: Bool
     ) async -> Bool {
         guard Constants.Features.voiceCloningEnabled else { return false }
         guard !isCreating else { return false }
+        let scopeToken = currentAccountToken
+        guard scopeToken.storageID != nil else { return false }
+        let requestID = UUID()
+        activeCreateRequestID = requestID
         isCreating = true
         uploadProgress = 0
-        defer { isCreating = false }
+        defer {
+            if activeCreateRequestID == requestID {
+                activeCreateRequestID = nil
+                isCreating = false
+            }
+        }
         do {
             let created = try await service.createVoice(
                 recordingURL: recordingURL,
@@ -181,9 +214,15 @@ final class VoiceCloneStore: ObservableObject {
                 consentConfirmed: consentConfirmed
             ) { [weak self] progress in
                 Task { @MainActor in
-                    self?.uploadProgress = progress
+                    guard let self,
+                          self.activeCreateRequestID == requestID,
+                          self.isCurrent(scopeToken) else { return }
+                    self.uploadProgress = progress
                 }
             }
+            guard activeCreateRequestID == requestID,
+                  isCurrent(scopeToken),
+                  !Task.isCancelled else { return false }
             // The create response is authoritative. Publish it immediately so
             // a transient list refresh failure cannot make a successfully
             // created voice look empty or lost to the user.
@@ -192,6 +231,7 @@ final class VoiceCloneStore: ObservableObject {
             } else {
                 voices.insert(created, at: 0)
             }
+            authoritativeCreatedVoices[created.voiceId] = created
             assignLabelIfNeeded(created.voiceId)
             let normalized = VoiceCatalog.normalizedLanguage(referenceLanguage)
             referenceLanguages[created.voiceId] = normalized
@@ -206,7 +246,8 @@ final class VoiceCloneStore: ObservableObject {
             // The POST response is already authoritative. Return success to the
             // creation flow immediately and reconcile the list in the background;
             // a slow or transient list request must not hold the success screen.
-            Task { [weak self] in
+            reconciliationTask?.cancel()
+            reconciliationTask = Task { [weak self] in
                 await self?.refresh()
             }
             return true
@@ -257,6 +298,7 @@ final class VoiceCloneStore: ObservableObject {
         defer { deletingVoiceId = nil }
         do {
             try await service.deleteVoice(voice.voiceId)
+            authoritativeCreatedVoices.removeValue(forKey: voice.voiceId)
             AppSettings.shared.clearActiveClonedVoice(ifMatching: voice.voiceId)
             labels.removeValue(forKey: voice.voiceId)
             referenceLanguages.removeValue(forKey: voice.voiceId)
@@ -353,6 +395,64 @@ final class VoiceCloneStore: ObservableObject {
         referenceLanguages = referenceLanguages.filter { ids.contains($0.key) }
         persistLabels()
         persistReferenceLanguages()
+    }
+
+    private struct AccountToken: Equatable, Sendable {
+        let storageID: String?
+        let generation: UInt64
+    }
+
+    private struct RefreshToken: Equatable, Sendable {
+        let account: AccountToken
+        let generation: UInt64
+    }
+
+    private var currentAccountToken: AccountToken {
+        AccountToken(storageID: activeStorageID, generation: accountGeneration)
+    }
+
+    private func beginRefresh() -> RefreshToken {
+        refreshGeneration &+= 1
+        return RefreshToken(
+            account: currentAccountToken,
+            generation: refreshGeneration
+        )
+    }
+
+    private func isCurrent(_ token: AccountToken) -> Bool {
+        token == currentAccountToken
+    }
+
+    private func isCurrent(_ token: RefreshToken) -> Bool {
+        token.account == currentAccountToken && token.generation == refreshGeneration
+    }
+
+    private func invalidateRefreshes() {
+        refreshGeneration &+= 1
+        reconciliationTask?.cancel()
+        reconciliationTask = nil
+        isLoading = false
+    }
+
+    private func invalidateAccountWork() {
+        accountGeneration &+= 1
+        invalidateRefreshes()
+        activeCreateRequestID = nil
+        authoritativeCreatedVoices = [:]
+    }
+
+    /// A create response is authoritative until the list endpoint has observed
+    /// that exact ID once. This prevents an eventually-consistent or older
+    /// in-flight list response from making a successful creation disappear.
+    private func reconcileServerVoices(_ serverVoices: [ClonedVoice]) -> [ClonedVoice] {
+        let serverIDs = Set(serverVoices.map(\.voiceId))
+        for voiceID in serverIDs {
+            authoritativeCreatedVoices.removeValue(forKey: voiceID)
+        }
+        let missingCreated = authoritativeCreatedVoices.values
+            .filter { !serverIDs.contains($0.voiceId) }
+            .sorted { ($0.createdAt ?? "") > ($1.createdAt ?? "") }
+        return missingCreated + serverVoices
     }
 
     private func clearTransientState() {

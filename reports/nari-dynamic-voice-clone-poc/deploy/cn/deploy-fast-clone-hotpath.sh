@@ -7,7 +7,7 @@ worker_root="${base}/worker"
 nari_root="${base}/nari-qwen3-tts/src/nari_qwen3_tts"
 runner="${base}/deploy/run-clone-china-staging.sh"
 source_commit="${1:?pass the 40-character source commit SHA}"
-worker_files=(clone_worker.py build_prompt.py semantic_asr.py)
+worker_files=(clone_worker.py build_prompt.py semantic_asr.py xvector_activation.py)
 nari_files=(
   contract/request.py
   api/schemas.py
@@ -80,7 +80,11 @@ mkdir -p "${backup}/worker" "${backup}/nari_qwen3_tts" "${base}/releases"
 cp -a "${runner}" "${backup}/run-clone-china-staging.sh"
 for name in "${worker_files[@]}"; do
   mkdir -p "${backup}/worker/$(dirname "${name}")"
-  cp -a "${worker_root}/${name}" "${backup}/worker/${name}"
+  if [[ -e "${worker_root}/${name}" ]]; then
+    cp -a "${worker_root}/${name}" "${backup}/worker/${name}"
+  else
+    : > "${backup}/worker/${name}.absent"
+  fi
 done
 for name in "${nari_files[@]}"; do
   mkdir -p "${backup}/nari_qwen3_tts/$(dirname "${name}")"
@@ -91,14 +95,23 @@ install_one() {
   local source_file="$1"
   local destination_file="$2"
   cp "${source_file}" "${destination_file}.next"
-  chown --reference="${destination_file}" "${destination_file}.next"
-  chmod --reference="${destination_file}" "${destination_file}.next"
+  if [[ -e "${destination_file}" ]]; then
+    chown --reference="${destination_file}" "${destination_file}.next"
+    chmod --reference="${destination_file}" "${destination_file}.next"
+  else
+    chown --reference="$(dirname "${destination_file}")" "${destination_file}.next"
+    chmod 0644 "${destination_file}.next"
+  fi
   mv "${destination_file}.next" "${destination_file}"
 }
 
 restore_files() {
   for name in "${worker_files[@]}"; do
-    cp -a "${backup}/worker/${name}" "${worker_root}/${name}"
+    if [[ -e "${backup}/worker/${name}.absent" ]]; then
+      rm -f "${worker_root}/${name}"
+    else
+      cp -a "${backup}/worker/${name}" "${worker_root}/${name}"
+    fi
   done
   for name in "${nari_files[@]}"; do
     cp -a "${backup}/nari_qwen3_tts/${name}" "${nari_root}/${name}"
@@ -163,7 +176,12 @@ import pathlib
 import sys
 
 commit, stamp, destination, worker_root, nari_root, runner = sys.argv[1:]
-worker_files = ("clone_worker.py", "build_prompt.py", "semantic_asr.py")
+worker_files = (
+    "clone_worker.py",
+    "build_prompt.py",
+    "semantic_asr.py",
+    "xvector_activation.py",
+)
 nari_files = (
     "contract/request.py",
     "api/schemas.py",
@@ -188,7 +206,7 @@ record = {
     "runner_sha256": digest(pathlib.Path(runner)),
     "hotpath": "nari-x-vector-only",
     "runtime_asr": "offline-audit-only",
-    "writer_activation": "requires-cross-region-marker",
+    "writer_activation": "requires-bound-release-marker-v1",
 }
 pathlib.Path(destination).write_text(json.dumps(record, indent=2) + "\n")
 PY

@@ -326,13 +326,38 @@ final class VoiceCloneTests: XCTestCase {
         )
         XCTAssertEqual(
             VoiceCloneQualityMessage.localized(for: "VOICE_REFERENCE_TEXT_MISMATCH"),
-            AppLocalized("示例文本无需逐字一致。录音已保留，请原样重试。")
+            AppLocalized("声音服务仍在更新。录音已保留，请稍后重试")
         )
         XCTAssertEqual(
             VoiceCloneQualityMessage.localized(for: "REFERENCE_LANGUAGE_UNSUPPORTED"),
             AppLocalized("暂不支持所选录音语言，请选择其他语言")
         )
         XCTAssertNil(VoiceCloneQualityMessage.localized(for: "VOICE_WORKER_ERROR"))
+    }
+
+    func testSemanticMismatchMigrationMessageIsLocalized() throws {
+        let repositoryRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let data = try Data(
+            contentsOf: repositoryRoot
+                .appendingPathComponent("CastReader/Localizable.xcstrings")
+        )
+        let root = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+        let entry = try XCTUnwrap(
+            strings["声音服务仍在更新。录音已保留，请稍后重试"] as? [String: Any]
+        )
+        let localizations = try XCTUnwrap(
+            entry["localizations"] as? [String: Any]
+        )
+
+        XCTAssertEqual(
+            Set(localizations.keys),
+            Set(["de", "en", "es", "fr", "hi", "it", "ja", "pt-BR", "zh-Hans"])
+        )
     }
 
     @MainActor
@@ -461,6 +486,16 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertNotNil(result.capability.resetAt)
     }
 
+    func testListParserSkipsOneMalformedHistoricalVoiceWithoutHidingValidVoices() throws {
+        let data = Data(
+            #"{"voices":[{"voiceId":"vc_new","supportedLanguages":["en"]},{"voiceId":42,"supportedLanguages":"legacy"},{"voice_id":"vc_old","created_at":"2025-01-01T00:00:00Z"}]}"#.utf8
+        )
+
+        let result = try VoiceCloneResponseParser.list(from: data)
+
+        XCTAssertEqual(result.voices.map(\.voiceId), ["vc_new", "vc_old"])
+    }
+
     func testQuotaErrorAndHeadersExposeRemainingSecondsAndReset() throws {
         let data = Data(
             #"{"code":"CLONE_QUOTA_EXHAUSTED","message":"limit","cloneMonthlyLimitSeconds":7200,"cloneMonthlyRemainingSeconds":0,"cloneQuotaResetAt":"2026-09-01T00:00:00Z"}"#.utf8
@@ -541,6 +576,19 @@ final class VoiceCloneTests: XCTestCase {
                 data: missingVoice
             )
         )
+        XCTAssertTrue(
+            ClonedTTSNotFoundPolicy.isConfirmedVoiceDeletion(
+                statusCode: 404,
+                data: missingVoice
+            )
+        )
+        XCTAssertFalse(
+            ClonedTTSNotFoundPolicy.isConfirmedVoiceDeletion(
+                statusCode: 404,
+                data: missingRoute
+            ),
+            "the TTS branch must preserve an active clone on a gateway 404"
+        )
     }
 
     func testProStatusDecodesCloneQuotaContract() throws {
@@ -595,7 +643,7 @@ final class VoiceCloneTests: XCTestCase {
         )
     }
 
-    func testCreationUXMakesTheSampleOptionalAndRefreshesAfterReturningSuccess() throws {
+    func testCreationUXMakesTheSampleOptional() throws {
         let repositoryRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -606,6 +654,8 @@ final class VoiceCloneTests: XCTestCase {
         )
         XCTAssertTrue(viewSource.contains("示例文本（可选）"))
         XCTAssertTrue(viewSource.contains("无需逐字一致"))
+        XCTAssertTrue(viewSource.contains("referenceText: nil"))
+        XCTAssertFalse(viewSource.contains("referenceText: exampleText"))
         let retryStart = try XCTUnwrap(
             viewSource.range(of: "case .retryOriginalRecording:")?.lowerBound
         )
@@ -613,17 +663,120 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(retryTail.contains("phase = .ready"))
         XCTAssertFalse(retryTail.contains("replaceRecording"))
 
-        let storeSource = try String(
-            contentsOf: repositoryRoot
-                .appendingPathComponent("CastReader/Models/VoiceCloneStore.swift"),
-            encoding: .utf8
+    }
+
+    func testSpeakerOnlyCreateMetadataOmitsUnconfirmedExampleTextOnBothRoutes() throws {
+        let metadata = try VoiceCloneCreateMetadata(
+            referenceLanguage: "hi-IN",
+            referenceText: nil
         )
-        XCTAssertTrue(
-            storeSource.contains(
-                "Task { [weak self] in\n                await self?.refresh()\n            }\n            return true"
-            ),
-            "the successful create response must return before the list reconciliation finishes"
+        let multipart = Dictionary(
+            uniqueKeysWithValues: metadata.multipartFields.map { ($0.name, $0.value) }
         )
+        let china = metadata.chinaPayload(referenceObjectKey: "user/reference.wav")
+
+        XCTAssertEqual(metadata.referenceLanguage, "hi")
+        XCTAssertNil(metadata.referenceText)
+        XCTAssertNil(multipart["reference_text"])
+        XCTAssertNil(china["referenceText"])
+        XCTAssertEqual(china["referenceLanguage"] as? String, "hi")
+    }
+
+    func testCreateMetadataSendsTextOnlyWhenTheCallerExplicitlyProvidesIt() throws {
+        let blank = try VoiceCloneCreateMetadata(
+            referenceLanguage: "en",
+            referenceText: "  \n "
+        )
+        XCTAssertNil(blank.referenceText)
+        XCTAssertFalse(blank.multipartFields.contains { $0.name == "reference_text" })
+
+        let confirmed = try VoiceCloneCreateMetadata(
+            referenceLanguage: "en",
+            referenceText: "  I chose these words.  "
+        )
+        XCTAssertEqual(confirmed.referenceText, "I chose these words.")
+        XCTAssertEqual(
+            confirmed.multipartFields.first { $0.name == "reference_text" }?.value,
+            "I chose these words."
+        )
+        XCTAssertEqual(
+            confirmed.chinaPayload(referenceObjectKey: "key")["referenceText"] as? String,
+            "I chose these words."
+        )
+    }
+
+    @MainActor
+    func testDelayedRefreshFromPreviousAccountCannotOverwriteNewAccount() async {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        let accountA = String(repeating: "a", count: 64)
+        let accountB = String(repeating: "b", count: 64)
+        store.activateAccountScope(storageID: accountA)
+
+        let refresh = Task { await store.refresh() }
+        await service.waitForListCall(count: 1)
+        store.activateAccountScope(storageID: accountB)
+        await service.completeNextList(
+            VoiceCloneListResult(
+                voices: [ClonedVoice(voiceId: "vc_account_a")],
+                nextCreateAt: nil
+            )
+        )
+        await refresh.value
+
+        XCTAssertTrue(store.voices.isEmpty)
+        XCTAssertNil(store.lastCreatedVoiceID)
+        XCTAssertFalse(store.isLoading)
+    }
+
+    @MainActor
+    func testEventuallyConsistentListCannotSwallowAuthoritativeCreateResponse() async throws {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let created = ClonedVoice(
+            voiceId: "vc_just_created",
+            createdAt: "2026-08-30T00:00:00Z",
+            referenceLanguage: "en"
+        )
+        let service = ControlledVoiceCloneService(createdVoice: created)
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        store.activateAccountScope(storageID: String(repeating: "c", count: 64))
+        let recordingURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("voice-clone-\(UUID().uuidString).wav")
+        try Data([0x52, 0x49, 0x46, 0x46]).write(to: recordingURL)
+        defer { try? FileManager.default.removeItem(at: recordingURL) }
+
+        let succeeded = await store.create(
+            recordingURL: recordingURL,
+            referenceLanguage: "en",
+            referenceText: nil,
+            consentConfirmed: true
+        )
+        XCTAssertTrue(succeeded)
+        XCTAssertEqual(store.voices.map(\.voiceId), [created.voiceId])
+
+        await service.waitForListCall(count: 1)
+        await service.completeNextList(
+            VoiceCloneListResult(voices: [], nextCreateAt: nil)
+        )
+        for _ in 0..<20 where store.isLoading {
+            await Task.yield()
+        }
+
+        XCTAssertEqual(store.voices.map(\.voiceId), [created.voiceId])
+        XCTAssertEqual(store.lastCreatedVoiceID, created.voiceId)
     }
 
     func testCreateParserSupportsEnvelope() throws {
@@ -711,5 +864,59 @@ final class VoiceCloneTests: XCTestCase {
             ClonedTTSRetryPolicy.isRetryable(VoiceCloneError.proRequired)
         )
         XCTAssertEqual(ClonedTTSRetryPolicy.delaysNanoseconds.count, 3)
+    }
+}
+
+private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
+    private typealias ListContinuation = CheckedContinuation<VoiceCloneListResult, Error>
+    private typealias CallWaiter = (
+        count: Int,
+        continuation: CheckedContinuation<Void, Never>
+    )
+
+    private let createdVoice: ClonedVoice
+    private var listCallCount = 0
+    private var pendingLists: [ListContinuation] = []
+    private var callWaiters: [CallWaiter] = []
+
+    init(createdVoice: ClonedVoice = ClonedVoice(voiceId: "vc_created")) {
+        self.createdVoice = createdVoice
+    }
+
+    func hasSession() async -> Bool { true }
+
+    func listVoices() async throws -> VoiceCloneListResult {
+        try await withCheckedThrowingContinuation { continuation in
+            listCallCount += 1
+            pendingLists.append(continuation)
+            let ready = callWaiters.filter { listCallCount >= $0.count }
+            callWaiters.removeAll { listCallCount >= $0.count }
+            ready.forEach { $0.continuation.resume() }
+        }
+    }
+
+    func createVoice(
+        recordingURL: URL,
+        referenceLanguage: String,
+        referenceText: String?,
+        consentConfirmed: Bool,
+        onProgress: @escaping @Sendable (Double) -> Void
+    ) async throws -> ClonedVoice {
+        onProgress(1)
+        return createdVoice
+    }
+
+    func deleteVoice(_ voiceId: String) async throws {}
+
+    func waitForListCall(count: Int) async {
+        guard listCallCount < count else { return }
+        await withCheckedContinuation { continuation in
+            callWaiters.append((count: count, continuation: continuation))
+        }
+    }
+
+    func completeNextList(_ result: VoiceCloneListResult) {
+        precondition(!pendingLists.isEmpty, "No pending list request")
+        pendingLists.removeFirst().resume(returning: result)
     }
 }

@@ -89,7 +89,7 @@ enum VoiceCloneQualityMessage {
         case "VOICE_REFERENCE_MULTIPLE_SPEAKERS":
             return AppLocalized("录音中可能有多人说话，请确保只有本人说话")
         case "VOICE_REFERENCE_TEXT_MISMATCH":
-            return AppLocalized("示例文本无需逐字一致。录音已保留，请原样重试。")
+            return AppLocalized("声音服务仍在更新。录音已保留，请稍后重试")
         case "REFERENCE_LANGUAGE_UNSUPPORTED", "VOICE_REFERENCE_LANGUAGE_UNSUPPORTED":
             return AppLocalized("暂不支持所选录音语言，请选择其他语言")
         default:
@@ -262,7 +262,7 @@ enum VoiceCloneResponseParser {
     static func list(from data: Data) throws -> VoiceCloneListResult {
         let object = try JSONSerialization.jsonObject(with: data)
         if let array = object as? [[String: Any]] {
-            return VoiceCloneListResult(voices: try decodeVoices(array), nextCreateAt: nil)
+            return VoiceCloneListResult(voices: decodeVoices(array), nextCreateAt: nil)
         }
         guard let root = object as? [String: Any] else { throw VoiceCloneError.invalidResponse }
         let payload = (root["data"] as? [String: Any]) ?? root
@@ -294,7 +294,7 @@ enum VoiceCloneResponseParser {
             })
         )
         return VoiceCloneListResult(
-            voices: try decodeVoices(rawVoices),
+            voices: decodeVoices(rawVoices),
             nextCreateAt: parseDate(next),
             capability: capability
         )
@@ -384,10 +384,15 @@ enum VoiceCloneResponseParser {
         parseDate(value)
     }
 
-    private static func decodeVoices(_ objects: [[String: Any]]) throws -> [ClonedVoice] {
-        try objects.map {
-            try JSONDecoder().decode(ClonedVoice.self, from: JSONSerialization.data(withJSONObject: $0))
-        }.filter { $0.voiceId.hasPrefix("vc_") }
+    private static func decodeVoices(_ objects: [[String: Any]]) -> [ClonedVoice] {
+        objects.compactMap { object in
+            guard let data = try? JSONSerialization.data(withJSONObject: object),
+                  let voice = try? JSONDecoder().decode(ClonedVoice.self, from: data),
+                  voice.voiceId.hasPrefix("vc_") else {
+                return nil
+            }
+            return voice
+        }
     }
 
     private static func string(_ object: [String: Any], keys: [String]) -> String? {
