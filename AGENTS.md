@@ -2,6 +2,36 @@
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
+## 声音克隆修改前强制入口
+
+修改 iOS `VoiceClone*`、克隆 TTS、服务区域、账号代际、Pro/克隆额度，或
+`reports/nari-dynamic-voice-clone-poc/**` Worker/部署代码前，必须完整阅读控制面仓库的
+唯一架构事实源：
+
+- 已锁定的不可变文档：
+  `https://github.com/scmyyan/readout-web/blob/e42b21ef2899f549f75d7a3bafda051dfed39a8c/docs/voice-clone-system-architecture.md`
+- Architecture ID：`voice-clone-system-v1`
+- 跨仓库版本锁：`docs/contracts/voice-clone-architecture.lock.json`。开始修改前运行
+  `python3 scripts/voice_clone_architecture_gate.py verify-lock --require-pinned`；若使用
+  本地后端 checkout，再加
+  `--backend-checkout <readout-web checkout>` 校验 commit 与文档 SHA256。
+
+硬约束：iOS 是 global/CN 双区移动端，session、列表、资产和额度按线路隔离；
+`reference_text` 可选且只作提示；创建成功不得等待试听；Worker/试听裸 404 不等于音色
+不存在；只有结构化 `VOICE_NOT_FOUND` 才能清理本地选择；克隆失败不得回退预设音色或
+跨区。iOS 当前裸试听 404 后 POST `/speech` 是待迁移兼容债务，不得扩散为新合同。
+
+相关修改至少运行全部 `VoiceCloneTests` 与门禁列出的声音克隆/双区
+`ServiceRoutingTests` 聚焦清单；若改动触及其他路由或账号语义，还必须补跑对应测试。
+同步更新架构文档/机器发布合同，并在 commit 中包含：
+
+`Voice-Clone-Architecture-Reviewed: voice-clone-system-v1`
+
+PR 门禁对所有 PR/merge queue 运行；只有敏感变更才启动 Worker 与 iOS 聚焦测试，但每个
+触及敏感路径的 authored commit 都必须携带上面的精确 trailer。不要通过移动/重命名文件
+绕过门禁，敏感路径和锁校验的唯一实现位于
+`scripts/voice_clone_architecture_gate.py`。
+
 ## 产品定位
 
 CastReader iOS 是**工具型 TTS 应用**（不是图书 app）。两大产品线：

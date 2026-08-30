@@ -1,0 +1,47 @@
+# Voice-clone architecture gate, lock and ownership are self-protected.
+/.github/CODEOWNERS @vinxu
+/.github/workflows/voice-clone-architecture-gate.yml @vinxu
+/scripts/voice_clone_architecture_gate.py @vinxu
+/scripts/test_voice_clone_architecture_gate.py @vinxu
+/docs/contracts/voice-clone-architecture.lock.json @vinxu
+/AGENTS.md @vinxu
+/CLAUDE.md @vinxu
+
+# iOS clone creation, identity, routing, generation and playback contract.
+/CastReader.xcodeproj/project.pbxproj @vinxu
+/CastReader.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved @vinxu
+/CastReader.xcworkspace/xcshareddata/swiftpm/Package.resolved @vinxu
+/CastReader/CastReaderApp.swift @vinxu
+/CastReader/Localizable.xcstrings @vinxu
+/CastReader/Models/AppSettings.swift @vinxu
+/CastReader/Models/PhoneAuthModels.swift @vinxu
+/CastReader/Models/TTSTimestamp.swift @vinxu
+/CastReader/Models/UserAccount.swift @vinxu
+/CastReader/Models/Voice*.swift @vinxu
+/CastReader/Services/APIService.swift @vinxu
+/CastReader/Services/AppRegion.swift @vinxu
+/CastReader/Services/AudioPlayerService.swift @vinxu
+/CastReader/Services/AuthService*.swift @vinxu
+/CastReader/Services/KeychainStore.swift @vinxu
+/CastReader/Services/MobileSessionService.swift @vinxu
+/CastReader/Services/OwnedAPINetworking.swift @vinxu
+/CastReader/Services/PhoneAuthService.swift @vinxu
+/CastReader/Services/ProBackendService.swift @vinxu
+/CastReader/Services/ProManager.swift @vinxu
+/CastReader/Services/QuotaManager.swift @vinxu
+/CastReader/Services/ServiceRouting.swift @vinxu
+/CastReader/Services/TTSEndpoint.swift @vinxu
+/CastReader/Services/TTSService.swift @vinxu
+/CastReader/Services/Voice*.swift @vinxu
+/CastReader/Utils/Constants.swift @vinxu
+/CastReader/ViewModels/ExplainViewModel.swift @vinxu
+/CastReader/ViewModels/ReadAloudViewModel.swift @vinxu
+/CastReader/Views/Home/HomeView.swift @vinxu
+/CastReader/Views/MainTabView.swift @vinxu
+/CastReader/Views/**/Voice*.swift @vinxu
+/CastReaderTests/AppRegionTests.swift @vinxu
+/CastReaderTests/ServiceRoutingTests.swift @vinxu
+/CastReaderTests/*Voice*.swift @vinxu
+
+# Worker, prompt schema, Nari runtime and both production deployment paths.
+/reports/nari-dynamic-voice-clone-poc/** @vinxu

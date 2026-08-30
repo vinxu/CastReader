@@ -1,0 +1,178 @@
+name: Voice-clone architecture gate
+
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  architecture-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      sensitive: ${{ steps.classify.outputs.sensitive }}
+    env:
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+
+      - name: Self-test architecture gate
+        run: python3 scripts/test_voice_clone_architecture_gate.py -v
+
+      - name: Validate architecture lock
+        run: python3 scripts/voice_clone_architecture_gate.py verify-lock --require-pinned
+
+      - name: Classify changed paths
+        id: classify
+        run: |
+          test -n "$BASE_SHA"
+          test -n "$HEAD_SHA"
+          python3 scripts/voice_clone_architecture_gate.py classify \
+            --base "$BASE_SHA" \
+            --head "$HEAD_SHA"
+
+      - name: Require a valid gate classification
+        env:
+          SENSITIVE: ${{ steps.classify.outputs.sensitive }}
+        run: |
+          case "$SENSITIVE" in
+            true|false) ;;
+            *)
+              echo "voice-clone architecture gate did not emit sensitive=true|false" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Require exact acknowledgement on every sensitive commit
+        if: steps.classify.outputs.sensitive == 'true'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SYNTHETIC_HEAD: ${{ github.event.merge_group.head_sha }}
+        run: |
+          trailer_args=()
+          if [[ "$EVENT_NAME" == "merge_group" ]]; then
+            # Skip only GitHub's immutable synthetic head. Authored merges are
+            # still checked unless they are deterministic, conflict-free base
+            # syncs whose tree is reproduced by git merge-tree.
+            test -n "$SYNTHETIC_HEAD"
+            trailer_args+=(--synthetic-head "$SYNTHETIC_HEAD")
+          fi
+          python3 scripts/voice_clone_architecture_gate.py verify-trailers \
+            --base "$BASE_SHA" \
+            --head "$HEAD_SHA" \
+            "${trailer_args[@]}"
+
+  worker-contract:
+    needs: architecture-contract
+    if: needs.architecture-contract.outputs.sensitive == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: reports/nari-dynamic-voice-clone-poc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+
+      - name: Compile Worker Python sources and tests
+        run: |
+          python_count="$(
+            find worker tests nari-qwen3-tts/src -type f -name '*.py' | wc -l
+          )"
+          test "$python_count" -gt 0
+          find worker tests nari-qwen3-tts/src \
+            -type f -name '*.py' -print0 | \
+            xargs -0 python3 -m py_compile
+
+      - name: Run dependency-light Worker unit suites
+        env:
+          PYTHONPATH: ${{ github.workspace }}/reports/nari-dynamic-voice-clone-poc/worker
+        run: |
+          for suite in \
+            test_inference_scheduler.py \
+            test_request_coalescer.py \
+            test_xvector_activation.py
+          do
+            python3 -m unittest discover -s tests -p "$suite" -v
+          done
+
+      - name: Parse every Worker deployment script
+        run: |
+          found=0
+          while IFS= read -r -d '' script; do
+            found=1
+            bash -n "$script"
+          done < <(find deploy -type f -name '*.sh' -print0)
+          test "$found" -eq 1
+
+  ios-contract:
+    needs: architecture-contract
+    if: needs.architecture-contract.outputs.sensitive == 'true'
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.sha }}
+
+      - name: Prepare public build configuration
+        run: |
+          if [[ ! -f Secrets.xcconfig ]]; then
+            cp Secrets.example.xcconfig Secrets.xcconfig
+          fi
+
+      - name: Select an available iPhone simulator
+        id: simulator
+        run: |
+          simulator_udid="$(python3 - <<'PY'
+          import json
+          import subprocess
+
+          payload = json.loads(
+              subprocess.check_output(
+                  ["xcrun", "simctl", "list", "devices", "available", "-j"],
+                  text=True,
+              )
+          )
+          candidates = [
+              device
+              for devices in payload["devices"].values()
+              for device in devices
+              if device.get("isAvailable", True)
+              and device.get("name", "").startswith("iPhone")
+          ]
+          if not candidates:
+              raise SystemExit("No available iPhone simulator")
+          print(candidates[0]["udid"])
+          PY
+          )"
+          test -n "$simulator_udid"
+          echo "udid=$simulator_udid" >> "$GITHUB_OUTPUT"
+
+      - name: Compile and run focused iOS contract tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -workspace CastReader.xcworkspace \
+            -scheme CastReader \
+            -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}' \
+            -derivedDataPath "$RUNNER_TEMP/CastReaderDerivedData" \
+            -only-testing:CastReaderTests/VoiceCloneTests \
+            -only-testing:CastReaderTests/ServiceRoutingTests/testValidBackendChinaRouteOnlyAppliesToAuthoritativeChinaRegion \
+            -only-testing:CastReaderTests/ServiceRoutingTests/testAppRegionChangeDoesNotChangeFrozenServiceRoute \
+            -only-testing:CastReaderTests/ServiceRoutingTests/testAnonymousTTSNeverResendsPayloadAcrossComputeRoutes \
+            -only-testing:CastReaderTests/ServiceRoutingTests/testAnonymousTTSDoesNotFallbackForRateLimitOrAuthContractFailure \
+            -only-testing:CastReaderTests/ServiceRoutingTests/testEnabledCloneVoiceNeverFallsBackToAnonymousComputeTTS \
+            -only-testing:CastReaderTests/ServiceRoutingTests/testGlobalRouteSendsEveryOwnedBusinessAPIThroughGlobalGateway \
+            -only-testing:CastReaderTests/ServiceRoutingTests/testChinaRouteUsesFiledGeneralGatewayAndDedicatedQuickReadIngress \
+            -only-testing:CastReaderTests/ServiceRoutingTests/testProtectedSTSUsesSelectedGatewayAndServerSessionForBothRoutes \
+            -only-testing:CastReaderTests/ServiceRoutingTests/testProtectedSTSRejectsMissingOrLocalSessionBeforeNetwork \
+            -only-testing:CastReaderTests/ServiceRoutingTests/testOnlyServerIssuedMobileSessionsCanReachProtectedChinaAPIs \
+            CODE_SIGNING_ALLOWED=NO

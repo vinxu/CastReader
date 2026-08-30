@@ -5,7 +5,9 @@ Nari is intentionally configured for one active request on an RTX 4090.  The
 old adapter exposed that constraint as an immediate HTTP 429.  This scheduler
 keeps the GPU single-flight while allowing callers to wait in a bounded queue.
 Interactive playback is preferred over prefetch, and prefetch is preferred
-over background voice-prompt creation.
+over work explicitly submitted as background. The public voice-build route is
+currently an interactive request because a user is synchronously waiting for
+creation; caller-supplied priority is authoritative.
 """
 
 from __future__ import annotations
