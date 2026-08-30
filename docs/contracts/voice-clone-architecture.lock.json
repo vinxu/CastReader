@@ -1,0 +1,12 @@
+{
+  "lockVersion": 1,
+  "architectureId": "voice-clone-system-v1",
+  "status": "pinned",
+  "source": {
+    "repository": "https://github.com/scmyyan/readout-web",
+    "branch": "beta",
+    "documentPath": "docs/voice-clone-system-architecture.md",
+    "backendCommit": "e42b21ef2899f549f75d7a3bafda051dfed39a8c",
+    "documentSha256": "a348685e9d6c64ee44fe6577087690513155fcc11721b30290a1793dc31360ef"
+  }
+}
