@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **声音克隆修改前强制入口**：修改 iOS `VoiceClone*`、克隆 TTS、区域/账号/额度，或
+> `reports/nari-dynamic-voice-clone-poc/**` Worker/部署代码前，必须完整阅读
+> `https://github.com/scmyyan/readout-web/blob/e42b21ef2899f549f75d7a3bafda051dfed39a8c/docs/voice-clone-system-architecture.md`
+>（Architecture ID `voice-clone-system-v1`）。遵守 speaker-only、iOS 双区隔离、试听
+> 非阻塞、结构化不存在、无预设音色/跨区回退和 reader-before-writer 合同。相关 commit
+> 必须包含 `Voice-Clone-Architecture-Reviewed: voice-clone-system-v1`。跨仓库精确版本以
+> `docs/contracts/voice-clone-architecture.lock.json` 为准，并先运行
+> `python3 scripts/voice_clone_architecture_gate.py verify-lock --require-pinned`。
+
 ## 产品定位
 
 CastReader iOS 是**工具型 TTS 应用**（不是图书 app）。两大产品线：
@@ -271,7 +280,10 @@ Constants.API.webURL           = https://castreader.ai                # 账号 /
 
 服务端 catalog 驱动 + **静态九语兜底**：远端目录缺某语言时回落 `fallbackAll` 的离线默认（`status: "offline-default"`），保证首启/离线每种语言都有可用音色。改语言集合时记得升 `VoiceCatalogService.cacheKey`（当前 `tts_voice_catalog_v2_nine_language_cache`），否则旧缓存会盖掉新语言。
 
-**声音克隆**（`VoiceClone*`）代码完整、数据保留，但 `Constants.Features.voiceCloningEnabled = false` **本版本关闭**——所有入口靠这个开关 gate，别绕过它。
+**声音克隆**（`VoiceClone*`）当前已开启：
+`Constants.Features.voiceCloningEnabled = true`。创建文本可选，成功不等待固定试听；
+global/CN 的 session、列表、缓存和资产不得互相恢复。完整跨端/后端合同以本文件顶部
+强制入口指向的 `voice-clone-system-v1` 为准，不能根据这一段单独修改接口。
 
 ### 埋点（`Services/ProductAnalytics.swift`）
 
