@@ -14,6 +14,7 @@ struct VoiceCloneCreatedView: View {
     @State private var showCreation = false
     @State private var pendingDelete: ClonedVoice?
     @State private var pendingRename: ClonedVoice?
+    @State private var preparingRenameVoiceID: String?
     @State private var sessionReady: Bool
     @State private var sessionCheckCompleted: Bool
 
@@ -53,6 +54,7 @@ struct VoiceCloneCreatedView: View {
         .onChange(of: auth.accountBoundaryID) { _ in
             pendingRename = nil
             pendingDelete = nil
+            preparingRenameVoiceID = nil
             showCreation = false
         }
         .sheet(isPresented: $showLogin) { LoginView() }
@@ -546,15 +548,47 @@ struct VoiceCloneCreatedView: View {
             )
 
             Menu {
-                if voice.identity != nil {
-                    Button("修改名称", systemImage: "pencil") {
-                        pendingRename = voice
-                    }
+                Button("修改名称", systemImage: "pencil") {
+                    prepareRename(voice)
                 }
                 Button("删除", systemImage: "trash", role: .destructive) { pendingDelete = voice }
-            } label: { Image(systemName: "ellipsis").frame(width: 36, height: 36) }
+            } label: {
+                if preparingRenameVoiceID == voice.voiceId {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: 36, height: 36)
+                        .accessibilityLabel("正在更新声音")
+                } else {
+                    Image(systemName: "ellipsis").frame(width: 36, height: 36)
+                }
+            }
+            .disabled(preparingRenameVoiceID != nil)
         }
         .disabled(store.deletingVoiceId != nil)
+    }
+
+    /// Identity metadata is optional to the core create/TTS contract, so a
+    /// successful creation can briefly appear before its display identity is
+    /// backfilled. Editing must remain discoverable for every active voice.
+    /// Refresh once before opening the editor rather than hiding the action;
+    /// names still stay server-authoritative and consistent across clients.
+    private func prepareRename(_ voice: ClonedVoice) {
+        guard preparingRenameVoiceID == nil else { return }
+        if voice.identity != nil {
+            pendingRename = voice
+            return
+        }
+        preparingRenameVoiceID = voice.voiceId
+        Task {
+            await store.refresh()
+            defer { preparingRenameVoiceID = nil }
+            guard let refreshed = store.voice(withID: voice.voiceId),
+                  refreshed.identity != nil else {
+                store.errorMessage = VoiceCloneError.identityUnavailable.localizedDescription
+                return
+            }
+            pendingRename = refreshed
+        }
     }
 
     private func applyVoice(_ voice: ClonedVoice) {
