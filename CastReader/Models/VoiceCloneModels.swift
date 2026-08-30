@@ -12,6 +12,11 @@ enum VoiceCloneLanguageSupport {
 }
 
 enum VoiceCloneRecordingPrompt {
+    /// Languages that can be selected explicitly while recording. Keep this
+    /// independent from output-language support: the recording language only
+    /// describes the sample the user is about to speak.
+    static let selectableLanguages = ["zh", "en", "ja", "es", "fr", "de", "pt", "it", "hi"]
+
     static func languageCode(
         for selection: AppLanguage,
         systemLanguageCode: String? = nil
@@ -32,6 +37,12 @@ enum VoiceCloneRecordingPrompt {
         scripts[VoiceCatalog.normalizedLanguage(language)] ?? scripts["en"]!
     }
 
+    static func displayName(for language: String, locale: Locale) -> String {
+        let normalized = VoiceCatalog.normalizedLanguage(language)
+        return locale.localizedString(forLanguageCode: normalized)
+            ?? normalized.uppercased()
+    }
+
     private static let scripts: [String: String] = [
         "zh": "我最喜欢的事情就是学习啦，我每天都会看书，学各种知识，希望变得更聪明！",
         "en": "My favorite thing is learning. I read every day, discover new ideas, and hope to understand the world a little better.",
@@ -45,6 +56,15 @@ enum VoiceCloneRecordingPrompt {
     ]
 }
 
+enum VoiceCloneCreationSubmissionOutcome: Equatable {
+    case completed
+    case retryOriginalRecording
+
+    init(succeeded: Bool) {
+        self = succeeded ? .completed : .retryOriginalRecording
+    }
+}
+
 enum VoiceCloneQualityMessage {
     static func localized(for code: String?) -> String? {
         switch code?.uppercased() {
@@ -55,9 +75,9 @@ enum VoiceCloneQualityMessage {
         case "VOICE_REFERENCE_NO_SPEECH":
             return AppLocalized("没有检测到清晰人声，请在安静环境中重新录制")
         case "VOICE_REFERENCE_SPEECH_TOO_SHORT":
-            return AppLocalized("有效讲话时间太短，请完整朗读文案")
+            return AppLocalized("有效讲话时间太短，请连续清晰说话至少 3 秒")
         case "VOICE_REFERENCE_TOO_MUCH_SILENCE":
-            return AppLocalized("录音中的静音太多，请按住后尽快开始朗读")
+            return AppLocalized("录音中的静音太多，请按住后尽快开始说话")
         case "VOICE_REFERENCE_TOO_QUIET":
             return AppLocalized("声音太小，请靠近手机并重新录制")
         case "VOICE_REFERENCE_CLIPPING":
@@ -67,9 +87,11 @@ enum VoiceCloneQualityMessage {
         case "VOICE_REFERENCE_TOO_REVERBERANT":
             return AppLocalized("房间回声太重，请靠近手机并换到较小、柔软的空间录制")
         case "VOICE_REFERENCE_MULTIPLE_SPEAKERS":
-            return AppLocalized("录音中可能有多人说话，请确保只有本人朗读")
+            return AppLocalized("录音中可能有多人说话，请确保只有本人说话")
         case "VOICE_REFERENCE_TEXT_MISMATCH":
-            return AppLocalized("有效讲话时间太短，请完整朗读文案")
+            return AppLocalized("示例文本无需逐字一致。录音已保留，请原样重试。")
+        case "REFERENCE_LANGUAGE_UNSUPPORTED", "VOICE_REFERENCE_LANGUAGE_UNSUPPORTED":
+            return AppLocalized("暂不支持所选录音语言，请选择其他语言")
         default:
             return nil
         }
@@ -292,14 +314,38 @@ enum VoiceCloneResponseParser {
 
     static func serverMessage(from data: Data) -> String? {
         guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
-        return string(root, keys: ["message", "error", "detail"])
-            ?? (root["data"] as? [String: Any]).flatMap { string($0, keys: ["message", "error", "detail"]) }
+        for object in responseObjects(from: root) {
+            if let value = string(object, keys: ["message", "error", "detail"]) {
+                return value
+            }
+        }
+        return nil
     }
 
-    static func serverCode(from data: Data) -> String? {
-        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
-        return string(root, keys: ["code", "error_code"])
-            ?? (root["data"] as? [String: Any]).flatMap { string($0, keys: ["code", "error_code"]) }
+    static func serverCode(
+        from data: Data,
+        response: HTTPURLResponse? = nil
+    ) -> String? {
+        if let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            for object in responseObjects(from: root) {
+                if let value = string(object, keys: ["code", "error_code", "errorCode"]) {
+                    return value
+                }
+                if let value = object["error"] as? String,
+                   isStructuredErrorCode(value) {
+                    return value
+                }
+            }
+        }
+        guard let response else { return nil }
+        for name in ["X-Voice-Error-Code", "X-CastReader-Error-Code", "X-Error-Code"] {
+            if let value = response.value(forHTTPHeaderField: name)?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+               !value.isEmpty {
+                return value
+            }
+        }
+        return nil
     }
 
     static func nextCreateAt(from data: Data) -> Date? {
@@ -349,6 +395,31 @@ enum VoiceCloneResponseParser {
             if let value = object[key] as? String, !value.isEmpty { return value }
         }
         return nil
+    }
+
+    private static func responseObjects(from root: [String: Any]) -> [[String: Any]] {
+        var result = [root]
+        var index = 0
+        while index < result.count, result.count < 16 {
+            let object = result[index]
+            for key in ["data", "error", "detail"] {
+                if let nested = object[key] as? [String: Any] {
+                    result.append(nested)
+                }
+            }
+            index += 1
+        }
+        return result
+    }
+
+    private static func isStructuredErrorCode(_ value: String) -> Bool {
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty, normalized == normalized.uppercased() else { return false }
+        return normalized.unicodeScalars.allSatisfy {
+            CharacterSet.uppercaseLetters.contains($0)
+                || CharacterSet.decimalDigits.contains($0)
+                || $0 == "_"
+        }
     }
 
     private static func bool(_ object: [String: Any], keys: [String]) -> Bool? {

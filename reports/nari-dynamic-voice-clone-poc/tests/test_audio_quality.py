@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import io
 import unittest
-from types import SimpleNamespace
-from unittest.mock import patch
 
 import numpy as np
 import soundfile as sf
@@ -114,7 +112,7 @@ class GeneratedAudioQualityTests(unittest.TestCase):
         self.assertGreater(medium, short)
         self.assertLess(medium, 4096)
 
-    def test_v2_prompt_upgrades_with_small_silence_bootstrap(self) -> None:
+    def test_v2_prompt_stays_immutable_when_runtime_is_xvector_only(self) -> None:
         prompt = {
             "schema": "qwen3_tts_base_voice_clone_prompt_v2",
             "ref_text": "Reference text.",
@@ -123,17 +121,12 @@ class GeneratedAudioQualityTests(unittest.TestCase):
         }
         raw = io.BytesIO()
         torch.save(prompt, raw)
-        builder = SimpleNamespace(
-            decoder_bootstrap_code=torch.zeros((4, 16), dtype=torch.long)
-        )
-
-        with patch.object(clone_worker, "prompt_builder", return_value=builder):
-            compiled, schema = clone_worker.upgrade_prompt_bytes(raw.getvalue())
+        compiled, schema = clone_worker.upgrade_prompt_bytes(raw.getvalue())
 
         upgraded = torch.load(io.BytesIO(compiled), map_location="cpu", weights_only=True)
-        self.assertEqual(schema, "qwen3_tts_base_voice_clone_prompt_v3")
-        self.assertEqual(tuple(upgraded["decoder_bootstrap_code"].shape), (4, 16))
-        self.assertNotIn("ref_code", upgraded)
+        self.assertEqual(schema, "qwen3_tts_base_voice_clone_prompt_v2")
+        self.assertEqual(compiled, raw.getvalue())
+        self.assertNotIn("decoder_bootstrap_code", upgraded)
 
     def test_v4_prompt_preserves_full_reference_decoder_context(self) -> None:
         prompt = {

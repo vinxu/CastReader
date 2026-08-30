@@ -203,7 +203,12 @@ final class VoiceCloneStore: ObservableObject {
             if !ProManager.shared.isPro {
                 capability.canApply = false
             }
-            await refresh()
+            // The POST response is already authoritative. Return success to the
+            // creation flow immediately and reconcile the list in the background;
+            // a slow or transient list request must not hold the success screen.
+            Task { [weak self] in
+                await self?.refresh()
+            }
             return true
         } catch let error as VoiceCloneError {
             handle(error)

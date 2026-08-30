@@ -17,6 +17,7 @@ import subprocess
 import threading
 import time
 import uuid
+import wave
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -80,17 +81,32 @@ LANGUAGE_MAP = {
 DATA_ROOT = Path(os.environ.get("CLONE_DATA_ROOT", "/workspace/castreader-clone"))
 VOICE_ROOT = DATA_ROOT / "voices"
 TOKEN_PATH = Path(os.environ.get("CLONE_TOKEN_FILE", DATA_ROOT / ".api-token"))
+XVECTOR_WRITER_MARKER = Path(
+    os.environ.get(
+        "CLONE_XVECTOR_WRITER_MARKER",
+        DATA_ROOT / ".xvector-writer-v1-enabled",
+    )
+)
 MODEL_DIR = Path(os.environ.get("NARI_MODEL_DIR", "/workspace/qwen3-tts-base/model-0.6b-base"))
 NARI_URL = os.environ.get("NARI_URL", "http://127.0.0.1:8094").rstrip("/")
-CLONE_WARMUP = os.environ.get("CLONE_WARMUP", "0").strip() == "1"
+CLONE_WARMUP = os.environ.get("CLONE_WARMUP", "1").strip() == "1"
 MAX_QUEUE_SIZE = int(os.environ.get("CLONE_MAX_QUEUE_SIZE", "64"))
 SYNTHESIS_TIMEOUT_SECONDS = float(os.environ.get("CLONE_SYNTHESIS_TIMEOUT_SECONDS", "45"))
-VOICE_BUILD_TIMEOUT_SECONDS = float(os.environ.get("CLONE_VOICE_BUILD_TIMEOUT_SECONDS", "90"))
+VOICE_BUILD_TIMEOUT_SECONDS = float(os.environ.get("CLONE_VOICE_BUILD_TIMEOUT_SECONDS", "40"))
 NARI_REQUEST_TIMEOUT_SECONDS = float(os.environ.get("NARI_REQUEST_TIMEOUT_SECONDS", "30"))
+NARI_XVECTOR_TOTAL_TIMEOUT_SECONDS = float(
+    os.environ.get(
+        "NARI_XVECTOR_TOTAL_TIMEOUT_SECONDS",
+        str(min(NARI_REQUEST_TIMEOUT_SECONDS, max(1.0, SYNTHESIS_TIMEOUT_SECONDS - 1.0))),
+    )
+)
 NARI_TEMPERATURE = float(os.environ.get("NARI_TEMPERATURE", "0.9"))
 NARI_TOP_K = int(os.environ.get("NARI_TOP_K", "50"))
 NARI_TOP_P = float(os.environ.get("NARI_TOP_P", "1.0"))
 NARI_REPETITION_PENALTY = float(os.environ.get("NARI_REPETITION_PENALTY", "1.05"))
+VOICE_SPEAKER_EMBEDDING_SIZE = int(
+    os.environ.get("CLONE_SPEAKER_EMBEDDING_SIZE", "1024")
+)
 ASR_MODEL_DIR_VALUE = os.environ.get("CLONE_ASR_MODEL_DIR", "").strip()
 ASR_MODEL_DIR = Path(ASR_MODEL_DIR_VALUE).expanduser() if ASR_MODEL_DIR_VALUE else None
 ASR_WARMUP = os.environ.get("CLONE_ASR_WARMUP", "0").strip() == "1"
@@ -105,6 +121,9 @@ PROMPT_UPGRADE_LOCK = threading.Lock()
 PROMPT_METADATA_CACHE: dict[str, tuple[int, "VoicePromptMetadata"]] = {}
 ASR_VALIDATOR_LOCK = threading.Lock()
 ASR_VALIDATOR_INSTANCE: SemanticASRValidator | None = None
+VOICE_MUTATION_LOCKS = tuple(threading.RLock() for _ in range(256))
+VOICE_BUILD_REGISTRY_LOCK = threading.Lock()
+VOICE_BUILD_CANCEL_EVENTS: dict[str, threading.Event] = {}
 
 GENERATED_AUDIO_REJECTION_HEADERS = {
     "X-Voice-Retryable": "false",
@@ -172,7 +191,7 @@ class GeneratedVoiceCandidate:
 @dataclass(frozen=True, slots=True)
 class VoicePromptMetadata:
     schema: str
-    reference_text: str
+    reference_text: str | None
     speaker_embedding: torch.Tensor
     semantic_contract_error: dict[str, object] | None
     semantic_attested: bool
@@ -228,6 +247,30 @@ def validate_reference_transcript_duration(
     return metrics
 
 
+def observe_reference_transcript_duration(
+    text: str,
+    speech_duration_s: float,
+) -> dict[str, float | int | bool | str]:
+    """Record a non-blocking transcript hint for diagnostics only.
+
+    New prompts are speaker-only, so users may read the sample, speak their
+    own text, use an accent, or choose another supported language.  A supplied
+    transcript can still help support/debugging, but it never controls whether
+    the voice is created.
+    """
+
+    metrics: dict[str, float | int | bool | str] = transcript_speaking_metrics(text)
+    minimum = float(metrics["minimum_complete_speech_s"])
+    metrics.update(
+        {
+            "speech_duration_s": round(speech_duration_s, 3),
+            "duration_plausible": minimum <= 0 or speech_duration_s + 0.05 >= minimum,
+            "enforcement": "advisory-only",
+        }
+    )
+    return metrics
+
+
 def _prompt_reference_speech_duration(prompt: dict[str, object]) -> float | None:
     measured = prompt.get("reference_speech_duration_s")
     if isinstance(measured, (float, int)) and not isinstance(measured, bool):
@@ -245,6 +288,8 @@ def _prompt_reference_speech_duration(prompt: dict[str, object]) -> float | None
 
 
 def validate_prompt_semantic_contract(prompt: dict[str, object]) -> None:
+    if prompt.get("schema") == "qwen3_tts_base_voice_clone_prompt_xvector_v1":
+        return
     text = prompt.get("ref_text")
     if not isinstance(text, str) or not text.strip():
         raise HTTPException(422, "invalid voice prompt")
@@ -374,6 +419,55 @@ def voice_dir(voice_id: str) -> Path:
     return VOICE_ROOT / voice_id
 
 
+def voice_mutation_lock(voice_id: str) -> threading.RLock:
+    """Return a stable, bounded lock for one voice's filesystem lifecycle."""
+
+    digest = hashlib.sha256(voice_id.encode("utf-8")).digest()
+    index = int.from_bytes(digest[:2], "big") % len(VOICE_MUTATION_LOCKS)
+    return VOICE_MUTATION_LOCKS[index]
+
+
+def register_voice_build(voice_id: str) -> threading.Event:
+    with VOICE_BUILD_REGISTRY_LOCK:
+        if voice_id in VOICE_BUILD_CANCEL_EVENTS:
+            raise HTTPException(
+                409,
+                detail={
+                    "code": "VOICE_BUILD_IN_PROGRESS",
+                    "message": "Voice creation is already in progress",
+                },
+            )
+        event = threading.Event()
+        VOICE_BUILD_CANCEL_EVENTS[voice_id] = event
+        return event
+
+
+def unregister_voice_build(voice_id: str, event: threading.Event) -> None:
+    with VOICE_BUILD_REGISTRY_LOCK:
+        if VOICE_BUILD_CANCEL_EVENTS.get(voice_id) is event:
+            VOICE_BUILD_CANCEL_EVENTS.pop(voice_id, None)
+
+
+def cancel_voice_build(voice_id: str) -> bool:
+    with VOICE_BUILD_REGISTRY_LOCK:
+        event = VOICE_BUILD_CANCEL_EVENTS.get(voice_id)
+        if event is None:
+            return False
+        event.set()
+        return True
+
+
+def xvector_writer_enabled() -> bool:
+    """Gate the irreversible prompt-schema writer migration.
+
+    Reader-compatible Worker and Nari code is deployed to every region first.
+    Only then is this marker enabled in every region. Removing it blocks new
+    voice creation while preserving reads of both legacy and x-vector prompts.
+    """
+
+    return XVECTOR_WRITER_MARKER.is_file()
+
+
 def normalize_language(value: str) -> str:
     code = value.strip().lower().replace("_", "-").split("-", 1)[0]
     try:
@@ -411,6 +505,12 @@ app = FastAPI(title="CastReader Nari Clone Worker", docs_url=None, redoc_url=Non
 @app.on_event("startup")
 def prepare_storage() -> None:
     VOICE_ROOT.mkdir(parents=True, exist_ok=True, mode=0o700)
+    # A prompt directory is published only by one atomic rename. Any private
+    # build directory left across a process crash can never be a valid voice
+    # and must not later be mistaken for one by cleanup or restore calls.
+    for stale in VOICE_ROOT.glob(".vc_*.*.building"):
+        if stale.is_dir():
+            shutil.rmtree(stale)
     if CLONE_WARMUP:
         prompt_builder()
     if ASR_WARMUP:
@@ -430,19 +530,26 @@ def health() -> dict[str, object]:
         nari_ready = response.status_code == 200 and response.json().get("ready") is True
     except Exception:
         nari_ready = False
-    try:
-        validator = semantic_asr_validator()
-        asr_ready = True
-        asr_loaded = validator.loaded
-    except SemanticASRUnavailable:
-        asr_ready = False
-        asr_loaded = False
+    # ASR is deliberately not an online dependency.  A small CPU recognizer is
+    # useful for offline audits, but it is not reliable enough to decide
+    # whether a clean user recording may become a voice.  Keeping health and
+    # creation independent from ASR also prevents a checkpoint outage or cold
+    # load from taking the clone service down.
+    asr_ready = ASR_MODEL_DIR is not None and ASR_MODEL_DIR.is_dir()
+    validator = ASR_VALIDATOR_INSTANCE
+    asr_loaded = validator.loaded if validator is not None else False
     return {
-        "status": "healthy" if nari_ready and asr_ready else "degraded",
+        "status": "healthy" if nari_ready else "degraded",
         "model": MODEL_NAME,
         "nari_ready": nari_ready,
         "semantic_asr_ready": asr_ready,
         "semantic_asr_loaded": asr_loaded,
+        "semantic_asr_required": False,
+        "voice_clone_generation_mode": "x-vector",
+        "voice_creation_enabled": xvector_writer_enabled(),
+        "voice_prompt_writer_schema": (
+            "xvector_v1" if xvector_writer_enabled() else "disabled"
+        ),
         **SCHEDULER.snapshot(),
     }
 
@@ -452,141 +559,262 @@ async def create_voice(
     reference: UploadFile = File(...),
     consent_confirmed: bool = Form(...),
     requested_voice_id: str | None = Form(default=None),
-    reference_text: str = Form(...),
+    reference_text: str = Form(default=""),
+    reference_language: str = Form(default=""),
     x_request_id: str | None = Header(default=None),
 ) -> dict[str, object]:
     if not consent_confirmed:
         raise HTTPException(422, "voice-owner consent is required")
-    transcript = reference_text.strip()
-    if not transcript or len(transcript) > 600:
-        raise HTTPException(422, "reference_text is required and must be at most 600 characters")
-    raw = await reference.read(MAX_UPLOAD_BYTES + 1)
-    if len(raw) > MAX_UPLOAD_BYTES:
-        raise HTTPException(413, "reference file is too large")
-    reference_result = await asyncio.to_thread(prepare_reference, raw)
-    normalized = reference_result.audio
-    duration = reference_result.duration_seconds
-    transcript_metrics = validate_reference_transcript_duration(
-        transcript,
-        float(reference_result.metrics["speech_duration_s"]),
-    )
-    reference_wav = io.BytesIO()
-    sf.write(
-        reference_wav,
-        normalized,
-        SAMPLE_RATE,
-        format="WAV",
-        subtype="PCM_16",
-    )
-    try:
-        reference_evidence = await asyncio.to_thread(
-            semantic_asr_validator().validate,
-            reference_wav.getvalue(),
-            transcript,
-            language="",
-        )
-    except SemanticAudioMismatch as error:
-        structured_log(
-            "voice_reference_semantic_rejected",
-            reason=error.reason,
-            **error.metrics,
-        )
-        raise HTTPException(
-            422,
-            detail={
-                "code": "VOICE_REFERENCE_TEXT_MISMATCH",
-                "message": "The recording did not match the reference text.",
-                "reason": error.reason,
-            },
-        ) from error
-    except SemanticASRUnavailable as error:
+    if not xvector_writer_enabled():
         raise HTTPException(
             503,
             detail={
-                "code": "VOICE_ASR_VALIDATION_UNAVAILABLE",
-                "message": "Reference validation is temporarily unavailable.",
+                "code": "VOICE_CREATION_TEMPORARILY_UNAVAILABLE",
+                "message": "Voice creation is temporarily unavailable during a safe schema migration.",
             },
-            headers=ASR_UNAVAILABLE_HEADERS,
-        ) from error
+            headers={"Retry-After": "30", "X-Voice-Retryable": "true"},
+        )
+    transcript = reference_text.strip()
+    if len(transcript) > 600:
+        raise HTTPException(422, "reference_text must be at most 600 characters")
+    reference_language_code = (
+        reference_language.strip().lower().replace("_", "-").split("-", 1)[0]
+    )
+    # Recording language is descriptive only in speaker-only mode. It need not
+    # be one of the ten synthesis languages (for example a Hindi speaker may
+    # record naturally, then use the clone for supported output languages).
+    if (
+        reference_language_code
+        and re.fullmatch(r"[a-z]{2,3}", reference_language_code) is None
+    ):
+        raise HTTPException(422, "unsupported reference_language")
     voice_id = requested_voice_id or f"vc_{uuid.uuid4().hex}"
     destination = voice_dir(voice_id)
-    structured_log(
-        "voice_reference_quality_passed",
-        voice_id=voice_id,
-        quality=reference_result.metrics,
-        warnings=reference_result.warnings,
-    )
-
-    def build_voice() -> dict[str, object]:
-        if destination.exists() and not (destination / "prompt.pt").is_file():
-            shutil.rmtree(destination)
-        try:
-            destination.mkdir(mode=0o700, parents=False, exist_ok=False)
-        except FileExistsError as error:
-            raise HTTPException(409, "voice_id already exists") from error
-        reference_path = destination / "reference.wav"
-        prompt_path = destination / "prompt.pt"
-        sf.write(reference_path, normalized, SAMPLE_RATE, subtype="PCM_16")
-        started = time.perf_counter()
-        try:
-            prompt_builder().save(
-                str(reference_path),
-                transcript,
-                prompt_path,
-                reference_speech_duration_s=float(
-                    reference_result.metrics["speech_duration_s"]
-                ),
-                semantic_attested=True,
+    staging = VOICE_ROOT / f".{voice_id}.{uuid.uuid4().hex}.building"
+    with voice_mutation_lock(voice_id):
+        if (destination / "prompt.pt").is_file():
+            raise HTTPException(
+                409,
+                detail={
+                    "code": "VOICE_ALREADY_READY",
+                    "message": "Voice is already registered",
+                },
             )
-        finally:
-            reference_path.unlink(missing_ok=True)
-        metadata = {
-            "voice_id": voice_id,
-            "created_at": utc_now(),
-            "consent_confirmed": True,
-            "reference_duration_s": round(duration, 3),
-            "reference_sha256": hashlib.sha256(raw).hexdigest(),
-            "prompt_build_s": round(time.perf_counter() - started, 3),
-            "model": MODEL_NAME,
-            "supported_languages": sorted(LANGUAGE_MAP),
-            "reference_quality": reference_result.metrics,
-            "reference_quality_warnings": reference_result.warnings,
-            "reference_transcript_contract": transcript_metrics,
-            "reference_semantic_similarity": round(
-                reference_evidence.similarity,
-                4,
-            ),
-        }
-        (destination / "metadata.json").write_text(
-            json.dumps(metadata, indent=2), encoding="utf-8"
-        )
-        return metadata
+        if destination.exists():
+            raise HTTPException(
+                409,
+                detail={
+                    "code": "VOICE_ID_CONFLICT",
+                    "message": "Voice path is not a ready prompt",
+                },
+            )
+        creation_cancelled = register_voice_build(voice_id)
+    creation_deadline = time.monotonic() + VOICE_BUILD_TIMEOUT_SECONDS
 
-    def guarded_build_voice() -> dict[str, object]:
+    def remaining_creation_budget() -> float:
+        return creation_deadline - time.monotonic()
+
+    def raise_if_creation_cancelled() -> None:
+        if creation_cancelled.is_set():
+            raise HTTPException(503, "voice creation was cancelled")
+        if remaining_creation_budget() <= 0:
+            creation_cancelled.set()
+            raise HTTPException(
+                503,
+                detail={
+                    "code": "VOICE_BUILD_TIMEOUT",
+                    "message": "Voice creation exceeded its deadline",
+                },
+                headers={"Retry-After": "2", "X-Voice-Retryable": "true"},
+            )
+
+    try:
         try:
-            return build_voice()
-        except HTTPException:
-            if destination.exists():
-                shutil.rmtree(destination)
-            raise
-        except Exception as error:
-            if destination.exists():
-                shutil.rmtree(destination)
-            raise HTTPException(503, "could not build voice prompt") from error
+            raw = await asyncio.wait_for(
+                reference.read(MAX_UPLOAD_BYTES + 1),
+                timeout=max(0.1, remaining_creation_budget()),
+            )
+        except TimeoutError as error:
+            raise_if_creation_cancelled()
+            raise HTTPException(503, "voice upload read timed out") from error
+        if len(raw) > MAX_UPLOAD_BYTES:
+            raise HTTPException(413, "reference file is too large")
+        raise_if_creation_cancelled()
+        try:
+            reference_result = await asyncio.wait_for(
+                asyncio.to_thread(prepare_reference, raw),
+                timeout=max(0.1, remaining_creation_budget()),
+            )
+        except TimeoutError as error:
+            raise_if_creation_cancelled()
+            raise HTTPException(503, "voice reference processing timed out") from error
+        raise_if_creation_cancelled()
 
-    result = await asyncio.to_thread(
-        schedule,
-        guarded_build_voice,
-        kind="voice-build",
-        priority=PRIORITY_BACKGROUND,
-        timeout_s=VOICE_BUILD_TIMEOUT_SECONDS,
-        request_id=x_request_id,
-    )
-    return result.value
+        normalized = reference_result.audio
+        duration = reference_result.duration_seconds
+        transcript_metrics = observe_reference_transcript_duration(
+            transcript,
+            float(reference_result.metrics["speech_duration_s"]),
+        )
+        structured_log(
+            "voice_reference_quality_passed",
+            voice_id=voice_id,
+            quality=reference_result.metrics,
+            warnings=reference_result.warnings,
+        )
+        structured_log(
+            "voice_reference_semantic_deferred",
+            voice_id=voice_id,
+            policy="offline-audit-only",
+            runtime_generation_mode="x-vector",
+            reference_language=reference_language_code or None,
+            transcript_sha256=(
+                hashlib.sha256(transcript.encode("utf-8")).hexdigest()
+                if transcript
+                else None
+            ),
+        )
+
+        def build_voice() -> dict[str, object]:
+            with voice_mutation_lock(voice_id):
+                raise_if_creation_cancelled()
+                # Never erase an unknown/incomplete destination. A concurrent
+                # import or an older deployment may own it; the gateway can
+                # choose a new UUID after receiving this deterministic 409.
+                if destination.exists():
+                    code = (
+                        "VOICE_ALREADY_READY"
+                        if (destination / "prompt.pt").is_file()
+                        else "VOICE_ID_CONFLICT"
+                    )
+                    raise HTTPException(
+                        409,
+                        detail={"code": code, "message": "Voice ID already exists"},
+                    )
+                try:
+                    staging.mkdir(mode=0o700, parents=False, exist_ok=False)
+                except FileExistsError as error:
+                    raise HTTPException(409, "voice build already exists") from error
+                reference_path = staging / "reference.wav"
+                prompt_path = staging / "prompt.pt"
+                started = time.perf_counter()
+                try:
+                    sf.write(reference_path, normalized, SAMPLE_RATE, subtype="PCM_16")
+                    prompt_builder().save(
+                        str(reference_path),
+                        transcript,
+                        prompt_path,
+                        reference_speech_duration_s=float(
+                            reference_result.metrics["speech_duration_s"]
+                        ),
+                        # Interactive creation never depends on ASR or the
+                        # optional guide text. Only the speaker embedding is
+                        # persisted and exposed to online synthesis.
+                        semantic_attested=False,
+                    )
+                    # The reference is needed only while extracting the
+                    # speaker embedding. Never publish raw voice audio into
+                    # the runtime prompt directory.
+                    reference_path.unlink(missing_ok=True)
+                    prompt_schema = validate_prompt_bytes(prompt_path.read_bytes())
+                    if prompt_schema != "qwen3_tts_base_voice_clone_prompt_xvector_v1":
+                        raise HTTPException(503, "voice prompt schema is unsafe")
+                    metadata = {
+                        "voice_id": voice_id,
+                        "created_at": utc_now(),
+                        "consent_confirmed": True,
+                        "reference_duration_s": round(duration, 3),
+                        "reference_sha256": hashlib.sha256(raw).hexdigest(),
+                        "prompt_build_s": round(time.perf_counter() - started, 3),
+                        "model": MODEL_NAME,
+                        "supported_languages": sorted(LANGUAGE_MAP),
+                        "reference_quality": reference_result.metrics,
+                        "reference_quality_warnings": reference_result.warnings,
+                        "reference_transcript_contract": transcript_metrics,
+                        "reference_semantic_attested": False,
+                        "reference_semantic_policy": "offline-audit-only",
+                        "runtime_generation_mode": "x-vector",
+                        "reference_language": reference_language_code or None,
+                    }
+                    (staging / "metadata.json").write_text(
+                        json.dumps(metadata, indent=2), encoding="utf-8"
+                    )
+                    # This check and publication share the same per-voice
+                    # mutation lock with DELETE/import. DELETE also sets the
+                    # independent cancellation event before waiting for it.
+                    raise_if_creation_cancelled()
+                    if destination.exists():
+                        code = (
+                            "VOICE_ALREADY_READY"
+                            if (destination / "prompt.pt").is_file()
+                            else "VOICE_ID_CONFLICT"
+                        )
+                        raise HTTPException(
+                            409,
+                            detail={"code": code, "message": "Voice ID already exists"},
+                        )
+                    if reference_path.exists():
+                        raise HTTPException(503, "voice reference cleanup failed")
+                    staging.replace(destination)
+                    return metadata
+                finally:
+                    reference_path.unlink(missing_ok=True)
+                    if staging.exists():
+                        shutil.rmtree(staging, ignore_errors=True)
+
+        def guarded_build_voice() -> dict[str, object]:
+            try:
+                return build_voice()
+            except HTTPException:
+                raise
+            except Exception as error:
+                raise HTTPException(503, "could not build voice prompt") from error
+
+        schedule_budget = min(
+            VOICE_BUILD_TIMEOUT_SECONDS,
+            max(0.1, remaining_creation_budget()),
+        )
+        result = await asyncio.to_thread(
+            schedule,
+            guarded_build_voice,
+            kind="voice-build",
+            # This request has a user actively waiting. It must not sit behind
+            # speculative paragraph prefetches and then outlive the gateway.
+            priority=PRIORITY_INTERACTIVE,
+            timeout_s=schedule_budget,
+            request_id=x_request_id,
+        )
+        return result.value
+    except BaseException:
+        creation_cancelled.set()
+        raise
+    finally:
+        unregister_voice_build(voice_id, creation_cancelled)
 
 
 def validate_prompt_structure(prompt: object) -> str:
     schema = prompt.get("schema") if isinstance(prompt, dict) else None
+    if schema == "qwen3_tts_base_voice_clone_prompt_xvector_v1":
+        speaker = prompt.get("ref_spk_embedding")
+        forbidden = (
+            "ref_text",
+            "reference_codec_embeddings",
+            "decoder_bootstrap_code",
+            "decoder_reference_code",
+        )
+        if (
+            not isinstance(speaker, torch.Tensor)
+            or speaker.ndim != 1
+            or speaker.numel() != VOICE_SPEAKER_EMBEDDING_SIZE
+            or not speaker.is_floating_point()
+            or not bool(torch.isfinite(speaker).all().item())
+            or prompt.get("x_vector_only_mode") is not True
+            or prompt.get("icl_mode") is not False
+            or prompt.get("conditioning_contract_version") != 1
+            or any(prompt.get(key) is not None for key in forbidden)
+        ):
+            raise HTTPException(422, "invalid x-vector voice prompt")
+        return schema
     if (
         not isinstance(prompt, dict)
         or schema
@@ -637,35 +865,24 @@ def validate_prompt_bytes(raw: bytes) -> str:
 
 def upgrade_prompt_bytes(raw: bytes) -> tuple[bytes, str]:
     schema = validate_prompt_bytes(raw)
-    if schema in {
-        "qwen3_tts_base_voice_clone_prompt_v3",
-        "qwen3_tts_base_voice_clone_prompt_v4",
-    }:
-        return raw, schema
-    prompt = torch.load(io.BytesIO(raw), map_location="cpu", weights_only=True)
-    assert isinstance(prompt, dict)
-    upgraded = dict(prompt)
-    upgraded["schema"] = "qwen3_tts_base_voice_clone_prompt_v3"
-    upgraded["decoder_bootstrap_code"] = (
-        prompt_builder().decoder_bootstrap_code.detach().cpu().clone()
-    )
-    output = io.BytesIO()
-    torch.save(upgraded, output)
-    compiled = output.getvalue()
-    return compiled, validate_prompt_bytes(compiled)
+    # Runtime cloned speech is x-vector-only. Legacy prompt schemas remain
+    # immutable compatibility assets; upgrading their unused ICL decoder state
+    # would add latency and can no longer improve the online result.
+    return raw, schema
 
 
 def install_prompt_bytes(voice_id: str, raw: bytes) -> None:
-    destination = voice_dir(voice_id)
-    destination.mkdir(mode=0o700, parents=True, exist_ok=True)
-    temporary = destination / f"prompt-{uuid.uuid4().hex}.tmp"
-    temporary.write_bytes(raw)
-    temporary.replace(destination / "prompt.pt")
-    with PROMPT_SCHEMA_LOCK:
-        PROMPT_METADATA_CACHE.pop(voice_id, None)
+    with voice_mutation_lock(voice_id):
+        destination = voice_dir(voice_id)
+        destination.mkdir(mode=0o700, parents=True, exist_ok=True)
+        temporary = destination / f"prompt-{uuid.uuid4().hex}.tmp"
+        temporary.write_bytes(raw)
+        temporary.replace(destination / "prompt.pt")
+        with PROMPT_SCHEMA_LOCK:
+            PROMPT_METADATA_CACHE.pop(voice_id, None)
 
 
-def voice_prompt_metadata(voice_id: str) -> VoicePromptMetadata:
+def _voice_prompt_metadata_unlocked(voice_id: str) -> VoicePromptMetadata:
     """Load immutable per-voice runtime fields once for each prompt mtime."""
 
     prompt_path = voice_dir(voice_id) / "prompt.pt"
@@ -686,9 +903,12 @@ def voice_prompt_metadata(voice_id: str) -> VoicePromptMetadata:
             raise HTTPException(422, "invalid voice prompt") from error
         schema = validate_prompt_structure(prompt)
         assert isinstance(prompt, dict)
-        reference_text = prompt["ref_text"]
+        reference_text = prompt.get("ref_text")
         speaker = prompt["ref_spk_embedding"]
-        assert isinstance(reference_text, str)
+        if schema != "qwen3_tts_base_voice_clone_prompt_xvector_v1":
+            assert isinstance(reference_text, str)
+        else:
+            reference_text = None
         assert isinstance(speaker, torch.Tensor)
         semantic_error: dict[str, object] | None = None
         try:
@@ -704,18 +924,29 @@ def voice_prompt_metadata(voice_id: str) -> VoicePromptMetadata:
             reference_text=reference_text,
             speaker_embedding=speaker.detach().cpu().clone(),
             semantic_contract_error=semantic_error,
-            semantic_attested=prompt.get("reference_contract_version") == 2,
+            semantic_attested=(
+                schema != "qwen3_tts_base_voice_clone_prompt_xvector_v1"
+                and prompt.get("reference_contract_version") == 2
+            ),
         )
         PROMPT_METADATA_CACHE[voice_id] = (modified_ns, metadata)
         return metadata
 
 
+def voice_prompt_metadata(voice_id: str) -> VoicePromptMetadata:
+    with voice_mutation_lock(voice_id):
+        return _voice_prompt_metadata_unlocked(voice_id)
+
+
 def ensure_voice_prompt_decoder_context(voice_id: str) -> None:
     metadata = voice_prompt_metadata(voice_id)
+    if metadata.schema == "qwen3_tts_base_voice_clone_prompt_xvector_v1":
+        return
     if metadata.semantic_contract_error is not None:
         raise HTTPException(422, detail=metadata.semantic_contract_error)
     current_schema = metadata.schema
     if current_schema in {
+        "qwen3_tts_base_voice_clone_prompt_v2",
         "qwen3_tts_base_voice_clone_prompt_v3",
         "qwen3_tts_base_voice_clone_prompt_v4",
     }:
@@ -723,6 +954,7 @@ def ensure_voice_prompt_decoder_context(voice_id: str) -> None:
     with PROMPT_UPGRADE_LOCK:
         current_schema = voice_prompt_schema(voice_id)
         if current_schema in {
+            "qwen3_tts_base_voice_clone_prompt_v2",
             "qwen3_tts_base_voice_clone_prompt_v3",
             "qwen3_tts_base_voice_clone_prompt_v4",
         }:
@@ -743,18 +975,19 @@ def voice_prompt_schema(voice_id: str) -> str:
 
 @app.get("/v1/voices/{voice_id}/prompt", dependencies=[Depends(require_token)])
 def export_voice_prompt(voice_id: str) -> Response:
-    prompt_path = voice_dir(voice_id) / "prompt.pt"
-    if not prompt_path.is_file():
-        raise HTTPException(404, "voice not found")
-    raw = prompt_path.read_bytes()
-    if not raw or len(raw) > MAX_PROMPT_BYTES:
-        raise HTTPException(503, "voice prompt is invalid")
-    return Response(raw, media_type="application/octet-stream")
+    with voice_mutation_lock(voice_id):
+        prompt_path = voice_dir(voice_id) / "prompt.pt"
+        if not prompt_path.is_file():
+            raise HTTPException(404, "voice not found")
+        raw = prompt_path.read_bytes()
+        if not raw or len(raw) > MAX_PROMPT_BYTES:
+            raise HTTPException(503, "voice prompt is invalid")
+        return Response(raw, media_type="application/octet-stream")
 
 
 @app.put("/v1/voices/{voice_id}/prompt", dependencies=[Depends(require_token)])
 async def import_voice_prompt(voice_id: str, prompt: UploadFile = File(...)) -> dict[str, str]:
-    destination = voice_dir(voice_id)
+    voice_dir(voice_id)
     raw = await prompt.read(MAX_PROMPT_BYTES + 1)
     if not raw or len(raw) > MAX_PROMPT_BYTES:
         raise HTTPException(413, "voice prompt is too large")
@@ -766,9 +999,13 @@ async def import_voice_prompt(voice_id: str, prompt: UploadFile = File(...)) -> 
         "voice_id": voice_id,
         "prompt_schema": schema,
         "decoder_context": (
-            "reference"
-            if schema == "qwen3_tts_base_voice_clone_prompt_v4"
-            else "fixed-silence"
+            "none"
+            if schema == "qwen3_tts_base_voice_clone_prompt_xvector_v1"
+            else (
+                "reference"
+                if schema == "qwen3_tts_base_voice_clone_prompt_v4"
+                else "fixed-silence"
+            )
         ),
         "upgraded_from": original_schema,
     }
@@ -777,22 +1014,35 @@ async def import_voice_prompt(voice_id: str, prompt: UploadFile = File(...)) -> 
 @app.delete("/v1/voices/{voice_id}", dependencies=[Depends(require_token)])
 def delete_voice(voice_id: str) -> dict[str, str]:
     destination = voice_dir(voice_id)
-    if not (destination / "prompt.pt").is_file():
-        raise HTTPException(404, "voice not found")
+    build_was_inflight = cancel_voice_build(voice_id)
 
     def remove_voice() -> dict[str, str]:
-        shutil.rmtree(destination)
-        with PROMPT_SCHEMA_LOCK:
-            PROMPT_METADATA_CACHE.pop(voice_id, None)
-        return {"status": "deleted", "voice_id": voice_id}
+        with voice_mutation_lock(voice_id):
+            # Close the check/register race by checking the registry again
+            # after acquiring the same lifecycle lock used by creation.
+            inflight = cancel_voice_build(voice_id) or build_was_inflight
+            removed = False
+            if destination.exists():
+                shutil.rmtree(destination)
+                removed = True
+            # Stale build directories are private implementation details and
+            # safe to remove only while holding the same publication lock.
+            for staging in VOICE_ROOT.glob(f".{voice_id}.*.building"):
+                if staging.is_dir():
+                    shutil.rmtree(staging)
+                    removed = True
+            with PROMPT_SCHEMA_LOCK:
+                PROMPT_METADATA_CACHE.pop(voice_id, None)
+            if removed:
+                return {"status": "deleted", "voice_id": voice_id}
+            if inflight:
+                return {"status": "cancelling", "voice_id": voice_id}
+            raise HTTPException(404, "voice not found")
 
-    return schedule(
-        remove_voice,
-        kind="voice-delete",
-        priority=PRIORITY_BACKGROUND,
-        timeout_s=15.0,
-        request_id=None,
-    ).value
+    # Filesystem cleanup must not wait behind GPU synthesis. The per-voice
+    # lock is the only ordering primitive it needs; an in-flight builder sees
+    # its cancellation event before it can publish.
+    return remove_voice()
 
 
 def nari_request_payload(
@@ -801,6 +1051,7 @@ def nari_request_payload(
     language: str,
     seed: int,
     voice_clone_mode: str = "icl",
+    deterministic: bool = False,
 ) -> dict[str, object]:
     return {
         "input": request.text.strip(),
@@ -822,16 +1073,61 @@ def nari_request_payload(
         # paragraph should never become a 327-second audio file merely because
         # the Talker missed EOS for one random seed.
         "max_new_tokens": maximum_generation_frames(request.text),
-        "do_sample": True,
+        "do_sample": not deterministic,
         "temperature": NARI_TEMPERATURE,
         "top_k": NARI_TOP_K,
         "top_p": NARI_TOP_P,
         "repetition_penalty": NARI_REPETITION_PENALTY,
-        "subtalker_dosample": True,
+        "subtalker_dosample": not deterministic,
         "subtalker_temperature": NARI_TEMPERATURE,
         "subtalker_top_k": NARI_TOP_K,
         "subtalker_top_p": NARI_TOP_P,
     }
+
+
+def nari_streamed_wav(
+    payload: dict[str, object],
+    *,
+    deadline_at: float,
+) -> tuple[int, bytes]:
+    """Collect PCM over a cancellable HTTP stream and return a complete WAV.
+
+    Closing the HTTP stream before Nari reaches a terminal state executes its
+    ``stream_bytes`` finalizer, which cancels the engine request. A worker or
+    scheduler deadline therefore releases the GPU instead of merely abandoning
+    a still-running non-streaming request.
+    """
+
+    remaining = deadline_at - time.monotonic()
+    if remaining <= 0.25:
+        raise TimeoutError("Nari request deadline expired before submission")
+    transport_payload = {
+        **payload,
+        "response_format": "pcm",
+        "stream": True,
+    }
+    with NARI_CLIENT.stream(
+        "POST",
+        f"{NARI_URL}/v1/audio/speech",
+        json=transport_payload,
+        timeout=max(0.25, min(NARI_REQUEST_TIMEOUT_SECONDS, remaining)),
+    ) as response:
+        if response.status_code != 200:
+            return response.status_code, b""
+        pcm = bytearray()
+        for chunk in response.iter_bytes():
+            if time.monotonic() >= deadline_at:
+                raise TimeoutError("Nari streamed synthesis exceeded its deadline")
+            pcm.extend(chunk)
+    if not pcm or len(pcm) % 2:
+        raise HTTPException(503, "Nari returned invalid PCM")
+    output = io.BytesIO()
+    with wave.open(output, "wb") as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(SAMPLE_RATE)
+        wav.writeframes(pcm)
+    return 200, output.getvalue()
 
 
 def request_nari(request: SpeechRequest) -> bytes:
@@ -939,7 +1235,12 @@ def _voice_error_code(error: HTTPException) -> str | None:
     return None
 
 
-def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
+def request_xvector_fallback(
+    request: SpeechRequest,
+    *,
+    reason: str,
+    deadline_at: float | None = None,
+) -> bytes:
     """Use Nari's captured x-vector path when a legacy ICL prompt is unsafe.
 
     This mode receives only the immutable speaker embedding. It cannot prepend
@@ -952,29 +1253,42 @@ def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
 
     language = normalize_language(request.language_id)
     voice_hash = hashlib.sha256(request.voice_id.encode()).hexdigest()[:12]
-    seeds = (request.seed, (request.seed + 104_729) % 2_147_483_647)
-    for attempt, seed in enumerate(seeds, start=1):
+    deadline = time.monotonic() + NARI_XVECTOR_TOTAL_TIMEOUT_SECONDS
+    if deadline_at is not None:
+        deadline = min(deadline, deadline_at)
+    attempts = (
+        (request.seed, False),
+        ((request.seed + 104_729) % 2_147_483_647, False),
+        # A final greedy pass removes sampling variance. This is slower only on
+        # the rare two-rejection path and prevents a transient bad pair from
+        # making the selected cloned voice completely unusable.
+        (request.seed, True),
+    )
+    for attempt, (seed, deterministic) in enumerate(attempts, start=1):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0.25:
+            break
         try:
-            response = NARI_CLIENT.post(
-                f"{NARI_URL}/v1/audio/speech",
-                json=nari_request_payload(
+            status_code, wav = nari_streamed_wav(
+                nari_request_payload(
                     request,
                     language=language,
                     seed=seed,
                     voice_clone_mode="x_vector",
+                    deterministic=deterministic,
                 ),
+                deadline_at=deadline,
             )
-            if response.status_code == 422:
+            if status_code == 422:
                 raise HTTPException(422, "Nari rejected the x-vector request")
-            if response.status_code == 429:
+            if status_code == 429:
                 raise HTTPException(
                     429,
                     "Nari is busy",
                     headers={"Retry-After": "2"},
                 )
-            if response.status_code != 200:
+            if status_code != 200:
                 raise HTTPException(503, "Nari x-vector synthesis failed")
-            wav = response.content
             metrics = validate_generated_wav(wav)
             expected_duration_limit = maximum_expected_output_duration_seconds(
                 request.text
@@ -996,30 +1310,41 @@ def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
                 voice_hash=voice_hash,
                 reason=reason,
                 attempt=attempt,
+                deterministic=deterministic,
                 code=error.code,
                 rejection=str(error),
                 **error.metrics,
             )
-            if attempt < len(seeds):
+            if attempt < len(attempts) and deadline - time.monotonic() > 0.25:
                 continue
+            headers = (
+                OUTPUT_TEXT_MISMATCH_HEADERS
+                if error.code == "VOICE_OUTPUT_TEXT_MISMATCH"
+                else GENERATED_AUDIO_REJECTION_HEADERS
+            )
             raise HTTPException(
                 503,
                 detail={
                     "code": error.code,
-                    "message": "Generated audio did not match the requested text",
+                    "message": (
+                        "Generated audio did not match the requested text"
+                        if error.code == "VOICE_OUTPUT_TEXT_MISMATCH"
+                        else "Nari returned unstable audio"
+                    ),
                     "reason": str(error),
                 },
-                headers=OUTPUT_TEXT_MISMATCH_HEADERS,
+                headers=headers,
             ) from error
-        except httpx.HTTPError as error:
+        except (httpx.HTTPError, TimeoutError) as error:
             structured_log(
                 "xvector_fallback_failed",
                 voice_hash=voice_hash,
                 reason=reason,
                 attempt=attempt,
+                deterministic=deterministic,
                 error_type=type(error).__name__,
             )
-            if attempt < len(seeds):
+            if attempt < len(attempts) and deadline - time.monotonic() > 0.25:
                 continue
             raise HTTPException(
                 503,
@@ -1028,7 +1353,8 @@ def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
                     "message": "Safe voice fallback failed",
                 },
                 headers={
-                    "X-Voice-Retryable": "false",
+                    "Retry-After": "2",
+                    "X-Voice-Retryable": "true",
                     "X-Voice-Error-Code": "VOICE_XVECTOR_FALLBACK_FAILED",
                 },
             ) from error
@@ -1039,6 +1365,7 @@ def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
             voice_hash=voice_hash,
             reason=reason,
             attempt=attempt,
+            deterministic=deterministic,
             **metrics,
         )
         return wav
@@ -1046,37 +1373,48 @@ def request_xvector_fallback(request: SpeechRequest, *, reason: str) -> bytes:
         503,
         detail={
             "code": "VOICE_XVECTOR_FALLBACK_FAILED",
-            "message": "Safe voice fallback failed",
+            "message": "Safe voice fallback exceeded its total deadline",
+        },
+        headers={
+            "Retry-After": "2",
+            "X-Voice-Retryable": "true",
+            "X-Voice-Error-Code": "VOICE_XVECTOR_FALLBACK_FAILED",
         },
     )
 
 
-def request_voice_candidate(request: SpeechRequest) -> GeneratedVoiceCandidate:
+def request_voice_candidate(
+    request: SpeechRequest,
+    *,
+    deadline_at: float | None = None,
+) -> GeneratedVoiceCandidate:
+    """Generate every cloned voice from the speaker embedding only.
+
+    The ICL path couples reference audio/text to every paragraph and can leak a
+    recording guide when that pair is imperfect.  X-vector conditioning keeps
+    the cloned identity while making requested ``text`` the only speech
+    content.  It is also the captured Nari sub-second path, so this single
+    invariant protects correctness, timestamp alignment, and latency for old
+    and new prompts alike.
+    """
+
     metadata = voice_prompt_metadata(request.voice_id)
-    if not metadata.semantic_attested:
-        reason = "VOICE_PROMPT_UNATTESTED"
-        if metadata.semantic_contract_error is not None:
-            raw_code = metadata.semantic_contract_error.get("code")
-            if isinstance(raw_code, str) and raw_code:
-                reason = raw_code
-        return GeneratedVoiceCandidate(
-            wav=request_xvector_fallback(request, reason=reason),
-            mode="x-vector",
-        )
-    try:
-        return GeneratedVoiceCandidate(wav=request_nari(request), mode="nari-icl")
-    except HTTPException as error:
-        code = _voice_error_code(error)
-        if code not in {
-            "VOICE_REFERENCE_TEXT_MISMATCH",
-            "VOICE_OUTPUT_TEXT_MISMATCH",
-            "VOICE_GENERATED_AUDIO_REJECTED",
-        }:
-            raise
-        return GeneratedVoiceCandidate(
-            wav=request_xvector_fallback(request, reason=code),
-            mode="x-vector",
-        )
+    reason = (
+        "VOICE_FAST_XVECTOR"
+        if metadata.semantic_attested
+        else "VOICE_PROMPT_UNATTESTED"
+    )
+    if metadata.semantic_contract_error is not None:
+        raw_code = metadata.semantic_contract_error.get("code")
+        if isinstance(raw_code, str) and raw_code:
+            reason = raw_code
+    fallback_options: dict[str, object] = {"reason": reason}
+    if deadline_at is not None:
+        fallback_options["deadline_at"] = deadline_at
+    return GeneratedVoiceCandidate(
+        wav=request_xvector_fallback(request, **fallback_options),
+        mode="x-vector",
+    )
 
 
 def request_voice(request: SpeechRequest) -> bytes:
@@ -1085,7 +1423,7 @@ def request_voice(request: SpeechRequest) -> bytes:
     return request_voice_candidate(request).wav
 
 
-def voice_reference_text(voice_id: str) -> str:
+def voice_reference_text(voice_id: str) -> str | None:
     return voice_prompt_metadata(voice_id).reference_text
 
 
@@ -1202,8 +1540,9 @@ def schedule_validated_voice(
     """Keep CPU ASR outside the single-GPU lane and retry one safe mode."""
 
     started = time.monotonic()
+    request_deadline = started + SYNTHESIS_TIMEOUT_SECONDS
     generated = schedule(
-        lambda: request_voice_candidate(request),
+        lambda: request_voice_candidate(request, deadline_at=request_deadline),
         kind=kind,
         priority=priority,
         timeout_s=SYNTHESIS_TIMEOUT_SECONDS,

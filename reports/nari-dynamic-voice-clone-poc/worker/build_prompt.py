@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build reusable Nari/Qwen3-TTS Base ICL prompts.
+"""Build reusable speaker-only Nari/Qwen3-TTS Base prompts.
 
 The CLI remains useful for provisioning and recovery. Production workers reuse
 ``VoicePromptBuilder`` in-process so every voice creation does not reload the
@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-import numpy as np
 import torch
 from qwen_tts import Qwen3TTSModel
 
@@ -26,71 +25,46 @@ class VoicePromptBuilder:
             attn_implementation="sdpa",
             local_files_only=True,
         )
-        silence = np.zeros(round(0.25 * 24_000), dtype=np.float32)
-        encoded_silence = self.model.model.speech_tokenizer.encode(
-            silence,
-            sr=24_000,
-        )
-        bootstrap = encoded_silence.audio_codes[0].detach().cpu().to(torch.long)
-        if bootstrap.ndim != 2 or not 2 <= bootstrap.shape[0] <= 8:
-            raise RuntimeError("Qwen3-TTS silence bootstrap has an unexpected shape")
-        self.decoder_bootstrap_code = bootstrap.contiguous()
 
     @torch.inference_mode()
     def build(
         self,
         reference_audio: str,
-        reference_text: str,
+        reference_text: str | None,
         *,
         reference_speech_duration_s: float | None = None,
         semantic_attested: bool = False,
     ) -> dict[str, object]:
         prompts = self.model.create_voice_clone_prompt(
             ref_audio=reference_audio,
-            ref_text=reference_text,
-            x_vector_only_mode=False,
+            # Speaker-only cloning intentionally accepts arbitrary speech.
+            # The suggested recording script is UX guidance, not model input.
+            ref_text=None,
+            x_vector_only_mode=True,
         )
-        if len(prompts) != 1 or prompts[0].ref_code is None:
-            raise RuntimeError("Qwen3-TTS did not create one full ICL prompt")
+        if (
+            len(prompts) != 1
+            or prompts[0].ref_code is not None
+            or not prompts[0].x_vector_only_mode
+            or prompts[0].icl_mode
+        ):
+            raise RuntimeError("Qwen3-TTS did not create one x-vector prompt")
         prompt = prompts[0]
-        ref_code = prompt.ref_code.to(
-            self.model.model.talker.device,
-            dtype=torch.long,
-        )
-        talker = self.model.model.talker
-        codec_parts = [talker.get_input_embeddings()(ref_code[:, :1])]
-        codec_parts.extend(
-            embedding(ref_code[:, index : index + 1])
-            for index, embedding in enumerate(
-                talker.code_predictor.get_input_embeddings(), start=1
-            )
-        )
-        reference_codec_embeddings = torch.cat(codec_parts, dim=1).sum(1)
+        speaker = prompt.ref_spk_embedding.detach().cpu().to(torch.float32)
+        if (
+            speaker.ndim != 1
+            or speaker.numel() != 1024
+            or not bool(torch.isfinite(speaker).all().item())
+        ):
+            raise RuntimeError("Qwen3-TTS returned an invalid speaker embedding")
         compiled: dict[str, object] = {
-            "schema": "qwen3_tts_base_voice_clone_prompt_v4",
-            "ref_spk_embedding": prompt.ref_spk_embedding.detach()
-            .cpu()
-            .to(torch.float32),
-            # Preserve the small discrete reference (normally 40-375 frames,
-            # 16 codebooks) so Nari can cache the decoder's exact causal state
-            # at the reference/generated boundary. This matches the official
-            # ref_code + generated_code decode without retaining reference PCM
-            # or decoding the full reference for every paragraph.
-            "decoder_reference_code": ref_code.detach()
-            .cpu()
-            .contiguous(),
-            "reference_codec_embeddings": reference_codec_embeddings.detach()
-            .cpu()
-            .to(torch.bfloat16),
-            "ref_text": prompt.ref_text,
-            "x_vector_only_mode": False,
-            "icl_mode": True,
+            "schema": "qwen3_tts_base_voice_clone_prompt_xvector_v1",
+            "ref_spk_embedding": speaker.contiguous(),
+            "x_vector_only_mode": True,
+            "icl_mode": False,
+            "conditioning_contract_version": 1,
         }
         if reference_speech_duration_s is not None:
-            # Only the HTTP creation path may assert v2 after it has compared
-            # the normalized recording with ref_text. Recovery/CLI builds stay
-            # on v1 and retain runtime validation until separately attested.
-            compiled["reference_contract_version"] = 2 if semantic_attested else 1
             compiled["reference_speech_duration_s"] = float(
                 reference_speech_duration_s
             )
@@ -99,7 +73,7 @@ class VoicePromptBuilder:
     def save(
         self,
         reference_audio: str,
-        reference_text: str,
+        reference_text: str | None,
         output: Path,
         *,
         reference_speech_duration_s: float | None = None,
@@ -123,7 +97,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True)
     parser.add_argument("--reference-audio", required=True)
-    parser.add_argument("--reference-text", required=True)
+    parser.add_argument(
+        "--reference-text",
+        default="",
+        help="Optional recording note; speaker-only prompts do not condition on it",
+    )
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""CPU-only reference audio quality gate for CastReader voice cloning.
+"""CPU-only acoustic quality gate for CastReader voice cloning.
 
-The model's ICL prompt requires the transcript to match the complete spoken
-reference.  This module therefore trims only the outer silence.  It never picks
-an arbitrary inner excerpt unless a future caller also supplies a matching
-transcript.
+Speaker-only prompts accept arbitrary natural speech in any recording language.
+This module therefore checks only audio properties that materially affect the
+speaker embedding: usable speech duration, level, clipping, noise, reverb, and
+single-speaker consistency. Suggested UI text is never part of this contract.
 """
 
 from __future__ import annotations

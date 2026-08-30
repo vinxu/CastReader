@@ -624,9 +624,18 @@ private struct VoiceCloneCreationView: View {
     @State private var submissionStarted = false
     @State private var isPreparingRecorder = false
     @State private var showPaywall = false
+    @State private var selectedRecordingLanguage: String?
 
     private var recordingLanguage: String {
-        VoiceCloneRecordingPrompt.languageCode(for: appLanguage.selectedLanguage)
+        selectedRecordingLanguage
+            ?? VoiceCloneRecordingPrompt.languageCode(for: appLanguage.selectedLanguage)
+    }
+
+    private var recordingLanguageSelection: Binding<String> {
+        Binding(
+            get: { recordingLanguage },
+            set: { selectedRecordingLanguage = VoiceCatalog.normalizedLanguage($0) }
+        )
     }
 
     var body: some View {
@@ -672,7 +681,7 @@ private struct VoiceCloneCreationView: View {
                 instructionRow(
                     icon: "mic.fill",
                     title: "录制自己的声音",
-                    detail: "只需按当前语言录制一次，生成的声音可用于全部支持的朗读语言。"
+                    detail: "选择一种录音语言，录制一次即可生成可跨语言使用的声音。"
                 )
                 instructionRow(
                     icon: "house.fill",
@@ -681,8 +690,8 @@ private struct VoiceCloneCreationView: View {
                 )
                 instructionRow(
                     icon: "text.book.closed.fill",
-                    title: "严格按照文本朗读",
-                    detail: "不要增字、漏字或重复，参考文本会用于准确还原音色。"
+                    title: "自由朗读或自然说话",
+                    detail: "可以朗读示例，也可以用录音语言自然说一段自己的内容，无需逐字一致。"
                 )
             }
             .padding(.horizontal, 34)
@@ -757,25 +766,34 @@ private struct VoiceCloneCreationView: View {
                 Spacer().frame(height: 58)
                 Text(
                     recorder.state == .recording
-                        ? AppLocalized("录音中，请朗读…")
-                        : AppLocalized("请朗读")
+                        ? AppLocalized("录音中，请自然说话…")
+                        : AppLocalized("请开始说话")
                 )
                     .font(.system(size: 31, weight: .bold))
 
-                Text("录制文案已跟随你的 App 语言，生成的声音可以跨语言使用")
+                recordingLanguagePicker
+                    .padding(.horizontal, 30)
+                    .padding(.top, 22)
+
+                Text("你可以朗读下面的示例，也可以自然说一段自己的内容，无需逐字一致。")
                     .font(.subheadline)
                     .foregroundStyle(AppTheme.mutedForeground)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 30)
-                    .padding(.top, 24)
+                    .padding(.top, 16)
 
-                Text(recordingScript)
-                    .font(.system(size: recordingLanguage == "zh" ? 27 : 23, weight: .medium))
-                    .lineSpacing(9)
-                    .foregroundStyle(AppTheme.foreground)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("示例文本（可选）")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(AppTheme.mutedForeground)
+                    Text(recordingExampleText)
+                        .font(.system(size: recordingLanguage == "zh" ? 25 : 21, weight: .medium))
+                        .lineSpacing(8)
+                        .foregroundStyle(AppTheme.foreground)
+                }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 30)
-                    .padding(.top, 72)
+                    .padding(.top, 30)
 
                 Spacer()
 
@@ -810,9 +828,15 @@ private struct VoiceCloneCreationView: View {
                         .padding(.bottom, 22)
                 }
 
-                holdControl
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 26)
+                if canRetryOriginalRecording {
+                    failedRecordingActions
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 26)
+                } else {
+                    holdControl
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 26)
+                }
             }
         }
         .animation(.easeOut(duration: 0.2), value: recorder.state)
@@ -832,6 +856,72 @@ private struct VoiceCloneCreationView: View {
         case ..<0.22: return AppLocalized("较小")
         case ..<0.66: return AppLocalized("适中")
         default: return AppLocalized("较大")
+        }
+    }
+
+    private var recordingLanguagePicker: some View {
+        Menu {
+            Picker("录音语言", selection: recordingLanguageSelection) {
+                ForEach(VoiceCloneRecordingPrompt.selectableLanguages, id: \.self) { code in
+                    Text(VoiceCloneRecordingPrompt.displayName(for: code, locale: appLanguage.locale))
+                        .tag(code)
+                }
+            }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "globe")
+                    .foregroundStyle(AppTheme.primary)
+                Text("录音语言")
+                    .foregroundStyle(AppTheme.foreground)
+                Spacer()
+                Text(VoiceCloneRecordingPrompt.displayName(
+                    for: recordingLanguage,
+                    locale: appLanguage.locale
+                ))
+                    .foregroundStyle(AppTheme.mutedForeground)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AppTheme.mutedForeground)
+            }
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 16)
+            .frame(height: 48)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(AppTheme.surface)
+            )
+        }
+        .disabled(recorder.state != .idle || submissionStarted)
+        .accessibilityIdentifier("voiceCloneRecordingLanguagePicker")
+    }
+
+    private var canRetryOriginalRecording: Bool {
+        recorder.state == .recorded
+            && recorder.canSubmit
+            && recorder.recordingURL != nil
+            && store.errorMessage != nil
+            && !submissionStarted
+    }
+
+    private var failedRecordingActions: some View {
+        VStack(spacing: 12) {
+            Button("重试原录音") {
+                submitRecording()
+            }
+            .font(.headline)
+            .buttonStyle(.borderedProminent)
+            .tint(AppTheme.primary)
+            .controlSize(.large)
+            .frame(maxWidth: .infinity)
+            .accessibilityIdentifier("voiceCloneRetryOriginalRecordingButton")
+
+            Button("重新录制") {
+                store.errorMessage = nil
+                recorder.replaceRecording()
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(AppTheme.primary)
+            .accessibilityIdentifier("voiceCloneReplaceRecordingButton")
         }
     }
 
@@ -995,7 +1085,7 @@ private struct VoiceCloneCreationView: View {
         }
     }
 
-    private var recordingScript: String {
+    private var recordingExampleText: String {
         VoiceCloneRecordingPrompt.text(for: recordingLanguage)
     }
 
@@ -1036,23 +1126,27 @@ private struct VoiceCloneCreationView: View {
     }
 
     private func submitRecording() {
-        guard let url = recorder.recordingURL else { return }
+        guard recorder.canSubmit,
+              let url = recorder.recordingURL else { return }
         let language = recordingLanguage
-        let script = recordingScript
+        let exampleText = recordingExampleText
+        store.errorMessage = nil
         submissionStarted = true
         phase = .creating
         Task { @MainActor in
             let succeeded = await store.create(
                 recordingURL: url,
                 referenceLanguage: language,
-                referenceText: script,
+                referenceText: exampleText,
                 consentConfirmed: true
             )
             submissionStarted = false
-            if succeeded {
+            switch VoiceCloneCreationSubmissionOutcome(succeeded: succeeded) {
+            case .completed:
                 phase = .complete
-            } else {
-                recorder.replaceRecording()
+            case .retryOriginalRecording:
+                // Keep the exact WAV and selected language available so a
+                // transient upload or worker failure can be retried unchanged.
                 phase = .ready
             }
         }

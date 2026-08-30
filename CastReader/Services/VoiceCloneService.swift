@@ -258,7 +258,10 @@ actor VoiceCloneService {
         guard let http = response as? HTTPURLResponse else { throw VoiceCloneError.invalidResponse }
         guard !(200..<300).contains(http.statusCode) else { return }
         let message = VoiceCloneResponseParser.serverMessage(from: data)
-        let code = VoiceCloneResponseParser.serverCode(from: data)?.uppercased()
+        let code = VoiceCloneResponseParser.serverCode(
+            from: data,
+            response: http
+        )?.uppercased()
         if code == "CLONE_QUOTA_EXHAUSTED" {
             let headerReset = VoiceCloneResponseParser.quotaCapability(from: http).resetAt
             throw VoiceCloneError.quotaExhausted(

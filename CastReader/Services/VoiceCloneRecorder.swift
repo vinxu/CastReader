@@ -263,7 +263,7 @@ final class VoiceCloneRecorder: NSObject, ObservableObject, @preconcurrency AVAu
             errorMessage = AppLocalized("录音文件必须不超过 4 MB")
         } else if let recordingURL, let quality = localQuality(at: recordingURL) {
             if quality.activeSpeechDuration < 2.5 {
-                errorMessage = AppLocalized("没有检测到足够清晰的人声，请完整朗读文案")
+                errorMessage = AppLocalized("没有检测到足够清晰的人声，请连续清晰说话至少 3 秒")
             } else if quality.activeRMSDBFS < -42 {
                 errorMessage = AppLocalized("声音太小，请靠近手机并重新录制")
             } else if quality.clippingRatio > 0.004 {

@@ -5,11 +5,13 @@ base=/root/autodl-tmp/nari-staging
 incoming="${base}/release-incoming-fast-hotpath"
 worker_root="${base}/worker"
 nari_root="${base}/nari-qwen3-tts/src/nari_qwen3_tts"
+runner="${base}/deploy/run-clone-china-staging.sh"
 source_commit="${1:?pass the 40-character source commit SHA}"
 worker_files=(clone_worker.py build_prompt.py semantic_asr.py)
 nari_files=(
   contract/request.py
   api/schemas.py
+  model/text.py
   model/input_layout.py
   executor/input_layout.py
   executor/talker.py
@@ -23,6 +25,8 @@ for name in "${worker_files[@]}"; do
   test -s "${incoming}/worker/${name}"
   "${base}/venv/bin/python" -m py_compile "${incoming}/worker/${name}"
 done
+test -s "${incoming}/run-clone-china-staging.sh"
+bash -n "${incoming}/run-clone-china-staging.sh"
 for name in "${nari_files[@]}"; do
   test -s "${incoming}/nari_qwen3_tts/${name}"
   "${base}/venv/bin/python" -m py_compile \
@@ -73,6 +77,7 @@ stamp=$(date -u +%Y%m%dT%H%M%SZ)
 backup="${base}/backups/fast-hotpath-${stamp}"
 release_record="${base}/releases/fast-hotpath-${stamp}.json"
 mkdir -p "${backup}/worker" "${backup}/nari_qwen3_tts" "${base}/releases"
+cp -a "${runner}" "${backup}/run-clone-china-staging.sh"
 for name in "${worker_files[@]}"; do
   mkdir -p "${backup}/worker/$(dirname "${name}")"
   cp -a "${worker_root}/${name}" "${backup}/worker/${name}"
@@ -98,6 +103,7 @@ restore_files() {
   for name in "${nari_files[@]}"; do
     cp -a "${backup}/nari_qwen3_tts/${name}" "${nari_root}/${name}"
   done
+  cp -a "${backup}/run-clone-china-staging.sh" "${runner}"
 }
 
 wait_for_restarted_stack() {
@@ -139,6 +145,7 @@ done
 for name in "${nari_files[@]}"; do
   install_one "${incoming}/nari_qwen3_tts/${name}" "${nari_root}/${name}"
 done
+install_one "${incoming}/run-clone-china-staging.sh" "${runner}"
 
 kill -TERM "${old_nari_pid}"
 read -r new_nari_pid new_worker_pid < <(
@@ -149,17 +156,18 @@ kill -0 "${old_tts_pid}"
 
 "${base}/venv/bin/python" - \
   "${source_commit}" "${stamp}" "${release_record}" \
-  "${worker_root}" "${nari_root}" <<'PY'
+  "${worker_root}" "${nari_root}" "${runner}" <<'PY'
 import hashlib
 import json
 import pathlib
 import sys
 
-commit, stamp, destination, worker_root, nari_root = sys.argv[1:]
+commit, stamp, destination, worker_root, nari_root, runner = sys.argv[1:]
 worker_files = ("clone_worker.py", "build_prompt.py", "semantic_asr.py")
 nari_files = (
     "contract/request.py",
     "api/schemas.py",
+    "model/text.py",
     "model/input_layout.py",
     "executor/input_layout.py",
     "executor/talker.py",
@@ -177,8 +185,10 @@ record = {
     "nari_sha256": {
         name: digest(pathlib.Path(nari_root) / name) for name in nari_files
     },
-    "hotpath": "nari-x-vector-or-attested-icl",
-    "runtime_asr": "creation-only",
+    "runner_sha256": digest(pathlib.Path(runner)),
+    "hotpath": "nari-x-vector-only",
+    "runtime_asr": "offline-audit-only",
+    "writer_activation": "requires-cross-region-marker",
 }
 pathlib.Path(destination).write_text(json.dumps(record, indent=2) + "\n")
 PY

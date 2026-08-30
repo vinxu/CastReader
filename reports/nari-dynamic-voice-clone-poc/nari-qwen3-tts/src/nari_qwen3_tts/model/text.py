@@ -80,6 +80,15 @@ class Qwen3TTSTextDomain:
         )["input_ids"]
         raw_config = json.loads((self.model_directory / "config.json").read_text())
         self.tts_model_type = str(raw_config.get("tts_model_type", ""))
+        talker_config = raw_config.get("talker_config")
+        speaker_embedding_size = (
+            talker_config.get("hidden_size")
+            if isinstance(talker_config, dict)
+            else None
+        )
+        if type(speaker_embedding_size) is not int or speaker_embedding_size < 1:
+            raise ValueError("Talker hidden_size must be a positive integer")
+        self._speaker_embedding_size = speaker_embedding_size
         self._base_ref_token_ids: torch.Tensor | None = None
         self._base_prompt_root = Path(
             os.environ.get(
@@ -137,20 +146,56 @@ class Qwen3TTSTextDomain:
             return cached[1], cached[2], cached[3], cached[4], cached[5]
         raw = torch.load(prompt_path, map_location="cpu", weights_only=True)
         if not isinstance(raw, dict) or raw.get("schema") not in {
+            "qwen3_tts_base_voice_clone_prompt_xvector_v1",
             "qwen3_tts_base_voice_clone_prompt_v2",
             "qwen3_tts_base_voice_clone_prompt_v3",
             "qwen3_tts_base_voice_clone_prompt_v4",
         }:
             raise ValueError("unsupported cloned voice prompt schema")
+        schema = raw.get("schema")
         ref_text = raw.get("ref_text")
         speaker = raw.get("ref_spk_embedding")
+        if not isinstance(speaker, torch.Tensor) or speaker.ndim != 1:
+            raise ValueError("cloned voice prompt speaker embedding is invalid")
+        if schema == "qwen3_tts_base_voice_clone_prompt_xvector_v1":
+            if (
+                raw.get("conditioning_contract_version") != 1
+                or raw.get("x_vector_only_mode") is not True
+                or raw.get("icl_mode") is not False
+                or not speaker.is_floating_point()
+                or speaker.numel() != self._speaker_embedding_size
+                or not bool(torch.isfinite(speaker).all().item())
+                or any(
+                    raw.get(key) is not None
+                    for key in (
+                        "ref_text",
+                        "reference_codec_embeddings",
+                        "decoder_bootstrap_code",
+                        "decoder_reference_code",
+                    )
+                )
+            ):
+                raise ValueError("x-vector voice prompt contains ICL fields")
+            if self._base_ref_token_ids is None:
+                raise ValueError("Qwen3-TTS Base lacks placeholder reference tokens")
+            value = (
+                modified_ns,
+                self._base_ref_token_ids.contiguous(),
+                speaker.to(torch.float32).contiguous(),
+                torch.zeros((1, speaker.numel()), dtype=torch.bfloat16),
+                None,
+                None,
+            )
+            self._base_prompt_cache[voice_prompt] = value
+            self._base_prompt_cache.move_to_end(voice_prompt)
+            while len(self._base_prompt_cache) > 128:
+                self._base_prompt_cache.popitem(last=False)
+            return value[1], value[2], value[3], value[4], value[5]
         reference = raw.get("reference_codec_embeddings")
         reference_tokens = raw.get("decoder_bootstrap_code")
         reference_context = raw.get("decoder_reference_code")
         if not isinstance(ref_text, str) or not ref_text.strip():
             raise ValueError("cloned voice prompt requires reference text")
-        if not isinstance(speaker, torch.Tensor) or speaker.ndim != 1:
-            raise ValueError("cloned voice prompt speaker embedding is invalid")
         if not isinstance(reference, torch.Tensor) or reference.ndim != 2 or reference.shape[0] < 1:
             raise ValueError("cloned voice prompt codec embeddings are invalid")
         if reference.shape[1] != speaker.numel():

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import unittest
+from collections import OrderedDict
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
 import torch
@@ -10,6 +13,7 @@ from nari_qwen3_tts.model.input_layout import (
     BaseVoiceCloneConditioning,
     build_batched_base_talker_token_layout,
 )
+from nari_qwen3_tts.model.text import Qwen3TTSTextDomain
 
 
 class NariXVectorLayoutTests(unittest.TestCase):
@@ -79,6 +83,78 @@ class NariXVectorLayoutTests(unittest.TestCase):
             layout.extra_embeddings[7].tolist(),
             conditioning.speaker_embedding.tolist(),
         )
+
+    def test_xvector_asset_loader_requires_only_speaker_embedding(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            voice = root / "vc_fast"
+            voice.mkdir()
+            torch.save(
+                {
+                    "schema": "qwen3_tts_base_voice_clone_prompt_xvector_v1",
+                    "ref_spk_embedding": torch.arange(4, dtype=torch.float32),
+                    "x_vector_only_mode": True,
+                    "icl_mode": False,
+                    "conditioning_contract_version": 1,
+                },
+                voice / "prompt.pt",
+            )
+            domain = object.__new__(Qwen3TTSTextDomain)
+            domain._base_prompt_root = root
+            domain._base_prompt_cache = OrderedDict()
+            domain._base_ref_token_ids = torch.tensor([1, 2, 3])
+            domain._speaker_embedding_size = 4
+
+            ref_ids, speaker, reference, prefix, context = domain._load_base_prompt(
+                "vc_fast"
+            )
+
+        self.assertEqual(ref_ids.tolist(), [1, 2, 3])
+        self.assertEqual(speaker.tolist(), [0.0, 1.0, 2.0, 3.0])
+        self.assertEqual(tuple(reference.shape), (1, 4))
+        self.assertFalse(torch.any(reference).item())
+        self.assertIsNone(prefix)
+        self.assertIsNone(context)
+
+    def test_xvector_asset_loader_rejects_corrupt_contracts(self) -> None:
+        base = {
+            "schema": "qwen3_tts_base_voice_clone_prompt_xvector_v1",
+            "ref_spk_embedding": torch.arange(4, dtype=torch.float32),
+            "x_vector_only_mode": True,
+            "icl_mode": False,
+            "conditioning_contract_version": 1,
+        }
+        invalid_variants = {
+            "wrong contract version": {"conditioning_contract_version": 2},
+            "wrong embedding size": {
+                "ref_spk_embedding": torch.arange(3, dtype=torch.float32)
+            },
+            "integer embedding": {
+                "ref_spk_embedding": torch.arange(4, dtype=torch.int64)
+            },
+            "non-finite embedding": {
+                "ref_spk_embedding": torch.tensor(
+                    [0.0, 1.0, float("nan"), float("inf")]
+                )
+            },
+        }
+
+        for label, changes in invalid_variants.items():
+            with self.subTest(label=label), TemporaryDirectory() as directory:
+                root = Path(directory)
+                voice = root / "vc_invalid"
+                voice.mkdir()
+                prompt = dict(base)
+                prompt.update(changes)
+                torch.save(prompt, voice / "prompt.pt")
+                domain = object.__new__(Qwen3TTSTextDomain)
+                domain._base_prompt_root = root
+                domain._base_prompt_cache = OrderedDict()
+                domain._base_ref_token_ids = torch.tensor([1, 2, 3])
+                domain._speaker_embedding_size = 4
+
+                with self.assertRaises(ValueError):
+                    domain._load_base_prompt("vc_invalid")
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@
 set -euo pipefail
 
 export NARI_VOICE_PROMPT_ROOT=/workspace/castreader-clone/voices
+export CLONE_WARMUP="${CLONE_WARMUP:-1}"
+export CLONE_VOICE_BUILD_TIMEOUT_SECONDS="${CLONE_VOICE_BUILD_TIMEOUT_SECONDS:-40}"
 export CLONE_ASR_MODEL_DIR="${CLONE_ASR_MODEL_DIR:-/workspace/.hf_home/hub/models--openai--whisper-base/snapshots/e37978b90ca9030d5170a5c07aadb050351a65bb}"
 export CLONE_ASR_WARMUP="${CLONE_ASR_WARMUP:-0}"
 quality_root="${CLONE_QUALITY_ROOT:-/workspace/castreader-clone/quality}"

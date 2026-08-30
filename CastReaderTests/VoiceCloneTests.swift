@@ -254,6 +254,33 @@ final class VoiceCloneTests: XCTestCase {
         )
     }
 
+    func testRecordingLanguagePickerCoversEverySupportedAppLanguage() {
+        XCTAssertEqual(
+            VoiceCloneRecordingPrompt.selectableLanguages,
+            ["zh", "en", "ja", "es", "fr", "de", "pt", "it", "hi"]
+        )
+        for language in VoiceCloneRecordingPrompt.selectableLanguages {
+            XCTAssertFalse(VoiceCloneRecordingPrompt.text(for: language).isEmpty)
+            XCTAssertFalse(
+                VoiceCloneRecordingPrompt.displayName(
+                    for: language,
+                    locale: Locale(identifier: "en_US")
+                ).isEmpty
+            )
+        }
+    }
+
+    func testFailedCreationPreservesTheOriginalRecordingForRetry() {
+        XCTAssertEqual(
+            VoiceCloneCreationSubmissionOutcome(succeeded: true),
+            .completed
+        )
+        XCTAssertEqual(
+            VoiceCloneCreationSubmissionOutcome(succeeded: false),
+            .retryOriginalRecording
+        )
+    }
+
     @MainActor
     func testExplainSegmentProgressUsesTheSelectedAppLanguage() {
         let manager = AppLanguageManager.shared
@@ -291,11 +318,19 @@ final class VoiceCloneTests: XCTestCase {
         )
         XCTAssertEqual(
             VoiceCloneQualityMessage.localized(for: "VOICE_REFERENCE_MULTIPLE_SPEAKERS"),
-            AppLocalized("录音中可能有多人说话，请确保只有本人朗读")
+            AppLocalized("录音中可能有多人说话，请确保只有本人说话")
+        )
+        XCTAssertEqual(
+            VoiceCloneQualityMessage.localized(for: "VOICE_REFERENCE_SPEECH_TOO_SHORT"),
+            AppLocalized("有效讲话时间太短，请连续清晰说话至少 3 秒")
         )
         XCTAssertEqual(
             VoiceCloneQualityMessage.localized(for: "VOICE_REFERENCE_TEXT_MISMATCH"),
-            AppLocalized("有效讲话时间太短，请完整朗读文案")
+            AppLocalized("示例文本无需逐字一致。录音已保留，请原样重试。")
+        )
+        XCTAssertEqual(
+            VoiceCloneQualityMessage.localized(for: "REFERENCE_LANGUAGE_UNSUPPORTED"),
+            AppLocalized("暂不支持所选录音语言，请选择其他语言")
         )
         XCTAssertNil(VoiceCloneQualityMessage.localized(for: "VOICE_WORKER_ERROR"))
     }
@@ -527,6 +562,68 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertNotNil(VoiceCloneResponseParser.nextCreateAt(from: limit))
         let busy = Data(#"{"code":"CLONE_WORKER_BUSY","message":"busy"}"#.utf8)
         XCTAssertEqual(VoiceCloneResponseParser.serverCode(from: busy), "CLONE_WORKER_BUSY")
+    }
+
+    func testFastAPIDetailCodeAndMessageAreParsed() throws {
+        let data = Data(
+            #"{"detail":{"code":"VOICE_REFERENCE_TOO_NOISY","message":"sample is noisy"}}"#.utf8
+        )
+
+        XCTAssertEqual(
+            VoiceCloneResponseParser.serverCode(from: data),
+            "VOICE_REFERENCE_TOO_NOISY"
+        )
+        XCTAssertEqual(
+            VoiceCloneResponseParser.serverMessage(from: data),
+            "sample is noisy"
+        )
+    }
+
+    func testVoiceErrorCodeFallsBackToResponseHeader() throws {
+        let response = try XCTUnwrap(
+            HTTPURLResponse(
+                url: URL(string: "https://api.castreader.ai/api/voice-clone/voices")!,
+                statusCode: 422,
+                httpVersion: nil,
+                headerFields: ["X-Voice-Error-Code": "VOICE_REFERENCE_MULTIPLE_SPEAKERS"]
+            )
+        )
+
+        XCTAssertEqual(
+            VoiceCloneResponseParser.serverCode(from: Data(#"{"detail":"invalid"}"#.utf8), response: response),
+            "VOICE_REFERENCE_MULTIPLE_SPEAKERS"
+        )
+    }
+
+    func testCreationUXMakesTheSampleOptionalAndRefreshesAfterReturningSuccess() throws {
+        let repositoryRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let viewSource = try String(
+            contentsOf: repositoryRoot
+                .appendingPathComponent("CastReader/Views/Settings/VoiceCloneCreatedView.swift"),
+            encoding: .utf8
+        )
+        XCTAssertTrue(viewSource.contains("示例文本（可选）"))
+        XCTAssertTrue(viewSource.contains("无需逐字一致"))
+        let retryStart = try XCTUnwrap(
+            viewSource.range(of: "case .retryOriginalRecording:")?.lowerBound
+        )
+        let retryTail = String(viewSource[retryStart...].prefix(360))
+        XCTAssertTrue(retryTail.contains("phase = .ready"))
+        XCTAssertFalse(retryTail.contains("replaceRecording"))
+
+        let storeSource = try String(
+            contentsOf: repositoryRoot
+                .appendingPathComponent("CastReader/Models/VoiceCloneStore.swift"),
+            encoding: .utf8
+        )
+        XCTAssertTrue(
+            storeSource.contains(
+                "Task { [weak self] in\n                await self?.refresh()\n            }\n            return true"
+            ),
+            "the successful create response must return before the list reconciliation finishes"
+        )
     }
 
     func testCreateParserSupportsEnvelope() throws {
