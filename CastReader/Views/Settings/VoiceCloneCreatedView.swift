@@ -253,7 +253,7 @@ struct VoiceCloneCreatedView: View {
 
                 if !store.pendingGiftInvitations.isEmpty {
                     voiceSectionHeader(
-                        title: AppLocalized("待回应邀请"),
+                        title: VoiceGiftInviterUIContract.pendingSectionTitle,
                         count: store.pendingGiftInvitations.filter(\.isPending).count,
                         showsProBadge: false
                     )
@@ -282,14 +282,14 @@ struct VoiceCloneCreatedView: View {
                         .foregroundStyle(.white)
                 }
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("邀请朋友成为我的朗读者")
+                    Text(VoiceGiftInviterUIContract.primaryTitle)
                         .font(.headline)
                         .foregroundStyle(.white)
-                    Text("朋友录一小段，你就能用他的声音朗读 Kindle、文件和网页。")
+                    Text(VoiceGiftInviterUIContract.primaryBenefit)
                         .font(.caption)
                         .foregroundStyle(Color.white.opacity(0.86))
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("授权后可一直用于朗读和解读，直到朋友主动收回。")
+                    Text(VoiceGiftInviterUIContract.primaryControlNote)
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(Color.white.opacity(0.72))
                         .fixedSize(horizontal: false, vertical: true)
@@ -316,7 +316,7 @@ struct VoiceCloneCreatedView: View {
         }
         .buttonStyle(.plain)
         .disabled(store.isCreatingGiftInvitation)
-        .accessibilityIdentifier("voiceGiftInviteButton")
+        .accessibilityIdentifier(VoiceGiftInviterUIContract.primaryActionIdentifier)
         .padding(.horizontal, 20)
         .padding(.bottom, 12)
     }
@@ -392,7 +392,9 @@ struct VoiceCloneCreatedView: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityIdentifier("voiceGiftPending_\(invitation.id)")
+        .accessibilityIdentifier(
+            VoiceGiftInviterUIContract.pendingActionIdentifier(for: invitation.id)
+        )
     }
 
     @ViewBuilder
@@ -898,6 +900,32 @@ struct VoiceCloneCreatedView: View {
 private struct VoiceGiftSharePayload: Identifiable {
     let id: String
     let url: URL
+}
+
+/// Frozen inviter-side MVP contract. The primary action stays recipient-free:
+/// one tap creates an open invitation and immediately hands its URL to the
+/// system share sheet. Pending requests remain discoverable as secondary rows.
+enum VoiceGiftInviterUIContract {
+    static let primaryActionIdentifier = "voiceGiftInviteButton"
+    static let pendingActionIdentifierPrefix = "voiceGiftPending_"
+
+    static let primaryTitleKey = "邀请朋友录制声音"
+    static let primaryBenefitKey = "朋友授权后，你可用他的声音朗读和解读 Kindle、文件与网页，直到他撤回。"
+    static let primaryControlNoteKey = "点击后直接分享链接，无需填写邮箱。"
+    static let pendingSectionTitleKey = "待回应邀请"
+
+    static var primaryTitle: String { localized(primaryTitleKey) }
+    static var primaryBenefit: String { localized(primaryBenefitKey) }
+    static var primaryControlNote: String { localized(primaryControlNoteKey) }
+    static var pendingSectionTitle: String { localized(pendingSectionTitleKey) }
+
+    static func pendingActionIdentifier(for requestID: String) -> String {
+        pendingActionIdentifierPrefix + requestID
+    }
+
+    private static func localized(_ key: String) -> String {
+        AppLocalized(String.LocalizationValue(stringLiteral: key))
+    }
 }
 
 enum VoiceGiftShareContract {

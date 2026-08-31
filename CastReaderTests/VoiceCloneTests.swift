@@ -445,9 +445,9 @@ final class VoiceCloneTests: XCTestCase {
             "我的朗读者",
             "朋友完成授权后，他的声音会自动出现在这里。",
             "待回应邀请",
-            "邀请朋友成为我的朗读者",
-            "朋友录一小段，你就能用他的声音朗读 Kindle、文件和网页。",
-            "授权后可一直用于朗读和解读，直到朋友主动收回。",
+            "邀请朋友录制声音",
+            "朋友授权后，你可用他的声音朗读和解读 Kindle、文件与网页，直到他撤回。",
+            "点击后直接分享链接，无需填写邮箱。",
             "等待朋友录制",
             "朋友正在录制",
             "再次分享邀请链接",
@@ -2001,6 +2001,28 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertEqual(sharedURL.path, "/voice-gift/request")
         XCTAssertEqual(sharedURL.fragment, "signed-token")
         XCTAssertEqual(sharedURL.absoluteString, invitationURL.absoluteString)
+    }
+
+    func testVoiceGiftInviterMVPUIContractKeepsDirectCTAAndPendingSecondaryAction() {
+        XCTAssertEqual(
+            VoiceGiftInviterUIContract.primaryActionIdentifier,
+            "voiceGiftInviteButton"
+        )
+        XCTAssertEqual(
+            VoiceGiftInviterUIContract.primaryTitleKey,
+            "邀请朋友录制声音"
+        )
+        XCTAssertTrue(VoiceGiftInviterUIContract.primaryBenefitKey.contains("Kindle"))
+        XCTAssertTrue(VoiceGiftInviterUIContract.primaryBenefitKey.contains("朗读和解读"))
+        XCTAssertTrue(VoiceGiftInviterUIContract.primaryBenefitKey.contains("撤回"))
+        XCTAssertTrue(VoiceGiftInviterUIContract.primaryControlNoteKey.contains("直接分享链接"))
+        XCTAssertTrue(VoiceGiftInviterUIContract.primaryControlNoteKey.contains("无需填写邮箱"))
+        XCTAssertFalse(VoiceGiftInviterUIContract.primaryBenefitKey.contains("永久"))
+        XCTAssertEqual(
+            VoiceGiftInviterUIContract.pendingActionIdentifier(for: "request_1"),
+            "voiceGiftPending_request_1"
+        )
+        XCTAssertEqual(VoiceGiftContract.authorizationMode, "until_revoked")
     }
 
     func testVoiceGiftCapabilityManifestRequiresEveryFrozenDimension() throws {
