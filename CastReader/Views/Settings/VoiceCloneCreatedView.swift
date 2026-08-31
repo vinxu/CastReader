@@ -898,13 +898,14 @@ struct VoiceCloneCreatedView: View {
 private struct VoiceGiftSharePayload: Identifiable {
     let id: String
     let url: URL
+}
 
-    var message: String {
-        [
-            AppLocalized("让重要的声音，陪你读懂每一页。"),
-            AppLocalized("CastReader 把 Kindle 书籍、照片、PDF 和网页变成同步指读与 AI 解读。"),
-            AppLocalized("录一小段声音，成为我的朗读者；授权有效且你未收回期间，我可以用于朗读和解读。"),
-        ].joined(separator: "\n\n")
+enum VoiceGiftShareContract {
+    static func activityItems(for url: URL) -> [Any] {
+        // Keep the invitation as one HTTPS item. Supplying a separate String
+        // and URL makes some share destinations materialize the URL as a
+        // `.url` attachment beside the message instead of one tappable link.
+        [url]
     }
 }
 
@@ -913,7 +914,7 @@ private struct VoiceGiftShareSheet: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
         UIActivityViewController(
-            activityItems: [payload.message, payload.url],
+            activityItems: VoiceGiftShareContract.activityItems(for: payload.url),
             applicationActivities: nil
         )
     }
