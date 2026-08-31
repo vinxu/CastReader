@@ -1983,6 +1983,26 @@ final class VoiceCloneTests: XCTestCase {
         ))
     }
 
+    func testGiftShareExportsOneTappableHTTPSInvitationWithoutAttachmentText() throws {
+        let invitationURL = try XCTUnwrap(
+            VoiceGiftInvitationURLValidator.validatedURL(
+                "https://castreader.com/voice-gift/request#signed-token"
+            )
+        )
+
+        let items = VoiceGiftShareContract.activityItems(for: invitationURL)
+
+        XCTAssertEqual(items.count, 1)
+        XCTAssertFalse(items.contains { $0 is String })
+        let sharedURL = try XCTUnwrap(items.first as? URL)
+        XCTAssertFalse(sharedURL.isFileURL)
+        XCTAssertEqual(sharedURL.scheme, "https")
+        XCTAssertEqual(sharedURL.host, "castreader.com")
+        XCTAssertEqual(sharedURL.path, "/voice-gift/request")
+        XCTAssertEqual(sharedURL.fragment, "signed-token")
+        XCTAssertEqual(sharedURL.absoluteString, invitationURL.absoluteString)
+    }
+
     func testVoiceGiftCapabilityManifestRequiresEveryFrozenDimension() throws {
         let supported = try XCTUnwrap(VoiceGiftCapabilityManifest.decode(from: Data(
             #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"global","futureField":true}}"#.utf8
