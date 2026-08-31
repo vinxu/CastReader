@@ -1,5 +1,73 @@
 import Foundation
 import CoreFoundation
+import CryptoKit
+
+enum VoiceCloneCreateIdempotency {
+    private static let prefix = "ios:"
+    private static let fingerprintVersion = "voice-clone-create-v1"
+
+    static func makeKey(uuid: UUID = UUID()) -> String {
+        prefix + uuid.uuidString.lowercased()
+    }
+
+    static func isValidKey(_ value: String) -> Bool {
+        guard value.hasPrefix(prefix) else { return false }
+        return UUID(uuidString: String(value.dropFirst(prefix.count))) != nil
+    }
+
+    static func apply(_ key: String, to request: inout URLRequest) throws {
+        guard isValidKey(key) else { throw VoiceCloneError.invalidResponse }
+        request.setValue(key, forHTTPHeaderField: "Idempotency-Key")
+    }
+
+    /// Binds retry identity to the exact recording and semantic inputs. Length
+    /// prefixes keep field boundaries unambiguous without persisting audio or
+    /// user text in defaults/logs.
+    static func fingerprint(
+        recordingData: Data,
+        referenceLanguage: String,
+        referenceText: String?
+    ) -> String {
+        let normalizedLanguage = VoiceCatalog.normalizedLanguage(referenceLanguage)
+        let trimmedText = referenceText?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedText = trimmedText?.isEmpty == false ? trimmedText! : ""
+        var payload = Data()
+        appendLengthPrefixed(Data(fingerprintVersion.utf8), to: &payload)
+        appendLengthPrefixed(Data(normalizedLanguage.utf8), to: &payload)
+        appendLengthPrefixed(Data(normalizedText.utf8), to: &payload)
+        appendLengthPrefixed(recordingData, to: &payload)
+        return SHA256.hash(data: payload).map {
+            String(format: "%02x", $0)
+        }.joined()
+    }
+
+    static func fingerprint(
+        recordingURL: URL,
+        referenceLanguage: String,
+        referenceText: String?
+    ) throws -> String {
+        fingerprint(
+            recordingData: try Data(contentsOf: recordingURL),
+            referenceLanguage: referenceLanguage,
+            referenceText: referenceText
+        )
+    }
+
+    private static func appendLengthPrefixed(_ value: Data, to payload: inout Data) {
+        var length = UInt64(value.count).bigEndian
+        withUnsafeBytes(of: &length) { payload.append(contentsOf: $0) }
+        payload.append(value)
+    }
+}
+
+enum VoiceCloneReferenceIntegrity {
+    static func sha256Hex(_ data: Data) -> String {
+        SHA256.hash(data: data).map {
+            String(format: "%02x", $0)
+        }.joined()
+    }
+}
 
 enum VoiceCloneLanguageSupport {
     static let all = ["de", "en", "es", "fr", "it", "ja", "ko", "pt", "ru", "zh"]
@@ -241,6 +309,372 @@ enum VoiceCloneNameValidator {
     }
 }
 
+struct VoiceGiftDonor: Equatable, Decodable {
+    let displayName: String?
+    /// Optional account portrait supplied for attribution and for the
+    /// server-authored unified-library presentation.
+    let avatarURL: String?
+    let identity: VoiceCloneIdentity?
+
+    init(
+        displayName: String? = nil,
+        avatarURL: String? = nil,
+        identity: VoiceCloneIdentity? = nil
+    ) {
+        self.displayName = displayName
+        self.avatarURL = avatarURL
+        self.identity = identity
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        displayName = try container.decodeIfPresent(String.self, forKey: .displayName)
+            ?? container.decodeIfPresent(String.self, forKey: .name)
+        avatarURL = try container.decodeIfPresent(String.self, forKey: .avatarURL)
+            ?? container.decodeIfPresent(String.self, forKey: .avatarUrl)
+            ?? container.decodeIfPresent(String.self, forKey: .avatarURLSnake)
+        let decodedIdentity = try? container.decode(VoiceCloneIdentity.self, forKey: .identity)
+        identity = decodedIdentity?.isSupported == true ? decodedIdentity : nil
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case displayName, name, avatarURL, avatarUrl, identity
+        case avatarURLSnake = "avatar_url"
+    }
+}
+
+/// Server-authored identity for a voice-library row. The backend owns the
+/// cross-client title/avatar precedence; every field remains optional so a
+/// partially rolled-out presentation can safely fall back to identity/donor.
+struct VoiceGiftPresentation: Equatable, Decodable {
+    struct Avatar: Equatable, Decodable {
+        let source: String?
+        let style: VoiceCloneAvatarPresentation?
+        let url: String?
+        let defaultKey: String?
+
+        var resolvedStyle: VoiceCloneAvatarPresentation? {
+            guard source == "identity" || source == "default",
+                  let style,
+                  style.isSupported else { return nil }
+            return style
+        }
+
+        var remoteURL: URL? {
+            guard source == "donor",
+                  let url,
+                  let components = URLComponents(string: url),
+                  components.scheme?.lowercased() == "https",
+                  components.user == nil,
+                  components.password == nil,
+                  components.host?.isEmpty == false else { return nil }
+            return components.url
+        }
+    }
+
+    let title: String?
+    let titleSource: String?
+    let avatar: Avatar?
+
+    var normalizedTitle: String? {
+        let value = title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return value?.isEmpty == false ? value : nil
+    }
+}
+
+struct VoiceGiftCapabilities: Equatable, Decodable {
+    let canPreview: Bool
+    let canUse: Bool
+    let canEditAlias: Bool
+    let canRemoveAccess: Bool
+    let canRename: Bool
+    let canDelete: Bool
+
+    init(
+        canPreview: Bool = false,
+        canUse: Bool = false,
+        canEditAlias: Bool = false,
+        canRemoveAccess: Bool = false,
+        canRename: Bool = false,
+        canDelete: Bool = false
+    ) {
+        self.canPreview = canPreview
+        self.canUse = canUse
+        self.canEditAlias = canEditAlias
+        self.canRemoveAccess = canRemoveAccess
+        self.canRename = canRename
+        self.canDelete = canDelete
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        // Canonical Voice Gift v1 names come first. The `canX` aliases keep
+        // compatibility with early mobile fixtures without weakening a
+        // missing permission into `true`.
+        canPreview = try container.decodeIfPresent(Bool.self, forKey: .preview)
+            ?? container.decodeIfPresent(Bool.self, forKey: .canPreview)
+            ?? false
+        canUse = try container.decodeIfPresent(Bool.self, forKey: .useTts)
+            ?? container.decodeIfPresent(Bool.self, forKey: .canUse)
+            ?? container.decodeIfPresent(Bool.self, forKey: .use)
+            ?? false
+        canEditAlias = try container.decodeIfPresent(Bool.self, forKey: .setAlias)
+            ?? container.decodeIfPresent(Bool.self, forKey: .canEditAlias)
+            ?? container.decodeIfPresent(Bool.self, forKey: .editAlias)
+            ?? false
+        canRemoveAccess = try container.decodeIfPresent(Bool.self, forKey: .remove)
+            ?? container.decodeIfPresent(Bool.self, forKey: .canRemoveAccess)
+            ?? container.decodeIfPresent(Bool.self, forKey: .removeAccess)
+            ?? false
+        canRename = try container.decodeIfPresent(Bool.self, forKey: .rename)
+            ?? container.decodeIfPresent(Bool.self, forKey: .canRename)
+            ?? false
+        canDelete = try container.decodeIfPresent(Bool.self, forKey: .delete)
+            ?? container.decodeIfPresent(Bool.self, forKey: .canDelete)
+            ?? false
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case canPreview, canUse, canEditAlias, canRemoveAccess, canRename, canDelete
+        case preview, useTts, setAlias, remove, rename, delete
+        case use, editAlias, removeAccess
+    }
+}
+
+struct VoiceGiftAccess: Equatable, Decodable {
+    enum Kind: String, Decodable {
+        case owner
+        case gifted
+    }
+
+    let kind: Kind
+    let grantId: String?
+    let shareId: String?
+    /// Kept as a string so a newly introduced backend state remains decodable.
+    let status: String?
+    let donor: VoiceGiftDonor?
+    let recipientAlias: String?
+    let capabilities: VoiceGiftCapabilities
+
+    init(
+        kind: Kind,
+        grantId: String? = nil,
+        shareId: String? = nil,
+        status: String? = nil,
+        donor: VoiceGiftDonor? = nil,
+        recipientAlias: String? = nil,
+        capabilities: VoiceGiftCapabilities? = nil
+    ) {
+        self.kind = kind
+        self.grantId = grantId
+        self.shareId = shareId
+        self.status = status
+        self.donor = donor
+        self.recipientAlias = recipientAlias
+        self.capabilities = capabilities ?? Self.defaultCapabilities(for: kind)
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        kind = try container.decode(Kind.self, forKey: .kind)
+        grantId = try container.decodeIfPresent(String.self, forKey: .grantId)
+            ?? container.decodeIfPresent(String.self, forKey: .grantIdSnake)
+        shareId = try container.decodeIfPresent(String.self, forKey: .shareId)
+            ?? container.decodeIfPresent(String.self, forKey: .shareIdSnake)
+        status = try container.decodeIfPresent(String.self, forKey: .status)
+        donor = try container.decodeIfPresent(VoiceGiftDonor.self, forKey: .donor)
+        recipientAlias = try container.decodeIfPresent(String.self, forKey: .recipientAlias)
+            ?? container.decodeIfPresent(String.self, forKey: .recipientAliasSnake)
+        // An explicit access object is the canonical authorization boundary;
+        // missing permissions fail closed. Legacy owner rows omit the entire
+        // access field and are handled separately by ClonedVoice.
+        capabilities = try container.decodeIfPresent(
+            VoiceGiftCapabilities.self,
+            forKey: .capabilities
+        ) ?? VoiceGiftCapabilities()
+    }
+
+    /// Grant lifecycle and product entitlement are separate axes. In
+    /// particular, `useTts == false` can merely mean the recipient is not Pro;
+    /// it must never be interpreted as the donor revoking authorization.
+    var authorizationActive: Bool {
+        guard kind == .gifted else { return true }
+        guard let status = status?.lowercased() else { return true }
+        return status == "active" || status == "fulfilled"
+    }
+
+    var hasTerminalRevocation: Bool {
+        guard kind == .gifted else { return false }
+        let normalized = status?.lowercased()
+        return normalized == "revoked" || normalized == "expired"
+    }
+
+    /// PATCH/DELETE are share-scoped. A grant id is deliberately not a route
+    /// fallback because the two namespaces are not interchangeable.
+    var mutationID: String? {
+        let normalized = shareId?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return normalized?.isEmpty == false ? normalized : nil
+    }
+
+    private static func defaultCapabilities(for kind: Kind) -> VoiceGiftCapabilities {
+        switch kind {
+        case .owner:
+            return VoiceGiftCapabilities(
+                canPreview: true,
+                canUse: true,
+                canRename: true,
+                canDelete: true
+            )
+        case .gifted:
+            // Gift permissions fail closed until the library explicitly grants
+            // them; older owner-only responses remain fully compatible.
+            return VoiceGiftCapabilities()
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case kind, grantId, shareId, status, donor, recipientAlias, capabilities
+        case grantIdSnake = "grant_id"
+        case shareIdSnake = "share_id"
+        case recipientAliasSnake = "recipient_alias"
+    }
+}
+
+enum VoiceGiftInvitationURLValidator {
+    static func validatedURL(_ value: String) -> URL? {
+        guard let components = URLComponents(string: value),
+              components.scheme?.lowercased() == "https",
+              components.user == nil,
+              components.password == nil,
+              let host = components.host?.lowercased(),
+              isAllowedHost(host),
+              isAllowedPath(components.path),
+              components.query == nil,
+              let token = components.fragment?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !token.isEmpty,
+              token.rangeOfCharacter(from: .whitespacesAndNewlines) == nil else {
+            return nil
+        }
+        #if !DEBUG
+        guard components.port == nil else { return nil }
+        #endif
+        return components.url
+    }
+
+    private static func isAllowedHost(_ host: String) -> Bool {
+        if host == "castreader.com" || host == "www.castreader.com" {
+            return true
+        }
+        #if DEBUG
+        // Debug-only injection supports deterministic localhost fixtures while
+        // the production binary remains pinned to the public CastReader host.
+        return host == "localhost" || host == "127.0.0.1" || host == "::1"
+        #else
+        return false
+        #endif
+    }
+
+    private static func isAllowedPath(_ path: String) -> Bool {
+        let components = path.split(separator: "/", omittingEmptySubsequences: true)
+        if components == ["voice-gift", "request"] { return true }
+        guard components.count == 3,
+              components[1] == "voice-gift",
+              components[2] == "request" else { return false }
+        let language = components[0]
+        guard (2...16).contains(language.count) else { return false }
+        return language.utf8.allSatisfy {
+            (0x30...0x39).contains($0)
+                || (0x41...0x5A).contains($0)
+                || (0x61...0x7A).contains($0)
+                || $0 == 0x2D
+        }
+    }
+}
+
+struct VoiceGiftInvitation: Identifiable, Equatable, Decodable {
+    struct Authorization: Equatable, Decodable {
+        let mode: String
+        let expiresAt: String?
+    }
+
+    let requestId: String
+    let invitationURL: String
+    /// String-backed to tolerate new lifecycle states without hiding the row.
+    let status: String
+    let createdAt: String?
+    let requestExpiresAt: String?
+    let authorization: Authorization?
+
+    var id: String { requestId }
+    var isPending: Bool {
+        // Unknown future states stay visible instead of being mistaken for a
+        // terminal server deletion. Only the frozen terminal states remove a
+        // request from the in-progress section.
+        !["fulfilled", "cancelled", "expired"].contains(status.lowercased())
+    }
+
+    var isClaimed: Bool {
+        ["claimed", "accepted"].contains(status.lowercased())
+    }
+
+    init(
+        requestId: String,
+        invitationURL: String,
+        status: String = "pending",
+        createdAt: String? = nil,
+        requestExpiresAt: String? = nil,
+        authorization: Authorization? = nil
+    ) {
+        self.requestId = requestId
+        self.invitationURL = invitationURL
+        self.status = status
+        self.createdAt = createdAt
+        self.requestExpiresAt = requestExpiresAt
+        self.authorization = authorization
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        guard let requestId = try container.decodeIfPresent(String.self, forKey: .requestId)
+            ?? container.decodeIfPresent(String.self, forKey: .requestIdSnake)
+            ?? container.decodeIfPresent(String.self, forKey: .id),
+              let invitationURL = try container.decodeIfPresent(String.self, forKey: .invitationURL)
+            ?? container.decodeIfPresent(String.self, forKey: .invitationUrl)
+            ?? container.decodeIfPresent(String.self, forKey: .invitationURLSnake),
+              VoiceGiftInvitationURLValidator.validatedURL(invitationURL) != nil else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .requestId,
+                in: container,
+                debugDescription: "Missing request id or invalid invitation URL"
+            )
+        }
+        self.requestId = requestId
+        self.invitationURL = invitationURL
+        status = try container.decodeIfPresent(String.self, forKey: .status) ?? "pending"
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+            ?? container.decodeIfPresent(String.self, forKey: .createdAtSnake)
+        requestExpiresAt = try container.decodeIfPresent(String.self, forKey: .requestExpiresAt)
+            ?? container.decodeIfPresent(String.self, forKey: .requestExpiresAtSnake)
+        if let object = try container.decodeIfPresent(Authorization.self, forKey: .authorization) {
+            authorization = object
+        } else if let mode = try container.decodeIfPresent(String.self, forKey: .authorizationMode)
+            ?? container.decodeIfPresent(String.self, forKey: .authorizationModeSnake) {
+            authorization = Authorization(mode: mode, expiresAt: nil)
+        } else {
+            authorization = nil
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case requestId, id, invitationURL = "invitationURL", invitationUrl, status, createdAt, requestExpiresAt, authorization, authorizationMode
+        case requestIdSnake = "request_id"
+        case invitationURLSnake = "invitation_url"
+        case createdAtSnake = "created_at"
+        case requestExpiresAtSnake = "request_expires_at"
+        case authorizationModeSnake = "authorization_mode"
+    }
+}
+
 struct ClonedVoice: Identifiable, Equatable, Decodable {
     let voiceId: String
     let createdAt: String?
@@ -251,6 +685,8 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
     let referenceLanguage: String?
     let supportedLanguages: [String]
     let identity: VoiceCloneIdentity?
+    let access: VoiceGiftAccess
+    let presentation: VoiceGiftPresentation?
 
     var id: String { voiceId }
 
@@ -263,7 +699,9 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
         previewDurationMs: Int? = nil,
         referenceLanguage: String? = nil,
         supportedLanguages: [String] = [],
-        identity: VoiceCloneIdentity? = nil
+        identity: VoiceCloneIdentity? = nil,
+        access: VoiceGiftAccess = VoiceGiftAccess(kind: .owner),
+        presentation: VoiceGiftPresentation? = nil
     ) {
         self.voiceId = voiceId
         self.createdAt = createdAt
@@ -274,6 +712,8 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
         self.referenceLanguage = referenceLanguage
         self.supportedLanguages = supportedLanguages
         self.identity = identity
+        self.access = access
+        self.presentation = presentation
     }
 
     init(from decoder: Decoder) throws {
@@ -300,9 +740,25 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
             ?? []
         let decodedIdentity = try? container.decode(VoiceCloneIdentity.self, forKey: .identity)
         identity = decodedIdentity?.isSupported == true ? decodedIdentity : nil
+        if container.contains(.access) {
+            // Never reinterpret an unknown/malformed access kind as owner:
+            // that would expose rename/delete for a donor-owned voice. New
+            // status values remain string-backed and therefore lossless, while
+            // the security boundary itself stays fail closed.
+            access = try container.decode(VoiceGiftAccess.self, forKey: .access)
+        } else {
+            access = VoiceGiftAccess(kind: .owner)
+        }
+        presentation = try? container.decode(
+            VoiceGiftPresentation.self,
+            forKey: .presentation
+        )
     }
 
-    func replacingIdentity(_ identity: VoiceCloneIdentity?) -> ClonedVoice {
+    func replacingIdentity(
+        _ identity: VoiceCloneIdentity?,
+        preservingPresentation: Bool = true
+    ) -> ClonedVoice {
         ClonedVoice(
             voiceId: voiceId,
             createdAt: createdAt,
@@ -312,12 +768,33 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
             previewDurationMs: previewDurationMs,
             referenceLanguage: referenceLanguage,
             supportedLanguages: supportedLanguages,
-            identity: identity
+            identity: identity,
+            access: access,
+            presentation: preservingPresentation ? presentation : nil
+        )
+    }
+
+    func replacingAccess(
+        _ access: VoiceGiftAccess,
+        preservingPresentation: Bool = true
+    ) -> ClonedVoice {
+        ClonedVoice(
+            voiceId: voiceId,
+            createdAt: createdAt,
+            sampleURL: sampleURL,
+            status: status,
+            previewStatus: previewStatus,
+            previewDurationMs: previewDurationMs,
+            referenceLanguage: referenceLanguage,
+            supportedLanguages: supportedLanguages,
+            identity: identity,
+            access: access,
+            presentation: preservingPresentation ? presentation : nil
         )
     }
 
     private enum CodingKeys: String, CodingKey {
-        case voiceId, id, createdAt, sampleUrl, status, previewStatus, previewDurationMs, referenceLanguage, supportedLanguages, identity
+        case voiceId, id, createdAt, sampleUrl, status, previewStatus, previewDurationMs, referenceLanguage, supportedLanguages, identity, access, presentation
         case voiceIdSnake = "voice_id"
         case createdAtSnake = "created_at"
         case sampleUrlSnake = "sample_url"
@@ -401,18 +878,70 @@ struct VoiceCloneQuotaPresentation: Equatable {
 }
 
 struct VoiceCloneListResult: Equatable {
+    let schemaVersion: String
+    let snapshotComplete: Bool
+    let invitationsSnapshotComplete: Bool
+    let voiceGiftEnabled: Bool
     let voices: [ClonedVoice]
+    let invitations: [VoiceGiftInvitation]
     let nextCreateAt: Date?
     let capability: VoiceCloneCapability
 
     init(
+        schemaVersion: String = "legacy-v1",
+        snapshotComplete: Bool = true,
+        invitationsSnapshotComplete: Bool = true,
+        voiceGiftEnabled: Bool = false,
         voices: [ClonedVoice],
+        invitations: [VoiceGiftInvitation] = [],
         nextCreateAt: Date?,
         capability: VoiceCloneCapability = .unknown
     ) {
+        self.schemaVersion = schemaVersion
+        self.snapshotComplete = snapshotComplete
+        self.invitationsSnapshotComplete = invitationsSnapshotComplete
+        self.voiceGiftEnabled = voiceGiftEnabled
         self.voices = voices
+        self.invitations = invitations
         self.nextCreateAt = nextCreateAt
         self.capability = capability
+    }
+}
+
+struct VoiceGiftCapabilityManifest: Equatable {
+    static let supportedVersion = "voice-gift-v1"
+    static let supportedLibraryVersion = "voice-library-v1"
+
+    let enabled: Bool
+    let version: String
+    let libraryVersion: String
+    let serviceRoute: String
+
+    var isCompatible: Bool {
+        enabled
+            && version == Self.supportedVersion
+            && libraryVersion == Self.supportedLibraryVersion
+            && serviceRoute == "global"
+    }
+
+    static func decode(from data: Data) -> VoiceGiftCapabilityManifest? {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        let payload = (root["data"] as? [String: Any]) ?? root
+        guard let voiceGift = payload["voiceGift"] as? [String: Any],
+              let enabled = voiceGift["enabled"] as? Bool,
+              let version = voiceGift["version"] as? String,
+              let libraryVersion = voiceGift["libraryVersion"] as? String,
+              let serviceRoute = voiceGift["serviceRoute"] as? String else {
+            return nil
+        }
+        return VoiceGiftCapabilityManifest(
+            enabled: enabled,
+            version: version,
+            libraryVersion: libraryVersion,
+            serviceRoute: serviceRoute
+        )
     }
 }
 
@@ -424,13 +953,33 @@ enum VoiceCloneResponseParser {
     static func list(from data: Data) throws -> VoiceCloneListResult {
         let object = try JSONSerialization.jsonObject(with: data)
         if let array = object as? [[String: Any]] {
-            return VoiceCloneListResult(voices: decodeVoices(array), nextCreateAt: nil)
+            return VoiceCloneListResult(voices: decodeVoiceItems(array), nextCreateAt: nil)
         }
         guard let root = object as? [String: Any] else { throw VoiceCloneError.invalidResponse }
         let payload = (root["data"] as? [String: Any]) ?? root
-        let rawVoices = (payload["voices"] as? [[String: Any]])
+        let rawVoices = (payload["items"] as? [[String: Any]])
+            ?? (payload["voices"] as? [[String: Any]])
+            ?? (root["items"] as? [[String: Any]])
             ?? (root["voices"] as? [[String: Any]])
             ?? []
+        let rawInvitations = (payload["pendingInvitations"] as? [[String: Any]])
+            ?? (payload["invitations"] as? [[String: Any]])
+            ?? (payload["requests"] as? [[String: Any]])
+            ?? (root["pendingInvitations"] as? [[String: Any]])
+            ?? (root["invitations"] as? [[String: Any]])
+            ?? []
+        let hasInvitationSnapshot = ["pendingInvitations", "invitations", "requests"]
+            .contains { payload[$0] != nil || root[$0] != nil }
+        let schemaVersion = string(payload, keys: ["schemaVersion", "schema_version"])
+            ?? string(root, keys: ["schemaVersion", "schema_version"])
+            ?? "legacy-v1"
+        if schemaVersion == VoiceGiftCapabilityManifest.supportedLibraryVersion,
+           payload["voices"] as? [[String: Any]] == nil {
+            // A canonical empty snapshot is `voices: []`. Missing the field is
+            // a contract failure and must never be interpreted as deleting all
+            // locally known owner/gifted voices.
+            throw VoiceCloneError.invalidResponse
+        }
         let creation = payload["creation"] as? [String: Any]
         let usage = payload["usage"] as? [String: Any]
         let next = creation.flatMap { string($0, keys: ["nextCreateAt", "next_create_at"]) }
@@ -455,10 +1004,93 @@ enum VoiceCloneResponseParser {
                 string($0, keys: ["resetAt", "reset_at"])
             })
         )
+        let decodedVoices = decodeVoiceItems(
+            rawVoices,
+            requiresExplicitAccess: schemaVersion
+                == VoiceGiftCapabilityManifest.supportedLibraryVersion
+        )
+        let declaredSnapshotComplete = bool(
+            payload,
+            keys: ["snapshotComplete", "snapshot_complete"]
+        ) ?? bool(
+            root,
+            keys: ["snapshotComplete", "snapshot_complete"]
+        ) ?? (schemaVersion == VoiceGiftCapabilityManifest.supportedLibraryVersion
+            ? false
+            : true)
         return VoiceCloneListResult(
-            voices: decodeVoices(rawVoices),
+            schemaVersion: schemaVersion,
+            snapshotComplete: declaredSnapshotComplete
+                && decodedVoices.count == rawVoices.count,
+            invitationsSnapshotComplete: hasInvitationSnapshot,
+            voices: decodedVoices,
+            invitations: decodeInvitations(rawInvitations),
             nextCreateAt: parseDate(next),
             capability: capability
+        )
+    }
+
+    static func giftInvitation(from data: Data) throws -> VoiceGiftInvitation {
+        let object = try JSONSerialization.jsonObject(with: data)
+        guard let root = object as? [String: Any] else {
+            throw VoiceCloneError.invalidResponse
+        }
+        let payload = (root["data"] as? [String: Any]) ?? root
+        var candidate = (payload["request"] as? [String: Any])
+            ?? (payload["invitation"] as? [String: Any])
+            ?? payload
+        if candidate["invitationURL"] == nil,
+           candidate["invitationUrl"] == nil,
+           candidate["invitation_url"] == nil {
+            candidate["invitationURL"] = string(
+                payload,
+                keys: ["invitationURL", "invitationUrl", "invitation_url", "url"]
+            ) ?? string(root, keys: ["invitationURL", "invitationUrl", "invitation_url", "url"])
+        }
+        if candidate["requestId"] == nil,
+           candidate["request_id"] == nil,
+           candidate["id"] == nil {
+            candidate["requestId"] = string(payload, keys: ["requestId", "request_id"])
+                ?? string(root, keys: ["requestId", "request_id"])
+        }
+        if candidate["authorization"] == nil {
+            candidate["authorization"] = payload["authorization"]
+                ?? root["authorization"]
+        }
+        guard let encoded = try? JSONSerialization.data(withJSONObject: candidate),
+              let invitation = try? JSONDecoder().decode(VoiceGiftInvitation.self, from: encoded) else {
+            throw VoiceCloneError.invalidResponse
+        }
+        return invitation
+    }
+
+    static func sentGiftInvitations(from data: Data) throws -> (
+        schemaVersion: String,
+        invitations: [VoiceGiftInvitation],
+        snapshotComplete: Bool
+    ) {
+        let object = try JSONSerialization.jsonObject(with: data)
+        guard let root = object as? [String: Any] else {
+            throw VoiceCloneError.invalidResponse
+        }
+        let payload = (root["data"] as? [String: Any]) ?? root
+        guard let sent = payload["sent"] as? [[String: Any]] else {
+            throw VoiceCloneError.invalidResponse
+        }
+        let decoded = decodeInvitations(sent)
+        let declaredSnapshotComplete = bool(
+            payload,
+            keys: ["snapshotComplete", "snapshot_complete"]
+        ) ?? false
+        return (
+            schemaVersion: string(payload, keys: ["schemaVersion", "schema_version"])
+                ?? "unknown",
+            // Preserve explicit terminal rows as tombstones. The Store filters
+            // display rows after using every returned id to remove stale local
+            // pending invitations from an incomplete snapshot.
+            invitations: decoded,
+            snapshotComplete: declaredSnapshotComplete
+                && decoded.count == sent.count
         )
     }
 
@@ -589,14 +1221,49 @@ enum VoiceCloneResponseParser {
         parseDate(value)
     }
 
-    private static func decodeVoices(_ objects: [[String: Any]]) -> [ClonedVoice] {
+    private static func decodeVoiceItems(
+        _ objects: [[String: Any]],
+        requiresExplicitAccess: Bool = false
+    ) -> [ClonedVoice] {
         objects.compactMap { object in
-            guard let data = try? JSONSerialization.data(withJSONObject: object),
+            var candidate = (object["voice"] as? [String: Any]) ?? object
+            if candidate["identity"] == nil {
+                candidate["identity"] = object["identity"]
+            }
+            if candidate["presentation"] == nil {
+                candidate["presentation"] = object["presentation"]
+            }
+            if var access = object["access"] as? [String: Any] {
+                for key in [
+                    "grantId", "grant_id", "shareId", "share_id", "status",
+                    "donor", "recipientAlias", "recipient_alias", "capabilities",
+                ] where access[key] == nil {
+                    access[key] = object[key]
+                }
+                candidate["access"] = access
+            }
+            if requiresExplicitAccess, candidate["access"] == nil {
+                // In the unified library, absence of ownership metadata is a
+                // security failure, not a legacy owner voice.
+                return nil
+            }
+            guard let data = try? JSONSerialization.data(withJSONObject: candidate),
                   let voice = try? JSONDecoder().decode(ClonedVoice.self, from: data),
                   voice.voiceId.hasPrefix("vc_") else {
                 return nil
             }
             return voice
+        }
+    }
+
+    private static func decodeInvitations(_ objects: [[String: Any]]) -> [VoiceGiftInvitation] {
+        objects.compactMap { object in
+            let candidate = (object["request"] as? [String: Any]) ?? object
+            guard let data = try? JSONSerialization.data(withJSONObject: candidate),
+                  let invitation = try? JSONDecoder().decode(VoiceGiftInvitation.self, from: data) else {
+                return nil
+            }
+            return invitation
         }
     }
 
@@ -673,11 +1340,17 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
     case invalidRecording(String)
     case slotFull
     case creationLimit(Date?)
+    case creationIdempotencyInProgress
+    case creationIdempotencyConflict
     case quotaExhausted(Date?)
     case workerBusy(String?)
     case identityConflict(VoiceCloneIdentity?)
     case identityInvalid(String?)
     case identityUnavailable
+    case giftUnavailableInRegion
+    case giftRevoked
+    case giftExpired
+    case giftAccessUnavailable
     case temporaryUnavailable
     case server(Int, String?)
     case invalidResponse
@@ -692,6 +1365,10 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
         case .invalidRecording(let message): return message
         case .slotFull: return AppLocalized("声音服务正在更新，请稍后重试")
         case .creationLimit: return AppLocalized("声音服务正在更新，请稍后重试")
+        case .creationIdempotencyInProgress:
+            return AppLocalized("这个声音正在创建，请稍后使用同一录音重试")
+        case .creationIdempotencyConflict:
+            return AppLocalized("创建记录与当前录音不一致，请重新录制或刷新后再试")
         case .quotaExhausted(let resetAt):
             if let resetAt {
                 let formatter = DateFormatter()
@@ -710,6 +1387,14 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
             return message ?? AppLocalized("声音名称无效，请修改后重试")
         case .identityUnavailable:
             return AppLocalized("声音仍可正常使用，名称同步暂不可用，请稍后重试")
+        case .giftUnavailableInRegion:
+            return AppLocalized("邀请朋友录制声音暂未在当前地区开放")
+        case .giftRevoked:
+            return AppLocalized("朗读者已收回这个声音的使用授权，已为你取消选择")
+        case .giftExpired:
+            return AppLocalized("这个声音的使用授权已过期，已为你取消选择")
+        case .giftAccessUnavailable:
+            return AppLocalized("这个朗读者声音暂时无法使用，请刷新声音列表后重试")
         case .temporaryUnavailable: return AppLocalized("声音服务暂时不可用，请稍后重试")
         case .server: return AppLocalized("声音克隆请求失败")
         case .invalidResponse: return AppLocalized("声音克隆返回数据无效")

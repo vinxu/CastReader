@@ -3,15 +3,28 @@ import Combine
 
 @MainActor
 final class VoiceCloneStore: ObservableObject {
+    private struct PendingCreateIdempotency: Equatable {
+        let storageID: String
+        let fingerprint: String
+        let key: String
+    }
+
+    private struct PendingGiftAlias: Equatable {
+        let value: String?
+    }
     static let shared = VoiceCloneStore()
 
     @Published private(set) var voices: [ClonedVoice] = []
+    @Published private(set) var pendingGiftInvitations: [VoiceGiftInvitation] = []
     @Published private(set) var nextCreateAt: Date?
     @Published private(set) var isLoading = false
     @Published private(set) var isCreating = false
     @Published private(set) var uploadProgress: Double = 0
     @Published private(set) var deletingVoiceId: String?
     @Published private(set) var renamingVoiceId: String?
+    @Published private(set) var isCreatingGiftInvitation = false
+    @Published private(set) var mutatingGiftVoiceID: String?
+    @Published private(set) var voiceGiftEnabled = false
     @Published private(set) var capability: VoiceCloneCapability = .unknown
     @Published private(set) var lastCreatedVoiceID: String?
     @Published private(set) var refreshErrorMessage: String?
@@ -27,10 +40,17 @@ final class VoiceCloneStore: ObservableObject {
     private var accountGeneration: UInt64 = 0
     private var refreshGeneration: UInt64 = 0
     private var activeCreateRequestID: UUID?
+    private var pendingCreateIdempotency: PendingCreateIdempotency?
     private var activeDeleteRequestID: UUID?
     private var activeRenameRequests: [String: UUID] = [:]
+    private var activeGiftInvitationRequestID: UUID?
+    private var pendingGiftInvitationClientRequestID: UUID?
+    private var giftInvitationTask: Task<VoiceGiftInvitation, Error>?
+    private var activeGiftMutationRequestID: UUID?
     private var reconciliationTask: Task<Void, Never>?
     private var authoritativeCreatedVoices: [String: ClonedVoice] = [:]
+    private var authoritativeGiftInvitations: [String: VoiceGiftInvitation] = [:]
+    private var authoritativeGiftAliases: [String: PendingGiftAlias] = [:]
 
     init(
         service: any VoiceCloneStoreServicing = VoiceCloneService.shared,
@@ -80,6 +100,20 @@ final class VoiceCloneStore: ObservableObject {
         true
     }
 
+    var ownedVoices: [ClonedVoice] {
+        voices.filter { $0.access.kind == .owner }
+    }
+
+    var giftedVoices: [ClonedVoice] {
+        voices.filter { $0.access.kind == .gifted }
+    }
+
+    /// This is intentionally derived from the authoritative library snapshot,
+    /// not from push delivery or a locally synthesized notification.
+    var giftActivityCount: Int {
+        giftedVoices.count + pendingGiftInvitations.filter(\.isPending).count
+    }
+
     var canApply: Bool {
         guard ProManager.shared.isPro else { return false }
         if isQuotaBlocked { return false }
@@ -113,6 +147,32 @@ final class VoiceCloneStore: ObservableObject {
     }
 
     func displayName(for voice: ClonedVoice) -> String {
+        // Unified-library presentation is the backend's cross-client source of
+        // truth. Older gateways and partially rolled-out rows keep the exact
+        // same deterministic fallback below.
+        if let title = voice.presentation?.normalizedTitle {
+            return title
+        }
+        if voice.access.kind == .gifted {
+            if let alias = voice.access.recipientAlias?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !alias.isEmpty {
+                return alias
+            }
+            if let donorName = voice.access.donor?.displayName?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !donorName.isEmpty {
+                return donorName
+            }
+            if let customName = voice.identity?.customName, !customName.isEmpty {
+                return customName
+            }
+            if let index = voice.identity?.autoNameIndex, index > 0 {
+                return String(
+                    format: AppLocalized("朗读者声音 %lld"),
+                    Int64(index)
+                )
+            }
+            return AppLocalized("朋友授权的声音")
+        }
         if let customName = voice.identity?.customName, !customName.isEmpty {
             return customName
         }
@@ -158,6 +218,7 @@ final class VoiceCloneStore: ObservableObject {
         guard Constants.Features.voiceCloningEnabled else {
             invalidateRefreshes()
             voices = []
+            pendingGiftInvitations = []
             refreshErrorMessage = nil
             errorMessage = nil
             return
@@ -165,6 +226,7 @@ final class VoiceCloneStore: ObservableObject {
         guard isSignedIn(), activeStorageID != nil else {
             invalidateRefreshes()
             voices = []
+            pendingGiftInvitations = []
             refreshErrorMessage = nil
             errorMessage = nil
             return
@@ -179,19 +241,34 @@ final class VoiceCloneStore: ObservableObject {
         do {
             let result = try await service.listVoices()
             guard isCurrent(token), !Task.isCancelled else { return }
-            voices = reconcileServerVoices(result.voices)
+            voices = reconcileServerVoices(
+                result.voices,
+                snapshotComplete: result.snapshotComplete,
+                preserveGiftedWhenMissing: !result.voiceGiftEnabled
+            )
+            pendingGiftInvitations = mergeInvitations(
+                result.invitations,
+                snapshotComplete: result.invitationsSnapshotComplete
+            )
             nextCreateAt = result.nextCreateAt
+            voiceGiftEnabled = result.voiceGiftEnabled
             applyCapability(result.capability)
             for voice in voices {
                 if let language = voice.referenceLanguage {
                     referenceLanguages[voice.voiceId] = VoiceCatalog.normalizedLanguage(language)
                 }
             }
-            updateIdentityCache(from: voices)
-            pruneLabels()
+            updateIdentityCache(
+                from: voices,
+                snapshotComplete: result.snapshotComplete
+            )
+            if result.snapshotComplete { pruneLabels() }
             persistReferenceLanguages()
-            for active in AppSettings.shared.activeClonedVoiceIDs where !voices.contains(where: { $0.voiceId == active }) {
-                AppSettings.shared.clearActiveClonedVoice(ifMatching: active)
+            applyGiftRevocations(from: result.voices)
+            if result.snapshotComplete {
+                for active in AppSettings.shared.activeClonedVoiceIDs where !voices.contains(where: { $0.voiceId == active }) {
+                    AppSettings.shared.clearActiveClonedVoice(ifMatching: active)
+                }
             }
             refreshErrorMessage = nil
             errorMessage = nil
@@ -238,12 +315,46 @@ final class VoiceCloneStore: ObservableObject {
                 isCreating = false
             }
         }
+        let fingerprint: String
+        do {
+            fingerprint = try await Task.detached(priority: .userInitiated) {
+                try VoiceCloneCreateIdempotency.fingerprint(
+                    recordingURL: recordingURL,
+                    referenceLanguage: referenceLanguage,
+                    referenceText: referenceText
+                )
+            }.value
+        } catch {
+            guard isCurrent(scopeToken), activeCreateRequestID == requestID else {
+                return false
+            }
+            handle(error)
+            return false
+        }
+        guard isCurrent(scopeToken),
+              activeCreateRequestID == requestID,
+              !Task.isCancelled,
+              let storageID = scopeToken.storageID else { return false }
+        let idempotencyKey: String
+        if let pendingCreateIdempotency,
+           pendingCreateIdempotency.storageID == storageID,
+           pendingCreateIdempotency.fingerprint == fingerprint {
+            idempotencyKey = pendingCreateIdempotency.key
+        } else {
+            idempotencyKey = VoiceCloneCreateIdempotency.makeKey()
+            pendingCreateIdempotency = PendingCreateIdempotency(
+                storageID: storageID,
+                fingerprint: fingerprint,
+                key: idempotencyKey
+            )
+        }
         do {
             let created = try await service.createVoice(
                 recordingURL: recordingURL,
                 referenceLanguage: referenceLanguage,
                 referenceText: referenceText,
-                consentConfirmed: consentConfirmed
+                consentConfirmed: consentConfirmed,
+                idempotencyKey: idempotencyKey
             ) { [weak self] progress in
                 Task { @MainActor in
                     guard let self,
@@ -264,6 +375,7 @@ final class VoiceCloneStore: ObservableObject {
                 voices.insert(created, at: 0)
             }
             authoritativeCreatedVoices[created.voiceId] = created
+            clearPendingCreateIdempotency(ifMatching: idempotencyKey)
             if created.identity == nil {
                 assignLabelIfNeeded(created.voiceId)
             } else if let identity = created.identity {
@@ -289,17 +401,215 @@ final class VoiceCloneStore: ObservableObject {
             }
             return true
         } catch let error as VoiceCloneError {
+            guard isCurrent(scopeToken),
+                  activeCreateRequestID == requestID else { return false }
+            if !preservesCreateIdempotency(after: error) {
+                clearPendingCreateIdempotency(ifMatching: idempotencyKey)
+            }
             handle(error)
             return false
+        } catch is CancellationError {
+            return false
         } catch {
+            guard isCurrent(scopeToken),
+                  activeCreateRequestID == requestID else { return false }
+            // Transport cancellation/timeout and unknown delivery failures are
+            // ambiguous: the server may have committed the voice before the
+            // response was lost, so the next identical retry must reuse key.
             handle(error)
             return false
         }
     }
 
     @discardableResult
+    func createGiftInvitation() async -> VoiceGiftInvitation? {
+        guard VoiceGiftFeature.isRegionEligible() else {
+            handle(VoiceCloneError.giftUnavailableInRegion)
+            return nil
+        }
+        guard voiceGiftEnabled else {
+            handle(VoiceCloneError.giftAccessUnavailable)
+            return nil
+        }
+        guard !isCreatingGiftInvitation else { return nil }
+        let scopeToken = currentAccountToken
+        guard isSignedIn(), scopeToken.storageID != nil else {
+            handle(VoiceCloneError.signInRequired)
+            return nil
+        }
+        guard await service.hasSession() else {
+            handle(VoiceCloneError.sessionUnavailable)
+            return nil
+        }
+        guard isCurrent(scopeToken), !Task.isCancelled else { return nil }
+        // Reuse the idempotency key after an ambiguous network failure. It is
+        // cleared only after an authoritative invitation response, preventing
+        // a retry from creating two open invitations server-side.
+        let requestID = pendingGiftInvitationClientRequestID ?? UUID()
+        pendingGiftInvitationClientRequestID = requestID
+        activeGiftInvitationRequestID = requestID
+        isCreatingGiftInvitation = true
+        let operation = Task {
+            try Task.checkCancellation()
+            return try await service.createGiftInvitation(
+                clientRequestID: requestID
+            )
+        }
+        giftInvitationTask = operation
+        defer {
+            if activeGiftInvitationRequestID == requestID {
+                operation.cancel()
+                giftInvitationTask = nil
+                activeGiftInvitationRequestID = nil
+                isCreatingGiftInvitation = false
+            }
+        }
+        do {
+            let invitation = try await operation.value
+            guard isCurrent(scopeToken),
+                  activeGiftInvitationRequestID == requestID,
+                  !Task.isCancelled else { return nil }
+            invalidateRefreshes()
+            if let index = pendingGiftInvitations.firstIndex(where: { $0.id == invitation.id }) {
+                pendingGiftInvitations[index] = invitation
+            } else {
+                pendingGiftInvitations.insert(invitation, at: 0)
+            }
+            authoritativeGiftInvitations[invitation.id] = invitation
+            pendingGiftInvitationClientRequestID = nil
+            errorMessage = nil
+            return invitation
+        } catch {
+            guard isCurrent(scopeToken),
+                  activeGiftInvitationRequestID == requestID else { return nil }
+            handle(error)
+            return nil
+        }
+    }
+
+    @discardableResult
+    func updateGiftAlias(_ voice: ClonedVoice, to alias: String?) async -> Bool {
+        guard voice.access.kind == .gifted,
+              voice.access.capabilities.canEditAlias,
+              let shareID = voice.access.mutationID,
+              mutatingGiftVoiceID == nil else {
+            handle(VoiceCloneError.giftAccessUnavailable)
+            return false
+        }
+        let normalized: String?
+        do {
+            let trimmed = alias?.trimmingCharacters(in: .whitespacesAndNewlines)
+            normalized = try VoiceCloneNameValidator.normalized(
+                trimmed?.isEmpty == true ? nil : alias
+            )
+        } catch {
+            handle(error)
+            return false
+        }
+        let scopeToken = currentAccountToken
+        let requestID = UUID()
+        activeGiftMutationRequestID = requestID
+        mutatingGiftVoiceID = voice.voiceId
+        defer {
+            if activeGiftMutationRequestID == requestID {
+                activeGiftMutationRequestID = nil
+                mutatingGiftVoiceID = nil
+            }
+        }
+        do {
+            try await service.updateGiftAlias(shareID: shareID, alias: normalized)
+            guard isCurrent(scopeToken),
+                  activeGiftMutationRequestID == requestID else { return false }
+            invalidateRefreshes()
+            authoritativeGiftAliases[voice.voiceId] = PendingGiftAlias(
+                value: normalized
+            )
+            if let index = voices.firstIndex(where: { $0.voiceId == voice.voiceId }) {
+                let access = voices[index].access
+                voices[index] = voices[index].replacingAccess(
+                    VoiceGiftAccess(
+                        kind: access.kind,
+                        grantId: access.grantId,
+                        shareId: access.shareId,
+                        status: access.status,
+                        donor: access.donor,
+                        recipientAlias: normalized,
+                        capabilities: access.capabilities
+                    ),
+                    // The server-authored title reflected the previous alias.
+                    // Fall back to the just-confirmed alias until refresh
+                    // returns a new presentation snapshot.
+                    preservingPresentation: false
+                )
+            }
+            errorMessage = nil
+            return true
+        } catch {
+            guard isCurrent(scopeToken),
+                  activeGiftMutationRequestID == requestID else { return false }
+            handleGiftMutationFailure(error, voiceID: voice.voiceId)
+            return false
+        }
+    }
+
+    func removeGiftAccess(_ voice: ClonedVoice) async {
+        guard voice.access.kind == .gifted,
+              voice.access.capabilities.canRemoveAccess,
+              let shareID = voice.access.mutationID,
+              mutatingGiftVoiceID == nil else {
+            handle(VoiceCloneError.giftAccessUnavailable)
+            return
+        }
+        let scopeToken = currentAccountToken
+        let requestID = UUID()
+        activeGiftMutationRequestID = requestID
+        mutatingGiftVoiceID = voice.voiceId
+        defer {
+            if activeGiftMutationRequestID == requestID {
+                activeGiftMutationRequestID = nil
+                mutatingGiftVoiceID = nil
+            }
+        }
+        do {
+            try await service.removeGiftAccess(shareID: shareID)
+            guard isCurrent(scopeToken),
+                  activeGiftMutationRequestID == requestID else { return }
+            invalidateRefreshes()
+            authoritativeGiftAliases.removeValue(forKey: voice.voiceId)
+            AppSettings.shared.clearActiveClonedVoice(ifMatching: voice.voiceId)
+            voices.removeAll { $0.voiceId == voice.voiceId }
+            errorMessage = nil
+        } catch {
+            guard isCurrent(scopeToken),
+                  activeGiftMutationRequestID == requestID else { return }
+            handleGiftMutationFailure(error, voiceID: voice.voiceId)
+        }
+    }
+
+    @discardableResult
     func select(_ voice: ClonedVoice, for language: String) async -> Bool {
         guard Constants.Features.voiceCloningEnabled else { return false }
+        let scopeToken = currentAccountToken
+        guard scopeToken.storageID != nil else { return false }
+        guard voice.access.authorizationActive else {
+            let normalizedStatus = voice.access.status?.lowercased()
+            let error: VoiceCloneError
+            if normalizedStatus == "expired" {
+                error = .giftExpired
+            } else if normalizedStatus == "revoked" {
+                error = .giftRevoked
+            } else {
+                // A future lifecycle state is decoded but cannot be selected
+                // until this client understands it. Do not erase a persisted
+                // selection unless the server explicitly says terminal.
+                error = .giftAccessUnavailable
+            }
+            if voice.access.hasTerminalRevocation {
+                AppSettings.shared.clearActiveClonedVoice(ifMatching: voice.voiceId)
+            }
+            handle(error)
+            return false
+        }
         let normalizedLanguage = VoiceCatalog.normalizedLanguage(language)
         let supported = Set(VoiceCloneLanguageSupport.languages(for: voice))
         guard supported.contains(normalizedLanguage) else {
@@ -320,8 +630,23 @@ final class VoiceCloneStore: ObservableObject {
             }
             return false
         }
+        if !voice.access.capabilities.canUse {
+            // `useTts=false` is an entitlement/synchronization result, not a
+            // revoked grant. Keep the voice and any prior selection intact.
+            VoiceCloneAccessCoordinator.shared.prompt = .message(
+                AppLocalized("Pro 权益正在同步，请稍后重试")
+            )
+            return false
+        }
         guard await service.hasSession() else {
             handle(VoiceCloneError.sessionUnavailable)
+            return false
+        }
+        guard isCurrent(scopeToken),
+              !Task.isCancelled,
+              let currentVoice = self.voice(withID: voice.voiceId),
+              currentVoice.access.authorizationActive else { return false }
+        if !currentVoice.access.capabilities.canUse {
             return false
         }
         AppSettings.shared.setActiveClonedVoice(voice.voiceId, for: normalizedLanguage)
@@ -330,6 +655,14 @@ final class VoiceCloneStore: ObservableObject {
 
     func delete(_ voice: ClonedVoice) async {
         guard Constants.Features.voiceCloningEnabled else { return }
+        guard voice.access.kind == .owner else {
+            handle(VoiceCloneError.giftAccessUnavailable)
+            return
+        }
+        guard voice.access.capabilities.canDelete else {
+            handle(VoiceCloneError.giftAccessUnavailable)
+            return
+        }
         guard deletingVoiceId == nil else { return }
         let scopeToken = currentAccountToken
         guard scopeToken.storageID != nil else { return }
@@ -371,6 +704,8 @@ final class VoiceCloneStore: ObservableObject {
         guard renamingVoiceId == nil,
               deletingVoiceId != voiceID,
               let currentVoice = voice(withID: voiceID),
+              currentVoice.access.kind == .owner,
+              currentVoice.access.capabilities.canRename,
               let identity = currentVoice.identity else {
             errorMessage = VoiceCloneError.identityUnavailable.localizedDescription
             return false
@@ -559,28 +894,82 @@ final class VoiceCloneStore: ObservableObject {
     private func invalidateAccountWork() {
         accountGeneration &+= 1
         invalidateRefreshes()
+        giftInvitationTask?.cancel()
+        giftInvitationTask = nil
+        VoiceClonePreviewPlayer.shared.stop()
         activeCreateRequestID = nil
+        pendingCreateIdempotency = nil
         activeDeleteRequestID = nil
         activeRenameRequests = [:]
+        activeGiftInvitationRequestID = nil
+        pendingGiftInvitationClientRequestID = nil
+        activeGiftMutationRequestID = nil
         renamingVoiceId = nil
         authoritativeCreatedVoices = [:]
+        authoritativeGiftInvitations = [:]
+        authoritativeGiftAliases = [:]
+    }
+
+    private func clearPendingCreateIdempotency(ifMatching key: String) {
+        guard pendingCreateIdempotency?.key == key else { return }
+        pendingCreateIdempotency = nil
+    }
+
+    private func preservesCreateIdempotency(after error: VoiceCloneError) -> Bool {
+        switch error {
+        case .temporaryUnavailable, .workerBusy, .invalidResponse,
+                .creationIdempotencyInProgress:
+            return true
+        case .server(let status, _):
+            return status >= 500
+        default:
+            return false
+        }
     }
 
     /// A create response is authoritative until the list endpoint has observed
     /// that exact ID once. This prevents an eventually-consistent or older
     /// in-flight list response from making a successful creation disappear.
-    private func reconcileServerVoices(_ serverVoices: [ClonedVoice]) -> [ClonedVoice] {
+    private func reconcileServerVoices(
+        _ serverVoices: [ClonedVoice],
+        snapshotComplete: Bool,
+        preserveGiftedWhenMissing: Bool = false
+    ) -> [ClonedVoice] {
         let localByID = Dictionary(uniqueKeysWithValues: voices.map { ($0.voiceId, $0) })
         let mergedServerVoices = serverVoices.map { serverVoice in
+            var candidate = serverVoice
+            if let pendingAlias = authoritativeGiftAliases[serverVoice.voiceId],
+               serverVoice.access.kind == .gifted {
+                if serverVoice.access.recipientAlias == pendingAlias.value {
+                    authoritativeGiftAliases.removeValue(forKey: serverVoice.voiceId)
+                } else {
+                    let access = serverVoice.access
+                    candidate = serverVoice.replacingAccess(
+                        VoiceGiftAccess(
+                            kind: access.kind,
+                            grantId: access.grantId,
+                            shareId: access.shareId,
+                            status: access.status,
+                            donor: access.donor,
+                            recipientAlias: pendingAlias.value,
+                            capabilities: access.capabilities
+                        ),
+                        preservingPresentation: false
+                    )
+                }
+            }
             guard let localIdentity = localByID[serverVoice.voiceId]?.identity
                     ?? cachedIdentities[serverVoice.voiceId] else {
-                return serverVoice
+                return candidate
             }
-            guard let serverIdentity = serverVoice.identity,
+            guard let serverIdentity = candidate.identity,
                   serverIdentity.revision > localIdentity.revision else {
-                return serverVoice.replacingIdentity(localIdentity)
+                return candidate.replacingIdentity(
+                    localIdentity,
+                    preservingPresentation: false
+                )
             }
-            return serverVoice
+            return candidate
         }
         let serverIDs = Set(mergedServerVoices.map(\.voiceId))
         for voiceID in serverIDs {
@@ -589,7 +978,82 @@ final class VoiceCloneStore: ObservableObject {
         let missingCreated = authoritativeCreatedVoices.values
             .filter { !serverIDs.contains($0.voiceId) }
             .sorted { ($0.createdAt ?? "") > ($1.createdAt ?? "") }
-        return missingCreated + mergedServerVoices
+        let partialSnapshotVoices: [ClonedVoice]
+        if snapshotComplete {
+            partialSnapshotVoices = preserveGiftedWhenMissing
+                ? voices.filter {
+                    $0.access.kind == .gifted
+                        && !serverIDs.contains($0.voiceId)
+                        && authoritativeCreatedVoices[$0.voiceId] == nil
+                }
+                : []
+        } else {
+            partialSnapshotVoices = voices.filter {
+                !serverIDs.contains($0.voiceId)
+                    && authoritativeCreatedVoices[$0.voiceId] == nil
+            }
+        }
+        return missingCreated + mergedServerVoices + partialSnapshotVoices
+    }
+
+    private func mergeInvitations(
+        _ serverInvitations: [VoiceGiftInvitation],
+        snapshotComplete: Bool
+    ) -> [VoiceGiftInvitation] {
+        let serverIDs = Set(serverInvitations.map(\.id))
+        for id in serverIDs {
+            authoritativeGiftInvitations.removeValue(forKey: id)
+        }
+        var merged = serverInvitations.filter(\.isPending)
+        var mergedIDs = Set(merged.map(\.id))
+        if !snapshotComplete {
+            for invitation in pendingGiftInvitations
+            where !serverIDs.contains(invitation.id) && !mergedIDs.contains(invitation.id) {
+                merged.append(invitation)
+                mergedIDs.insert(invitation.id)
+            }
+        }
+        for invitation in authoritativeGiftInvitations.values
+        where invitation.isPending && !mergedIDs.contains(invitation.id) {
+            merged.append(invitation)
+            mergedIDs.insert(invitation.id)
+        }
+        return merged
+    }
+
+    private func applyGiftRevocations(from serverVoices: [ClonedVoice]) {
+        for voice in serverVoices where voice.access.hasTerminalRevocation {
+            let wasSelected = AppSettings.shared.activeClonedVoiceIDs.contains(voice.voiceId)
+            AppSettings.shared.clearActiveClonedVoice(ifMatching: voice.voiceId)
+            guard wasSelected else { continue }
+            let error: VoiceCloneError = voice.access.status?.lowercased() == "expired"
+                ? .giftExpired
+                : .giftRevoked
+            errorMessage = error.localizedDescription
+            VoiceCloneAccessCoordinator.shared.prompt = .message(error.localizedDescription)
+        }
+    }
+
+    private func handleGiftMutationFailure(_ error: Error, voiceID: String) {
+        guard let cloneError = error as? VoiceCloneError,
+              cloneError == .giftRevoked || cloneError == .giftExpired else {
+            handle(error)
+            return
+        }
+        AppSettings.shared.clearActiveClonedVoice(ifMatching: voiceID)
+        if let index = voices.firstIndex(where: { $0.voiceId == voiceID }) {
+            let access = voices[index].access
+            voices[index] = voices[index].replacingAccess(VoiceGiftAccess(
+                kind: access.kind,
+                grantId: access.grantId,
+                shareId: access.shareId,
+                status: cloneError == .giftExpired ? "expired" : "revoked",
+                donor: access.donor,
+                recipientAlias: access.recipientAlias,
+                capabilities: access.capabilities
+            ))
+        }
+        handle(cloneError)
     }
 
     private func applyIdentity(_ identity: VoiceCloneIdentity, to voiceID: String) {
@@ -598,13 +1062,19 @@ final class VoiceCloneStore: ObservableObject {
         if let index = voices.firstIndex(where: { $0.voiceId == voiceID }) {
             let currentRevision = voices[index].identity?.revision ?? 0
             if identity.revision >= currentRevision {
-                voices[index] = voices[index].replacingIdentity(identity)
+                voices[index] = voices[index].replacingIdentity(
+                    identity,
+                    preservingPresentation: false
+                )
             }
         }
         if let created = authoritativeCreatedVoices[voiceID] {
             let currentRevision = created.identity?.revision ?? 0
             if identity.revision >= currentRevision {
-                authoritativeCreatedVoices[voiceID] = created.replacingIdentity(identity)
+                authoritativeCreatedVoices[voiceID] = created.replacingIdentity(
+                    identity,
+                    preservingPresentation: false
+                )
             }
         }
         let cachedRevision = cachedIdentities[voiceID]?.revision ?? 0
@@ -615,9 +1085,14 @@ final class VoiceCloneStore: ObservableObject {
         if cacheChanged { persistIdentities() }
     }
 
-    private func updateIdentityCache(from activeVoices: [ClonedVoice]) {
+    private func updateIdentityCache(
+        from activeVoices: [ClonedVoice],
+        snapshotComplete: Bool
+    ) {
         let activeIDs = Set(activeVoices.map(\.voiceId))
-        cachedIdentities = cachedIdentities.filter { activeIDs.contains($0.key) }
+        if snapshotComplete {
+            cachedIdentities = cachedIdentities.filter { activeIDs.contains($0.key) }
+        }
         for voice in activeVoices {
             guard let identity = voice.identity, identity.isSupported else { continue }
             let cachedRevision = cachedIdentities[voice.voiceId]?.revision ?? 0
@@ -630,12 +1105,16 @@ final class VoiceCloneStore: ObservableObject {
 
     private func clearTransientState() {
         voices = []
+        pendingGiftInvitations = []
         nextCreateAt = nil
         isLoading = false
         isCreating = false
         uploadProgress = 0
         deletingVoiceId = nil
         renamingVoiceId = nil
+        isCreatingGiftInvitation = false
+        mutatingGiftVoiceID = nil
+        voiceGiftEnabled = false
         cachedIdentities = [:]
         capability = .unknown
         lastCreatedVoiceID = nil

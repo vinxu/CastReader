@@ -419,6 +419,81 @@ final class VoiceCloneTests: XCTestCase {
         }
     }
 
+    func testVoiceGiftCopyIsCompleteInEverySupportedLocale() throws {
+        let repositoryRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let data = try Data(
+            contentsOf: repositoryRoot
+                .appendingPathComponent("CastReader/Localizable.xcstrings")
+        )
+        let root = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+        let expectedLocales = Set([
+            "de", "en", "es", "fr", "hi", "it", "ja", "pt-BR", "zh-Hans",
+        ])
+        let giftKeys = [
+            "邀请朋友录制声音暂未在当前地区开放",
+            "朗读者已收回这个声音的使用授权，已为你取消选择",
+            "这个声音的使用授权已过期，已为你取消选择",
+            "这个朗读者声音暂时无法使用，请刷新声音列表后重试",
+            "移除访问",
+            "移除这个朗读者声音？",
+            "只会从你的朗读者列表移除，不会删除对方创建的声音。",
+            "我的朗读者",
+            "朋友完成授权后，他的声音会自动出现在这里。",
+            "待回应邀请",
+            "邀请朋友成为我的朗读者",
+            "朋友录一小段，你就能用他的声音朗读 Kindle、文件和网页。",
+            "授权后可一直用于朗读和解读，直到朋友主动收回。",
+            "等待朋友录制",
+            "朋友正在录制",
+            "再次分享邀请链接",
+            "修改私有备注",
+            "来自 %@",
+            "朋友授权的声音",
+            "朗读者声音 %lld",
+            "授权已过期",
+            "授权已收回",
+            "可用于朗读和解读",
+            "让重要的声音，陪你读懂每一页。",
+            "CastReader 把 Kindle 书籍、照片、PDF 和网页变成同步指读与 AI 解读。",
+            "录一小段声音，成为我的朗读者；授权有效且你未收回期间，我可以用于朗读和解读。",
+            "私有备注",
+            "只有你能看到这个备注，不会修改朗读者创建的声音名称。",
+            "例如：妈妈讲故事",
+        ]
+
+        for key in giftKeys {
+            let entry = try XCTUnwrap(strings[key] as? [String: Any], key)
+            let localizations = try XCTUnwrap(
+                entry["localizations"] as? [String: Any],
+                key
+            )
+            XCTAssertEqual(Set(localizations.keys), expectedLocales, key)
+            for locale in expectedLocales {
+                let localization = try XCTUnwrap(
+                    localizations[locale] as? [String: Any],
+                    "\(key) [\(locale)]"
+                )
+                let unit = try XCTUnwrap(
+                    localization["stringUnit"] as? [String: Any],
+                    "\(key) [\(locale)]"
+                )
+                let value = try XCTUnwrap(
+                    unit["value"] as? String,
+                    "\(key) [\(locale)]"
+                )
+                XCTAssertFalse(value.isEmpty, "\(key) [\(locale)]")
+                if key.contains("%@") {
+                    XCTAssertTrue(value.contains("%@"), "\(key) [\(locale)]")
+                }
+            }
+        }
+    }
+
     @MainActor
     func testCreationRemainsAvailableWhenLegacyServerCapabilitySaysSlotConsumed() {
         let suite = "VoiceCloneTests-\(UUID().uuidString)"
@@ -783,6 +858,32 @@ final class VoiceCloneTests: XCTestCase {
         } catch let error as VoiceCloneError {
             XCTAssertEqual(error, .identityUnavailable)
         }
+
+        VoiceCloneTestURLProtocol.handler = VoiceCloneTestURLProtocol.json(
+            statusCode: 409,
+            data: Data(
+                #"{"code":"VOICE_CREATION_IDEMPOTENCY_IN_PROGRESS"}"#.utf8
+            )
+        )
+        do {
+            _ = try await service.renameVoice("vc_http", name: "Valid", expectedRevision: 5)
+            XCTFail("expected idempotent create in-progress response")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(error, .creationIdempotencyInProgress)
+        }
+
+        VoiceCloneTestURLProtocol.handler = VoiceCloneTestURLProtocol.json(
+            statusCode: 409,
+            data: Data(
+                #"{"code":"VOICE_CREATION_IDEMPOTENCY_RETIRED"}"#.utf8
+            )
+        )
+        do {
+            _ = try await service.renameVoice("vc_http", name: "Valid", expectedRevision: 5)
+            XCTFail("expected retired idempotency response")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(error, .creationIdempotencyConflict)
+        }
     }
 
     func testQuotaErrorAndHeadersExposeRemainingSecondsAndReset() throws {
@@ -962,13 +1063,38 @@ final class VoiceCloneTests: XCTestCase {
         let multipart = Dictionary(
             uniqueKeysWithValues: metadata.multipartFields.map { ($0.name, $0.value) }
         )
-        let china = metadata.chinaPayload(referenceObjectKey: "user/reference.wav")
+        let china = metadata.chinaPayload(
+            referenceObjectKey: "user/reference.wav",
+            referenceSha256: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        )
 
         XCTAssertEqual(metadata.referenceLanguage, "hi")
         XCTAssertNil(metadata.referenceText)
         XCTAssertNil(multipart["reference_text"])
         XCTAssertNil(china["referenceText"])
         XCTAssertEqual(china["referenceLanguage"] as? String, "hi")
+        XCTAssertEqual(
+            china["referenceSha256"] as? String,
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        )
+        XCTAssertEqual(
+            multipart["consent_version"],
+            "voice-owner-consent-2026-07-12-v1"
+        )
+        XCTAssertEqual(multipart["consent_source"], "ios")
+        XCTAssertEqual(china["consentConfirmed"] as? Bool, true)
+        XCTAssertEqual(
+            china["consentVersion"] as? String,
+            "voice-owner-consent-2026-07-12-v1"
+        )
+        XCTAssertEqual(china["consentSource"] as? String, "ios")
+        let structuredConsent = try XCTUnwrap(china["consent"] as? [String: Any])
+        XCTAssertEqual(structuredConsent["confirmed"] as? Bool, true)
+        XCTAssertEqual(
+            structuredConsent["version"] as? String,
+            "voice-owner-consent-2026-07-12-v1"
+        )
+        XCTAssertEqual(structuredConsent["source"] as? String, "ios")
     }
 
     func testCreateMetadataSendsTextOnlyWhenTheCallerExplicitlyProvidesIt() throws {
@@ -989,8 +1115,98 @@ final class VoiceCloneTests: XCTestCase {
             "I chose these words."
         )
         XCTAssertEqual(
-            confirmed.chinaPayload(referenceObjectKey: "key")["referenceText"] as? String,
+            confirmed.chinaPayload(
+                referenceObjectKey: "key",
+                referenceSha256: String(repeating: "a", count: 64)
+            )["referenceText"] as? String,
             "I chose these words."
+        )
+    }
+
+    func testCreateIdempotencyHeaderAndInputFingerprintContract() throws {
+        let key = VoiceCloneCreateIdempotency.makeKey(
+            uuid: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")!
+        )
+        XCTAssertEqual(key, "ios:aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+        XCTAssertTrue(VoiceCloneCreateIdempotency.isValidKey(key))
+        XCTAssertFalse(VoiceCloneCreateIdempotency.isValidKey("android:aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"))
+
+        var request = URLRequest(url: URL(string: "https://api.castreader.ai/api/voice-clone/voices")!)
+        try VoiceCloneCreateIdempotency.apply(key, to: &request)
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Idempotency-Key"), key)
+        XCTAssertThrowsError(
+            try VoiceCloneCreateIdempotency.apply("ios:not-a-uuid", to: &request)
+        )
+
+        let baseline = VoiceCloneCreateIdempotency.fingerprint(
+            recordingData: Data([0, 1, 2, 3]),
+            referenceLanguage: "en-US",
+            referenceText: "  Optional words  "
+        )
+        XCTAssertEqual(
+            baseline,
+            VoiceCloneCreateIdempotency.fingerprint(
+                recordingData: Data([0, 1, 2, 3]),
+                referenceLanguage: "en",
+                referenceText: "Optional words"
+            )
+        )
+        XCTAssertNotEqual(
+            baseline,
+            VoiceCloneCreateIdempotency.fingerprint(
+                recordingData: Data([0, 1, 2, 4]),
+                referenceLanguage: "en",
+                referenceText: "Optional words"
+            )
+        )
+        XCTAssertNotEqual(
+            baseline,
+            VoiceCloneCreateIdempotency.fingerprint(
+                recordingData: Data([0, 1, 2, 3]),
+                referenceLanguage: "zh",
+                referenceText: "Optional words"
+            )
+        )
+        XCTAssertEqual(
+            VoiceCloneReferenceIntegrity.sha256Hex(Data("abc".utf8)),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        )
+    }
+
+    func testGlobalAndChinaCreateRequestsSendTheSameIdempotencyHeader() async throws {
+        let key = VoiceCloneCreateIdempotency.makeKey(
+            uuid: UUID(uuidString: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")!
+        )
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-contract.test")!,
+            session: .shared,
+            route: .globalGateway,
+            sessionProvider: VoiceCloneTestSessionProvider(token: "cms_contract")
+        )
+
+        let global = try await service.createUploadRequest(
+            boundary: "boundary",
+            token: "cms_contract",
+            idempotencyKey: key
+        )
+        let chinaBody = try JSONSerialization.data(withJSONObject: [
+            "referenceObjectKey": "users/example/reference.wav",
+            "referenceSha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        ])
+        let china = try await service.createChinaObjectRequest(
+            token: "cms_contract",
+            body: chinaBody,
+            idempotencyKey: key
+        )
+
+        XCTAssertEqual(global.value(forHTTPHeaderField: "Idempotency-Key"), key)
+        XCTAssertEqual(china.value(forHTTPHeaderField: "Idempotency-Key"), key)
+        let decodedChina = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: try XCTUnwrap(china.httpBody)) as? [String: Any]
+        )
+        XCTAssertEqual(
+            decodedChina["referenceSha256"] as? String,
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         )
     }
 
@@ -1066,6 +1282,140 @@ final class VoiceCloneTests: XCTestCase {
 
         XCTAssertEqual(store.voices.map(\.voiceId), [created.voiceId])
         XCTAssertEqual(store.lastCreatedVoiceID, created.voiceId)
+    }
+
+    @MainActor
+    func testCreateRetryReusesKeyButInputAccountAndSuccessRotateIt() async throws {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = SequencedCreateVoiceCloneService(outcomes: [
+            .failure(.creationIdempotencyInProgress),
+            .failure(.creationIdempotencyInProgress),
+            .failure(.creationIdempotencyConflict),
+            .success("vc_account_a_after_conflict"),
+            .failure(.creationIdempotencyInProgress),
+            .success("vc_account_b_first"),
+            .success("vc_account_b_second"),
+        ])
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        let recordingURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("voice-clone-idempotency-\(UUID().uuidString).wav")
+        try Data([0x52, 0x49, 0x46, 0x46, 0, 1, 2, 3]).write(to: recordingURL)
+        defer { try? FileManager.default.removeItem(at: recordingURL) }
+
+        store.activateAccountScope(storageID: String(repeating: "a", count: 64))
+        let firstAmbiguous = await store.create(
+            recordingURL: recordingURL,
+            referenceLanguage: "en",
+            referenceText: nil,
+            consentConfirmed: true
+        )
+        let repeatedAmbiguous = await store.create(
+            recordingURL: recordingURL,
+            referenceLanguage: "en-US",
+            referenceText: nil,
+            consentConfirmed: true
+        )
+        let changedInputConflict = await store.create(
+            recordingURL: recordingURL,
+            referenceLanguage: "zh",
+            referenceText: nil,
+            consentConfirmed: true
+        )
+        let retriedAfterConflict = await store.create(
+            recordingURL: recordingURL,
+            referenceLanguage: "zh",
+            referenceText: nil,
+            consentConfirmed: true
+        )
+        XCTAssertFalse(firstAmbiguous)
+        XCTAssertFalse(repeatedAmbiguous)
+        XCTAssertFalse(changedInputConflict)
+        XCTAssertTrue(retriedAfterConflict)
+
+        store.activateAccountScope(storageID: String(repeating: "b", count: 64))
+        let accountBAmbiguous = await store.create(
+            recordingURL: recordingURL,
+            referenceLanguage: "en",
+            referenceText: nil,
+            consentConfirmed: true
+        )
+        let accountBRetry = await store.create(
+            recordingURL: recordingURL,
+            referenceLanguage: "en",
+            referenceText: nil,
+            consentConfirmed: true
+        )
+        let accountBAfterSuccess = await store.create(
+            recordingURL: recordingURL,
+            referenceLanguage: "en",
+            referenceText: nil,
+            consentConfirmed: true
+        )
+        XCTAssertFalse(accountBAmbiguous)
+        XCTAssertTrue(accountBRetry)
+        XCTAssertTrue(accountBAfterSuccess)
+
+        let calls = await service.createCalls()
+        XCTAssertEqual(calls.count, 7)
+        XCTAssertEqual(calls[0].idempotencyKey, calls[1].idempotencyKey)
+        XCTAssertNotEqual(calls[1].idempotencyKey, calls[2].idempotencyKey)
+        XCTAssertNotEqual(calls[2].idempotencyKey, calls[3].idempotencyKey)
+        XCTAssertNotEqual(calls[0].idempotencyKey, calls[4].idempotencyKey)
+        XCTAssertEqual(calls[4].idempotencyKey, calls[5].idempotencyKey)
+        XCTAssertNotEqual(calls[5].idempotencyKey, calls[6].idempotencyKey)
+        XCTAssertTrue(calls.allSatisfy {
+            VoiceCloneCreateIdempotency.isValidKey($0.idempotencyKey)
+        })
+    }
+
+    @MainActor
+    func testCreateRetryPreservesKeyForTimeoutNetworkLossAndInProgress() async throws {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = SequencedCreateVoiceCloneService(outcomes: [
+            .transport(.timedOut),
+            .transport(.networkConnectionLost),
+            .failure(.creationIdempotencyInProgress),
+            .failure(.creationIdempotencyConflict),
+            .success("vc_after_conflict"),
+            .success("vc_after_success"),
+        ])
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        let recordingURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("voice-clone-ambiguous-\(UUID().uuidString).wav")
+        try Data([0x52, 0x49, 0x46, 0x46, 4, 3, 2, 1]).write(to: recordingURL)
+        defer { try? FileManager.default.removeItem(at: recordingURL) }
+        store.activateAccountScope(storageID: String(repeating: "e", count: 64))
+
+        var outcomes: [Bool] = []
+        for _ in 0..<6 {
+            outcomes.append(await store.create(
+                recordingURL: recordingURL,
+                referenceLanguage: "en",
+                referenceText: "same optional words",
+                consentConfirmed: true
+            ))
+        }
+
+        XCTAssertEqual(outcomes, [false, false, false, false, true, true])
+        let calls = await service.createCalls()
+        XCTAssertEqual(calls.count, 6)
+        XCTAssertEqual(calls[0].idempotencyKey, calls[1].idempotencyKey)
+        XCTAssertEqual(calls[1].idempotencyKey, calls[2].idempotencyKey)
+        XCTAssertEqual(calls[2].idempotencyKey, calls[3].idempotencyKey)
+        XCTAssertNotEqual(calls[3].idempotencyKey, calls[4].idempotencyKey)
+        XCTAssertNotEqual(calls[4].idempotencyKey, calls[5].idempotencyKey)
     }
 
     @MainActor
@@ -1382,6 +1732,39 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertEqual(listCallCount, 2)
     }
 
+    @MainActor
+    func testDeleteFailsClosedWhenExplicitOwnerCapabilityForbidsIt() async {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        store.activateAccountScope(storageID: String(repeating: "5", count: 64))
+        let blocked = ClonedVoice(
+            voiceId: "vc_owner_delete_forbidden",
+            access: VoiceGiftAccess(
+                kind: .owner,
+                capabilities: VoiceGiftCapabilities(
+                    canPreview: true,
+                    canUse: true,
+                    canRename: true,
+                    canDelete: false
+                )
+            )
+        )
+
+        await store.delete(blocked)
+
+        let deleteCalls = await service.deleteCalls()
+        XCTAssertTrue(deleteCalls.isEmpty)
+        XCTAssertNil(store.deletingVoiceId)
+        XCTAssertTrue(ClonedVoice(voiceId: "vc_legacy_owner").access.capabilities.canDelete)
+    }
+
     func testCreateParserSupportsEnvelope() throws {
         let data = Data(#"{"voice":{"voiceId":"vc_created","sampleUrl":"https://example.com/sample.wav","reference_language":"zh","supported_languages":["zh","en"]}}"#.utf8)
         let voice = try VoiceCloneResponseParser.createdVoice(from: data)
@@ -1468,6 +1851,697 @@ final class VoiceCloneTests: XCTestCase {
         )
         XCTAssertEqual(ClonedTTSRetryPolicy.delaysNanoseconds.count, 3)
     }
+
+    func testUnifiedVoiceLibraryDecodesOwnerGiftAndIncompleteSnapshotLossily() throws {
+        let data = try Data(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .appendingPathComponent("Fixtures/voice-gift-library-v1.json")
+        )
+
+        let result = try VoiceCloneResponseParser.list(from: data)
+
+        XCTAssertEqual(result.schemaVersion, "voice-library-v1")
+        XCTAssertFalse(result.snapshotComplete)
+        XCTAssertEqual(
+            result.voices.map(\.voiceId),
+            ["vc_owner_fixture", "vc_gift_fixture"]
+        )
+        XCTAssertEqual(result.voices[0].access.kind, .owner)
+        XCTAssertTrue(result.voices[0].access.capabilities.canUse)
+        XCTAssertTrue(result.voices[0].access.capabilities.canRename)
+        XCTAssertTrue(result.voices[0].access.capabilities.canDelete)
+        XCTAssertEqual(result.voices[0].presentation?.normalizedTitle, "My Voice 1")
+        XCTAssertEqual(
+            result.voices[0].presentation?.avatar?.resolvedStyle?.glyph,
+            .waveBars
+        )
+        XCTAssertEqual(result.voices[1].access.kind, .gifted)
+        XCTAssertEqual(result.voices[1].access.grantId, "grant_fixture")
+        XCTAssertEqual(result.voices[1].access.mutationID, "share_fixture")
+        XCTAssertEqual(result.voices[1].access.status, "active")
+        XCTAssertEqual(result.voices[1].access.donor?.displayName, "Lina")
+        XCTAssertEqual(
+            result.voices[1].access.donor?.avatarURL,
+            "https://castreader.com/assets/avatars/lina.png"
+        )
+        XCTAssertEqual(result.voices[1].access.recipientAlias, "Bedtime Reader")
+        XCTAssertTrue(result.voices[1].access.capabilities.canUse)
+        XCTAssertTrue(result.voices[1].access.capabilities.canEditAlias)
+        XCTAssertTrue(result.voices[1].access.capabilities.canRemoveAccess)
+        XCTAssertFalse(result.voices[1].access.capabilities.canDelete)
+        XCTAssertEqual(
+            result.voices[1].presentation?.normalizedTitle,
+            "Bedtime Reader"
+        )
+        XCTAssertEqual(
+            result.voices[1].presentation?.avatar?.remoteURL?.absoluteString,
+            "https://castreader.com/assets/avatars/lina.png"
+        )
+        XCTAssertTrue(result.invitations.isEmpty)
+    }
+
+    func testGiftAccessToleratesNewStatusButNeverPromotesUnknownKindToOwner() throws {
+        let result = try VoiceCloneResponseParser.list(from: Data(
+            #"{"schemaVersion":"voice-library-v1","snapshotComplete":true,"voices":[{"voiceId":"vc_future_status","access":{"kind":"gifted","status":"future_state","capabilities":{"useTts":true}}},{"voiceId":"vc_unknown_kind","access":{"kind":"future_kind","status":"active","capabilities":{"delete":true}}},{"voiceId":"vc_missing_access"}]}"#.utf8
+        ))
+
+        XCTAssertEqual(result.voices.map(\.voiceId), ["vc_future_status"])
+        XCTAssertFalse(result.snapshotComplete)
+        XCTAssertEqual(result.voices.first?.access.status, "future_state")
+        XCTAssertEqual(result.voices.first?.access.kind, .gifted)
+
+        let explicitOwnerWithoutCapabilities = try VoiceCloneResponseParser.list(
+            from: Data(
+                #"{"schemaVersion":"voice-library-v1","snapshotComplete":true,"voices":[{"voiceId":"vc_owner_closed","access":{"kind":"owner"}}]}"#.utf8
+            )
+        )
+        XCTAssertFalse(
+            try XCTUnwrap(explicitOwnerWithoutCapabilities.voices.first)
+                .access.capabilities.canRename
+        )
+        XCTAssertFalse(
+            try XCTUnwrap(explicitOwnerWithoutCapabilities.voices.first)
+                .access.capabilities.canDelete
+        )
+
+        let legacy = try VoiceCloneResponseParser.list(from: Data(
+            #"{"voices":[{"voiceId":"vc_legacy_owner"}]}"#.utf8
+        ))
+        XCTAssertTrue(
+            try XCTUnwrap(legacy.voices.first).access.capabilities.canDelete
+        )
+
+        let grantOnly = VoiceGiftAccess(
+            kind: .gifted,
+            grantId: "grant_not_share",
+            capabilities: VoiceGiftCapabilities(
+                canEditAlias: true,
+                canRemoveAccess: true
+            )
+        )
+        XCTAssertNil(grantOnly.mutationID)
+    }
+
+    func testGiftInvitationParserCombinesRequestEnvelopeAndInvitationURL() throws {
+        let data = Data(
+            #"{"data":{"request":{"id":"request_open","status":"pending","createdAt":"2026-08-31T00:00:00Z","futureField":"ok"},"invitationURL":"https://castreader.com/voice-gift/request#open-token"}}"#.utf8
+        )
+
+        let invitation = try VoiceCloneResponseParser.giftInvitation(from: data)
+
+        XCTAssertEqual(invitation.id, "request_open")
+        XCTAssertTrue(invitation.isPending)
+        XCTAssertEqual(invitation.invitationURL, "https://castreader.com/voice-gift/request#open-token")
+
+        let sent = try VoiceCloneResponseParser.sentGiftInvitations(from: Data(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .appendingPathComponent("Fixtures/voice-gift-sent-requests-v1.json")
+        ))
+        XCTAssertEqual(sent.schemaVersion, "voice-gift-v1")
+        XCTAssertTrue(sent.snapshotComplete)
+        XCTAssertEqual(sent.invitations.map(\.id), ["request_fixture"])
+        XCTAssertEqual(sent.invitations.first?.authorization?.mode, "until_revoked")
+    }
+
+    func testGiftInvitationURLIsPinnedToCanonicalFragmentRoute() throws {
+        XCTAssertNotNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://castreader.com/voice-gift/request#signed-token"
+        ))
+        XCTAssertNotNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://www.castreader.com/zh-Hans/voice-gift/request#signed-token"
+        ))
+        XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://attacker.example/voice-gift/request#signed-token"
+        ))
+        XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://castreader.com/voice-gift/request?token=query-token"
+        ))
+        XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://castreader.com/voice-gift/other#signed-token"
+        ))
+    }
+
+    func testVoiceGiftCapabilityManifestRequiresEveryFrozenDimension() throws {
+        let supported = try XCTUnwrap(VoiceGiftCapabilityManifest.decode(from: Data(
+            #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"global","futureField":true}}"#.utf8
+        )))
+        XCTAssertTrue(supported.isCompatible)
+
+        for mutation in [
+            #"{"voiceGift":{"enabled":false,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"global"}}"#,
+            #"{"voiceGift":{"enabled":true,"version":"voice-gift-v2","libraryVersion":"voice-library-v1","serviceRoute":"global"}}"#,
+            #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v2","serviceRoute":"global"}}"#,
+            #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"china"}}"#,
+        ] {
+            XCTAssertFalse(try XCTUnwrap(
+                VoiceGiftCapabilityManifest.decode(from: Data(mutation.utf8))
+            ).isCompatible)
+        }
+    }
+
+    func testClaimedAndLegacyAcceptedInvitationsRemainVisibleUntilFulfilled() {
+        for status in ["pending", "claimed", "accepted", "future_state"] {
+            let invitation = VoiceGiftInvitation(
+                requestId: "request_\(status)",
+                invitationURL: "https://castreader.com/voice-gift/request#\(status)",
+                status: status
+            )
+            XCTAssertTrue(invitation.isPending, status)
+            XCTAssertEqual(
+                invitation.isClaimed,
+                status == "claimed" || status == "accepted",
+                status
+            )
+        }
+        for status in ["fulfilled", "cancelled", "expired"] {
+            XCTAssertFalse(VoiceGiftInvitation(
+                requestId: "request_\(status)",
+                invitationURL: "https://castreader.com/voice-gift/request#\(status)",
+                status: status
+            ).isPending, status)
+        }
+    }
+
+    func testGlobalGiftServiceUsesLibraryAndCreatesOpenInviteWithoutEmail() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer {
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+        let recorder = VoiceCloneRequestRecorder()
+        VoiceCloneTestURLProtocol.handler = { request in
+            recorder.record(request)
+            let responseBody: Data
+            if request.url?.path == "/api/capabilities" {
+                responseBody = Data(
+                    #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"global"}}"#.utf8
+                )
+            } else if request.url?.path == "/api/voice-clone/library" {
+                responseBody = Data(
+                    #"{"schemaVersion":"voice-library-v1","snapshotComplete":true,"voices":[]}"#.utf8
+                )
+            } else if request.url?.path == "/api/voice-clone/requests",
+                      request.httpMethod == "GET" {
+                responseBody = Data(
+                    #"{"code":0,"data":{"schemaVersion":"voice-gift-v1","snapshotComplete":true,"sent":[],"claimed":[],"accepted":[]}}"#.utf8
+                )
+            } else {
+                responseBody = Data(
+                    #"{"data":{"schemaVersion":"voice-gift-v1","request":{"id":"request_1","status":"pending"},"invitationURL":"https://castreader.com/voice-gift/request#token","authorization":{"mode":"until_revoked","expiresAt":null}}}"#.utf8
+                )
+            }
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!,
+                responseBody
+            )
+        }
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-contract.test")!,
+            session: session,
+            route: .globalGateway,
+            sessionProvider: VoiceCloneTestSessionProvider(token: "cms_contract")
+        )
+
+        let library = try await service.listVoices()
+        XCTAssertEqual(library.schemaVersion, "voice-library-v1")
+        XCTAssertTrue(library.voiceGiftEnabled)
+        XCTAssertEqual(
+            recorder.allRequests().map { $0.url?.path },
+            ["/api/capabilities", "/api/voice-clone/library", "/api/voice-clone/requests"]
+        )
+
+        let invitation = try await service.createGiftInvitation(
+            clientRequestID: UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
+        )
+        XCTAssertEqual(invitation.id, "request_1")
+        XCTAssertEqual(invitation.authorization?.mode, "until_revoked")
+        let request = try XCTUnwrap(recorder.lastRequest())
+        XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertEqual(request.url?.path, "/api/voice-clone/requests")
+        let body = try XCTUnwrap(request.httpBody)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: body) as? [String: Any]
+        )
+        let fixtureObject = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(
+                contentsOf: URL(fileURLWithPath: #filePath)
+                    .deletingLastPathComponent()
+                    .appendingPathComponent("Fixtures/voice-gift-create-request-v1.json")
+            )) as? [String: Any]
+        )
+        XCTAssertEqual(
+            NSDictionary(dictionary: object),
+            NSDictionary(dictionary: fixtureObject)
+        )
+        XCTAssertEqual(object["purpose"] as? String, "personal_tts")
+        let authorization = try XCTUnwrap(
+            object["authorization"] as? [String: Any]
+        )
+        XCTAssertEqual(authorization["mode"] as? String, "until_revoked")
+        XCTAssertNil(
+            object["consent"],
+            "the inviter cannot consent on behalf of the donor"
+        )
+        XCTAssertEqual(
+            object["clientRequestId"] as? String,
+            "11111111-2222-3333-4444-555555555555"
+        )
+        XCTAssertNil(object["email"])
+        XCTAssertNil(object["inviteeEmail"])
+    }
+
+    func testDelayed401CannotRefreshOrReplayGiftMutationAcrossSessionBoundary() async {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let requestStarted = expectation(description: "gift mutation started")
+        let releaseResponse = DispatchSemaphore(value: 0)
+        let recorder = VoiceCloneRequestRecorder()
+        let provider = VoiceCloneTestSessionProvider(token: "cms_account_a")
+        defer {
+            releaseResponse.signal()
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+        VoiceCloneTestURLProtocol.handler = { request in
+            recorder.record(request)
+            if request.url?.path == "/api/capabilities" {
+                return (
+                    HTTPURLResponse(
+                        url: request.url!,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: ["Content-Type": "application/json"]
+                    )!,
+                    Data(
+                        #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"global"}}"#.utf8
+                    )
+                )
+            }
+            requestStarted.fulfill()
+            _ = releaseResponse.wait(timeout: .now() + 3)
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 401,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!,
+                Data(#"{"code":"UNAUTHORIZED"}"#.utf8)
+            )
+        }
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-contract.test")!,
+            session: session,
+            route: .globalGateway,
+            sessionProvider: provider
+        )
+
+        let mutation = Task {
+            do {
+                _ = try await service.createGiftInvitation(
+                    clientRequestID: UUID()
+                )
+                return false
+            } catch is CancellationError {
+                return true
+            } catch {
+                return false
+            }
+        }
+        await fulfillment(of: [requestStarted], timeout: 3)
+        await provider.setToken("cms_account_b")
+        releaseResponse.signal()
+
+        let cancelledAtBoundary = await mutation.value
+        let refreshCallCount = await provider.refreshCallCount()
+        XCTAssertTrue(cancelledAtBoundary)
+        XCTAssertEqual(refreshCallCount, 0)
+        XCTAssertEqual(
+            recorder.allRequests().filter {
+                $0.url?.path == "/api/voice-clone/requests"
+            }.count,
+            1
+        )
+    }
+
+    func testGlobalOldBackendFallsBackToOwnerVoicesWhenCapabilityIsMissing() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer {
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+        let recorder = VoiceCloneRequestRecorder()
+        VoiceCloneTestURLProtocol.handler = { request in
+            recorder.record(request)
+            let statusCode: Int
+            let data: Data
+            if request.url?.path == "/api/capabilities" {
+                statusCode = 404
+                data = Data(#"{"code":"NOT_FOUND"}"#.utf8)
+            } else {
+                statusCode = 200
+                data = Data(#"{"voices":[{"voiceId":"vc_legacy_owner"}]}"#.utf8)
+            }
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: statusCode,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!,
+                data
+            )
+        }
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-contract.test")!,
+            session: session,
+            route: .globalGateway,
+            sessionProvider: VoiceCloneTestSessionProvider(token: "cms_contract")
+        )
+
+        let result = try await service.listVoices()
+
+        XCTAssertFalse(result.voiceGiftEnabled)
+        XCTAssertEqual(result.voices.map(\.voiceId), ["vc_legacy_owner"])
+        XCTAssertEqual(
+            recorder.allRequests().map { $0.url?.path },
+            ["/api/capabilities", "/api/voice-clone/voices"]
+        )
+    }
+
+    func testVoiceGiftIsFailClosedOnChinaRouteWithoutSendingARequest() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer {
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+        let recorder = VoiceCloneRequestRecorder()
+        VoiceCloneTestURLProtocol.handler = { request in
+            recorder.record(request)
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!,
+                Data(#"{"voices":[]}"#.utf8)
+            )
+        }
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-contract.test")!,
+            session: session,
+            route: .chinaGateway,
+            sessionProvider: VoiceCloneTestSessionProvider(token: "cms_contract")
+        )
+
+        let library = try await service.listVoices()
+        XCTAssertFalse(library.voiceGiftEnabled)
+        XCTAssertEqual(
+            recorder.allRequests().map { $0.url?.path },
+            ["/api/voice-clone/voices"]
+        )
+        XCTAssertFalse(VoiceGiftFeature.isRegionEligible(on: .chinaGateway))
+        do {
+            _ = try await service.createGiftInvitation(clientRequestID: UUID())
+            XCTFail("China must not call the global Voice Gift contract")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(error, .giftUnavailableInRegion)
+        }
+        XCTAssertEqual(recorder.allRequests().count, 1)
+    }
+
+    func testGiftMutationMapsStableRevokedAndExpiredErrors() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer {
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-contract.test")!,
+            session: session,
+            route: .globalGateway,
+            sessionProvider: VoiceCloneTestSessionProvider(token: "cms_contract")
+        )
+
+        VoiceCloneTestURLProtocol.handler = { request in
+            if request.url?.path == "/api/capabilities" {
+                return (
+                    HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                    Data(#"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"global"}}"#.utf8)
+                )
+            }
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 410, httpVersion: nil, headerFields: nil)!,
+                Data(#"{"code":"VOICE_GIFT_REVOKED"}"#.utf8)
+            )
+        }
+        do {
+            try await service.updateGiftAlias(shareID: "share_1", alias: "Mom")
+            XCTFail("expected revoked access")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(error, .giftRevoked)
+        }
+
+        VoiceCloneTestURLProtocol.handler = VoiceCloneTestURLProtocol.json(
+            statusCode: 410,
+            data: Data(#"{"code":"VOICE_GIFT_EXPIRED"}"#.utf8)
+        )
+        do {
+            try await service.removeGiftAccess(shareID: "share_1")
+            XCTFail("expected expired access")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(error, .giftExpired)
+        }
+    }
+
+    @MainActor
+    func testIncompleteLibrarySnapshotMergesWithoutDeletingGiftedVoice() async {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        store.activateAccountScope(storageID: String(repeating: "f", count: 64))
+        let gift = ClonedVoice(
+            voiceId: "vc_gift",
+            access: VoiceGiftAccess(
+                kind: .gifted,
+                grantId: "grant_1",
+                shareId: "share_1",
+                status: "active",
+                donor: VoiceGiftDonor(displayName: "Lina"),
+                capabilities: VoiceGiftCapabilities(canPreview: true, canUse: true)
+            )
+        )
+        await service.enqueueImmediateList(VoiceCloneListResult(
+            schemaVersion: "voice-library.v1",
+            snapshotComplete: true,
+            voices: [ClonedVoice(voiceId: "vc_owner"), gift],
+            nextCreateAt: nil
+        ))
+        await store.refresh()
+
+        await service.enqueueImmediateList(VoiceCloneListResult(
+            schemaVersion: "voice-library.v1",
+            snapshotComplete: false,
+            voices: [ClonedVoice(voiceId: "vc_owner")],
+            nextCreateAt: nil
+        ))
+        await store.refresh()
+
+        XCTAssertEqual(Set(store.voices.map(\.voiceId)), ["vc_owner", "vc_gift"])
+        XCTAssertEqual(store.giftedVoices.first?.access.donor?.displayName, "Lina")
+    }
+
+    @MainActor
+    func testIncompleteInvitationSnapshotAppliesExplicitTerminalTombstone() async {
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: UserDefaults(suiteName: "VoiceCloneTests-\(UUID().uuidString)")!,
+            isSignedIn: { true }
+        )
+        store.activateAccountScope(storageID: String(repeating: "d", count: 64))
+        let pending = VoiceGiftInvitation(
+            requestId: "request_terminal",
+            invitationURL: "https://castreader.com/voice-gift/request#terminal",
+            status: "pending"
+        )
+        await service.enqueueImmediateList(VoiceCloneListResult(
+            invitationsSnapshotComplete: true,
+            voiceGiftEnabled: true,
+            voices: [],
+            invitations: [pending],
+            nextCreateAt: nil
+        ))
+        await store.refresh()
+        XCTAssertEqual(store.pendingGiftInvitations.map(\.id), [pending.id])
+
+        let fulfilled = VoiceGiftInvitation(
+            requestId: pending.id,
+            invitationURL: pending.invitationURL,
+            status: "fulfilled"
+        )
+        await service.enqueueImmediateList(VoiceCloneListResult(
+            invitationsSnapshotComplete: false,
+            voiceGiftEnabled: true,
+            voices: [],
+            invitations: [fulfilled],
+            nextCreateAt: nil
+        ))
+        await store.refresh()
+        XCTAssertTrue(store.pendingGiftInvitations.isEmpty)
+    }
+
+    @MainActor
+    func testGiftEntitlementFalseDoesNotClearAuthorizationButTerminalStatusDoes() async {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        store.activateAccountScope(storageID: String(repeating: "e", count: 64))
+
+        let settings = AppSettings.shared
+        let previousSelections = settings.clonedVoicesByLanguage
+        defer {
+            let languages = Set(previousSelections.keys).union(["en"])
+            for language in languages {
+                settings.clearActiveClonedVoice(for: language)
+            }
+            for (language, voiceID) in previousSelections {
+                _ = settings.setActiveClonedVoice(voiceID, for: language)
+            }
+        }
+        let voiceID = "vc_gift_entitlement"
+        XCTAssertTrue(settings.setActiveClonedVoice(voiceID, for: "en"))
+
+        let activeAccess = VoiceGiftAccess(
+            kind: .gifted,
+            grantId: "grant_entitlement",
+            status: "active",
+            capabilities: VoiceGiftCapabilities(canUse: false)
+        )
+        XCTAssertTrue(activeAccess.authorizationActive)
+        await service.enqueueImmediateList(VoiceCloneListResult(
+            schemaVersion: "voice-library-v1",
+            snapshotComplete: true,
+            voiceGiftEnabled: true,
+            voices: [ClonedVoice(voiceId: voiceID, access: activeAccess)],
+            nextCreateAt: nil
+        ))
+        await store.refresh()
+        XCTAssertEqual(settings.activeClonedVoiceID(for: "en"), voiceID)
+
+        let revokedAccess = VoiceGiftAccess(
+            kind: .gifted,
+            grantId: "grant_entitlement",
+            status: "revoked",
+            capabilities: VoiceGiftCapabilities(canUse: false)
+        )
+        XCTAssertTrue(revokedAccess.hasTerminalRevocation)
+        await service.enqueueImmediateList(VoiceCloneListResult(
+            schemaVersion: "voice-library-v1",
+            snapshotComplete: true,
+            voiceGiftEnabled: true,
+            voices: [ClonedVoice(voiceId: voiceID, access: revokedAccess)],
+            nextCreateAt: nil
+        ))
+        await store.refresh()
+        XCTAssertNil(settings.activeClonedVoiceID(for: "en"))
+    }
+
+    @MainActor
+    func testGiftDisplayNamePrefersPrivateAliasThenDonor() {
+        let store = VoiceCloneStore(
+            service: ControlledVoiceCloneService(),
+            defaults: UserDefaults(suiteName: "VoiceCloneTests-\(UUID().uuidString)")!,
+            isSignedIn: { true }
+        )
+        let access = VoiceGiftAccess(
+            kind: .gifted,
+            grantId: "grant",
+            status: "active",
+            donor: VoiceGiftDonor(displayName: "Dad"),
+            recipientAlias: "Bedtime Reader",
+            capabilities: VoiceGiftCapabilities(canUse: true)
+        )
+        XCTAssertEqual(
+            store.displayName(for: ClonedVoice(voiceId: "vc_alias", access: access)),
+            "Bedtime Reader"
+        )
+        let withoutAlias = VoiceGiftAccess(
+            kind: .gifted,
+            donor: VoiceGiftDonor(displayName: "Dad"),
+            capabilities: VoiceGiftCapabilities(canUse: true)
+        )
+        XCTAssertEqual(
+            store.displayName(for: ClonedVoice(voiceId: "vc_donor", access: withoutAlias)),
+            "Dad"
+        )
+        let identityFallback = ClonedVoice(
+            voiceId: "vc_identity_fallback",
+            identity: makeVoiceIdentity(index: 4, revision: 1),
+            access: VoiceGiftAccess(kind: .gifted)
+        )
+        XCTAssertEqual(
+            store.displayName(for: identityFallback),
+            String(format: AppLocalized("朗读者声音 %lld"), Int64(4))
+        )
+
+        let serverPresentation = VoiceGiftPresentation(
+            title: "Server Reader Title",
+            titleSource: "donor_display_name",
+            avatar: VoiceGiftPresentation.Avatar(
+                source: "default",
+                style: VoiceCloneAvatarPresentation(
+                    styleVersion: "v1",
+                    backgroundStart: "#586FD1",
+                    backgroundEnd: "#31419E",
+                    foreground: "#FFFFFF",
+                    glyph: .waveBars
+                ),
+                url: nil,
+                defaultKey: "voice-gift-default-v1"
+            )
+        )
+        let presented = ClonedVoice(
+            voiceId: "vc_server_presentation",
+            identity: makeVoiceIdentity(index: 8, name: "Local Fallback", revision: 1),
+            access: access,
+            presentation: serverPresentation
+        )
+        XCTAssertEqual(store.displayName(for: presented), "Server Reader Title")
+        XCTAssertEqual(
+            presented.presentation?.avatar?.resolvedStyle?.backgroundStart,
+            "#586FD1"
+        )
+    }
 }
 
 private func makeVoiceIdentity(
@@ -1490,6 +2564,74 @@ private func makeVoiceIdentity(
         ),
         revision: revision
     )
+}
+
+private actor SequencedCreateVoiceCloneService: VoiceCloneStoreServicing {
+    enum Outcome: Sendable {
+        case success(String)
+        case failure(VoiceCloneError)
+        case transport(URLError.Code)
+    }
+
+    struct CreateCall: Equatable, Sendable {
+        let referenceLanguage: String
+        let referenceText: String?
+        let idempotencyKey: String
+    }
+
+    private var outcomes: [Outcome]
+    private var calls: [CreateCall] = []
+
+    init(outcomes: [Outcome]) {
+        self.outcomes = outcomes
+    }
+
+    func hasSession() async -> Bool { true }
+
+    func listVoices() async throws -> VoiceCloneListResult {
+        VoiceCloneListResult(voices: [], nextCreateAt: nil)
+    }
+
+    func createVoice(
+        recordingURL: URL,
+        referenceLanguage: String,
+        referenceText: String?,
+        consentConfirmed: Bool,
+        idempotencyKey: String,
+        onProgress: @escaping @Sendable (Double) -> Void
+    ) async throws -> ClonedVoice {
+        calls.append(CreateCall(
+            referenceLanguage: referenceLanguage,
+            referenceText: referenceText,
+            idempotencyKey: idempotencyKey
+        ))
+        onProgress(1)
+        guard !outcomes.isEmpty else { throw VoiceCloneError.temporaryUnavailable }
+        switch outcomes.removeFirst() {
+        case .success(let voiceID):
+            return ClonedVoice(voiceId: voiceID)
+        case .failure(let error):
+            throw error
+        case .transport(let code):
+            throw URLError(code)
+        }
+    }
+
+    func renameVoice(
+        _ voiceId: String,
+        name: String?,
+        expectedRevision: Int
+    ) async throws -> VoiceCloneIdentity {
+        throw VoiceCloneError.identityUnavailable
+    }
+
+    func deleteVoice(_ voiceId: String) async throws {
+        throw VoiceCloneError.temporaryUnavailable
+    }
+
+    func createCalls() -> [CreateCall] {
+        calls
+    }
 }
 
 private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
@@ -1543,6 +2685,7 @@ private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
         referenceLanguage: String,
         referenceText: String?,
         consentConfirmed: Bool,
+        idempotencyKey: String,
         onProgress: @escaping @Sendable (Double) -> Void
     ) async throws -> ClonedVoice {
         onProgress(1)
@@ -1617,6 +2760,10 @@ private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
         pendingDeletes.removeFirst().resume()
     }
 
+    func deleteCalls() -> [String] {
+        deleteCallValues
+    }
+
     func waitForRenameCall(count: Int) async {
         guard renameCallValues.count < count else { return }
         await withCheckedContinuation { continuation in
@@ -1641,18 +2788,24 @@ private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
 
 private final class VoiceCloneRequestRecorder: @unchecked Sendable {
     private let lock = NSLock()
-    private var request: URLRequest?
+    private var requests: [URLRequest] = []
 
     func record(_ request: URLRequest) {
         lock.lock()
-        self.request = request
+        requests.append(request)
         lock.unlock()
     }
 
     func lastRequest() -> URLRequest? {
         lock.lock()
         defer { lock.unlock() }
-        return request
+        return requests.last
+    }
+
+    func allRequests() -> [URLRequest] {
+        lock.lock()
+        defer { lock.unlock() }
+        return requests
     }
 }
 
@@ -1721,12 +2874,24 @@ private final class VoiceCloneTestURLProtocol: URLProtocol {
 
 private actor VoiceCloneTestSessionProvider: MobileSessionProviding {
     private var token: String?
+    private var refreshCalls = 0
 
     init(token: String?) {
         self.token = token
     }
 
     func sessionToken() -> String? { token }
-    func refreshSession() -> String? { token }
+    func refreshSession() -> String? {
+        refreshCalls += 1
+        return token
+    }
     func invalidateSession() { token = nil }
+
+    func setToken(_ value: String?) {
+        token = value
+    }
+
+    func refreshCallCount() -> Int {
+        refreshCalls
+    }
 }

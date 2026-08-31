@@ -378,6 +378,8 @@ struct CastReaderApp: App {
             _ = CloudStorageCenter.handleOAuthRedirect(url)
         } else if StudyBoostDeepLink.matches(url) {
             StudyBoostRouter.shared.open()
+        } else if url.scheme == "castreader", url.host == "voice-gift" {
+            VoiceGiftRouteCenter.shared.open()
         } else if url.scheme == "castreader", url.host == "youtube" {
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
             if let rawURL = components?.queryItems?

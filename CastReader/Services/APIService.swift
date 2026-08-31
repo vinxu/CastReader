@@ -615,26 +615,54 @@ actor APIService {
         priority: TTSRequestPriority,
         requestID: String = UUID().uuidString,
         canRefresh: Bool = true,
-        transientAttempt: Int = 0
+        transientAttempt: Int = 0,
+        accountBoundary: AccountContentBoundaryToken? = nil
     ) async throws -> TTSResponse {
+        let expectedBoundary: AccountContentBoundaryToken?
+        if let accountBoundary {
+            expectedBoundary = accountBoundary
+        } else {
+            expectedBoundary = await MainActor.run {
+                AccountContentIsolation.captureBoundaryToken()
+            }
+        }
         // Authentication is the first hard boundary for cloned-voice compute.
         // This also guarantees that a stale locally selected clone can never
         // fall through to the anonymous preset-voice endpoint.
         guard let token = await MobileSessionStore.shared.sessionToken(), !token.isEmpty else {
             await MobileSessionStore.shared.rejectSession(nil)
-            await MainActor.run { VoiceCloneAccessCoordinator.shared.prompt = .signIn }
+            await MainActor.run {
+                guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
+                VoiceCloneAccessCoordinator.shared.prompt = .signIn
+            }
             throw VoiceCloneError.sessionUnavailable
         }
-        let accessState = await MainActor.run {
-            (
+        if let expectedBoundary {
+            let isCurrent = await MainActor.run {
+                AccountContentIsolation.isCurrent(expectedBoundary)
+            }
+            guard isCurrent else { throw CancellationError() }
+        }
+        let accessState = await MainActor.run { () -> (
+            isPro: Bool,
+            canApply: Bool,
+            blocked: Bool,
+            resetAt: Date?
+        )? in
+            guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else {
+                return nil
+            }
+            return (
                 isPro: ProManager.shared.isPro,
                 canApply: VoiceCloneStore.shared.canApply,
                 blocked: VoiceCloneStore.shared.isQuotaBlocked,
                 resetAt: VoiceCloneStore.shared.capability.resetAt
             )
         }
+        guard let accessState else { throw CancellationError() }
         if !accessState.isPro {
             await MainActor.run {
+                guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
                 VoiceCloneAccessCoordinator.shared.prompt = .paywall
             }
             throw VoiceCloneError.proRequired
@@ -642,12 +670,14 @@ actor APIService {
         if accessState.blocked {
             let error = VoiceCloneError.quotaExhausted(accessState.resetAt)
             await MainActor.run {
+                guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
                 VoiceCloneAccessCoordinator.shared.prompt = .message(error.localizedDescription)
             }
             throw error
         }
         if !accessState.canApply {
             await MainActor.run {
+                guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
                 VoiceCloneAccessCoordinator.shared.prompt = .message(
                     AppLocalized("Pro 权益正在同步，请稍后重试")
                 )
@@ -677,11 +707,18 @@ actor APIService {
                 priority: priority,
                 requestID: requestID,
                 canRefresh: canRefresh,
-                transientAttempt: transientAttempt
+                transientAttempt: transientAttempt,
+                accountBoundary: expectedBoundary
             ) {
                 return retry
             }
             throw error
+        }
+        if let expectedBoundary {
+            let isCurrent = await MainActor.run {
+                AccountContentIsolation.isCurrent(expectedBoundary)
+            }
+            guard isCurrent else { throw CancellationError() }
         }
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         if http.statusCode == 401, canRefresh,
@@ -692,7 +729,8 @@ actor APIService {
                 priority: priority,
                 requestID: requestID,
                 canRefresh: false,
-                transientAttempt: transientAttempt
+                transientAttempt: transientAttempt,
+                accountBoundary: expectedBoundary
             )
         }
         let responseRequestID = http.value(forHTTPHeaderField: "X-Request-ID")
@@ -704,6 +742,7 @@ actor APIService {
             "status=\(http.statusCode) quota=\(quotaMode) attempt=\(transientAttempt + 1)"
         )
         await MainActor.run {
+            guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
             VoiceCloneStore.shared.applyQuotaHeaders(http)
         }
         guard 200..<300 ~= http.statusCode else {
@@ -714,18 +753,53 @@ actor APIService {
                     ?? VoiceCloneResponseParser.quotaCapability(from: http).resetAt
                 let error = VoiceCloneError.quotaExhausted(resetAt)
                 await MainActor.run {
+                    guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
                     VoiceCloneStore.shared.markQuotaExhausted(resetAt: resetAt)
                     VoiceCloneAccessCoordinator.shared.prompt = .message(error.localizedDescription)
+                }
+                throw error
+            }
+            if code == "VOICE_GIFT_REVOKED" || code == "VOICE_GIFT_EXPIRED" {
+                let error: VoiceCloneError = code == "VOICE_GIFT_EXPIRED"
+                    ? .giftExpired
+                    : .giftRevoked
+                await MainActor.run {
+                    guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
+                    // A gift is one access grant, not the donor's underlying
+                    // voice. Clear only this selected voice ID and never delete
+                    // or rename the donor-owned asset.
+                    AppSettings.shared.clearActiveClonedVoice(ifMatching: voiceID)
+                    VoiceCloneAccessCoordinator.shared.prompt = .message(
+                        error.localizedDescription
+                    )
+                }
+                throw error
+            }
+            if ["VOICE_GIFT_NOT_FOUND", "VOICE_GIFT_ACCESS_DENIED", "VOICE_GIFT_UNAVAILABLE"].contains(code ?? "") {
+                let error = VoiceCloneError.giftAccessUnavailable
+                await MainActor.run {
+                    guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
+                    // These codes are not terminal grant states. Preserve the
+                    // user's selection until the library explicitly reports
+                    // revoked/expired, so a rollout or transient denial cannot
+                    // silently rewrite their voice preference.
+                    VoiceCloneAccessCoordinator.shared.prompt = .message(
+                        error.localizedDescription
+                    )
                 }
                 throw error
             }
             switch http.statusCode {
             case 401:
                 await MobileSessionStore.shared.rejectSession(token)
-                await MainActor.run { VoiceCloneAccessCoordinator.shared.prompt = .signIn }
+                await MainActor.run {
+                    guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
+                    VoiceCloneAccessCoordinator.shared.prompt = .signIn
+                }
                 throw VoiceCloneError.sessionUnavailable
             case 403:
                 await MainActor.run {
+                    guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
                     if ProManager.shared.isPro {
                         VoiceCloneAccessCoordinator.shared.prompt = .message(
                             message ?? AppLocalized("Pro 权益正在同步，请稍后重试")
@@ -739,7 +813,10 @@ actor APIService {
                 statusCode: http.statusCode,
                 data: data
             ):
-                await MainActor.run { AppSettings.shared.clearActiveClonedVoice(ifMatching: voiceID) }
+                await MainActor.run {
+                    guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
+                    AppSettings.shared.clearActiveClonedVoice(ifMatching: voiceID)
+                }
                 throw VoiceCloneError.voiceNotFound
             case 404:
                 throw VoiceCloneError.server(404, message)
@@ -752,7 +829,8 @@ actor APIService {
                     priority: priority,
                     requestID: requestID,
                     canRefresh: canRefresh,
-                    transientAttempt: transientAttempt
+                    transientAttempt: transientAttempt,
+                    accountBoundary: expectedBoundary
                 ) {
                     return retry
                 }
@@ -766,7 +844,8 @@ actor APIService {
                     priority: priority,
                     requestID: requestID,
                     canRefresh: canRefresh,
-                    transientAttempt: transientAttempt
+                    transientAttempt: transientAttempt,
+                    accountBoundary: expectedBoundary
                 ) {
                     return retry
                 }
@@ -776,8 +855,17 @@ actor APIService {
             }
         }
         do {
-            return try decoder.decode(TTSResponse.self, from: data)
+            let decoded = try decoder.decode(TTSResponse.self, from: data)
+            try Task.checkCancellation()
+            if let expectedBoundary {
+                let isCurrent = await MainActor.run {
+                    AccountContentIsolation.isCurrent(expectedBoundary)
+                }
+                guard isCurrent else { throw CancellationError() }
+            }
+            return decoded
         } catch {
+            if error is CancellationError { throw error }
             throw APIError.decodingError(error)
         }
     }
@@ -789,7 +877,8 @@ actor APIService {
         priority: TTSRequestPriority,
         requestID: String,
         canRefresh: Bool,
-        transientAttempt: Int
+        transientAttempt: Int,
+        accountBoundary: AccountContentBoundaryToken?
     ) async throws -> TTSResponse? {
         let delays = ClonedTTSRetryPolicy.delaysNanoseconds
         guard transientAttempt < delays.count,
@@ -807,7 +896,8 @@ actor APIService {
             priority: priority,
             requestID: requestID,
             canRefresh: canRefresh,
-            transientAttempt: nextAttempt
+            transientAttempt: nextAttempt,
+            accountBoundary: accountBoundary
         )
     }
 
