@@ -1,0 +1,22 @@
+{
+  "code": 0,
+  "data": {
+    "schemaVersion": "voice-gift-v1",
+    "snapshotComplete": true,
+    "sent": [
+      {
+        "requestId": "request_fixture",
+        "status": "pending",
+        "invitationURL": "https://castreader.com/voice-gift/request#fixture-token",
+        "requestExpiresAt": "2026-09-07T00:00:00Z",
+        "authorization": {
+          "mode": "until_revoked",
+          "expiresAt": null
+        },
+        "futureField": "must be ignored"
+      }
+    ],
+    "claimed": [],
+    "accepted": []
+  }
+}

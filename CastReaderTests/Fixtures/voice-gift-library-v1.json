@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "voice-library-v1",
+  "snapshotComplete": false,
+  "voices": [
+    {
+      "voice": {
+        "voiceId": "vc_owner_fixture",
+        "supportedLanguages": ["en", "zh"]
+      },
+      "identity": {
+        "schemaVersion": "v1",
+        "nameMode": "auto",
+        "autoNameIndex": 1,
+        "customName": null,
+        "avatarToken": "v1:012345abcdef",
+        "avatar": {
+          "styleVersion": "v1",
+          "backgroundStart": "#258BD9",
+          "backgroundEnd": "#244EC7",
+          "foreground": "#FFFFFF",
+          "glyph": "wave-bars"
+        },
+        "revision": 1
+      },
+      "presentation": {
+        "title": "My Voice 1",
+        "titleSource": "identity_auto_name",
+        "avatar": {
+          "source": "identity",
+          "style": {
+            "styleVersion": "v1",
+            "backgroundStart": "#258BD9",
+            "backgroundEnd": "#244EC7",
+            "foreground": "#FFFFFF",
+            "glyph": "wave-bars"
+          },
+          "url": null,
+          "defaultKey": null
+        }
+      },
+      "access": {
+        "kind": "owner",
+        "status": "active",
+        "capabilities": {
+          "preview": true,
+          "useTts": true,
+          "rename": true,
+          "delete": true
+        }
+      }
+    },
+    {
+      "voice": {
+        "voiceId": "vc_gift_fixture",
+        "supportedLanguages": ["en", "zh"]
+      },
+      "identity": {
+        "schemaVersion": "v1",
+        "nameMode": "custom",
+        "autoNameIndex": 2,
+        "customName": "Lina's Voice",
+        "avatarToken": "v1:abcdef012345",
+        "avatar": {
+          "styleVersion": "v1",
+          "backgroundStart": "#6B5BDD",
+          "backgroundEnd": "#3E2DA8",
+          "foreground": "#FFFFFF",
+          "glyph": "wave-ripple"
+        },
+        "revision": 2
+      },
+      "presentation": {
+        "title": "Bedtime Reader",
+        "titleSource": "recipient_alias",
+        "avatar": {
+          "source": "donor",
+          "style": null,
+          "url": "https://castreader.com/assets/avatars/lina.png",
+          "defaultKey": null
+        }
+      },
+      "access": {
+        "kind": "gifted",
+        "grantId": "grant_fixture",
+        "shareId": "share_fixture",
+        "status": "active"
+      },
+      "donor": {
+        "displayName": "Lina",
+        "avatarURL": "https://castreader.com/assets/avatars/lina.png"
+      },
+      "recipientAlias": "Bedtime Reader",
+      "capabilities": {
+        "preview": true,
+        "useTts": true,
+        "setAlias": true,
+        "remove": true,
+        "rename": false,
+        "delete": false,
+        "revoke": false,
+        "export": false,
+        "transfer": false
+      },
+      "futureField": {
+        "mustBeIgnored": true
+      }
+    }
+  ]
+}

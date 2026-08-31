@@ -23,6 +23,28 @@ struct VoiceBrowserLaunchRequest: Equatable {
     }
 }
 
+/// In-process routing for the existing `castreader://` URL scheme. Voice Gift
+/// deliberately does not add Associated Domains in this MVP; HTTPS invitation
+/// acceptance stays on the web and can explicitly hand back to this route.
+@MainActor
+final class VoiceGiftRouteCenter: ObservableObject {
+    static let shared = VoiceGiftRouteCenter()
+
+    @Published private(set) var requestID: UUID?
+
+    private init() {}
+
+    func open() {
+        guard VoiceGiftFeature.isRegionEligible() else { return }
+        requestID = UUID()
+    }
+
+    func consume(_ id: UUID) {
+        guard requestID == id else { return }
+        requestID = nil
+    }
+}
+
 /// Player-owned voice selection is rendered inside the app's root ZStack
 /// instead of a UIKit sheet. Presenting a sheet from a control embedded in the
 /// Kindle reader temporarily changes the underlying WKWebView geometry on
@@ -77,6 +99,7 @@ struct VoiceBrowserView: View {
     @ObservedObject private var library: VoiceLibraryStore
     @ObservedObject private var samplePlayer: VoiceSamplePlayer
     @ObservedObject private var voiceSwitch: VoiceSwitchStatusCenter
+    @ObservedObject private var voiceCloneStore: VoiceCloneStore
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     private let presentation: VoiceBrowserPresentation
     /// The reader seeds the panel with the language it is currently narrating in.
@@ -121,6 +144,7 @@ struct VoiceBrowserView: View {
         _library = ObservedObject(wrappedValue: .shared)
         _samplePlayer = ObservedObject(wrappedValue: .shared)
         _voiceSwitch = ObservedObject(wrappedValue: .shared)
+        _voiceCloneStore = ObservedObject(wrappedValue: .shared)
     }
 
     init(
@@ -147,6 +171,7 @@ struct VoiceBrowserView: View {
         _library = ObservedObject(wrappedValue: library)
         _samplePlayer = ObservedObject(wrappedValue: .shared)
         _voiceSwitch = ObservedObject(wrappedValue: .shared)
+        _voiceCloneStore = ObservedObject(wrappedValue: .shared)
     }
 
     /// Pin the language only when it was supplied from outside *and* cannot be
@@ -198,6 +223,11 @@ struct VoiceBrowserView: View {
             .reservesMiniPlayerSpace()
             .background(AppTheme.background)
             .scrollDismissesKeyboard(.interactively)
+            .refreshable {
+                if tab == .created {
+                    await voiceCloneStore.refresh()
+                }
+            }
             .navigationTitle("音色")
             .navigationBarTitleDisplayMode(presentation == .tab ? .large : .inline)
             .searchable(text: $searchText, prompt: "搜索音色")
@@ -277,7 +307,13 @@ struct VoiceBrowserView: View {
             Text("收藏").tag(VoiceBrowserTab.favorites)
             Text("探索").tag(VoiceBrowserTab.explore)
             if Constants.Features.voiceCloningEnabled {
-                Text("已创建").tag(VoiceBrowserTab.created)
+                Text(
+                    voiceCloneStore.voiceGiftEnabled
+                        && voiceCloneStore.giftActivityCount > 0
+                        ? "\(AppLocalized("已创建")) \(voiceCloneStore.giftActivityCount)"
+                        : AppLocalized("已创建")
+                )
+                .tag(VoiceBrowserTab.created)
             }
         }
         .pickerStyle(.segmented)

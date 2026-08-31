@@ -1,8 +1,10 @@
 import SwiftUI
+import UIKit
 
 @MainActor
 struct VoiceCloneCreatedView: View {
     let language: String
+    @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var auth = AuthService.shared
     @ObservedObject private var pro = ProManager.shared
     @ObservedObject private var store = VoiceCloneStore.shared
@@ -14,6 +16,9 @@ struct VoiceCloneCreatedView: View {
     @State private var showCreation = false
     @State private var pendingDelete: ClonedVoice?
     @State private var pendingRename: ClonedVoice?
+    @State private var pendingGiftAlias: ClonedVoice?
+    @State private var pendingGiftRemoval: ClonedVoice?
+    @State private var giftSharePayload: VoiceGiftSharePayload?
     @State private var preparingRenameVoiceID: String?
     @State private var sessionReady: Bool
     @State private var sessionCheckCompleted: Bool
@@ -53,9 +58,16 @@ struct VoiceCloneCreatedView: View {
         }
         .onChange(of: auth.accountBoundaryID) { _ in
             pendingRename = nil
+            pendingGiftAlias = nil
+            pendingGiftRemoval = nil
+            giftSharePayload = nil
             pendingDelete = nil
             preparingRenameVoiceID = nil
             showCreation = false
+        }
+        .onChange(of: scenePhase) { phase in
+            guard phase == .active, sessionReady else { return }
+            Task { await store.refresh() }
         }
         .sheet(isPresented: $showLogin) { LoginView() }
         .onChange(of: showLogin) { presented in
@@ -77,6 +89,12 @@ struct VoiceCloneCreatedView: View {
         .sheet(item: $pendingRename) { voice in
             VoiceCloneRenameView(voiceID: voice.voiceId)
         }
+        .sheet(item: $pendingGiftAlias) { voice in
+            VoiceGiftAliasView(voice: voice)
+        }
+        .sheet(item: $giftSharePayload) { payload in
+            VoiceGiftShareSheet(payload: payload)
+        }
         .onAppear {
             #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("-CastReaderOpenVoiceCloneCreation") {
@@ -92,6 +110,19 @@ struct VoiceCloneCreatedView: View {
                 Task { await store.delete(voice) }
             }
         } message: { Text("删除后将无法继续使用这个声音。") }
+        .alert("移除这个朗读者声音？", isPresented: Binding(
+            get: { pendingGiftRemoval != nil },
+            set: { if !$0 { pendingGiftRemoval = nil } }
+        )) {
+            Button("取消", role: .cancel) { pendingGiftRemoval = nil }
+            Button("移除访问", role: .destructive) {
+                guard let voice = pendingGiftRemoval else { return }
+                pendingGiftRemoval = nil
+                Task { await store.removeGiftAccess(voice) }
+            }
+        } message: {
+            Text("只会从你的朗读者列表移除，不会删除对方创建的声音。")
+        }
         .alert("声音克隆", isPresented: Binding(get: { store.errorMessage != nil }, set: { if !$0 { store.errorMessage = nil } })) {
             Button("好") { store.errorMessage = nil }
         } message: { Text(store.errorMessage ?? "") }
@@ -163,33 +194,19 @@ struct VoiceCloneCreatedView: View {
                 .padding(.bottom, 12)
             }
 
+            if store.voiceGiftEnabled {
+                voiceGiftInvitationAction
+            }
+
             createVoiceAction
 
-            HStack {
-                Text("我的声音")
-                    .font(.headline)
-                Label("PRO", systemImage: "crown.fill")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(AppTheme.primary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(AppTheme.primary.opacity(0.12))
-                    )
-                    .accessibilityIdentifier("voiceCloneProBadge")
-                Spacer()
-                if store.isLoading, !store.voices.isEmpty {
-                    ProgressView()
-                        .controlSize(.small)
-                        .accessibilityLabel("正在更新声音")
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 10)
+            voiceSectionHeader(
+                title: AppLocalized("我的声音"),
+                count: store.ownedVoices.count,
+                showsProBadge: true
+            )
 
-            if store.voices.isEmpty {
+            if store.ownedVoices.isEmpty {
                 HStack(spacing: 10) {
                     if !sessionCheckCompleted || store.isLoading {
                         ProgressView().controlSize(.small)
@@ -204,15 +221,178 @@ struct VoiceCloneCreatedView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
             } else {
-                ForEach(store.voices) { voice in
+                ForEach(store.ownedVoices) { voice in
                     cloneRow(voice)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 12)
                     Divider().padding(.leading, 82)
                 }
             }
+
+            if store.voiceGiftEnabled {
+                voiceSectionHeader(
+                    title: AppLocalized("我的朗读者"),
+                    count: store.giftedVoices.count,
+                    showsProBadge: false
+                )
+                if store.giftedVoices.isEmpty {
+                    Text("朋友完成授权后，他的声音会自动出现在这里。")
+                        .font(.subheadline)
+                        .foregroundStyle(AppTheme.mutedForeground)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 14)
+                } else {
+                    ForEach(store.giftedVoices) { voice in
+                        cloneRow(voice)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                        Divider().padding(.leading, 82)
+                    }
+                }
+
+                if !store.pendingGiftInvitations.isEmpty {
+                    voiceSectionHeader(
+                        title: AppLocalized("待回应邀请"),
+                        count: store.pendingGiftInvitations.filter(\.isPending).count,
+                        showsProBadge: false
+                    )
+                    ForEach(store.pendingGiftInvitations.filter(\.isPending)) { invitation in
+                        pendingInvitationRow(invitation)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                    }
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .top)
+    }
+
+    private var voiceGiftInvitationAction: some View {
+        Button {
+            beginGiftInvitation()
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.18))
+                        .frame(width: 48, height: 48)
+                    Image(systemName: "person.2.wave.2.fill")
+                        .font(.system(size: 21, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("邀请朋友成为我的朗读者")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                    Text("朋友录一小段，你就能用他的声音朗读 Kindle、文件和网页。")
+                        .font(.caption)
+                        .foregroundStyle(Color.white.opacity(0.86))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("授权后可一直用于朗读和解读，直到朋友主动收回。")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(Color.white.opacity(0.72))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 4)
+                if store.isCreatingGiftInvitation {
+                    ProgressView().tint(.white)
+                } else {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                LinearGradient(
+                    colors: [AppTheme.primary, AppTheme.primary.opacity(0.72)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(store.isCreatingGiftInvitation)
+        .accessibilityIdentifier("voiceGiftInviteButton")
+        .padding(.horizontal, 20)
+        .padding(.bottom, 12)
+    }
+
+    private func voiceSectionHeader(
+        title: String,
+        count: Int,
+        showsProBadge: Bool
+    ) -> some View {
+        HStack(spacing: 8) {
+            Text(title).font(.headline)
+            if count > 0 {
+                Text("\(count)")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(AppTheme.primary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(AppTheme.primary.opacity(0.12))
+                    )
+            }
+            if showsProBadge {
+                Label("PRO", systemImage: "crown.fill")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(AppTheme.primary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(AppTheme.primary.opacity(0.12))
+                    )
+                    .accessibilityIdentifier("voiceCloneProBadge")
+            }
+            Spacer()
+            if store.isLoading, !store.voices.isEmpty {
+                ProgressView()
+                    .controlSize(.small)
+                    .accessibilityLabel("正在更新声音")
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+        .padding(.bottom, 10)
+    }
+
+    private func pendingInvitationRow(_ invitation: VoiceGiftInvitation) -> some View {
+        Button {
+            presentShare(for: invitation)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "clock.badge.checkmark")
+                    .font(.title3)
+                    .foregroundStyle(AppTheme.primary)
+                    .frame(width: 38, height: 38)
+                    .background(AppTheme.primary.opacity(0.10), in: Circle())
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(invitation.isClaimed ? "朋友正在录制" : "等待朋友录制")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.foreground)
+                    Text("再次分享邀请链接")
+                        .font(.caption)
+                        .foregroundStyle(AppTheme.mutedForeground)
+                }
+                Spacer()
+                Image(systemName: "square.and.arrow.up")
+                    .foregroundStyle(AppTheme.primary)
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(AppTheme.surface)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("voiceGiftPending_\(invitation.id)")
     }
 
     @ViewBuilder
@@ -502,6 +682,7 @@ struct VoiceCloneCreatedView: View {
                     .overlay(Circle().stroke(AppTheme.background, lineWidth: 2))
                 }
                 .buttonStyle(.plain)
+                .disabled(!voice.access.capabilities.canPreview)
                 .accessibilityLabel(Text(LocalizedStringKey(
                     previewPlayer.playingVoiceId == voice.voiceId ? "停止试听" : "试听"
                 )))
@@ -547,24 +728,57 @@ struct VoiceCloneCreatedView: View {
                     : AppLocalized("需要 Pro 才能用于朗读和解读")
             )
 
-            Menu {
-                Button("修改名称", systemImage: "pencil") {
-                    prepareRename(voice)
+            if voice.access.kind == .owner,
+               voice.access.capabilities.canRename
+                    || voice.access.capabilities.canDelete {
+                Menu {
+                    if voice.access.capabilities.canRename {
+                        Button("修改名称", systemImage: "pencil") {
+                            prepareRename(voice)
+                        }
+                    }
+                    if voice.access.capabilities.canDelete {
+                        Button("删除", systemImage: "trash", role: .destructive) {
+                            pendingDelete = voice
+                        }
+                    }
+                } label: {
+                    if preparingRenameVoiceID == voice.voiceId {
+                        ProgressView()
+                            .controlSize(.small)
+                            .frame(width: 36, height: 36)
+                            .accessibilityLabel("正在更新声音")
+                    } else {
+                        Image(systemName: "ellipsis").frame(width: 36, height: 36)
+                    }
                 }
-                Button("删除", systemImage: "trash", role: .destructive) { pendingDelete = voice }
-            } label: {
-                if preparingRenameVoiceID == voice.voiceId {
-                    ProgressView()
-                        .controlSize(.small)
-                        .frame(width: 36, height: 36)
-                        .accessibilityLabel("正在更新声音")
-                } else {
-                    Image(systemName: "ellipsis").frame(width: 36, height: 36)
+                .disabled(preparingRenameVoiceID != nil)
+            } else if voice.access.capabilities.canEditAlias
+                        || voice.access.capabilities.canRemoveAccess {
+                Menu {
+                    if voice.access.capabilities.canEditAlias {
+                        Button("修改私有备注", systemImage: "pencil") {
+                            pendingGiftAlias = voice
+                        }
+                    }
+                    if voice.access.capabilities.canRemoveAccess {
+                        Button("移除访问", systemImage: "person.crop.circle.badge.minus", role: .destructive) {
+                            pendingGiftRemoval = voice
+                        }
+                    }
+                } label: {
+                    if store.mutatingGiftVoiceID == voice.voiceId {
+                        ProgressView()
+                            .controlSize(.small)
+                            .frame(width: 36, height: 36)
+                    } else {
+                        Image(systemName: "ellipsis").frame(width: 36, height: 36)
+                    }
                 }
+                .disabled(store.mutatingGiftVoiceID != nil)
             }
-            .disabled(preparingRenameVoiceID != nil)
         }
-        .disabled(store.deletingVoiceId != nil)
+        .disabled(store.deletingVoiceId != nil || store.mutatingGiftVoiceID != nil)
     }
 
     /// Identity metadata is optional to the core create/TTS contract, so a
@@ -600,6 +814,20 @@ struct VoiceCloneCreatedView: View {
     }
 
     private func cloneMetadata(_ voice: ClonedVoice) -> String {
+        if voice.access.kind == .gifted {
+            let donor = voice.access.donor?.displayName?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let source = donor.flatMap { $0.isEmpty ? nil : $0 }
+                .map { String(format: AppLocalized("来自 %@"), $0) }
+                ?? AppLocalized("朋友授权的声音")
+            let status: String
+            switch voice.access.status?.lowercased() {
+            case "expired": status = AppLocalized("授权已过期")
+            case "revoked", "cancelled": status = AppLocalized("授权已收回")
+            case nil, "active", "fulfilled": status = AppLocalized("可用于朗读和解读")
+            default: status = AppLocalized("这个朗读者声音暂时无法使用，请刷新声音列表后重试")
+            }
+            return "\(source) · \(status)"
+        }
         let reference = store.referenceLanguage(for: voice)
         let recording = reference == "zh" ? AppLocalized("中文样本") :
             (reference == "en" ? AppLocalized("英语样本") : AppLocalized("录音样本"))
@@ -629,6 +857,117 @@ struct VoiceCloneCreatedView: View {
             showCreation = true
         }
     }
+
+    private func beginGiftInvitation() {
+        guard auth.isSignedIn else {
+            showLogin = true
+            return
+        }
+        guard VoiceGiftFeature.isRegionEligible() else {
+            store.errorMessage = VoiceCloneError.giftUnavailableInRegion.localizedDescription
+            return
+        }
+        guard store.voiceGiftEnabled else {
+            store.errorMessage = VoiceCloneError.giftAccessUnavailable.localizedDescription
+            return
+        }
+        Task {
+            guard await auth.ensureMobileSessionForVoiceClone() else {
+                store.errorMessage = VoiceCloneError.sessionUnavailable.localizedDescription
+                return
+            }
+            guard let invitation = await store.createGiftInvitation() else { return }
+            presentShare(for: invitation)
+        }
+    }
+
+    private func presentShare(for invitation: VoiceGiftInvitation) {
+        guard let url = VoiceGiftInvitationURLValidator.validatedURL(
+            invitation.invitationURL
+        ) else {
+            store.errorMessage = VoiceCloneError.invalidResponse.localizedDescription
+            return
+        }
+        giftSharePayload = VoiceGiftSharePayload(
+            id: invitation.id,
+            url: url
+        )
+    }
+}
+
+private struct VoiceGiftSharePayload: Identifiable {
+    let id: String
+    let url: URL
+
+    var message: String {
+        [
+            AppLocalized("让重要的声音，陪你读懂每一页。"),
+            AppLocalized("CastReader 把 Kindle 书籍、照片、PDF 和网页变成同步指读与 AI 解读。"),
+            AppLocalized("录一小段声音，成为我的朗读者；授权有效且你未收回期间，我可以用于朗读和解读。"),
+        ].joined(separator: "\n\n")
+    }
+}
+
+private struct VoiceGiftShareSheet: UIViewControllerRepresentable {
+    let payload: VoiceGiftSharePayload
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(
+            activityItems: [payload.message, payload.url],
+            applicationActivities: nil
+        )
+    }
+
+    func updateUIViewController(
+        _ uiViewController: UIActivityViewController,
+        context: Context
+    ) {}
+}
+
+@MainActor
+private struct VoiceGiftAliasView: View {
+    let voice: ClonedVoice
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var store = VoiceCloneStore.shared
+    @State private var alias: String
+
+    init(voice: ClonedVoice) {
+        self.voice = voice
+        _alias = State(initialValue: voice.access.recipientAlias ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("例如：妈妈讲故事", text: $alias)
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                } header: {
+                    Text("私有备注")
+                } footer: {
+                    Text("只有你能看到这个备注，不会修改朗读者创建的声音名称。")
+                }
+            }
+            .navigationTitle("修改私有备注")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") {
+                        Task {
+                            if await store.updateGiftAlias(voice, to: alias) {
+                                dismiss()
+                            }
+                        }
+                    }
+                    .disabled(store.mutatingGiftVoiceID != nil)
+                }
+            }
+        }
+    }
 }
 
 struct ClonedVoiceAvatarView: View {
@@ -637,27 +976,70 @@ struct ClonedVoiceAvatarView: View {
     var isAnimating = false
 
     var body: some View {
+        avatarContent
+            .frame(width: size, height: size)
+            .clipShape(Circle())
+            .overlay(Circle().stroke(Color.white.opacity(0.24), lineWidth: 1))
+            .overlay {
+                if isAnimating, remoteAvatarURL != nil {
+                    Circle()
+                        .fill(Color.black.opacity(0.24))
+                    Image(systemName: "waveform")
+                        .font(.system(size: size * 0.38, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .symbolEffect(.variableColor.iterative)
+                }
+            }
+            .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var avatarContent: some View {
+        if let remoteAvatarURL {
+            AsyncImage(url: remoteAvatarURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                default:
+                    stylizedAvatar
+                }
+            }
+        } else {
+            stylizedAvatar
+        }
+    }
+
+    private var stylizedAvatar: some View {
         ZStack {
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: colors,
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(Circle().stroke(Color.white.opacity(0.24), lineWidth: 1))
+            LinearGradient(
+                colors: colors,
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
             Image(systemName: isAnimating ? "waveform" : symbolName)
                 .font(.system(size: size * 0.42, weight: .semibold))
                 .foregroundStyle(foreground)
                 .symbolEffect(.variableColor.iterative, isActive: isAnimating)
         }
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
+    }
+
+    private var remoteAvatarURL: URL? {
+        voice.presentation?.avatar?.remoteURL
+    }
+
+    private var resolvedAvatarStyle: VoiceCloneAvatarPresentation? {
+        if let style = voice.presentation?.avatar?.resolvedStyle {
+            return style
+        }
+        guard let avatar = voice.identity?.avatar,
+              avatar.isSupported else { return nil }
+        return avatar
     }
 
     private var colors: [Color] {
-        if let avatar = voice.identity?.avatar, avatar.isSupported {
+        if let avatar = resolvedAvatarStyle {
             return [
                 Color(hexString: avatar.backgroundStart),
                 Color(hexString: avatar.backgroundEnd),
@@ -679,12 +1061,12 @@ struct ClonedVoiceAvatarView: View {
     }
 
     private var foreground: Color {
-        guard let value = voice.identity?.avatar.foreground else { return .white }
+        guard let value = resolvedAvatarStyle?.foreground else { return .white }
         return Color(hexString: value)
     }
 
     private var symbolName: String {
-        switch voice.identity?.avatar.glyph {
+        switch resolvedAvatarStyle?.glyph {
         case .waveBars: return "waveform"
         case .wavePulse: return "waveform.path.ecg"
         case .waveOrbit: return "dot.radiowaves.left.and.right"

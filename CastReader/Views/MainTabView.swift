@@ -99,6 +99,9 @@ struct MainTabView: View {
     @StateObject private var reviewPrompt = AppReviewPromptManager.shared
     @StateObject private var studyBoostRouter = StudyBoostRouter.shared
     @StateObject private var youtubeRouteCenter = YouTubeRouteCenter.shared
+    @StateObject private var voiceGiftRouteCenter = VoiceGiftRouteCenter.shared
+    @StateObject private var voiceCloneStore = VoiceCloneStore.shared
+    @StateObject private var auth = AuthService.shared
     @StateObject private var growthLoop = GrowthLoopConversionCoordinator.shared
     @ObservedObject private var audioPlayer = AudioPlayerService.shared
     @Environment(\.scenePhase) private var scenePhase
@@ -368,11 +371,18 @@ struct MainTabView: View {
                     clipboard.check()   // 进 App / 回前台 → 探测剪贴板
                 }
                 reloadShareInbox(showWhenPending: false)
+                if auth.isSignedIn, VoiceGiftFeature.isRegionEligible() {
+                    Task { await voiceCloneStore.refresh() }
+                }
             }
         }
         .task {
             reviewPrompt.recordActiveDay()
             reloadShareInbox(showWhenPending: false)
+            if auth.isSignedIn, VoiceGiftFeature.isRegionEligible() {
+                await voiceCloneStore.refresh()
+            }
+            routePendingVoiceGiftIfAvailable()
             if !routePendingYouTubeIfAvailable() {
                 routePendingSystemActionIfAvailable()
             }
@@ -409,6 +419,13 @@ struct MainTabView: View {
         .onReceive(youtubeRouteCenter.$request.compactMap { $0 }) { request in
             guard scenePhase == .active else { return }
             beginYouTubeExtraction(request)
+        }
+        .onReceive(voiceGiftRouteCenter.$requestID.compactMap { $0 }) { requestID in
+            routeVoiceGift(requestID)
+        }
+        .onChange(of: voiceCloneStore.voiceGiftEnabled) { enabled in
+            guard enabled else { return }
+            routePendingVoiceGiftIfAvailable()
         }
         .onReceive(
             NotificationCenter.default.publisher(
@@ -684,6 +701,28 @@ struct MainTabView: View {
     /// Consumes either an already-routed deep link or the oldest Share
     /// Extension handoff. The App Group queue is authoritative because iOS does
     /// not guarantee that a Share Extension can foreground its containing app.
+    private func routePendingVoiceGiftIfAvailable() {
+        guard let requestID = voiceGiftRouteCenter.requestID else { return }
+        routeVoiceGift(requestID)
+    }
+
+    private func routeVoiceGift(_ requestID: UUID) {
+        guard VoiceGiftFeature.isRegionEligible() else {
+            voiceGiftRouteCenter.consume(requestID)
+            return
+        }
+        // The deep link may arrive before login or before the public manifest
+        // resolves. It can safely open the existing Created tab; the Gift CTA,
+        // library and request endpoints remain independently fail-closed behind
+        // the remote capability gate.
+        voiceBrowserLaunchRequest = VoiceBrowserLaunchRequest(tab: .created)
+        selectedTab = 2
+        voiceGiftRouteCenter.consume(requestID)
+        if !voiceCloneStore.voiceGiftEnabled {
+            Task { await voiceCloneStore.refresh() }
+        }
+    }
+
     @discardableResult
     private func routePendingYouTubeIfAvailable() -> Bool {
         guard scenePhase == .active else { return false }
