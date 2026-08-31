@@ -54,6 +54,7 @@ enum VoiceGiftFeature {
 enum VoiceGiftContract {
     static let schemaVersion = "voice-gift-v1"
     static let purpose = "personal_tts"
+    static let authorizationMode = "until_revoked"
 }
 
 /// Normalizes the optional descriptive metadata sent with a speaker-only
@@ -231,7 +232,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         try Task.checkCancellation()
         let body = try JSONSerialization.data(withJSONObject: [
             "purpose": VoiceGiftContract.purpose,
-            "authorization": ["mode": "until_revoked"],
+            "authorization": ["mode": VoiceGiftContract.authorizationMode],
             "clientRequestId": clientRequestID.uuidString.lowercased(),
         ])
         let data = try await perform(
