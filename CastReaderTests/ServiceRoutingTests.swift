@@ -1313,6 +1313,101 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertFalse(requestedURLs.contains { URL(string: $0)?.host == "api.castreader.ai" })
     }
 
+    func testVoiceCloneSTSReturnsTheExactSessionThatAuthorizedCredentials() async throws {
+        ServiceRouting.overrideRoute = .chinaGateway
+        resetSnapshots()
+
+        let expired = "cms_voice_clone_expired"
+        let refreshed = "cms_voice_clone_refreshed"
+        let provider = RoutingMobileSessionProvider(
+            currentToken: expired,
+            refreshedToken: refreshed
+        )
+        var authorizations: [String] = []
+        RoutingURLProtocol.handler = { request in
+            authorizations.append(
+                request.value(forHTTPHeaderField: "Authorization") ?? ""
+            )
+            let status = authorizations.count == 1 ? 401 : 200
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: status,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!,
+                status == 200
+                    ? try Self.makeSTSSuccessData(prefix: "voice-clone")
+                    : Data(#"{"error":"expired"}"#.utf8)
+            )
+        }
+        let service = APIService(
+            session: makeRoutingSession(),
+            mobileSessionProvider: provider
+        )
+
+        let authorization = try await service.fetchVoiceCloneSTSCredentials(
+            using: expired
+        )
+
+        XCTAssertEqual(authorization.sessionToken, refreshed)
+        XCTAssertEqual(authorization.credentials.prefix, "voice-clone/uploads/")
+        XCTAssertEqual(
+            authorizations,
+            ["Bearer \(expired)", "Bearer \(refreshed)"]
+        )
+        let refreshCount = await provider.refreshCallCount()
+        XCTAssertEqual(refreshCount, 1)
+    }
+
+    func testVoiceCloneSTS401CannotRefreshWithAnewerAccountsSession() async {
+        ServiceRouting.overrideRoute = .chinaGateway
+        resetSnapshots()
+
+        let accountA = "cms_voice_clone_account_a"
+        let accountB = "cms_voice_clone_account_b"
+        let provider = RoutingMobileSessionProvider(
+            currentToken: accountB,
+            refreshedToken: "cms_must_not_be_used"
+        )
+        var authorizations: [String] = []
+        RoutingURLProtocol.handler = { request in
+            authorizations.append(
+                request.value(forHTTPHeaderField: "Authorization") ?? ""
+            )
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 401,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!,
+                Data(#"{"error":"expired"}"#.utf8)
+            )
+        }
+        let service = APIService(
+            session: makeRoutingSession(),
+            mobileSessionProvider: provider
+        )
+
+        do {
+            _ = try await service.fetchVoiceCloneSTSCredentials(using: accountA)
+            XCTFail("account A's rejected token must not refresh through account B")
+        } catch APIError.httpError(let status) {
+            XCTAssertEqual(status, 401)
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+
+        let refreshCount = await provider.refreshCallCount()
+        let rejected = await provider.rejectedSessionTokens()
+        let survivingToken = await provider.sessionToken()
+        XCTAssertEqual(authorizations, ["Bearer \(accountA)"])
+        XCTAssertEqual(refreshCount, 0)
+        XCTAssertEqual(rejected, [accountA])
+        XCTAssertEqual(survivingToken, accountB)
+    }
+
     func testProtectedDocumentsUseSelectedGatewayAndServerSessionForBothRoutes() async throws {
         for route in [ServiceRoute.globalGateway, .chinaGateway] {
             ServiceRouting.overrideRoute = route
@@ -2918,6 +3013,47 @@ final class ServiceRoutingTests: XCTestCase {
         let currentToken = await store.sessionToken()
         XCTAssertNil(staleRefreshResult)
         XCTAssertEqual(currentToken, "cms_account_b")
+    }
+
+    func testRejectedAccountATokenCannotRefreshAfterAccountBSwitched() async {
+        let route = ServiceRoute.globalGateway
+        let keys = MobileSessionStore.storageKeys(for: route)
+        let saved = [
+            keys.session: KeychainStore.get(keys.session),
+            keys.provider: KeychainStore.get(keys.provider),
+            keys.identityToken: KeychainStore.get(keys.identityToken),
+        ]
+        defer {
+            for (key, value) in saved {
+                if let value {
+                    KeychainStore.set(value, for: key)
+                } else {
+                    KeychainStore.delete(key)
+                }
+            }
+        }
+
+        _ = MobileSessionStore.detachLocalSession(for: route)
+        XCTAssertTrue(KeychainStore.set("cms_account_a", for: keys.session))
+        XCTAssertTrue(KeychainStore.set("phone", for: keys.provider))
+        KeychainStore.delete(keys.identityToken)
+        let store = MobileSessionStore(route: route)
+        let accountAToken = await store.sessionToken()
+        guard let rejectedAccountAToken = accountAToken else {
+            return XCTFail("account A token should be readable before the switch")
+        }
+
+        _ = MobileSessionStore.detachLocalSession(for: route)
+        XCTAssertTrue(KeychainStore.set("cms_account_b", for: keys.session))
+        XCTAssertTrue(KeychainStore.set("phone", for: keys.provider))
+        KeychainStore.delete(keys.identityToken)
+
+        let staleRetryToken = await store.refreshSession(
+            replacing: rejectedAccountAToken
+        )
+        let survivingAccountBToken = await store.sessionToken()
+        XCTAssertNil(staleRetryToken)
+        XCTAssertEqual(survivingAccountBToken, "cms_account_b")
     }
 
     func testExternalPhoneSessionRejectsNonServerTokenWithoutPersistingIt() async {

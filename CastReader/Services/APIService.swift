@@ -139,7 +139,7 @@ enum APIError: Error, LocalizedError {
     }
 }
 
-actor APIService {
+actor APIService: VoiceCloneSTSCredentialProviding {
     static let shared = APIService()
 
     private let session: URLSession
@@ -327,9 +327,25 @@ actor APIService {
             throw APIError.invalidURL
         }
 
-        return try await fetchSTSCredentials(
+        return try await fetchAuthorizedSTSCredentials(
             url: url,
             suppliedToken: nil,
+            canRefreshSession: true
+        ).credentials
+    }
+
+    /// Voice cloning binds STS issuance to the same route-local bearer that
+    /// authorized the logical create operation. The returned token is the one
+    /// actually used after at most one account-safe 401 refresh.
+    func fetchVoiceCloneSTSCredentials(
+        using sessionToken: String
+    ) async throws -> VoiceCloneAuthorizedSTS {
+        guard let url = URL(string: Constants.API.sts) else {
+            throw APIError.invalidURL
+        }
+        return try await fetchAuthorizedSTSCredentials(
+            url: url,
+            suppliedToken: sessionToken,
             canRefreshSession: true
         )
     }
@@ -337,19 +353,28 @@ actor APIService {
     /// The protected mobile STS endpoint is deliberately separate from the
     /// generic request helper: it must never make an anonymous request or fall
     /// back to the historical `/sts` compatibility endpoint.
-    private func fetchSTSCredentials(
+    private func fetchAuthorizedSTSCredentials(
         url: URL,
         suppliedToken: String?,
         canRefreshSession: Bool
-    ) async throws -> STSCredentials {
+    ) async throws -> VoiceCloneAuthorizedSTS {
+        try Task.checkCancellation()
         var token: String?
         if let suppliedToken {
             token = suppliedToken
         } else {
             token = await mobileSessionProvider.sessionToken()
         }
+        try Task.checkCancellation()
         if !Self.isValidMobileSession(token), canRefreshSession {
-            token = await mobileSessionProvider.refreshSession()
+            if let rejectedToken = token {
+                token = await mobileSessionProvider.refreshSession(
+                    replacing: rejectedToken
+                )
+            } else {
+                token = await mobileSessionProvider.refreshSession()
+            }
+            try Task.checkCancellation()
         }
         guard let token, Self.isValidMobileSession(token) else {
             await mobileSessionProvider.rejectSession(nil)
@@ -363,14 +388,19 @@ actor APIService {
         request.setValue("session", forHTTPHeaderField: "X-Auth-Provider")
 
         let (data, response) = try await session.data(for: request)
+        try Task.checkCancellation()
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
         if httpResponse.statusCode == 401 {
+            try Task.checkCancellation()
             if canRefreshSession,
-               let refreshed = await mobileSessionProvider.refreshSession(),
+               let refreshed = await mobileSessionProvider.refreshSession(
+                    replacing: token
+               ),
                Self.isValidMobileSession(refreshed) {
-                return try await fetchSTSCredentials(
+                try Task.checkCancellation()
+                return try await fetchAuthorizedSTSCredentials(
                     url: url,
                     suppliedToken: refreshed,
                     canRefreshSession: false
@@ -382,6 +412,7 @@ actor APIService {
         guard 200..<300 ~= httpResponse.statusCode else {
             throw APIError.httpError(httpResponse.statusCode)
         }
+        try Task.checkCancellation()
 
         let payload: STSResponse
         do {
@@ -392,7 +423,10 @@ actor APIService {
         guard let sts = payload.sts else {
             throw APIError.invalidResponse
         }
-        return sts
+        return VoiceCloneAuthorizedSTS(
+            credentials: sts,
+            sessionToken: token
+        )
     }
 
     private static func isValidMobileSession(_ token: String?) -> Bool {

@@ -138,27 +138,27 @@ enum VoiceCloneQualityMessage {
     static func localized(for code: String?) -> String? {
         switch code?.uppercased() {
         case "VOICE_REFERENCE_INVALID", "VOICE_REFERENCE_SAMPLE_RATE_UNSUPPORTED":
-            return AppLocalized("录音文件无效，请重新录制")
+            return AppLocalized("参考音频无效，请换一段清晰音频后重试")
         case "VOICE_REFERENCE_DURATION_INVALID":
-            return AppLocalized("请录制 3 到 30 秒的声音")
+            return AppLocalized("参考音频需要包含 3 到 30 秒的声音")
         case "VOICE_REFERENCE_NO_SPEECH":
-            return AppLocalized("没有检测到清晰人声，请在安静环境中重新录制")
+            return AppLocalized("没有检测到清晰人声，请换一段安静环境中的自然讲话")
         case "VOICE_REFERENCE_SPEECH_TOO_SHORT":
             return AppLocalized("有效讲话时间太短，请连续清晰说话至少 3 秒")
         case "VOICE_REFERENCE_TOO_MUCH_SILENCE":
-            return AppLocalized("录音中的静音太多，请按住后尽快开始说话")
+            return AppLocalized("参考音频中的静音太多，请换一段连续讲话")
         case "VOICE_REFERENCE_TOO_QUIET":
-            return AppLocalized("声音太小，请靠近手机并重新录制")
+            return AppLocalized("声音太小，请换一段更清晰、响亮的讲话")
         case "VOICE_REFERENCE_CLIPPING":
-            return AppLocalized("声音过大并出现失真，请稍微远离手机重新录制")
+            return AppLocalized("声音过大并出现失真，请换一段没有破音的讲话")
         case "VOICE_REFERENCE_TOO_NOISY":
-            return AppLocalized("环境噪声太大，请换到更安静的地方重新录制")
+            return AppLocalized("环境噪声太大，请换一段更安静的讲话")
         case "VOICE_REFERENCE_TOO_REVERBERANT":
-            return AppLocalized("房间回声太重，请靠近手机并换到较小、柔软的空间录制")
+            return AppLocalized("房间回声太重，请换一段回声更少的讲话")
         case "VOICE_REFERENCE_MULTIPLE_SPEAKERS":
-            return AppLocalized("录音中可能有多人说话，请确保只有本人说话")
+            return AppLocalized("参考音频中可能有多人说话，请换一段只有目标声音的讲话")
         case "VOICE_REFERENCE_TEXT_MISMATCH":
-            return AppLocalized("声音服务仍在更新。录音已保留，请稍后重试")
+            return AppLocalized("声音服务仍在更新。已确认的音频片段会保留，请稍后重试")
         case "REFERENCE_LANGUAGE_UNSUPPORTED", "VOICE_REFERENCE_LANGUAGE_UNSUPPORTED":
             return AppLocalized("暂不支持所选录音语言，请选择其他语言")
         default:

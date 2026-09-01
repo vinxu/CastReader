@@ -188,6 +188,18 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(VoiceCloneReferenceTransport.usesDirectCOSUpload(for: .chinaGateway))
     }
 
+    func testCreateTraceIDCanBeReusedAcrossOneInvocationRetry() throws {
+        var first = URLRequest(url: URL(string: "https://api.castreader.ai/api/voice-clone/voices")!)
+        var retry = URLRequest(url: URL(string: "https://api.castreader.ai/api/voice-clone/voices")!)
+        let requestID = UUID().uuidString
+
+        VoiceCloneCreateTrace.apply(to: &first, requestID: requestID)
+        VoiceCloneCreateTrace.apply(to: &retry, requestID: requestID)
+
+        XCTAssertEqual(first.value(forHTTPHeaderField: "X-Request-ID"), requestID)
+        XCTAssertEqual(retry.value(forHTTPHeaderField: "X-Request-ID"), requestID)
+    }
+
     func testSTSUploadHostHonorsServerEndpointAndKeepsRegionalFallback() throws {
         let accelerated = try JSONDecoder().decode(
             STSCredentials.self,
@@ -358,11 +370,11 @@ final class VoiceCloneTests: XCTestCase {
     func testReferenceQualityErrorsHaveActionableLocalizedMessages() {
         XCTAssertEqual(
             VoiceCloneQualityMessage.localized(for: "VOICE_REFERENCE_TOO_NOISY"),
-            AppLocalized("环境噪声太大，请换到更安静的地方重新录制")
+            AppLocalized("环境噪声太大，请换一段更安静的讲话")
         )
         XCTAssertEqual(
             VoiceCloneQualityMessage.localized(for: "VOICE_REFERENCE_MULTIPLE_SPEAKERS"),
-            AppLocalized("录音中可能有多人说话，请确保只有本人说话")
+            AppLocalized("参考音频中可能有多人说话，请换一段只有目标声音的讲话")
         )
         XCTAssertEqual(
             VoiceCloneQualityMessage.localized(for: "VOICE_REFERENCE_SPEECH_TOO_SHORT"),
@@ -370,7 +382,7 @@ final class VoiceCloneTests: XCTestCase {
         )
         XCTAssertEqual(
             VoiceCloneQualityMessage.localized(for: "VOICE_REFERENCE_TEXT_MISMATCH"),
-            AppLocalized("声音服务仍在更新。录音已保留，请稍后重试")
+            AppLocalized("声音服务仍在更新。已确认的音频片段会保留，请稍后重试")
         )
         XCTAssertEqual(
             VoiceCloneQualityMessage.localized(for: "REFERENCE_LANGUAGE_UNSUPPORTED"),
@@ -392,7 +404,7 @@ final class VoiceCloneTests: XCTestCase {
         )
         let strings = try XCTUnwrap(root["strings"] as? [String: Any])
         let entry = try XCTUnwrap(
-            strings["声音服务仍在更新。录音已保留，请稍后重试"] as? [String: Any]
+            strings["声音服务仍在更新。已确认的音频片段会保留，请稍后重试"] as? [String: Any]
         )
         let localizations = try XCTUnwrap(
             entry["localizations"] as? [String: Any]
@@ -1401,6 +1413,348 @@ final class VoiceCloneTests: XCTestCase {
         )
     }
 
+    func testUnknownReferenceLanguageUsesUndOnBothCreateRoutes() throws {
+        for input in ["", "  ", "und"] {
+            let metadata = try VoiceCloneCreateMetadata(
+                referenceLanguage: input,
+                referenceText: nil
+            )
+            let multipart = Dictionary(
+                uniqueKeysWithValues: metadata.multipartFields.map { ($0.name, $0.value) }
+            )
+            let china = metadata.chinaPayload(referenceObjectKey: "account/reference.wav")
+
+            XCTAssertEqual(metadata.referenceLanguage, "und")
+            XCTAssertEqual(multipart["reference_language"], "und")
+            XCTAssertEqual(china["referenceLanguage"] as? String, "und")
+        }
+    }
+
+    @MainActor
+    func testUploadedReferenceRequiresMatchingCandidatePreviewAndConsent() {
+        let allowed = VoiceCloneAudioUploadViewModel.creationAllowed(
+            state: .review,
+            hasPreparedReference: true,
+            selectedCandidateID: "candidate-a",
+            previewedCandidateID: "candidate-a",
+            consentConfirmed: true
+        )
+        XCTAssertTrue(allowed)
+
+        XCTAssertFalse(VoiceCloneAudioUploadViewModel.creationAllowed(
+            state: .review,
+            hasPreparedReference: true,
+            selectedCandidateID: "candidate-a",
+            previewedCandidateID: nil,
+            consentConfirmed: true
+        ))
+        XCTAssertFalse(VoiceCloneAudioUploadViewModel.creationAllowed(
+            state: .review,
+            hasPreparedReference: true,
+            selectedCandidateID: "candidate-b",
+            previewedCandidateID: "candidate-a",
+            consentConfirmed: true
+        ))
+        XCTAssertFalse(VoiceCloneAudioUploadViewModel.creationAllowed(
+            state: .review,
+            hasPreparedReference: true,
+            selectedCandidateID: "candidate-a",
+            previewedCandidateID: "candidate-a",
+            consentConfirmed: false
+        ))
+    }
+
+    func testCancelledVoiceCreateBeforeEntryMakesNoNetworkCalls() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let networkCalls = VoiceCloneCallCounter()
+        VoiceCloneTestURLProtocol.handler = { request in
+            networkCalls.increment()
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 500,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                Data()
+            )
+        }
+        defer {
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+
+        let sessionProvider = MutableVoiceCloneTestSessionProvider(token: "cms_account_a")
+        let stsProvider = ImmediateVoiceCloneTestSTSProvider(
+            authorization: makeVoiceCloneAuthorizedSTS(sessionToken: "cms_account_a")
+        )
+        let cosUploader = RecordingVoiceCloneTestCOSUploader()
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-cn-contract.test")!,
+            session: session,
+            route: .chinaGateway,
+            sessionProvider: sessionProvider,
+            stsProvider: stsProvider,
+            cosUploader: cosUploader
+        )
+        let recordingURL = try makeTemporaryVoiceCloneReference()
+        defer { try? FileManager.default.removeItem(at: recordingURL) }
+
+        let task = Task {
+            // Ensure the task is cancelled before it crosses the service
+            // boundary while still invoking createVoice with cancellation set.
+            try? await Task.sleep(nanoseconds: 30_000_000_000)
+            return try await service.createVoice(
+                recordingURL: recordingURL,
+                referenceLanguage: "und",
+                referenceText: nil,
+                consentConfirmed: true,
+                onProgress: { _ in }
+            )
+        }
+        task.cancel()
+
+        do {
+            _ = try await task.value
+            XCTFail("a pre-cancelled create must stop at the service entry")
+        } catch is CancellationError {
+            // Expected privacy boundary.
+        }
+
+        let sessionCalls = await sessionProvider.sessionTokenCallCount()
+        let stsCalls = await stsProvider.callCount()
+        let cosCalls = await cosUploader.callCount()
+        XCTAssertEqual(sessionCalls, 0)
+        XCTAssertEqual(stsCalls, 0)
+        XCTAssertEqual(cosCalls, 0)
+        XCTAssertEqual(networkCalls.value, 0)
+    }
+
+    func testAccountSwitchWhileSTSPendingStopsBeforeCOSAndControlPlane() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let networkCalls = VoiceCloneCallCounter()
+        VoiceCloneTestURLProtocol.handler = { request in
+            networkCalls.increment()
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 201,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!,
+                Data(#"{"voiceId":"vc_must_not_publish"}"#.utf8)
+            )
+        }
+        defer {
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+
+        let accountAToken = "cms_account_a"
+        let sessionProvider = MutableVoiceCloneTestSessionProvider(token: accountAToken)
+        let stsProvider = SuspendedVoiceCloneTestSTSProvider()
+        let cosUploader = RecordingVoiceCloneTestCOSUploader()
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-cn-contract.test")!,
+            session: session,
+            route: .chinaGateway,
+            sessionProvider: sessionProvider,
+            stsProvider: stsProvider,
+            cosUploader: cosUploader
+        )
+        let recordingURL = try makeTemporaryVoiceCloneReference()
+        defer { try? FileManager.default.removeItem(at: recordingURL) }
+
+        let create = Task {
+            try await service.createVoice(
+                recordingURL: recordingURL,
+                referenceLanguage: "und",
+                referenceText: nil,
+                consentConfirmed: true,
+                onProgress: { _ in }
+            )
+        }
+        var stsDidStart = false
+        for _ in 0..<1_000 {
+            stsDidStart = await stsProvider.hasStarted()
+            if stsDidStart { break }
+            try await Task.sleep(nanoseconds: 1_000_000)
+        }
+        guard stsDidStart else {
+            create.cancel()
+            return XCTFail("the CN create should request account-bound STS credentials")
+        }
+
+        await sessionProvider.setToken("cms_account_b")
+        await stsProvider.succeed(
+            makeVoiceCloneAuthorizedSTS(sessionToken: accountAToken)
+        )
+
+        do {
+            _ = try await create.value
+            XCTFail("account A's in-flight create must not continue in account B")
+        } catch is CancellationError {
+            // Expected account boundary.
+        }
+
+        let requestedTokens = await stsProvider.requestedTokens()
+        let cosCalls = await cosUploader.callCount()
+        let currentToken = await sessionProvider.currentToken()
+        XCTAssertEqual(requestedTokens, [accountAToken])
+        XCTAssertEqual(cosCalls, 0)
+        XCTAssertEqual(networkCalls.value, 0)
+        XCTAssertEqual(currentToken, "cms_account_b")
+    }
+
+    func testChinaCreateUsesOneAccountForSTSCanonicalObjectAndControlPlane() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let recorder = VoiceCloneRequestRecorder()
+        VoiceCloneTestURLProtocol.handler = { request in
+            recorder.record(request)
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 201,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!,
+                Data(#"{"voiceId":"vc_cn_created","referenceLanguage":"und"}"#.utf8)
+            )
+        }
+        defer {
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+
+        let accountToken = "cms_account_a"
+        let sessionProvider = MutableVoiceCloneTestSessionProvider(token: accountToken)
+        let stsProvider = ImmediateVoiceCloneTestSTSProvider(
+            authorization: makeVoiceCloneAuthorizedSTS(sessionToken: accountToken)
+        )
+        let cosUploader = RecordingVoiceCloneTestCOSUploader()
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-cn-contract.test")!,
+            session: session,
+            route: .chinaGateway,
+            sessionProvider: sessionProvider,
+            stsProvider: stsProvider,
+            cosUploader: cosUploader
+        )
+        let recordingURL = try makeTemporaryVoiceCloneReference()
+        defer { try? FileManager.default.removeItem(at: recordingURL) }
+
+        let voice = try await service.createVoice(
+            recordingURL: recordingURL,
+            referenceLanguage: "",
+            referenceText: nil,
+            consentConfirmed: true,
+            onProgress: { _ in }
+        )
+
+        XCTAssertEqual(voice.voiceId, "vc_cn_created")
+        let stsTokens = await stsProvider.requestedTokens()
+        let cosCalls = await cosUploader.callCount()
+        XCTAssertEqual(stsTokens, [accountToken])
+        XCTAssertEqual(cosCalls, 1)
+        let request = try XCTUnwrap(recorder.lastRequest())
+        XCTAssertEqual(request.url?.path, "/api/voice-clone/voices")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer \(accountToken)")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "X-Auth-Provider"), "session")
+        XCTAssertNotNil(request.value(forHTTPHeaderField: "X-Request-ID"))
+        let payload = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: try XCTUnwrap(request.httpBody))
+                as? [String: Any]
+        )
+        XCTAssertEqual(payload["referenceLanguage"] as? String, "und")
+        XCTAssertEqual(
+            payload["referenceObjectKey"] as? String,
+            "account-a/voice-clone/test-reference.wav"
+        )
+        XCTAssertEqual(payload["consentConfirmed"] as? Bool, true)
+        XCTAssertNil(payload["referenceText"])
+        XCTAssertNil(payload["reference"], "raw or canonical bytes never belong in CN JSON")
+    }
+
+    func testAccountSwitchWhileCOSPendingStopsBeforeControlPlane() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let networkCalls = VoiceCloneCallCounter()
+        VoiceCloneTestURLProtocol.handler = { request in
+            networkCalls.increment()
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 201,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                Data(#"{"voiceId":"vc_must_not_publish"}"#.utf8)
+            )
+        }
+        defer {
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+
+        let accountAToken = "cms_account_a"
+        let sessionProvider = MutableVoiceCloneTestSessionProvider(token: accountAToken)
+        let stsProvider = ImmediateVoiceCloneTestSTSProvider(
+            authorization: makeVoiceCloneAuthorizedSTS(sessionToken: accountAToken)
+        )
+        let cosUploader = SuspendedVoiceCloneTestCOSUploader()
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-cn-contract.test")!,
+            session: session,
+            route: .chinaGateway,
+            sessionProvider: sessionProvider,
+            stsProvider: stsProvider,
+            cosUploader: cosUploader
+        )
+        let recordingURL = try makeTemporaryVoiceCloneReference()
+        defer { try? FileManager.default.removeItem(at: recordingURL) }
+
+        let create = Task {
+            try await service.createVoice(
+                recordingURL: recordingURL,
+                referenceLanguage: "und",
+                referenceText: nil,
+                consentConfirmed: true,
+                onProgress: { _ in }
+            )
+        }
+        var cosDidStart = false
+        for _ in 0..<1_000 {
+            cosDidStart = await cosUploader.hasStarted()
+            if cosDidStart { break }
+            try await Task.sleep(nanoseconds: 1_000_000)
+        }
+        guard cosDidStart else {
+            create.cancel()
+            return XCTFail("the CN create should begin its account-A COS PUT")
+        }
+
+        await sessionProvider.setToken("cms_account_b")
+        await cosUploader.succeed(objectKey: "account-a/voice-clone/uploaded.wav")
+
+        do {
+            _ = try await create.value
+            XCTFail("an account-A COS result must not reach account B's control plane")
+        } catch is CancellationError {
+            // Expected account boundary after the already-started A PUT.
+        }
+
+        let currentToken = await sessionProvider.currentToken()
+        XCTAssertEqual(networkCalls.value, 0)
+        XCTAssertEqual(currentToken, "cms_account_b")
+    }
+
     @MainActor
     func testDelayedRefreshFromPreviousAccountCannotOverwriteNewAccount() async {
         let suite = "VoiceCloneTests-\(UUID().uuidString)"
@@ -1430,6 +1784,44 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(store.voices.isEmpty)
         XCTAssertNil(store.lastCreatedVoiceID)
         XCTAssertFalse(store.isLoading)
+    }
+
+    @MainActor
+    func testAccountSwitchCancelsInFlightVoiceCreation() async throws {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = CancellableVoiceCloneCreateService()
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        store.activateAccountScope(storageID: String(repeating: "a", count: 64))
+        let referenceURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("voice-clone-cancel-\(UUID().uuidString).wav")
+        try Data([0x52, 0x49, 0x46, 0x46]).write(to: referenceURL)
+        defer { try? FileManager.default.removeItem(at: referenceURL) }
+
+        let creation = Task {
+            await store.create(
+                recordingURL: referenceURL,
+                referenceLanguage: "",
+                referenceText: nil,
+                consentConfirmed: true
+            )
+        }
+        await service.waitUntilCreateStarts()
+
+        store.activateAccountScope(storageID: String(repeating: "b", count: 64))
+        let succeeded = await creation.value
+        let serviceWasCancelled = await service.wasCancelled()
+
+        XCTAssertFalse(succeeded)
+        XCTAssertTrue(serviceWasCancelled)
+        XCTAssertFalse(store.isCreating)
+        XCTAssertTrue(store.voices.isEmpty)
+        XCTAssertNil(store.errorMessage)
     }
 
     @MainActor
@@ -2320,7 +2712,8 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(source.contains("voiceCreationMethodRecordButton"))
         XCTAssertTrue(source.contains("voiceCreationMethodInviteButton"))
         XCTAssertTrue(source.contains("voiceCreationMethodUploadButton"))
-        XCTAssertTrue(source.contains("voiceCreationMethodUploadComingSoon"))
+        XCTAssertFalse(source.contains("voiceCreationMethodUploadComingSoon"))
+        XCTAssertTrue(source.contains("activeCreationSheet = .upload"))
         XCTAssertTrue(source.contains("canInviteFriend: VoiceGiftFeature.isRegionEligible()"))
         XCTAssertTrue(source.contains("&& store.voiceGiftEnabled"))
         XCTAssertTrue(source.contains("VoiceGiftInviterUIContract.methodDetailKey"))
@@ -3628,6 +4021,209 @@ private actor SequencedCreateVoiceCloneService: VoiceCloneStoreServicing {
     func createCalls() -> [CreateCall] {
         calls
     }
+}
+
+private func makeTemporaryVoiceCloneReference() throws -> URL {
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("voice-clone-reference-\(UUID().uuidString).wav")
+    try Data([0x52, 0x49, 0x46, 0x46]).write(to: url, options: .atomic)
+    return url
+}
+
+private func makeVoiceCloneAuthorizedSTS(
+    sessionToken: String
+) -> VoiceCloneAuthorizedSTS {
+    VoiceCloneAuthorizedSTS(
+        credentials: STSCredentials(
+            accessKeyId: "access-a",
+            secretAccessKey: "secret-a",
+            sessionToken: "cos-session-a",
+            bucket: "castreader-test",
+            region: "ap-shanghai",
+            prefix: "account-a/voice-clone/",
+            endpoint: nil
+        ),
+        sessionToken: sessionToken
+    )
+}
+
+private final class VoiceCloneCallCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+
+    func increment() {
+        lock.lock()
+        count += 1
+        lock.unlock()
+    }
+
+    var value: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return count
+    }
+}
+
+private actor MutableVoiceCloneTestSessionProvider: MobileSessionProviding {
+    private var token: String?
+    private var sessionTokenCalls = 0
+
+    init(token: String?) {
+        self.token = token
+    }
+
+    func sessionToken() -> String? {
+        sessionTokenCalls += 1
+        return token
+    }
+
+    func refreshSession() -> String? { token }
+    func invalidateSession() { token = nil }
+    func setToken(_ token: String?) { self.token = token }
+    func currentToken() -> String? { token }
+    func sessionTokenCallCount() -> Int { sessionTokenCalls }
+}
+
+private actor ImmediateVoiceCloneTestSTSProvider: VoiceCloneSTSCredentialProviding {
+    private let authorization: VoiceCloneAuthorizedSTS
+    private var calls = 0
+    private var tokens: [String] = []
+
+    init(authorization: VoiceCloneAuthorizedSTS) {
+        self.authorization = authorization
+    }
+
+    func fetchVoiceCloneSTSCredentials(
+        using sessionToken: String
+    ) async throws -> VoiceCloneAuthorizedSTS {
+        calls += 1
+        tokens.append(sessionToken)
+        return authorization
+    }
+
+    func callCount() -> Int { calls }
+    func requestedTokens() -> [String] { tokens }
+}
+
+private actor SuspendedVoiceCloneTestSTSProvider: VoiceCloneSTSCredentialProviding {
+    private typealias AuthorizationContinuation =
+        CheckedContinuation<VoiceCloneAuthorizedSTS, Error>
+
+    private var tokens: [String] = []
+    private var continuation: AuthorizationContinuation?
+
+    func fetchVoiceCloneSTSCredentials(
+        using sessionToken: String
+    ) async throws -> VoiceCloneAuthorizedSTS {
+        tokens.append(sessionToken)
+        return try await withCheckedThrowingContinuation { continuation in
+            self.continuation = continuation
+        }
+    }
+
+    func hasStarted() -> Bool { !tokens.isEmpty }
+    func requestedTokens() -> [String] { tokens }
+
+    func succeed(_ authorization: VoiceCloneAuthorizedSTS) {
+        continuation?.resume(returning: authorization)
+        continuation = nil
+    }
+}
+
+private actor RecordingVoiceCloneTestCOSUploader: VoiceCloneReferenceObjectUploading {
+    private var calls = 0
+
+    func upload(
+        data: Data,
+        filename: String,
+        credentials: STSCredentials,
+        onProgress: @escaping @Sendable (Double) -> Void
+    ) async throws -> String {
+        calls += 1
+        onProgress(1)
+        return "\(credentials.prefix)test-reference.wav"
+    }
+
+    func callCount() -> Int { calls }
+}
+
+private actor SuspendedVoiceCloneTestCOSUploader: VoiceCloneReferenceObjectUploading {
+    private typealias ObjectContinuation = CheckedContinuation<String, Error>
+
+    private var calls = 0
+    private var continuation: ObjectContinuation?
+
+    func upload(
+        data: Data,
+        filename: String,
+        credentials: STSCredentials,
+        onProgress: @escaping @Sendable (Double) -> Void
+    ) async throws -> String {
+        calls += 1
+        onProgress(0.5)
+        return try await withCheckedThrowingContinuation { continuation in
+            self.continuation = continuation
+        }
+    }
+
+    func hasStarted() -> Bool { calls > 0 }
+
+    func succeed(objectKey: String) {
+        continuation?.resume(returning: objectKey)
+        continuation = nil
+    }
+}
+
+private actor CancellableVoiceCloneCreateService: VoiceCloneStoreServicing {
+    private var started = false
+    private var cancelled = false
+    private var startWaiters: [CheckedContinuation<Void, Never>] = []
+
+    func hasSession() async -> Bool { true }
+
+    func listVoices() async throws -> VoiceCloneListResult {
+        VoiceCloneListResult(voices: [], nextCreateAt: nil)
+    }
+
+    func createVoice(
+        recordingURL: URL,
+        referenceLanguage: String,
+        referenceText: String?,
+        consentConfirmed: Bool,
+        idempotencyKey: String,
+        onProgress: @escaping @Sendable (Double) -> Void
+    ) async throws -> ClonedVoice {
+        started = true
+        let waiters = startWaiters
+        startWaiters.removeAll()
+        waiters.forEach { $0.resume() }
+        do {
+            try await Task.sleep(nanoseconds: 60_000_000_000)
+            return ClonedVoice(voiceId: "vc_should_not_complete")
+        } catch is CancellationError {
+            cancelled = true
+            throw CancellationError()
+        }
+    }
+
+    func renameVoice(
+        _ voiceId: String,
+        name: String?,
+        expectedRevision: Int
+    ) async throws -> VoiceCloneIdentity {
+        throw VoiceCloneError.temporaryUnavailable
+    }
+
+    func deleteVoice(_ voiceId: String) async throws {}
+
+    func waitUntilCreateStarts() async {
+        guard !started else { return }
+        await withCheckedContinuation { continuation in
+            startWaiters.append(continuation)
+        }
+    }
+
+    func wasCancelled() -> Bool { cancelled }
 }
 
 private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {

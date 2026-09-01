@@ -9,6 +9,32 @@ enum VoiceCloneReferenceTransport {
     }
 }
 
+enum VoiceCloneCreateTrace {
+    static func apply(to request: inout URLRequest, requestID: String) {
+        request.setValue(requestID, forHTTPHeaderField: "X-Request-ID")
+    }
+}
+
+struct VoiceCloneAuthorizedSTS: Sendable {
+    let credentials: STSCredentials
+    let sessionToken: String
+}
+
+protocol VoiceCloneSTSCredentialProviding: Sendable {
+    func fetchVoiceCloneSTSCredentials(
+        using sessionToken: String
+    ) async throws -> VoiceCloneAuthorizedSTS
+}
+
+protocol VoiceCloneReferenceObjectUploading: Sendable {
+    func upload(
+        data: Data,
+        filename: String,
+        credentials: STSCredentials,
+        onProgress: @escaping @Sendable (Double) -> Void
+    ) async throws -> String
+}
+
 protocol VoiceCloneStoreServicing: Sendable {
     func hasSession() async -> Bool
     func listVoices() async throws -> VoiceCloneListResult
@@ -86,7 +112,11 @@ struct VoiceCloneCreateMetadata {
     let referenceText: String?
 
     init(referenceLanguage: String, referenceText: String?) throws {
-        self.referenceLanguage = VoiceCatalog.normalizedLanguage(referenceLanguage)
+        let normalizedLanguage = VoiceCatalog.normalizedLanguage(referenceLanguage)
+        // Speaker-only uploads intentionally skip client-side ASR. Preserve
+        // that unknown state as the BCP-47 code `und` instead of sending an
+        // empty value that route implementations could interpret differently.
+        self.referenceLanguage = normalizedLanguage.isEmpty ? "und" : normalizedLanguage
         let trimmed = referenceText?.trimmingCharacters(in: .whitespacesAndNewlines)
         guard (trimmed?.count ?? 0) <= 600 else {
             throw VoiceCloneError.invalidRecording(AppLocalized("朗读文本不能超过 600 个字符"))
@@ -150,6 +180,8 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
     private let baseURL: URL
     private let session: URLSession
     private let sessionProvider: any MobileSessionProviding
+    private let stsProvider: any VoiceCloneSTSCredentialProviding
+    private let cosUploader: any VoiceCloneReferenceObjectUploading
     private let route: ServiceRoute
     private let productRegion: AppRegion
     private var cachedVoiceGiftManifest: VoiceGiftCapabilityManifest?
@@ -162,15 +194,20 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         session: URLSession? = nil,
         route: ServiceRoute = ServiceRouting.current,
         productRegion: AppRegion = .global,
-        sessionProvider: any MobileSessionProviding
+        sessionProvider: any MobileSessionProviding,
+        stsProvider: (any VoiceCloneSTSCredentialProviding)? = nil,
+        cosUploader: (any VoiceCloneReferenceObjectUploading)? = nil
     ) {
-        self.baseURL = baseURL
-            ?? URL(string: route.webBaseURL)
-            ?? URL(string: ServiceRoute.globalGateway.apiGatewayBaseURL)!
+        // Route configuration is a frozen trusted enum value. A malformed CN
+        // URL must crash during development rather than silently sending an
+        // authenticated CN reference to the global control plane.
+        self.baseURL = baseURL ?? URL(string: route.webBaseURL)!
         self.session = session ?? OwnedAPIURLSession.make(route: route)
         self.route = route
         self.productRegion = productRegion
         self.sessionProvider = sessionProvider
+        self.stsProvider = stsProvider ?? APIService.shared
+        self.cosUploader = cosUploader ?? VoiceCloneCOSUploader()
     }
 
     func hasSession() async -> Bool {
@@ -297,9 +334,10 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         referenceLanguage: String,
         referenceText: String?,
         consentConfirmed: Bool,
-        idempotencyKey: String,
+        idempotencyKey: String = VoiceCloneCreateIdempotency.makeKey(),
         onProgress: @escaping @Sendable (Double) -> Void
     ) async throws -> ClonedVoice {
+        try Task.checkCancellation()
         guard Constants.Features.voiceCloningEnabled else {
             throw VoiceCloneError.temporaryUnavailable
         }
@@ -317,15 +355,27 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         )
         let values = try recordingURL.resourceValues(forKeys: [.fileSizeKey])
         guard let size = values.fileSize, size > 0, size <= 4 * 1024 * 1024 else {
-            throw VoiceCloneError.invalidRecording(AppLocalized("录音文件必须不超过 4 MB"))
+            throw VoiceCloneError.invalidRecording(AppLocalized("参考音频必须不超过 4 MB"))
         }
         let reference = try Data(contentsOf: recordingURL)
+        try Task.checkCancellation()
+        // The idempotency key survives an ambiguous retry at Store level. This
+        // request ID is only trace context for this invocation and its 401
+        // replay, so the two headers deliberately have separate lifetimes.
+        let requestID = UUID().uuidString
+        var token = try await requireToken()
+        try await ensureExpectedSessionToken(
+            token,
+            accountBoundary: accountBoundary
+        )
         if VoiceCloneReferenceTransport.usesDirectCOSUpload(for: route) {
             return try await createChinaVoice(
                 reference: reference,
                 metadata: metadata,
                 idempotencyKey: idempotencyKey,
                 accountBoundary: accountBoundary,
+                requestID: requestID,
+                token: token,
                 onProgress: onProgress
             )
         }
@@ -342,7 +392,6 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         body.append(reference)
         body.appendMultipart("\r\n--\(boundary)--\r\n")
 
-        var token = try await requireToken()
         try await ensureExpectedSessionToken(
             token,
             accountBoundary: accountBoundary
@@ -350,11 +399,16 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         var request = try createUploadRequest(
             boundary: boundary,
             token: token,
-            idempotencyKey: idempotencyKey
+            idempotencyKey: idempotencyKey,
+            requestID: requestID
         )
         let uploader = VoiceCloneUploader(route: route)
+        try Task.checkCancellation()
         var (data, response) = try await uploader.upload(request: request, body: body, onProgress: onProgress)
-        try await ensureAccountBoundary(accountBoundary)
+        try await ensureExpectedSessionToken(
+            token,
+            accountBoundary: accountBoundary
+        )
         if let http = response as? HTTPURLResponse, http.statusCode == 401 {
             // A late 401 from account A must never refresh and replay this
             // upload with account B's newer bearer.
@@ -364,7 +418,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             )
         }
         if let http = response as? HTTPURLResponse, http.statusCode == 401,
-           let refreshed = await sessionProvider.refreshSession() {
+           let refreshed = await sessionProvider.refreshSession(replacing: token) {
             token = refreshed
             try await ensureExpectedSessionToken(
                 token,
@@ -373,15 +427,25 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             request = try createUploadRequest(
                 boundary: boundary,
                 token: token,
-                idempotencyKey: idempotencyKey
+                idempotencyKey: idempotencyKey,
+                requestID: requestID
             )
             (data, response) = try await uploader.upload(request: request, body: body, onProgress: onProgress)
-            try await ensureAccountBoundary(accountBoundary)
+            try await ensureExpectedSessionToken(
+                token,
+                accountBoundary: accountBoundary
+            )
         }
         try await validate(response: response, data: data, originalRequest: request, canRefresh: false)
-        try await ensureAccountBoundary(accountBoundary)
+        try await ensureExpectedSessionToken(
+            token,
+            accountBoundary: accountBoundary
+        )
         let voice = try VoiceCloneResponseParser.createdVoice(from: data)
-        try await ensureAccountBoundary(accountBoundary)
+        try await ensureExpectedSessionToken(
+            token,
+            accountBoundary: accountBoundary
+        )
         return voice
     }
 
@@ -390,44 +454,61 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         metadata: VoiceCloneCreateMetadata,
         idempotencyKey: String,
         accountBoundary: AccountContentBoundaryToken?,
+        requestID: String,
+        token initialToken: String,
         onProgress: @escaping @Sendable (Double) -> Void
     ) async throws -> ClonedVoice {
-        try await ensureAccountBoundary(accountBoundary)
+        var token = initialToken
+        try await ensureExpectedSessionToken(
+            token,
+            accountBoundary: accountBoundary
+        )
         onProgress(0.03)
-        let sts: STSCredentials
+        let authorization: VoiceCloneAuthorizedSTS
         do {
-            sts = try await APIService.shared.fetchSTSCredentials()
+            authorization = try await stsProvider.fetchVoiceCloneSTSCredentials(
+                using: token
+            )
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             throw VoiceCloneError.temporaryUnavailable
         }
-        try await ensureAccountBoundary(accountBoundary)
-        let objectKey = try await VoiceCloneCOSUploader().upload(
+        token = authorization.sessionToken
+        try await ensureExpectedSessionToken(
+            token,
+            accountBoundary: accountBoundary
+        )
+        let objectKey = try await cosUploader.upload(
             data: reference,
             filename: "voice-reference.wav",
-            credentials: sts
+            credentials: authorization.credentials
         ) { progress in
             onProgress(0.05 + progress * 0.75)
         }
-        try await ensureAccountBoundary(accountBoundary)
+        try await ensureExpectedSessionToken(
+            token,
+            accountBoundary: accountBoundary
+        )
         let payload = try JSONSerialization.data(
             withJSONObject: metadata.chinaPayload(
                 referenceObjectKey: objectKey,
                 referenceSha256: VoiceCloneReferenceIntegrity.sha256Hex(reference)
             )
         )
-        var token = try await requireToken()
+        var request = try createChinaObjectRequest(
+            token: token,
+            body: payload,
+            idempotencyKey: idempotencyKey,
+            requestID: requestID
+        )
+        onProgress(0.82)
+        try Task.checkCancellation()
+        var (data, response) = try await session.data(for: request)
         try await ensureExpectedSessionToken(
             token,
             accountBoundary: accountBoundary
         )
-        var request = try createChinaObjectRequest(
-            token: token,
-            body: payload,
-            idempotencyKey: idempotencyKey
-        )
-        onProgress(0.82)
-        var (data, response) = try await session.data(for: request)
-        try await ensureAccountBoundary(accountBoundary)
         if let http = response as? HTTPURLResponse, http.statusCode == 401 {
             try await ensureExpectedSessionToken(
                 token,
@@ -435,7 +516,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             )
         }
         if let http = response as? HTTPURLResponse, http.statusCode == 401,
-           let refreshed = await sessionProvider.refreshSession() {
+           let refreshed = await sessionProvider.refreshSession(replacing: token) {
             token = refreshed
             try await ensureExpectedSessionToken(
                 token,
@@ -444,17 +525,35 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             request = try createChinaObjectRequest(
                 token: token,
                 body: payload,
-                idempotencyKey: idempotencyKey
+                idempotencyKey: idempotencyKey,
+                requestID: requestID
             )
             (data, response) = try await session.data(for: request)
-            try await ensureAccountBoundary(accountBoundary)
+            try await ensureExpectedSessionToken(
+                token,
+                accountBoundary: accountBoundary
+            )
         }
         try await validate(response: response, data: data, originalRequest: request, canRefresh: false)
-        try await ensureAccountBoundary(accountBoundary)
+        try await ensureExpectedSessionToken(
+            token,
+            accountBoundary: accountBoundary
+        )
         onProgress(1)
         let voice = try VoiceCloneResponseParser.createdVoice(from: data)
-        try await ensureAccountBoundary(accountBoundary)
+        try await ensureExpectedSessionToken(
+            token,
+            accountBoundary: accountBoundary
+        )
         return voice
+    }
+
+    private func requireCurrentSession(_ token: String) async throws {
+        try Task.checkCancellation()
+        guard await sessionProvider.sessionToken() == token else {
+            throw CancellationError()
+        }
+        try Task.checkCancellation()
     }
 
     func deleteVoice(_ voiceId: String) async throws {
@@ -652,7 +751,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             )
         }
         if let http = response as? HTTPURLResponse, http.statusCode == 401, canRefresh,
-           let refreshed = await sessionProvider.refreshSession() {
+           let refreshed = await sessionProvider.refreshSession(replacing: token) {
             try await ensureExpectedSessionToken(
                 refreshed,
                 accountBoundary: accountBoundary
@@ -732,20 +831,23 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
     func createUploadRequest(
         boundary: String,
         token: String,
-        idempotencyKey: String
+        idempotencyKey: String,
+        requestID: String = UUID().uuidString
     ) throws -> URLRequest {
         var request = URLRequest(url: baseURL.appendingPathComponent("api/voice-clone/voices"))
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         authorize(&request, token: token)
         try VoiceCloneCreateIdempotency.apply(idempotencyKey, to: &request)
+        VoiceCloneCreateTrace.apply(to: &request, requestID: requestID)
         return request
     }
 
     func createChinaObjectRequest(
         token: String,
         body: Data,
-        idempotencyKey: String
+        idempotencyKey: String,
+        requestID: String = UUID().uuidString
     ) throws -> URLRequest {
         var request = URLRequest(url: baseURL.appendingPathComponent("api/voice-clone/voices"))
         request.httpMethod = "POST"
@@ -753,6 +855,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         authorize(&request, token: token)
         try VoiceCloneCreateIdempotency.apply(idempotencyKey, to: &request)
+        VoiceCloneCreateTrace.apply(to: &request, requestID: requestID)
         return request
     }
 
@@ -869,7 +972,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
                 for: code
             )
             throw VoiceCloneError.invalidRecording(
-                localized ?? AppLocalized("录音未通过服务器校验")
+                localized ?? AppLocalized("参考音频未通过服务器校验")
             )
         case 429 where code == "VOICE_CREATION_LIMIT":
             throw VoiceCloneError.temporaryUnavailable
@@ -882,9 +985,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
     }
 }
 
-private final class VoiceCloneCOSUploader: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
-    private var progress: (@Sendable (Double) -> Void)?
-
+private struct VoiceCloneCOSUploader: VoiceCloneReferenceObjectUploading {
     func upload(
         data: Data,
         filename: String,
@@ -898,7 +999,7 @@ private final class VoiceCloneCOSUploader: NSObject, URLSessionTaskDelegate, @un
         let host = credentials.uploadHost
         guard let encodedKey = key.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
               let url = URL(string: "https://\(host)/\(encodedKey)") else {
-            throw VoiceCloneError.invalidRecording(AppLocalized("录音上传地址无效，请重试"))
+            throw VoiceCloneError.invalidRecording(AppLocalized("参考音频上传地址无效，请重试"))
         }
 
         let startTime = Int(Date().timeIntervalSince1970)
@@ -926,11 +1027,15 @@ private final class VoiceCloneCOSUploader: NSObject, URLSessionTaskDelegate, @un
         request.setValue(credentials.sessionToken, forHTTPHeaderField: "x-cos-security-token")
         request.setValue(authorization, forHTTPHeaderField: "Authorization")
 
-        progress = onProgress
+        let delegate = VoiceCloneCOSUploadDelegate(onProgress: onProgress)
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpShouldSetCookies = false
         configuration.httpCookieStorage = nil
-        let uploadSession = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+        let uploadSession = URLSession(
+            configuration: configuration,
+            delegate: delegate,
+            delegateQueue: nil
+        )
         defer { uploadSession.finishTasksAndInvalidate() }
         let (_, response) = try await uploadSession.upload(for: request, from: data)
         guard let http = response as? HTTPURLResponse,
@@ -938,17 +1043,6 @@ private final class VoiceCloneCOSUploader: NSObject, URLSessionTaskDelegate, @un
             throw VoiceCloneError.temporaryUnavailable
         }
         return key
-    }
-
-    func urlSession(
-        _ session: URLSession,
-        task: URLSessionTask,
-        didSendBodyData bytesSent: Int64,
-        totalBytesSent: Int64,
-        totalBytesExpectedToSend: Int64
-    ) {
-        guard totalBytesExpectedToSend > 0 else { return }
-        progress?(min(1, Double(totalBytesSent) / Double(totalBytesExpectedToSend)))
     }
 
     private static func hmacSHA1(key: String, data: String) -> String {
@@ -986,6 +1080,41 @@ private final class VoiceCloneCOSUploader: NSObject, URLSessionTaskDelegate, @un
     }
 }
 
+/// One delegate per COS PUT keeps progress callbacks isolated even when the
+/// service actor is re-entered by an account change and two uploads overlap.
+/// COS credentials are host-bound; redirects are rejected so their signed
+/// headers and reference bytes can never be forwarded to another origin.
+private final class VoiceCloneCOSUploadDelegate: NSObject, URLSessionTaskDelegate,
+    @unchecked Sendable
+{
+    private let onProgress: @Sendable (Double) -> Void
+
+    init(onProgress: @escaping @Sendable (Double) -> Void) {
+        self.onProgress = onProgress
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didSendBodyData bytesSent: Int64,
+        totalBytesSent: Int64,
+        totalBytesExpectedToSend: Int64
+    ) {
+        guard totalBytesExpectedToSend > 0 else { return }
+        onProgress(min(1, Double(totalBytesSent) / Double(totalBytesExpectedToSend)))
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        completionHandler(nil)
+    }
+}
+
 private final class VoiceCloneUploader: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
     private var progress: (@Sendable (Double) -> Void)?
     private let route: ServiceRoute
@@ -1000,7 +1129,15 @@ private final class VoiceCloneUploader: NSObject, URLSessionTaskDelegate, @unche
         onProgress: @escaping @Sendable (Double) -> Void
     ) async throws -> (Data, URLResponse) {
         progress = onProgress
-        let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.httpShouldSetCookies = false
+        configuration.httpCookieStorage = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        let session = URLSession(
+            configuration: configuration,
+            delegate: self,
+            delegateQueue: nil
+        )
         defer { session.finishTasksAndInvalidate() }
         return try await session.upload(for: request, from: body)
     }

@@ -3,11 +3,20 @@ import Foundation
 protocol MobileSessionProviding: Sendable {
     func sessionToken() async -> String?
     func refreshSession() async -> String?
+    func refreshSession(replacing rejectedToken: String) async -> String?
     func invalidateSession() async
     func rejectSession(_ rejectedToken: String?) async
 }
 
 extension MobileSessionProviding {
+    /// Refreshes only while the rejected bearer still belongs to this
+    /// provider. Production overrides this with an atomic boundary-generation
+    /// check; the default keeps lightweight test doubles source-compatible.
+    func refreshSession(replacing rejectedToken: String) async -> String? {
+        guard await sessionToken() == rejectedToken else { return nil }
+        return await refreshSession()
+    }
+
     /// Test doubles and deliberately missing-session providers do not own the
     /// app's authenticated UI state. The production MobileSessionStore
     /// overrides this hook and closes the local account boundary.
@@ -270,12 +279,32 @@ actor MobileSessionStore: MobileSessionProviding {
         await refreshSessionExchange()?.token
     }
 
+    /// A protected request must never retry account A's body with account B's
+    /// freshly installed bearer. Capture both the bearer and route boundary
+    /// before the refresh; `exchange` rejects persistence if either account
+    /// logout or login advances that boundary while the network call awaits.
+    func refreshSession(replacing rejectedToken: String) async -> String? {
+        let boundaryGeneration = MobileSessionBoundaryClock.shared.snapshot(for: route)
+        guard sessionToken() == rejectedToken else { return nil }
+        return await refreshSessionExchange(
+            expectedBoundaryGeneration: boundaryGeneration
+        )?.token
+    }
+
     /// Re-exchanges the saved provider credential and returns both the fresh
     /// route-local bearer and its canonical account id. This repairs profiles
     /// created by older builds that persisted a valid `cms_` token but dropped
     /// `data.userId` from the same response.
     func refreshSessionExchange() async -> ExchangeResult? {
         let boundaryGeneration = MobileSessionBoundaryClock.shared.snapshot(for: route)
+        return await refreshSessionExchange(
+            expectedBoundaryGeneration: boundaryGeneration
+        )
+    }
+
+    private func refreshSessionExchange(
+        expectedBoundaryGeneration boundaryGeneration: UInt64
+    ) async -> ExchangeResult? {
         guard let provider = normalized(KeychainStore.get(storageKeys.provider)),
               let idToken = normalized(KeychainStore.get(storageKeys.identityToken)) else { return nil }
         return try? await exchange(
