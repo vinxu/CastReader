@@ -2541,6 +2541,34 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertEqual(recorder.allRequests().count, 1)
     }
 
+    func testVoiceGiftRequiresBothGlobalProductRegionAndGlobalServiceRoute() {
+        XCTAssertTrue(
+            VoiceGiftFeature.isRegionEligible(
+                on: .globalGateway,
+                appRegion: .global
+            )
+        )
+        XCTAssertFalse(
+            VoiceGiftFeature.isRegionEligible(
+                on: .globalGateway,
+                appRegion: .cn
+            ),
+            "A China-product build must not expose Voice Gift merely because its service route is temporarily global"
+        )
+        XCTAssertFalse(
+            VoiceGiftFeature.isRegionEligible(
+                on: .chinaGateway,
+                appRegion: .global
+            )
+        )
+        XCTAssertFalse(
+            VoiceGiftFeature.isRegionEligible(
+                on: .chinaGateway,
+                appRegion: .cn
+            )
+        )
+    }
+
     func testGiftMutationMapsStableRevokedAndExpiredErrors() async throws {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]

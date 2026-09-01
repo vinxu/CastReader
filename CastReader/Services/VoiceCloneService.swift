@@ -52,8 +52,13 @@ extension VoiceCloneStoreServicing {
 }
 
 enum VoiceGiftFeature {
-    static func isRegionEligible(on route: ServiceRoute = ServiceRouting.current) -> Bool {
-        Constants.Features.voiceCloningEnabled && route == .globalGateway
+    static func isRegionEligible(
+        on route: ServiceRoute = ServiceRouting.current,
+        appRegion: AppRegion = AppRegion.current
+    ) -> Bool {
+        Constants.Features.voiceCloningEnabled
+            && appRegion == .global
+            && route == .globalGateway
     }
 }
 
@@ -130,12 +135,16 @@ enum VoiceCloneEndpoint {
 }
 
 actor VoiceCloneService: VoiceCloneStoreServicing {
-    static let shared = VoiceCloneService(sessionProvider: MobileSessionStore.shared)
+    static let shared = VoiceCloneService(
+        productRegion: AppRegion.current,
+        sessionProvider: MobileSessionStore.shared
+    )
 
     private let baseURL: URL
     private let session: URLSession
     private let sessionProvider: any MobileSessionProviding
     private let route: ServiceRoute
+    private let productRegion: AppRegion
     private var cachedVoiceGiftManifest: VoiceGiftCapabilityManifest?
     private var voiceGiftCapabilityResolved = false
     private var voiceGiftCapabilityCheckedAt: Date?
@@ -145,6 +154,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         baseURL: URL? = nil,
         session: URLSession? = nil,
         route: ServiceRoute = ServiceRouting.current,
+        productRegion: AppRegion = .global,
         sessionProvider: any MobileSessionProviding
     ) {
         self.baseURL = baseURL
@@ -152,6 +162,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             ?? URL(string: ServiceRoute.globalGateway.apiGatewayBaseURL)!
         self.session = session ?? OwnedAPIURLSession.make(route: route)
         self.route = route
+        self.productRegion = productRegion
         self.sessionProvider = sessionProvider
     }
 
@@ -525,7 +536,10 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
            Date().timeIntervalSince(checkedAt) < voiceGiftCapabilityTTL {
             return cachedVoiceGiftManifest?.isCompatible == true
         }
-        guard VoiceGiftFeature.isRegionEligible(on: route) else {
+        guard VoiceGiftFeature.isRegionEligible(
+            on: route,
+            appRegion: productRegion
+        ) else {
             cachedVoiceGiftManifest = nil
             voiceGiftCapabilityResolved = true
             voiceGiftCapabilityCheckedAt = Date()
@@ -560,7 +574,10 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
     }
 
     private func requireVoiceGiftCapability() async throws {
-        guard VoiceGiftFeature.isRegionEligible(on: route) else {
+        guard VoiceGiftFeature.isRegionEligible(
+            on: route,
+            appRegion: productRegion
+        ) else {
             throw VoiceCloneError.giftUnavailableInRegion
         }
         // Mutations must honor the same expiring rollout gate as reads. Using
