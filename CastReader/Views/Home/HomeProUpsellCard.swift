@@ -102,7 +102,7 @@ struct HomeProUpsellCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: HomeLayout.itemGap) {
             HomeProBookArtwork()
                 .frame(height: 108)
                 .accessibilityHidden(true)
@@ -122,7 +122,7 @@ struct HomeProUpsellCard: View {
                 .foregroundColor(AppTheme.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                 Text(annualPriceText)
                     .font(.title3.weight(.bold))
                     .foregroundColor(AppTheme.foreground)
@@ -149,7 +149,7 @@ struct HomeProUpsellCard: View {
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity, minHeight: 50)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, HomeLayout.compactCardPadding)
                 .foregroundColor(AppTheme.primaryForeground)
                 .background(AppTheme.primary, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
             }
@@ -174,7 +174,7 @@ struct HomeProUpsellCard: View {
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
         }
-        .padding(17)
+        .padding(HomeLayout.regularCardPadding)
         .background(AppTheme.surfaceVariant, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)

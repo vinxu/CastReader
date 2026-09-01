@@ -26,9 +26,9 @@ struct GoogleBooksHomeSection: View {
     var body: some View {
         Group {
             if !store.needsConnection && !store.homeBooks.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
                     HStack(alignment: .center) {
-                        VStack(alignment: .leading, spacing: 3) {
+                        VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                             Text(AppLocalized("Google Play 图书"))
                                 .font(.headline)
                                 .foregroundColor(AppTheme.foreground)
@@ -45,20 +45,15 @@ struct GoogleBooksHomeSection: View {
                         .accessibilityIdentifier("homeShelfViewAll.google_books")
                     }
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 14) {
-                            ForEach(store.homeBooks) { book in
-                                Button { open(book) } label: { GoogleBooksRailCard(book: book) }
-                                    .buttonStyle(.plain)
-                                    .accessibilityIdentifier(
-                                        "homeShelfBook.google_books.\(book.volumeID ?? book.id)"
-                                    )
-                            }
+                    HomeHorizontalRail(alignment: .top) {
+                        ForEach(store.homeBooks) { book in
+                            Button { open(book) } label: { GoogleBooksRailCard(book: book) }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier(
+                                    "homeShelfBook.google_books.\(book.volumeID ?? book.id)"
+                                )
                         }
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 2)
                     }
-                    .padding(.horizontal, -2)
                 }
                 .accessibilityIdentifier("homeShelfSection.google_books")
             }
@@ -434,7 +429,7 @@ struct GoogleBooksLibraryView: View {
 private struct GoogleBooksRailCard: View {
     let book: GoogleBooksBook
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
             GoogleBooksCoverView(urlString: book.coverURL)
                 .frame(width: 96, height: 144)
                 .clipShape(RoundedRectangle(cornerRadius: 8))

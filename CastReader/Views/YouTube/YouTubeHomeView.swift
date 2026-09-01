@@ -327,13 +327,13 @@ struct YouTubeHomeSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
             header
             switch projection {
             case .empty:
                 emptyState
             case .content:
-                LazyVStack(spacing: 10) {
+                LazyVStack(spacing: HomeLayout.itemGap) {
                     ForEach(homeRecords) { record in
                         YouTubeHomeShelfRow(
                             record: record,
@@ -389,8 +389,8 @@ struct YouTubeHomeSection: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(alignment: .center, spacing: 12) {
+        VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
+            HStack(alignment: .center, spacing: HomeLayout.itemGap) {
                 Text(AppLocalized("听 YouTube"))
                     .font(.headline)
                     .foregroundStyle(AppTheme.foreground)
@@ -419,9 +419,9 @@ struct YouTubeHomeSection: View {
     /// 还配了一颗全宽实心按钮——空状态不需要这么强的视觉重量。
     private var emptyState: some View {
         NavigationLink(destination: YouTubeHomeView()) {
-            HStack(spacing: 14) {
+            HStack(spacing: HomeLayout.itemGap) {
                 youtubeIcon
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                     Text(AppLocalized("粘贴视频链接"))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AppTheme.foreground)
@@ -436,7 +436,7 @@ struct YouTubeHomeSection: View {
                     .foregroundStyle(AppTheme.mutedForeground)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
+            .padding(HomeLayout.regularCardPadding)
             .background(AppTheme.surface)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay {
@@ -494,7 +494,7 @@ private struct YouTubeHomeShelfRow: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: HomeLayout.itemGap) {
                 CoverThumbnail(
                     record: record,
                     contentMode: .fill,
@@ -503,7 +503,7 @@ private struct YouTubeHomeShelfRow: View {
                 .frame(width: 96, height: 54)
                 .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                     Text(record.title)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AppTheme.foreground)
@@ -521,7 +521,7 @@ private struct YouTubeHomeShelfRow: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(10)
+            .padding(HomeLayout.compactCardPadding)
             .background(isActive ? AppTheme.primary.opacity(0.07) : AppTheme.surface)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay {

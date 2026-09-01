@@ -22,9 +22,9 @@ struct WeReadHomeSection: View {
     var body: some View {
         Group {
             if !store.needsConnection && !store.homeBooks.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
                     HStack(alignment: .center) {
-                        VStack(alignment: .leading, spacing: 3) {
+                        VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                             Text(AppLocalized("微信读书")).font(.headline).foregroundColor(AppTheme.foreground)
                             Text(AppLocalized("已同步的微信读书书架")).font(.caption).foregroundColor(AppTheme.mutedForeground)
                         }
@@ -35,18 +35,13 @@ struct WeReadHomeSection: View {
                         .accessibilityIdentifier("homeShelfViewAll.weread")
                     }
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 14) {
-                            ForEach(store.homeBooks) { book in
-                                Button { open(book) } label: { WeReadBookRailCard(book: book) }
-                                    .buttonStyle(.plain)
-                                    .accessibilityIdentifier("homeShelfBook.weread.\(book.id)")
-                            }
+                    HomeHorizontalRail(alignment: .top) {
+                        ForEach(store.homeBooks) { book in
+                            Button { open(book) } label: { WeReadBookRailCard(book: book) }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("homeShelfBook.weread.\(book.id)")
                         }
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 2)
                     }
-                    .padding(.horizontal, -2)
                 }
                 .accessibilityIdentifier("homeShelfSection.weread")
             }
@@ -281,7 +276,7 @@ struct WeReadLibraryView: View {
 private struct WeReadBookRailCard: View {
     let book: WeReadBook
     var body: some View {
-        VStack(alignment:.leading,spacing:8) {
+        VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
             WeReadCoverView(urlString: book.coverURL).frame(width:96,height:144).clipShape(RoundedRectangle(cornerRadius:8)).overlay(RoundedRectangle(cornerRadius:8).stroke(AppTheme.border.opacity(0.65),lineWidth:1))
             Text(book.title).font(.caption.weight(.semibold)).foregroundColor(AppTheme.foreground).lineLimit(2).frame(width:104,height:34,alignment:.topLeading)
             Text(book.displayProgress).font(.caption2).foregroundColor(AppTheme.mutedForeground).lineLimit(1).frame(width:104,alignment:.leading)

@@ -63,9 +63,9 @@ struct KoboHomeSection: View {
     var body: some View {
         Group {
             if !store.needsConnection && !store.homeBooks.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
                     HStack {
-                        VStack(alignment: .leading, spacing: 3) {
+                        VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                             Text("Kobo")
                                 .font(.headline)
                                 .foregroundColor(AppTheme.foreground)
@@ -82,22 +82,17 @@ struct KoboHomeSection: View {
                         .accessibilityIdentifier("homeShelfViewAll.kobo")
                     }
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(alignment: .top, spacing: 14) {
-                            ForEach(store.homeBooks) { book in
-                                Button { open(book) } label: {
-                                    KoboRailCard(book: book)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier(
-                                    "homeShelfBook.kobo.\(book.bookUUID)"
-                                )
+                    HomeHorizontalRail(alignment: .top) {
+                        ForEach(store.homeBooks) { book in
+                            Button { open(book) } label: {
+                                KoboRailCard(book: book)
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier(
+                                "homeShelfBook.kobo.\(book.bookUUID)"
+                            )
                         }
-                        .padding(.horizontal, 2)
-                        .padding(.vertical, 4)
                     }
-                    .padding(.horizontal, -2)
                 }
                 .accessibilityIdentifier("homeShelfSection.kobo")
             }
@@ -126,7 +121,7 @@ private struct KoboRailCard: View {
     let book: KoboBook
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
             KoboCoverView(book: book)
                 .frame(width: 92, height: 132)
             Text(book.title)

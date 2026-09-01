@@ -52,7 +52,7 @@ struct KindleHomeSection: View {
     var body: some View {
         Group {
             if !store.needsConnection && !orderedHomeBooks.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
                     header
                     bookRail
                 }
@@ -63,7 +63,7 @@ struct KindleHomeSection: View {
 
     private var header: some View {
         HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                 Text("Kindle")
                     .font(.headline)
                     .foregroundColor(AppTheme.foreground)
@@ -82,25 +82,20 @@ struct KindleHomeSection: View {
     }
 
     private var bookRail: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 14) {
-                ForEach(orderedHomeBooks) { book in
-                    Button {
-                        KindlePlaybackCenter.shared.open(book: book)
-                    } label: {
-                        KindleBookRailCard(
-                            book: book,
-                            isRecent: recentKindleBookIDs.contains(book.id)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("homeShelfBook.kindle.\(book.id)")
+        HomeHorizontalRail(alignment: .top) {
+            ForEach(orderedHomeBooks) { book in
+                Button {
+                    KindlePlaybackCenter.shared.open(book: book)
+                } label: {
+                    KindleBookRailCard(
+                        book: book,
+                        isRecent: recentKindleBookIDs.contains(book.id)
+                    )
                 }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("homeShelfBook.kindle.\(book.id)")
             }
-            .padding(.vertical, 4)
-            .padding(.horizontal, 2)
         }
-        .padding(.horizontal, -2)
     }
 
 }
@@ -110,7 +105,7 @@ private struct KindleBookRailCard: View {
     let isRecent: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
             ZStack(alignment: .topLeading) {
                 KindleCoverView(urlString: book.coverURL)
                     .frame(width: 96, height: 144)

@@ -66,9 +66,9 @@ struct OReillyHomeSection: View {
     var body: some View {
         Group {
             if !store.needsConnection && !store.homeBooks.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
                     HStack {
-                        VStack(alignment: .leading, spacing: 3) {
+                        VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                             Text("O’Reilly Learning")
                                 .font(.headline)
                                 .foregroundColor(AppTheme.foreground)
@@ -85,22 +85,17 @@ struct OReillyHomeSection: View {
                         .accessibilityIdentifier("homeShelfViewAll.oreilly")
                     }
 
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(alignment: .top, spacing: 14) {
-                            ForEach(store.homeBooks) { book in
-                                Button { open(book) } label: {
-                                    OReillyRailCard(book: book)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier(
-                                    "homeShelfBook.oreilly.\(book.contentID)"
-                                )
+                    HomeHorizontalRail(alignment: .top) {
+                        ForEach(store.homeBooks) { book in
+                            Button { open(book) } label: {
+                                OReillyRailCard(book: book)
                             }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier(
+                                "homeShelfBook.oreilly.\(book.contentID)"
+                            )
                         }
-                        .padding(.horizontal, 2)
-                        .padding(.vertical, 4)
                     }
-                    .padding(.horizontal, -2)
                 }
                 .accessibilityIdentifier("homeShelfSection.oreilly")
             }
@@ -120,7 +115,7 @@ private struct OReillyRailCard: View {
     let book: OReillyBook
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
             OReillyCoverView(book: book)
                 .frame(width: 92, height: 132)
             Text(book.title)

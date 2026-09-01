@@ -17,6 +17,44 @@ import Combine
 import WebKit
 #endif
 
+/// 首页统一空间节奏。页面边距、区块层级和卡片内部留白分开定义，
+/// 避免每个模块各自使用接近但不相同的 magic number。
+enum HomeLayout {
+    static let pageInset: CGFloat = 20
+    static let sectionGap: CGFloat = 24
+    static let headerToContent: CGFloat = 12
+    static let titleToSubtitle: CGFloat = 4
+    static let itemGap: CGFloat = 12
+    static let mediaToTextGap: CGFloat = 8
+    static let compactCardPadding: CGFloat = 12
+    static let regularCardPadding: CGFloat = 16
+    static let railOverflow: CGFloat = 4
+}
+
+/// 首页横滑卡片统一处理卡间距、阴影缓冲和与页面正文的首卡对齐。
+struct HomeHorizontalRail<Content: View>: View {
+    let alignment: VerticalAlignment
+    private let content: Content
+
+    init(
+        alignment: VerticalAlignment = .center,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.alignment = alignment
+        self.content = content()
+    }
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: alignment, spacing: HomeLayout.itemGap) {
+                content
+            }
+            .padding(HomeLayout.railOverflow)
+        }
+        .padding(.horizontal, -HomeLayout.railOverflow)
+    }
+}
+
 /// 导入来源（场景入口 + ➕ 通用导入共用）。场景只改变排序，不再限制来源能力。
 enum ImportSource: String, Identifiable, CaseIterable {
     case camera, photoLibrary, file, url, text
@@ -155,8 +193,8 @@ private struct HomeVoiceFeatureBanner: View {
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
                     .minimumScaleFactor(0.78)
-                    .padding(.horizontal, 14)
-                    .padding(.top, 14)
+                    .padding(.horizontal, HomeLayout.regularCardPadding)
+                    .padding(.top, HomeLayout.regularCardPadding)
             }
             .frame(maxWidth: .infinity)
             .aspectRatio(1, contentMode: .fit)
@@ -271,7 +309,7 @@ struct HomeView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: HomeLayout.sectionGap) {
                     if libraryOnboarding.shouldShowReminder {
                         libraryOnboardingReminder
                     }
@@ -308,7 +346,7 @@ struct HomeView: View {
                         homeProCard
                     }
                 }
-                .padding(20)
+                .padding(HomeLayout.pageInset)
             }
             // Inside the NavigationView on purpose — an inset applied outside it
             // never reaches this ScrollView.
@@ -511,13 +549,13 @@ struct HomeView: View {
             columns: Array(
                 repeating: GridItem(
                     .flexible(minimum: 0, maximum: .infinity),
-                    spacing: 12,
+                    spacing: HomeLayout.itemGap,
                     alignment: .top
                 ),
                 count: Constants.Features.voiceCloningEnabled ? 2 : 1
             ),
             alignment: .leading,
-            spacing: 12
+            spacing: HomeLayout.itemGap
         ) {
             HomeVoiceFeatureBanner(
                 title: "找到你喜欢的声音",
@@ -705,7 +743,7 @@ struct HomeView: View {
         Button {
             activeSheet = .librarySources
         } label: {
-            HStack(alignment: .center, spacing: 14) {
+            HStack(alignment: .center, spacing: HomeLayout.itemGap) {
                 Image(systemName: "books.vertical.fill")
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundColor(AppTheme.primary)
@@ -715,7 +753,7 @@ struct HomeView: View {
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                     Text(librarySourcesEmptyCardTitle)
                         .font(.subheadline.weight(.semibold))
                         .foregroundColor(AppTheme.foreground)
@@ -732,7 +770,7 @@ struct HomeView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundColor(AppTheme.mutedForeground)
             }
-            .padding(14)
+            .padding(HomeLayout.regularCardPadding)
             .background(AppTheme.surface)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
@@ -862,49 +900,39 @@ struct HomeView: View {
     }
 
     private var continueSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
             Text("继续看").font(.headline).foregroundColor(AppTheme.foreground)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
-                    ForEach(continueRecords.prefix(8)) { rec in
-                        ContinueCard(record: rec) { reopen(rec) }
-                    }
+            HomeHorizontalRail {
+                ForEach(continueRecords.prefix(8)) { rec in
+                    ContinueCard(record: rec) { reopen(rec) }
                 }
-                .padding(.vertical, 6)
-                .padding(.horizontal, 2)
             }
-            .padding(.horizontal, -2)
         }
     }
 
     // MARK: - 场景入口
 
     private var scenarioSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: HomeLayout.headerToContent) {
             HStack {
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                     Text("解读场景").font(.headline).foregroundColor(AppTheme.foreground)
                     Text("选择导入和解读时使用的内容视角").font(.caption).foregroundColor(AppTheme.mutedForeground)
                 }
                 Spacer()
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(ExplainContentType.allCases) { ct in
-                        Button {
-                            activeSheet = .importPanel(.scenario(ct))
-                        } label: {
-                            ScenarioPill(ct: ct)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("scenario-\(ct.rawValue)")
+            HomeHorizontalRail {
+                ForEach(ExplainContentType.allCases) { ct in
+                    Button {
+                        activeSheet = .importPanel(.scenario(ct))
+                    } label: {
+                        ScenarioPill(ct: ct)
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("scenario-\(ct.rawValue)")
                 }
-                .padding(.vertical, 3)
-                .padding(.horizontal, 2)
             }
-            .padding(.horizontal, -2)
         }
     }
 
@@ -1516,8 +1544,8 @@ private struct BoundLibraryActivationCard: View {
     let action: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
-            HStack(alignment: .top, spacing: 12) {
+        VStack(alignment: .leading, spacing: HomeLayout.itemGap) {
+            HStack(alignment: .top, spacing: HomeLayout.itemGap) {
                 Image(systemName: iconName)
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(AppTheme.primary)
@@ -1525,7 +1553,7 @@ private struct BoundLibraryActivationCard: View {
                     .background(AppTheme.primary.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: HomeLayout.titleToSubtitle) {
                     Text(AppLocalized("完成首次朗读"))
                         .font(.headline)
                         .foregroundStyle(AppTheme.foreground)
@@ -1556,7 +1584,7 @@ private struct BoundLibraryActivationCard: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("continueLibraryOnboarding")
         }
-        .padding(16)
+        .padding(HomeLayout.regularCardPadding)
         .background(AppTheme.surface)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
@@ -2082,7 +2110,7 @@ private struct ScenarioPill: View {
     let ct: ExplainContentType
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: HomeLayout.mediaToTextGap) {
             Image(systemName: ct.icon)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(AppTheme.primary)
@@ -2091,8 +2119,7 @@ private struct ScenarioPill: View {
                 .foregroundColor(AppTheme.foreground)
                 .lineLimit(1)
         }
-        .padding(.horizontal, 13)
-        .padding(.vertical, 10)
+        .padding(HomeLayout.compactCardPadding)
         .background(AppTheme.surface)
         .cornerRadius(14)
         .overlay(
@@ -2176,9 +2203,13 @@ private struct ContinueCardContent: View {
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 3 : 2)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(width: cardWidth - 20, alignment: .topLeading)
+                .frame(
+                    width: cardWidth - HomeLayout.compactCardPadding * 2,
+                    alignment: .topLeading
+                )
                 .frame(minHeight: 38, alignment: .topLeading)
-                .padding(.horizontal, 10).padding(.vertical, 8)
+                .padding(.horizontal, HomeLayout.compactCardPadding)
+                .padding(.vertical, HomeLayout.mediaToTextGap)
         }
         .frame(width: cardWidth)
         .background(AppTheme.surface)
