@@ -141,7 +141,7 @@ struct STSResponse: Codable {
     let sts: STSCredentials?
 }
 
-struct STSCredentials: Codable {
+struct STSCredentials: Codable, Sendable {
     let accessKeyId: String
     let secretAccessKey: String
     let sessionToken: String

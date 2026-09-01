@@ -63,8 +63,8 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["登录后创建声音"].waitForExistence(timeout: 5))
     }
 
-    /// Debug-only presentation hook lets UI automation verify the complete
-    /// recording shell without bypassing the production account boundary.
+    /// Debug-only presentation hook verifies both creation sources, then keeps
+    /// exercising the existing recording flow without bypassing the account boundary.
     func testVoiceCloneDoubaoStyleRecordingShell() throws {
         let app = XCUIApplication()
         app.launchArguments = [
@@ -83,28 +83,22 @@ class CastReaderUITests: XCTestCase {
         created.tap()
 
         XCTAssertTrue(app.staticTexts["克隆我的声音"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["录制自己的声音"].exists)
-        XCTAssertTrue(app.staticTexts["找一处安静的地方"].exists)
-        XCTAssertTrue(app.staticTexts["自由朗读或自然说话"].exists)
-        XCTAssertTrue(
-            app.staticTexts[
-                "可以朗读示例，也可以用录音语言自然说一段自己的内容，无需逐字一致。"
-            ].exists
-        )
+        let confirm = app.buttons["voiceCloneIntroConfirmButton"]
+        let upload = app.buttons["voiceCloneUploadAudioButton"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        XCTAssertTrue(upload.waitForExistence(timeout: 3))
+        XCTAssertTrue(confirm.label.contains("录制约 10 秒"))
+        XCTAssertTrue(upload.label.contains("上传音频文件"))
+        XCTAssertTrue(upload.label.contains("原文件不会上传"))
+        XCTAssertTrue(app.staticTexts["只保留一个人的声音"].exists)
+        XCTAssertTrue(app.staticTexts["使用本人或已获授权的声音"].exists)
         XCTAssertTrue(
             app.staticTexts[
                 "所有用户均可创建和试听声音；Pro 可用于朗读和解读，每个会员周期 120 分钟。"
             ].exists
         )
 
-        XCTAssertTrue(
-            app.staticTexts[
-                "继续即表示你确认录制的是本人声音，并同意仅在 App 内用于生成语音。"
-            ].exists
-        )
         XCTAssertFalse(app.switches.firstMatch.exists)
-        let confirm = app.buttons["voiceCloneIntroConfirmButton"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
         let confirmEnabled = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "enabled == true"),
             object: confirm
@@ -151,8 +145,16 @@ class CastReaderUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts["Clone My Voice"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["克隆我的声音"].exists)
-        XCTAssertTrue(app.staticTexts["Read Freely or Speak Naturally"].exists)
-        app.buttons["voiceCloneIntroConfirmButton"].tap()
+        let record = app.buttons["voiceCloneIntroConfirmButton"]
+        let upload = app.buttons["voiceCloneUploadAudioButton"]
+        XCTAssertTrue(record.waitForExistence(timeout: 3))
+        XCTAssertTrue(upload.waitForExistence(timeout: 3))
+        XCTAssertTrue(record.label.contains("Record About 10 Seconds"))
+        XCTAssertTrue(upload.label.contains("Upload Audio File"))
+        XCTAssertTrue(upload.label.contains("original file is not uploaded"))
+        XCTAssertTrue(app.staticTexts["Only One Person’s Voice"].exists)
+        XCTAssertTrue(app.staticTexts["Use Your Own or an Authorized Voice"].exists)
+        record.tap()
 
         XCTAssertTrue(app.staticTexts["Start Speaking"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["voiceCloneRecordingLanguagePicker"].exists)

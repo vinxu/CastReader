@@ -27,6 +27,7 @@ final class VoiceCloneStore: ObservableObject {
     private var accountGeneration: UInt64 = 0
     private var refreshGeneration: UInt64 = 0
     private var activeCreateRequestID: UUID?
+    private var activeCreateTask: Task<ClonedVoice, Error>?
     private var activeDeleteRequestID: UUID?
     private var activeRenameRequests: [String: UUID] = [:]
     private var reconciliationTask: Task<Void, Never>?
@@ -234,24 +235,29 @@ final class VoiceCloneStore: ObservableObject {
         uploadProgress = 0
         defer {
             if activeCreateRequestID == requestID {
+                activeCreateTask = nil
                 activeCreateRequestID = nil
                 isCreating = false
             }
         }
         do {
-            let created = try await service.createVoice(
-                recordingURL: recordingURL,
-                referenceLanguage: referenceLanguage,
-                referenceText: referenceText,
-                consentConfirmed: consentConfirmed
-            ) { [weak self] progress in
-                Task { @MainActor in
-                    guard let self,
-                          self.activeCreateRequestID == requestID,
-                          self.isCurrent(scopeToken) else { return }
-                    self.uploadProgress = progress
+            let createTask = Task<ClonedVoice, Error> { [service] in
+                try await service.createVoice(
+                    recordingURL: recordingURL,
+                    referenceLanguage: referenceLanguage,
+                    referenceText: referenceText,
+                    consentConfirmed: consentConfirmed
+                ) { [weak self] progress in
+                    Task { @MainActor in
+                        guard let self,
+                              self.activeCreateRequestID == requestID,
+                              self.isCurrent(scopeToken) else { return }
+                        self.uploadProgress = progress
+                    }
                 }
             }
+            activeCreateTask = createTask
+            let created = try await createTask.value
             guard activeCreateRequestID == requestID,
                   isCurrent(scopeToken),
                   !Task.isCancelled else { return false }
@@ -271,7 +277,11 @@ final class VoiceCloneStore: ObservableObject {
                 persistIdentities()
             }
             let normalized = VoiceCatalog.normalizedLanguage(referenceLanguage)
-            referenceLanguages[created.voiceId] = normalized
+            if normalized.isEmpty {
+                referenceLanguages.removeValue(forKey: created.voiceId)
+            } else {
+                referenceLanguages[created.voiceId] = normalized
+            }
             persistReferenceLanguages()
             lastCreatedVoiceID = created.voiceId
             // Do not select the voice automatically: free users may preview it,
@@ -288,10 +298,18 @@ final class VoiceCloneStore: ObservableObject {
                 await self?.refresh()
             }
             return true
+        } catch is CancellationError {
+            // Account changes and view teardown cancel the in-flight upload.
+            // Never publish that cancellation into the next account scope.
+            return false
         } catch let error as VoiceCloneError {
+            guard activeCreateRequestID == requestID,
+                  isCurrent(scopeToken) else { return false }
             handle(error)
             return false
         } catch {
+            guard activeCreateRequestID == requestID,
+                  isCurrent(scopeToken) else { return false }
             handle(error)
             return false
         }
@@ -559,6 +577,8 @@ final class VoiceCloneStore: ObservableObject {
     private func invalidateAccountWork() {
         accountGeneration &+= 1
         invalidateRefreshes()
+        activeCreateTask?.cancel()
+        activeCreateTask = nil
         activeCreateRequestID = nil
         activeDeleteRequestID = nil
         activeRenameRequests = [:]

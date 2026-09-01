@@ -11,6 +11,11 @@ enum Constants {
         /// through the authenticated CastReader gateway.
         static let voiceCloningEnabled = true
 
+        /// The upload-audio creation path is developed independently from the
+        /// shipped microphone flow so it can be disabled without changing the
+        /// voice-clone account, asset, quota, or synthesis contracts.
+        static let voiceCloneAudioUploadEnabled = true
+
         /// Google One Pick (`drive.file`) import is part of this release. The
         /// provider is hidden when its public OAuth configuration is absent.
         static let cloudStorageEnabled = true

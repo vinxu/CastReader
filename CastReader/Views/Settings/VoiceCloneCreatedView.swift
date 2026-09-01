@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 @MainActor
 struct VoiceCloneCreatedView: View {
@@ -790,10 +791,13 @@ private struct VoiceCloneRenameView: View {
 
 @MainActor
 private struct VoiceCloneCreationView: View {
-    private enum Phase: Equatable { case introduction, ready, creating, complete }
+    private enum Phase: Equatable { case introduction, ready, upload, creating, complete }
+
+    private enum CreationSource: Equatable { case recording, uploadedAudio }
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var recorder = VoiceCloneRecorder()
+    @StateObject private var audioUpload = VoiceCloneAudioUploadViewModel()
     @ObservedObject private var store = VoiceCloneStore.shared
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     @ObservedObject private var pro = ProManager.shared
@@ -808,6 +812,8 @@ private struct VoiceCloneCreationView: View {
     @State private var showPaywall = false
     @State private var showRename = false
     @State private var selectedRecordingLanguage: String?
+    @State private var showAudioImporter = false
+    @State private var creationSource: CreationSource = .recording
 
     private var recordingLanguage: String {
         selectedRecordingLanguage
@@ -828,6 +834,7 @@ private struct VoiceCloneCreationView: View {
                 switch phase {
                 case .introduction: introduction
                 case .ready: recordingScreen
+                case .upload: audioUploadScreen
                 case .creating: creatingScreen
                 case .complete: completeScreen
                 }
@@ -836,13 +843,26 @@ private struct VoiceCloneCreationView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }.disabled(store.isCreating)
+                    Button("取消") {
+                        audioUpload.cleanup()
+                        dismiss()
+                    }
+                    .disabled(store.isCreating)
                 }
             }
         }
         .presentationDetents([.large])
         .interactiveDismissDisabled(store.isCreating || recorder.state == .recording)
-        .onDisappear { recorder.cancelRecording() }
+        .onDisappear {
+            recorder.cancelRecording()
+            audioUpload.cleanup()
+        }
+        .fileImporter(
+            isPresented: $showAudioImporter,
+            allowedContentTypes: supportedAudioTypes,
+            allowsMultipleSelection: false,
+            onCompletion: handleAudioImport
+        )
         .sheet(isPresented: $showPaywall) {
             PaywallView(
                 reason: AppLocalized("免费版可创建并试听自己的声音。Pro 可将自己的声音用于朗读和解读，每月 120 分钟。"),
@@ -858,67 +878,115 @@ private struct VoiceCloneCreationView: View {
     }
 
     private var introduction: some View {
-        VStack(spacing: 0) {
-            Spacer().frame(height: 72)
+        ScrollView {
+            VStack(spacing: 0) {
+            Spacer().frame(height: 54)
             Text("克隆我的声音")
                 .font(.system(size: 34, weight: .bold))
                 .foregroundStyle(AppTheme.foreground)
-            Spacer().frame(height: 76)
+            Text("录制一小段，或上传已有音频。我们只需要一段清晰、自然的讲话。")
+                .font(.subheadline)
+                .foregroundStyle(AppTheme.mutedForeground)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 34)
+                .padding(.top, 12)
 
-            VStack(alignment: .leading, spacing: 34) {
+            VStack(spacing: 14) {
+                Button { prepareRecordingStep() } label: {
+                    sourceOption(
+                        icon: "mic.fill",
+                        title: "录制约 10 秒",
+                        detail: "推荐 · 在安静环境中自然说话，效果最稳定",
+                        showsProgress: isPreparingRecorder
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(isPreparingRecorder)
+                .accessibilityIdentifier("voiceCloneIntroConfirmButton")
+
+                if Constants.Features.voiceCloneAudioUploadEnabled {
+                    Button { showAudioImporter = true } label: {
+                        sourceOption(
+                            icon: "waveform.badge.plus",
+                            title: "上传音频文件",
+                            detail: "自动找到最清晰的约 10 秒，原文件不会上传",
+                            showsProgress: false
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isPreparingRecorder)
+                    .accessibilityIdentifier("voiceCloneUploadAudioButton")
+                }
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 42)
+
+            VStack(alignment: .leading, spacing: 24) {
                 instructionRow(
-                    icon: "mic.fill",
-                    title: "录制自己的声音",
-                    detail: "选择一种录音语言，录制一次即可生成可跨语言使用的声音。"
+                    icon: "person.wave.2.fill",
+                    title: "只保留一个人的声音",
+                    detail: "避免背景音乐、多人同时讲话、明显回声或破音。"
                 )
                 instructionRow(
-                    icon: "house.fill",
-                    title: "找一处安静的地方",
-                    detail: "使用自然语气和日常说话习惯，保持手机距离稳定。"
-                )
-                instructionRow(
-                    icon: "text.book.closed.fill",
-                    title: "自由朗读或自然说话",
-                    detail: "可以朗读示例，也可以用录音语言自然说一段自己的内容，无需逐字一致。"
+                    icon: "checkmark.shield.fill",
+                    title: "使用本人或已获授权的声音",
+                    detail: "上传后需要试听选中的短片段，并明确确认你有权创建这个声音。"
                 )
             }
             .padding(.horizontal, 34)
+            .padding(.top, 38)
 
-            Spacer()
-
-            Text("继续即表示你确认录制的是本人声音，并同意仅在 App 内用于生成语音。")
+            Text("所有用户均可创建和试听声音；Pro 可用于朗读和解读，每个会员周期 120 分钟。")
                 .font(.footnote)
                 .foregroundStyle(AppTheme.mutedForeground)
                 .multilineTextAlignment(.center)
-            .padding(.horizontal, 28)
-            .padding(.bottom, 18)
-
-            Text("所有用户均可创建和试听声音；Pro 可用于朗读和解读，每个会员周期 120 分钟。")
-                .font(.caption)
-                .foregroundStyle(AppTheme.mutedForeground)
-                .multilineTextAlignment(.center)
                 .padding(.horizontal, 28)
-                .padding(.bottom, 12)
-
-            Button { prepareRecordingStep() } label: {
-                ZStack {
-                    Text("确认录制")
-                        .font(.headline)
-                        .opacity(isPreparingRecorder ? 0 : 1)
-                    if isPreparingRecorder {
-                        ProgressView().tint(.white)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 58)
+                .padding(.top, 34)
+                .padding(.bottom, 28)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(AppTheme.primary)
-            .disabled(isPreparingRecorder)
-            .accessibilityIdentifier("voiceCloneIntroConfirmButton")
-            .padding(.horizontal, 22)
-            .padding(.bottom, 24)
         }
+    }
+
+    private func sourceOption(
+        icon: String,
+        title: LocalizedStringKey,
+        detail: LocalizedStringKey,
+        showsProgress: Bool
+    ) -> some View {
+        HStack(spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(AppTheme.primary.opacity(0.12))
+                if showsProgress {
+                    ProgressView().tint(AppTheme.primary)
+                } else {
+                    Image(systemName: icon)
+                        .font(.system(size: 23, weight: .semibold))
+                        .foregroundStyle(AppTheme.primary)
+                }
+            }
+            .frame(width: 52, height: 52)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.foreground)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(AppTheme.mutedForeground)
+                    .multilineTextAlignment(.leading)
+            }
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(AppTheme.mutedForeground)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(AppTheme.surface)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private func instructionRow(
@@ -1028,6 +1096,291 @@ private struct VoiceCloneCreationView: View {
             }
         }
         .animation(.easeOut(duration: 0.2), value: recorder.state)
+    }
+
+    @ViewBuilder
+    private var audioUploadScreen: some View {
+        switch audioUpload.state {
+        case .idle:
+            uploadEmptyState
+        case .processing:
+            uploadProcessingState
+        case .review:
+            uploadReviewState
+        case .failed:
+            uploadFailureState
+        }
+    }
+
+    private var uploadEmptyState: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            Image(systemName: "waveform.badge.plus")
+                .font(.system(size: 58, weight: .medium))
+                .foregroundStyle(AppTheme.primary)
+            Text("选择一个音频文件")
+                .font(.title2.bold())
+            Text("支持 MP3、M4A、AAC、WAV、FLAC、AIFF 和 CAF，最长 10 分钟。")
+                .font(.subheadline)
+                .foregroundStyle(AppTheme.mutedForeground)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 38)
+            Spacer()
+            Button("选择音频") { showAudioImporter = true }
+                .font(.headline)
+                .buttonStyle(.borderedProminent)
+                .tint(AppTheme.primary)
+                .controlSize(.large)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 28)
+        }
+    }
+
+    private var uploadProcessingState: some View {
+        VStack(spacing: 22) {
+            Spacer()
+            ZStack {
+                Circle().fill(AppTheme.primary.opacity(0.12)).frame(width: 118, height: 118)
+                Image(systemName: "waveform.path.ecg")
+                    .font(.system(size: 46, weight: .medium))
+                    .foregroundStyle(AppTheme.primary)
+                    .symbolEffect(.variableColor.iterative)
+            }
+            Text(uploadProgressTitle)
+                .font(.title2.bold())
+            Text("我们会在设备上扫描整段音频，找到最清晰的连续片段。原文件不会上传。")
+                .font(.subheadline)
+                .foregroundStyle(AppTheme.mutedForeground)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 38)
+            ProgressView(value: audioUpload.progress?.fraction ?? 0)
+                .tint(AppTheme.primary)
+                .padding(.horizontal, 52)
+            Text(String(
+                format: AppLocalized("已完成 %lld%%"),
+                Int64((audioUpload.progress?.fraction ?? 0) * 100)
+            ))
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(AppTheme.mutedForeground)
+            Spacer()
+            Button("取消处理") {
+                audioUpload.cleanup()
+                phase = .introduction
+            }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(AppTheme.primary)
+                .padding(.bottom, 28)
+        }
+    }
+
+    private var uploadFailureState: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            Image(systemName: "exclamationmark.waveform")
+                .font(.system(size: 58, weight: .medium))
+                .foregroundStyle(AppTheme.destructive)
+            Text("没有找到可用的声音片段")
+                .font(.title2.bold())
+            Text(audioUpload.errorMessage ?? AppLocalized("请换一个音频文件后重试"))
+                .font(.subheadline)
+                .foregroundStyle(AppTheme.mutedForeground)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 36)
+            Spacer()
+            VStack(spacing: 12) {
+                Button("换一个文件") { showAudioImporter = true }
+                    .font(.headline)
+                    .buttonStyle(.borderedProminent)
+                    .tint(AppTheme.primary)
+                    .controlSize(.large)
+                    .frame(maxWidth: .infinity)
+                Button("改为直接录制") {
+                    audioUpload.cleanup()
+                    prepareRecordingStep()
+                }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(AppTheme.primary)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 28)
+        }
+    }
+
+    private var uploadReviewState: some View {
+        ScrollView {
+            VStack(spacing: 22) {
+                Text("这是你想创建的声音吗？")
+                    .font(.system(size: 28, weight: .bold))
+                    .padding(.top, 34)
+
+                Text("我们已自动选择一段清晰讲话。请务必试听，确认片段里是你有权使用的目标声音。")
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.mutedForeground)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+
+                Button { audioUpload.togglePreview() } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: audioUpload.isPlaying ? "stop.fill" : "play.fill")
+                        Text(audioUpload.isPlaying ? "停止试听" : "试听选中的片段")
+                    }
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 58)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(AppTheme.primary)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("voiceCloneUploadPreviewButton")
+                .padding(.horizontal, 24)
+
+                if let analysis = audioUpload.analysis {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("候选片段")
+                                .font(.headline)
+                            Spacer()
+                            Text(analysis.sourceFilename)
+                                .font(.caption)
+                                .foregroundStyle(AppTheme.mutedForeground)
+                                .lineLimit(1)
+                        }
+                        ForEach(Array(analysis.candidates.enumerated()), id: \.element.id) { index, candidate in
+                            uploadCandidateRow(candidate, index: index)
+                        }
+                    }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(AppTheme.surface)
+                    )
+                    .padding(.horizontal, 24)
+                }
+
+                if let selected = audioUpload.selectedCandidate {
+                    Text(String(
+                        format: AppLocalized("已选 %.1f 秒 · 有效讲话 %.1f 秒"),
+                        locale: appLanguage.locale,
+                        selected.duration,
+                        selected.activeSpeechDuration
+                    ))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(AppTheme.mutedForeground)
+                }
+
+                if let error = audioUpload.errorMessage ?? store.errorMessage {
+                    Text(error)
+                        .font(.footnote)
+                        .foregroundStyle(AppTheme.destructive)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 26)
+                }
+
+                Button { audioUpload.consentConfirmed.toggle() } label: {
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: audioUpload.consentConfirmed ? "checkmark.square.fill" : "square")
+                            .font(.title3)
+                            .foregroundStyle(audioUpload.consentConfirmed ? AppTheme.primary : AppTheme.mutedForeground)
+                        Text("我确认这是我的声音，或已获得声音所有者明确授权，并有权使用此音频创建合成声音。")
+                            .font(.footnote)
+                            .foregroundStyle(AppTheme.foreground)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(AppTheme.surface)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("voiceCloneUploadConsentButton")
+                .padding(.horizontal, 24)
+
+                VStack(spacing: 12) {
+                    Button("确认并创建声音") { submitUploadedReference() }
+                        .font(.headline)
+                        .buttonStyle(.borderedProminent)
+                        .tint(AppTheme.primary)
+                        .controlSize(.large)
+                        .frame(maxWidth: .infinity)
+                        .disabled(!audioUpload.canCreate)
+                        .accessibilityIdentifier("voiceCloneUploadCreateButton")
+                    if !audioUpload.hasPreviewedSelectedCandidate {
+                        Text("请先试听当前候选片段")
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.mutedForeground)
+                    }
+                    Button("换一个文件") { showAudioImporter = true }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.primary)
+                }
+                .padding(.horizontal, 24)
+
+                Text("原文件不会上传；只上传你确认的短片段。")
+                    .font(.caption)
+                    .foregroundStyle(AppTheme.mutedForeground)
+                    .padding(.bottom, 28)
+            }
+        }
+    }
+
+    private func uploadCandidateRow(
+        _ candidate: VoiceCloneReferenceCandidate,
+        index: Int
+    ) -> some View {
+        let selected = audioUpload.selectedCandidateID == candidate.id
+        return Button { audioUpload.selectCandidate(candidate) } label: {
+            HStack(spacing: 12) {
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(selected ? AppTheme.primary : AppTheme.mutedForeground)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(index == 0 ? AppLocalized("推荐片段") : String(format: AppLocalized("备选片段 %lld"), Int64(index)))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(AppTheme.foreground)
+                    Text(candidateTimeDescription(candidate))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(AppTheme.mutedForeground)
+                }
+                Spacer()
+                Text(String(format: "%.0f%%", candidate.speechCoverage * 100))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(AppTheme.mutedForeground)
+            }
+            .padding(.vertical, 7)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(audioUpload.state == .processing)
+    }
+
+    private func candidateTimeDescription(_ candidate: VoiceCloneReferenceCandidate) -> String {
+        String(
+            format: AppLocalized("%@ – %@ · %.1f 秒"),
+            timeLabel(candidate.startTime),
+            timeLabel(candidate.endTime),
+            candidate.duration
+        )
+    }
+
+    private func timeLabel(_ value: TimeInterval) -> String {
+        let total = max(0, Int(value.rounded(.down)))
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
+    private var uploadProgressTitle: String {
+        switch audioUpload.progress?.stage {
+        case .validating: return AppLocalized("正在检查音频")
+        case .copying: return AppLocalized("正在安全读取文件")
+        case .decoding: return AppLocalized("正在解码音频")
+        case .analyzing: return AppLocalized("正在寻找最清晰的 10 秒")
+        case .exporting: return AppLocalized("正在准备声音片段")
+        case .completed: return AppLocalized("声音片段已准备好")
+        case nil: return AppLocalized("正在处理音频")
+        }
     }
 
     private var recordingWaveform: some View {
@@ -1203,12 +1556,28 @@ private struct VoiceCloneCreationView: View {
                     .symbolEffect(.variableColor.iterative)
             }
             Text("正在生成你的声音").font(.title2.bold())
-            Text("正在安全上传录音并提取音色，通常只需十几秒。")
+            Text(
+                creationSource == .uploadedAudio
+                    ? AppLocalized("正在安全上传你确认的短片段并提取音色，原文件不会上传。")
+                    : AppLocalized("正在安全上传录音并提取音色，通常只需十几秒。")
+            )
                 .font(.subheadline)
                 .foregroundStyle(AppTheme.mutedForeground)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 44)
-            ProgressView().controlSize(.large).tint(AppTheme.primary)
+            if store.uploadProgress > 0, store.uploadProgress < 1 {
+                ProgressView(value: store.uploadProgress)
+                    .tint(AppTheme.primary)
+                    .padding(.horizontal, 52)
+                Text(String(
+                    format: AppLocalized("处理进度 %lld%%"),
+                    Int64(store.uploadProgress * 100)
+                ))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(AppTheme.mutedForeground)
+            } else {
+                ProgressView().controlSize(.large).tint(AppTheme.primary)
+            }
             Spacer()
         }
     }
@@ -1296,8 +1665,29 @@ private struct VoiceCloneCreationView: View {
         VoiceCloneRecordingPrompt.text(for: recordingLanguage)
     }
 
+    private var supportedAudioTypes: [UTType] {
+        let extensions = ["mp3", "m4a", "aac", "wav", "flac", "aiff", "aif", "caf"]
+        return [UTType.audio] + extensions.compactMap { UTType(filenameExtension: $0) }
+    }
+
+    private func handleAudioImport(_ result: Result<[URL], Error>) {
+        switch result {
+        case .success(let urls):
+            guard let url = urls.first else { return }
+            creationSource = .uploadedAudio
+            store.errorMessage = nil
+            phase = .upload
+            audioUpload.importAudio(from: url)
+        case .failure(let error):
+            let cocoa = error as NSError
+            guard cocoa.code != NSUserCancelledError else { return }
+            store.errorMessage = error.localizedDescription
+        }
+    }
+
     private func prepareRecordingStep() {
         guard !isPreparingRecorder else { return }
+        creationSource = .recording
         isPreparingRecorder = true
         Task { @MainActor in
             let granted = await recorder.preparePermission()
@@ -1336,6 +1726,7 @@ private struct VoiceCloneCreationView: View {
         guard recorder.canSubmit,
               let url = recorder.recordingURL else { return }
         let language = recordingLanguage
+        creationSource = .recording
         store.errorMessage = nil
         submissionStarted = true
         phase = .creating
@@ -1356,6 +1747,37 @@ private struct VoiceCloneCreationView: View {
                 // Keep the exact WAV and selected language available so a
                 // transient upload or worker failure can be retried unchanged.
                 phase = .ready
+            }
+        }
+    }
+
+    private func submitUploadedReference() {
+        guard audioUpload.canCreate,
+              let prepared = audioUpload.preparedReference else { return }
+        creationSource = .uploadedAudio
+        audioUpload.stopPreview()
+        store.errorMessage = nil
+        submissionStarted = true
+        phase = .creating
+        Task { @MainActor in
+            let succeeded = await store.create(
+                recordingURL: prepared.canonicalURL,
+                // Speaker-only creation is language-independent. Unknown
+                // language is represented as BCP-47 `und`, never inferred
+                // with client-side ASR.
+                referenceLanguage: "und",
+                referenceText: nil,
+                consentConfirmed: audioUpload.consentConfirmed
+            )
+            submissionStarted = false
+            if succeeded {
+                audioUpload.cleanup()
+                phase = .complete
+            } else {
+                // Keep the exact user-confirmed canonical WAV so a transient
+                // network/worker failure can be retried without rescanning the
+                // original long file.
+                phase = .upload
             }
         }
     }
