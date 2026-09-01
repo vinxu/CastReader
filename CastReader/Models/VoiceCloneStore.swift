@@ -44,6 +44,7 @@ final class VoiceCloneStore: ObservableObject {
     private var activeRenameRequests: [String: UUID] = [:]
     private var activeGiftInvitationRequestID: UUID?
     private var pendingGiftInvitationClientRequestID: UUID?
+    private var pendingGiftInvitationLocale: String?
     private var giftInvitationTask: Task<VoiceGiftInvitation, Error>?
     private var activeGiftMutationRequestID: UUID?
     private var reconciliationTask: Task<Void, Never>?
@@ -408,7 +409,7 @@ final class VoiceCloneStore: ObservableObject {
     }
 
     @discardableResult
-    func createGiftInvitation() async -> VoiceGiftInvitation? {
+    func createGiftInvitation(locale: String) async -> VoiceGiftInvitation? {
         guard VoiceGiftFeature.isRegionEligible() else {
             handle(VoiceCloneError.giftUnavailableInRegion)
             return nil
@@ -432,13 +433,17 @@ final class VoiceCloneStore: ObservableObject {
         // cleared only after an authoritative invitation response, preventing
         // a retry from creating two open invitations server-side.
         let requestID = pendingGiftInvitationClientRequestID ?? UUID()
+        let canonicalLocale = pendingGiftInvitationLocale
+            ?? AppLanguage.canonicalVoiceGiftLocale(from: locale)
         pendingGiftInvitationClientRequestID = requestID
+        pendingGiftInvitationLocale = canonicalLocale
         activeGiftInvitationRequestID = requestID
         isCreatingGiftInvitation = true
         let operation = Task {
             try Task.checkCancellation()
             return try await service.createGiftInvitation(
-                clientRequestID: requestID
+                clientRequestID: requestID,
+                locale: canonicalLocale
             )
         }
         giftInvitationTask = operation
@@ -457,6 +462,7 @@ final class VoiceCloneStore: ObservableObject {
                   !Task.isCancelled else { return nil }
             invalidateRefreshes()
             pendingGiftInvitationClientRequestID = nil
+            pendingGiftInvitationLocale = nil
             errorMessage = nil
             return invitation
         } catch {
@@ -883,6 +889,7 @@ final class VoiceCloneStore: ObservableObject {
         activeRenameRequests = [:]
         activeGiftInvitationRequestID = nil
         pendingGiftInvitationClientRequestID = nil
+        pendingGiftInvitationLocale = nil
         activeGiftMutationRequestID = nil
         renamingVoiceId = nil
         authoritativeCreatedVoices = [:]

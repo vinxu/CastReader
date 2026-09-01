@@ -16,11 +16,26 @@ enum VoiceBrowserPresentation: Equatable {
 struct VoiceBrowserLaunchRequest: Equatable {
     let id: UUID
     let tab: VoiceBrowserTab
+    let creationEntry: VoiceCreationEntry?
 
     init(tab: VoiceBrowserTab) {
         id = UUID()
         self.tab = tab
+        creationEntry = nil
     }
+
+    init(creationEntry: VoiceCreationEntry) {
+        id = UUID()
+        tab = .created
+        self.creationEntry = creationEntry
+    }
+}
+
+enum VoiceCreationEntry: Equatable {
+    case chooser
+    case recordMyVoice
+    case inviteFriend
+    case uploadAudio
 }
 
 /// In-process routing for the existing `castreader://` URL scheme. Voice Gift
@@ -112,6 +127,7 @@ struct VoiceBrowserView: View {
     private let onCorrectReadingLanguage: ((String) -> Void)?
     private let onDone: (() -> Void)?
     private let launchRequest: VoiceBrowserLaunchRequest?
+    private let onConsumeLaunchRequest: (UUID) -> Void
 
     @State private var tab: VoiceBrowserTab = .explore
     @State private var searchText = ""
@@ -128,6 +144,7 @@ struct VoiceBrowserView: View {
         presentation: VoiceBrowserPresentation = .sheet,
         language: String? = nil,
         launchRequest: VoiceBrowserLaunchRequest? = nil,
+        onConsumeLaunchRequest: @escaping (UUID) -> Void = { _ in },
         onCorrectReadingLanguage: ((String) -> Void)? = nil,
         onDone: (() -> Void)? = nil
     ) {
@@ -135,6 +152,7 @@ struct VoiceBrowserView: View {
         let normalized = language.map(VoiceCatalog.normalizedLanguage) ?? ""
         self.initialLanguage = normalized.isEmpty ? nil : normalized
         self.launchRequest = launchRequest
+        self.onConsumeLaunchRequest = onConsumeLaunchRequest
         self.onCorrectReadingLanguage = onCorrectReadingLanguage
         self.onDone = onDone
         _tab = State(initialValue: launchRequest?.tab ?? .explore)
@@ -155,6 +173,7 @@ struct VoiceBrowserView: View {
         presentation: VoiceBrowserPresentation = .sheet,
         language: String? = nil,
         launchRequest: VoiceBrowserLaunchRequest? = nil,
+        onConsumeLaunchRequest: @escaping (UUID) -> Void = { _ in },
         onCorrectReadingLanguage: ((String) -> Void)? = nil,
         onDone: (() -> Void)? = nil
     ) {
@@ -162,6 +181,7 @@ struct VoiceBrowserView: View {
         let normalized = language.map(VoiceCatalog.normalizedLanguage) ?? ""
         self.initialLanguage = normalized.isEmpty ? nil : normalized
         self.launchRequest = launchRequest
+        self.onConsumeLaunchRequest = onConsumeLaunchRequest
         self.onCorrectReadingLanguage = onCorrectReadingLanguage
         self.onDone = onDone
         _tab = State(initialValue: launchRequest?.tab ?? .explore)
@@ -299,6 +319,9 @@ struct VoiceBrowserView: View {
             : request.tab
         searchText = ""
         samplePlayer.stop()
+        if request.creationEntry == nil {
+            onConsumeLaunchRequest(request.id)
+        }
     }
 
     private var categoryTabs: some View {
@@ -322,7 +345,11 @@ struct VoiceBrowserView: View {
     @ViewBuilder
     private var voiceResults: some View {
         if Constants.Features.voiceCloningEnabled, tab == .created {
-            VoiceCloneCreatedView(language: library.browserLanguage)
+            VoiceCloneCreatedView(
+                language: library.browserLanguage,
+                launchRequest: launchRequest,
+                onConsumeLaunchRequest: onConsumeLaunchRequest
+            )
                 .frame(minHeight: 360)
         } else if displayedVoices.isEmpty {
             emptyState

@@ -21,13 +21,26 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["登录后创建声音"].waitForExistence(timeout: 5))
     }
 
-    func testHomeVoiceFeatureBannersRouteToExploreAndCreated() throws {
-        let app = launchZh()
+    func testHomeVoiceFeatureCarouselRoutesToExploreAndRecord() throws {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-interfaceLanguage", "system",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
+            "-CastReaderRegion", "global",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
 
         let discover = app.buttons["homeVoiceDiscoverBanner"]
-        let clone = app.buttons["homeVoiceCloneBanner"]
+        let record = app.buttons["homeVoiceRecordBanner"]
+        let invite = app.buttons["homeVoiceInviteBanner"]
         XCTAssertTrue(discover.waitForExistence(timeout: 5))
-        XCTAssertTrue(clone.waitForExistence(timeout: 5))
+        XCTAssertTrue(record.waitForExistence(timeout: 5))
+        let showsCapabilityGatedInvite = invite.waitForExistence(timeout: 1)
 
         // The banners intentionally live at the end of Home, immediately before
         // the optional Pro card. Scroll to the end before inspecting their frames.
@@ -35,21 +48,29 @@ class CastReaderUITests: XCTestCase {
             app.swipeUp()
         }
         XCTAssertTrue(discover.isHittable)
-        XCTAssertTrue(clone.isHittable)
+        XCTAssertTrue(record.isHittable)
 
-        XCTAssertEqual(discover.frame.width, clone.frame.width, accuracy: 0.5)
-        XCTAssertEqual(discover.frame.height, clone.frame.height, accuracy: 0.5)
-        XCTAssertEqual(discover.frame.minY, clone.frame.minY, accuracy: 0.5)
+        XCTAssertEqual(discover.frame.width, record.frame.width, accuracy: 0.5)
+        XCTAssertEqual(discover.frame.height, record.frame.height, accuracy: 0.5)
+        XCTAssertEqual(discover.frame.minY, record.frame.minY, accuracy: 0.5)
+        if showsCapabilityGatedInvite {
+            XCTAssertEqual(discover.frame.width, invite.frame.width, accuracy: 0.5)
+            XCTAssertEqual(discover.frame.minY, invite.frame.minY, accuracy: 0.5)
+        }
 
         let windowFrame = app.windows.firstMatch.frame
         let leftInset = discover.frame.minX - windowFrame.minX
-        let rightInset = windowFrame.maxX - clone.frame.maxX
-        XCTAssertEqual(leftInset, rightInset, accuracy: 1)
-        XCTAssertEqual(clone.frame.minX - discover.frame.maxX, 12, accuracy: 1)
+        XCTAssertEqual(leftInset, 20, accuracy: 2)
+        XCTAssertEqual(record.frame.minX - discover.frame.maxX, 12, accuracy: 1)
+        if showsCapabilityGatedInvite {
+            XCTAssertEqual(invite.frame.minX - record.frame.maxX, 12, accuracy: 1)
+            XCTAssertLessThan(invite.frame.minX, windowFrame.maxX)
+            XCTAssertGreaterThan(invite.frame.maxX, windowFrame.maxX)
+        }
 
         let proCard = app.otherElements["homeProCard"]
         if proCard.exists {
-            XCTAssertLessThan(clone.frame.maxY, proCard.frame.minY)
+            XCTAssertLessThan(record.frame.maxY, proCard.frame.minY)
         }
 
         discover.tap()
@@ -57,10 +78,35 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.buttons["性别"].waitForExistence(timeout: 5))
 
         app.tabBars.buttons["首页"].tap()
-        XCTAssertTrue(clone.waitForExistence(timeout: 5))
-        clone.tap()
+        XCTAssertTrue(record.waitForExistence(timeout: 5))
+        record.tap()
         XCTAssertTrue(app.buttons["已创建"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["登录后创建声音"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["登录 CastReader"].waitForExistence(timeout: 5))
+    }
+
+    func testVoiceCreationMethodChooserRendersAvailableMethods() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+            "-CastReaderSkipLibraryOnboarding",
+            "-CastReaderSkipSignInGate",
+            "-CastReaderRegion", "global",
+            "-CastReaderOpenVoiceCreationMethods",
+        ]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+
+        app.tabBars.buttons["音色"].tap()
+        let created = app.buttons["已创建"]
+        XCTAssertTrue(created.waitForExistence(timeout: 5))
+        created.tap()
+
+        XCTAssertTrue(app.otherElements["voiceCreationMethodSheet"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["voiceCreationMethodRecordButton"].exists)
+        XCTAssertTrue(app.buttons["voiceCreationMethodUploadButton"].exists)
+        XCTAssertFalse(app.buttons["voiceCreationMethodUploadButton"].isEnabled)
+        XCTAssertTrue(app.staticTexts["voiceCreationMethodUploadComingSoon"].exists)
     }
 
     /// Debug-only presentation hook lets UI automation verify the complete
