@@ -41,9 +41,9 @@ xcodebuild test -workspace CastReader.xcworkspace -scheme CastReader -destinatio
 
 `/Users/xuxuheng/.codex/skills/submit-castreader-ios-to-app-store/SKILL.md`
 
-完整提交指令默认授权：读取 App Store Connect 当前版本与最大 Build → 更新版本号 → 测试/归档/签名 → 上传并等待 `VALID` → 创建新版本 → 八语 App Info 与版本元数据 → 截图/审核资料/合规检查 → 绑定 Build → Review Submission → 状态回读。不要只停在打包、上传或保存草稿。
+完整提交指令默认授权：读取 App Store Connect 当前版本与最大 Build → 更新版本号 → 测试/归档/签名 → 上传并等待 `VALID` → 创建新版本 → 11 语 App Info 与版本元数据 → 截图/审核资料/合规检查 → 绑定 Build → Review Submission → 状态回读。不要只停在打包、上传或保存草稿。
 
-项目内 SOP 见 `docs/iOS-AppStore-Release-SOP.md`，八语文案源为 `docs/CastReader-AppStore-Metadata-8-Languages.md`。不得输出 `.p8`、JWT 或签名凭据，不得为过审擅自修改价格、订阅、地区、App Privacy、年龄分级或法律声明。
+项目内 SOP 见 `docs/iOS-AppStore-Release-SOP.md`，11 语文案源为 `docs/CastReader-AppStore-Metadata-11-Languages-1.2.20.md`。用户要求标题/副标题保持不变时，元数据同步必须设置 `ASC_SKIP_APP_INFO=1`，并在送审前用基线与待审 App Info 做 11 语精确回读。不得输出 `.p8`、JWT 或签名凭据，不得为过审擅自修改价格、订阅、地区、App Privacy、年龄分级或法律声明。
 
 ### 新增/删除源文件 → 必须改 project.pbxproj
 
