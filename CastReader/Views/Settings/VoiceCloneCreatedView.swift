@@ -976,8 +976,7 @@ private struct VoiceCreationMethodSheet: View {
         detail: LocalizedStringKey,
         systemImage: String,
         accessibilityID: String,
-        isEnabled: Bool = true,
-        badge: LocalizedStringKey? = nil
+        isEnabled: Bool = true
     ) -> some View {
         Button {
             guard isEnabled else { return }
@@ -994,23 +993,9 @@ private struct VoiceCreationMethodSheet: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Text(title)
-                            .font(.headline)
-                            .foregroundStyle(AppTheme.foreground)
-                        if let badge {
-                            Text(badge)
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(AppTheme.mutedForeground)
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 3)
-                                .background(
-                                    Capsule(style: .continuous)
-                                        .fill(AppTheme.mutedForeground.opacity(0.10))
-                                )
-                                .accessibilityIdentifier("voiceCreationMethodUploadComingSoon")
-                        }
-                    }
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(AppTheme.foreground)
                     Text(detail)
                         .font(.caption)
                         .foregroundStyle(AppTheme.mutedForeground)

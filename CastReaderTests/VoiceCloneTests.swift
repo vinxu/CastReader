@@ -1332,7 +1332,10 @@ final class VoiceCloneTests: XCTestCase {
             let multipart = Dictionary(
                 uniqueKeysWithValues: metadata.multipartFields.map { ($0.name, $0.value) }
             )
-            let china = metadata.chinaPayload(referenceObjectKey: "account/reference.wav")
+            let china = metadata.chinaPayload(
+                referenceObjectKey: "account/reference.wav",
+                referenceSha256: String(repeating: "a", count: 64)
+            )
 
             XCTAssertEqual(metadata.referenceLanguage, "und")
             XCTAssertEqual(multipart["reference_language"], "und")
