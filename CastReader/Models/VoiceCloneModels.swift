@@ -542,17 +542,26 @@ struct VoiceGiftAccess: Equatable, Decodable {
 
 enum VoiceGiftInvitationURLValidator {
     static func validatedURL(_ value: String) -> URL? {
+        validatedURL(value, route: nil)
+    }
+
+    static func validatedURL(_ value: String, for route: ServiceRoute) -> URL? {
+        validatedURL(value, route: route)
+    }
+
+    private static func validatedURL(_ value: String, route: ServiceRoute?) -> URL? {
         guard let components = URLComponents(string: value),
               components.scheme?.lowercased() == "https",
               components.user == nil,
               components.password == nil,
               let host = components.host?.lowercased(),
-              isAllowedHost(host),
+              isAllowedHost(host, route: route),
               isAllowedPath(components.path),
+              components.percentEncodedPath == components.path,
               components.query == nil,
-              let token = components.fragment?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !token.isEmpty,
-              token.rangeOfCharacter(from: .whitespacesAndNewlines) == nil else {
+              let token = components.fragment,
+              components.percentEncodedFragment == token,
+              isAllowedToken(token) else {
             return nil
         }
         #if !DEBUG
@@ -561,13 +570,24 @@ enum VoiceGiftInvitationURLValidator {
         return components.url
     }
 
-    private static func isAllowedHost(_ host: String) -> Bool {
-        if host == "castreader.com" || host == "www.castreader.com" {
+    private static func isAllowedHost(_ host: String, route: ServiceRoute?) -> Bool {
+        let globalHosts = ["castreader.com"]
+        let chinaHosts = ["api.castreader.cn"]
+        let allowedHosts: [String]
+        switch route {
+        case .globalGateway:
+            allowedHosts = globalHosts
+        case .chinaGateway:
+            allowedHosts = chinaHosts
+        case nil:
+            allowedHosts = globalHosts + chinaHosts
+        }
+        if allowedHosts.contains(host) {
             return true
         }
         #if DEBUG
         // Debug-only injection supports deterministic localhost fixtures while
-        // the production binary remains pinned to the public CastReader host.
+        // the production binary remains pinned to the route-owned CastReader hosts.
         return host == "localhost" || host == "127.0.0.1" || host == "::1"
         #else
         return false
@@ -575,18 +595,28 @@ enum VoiceGiftInvitationURLValidator {
     }
 
     private static func isAllowedPath(_ path: String) -> Bool {
-        let components = path.split(separator: "/", omittingEmptySubsequences: true)
-        if components == ["voice-gift", "request"] { return true }
-        guard components.count == 3,
-              components[1] == "voice-gift",
-              components[2] == "request" else { return false }
-        let language = components[0]
-        guard (2...16).contains(language.count) else { return false }
-        return language.utf8.allSatisfy {
+        let allowedPaths: Set<String> = [
+            "/voice-gift/request",
+            "/zh/voice-gift/request",
+            "/ja/voice-gift/request",
+            "/es/voice-gift/request",
+            "/fr/voice-gift/request",
+            "/de/voice-gift/request",
+            "/pt-br/voice-gift/request",
+            "/it/voice-gift/request",
+            "/hi/voice-gift/request",
+        ]
+        return allowedPaths.contains(path)
+    }
+
+    private static func isAllowedToken(_ token: String) -> Bool {
+        guard token.utf8.count == 43 else { return false }
+        return token.utf8.allSatisfy {
             (0x30...0x39).contains($0)
                 || (0x41...0x5A).contains($0)
                 || (0x61...0x7A).contains($0)
                 || $0 == 0x2D
+                || $0 == 0x5F
         }
     }
 }
@@ -917,11 +947,11 @@ struct VoiceGiftCapabilityManifest: Equatable {
     let libraryVersion: String
     let serviceRoute: String
 
-    var isCompatible: Bool {
+    func isCompatible(with route: ServiceRoute) -> Bool {
         enabled
             && version == Self.supportedVersion
             && libraryVersion == Self.supportedLibraryVersion
-            && serviceRoute == "global"
+            && serviceRoute == route.rawValue
     }
 
     static func decode(from data: Data) -> VoiceGiftCapabilityManifest? {

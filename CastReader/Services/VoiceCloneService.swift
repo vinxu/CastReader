@@ -52,8 +52,17 @@ extension VoiceCloneStoreServicing {
 }
 
 enum VoiceGiftFeature {
-    static func isRegionEligible(on route: ServiceRoute = ServiceRouting.current) -> Bool {
-        Constants.Features.voiceCloningEnabled && route == .globalGateway
+    static func isRegionEligible(
+        on route: ServiceRoute = ServiceRouting.current,
+        appRegion: AppRegion = AppRegion.current
+    ) -> Bool {
+        guard Constants.Features.voiceCloningEnabled else { return false }
+        switch (appRegion, route) {
+        case (.global, .globalGateway), (.cn, .chinaGateway):
+            return true
+        default:
+            return false
+        }
     }
 }
 
@@ -130,12 +139,16 @@ enum VoiceCloneEndpoint {
 }
 
 actor VoiceCloneService: VoiceCloneStoreServicing {
-    static let shared = VoiceCloneService(sessionProvider: MobileSessionStore.shared)
+    static let shared = VoiceCloneService(
+        productRegion: AppRegion.current,
+        sessionProvider: MobileSessionStore.shared
+    )
 
     private let baseURL: URL
     private let session: URLSession
     private let sessionProvider: any MobileSessionProviding
     private let route: ServiceRoute
+    private let productRegion: AppRegion
     private var cachedVoiceGiftManifest: VoiceGiftCapabilityManifest?
     private var voiceGiftCapabilityResolved = false
     private var voiceGiftCapabilityCheckedAt: Date?
@@ -145,6 +158,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         baseURL: URL? = nil,
         session: URLSession? = nil,
         route: ServiceRoute = ServiceRouting.current,
+        productRegion: AppRegion = .global,
         sessionProvider: any MobileSessionProviding
     ) {
         self.baseURL = baseURL
@@ -152,6 +166,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             ?? URL(string: ServiceRoute.globalGateway.apiGatewayBaseURL)!
         self.session = session ?? OwnedAPIURLSession.make(route: route)
         self.route = route
+        self.productRegion = productRegion
         self.sessionProvider = sessionProvider
     }
 
@@ -225,7 +240,14 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             body: body,
             headers: ["Accept-Language": canonicalLocale]
         )
-        return try VoiceCloneResponseParser.giftInvitation(from: data)
+        let invitation = try VoiceCloneResponseParser.giftInvitation(from: data)
+        guard VoiceGiftInvitationURLValidator.validatedURL(
+            invitation.invitationURL,
+            for: route
+        ) != nil else {
+            throw VoiceCloneError.invalidResponse
+        }
+        return invitation
     }
 
     func updateGiftAlias(shareID: String, alias: String?) async throws {
@@ -523,9 +545,12 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         if voiceGiftCapabilityResolved,
            let checkedAt = voiceGiftCapabilityCheckedAt,
            Date().timeIntervalSince(checkedAt) < voiceGiftCapabilityTTL {
-            return cachedVoiceGiftManifest?.isCompatible == true
+            return cachedVoiceGiftManifest?.isCompatible(with: route) == true
         }
-        guard VoiceGiftFeature.isRegionEligible(on: route) else {
+        guard VoiceGiftFeature.isRegionEligible(
+            on: route,
+            appRegion: productRegion
+        ) else {
             cachedVoiceGiftManifest = nil
             voiceGiftCapabilityResolved = true
             voiceGiftCapabilityCheckedAt = Date()
@@ -541,7 +566,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             guard let http = response as? HTTPURLResponse,
                   (200..<300).contains(http.statusCode),
                   let manifest = VoiceGiftCapabilityManifest.decode(from: data),
-                  manifest.isCompatible else {
+                  manifest.isCompatible(with: route) else {
                 cachedVoiceGiftManifest = nil
                 voiceGiftCapabilityResolved = true
                 voiceGiftCapabilityCheckedAt = Date()
@@ -560,7 +585,10 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
     }
 
     private func requireVoiceGiftCapability() async throws {
-        guard VoiceGiftFeature.isRegionEligible(on: route) else {
+        guard VoiceGiftFeature.isRegionEligible(
+            on: route,
+            appRegion: productRegion
+        ) else {
             throw VoiceCloneError.giftUnavailableInRegion
         }
         // Mutations must honor the same expiring rollout gate as reads. Using
