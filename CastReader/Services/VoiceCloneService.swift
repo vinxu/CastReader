@@ -182,48 +182,21 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             return try await legacyVoiceList()
         }
 
-        do {
-            let requestData = try await perform(
-                path: "/api/voice-clone/requests",
-                method: "GET"
-            )
-            let requests = try VoiceCloneResponseParser.sentGiftInvitations(
-                from: requestData
-            )
-            guard requests.schemaVersion
-                    == VoiceGiftCapabilityManifest.supportedVersion else {
-                throw VoiceCloneError.invalidResponse
-            }
-            return VoiceCloneListResult(
-                schemaVersion: library.schemaVersion,
-                snapshotComplete: library.snapshotComplete,
-                invitationsSnapshotComplete: requests.snapshotComplete,
-                voiceGiftEnabled: true,
-                voices: library.voices,
-                invitations: requests.invitations,
-                nextCreateAt: library.nextCreateAt,
-                capability: library.capability
-            )
-        } catch VoiceCloneError.signInRequired {
-            throw VoiceCloneError.signInRequired
-        } catch VoiceCloneError.sessionUnavailable {
-            throw VoiceCloneError.sessionUnavailable
-        } catch {
-            // Invitations are secondary to the voice library. A rollout or
-            // transient failure must not hide owner/gifted voices, and marking
-            // this sub-snapshot incomplete tells the Store to retain pending
-            // rows until the request endpoint recovers.
-            return VoiceCloneListResult(
-                schemaVersion: library.schemaVersion,
-                snapshotComplete: library.snapshotComplete,
-                invitationsSnapshotComplete: false,
-                voiceGiftEnabled: true,
-                voices: library.voices,
-                invitations: [],
-                nextCreateAt: library.nextCreateAt,
-                capability: library.capability
-            )
-        }
+        // The inviter library intentionally has no pending-task UI. Refreshing
+        // it therefore depends only on the authoritative voice library; an
+        // unanswered link must not add a serial request or be able to hide an
+        // already-delivered gifted voice. The POST request endpoint remains the
+        // source of invitation URLs and the server keeps its lifecycle record.
+        return VoiceCloneListResult(
+            schemaVersion: library.schemaVersion,
+            snapshotComplete: library.snapshotComplete,
+            invitationsSnapshotComplete: true,
+            voiceGiftEnabled: true,
+            voices: library.voices,
+            invitations: [],
+            nextCreateAt: library.nextCreateAt,
+            capability: library.capability
+        )
     }
 
     func createGiftInvitation(clientRequestID: UUID) async throws -> VoiceGiftInvitation {

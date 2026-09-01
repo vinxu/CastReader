@@ -15,7 +15,6 @@ final class VoiceCloneStore: ObservableObject {
     static let shared = VoiceCloneStore()
 
     @Published private(set) var voices: [ClonedVoice] = []
-    @Published private(set) var pendingGiftInvitations: [VoiceGiftInvitation] = []
     @Published private(set) var nextCreateAt: Date?
     @Published private(set) var isLoading = false
     @Published private(set) var isCreating = false
@@ -49,7 +48,6 @@ final class VoiceCloneStore: ObservableObject {
     private var activeGiftMutationRequestID: UUID?
     private var reconciliationTask: Task<Void, Never>?
     private var authoritativeCreatedVoices: [String: ClonedVoice] = [:]
-    private var authoritativeGiftInvitations: [String: VoiceGiftInvitation] = [:]
     private var authoritativeGiftAliases: [String: PendingGiftAlias] = [:]
 
     init(
@@ -106,12 +104,6 @@ final class VoiceCloneStore: ObservableObject {
 
     var giftedVoices: [ClonedVoice] {
         voices.filter { $0.access.kind == .gifted }
-    }
-
-    /// This is intentionally derived from the authoritative library snapshot,
-    /// not from push delivery or a locally synthesized notification.
-    var giftActivityCount: Int {
-        giftedVoices.count + pendingGiftInvitations.filter(\.isPending).count
     }
 
     var canApply: Bool {
@@ -218,7 +210,6 @@ final class VoiceCloneStore: ObservableObject {
         guard Constants.Features.voiceCloningEnabled else {
             invalidateRefreshes()
             voices = []
-            pendingGiftInvitations = []
             refreshErrorMessage = nil
             errorMessage = nil
             return
@@ -226,7 +217,6 @@ final class VoiceCloneStore: ObservableObject {
         guard isSignedIn(), activeStorageID != nil else {
             invalidateRefreshes()
             voices = []
-            pendingGiftInvitations = []
             refreshErrorMessage = nil
             errorMessage = nil
             return
@@ -245,10 +235,6 @@ final class VoiceCloneStore: ObservableObject {
                 result.voices,
                 snapshotComplete: result.snapshotComplete,
                 preserveGiftedWhenMissing: !result.voiceGiftEnabled
-            )
-            pendingGiftInvitations = mergeInvitations(
-                result.invitations,
-                snapshotComplete: result.invitationsSnapshotComplete
             )
             nextCreateAt = result.nextCreateAt
             voiceGiftEnabled = result.voiceGiftEnabled
@@ -470,12 +456,6 @@ final class VoiceCloneStore: ObservableObject {
                   activeGiftInvitationRequestID == requestID,
                   !Task.isCancelled else { return nil }
             invalidateRefreshes()
-            if let index = pendingGiftInvitations.firstIndex(where: { $0.id == invitation.id }) {
-                pendingGiftInvitations[index] = invitation
-            } else {
-                pendingGiftInvitations.insert(invitation, at: 0)
-            }
-            authoritativeGiftInvitations[invitation.id] = invitation
             pendingGiftInvitationClientRequestID = nil
             errorMessage = nil
             return invitation
@@ -906,7 +886,6 @@ final class VoiceCloneStore: ObservableObject {
         activeGiftMutationRequestID = nil
         renamingVoiceId = nil
         authoritativeCreatedVoices = [:]
-        authoritativeGiftInvitations = [:]
         authoritativeGiftAliases = [:]
     }
 
@@ -996,31 +975,6 @@ final class VoiceCloneStore: ObservableObject {
         return missingCreated + mergedServerVoices + partialSnapshotVoices
     }
 
-    private func mergeInvitations(
-        _ serverInvitations: [VoiceGiftInvitation],
-        snapshotComplete: Bool
-    ) -> [VoiceGiftInvitation] {
-        let serverIDs = Set(serverInvitations.map(\.id))
-        for id in serverIDs {
-            authoritativeGiftInvitations.removeValue(forKey: id)
-        }
-        var merged = serverInvitations.filter(\.isPending)
-        var mergedIDs = Set(merged.map(\.id))
-        if !snapshotComplete {
-            for invitation in pendingGiftInvitations
-            where !serverIDs.contains(invitation.id) && !mergedIDs.contains(invitation.id) {
-                merged.append(invitation)
-                mergedIDs.insert(invitation.id)
-            }
-        }
-        for invitation in authoritativeGiftInvitations.values
-        where invitation.isPending && !mergedIDs.contains(invitation.id) {
-            merged.append(invitation)
-            mergedIDs.insert(invitation.id)
-        }
-        return merged
-    }
-
     private func applyGiftRevocations(from serverVoices: [ClonedVoice]) {
         for voice in serverVoices where voice.access.hasTerminalRevocation {
             let wasSelected = AppSettings.shared.activeClonedVoiceIDs.contains(voice.voiceId)
@@ -1105,7 +1059,6 @@ final class VoiceCloneStore: ObservableObject {
 
     private func clearTransientState() {
         voices = []
-        pendingGiftInvitations = []
         nextCreateAt = nil
         isLoading = false
         isCreating = false

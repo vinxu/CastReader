@@ -2003,7 +2003,7 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertEqual(sharedURL.absoluteString, invitationURL.absoluteString)
     }
 
-    func testVoiceGiftInviterMVPUIContractKeepsDirectCTAAndPendingSecondaryAction() {
+    func testVoiceGiftInviterMVPUIContractKeepsOnePressureFreeShareAction() throws {
         XCTAssertEqual(
             VoiceGiftInviterUIContract.primaryActionIdentifier,
             "voiceGiftInviteButton"
@@ -2018,10 +2018,13 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(VoiceGiftInviterUIContract.primaryControlNoteKey.contains("直接分享链接"))
         XCTAssertTrue(VoiceGiftInviterUIContract.primaryControlNoteKey.contains("无需填写邮箱"))
         XCTAssertFalse(VoiceGiftInviterUIContract.primaryBenefitKey.contains("永久"))
-        XCTAssertEqual(
-            VoiceGiftInviterUIContract.pendingActionIdentifier(for: "request_1"),
-            "voiceGiftPending_request_1"
-        )
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("CastReader/Views/Settings/VoiceCloneCreatedView.swift"))
+        XCTAssertFalse(source.contains("pendingInvitationRow"))
+        XCTAssertFalse(source.contains("pendingSectionTitle"))
+        XCTAssertFalse(source.contains("voiceGiftPending_"))
         XCTAssertEqual(VoiceGiftContract.authorizationMode, "until_revoked")
     }
 
@@ -2043,7 +2046,7 @@ final class VoiceCloneTests: XCTestCase {
         }
     }
 
-    func testClaimedAndLegacyAcceptedInvitationsRemainVisibleUntilFulfilled() {
+    func testInvitationProtocolStillClassifiesOpenAndTerminalStatuses() {
         for status in ["pending", "claimed", "accepted", "future_state"] {
             let invitation = VoiceGiftInvitation(
                 requestId: "request_\(status)",
@@ -2086,11 +2089,6 @@ final class VoiceCloneTests: XCTestCase {
                 responseBody = Data(
                     #"{"schemaVersion":"voice-library-v1","snapshotComplete":true,"voices":[]}"#.utf8
                 )
-            } else if request.url?.path == "/api/voice-clone/requests",
-                      request.httpMethod == "GET" {
-                responseBody = Data(
-                    #"{"code":0,"data":{"schemaVersion":"voice-gift-v1","snapshotComplete":true,"sent":[],"claimed":[],"accepted":[]}}"#.utf8
-                )
             } else {
                 responseBody = Data(
                     #"{"data":{"schemaVersion":"voice-gift-v1","request":{"id":"request_1","status":"pending"},"invitationURL":"https://castreader.com/voice-gift/request#token","authorization":{"mode":"until_revoked","expiresAt":null}}}"#.utf8
@@ -2118,8 +2116,11 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(library.voiceGiftEnabled)
         XCTAssertEqual(
             recorder.allRequests().map { $0.url?.path },
-            ["/api/capabilities", "/api/voice-clone/library", "/api/voice-clone/requests"]
+            ["/api/capabilities", "/api/voice-clone/library"]
         )
+        XCTAssertFalse(recorder.allRequests().contains {
+            $0.url?.path == "/api/voice-clone/requests" && $0.httpMethod == "GET"
+        })
 
         let invitation = try await service.createGiftInvitation(
             clientRequestID: UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
@@ -2417,7 +2418,7 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     @MainActor
-    func testIncompleteInvitationSnapshotAppliesExplicitTerminalTombstone() async {
+    func testInvitationSnapshotsDoNotCreateAnInviterTaskList() async {
         let service = ControlledVoiceCloneService()
         let store = VoiceCloneStore(
             service: service,
@@ -2438,7 +2439,7 @@ final class VoiceCloneTests: XCTestCase {
             nextCreateAt: nil
         ))
         await store.refresh()
-        XCTAssertEqual(store.pendingGiftInvitations.map(\.id), [pending.id])
+        XCTAssertTrue(store.voices.isEmpty)
 
         let fulfilled = VoiceGiftInvitation(
             requestId: pending.id,
@@ -2453,7 +2454,7 @@ final class VoiceCloneTests: XCTestCase {
             nextCreateAt: nil
         ))
         await store.refresh()
-        XCTAssertTrue(store.pendingGiftInvitations.isEmpty)
+        XCTAssertTrue(store.voices.isEmpty)
     }
 
     @MainActor
