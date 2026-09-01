@@ -176,6 +176,16 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
     }
 
     func listVoices() async throws -> VoiceCloneListResult {
+        #if DEBUG
+        // Explicit phone-login UI automation owns a deterministic local bearer,
+        // not a server session. Keep it out of production request logs while
+        // still letting the signed-in shell exercise account-scoped UI. Release
+        // builds cannot enter this branch.
+        if let token = await sessionProvider.sessionToken(),
+           MobileSessionStore.isExplicitUITestSessionToken(token) {
+            return VoiceCloneListResult(voices: [], nextCreateAt: nil)
+        }
+        #endif
         let giftEnabled = await resolveVoiceGiftCapability()
         guard giftEnabled else { return try await legacyVoiceList() }
 

@@ -633,6 +633,7 @@ actor APIService {
             await MobileSessionStore.shared.rejectSession(nil)
             await MainActor.run {
                 guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
+                guard !AuthService.shared.isSignedIn else { return }
                 VoiceCloneAccessCoordinator.shared.prompt = .signIn
             }
             throw VoiceCloneError.sessionUnavailable
@@ -796,6 +797,7 @@ actor APIService {
                 await MobileSessionStore.shared.rejectSession(token)
                 await MainActor.run {
                     guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
+                    guard !AuthService.shared.isSignedIn else { return }
                     VoiceCloneAccessCoordinator.shared.prompt = .signIn
                 }
                 throw VoiceCloneError.sessionUnavailable

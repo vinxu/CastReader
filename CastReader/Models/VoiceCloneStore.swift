@@ -804,7 +804,14 @@ final class VoiceCloneStore: ObservableObject {
         guard let cloneError = error as? VoiceCloneError else { return }
         switch cloneError {
         case .signInRequired:
-            VoiceCloneAccessCoordinator.shared.prompt = .signIn
+            // `rejectSession` closes the current account when the bearer really
+            // is invalid, and RootAuthGate then presents login. If the account
+            // remains signed in, the 401 belonged to a stale request (or an
+            // explicit UI-test bearer) and must not cover the valid account
+            // with a second login sheet.
+            if !AuthService.shared.isSignedIn {
+                VoiceCloneAccessCoordinator.shared.prompt = .signIn
+            }
         case .sessionUnavailable:
             VoiceCloneAccessCoordinator.shared.prompt = .message(cloneError.localizedDescription)
         case .proRequired:

@@ -524,6 +524,17 @@ final class AuthService: NSObject, ObservableObject {
         let expectedEpoch = accountTransitionEpoch
         let currentToken = await MobileSessionStore.shared.sessionToken()
         guard account != nil, accountTransitionEpoch == expectedEpoch else { return }
+        #if DEBUG
+        // The deterministic cms_local_ bearer exists only for explicit UI
+        // automation. Matched CN Voice Gift now performs protected Home
+        // refreshes, whose expected production 401 must not erase that local
+        // test account. Keep the exception at this central boundary so it also
+        // covers direct Pro refresh rejections. Release builds cannot enter it.
+        if let currentToken,
+           MobileSessionStore.isExplicitUITestSessionToken(currentToken) {
+            return
+        }
+        #endif
         guard Self.shouldCloseAccountForRejectedSession(
             currentToken: currentToken,
             rejectedToken: rejectedToken
@@ -541,6 +552,12 @@ final class AuthService: NSObject, ObservableObject {
     /// 供 Apple 登录扩展写入账号（private(set) 仅本文件可设）。
     func applyAccount(_ acc: UserAccount) {
         lastAccountDeletionReceipt = nil
+        // A protected voice request can publish a sign-in prompt immediately
+        // after its rejected session closes the old account boundary. The root
+        // auth gate already owns that login. Clear the process-wide prompt on
+        // every successful account transition so it cannot reopen a redundant
+        // login sheet over the newly authenticated MainTab.
+        VoiceCloneAccessCoordinator.shared.prompt = nil
         let nextStorageID = AccountContentIsolation.activate(for: acc)
         let changedAccountBoundary = activeContentStorageID != nextStorageID
         if changedAccountBoundary {

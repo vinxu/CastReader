@@ -1408,8 +1408,15 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(primary.isEnabled)
         primary.tap()
 
+        // Home and Voice intentionally share this accessibility identifier, and
+        // SwiftUI may retain both tab hierarchies. Select Voice explicitly so the
+        // query resolves to a stable, visible toolbar target after login.
+        let voiceTab = app.tabBars.buttons["音色"]
+        XCTAssertTrue(voiceTab.waitForExistence(timeout: 20), "手机号登录后必须进入主界面")
+        voiceTab.tap()
+
         let settings = app.buttons["settingsGearButton"]
-        XCTAssertTrue(settings.waitForExistence(timeout: 20), "手机号登录后必须进入主界面")
+        XCTAssertTrue(settings.waitForExistence(timeout: 6), "音色页必须提供设置入口")
         settings.tap()
         XCTAssertTrue(app.navigationBars["设置"].waitForExistence(timeout: 6))
         XCTAssertTrue(
