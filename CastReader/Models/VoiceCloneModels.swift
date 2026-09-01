@@ -945,6 +945,23 @@ struct VoiceGiftCapabilityManifest: Equatable {
     }
 }
 
+enum VoiceGiftAccessLoss: Equatable {
+    case voiceNotFound
+    case recipientMismatch
+    case revoked
+    case expired
+    case unavailable
+
+    var error: VoiceCloneError {
+        switch self {
+        case .voiceNotFound: return .voiceNotFound
+        case .revoked: return .giftRevoked
+        case .expired: return .giftExpired
+        case .recipientMismatch, .unavailable: return .giftAccessLost
+        }
+    }
+}
+
 enum VoiceCloneResponseParser {
     struct VoiceGiftInvitationLimitDetails: Equatable {
         let limitType: String?
@@ -959,6 +976,31 @@ enum VoiceCloneResponseParser {
 
     static func isVoiceNotFound(statusCode: Int, data: Data) -> Bool {
         statusCode == 404 && serverCode(from: data)?.uppercased() == "VOICE_NOT_FOUND"
+    }
+
+    /// A transport status by itself never proves that a persisted voice or
+    /// grant disappeared. Keep this table aligned with voice-gift-v1 so route
+    /// misses, rollout errors and feature-level 404s cannot erase a user's
+    /// current selection.
+    static func confirmedVoiceGiftAccessLoss(
+        statusCode: Int,
+        data: Data
+    ) -> VoiceGiftAccessLoss? {
+        guard let code = serverCode(from: data)?.uppercased() else { return nil }
+        switch (statusCode, code) {
+        case (404, "VOICE_NOT_FOUND"):
+            return .voiceNotFound
+        case (403, "VOICE_GIFT_RECIPIENT_MISMATCH"):
+            return .recipientMismatch
+        case (410, "VOICE_GIFT_REVOKED"):
+            return .revoked
+        case (410, "VOICE_GIFT_EXPIRED"):
+            return .expired
+        case (410, "VOICE_GIFT_UNAVAILABLE"):
+            return .unavailable
+        default:
+            return nil
+        }
     }
 
     static func list(from data: Data) throws -> VoiceCloneListResult {
@@ -1416,6 +1458,7 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
     case giftUnavailableInRegion
     case giftRevoked
     case giftExpired
+    case giftAccessLost
     case giftAccessUnavailable
     case giftActiveInvitationLimit(limit: Int, earliestExpiryAt: Date?)
     case giftDailyInvitationLimit(limit: Int, retryAt: Date?)
@@ -1462,6 +1505,8 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
             return AppLocalized("朗读者已收回这个声音的使用授权，已为你取消选择")
         case .giftExpired:
             return AppLocalized("这个声音的使用授权已过期，已为你取消选择")
+        case .giftAccessLost:
+            return AppLocalized("这个朗读者声音已无法访问，已为你取消选择")
         case .giftAccessUnavailable:
             return AppLocalized("这个朗读者声音暂时无法使用，请刷新声音列表后重试")
         case .giftActiveInvitationLimit(let limit, let earliestExpiryAt):

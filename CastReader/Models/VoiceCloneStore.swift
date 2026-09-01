@@ -995,9 +995,10 @@ final class VoiceCloneStore: ObservableObject {
         }
     }
 
-    private func handleGiftMutationFailure(_ error: Error, voiceID: String) {
+    func handleConfirmedVoiceAccessLoss(_ error: Error, voiceID: String) {
         guard let cloneError = error as? VoiceCloneError,
-              cloneError == .giftRevoked || cloneError == .giftExpired else {
+              [.voiceNotFound, .giftRevoked, .giftExpired, .giftAccessLost]
+                .contains(cloneError) else {
             handle(error)
             return
         }
@@ -1008,13 +1009,19 @@ final class VoiceCloneStore: ObservableObject {
                 kind: access.kind,
                 grantId: access.grantId,
                 shareId: access.shareId,
-                status: cloneError == .giftExpired ? "expired" : "revoked",
+                status: cloneError == .giftExpired
+                    ? "expired"
+                    : (cloneError == .giftRevoked ? "revoked" : "unavailable"),
                 donor: access.donor,
                 recipientAlias: access.recipientAlias,
                 capabilities: access.capabilities
             ))
         }
         handle(cloneError)
+    }
+
+    private func handleGiftMutationFailure(_ error: Error, voiceID: String) {
+        handleConfirmedVoiceAccessLoss(error, voiceID: voiceID)
     }
 
     private func applyIdentity(_ identity: VoiceCloneIdentity, to voiceID: String) {

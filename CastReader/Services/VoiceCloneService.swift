@@ -738,11 +738,11 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             || code == "VOICE_CREATION_IDEMPOTENCY_RETIRED" {
             throw VoiceCloneError.creationIdempotencyConflict
         }
-        if code == "VOICE_GIFT_REVOKED" {
-            throw VoiceCloneError.giftRevoked
-        }
-        if code == "VOICE_GIFT_EXPIRED" {
-            throw VoiceCloneError.giftExpired
+        if let accessLoss = VoiceCloneResponseParser.confirmedVoiceGiftAccessLoss(
+            statusCode: http.statusCode,
+            data: data
+        ) {
+            throw accessLoss.error
         }
         if code == "VOICE_GIFT_ACTIVE_INVITATION_LIMIT_REACHED" {
             let details = VoiceCloneResponseParser.voiceGiftInvitationLimitDetails(
@@ -786,7 +786,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
                 )
             }
         }
-        if ["VOICE_GIFT_NOT_FOUND", "VOICE_GIFT_ACCESS_DENIED", "VOICE_GIFT_UNAVAILABLE"].contains(code ?? "") {
+        if ["VOICE_GIFT_NOT_FOUND", "VOICE_GIFT_ACCESS_DENIED"].contains(code ?? "") {
             throw VoiceCloneError.giftAccessUnavailable
         }
         if code == "CLONE_QUOTA_EXHAUSTED" {
@@ -1042,7 +1042,17 @@ final class VoiceClonePreviewPlayer: NSObject, ObservableObject, @preconcurrency
                 guard loadingVoiceId == voice.voiceId else { return }
                 loadingVoiceId = nil
                 VoicePreviewPlaybackCoordinator.shared.end()
-                VoiceCloneStore.shared.errorMessage = error.localizedDescription
+                if let cloneError = error as? VoiceCloneError,
+                   [.voiceNotFound, .giftRevoked, .giftExpired, .giftAccessLost]
+                    .contains(cloneError) {
+                    VoiceCloneStore.shared.handleConfirmedVoiceAccessLoss(
+                        cloneError,
+                        voiceID: voice.voiceId
+                    )
+                    Task { await VoiceCloneStore.shared.refresh() }
+                } else {
+                    VoiceCloneStore.shared.errorMessage = error.localizedDescription
+                }
             }
         }
     }

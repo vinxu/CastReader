@@ -759,23 +759,25 @@ actor APIService {
                 }
                 throw error
             }
-            if code == "VOICE_GIFT_REVOKED" || code == "VOICE_GIFT_EXPIRED" {
-                let error: VoiceCloneError = code == "VOICE_GIFT_EXPIRED"
-                    ? .giftExpired
-                    : .giftRevoked
+            if let accessLoss = VoiceCloneResponseParser.confirmedVoiceGiftAccessLoss(
+                statusCode: http.statusCode,
+                data: data
+            ) {
+                let error = accessLoss.error
                 await MainActor.run {
                     guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }
-                    // A gift is one access grant, not the donor's underlying
-                    // voice. Clear only this selected voice ID and never delete
-                    // or rename the donor-owned asset.
+                    // Bind invalidation to the exact failed synthesis request.
+                    // A late response for an old voice must not clear the voice
+                    // the user selected while that request was in flight.
                     AppSettings.shared.clearActiveClonedVoice(ifMatching: voiceID)
                     VoiceCloneAccessCoordinator.shared.prompt = .message(
                         error.localizedDescription
                     )
+                    Task { await VoiceCloneStore.shared.refresh() }
                 }
                 throw error
             }
-            if ["VOICE_GIFT_NOT_FOUND", "VOICE_GIFT_ACCESS_DENIED", "VOICE_GIFT_UNAVAILABLE"].contains(code ?? "") {
+            if ["VOICE_GIFT_NOT_FOUND", "VOICE_GIFT_ACCESS_DENIED"].contains(code ?? "") {
                 let error = VoiceCloneError.giftAccessUnavailable
                 await MainActor.run {
                     guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }

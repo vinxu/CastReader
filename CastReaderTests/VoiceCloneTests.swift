@@ -1038,6 +1038,50 @@ final class VoiceCloneTests: XCTestCase {
         )
     }
 
+    func testVoiceGiftAccessLossRequiresExactStatusAndStructuredCode() {
+        let confirmed: [(Int, String, VoiceGiftAccessLoss)] = [
+            (404, "VOICE_NOT_FOUND", .voiceNotFound),
+            (403, "VOICE_GIFT_RECIPIENT_MISMATCH", .recipientMismatch),
+            (410, "VOICE_GIFT_REVOKED", .revoked),
+            (410, "VOICE_GIFT_EXPIRED", .expired),
+            (410, "VOICE_GIFT_UNAVAILABLE", .unavailable),
+        ]
+
+        for (status, code, expected) in confirmed {
+            let data = Data(#"{"code":"\#(code)"}"#.utf8)
+            XCTAssertEqual(
+                VoiceCloneResponseParser.confirmedVoiceGiftAccessLoss(
+                    statusCode: status,
+                    data: data
+                ),
+                expected
+            )
+        }
+
+        let revoked = Data(#"{"code":"VOICE_GIFT_REVOKED"}"#.utf8)
+        XCTAssertNil(
+            VoiceCloneResponseParser.confirmedVoiceGiftAccessLoss(
+                statusCode: 503,
+                data: revoked
+            ),
+            "a transient 5xx must preserve the selected voice"
+        )
+        XCTAssertNil(
+            VoiceCloneResponseParser.confirmedVoiceGiftAccessLoss(
+                statusCode: 404,
+                data: Data(#"{"code":"VOICE_GIFT_NOT_FOUND"}"#.utf8)
+            ),
+            "feature/invitation 404 is not proof that a voice grant disappeared"
+        )
+        XCTAssertNil(
+            VoiceCloneResponseParser.confirmedVoiceGiftAccessLoss(
+                statusCode: 404,
+                data: Data("<html>not found</html>".utf8)
+            ),
+            "a bare gateway 404 must never clear the selected voice"
+        )
+    }
+
     func testProStatusDecodesCloneQuotaContract() throws {
         let data = Data(
             #"{"pro":true,"plan":"trialing","account":null,"freeRemaining":1,"freeMax":3,"listenSeconds":0,"listenLimit":1200,"listenRemaining":1200,"resolvedUserId":"user_1","clonePolicy":"monthly_120_v1","cloneCanCreate":true,"cloneCanApply":true,"cloneFreeCreationConsumed":true,"cloneMonthlyLimitSeconds":7200,"cloneMonthlyUsedSeconds":60,"cloneMonthlyRemainingSeconds":7140,"cloneQuotaResetAt":"2026-09-01T00:00:00Z"}"#.utf8
