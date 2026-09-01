@@ -157,6 +157,7 @@ class CastReaderUITests: XCTestCase {
         )
         XCTAssertEqual(XCTWaiter().wait(for: [confirmEnabled], timeout: 3), .completed)
         confirm.tap()
+        allowMicrophonePermissionIfPresent()
 
         XCTAssertTrue(app.staticTexts["请开始说话"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["voiceCloneRecordingLanguagePicker"].exists)
@@ -199,6 +200,7 @@ class CastReaderUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["克隆我的声音"].exists)
         XCTAssertTrue(app.staticTexts["Read Freely or Speak Naturally"].exists)
         app.buttons["voiceCloneIntroConfirmButton"].tap()
+        allowMicrophonePermissionIfPresent()
 
         XCTAssertTrue(app.staticTexts["Start Speaking"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["voiceCloneRecordingLanguagePicker"].exists)
@@ -472,6 +474,27 @@ class CastReaderUITests: XCTestCase {
                 button.tap()
                 return
             }
+        }
+    }
+
+    /// A fresh install asks for microphone access when the clone recorder is
+    /// prepared. Handle that one-time SpringBoard alert explicitly so this UI
+    /// contract remains deterministic on both clean and reused simulators.
+    private func allowMicrophonePermissionIfPresent(timeout: TimeInterval = 2) {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let alert = springboard.alerts.firstMatch
+        guard alert.waitForExistence(timeout: timeout) else { return }
+        let title = alert.label.lowercased()
+        guard title.contains("microphone") || title.contains("麦克风") else { return }
+        for label in ["Allow", "允许", "OK", "好"] {
+            let button = alert.buttons[label]
+            if button.exists {
+                button.tap()
+                return
+            }
+        }
+        if alert.buttons.count > 1 {
+            alert.buttons.element(boundBy: alert.buttons.count - 1).tap()
         }
     }
 
