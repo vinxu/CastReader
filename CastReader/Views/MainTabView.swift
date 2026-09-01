@@ -178,8 +178,8 @@ struct MainTabView: View {
                             entryPoint: "library_onboarding_reminder"
                         )
                     },
-                    onOpenVoiceBrowser: { tab in
-                        voiceBrowserLaunchRequest = VoiceBrowserLaunchRequest(tab: tab)
+                    onOpenVoiceBrowser: { request in
+                        voiceBrowserLaunchRequest = request
                         selectedTab = 2
                     }
                 )
@@ -195,7 +195,8 @@ struct MainTabView: View {
                     .tag(1)
                 VoiceBrowserView(
                     presentation: .tab,
-                    launchRequest: voiceBrowserLaunchRequest
+                    launchRequest: voiceBrowserLaunchRequest,
+                    onConsumeLaunchRequest: consumeVoiceBrowserLaunchRequest
                 )
                     .tabItem { Label("音色", systemImage: "waveform") }
                     .tag(2)
@@ -712,8 +713,8 @@ struct MainTabView: View {
             return
         }
         // The deep link may arrive before login or before the public manifest
-        // resolves. It can safely open the existing Created tab; the Gift CTA,
-        // library and request endpoints remain independently fail-closed behind
+        // resolves. It can safely open the existing Created library; creation
+        // methods and request endpoints remain independently fail-closed behind
         // the remote capability gate.
         voiceBrowserLaunchRequest = VoiceBrowserLaunchRequest(tab: .created)
         selectedTab = 2
@@ -721,6 +722,14 @@ struct MainTabView: View {
         if !voiceCloneStore.voiceGiftEnabled {
             Task { await voiceCloneStore.refresh() }
         }
+    }
+
+    /// MainTab owns launch requests because it also owns the selected tab. A
+    /// child reports a successful handoff by ID; stale callbacks from an older
+    /// login/session attempt can never clear a newer Home action.
+    private func consumeVoiceBrowserLaunchRequest(_ requestID: UUID) {
+        guard voiceBrowserLaunchRequest?.id == requestID else { return }
+        voiceBrowserLaunchRequest = nil
     }
 
     @discardableResult

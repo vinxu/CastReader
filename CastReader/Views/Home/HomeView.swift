@@ -139,6 +139,7 @@ private struct HomeVoiceFeatureBanner: View {
     let title: LocalizedStringKey
     let imageName: String
     let accessibilityID: String
+    let width: CGFloat
     let action: () -> Void
 
     var body: some View {
@@ -150,28 +151,44 @@ private struct HomeVoiceFeatureBanner: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 Text(title)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(AppTheme.foreground)
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
-                    .minimumScaleFactor(0.78)
-                    .padding(.horizontal, 14)
-                    .padding(.top, 14)
+                    .minimumScaleFactor(0.72)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 12)
             }
-            .frame(maxWidth: .infinity)
-            .aspectRatio(1, contentMode: .fit)
+            .frame(width: width, height: width)
             .background(AppTheme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                RoundedRectangle(cornerRadius: 17, style: .continuous)
                     .strokeBorder(AppTheme.border.opacity(0.72), lineWidth: 0.75)
             }
-            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
         }
-        .frame(maxWidth: .infinity)
         .buttonStyle(.plain)
         .accessibilityLabel(Text(title))
         .accessibilityIdentifier(accessibilityID)
+    }
+}
+
+enum HomeVoiceFeatureCarouselLayout {
+    static let minimumCardWidth: CGFloat = 122
+    static let maximumCardWidth: CGFloat = 148
+    static let spacing: CGFloat = 12
+    static let containerHeight: CGFloat = 154
+
+    static func cardWidth(for availableWidth: CGFloat) -> CGFloat {
+        let phoneWidth = (availableWidth - spacing * 2) / 2.5
+        return min(maximumCardWidth, max(minimumCardWidth, phoneWidth))
+    }
+}
+
+enum VoiceGiftHomeEntryPolicy {
+    static func showsInvite(regionEligible: Bool, capabilityEnabled: Bool) -> Bool {
+        regionEligible && capabilityEnabled
     }
 }
 
@@ -181,7 +198,7 @@ struct HomeView: View {
     let onOpenShareInbox: () -> Void
     let onReviewPresentationBlockedChanged: (Bool) -> Void
     let onRequestLibraryConnection: (BoundLibraryOnboardingSource) -> Void
-    let onOpenVoiceBrowser: (VoiceBrowserTab) -> Void
+    let onOpenVoiceBrowser: (VoiceBrowserLaunchRequest) -> Void
 
     @EnvironmentObject private var coordinator: PlayerCoordinator
     @EnvironmentObject private var importRouter: ImportRouter
@@ -189,6 +206,7 @@ struct HomeView: View {
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     @ObservedObject private var pro = ProManager.shared
     @ObservedObject private var auth = AuthService.shared
+    @ObservedObject private var voiceCloneStore = VoiceCloneStore.shared
     @StateObject private var captureVM = CaptureFlowViewModel()
     @ObservedObject private var cloudStorage = CloudStorageCenter.shared
     @ObservedObject private var kindleStore = KindleLibraryStore.shared
@@ -205,7 +223,7 @@ struct HomeView: View {
         onOpenShareInbox: @escaping () -> Void = {},
         onReviewPresentationBlockedChanged: @escaping (Bool) -> Void = { _ in },
         onRequestLibraryConnection: @escaping (BoundLibraryOnboardingSource) -> Void,
-        onOpenVoiceBrowser: @escaping (VoiceBrowserTab) -> Void = { _ in }
+        onOpenVoiceBrowser: @escaping (VoiceBrowserLaunchRequest) -> Void = { _ in }
     ) {
         self.shareInboxUnreadCount = shareInboxUnreadCount
         self.isSurfaceActive = isSurfaceActive
@@ -507,34 +525,59 @@ struct HomeView: View {
     // MARK: - 声音入口
 
     private var voiceFeatureBanners: some View {
-        LazyVGrid(
-            columns: Array(
-                repeating: GridItem(
-                    .flexible(minimum: 0, maximum: .infinity),
-                    spacing: 12,
-                    alignment: .top
-                ),
-                count: Constants.Features.voiceCloningEnabled ? 2 : 1
-            ),
-            alignment: .leading,
-            spacing: 12
-        ) {
-            HomeVoiceFeatureBanner(
-                title: "找到你喜欢的声音",
-                imageName: "HomeVoiceDiscoverIllustration",
-                accessibilityID: "homeVoiceDiscoverBanner",
-                action: { onOpenVoiceBrowser(.explore) }
+        GeometryReader { proxy in
+            let cardWidth = HomeVoiceFeatureCarouselLayout.cardWidth(
+                for: proxy.size.width
             )
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: HomeVoiceFeatureCarouselLayout.spacing) {
+                    HomeVoiceFeatureBanner(
+                        title: "找到你喜欢的声音",
+                        imageName: "HomeVoiceDiscoverIllustration",
+                        accessibilityID: "homeVoiceDiscoverBanner",
+                        width: cardWidth,
+                        action: {
+                            onOpenVoiceBrowser(VoiceBrowserLaunchRequest(tab: .explore))
+                        }
+                    )
 
-            if Constants.Features.voiceCloningEnabled {
-                HomeVoiceFeatureBanner(
-                    title: "克隆你的声音",
-                    imageName: "HomeVoiceCloneIllustration",
-                    accessibilityID: "homeVoiceCloneBanner",
-                    action: { onOpenVoiceBrowser(.created) }
-                )
+                    if Constants.Features.voiceCloningEnabled {
+                        HomeVoiceFeatureBanner(
+                            title: "录制自己的声音",
+                            imageName: "HomeVoiceCloneIllustration",
+                            accessibilityID: "homeVoiceRecordBanner",
+                            width: cardWidth,
+                            action: {
+                                onOpenVoiceBrowser(
+                                    VoiceBrowserLaunchRequest(creationEntry: .recordMyVoice)
+                                )
+                            }
+                        )
+
+                        if VoiceGiftHomeEntryPolicy.showsInvite(
+                            regionEligible: VoiceGiftFeature.isRegionEligible(),
+                            capabilityEnabled: voiceCloneStore.voiceGiftEnabled
+                        ) {
+                            HomeVoiceFeatureBanner(
+                                title: "邀请朋友录制声音",
+                                imageName: "HomeVoiceInviteIllustration",
+                                accessibilityID: "homeVoiceInviteBanner",
+                                width: cardWidth,
+                                action: {
+                                    onOpenVoiceBrowser(
+                                        VoiceBrowserLaunchRequest(creationEntry: .inviteFriend)
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+                .scrollTargetLayout()
             }
+            .scrollTargetBehavior(.viewAligned)
+            .accessibilityIdentifier("homeVoiceFeatureCarousel")
         }
+        .frame(height: HomeVoiceFeatureCarouselLayout.containerHeight)
     }
 
     // MARK: - 首页 Pro 卡片

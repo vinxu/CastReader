@@ -3,5 +3,6 @@
   "authorization": {
     "mode": "until_revoked"
   },
-  "clientRequestId": "11111111-2222-3333-4444-555555555555"
+  "clientRequestId": "11111111-2222-3333-4444-555555555555",
+  "locale": "pt-BR"
 }

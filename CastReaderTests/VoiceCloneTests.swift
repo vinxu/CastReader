@@ -230,6 +230,50 @@ final class VoiceCloneTests: XCTestCase {
         )
     }
 
+    func testVoiceGiftLocaleMappingUsesExactlyNineCanonicalLocales() {
+        let explicit: [AppLanguage: String] = [
+            .english: "en",
+            .simplifiedChinese: "zh-Hans",
+            .japanese: "ja",
+            .spanish: "es",
+            .french: "fr",
+            .german: "de",
+            .brazilianPortuguese: "pt-BR",
+            .italian: "it",
+            .hindi: "hi",
+        ]
+
+        XCTAssertEqual(AppLanguage.voiceGiftLocales, [
+            "en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi",
+        ])
+        for (language, locale) in explicit {
+            XCTAssertEqual(language.voiceGiftLocale, locale)
+        }
+    }
+
+    func testSystemVoiceGiftLocaleNormalizesRegionalAndUnsupportedIdentifiers() {
+        let expected = [
+            "en-GB": "en",
+            "zh_Hant_HK": "zh-Hans",
+            "ja-JP": "ja",
+            "es-MX": "es",
+            "fr-CA": "fr",
+            "de-AT": "de",
+            "pt-PT": "pt-BR",
+            "it-CH": "it",
+            "hi-IN": "hi",
+            " pt_BR ": "pt-BR",
+            "ar-SA": "en",
+        ]
+        for (identifier, locale) in expected {
+            XCTAssertEqual(
+                AppLanguage.system.voiceGiftLocale(systemLanguageIdentifier: identifier),
+                locale,
+                identifier
+            )
+        }
+    }
+
     func testEverySelectableAppLanguageHasItsOwnRecordingPrompt() {
         let expected: [AppLanguage: String] = [
             .english: "en",
@@ -2003,10 +2047,10 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertEqual(sharedURL.absoluteString, invitationURL.absoluteString)
     }
 
-    func testVoiceGiftInviterMVPUIContractKeepsOnePressureFreeShareAction() throws {
+    func testVoiceGiftInviterMVPUIContractLivesBehindCreationMethodChooser() throws {
         XCTAssertEqual(
             VoiceGiftInviterUIContract.primaryActionIdentifier,
-            "voiceGiftInviteButton"
+            "voiceCreationMethodInviteButton"
         )
         XCTAssertEqual(
             VoiceGiftInviterUIContract.primaryTitleKey,
@@ -2025,7 +2069,112 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertFalse(source.contains("pendingInvitationRow"))
         XCTAssertFalse(source.contains("pendingSectionTitle"))
         XCTAssertFalse(source.contains("voiceGiftPending_"))
+        XCTAssertFalse(source.contains("private var voiceGiftInvitationAction"))
+        XCTAssertTrue(source.contains("voiceCreationMethodSheet"))
+        XCTAssertTrue(source.contains("voiceCreationMethodRecordButton"))
+        XCTAssertTrue(source.contains("voiceCreationMethodInviteButton"))
+        XCTAssertTrue(source.contains("voiceCreationMethodUploadButton"))
+        XCTAssertTrue(source.contains("voiceCreationMethodUploadComingSoon"))
         XCTAssertEqual(VoiceGiftContract.authorizationMode, "until_revoked")
+    }
+
+    func testVoiceCreationLaunchRequestKeepsDestinationTyped() {
+        let record = VoiceBrowserLaunchRequest(creationEntry: .recordMyVoice)
+        XCTAssertEqual(record.tab, .created)
+        XCTAssertEqual(record.creationEntry, .recordMyVoice)
+
+        let invite = VoiceBrowserLaunchRequest(creationEntry: .inviteFriend)
+        XCTAssertEqual(invite.tab, .created)
+        XCTAssertEqual(invite.creationEntry, .inviteFriend)
+
+        let explore = VoiceBrowserLaunchRequest(tab: .explore)
+        XCTAssertEqual(explore.tab, .explore)
+        XCTAssertNil(explore.creationEntry)
+    }
+
+    func testVoiceGiftEntryRequiresBothGlobalRegionAndServerCapability() {
+        XCTAssertTrue(VoiceGiftHomeEntryPolicy.showsInvite(
+            regionEligible: true,
+            capabilityEnabled: true
+        ))
+        XCTAssertFalse(VoiceGiftHomeEntryPolicy.showsInvite(
+            regionEligible: true,
+            capabilityEnabled: false
+        ))
+        XCTAssertFalse(VoiceGiftHomeEntryPolicy.showsInvite(
+            regionEligible: false,
+            capabilityEnabled: true
+        ))
+    }
+
+    func testHomeVoiceCarouselNeverExceedsItsFixedContainerHeight() {
+        for width: CGFloat in [320, 393, 852, 1_366] {
+            let cardWidth = HomeVoiceFeatureCarouselLayout.cardWidth(for: width)
+            XCTAssertGreaterThanOrEqual(
+                cardWidth,
+                HomeVoiceFeatureCarouselLayout.minimumCardWidth
+            )
+            XCTAssertLessThanOrEqual(
+                cardWidth,
+                HomeVoiceFeatureCarouselLayout.maximumCardWidth
+            )
+            XCTAssertLessThanOrEqual(
+                cardWidth,
+                HomeVoiceFeatureCarouselLayout.containerHeight
+            )
+        }
+        XCTAssertEqual(
+            HomeVoiceFeatureCarouselLayout.cardWidth(for: 353),
+            (353 - 24) / 2.5,
+            accuracy: 0.001
+        )
+    }
+
+    func testVoiceCreationSheetHandoffUsesDismissCallbacksInsteadOfTimingGuess() throws {
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("CastReader/Views/Settings/VoiceCloneCreatedView.swift"))
+        XCTAssertTrue(source.contains("onDismiss: resumeCreationAfterLogin"))
+        XCTAssertTrue(source.contains("onDismiss: resumeCreationAfterSheetDismiss"))
+        XCTAssertTrue(source.contains("pendingCreationRoute"))
+        XCTAssertFalse(source.contains("creationRouteAfterSheetDismiss"))
+        XCTAssertFalse(source.contains("280_000_000"))
+    }
+
+    func testMainTabRemainsTheOnlyLaunchRequestOwner() throws {
+        let repositoryRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let mainTab = try String(contentsOf: repositoryRoot
+            .appendingPathComponent("CastReader/Views/MainTabView.swift"))
+        let browser = try String(contentsOf: repositoryRoot
+            .appendingPathComponent("CastReader/Views/Settings/VoiceBrowserView.swift"))
+        XCTAssertTrue(mainTab.contains("consumeVoiceBrowserLaunchRequest"))
+        XCTAssertTrue(mainTab.contains("voiceBrowserLaunchRequest = nil"))
+        XCTAssertFalse(browser.contains("consumedCreationLaunchRequestIDs"))
+    }
+
+    func testVoiceInviteHomeIllustrationProvidesLightAndDarkAssets() throws {
+        let assetURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("CastReader/Assets.xcassets/HomeVoiceInviteIllustration.imageset")
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: assetURL.appendingPathComponent("home-voice-invite.png").path
+        ))
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: assetURL.appendingPathComponent("home-voice-invite-dark.png").path
+        ))
+
+        let contents = try String(
+            contentsOf: assetURL.appendingPathComponent("Contents.json"),
+            encoding: .utf8
+        )
+        XCTAssertTrue(contents.contains("home-voice-invite.png"))
+        XCTAssertTrue(contents.contains("home-voice-invite-dark.png"))
+        XCTAssertTrue(contents.contains("luminosity"))
+        XCTAssertTrue(contents.contains("dark"))
     }
 
     func testVoiceGiftCapabilityManifestRequiresEveryFrozenDimension() throws {
@@ -2123,13 +2272,15 @@ final class VoiceCloneTests: XCTestCase {
         })
 
         let invitation = try await service.createGiftInvitation(
-            clientRequestID: UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
+            clientRequestID: UUID(uuidString: "11111111-2222-3333-4444-555555555555")!,
+            locale: "pt_BR"
         )
         XCTAssertEqual(invitation.id, "request_1")
         XCTAssertEqual(invitation.authorization?.mode, "until_revoked")
         let request = try XCTUnwrap(recorder.lastRequest())
         XCTAssertEqual(request.httpMethod, "POST")
         XCTAssertEqual(request.url?.path, "/api/voice-clone/requests")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Accept-Language"), "pt-BR")
         let body = try XCTUnwrap(request.httpBody)
         let object = try XCTUnwrap(
             JSONSerialization.jsonObject(with: body) as? [String: Any]
@@ -2158,6 +2309,7 @@ final class VoiceCloneTests: XCTestCase {
             object["clientRequestId"] as? String,
             "11111111-2222-3333-4444-555555555555"
         )
+        XCTAssertEqual(object["locale"] as? String, "pt-BR")
         XCTAssertNil(object["email"])
         XCTAssertNil(object["inviteeEmail"])
     }
@@ -2212,7 +2364,8 @@ final class VoiceCloneTests: XCTestCase {
         let mutation = Task {
             do {
                 _ = try await service.createGiftInvitation(
-                    clientRequestID: UUID()
+                    clientRequestID: UUID(),
+                    locale: "de"
                 )
                 return false
             } catch is CancellationError {
@@ -2320,7 +2473,10 @@ final class VoiceCloneTests: XCTestCase {
         )
         XCTAssertFalse(VoiceGiftFeature.isRegionEligible(on: .chinaGateway))
         do {
-            _ = try await service.createGiftInvitation(clientRequestID: UUID())
+            _ = try await service.createGiftInvitation(
+                clientRequestID: UUID(),
+                locale: "ja"
+            )
             XCTFail("China must not call the global Voice Gift contract")
         } catch let error as VoiceCloneError {
             XCTAssertEqual(error, .giftUnavailableInRegion)
@@ -2585,6 +2741,34 @@ final class VoiceCloneTests: XCTestCase {
             "#586FD1"
         )
     }
+
+    @MainActor
+    func testStorePassesCanonicalLocaleToGiftInvitationService() async throws {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        store.activateAccountScope(storageID: String(repeating: "a", count: 64))
+        await service.enqueueImmediateList(VoiceCloneListResult(
+            voiceGiftEnabled: true,
+            voices: [],
+            nextCreateAt: nil
+        ))
+        await store.refresh()
+
+        let invitation = await store.createGiftInvitation(locale: "hi_IN")
+
+        XCTAssertNotNil(invitation)
+        let calls = await service.giftInvitationCalls()
+        let call = try XCTUnwrap(calls.first)
+        XCTAssertEqual(call.locale, "hi")
+        XCTAssertFalse(call.clientRequestID.uuidString.isEmpty)
+    }
 }
 
 private func makeVoiceIdentity(
@@ -2697,11 +2881,17 @@ private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
     private var renameCallValues: [RenameCall] = []
     private var pendingRenames: [RenameContinuation] = []
     private var renameWaiters: [CallWaiter] = []
+    private var giftInvitationCallValues: [GiftInvitationCall] = []
 
     struct RenameCall: Equatable, Sendable {
         let voiceID: String
         let name: String?
         let expectedRevision: Int
+    }
+
+    struct GiftInvitationCall: Equatable, Sendable {
+        let clientRequestID: UUID
+        let locale: String
     }
 
     init(createdVoice: ClonedVoice = ClonedVoice(voiceId: "vc_created")) {
@@ -2733,6 +2923,21 @@ private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
     ) async throws -> ClonedVoice {
         onProgress(1)
         return createdVoice
+    }
+
+    func createGiftInvitation(
+        clientRequestID: UUID,
+        locale: String
+    ) async throws -> VoiceGiftInvitation {
+        giftInvitationCallValues.append(GiftInvitationCall(
+            clientRequestID: clientRequestID,
+            locale: locale
+        ))
+        return VoiceGiftInvitation(
+            requestId: "request_mock",
+            invitationURL: "https://castreader.com/voice-gift/request#mock",
+            status: "pending"
+        )
     }
 
     func deleteVoice(_ voiceId: String) async throws {
@@ -2816,6 +3021,10 @@ private actor ControlledVoiceCloneService: VoiceCloneStoreServicing {
 
     func renameCalls() -> [RenameCall] {
         renameCallValues
+    }
+
+    func giftInvitationCalls() -> [GiftInvitationCall] {
+        giftInvitationCallValues
     }
 
     func completeNextRename(returning identity: VoiceCloneIdentity) {

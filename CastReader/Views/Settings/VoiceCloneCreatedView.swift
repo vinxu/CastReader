@@ -3,7 +3,21 @@ import UIKit
 
 @MainActor
 struct VoiceCloneCreatedView: View {
+    private enum CreationSheet: String, Identifiable {
+        case methods
+        case recording
+
+        var id: String { rawValue }
+    }
+
+    private struct PendingCreationRoute: Equatable {
+        let entry: VoiceCreationEntry
+        let launchRequestID: UUID?
+    }
+
     let language: String
+    private let launchRequest: VoiceBrowserLaunchRequest?
+    private let onConsumeLaunchRequest: (UUID) -> Void
     @Environment(\.scenePhase) private var scenePhase
     @ObservedObject private var auth = AuthService.shared
     @ObservedObject private var pro = ProManager.shared
@@ -13,7 +27,9 @@ struct VoiceCloneCreatedView: View {
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     @State private var showLogin = false
     @State private var showPaywall = false
-    @State private var showCreation = false
+    @State private var activeCreationSheet: CreationSheet?
+    @State private var pendingCreationRoute: PendingCreationRoute?
+    @State private var isHandlingCreationEntry = false
     @State private var pendingDelete: ClonedVoice?
     @State private var pendingRename: ClonedVoice?
     @State private var pendingGiftAlias: ClonedVoice?
@@ -23,8 +39,14 @@ struct VoiceCloneCreatedView: View {
     @State private var sessionReady: Bool
     @State private var sessionCheckCompleted: Bool
 
-    init(language: String) {
+    init(
+        language: String,
+        launchRequest: VoiceBrowserLaunchRequest? = nil,
+        onConsumeLaunchRequest: @escaping (UUID) -> Void = { _ in }
+    ) {
         self.language = language
+        self.launchRequest = launchRequest
+        self.onConsumeLaunchRequest = onConsumeLaunchRequest
         // Switching away from the Created tab destroys this view. Seed the new
         // instance from the route-local session so returning to the tab does not
         // briefly replace already-loaded voices with a sign-in gate.
@@ -54,7 +76,9 @@ struct VoiceCloneCreatedView: View {
             await pro.refreshServer()
             sessionReady = await auth.ensureMobileSessionForVoiceClone()
             sessionCheckCompleted = true
-            if sessionReady { await store.refresh() }
+            if sessionReady {
+                await store.refresh()
+            }
         }
         .onChange(of: auth.accountBoundaryID) { _ in
             pendingRename = nil
@@ -63,20 +87,14 @@ struct VoiceCloneCreatedView: View {
             giftSharePayload = nil
             pendingDelete = nil
             preparingRenameVoiceID = nil
-            showCreation = false
+            activeCreationSheet = nil
         }
         .onChange(of: scenePhase) { phase in
             guard phase == .active, sessionReady else { return }
             Task { await store.refresh() }
         }
-        .sheet(isPresented: $showLogin) { LoginView() }
-        .onChange(of: showLogin) { presented in
-            guard !presented, auth.isSignedIn else { return }
-            Task {
-                sessionReady = await auth.ensureMobileSessionForVoiceClone()
-                sessionCheckCompleted = true
-                if sessionReady { await store.refresh() }
-            }
+        .sheet(isPresented: $showLogin, onDismiss: resumeCreationAfterLogin) {
+            LoginView()
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView(
@@ -85,7 +103,19 @@ struct VoiceCloneCreatedView: View {
                 analyticsSurface: "voice_clone_created"
             )
         }
-        .sheet(isPresented: $showCreation) { VoiceCloneCreationView(language: language) }
+        .sheet(item: $activeCreationSheet, onDismiss: resumeCreationAfterSheetDismiss) { sheet in
+            switch sheet {
+            case .methods:
+                VoiceCreationMethodSheet(
+                    canInviteFriend: VoiceGiftFeature.isRegionEligible()
+                        && store.voiceGiftEnabled,
+                    onCancel: { activeCreationSheet = nil },
+                    onSelect: transitionFromCreationMethods(to:)
+                )
+            case .recording:
+                VoiceCloneCreationView(language: language)
+            }
+        }
         .sheet(item: $pendingRename) { voice in
             VoiceCloneRenameView(voiceID: voice.voiceId)
         }
@@ -97,10 +127,22 @@ struct VoiceCloneCreatedView: View {
         }
         .onAppear {
             #if DEBUG
-            if ProcessInfo.processInfo.arguments.contains("-CastReaderOpenVoiceCloneCreation") {
-                showCreation = true
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderOpenVoiceCreationMethods") {
+                activeCreationSheet = .methods
+            } else if ProcessInfo.processInfo.arguments.contains("-CastReaderOpenVoiceCloneCreation") {
+                activeCreationSheet = .recording
             }
             #endif
+        }
+        .task(id: launchRequest?.id) {
+            guard let request = launchRequest,
+                  let entry = request.creationEntry,
+                  pendingCreationRoute?.launchRequestID != request.id else { return }
+            pendingCreationRoute = PendingCreationRoute(
+                entry: entry,
+                launchRequestID: request.id
+            )
+            await handlePendingCreationEntry()
         }
         .alert("删除这个声音？", isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } })) {
             Button("取消", role: .cancel) { pendingDelete = nil }
@@ -194,10 +236,6 @@ struct VoiceCloneCreatedView: View {
                 .padding(.bottom, 12)
             }
 
-            if store.voiceGiftEnabled {
-                voiceGiftInvitationAction
-            }
-
             createVoiceAction
 
             voiceSectionHeader(
@@ -253,59 +291,6 @@ struct VoiceCloneCreatedView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .top)
-    }
-
-    private var voiceGiftInvitationAction: some View {
-        Button {
-            beginGiftInvitation()
-        } label: {
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.18))
-                        .frame(width: 48, height: 48)
-                    Image(systemName: "person.2.wave.2.fill")
-                        .font(.system(size: 21, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(VoiceGiftInviterUIContract.primaryTitle)
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                    Text(VoiceGiftInviterUIContract.primaryBenefit)
-                        .font(.caption)
-                        .foregroundStyle(Color.white.opacity(0.86))
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(VoiceGiftInviterUIContract.primaryControlNote)
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(Color.white.opacity(0.72))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 4)
-                if store.isCreatingGiftInvitation {
-                    ProgressView().tint(.white)
-                } else {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                }
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                LinearGradient(
-                    colors: [AppTheme.primary, AppTheme.primary.opacity(0.72)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-            )
-        }
-        .buttonStyle(.plain)
-        .disabled(store.isCreatingGiftInvitation)
-        .accessibilityIdentifier(VoiceGiftInviterUIContract.primaryActionIdentifier)
-        .padding(.horizontal, 20)
-        .padding(.bottom, 12)
     }
 
     private func voiceSectionHeader(
@@ -505,13 +490,13 @@ struct VoiceCloneCreatedView: View {
 
     private var createVoiceAction: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Button { beginCreation() } label: {
+            Button { beginCreationChooser() } label: {
                 HStack(spacing: 13) {
                     ZStack {
                         Circle()
                             .fill(createButtonAvailable ? Color.white.opacity(0.19) : AppTheme.destructive.opacity(0.10))
                             .frame(width: 42, height: 42)
-                        Image(systemName: createButtonAvailable ? "mic.badge.plus" : "exclamationmark.lock.fill")
+                        Image(systemName: createButtonAvailable ? "plus" : "exclamationmark.lock.fill")
                             .font(.system(size: 18, weight: .bold))
                     }
                     VStack(alignment: .leading, spacing: 2) {
@@ -529,7 +514,7 @@ struct VoiceCloneCreatedView: View {
                 .foregroundStyle(createButtonAvailable ? Color.white : AppTheme.destructive)
                 .padding(.horizontal, 18)
                 .frame(maxWidth: .infinity)
-                .frame(height: 70)
+                .frame(height: 64)
                 .background(
                     RoundedRectangle(cornerRadius: 17, style: .continuous)
                         .fill(
@@ -579,14 +564,14 @@ struct VoiceCloneCreatedView: View {
         if !sessionReady {
             return sessionCheckCompleted ? "重新连接后创建" : "正在确认创建资格"
         }
-        return "创建新声音"
+        return "创建声音"
     }
 
     private var createButtonSubtitle: LocalizedStringKey {
         if !sessionReady {
             return sessionCheckCompleted ? "点击更新登录状态" : "请稍候"
         }
-        return "按住录制，约 10 秒完成"
+        return "选择录制自己、邀请朋友或上传音频"
     }
 
     private var createButtonAvailable: Bool {
@@ -599,7 +584,7 @@ struct VoiceCloneCreatedView: View {
                 ? AppLocalized("登录状态需要更新，点击按钮重新连接后创建。")
                 : AppLocalized("请稍候")
         }
-        return AppLocalized("录制一段清晰语音，即可创建一个可跨语言使用的个人音色。")
+        return AppLocalized("创建完成后会回到已创建列表，可在这里试听、编辑和选择音色。")
     }
 
     private func formattedMinutes(_ seconds: Int) -> String {
@@ -802,51 +787,259 @@ struct VoiceCloneCreatedView: View {
         }
     }
 
-    private func beginCreation() {
-        guard auth.isSignedIn else { showLogin = true; return }
-        Task {
-            guard await auth.ensureMobileSessionForVoiceClone() else {
-                store.errorMessage = VoiceCloneError.sessionUnavailable.localizedDescription
-                return
-            }
-            showCreation = true
-        }
+    private func beginCreationChooser() {
+        queueCreationEntry(.chooser)
     }
 
-    private func beginGiftInvitation() {
+    private func transitionFromCreationMethods(to entry: VoiceCreationEntry) {
+        // Keep exactly one queued destination. The currently presented method
+        // sheet is dismissed first; its onDismiss callback is then the only
+        // place allowed to continue into recording/invitation work.
+        pendingCreationRoute = PendingCreationRoute(
+            entry: entry,
+            launchRequestID: nil
+        )
+        activeCreationSheet = nil
+    }
+
+    private func resumeCreationAfterSheetDismiss() {
+        guard pendingCreationRoute != nil else { return }
+        Task { await handlePendingCreationEntry() }
+    }
+
+    private func resumeCreationAfterLogin() {
+        guard auth.isSignedIn, pendingCreationRoute != nil else { return }
+        Task { await handlePendingCreationEntry() }
+    }
+
+    private func queueCreationEntry(_ entry: VoiceCreationEntry) {
+        // A manual retry may replace the destination after session recovery,
+        // but it must not orphan the MainTab-owned request that brought the
+        // user here. Preserve that ID until one destination is handed off.
+        let launchRequestID = pendingCreationRoute?.launchRequestID
+        pendingCreationRoute = PendingCreationRoute(
+            entry: entry,
+            launchRequestID: launchRequestID
+        )
+        Task { await handlePendingCreationEntry() }
+    }
+
+    private func handlePendingCreationEntry() async {
+        guard let route = pendingCreationRoute,
+              !isHandlingCreationEntry else { return }
         guard auth.isSignedIn else {
             showLogin = true
             return
         }
-        guard VoiceGiftFeature.isRegionEligible() else {
-            store.errorMessage = VoiceCloneError.giftUnavailableInRegion.localizedDescription
+
+        isHandlingCreationEntry = true
+        defer { isHandlingCreationEntry = false }
+
+        let hasSession = await auth.ensureMobileSessionForVoiceClone()
+        guard !Task.isCancelled else { return }
+        guard hasSession else {
+            store.errorMessage = VoiceCloneError.sessionUnavailable.localizedDescription
             return
         }
-        guard store.voiceGiftEnabled else {
-            store.errorMessage = VoiceCloneError.giftAccessUnavailable.localizedDescription
-            return
-        }
-        Task {
-            guard await auth.ensureMobileSessionForVoiceClone() else {
-                store.errorMessage = VoiceCloneError.sessionUnavailable.localizedDescription
+        sessionReady = true
+        sessionCheckCompleted = true
+
+        switch route.entry {
+        case .chooser:
+            if VoiceGiftFeature.isRegionEligible(), !store.voiceGiftEnabled {
+                await store.refresh()
+            }
+            guard !Task.isCancelled else { return }
+            pendingCreationRoute = nil
+            activeCreationSheet = .methods
+            completeLaunchHandoff(route)
+        case .recordMyVoice:
+            pendingCreationRoute = nil
+            activeCreationSheet = .recording
+            completeLaunchHandoff(route)
+        case .inviteFriend:
+            guard VoiceGiftFeature.isRegionEligible() else {
+                store.errorMessage = VoiceCloneError.giftUnavailableInRegion.localizedDescription
                 return
             }
-            guard let invitation = await store.createGiftInvitation() else { return }
-            presentShare(for: invitation)
+            if !store.voiceGiftEnabled {
+                await store.refresh()
+            }
+            guard !Task.isCancelled else { return }
+            guard store.voiceGiftEnabled else {
+                store.errorMessage = VoiceCloneError.giftAccessUnavailable.localizedDescription
+                return
+            }
+            guard let invitation = await store.createGiftInvitation(
+                locale: appLanguage.selectedLanguage.voiceGiftLocale
+            ), presentShare(for: invitation) else { return }
+            pendingCreationRoute = nil
+            completeLaunchHandoff(route)
+        case .uploadAudio:
+            // Kept as a typed route so Android/Web can later adopt the same
+            // creation IA without overloading the recording flow today.
+            pendingCreationRoute = nil
+            activeCreationSheet = .methods
+            completeLaunchHandoff(route)
         }
     }
 
-    private func presentShare(for invitation: VoiceGiftInvitation) {
+    private func completeLaunchHandoff(_ route: PendingCreationRoute) {
+        guard let requestID = route.launchRequestID else { return }
+        onConsumeLaunchRequest(requestID)
+    }
+
+    @discardableResult
+    private func presentShare(for invitation: VoiceGiftInvitation) -> Bool {
         guard let url = VoiceGiftInvitationURLValidator.validatedURL(
             invitation.invitationURL
         ) else {
             store.errorMessage = VoiceCloneError.invalidResponse.localizedDescription
-            return
+            return false
         }
         giftSharePayload = VoiceGiftSharePayload(
             id: invitation.id,
             url: url
         )
+        return true
+    }
+}
+
+private struct VoiceCreationMethodSheet: View {
+    let canInviteFriend: Bool
+    let onCancel: () -> Void
+    let onSelect: (VoiceCreationEntry) -> Void
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("选择创建方式")
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.mutedForeground)
+                    .padding(.horizontal, 4)
+
+                methodButton(
+                    entry: .recordMyVoice,
+                    title: "录制自己的声音",
+                    detail: "用约 10 秒清晰语音创建你的个人音色",
+                    systemImage: "mic.badge.plus",
+                    accessibilityID: "voiceCreationMethodRecordButton"
+                )
+
+                if canInviteFriend {
+                    methodButton(
+                        entry: .inviteFriend,
+                        title: "邀请朋友录制声音",
+                        detail: "分享一个链接，请朋友授权成为你的朗读者",
+                        systemImage: "person.2.fill",
+                        accessibilityID: VoiceGiftInviterUIContract.primaryActionIdentifier
+                    )
+                }
+
+                methodButton(
+                    entry: .uploadAudio,
+                    title: "上传音频",
+                    detail: "从清晰的录音文件创建音色",
+                    systemImage: "waveform.badge.plus",
+                    accessibilityID: "voiceCreationMethodUploadButton",
+                    isEnabled: false,
+                    badge: "即将推出"
+                )
+
+                Spacer(minLength: 12)
+
+                Text("无论选择哪种方式，完成后都会回到已创建列表，在那里试听、编辑和选择音色。")
+                    .font(.footnote)
+                    .foregroundStyle(AppTheme.mutedForeground)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 4)
+            }
+            .padding(20)
+            .background(AppTheme.background.ignoresSafeArea())
+            .navigationTitle("创建声音")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消", action: onCancel)
+                }
+            }
+        }
+        .accessibilityIdentifier("voiceCreationMethodSheet")
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+    }
+
+    private func methodButton(
+        entry: VoiceCreationEntry,
+        title: LocalizedStringKey,
+        detail: LocalizedStringKey,
+        systemImage: String,
+        accessibilityID: String,
+        isEnabled: Bool = true,
+        badge: LocalizedStringKey? = nil
+    ) -> some View {
+        Button {
+            guard isEnabled else { return }
+            onSelect(entry)
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .fill(AppTheme.primary.opacity(isEnabled ? 0.13 : 0.06))
+                        .frame(width: 48, height: 48)
+                    Image(systemName: systemImage)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(isEnabled ? AppTheme.primary : AppTheme.mutedForeground)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text(title)
+                            .font(.headline)
+                            .foregroundStyle(AppTheme.foreground)
+                        if let badge {
+                            Text(badge)
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(AppTheme.mutedForeground)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(
+                                    Capsule(style: .continuous)
+                                        .fill(AppTheme.mutedForeground.opacity(0.10))
+                                )
+                                .accessibilityIdentifier("voiceCreationMethodUploadComingSoon")
+                        }
+                    }
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(AppTheme.mutedForeground)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 4)
+                if isEnabled {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(AppTheme.mutedForeground)
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 17, style: .continuous)
+                    .fill(AppTheme.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 17, style: .continuous)
+                            .stroke(AppTheme.border.opacity(0.72), lineWidth: 1)
+                    )
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.72)
+        .accessibilityIdentifier(accessibilityID)
     }
 }
 
@@ -860,7 +1053,7 @@ private struct VoiceGiftSharePayload: Identifiable {
 /// system share sheet. An unanswered link is intentionally not presented as a
 /// task, counter or pending row in the inviter's library.
 enum VoiceGiftInviterUIContract {
-    static let primaryActionIdentifier = "voiceGiftInviteButton"
+    static let primaryActionIdentifier = "voiceCreationMethodInviteButton"
 
     static let primaryTitleKey = "邀请朋友录制声音"
     static let primaryBenefitKey = "朋友授权后，你可用他的声音朗读和解读 Kindle、文件与网页，直到他撤回。"
@@ -1598,11 +1791,7 @@ private struct VoiceCloneCreationView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 42)
             Spacer()
-            Button(
-                pro.isPro
-                    ? AppLocalized("立即使用")
-                    : AppLocalized("试听我的声音")
-            ) {
+            Button(AppLocalized("返回已创建")) {
                 completePrimaryAction()
             }
                 .font(.headline)
@@ -1630,24 +1819,13 @@ private struct VoiceCloneCreationView: View {
 
     private var completeDetail: String {
         if pro.isPro {
-            return AppLocalized("这个声音可用于全部支持的朗读语言。Pro 每月包含 120 分钟克隆音色朗读和解读额度。")
+            return AppLocalized("这个声音可用于全部支持的朗读语言。返回已创建列表后，可试听、编辑或选择它用于朗读和解读。")
         }
-        return AppLocalized("这个声音可跨语言试听。免费版不能将克隆音色用于朗读和解读，升级 Pro 后每月可使用 120 分钟。")
+        return AppLocalized("这个声音可跨语言试听。返回已创建列表后可试听和编辑；升级 Pro 后可用于朗读和解读。")
     }
 
     private func completePrimaryAction() {
-        guard let voiceID = store.lastCreatedVoiceID,
-              let voice = store.voices.first(where: { $0.voiceId == voiceID }) else {
-            dismiss()
-            return
-        }
-        if pro.isPro {
-            Task {
-                if await store.select(voice, for: language) { dismiss() }
-            }
-        } else {
-            previewPlayer.toggle(voice)
-        }
+        dismiss()
     }
 
     private var recordingExampleText: String {

@@ -26,13 +26,19 @@ protocol VoiceCloneStoreServicing: Sendable {
         expectedRevision: Int
     ) async throws -> VoiceCloneIdentity
     func deleteVoice(_ voiceId: String) async throws
-    func createGiftInvitation(clientRequestID: UUID) async throws -> VoiceGiftInvitation
+    func createGiftInvitation(
+        clientRequestID: UUID,
+        locale: String
+    ) async throws -> VoiceGiftInvitation
     func updateGiftAlias(shareID: String, alias: String?) async throws
     func removeGiftAccess(shareID: String) async throws
 }
 
 extension VoiceCloneStoreServicing {
-    func createGiftInvitation(clientRequestID: UUID) async throws -> VoiceGiftInvitation {
+    func createGiftInvitation(
+        clientRequestID: UUID,
+        locale: String
+    ) async throws -> VoiceGiftInvitation {
         throw VoiceCloneError.giftAccessUnavailable
     }
 
@@ -199,19 +205,25 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         )
     }
 
-    func createGiftInvitation(clientRequestID: UUID) async throws -> VoiceGiftInvitation {
+    func createGiftInvitation(
+        clientRequestID: UUID,
+        locale: String
+    ) async throws -> VoiceGiftInvitation {
         try Task.checkCancellation()
         try await requireVoiceGiftCapability()
         try Task.checkCancellation()
+        let canonicalLocale = AppLanguage.canonicalVoiceGiftLocale(from: locale)
         let body = try JSONSerialization.data(withJSONObject: [
             "purpose": VoiceGiftContract.purpose,
             "authorization": ["mode": VoiceGiftContract.authorizationMode],
             "clientRequestId": clientRequestID.uuidString.lowercased(),
+            "locale": canonicalLocale,
         ])
         let data = try await perform(
             path: "/api/voice-clone/requests",
             method: "POST",
-            body: body
+            body: body,
+            headers: ["Accept-Language": canonicalLocale]
         )
         return try VoiceCloneResponseParser.giftInvitation(from: data)
     }
@@ -558,7 +570,13 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         guard enabled else { throw VoiceCloneError.giftAccessUnavailable }
     }
 
-    private func perform(path: String, method: String, body: Data? = nil, canRefresh: Bool = true) async throws -> Data {
+    private func perform(
+        path: String,
+        method: String,
+        body: Data? = nil,
+        headers: [String: String] = [:],
+        canRefresh: Bool = true
+    ) async throws -> Data {
         guard Constants.Features.voiceCloningEnabled else {
             throw VoiceCloneError.temporaryUnavailable
         }
@@ -573,6 +591,9 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         request.httpMethod = method
         request.httpBody = body
         if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
+        for (name, value) in headers {
+            request.setValue(value, forHTTPHeaderField: name)
+        }
         authorize(&request, token: token)
         let (data, response) = try await session.data(for: request)
         try await ensureAccountBoundary(accountBoundary)

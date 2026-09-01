@@ -22,6 +22,50 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Voice Gift web surfaces support the same nine locales as the app, but
+    /// their API contract requires one canonical BCP-47 value. Keep that
+    /// normalization here so request creation, future fulfill/recovery calls,
+    /// and tests cannot each invent a slightly different locale spelling.
+    static let voiceGiftLocales = [
+        "en", "zh-Hans", "ja", "es", "fr", "de", "pt-BR", "it", "hi",
+    ]
+
+    var voiceGiftLocale: String {
+        voiceGiftLocale(systemLanguageIdentifier: nil)
+    }
+
+    func voiceGiftLocale(systemLanguageIdentifier: String?) -> String {
+        let identifier: String
+        if self == .system {
+            identifier = systemLanguageIdentifier
+                ?? Locale.preferredLanguages.first
+                ?? Locale.autoupdatingCurrent.identifier
+        } else {
+            identifier = rawValue
+        }
+        return Self.canonicalVoiceGiftLocale(from: identifier)
+    }
+
+    static func canonicalVoiceGiftLocale(from identifier: String?) -> String {
+        let normalized = (identifier ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "_", with: "-")
+            .lowercased()
+        let language = normalized.split(separator: "-").first.map(String.init) ?? ""
+        switch language {
+        case "zh": return "zh-Hans"
+        case "ja": return "ja"
+        case "es": return "es"
+        case "fr": return "fr"
+        case "de": return "de"
+        case "pt": return "pt-BR"
+        case "it": return "it"
+        case "hi": return "hi"
+        case "en": return "en"
+        default: return "en"
+        }
+    }
+
     var bundleLocalization: String? {
         self == .system ? nil : rawValue
     }
