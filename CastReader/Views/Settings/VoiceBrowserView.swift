@@ -307,13 +307,7 @@ struct VoiceBrowserView: View {
             Text("收藏").tag(VoiceBrowserTab.favorites)
             Text("探索").tag(VoiceBrowserTab.explore)
             if Constants.Features.voiceCloningEnabled {
-                Text(
-                    voiceCloneStore.voiceGiftEnabled
-                        && voiceCloneStore.giftActivityCount > 0
-                        ? "\(AppLocalized("已创建")) \(voiceCloneStore.giftActivityCount)"
-                        : AppLocalized("已创建")
-                )
-                .tag(VoiceBrowserTab.created)
+                Text("已创建").tag(VoiceBrowserTab.created)
             }
         }
         .pickerStyle(.segmented)

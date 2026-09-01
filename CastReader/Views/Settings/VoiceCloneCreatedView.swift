@@ -250,19 +250,6 @@ struct VoiceCloneCreatedView: View {
                         Divider().padding(.leading, 82)
                     }
                 }
-
-                if !store.pendingGiftInvitations.isEmpty {
-                    voiceSectionHeader(
-                        title: VoiceGiftInviterUIContract.pendingSectionTitle,
-                        count: store.pendingGiftInvitations.filter(\.isPending).count,
-                        showsProBadge: false
-                    )
-                    ForEach(store.pendingGiftInvitations.filter(\.isPending)) { invitation in
-                        pendingInvitationRow(invitation)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                    }
-                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .top)
@@ -361,40 +348,6 @@ struct VoiceCloneCreatedView: View {
         .padding(.horizontal, 20)
         .padding(.top, 20)
         .padding(.bottom, 10)
-    }
-
-    private func pendingInvitationRow(_ invitation: VoiceGiftInvitation) -> some View {
-        Button {
-            presentShare(for: invitation)
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "clock.badge.checkmark")
-                    .font(.title3)
-                    .foregroundStyle(AppTheme.primary)
-                    .frame(width: 38, height: 38)
-                    .background(AppTheme.primary.opacity(0.10), in: Circle())
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(invitation.isClaimed ? "朋友正在录制" : "等待朋友录制")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(AppTheme.foreground)
-                    Text("再次分享邀请链接")
-                        .font(.caption)
-                        .foregroundStyle(AppTheme.mutedForeground)
-                }
-                Spacer()
-                Image(systemName: "square.and.arrow.up")
-                    .foregroundStyle(AppTheme.primary)
-            }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(AppTheme.surface)
-            )
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier(
-            VoiceGiftInviterUIContract.pendingActionIdentifier(for: invitation.id)
-        )
     }
 
     @ViewBuilder
@@ -904,24 +857,18 @@ private struct VoiceGiftSharePayload: Identifiable {
 
 /// Frozen inviter-side MVP contract. The primary action stays recipient-free:
 /// one tap creates an open invitation and immediately hands its URL to the
-/// system share sheet. Pending requests remain discoverable as secondary rows.
+/// system share sheet. An unanswered link is intentionally not presented as a
+/// task, counter or pending row in the inviter's library.
 enum VoiceGiftInviterUIContract {
     static let primaryActionIdentifier = "voiceGiftInviteButton"
-    static let pendingActionIdentifierPrefix = "voiceGiftPending_"
 
     static let primaryTitleKey = "邀请朋友录制声音"
     static let primaryBenefitKey = "朋友授权后，你可用他的声音朗读和解读 Kindle、文件与网页，直到他撤回。"
     static let primaryControlNoteKey = "点击后直接分享链接，无需填写邮箱。"
-    static let pendingSectionTitleKey = "待回应邀请"
 
     static var primaryTitle: String { localized(primaryTitleKey) }
     static var primaryBenefit: String { localized(primaryBenefitKey) }
     static var primaryControlNote: String { localized(primaryControlNoteKey) }
-    static var pendingSectionTitle: String { localized(pendingSectionTitleKey) }
-
-    static func pendingActionIdentifier(for requestID: String) -> String {
-        pendingActionIdentifierPrefix + requestID
-    }
 
     private static func localized(_ key: String) -> String {
         AppLocalized(String.LocalizationValue(stringLiteral: key))
