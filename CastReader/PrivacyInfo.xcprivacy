@@ -128,6 +128,19 @@
 				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
 			</array>
 		</dict>
+		<!-- 音频数据：用户本人或受邀朋友明确录制的声音样本会上传到所选线路，用于创建账号关联的克隆音色；不用于追踪。 -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeAudioData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 		<!-- 用户内容：导入文档及朗读/解读文本会发送到服务端处理；请求可携带账号或设备标识，因此按可关联申报，不用于追踪。照片 OCR 原图仍仅在端上处理。 -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
