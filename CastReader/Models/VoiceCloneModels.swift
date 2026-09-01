@@ -946,6 +946,17 @@ struct VoiceGiftCapabilityManifest: Equatable {
 }
 
 enum VoiceCloneResponseParser {
+    struct VoiceGiftInvitationLimitDetails: Equatable {
+        let limitType: String?
+        let limit: Int?
+        let current: Int?
+        let invitationTTLSeconds: Int?
+        let windowSeconds: Int?
+        let earliestExpiryAt: Date?
+        let retryAt: Date?
+        let retryAfterSeconds: Int?
+    }
+
     static func isVoiceNotFound(statusCode: Int, data: Data) -> Bool {
         statusCode == 404 && serverCode(from: data)?.uppercased() == "VOICE_NOT_FOUND"
     }
@@ -1217,6 +1228,41 @@ enum VoiceCloneResponseParser {
         )
     }
 
+    static func voiceGiftInvitationLimitDetails(
+        from data: Data,
+        response: HTTPURLResponse,
+        now: Date = Date()
+    ) -> VoiceGiftInvitationLimitDetails {
+        let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        let objects = root.map(responseObjects(from:)) ?? []
+        let firstString: ([String]) -> String? = { keys in
+            objects.lazy.compactMap { string($0, keys: keys) }.first
+        }
+        let firstInt: ([String]) -> Int? = { keys in
+            objects.lazy.compactMap { int($0, keys: keys) }.first
+        }
+        let retryAfterSeconds = firstInt(["retryAfterSeconds", "retry_after_seconds"])
+            ?? Self.retryAfterSeconds(from: response, now: now)
+        let explicitRetryAt = parseDate(firstString(["retryAt", "retry_at"]))
+        let derivedRetryAt = retryAfterSeconds.map {
+            now.addingTimeInterval(TimeInterval(max(0, $0)))
+        }
+        return VoiceGiftInvitationLimitDetails(
+            limitType: firstString(["limitType", "limit_type"]),
+            limit: firstInt(["limit"]),
+            current: firstInt(["current"]),
+            invitationTTLSeconds: firstInt([
+                "invitationTtlSeconds", "invitationTTLSeconds", "invitation_ttl_seconds",
+            ]),
+            windowSeconds: firstInt(["windowSeconds", "window_seconds"]),
+            earliestExpiryAt: parseDate(firstString([
+                "earliestExpiryAt", "earliest_expiry_at",
+            ])),
+            retryAt: explicitRetryAt ?? derivedRetryAt,
+            retryAfterSeconds: retryAfterSeconds
+        )
+    }
+
     static func parseServerDate(_ value: String?) -> Date? {
         parseDate(value)
     }
@@ -1279,7 +1325,7 @@ enum VoiceCloneResponseParser {
         var index = 0
         while index < result.count, result.count < 16 {
             let object = result[index]
-            for key in ["data", "error", "detail"] {
+            for key in ["data", "error", "detail", "details"] {
                 if let nested = object[key] as? [String: Any] {
                     result.append(nested)
                 }
@@ -1329,6 +1375,26 @@ enum VoiceCloneResponseParser {
         fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return fractional.date(from: value) ?? ISO8601DateFormatter().date(from: value)
     }
+
+    private static func retryAfterSeconds(
+        from response: HTTPURLResponse,
+        now: Date
+    ) -> Int? {
+        guard let value = response.value(forHTTPHeaderField: "Retry-After")?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty else {
+            return nil
+        }
+        if let seconds = Int(value) {
+            return max(0, seconds)
+        }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "EEE',' dd MMM yyyy HH':'mm':'ss z"
+        guard let date = formatter.date(from: value) else { return nil }
+        return max(0, Int(ceil(date.timeIntervalSince(now))))
+    }
 }
 
 enum VoiceCloneError: Error, LocalizedError, Equatable {
@@ -1351,6 +1417,9 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
     case giftRevoked
     case giftExpired
     case giftAccessUnavailable
+    case giftActiveInvitationLimit(limit: Int, earliestExpiryAt: Date?)
+    case giftDailyInvitationLimit(limit: Int, retryAt: Date?)
+    case giftInvitationRateLimited(retryAt: Date?)
     case temporaryUnavailable
     case server(Int, String?)
     case invalidResponse
@@ -1395,6 +1464,38 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
             return AppLocalized("这个声音的使用授权已过期，已为你取消选择")
         case .giftAccessUnavailable:
             return AppLocalized("这个朗读者声音暂时无法使用，请刷新声音列表后重试")
+        case .giftActiveInvitationLimit(let limit, let earliestExpiryAt):
+            if let earliestExpiryAt {
+                return String(
+                    format: AppLocalized("最多可同时保留 %1$lld 个未完成邀请。最早一条将于 %2$@ 自动过期，之后即可再次邀请。"),
+                    Int64(limit),
+                    Self.localizedDateTime(earliestExpiryAt)
+                )
+            }
+            return String(
+                format: AppLocalized("最多可同时保留 %lld 个未完成邀请。未完成邀请会在创建 48 小时后自动过期，之后即可再次邀请。"),
+                Int64(limit)
+            )
+        case .giftDailyInvitationLimit(let limit, let retryAt):
+            if let retryAt {
+                return String(
+                    format: AppLocalized("24 小时内最多发送 %1$lld 个邀请。请于 %2$@ 后再试；未完成邀请会在创建 48 小时后自动过期。"),
+                    Int64(limit),
+                    Self.localizedDateTime(retryAt)
+                )
+            }
+            return String(
+                format: AppLocalized("24 小时内最多发送 %lld 个邀请。请稍后再试；未完成邀请会在创建 48 小时后自动过期。"),
+                Int64(limit)
+            )
+        case .giftInvitationRateLimited(let retryAt):
+            if let retryAt {
+                return String(
+                    format: AppLocalized("邀请数量已达当前上限。请于 %@ 后再试；未完成邀请会在创建 48 小时后自动过期。"),
+                    Self.localizedDateTime(retryAt)
+                )
+            }
+            return AppLocalized("邀请数量已达当前上限。未完成邀请会在创建 48 小时后自动过期，请稍后再试。")
         case .temporaryUnavailable: return AppLocalized("声音服务暂时不可用，请稍后重试")
         case .server: return AppLocalized("声音克隆请求失败")
         case .invalidResponse: return AppLocalized("声音克隆返回数据无效")
@@ -1404,5 +1505,13 @@ enum VoiceCloneError: Error, LocalizedError, Equatable {
     var isQuotaExhausted: Bool {
         if case .quotaExhausted = self { return true }
         return false
+    }
+
+    private static func localizedDateTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = AppLanguageManager.shared.locale
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }

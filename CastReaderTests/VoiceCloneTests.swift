@@ -508,6 +508,12 @@ final class VoiceCloneTests: XCTestCase {
             "私有备注",
             "只有你能看到这个备注，不会修改朗读者创建的声音名称。",
             "例如：妈妈讲故事",
+            "最多可同时保留 %1$lld 个未完成邀请。最早一条将于 %2$@ 自动过期，之后即可再次邀请。",
+            "最多可同时保留 %lld 个未完成邀请。未完成邀请会在创建 48 小时后自动过期，之后即可再次邀请。",
+            "24 小时内最多发送 %1$lld 个邀请。请于 %2$@ 后再试；未完成邀请会在创建 48 小时后自动过期。",
+            "24 小时内最多发送 %lld 个邀请。请稍后再试；未完成邀请会在创建 48 小时后自动过期。",
+            "邀请数量已达当前上限。请于 %@ 后再试；未完成邀请会在创建 48 小时后自动过期。",
+            "邀请数量已达当前上限。未完成邀请会在创建 48 小时后自动过期，请稍后再试。",
         ]
 
         for key in giftKeys {
@@ -533,6 +539,13 @@ final class VoiceCloneTests: XCTestCase {
                 XCTAssertFalse(value.isEmpty, "\(key) [\(locale)]")
                 if key.contains("%@") {
                     XCTAssertTrue(value.contains("%@"), "\(key) [\(locale)]")
+                }
+                if key.contains("%lld") {
+                    XCTAssertTrue(value.contains("%lld"), "\(key) [\(locale)]")
+                }
+                if key.contains("%1$lld") {
+                    XCTAssertTrue(value.contains("%1$lld"), "\(key) [\(locale)]")
+                    XCTAssertTrue(value.contains("%2$@"), "\(key) [\(locale)]")
                 }
             }
         }
@@ -2527,6 +2540,280 @@ final class VoiceCloneTests: XCTestCase {
             XCTFail("expected expired access")
         } catch let error as VoiceCloneError {
             XCTAssertEqual(error, .giftExpired)
+        }
+    }
+
+    func testVoiceGiftLimitDetailsParseNestedFieldsAndRetryAfterHeader() throws {
+        let now = try XCTUnwrap(
+            ISO8601DateFormatter().date(from: "2026-09-01T03:00:00Z")
+        )
+        let response = try XCTUnwrap(
+            HTTPURLResponse(
+                url: URL(string: "https://api.castreader.ai/api/voice-clone/requests")!,
+                statusCode: 429,
+                httpVersion: nil,
+                headerFields: ["Retry-After": "120"]
+            )
+        )
+        let details = VoiceCloneResponseParser.voiceGiftInvitationLimitDetails(
+            from: Data(
+                #"{"code":"VOICE_GIFT_ACTIVE_INVITATION_LIMIT_REACHED","details":{"limitType":"active_invitations","limit":20,"current":20,"invitationTtlSeconds":172800,"earliestExpiryAt":"2026-09-02T03:00:00Z"}}"#.utf8
+            ),
+            response: response,
+            now: now
+        )
+
+        XCTAssertEqual(details.limitType, "active_invitations")
+        XCTAssertEqual(details.limit, 20)
+        XCTAssertEqual(details.current, 20)
+        XCTAssertEqual(details.invitationTTLSeconds, 172_800)
+        XCTAssertEqual(details.retryAfterSeconds, 120)
+        XCTAssertEqual(details.retryAt, now.addingTimeInterval(120))
+        XCTAssertEqual(
+            details.earliestExpiryAt,
+            ISO8601DateFormatter().date(from: "2026-09-02T03:00:00Z")
+        )
+    }
+
+    func testGiftInvitationMapsActiveAndDailyLimitsToActionableErrors() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer {
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-contract.test")!,
+            session: session,
+            route: .globalGateway,
+            sessionProvider: VoiceCloneTestSessionProvider(token: "cms_contract")
+        )
+        let capability = Data(
+            #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"global"}}"#.utf8
+        )
+        VoiceCloneTestURLProtocol.handler = { request in
+            if request.url?.path == "/api/capabilities" {
+                return (
+                    HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                    capability
+                )
+            }
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 429,
+                    httpVersion: nil,
+                    headerFields: ["Retry-After": "3600"]
+                )!,
+                Data(
+                    #"{"code":"VOICE_GIFT_ACTIVE_INVITATION_LIMIT_REACHED","legacyCode":"VOICE_GIFT_RATE_LIMITED","details":{"limitType":"active_invitations","limit":20,"current":20,"invitationTtlSeconds":172800,"earliestExpiryAt":"2026-09-02T03:00:00Z","retryAfterSeconds":3600}}"#.utf8
+                )
+            )
+        }
+        do {
+            _ = try await service.createGiftInvitation(
+                clientRequestID: UUID(),
+                locale: "en"
+            )
+            XCTFail("expected active invitation limit")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(
+                error,
+                .giftActiveInvitationLimit(
+                    limit: 20,
+                    earliestExpiryAt: ISO8601DateFormatter().date(
+                        from: "2026-09-02T03:00:00Z"
+                    )
+                )
+            )
+        }
+
+        VoiceCloneTestURLProtocol.handler = { request in
+            if request.url?.path == "/api/capabilities" {
+                return (
+                    HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                    capability
+                )
+            }
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 429,
+                    httpVersion: nil,
+                    headerFields: ["Retry-After": "7200"]
+                )!,
+                Data(
+                    #"{"code":"VOICE_GIFT_DAILY_RATE_LIMITED","legacyCode":"VOICE_GIFT_RATE_LIMITED","details":{"limitType":"rolling_24h_creations","limit":20,"current":20,"windowSeconds":86400,"retryAt":"2026-09-02T05:00:00Z","retryAfterSeconds":7200}}"#.utf8
+                )
+            )
+        }
+        do {
+            _ = try await service.createGiftInvitation(
+                clientRequestID: UUID(),
+                locale: "en"
+            )
+            XCTFail("expected rolling 24-hour invitation limit")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(
+                error,
+                .giftDailyInvitationLimit(
+                    limit: 20,
+                    retryAt: ISO8601DateFormatter().date(
+                        from: "2026-09-02T05:00:00Z"
+                    )
+                )
+            )
+        }
+    }
+
+    func testLegacyVoiceGiftRateLimitNeverFallsBackToGenericCloneFailure() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer {
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+        VoiceCloneTestURLProtocol.handler = { request in
+            if request.url?.path == "/api/capabilities" {
+                return (
+                    HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                    Data(#"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"global"}}"#.utf8)
+                )
+            }
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 429, httpVersion: nil, headerFields: nil)!,
+                Data(#"{"code":"VOICE_GIFT_RATE_LIMITED","message":"Too many requests"}"#.utf8)
+            )
+        }
+        let service = VoiceCloneService(
+            baseURL: URL(string: "https://voice-contract.test")!,
+            session: session,
+            route: .globalGateway,
+            sessionProvider: VoiceCloneTestSessionProvider(token: "cms_contract")
+        )
+
+        do {
+            _ = try await service.createGiftInvitation(
+                clientRequestID: UUID(),
+                locale: "zh-Hans"
+            )
+            XCTFail("expected legacy Voice Gift rate limit")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(error, .giftInvitationRateLimited(retryAt: nil))
+            XCTAssertNotEqual(
+                error.localizedDescription,
+                VoiceCloneError.server(429, nil).localizedDescription
+            )
+        }
+
+        VoiceCloneTestURLProtocol.handler = { request in
+            if request.url?.path == "/api/capabilities" {
+                return (
+                    HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                    Data(#"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"global"}}"#.utf8)
+                )
+            }
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 429, httpVersion: nil, headerFields: nil)!,
+                Data(#"{"code":"VOICE_GIFT_RATE_LIMITED","limitType":"active_invitations","limit":20,"earliestExpiryAt":"2026-09-02T03:00:00Z"}"#.utf8)
+            )
+        }
+        do {
+            _ = try await service.createGiftInvitation(
+                clientRequestID: UUID(),
+                locale: "zh-Hans"
+            )
+            XCTFail("expected legacy active-invitation limit")
+        } catch let error as VoiceCloneError {
+            XCTAssertEqual(
+                error,
+                .giftActiveInvitationLimit(
+                    limit: 20,
+                    earliestExpiryAt: ISO8601DateFormatter().date(
+                        from: "2026-09-02T03:00:00Z"
+                    )
+                )
+            )
+        }
+    }
+
+    @MainActor
+    func testVoiceGiftLimitMessagesExplainTwentyAndFortyEightHourExpiry() throws {
+        let manager = AppLanguageManager.shared
+        let original = manager.selectedLanguage
+        defer { manager.select(original) }
+        manager.select(.simplifiedChinese)
+        let expiry = try XCTUnwrap(
+            ISO8601DateFormatter().date(from: "2026-09-02T03:00:00Z")
+        )
+
+        let active = VoiceCloneError.giftActiveInvitationLimit(
+            limit: 20,
+            earliestExpiryAt: expiry
+        ).localizedDescription
+        let daily = VoiceCloneError.giftDailyInvitationLimit(
+            limit: 20,
+            retryAt: nil
+        ).localizedDescription
+        let legacy = VoiceCloneError.giftInvitationRateLimited(
+            retryAt: nil
+        ).localizedDescription
+
+        XCTAssertTrue(active.contains("20"))
+        XCTAssertTrue(active.contains("自动过期"))
+        XCTAssertTrue(daily.contains("20"))
+        XCTAssertTrue(daily.contains("48 小时"))
+        XCTAssertTrue(legacy.contains("已达当前上限"))
+        XCTAssertTrue(legacy.contains("48 小时"))
+        XCTAssertFalse(active.contains("声音克隆请求失败"))
+        XCTAssertFalse(daily.contains("声音克隆请求失败"))
+        XCTAssertFalse(legacy.contains("声音克隆请求失败"))
+    }
+
+    @MainActor
+    func testVoiceGiftLimitMessagesFormatInEverySupportedAppLanguage() throws {
+        let manager = AppLanguageManager.shared
+        let original = manager.selectedLanguage
+        defer { manager.select(original) }
+        let expiry = try XCTUnwrap(
+            ISO8601DateFormatter().date(from: "2026-09-02T03:00:00Z")
+        )
+
+        for language in AppLanguage.allCases where language != .system {
+            manager.select(language)
+            let messages = [
+                VoiceCloneError.giftActiveInvitationLimit(
+                    limit: 20,
+                    earliestExpiryAt: expiry
+                ).localizedDescription,
+                VoiceCloneError.giftActiveInvitationLimit(
+                    limit: 20,
+                    earliestExpiryAt: nil
+                ).localizedDescription,
+                VoiceCloneError.giftDailyInvitationLimit(
+                    limit: 20,
+                    retryAt: expiry
+                ).localizedDescription,
+                VoiceCloneError.giftDailyInvitationLimit(
+                    limit: 20,
+                    retryAt: nil
+                ).localizedDescription,
+                VoiceCloneError.giftInvitationRateLimited(
+                    retryAt: expiry
+                ).localizedDescription,
+                VoiceCloneError.giftInvitationRateLimited(
+                    retryAt: nil
+                ).localizedDescription,
+            ]
+            for message in messages {
+                XCTAssertFalse(message.isEmpty, language.rawValue)
+                XCTAssertFalse(message.contains("%@"), language.rawValue)
+                XCTAssertFalse(message.contains("%lld"), language.rawValue)
+                XCTAssertFalse(message.contains("%1$lld"), language.rawValue)
+                XCTAssertFalse(message.contains("%2$@"), language.rawValue)
+            }
         }
     }
 

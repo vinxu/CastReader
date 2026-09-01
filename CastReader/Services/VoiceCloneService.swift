@@ -744,6 +744,48 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         if code == "VOICE_GIFT_EXPIRED" {
             throw VoiceCloneError.giftExpired
         }
+        if code == "VOICE_GIFT_ACTIVE_INVITATION_LIMIT_REACHED" {
+            let details = VoiceCloneResponseParser.voiceGiftInvitationLimitDetails(
+                from: data,
+                response: http
+            )
+            throw VoiceCloneError.giftActiveInvitationLimit(
+                limit: details.limit ?? 20,
+                earliestExpiryAt: details.earliestExpiryAt ?? details.retryAt
+            )
+        }
+        if code == "VOICE_GIFT_DAILY_RATE_LIMITED" {
+            let details = VoiceCloneResponseParser.voiceGiftInvitationLimitDetails(
+                from: data,
+                response: http
+            )
+            throw VoiceCloneError.giftDailyInvitationLimit(
+                limit: details.limit ?? 20,
+                retryAt: details.retryAt
+            )
+        }
+        if code == "VOICE_GIFT_RATE_LIMITED" {
+            let details = VoiceCloneResponseParser.voiceGiftInvitationLimitDetails(
+                from: data,
+                response: http
+            )
+            switch details.limitType?.lowercased() {
+            case "active_invitations", "active_open_invitations":
+                throw VoiceCloneError.giftActiveInvitationLimit(
+                    limit: details.limit ?? 20,
+                    earliestExpiryAt: details.earliestExpiryAt ?? details.retryAt
+                )
+            case "rolling_24h_creations":
+                throw VoiceCloneError.giftDailyInvitationLimit(
+                    limit: details.limit ?? 20,
+                    retryAt: details.retryAt
+                )
+            default:
+                throw VoiceCloneError.giftInvitationRateLimited(
+                    retryAt: details.retryAt ?? details.earliestExpiryAt
+                )
+            }
+        }
         if ["VOICE_GIFT_NOT_FOUND", "VOICE_GIFT_ACCESS_DENIED", "VOICE_GIFT_UNAVAILABLE"].contains(code ?? "") {
             throw VoiceCloneError.giftAccessUnavailable
         }
