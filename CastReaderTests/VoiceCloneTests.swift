@@ -2045,15 +2045,19 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     func testGiftInvitationParserCombinesRequestEnvelopeAndInvitationURL() throws {
+        let token = String(repeating: "A", count: 43)
         let data = Data(
-            #"{"data":{"request":{"id":"request_open","status":"pending","createdAt":"2026-08-31T00:00:00Z","futureField":"ok"},"invitationURL":"https://castreader.com/voice-gift/request#open-token"}}"#.utf8
+            #"{"data":{"request":{"id":"request_open","status":"pending","createdAt":"2026-08-31T00:00:00Z","futureField":"ok"},"invitationURL":"https://castreader.com/voice-gift/request#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}}"#.utf8
         )
 
         let invitation = try VoiceCloneResponseParser.giftInvitation(from: data)
 
         XCTAssertEqual(invitation.id, "request_open")
         XCTAssertTrue(invitation.isPending)
-        XCTAssertEqual(invitation.invitationURL, "https://castreader.com/voice-gift/request#open-token")
+        XCTAssertEqual(
+            invitation.invitationURL,
+            "https://castreader.com/voice-gift/request#\(token)"
+        )
 
         let sent = try VoiceCloneResponseParser.sentGiftInvitations(from: Data(
             contentsOf: URL(fileURLWithPath: #filePath)
@@ -2067,41 +2071,93 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     func testGiftInvitationURLIsPinnedToCanonicalFragmentRoute() throws {
+        let token = String(repeating: "A", count: 43)
+        let allowedPaths = [
+            "/voice-gift/request",
+            "/zh/voice-gift/request",
+            "/ja/voice-gift/request",
+            "/es/voice-gift/request",
+            "/fr/voice-gift/request",
+            "/de/voice-gift/request",
+            "/pt-br/voice-gift/request",
+            "/it/voice-gift/request",
+            "/hi/voice-gift/request",
+        ]
+        for path in allowedPaths {
+            let value = "https://api.castreader.cn\(path)#\(token)"
+            XCTAssertNotNil(VoiceGiftInvitationURLValidator.validatedURL(value), value)
+        }
         XCTAssertNotNil(VoiceGiftInvitationURLValidator.validatedURL(
-            "https://castreader.com/voice-gift/request#signed-token"
+            "https://castreader.com/voice-gift/request#\(token)"
         ))
         XCTAssertNotNil(VoiceGiftInvitationURLValidator.validatedURL(
-            "https://www.castreader.com/zh-Hans/voice-gift/request#signed-token"
+            "https://castreader.com/voice-gift/request#\(token)",
+            for: .globalGateway
         ))
         XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
-            "https://attacker.example/voice-gift/request#signed-token"
+            "https://www.castreader.com/voice-gift/request#\(token)",
+            for: .globalGateway
+        ))
+        XCTAssertNotNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://api.castreader.cn/voice-gift/request#\(token)",
+            for: .chinaGateway
         ))
         XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
-            "https://castreader.com/voice-gift/request?token=query-token"
+            "https://castreader.cn/voice-gift/request#\(token)",
+            for: .chinaGateway
         ))
         XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
-            "https://castreader.com/voice-gift/other#signed-token"
+            "https://castreader.com/voice-gift/request#\(token)",
+            for: .chinaGateway
+        ))
+        XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://attacker.example/voice-gift/request#\(token)"
+        ))
+        XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://castreader.com/voice-gift/request?token=query-token#\(token)"
+        ))
+        XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://castreader.com/voice-gift/other#\(token)"
+        ))
+        XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://api.castreader.cn/zh-Hans/voice-gift/request#\(token)"
+        ))
+        XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://api.castreader.cn/nl/voice-gift/request#\(token)"
+        ))
+        XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://api.castreader.cn/zh/voice-gift/request#short"
+        ))
+        XCTAssertNil(VoiceGiftInvitationURLValidator.validatedURL(
+            "https://api.castreader.cn/zh/voice-gift/request#%41\(String(repeating: "A", count: 42))"
         ))
     }
 
     func testGiftShareExportsOneTappableHTTPSInvitationWithoutAttachmentText() throws {
-        let invitationURL = try XCTUnwrap(
-            VoiceGiftInvitationURLValidator.validatedURL(
-                "https://castreader.com/voice-gift/request#signed-token"
+        let token = String(repeating: "A", count: 43)
+        for (route, host) in [
+            (ServiceRoute.globalGateway, "castreader.com"),
+            (ServiceRoute.chinaGateway, "api.castreader.cn"),
+        ] {
+            let invitationURL = try XCTUnwrap(
+                VoiceGiftInvitationURLValidator.validatedURL(
+                    "https://\(host)/voice-gift/request#\(token)",
+                    for: route
+                )
             )
-        )
 
-        let items = VoiceGiftShareContract.activityItems(for: invitationURL)
+            let items = VoiceGiftShareContract.activityItems(for: invitationURL)
 
-        XCTAssertEqual(items.count, 1)
-        XCTAssertFalse(items.contains { $0 is String })
-        let sharedURL = try XCTUnwrap(items.first as? URL)
-        XCTAssertFalse(sharedURL.isFileURL)
-        XCTAssertEqual(sharedURL.scheme, "https")
-        XCTAssertEqual(sharedURL.host, "castreader.com")
-        XCTAssertEqual(sharedURL.path, "/voice-gift/request")
-        XCTAssertEqual(sharedURL.fragment, "signed-token")
-        XCTAssertEqual(sharedURL.absoluteString, invitationURL.absoluteString)
+            XCTAssertEqual(items.count, 1)
+            XCTAssertFalse(items.contains { $0 is String })
+            let sharedURL = try XCTUnwrap(items.first as? URL)
+            XCTAssertFalse(sharedURL.isFileURL)
+            XCTAssertEqual(sharedURL.scheme, "https")
+            XCTAssertEqual(sharedURL.host, host)
+            XCTAssertEqual(sharedURL.path, "/voice-gift/request")
+            XCTAssertEqual(sharedURL.fragment, token)
+            XCTAssertEqual(sharedURL.absoluteString, invitationURL.absoluteString)
+        }
     }
 
     func testVoiceGiftInviterMVPUIContractLivesBehindCreationMethodChooser() throws {
@@ -2149,18 +2205,38 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertNil(explore.creationEntry)
     }
 
-    func testVoiceGiftEntryRequiresBothGlobalRegionAndServerCapability() {
+    func testVoiceGiftEntryRequiresSupportedRouteAndServerCapability() {
+        XCTAssertTrue(VoiceGiftFeature.isRegionEligible(
+            on: .globalGateway,
+            appRegion: .global
+        ))
+        XCTAssertTrue(VoiceGiftFeature.isRegionEligible(
+            on: .chinaGateway,
+            appRegion: .cn
+        ))
+        XCTAssertFalse(VoiceGiftFeature.isRegionEligible(
+            on: .chinaGateway,
+            appRegion: .global
+        ))
+        XCTAssertFalse(VoiceGiftFeature.isRegionEligible(
+            on: .globalGateway,
+            appRegion: .cn
+        ))
         XCTAssertTrue(VoiceGiftHomeEntryPolicy.showsInvite(
-            regionEligible: true,
+            routeEligible: true,
             capabilityEnabled: true
         ))
         XCTAssertFalse(VoiceGiftHomeEntryPolicy.showsInvite(
-            regionEligible: true,
+            routeEligible: true,
             capabilityEnabled: false
         ))
         XCTAssertFalse(VoiceGiftHomeEntryPolicy.showsInvite(
-            regionEligible: false,
+            routeEligible: false,
             capabilityEnabled: true
+        ))
+        XCTAssertFalse(VoiceGiftHomeEntryPolicy.showsInvite(
+            routeEligible: false,
+            capabilityEnabled: false
         ))
     }
 
@@ -2235,10 +2311,16 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     func testVoiceGiftCapabilityManifestRequiresEveryFrozenDimension() throws {
-        let supported = try XCTUnwrap(VoiceGiftCapabilityManifest.decode(from: Data(
+        let global = try XCTUnwrap(VoiceGiftCapabilityManifest.decode(from: Data(
             #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"global","futureField":true}}"#.utf8
         )))
-        XCTAssertTrue(supported.isCompatible)
+        let china = try XCTUnwrap(VoiceGiftCapabilityManifest.decode(from: Data(
+            #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"cn","futureField":true}}"#.utf8
+        )))
+        XCTAssertTrue(global.isCompatible(with: .globalGateway))
+        XCTAssertFalse(global.isCompatible(with: .chinaGateway))
+        XCTAssertTrue(china.isCompatible(with: .chinaGateway))
+        XCTAssertFalse(china.isCompatible(with: .globalGateway))
 
         for mutation in [
             #"{"voiceGift":{"enabled":false,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"global"}}"#,
@@ -2246,9 +2328,11 @@ final class VoiceCloneTests: XCTestCase {
             #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v2","serviceRoute":"global"}}"#,
             #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"china"}}"#,
         ] {
-            XCTAssertFalse(try XCTUnwrap(
+            let manifest = try XCTUnwrap(
                 VoiceGiftCapabilityManifest.decode(from: Data(mutation.utf8))
-            ).isCompatible)
+            )
+            XCTAssertFalse(manifest.isCompatible(with: .globalGateway))
+            XCTAssertFalse(manifest.isCompatible(with: .chinaGateway))
         }
     }
 
@@ -2297,7 +2381,7 @@ final class VoiceCloneTests: XCTestCase {
                 )
             } else {
                 responseBody = Data(
-                    #"{"data":{"schemaVersion":"voice-gift-v1","request":{"id":"request_1","status":"pending"},"invitationURL":"https://castreader.com/voice-gift/request#token","authorization":{"mode":"until_revoked","expiresAt":null}}}"#.utf8
+                    #"{"data":{"schemaVersion":"voice-gift-v1","request":{"id":"request_1","status":"pending"},"invitationURL":"https://castreader.com/voice-gift/request#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","authorization":{"mode":"until_revoked","expiresAt":null}}}"#.utf8
                 )
             }
             return (
@@ -2494,7 +2578,7 @@ final class VoiceCloneTests: XCTestCase {
         )
     }
 
-    func testVoiceGiftIsFailClosedOnChinaRouteWithoutSendingARequest() async throws {
+    func testChinaGiftServiceUsesChinaCapabilityAndEndpoints() async throws {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
         let session = URLSession(configuration: configuration)
@@ -2505,6 +2589,20 @@ final class VoiceCloneTests: XCTestCase {
         let recorder = VoiceCloneRequestRecorder()
         VoiceCloneTestURLProtocol.handler = { request in
             recorder.record(request)
+            let data: Data
+            if request.url?.path == "/api/capabilities" {
+                data = Data(
+                    #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"cn"}}"#.utf8
+                )
+            } else if request.url?.path == "/api/voice-clone/library" {
+                data = Data(
+                    #"{"schemaVersion":"voice-library-v1","snapshotComplete":true,"voices":[]}"#.utf8
+                )
+            } else {
+                data = Data(
+                    #"{"data":{"schemaVersion":"voice-gift-v1","request":{"id":"request_cn","status":"pending"},"requesterEmailMasked":null,"inviteeEmailMasked":null,"emailDelivery":"not-requested","invitationURL":"https://api.castreader.cn/zh/voice-gift/request#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB","authorization":{"mode":"until_revoked","expiresAt":null}}}"#.utf8
+                )
+            }
             return (
                 HTTPURLResponse(
                     url: request.url!,
@@ -2512,40 +2610,206 @@ final class VoiceCloneTests: XCTestCase {
                     httpVersion: nil,
                     headerFields: ["Content-Type": "application/json"]
                 )!,
-                Data(#"{"voices":[]}"#.utf8)
+                data
             )
         }
         let service = VoiceCloneService(
-            baseURL: URL(string: "https://voice-contract.test")!,
+            baseURL: URL(string: "https://api.castreader.cn")!,
             session: session,
             route: .chinaGateway,
+            productRegion: .cn,
             sessionProvider: VoiceCloneTestSessionProvider(token: "cms_contract")
         )
 
         let library = try await service.listVoices()
-        XCTAssertFalse(library.voiceGiftEnabled)
+        XCTAssertTrue(library.voiceGiftEnabled)
         XCTAssertEqual(
             recorder.allRequests().map { $0.url?.path },
-            ["/api/voice-clone/voices"]
+            ["/api/capabilities", "/api/voice-clone/library"]
         )
-        XCTAssertFalse(VoiceGiftFeature.isRegionEligible(on: .chinaGateway))
-        do {
-            _ = try await service.createGiftInvitation(
-                clientRequestID: UUID(),
-                locale: "ja"
-            )
-            XCTFail("China must not call the global Voice Gift contract")
-        } catch let error as VoiceCloneError {
-            XCTAssertEqual(error, .giftUnavailableInRegion)
-        }
-        XCTAssertEqual(recorder.allRequests().count, 1)
+        XCTAssertTrue(VoiceGiftFeature.isRegionEligible(
+            on: .chinaGateway,
+            appRegion: .cn
+        ))
+
+        let invitation = try await service.createGiftInvitation(
+            clientRequestID: UUID(uuidString: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee")!,
+            locale: "zh_CN"
+        )
+        XCTAssertEqual(invitation.id, "request_cn")
+        XCTAssertNotNil(VoiceGiftInvitationURLValidator.validatedURL(
+            invitation.invitationURL,
+            for: .chinaGateway
+        ))
+        let requests = recorder.allRequests()
+        XCTAssertEqual(requests.map { $0.url?.host }, Array(
+            repeating: "api.castreader.cn",
+            count: 3
+        ))
+        let mutation = try XCTUnwrap(requests.last)
+        XCTAssertEqual(mutation.url?.path, "/api/voice-clone/requests")
+        XCTAssertEqual(mutation.httpMethod, "POST")
+        XCTAssertEqual(
+            mutation.value(forHTTPHeaderField: "Authorization"),
+            "Bearer cms_contract"
+        )
+        XCTAssertEqual(
+            mutation.value(forHTTPHeaderField: "X-Auth-Provider"),
+            "session"
+        )
+        XCTAssertEqual(
+            mutation.value(forHTTPHeaderField: "Accept-Language"),
+            "zh-Hans"
+        )
+        let body = try XCTUnwrap(mutation.httpBody)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: body) as? [String: Any]
+        )
+        XCTAssertNil(object["email"])
+        XCTAssertNil(object["inviteeEmail"])
     }
 
-    func testVoiceGiftRequiresBothGlobalProductRegionAndGlobalServiceRoute() {
+    func testGiftServiceRejectsInvitationURLFromOtherRoute() async throws {
+        for (route, wrongHost) in [
+            (ServiceRoute.globalGateway, "api.castreader.cn"),
+            (ServiceRoute.chinaGateway, "castreader.com"),
+        ] {
+            let configuration = URLSessionConfiguration.ephemeral
+            configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+            let session = URLSession(configuration: configuration)
+            let recorder = VoiceCloneRequestRecorder()
+            VoiceCloneTestURLProtocol.handler = { request in
+                recorder.record(request)
+                let data: Data
+                switch request.url?.path {
+                case "/api/capabilities":
+                    data = Data(
+                        #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"\#(route.rawValue)"}}"#.utf8
+                    )
+                case "/api/voice-clone/library":
+                    data = Data(
+                        #"{"schemaVersion":"voice-library-v1","snapshotComplete":true,"voices":[]}"#.utf8
+                    )
+                default:
+                    data = Data(
+                        #"{"data":{"schemaVersion":"voice-gift-v1","request":{"id":"request_wrong_route","status":"pending"},"invitationURL":"https://\#(wrongHost)/voice-gift/request#CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC","authorization":{"mode":"until_revoked","expiresAt":null}}}"#.utf8
+                    )
+                }
+                return (
+                    HTTPURLResponse(
+                        url: request.url!,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: ["Content-Type": "application/json"]
+                    )!,
+                    data
+                )
+            }
+            let service = VoiceCloneService(
+                baseURL: URL(string: route.apiGatewayBaseURL)!,
+                session: session,
+                route: route,
+                productRegion: route == .chinaGateway ? .cn : .global,
+                sessionProvider: VoiceCloneTestSessionProvider(token: "cms_contract")
+            )
+
+            let library = try await service.listVoices()
+            XCTAssertTrue(library.voiceGiftEnabled)
+            do {
+                _ = try await service.createGiftInvitation(
+                    clientRequestID: UUID(),
+                    locale: "zh-Hans"
+                )
+                XCTFail("A \(route.rawValue) response must reject \(wrongHost)")
+            } catch let error as VoiceCloneError {
+                XCTAssertEqual(error, .invalidResponse)
+            }
+            XCTAssertEqual(
+                recorder.allRequests().map { $0.url?.path },
+                [
+                    "/api/capabilities",
+                    "/api/voice-clone/library",
+                    "/api/voice-clone/requests",
+                ]
+            )
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+    }
+
+    func testVoiceGiftFailsClosedWhenCapabilityRouteDoesNotMatchServiceRoute() async throws {
+        for (route, manifestRoute) in [
+            (ServiceRoute.globalGateway, ServiceRoute.chinaGateway.rawValue),
+            (ServiceRoute.chinaGateway, ServiceRoute.globalGateway.rawValue),
+        ] {
+            let configuration = URLSessionConfiguration.ephemeral
+            configuration.protocolClasses = [VoiceCloneTestURLProtocol.self]
+            let session = URLSession(configuration: configuration)
+            let recorder = VoiceCloneRequestRecorder()
+            VoiceCloneTestURLProtocol.handler = { request in
+                recorder.record(request)
+                let data: Data
+                if request.url?.path == "/api/capabilities" {
+                    data = Data(
+                        #"{"voiceGift":{"enabled":true,"version":"voice-gift-v1","libraryVersion":"voice-library-v1","serviceRoute":"\#(manifestRoute)"}}"#.utf8
+                    )
+                } else {
+                    data = Data(#"{"voices":[{"voiceId":"vc_legacy_owner"}]}"#.utf8)
+                }
+                return (
+                    HTTPURLResponse(
+                        url: request.url!,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: ["Content-Type": "application/json"]
+                    )!,
+                    data
+                )
+            }
+            let service = VoiceCloneService(
+                baseURL: URL(string: route.apiGatewayBaseURL)!,
+                session: session,
+                route: route,
+                productRegion: route == .chinaGateway ? .cn : .global,
+                sessionProvider: VoiceCloneTestSessionProvider(token: "cms_contract")
+            )
+
+            let library = try await service.listVoices()
+            XCTAssertFalse(library.voiceGiftEnabled, route.rawValue)
+            XCTAssertEqual(library.voices.map(\.voiceId), ["vc_legacy_owner"])
+            XCTAssertEqual(
+                recorder.allRequests().map { $0.url?.path },
+                ["/api/capabilities", "/api/voice-clone/voices"]
+            )
+
+            do {
+                _ = try await service.createGiftInvitation(
+                    clientRequestID: UUID(),
+                    locale: "ja"
+                )
+                XCTFail("A mismatched capability must not enable \(route.rawValue)")
+            } catch let error as VoiceCloneError {
+                XCTAssertEqual(error, .giftAccessUnavailable)
+            }
+            XCTAssertFalse(recorder.allRequests().contains {
+                $0.url?.path == "/api/voice-clone/requests"
+            })
+            VoiceCloneTestURLProtocol.handler = nil
+            session.invalidateAndCancel()
+        }
+    }
+
+    func testVoiceGiftRequiresMatchingProductRegionAndServiceRoute() {
         XCTAssertTrue(
             VoiceGiftFeature.isRegionEligible(
                 on: .globalGateway,
                 appRegion: .global
+            )
+        )
+        XCTAssertTrue(
+            VoiceGiftFeature.isRegionEligible(
+                on: .chinaGateway,
+                appRegion: .cn
             )
         )
         XCTAssertFalse(
@@ -2559,12 +2823,6 @@ final class VoiceCloneTests: XCTestCase {
             VoiceGiftFeature.isRegionEligible(
                 on: .chinaGateway,
                 appRegion: .global
-            )
-        )
-        XCTAssertFalse(
-            VoiceGiftFeature.isRegionEligible(
-                on: .chinaGateway,
-                appRegion: .cn
             )
         )
     }

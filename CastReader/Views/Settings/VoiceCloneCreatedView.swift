@@ -892,7 +892,8 @@ struct VoiceCloneCreatedView: View {
     @discardableResult
     private func presentShare(for invitation: VoiceGiftInvitation) -> Bool {
         guard let url = VoiceGiftInvitationURLValidator.validatedURL(
-            invitation.invitationURL
+            invitation.invitationURL,
+            for: ServiceRouting.current
         ) else {
             store.errorMessage = VoiceCloneError.invalidResponse.localizedDescription
             return false

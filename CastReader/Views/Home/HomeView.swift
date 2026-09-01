@@ -225,8 +225,8 @@ enum HomeVoiceFeatureCarouselLayout {
 }
 
 enum VoiceGiftHomeEntryPolicy {
-    static func showsInvite(regionEligible: Bool, capabilityEnabled: Bool) -> Bool {
-        regionEligible && capabilityEnabled
+    static func showsInvite(routeEligible: Bool, capabilityEnabled: Bool) -> Bool {
+        routeEligible && capabilityEnabled
     }
 }
 
@@ -593,7 +593,7 @@ struct HomeView: View {
                         )
 
                         if VoiceGiftHomeEntryPolicy.showsInvite(
-                            regionEligible: VoiceGiftFeature.isRegionEligible(),
+                            routeEligible: VoiceGiftFeature.isRegionEligible(),
                             capabilityEnabled: voiceCloneStore.voiceGiftEnabled
                         ) {
                             HomeVoiceFeatureBanner(

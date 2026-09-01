@@ -7,7 +7,7 @@
       {
         "requestId": "request_fixture",
         "status": "pending",
-        "invitationURL": "https://castreader.com/voice-gift/request#fixture-token",
+        "invitationURL": "https://castreader.com/voice-gift/request#DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
         "requestExpiresAt": "2026-09-07T00:00:00Z",
         "authorization": {
           "mode": "until_revoked",

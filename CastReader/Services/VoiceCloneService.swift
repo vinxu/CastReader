@@ -56,9 +56,13 @@ enum VoiceGiftFeature {
         on route: ServiceRoute = ServiceRouting.current,
         appRegion: AppRegion = AppRegion.current
     ) -> Bool {
-        Constants.Features.voiceCloningEnabled
-            && appRegion == .global
-            && route == .globalGateway
+        guard Constants.Features.voiceCloningEnabled else { return false }
+        switch (appRegion, route) {
+        case (.global, .globalGateway), (.cn, .chinaGateway):
+            return true
+        default:
+            return false
+        }
     }
 }
 
@@ -236,7 +240,14 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             body: body,
             headers: ["Accept-Language": canonicalLocale]
         )
-        return try VoiceCloneResponseParser.giftInvitation(from: data)
+        let invitation = try VoiceCloneResponseParser.giftInvitation(from: data)
+        guard VoiceGiftInvitationURLValidator.validatedURL(
+            invitation.invitationURL,
+            for: route
+        ) != nil else {
+            throw VoiceCloneError.invalidResponse
+        }
+        return invitation
     }
 
     func updateGiftAlias(shareID: String, alias: String?) async throws {
@@ -534,7 +545,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         if voiceGiftCapabilityResolved,
            let checkedAt = voiceGiftCapabilityCheckedAt,
            Date().timeIntervalSince(checkedAt) < voiceGiftCapabilityTTL {
-            return cachedVoiceGiftManifest?.isCompatible == true
+            return cachedVoiceGiftManifest?.isCompatible(with: route) == true
         }
         guard VoiceGiftFeature.isRegionEligible(
             on: route,
@@ -555,7 +566,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
             guard let http = response as? HTTPURLResponse,
                   (200..<300).contains(http.statusCode),
                   let manifest = VoiceGiftCapabilityManifest.decode(from: data),
-                  manifest.isCompatible else {
+                  manifest.isCompatible(with: route) else {
                 cachedVoiceGiftManifest = nil
                 voiceGiftCapabilityResolved = true
                 voiceGiftCapabilityCheckedAt = Date()
