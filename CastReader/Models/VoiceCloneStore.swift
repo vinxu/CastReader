@@ -101,11 +101,15 @@ final class VoiceCloneStore: ObservableObject {
     }
 
     var ownedVoices: [ClonedVoice] {
-        voices.filter { $0.access.kind == .owner }
+        voices.filter { $0.access.kind == .owner && !$0.isInvitedVoice }
     }
 
     var giftedVoices: [ClonedVoice] {
         voices.filter { $0.access.kind == .gifted }
+    }
+
+    var invitedVoices: [ClonedVoice] {
+        voices.filter(\.isInvitedVoice)
     }
 
     var canApply: Bool {

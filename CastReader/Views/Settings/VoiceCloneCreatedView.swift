@@ -272,23 +272,25 @@ struct VoiceCloneCreatedView: View {
             }
 
             if store.voiceGiftEnabled,
-               VoiceGiftInviterUIContract.showsGiftedReaderSection(
+               VoiceGiftInviterUIContract.showsInvitedVoiceSection(
                    for: ServiceRouting.current
                ) {
                 voiceSectionHeader(
                     title: AppLocalized("我的朗读者"),
-                    count: store.giftedVoices.count,
+                    count: store.invitedVoices.count,
                     showsProBadge: false
                 )
-                if store.giftedVoices.isEmpty {
-                    Text("朋友完成授权后，他的声音会自动出现在这里。")
+                if store.invitedVoices.isEmpty {
+                    Text(VoiceGiftInviterUIContract.invitedVoiceEmptyText(
+                        for: ServiceRouting.current
+                    ))
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.mutedForeground)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 14)
                 } else {
-                    ForEach(store.giftedVoices) { voice in
+                    ForEach(store.invitedVoices) { voice in
                         cloneRow(voice)
                             .padding(.horizontal, 20)
                             .padding(.vertical, 12)
@@ -1084,12 +1086,24 @@ enum VoiceGiftInviterUIContract {
         route == .chinaGateway ? chinaPrimaryControlNoteKey : primaryControlNoteKey
     }
 
-    static func showsGiftedReaderSection(for route: ServiceRoute) -> Bool {
-        // Global invitations grant revocable access to a donor-owned voice.
-        // China invitations instead materialize an owner voice in “我的声音”,
-        // so rendering the reader/grant section there would expose the wrong
-        // lifecycle and leave a permanently misleading empty state.
-        route == .globalGateway
+    static let globalInvitedVoiceEmptyKey = "朋友完成授权后，他的声音会自动出现在这里。"
+    static let chinaInvitedVoiceEmptyKey = "朋友录制并提交后，声音会自动出现在这里。"
+
+    static func showsInvitedVoiceSection(for route: ServiceRoute) -> Bool {
+        // Both products group invitation-created voices separately. Their
+        // lifecycle remains route-specific: global rows are revocable gifted
+        // access, while China rows are requester-owned and stay renameable.
+        true
+    }
+
+    static func invitedVoiceEmptyKey(for route: ServiceRoute) -> String {
+        route == .chinaGateway
+            ? chinaInvitedVoiceEmptyKey
+            : globalInvitedVoiceEmptyKey
+    }
+
+    static func invitedVoiceEmptyText(for route: ServiceRoute) -> String {
+        localized(invitedVoiceEmptyKey(for: route))
     }
 
     private static func localized(_ key: String) -> String {
@@ -1771,7 +1785,7 @@ private struct VoiceCloneCreationView: View {
                     .font(.system(size: 28, weight: .bold))
                     .padding(.top, 34)
 
-                Text("我们已自动选择一段清晰讲话。请务必试听，确认片段里是你有权使用的目标声音。")
+                Text("我们已自动选择一段清晰讲话。你可以试听确认，也可以直接创建。")
                     .font(.subheadline)
                     .foregroundStyle(AppTheme.mutedForeground)
                     .multilineTextAlignment(.center)
@@ -1780,7 +1794,9 @@ private struct VoiceCloneCreationView: View {
                 Button { audioUpload.togglePreview() } label: {
                     HStack(spacing: 12) {
                         Image(systemName: audioUpload.isPlaying ? "stop.fill" : "play.fill")
-                        Text(audioUpload.isPlaying ? "停止试听" : "试听选中的片段")
+                        Text(audioUpload.isPlaying
+                            ? AppLocalized("停止试听")
+                            : AppLocalized("试听选中的片段（可选）"))
                     }
                     .font(.headline)
                     .foregroundStyle(.white)
@@ -1867,11 +1883,6 @@ private struct VoiceCloneCreationView: View {
                         .frame(maxWidth: .infinity)
                         .disabled(!audioUpload.canCreate)
                         .accessibilityIdentifier("voiceCloneUploadCreateButton")
-                    if !audioUpload.hasPreviewedSelectedCandidate {
-                        Text("请先试听当前候选片段")
-                            .font(.caption)
-                            .foregroundStyle(AppTheme.mutedForeground)
-                    }
                     Button("换一个文件") { showAudioImporter = true }
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(AppTheme.primary)

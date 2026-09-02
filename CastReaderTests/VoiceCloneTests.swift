@@ -445,6 +445,8 @@ final class VoiceCloneTests: XCTestCase {
             "声音名称无效，请修改后重试",
             "恢复默认名称",
             "朗读文本不能超过 600 个字符",
+            "我们已自动选择一段清晰讲话。你可以试听确认，也可以直接创建。",
+            "试听选中的片段（可选）",
         ]
 
         for key in identityKeys {
@@ -500,6 +502,7 @@ final class VoiceCloneTests: XCTestCase {
             "只会从你的朗读者列表移除，不会删除对方创建的声音。",
             "我的朗读者",
             "朋友完成授权后，他的声音会自动出现在这里。",
+            "朋友录制并提交后，声音会自动出现在这里。",
             "待回应邀请",
             "邀请朋友录制声音",
             "朋友授权后，你可用他的声音朗读和解读 Kindle、文件与网页，直到他撤回。",
@@ -1434,36 +1437,36 @@ final class VoiceCloneTests: XCTestCase {
     }
 
     @MainActor
-    func testUploadedReferenceRequiresMatchingCandidatePreviewAndConsent() {
-        let allowed = VoiceCloneAudioUploadViewModel.creationAllowed(
+    func testUploadedReferenceAllowsOptionalPreviewButRequiresConsent() {
+        XCTAssertTrue(VoiceCloneAudioUploadViewModel.creationAllowed(
             state: .review,
             hasPreparedReference: true,
             selectedCandidateID: "candidate-a",
-            previewedCandidateID: "candidate-a",
             consentConfirmed: true
-        )
-        XCTAssertTrue(allowed)
-
+        ))
         XCTAssertFalse(VoiceCloneAudioUploadViewModel.creationAllowed(
             state: .review,
-            hasPreparedReference: true,
+            hasPreparedReference: false,
             selectedCandidateID: "candidate-a",
-            previewedCandidateID: nil,
             consentConfirmed: true
         ))
         XCTAssertFalse(VoiceCloneAudioUploadViewModel.creationAllowed(
             state: .review,
             hasPreparedReference: true,
-            selectedCandidateID: "candidate-b",
-            previewedCandidateID: "candidate-a",
+            selectedCandidateID: nil,
             consentConfirmed: true
         ))
         XCTAssertFalse(VoiceCloneAudioUploadViewModel.creationAllowed(
             state: .review,
             hasPreparedReference: true,
             selectedCandidateID: "candidate-a",
-            previewedCandidateID: "candidate-a",
             consentConfirmed: false
+        ))
+        XCTAssertFalse(VoiceCloneAudioUploadViewModel.creationAllowed(
+            state: .processing,
+            hasPreparedReference: true,
+            selectedCandidateID: "candidate-a",
+            consentConfirmed: true
         ))
 
         XCTAssertEqual(
@@ -2384,6 +2387,19 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertEqual(voice.supportedLanguages, ["zh", "en"])
     }
 
+    func testLibraryParserPreservesInvitationOriginBesideNestedVoice() throws {
+        let data = Data(#"{"schemaVersion":"voice-library-v1","snapshotComplete":true,"voices":[{"voice":{"voiceId":"vc_invited_nested","status":"active"},"origin":"invitation","access":{"kind":"owner","status":"active","capabilities":{"preview":true,"useTts":true,"rename":true,"delete":true}}}]}"#.utf8)
+
+        let result = try VoiceCloneResponseParser.list(from: data)
+        let voice = try XCTUnwrap(result.voices.first)
+
+        XCTAssertEqual(voice.origin, .invitation)
+        XCTAssertTrue(voice.isInvitedVoice)
+        XCTAssertEqual(voice.access.kind, .owner)
+        XCTAssertTrue(voice.access.capabilities.canRename)
+        XCTAssertTrue(voice.access.capabilities.canDelete)
+    }
+
     func testTTSRequestSendsVoiceAndVoiceCode() throws {
         let data = try JSONEncoder().encode(TTSRequest(input: "hello", voice: "vc_one"))
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -2503,6 +2519,8 @@ final class VoiceCloneTests: XCTestCase {
             ["vc_owner_fixture", "vc_gift_fixture"]
         )
         XCTAssertEqual(result.voices[0].access.kind, .owner)
+        XCTAssertEqual(result.voices[0].origin, .selfCreated)
+        XCTAssertFalse(result.voices[0].isInvitedVoice)
         XCTAssertTrue(result.voices[0].access.capabilities.canUse)
         XCTAssertTrue(result.voices[0].access.capabilities.canRename)
         XCTAssertTrue(result.voices[0].access.capabilities.canDelete)
@@ -2512,6 +2530,8 @@ final class VoiceCloneTests: XCTestCase {
             .waveBars
         )
         XCTAssertEqual(result.voices[1].access.kind, .gifted)
+        XCTAssertEqual(result.voices[1].origin, .invitation)
+        XCTAssertTrue(result.voices[1].isInvitedVoice)
         XCTAssertEqual(result.voices[1].access.grantId, "grant_fixture")
         XCTAssertEqual(result.voices[1].access.mutationID, "share_fixture")
         XCTAssertEqual(result.voices[1].access.status, "active")
@@ -2742,14 +2762,25 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(chinaControlNote.contains("短信"))
         XCTAssertFalse(chinaControlNote.contains("邮箱"))
         XCTAssertTrue(
-            VoiceGiftInviterUIContract.showsGiftedReaderSection(
+            VoiceGiftInviterUIContract.showsInvitedVoiceSection(
                 for: .globalGateway
             )
         )
-        XCTAssertFalse(
-            VoiceGiftInviterUIContract.showsGiftedReaderSection(
+        XCTAssertTrue(
+            VoiceGiftInviterUIContract.showsInvitedVoiceSection(
                 for: .chinaGateway
             )
+        )
+        XCTAssertEqual(
+            VoiceGiftInviterUIContract.invitedVoiceEmptyKey(for: .globalGateway),
+            VoiceGiftInviterUIContract.globalInvitedVoiceEmptyKey
+        )
+        XCTAssertEqual(
+            VoiceGiftInviterUIContract.invitedVoiceEmptyKey(for: .chinaGateway),
+            VoiceGiftInviterUIContract.chinaInvitedVoiceEmptyKey
+        )
+        XCTAssertFalse(
+            VoiceGiftInviterUIContract.chinaInvitedVoiceEmptyKey.contains("授权")
         )
         XCTAssertTrue(VoiceGiftInviterUIContract.primaryControlNoteKey.contains("直接分享链接"))
         XCTAssertTrue(VoiceGiftInviterUIContract.primaryControlNoteKey.contains("无需填写邮箱"))
@@ -3181,7 +3212,7 @@ final class VoiceCloneTests: XCTestCase {
                 )
             } else if request.url?.path == "/api/voice-clone/library" {
                 data = Data(
-                    #"{"schemaVersion":"voice-library-v1","snapshotComplete":true,"voices":[{"voiceId":"vc_cn_invited_owner","status":"active","reference_language":"zh","supported_languages":["zh","en"],"access":{"kind":"owner","status":"active","capabilities":{"preview":true,"useTts":true,"rename":true,"delete":true}}}]}"#.utf8
+                    #"{"schemaVersion":"voice-library-v1","snapshotComplete":true,"voices":[{"voiceId":"vc_cn_invited_owner","status":"active","origin":"invitation","reference_language":"zh","supported_languages":["zh","en"],"access":{"kind":"owner","status":"active","capabilities":{"preview":true,"useTts":true,"rename":true,"delete":true}}}]}"#.utf8
                 )
             } else {
                 data = Data(
@@ -3215,6 +3246,8 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertEqual(ownerVoice.referenceLanguage, "zh")
         XCTAssertEqual(ownerVoice.supportedLanguages, ["zh", "en"])
         XCTAssertEqual(ownerVoice.access.kind, .owner)
+        XCTAssertEqual(ownerVoice.origin, .invitation)
+        XCTAssertTrue(ownerVoice.isInvitedVoice)
         XCTAssertTrue(ownerVoice.access.capabilities.canPreview)
         XCTAssertTrue(ownerVoice.access.capabilities.canUse)
         XCTAssertTrue(ownerVoice.access.capabilities.canRename)
@@ -3789,6 +3822,53 @@ final class VoiceCloneTests: XCTestCase {
 
         XCTAssertEqual(Set(store.voices.map(\.voiceId)), ["vc_owner", "vc_gift"])
         XCTAssertEqual(store.giftedVoices.first?.access.donor?.displayName, "Lina")
+    }
+
+    @MainActor
+    func testInvitationVoicesAreSeparatedFromSelfCreatedVoicesAcrossRoutes() async {
+        let suite = "VoiceCloneTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let service = ControlledVoiceCloneService()
+        let store = VoiceCloneStore(
+            service: service,
+            defaults: defaults,
+            isSignedIn: { true }
+        )
+        store.activateAccountScope(storageID: String(repeating: "9", count: 64))
+        let chinaInvitedOwner = ClonedVoice(
+            voiceId: "vc_cn_invited",
+            access: VoiceGiftAccess(kind: .owner),
+            origin: .invitation
+        )
+        let globalGifted = ClonedVoice(
+            voiceId: "vc_global_gifted",
+            access: VoiceGiftAccess(kind: .gifted)
+        )
+        await service.enqueueImmediateList(VoiceCloneListResult(
+            voices: [
+                ClonedVoice(voiceId: "vc_self", origin: .selfCreated),
+                ClonedVoice(voiceId: "vc_legacy_self"),
+                chinaInvitedOwner,
+                globalGifted,
+            ],
+            nextCreateAt: nil
+        ))
+
+        await store.refresh()
+
+        XCTAssertEqual(
+            Set(store.ownedVoices.map(\.voiceId)),
+            Set(["vc_self", "vc_legacy_self"])
+        )
+        XCTAssertEqual(
+            Set(store.invitedVoices.map(\.voiceId)),
+            Set(["vc_cn_invited", "vc_global_gifted"])
+        )
+        XCTAssertEqual(store.giftedVoices.map(\.voiceId), ["vc_global_gifted"])
+        XCTAssertTrue(store.invitedVoices.contains {
+            $0.voiceId == "vc_cn_invited" && $0.access.kind == .owner
+        })
     }
 
     @MainActor

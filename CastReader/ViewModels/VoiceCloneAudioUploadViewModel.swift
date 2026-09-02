@@ -4,7 +4,7 @@ import Foundation
 
 /// Owns the temporary, device-only lifecycle for an imported voice reference.
 /// The original file never reaches VoiceCloneService; only `preparedReference`
-/// is eligible for upload after the user previews it and confirms consent.
+/// is eligible for upload after the user confirms consent. Preview is optional.
 @MainActor
 final class VoiceCloneAudioUploadViewModel: NSObject, ObservableObject,
     AVAudioPlayerDelegate
@@ -43,27 +43,19 @@ final class VoiceCloneAudioUploadViewModel: NSObject, ObservableObject,
             state: state,
             hasPreparedReference: preparedReference != nil,
             selectedCandidateID: selectedCandidateID,
-            previewedCandidateID: previewedCandidateID,
             consentConfirmed: consentConfirmed
         )
-    }
-
-    var hasPreviewedSelectedCandidate: Bool {
-        guard let selectedCandidateID else { return false }
-        return previewedCandidateID == selectedCandidateID
     }
 
     static func creationAllowed(
         state: State,
         hasPreparedReference: Bool,
         selectedCandidateID: String?,
-        previewedCandidateID: String?,
         consentConfirmed: Bool
     ) -> Bool {
         state == .review
             && hasPreparedReference
             && selectedCandidateID != nil
-            && previewedCandidateID == selectedCandidateID
             && consentConfirmed
     }
 

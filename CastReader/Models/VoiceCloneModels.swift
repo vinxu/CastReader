@@ -705,6 +705,14 @@ struct VoiceGiftInvitation: Identifiable, Equatable, Decodable {
     }
 }
 
+/// Describes how a voice entered the current account's library without
+/// changing its authorization semantics. China invitation recordings are
+/// requester-owned voices, while global invitations remain gifted access.
+enum VoiceCloneOrigin: String, Equatable, Decodable {
+    case selfCreated = "self"
+    case invitation
+}
+
 struct ClonedVoice: Identifiable, Equatable, Decodable {
     let voiceId: String
     let createdAt: String?
@@ -716,9 +724,13 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
     let supportedLanguages: [String]
     let identity: VoiceCloneIdentity?
     let access: VoiceGiftAccess
+    let origin: VoiceCloneOrigin?
     let presentation: VoiceGiftPresentation?
 
     var id: String { voiceId }
+    var isInvitedVoice: Bool {
+        origin == .invitation || access.kind == .gifted
+    }
 
     init(
         voiceId: String,
@@ -731,6 +743,7 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
         supportedLanguages: [String] = [],
         identity: VoiceCloneIdentity? = nil,
         access: VoiceGiftAccess = VoiceGiftAccess(kind: .owner),
+        origin: VoiceCloneOrigin? = nil,
         presentation: VoiceGiftPresentation? = nil
     ) {
         self.voiceId = voiceId
@@ -743,6 +756,7 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
         self.supportedLanguages = supportedLanguages
         self.identity = identity
         self.access = access
+        self.origin = origin
         self.presentation = presentation
     }
 
@@ -779,6 +793,9 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
         } else {
             access = VoiceGiftAccess(kind: .owner)
         }
+        // Provenance is presentation metadata, not an authorization boundary.
+        // Unknown future values stay unclassified instead of dropping a voice.
+        origin = try? container.decode(VoiceCloneOrigin.self, forKey: .origin)
         presentation = try? container.decode(
             VoiceGiftPresentation.self,
             forKey: .presentation
@@ -800,6 +817,7 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
             supportedLanguages: supportedLanguages,
             identity: identity,
             access: access,
+            origin: origin,
             presentation: preservingPresentation ? presentation : nil
         )
     }
@@ -819,12 +837,13 @@ struct ClonedVoice: Identifiable, Equatable, Decodable {
             supportedLanguages: supportedLanguages,
             identity: identity,
             access: access,
+            origin: origin,
             presentation: preservingPresentation ? presentation : nil
         )
     }
 
     private enum CodingKeys: String, CodingKey {
-        case voiceId, id, createdAt, sampleUrl, status, previewStatus, previewDurationMs, referenceLanguage, supportedLanguages, identity, access, presentation
+        case voiceId, id, createdAt, sampleUrl, status, previewStatus, previewDurationMs, referenceLanguage, supportedLanguages, identity, access, origin, presentation
         case voiceIdSnake = "voice_id"
         case createdAtSnake = "created_at"
         case sampleUrlSnake = "sample_url"
@@ -1350,6 +1369,9 @@ enum VoiceCloneResponseParser {
             }
             if candidate["presentation"] == nil {
                 candidate["presentation"] = object["presentation"]
+            }
+            if candidate["origin"] == nil {
+                candidate["origin"] = object["origin"]
             }
             if var access = object["access"] as? [String: Any] {
                 for key in [
