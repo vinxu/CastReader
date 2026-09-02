@@ -142,6 +142,7 @@ enum AccountContentIsolation {
         }
         activeStorageID = scope.storageID
         _ = AccountContentScopeBridge.activate(storageID: scope.storageID)
+        OfflineReadingCacheProvider.activateAccountScope(storageID: scope.storageID)
         BoundLibraryOnboardingStore.shared.activateAccountScope(
             storageID: scope.storageID,
             region: AppRegion.current,
@@ -175,6 +176,7 @@ enum AccountContentIsolation {
         if ProcessInfo.processInfo.arguments.contains("-CastReaderSkipSignInGate") {
             activeStorageID = "debug-legacy"
             AccountContentScopeBridge.activateLegacyTestingScope()
+            OfflineReadingCacheProvider.activateAccountScope(storageID: "debug-legacy")
             BoundLibraryOnboardingStore.shared.activateLegacyTestingScope()
             CommercialWebSession.activateLegacyTestingScope()
             _ = HistoryStore.shared.activateLegacyTestingScope()
@@ -193,6 +195,7 @@ enum AccountContentIsolation {
 
         activeStorageID = nil
         AccountContentScopeBridge.deactivate()
+        OfflineReadingCacheProvider.deactivateAccountScope()
         BoundLibraryOnboardingStore.shared.deactivateAccountScope()
         CommercialWebSession.deactivateAccountScope()
         HistoryStore.shared.deactivateAccountScope()

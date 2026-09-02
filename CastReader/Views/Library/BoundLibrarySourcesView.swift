@@ -379,7 +379,9 @@ struct LibrarySourcesView: View {
         switch source {
         case .googleBooks, .kobo, .oreilly:
             return AppLocalized("只清除 CastReader 中对应平台的书架和阅读进度；共享网页登录状态会保留。")
-        case .kindle, .weread:
+        case .kindle:
+            return AppLocalized("解除绑定会清除 CastReader 中的 Kindle 书架、阅读进度和已下载的离线内容，不会影响 Amazon 账号或原书籍。")
+        case .weread:
             return AppLocalized("解除绑定只会清除 CastReader 中对应平台的本地数据，不会影响原平台账号或书籍。")
         }
     }

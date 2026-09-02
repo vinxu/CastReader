@@ -2,9 +2,9 @@
 //  KindleModels.swift
 //  CastReader
 //
-//  Native Kindle shelf metadata. Kindle content still comes from the user's
-//  authenticated read.amazon.com WebView session; CastReader persists only
-//  book metadata and local reading position.
+//  Native Kindle shelf metadata. Online content comes from the user's
+//  authenticated read.amazon.com WebView session. A user-initiated Pro offline
+//  download may separately persist an account-scoped page/audio package.
 //
 
 import CryptoKit

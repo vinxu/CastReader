@@ -15,6 +15,24 @@ struct KindleReaderView: View {
     @ObservedObject var explainVM: ExplainViewModel
     let mode: ReaderMode
     let refocusToken: Int
+    let onVisiblePageChanged: ((Int) -> Void)?
+    @State private var lastReportedPageIndex: Int?
+
+    init(
+        document: ReadingDocument,
+        readVM: ReadAloudViewModel,
+        explainVM: ExplainViewModel,
+        mode: ReaderMode,
+        refocusToken: Int,
+        onVisiblePageChanged: ((Int) -> Void)? = nil
+    ) {
+        self.document = document
+        self.readVM = readVM
+        self.explainVM = explainVM
+        self.mode = mode
+        self.refocusToken = refocusToken
+        self.onVisiblePageChanged = onVisiblePageChanged
+    }
 
     private var pages: [KindlePage] {
         let imageParas = document.paragraphs.filter { $0.type == .image && $0.imageData != nil }
@@ -29,39 +47,71 @@ struct KindleReaderView: View {
     }
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 18) {
-                    ForEach(pages) { page in
-                        KindlePageCanvas(
-                            document: document,
-                            page: page,
-                            readVM: readVM,
-                            explainVM: explainVM,
-                            mode: mode
-                        )
-                        .id(page.id)
+        GeometryReader { viewport in
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 18) {
+                        ForEach(pages) { page in
+                            KindlePageCanvas(
+                                document: document,
+                                page: page,
+                                readVM: readVM,
+                                explainVM: explainVM,
+                                mode: mode
+                            )
+                            .background {
+                                GeometryReader { pageProxy in
+                                    Color.clear.preference(
+                                        key: KindleVisiblePagePreferenceKey.self,
+                                        value: [
+                                            page.index: pageProxy.frame(
+                                                in: .named(KindlePageScrollCoordinateSpace.name)
+                                            ),
+                                        ]
+                                    )
+                                }
+                            }
+                            .id(page.id)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 18)
+                }
+                .coordinateSpace(name: KindlePageScrollCoordinateSpace.name)
+                .onPreferenceChange(KindleVisiblePagePreferenceKey.self) { frames in
+                    reportVisiblePage(frames: frames, viewportHeight: viewport.size.height)
+                }
+                .onChange(of: readVM.currentParagraphIndex) { idx in
+                    guard mode == .read, idx >= 0, let pageID = pageID(forParagraph: idx) else { return }
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        proxy.scrollTo(pageID, anchor: UnitPoint(x: 0.5, y: 0.28))
                     }
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 18)
-            }
-            .onChange(of: readVM.currentParagraphIndex) { idx in
-                guard mode == .read, idx >= 0, let pageID = pageID(forParagraph: idx) else { return }
-                withAnimation(.easeInOut(duration: 0.35)) {
-                    proxy.scrollTo(pageID, anchor: UnitPoint(x: 0.5, y: 0.28))
+                .onChange(of: explainVM.scrollTarget) { idx in
+                    guard mode == .explain, idx >= 0, let pageID = pageID(forParagraph: idx) else { return }
+                    withAnimation(.easeInOut(duration: 0.45)) {
+                        proxy.scrollTo(pageID, anchor: UnitPoint(x: 0.5, y: 0.30))
+                    }
                 }
-            }
-            .onChange(of: explainVM.scrollTarget) { idx in
-                guard mode == .explain, idx >= 0, let pageID = pageID(forParagraph: idx) else { return }
-                withAnimation(.easeInOut(duration: 0.45)) {
-                    proxy.scrollTo(pageID, anchor: UnitPoint(x: 0.5, y: 0.30))
+                .onChange(of: refocusToken) { _ in
+                    refocus(proxy)
                 }
-            }
-            .onChange(of: refocusToken) { _ in
-                refocus(proxy)
             }
         }
+    }
+
+    private func reportVisiblePage(frames: [Int: CGRect], viewportHeight: CGFloat) {
+        guard onVisiblePageChanged != nil, viewportHeight > 0 else { return }
+        let centerY = viewportHeight / 2
+        let visible = frames.filter { _, frame in
+            frame.maxY > 0 && frame.minY < viewportHeight
+        }
+        guard let pageIndex = visible.min(by: { lhs, rhs in
+            abs(lhs.value.midY - centerY) < abs(rhs.value.midY - centerY)
+        })?.key,
+        pageIndex != lastReportedPageIndex else { return }
+        lastReportedPageIndex = pageIndex
+        onVisiblePageChanged?(pageIndex)
     }
 
     private func refocus(_ proxy: ScrollViewProxy) {
@@ -83,9 +133,21 @@ struct KindleReaderView: View {
     }
 
     private func pageID(forParagraph idx: Int) -> String? {
-        guard idx >= 0, idx < document.paragraphs.count,
-              let pageIndex = document.paragraphs[idx].pageIndex else { return nil }
+        guard idx >= 0,
+              let pageIndex = document.paragraphs.first(where: { $0.id == idx })?.pageIndex else { return nil }
         return "kindle-page-\(pageIndex)"
+    }
+}
+
+private enum KindlePageScrollCoordinateSpace {
+    static let name = "castreader-kindle-pages"
+}
+
+private struct KindleVisiblePagePreferenceKey: PreferenceKey {
+    static var defaultValue: [Int: CGRect] = [:]
+
+    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, next in next })
     }
 }
 

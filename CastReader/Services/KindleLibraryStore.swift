@@ -343,6 +343,17 @@ final class KindleLibraryStore: ObservableObject {
     }
 
     func disconnectAccount() async {
+        if let offlineCache = OfflineReadingCacheProvider.shared {
+            do {
+                try await offlineCache.removeAllKindlePackages()
+            } catch {
+                // Keep the binding visible so the user has a retry path. A
+                // successful disconnect must not silently leave page images or
+                // audio behind after a filesystem/manifest failure.
+                lastError = AppLocalized("无法删除 Kindle 离线内容，请重试解除绑定。")
+                return
+            }
+        }
         disconnectLocalCache()
         await clearAmazonWebsiteData()
     }

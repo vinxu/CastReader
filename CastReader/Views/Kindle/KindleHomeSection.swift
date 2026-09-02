@@ -103,6 +103,7 @@ struct KindleHomeSection: View {
 private struct KindleBookRailCard: View {
     let book: KindleBook
     let isRecent: Bool
+    @State private var hasOfflinePackage = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: HomeLayout.mediaToTextGap) {
@@ -122,6 +123,19 @@ private struct KindleBookRailCard: View {
                         .background(AppTheme.primary.opacity(0.82), in: Capsule())
                         .padding(6)
                 }
+
+                if hasOfflinePackage {
+                    HStack {
+                        Spacer()
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white, AppTheme.primary)
+                            .padding(5)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                    .frame(width: 96)
+                    .accessibilityLabel(AppLocalized("已下载离线内容"))
+                }
             }
 
             Text(book.title)
@@ -137,6 +151,23 @@ private struct KindleBookRailCard: View {
                 .frame(width: 104, alignment: .leading)
         }
         .frame(width: 108, alignment: .topLeading)
+        .task(id: book.id + "|" + (book.storefrontID ?? "")) {
+            await refreshOfflinePackageState()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .offlineReadingCacheDidChange)) { _ in
+            Task { @MainActor in
+                await refreshOfflinePackageState()
+            }
+        }
+    }
+
+    @MainActor
+    private func refreshOfflinePackageState() async {
+        guard let cache = OfflineReadingCacheProvider.shared else {
+            hasOfflinePackage = false
+            return
+        }
+        hasOfflinePackage = await cache.containsKindlePackage(book: book)
     }
 }
 

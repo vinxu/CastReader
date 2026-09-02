@@ -92,6 +92,10 @@ final class ProManager: ObservableObject {
         updatesTask?.cancel()
         updatesTask = listenForTransactions()
         Task {
+            // Publish the locally signed App Store entitlement before any
+            // product, intro-offer, account-exchange, or backend request can
+            // delay a cold-start offline reader.
+            await refreshLocalStoreKitEntitlements()
             await loadProducts()
             await refresh()
         }
@@ -324,6 +328,25 @@ final class ProManager: ObservableObject {
         isVerified
     }
 
+    /// Resolve the StoreKit account token using only the account profile that
+    /// is already persisted on this device. This deliberately has no fallback
+    /// to provider ids, email, device id, or a network account exchange.
+    ///
+    /// UUIDv8 transactions are account-bound and therefore fail closed when an
+    /// older profile has no canonical backend id. Legacy UUIDv4/nil purchases
+    /// retain their compatibility behavior in
+    /// `transactionBelongsToCurrentAccount`.
+    nonisolated static func locallyExpectedStoreKitAccountToken(
+        isSignedIn: Bool,
+        persistedBackendUserId: String?
+    ) -> UUID? {
+        guard isSignedIn,
+              let userId = normalizedIdentityComponent(persistedBackendUserId) else {
+            return nil
+        }
+        return accountBoundAppAccountToken(userId: userId)
+    }
+
     /// 打开系统「管理订阅」面板（模拟器不支持）。
     func openManageSubscriptions() async {
         guard let scene = UIApplication.shared.connectedScenes
@@ -436,42 +459,98 @@ final class ProManager: ObservableObject {
     }
 
     func refreshEntitlements() async {
-        var active = false
-        var latestSignedTransaction: String?
-        var latestExpiration = Date.distantPast
+        let accountBoundaryID = AuthService.shared.accountBoundaryID
         let expectedAccountToken = await expectedStoreKitAccountToken()
-        for await result in Transaction.currentEntitlements {
-            guard case .verified(let t) = result else { continue }
-            guard Self.productIDs.contains(t.productID) else { continue }
-            guard Self.transactionBelongsToCurrentAccount(
-                appAccountToken: t.appAccountToken,
-                expectedAccountToken: expectedAccountToken
-            ) else {
-                debugTransaction("entitlement account-mismatch", t)
-                continue
-            }
-            let notRevoked = t.revocationDate == nil
-            let notExpired = (t.expirationDate ?? Date.distantFuture) > Date()
-            if notRevoked && notExpired {
-                active = true
-                debugTransaction("entitlement", t)
-                let expiration = t.expirationDate ?? Date.distantFuture
-                if expiration > latestExpiration {
-                    latestExpiration = expiration
-                    latestSignedTransaction = result.jwsRepresentation
-                }
-            }
+        let snapshot = await currentStoreKitEntitlementSnapshot(
+            expectedAccountToken: expectedAccountToken
+        )
+        guard AuthService.shared.accountBoundaryID == accountBoundaryID else {
+            debugLog("entitlement snapshot discarded after account transition")
+            return
         }
-        setStoreKitLocalPro(active, reason: "refresh-entitlements")
+        setStoreKitLocalPro(snapshot.active, reason: "refresh-entitlements")
         await refreshIntroOfferEligibility()
+        guard AuthService.shared.accountBoundaryID == accountBoundaryID else {
+            debugLog("entitlement server sync skipped after account transition")
+            return
+        }
         // 上报只要已登录就尝试：verify-apple 实际依赖 cms_ 会话（无会话时自 SKIP），
         // 拿 email 当前置条件会漏掉 Apple 无 email 但有会话的账号。
-        if active,
+        if snapshot.active,
            AuthService.shared.isSignedIn,
-           let latestSignedTransaction {
+           let latestSignedTransaction = snapshot.latestSignedTransaction {
             let synced = await ProBackendService.shared.verifyAppleTransaction(latestSignedTransaction)
             debugLog("storekit-server-sync result=\(synced ? "Y" : "N")")
         }
+    }
+
+    /// Refreshes the App Store entitlement needed to open already-downloaded
+    /// Pro content without waiting for CastReader's network services.
+    ///
+    /// This path intentionally does **not** call:
+    /// - `ensureBackendUserIdForPro()` (which may exchange a session),
+    /// - intro-offer/product APIs, or
+    /// - the CastReader entitlement backend.
+    ///
+    /// `Transaction.currentEntitlements` yields StoreKit's locally verified,
+    /// signed transaction snapshot. Server/cross-platform Pro is not persisted
+    /// as an unsigned bool here; cold-start offline support for that entitlement
+    /// requires a short-lived backend-signed lease.
+    @discardableResult
+    func refreshLocalStoreKitEntitlements() async -> Bool {
+        let accountBoundaryID = AuthService.shared.accountBoundaryID
+        let expectedAccountToken = Self.locallyExpectedStoreKitAccountToken(
+            isSignedIn: AuthService.shared.isSignedIn,
+            persistedBackendUserId: AuthService.shared.proUserId
+        )
+        let snapshot = await currentStoreKitEntitlementSnapshot(
+            expectedAccountToken: expectedAccountToken
+        )
+        guard AuthService.shared.accountBoundaryID == accountBoundaryID else {
+            debugLog("local entitlement snapshot discarded after account transition")
+            return false
+        }
+        setStoreKitLocalPro(snapshot.active, reason: "refresh-local-entitlements")
+        return snapshot.active
+    }
+
+    private struct StoreKitEntitlementSnapshot {
+        let active: Bool
+        let latestSignedTransaction: String?
+    }
+
+    private func currentStoreKitEntitlementSnapshot(
+        expectedAccountToken: UUID?
+    ) async -> StoreKitEntitlementSnapshot {
+        var active = false
+        var latestSignedTransaction: String?
+        var latestExpiration = Date.distantPast
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result else { continue }
+            guard Self.productIDs.contains(transaction.productID) else { continue }
+            guard Self.transactionBelongsToCurrentAccount(
+                appAccountToken: transaction.appAccountToken,
+                expectedAccountToken: expectedAccountToken
+            ) else {
+                debugTransaction("entitlement account-mismatch", transaction)
+                continue
+            }
+            let notRevoked = transaction.revocationDate == nil
+            let notExpired = (transaction.expirationDate ?? Date.distantFuture) > Date()
+            guard notRevoked, notExpired else { continue }
+
+            active = true
+            debugTransaction("entitlement", transaction)
+            let expiration = transaction.expirationDate ?? Date.distantFuture
+            if expiration > latestExpiration {
+                latestExpiration = expiration
+                latestSignedTransaction = result.jwsRepresentation
+            }
+        }
+        return StoreKitEntitlementSnapshot(
+            active: active,
+            latestSignedTransaction: latestSignedTransaction
+        )
     }
 
     // MARK: - 购买 / 恢复

@@ -369,6 +369,31 @@ final class PaymentTests: XCTestCase {
         )
     }
 
+    func testOfflineStoreKitTokenResolutionUsesOnlyPersistedCanonicalAccount() {
+        let expected = ProManager.accountBoundAppAccountToken(userId: "user-42")
+        XCTAssertEqual(
+            ProManager.locallyExpectedStoreKitAccountToken(
+                isSignedIn: true,
+                persistedBackendUserId: "  user-42  "
+            ),
+            expected
+        )
+        XCTAssertNil(
+            ProManager.locallyExpectedStoreKitAccountToken(
+                isSignedIn: false,
+                persistedBackendUserId: "user-42"
+            ),
+            "a signed-out process must not reuse the previous account's StoreKit token"
+        )
+        XCTAssertNil(
+            ProManager.locallyExpectedStoreKitAccountToken(
+                isSignedIn: true,
+                persistedBackendUserId: nil
+            ),
+            "offline refresh must fail closed instead of deriving identity from email, provider id, or device id"
+        )
+    }
+
     func testOnlyVerifiedStoreKitTransactionsMayBeFinished() {
         XCTAssertTrue(ProManager.shouldFinishStoreKitTransaction(isVerified: true))
         XCTAssertFalse(
@@ -549,6 +574,22 @@ final class PaymentTests: XCTestCase {
         try await seedStoreKitPurchase(ProManager.monthlyID)
         XCTAssertTrue(ProManager.shared.storeKitPro, "购买后 storeKitPro=true")
         XCTAssertTrue(ProManager.shared.isPro, "购买后 isPro=true")
+    }
+
+    @MainActor
+    func testLocalStoreKitRefreshRestoresSignedTransactionWithoutServerStatus() async throws {
+        signInPurchaseAccount()
+        try await seedStoreKitPurchase(ProManager.monthlyID)
+        ProManager.shared.setEntitlementsForTesting(storeKit: false, server: false)
+
+        let active = await ProManager.shared.refreshLocalStoreKitEntitlements()
+
+        XCTAssertTrue(active)
+        XCTAssertTrue(ProManager.shared.storeKitLocalPro)
+        XCTAssertFalse(
+            ProManager.shared.serverPro,
+            "local StoreKit refresh must not manufacture or restore cross-platform server Pro"
+        )
     }
 
     @MainActor

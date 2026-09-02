@@ -212,6 +212,7 @@ struct KindleLibraryView: View {
 private struct KindleLibraryRow: View {
     let book: KindleBook
     let open: () -> Void
+    @State private var offlineSummary: OfflineReadingCacheSummary?
 
     private var lastOpenedText: String {
         let date = book.lastOpenedAt ?? book.lastSyncedAt
@@ -245,6 +246,15 @@ private struct KindleLibraryRow: View {
                     .font(.caption2)
                     .foregroundColor(AppTheme.mutedForeground)
                     .lineLimit(1)
+
+                    if let offlineSummary {
+                        Label(
+                            String(format: AppLocalized("%d 页离线"), offlineSummary.pageCount),
+                            systemImage: "arrow.down.circle.fill"
+                        )
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(AppTheme.primary)
+                    }
                 }
                 Spacer(minLength: 4)
             }
@@ -260,5 +270,22 @@ private struct KindleLibraryRow: View {
         .background(AppTheme.surface)
         .cornerRadius(16)
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppTheme.border.opacity(0.65), lineWidth: 1))
+        .task(id: book.id + "|" + (book.storefrontID ?? "")) {
+            await refreshOfflineSummary()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .offlineReadingCacheDidChange)) { _ in
+            Task { @MainActor in
+                await refreshOfflineSummary()
+            }
+        }
+    }
+
+    @MainActor
+    private func refreshOfflineSummary() async {
+        guard let cache = OfflineReadingCacheProvider.shared else {
+            offlineSummary = nil
+            return
+        }
+        offlineSummary = await cache.summary(forKindleBook: book)
     }
 }

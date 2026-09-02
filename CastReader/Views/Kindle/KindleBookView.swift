@@ -56,6 +56,7 @@ struct KindleBookView: View {
     @StateObject private var model: KindleBookViewModel
     @State private var refocusTask: Task<Void, Never>?
     @State private var readerSurfaceSize: CGSize = .zero
+    @State private var isOfflinePanelPresented = false
 
     init(book: KindleBook) {
         _model = StateObject(wrappedValue: KindleBookViewModel(book: book))
@@ -127,6 +128,7 @@ struct KindleBookView: View {
             model.setApplicationActive(scenePhase == .active)
             model.setPlayerControlOverlayPresented(playbackVoicePanel.isPresented)
             model.loadIfNeeded()
+            model.refreshOfflineCacheSummary()
             schedulePlaybackRefocus(reason: "appear")
         }
         .onChange(of: playbackCenter.isPresented) { isPresented in
@@ -197,14 +199,18 @@ struct KindleBookView: View {
         }
         .sheet(isPresented: kindlePaywallBinding) {
             PaywallView(
-                analyticsTrigger: QuotaManager.shared.paywallTrigger(
-                    replacing: KindlePaywallPresentationContract.analyticsTrigger(
-                        requestedMode: model.paywallMode,
-                        currentMode: model.mode
-                    )
-                ),
+                analyticsTrigger: model.paywallTriggerOverride
+                    ?? QuotaManager.shared.paywallTrigger(
+                        replacing: KindlePaywallPresentationContract.analyticsTrigger(
+                            requestedMode: model.paywallMode,
+                            currentMode: model.mode
+                        )
+                    ),
                 analyticsSurface: "kindle_reader"
             )
+        }
+        .sheet(isPresented: $isOfflinePanelPresented) {
+            KindleOfflinePanel(model: model)
         }
     }
 
@@ -217,7 +223,31 @@ struct KindleBookView: View {
         )
     }
 
+    @ViewBuilder
     private var readerSurface: some View {
+        if let document = model.offlineDocument,
+           let readVM = model.readVM,
+           let explainVM = model.explainVM {
+            KindleReaderView(
+                document: document,
+                readVM: readVM,
+                explainVM: explainVM,
+                mode: .read,
+                refocusToken: 0,
+                onVisiblePageChanged: { pageIndex in
+                    model.setOfflineVisiblePage(pageIndex)
+                }
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(AppTheme.background)
+        } else if let message = model.offlineUnavailableMessage {
+            offlineUnavailableSurface(message: message)
+        } else {
+            liveReaderSurface
+        }
+    }
+
+    private var liveReaderSurface: some View {
         ZStack(alignment: .bottomLeading) {
             GeometryReader { proxy in
                 let webSize = KindleReaderSurfaceContract.renderSize(
@@ -295,6 +325,28 @@ struct KindleBookView: View {
                 Color.clear.preference(key: KindleReaderSurfaceSizePreferenceKey.self, value: proxy.size)
             }
         )
+    }
+
+    private func offlineUnavailableSurface(message: String) -> some View {
+        VStack(spacing: 14) {
+            Image(systemName: "wifi.slash")
+                .font(.system(size: 32, weight: .semibold))
+                .foregroundStyle(AppTheme.primary)
+            Text(AppLocalized("暂时无法打开 Kindle"))
+                .font(.headline)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(AppTheme.mutedForeground)
+                .multilineTextAlignment(.center)
+            Button(AppLocalized("重试在线打开")) {
+                model.retryOnlineBookOpen()
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(AppTheme.primary)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppTheme.background)
     }
 
     private var kindleRebindOverlay: some View {
@@ -415,14 +467,34 @@ struct KindleBookView: View {
 
             Spacer(minLength: 8)
 
-            HStack(spacing: 2) {
-                kindleModeButton(.read, title: AppLocalized("朗读"))
-                kindleModeButton(.explain, title: AppLocalized("解读"))
+            if model.isOfflinePlayback {
+                Label(AppLocalized("离线朗读"), systemImage: "arrow.down.circle.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(AppTheme.primary)
+                    .padding(.horizontal, 10)
+                    .frame(height: 28)
+                    .background(AppTheme.primary.opacity(0.12), in: Capsule())
+            } else {
+                HStack(spacing: 2) {
+                    kindleModeButton(.read, title: AppLocalized("朗读"))
+                    kindleModeButton(.explain, title: AppLocalized("解读"))
+                }
+                .padding(3)
+                .background(AppTheme.surfaceVariant, in: Capsule())
+                .opacity(model.isKindleSyncDialogVisible || model.isAmazonCookieConsentVisible ? 0.5 : 1)
+                .allowsHitTesting(!model.isKindleSyncDialogVisible && !model.isAmazonCookieConsentVisible)
             }
-            .padding(3)
-            .background(AppTheme.surfaceVariant, in: Capsule())
-            .opacity(model.isKindleSyncDialogVisible || model.isAmazonCookieConsentVisible ? 0.5 : 1)
-            .allowsHitTesting(!model.isKindleSyncDialogVisible && !model.isAmazonCookieConsentVisible)
+
+            Button {
+                isOfflinePanelPresented = true
+            } label: {
+                Image(systemName: model.offlineCacheSummary == nil ? "arrow.down.circle" : "checkmark.circle.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(model.offlineCacheSummary == nil ? AppTheme.foreground : AppTheme.primary)
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(AppLocalized("离线朗读"))
         }
         .frame(height: headerHeight)
         .padding(.horizontal, 14)
@@ -733,7 +805,9 @@ private struct KindleReadPlaybackBar: View {
             isLandscape: compact,
             playbackStatus: playbackStatus,
             statusMessage: voiceSwitch.progress?.localizedMessage,
-            voiceLanguage: vm.hasStartedPlayback ? vm.playbackLanguage : nil,
+            voiceLanguage: vm.hasStartedPlayback && !vm.isOfflinePlayback
+                ? vm.playbackLanguage
+                : nil,
             onCorrectReadingLanguage: { [weak vm] in vm?.correctReadingLanguage($0) },
             previousPage: previousPage,
             nextPage: nextPage,
@@ -1156,7 +1230,9 @@ private struct KindleLandscapeReadOverlay: View {
                 isLandscape: true,
                 playbackStatus: isLoading ? AppLocalized("正在准备…") : (vm.isPlaying ? AppLocalized("朗读中") : AppLocalized("已暂停")),
                 statusMessage: voiceSwitch.progress?.localizedMessage,
-                voiceLanguage: vm.hasStartedPlayback ? vm.playbackLanguage : nil,
+                voiceLanguage: vm.hasStartedPlayback && !vm.isOfflinePlayback
+                    ? vm.playbackLanguage
+                    : nil,
                 onCorrectReadingLanguage: { [weak vm] in vm?.correctReadingLanguage($0) },
                 previousPage: previousPage,
                 nextPage: nextPage,
@@ -1555,6 +1631,53 @@ enum KindlePaywallPresentationContract {
     }
 }
 
+/// An unavailable speculative successor must not discard a valid current
+/// Kindle page. Cancellation is different: it belongs to the caller and must
+/// stop the complete download transaction.
+@MainActor
+enum KindleOfflinePageGroupCaptureContract {
+    static func bestEffortSuccessors<Page>(
+        _ capture: () async throws -> [Page]
+    ) async throws -> [Page] {
+        do {
+            return try await capture()
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            return []
+        }
+    }
+}
+
+enum KindleOfflineDownloadAccessContract {
+    static func canContinue(isPro: Bool, isAccountBoundaryCurrent: Bool) -> Bool {
+        isPro && isAccountBoundaryCurrent
+    }
+}
+
+enum KindleOfflineFallbackTrigger: Equatable {
+    case networkPathUnavailable
+    case transportFailure
+}
+
+enum KindleOfflineFallbackContract {
+    /// Reachability is only a cold/opening hint. Once Amazon's live reader has
+    /// successfully loaded, a transient path update must not replace the page
+    /// the user is reading with an older cached snapshot. A concrete Web/TTS
+    /// transport failure remains authoritative and may still use the cache.
+    static func shouldAttempt(
+        trigger: KindleOfflineFallbackTrigger,
+        hasEstablishedLiveReader: Bool
+    ) -> Bool {
+        switch trigger {
+        case .networkPathUnavailable:
+            return !hasEstablishedLiveReader
+        case .transportFailure:
+            return true
+        }
+    }
+}
+
 private extension UIApplication.State {
     var debugName: String {
         switch self {
@@ -1575,8 +1698,10 @@ struct KindleMiniPlayerView: View {
 
     private var statusText: String {
         if let progress = voiceSwitch.progress { return progress.localizedMessage }
-        guard model != nil else { return AppLocalized("已暂停") }
-        if audio.isPlaying { return AppLocalized("朗读中") }
+        guard let model else { return AppLocalized("已暂停") }
+        if audio.isPlaying {
+            return model.isOfflinePlayback ? AppLocalized("离线朗读中") : AppLocalized("朗读中")
+        }
         return AppLocalized("已暂停")
     }
 
@@ -1605,7 +1730,9 @@ struct KindleMiniPlayerView: View {
 
                 if model.mode == .explain, let vm = model.explainVM {
                     PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
-                } else if let vm = model.readVM, vm.hasStartedPlayback {
+                } else if let vm = model.readVM,
+                          vm.hasStartedPlayback,
+                          !vm.isOfflinePlayback {
                     PlaybackVoiceButton(
                         language: vm.playbackLanguage,
                         size: 34,
@@ -1916,6 +2043,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     @Published var explainVM: ExplainViewModel?
     @Published var showPaywall = false
     @Published private(set) var paywallMode: ReaderMode?
+    @Published private(set) var paywallTriggerOverride: String?
+    @Published private(set) var offlineCacheSummary: OfflineReadingCacheSummary?
+    @Published private(set) var offlineDocument: ReadingDocument?
+    @Published private(set) var offlineUnavailableMessage: String?
+    @Published private(set) var isOfflineCaching = false
+    @Published private(set) var isOfflineRemoving = false
+    @Published private(set) var offlineCacheProgress: Double = 0
+    @Published private(set) var offlineCacheStatusText = AppLocalized("等待下载")
+    @Published private(set) var offlineCacheError: String?
     @Published var isContinuingExplainPage = false
     @Published var isPageTurnResuming = false
     @Published var viewportCrop: KindleViewportCrop = .identity
@@ -1986,6 +2122,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         isContinuingExplainPage || isPageTurnResuming
     }
 
+    var isOfflinePlayback: Bool {
+        offlineDocument != nil && readVM?.isOfflinePlayback == true
+    }
+
     var isNativeTOCJumpBlocking: Bool {
         isNativeTOCLoading && !isNativeTOCPresented
     }
@@ -2003,10 +2143,24 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var shownMarkIds = Set<String>()
     private var animatedMarkIds = Set<String>()
     private var didLoad = false
+    private var hasEstablishedLiveReader = false
     private var staleBookRecoveryAttempted = false
     private var staleBookRecoveryTask: Task<Void, Never>?
     private var staleBookErrorProbeTask: Task<Void, Never>?
     private var readerSetupTask: Task<Void, Never>?
+    private var offlineCacheTask: Task<Void, Never>?
+    private var offlineCacheRequestID: UUID?
+    private var offlineCachePublishLease: OfflineReadingCachePublishLease?
+    private var offlineOpenTask: Task<Void, Never>?
+    private var offlineOpenRequestID: UUID?
+    private var offlineSummaryTask: Task<Void, Never>?
+    private var offlineSummaryRequestID: UUID?
+    private var offlineTransportFallbackTask: Task<Void, Never>?
+    private var offlineTransportFallbackRequestID: UUID?
+    private var offlineRemovalTask: Task<Void, Never>?
+    private var offlineRemovalRequestID: UUID?
+    private var offlineVisiblePageIndex: Int?
+    private var forceOnlineOpenOnce = false
     private var pageKeysByDocumentID: [String: [Int: String]] = [:]
     private var lastSyncedPageIndex: Int?
     private var isAdvancingLivePage = false
@@ -2018,7 +2172,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var cancellables = Set<AnyCancellable>()
     private var playbackCancellables = Set<AnyCancellable>()
     private let store = KindleLibraryStore.shared
+    private let accountBoundaryToken = AccountContentIsolation.captureBoundaryToken()
     private let analyticsContext: AnalyticsContentContext
+
+    private var isAccountBoundaryCurrent: Bool {
+        guard let accountBoundaryToken else { return false }
+        return AccountContentIsolation.isCurrent(accountBoundaryToken)
+    }
 
     /// One reader WebView is bound to one concrete book identity. Storefront
     /// ownership alone is not enough because an auth redirect could otherwise
@@ -2161,6 +2321,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var pendingContinuationTask: Task<Void, Never>?
 
     var shouldRunPlaybackRefocus: Bool {
+        guard !isOfflinePlayback else { return false }
         guard AudioPlayerService.shared.currentBookId == book.id else { return false }
         switch mode {
         case .read:
@@ -2182,6 +2343,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard isReaderSurfaceAttached != attached else { return }
         isReaderSurfaceAttached = attached
         KindleRunLog.write("KINDLE lifecycle surfaceAttached=\(attached ? "Y" : "N")")
+        guard !isOfflinePlayback else { return }
         if attached {
             scheduleCookieConsentRecovery()
             webView.evaluateJavaScript(
@@ -2197,6 +2359,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         guard isReaderPresented != presented else { return }
         isReaderPresented = presented
         KindleRunLog.write("KINDLE lifecycle presented=\(presented ? "Y" : "N")")
+        guard !isOfflinePlayback else { return }
         if presented {
             // Messages received while the mini player owned the WebView are
             // intentionally rejected. Probe again when the reader becomes
@@ -2250,6 +2413,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func notePlaybackLayoutChange(reason: String) {
+        guard !isOfflinePlayback else { return }
         guard readerOperationAllowed(.layoutRepair, reason: reason) else { return }
         guard !isPlayerControlOverlayPresented else {
             KindleRunLog.write("KINDLE layout ignored reason=\(reason) source=player-overlay")
@@ -2275,6 +2439,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             width: max(1, size.width.rounded(.toNearestOrAwayFromZero)),
             height: max(1, size.height.rounded(.toNearestOrAwayFromZero))
         )
+        if isOfflinePlayback {
+            readerSurfaceSize = normalized
+            return
+        }
         guard !isPlayerControlOverlayPresented else {
             KindleRunLog.write("KINDLE viewport crop keep-current reason=player-overlay surface=\(Self.sizeLog(normalized))")
             return
@@ -2360,6 +2528,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func noteReaderLayoutChange(reason: String) {
+        guard !isOfflinePlayback else { return }
         guard readerOperationAllowed(.layoutRepair, reason: reason) else { return }
         guard !isPlayerControlOverlayPresented else {
             KindleRunLog.write("KINDLE reader layout ignored reason=\(reason) source=player-overlay")
@@ -2404,7 +2573,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func preparePlaybackForReaderLayoutRestartIfNeeded(reason: String) {
-        guard Self.layoutReasonShouldRestartPlayback(reason),
+        guard !isOfflinePlayback,
+              Self.layoutReasonShouldRestartPlayback(reason),
               pendingLayoutPlaybackMode == nil,
               hasActivePlaybackSession,
               AudioPlayerService.shared.currentBookId == book.id else { return }
@@ -2859,6 +3029,32 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             .receive(on: RunLoop.main)
             .sink { [weak self] in self?.loadProgress = $0 }
             .store(in: &cancellables)
+        NetworkReachability.shared.$isOnline
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] isOnline in
+                guard !isOnline else { return }
+                self?.attemptOfflineFallbackIfAvailable(
+                    trigger: .networkPathUnavailable,
+                    reason: "network-path-unsatisfied"
+                )
+            }
+            .store(in: &cancellables)
+        ProManager.shared.$storeKitLocalPro
+            .combineLatest(ProManager.shared.$serverPro)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.cancelOfflineDownloadIfProAccessWasLost()
+            }
+            .store(in: &cancellables)
+        #if DEBUG
+        ProManager.shared.$debugForcePro
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.cancelOfflineDownloadIfProAccessWasLost()
+            }
+            .store(in: &cancellables)
+        #endif
 
         if case .autoplayRead(let requestID) = openIntent {
             requestAutoplayRead(requestID: requestID)
@@ -2920,6 +3116,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         isMainFrame: Bool,
         sourceURL: URL?
     ) {
+        guard !isOfflinePlayback else {
+            KindleRunLog.write("KINDLE script message ignored reason=offline-playback")
+            return
+        }
         guard let payload = body as? [String: Any] else {
             KindleRunLog.write("KINDLE script message rejected reason=malformed-body")
             return
@@ -3451,10 +3651,566 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE webview load deferred waiting-surface")
             return
         }
+        if !forceOnlineOpenOnce, !NetworkReachability.shared.isOnline {
+            didLoad = true
+            store.markOpened(book)
+            openOfflinePackage(
+                autoplay: false,
+                unavailableMessage: AppLocalized("当前没有网络，也没有可用的 Kindle 离线页面。联网后打开本书并下载页面组即可离线朗读。")
+            )
+            return
+        }
+        forceOnlineOpenOnce = false
         didLoad = true
+        offlineUnavailableMessage = nil
         restoreReaderViewportCrop(reason: "preload-surface")
         openBookWithSessionPreflight()
         store.markOpened(book)
+    }
+
+    func retryOnlineBookOpen() {
+        offlineUnavailableMessage = nil
+        forceOnlineOpenOnce = true
+        hasEstablishedLiveReader = false
+        didLoad = false
+        loadIfNeeded()
+    }
+
+    private func attemptOfflineFallbackIfAvailable(
+        trigger: KindleOfflineFallbackTrigger,
+        reason: String
+    ) {
+        guard didLoad,
+              !isOfflinePlayback,
+              isAccountBoundaryCurrent,
+              KindleOfflineFallbackContract.shouldAttempt(
+                  trigger: trigger,
+                  hasEstablishedLiveReader: hasEstablishedLiveReader
+              ),
+              let cache = OfflineReadingCacheProvider.shared else { return }
+        offlineTransportFallbackTask?.cancel()
+        let requestID = UUID()
+        offlineTransportFallbackRequestID = requestID
+        let requestedBook = book
+        let shouldAutoplay = pendingAutoplayRequestID != nil
+        offlineTransportFallbackTask = Task { @MainActor [weak self] in
+            let summary = await cache.summary(forKindleBook: requestedBook)
+            guard let self else { return }
+            defer {
+                if self.offlineTransportFallbackRequestID == requestID {
+                    self.offlineTransportFallbackRequestID = nil
+                    self.offlineTransportFallbackTask = nil
+                }
+            }
+            guard !Task.isCancelled,
+                  self.offlineTransportFallbackRequestID == requestID,
+                  self.isAccountBoundaryCurrent,
+                  self.book.id == requestedBook.id,
+                  KindleOfflineFallbackContract.shouldAttempt(
+                      trigger: trigger,
+                      hasEstablishedLiveReader: self.hasEstablishedLiveReader
+                  ),
+                  !self.isOfflinePlayback else { return }
+            guard summary != nil else {
+                if !NetworkReachability.shared.isOnline {
+                    self.webView.stopLoading()
+                    self.offlineUnavailableMessage = AppLocalized("当前没有网络，也没有可用的 Kindle 离线页面。联网后打开本书并下载页面组即可离线朗读。")
+                }
+                return
+            }
+            KindleRunLog.write(
+                "KINDLE switching to offline package reason=\(reason) " +
+                "book=\(Self.keyLog(requestedBook.id))"
+            )
+            self.openOfflinePackage(autoplay: shouldAutoplay)
+        }
+    }
+
+    func refreshOfflineCacheSummary() {
+        offlineSummaryTask?.cancel()
+        offlineSummaryTask = nil
+        offlineSummaryRequestID = nil
+        guard isAccountBoundaryCurrent,
+              let cache = OfflineReadingCacheProvider.shared else {
+            offlineCacheSummary = nil
+            return
+        }
+        let requestedBook = book
+        let requestID = UUID()
+        offlineSummaryRequestID = requestID
+        offlineSummaryTask = Task { @MainActor [weak self] in
+            let summary = await cache.summary(forKindleBook: requestedBook)
+            guard let self else { return }
+            defer {
+                if self.offlineSummaryRequestID == requestID {
+                    self.offlineSummaryRequestID = nil
+                    self.offlineSummaryTask = nil
+                }
+            }
+            guard !Task.isCancelled,
+                  self.offlineSummaryRequestID == requestID,
+                  self.isAccountBoundaryCurrent,
+                  self.book.id == requestedBook.id else { return }
+            self.offlineCacheSummary = summary
+        }
+    }
+
+    func presentOfflineProPaywall() {
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 220_000_000)
+            guard let self else { return }
+            self.paywallTriggerOverride = "kindle_offline_download"
+            self.presentPaywall(for: .read, replaceExistingMode: true)
+        }
+    }
+
+    private func cancelOfflineDownloadIfProAccessWasLost() {
+        guard isOfflineCaching, !ProManager.shared.isPro else { return }
+        offlineCacheError = AppLocalized("Pro 权益已失效，离线内容下载已停止。")
+        offlineCacheStatusText = AppLocalized("下载已停止")
+        offlineCachePublishLease?.revoke()
+        offlineCacheTask?.cancel()
+    }
+
+    private func requireOfflineDownloadAccess() throws {
+        try Task.checkCancellation()
+        guard KindleOfflineDownloadAccessContract.canContinue(
+            isPro: ProManager.shared.isPro,
+            isAccountBoundaryCurrent: isAccountBoundaryCurrent
+        ) else {
+            throw CancellationError()
+        }
+    }
+
+    func cacheCurrentKindlePageGroup() {
+        guard ProManager.shared.isPro else {
+            presentOfflineProPaywall()
+            return
+        }
+        guard isAccountBoundaryCurrent else {
+            offlineCacheError = AppLocalized("账号已切换，请重新打开本书后重试。")
+            return
+        }
+        guard !isOfflinePlayback, !isOfflineCaching else { return }
+        guard NetworkReachability.shared.isOnline else {
+            offlineCacheError = AppLocalized("下载离线内容需要网络连接。")
+            return
+        }
+        guard OfflineReadingCacheProvider.shared != nil else {
+            offlineCacheError = AppLocalized("无法创建账号专属离线空间，请重新登录后重试。")
+            return
+        }
+
+        offlineCachePublishLease?.revoke()
+        offlineCacheTask?.cancel()
+        let publishLease = OfflineReadingCachePublishLease()
+        let requestID = UUID()
+        offlineCacheRequestID = requestID
+        offlineCachePublishLease = publishLease
+        offlineCacheError = nil
+        offlineCacheProgress = 0.01
+        offlineCacheStatusText = AppLocalized("正在准备 Kindle 页面…")
+        isOfflineCaching = true
+        offlineCacheTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                if self.offlineCacheRequestID == requestID {
+                    self.isOfflineCaching = false
+                    self.offlineCacheRequestID = nil
+                    self.offlineCacheTask = nil
+                    if self.offlineCachePublishLease === publishLease {
+                        self.offlineCachePublishLease = nil
+                    }
+                }
+            }
+            do {
+                try await self.buildAndSaveOfflinePageGroup(
+                    publishLease: publishLease
+                )
+            } catch is CancellationError {
+                if self.offlineCacheRequestID == requestID {
+                    if ProManager.shared.isPro {
+                        self.offlineCacheStatusText = AppLocalized("下载已取消")
+                    } else {
+                        self.offlineCacheError = AppLocalized("Pro 权益已失效，离线内容下载已停止。")
+                        self.offlineCacheStatusText = AppLocalized("下载已停止")
+                    }
+                }
+            } catch {
+                guard self.offlineCacheRequestID == requestID,
+                      self.isAccountBoundaryCurrent else { return }
+                self.offlineCacheError = error.localizedDescription
+                self.offlineCacheStatusText = AppLocalized("下载失败")
+                KindleRunLog.write(
+                    "KINDLE offline cache failed book=\(Self.keyLog(self.book.id)) " +
+                    "error=\(error.localizedDescription)"
+                )
+            }
+        }
+    }
+
+    private func buildAndSaveOfflinePageGroup(
+        publishLease: OfflineReadingCachePublishLease
+    ) async throws {
+        try requireOfflineDownloadAccess()
+        try requireReaderOperation(.capture, reason: "offline-page-group")
+        guard !isPreparing else { throw KindleBookError.busy }
+        guard let cache = OfflineReadingCacheProvider.shared else {
+            throw OfflineReadingCacheError.ioFailure("account scope unavailable")
+        }
+
+        installCaptureScript()
+        await setKindlePageModeLocked(true)
+        try await waitForPageReady()
+        try requireOfflineDownloadAccess()
+
+        offlineCacheStatusText = AppLocalized("正在识别当前页面…")
+        offlineCacheProgress = 0.06
+        let current = try await captureVisiblePage(pageIndex: 0)
+            .replacingPageIndex(0)
+        try requireOfflineDownloadAccess()
+        var pages = [current]
+        var seen = Set([current.key])
+
+        if !current.key.isEmpty {
+            offlineCacheStatusText = AppLocalized("正在读取 Kindle 已准备的后续页面…")
+            let candidates = try await KindleOfflinePageGroupCaptureContract.bestEffortSuccessors {
+                try await self.captureCandidatePages(afterKey: current.key, limit: 12)
+            }
+            try requireOfflineDownloadAccess()
+            for candidate in candidates {
+                try requireOfflineDownloadAccess()
+                let identity = candidate.key.nilIfEmpty
+                    ?? candidate.pixelFingerprint?.nilIfEmpty
+                    ?? "page-\(pages.count)"
+                guard !seen.contains(identity) else { continue }
+                seen.insert(identity)
+                pages.append(candidate.replacingPageIndex(pages.count))
+            }
+        }
+
+        guard !pages.isEmpty else { throw KindleBookError.noImage }
+        let document = makeDocument(from: pages)
+        let readable = document.paragraphs.filter {
+            $0.type.isReadable
+                && SpeechTextSanitizer.containsSpeakableContent($0.resolvedSpeechText)
+        }
+        guard !readable.isEmpty else { throw KindleBookError.noText }
+        let pageKeys = pages.enumerated().map { index, page in
+            page.key.nilIfEmpty
+                ?? page.pixelFingerprint?.nilIfEmpty
+                ?? "local-page-\(index)"
+        }
+        let voiceID = AppSettings.shared.voice(for: document.language)
+        var audioByParagraph: [Int: [AudioSegment]] = [:]
+
+        for (offset, paragraph) in readable.enumerated() {
+            try requireOfflineDownloadAccess()
+            offlineCacheStatusText = String(
+                format: AppLocalized("正在生成离线音频 %d/%d…"),
+                offset + 1,
+                readable.count
+            )
+            offlineCacheProgress = 0.24 + 0.68 * Double(offset) / Double(max(1, readable.count))
+            let segments = try await TTSService.shared.generatePrefetchSegments(
+                paragraphIndex: paragraph.id,
+                text: SpeechTextSanitizer.sanitizedForTTS(
+                    paragraph.resolvedSpeechText
+                ),
+                voice: voiceID,
+                speed: 1,
+                language: document.language,
+                includeVoiceCode: true,
+                speaker: paragraph.speaker,
+                cloneRequestID: voiceID.hasPrefix("vc_") ? UUID().uuidString : nil
+            )
+            try requireOfflineDownloadAccess()
+            guard !segments.isEmpty else {
+                throw OfflineReadingCacheError.incompleteAudio(paragraphIndex: paragraph.id)
+            }
+            audioByParagraph[paragraph.id] = segments
+        }
+
+        try requireOfflineDownloadAccess()
+        offlineCacheStatusText = AppLocalized("正在安全保存离线包…")
+        offlineCacheProgress = 0.94
+        let summary = try await cache.saveKindlePackage(
+            book: book,
+            document: document,
+            pageKeys: pageKeys,
+            voiceID: voiceID,
+            segmentsByParagraph: audioByParagraph,
+            publishLease: publishLease
+        )
+        try requireOfflineDownloadAccess()
+        offlineCacheSummary = summary
+        offlineCacheProgress = 1
+        offlineCacheStatusText = String(
+            format: AppLocalized("已缓存 %d 页，可离线朗读"),
+            summary.pageCount
+        )
+        KindleRunLog.write(
+            "KINDLE offline cache ready book=\(Self.keyLog(book.id)) " +
+            "pages=\(summary.pageCount) paras=\(summary.readableParagraphCount) " +
+            "bytes=\(summary.byteSize)"
+        )
+    }
+
+    func openOfflinePackage(autoplay: Bool) {
+        openOfflinePackage(autoplay: autoplay, unavailableMessage: nil)
+    }
+
+    private func openOfflinePackage(autoplay: Bool, unavailableMessage: String?) {
+        guard !isOfflineRemoving else { return }
+        offlineOpenTask?.cancel()
+        offlineOpenTask = nil
+        offlineOpenRequestID = nil
+        guard isAccountBoundaryCurrent,
+              let cache = OfflineReadingCacheProvider.shared else {
+            offlineUnavailableMessage = unavailableMessage
+                ?? AppLocalized("离线空间暂不可用，请重新登录后重试。")
+            return
+        }
+        let requestedBook = book
+        let requestID = UUID()
+        offlineOpenRequestID = requestID
+        offlineOpenTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                if self.offlineOpenRequestID == requestID {
+                    self.offlineOpenRequestID = nil
+                    self.offlineOpenTask = nil
+                }
+            }
+            guard !Task.isCancelled,
+                  self.offlineOpenRequestID == requestID,
+                  self.isAccountBoundaryCurrent else { return }
+            if !ProManager.shared.isPro {
+                // StoreKit entitlements are available locally even without a
+                // network path, but app launch may race their first refresh.
+                await ProManager.shared.refreshLocalStoreKitEntitlements()
+            }
+            guard !Task.isCancelled,
+                  self.offlineOpenRequestID == requestID,
+                  self.isAccountBoundaryCurrent else { return }
+            guard ProManager.shared.isPro else {
+                self.offlineUnavailableMessage = AppLocalized("Kindle 离线朗读是 Pro 功能。恢复 Pro 后即可继续使用已下载内容。")
+                self.presentOfflineProPaywall()
+                return
+            }
+            let package = await cache.loadKindlePackage(book: requestedBook)
+            guard !Task.isCancelled,
+                  self.offlineOpenRequestID == requestID,
+                  self.isAccountBoundaryCurrent,
+                  self.book.id == requestedBook.id else { return }
+            guard let package else {
+                self.offlineCacheSummary = nil
+                self.offlineUnavailableMessage = unavailableMessage
+                    ?? AppLocalized("离线包不存在或已损坏，请联网后重新下载。")
+                return
+            }
+            self.activateOfflinePackage(package, autoplay: autoplay)
+        }
+    }
+
+    private func suspendLiveReaderForOfflinePlayback() {
+        terminateContinuousReadHandoffForClosure(reason: "offline-package")
+        onboardingAutoplayRetryTask?.cancel()
+        onboardingAutoplayRetryTask = nil
+        pendingAutoplayRequestID = nil
+        continueListeningTask?.cancel()
+        continueListeningTask = nil
+        continueListeningBaselineTask?.cancel()
+        continueListeningBaselineTask = nil
+        syncDialogResolutionTask?.cancel()
+        syncDialogResolutionTask = nil
+        syncDialogEpoch &+= 1
+        isKindleSyncDialogVisible = false
+        syncDialogShouldResume = false
+        syncDialogResumeMode = nil
+        pendingStartAfterSyncResolution = false
+        nativeTOCTask?.cancel()
+        nativeTOCTask = nil
+        isNativeTOCPresented = false
+        isNativeTOCLoading = false
+        isKindleTOCVisible = false
+        readerSetupTask?.cancel()
+        readerSetupTask = nil
+        readerLayoutRepairTask?.cancel()
+        readerLayoutRepairTask = nil
+        layoutPlaybackRestartTask?.cancel()
+        layoutPlaybackRestartTask = nil
+        navigationRestartTask?.cancel()
+        navigationRestartTask = nil
+        modeSwitchTask?.cancel()
+        modeSwitchTask = nil
+        manualPageResumeTask?.cancel()
+        manualPageResumeTask = nil
+        pendingManualPageResumeMode = nil
+        pendingLayoutPlaybackMode = nil
+        pendingLayoutPlaybackOldKey = nil
+        staleBookRecoveryTask?.cancel()
+        staleBookRecoveryTask = nil
+        staleBookErrorProbeTask?.cancel()
+        staleBookErrorProbeTask = nil
+        authRecoveryTask?.cancel()
+        authRecoveryTask = nil
+        openPreflightTask?.cancel()
+        openPreflightTask = nil
+        cookieConsentRecoveryTask?.cancel()
+        cookieConsentRecoveryTask = nil
+        resetAmazonCookieConsentState(reason: .readerHidden)
+        libraryRecoveryWebView?.stopLoading()
+        libraryRecoveryWebView = nil
+        contentCover = nil
+        isPreparing = false
+        isPageTurnResuming = false
+        isAdvancingLivePage = false
+        stopPageKeyWatcher()
+        stopFollowing()
+        cancelPageCaching(clearPrepared: true)
+        clearPendingContinuation()
+        invalidateReadPageSession(reason: "offline-package")
+        webView.stopLoading()
+    }
+
+    private func activateOfflinePackage(_ package: OfflineReadingPackage, autoplay: Bool) {
+        guard isAccountBoundaryCurrent else { return }
+        let shouldAutoplay = autoplay || pendingAutoplayRequestID != nil
+        // Opening a known-good package wins over an in-flight replacement.
+        // The old package stays atomically published when cancellation lands.
+        offlineCachePublishLease?.revoke()
+        offlineCachePublishLease = nil
+        offlineCacheTask?.cancel()
+        offlineCacheTask = nil
+        offlineCacheRequestID = nil
+        isOfflineCaching = false
+        suspendLiveReaderForOfflinePlayback()
+        _ = continueListeningGate.consume(for: book.id)
+        continueListeningRequestedAt.removeAll(keepingCapacity: false)
+        playbackCancellables.removeAll()
+        readVM?.stop()
+        explainVM?.stop()
+        readVM?.deactivate()
+        explainVM?.deactivate()
+        mode = .read
+        offlineUnavailableMessage = nil
+        offlineCacheError = nil
+        offlineCacheSummary = package.summary
+        offlineDocument = package.document
+        offlineVisiblePageIndex = package.document.paragraphs.first(where: {
+            $0.type == .image
+        })?.pageIndex
+
+        let readVM = ReadAloudViewModel(
+            document: package.document,
+            analyticsContext: analyticsContext,
+            analyticsSessionCoordinator: readAnalyticsSessionCoordinator
+        )
+        readVM.configurePlaybackMetadata(
+            id: book.id,
+            title: book.title,
+            coverURL: book.coverURL,
+            chapterTitle: AppLocalized("离线朗读")
+        )
+        guard readVM.configureOfflinePlayback(
+            segmentsByParagraph: package.segmentsByParagraph,
+            voiceID: package.summary.voiceID
+        ) else {
+            offlineDocument = nil
+            offlineVisiblePageIndex = nil
+            offlineUnavailableMessage = AppLocalized("离线音频不完整，请联网后重新下载。")
+            return
+        }
+        let explainVM = makeExplainVM(document: package.document)
+        explainVM.deactivate()
+        self.readVM = readVM
+        self.explainVM = explainVM
+        readVM.$showPaywall
+            .removeDuplicates()
+            .sink { [weak self] show in
+                if show { self?.presentOfflineProPaywall() }
+            }
+            .store(in: &playbackCancellables)
+        recordPlaybackStart(language: package.document.language)
+        KindlePlaybackCenter.shared.activate(model: self)
+        if shouldAutoplay { readVM.start() }
+        KindleRunLog.write(
+            "KINDLE offline package opened book=\(Self.keyLog(book.id)) " +
+            "pages=\(package.summary.pageCount) autoplay=\(shouldAutoplay ? "Y" : "N")"
+        )
+    }
+
+    func removeOfflinePackage() {
+        guard isAccountBoundaryCurrent else {
+            offlineCacheError = AppLocalized("账号已切换，请重新打开本书后重试。")
+            return
+        }
+        guard !isOfflineRemoving else { return }
+        guard let cache = OfflineReadingCacheProvider.shared else {
+            offlineCacheSummary = nil
+            return
+        }
+        offlineOpenTask?.cancel()
+        offlineOpenTask = nil
+        offlineOpenRequestID = nil
+        offlineSummaryTask?.cancel()
+        offlineSummaryTask = nil
+        offlineSummaryRequestID = nil
+        offlineTransportFallbackTask?.cancel()
+        offlineTransportFallbackTask = nil
+        offlineTransportFallbackRequestID = nil
+        let requestID = UUID()
+        offlineRemovalRequestID = requestID
+        isOfflineRemoving = true
+        let requestedBook = book
+        offlineRemovalTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                if self.offlineRemovalRequestID == requestID {
+                    self.offlineRemovalRequestID = nil
+                    self.offlineRemovalTask = nil
+                    self.isOfflineRemoving = false
+                }
+            }
+            do {
+                try await cache.removeKindlePackage(book: requestedBook)
+                guard !Task.isCancelled,
+                      self.offlineRemovalRequestID == requestID,
+                      self.isAccountBoundaryCurrent,
+                      self.book.id == requestedBook.id else { return }
+                self.offlineCacheSummary = nil
+                self.offlineCacheError = nil
+                if self.isOfflinePlayback { self.exitOfflinePlayback() }
+            } catch {
+                guard !Task.isCancelled,
+                      self.offlineRemovalRequestID == requestID,
+                      self.isAccountBoundaryCurrent else { return }
+                self.offlineCacheError = error.localizedDescription
+            }
+        }
+    }
+
+    func exitOfflinePlayback() {
+        readVM?.stop()
+        readVM?.deactivate()
+        explainVM?.stop()
+        explainVM?.deactivate()
+        playbackCancellables.removeAll()
+        offlineDocument = nil
+        offlineVisiblePageIndex = nil
+        offlineUnavailableMessage = nil
+        readVM = nil
+        explainVM = nil
+        mode = .read
+        guard NetworkReachability.shared.isOnline else {
+            offlineUnavailableMessage = AppLocalized("恢复在线 Kindle 需要网络连接。")
+            return
+        }
+        forceOnlineOpenOnce = true
+        hasEstablishedLiveReader = false
+        didLoad = false
+        loadIfNeeded()
     }
 
     /// Amazon 用 `id_pk`/`id_pkel`（www 域，14 分钟 TTL）配对深链 reader 会话：
@@ -3490,6 +4246,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func requestContinueListening() {
+        if isOfflinePlayback {
+            resumeOfflinePlaybackFromExternalRequest()
+            return
+        }
         guard readerOperationAllowed(.ttsPreparation, reason: "continue-listening") else {
             statusText = AppLocalized("请先处理 Amazon 的 Cookie 提示。")
             return
@@ -3517,6 +4277,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         onboardingAutoplayRetryTask = nil
         onboardingAutoplayRetryCount = 0
         pendingAutoplayRequestID = requestID
+        if isOfflinePlayback {
+            resumeOfflinePlaybackFromExternalRequest()
+            return
+        }
         if !readerOperationAllowed(.ttsPreparation, reason: "onboarding-autoplay") {
             cookieConsentShouldResumePlayback = true
             cookieConsentResumeMode = .read
@@ -3532,6 +4296,23 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return
         }
         requestContinueListening()
+    }
+
+    private func resumeOfflinePlaybackFromExternalRequest() {
+        guard ProManager.shared.isPro else {
+            presentOfflineProPaywall()
+            return
+        }
+        guard let vm = readVM, vm.isOfflinePlayback else { return }
+        _ = continueListeningGate.consume(for: book.id)
+        continueListeningRequestedAt.removeAll(keepingCapacity: false)
+        pendingAutoplayRequestID = nil
+        if vm.currentParagraphIndex < 0 || vm.isFinished {
+            vm.start()
+        } else {
+            vm.ensurePlaying()
+        }
+        KindlePlaybackCenter.shared.activate(model: self)
     }
 
     var pendingOpenIntentForReplacement: KindleOpenIntent {
@@ -3563,6 +4344,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        guard !isOfflinePlayback else { return }
         let finishedURL = webView.url?.absoluteString ?? ""
         let landing = KindleSessionProbe.landingKind(finishedURL)
         KindleRunLog.write("KINDLE webview didFinish \(KindleSessionProbe.safeRouteLabel(webView.url)) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
@@ -3601,6 +4383,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 book.storefrontID = expected.id
             }
             KindleSessionFreshness.markReaderOK()
+            hasEstablishedLiveReader = true
             authRecoveryAttempted = false
             contentCover = nil
         }
@@ -3624,6 +4407,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func scheduleReaderSetup(reason: String) {
+        guard !isOfflinePlayback else { return }
         guard readerOperationAllowed(.readerSetup, reason: reason) else { return }
         readerSetupTask?.cancel()
         configurePageModeGestures()
@@ -3643,6 +4427,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func detectAndRecoverStaleBookEntry() {
+        guard !isOfflinePlayback else { return }
         guard staleBookRecoveryTask == nil, !isStaleBookRecovering else { return }
         staleBookErrorProbeTask?.cancel()
         staleBookErrorProbeTask = Task { @MainActor [weak self] in
@@ -3805,6 +4590,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// a single `/kindle-library` load — with no sync and no scraping — made the
     /// very next open succeed. So: load the shelf, then retry the book.
     private func startAuthRecovery() {
+        guard !isOfflinePlayback else { return }
         guard contentCover == nil, !needsKindleRebind else { return }
         guard !authRecoveryAttempted else {
             contentCover = nil
@@ -3990,6 +4776,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         decidePolicyFor navigationAction: WKNavigationAction,
         decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
     ) {
+        guard !isOfflinePlayback else {
+            decisionHandler(.cancel)
+            return
+        }
         guard navigationAction.targetFrame?.isMainFrame == true,
               let destination = navigationAction.request.url else {
             decisionHandler(.allow)
@@ -4011,6 +4801,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        guard !isOfflinePlayback else { return }
         finishKindleSyncDialog(reason: "navigation-start")
         resetAmazonCookieConsentState(reason: .navigationStart)
         KindleRunLog.write(
@@ -4030,6 +4821,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         decidePolicyFor navigationResponse: WKNavigationResponse,
         decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
     ) {
+        guard !isOfflinePlayback else {
+            decisionHandler(.cancel)
+            return
+        }
         if navigationResponse.isForMainFrame,
            let http = navigationResponse.response as? HTTPURLResponse {
             let url = http.url?.absoluteString ?? ""
@@ -4093,6 +4888,28 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let code = (error as NSError).code
         guard code != NSURLErrorCancelled else { return }
         KindleRunLog.write("KINDLE transport failure \(reason) code=\(code)")
+        if Self.isOfflineFallbackTransportError(code) {
+            attemptOfflineFallbackIfAvailable(
+                trigger: .transportFailure,
+                reason: "\(reason)-\(code)"
+            )
+        }
+    }
+
+    private static func isOfflineFallbackTransportError(_ code: Int) -> Bool {
+        switch code {
+        case NSURLErrorTimedOut,
+             NSURLErrorCannotFindHost,
+             NSURLErrorCannotConnectToHost,
+             NSURLErrorNetworkConnectionLost,
+             NSURLErrorDNSLookupFailed,
+             NSURLErrorNotConnectedToInternet,
+             NSURLErrorInternationalRoamingOff,
+             NSURLErrorDataNotAllowed:
+            return true
+        default:
+            return false
+        }
     }
 
     private func schedulePendingContinueListening(reason: String) {
@@ -4111,6 +4928,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func performContinueListening(request: Int, requestedAt: Date, reason: String) async {
+        if isOfflinePlayback {
+            resumeOfflinePlaybackFromExternalRequest()
+            return
+        }
         guard readerOperationAllowed(.ttsPreparation, reason: reason) else { return }
         let audio = AudioPlayerService.shared
         if mode == .read,
@@ -4315,6 +5136,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func toggleTOCProbeFromButton(preferCachedOnly: Bool = false) {
+        guard !isOfflinePlayback else {
+            statusText = AppLocalized("离线页面组暂不提供章节目录。")
+            return
+        }
         guard !isNativeTOCLoading, !isNativeTOCBridgeJumping else {
             KindleRunLog.write("KINDLE native toc open ignored reason=jump-in-flight loading=\(isNativeTOCLoading) bridge=\(isNativeTOCBridgeJumping) epoch=\(nativeTOCEpoch)")
             return
@@ -5125,6 +5950,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func selectMode(_ newMode: ReaderMode, autoStart: Bool = false) {
+        if isOfflinePlayback {
+            guard newMode == .read else {
+                playbackErrorText = AppLocalized("解读需要联网，请先返回在线 Kindle。")
+                return
+            }
+            if autoStart { Task { try? await startCurrentMode() } }
+            return
+        }
         guard !isKindleSyncDialogVisible else {
             statusText = AppLocalized("请先确认 Kindle 阅读位置。")
             return
@@ -5237,6 +6070,37 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     @discardableResult
     func startCurrentMode() async throws -> KindlePlaybackStartOutcome {
+        if isOfflinePlayback {
+            guard ProManager.shared.isPro else {
+                presentOfflineProPaywall()
+                return .blocked
+            }
+            guard let vm = readVM else { return .blocked }
+            playbackErrorText = nil
+            mode = .read
+            explainVM?.deactivate()
+            let visibleParagraph = offlineDocument?.paragraphs.first(where: {
+                $0.pageIndex == offlineVisiblePageIndex
+                    && $0.type.isReadable
+                    && SpeechTextSanitizer.containsSpeakableContent($0.resolvedSpeechText)
+            })
+            let playbackPage = offlineDocument?.paragraphs
+                .first(where: { $0.id == vm.currentParagraphIndex })?
+                .pageIndex
+            if vm.currentParagraphIndex < 0, let visibleParagraph {
+                vm.seekOffline(to: visibleParagraph.id, autoplay: true)
+            } else if vm.isFinished {
+                vm.start()
+            } else if !vm.isPlaying,
+                      playbackPage != offlineVisiblePageIndex,
+                      let visibleParagraph {
+                vm.seekOffline(to: visibleParagraph.id, autoplay: true)
+            } else {
+                vm.togglePlayPause()
+            }
+            KindlePlaybackCenter.shared.activate(model: self)
+            return .started
+        }
         try requireReaderOperation(.ttsPreparation, reason: "start-current-mode")
         guard !isKindleSyncDialogVisible else {
             statusText = AppLocalized("请先确认 Kindle 阅读位置。")
@@ -5414,9 +6278,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         explainVM?.showPaywall = false
         showPaywall = false
         paywallMode = nil
+        paywallTriggerOverride = nil
     }
 
     func turnPage(_ direction: KindlePageTurnDirection) async {
+        if isOfflinePlayback {
+            turnOfflinePage(direction)
+            return
+        }
         guard readerOperationAllowed(.pageTurn, reason: direction.logName) else {
             statusText = AppLocalized("请先处理 Amazon 的 Cookie 提示。")
             return
@@ -5476,6 +6345,50 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             NSLog("CRDBG KINDLE page turn dispatch-only %@ error %@", direction.logName, error.localizedDescription)
             #endif
         }
+    }
+
+    func setOfflineVisiblePage(_ pageIndex: Int) {
+        guard isOfflinePlayback,
+              offlineDocument?.paragraphs.contains(where: {
+                  $0.type == .image && $0.pageIndex == pageIndex
+              }) == true else { return }
+        offlineVisiblePageIndex = pageIndex
+    }
+
+    private func turnOfflinePage(_ direction: KindlePageTurnDirection) {
+        guard let document = offlineDocument, let vm = readVM else { return }
+        let pageIndexes = Array(Set(document.paragraphs.compactMap { paragraph in
+            paragraph.type == .image ? paragraph.pageIndex : nil
+        })).sorted()
+        guard !pageIndexes.isEmpty else { return }
+
+        let playbackPage = document.paragraphs
+            .first(where: { $0.id == vm.currentParagraphIndex })?
+            .pageIndex
+        let currentPage = offlineVisiblePageIndex ?? playbackPage
+        let currentPosition = currentPage.flatMap { pageIndexes.firstIndex(of: $0) }
+            ?? 0
+        let targetPosition = direction == .next
+            ? currentPosition + 1
+            : currentPosition - 1
+        guard pageIndexes.indices.contains(targetPosition) else {
+            statusText = direction == .next
+                ? AppLocalized("已到离线页面组末尾。")
+                : AppLocalized("已到离线页面组开头。")
+            return
+        }
+        let targetPage = pageIndexes[targetPosition]
+        guard let targetParagraph = document.paragraphs.first(where: {
+            $0.pageIndex == targetPage
+                && $0.type.isReadable
+                && SpeechTextSanitizer.containsSpeakableContent($0.resolvedSpeechText)
+        }) else {
+            statusText = AppLocalized("这一页没有可朗读文字。")
+            return
+        }
+        offlineVisiblePageIndex = targetPage
+        let shouldAutoplay = vm.isPlaying || vm.status.isLoadingOrStreaming
+        vm.seekOffline(to: targetParagraph.id, autoplay: shouldAutoplay)
     }
 
     private func performManualPageTurn(
@@ -5983,6 +6896,25 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     func stopAll() {
         flushListeningAnchor(reason: "stop-all")
         terminateContinuousReadHandoffForClosure(reason: "stop-all")
+        offlineCachePublishLease?.revoke()
+        offlineCachePublishLease = nil
+        offlineCacheTask?.cancel()
+        offlineCacheTask = nil
+        offlineCacheRequestID = nil
+        isOfflineCaching = false
+        offlineOpenTask?.cancel()
+        offlineOpenTask = nil
+        offlineOpenRequestID = nil
+        offlineSummaryTask?.cancel()
+        offlineSummaryTask = nil
+        offlineSummaryRequestID = nil
+        offlineTransportFallbackTask?.cancel()
+        offlineTransportFallbackTask = nil
+        offlineTransportFallbackRequestID = nil
+        offlineRemovalTask?.cancel()
+        offlineRemovalTask = nil
+        offlineRemovalRequestID = nil
+        isOfflineRemoving = false
         onboardingAutoplayRetryTask?.cancel()
         onboardingAutoplayRetryTask = nil
         pendingAutoplayRequestID = nil
@@ -6288,6 +7220,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func resetViewModels(document: ReadingDocument) {
+        guard !isOfflinePlayback else {
+            KindleRunLog.write("KINDLE live VM reset ignored reason=offline-playback")
+            return
+        }
         playbackCancellables.removeAll()
         clearKindleMarkState(resetAnimationHistory: true)
         lastHighlightedWordByParagraph.removeAll()
@@ -7163,6 +8099,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func refocusPlaybackPosition(reason: String) async {
+        guard !isOfflinePlayback else { return }
         guard readerOperationAllowed(.visualRecovery, reason: reason) else { return }
         guard readVM != nil || explainVM != nil else { return }
         guard shouldRunPlaybackRefocus else { return }
@@ -7215,6 +8152,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func cancelPlaybackRefocusEffects(reason: String) {
+        guard !isOfflinePlayback else { return }
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -11765,6 +12703,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func load(_ raw: String, reason: String) {
+        guard !isOfflinePlayback else {
+            KindleRunLog.write("KINDLE webview load ignored reason=offline-playback")
+            return
+        }
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed) ?? trimmed
         let storefront = KindleStorefront.entry(id: book.storefrontID) ?? store.boundStorefront
@@ -13408,6 +14350,25 @@ private struct CapturedKindlePage {
     let document: ReadingDocument
     let text: String
     let columnLayout: String
+
+    func replacingPageIndex(_ pageIndex: Int) -> CapturedKindlePage {
+        CapturedKindlePage(
+            pageIndex: pageIndex,
+            key: key,
+            pixelFingerprint: pixelFingerprint,
+            sessionId: sessionId,
+            kind: kind,
+            title: title,
+            url: url,
+            progress: progress,
+            visibleTopNorm: visibleTopNorm,
+            visibleBottomNorm: visibleBottomNorm,
+            imageData: imageData,
+            document: document,
+            text: text,
+            columnLayout: columnLayout
+        )
+    }
 
     func replacingSessionId(_ sessionId: Int) -> CapturedKindlePage {
         CapturedKindlePage(

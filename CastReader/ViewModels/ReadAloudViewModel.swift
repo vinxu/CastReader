@@ -562,6 +562,9 @@ final class ReadAloudViewModel: ObservableObject {
     @Published var isFinished = false      // 全部段落播完 → Mini Player 显示「已播完」+ 点播放从头重读
     @Published var showPaywall: Bool = false
     @Published var autoScrollEnabled: Bool = true
+    /// True when every readable paragraph is backed by a user-downloaded audio
+    /// package. In this mode the VM must never fall through to cloud TTS.
+    @Published private(set) var isOfflinePlayback = false
 
     private let audio = AudioPlayerService.shared
     private let settings = AppSettings.shared
@@ -576,6 +579,8 @@ final class ReadAloudViewModel: ObservableObject {
     private var audioSessionToken: AudioPlaybackSessionToken?
 
     private var segmentsByParagraph: [Int: [AudioSegment]] = [:]
+    private var offlineSegmentsByParagraph: [Int: [AudioSegment]] = [:]
+    private var offlineVoiceID: String?
     private var generationTask: Task<Void, Never>?
     private var liveWebTurnIntentSuspended = false
     private var listenCapRefreshTask: Task<Void, Never>?
@@ -852,6 +857,70 @@ final class ReadAloudViewModel: ObservableObject {
         adoptStoredReadingLanguageCorrection()
     }
 
+    /// Installs a complete, locally persisted audio package. The all-or-nothing
+    /// validation is intentional: a missing paragraph must surface as a damaged
+    /// download instead of silently invoking cloud TTS while the device is offline.
+    @discardableResult
+    func configureOfflinePlayback(
+        segmentsByParagraph: [Int: [AudioSegment]],
+        voiceID: String
+    ) -> Bool {
+        let voiceID = voiceID.trimmed
+        guard !voiceID.isEmpty, !readableIndices.isEmpty else { return false }
+
+        var validated: [Int: [AudioSegment]] = [:]
+        for paragraphIndex in readableIndices {
+            guard let segments = segmentsByParagraph[paragraphIndex],
+                  !segments.isEmpty,
+                  segments.allSatisfy({
+                      $0.paragraphIndex == paragraphIndex
+                          && !$0.audioData.isEmpty
+                          && $0.duration.isFinite
+                          && $0.duration > 0
+                          && !$0.timestamps.isEmpty
+                          && $0.timestamps.allSatisfy { timestamp in
+                              !timestamp.word.trimmed.isEmpty
+                                  && timestamp.startTime.isFinite
+                                  && timestamp.endTime.isFinite
+                                  && timestamp.startTime >= 0
+                                  && timestamp.endTime >= timestamp.startTime
+                          }
+                  }) else {
+                return false
+            }
+            validated[paragraphIndex] = segments.sorted { lhs, rhs in
+                lhs.segmentIndex < rhs.segmentIndex
+            }
+        }
+
+        offlineSegmentsByParagraph = validated
+        self.segmentsByParagraph = validated
+        offlineVoiceID = voiceID
+        playbackVoiceID = voiceID
+        isOfflinePlayback = true
+        return true
+    }
+
+    /// Removes the local-only source from a reusable VM. Kindle normally drops
+    /// the VM when returning online, but keeping this API source-neutral lets the
+    /// same player contract serve uploaded documents later.
+    func clearOfflinePlayback() {
+        guard isOfflinePlayback else { return }
+        stop()
+        offlineSegmentsByParagraph.removeAll(keepingCapacity: false)
+        segmentsByParagraph.removeAll(keepingCapacity: false)
+        offlineVoiceID = nil
+        isOfflinePlayback = false
+        playbackVoiceID = settings.voice(for: docLanguage)
+    }
+
+    /// Moves the native offline surface without ever consulting a network
+    /// source. Page buttons use `autoplay: false` when playback was paused.
+    func seekOffline(to paragraphIndex: Int, autoplay: Bool) {
+        guard isOfflinePlayback, readableIndices.contains(paragraphIndex) else { return }
+        startOfflineParagraph(paragraphIndex, autoplay: autoplay)
+    }
+
     /// A Kindle page handoff is safe only after the last readable chunk has
     /// finished generating all of its own segments. At that point, appending the
     /// next page's prepared audio cannot reorder a still-streaming current page.
@@ -1020,6 +1089,7 @@ final class ReadAloudViewModel: ObservableObject {
     /// voice they already prefer for that language; the voice itself remains
     /// changeable in the same panel.
     func correctReadingLanguage(_ language: String) {
+        guard !isOfflinePlayback else { return }
         let normalized = VoiceCatalog.normalizedLanguage(language)
         guard !normalized.isEmpty, normalized != playbackLanguage else { return }
         let previous = playbackLanguage
@@ -1999,14 +2069,21 @@ final class ReadAloudViewModel: ObservableObject {
         pro.$storeKitLocalPro
             .combineLatest(pro.$serverPro)
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in self?.applySpeed() }
+            .sink { [weak self] _ in self?.handleProAccessChanged() }
             .store(in: &cancellables)
         #if DEBUG
         pro.$debugForcePro
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in self?.applySpeed() }
+            .sink { [weak self] _ in self?.handleProAccessChanged() }
             .store(in: &cancellables)
         #endif
+    }
+
+    private func handleProAccessChanged() {
+        applySpeed()
+        if isOfflinePlayback, !pro.isPro {
+            _ = requireOfflineProAccess()
+        }
     }
 
     /// 成为当前激活模式（接管音频回调）。
@@ -2064,6 +2141,40 @@ final class ReadAloudViewModel: ObservableObject {
 
     // MARK: - Start / control
 
+    private func requireOfflineProAccess() -> Bool {
+        guard isOfflinePlayback else { return true }
+        guard pro.isPro else {
+            if let token = audioSessionToken {
+                _ = audio.pause(session: token)
+                // Remote-control commands address AudioPlayerService directly.
+                // Releasing ownership makes lock-screen/earbud Play fail closed
+                // until this VM reclaims a session after Pro is restored.
+                audio.releasePlaybackSession(token)
+                audioSessionToken = nil
+            }
+            status = currentParagraphIndex >= 0 ? .ready : .pending
+            showPaywall = true
+            endAnalyticsReadSession(result: .blocked, reason: "offline_pro_required")
+            return false
+        }
+        return true
+    }
+
+    private func startOfflineParagraph(_ paragraphIndex: Int, autoplay: Bool = true) {
+        guard requireOfflineProAccess() else { return }
+        guard let segments = offlineSegmentsByParagraph[paragraphIndex],
+              !segments.isEmpty else {
+            status = .error(AppLocalized("离线内容不完整，请联网后重新下载"))
+            return
+        }
+        startWithPrefetchedSegments(
+            segments,
+            paragraphIndex: paragraphIndex,
+            allowAccessRefresh: false,
+            autoplay: autoplay
+        )
+    }
+
     func start() {
         start(allowAccessRefresh: true)
     }
@@ -2071,6 +2182,18 @@ final class ReadAloudViewModel: ObservableObject {
     private func start(allowAccessRefresh: Bool) {
         liveWebTurnIntentSuspended = false
         guard !readableIndices.isEmpty else { status = .error(AppLocalized("无可朗读内容")); return }
+        if isOfflinePlayback {
+            let preferred = preferredLiveWebStartIndex.flatMap {
+                readableIndices.contains($0) ? $0 : nil
+            }
+            preferredLiveWebStartIndex = nil
+            let resume = pendingResumeParagraphIndex.flatMap {
+                readableIndices.contains($0) ? $0 : nil
+            }
+            pendingResumeParagraphIndex = nil
+            startOfflineParagraph(preferred ?? resume ?? readableIndices[0])
+            return
+        }
         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
             self?.start(allowAccessRefresh: true)
         }) {
@@ -2115,6 +2238,7 @@ final class ReadAloudViewModel: ObservableObject {
     func togglePlayPause() {
         liveWebTurnIntentSuspended = false
         if currentParagraphIndex < 0 { start(); return }
+        guard requireOfflineProAccess() else { return }
         if !audio.isPlaying,
            presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
                self?.togglePlayPause()
@@ -2162,6 +2286,7 @@ final class ReadAloudViewModel: ObservableObject {
     /// playback or start a duplicate generation request.
     func ensurePlaying() {
         liveWebTurnIntentSuspended = false
+        guard requireOfflineProAccess() else { return }
         if ownsAudioQueue, audio.isPlaying { return }
         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
             self?.ensurePlaying()
@@ -2253,6 +2378,10 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func jump(to paragraphIndex: Int, allowAccessRefresh: Bool) {
         guard readableIndices.contains(paragraphIndex) else { return }
+        if isOfflinePlayback {
+            startOfflineParagraph(paragraphIndex)
+            return
+        }
         guard document.sourceKind == .youtube
                 || canStartAudio(persistentYouTubeCacheHit: false) else {
             if allowAccessRefresh {
@@ -2340,9 +2469,14 @@ final class ReadAloudViewModel: ObservableObject {
         persistentYouTubeCacheHit: Bool = false
     ) {
         guard readableIndices.contains(paragraphIndex), !segments.isEmpty else {
+            if isOfflinePlayback {
+                status = .error(AppLocalized("离线内容不完整，请联网后重新下载"))
+                return
+            }
             jump(to: paragraphIndex)
             return
         }
+        guard requireOfflineProAccess() else { return }
         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
             self?.startWithPrefetchedSegments(
                 segments,
@@ -2384,7 +2518,7 @@ final class ReadAloudViewModel: ObservableObject {
         guard let token = ensureAudioSessionClaim() else { return }
         applyPlaybackMetadata()
         applySpeed()
-        playbackVoiceID = settings.voice(for: docLanguage)
+        playbackVoiceID = offlineVoiceID ?? settings.voice(for: docLanguage)
         isFinished = false
         generationEpoch &+= 1
         generationTask?.cancel()
@@ -2755,6 +2889,10 @@ final class ReadAloudViewModel: ObservableObject {
         voiceSwitchID: UUID? = nil,
         allowAccessRefresh: Bool = true
     ) {
+        if isOfflinePlayback {
+            startOfflineParagraph(index, autoplay: autoPlay)
+            return
+        }
         guard isActive, paras.indices.contains(index) else { return }
         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
             self?.generate(
@@ -3071,6 +3209,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func handleVoicePreferenceChanged(forceRestart: Bool = false) {
+        guard !isOfflinePlayback else { return }
         let newVoiceID = settings.voice(for: docLanguage)
         guard forceRestart || newVoiceID != playbackVoiceID else { return }
         let oldVoiceID = playbackVoiceID
@@ -3135,6 +3274,20 @@ final class ReadAloudViewModel: ObservableObject {
         guard nextPos < readableIndices.count else { return }
         let nextIndex = readableIndices[nextPos]
         if prefetchingIndex == nextIndex || prefetchedIndex == nextIndex { return }   // 已在预取/已就绪
+        if isOfflinePlayback {
+            guard let segments = offlineSegmentsByParagraph[nextIndex],
+                  !segments.isEmpty else {
+                prefetchedIndex = nil
+                prefetchedSegments = []
+                return
+            }
+            prefetchingIndex = nil
+            prefetchedIndex = nextIndex
+            prefetchedSegments = segments
+            prefetchedYouTubeAudioIsQuotaExempt = false
+            audio.prestageSegments(segments)
+            return
+        }
         startPrefetch(nextIndex)
     }
 
@@ -3359,6 +3512,7 @@ final class ReadAloudViewModel: ObservableObject {
             )
             return
         }
+        guard requireOfflineProAccess() else { return }
         if isAwaitingLiveWebCarryCompletion {
             commitListen()
             if GrowthLoopConversionCoordinator.shared.claimHardWallAtParagraphBoundary(
@@ -3422,7 +3576,7 @@ final class ReadAloudViewModel: ObservableObject {
                     appReviewReadSession,
                     for: document.sourceKind
                 )
-                if document.sourceKind != .kindle {
+                if document.sourceKind != .kindle || isOfflinePlayback {
                     endAnalyticsReadSession(result: .success, reason: "completed")
                 }
                 AppReviewPromptManager.shared.recordPositiveOutcome(
@@ -3484,7 +3638,7 @@ final class ReadAloudViewModel: ObservableObject {
             // session. KindleBookViewModel either transfers this still-open
             // coordinator to the confirmed next page or terminates it if the
             // page advance truly fails/ends.
-            if document.sourceKind != .kindle {
+            if document.sourceKind != .kindle || isOfflinePlayback {
                 endAnalyticsReadSession(result: .success, reason: "completed")
             }
             AppReviewPromptManager.shared.recordPositiveOutcome(
