@@ -883,6 +883,10 @@ struct VoiceCloneCreatedView: View {
             pendingCreationRoute = nil
             completeLaunchHandoff(route)
         case .uploadAudio:
+            guard Constants.Features.voiceCloneAudioUploadEnabled else {
+                store.errorMessage = VoiceCloneError.temporaryUnavailable.localizedDescription
+                return
+            }
             pendingCreationRoute = nil
             activeCreationSheet = .upload
             completeLaunchHandoff(route)
@@ -946,13 +950,15 @@ private struct VoiceCreationMethodSheet: View {
                     )
                 }
 
-                methodButton(
-                    entry: .uploadAudio,
-                    title: "上传音频",
-                    detail: "从清晰的录音文件创建音色",
-                    systemImage: "waveform.badge.plus",
-                    accessibilityID: "voiceCreationMethodUploadButton"
-                )
+                if Constants.Features.voiceCloneAudioUploadEnabled {
+                    methodButton(
+                        entry: .uploadAudio,
+                        title: "上传音频",
+                        detail: "从清晰的录音文件创建音色",
+                        systemImage: "waveform.badge.plus",
+                        accessibilityID: "voiceCreationMethodUploadButton"
+                    )
+                }
 
                 Spacer(minLength: 12)
 
@@ -1052,7 +1058,7 @@ enum VoiceGiftInviterUIContract {
     /// Frozen global grant wording. Do not reuse this sentence for the China
     /// owner-voice flow, which has no donor revocation lifecycle.
     static let primaryBenefitKey = "朋友授权后，你可用他的声音朗读和解读 Kindle、文件与网页，直到他撤回。"
-    static let chinaPrimaryBenefitKey = "朋友录音并提交后，声音会出现在你的声音列表，可用于朗读和解读 Kindle、文件与网页。"
+    static let chinaPrimaryBenefitKey = "朋友录音并提交后，声音会出现在你的声音列表，可用于朗读和解读微信读书、文件与网页。"
     static let globalMethodDetailKey = "分享一个链接，请朋友授权成为你的朗读者"
     static let chinaMethodDetailKey = "分享链接，请朋友录音、试听并提交"
     static let primaryControlNoteKey = "点击后直接分享链接，无需填写邮箱。"

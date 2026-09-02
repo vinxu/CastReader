@@ -30,6 +30,7 @@ final class VoiceCloneAudioUploadViewModel: NSObject, ObservableObject,
     private var operationTask: Task<Void, Never>?
     private var operationID = UUID()
     private var player: AVAudioPlayer?
+    private var playingCandidateID: String?
     private var ownsActiveAudioSession = false
 
     init(preprocessor: VoiceCloneReferencePreprocessor = .shared) {
@@ -64,6 +65,17 @@ final class VoiceCloneAudioUploadViewModel: NSObject, ObservableObject,
             && selectedCandidateID != nil
             && previewedCandidateID == selectedCandidateID
             && consentConfirmed
+    }
+
+    static func previewedCandidateIDAfterPlayback(
+        playedCandidateID: String?,
+        completedSuccessfully: Bool,
+        existingPreviewedCandidateID: String?
+    ) -> String? {
+        guard completedSuccessfully, let playedCandidateID else {
+            return existingPreviewedCandidateID
+        }
+        return playedCandidateID
     }
 
     var selectedCandidate: VoiceCloneReferenceCandidate? {
@@ -180,11 +192,12 @@ final class VoiceCloneAudioUploadViewModel: NSObject, ObservableObject,
                 throw VoiceCloneReferencePreprocessorError.exportFailed
             }
             self.player = player
+            playingCandidateID = selectedCandidateID
             isPlaying = true
-            previewedCandidateID = selectedCandidateID
             errorMessage = nil
         } catch {
             player = nil
+            playingCandidateID = nil
             isPlaying = false
             deactivateAudioSessionIfOwned()
             errorMessage = error.localizedDescription
@@ -194,6 +207,7 @@ final class VoiceCloneAudioUploadViewModel: NSObject, ObservableObject,
     func stopPreview() {
         player?.stop()
         player = nil
+        playingCandidateID = nil
         isPlaying = false
         deactivateAudioSessionIfOwned()
     }
@@ -236,10 +250,16 @@ final class VoiceCloneAudioUploadViewModel: NSObject, ObservableObject,
     ) {
         Task { @MainActor [weak self] in
             guard let self, self.player === player else { return }
+            let finishedCandidateID = self.playingCandidateID
             self.player = nil
+            self.playingCandidateID = nil
             self.isPlaying = false
+            self.previewedCandidateID = Self.previewedCandidateIDAfterPlayback(
+                playedCandidateID: finishedCandidateID,
+                completedSuccessfully: flag,
+                existingPreviewedCandidateID: self.previewedCandidateID
+            )
             if !flag {
-                self.previewedCandidateID = nil
                 self.errorMessage = AppLocalized("音频播放失败，请重试")
             }
             self.deactivateAudioSessionIfOwned()
@@ -253,8 +273,8 @@ final class VoiceCloneAudioUploadViewModel: NSObject, ObservableObject,
         Task { @MainActor [weak self] in
             guard let self, self.player === player else { return }
             self.player = nil
+            self.playingCandidateID = nil
             self.isPlaying = false
-            self.previewedCandidateID = nil
             self.errorMessage = error?.localizedDescription
                 ?? AppLocalized("音频播放失败，请重试")
             self.deactivateAudioSessionIfOwned()

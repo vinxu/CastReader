@@ -137,10 +137,20 @@ class CastReaderUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["自由朗读或自然说话"].exists)
         XCTAssertTrue(
             app.staticTexts[
+                "可以朗读示例，也可以用录音语言自然说一段自己的内容，无需逐字一致。"
+            ].exists
+        )
+        XCTAssertTrue(
+            app.staticTexts[
                 "所有用户均可创建和试听声音；Pro 可用于朗读和解读，每个会员周期 120 分钟。"
             ].exists
         )
 
+        XCTAssertTrue(
+            app.staticTexts[
+                "继续即表示你确认录制的是本人声音，并同意仅在 App 内用于生成语音。"
+            ].exists
+        )
         XCTAssertFalse(app.switches.firstMatch.exists)
         let confirmEnabled = XCTNSPredicateExpectation(
             predicate: NSPredicate(format: "enabled == true"),

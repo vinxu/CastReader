@@ -503,7 +503,7 @@ final class VoiceCloneTests: XCTestCase {
             "待回应邀请",
             "邀请朋友录制声音",
             "朋友授权后，你可用他的声音朗读和解读 Kindle、文件与网页，直到他撤回。",
-            "朋友录音并提交后，声音会出现在你的声音列表，可用于朗读和解读 Kindle、文件与网页。",
+            "朋友录音并提交后，声音会出现在你的声音列表，可用于朗读和解读微信读书、文件与网页。",
             "分享链接，请朋友录音、试听并提交",
             "点击后直接分享链接，无需填写邮箱。",
             "点击后直接分享链接，无需填写对方手机号或发送短信。",
@@ -1422,7 +1422,10 @@ final class VoiceCloneTests: XCTestCase {
             let multipart = Dictionary(
                 uniqueKeysWithValues: metadata.multipartFields.map { ($0.name, $0.value) }
             )
-            let china = metadata.chinaPayload(referenceObjectKey: "account/reference.wav")
+            let china = metadata.chinaPayload(
+                referenceObjectKey: "account/reference.wav",
+                referenceSha256: String(repeating: "a", count: 64)
+            )
 
             XCTAssertEqual(metadata.referenceLanguage, "und")
             XCTAssertEqual(multipart["reference_language"], "und")
@@ -1462,6 +1465,30 @@ final class VoiceCloneTests: XCTestCase {
             previewedCandidateID: "candidate-a",
             consentConfirmed: false
         ))
+
+        XCTAssertEqual(
+            VoiceCloneAudioUploadViewModel.previewedCandidateIDAfterPlayback(
+                playedCandidateID: "candidate-a",
+                completedSuccessfully: true,
+                existingPreviewedCandidateID: nil
+            ),
+            "candidate-a"
+        )
+        XCTAssertNil(
+            VoiceCloneAudioUploadViewModel.previewedCandidateIDAfterPlayback(
+                playedCandidateID: "candidate-a",
+                completedSuccessfully: false,
+                existingPreviewedCandidateID: nil
+            )
+        )
+        XCTAssertEqual(
+            VoiceCloneAudioUploadViewModel.previewedCandidateIDAfterPlayback(
+                playedCandidateID: "candidate-b",
+                completedSuccessfully: false,
+                existingPreviewedCandidateID: "candidate-a"
+            ),
+            "candidate-a"
+        )
     }
 
     func testCancelledVoiceCreateBeforeEntryMakesNoNetworkCalls() async throws {
@@ -2666,6 +2693,8 @@ final class VoiceCloneTests: XCTestCase {
             for: .chinaGateway
         )
         XCTAssertTrue(chinaBenefit.contains("录音并提交"))
+        XCTAssertTrue(chinaBenefit.contains("微信读书"))
+        XCTAssertFalse(chinaBenefit.contains("Kindle"))
         XCTAssertFalse(chinaBenefit.contains("撤回"))
         XCTAssertEqual(
             VoiceGiftInviterUIContract.methodDetailKey(for: .chinaGateway),
@@ -2714,6 +2743,8 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(source.contains("voiceCreationMethodUploadButton"))
         XCTAssertFalse(source.contains("voiceCreationMethodUploadComingSoon"))
         XCTAssertTrue(source.contains("activeCreationSheet = .upload"))
+        XCTAssertTrue(source.contains("if Constants.Features.voiceCloneAudioUploadEnabled"))
+        XCTAssertTrue(source.contains("guard Constants.Features.voiceCloneAudioUploadEnabled"))
         XCTAssertTrue(source.contains("canInviteFriend: VoiceGiftFeature.isRegionEligible()"))
         XCTAssertTrue(source.contains("&& store.voiceGiftEnabled"))
         XCTAssertTrue(source.contains("VoiceGiftInviterUIContract.methodDetailKey"))
