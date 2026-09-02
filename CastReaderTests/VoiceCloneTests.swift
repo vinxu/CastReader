@@ -491,7 +491,10 @@ final class VoiceCloneTests: XCTestCase {
             "待回应邀请",
             "邀请朋友录制声音",
             "朋友授权后，你可用他的声音朗读和解读 Kindle、文件与网页，直到他撤回。",
+            "朋友录音并提交后，声音会出现在你的声音列表，可用于朗读和解读 Kindle、文件与网页。",
+            "分享链接，请朋友录音、试听并提交",
             "点击后直接分享链接，无需填写邮箱。",
+            "点击后直接分享链接，无需填写对方手机号或发送短信。",
             "等待朋友录制",
             "朋友正在录制",
             "再次分享邀请链接",
@@ -549,6 +552,93 @@ final class VoiceCloneTests: XCTestCase {
                 }
             }
         }
+    }
+
+    func testChinaVoiceGiftCopyDescribesRecordPreviewSubmitWithoutRevocation() throws {
+        let repositoryRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let data = try Data(
+            contentsOf: repositoryRoot
+                .appendingPathComponent("CastReader/Localizable.xcstrings")
+        )
+        let root = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        let strings = try XCTUnwrap(root["strings"] as? [String: Any])
+        for key in [
+            VoiceGiftInviterUIContract.chinaPrimaryBenefitKey,
+            VoiceGiftInviterUIContract.chinaMethodDetailKey,
+        ] {
+            let entry = try XCTUnwrap(strings[key] as? [String: Any], key)
+            let localizations = try XCTUnwrap(
+                entry["localizations"] as? [String: Any],
+                key
+            )
+            for locale in ["zh-Hans", "en"] {
+                let localization = try XCTUnwrap(
+                    localizations[locale] as? [String: Any],
+                    "\(key) [\(locale)]"
+                )
+                let unit = try XCTUnwrap(
+                    localization["stringUnit"] as? [String: Any],
+                    "\(key) [\(locale)]"
+                )
+                let value = try XCTUnwrap(
+                    unit["value"] as? String,
+                    "\(key) [\(locale)]"
+                )
+                let normalized = value.lowercased()
+                XCTAssertFalse(value.contains("撤回"), "\(key) [\(locale)]")
+                XCTAssertFalse(value.contains("收回"), "\(key) [\(locale)]")
+                XCTAssertFalse(normalized.contains("revoke"), "\(key) [\(locale)]")
+                XCTAssertFalse(normalized.contains("withdraw"), "\(key) [\(locale)]")
+                if locale == "zh-Hans" {
+                    XCTAssertTrue(value.contains("录音"), "\(key) [\(locale)]")
+                    XCTAssertTrue(value.contains("提交"), "\(key) [\(locale)]")
+                } else {
+                    XCTAssertTrue(normalized.contains("record"), "\(key) [\(locale)]")
+                    XCTAssertTrue(normalized.contains("submit"), "\(key) [\(locale)]")
+                }
+            }
+        }
+
+        let contactEntry = try XCTUnwrap(
+            strings[VoiceGiftInviterUIContract.chinaPrimaryControlNoteKey]
+                as? [String: Any]
+        )
+        let contactLocalizations = try XCTUnwrap(
+            contactEntry["localizations"] as? [String: Any]
+        )
+        let chineseContact = try localizedValue(
+            in: contactLocalizations,
+            locale: "zh-Hans"
+        )
+        XCTAssertTrue(chineseContact.contains("手机号"))
+        XCTAssertTrue(chineseContact.contains("短信"))
+        XCTAssertFalse(chineseContact.contains("邮箱"))
+        let englishContact = try localizedValue(
+            in: contactLocalizations,
+            locale: "en"
+        ).lowercased()
+        XCTAssertTrue(englishContact.contains("phone number"))
+        XCTAssertTrue(englishContact.contains("text message"))
+        XCTAssertFalse(englishContact.contains("email"))
+    }
+
+    private func localizedValue(
+        in localizations: [String: Any],
+        locale: String
+    ) throws -> String {
+        let localization = try XCTUnwrap(
+            localizations[locale] as? [String: Any],
+            locale
+        )
+        let unit = try XCTUnwrap(
+            localization["stringUnit"] as? [String: Any],
+            locale
+        )
+        return try XCTUnwrap(unit["value"] as? String, locale)
     }
 
     @MainActor
@@ -2169,12 +2259,55 @@ final class VoiceCloneTests: XCTestCase {
             VoiceGiftInviterUIContract.primaryTitleKey,
             "邀请朋友录制声音"
         )
-        XCTAssertTrue(VoiceGiftInviterUIContract.primaryBenefitKey.contains("Kindle"))
-        XCTAssertTrue(VoiceGiftInviterUIContract.primaryBenefitKey.contains("朗读和解读"))
-        XCTAssertTrue(VoiceGiftInviterUIContract.primaryBenefitKey.contains("撤回"))
+        let globalBenefit = VoiceGiftInviterUIContract.primaryBenefitKey(
+            for: .globalGateway
+        )
+        XCTAssertEqual(globalBenefit, VoiceGiftInviterUIContract.primaryBenefitKey)
+        XCTAssertTrue(globalBenefit.contains("Kindle"))
+        XCTAssertTrue(globalBenefit.contains("朗读和解读"))
+        XCTAssertTrue(globalBenefit.contains("撤回"))
+        XCTAssertEqual(
+            VoiceGiftInviterUIContract.methodDetailKey(for: .globalGateway),
+            "分享一个链接，请朋友授权成为你的朗读者"
+        )
+        let chinaBenefit = VoiceGiftInviterUIContract.primaryBenefitKey(
+            for: .chinaGateway
+        )
+        XCTAssertTrue(chinaBenefit.contains("录音并提交"))
+        XCTAssertFalse(chinaBenefit.contains("撤回"))
+        XCTAssertEqual(
+            VoiceGiftInviterUIContract.methodDetailKey(for: .chinaGateway),
+            "分享链接，请朋友录音、试听并提交"
+        )
+        XCTAssertFalse(
+            VoiceGiftInviterUIContract.methodDetailKey(for: .chinaGateway)
+                .contains("撤回")
+        )
+        XCTAssertEqual(
+            VoiceGiftInviterUIContract.primaryControlNoteKey(
+                for: .globalGateway
+            ),
+            VoiceGiftInviterUIContract.primaryControlNoteKey
+        )
+        let chinaControlNote = VoiceGiftInviterUIContract.primaryControlNoteKey(
+            for: .chinaGateway
+        )
+        XCTAssertTrue(chinaControlNote.contains("手机号"))
+        XCTAssertTrue(chinaControlNote.contains("短信"))
+        XCTAssertFalse(chinaControlNote.contains("邮箱"))
+        XCTAssertTrue(
+            VoiceGiftInviterUIContract.showsGiftedReaderSection(
+                for: .globalGateway
+            )
+        )
+        XCTAssertFalse(
+            VoiceGiftInviterUIContract.showsGiftedReaderSection(
+                for: .chinaGateway
+            )
+        )
         XCTAssertTrue(VoiceGiftInviterUIContract.primaryControlNoteKey.contains("直接分享链接"))
         XCTAssertTrue(VoiceGiftInviterUIContract.primaryControlNoteKey.contains("无需填写邮箱"))
-        XCTAssertFalse(VoiceGiftInviterUIContract.primaryBenefitKey.contains("永久"))
+        XCTAssertFalse(globalBenefit.contains("永久"))
         let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
@@ -2188,6 +2321,9 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(source.contains("voiceCreationMethodInviteButton"))
         XCTAssertTrue(source.contains("voiceCreationMethodUploadButton"))
         XCTAssertTrue(source.contains("voiceCreationMethodUploadComingSoon"))
+        XCTAssertTrue(source.contains("canInviteFriend: VoiceGiftFeature.isRegionEligible()"))
+        XCTAssertTrue(source.contains("&& store.voiceGiftEnabled"))
+        XCTAssertTrue(source.contains("VoiceGiftInviterUIContract.methodDetailKey"))
         XCTAssertEqual(VoiceGiftContract.authorizationMode, "until_revoked")
     }
 
@@ -2596,11 +2732,11 @@ final class VoiceCloneTests: XCTestCase {
                 )
             } else if request.url?.path == "/api/voice-clone/library" {
                 data = Data(
-                    #"{"schemaVersion":"voice-library-v1","snapshotComplete":true,"voices":[]}"#.utf8
+                    #"{"schemaVersion":"voice-library-v1","snapshotComplete":true,"voices":[{"voiceId":"vc_cn_invited_owner","status":"active","reference_language":"zh","supported_languages":["zh","en"],"access":{"kind":"owner","status":"active","capabilities":{"preview":true,"useTts":true,"rename":true,"delete":true}}}]}"#.utf8
                 )
             } else {
                 data = Data(
-                    #"{"data":{"schemaVersion":"voice-gift-v1","request":{"id":"request_cn","status":"pending"},"requesterEmailMasked":null,"inviteeEmailMasked":null,"emailDelivery":"not-requested","invitationURL":"https://api.castreader.cn/zh/voice-gift/request#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB","authorization":{"mode":"until_revoked","expiresAt":null}}}"#.utf8
+                    #"{"data":{"schemaVersion":"voice-gift-v1","request":{"id":"request_cn","status":"pending"},"invitationURL":"https://api.castreader.cn/zh/voice-gift/request#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"}}"#.utf8
                 )
             }
             return (
@@ -2623,6 +2759,17 @@ final class VoiceCloneTests: XCTestCase {
 
         let library = try await service.listVoices()
         XCTAssertTrue(library.voiceGiftEnabled)
+        XCTAssertEqual(library.schemaVersion, "voice-library-v1")
+        XCTAssertTrue(library.snapshotComplete)
+        let ownerVoice = try XCTUnwrap(library.voices.first)
+        XCTAssertEqual(ownerVoice.voiceId, "vc_cn_invited_owner")
+        XCTAssertEqual(ownerVoice.referenceLanguage, "zh")
+        XCTAssertEqual(ownerVoice.supportedLanguages, ["zh", "en"])
+        XCTAssertEqual(ownerVoice.access.kind, .owner)
+        XCTAssertTrue(ownerVoice.access.capabilities.canPreview)
+        XCTAssertTrue(ownerVoice.access.capabilities.canUse)
+        XCTAssertTrue(ownerVoice.access.capabilities.canRename)
+        XCTAssertTrue(ownerVoice.access.capabilities.canDelete)
         XCTAssertEqual(
             recorder.allRequests().map { $0.url?.path },
             ["/api/capabilities", "/api/voice-clone/library"]
@@ -2637,6 +2784,7 @@ final class VoiceCloneTests: XCTestCase {
             locale: "zh_CN"
         )
         XCTAssertEqual(invitation.id, "request_cn")
+        XCTAssertNil(invitation.authorization)
         XCTAssertNotNil(VoiceGiftInvitationURLValidator.validatedURL(
             invitation.invitationURL,
             for: .chinaGateway
@@ -2667,6 +2815,10 @@ final class VoiceCloneTests: XCTestCase {
         )
         XCTAssertNil(object["email"])
         XCTAssertNil(object["inviteeEmail"])
+        XCTAssertNil(
+            object["authorization"],
+            "China's owner-voice invitation has no revocable grant contract"
+        )
     }
 
     func testGiftServiceRejectsInvitationURLFromOtherRoute() async throws {

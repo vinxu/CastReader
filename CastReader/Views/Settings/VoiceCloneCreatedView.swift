@@ -267,7 +267,10 @@ struct VoiceCloneCreatedView: View {
                 }
             }
 
-            if store.voiceGiftEnabled {
+            if store.voiceGiftEnabled,
+               VoiceGiftInviterUIContract.showsGiftedReaderSection(
+                   for: ServiceRouting.current
+               ) {
                 voiceSectionHeader(
                     title: AppLocalized("我的朗读者"),
                     count: store.giftedVoices.count,
@@ -931,7 +934,11 @@ private struct VoiceCreationMethodSheet: View {
                     methodButton(
                         entry: .inviteFriend,
                         title: "邀请朋友录制声音",
-                        detail: "分享一个链接，请朋友授权成为你的朗读者",
+                        detail: LocalizedStringKey(
+                            VoiceGiftInviterUIContract.methodDetailKey(
+                                for: ServiceRouting.current
+                            )
+                        ),
                         systemImage: "person.2.fill",
                         accessibilityID: VoiceGiftInviterUIContract.primaryActionIdentifier
                     )
@@ -1057,12 +1064,42 @@ enum VoiceGiftInviterUIContract {
     static let primaryActionIdentifier = "voiceCreationMethodInviteButton"
 
     static let primaryTitleKey = "邀请朋友录制声音"
+    /// Frozen global grant wording. Do not reuse this sentence for the China
+    /// owner-voice flow, which has no donor revocation lifecycle.
     static let primaryBenefitKey = "朋友授权后，你可用他的声音朗读和解读 Kindle、文件与网页，直到他撤回。"
+    static let chinaPrimaryBenefitKey = "朋友录音并提交后，声音会出现在你的声音列表，可用于朗读和解读 Kindle、文件与网页。"
+    static let globalMethodDetailKey = "分享一个链接，请朋友授权成为你的朗读者"
+    static let chinaMethodDetailKey = "分享链接，请朋友录音、试听并提交"
     static let primaryControlNoteKey = "点击后直接分享链接，无需填写邮箱。"
+    static let chinaPrimaryControlNoteKey = "点击后直接分享链接，无需填写对方手机号或发送短信。"
 
     static var primaryTitle: String { localized(primaryTitleKey) }
-    static var primaryBenefit: String { localized(primaryBenefitKey) }
-    static var primaryControlNote: String { localized(primaryControlNoteKey) }
+    static var primaryBenefit: String {
+        localized(primaryBenefitKey(for: ServiceRouting.current))
+    }
+    static var primaryControlNote: String {
+        localized(primaryControlNoteKey(for: ServiceRouting.current))
+    }
+
+    static func primaryBenefitKey(for route: ServiceRoute) -> String {
+        route == .chinaGateway ? chinaPrimaryBenefitKey : primaryBenefitKey
+    }
+
+    static func methodDetailKey(for route: ServiceRoute) -> String {
+        route == .chinaGateway ? chinaMethodDetailKey : globalMethodDetailKey
+    }
+
+    static func primaryControlNoteKey(for route: ServiceRoute) -> String {
+        route == .chinaGateway ? chinaPrimaryControlNoteKey : primaryControlNoteKey
+    }
+
+    static func showsGiftedReaderSection(for route: ServiceRoute) -> Bool {
+        // Global invitations grant revocable access to a donor-owned voice.
+        // China invitations instead materialize an owner voice in “我的声音”,
+        // so rendering the reader/grant section there would expose the wrong
+        // lifecycle and leave a permanently misleading empty state.
+        route == .globalGateway
+    }
 
     private static func localized(_ key: String) -> String {
         AppLocalized(String.LocalizationValue(stringLiteral: key))

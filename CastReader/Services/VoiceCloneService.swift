@@ -69,6 +69,9 @@ enum VoiceGiftFeature {
 enum VoiceGiftContract {
     static let schemaVersion = "voice-gift-v1"
     static let purpose = "personal_tts"
+    /// The revocable-grant authorization contract is frozen for the global
+    /// service. China invitations create an owner voice directly and therefore
+    /// omit this field from their minimal request contract.
     static let authorizationMode = "until_revoked"
 }
 
@@ -238,12 +241,17 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
         try await requireVoiceGiftCapability()
         try Task.checkCancellation()
         let canonicalLocale = AppLanguage.canonicalVoiceGiftLocale(from: locale)
-        let body = try JSONSerialization.data(withJSONObject: [
+        var requestPayload: [String: Any] = [
             "purpose": VoiceGiftContract.purpose,
-            "authorization": ["mode": VoiceGiftContract.authorizationMode],
             "clientRequestId": clientRequestID.uuidString.lowercased(),
             "locale": canonicalLocale,
-        ])
+        ]
+        if route == .globalGateway {
+            requestPayload["authorization"] = [
+                "mode": VoiceGiftContract.authorizationMode,
+            ]
+        }
+        let body = try JSONSerialization.data(withJSONObject: requestPayload)
         let data = try await perform(
             path: "/api/voice-clone/requests",
             method: "POST",
