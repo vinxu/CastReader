@@ -170,6 +170,116 @@ final class OfflineReadAloudViewModelTests: XCTestCase {
         XCTAssertFalse(vm.isOfflinePlayback)
     }
 
+    @MainActor
+    func testConfigureOnDeviceOfflinePlaybackNeedsNoPersistentAudio() {
+        let vm = makeTwoParagraphViewModel()
+
+        XCTAssertTrue(vm.configureOfflinePlayback(
+            segmentsByParagraph: [:],
+            voiceID: "on-device:auto",
+            audioMode: .onDevice
+        ))
+        XCTAssertTrue(vm.isOfflinePlayback)
+
+        let accidentalAudio = makeSegment(paragraphIndex: 0, marker: 0x70)
+        let rejected = makeTwoParagraphViewModel()
+        XCTAssertFalse(rejected.configureOfflinePlayback(
+            segmentsByParagraph: [0: [accidentalAudio]],
+            voiceID: "on-device:auto",
+            audioMode: .onDevice
+        ))
+    }
+
+    func testOnDeviceTimestampPolicyHandlesLatinAndCJKWithoutPunctuation() {
+        XCTAssertEqual(
+            OnDeviceSpeechTimestampPolicy.tokens(in: "Hello, 世界！42"),
+            ["Hello", "世", "界", "42"]
+        )
+        let timestamps = OnDeviceSpeechTimestampPolicy.proportional(
+            text: "Hello 世界",
+            duration: 3
+        )
+        XCTAssertEqual(timestamps.map(\.word), ["Hello", "世", "界"])
+        XCTAssertEqual(timestamps.first?.startTime, 0)
+        XCTAssertEqual(timestamps.last?.endTime ?? -1, 3, accuracy: 0.0001)
+    }
+
+    func testOnDeviceTimestampPolicyRejectsFrozenSystemVoiceMarks() {
+        let frozen = [
+            TTSTimestamp(word: "Hello", startTime: 0, endTime: 0),
+            TTSTimestamp(word: "world", startTime: 0, endTime: 2),
+        ]
+        XCTAssertTrue(
+            OnDeviceSpeechTimestampPolicy.usable(frozen, duration: 2).isEmpty
+        )
+
+        let advancing = [
+            TTSTimestamp(word: "Hello", startTime: 0, endTime: 1),
+            TTSTimestamp(word: "world", startTime: 1, endTime: 2),
+        ]
+        let accepted = OnDeviceSpeechTimestampPolicy.usable(advancing, duration: 2)
+        XCTAssertEqual(accepted.map(\.word), ["Hello", "world"])
+        XCTAssertEqual(accepted.map(\.startTime), [0, 1])
+        XCTAssertEqual(accepted.map(\.endTime), [1, 2])
+    }
+
+    func testOnDeviceSpeechAlwaysStreamsNaturalSentences() {
+        XCTAssertEqual(
+            OnDeviceSpeechChunkingPolicy.requestUnits(
+                "First sentence. Second sentence! Third?",
+                language: "en"
+            ),
+            ["First sentence.", "Second sentence!", "Third?"]
+        )
+        XCTAssertEqual(
+            OnDeviceSpeechChunkingPolicy.requestUnits(
+                "第一句。第二句！第三句？",
+                language: "zh"
+            ),
+            ["第一句。", "第二句！", "第三句？"]
+        )
+    }
+
+    @MainActor
+    func testSystemOnDeviceSpeechRendersPlayableOfflineAudio() async throws {
+        guard await OnDeviceSpeechService.shared.capability(language: "en-US") != nil else {
+            throw XCTSkip("The simulator has no installed English system voice")
+        }
+        var segments: [AudioSegment] = []
+        try await OnDeviceSpeechService.shared.generateParagraph(
+            paragraphIndex: 7,
+            text: "Offline reading works.",
+            language: "en-US",
+            speaker: nil
+        ) { segment in
+            segments.append(segment)
+        }
+
+        let segment = try XCTUnwrap(segments.first)
+        XCTAssertEqual(segment.paragraphIndex, 7)
+        XCTAssertTrue(segment.isWavFormat)
+        XCTAssertGreaterThan(segment.audioData.count, 44)
+        XCTAssertGreaterThan(segment.duration, 0)
+        XCTAssertFalse(segment.timestamps.isEmpty)
+    }
+
+    func testOnDeviceAudioMemoryWindowStaysBoundedAroundReadingPosition() {
+        XCTAssertEqual(
+            OfflineOnDeviceAudioMemoryWindow.retainedIndexes(
+                readableIndexes: Array(0..<20),
+                around: 10
+            ),
+            Set(8...13)
+        )
+        XCTAssertEqual(
+            OfflineOnDeviceAudioMemoryWindow.retainedIndexes(
+                readableIndexes: Array(0..<20),
+                around: 0
+            ),
+            Set(0...3)
+        )
+    }
+
     #if DEBUG
     @MainActor
     func testOfflinePreloadUsesInstalledLocalSegments() async {

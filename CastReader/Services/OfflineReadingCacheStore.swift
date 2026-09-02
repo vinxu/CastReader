@@ -39,6 +39,15 @@ enum OfflineReadingProvider: String, Codable, Equatable, Sendable {
     case kindle
 }
 
+/// The durable book and its replaceable speech layer are deliberately
+/// independent. A legacy embedded package contains every audio segment;
+/// an on-device package keeps only rendered pages + OCR and synthesizes a
+/// bounded read-ahead window locally.
+enum OfflineReadingAudioMode: String, Codable, Equatable, Sendable {
+    case embedded
+    case onDevice
+}
+
 struct OfflineReadingCacheSummary: Equatable, Sendable {
     /// Opaque SHA-256 key. It is safe to use for diagnostics and filesystem
     /// lookup; it cannot reveal an ASIN, title or account identifier.
@@ -49,6 +58,7 @@ struct OfflineReadingCacheSummary: Equatable, Sendable {
     let readableParagraphCount: Int
     let audioSegmentCount: Int
     let byteSize: Int64
+    let audioMode: OfflineReadingAudioMode
     let voiceID: String
     let createdAt: Date
     let updatedAt: Date
@@ -59,6 +69,7 @@ struct OfflineReadingPackage {
     let document: ReadingDocument
     let pageKeys: [String]
     let segmentsByParagraph: [Int: [AudioSegment]]
+    let audioMode: OfflineReadingAudioMode
     let summary: OfflineReadingCacheSummary
 }
 
@@ -264,7 +275,7 @@ enum OfflineReadingCacheProvider {
 }
 
 actor OfflineReadingCacheStore {
-    private static let packageSchemaVersion = 1
+    private static let packageSchemaVersion = 2
     private static let manifestFilename = "manifest.json"
     private static let entriesDirectoryName = "entries"
     private static let stagingDirectoryName = ".staging"
@@ -406,6 +417,7 @@ actor OfflineReadingCacheStore {
         pageKeys: [String],
         voiceID: String,
         segmentsByParagraph: [Int: [AudioSegment]],
+        audioMode: OfflineReadingAudioMode = .embedded,
         publishLease: OfflineReadingCachePublishLease? = nil
     ) throws -> OfflineReadingCacheSummary {
         // A cancelled producer must never publish after account unbinding has
@@ -424,7 +436,8 @@ actor OfflineReadingCacheStore {
             document: document,
             pageKeys: normalizedPageKeys,
             voiceID: normalizedVoiceID,
-            segmentsByParagraph: segmentsByParagraph
+            segmentsByParagraph: segmentsByParagraph,
+            audioMode: audioMode
         )
 
         let now = clock.now()
@@ -463,6 +476,7 @@ actor OfflineReadingCacheStore {
                 provider: .kindle,
                 pageKeys: normalizedPageKeys,
                 voiceID: normalizedVoiceID,
+                audioMode: audioMode,
                 document: documentRecord,
                 audioByParagraph: audioRecords,
                 createdAt: createdAt,
@@ -499,6 +513,7 @@ actor OfflineReadingCacheStore {
                 paragraphCount: document.paragraphs.count,
                 readableParagraphCount: document.readableParagraphs.count,
                 audioSegmentCount: segmentsByParagraph.values.reduce(0) { $0 + $1.count },
+                audioMode: audioMode,
                 voiceID: normalizedVoiceID
             )
 
@@ -568,6 +583,7 @@ actor OfflineReadingCacheStore {
                 document: package.document,
                 pageKeys: package.pageKeys,
                 segmentsByParagraph: package.segmentsByParagraph,
+                audioMode: package.audioMode,
                 summary: summary(cacheKey: cacheKey, entry: touchedEntry)
             )
         } catch {
@@ -577,6 +593,7 @@ actor OfflineReadingCacheStore {
                 document: package.document,
                 pageKeys: package.pageKeys,
                 segmentsByParagraph: package.segmentsByParagraph,
+                audioMode: package.audioMode,
                 summary: summary(cacheKey: cacheKey, entry: entry)
             )
         }
@@ -640,7 +657,8 @@ actor OfflineReadingCacheStore {
         document: ReadingDocument,
         pageKeys: [String],
         voiceID: String,
-        segmentsByParagraph: [Int: [AudioSegment]]
+        segmentsByParagraph: [Int: [AudioSegment]],
+        audioMode: OfflineReadingAudioMode
     ) throws {
         guard document.sourceKind == .kindle else {
             throw OfflineReadingCacheError.invalidDocument("source is not Kindle")
@@ -712,6 +730,22 @@ actor OfflineReadingCacheStore {
         }
 
         let readableIDs = Set(document.readableParagraphs.map(\.id))
+        if audioMode == .onDevice {
+            // Generated speech belongs to a separate bounded LRU. Enforce the
+            // small-package contract here so no caller can accidentally persist
+            // hours of PCM together with the book.
+            guard segmentsByParagraph.isEmpty else {
+                throw OfflineReadingCacheError.invalidDocument(
+                    "on-device packages cannot embed audio"
+                )
+            }
+            guard !readableIDs.isEmpty else {
+                throw OfflineReadingCacheError.invalidDocument(
+                    "contains no readable OCR text"
+                )
+            }
+            return
+        }
         guard !readableIDs.isEmpty,
               Set(segmentsByParagraph.keys) == readableIDs else {
             throw OfflineReadingCacheError.incompleteAudio(paragraphIndex: nil)
@@ -919,6 +953,7 @@ actor OfflineReadingCacheStore {
               record.document.paragraphs.count == entry.paragraphCount,
               record.audioByParagraph.reduce(0, { $0 + $1.segments.count })
                 == entry.audioSegmentCount,
+              record.audioMode == entry.audioMode,
               record.voiceID == entry.voiceID else {
             throw OfflineReadingCacheError.corruptPackage
         }
@@ -963,7 +998,8 @@ actor OfflineReadingCacheStore {
                 document: document,
                 pageKeys: record.pageKeys,
                 voiceID: record.voiceID,
-                segmentsByParagraph: segmentsByParagraph
+                segmentsByParagraph: segmentsByParagraph,
+                audioMode: record.audioMode
             )
         } catch {
             // A package that decodes but no longer satisfies the schema's
@@ -982,6 +1018,7 @@ actor OfflineReadingCacheStore {
             document: document,
             pageKeys: record.pageKeys,
             segmentsByParagraph: segmentsByParagraph,
+            audioMode: record.audioMode,
             summary: summary(
                 cacheKey: cacheKey,
                 entry: entry,
@@ -1707,6 +1744,7 @@ actor OfflineReadingCacheStore {
             && entry.paragraphCount >= 0
             && entry.readableParagraphCount >= 0
             && entry.audioSegmentCount >= 0
+            && (entry.audioMode == .embedded || entry.audioSegmentCount == 0)
             && !entry.voiceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
@@ -1727,6 +1765,7 @@ actor OfflineReadingCacheStore {
             readableParagraphCount: entry.readableParagraphCount,
             audioSegmentCount: entry.audioSegmentCount,
             byteSize: entry.byteSize,
+            audioMode: entry.audioMode,
             voiceID: entry.voiceID,
             createdAt: entry.createdAt,
             updatedAt: entry.updatedAt,
@@ -1785,7 +1824,7 @@ actor OfflineReadingCacheStore {
 // MARK: - Codable package schema
 
 private struct OfflineReadingCacheManifest: Codable, Equatable {
-    static let currentVersion = 1
+    static let currentVersion = 2
     var version: Int = currentVersion
     var entries: [String: OfflineReadingCacheManifestEntry] = [:]
 }
@@ -1802,6 +1841,7 @@ private struct OfflineReadingCacheManifestEntry: Codable, Equatable {
     let paragraphCount: Int
     let readableParagraphCount: Int
     let audioSegmentCount: Int
+    let audioMode: OfflineReadingAudioMode
     let voiceID: String
 }
 
@@ -1830,6 +1870,7 @@ private struct OfflineReadingPackageRecord: Codable {
     let provider: OfflineReadingProvider
     let pageKeys: [String]
     let voiceID: String
+    let audioMode: OfflineReadingAudioMode
     let document: OfflineReadingDocumentRecord
     let audioByParagraph: [OfflineReadingParagraphAudioRecord]
     let createdAt: Date

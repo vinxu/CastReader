@@ -544,6 +544,25 @@ enum YouTubeAudioMemoryWindow {
     }
 }
 
+/// On-device speech is cheap to rebuild and expensive to retain as PCM. Keep a
+/// tight paragraph window in memory; the durable page/OCR package is untouched.
+enum OfflineOnDeviceAudioMemoryWindow {
+    static let paragraphsBehind = 2
+    static let paragraphsAhead = 3
+
+    static func retainedIndexes(
+        readableIndexes: [Int],
+        around paragraphIndex: Int
+    ) -> Set<Int> {
+        guard let position = readableIndexes.firstIndex(of: paragraphIndex) else {
+            return []
+        }
+        let lower = max(0, position - paragraphsBehind)
+        let upper = min(readableIndexes.count - 1, position + paragraphsAhead)
+        return Set(readableIndexes[lower...upper])
+    }
+}
+
 @MainActor
 final class ReadAloudViewModel: ObservableObject {
 
@@ -580,7 +599,9 @@ final class ReadAloudViewModel: ObservableObject {
 
     private var segmentsByParagraph: [Int: [AudioSegment]] = [:]
     private var offlineSegmentsByParagraph: [Int: [AudioSegment]] = [:]
+    private var offlineAudioMode: OfflineReadingAudioMode?
     private var offlineVoiceID: String?
+    private let onDeviceSpeechGenerator: any OnDeviceSpeechGenerating
     private var generationTask: Task<Void, Never>?
     private var liveWebTurnIntentSuspended = false
     private var listenCapRefreshTask: Task<Void, Never>?
@@ -771,9 +792,11 @@ final class ReadAloudViewModel: ObservableObject {
     init(
         document: ReadingDocument,
         analyticsContext: AnalyticsContentContext? = nil,
-        analyticsSessionCoordinator: ReadAnalyticsSessionCoordinator? = nil
+        analyticsSessionCoordinator: ReadAnalyticsSessionCoordinator? = nil,
+        onDeviceSpeechGenerator: any OnDeviceSpeechGenerating = OnDeviceSpeechService.shared
     ) {
         self.document = document
+        self.onDeviceSpeechGenerator = onDeviceSpeechGenerator
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         self.analyticsSessionCoordinator = analyticsSessionCoordinator
             ?? ReadAnalyticsSessionCoordinator()
@@ -863,38 +886,47 @@ final class ReadAloudViewModel: ObservableObject {
     @discardableResult
     func configureOfflinePlayback(
         segmentsByParagraph: [Int: [AudioSegment]],
-        voiceID: String
+        voiceID: String,
+        audioMode: OfflineReadingAudioMode = .embedded
     ) -> Bool {
         let voiceID = voiceID.trimmed
         guard !voiceID.isEmpty, !readableIndices.isEmpty else { return false }
 
         var validated: [Int: [AudioSegment]] = [:]
-        for paragraphIndex in readableIndices {
-            guard let segments = segmentsByParagraph[paragraphIndex],
-                  !segments.isEmpty,
-                  segments.allSatisfy({
-                      $0.paragraphIndex == paragraphIndex
-                          && !$0.audioData.isEmpty
-                          && $0.duration.isFinite
-                          && $0.duration > 0
-                          && !$0.timestamps.isEmpty
-                          && $0.timestamps.allSatisfy { timestamp in
-                              !timestamp.word.trimmed.isEmpty
-                                  && timestamp.startTime.isFinite
-                                  && timestamp.endTime.isFinite
-                                  && timestamp.startTime >= 0
-                                  && timestamp.endTime >= timestamp.startTime
-                          }
-                  }) else {
-                return false
+        if audioMode == .onDevice {
+            guard segmentsByParagraph.isEmpty else { return false }
+        } else {
+            for paragraphIndex in readableIndices {
+                guard let segments = segmentsByParagraph[paragraphIndex],
+                      !segments.isEmpty,
+                      segments.allSatisfy({
+                          $0.paragraphIndex == paragraphIndex
+                              && !$0.audioData.isEmpty
+                              && $0.duration.isFinite
+                              && $0.duration > 0
+                              && !$0.timestamps.isEmpty
+                              && $0.timestamps.allSatisfy { timestamp in
+                                  !timestamp.word.trimmed.isEmpty
+                                      && timestamp.startTime.isFinite
+                                      && timestamp.endTime.isFinite
+                                      && timestamp.startTime >= 0
+                                      && timestamp.endTime >= timestamp.startTime
+                              }
+                      }) else {
+                    return false
+                }
+                validated[paragraphIndex] = segments.sorted { lhs, rhs in
+                    lhs.segmentIndex < rhs.segmentIndex
+                }
             }
-            validated[paragraphIndex] = segments.sorted { lhs, rhs in
-                lhs.segmentIndex < rhs.segmentIndex
+            guard Set(segmentsByParagraph.keys) == Set(readableIndices) else {
+                return false
             }
         }
 
         offlineSegmentsByParagraph = validated
         self.segmentsByParagraph = validated
+        offlineAudioMode = audioMode
         offlineVoiceID = voiceID
         playbackVoiceID = voiceID
         isOfflinePlayback = true
@@ -909,6 +941,7 @@ final class ReadAloudViewModel: ObservableObject {
         stop()
         offlineSegmentsByParagraph.removeAll(keepingCapacity: false)
         segmentsByParagraph.removeAll(keepingCapacity: false)
+        offlineAudioMode = nil
         offlineVoiceID = nil
         isOfflinePlayback = false
         playbackVoiceID = settings.voice(for: docLanguage)
@@ -2162,17 +2195,131 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func startOfflineParagraph(_ paragraphIndex: Int, autoplay: Bool = true) {
         guard requireOfflineProAccess() else { return }
-        guard let segments = offlineSegmentsByParagraph[paragraphIndex],
-              !segments.isEmpty else {
+        if let segments = offlineSegmentsByParagraph[paragraphIndex],
+           !segments.isEmpty {
+            startWithPrefetchedSegments(
+                segments,
+                paragraphIndex: paragraphIndex,
+                allowAccessRefresh: false,
+                autoplay: autoplay
+            )
+            return
+        }
+        guard offlineAudioMode == .onDevice else {
             status = .error(AppLocalized("离线内容不完整，请联网后重新下载"))
             return
         }
-        startWithPrefetchedSegments(
-            segments,
-            paragraphIndex: paragraphIndex,
-            allowAccessRefresh: false,
-            autoplay: autoplay
-        )
+        generateOnDeviceParagraph(paragraphIndex, autoplay: autoplay)
+    }
+
+    /// Generates one paragraph without consulting any network service. The
+    /// first natural sentence is enqueued as soon as it is rendered; once the
+    /// producer finishes, the next paragraph is synthesized in the background.
+    private func generateOnDeviceParagraph(
+        _ paragraphIndex: Int,
+        autoplay: Bool
+    ) {
+        guard isOfflinePlayback,
+              offlineAudioMode == .onDevice,
+              readableIndices.contains(paragraphIndex),
+              paras.indices.contains(paragraphIndex),
+              requireOfflineProAccess() else { return }
+
+        if !isActive {
+            activate()
+            applyPlaybackMetadata()
+            applySpeed()
+        }
+        beginAnalyticsReadSessionIfNeeded(resume: currentParagraphIndex >= 0)
+        guard let session = ensureAudioSessionClaim() else { return }
+
+        generationEpoch &+= 1
+        let epoch = generationEpoch
+        generationTask?.cancel()
+        resetLiveWebCarryPrewarmState()
+        clearPrefetch()
+        _ = audio.clearQueue(session: session)
+        _ = audio.setMoreSegmentsExpected(true, session: session)
+
+        isFinished = false
+        segmentsByParagraph[paragraphIndex] = []
+        offlineSegmentsByParagraph.removeValue(forKey: paragraphIndex)
+        currentParagraphIndex = paragraphIndex
+        processedDisplayText = nil
+        highlightRange = nil
+        photoHighlightWordIndex = nil
+        photoHighlightWordRange = nil
+        pdfHighlight = nil
+        photoCursor = 0
+        clearOCRWordAlignment()
+        lastWordKey = ""
+        status = .loading
+
+        let paragraph = paras[paragraphIndex]
+        let language = docLanguage
+        generationTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await self.onDeviceSpeechGenerator.generateParagraph(
+                    paragraphIndex: paragraphIndex,
+                    text: SpeechTextSanitizer.sanitizedForTTS(
+                        paragraph.resolvedSpeechText
+                    ),
+                    language: language,
+                    speaker: paragraph.speaker
+                ) { [weak self] segment in
+                    await MainActor.run {
+                        self?.appendSegment(
+                            segment,
+                            paragraph: paragraphIndex,
+                            epoch: epoch,
+                            session: session,
+                            autoPlay: autoplay,
+                            voiceSwitchID: nil
+                        )
+                    }
+                }
+                guard !Task.isCancelled,
+                      self.generationEpoch == epoch,
+                      self.currentParagraphIndex == paragraphIndex,
+                      self.audioSessionToken == session,
+                      self.audio.isPlaybackSessionActive(session) else { return }
+                _ = self.audio.finishStreamingProducer(session: session)
+                let generated = self.segmentsByParagraph[paragraphIndex] ?? []
+                guard !generated.isEmpty else {
+                    self.status = .error(AppLocalized("本机语音没有生成可播放内容。"))
+                    return
+                }
+                self.offlineSegmentsByParagraph[paragraphIndex] = generated
+                self.pruneOnDeviceAudio(around: paragraphIndex)
+                self.status = .ready
+                self.preloadNext(after: paragraphIndex)
+            } catch OnDeviceSpeechError.cancelled {
+                guard self.generationEpoch == epoch,
+                      self.audioSessionToken == session else { return }
+                _ = self.audio.setMoreSegmentsExpected(false, session: session)
+            } catch is CancellationError {
+                guard self.generationEpoch == epoch,
+                      self.audioSessionToken == session else { return }
+                _ = self.audio.setMoreSegmentsExpected(false, session: session)
+            } catch {
+                guard self.generationEpoch == epoch,
+                      self.currentParagraphIndex == paragraphIndex,
+                      self.audioSessionToken == session,
+                      self.audio.isPlaybackSessionActive(session) else { return }
+                _ = self.audio.setMoreSegmentsExpected(false, session: session)
+                self.status = .error(
+                    (error as? LocalizedError)?.errorDescription
+                        ?? AppLocalized("本机语音生成失败，请重试。")
+                )
+                self.endAnalyticsReadSession(
+                    result: .failed,
+                    reason: "offline_tts_failed",
+                    errorStage: "on_device_tts",
+                    errorCode: "local_generation_failed"
+                )
+            }
+        }
     }
 
     func start() {
@@ -3275,20 +3422,92 @@ final class ReadAloudViewModel: ObservableObject {
         let nextIndex = readableIndices[nextPos]
         if prefetchingIndex == nextIndex || prefetchedIndex == nextIndex { return }   // 已在预取/已就绪
         if isOfflinePlayback {
-            guard let segments = offlineSegmentsByParagraph[nextIndex],
-                  !segments.isEmpty else {
-                prefetchedIndex = nil
-                prefetchedSegments = []
+            if let segments = offlineSegmentsByParagraph[nextIndex],
+               !segments.isEmpty {
+                prefetchingIndex = nil
+                prefetchedIndex = nextIndex
+                prefetchedSegments = segments
+                prefetchedYouTubeAudioIsQuotaExempt = false
+                audio.prestageSegments(segments)
                 return
             }
-            prefetchingIndex = nil
-            prefetchedIndex = nextIndex
-            prefetchedSegments = segments
-            prefetchedYouTubeAudioIsQuotaExempt = false
-            audio.prestageSegments(segments)
+            if offlineAudioMode == .onDevice {
+                startOnDevicePrefetch(nextIndex)
+            } else {
+                prefetchingIndex = nil
+                prefetchedIndex = nil
+                prefetchedSegments = []
+            }
             return
         }
         startPrefetch(nextIndex)
+    }
+
+    private func startOnDevicePrefetch(_ nextIndex: Int) {
+        guard isActive,
+              isOfflinePlayback,
+              offlineAudioMode == .onDevice,
+              paras.indices.contains(nextIndex) else { return }
+        prefetchTask?.cancel()
+        prefetchingIndex = nextIndex
+        prefetchedIndex = nil
+        prefetchedSegments = []
+        prefetchedYouTubeAudioIsQuotaExempt = false
+        let epoch = generationEpoch
+        let paragraph = paras[nextIndex]
+        let language = docLanguage
+        prefetchTask = Task { [weak self] in
+            guard let self else { return }
+            var collected: [AudioSegment] = []
+            do {
+                try await self.onDeviceSpeechGenerator.generateParagraph(
+                    paragraphIndex: nextIndex,
+                    text: SpeechTextSanitizer.sanitizedForTTS(
+                        paragraph.resolvedSpeechText
+                    ),
+                    language: language,
+                    speaker: paragraph.speaker
+                ) { segment in
+                    collected.append(segment)
+                }
+                guard !Task.isCancelled,
+                      self.isActive,
+                      self.isOfflinePlayback,
+                      self.generationEpoch == epoch,
+                      self.prefetchingIndex == nextIndex,
+                      !collected.isEmpty else { return }
+                self.offlineSegmentsByParagraph[nextIndex] = collected
+                self.pruneOnDeviceAudio(around: nextIndex)
+                self.prefetchedSegments = collected
+                self.prefetchedIndex = nextIndex
+                self.prefetchingIndex = nil
+                self.prefetchTask = nil
+                self.audio.prestageSegments(collected)
+            } catch {
+                guard self.generationEpoch == epoch,
+                      self.prefetchingIndex == nextIndex else { return }
+                self.prefetchingIndex = nil
+                self.prefetchTask = nil
+                ReaderRunLog.write(
+                    "READ offline prefetch failed para=\(nextIndex) " +
+                    "error=\(error.localizedDescription)"
+                )
+            }
+        }
+    }
+
+    private func pruneOnDeviceAudio(around paragraphIndex: Int) {
+        guard isOfflinePlayback, offlineAudioMode == .onDevice else { return }
+        let retained = OfflineOnDeviceAudioMemoryWindow.retainedIndexes(
+            readableIndexes: readableIndices,
+            around: paragraphIndex
+        )
+        offlineSegmentsByParagraph = offlineSegmentsByParagraph.filter {
+            retained.contains($0.key)
+        }
+        segmentsByParagraph = segmentsByParagraph.filter {
+            retained.contains($0.key)
+        }
     }
 
     /// 后台生成 nextIndex 段的全部 segment 到 `prefetchedSegments`（不碰播放器，

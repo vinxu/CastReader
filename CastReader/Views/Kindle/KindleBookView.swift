@@ -2968,6 +2968,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 forMainFrameOnly: true,
                 in: .page
             ))
+#if DEBUG
+            // Inert until a developer explicitly starts a run from Web Inspector.
+            // Keeping the field probe out of Release avoids shipping a large
+            // observational payload before its Page Flip assumptions are proven.
+            userContentController.addUserScript(WKUserScript(
+                source: KindleWebScripts.pageFlipProbeBootstrap,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true,
+                in: .page
+            ))
+#endif
         } else {
             userContentController.addUserScript(WKUserScript(
                 source: KindleWebScripts.restrictedToKnownStorefronts(
@@ -2988,6 +2999,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 injectionTime: .atDocumentStart,
                 forMainFrameOnly: true
             ))
+#if DEBUG
+            userContentController.addUserScript(WKUserScript(
+                source: KindleWebScripts.pageFlipProbeBootstrap,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            ))
+#endif
         }
         config.userContentController = userContentController
         webView = WKWebView(frame: .zero, configuration: config)
@@ -3901,45 +3919,27 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 ?? page.pixelFingerprint?.nilIfEmpty
                 ?? "local-page-\(index)"
         }
-        let voiceID = AppSettings.shared.voice(for: document.language)
-        var audioByParagraph: [Int: [AudioSegment]] = [:]
-
-        for (offset, paragraph) in readable.enumerated() {
-            try requireOfflineDownloadAccess()
-            offlineCacheStatusText = String(
-                format: AppLocalized("正在生成离线音频 %d/%d…"),
-                offset + 1,
-                readable.count
-            )
-            offlineCacheProgress = 0.24 + 0.68 * Double(offset) / Double(max(1, readable.count))
-            let segments = try await TTSService.shared.generatePrefetchSegments(
-                paragraphIndex: paragraph.id,
-                text: SpeechTextSanitizer.sanitizedForTTS(
-                    paragraph.resolvedSpeechText
-                ),
-                voice: voiceID,
-                speed: 1,
-                language: document.language,
-                includeVoiceCode: true,
-                speaker: paragraph.speaker,
-                cloneRequestID: voiceID.hasPrefix("vc_") ? UUID().uuidString : nil
-            )
-            try requireOfflineDownloadAccess()
-            guard !segments.isEmpty else {
-                throw OfflineReadingCacheError.incompleteAudio(paragraphIndex: paragraph.id)
-            }
-            audioByParagraph[paragraph.id] = segments
+        // A book download is complete once its visual pages and OCR geometry
+        // are durable. Speech is regenerated just ahead of playback on device,
+        // so a long book does not carry hundreds of megabytes of permanent
+        // audio or require an hours-long foreground download.
+        guard await OnDeviceSpeechService.shared.capability(
+            language: document.language
+        ) != nil else {
+            throw OnDeviceSpeechError.noInstalledVoice(document.language)
         }
+        let voiceID = "on-device:auto"
 
         try requireOfflineDownloadAccess()
-        offlineCacheStatusText = AppLocalized("正在安全保存离线包…")
-        offlineCacheProgress = 0.94
+        offlineCacheStatusText = AppLocalized("正在安全保存页面和文字…")
+        offlineCacheProgress = 0.90
         let summary = try await cache.saveKindlePackage(
             book: book,
             document: document,
             pageKeys: pageKeys,
             voiceID: voiceID,
-            segmentsByParagraph: audioByParagraph,
+            segmentsByParagraph: [:],
+            audioMode: .onDevice,
             publishLease: publishLease
         )
         try requireOfflineDownloadAccess()
@@ -4009,6 +4009,19 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     ?? AppLocalized("离线包不存在或已损坏，请联网后重新下载。")
                 return
             }
+            if package.audioMode == .onDevice,
+               await OnDeviceSpeechService.shared.capability(
+                   language: package.document.language
+               ) == nil {
+                self.offlineUnavailableMessage = AppLocalized(
+                    "本机没有这本书对应语言的语音。请先在 iPhone 设置中下载该语言的语音。"
+                )
+                return
+            }
+            guard !Task.isCancelled,
+                  self.offlineOpenRequestID == requestID,
+                  self.isAccountBoundaryCurrent,
+                  self.book.id == requestedBook.id else { return }
             self.activateOfflinePackage(package, autoplay: autoplay)
         }
     }
@@ -4115,11 +4128,12 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         )
         guard readVM.configureOfflinePlayback(
             segmentsByParagraph: package.segmentsByParagraph,
-            voiceID: package.summary.voiceID
+            voiceID: package.summary.voiceID,
+            audioMode: package.audioMode
         ) else {
             offlineDocument = nil
             offlineVisiblePageIndex = nil
-            offlineUnavailableMessage = AppLocalized("离线音频不完整，请联网后重新下载。")
+            offlineUnavailableMessage = AppLocalized("离线页面不完整，请联网后重新下载。")
             return
         }
         let explainVM = makeExplainVM(document: package.document)

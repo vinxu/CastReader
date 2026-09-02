@@ -60,9 +60,9 @@ struct KindleOfflinePanel: View {
                 Text(AppLocalized("Pro 功能"))
                     .font(.subheadline.weight(.semibold))
             }
-            Text(AppLocalized("缓存当前 Kindle 页面组"))
+            Text(AppLocalized("下载 Kindle 离线页面"))
                 .font(.headline)
-            Text(AppLocalized("保存当前页和 Kindle 已准备的后续页面（最多 13 页），包括原页图片、文字位置和当前音色。下载不会自动翻书，也不会改变 Kindle 阅读进度。"))
+            Text(AppLocalized("保存当前页和 Kindle 已准备的后续页面（目前最多 13 页），包含原页图片与文字位置。朗读时由本机即时生成声音，不保存整本音频，因此下载更快、占用更小，也不会改变 Kindle 阅读进度。"))
                 .font(.footnote)
                 .foregroundStyle(AppTheme.mutedForeground)
                 .fixedSize(horizontal: false, vertical: true)
@@ -83,7 +83,12 @@ struct KindleOfflinePanel: View {
                 metric(value: "\(summary.readableParagraphCount)", label: AppLocalized("朗读段"))
                 metric(value: Self.byteText(summary.byteSize), label: AppLocalized("空间"))
             }
-            Text(AppLocalized("离线包使用下载时选择的音色；倍速可随时调整。更换音色需要联网重新下载。"))
+            Label(
+                summary.audioMode == .onDevice
+                    ? AppLocalized("本机语音 · 阅读时自动准备后续内容")
+                    : AppLocalized("已包含离线音频"),
+                systemImage: summary.audioMode == .onDevice ? "iphone.gen3" : "waveform"
+            )
                 .font(.caption)
                 .foregroundStyle(AppTheme.mutedForeground)
         }
@@ -104,7 +109,7 @@ struct KindleOfflinePanel: View {
             }
             ProgressView(value: model.offlineCacheProgress)
                 .tint(AppTheme.primary)
-            Text(AppLocalized("请保持此页面打开，iOS 暂不支持在锁屏后继续生成离线音频。"))
+            Text(AppLocalized("请保持此页面打开，页面保存完成后即可断网阅读和朗读。"))
                 .font(.caption)
                 .foregroundStyle(AppTheme.mutedForeground)
         }

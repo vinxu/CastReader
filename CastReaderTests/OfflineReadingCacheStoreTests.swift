@@ -127,6 +127,54 @@ final class OfflineReadingCacheStoreTests: XCTestCase {
         assertSegment(package.segmentsByParagraph[3]?.first, equals: audio[3]?.first)
     }
 
+    func testOnDevicePackageRoundTripsWithoutEmbeddedAudio() async throws {
+        let fixture = try makeFixture()
+        let store = try OfflineReadingCacheStore(rootDirectory: fixture.cacheRoot)
+        let book = makeBook(id: "B00-LOCAL-JIT")
+        let document = makeDocument(id: "local-jit")
+
+        let summary = try await store.saveKindlePackage(
+            book: book,
+            document: document,
+            pageKeys: ["page-a", "page-b"],
+            voiceID: "on-device:auto",
+            segmentsByParagraph: [:],
+            audioMode: .onDevice
+        )
+
+        XCTAssertEqual(summary.audioMode, .onDevice)
+        XCTAssertEqual(summary.audioSegmentCount, 0)
+        let loaded = await store.loadKindlePackage(book: book)
+        let package = try XCTUnwrap(loaded)
+        XCTAssertEqual(package.document, document)
+        XCTAssertEqual(package.audioMode, .onDevice)
+        XCTAssertTrue(package.segmentsByParagraph.isEmpty)
+    }
+
+    func testOnDevicePackageRejectsAccidentallyEmbeddedAudio() async throws {
+        let fixture = try makeFixture()
+        let store = try OfflineReadingCacheStore(rootDirectory: fixture.cacheRoot)
+        let book = makeBook(id: "B00-LOCAL-NO-AUDIO")
+        let document = makeDocument(id: "local-no-audio")
+
+        do {
+            _ = try await store.saveKindlePackage(
+                book: book,
+                document: document,
+                pageKeys: ["page-a", "page-b"],
+                voiceID: "on-device:auto",
+                segmentsByParagraph: makeAudio(document: document),
+                audioMode: .onDevice
+            )
+            XCTFail("On-device packages must keep generated audio out of the durable book")
+        } catch {
+            XCTAssertEqual(
+                error as? OfflineReadingCacheError,
+                .invalidDocument("on-device packages cannot embed audio")
+            )
+        }
+    }
+
     func testIncompletePageOrAudioCoverageIsRejectedWithoutReplacingGoodPackage() async throws {
         let fixture = try makeFixture()
         let store = try OfflineReadingCacheStore(rootDirectory: fixture.cacheRoot)
