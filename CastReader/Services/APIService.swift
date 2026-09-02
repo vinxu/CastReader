@@ -104,6 +104,22 @@ enum ClonedTTSNotFoundPolicy {
     }
 }
 
+enum ClonedTTSSessionRejectionPolicy {
+    /// Only structured errors that prove the route-local cms_ bearer itself is
+    /// unusable may close the account boundary. A generic/unknown 401 can be a
+    /// gateway configuration failure and must never turn into a login loop.
+    private static let definitiveSessionCodes: Set<String> = [
+        "INVALID_SESSION",
+        "SESSION_EXPIRED",
+        "SESSION_ROUTE_MISMATCH",
+    ]
+
+    static func isDefinitive(statusCode: Int, serverCode: String?) -> Bool {
+        guard statusCode == 401, let serverCode else { return false }
+        return definitiveSessionCodes.contains(serverCode.uppercased())
+    }
+}
+
 private func apiDebugLog(_ message: @autoclosure () -> String) {
     #if DEBUG
     print(message())
@@ -719,7 +735,9 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             }
             throw VoiceCloneError.proRequired
         }
-        guard let url = URL(string: Constants.API.tts) else { throw APIError.invalidURL }
+        guard let url = URL(string: Constants.API.clonedVoiceTTS) else {
+            throw APIError.invalidURL
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = body
@@ -756,7 +774,11 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             guard isCurrent else { throw CancellationError() }
         }
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
-        if http.statusCode == 401, canRefresh,
+        let code = VoiceCloneResponseParser.serverCode(from: data)?.uppercased()
+        if ClonedTTSSessionRejectionPolicy.isDefinitive(
+            statusCode: http.statusCode,
+            serverCode: code
+        ), canRefresh,
            await MobileSessionStore.shared.refreshSession() != nil {
             return try await requestClonedVoiceTTS(
                 body: body,
@@ -781,7 +803,6 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             VoiceCloneStore.shared.applyQuotaHeaders(http)
         }
         guard 200..<300 ~= http.statusCode else {
-            let code = VoiceCloneResponseParser.serverCode(from: data)?.uppercased()
             let message = VoiceCloneResponseParser.serverMessage(from: data)
             if code == "CLONE_QUOTA_EXHAUSTED" {
                 let resetAt = VoiceCloneResponseParser.quotaResetAt(from: data)
@@ -828,6 +849,14 @@ actor APIService: VoiceCloneSTSCredentialProviding {
             }
             switch http.statusCode {
             case 401:
+                guard ClonedTTSSessionRejectionPolicy.isDefinitive(
+                    statusCode: http.statusCode,
+                    serverCode: code
+                ) else {
+                    // Preserve the valid local login. The TTS surface already
+                    // converts this failure into a retriable service message.
+                    throw VoiceCloneError.server(http.statusCode, message)
+                }
                 await MobileSessionStore.shared.rejectSession(token)
                 await MainActor.run {
                     guard expectedBoundary.map(AccountContentIsolation.isCurrent) ?? true else { return }

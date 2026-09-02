@@ -57,6 +57,13 @@ enum Constants {
 
         // TTS
         static var tts: String { "\(baseURL)/api/captioned_speech_partly" }
+        /// Cloned voices use the authenticated v3 endpoint directly. The generic
+        /// captioned route remains only for preset voices and old-client
+        /// compatibility, so a reverse-proxy compatibility rule cannot silently
+        /// strip or misclassify the account session used for private voices.
+        static var clonedVoiceTTS: String {
+            "\(baseURL)/api/voice-clone/captioned-speech"
+        }
         static var ttsCatalog: String {
             "\(ServiceRouting.current.apiGatewayBaseURL)/api/tts/catalog?contract=tts-voice-catalog-v1"
         }

@@ -899,6 +899,7 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(Constants.API.documents, "https://api.castreader.ai/api/mobile/documents")
         XCTAssertEqual(Constants.API.sts, "https://api.castreader.ai/api/mobile/upload/sts")
         XCTAssertEqual(Constants.API.asyncUpload, "https://api.castreader.ai/api/mobile/upload/notify")
+        XCTAssertEqual(Constants.API.clonedVoiceTTS, "https://api.castreader.ai/api/voice-clone/captioned-speech")
         XCTAssertEqual(Constants.API.ttsCatalog, "https://api.castreader.ai/api/tts/catalog?contract=tts-voice-catalog-v1")
 
         XCTAssertEqual(Constants.API.webURL, "https://api.castreader.ai")
@@ -941,6 +942,7 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(Constants.API.sts, "https://api.castreader.cn/api/mobile/upload/sts")
         XCTAssertEqual(Constants.API.asyncUpload, "https://api.castreader.cn/api/mobile/upload/notify")
         XCTAssertEqual(Constants.API.tts, "https://api.castreader.cn/api/captioned_speech_partly")
+        XCTAssertEqual(Constants.API.clonedVoiceTTS, "https://api.castreader.cn/api/voice-clone/captioned-speech")
         XCTAssertEqual(Constants.API.ttsCatalog, "https://api.castreader.cn/api/tts/catalog?contract=tts-voice-catalog-v1")
         XCTAssertEqual(Constants.API.webURL, "https://api.castreader.cn")
         XCTAssertEqual(Constants.API.proStatus, "https://api.castreader.cn/api/pro/status")

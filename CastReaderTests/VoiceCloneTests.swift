@@ -2462,6 +2462,31 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertEqual(ClonedTTSRetryPolicy.delaysNanoseconds.count, 3)
     }
 
+    func testClonedTTSSessionRejectionRequiresAuthoritativeStructuredCode() {
+        for code in ["INVALID_SESSION", "SESSION_EXPIRED", "SESSION_ROUTE_MISMATCH"] {
+            XCTAssertTrue(
+                ClonedTTSSessionRejectionPolicy.isDefinitive(
+                    statusCode: 401,
+                    serverCode: code
+                )
+            )
+        }
+        for code in [nil, "INVALID_TOKEN", "AUTH_REQUIRED", "VOICE_CLONE_INTERNAL_ERROR"] as [String?] {
+            XCTAssertFalse(
+                ClonedTTSSessionRejectionPolicy.isDefinitive(
+                    statusCode: 401,
+                    serverCode: code
+                )
+            )
+        }
+        XCTAssertFalse(
+            ClonedTTSSessionRejectionPolicy.isDefinitive(
+                statusCode: 503,
+                serverCode: "SESSION_EXPIRED"
+            )
+        )
+    }
+
     func testUnifiedVoiceLibraryDecodesOwnerGiftAndIncompleteSnapshotLossily() throws {
         let data = try Data(
             contentsOf: URL(fileURLWithPath: #filePath)
