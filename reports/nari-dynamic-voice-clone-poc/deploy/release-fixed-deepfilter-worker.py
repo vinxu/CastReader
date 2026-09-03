@@ -141,9 +141,24 @@ def http_json(port: int, route: str) -> dict:
         return json.load(response)
 
 
+def supervisor_pid(name: str) -> int:
+    require(name in {"castreader-clone", "castreader-nari-base", "castreader-tts"},
+            "Unexpected supervisor service name")
+    result = subprocess.run(["supervisorctl", "pid", name], capture_output=True,
+                            text=True, timeout=5)
+    value = result.stdout.strip()
+    require(re.fullmatch(r"\d+", value), "Supervisor PID response is not numeric")
+    pid = int(value)
+    # Actual Supervisor returns LSB NOT_RUNNING (3) *and prints 0* for STOPPED,
+    # EXITED/FATAL states. This is a valid state snapshot, not a failed command.
+    require((pid == 0 and result.returncode == 3) or (pid > 1 and result.returncode == 0),
+            "Supervisor PID response has an unexpected exit status")
+    return pid
+
+
 def service_pids(config: dict) -> dict[str, int]:
     if config["region"] == "us":
-        return {key: int(run(["supervisorctl", "pid", name])) for key, name in (
+        return {key: supervisor_pid(name) for key, name in (
             ("worker", "castreader-clone"), ("nari", "castreader-nari-base"),
             ("tts", "castreader-tts"))}
     base = config["base"]
@@ -408,7 +423,7 @@ def supervisor_worker_state() -> tuple[str, int]:
                             capture_output=True, text=True, timeout=5)
     fields = status.stdout.strip().split()
     require(len(fields) >= 2 and fields[0] == "castreader-clone", "Cannot read clone supervisor state")
-    pid = int(run(["supervisorctl", "pid", "castreader-clone"], timeout=5))
+    pid = supervisor_pid("castreader-clone")
     return fields[1], pid
 
 

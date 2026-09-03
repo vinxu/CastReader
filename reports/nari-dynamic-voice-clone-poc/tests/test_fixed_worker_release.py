@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -342,6 +343,34 @@ class FixedWorkerReleaseTests(unittest.TestCase):
             with self.assertRaisesRegex(release.ReleaseError, "supervisor STOPPED"):
                 release.start_worker({"region": "us"})
         run.assert_not_called()
+
+    def test_actual_supervisor_pid_zero_exit_three_is_valid(self):
+        response = SimpleNamespace(stdout="0\n", stderr="", returncode=3)
+        with patch.object(release.subprocess, "run", return_value=response):
+            self.assertEqual(release.supervisor_pid("castreader-clone"), 0)
+
+    def test_actual_supervisor_stopped_status_and_pid_both_exit_three(self):
+        responses = [SimpleNamespace(stdout="castreader-clone                 STOPPED   Sep 03 12:00 PM\n",
+                                     stderr="", returncode=3),
+                     SimpleNamespace(stdout="0\n", stderr="", returncode=3)]
+        with patch.object(release.subprocess, "run", side_effect=responses):
+            self.assertEqual(release.supervisor_worker_state(), ("STOPPED", 0))
+
+    def test_service_pid_snapshot_accepts_stopped_worker_with_running_protected_services(self):
+        responses = [SimpleNamespace(stdout="0\n", stderr="", returncode=3),
+                     SimpleNamespace(stdout="222\n", stderr="", returncode=0),
+                     SimpleNamespace(stdout="333\n", stderr="", returncode=0)]
+        with patch.object(release.subprocess, "run", side_effect=responses):
+            self.assertEqual(release.service_pids({"region": "us"}),
+                             {"worker": 0, "nari": 222, "tts": 333})
+
+    def test_supervisor_pid_rejects_rpc_error_and_inconsistent_status(self):
+        for stdout, code in (("No such process castreader-clone\n", 1), ("444\n", 3), ("0\n", 1)):
+            with self.subTest(stdout=stdout, code=code), \
+                 patch.object(release.subprocess, "run", return_value=SimpleNamespace(
+                     stdout=stdout, stderr="", returncode=code)):
+                with self.assertRaises(release.ReleaseError):
+                    release.supervisor_pid("castreader-clone")
 
     def test_us_respawn_is_frozen_and_supervised_stopped_before_swap(self):
         command = MagicMock()
