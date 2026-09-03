@@ -60,7 +60,8 @@ PROBE_TEXT_EN = (
 class AdaptiveDenoiseError(RuntimeError):
     """A recoverable enhancement or selector failure.
 
-    The production caller must fall back to the already validated raw prompt.
+    Production creation reports a retryable failure without publishing a raw
+    prompt. Legacy selector helpers remain available for offline experiments.
     This exception must never be used for raw reference quality failures.
     """
 

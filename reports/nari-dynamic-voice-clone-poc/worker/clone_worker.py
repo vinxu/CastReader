@@ -35,27 +35,15 @@ from adaptive_denoise import (
     DEFAULT_DEEPFILTER_SHA256,
     DEFAULT_DIARIZATION_SHA256,
     DEFAULT_SPEAKER_SHA256,
-    PROBE_SEEDS,
-    PROBE_VERSION,
-    QWEN_PROMPT_COSINE_FLOOR,
     RELATIVE_SPEAKER_FLOOR,
-    SELECTOR_VERSION,
     DiarizationUnavailable,
     DeepFilterRunner,
     SpeakerDiarizer,
-    cosine,
-    low_energy_artifact_metrics,
-    probe_text,
-    raw_bypass_reason,
-    runtime_mode,
-    select_branch,
-    should_apply,
 )
 from audio_quality import (
     ReferenceAudioResult,
     ReferenceQualityError,
     process_reference_audio,
-    reference_speaker_embedding,
 )
 from build_prompt import VoicePromptBuilder
 from inference_scheduler import (
@@ -133,11 +121,8 @@ VOICE_SPEAKER_EMBEDDING_SIZE = int(
 ASR_MODEL_DIR_VALUE = os.environ.get("CLONE_ASR_MODEL_DIR", "").strip()
 ASR_MODEL_DIR = Path(ASR_MODEL_DIR_VALUE).expanduser() if ASR_MODEL_DIR_VALUE else None
 ASR_WARMUP = os.environ.get("CLONE_ASR_WARMUP", "0").strip() == "1"
-DENOISE_CONFIGURED_MODE = os.environ.get("CLONE_DENOISE_MODE", "off")
-DENOISE_MODE_FILE = Path(
-    os.environ.get("CLONE_DENOISE_MODE_FILE", DATA_ROOT / ".adaptive-denoise-mode")
-)
-DENOISE_CANARY_PERCENT = int(os.environ.get("CLONE_DENOISE_CANARY_PERCENT", "10"))
+DENOISE_PIPELINE_VERSION = "fixed-deepfilter-atten24-v1"
+DENOISE_ATTENUATION_DB = 24
 DEEPFILTER_BIN = Path(
     os.environ.get("CLONE_DEEPFILTER_BIN", DATA_ROOT / "denoise/bin/deep-filter")
 )
@@ -187,18 +172,11 @@ SPEAKER_DIARIZER = SpeakerDiarizer(
 )
 DENOISE_TELEMETRY_LOCK = threading.Lock()
 DENOISE_TELEMETRY: dict[str, int] = {
-    "created_online": 0,
     "created_atten24": 0,
-    "created_atten100": 0,
-    "shadow_online": 0,
-    "adaptive_fallback_online": 0,
-    "mechanical_bypass_online": 0,
-    "clean_bypass_online": 0,
-    "inconclusive_bypass_online": 0,
+    "denoise_failures": 0,
+    "denoise_reference_rejections": 0,
     "multiple_speaker_rejections": 0,
-    "shadow_multiple_speaker_observations": 0,
     "diarization_unavailable": 0,
-    "shadow_diarization_unavailable": 0,
 }
 
 GENERATED_AUDIO_REJECTION_HEADERS = {
@@ -394,24 +372,46 @@ def increment_denoise_metric(name: str) -> None:
         DENOISE_TELEMETRY[name] = DENOISE_TELEMETRY.get(name, 0) + 1
 
 
-def denoise_mode() -> tuple[str, str]:
-    return runtime_mode(DENOISE_CONFIGURED_MODE, DENOISE_MODE_FILE)
-
-
 def denoise_health() -> dict[str, object]:
-    mode, source = denoise_mode()
     with DENOISE_TELEMETRY_LOCK:
         counters = dict(DENOISE_TELEMETRY)
+    deepfilter = DEEPFILTER_RUNNER.status()
+    diarization = SPEAKER_DIARIZER.model_status()
     return {
-        "selector_version": SELECTOR_VERSION,
-        "probe_version": PROBE_VERSION,
-        "mode": mode,
-        "mode_source": source,
-        "canary_percent": DENOISE_CANARY_PERCENT,
-        "deepfilter": DEEPFILTER_RUNNER.status(),
-        "diarization": SPEAKER_DIARIZER.model_status(),
+        "pipeline_version": DENOISE_PIPELINE_VERSION,
+        "selector_version": DENOISE_PIPELINE_VERSION,
+        "mode": "on",
+        "mode_source": "fixed-policy",
+        "all_recordings": True,
+        "attenuation_db": DENOISE_ATTENUATION_DB,
+        "deepfilter_passes": 1,
+        "prompt_builds": 1,
+        "probe_count": 0,
+        "raw_fallback": False,
+        "ready": bool(
+            deepfilter["ready"]
+            and diarization["ready"]
+            and not diarization.get("load_error")
+        ),
+        "deepfilter": deepfilter,
+        "diarization": diarization,
         "counters": counters,
     }
+
+
+def denoise_unavailable() -> HTTPException:
+    return HTTPException(
+        503,
+        detail={
+            "code": "VOICE_DENOISE_UNAVAILABLE",
+            "message": "Voice noise reduction is temporarily unavailable. Please retry.",
+        },
+        headers={
+            "Retry-After": "2",
+            "X-Voice-Retryable": "true",
+            "X-Voice-Error-Code": "VOICE_DENOISE_UNAVAILABLE",
+        },
+    )
 
 
 def decode_reference(raw: bytes) -> tuple[np.ndarray, int]:
@@ -641,11 +641,19 @@ def prepare_storage() -> None:
         prompt_builder()
     if ASR_WARMUP:
         semantic_asr_validator().warmup()
-    mode, _ = denoise_mode()
-    if mode != "off" and DENOISE_WARMUP:
-        if not DEEPFILTER_RUNNER.status()["ready"]:
-            raise RuntimeError("adaptive denoise DeepFilter binary is not ready")
-        SPEAKER_DIARIZER.warmup()
+    if DENOISE_WARMUP:
+        # A failed enhancement dependency must not take existing-voice TTS
+        # down. Creation still fails closed, and health exposes readiness.
+        try:
+            if not DEEPFILTER_RUNNER.status()["ready"]:
+                raise AdaptiveDenoiseError("DeepFilter binary is not ready")
+            SPEAKER_DIARIZER.warmup()
+        except Exception as error:
+            structured_log(
+                "voice_denoise_warmup_unavailable",
+                pipeline_version=DENOISE_PIPELINE_VERSION,
+                error_type=type(error).__name__,
+            )
 
 
 @app.on_event("shutdown")
@@ -669,6 +677,10 @@ def health() -> dict[str, object]:
     asr_ready = ASR_MODEL_DIR is not None and ASR_MODEL_DIR.is_dir()
     validator = ASR_VALIDATOR_INSTANCE
     asr_loaded = validator.loaded if validator is not None else False
+    denoise = denoise_health()
+    writer_enabled = xvector_writer_enabled()
+    with VOICE_BUILD_REGISTRY_LOCK:
+        active_voice_tasks = len(VOICE_BUILD_CANCEL_EVENTS)
     return {
         "status": "healthy" if nari_ready else "degraded",
         "model": MODEL_NAME,
@@ -677,11 +689,13 @@ def health() -> dict[str, object]:
         "semantic_asr_loaded": asr_loaded,
         "semantic_asr_required": False,
         "voice_clone_generation_mode": "x-vector",
-        "voice_creation_enabled": xvector_writer_enabled(),
+        "voice_creation_enabled": writer_enabled and bool(denoise["ready"]),
+        "voice_creation_dependencies_ready": denoise["ready"],
+        "active_voice_tasks": active_voice_tasks,
         "voice_prompt_writer_schema": (
-            "xvector_v1" if xvector_writer_enabled() else "disabled"
+            "xvector_v1" if writer_enabled else "disabled"
         ),
-        "adaptive_denoise": denoise_health(),
+        "adaptive_denoise": denoise,
         **SCHEDULER.snapshot(),
     }
 
@@ -725,12 +739,6 @@ async def create_voice(
         raise HTTPException(422, "requested_voice_id uses a reserved prefix")
     destination = voice_dir(voice_id)
     staging = VOICE_ROOT / f".{voice_id}.{uuid.uuid4().hex}.building"
-    selected_mode, mode_source = denoise_mode()
-    adaptive_requested = should_apply(
-        selected_mode,
-        voice_id,
-        DENOISE_CANARY_PERCENT,
-    )
     with voice_mutation_lock(voice_id):
         if (destination / "prompt.pt").is_file():
             raise HTTPException(
@@ -802,78 +810,56 @@ async def create_voice(
             raise HTTPException(503, "voice reference processing timed out") from error
         raise_if_creation_cancelled()
 
-        diarization_metrics: dict[str, object] | None = None
-        if adaptive_requested:
-            try:
-                diarization = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        SPEAKER_DIARIZER.inspect,
-                        source_audio,
-                        source_sample_rate,
-                    ),
-                    timeout=max(0.1, remaining_creation_budget()),
-                )
-            except (DiarizationUnavailable, TimeoutError) as error:
-                metric = (
-                    "shadow_diarization_unavailable"
-                    if selected_mode == "shadow"
-                    else "diarization_unavailable"
-                )
-                increment_denoise_metric(metric)
-                structured_log(
-                    "voice_reference_diarization_unavailable",
-                    voice_id=voice_id,
-                    error_type=type(error).__name__,
-                    mode=selected_mode,
-                )
-                if selected_mode != "shadow":
-                    raise HTTPException(
-                        503,
-                        detail={
-                            "code": "VOICE_REFERENCE_DIARIZATION_UNAVAILABLE",
-                            "message": "Voice safety validation is temporarily unavailable",
-                        },
-                        headers={
-                            "Retry-After": "2",
-                            "X-Voice-Retryable": "true",
-                            "X-Voice-Error-Code": "VOICE_REFERENCE_DIARIZATION_UNAVAILABLE",
-                        },
-                    ) from error
-                diarization_metrics = {
-                    "available": False,
-                    "error_type": type(error).__name__,
-                }
-            else:
-                diarization_metrics = diarization.as_metrics()
-            if (
-                diarization_metrics is not None
-                and diarization_metrics.get("competing_speech") is True
-            ):
-                metric = (
-                    "shadow_multiple_speaker_observations"
-                    if selected_mode == "shadow"
-                    else "multiple_speaker_rejections"
-                )
-                increment_denoise_metric(metric)
-                structured_log(
-                    "voice_reference_competing_speech_observed",
-                    voice_id=voice_id,
-                    diarization=diarization_metrics,
-                    mode=selected_mode,
-                )
-                if selected_mode != "shadow":
-                    raise HTTPException(
-                        422,
-                        detail={
-                            "code": "VOICE_REFERENCE_MULTIPLE_SPEAKERS",
-                            "message": "More than one voice is present. Record again with only one person speaking.",
-                            "metrics": diarization_metrics,
-                        },
-                        headers={
-                            "X-Voice-Retryable": "false",
-                            "X-Voice-Error-Code": "VOICE_REFERENCE_MULTIPLE_SPEAKERS",
-                        },
-                    )
+        try:
+            diarization = await asyncio.wait_for(
+                asyncio.to_thread(
+                    SPEAKER_DIARIZER.inspect,
+                    source_audio,
+                    source_sample_rate,
+                ),
+                timeout=max(0.1, remaining_creation_budget()),
+            )
+        except (DiarizationUnavailable, TimeoutError) as error:
+            increment_denoise_metric("diarization_unavailable")
+            structured_log(
+                "voice_reference_diarization_unavailable",
+                voice_id=voice_id,
+                error_type=type(error).__name__,
+                pipeline_version=DENOISE_PIPELINE_VERSION,
+            )
+            raise HTTPException(
+                503,
+                detail={
+                    "code": "VOICE_REFERENCE_DIARIZATION_UNAVAILABLE",
+                    "message": "Voice safety validation is temporarily unavailable",
+                },
+                headers={
+                    "Retry-After": "2",
+                    "X-Voice-Retryable": "true",
+                    "X-Voice-Error-Code": "VOICE_REFERENCE_DIARIZATION_UNAVAILABLE",
+                },
+            ) from error
+        diarization_metrics = diarization.as_metrics()
+        if diarization_metrics.get("competing_speech") is True:
+            increment_denoise_metric("multiple_speaker_rejections")
+            structured_log(
+                "voice_reference_competing_speech_observed",
+                voice_id=voice_id,
+                diarization=diarization_metrics,
+                pipeline_version=DENOISE_PIPELINE_VERSION,
+            )
+            raise HTTPException(
+                422,
+                detail={
+                    "code": "VOICE_REFERENCE_MULTIPLE_SPEAKERS",
+                    "message": "More than one voice is present. Record again with only one person speaking.",
+                    "metrics": diarization_metrics,
+                },
+                headers={
+                    "X-Voice-Retryable": "false",
+                    "X-Voice-Error-Code": "VOICE_REFERENCE_MULTIPLE_SPEAKERS",
+                },
+            )
 
         transcript_metrics = observe_reference_transcript_duration(
             transcript,
@@ -910,9 +896,6 @@ async def create_voice(
                 transcript=transcript,
                 reference_language_code=reference_language_code,
                 transcript_metrics=transcript_metrics,
-                denoise_runtime_mode=selected_mode,
-                denoise_mode_source=mode_source,
-                adaptive_requested=adaptive_requested,
                 diarization_metrics=diarization_metrics,
                 creation_deadline=creation_deadline,
                 creation_cancelled=creation_cancelled,
@@ -1044,8 +1027,7 @@ def _schedule_voice_build_step(
     return schedule(
         execute,
         kind=kind,
-        # A voice build is long-running background GPU work. Submitting each
-        # prompt/probe separately lets interactive TTS run between its steps.
+        # Keep the one prompt build behind interactive TTS in the GPU queue.
         priority=PRIORITY_BACKGROUND,
         timeout_s=max(0.5, _remaining_build_budget(deadline_at) - 0.5),
         request_id=request_id,
@@ -1086,332 +1068,33 @@ def _build_prompt_for_reference(
         raise HTTPException(503, "voice prompt schema is unsafe")
 
 
-def _prompt_speaker_vector(prompt_path: Path) -> np.ndarray:
-    prompt = torch.load(
-        io.BytesIO(prompt_path.read_bytes()),
-        map_location="cpu",
-        weights_only=True,
-    )
-    validate_prompt_structure(prompt)
-    assert isinstance(prompt, dict)
-    speaker = prompt["ref_spk_embedding"]
-    assert isinstance(speaker, torch.Tensor)
-    return speaker.detach().to(torch.float32).cpu().numpy()
-
-
 def _relative_reference_speaker_guard(
     online: ReferenceAudioResult,
     candidate: ReferenceAudioResult,
-) -> bool:
+) -> dict[str, object]:
     baseline = online.metrics.get("min_speaker_similarity")
     selected = candidate.metrics.get("min_speaker_similarity")
-    return (
-        isinstance(baseline, (float, int))
-        and not isinstance(baseline, bool)
-        and isinstance(selected, (float, int))
-        and not isinstance(selected, bool)
-        and float(selected) >= float(baseline) - RELATIVE_SPEAKER_FLOOR
+    comparable = all(
+        isinstance(value, (float, int))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+        for value in (baseline, selected)
     )
-
-
-def _install_temporary_probe_prompt(prompt_path: Path, branch: str) -> tuple[str, Path]:
-    suffix = {"online": "base", "atten24": "d24", "atten100": "d100"}[branch]
-    voice_id = f"{PROBE_TEMP_PREFIX}{uuid.uuid4().hex[:24]}_{suffix}"
-    destination = VOICE_ROOT / voice_id
-    destination.mkdir(mode=0o700, parents=False, exist_ok=False)
-    try:
-        (destination / PROBE_TEMP_MARKER).write_text(
-            SELECTOR_VERSION + "\n",
-            encoding="utf-8",
-        )
-        shutil.copyfile(prompt_path, destination / "prompt.pt")
-    except BaseException:
-        shutil.rmtree(destination, ignore_errors=True)
-        raise
-    return voice_id, destination
-
-
-def _evict_nari_prompt(voice_id: str) -> bool:
-    try:
-        response = NARI_CLIENT.delete(
-            f"{NARI_URL}/internal/voice-prompts/{voice_id}",
-            timeout=min(2.0, NARI_REQUEST_TIMEOUT_SECONDS),
-        )
-        return response.status_code == 200
-    except Exception:
-        return False
-
-
-def _one_shot_denoise_probe(
-    voice_id: str,
-    *,
-    text: str,
-    language_code: str,
-    seed: int,
-    deadline_at: float,
-) -> bytes:
-    request = SpeechRequest(
-        text=text,
-        voice_id=voice_id,
-        language_id=language_code,
-        seed=seed,
-    )
-    status, wav = nari_streamed_wav(
-        nari_request_payload(
-            request,
-            language=normalize_language(language_code),
-            seed=seed,
-            voice_clone_mode="x_vector",
+    # Short valid references can contain fewer than two comparable 2.4 s
+    # windows. Absence of that relative statistic is not identity mismatch:
+    # raw diarization and the candidate's input-quality gate still apply.
+    return {
+        "backend": "campplus-window-consistency",
+        "comparable": comparable,
+        "passed": (
+            float(selected) >= float(baseline) - RELATIVE_SPEAKER_FLOOR
+            if comparable
+            else None
         ),
-        deadline_at=deadline_at,
-    )
-    if status != 200:
-        raise AdaptiveDenoiseError(f"Nari probe failed with status {status}")
-    audio, sample_rate = _decode_probe(wav)
-    _validate_denoise_probe_integrity(
-        audio,
-        sample_rate,
-        text=text,
-    )
-    return wav
-
-
-def _decode_probe(wav: bytes) -> tuple[np.ndarray, int]:
-    try:
-        audio, sample_rate = sf.read(
-            io.BytesIO(wav),
-            dtype="float32",
-            always_2d=True,
-        )
-    except (RuntimeError, ValueError) as error:
-        raise AdaptiveDenoiseError("Nari probe was not a valid WAV") from error
-    return np.mean(audio, axis=1, dtype=np.float32), int(sample_rate)
-
-
-def _validate_denoise_probe_integrity(
-    audio: np.ndarray,
-    sample_rate: int,
-    *,
-    text: str,
-) -> None:
-    """Reject unusable probes while preserving spectral evidence for selection.
-
-    The normal playback gate intentionally rejects electronic spectra and prefix
-    artifacts. Those are exactly the signals compared by the adaptive selector,
-    so applying that gate here would turn measurable candidate evidence into a
-    whole-pipeline fallback. Probe audio is never published to a user; identity
-    and electrical guards decide which separately validated prompt is retained.
-    """
-
-    samples = np.asarray(audio, dtype=np.float32).reshape(-1)
-    if (
-        samples.size == 0
-        or sample_rate != SAMPLE_RATE
-        or not np.isfinite(samples).all()
-    ):
-        raise AdaptiveDenoiseError("Nari probe contained invalid samples")
-    duration = samples.size / sample_rate
-    rms = float(np.sqrt(np.mean(np.square(samples, dtype=np.float64))))
-    if duration < 0.2 or not math.isfinite(rms) or rms < 0.001:
-        raise AdaptiveDenoiseError("Nari probe was empty or silent")
-    if float(np.mean(np.abs(samples) >= 0.999)) > 0.03:
-        raise AdaptiveDenoiseError("Nari probe was excessively clipped")
-    if float(abs(np.mean(samples, dtype=np.float64))) > 0.10:
-        raise AdaptiveDenoiseError("Nari probe had excessive DC offset")
-    if float(np.mean(np.abs(samples) < 0.0001)) > 0.995:
-        raise AdaptiveDenoiseError("Nari probe was mostly silent")
-    if duration > maximum_expected_output_duration_seconds(text):
-        raise AdaptiveDenoiseError("Nari probe duration did not match its text")
-
-
-def _adaptive_prompt_selection(
-    *,
-    staging: Path,
-    source_audio: np.ndarray,
-    source_sample_rate: int,
-    online_reference: ReferenceAudioResult,
-    online_prompt: Path,
-    transcript: str,
-    reference_language_code: str,
-    creation_deadline: float,
-    creation_cancelled: threading.Event,
-) -> tuple[Path, ReferenceAudioResult, dict[str, object]]:
-    bypass = raw_bypass_reason(
-        online_reference.metrics,
-        online_reference.warnings,
-    )
-    if bypass is not None:
-        if bypass == "periodic-mechanical-noise-conservative-bypass":
-            increment_denoise_metric("mechanical_bypass_online")
-        elif bypass in {"clean-reliable-snr", "clean-spectral-backstop"}:
-            increment_denoise_metric("clean_bypass_online")
-        else:
-            increment_denoise_metric("inconclusive_bypass_online")
-        return online_prompt, online_reference, {
-            "selected": "online",
-            "reason": bypass,
-            "adaptive_attempted": False,
-        }
-
-    private_work = staging / ".adaptive-work"
-    private_work.mkdir(mode=0o700, parents=False, exist_ok=False)
-    candidates: dict[str, ReferenceAudioResult] = {"online": online_reference}
-    prompts: dict[str, Path] = {"online": online_prompt}
-    deepfilter_elapsed: dict[str, float] = {}
-    temporary_prompts: list[tuple[str, Path]] = []
-    try:
-        for attenuation, branch in ((24, "atten24"), (100, "atten100")):
-            if creation_cancelled.is_set():
-                raise HTTPException(503, "voice creation was cancelled")
-            enhanced, enhanced_rate, elapsed = DEEPFILTER_RUNNER.enhance(
-                source_audio,
-                source_sample_rate,
-                attenuation_db=attenuation,
-                work_dir=private_work,
-                deadline_at=creation_deadline,
-                cancelled=creation_cancelled,
-            )
-            deepfilter_elapsed[branch] = round(elapsed, 3)
-            try:
-                candidates[branch] = process_reference_audio(
-                    enhanced,
-                    enhanced_rate,
-                )
-            except ReferenceQualityError as error:
-                raise AdaptiveDenoiseError(
-                    f"{branch} failed reference gate: {error.code}"
-                ) from error
-            prompts[branch] = staging / f"prompt.{branch}.pt"
-            _build_prompt_for_reference(
-                candidates[branch],
-                reference_path=staging / f"reference.{branch}.wav",
-                prompt_path=prompts[branch],
-                transcript=transcript,
-                deadline_at=creation_deadline,
-                cancelled=creation_cancelled,
-                request_id=None,
-            )
-
-        online_vector = _prompt_speaker_vector(prompts["online"])
-        prompt_cosines = {
-            branch: cosine(online_vector, _prompt_speaker_vector(prompts[branch]))
-            for branch in ("atten24", "atten100")
-        }
-        reference_guards = {
-            branch: _relative_reference_speaker_guard(
-                online_reference,
-                candidates[branch],
-            )
-            for branch in ("atten24", "atten100")
-        }
-        source_embedding = reference_speaker_embedding(
-            source_audio,
-            source_sample_rate,
-        )
-        if source_embedding is None:
-            raise AdaptiveDenoiseError("raw CampPlus identity embedding unavailable")
-
-        probe_ids: dict[str, str] = {}
-        for branch in ("online", "atten24", "atten100"):
-            temporary_id, temporary_dir = _install_temporary_probe_prompt(
-                prompts[branch],
-                branch,
-            )
-            temporary_prompts.append((temporary_id, temporary_dir))
-            probe_ids[branch] = temporary_id
-
-        text, probe_language = probe_text(reference_language_code)
-        per_seed: list[dict[str, object]] = []
-        identities: dict[str, list[float]] = {
-            "online": [],
-            "atten24": [],
-            "atten100": [],
-        }
-        for seed in PROBE_SEEDS:
-            record: dict[str, object] = {"seed": seed}
-            for branch in ("online", "atten24", "atten100"):
-                wav = _schedule_voice_build_step(
-                    lambda branch=branch, seed=seed: _one_shot_denoise_probe(
-                        probe_ids[branch],
-                        text=text,
-                        language_code=probe_language,
-                        seed=seed,
-                        deadline_at=creation_deadline,
-                    ),
-                    kind="voice-denoise-probe",
-                    deadline_at=creation_deadline,
-                    cancelled=creation_cancelled,
-                )
-                audio, sample_rate = _decode_probe(wav)
-                electrical = low_energy_artifact_metrics(audio, sample_rate)
-                embedding = reference_speaker_embedding(audio, sample_rate)
-                if embedding is None:
-                    raise AdaptiveDenoiseError(
-                        f"{branch} CampPlus probe embedding unavailable"
-                    )
-                identity = cosine(source_embedding, embedding)
-                identities[branch].append(identity)
-                record[f"{branch}_e"] = electrical[
-                    "suspicious_fraction_all_frames"
-                ]
-                record[f"{branch}_low_frames"] = electrical[
-                    "low_energy_frame_count"
-                ]
-                record[f"{branch}_identity"] = round(identity, 6)
-            per_seed.append(record)
-
-        median_identity = {
-            branch: float(np.median(values))
-            for branch, values in identities.items()
-        }
-        eligibility = {}
-        for branch in ("atten24", "atten100"):
-            eligibility[branch] = bool(
-                prompt_cosines[branch] >= QWEN_PROMPT_COSINE_FLOOR
-                and reference_guards[branch]
-                and median_identity[branch]
-                >= median_identity["online"] - RELATIVE_SPEAKER_FLOOR
-            )
-        decision = select_branch(
-            per_seed,
-            atten24_eligible=eligibility["atten24"],
-            atten100_eligible=eligibility["atten100"],
-        )
-        details: dict[str, object] = {
-            "selected": decision.selected,
-            "reason": decision.reason,
-            "adaptive_attempted": True,
-            "selector_version": SELECTOR_VERSION,
-            "probe_version": PROBE_VERSION,
-            "probe_seeds": list(PROBE_SEEDS),
-            "deepfilter_elapsed_s": deepfilter_elapsed,
-            "prompt_cosine_to_online": {
-                key: round(value, 6) for key, value in prompt_cosines.items()
-            },
-            "reference_speaker_guard": reference_guards,
-            "probe_identity_to_raw_reference": {
-                key: round(value, 6) for key, value in median_identity.items()
-            },
-            "eligibility": eligibility,
-            "valid_seed_count": decision.valid_seed_count,
-            "material_100_wins": decision.material_100_wins,
-            "material_100_regressions": decision.material_100_regressions,
-            "material_raw_wins": decision.material_raw_wins,
-            "per_seed": per_seed,
-        }
-        return prompts[decision.selected], candidates[decision.selected], details
-    finally:
-        for temporary_id, temporary_dir in temporary_prompts:
-            evicted = _evict_nari_prompt(temporary_id)
-            if not evicted:
-                structured_log(
-                    "voice_denoise_probe_cache_eviction_failed",
-                    temporary_voice_hash=hashlib.sha256(
-                        temporary_id.encode("utf-8")
-                    ).hexdigest()[:12],
-                )
-            shutil.rmtree(temporary_dir, ignore_errors=True)
-        shutil.rmtree(private_work, ignore_errors=True)
+        "baseline_min_similarity": baseline,
+        "candidate_min_similarity": selected,
+        "maximum_relative_drop": RELATIVE_SPEAKER_FLOOR,
+    }
 
 
 def build_voice_pipeline(
@@ -1426,15 +1109,17 @@ def build_voice_pipeline(
     transcript: str,
     reference_language_code: str,
     transcript_metrics: dict[str, float | int | bool | str],
-    denoise_runtime_mode: str,
-    denoise_mode_source: str,
-    adaptive_requested: bool,
     diarization_metrics: dict[str, object] | None,
     creation_deadline: float,
     creation_cancelled: threading.Event,
     raise_if_creation_cancelled,
     external_request_id: str | None,
 ) -> dict[str, object]:
+    """Run exactly one atten24 enhancement, then publish one x-vector prompt.
+
+    There is deliberately no clean/mechanical bypass, mode switch, generated
+    probe, alternative attenuation, or fallback to an unenhanced reference.
+    """
     with voice_mutation_lock(voice_id):
         raise_if_creation_cancelled()
         if destination.exists():
@@ -1453,23 +1138,107 @@ def build_voice_pipeline(
             raise HTTPException(409, "voice build already exists") from error
 
         started = time.perf_counter()
-        online_prompt = staging / "prompt.online.pt"
         final_prompt = staging / "prompt.pt"
-        selected_reference = online_reference
-        selection: dict[str, object] = {
-            "selected": "online",
-            "reason": (
-                "mode-off"
-                if denoise_runtime_mode == "off"
-                else "canary-holdout"
-            ),
-            "adaptive_attempted": False,
-        }
+        private_work = staging / ".denoise-work"
         try:
+            try:
+                private_work.mkdir(mode=0o700, parents=False, exist_ok=False)
+                enhanced, enhanced_rate, elapsed = DEEPFILTER_RUNNER.enhance(
+                    source_audio,
+                    source_sample_rate,
+                    attenuation_db=DENOISE_ATTENUATION_DB,
+                    work_dir=private_work,
+                    deadline_at=creation_deadline,
+                    cancelled=creation_cancelled,
+                )
+                raise_if_creation_cancelled()
+                selected_reference = process_reference_audio(
+                    enhanced,
+                    enhanced_rate,
+                )
+                reference_guard = _relative_reference_speaker_guard(
+                    online_reference,
+                    selected_reference,
+                )
+                if reference_guard["passed"] is False:
+                    increment_denoise_metric("denoise_reference_rejections")
+                    structured_log(
+                        "voice_denoise_reference_rejected",
+                        voice_id=voice_id,
+                        pipeline_version=DENOISE_PIPELINE_VERSION,
+                        code="VOICE_REFERENCE_DENOISE_REJECTED",
+                        quality=reference_guard,
+                        raw_fallback=False,
+                    )
+                    raise HTTPException(
+                        422,
+                        detail={
+                            "code": "VOICE_REFERENCE_DENOISE_REJECTED",
+                            "message": "Noise reduction could not preserve the voice reliably. Please record again in a quieter place.",
+                            "metrics": reference_guard,
+                        },
+                        headers={
+                            "X-Voice-Retryable": "false",
+                            "X-Voice-Error-Code": "VOICE_REFERENCE_DENOISE_REJECTED",
+                        },
+                    )
+                raise_if_creation_cancelled()
+            except ReferenceQualityError as error:
+                increment_denoise_metric("denoise_reference_rejections")
+                structured_log(
+                    "voice_denoise_reference_rejected",
+                    voice_id=voice_id,
+                    pipeline_version=DENOISE_PIPELINE_VERSION,
+                    code=error.code,
+                    quality=error.metrics,
+                    raw_fallback=False,
+                )
+                raise HTTPException(
+                    422,
+                    detail={
+                        "code": error.code,
+                        "message": error.message,
+                        "metrics": error.metrics,
+                    },
+                    headers={
+                        "X-Voice-Retryable": "false",
+                        "X-Voice-Error-Code": error.code,
+                    },
+                ) from error
+            except HTTPException:
+                raise
+            except Exception as error:
+                raise_if_creation_cancelled()
+                increment_denoise_metric("denoise_failures")
+                structured_log(
+                    "voice_denoise_failed",
+                    voice_id=voice_id,
+                    pipeline_version=DENOISE_PIPELINE_VERSION,
+                    error_type=type(error).__name__,
+                    raw_fallback=False,
+                )
+                raise denoise_unavailable() from error
+            finally:
+                shutil.rmtree(private_work, ignore_errors=True)
+
+            selection: dict[str, object] = {
+                "pipeline_version": DENOISE_PIPELINE_VERSION,
+                "selector_version": DENOISE_PIPELINE_VERSION,
+                "selected": "atten24",
+                "reason": "fixed-deepfilter-atten24",
+                "deepfilter_applied": True,
+                "attenuation_db": DENOISE_ATTENUATION_DB,
+                "deepfilter_elapsed_s": round(elapsed, 6),
+                "deepfilter_passes": 1,
+                "prompt_builds": 1,
+                "probe_count": 0,
+                "raw_fallback": False,
+                "reference_speaker_guard": reference_guard,
+            }
             _build_prompt_for_reference(
-                online_reference,
-                reference_path=staging / "reference.online.wav",
-                prompt_path=online_prompt,
+                selected_reference,
+                reference_path=staging / "reference.atten24.wav",
+                prompt_path=final_prompt,
                 transcript=transcript,
                 deadline_at=creation_deadline,
                 cancelled=creation_cancelled,
@@ -1479,65 +1248,12 @@ def build_voice_pipeline(
                     else None
                 ),
             )
-            selected_prompt = online_prompt
-            if adaptive_requested:
-                try:
-                    (
-                        selected_prompt,
-                        selected_reference,
-                        selection,
-                    ) = _adaptive_prompt_selection(
-                        staging=staging,
-                        source_audio=source_audio,
-                        source_sample_rate=source_sample_rate,
-                        online_reference=online_reference,
-                        online_prompt=online_prompt,
-                        transcript=transcript,
-                        reference_language_code=reference_language_code,
-                        creation_deadline=creation_deadline,
-                        creation_cancelled=creation_cancelled,
-                    )
-                except Exception as error:
-                    raise_if_creation_cancelled()
-                    selection = {
-                        "selected": "online",
-                        "reason": "adaptive-system-fallback",
-                        "adaptive_attempted": True,
-                        "fallback_error_type": type(error).__name__,
-                    }
-                    selected_prompt = online_prompt
-                    selected_reference = online_reference
-                    increment_denoise_metric("adaptive_fallback_online")
-                    structured_log(
-                        "voice_denoise_fallback_online",
-                        voice_id=voice_id,
-                        error_type=type(error).__name__,
-                    )
-
-            would_select = str(selection["selected"])
-            if denoise_runtime_mode == "shadow" and adaptive_requested:
-                would_reason = str(selection["reason"])
-                selection = {
-                    **selection,
-                    "would_select": would_select,
-                    "would_reason": would_reason,
-                    "selected": "online",
-                    "reason": "shadow-mode",
-                }
-                selected_prompt = online_prompt
-                selected_reference = online_reference
-                increment_denoise_metric("shadow_online")
-
             raise_if_creation_cancelled()
-            selected_prompt.replace(final_prompt)
-            for candidate_prompt in staging.glob("prompt.*.pt"):
-                candidate_prompt.unlink(missing_ok=True)
             prompt_schema = validate_prompt_bytes(final_prompt.read_bytes())
             if prompt_schema != "qwen3_tts_base_voice_clone_prompt_xvector_v1":
                 raise HTTPException(503, "voice prompt schema is unsafe")
 
-            selected_branch = str(selection["selected"])
-            increment_denoise_metric(f"created_{selected_branch}")
+            deepfilter_status = DEEPFILTER_RUNNER.status()
             metadata = {
                 "voice_id": voice_id,
                 "created_at": utc_now(),
@@ -1552,6 +1268,8 @@ def build_voice_pipeline(
                 "supported_languages": sorted(LANGUAGE_MAP),
                 "reference_quality": selected_reference.metrics,
                 "reference_quality_warnings": selected_reference.warnings,
+                # Historical field name retained for audit/API compatibility;
+                # this is a quality baseline only, never a second prompt.
                 "reference_quality_online": online_reference.metrics,
                 "reference_transcript_contract": transcript_metrics,
                 "reference_semantic_attested": False,
@@ -1560,10 +1278,10 @@ def build_voice_pipeline(
                 "reference_language": reference_language_code or None,
                 "adaptive_denoise": {
                     **selection,
-                    "mode": denoise_runtime_mode,
-                    "mode_source": denoise_mode_source,
-                    "deepfilter_version": DEEPFILTER_RUNNER.status()["version"],
-                    "deepfilter_sha256": DEEPFILTER_RUNNER.status()["sha256"],
+                    "mode": "on",
+                    "mode_source": "fixed-policy",
+                    "deepfilter_version": deepfilter_status["version"],
+                    "deepfilter_sha256": deepfilter_status["sha256"],
                     "diarization": diarization_metrics,
                 },
             }
@@ -1583,23 +1301,19 @@ def build_voice_pipeline(
                     detail={"code": code, "message": "Voice ID already exists"},
                 )
             leaked_references = tuple(staging.glob("reference*.wav"))
-            if leaked_references or (staging / ".adaptive-work").exists():
+            if leaked_references or private_work.exists():
                 raise HTTPException(503, "voice reference cleanup failed")
             staging.replace(destination)
+            increment_denoise_metric("created_atten24")
             structured_log(
                 "voice_denoise_selected",
                 voice_id=voice_id,
-                selected=selected_branch,
-                reason=selection["reason"],
-                mode=denoise_runtime_mode,
+                **selection,
+                mode="on",
                 prompt_build_s=metadata["prompt_build_s"],
             )
             return metadata
         finally:
-            for reference_path in staging.glob("reference*.wav"):
-                reference_path.unlink(missing_ok=True)
-            for candidate_prompt in staging.glob("prompt.*.pt"):
-                candidate_prompt.unlink(missing_ok=True)
             if staging.exists():
                 shutil.rmtree(staging, ignore_errors=True)
 
