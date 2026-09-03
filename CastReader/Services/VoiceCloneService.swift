@@ -79,6 +79,7 @@ enum VoiceCloneEndpoint {
 
 actor VoiceCloneService: VoiceCloneStoreServicing {
     static let shared = VoiceCloneService(sessionProvider: MobileSessionStore.shared)
+    static let creationRequestTimeout: TimeInterval = 150
 
     private let baseURL: URL
     private let session: URLSession
@@ -321,6 +322,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
 
     private func createUploadRequest(boundary: String, token: String) -> URLRequest {
         var request = URLRequest(url: baseURL.appendingPathComponent("api/voice-clone/voices"))
+        request.timeoutInterval = Self.creationRequestTimeout
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         authorize(&request, token: token)
@@ -329,6 +331,7 @@ actor VoiceCloneService: VoiceCloneStoreServicing {
 
     private func createChinaObjectRequest(token: String, body: Data) -> URLRequest {
         var request = URLRequest(url: baseURL.appendingPathComponent("api/voice-clone/voices"))
+        request.timeoutInterval = Self.creationRequestTimeout
         request.httpMethod = "POST"
         request.httpBody = body
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

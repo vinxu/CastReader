@@ -8,15 +8,30 @@ worker_root="${base}/app"
 nari_root="${nari_base}/src/nari_qwen3_tts"
 runner="${base}/run-clone-worker.sh"
 source_commit="${1:?pass the 40-character source commit SHA}"
-worker_files=(clone_worker.py build_prompt.py semantic_asr.py xvector_activation.py)
+worker_files=(
+  clone_worker.py
+  audio_quality.py
+  adaptive_denoise.py
+  build_prompt.py
+  semantic_asr.py
+  xvector_activation.py
+)
 nari_files=(
   contract/request.py
+  api/app.py
   api/schemas.py
   model/text.py
   model/input_layout.py
   executor/input_layout.py
   executor/talker.py
 )
+deepfilter_source="${incoming}/assets/denoise/bin/deep-filter"
+deepfilter_destination="${base}/denoise/bin/deep-filter"
+diarization_source="${incoming}/assets/quality/models/sherpa-onnx-pyannote-segmentation-3-0/model.onnx"
+diarization_destination="${base}/quality/models/sherpa-onnx-pyannote-segmentation-3-0/model.onnx"
+diarization_license_source="${incoming}/assets/quality/models/sherpa-onnx-pyannote-segmentation-3-0/LICENSE"
+diarization_license_destination="${base}/quality/models/sherpa-onnx-pyannote-segmentation-3-0/LICENSE"
+mode_file="${base}/.adaptive-denoise-mode"
 
 if [[ ! "${source_commit}" =~ ^[0-9a-f]{40}$ ]]; then
   echo "invalid source commit SHA" >&2
@@ -34,6 +49,14 @@ for name in "${nari_files[@]}"; do
   "${nari_base}/venv/bin/python" -m py_compile \
     "${incoming}/nari_qwen3_tts/${name}"
 done
+test "$(sha256sum "${deepfilter_source}" | cut -d' ' -f1)" = \
+  70775e251eee44c0f2451a1e833326cf8bcbbe304d3e7cd12851e6fce72ef7da
+test "$(sha256sum "${diarization_source}" | cut -d' ' -f1)" = \
+  220ad67ca923bef2fa91f2390c786097bf305bceb5e261d4af67b38e938e1079
+test -s "${diarization_license_source}"
+PYTHONPATH="${base}/quality/deps" \
+LD_LIBRARY_PATH="${base}/quality/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+  "${nari_base}/venv/bin/python" -c 'import sherpa_onnx'
 
 test "$(curl -fsS -o /dev/null -w '%{http_code}' --max-time 3 http://127.0.0.1:8880/health)" = 200
 curl -fsS --max-time 3 http://127.0.0.1:8094/ready >/dev/null
@@ -75,6 +98,11 @@ backup="${base}/backups/fast-hotpath-${stamp}"
 release_record="${base}/releases/fast-hotpath-${stamp}.json"
 mkdir -p "${backup}/worker" "${backup}/nari_qwen3_tts" "${base}/releases"
 cp -a "${runner}" "${backup}/run-clone-worker.sh"
+if [[ -e "${mode_file}" ]]; then
+  cp -a "${mode_file}" "${backup}/adaptive-denoise-mode"
+else
+  : > "${backup}/adaptive-denoise-mode.absent"
+fi
 for name in "${worker_files[@]}"; do
   mkdir -p "${backup}/worker/$(dirname "${name}")"
   if [[ -e "${worker_root}/${name}" ]]; then
@@ -114,6 +142,11 @@ restore_files() {
     cp -a "${backup}/nari_qwen3_tts/${name}" "${nari_root}/${name}"
   done
   cp -a "${backup}/run-clone-worker.sh" "${runner}"
+  if [[ -e "${backup}/adaptive-denoise-mode.absent" ]]; then
+    rm -f "${mode_file}"
+  else
+    cp -a "${backup}/adaptive-denoise-mode" "${mode_file}"
+  fi
 }
 
 rollback() {
@@ -130,7 +163,18 @@ done
 for name in "${nari_files[@]}"; do
   install_one "${incoming}/nari_qwen3_tts/${name}" "${nari_root}/${name}"
 done
+mkdir -p "$(dirname "${deepfilter_destination}")" \
+  "$(dirname "${diarization_destination}")"
+install -m 0755 "${deepfilter_source}" "${deepfilter_destination}.next"
+mv "${deepfilter_destination}.next" "${deepfilter_destination}"
+install -m 0644 "${diarization_source}" "${diarization_destination}.next"
+mv "${diarization_destination}.next" "${diarization_destination}"
+install -m 0644 "${diarization_license_source}" "${diarization_license_destination}.next"
+mv "${diarization_license_destination}.next" "${diarization_license_destination}"
 install_one "${incoming}/run-clone-worker.sh" "${runner}"
+install -m 0600 /dev/null "${mode_file}.next"
+printf 'shadow\n' > "${mode_file}.next"
+mv "${mode_file}.next" "${mode_file}"
 
 supervisorctl stop castreader-clone >/dev/null
 supervisorctl restart castreader-nari-base >/dev/null
@@ -163,12 +207,15 @@ import sys
 commit, stamp, destination, worker_root, nari_root, runner = sys.argv[1:]
 worker_files = (
     "clone_worker.py",
+    "audio_quality.py",
+    "adaptive_denoise.py",
     "build_prompt.py",
     "semantic_asr.py",
     "xvector_activation.py",
 )
 nari_files = (
     "contract/request.py",
+    "api/app.py",
     "api/schemas.py",
     "model/text.py",
     "model/input_layout.py",
@@ -192,6 +239,13 @@ record = {
     "hotpath": "nari-x-vector-only",
     "runtime_asr": "offline-audit-only",
     "writer_activation": "requires-bound-release-marker-v1",
+    "adaptive_denoise": {
+        "selector": "adaptive-deepfilter-24-100-v1",
+        "deployment_mode": "shadow",
+        "deepfilter_sha256": "70775e251eee44c0f2451a1e833326cf8bcbbe304d3e7cd12851e6fce72ef7da",
+        "diarization_sha256": "220ad67ca923bef2fa91f2390c786097bf305bceb5e261d4af67b38e938e1079",
+        "speaker_sha256": "f682b514c05d947ee3fa91cd6ec6c5c7543479a128373fa29b1faedccd21fd11",
+    },
 }
 pathlib.Path(destination).write_text(json.dumps(record, indent=2) + "\n")
 PY

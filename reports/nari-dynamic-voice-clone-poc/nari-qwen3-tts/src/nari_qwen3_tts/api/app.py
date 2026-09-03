@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import uuid
 from contextlib import asynccontextmanager
 
@@ -23,6 +24,7 @@ from nari_qwen3_tts.engine.engine import Engine
 
 _PCM_MEDIA_TYPE = "audio/pcm"
 _WAV_MEDIA_TYPE = "audio/wav"
+_SELECTOR_TEMP_PROMPT_RE = re.compile(r"^vc_tmpdn_[A-Za-z0-9_-]{1,55}$")
 # Sockets, tokenization hops, and the readiness endpoints also borrow worker
 # threads, so the transport needs slack above the admission ceiling.
 def create_app(  # noqa: PLR0915
@@ -85,6 +87,22 @@ def create_app(  # noqa: PLR0915
             "object": "list",
             "data": [{"id": model_id, "object": "model", "owned_by": "qwen"}],
         }
+
+    @app.delete("/internal/voice-prompts/{voice_prompt}")
+    def evict_temporary_voice_prompt(voice_prompt: str) -> dict[str, object]:
+        """Evict only selector-owned temporary prompts from the local cache.
+
+        Nari is bound to loopback in both production regions. Restricting the
+        identifier as well prevents this maintenance endpoint from affecting a
+        user's persistent voice if a reverse-proxy rule is ever broadened.
+        """
+
+        if _SELECTOR_TEMP_PROMPT_RE.fullmatch(voice_prompt) is None:
+            raise HTTPException(404, "temporary voice prompt was not found")
+        evict = getattr(text_frontend, "evict_base_prompt", None)
+        if not callable(evict):
+            raise HTTPException(503, "voice prompt cache eviction is unavailable")
+        return {"ok": True, "evicted": bool(evict(voice_prompt))}
 
     @app.post("/v1/audio/speech")
     def speech(body: SpeechRequestBody):

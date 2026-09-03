@@ -107,6 +107,7 @@ class Qwen3TTSTextDomain:
                 torch.Tensor | None,
             ],
         ] = OrderedDict()
+        self._base_prompt_cache_lock = threading.RLock()
         if self.tts_model_type == "base":
             prompt_path = self.model_directory / "voice_clone_prompt.pt"
             if not prompt_path.is_file():
@@ -140,10 +141,11 @@ class Qwen3TTSTextDomain:
             modified_ns = prompt_path.stat().st_mtime_ns
         except FileNotFoundError as error:
             raise ValueError("cloned voice prompt was not found") from error
-        cached = self._base_prompt_cache.get(voice_prompt)
-        if cached is not None and cached[0] == modified_ns:
-            self._base_prompt_cache.move_to_end(voice_prompt)
-            return cached[1], cached[2], cached[3], cached[4], cached[5]
+        with self._base_prompt_cache_lock:
+            cached = self._base_prompt_cache.get(voice_prompt)
+            if cached is not None and cached[0] == modified_ns:
+                self._base_prompt_cache.move_to_end(voice_prompt)
+                return cached[1], cached[2], cached[3], cached[4], cached[5]
         raw = torch.load(prompt_path, map_location="cpu", weights_only=True)
         if not isinstance(raw, dict) or raw.get("schema") not in {
             "qwen3_tts_base_voice_clone_prompt_xvector_v1",
@@ -186,10 +188,11 @@ class Qwen3TTSTextDomain:
                 None,
                 None,
             )
-            self._base_prompt_cache[voice_prompt] = value
-            self._base_prompt_cache.move_to_end(voice_prompt)
-            while len(self._base_prompt_cache) > 128:
-                self._base_prompt_cache.popitem(last=False)
+            with self._base_prompt_cache_lock:
+                self._base_prompt_cache[voice_prompt] = value
+                self._base_prompt_cache.move_to_end(voice_prompt)
+                while len(self._base_prompt_cache) > 128:
+                    self._base_prompt_cache.popitem(last=False)
             return value[1], value[2], value[3], value[4], value[5]
         reference = raw.get("reference_codec_embeddings")
         reference_tokens = raw.get("decoder_bootstrap_code")
@@ -232,21 +235,34 @@ class Qwen3TTSTextDomain:
             reference_tokens.contiguous() if reference_tokens is not None else None,
             reference_context.contiguous() if reference_context is not None else None,
         )
-        self._base_prompt_cache[voice_prompt] = value
-        self._base_prompt_cache.move_to_end(voice_prompt)
-        while len(self._base_prompt_cache) > 128:
-            self._base_prompt_cache.popitem(last=False)
+        with self._base_prompt_cache_lock:
+            self._base_prompt_cache[voice_prompt] = value
+            self._base_prompt_cache.move_to_end(voice_prompt)
+            while len(self._base_prompt_cache) > 128:
+                self._base_prompt_cache.popitem(last=False)
         return value[1], value[2], value[3], value[4], value[5]
+
+    def evict_base_prompt(self, voice_prompt: str) -> bool:
+        """Forget one dynamic prompt without touching its on-disk asset."""
+
+        with self._base_prompt_cache_lock:
+            return self._base_prompt_cache.pop(voice_prompt, None) is not None
 
     def __getstate__(self) -> dict[str, object]:
         state = dict(self.__dict__)
-        for name in ("_tokenizer_lock", "_pool_init_lock", "_pool"):
+        for name in (
+            "_tokenizer_lock",
+            "_pool_init_lock",
+            "_pool",
+            "_base_prompt_cache_lock",
+        ):
             state.pop(name, None)
         return state
 
     def __setstate__(self, state: dict[str, object]) -> None:
         self.__dict__.update(state)
         self._tokenizer_lock = threading.RLock()
+        self._base_prompt_cache_lock = threading.RLock()
         self._pool_init_lock = threading.Lock()
         self._pool = None
 

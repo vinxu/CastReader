@@ -526,6 +526,28 @@ class SpeakerConsistencyInspector:
 _SPEAKER_INSPECTOR = SpeakerConsistencyInspector()
 
 
+def reference_speaker_embedding(
+    audio: np.ndarray,
+    sample_rate: int,
+    *,
+    speaker_inspector: SpeakerConsistencyInspector | None = None,
+) -> np.ndarray | None:
+    """Return one normalized CampPlus embedding for a reference or probe.
+
+    Adaptive denoise uses this only as a relative identity guard.  Exposing a
+    narrow helper avoids coupling production orchestration to the inspector's
+    private resampling and stream lifecycle.
+    """
+
+    samples = np.asarray(audio, dtype=np.float32)
+    if samples.ndim == 2:
+        samples = np.mean(samples, axis=1, dtype=np.float32)
+    if samples.ndim != 1 or samples.size == 0 or not np.isfinite(samples).all():
+        return None
+    audio_16k = _resample(samples, sample_rate, VAD_SAMPLE_RATE)
+    return (speaker_inspector or _SPEAKER_INSPECTOR)._embedding(audio_16k)
+
+
 def process_reference_audio(
     audio: np.ndarray,
     sample_rate: int,

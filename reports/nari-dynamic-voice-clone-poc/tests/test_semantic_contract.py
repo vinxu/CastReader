@@ -195,7 +195,15 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
                 patch.object(clone_worker, "VOICE_ROOT", root),
                 patch.object(
                     clone_worker,
-                    "prepare_reference",
+                    "decode_reference",
+                    return_value=(
+                        reference_result.audio,
+                        reference_result.sample_rate,
+                    ),
+                ),
+                patch.object(
+                    clone_worker,
+                    "prepare_decoded_reference",
                     return_value=reference_result,
                 ),
                 patch.object(clone_worker, "prompt_builder", return_value=builder),
@@ -224,6 +232,109 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
             self.assertFalse(result["reference_semantic_attested"])
             self.assertEqual(result["runtime_generation_mode"], "x-vector")
             validator.assert_not_called()
+
+    def test_shadow_diarization_outage_never_changes_creation_result(self) -> None:
+        reference_result = clone_worker.ReferenceAudioResult(
+            audio=np.zeros(4 * clone_worker.SAMPLE_RATE, dtype=np.float32),
+            sample_rate=clone_worker.SAMPLE_RATE,
+            duration_seconds=4.0,
+            metrics={"speech_duration_s": 4.0},
+            warnings=[],
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            reference = UploadFile(file=io.BytesIO(b"reference"), filename="reference.wav")
+            with (
+                patch.object(clone_worker, "VOICE_ROOT", root),
+                patch.object(clone_worker, "DENOISE_CONFIGURED_MODE", "shadow"),
+                patch.object(clone_worker, "DENOISE_MODE_FILE", root / "missing-mode"),
+                patch.object(clone_worker, "xvector_writer_enabled", return_value=True),
+                patch.object(
+                    clone_worker,
+                    "decode_reference",
+                    return_value=(reference_result.audio, reference_result.sample_rate),
+                ),
+                patch.object(
+                    clone_worker,
+                    "prepare_decoded_reference",
+                    return_value=reference_result,
+                ),
+                patch.object(
+                    clone_worker.SPEAKER_DIARIZER,
+                    "inspect",
+                    side_effect=clone_worker.DiarizationUnavailable("offline"),
+                ),
+                patch.object(
+                    clone_worker,
+                    "build_voice_pipeline",
+                    return_value={"voice_id": "vc_shadow_outage"},
+                ) as build,
+            ):
+                result = asyncio.run(
+                    clone_worker.create_voice(
+                        reference=reference,
+                        consent_confirmed=True,
+                        requested_voice_id="vc_shadow_outage",
+                        reference_text="Anything at all.",
+                        reference_language="en",
+                        x_request_id="shadow-outage",
+                    )
+                )
+
+        self.assertEqual(result["voice_id"], "vc_shadow_outage")
+        self.assertFalse(build.call_args.kwargs["diarization_metrics"]["available"])
+
+    def test_active_diarization_outage_fails_closed_before_prompt_build(self) -> None:
+        reference_result = clone_worker.ReferenceAudioResult(
+            audio=np.zeros(4 * clone_worker.SAMPLE_RATE, dtype=np.float32),
+            sample_rate=clone_worker.SAMPLE_RATE,
+            duration_seconds=4.0,
+            metrics={"speech_duration_s": 4.0},
+            warnings=[],
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            reference = UploadFile(file=io.BytesIO(b"reference"), filename="reference.wav")
+            with (
+                patch.object(clone_worker, "VOICE_ROOT", root),
+                patch.object(clone_worker, "DENOISE_CONFIGURED_MODE", "on"),
+                patch.object(clone_worker, "DENOISE_MODE_FILE", root / "missing-mode"),
+                patch.object(clone_worker, "xvector_writer_enabled", return_value=True),
+                patch.object(
+                    clone_worker,
+                    "decode_reference",
+                    return_value=(reference_result.audio, reference_result.sample_rate),
+                ),
+                patch.object(
+                    clone_worker,
+                    "prepare_decoded_reference",
+                    return_value=reference_result,
+                ),
+                patch.object(
+                    clone_worker.SPEAKER_DIARIZER,
+                    "inspect",
+                    side_effect=clone_worker.DiarizationUnavailable("offline"),
+                ),
+                patch.object(clone_worker, "build_voice_pipeline") as build,
+            ):
+                with self.assertRaises(HTTPException) as captured:
+                    asyncio.run(
+                        clone_worker.create_voice(
+                            reference=reference,
+                            consent_confirmed=True,
+                            requested_voice_id="vc_active_outage",
+                            reference_text="Anything at all.",
+                            reference_language="en",
+                            x_request_id="active-outage",
+                        )
+                    )
+
+        self.assertEqual(captured.exception.status_code, 503)
+        self.assertEqual(
+            captured.exception.detail["code"],
+            "VOICE_REFERENCE_DIARIZATION_UNAVAILABLE",
+        )
+        build.assert_not_called()
 
     def test_health_does_not_load_or_require_asr(self) -> None:
         class ReadyResponse:
@@ -351,7 +462,15 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
                 patch.object(clone_worker, "VOICE_ROOT", root),
                 patch.object(
                     clone_worker,
-                    "prepare_reference",
+                    "decode_reference",
+                    return_value=(
+                        reference_result.audio,
+                        reference_result.sample_rate,
+                    ),
+                ),
+                patch.object(
+                    clone_worker,
+                    "prepare_decoded_reference",
                     return_value=reference_result,
                 ),
                 patch.object(
@@ -738,6 +857,37 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
         self.assertTrue(client.payloads[1]["do_sample"])
         self.assertFalse(client.payloads[2]["do_sample"])
         self.assertFalse(client.payloads[2]["subtalker_dosample"])
+
+    def test_denoise_probe_integrity_preserves_spectral_selection_evidence(self) -> None:
+        rng = np.random.default_rng(20260903)
+        spectral_probe = rng.normal(
+            0.0,
+            0.04,
+            clone_worker.SAMPLE_RATE * 2,
+        ).astype(np.float32)
+        encoded = io.BytesIO()
+        clone_worker.sf.write(
+            encoded,
+            spectral_probe,
+            clone_worker.SAMPLE_RATE,
+            format="WAV",
+            subtype="PCM_16",
+        )
+
+        with self.assertRaises(clone_worker.GeneratedAudioQualityError):
+            clone_worker.validate_generated_wav(encoded.getvalue())
+
+        clone_worker._validate_denoise_probe_integrity(
+            spectral_probe,
+            clone_worker.SAMPLE_RATE,
+            text=IOS_ENGLISH_GUIDE,
+        )
+        with self.assertRaises(clone_worker.AdaptiveDenoiseError):
+            clone_worker._validate_denoise_probe_integrity(
+                np.ones(clone_worker.SAMPLE_RATE, dtype=np.float32),
+                clone_worker.SAMPLE_RATE,
+                text=IOS_ENGLISH_GUIDE,
+            )
 
     def test_nari_xvector_skips_per_paragraph_asr(self) -> None:
         metadata = clone_worker.VoicePromptMetadata(

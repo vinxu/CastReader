@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+import threading
 from collections import OrderedDict
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -102,6 +103,7 @@ class NariXVectorLayoutTests(unittest.TestCase):
             domain = object.__new__(Qwen3TTSTextDomain)
             domain._base_prompt_root = root
             domain._base_prompt_cache = OrderedDict()
+            domain._base_prompt_cache_lock = threading.RLock()
             domain._base_ref_token_ids = torch.tensor([1, 2, 3])
             domain._speaker_embedding_size = 4
 
@@ -150,11 +152,23 @@ class NariXVectorLayoutTests(unittest.TestCase):
                 domain = object.__new__(Qwen3TTSTextDomain)
                 domain._base_prompt_root = root
                 domain._base_prompt_cache = OrderedDict()
+                domain._base_prompt_cache_lock = threading.RLock()
                 domain._base_ref_token_ids = torch.tensor([1, 2, 3])
                 domain._speaker_embedding_size = 4
 
                 with self.assertRaises(ValueError):
                     domain._load_base_prompt("vc_invalid")
+
+    def test_temporary_prompt_cache_can_be_evicted(self) -> None:
+        domain = object.__new__(Qwen3TTSTextDomain)
+        domain._base_prompt_cache = OrderedDict(
+            [("vc_tmpdn_probe", (1, None, None, None, None, None))]
+        )
+        domain._base_prompt_cache_lock = threading.RLock()
+
+        self.assertTrue(domain.evict_base_prompt("vc_tmpdn_probe"))
+        self.assertFalse(domain.evict_base_prompt("vc_tmpdn_probe"))
+        self.assertEqual(domain._base_prompt_cache, OrderedDict())
 
 
 if __name__ == "__main__":
