@@ -1,4 +1,6 @@
 {
+  "historical_snapshot": true,
+  "superseded_by": "fixed-deepfilter-warning-rollout-20260903",
   "rollout_id": "fixed-deepfilter-rollout-20260903",
   "policy": "fixed-deepfilter-atten24-v1",
   "worker_sha256": "9be8893828c8f559f94c9548c9b479108bd71b8760fd2db081463b13037d40e3",

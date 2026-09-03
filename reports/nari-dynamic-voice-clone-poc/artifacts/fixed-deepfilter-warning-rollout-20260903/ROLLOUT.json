@@ -1,0 +1,640 @@
+{
+  "rollout_id": "fixed-deepfilter-warning-rollout-20260903",
+  "completed_at": "2026-09-03T07:12:14Z",
+  "status": "deployed_and_verified",
+  "source_commit": "3c7a1cea4ac1bd1b65d74c98bfa52e2edaf6ee0f",
+  "worker_sha256": "68646719e50829286c8ce132a147f2376082a56ef5e496e87d0c0c6e0c6e55b7",
+  "policy": "fixed-deepfilter-atten24-v1",
+  "reference_speaker_policy": "warn-only-v1",
+  "unit_tests": 142,
+  "supervisor_lifecycle": {
+    "ok": true,
+    "elapsed_s": 52.405,
+    "pid_not_running_returncode": 7,
+    "status_not_running_returncode": 3,
+    "isolated_daemon_exited": true
+  },
+  "changed_production_files": [
+    "clone_worker.py"
+  ],
+  "manifest_sha256": "7d8e535d2964e3ca412c7dedd2c733a0b91dc08877e4fb1d118d5b60607a9dfc",
+  "regression": {
+    "incident_metric_pair": [
+      0.7565,
+      0.6696
+    ],
+    "previous_maximum_drop": 0.05,
+    "relative_drop_now_warns_and_publishes": true,
+    "raw_multiple_speaker_rejection_preserved": true,
+    "post_deepfilter_quality_rejection_preserved": true,
+    "deepfilter_failures_do_not_fallback": true,
+    "original_failed_user_audio_replayed": false
+  },
+  "regions": {
+    "cn": {
+      "release": {
+        "backup": "/root/autodl-tmp/nari-staging/backups/fixed-deepfilter-worker-20260903T070804Z-59782",
+        "changed_files": [
+          "clone_worker.py"
+        ],
+        "executed": true,
+        "nari_tts_unchanged": true,
+        "policy": "fixed-deepfilter-atten24-v1",
+        "preflight": {
+          "deepfilter_applied": true,
+          "deepfilter_elapsed_s": 0.656,
+          "diarization_ready": true,
+          "policy": "fixed-deepfilter-atten24-v1",
+          "schema": "xvector_v1"
+        },
+        "region": "cn",
+        "release_record": "/root/autodl-tmp/nari-staging/releases/fast-hotpath-fixed-deepfilter-20260903T070804Z-59782.json",
+        "source_commit": "3c7a1cea4ac1bd1b65d74c98bfa52e2edaf6ee0f",
+        "voice_creation_enabled": true,
+        "worker_pid": 60040
+      },
+      "preflight": {
+        "changed_files": [
+          "clone_worker.py"
+        ],
+        "executed": false,
+        "preflight": {
+          "deepfilter_applied": true,
+          "deepfilter_elapsed_s": 0.656,
+          "diarization_ready": true,
+          "policy": "fixed-deepfilter-atten24-v1",
+          "schema": "xvector_v1"
+        },
+        "region": "cn",
+        "source_commit": "3c7a1cea4ac1bd1b65d74c98bfa52e2edaf6ee0f"
+      },
+      "verification": {
+        "region": "cn",
+        "pids": {
+          "worker": 60040,
+          "nari": 959622,
+          "tts": 129484
+        },
+        "hashes_and_protected_sources_match": true,
+        "voice_creation_enabled": true,
+        "reference_speaker_policy": "warn-only-v1",
+        "counters": {
+          "created_atten24": 5,
+          "denoise_failures": 0,
+          "denoise_reference_rejections": 0,
+          "speaker_consistency_warnings": 0,
+          "multiple_speaker_rejections": 0,
+          "diarization_unavailable": 0
+        },
+        "queue_depth": 0,
+        "active_voice_tasks": 0,
+        "busy": false,
+        "test_leftovers": {
+          "vc_smokedf_*": 0,
+          ".vc_smokedf_*.*.building": 0,
+          "vc_tmpdn_*": 0
+        },
+        "canary_log_evidence": [
+          {
+            "case": "clean",
+            "timestamp": "2026-09-03T07:08:34.761176+00:00",
+            "policy": "warn-only-v1",
+            "blocking": false
+          },
+          {
+            "case": "kitchen",
+            "timestamp": "2026-09-03T07:08:38.367978+00:00",
+            "policy": "warn-only-v1",
+            "blocking": false
+          },
+          {
+            "case": "washing-machine",
+            "timestamp": "2026-09-03T07:08:42.360572+00:00",
+            "policy": "warn-only-v1",
+            "blocking": false
+          },
+          {
+            "case": "meeting-room",
+            "timestamp": "2026-09-03T07:08:45.179785+00:00",
+            "policy": "warn-only-v1",
+            "blocking": false
+          },
+          {
+            "case": "short",
+            "timestamp": "2026-09-03T07:08:47.599774+00:00",
+            "policy": "warn-only-v1",
+            "blocking": false
+          }
+        ]
+      },
+      "canaries": {
+        "policy": "fixed-deepfilter-atten24-v1",
+        "reference_speaker_policy": "warn-only-v1",
+        "ok": true,
+        "cases": [
+          {
+            "case": "clean",
+            "test_voice_id": "vc_smokedf_3b4571e34601448b86fa32473052eafb",
+            "ok": true,
+            "cleanup_ok": true,
+            "create_status": 200,
+            "create_elapsed_s": 5.103,
+            "denoise": {
+              "selected": "atten24",
+              "deepfilter_applied": true,
+              "policy": "fixed-deepfilter-atten24-v1",
+              "deepfilter_elapsed_s": 2.041793,
+              "prompt_build_s": 4.193,
+              "reference_duration_s": 8.836,
+              "reference_speaker_guard": {
+                "backend": "campplus-window-consistency",
+                "policy": "warn-only-v1",
+                "action": "warn_only",
+                "blocking": false,
+                "comparable": true,
+                "passed": true,
+                "baseline_min_similarity": 0.7167,
+                "candidate_min_similarity": 0.711,
+                "maximum_relative_drop": 0.05
+              },
+              "reference_quality_warnings": []
+            },
+            "speech_status": 200,
+            "speech_elapsed_s": 0.781,
+            "audio": {
+              "duration_s": 8.88,
+              "bytes": 426284,
+              "sha256": "2d3bf16fe48012113b02dd9502d457c4bcd060a99a3107d6a7ee95c7ed814dd6",
+              "rms_dbfs": -21.03,
+              "peak": 0.42029
+            },
+            "speech_queue_wait_ms": "0.13"
+          },
+          {
+            "case": "kitchen",
+            "test_voice_id": "vc_smokedf_62dabc42c9ce4869addabea83c3f1e69",
+            "ok": true,
+            "cleanup_ok": true,
+            "create_status": 200,
+            "create_elapsed_s": 2.759,
+            "denoise": {
+              "selected": "atten24",
+              "deepfilter_applied": true,
+              "policy": "fixed-deepfilter-atten24-v1",
+              "deepfilter_elapsed_s": 2.065598,
+              "prompt_build_s": 2.415,
+              "reference_duration_s": 8.836,
+              "reference_speaker_guard": {
+                "backend": "campplus-window-consistency",
+                "policy": "warn-only-v1",
+                "action": "warn_only",
+                "blocking": false,
+                "comparable": true,
+                "passed": true,
+                "baseline_min_similarity": 0.6949,
+                "candidate_min_similarity": 0.6844,
+                "maximum_relative_drop": 0.05
+              },
+              "reference_quality_warnings": []
+            },
+            "speech_status": 200,
+            "speech_elapsed_s": 0.805,
+            "audio": {
+              "duration_s": 9.36,
+              "bytes": 449324,
+              "sha256": "81654b9c0a5cb81ec5b3497fccc6123061de7188ee0853aca022ae59459a1d6d",
+              "rms_dbfs": -20.78,
+              "peak": 0.38071
+            },
+            "speech_queue_wait_ms": "0.10"
+          },
+          {
+            "case": "washing-machine",
+            "test_voice_id": "vc_smokedf_fc12273fc65147939469e8f59acaf686",
+            "ok": true,
+            "cleanup_ok": true,
+            "create_status": 200,
+            "create_elapsed_s": 3.116,
+            "denoise": {
+              "selected": "atten24",
+              "deepfilter_applied": true,
+              "policy": "fixed-deepfilter-atten24-v1",
+              "deepfilter_elapsed_s": 2.365805,
+              "prompt_build_s": 2.753,
+              "reference_duration_s": 8.12,
+              "reference_speaker_guard": {
+                "backend": "campplus-window-consistency",
+                "policy": "warn-only-v1",
+                "action": "warn_only",
+                "blocking": false,
+                "comparable": true,
+                "passed": true,
+                "baseline_min_similarity": 0.6666,
+                "candidate_min_similarity": 0.7064,
+                "maximum_relative_drop": 0.05
+              },
+              "reference_quality_warnings": []
+            },
+            "speech_status": 200,
+            "speech_elapsed_s": 0.722,
+            "audio": {
+              "duration_s": 8.24,
+              "bytes": 395564,
+              "sha256": "7d9b81e3b736a0b52e65bdccc699a42a0ac0a92a1c564b03072ff99ae6a0f6de",
+              "rms_dbfs": -21.24,
+              "peak": 0.5676
+            },
+            "speech_queue_wait_ms": "0.09"
+          },
+          {
+            "case": "meeting-room",
+            "test_voice_id": "vc_smokedf_7a98c5b433c54da295302f67374c06ad",
+            "ok": true,
+            "cleanup_ok": true,
+            "create_status": 200,
+            "create_elapsed_s": 2.035,
+            "denoise": {
+              "selected": "atten24",
+              "deepfilter_applied": true,
+              "policy": "fixed-deepfilter-atten24-v1",
+              "deepfilter_elapsed_s": 1.540029,
+              "prompt_build_s": 1.798,
+              "reference_duration_s": 6.161,
+              "reference_speaker_guard": {
+                "backend": "campplus-window-consistency",
+                "policy": "warn-only-v1",
+                "action": "warn_only",
+                "blocking": false,
+                "comparable": true,
+                "passed": true,
+                "baseline_min_similarity": 0.8382,
+                "candidate_min_similarity": 0.8404,
+                "maximum_relative_drop": 0.05
+              },
+              "reference_quality_warnings": []
+            },
+            "speech_status": 200,
+            "speech_elapsed_s": 0.719,
+            "audio": {
+              "duration_s": 8.16,
+              "bytes": 391724,
+              "sha256": "3fbb5337bf74f0e27058f15df6ceaecdabb42ccc9017c9e8b5be462603d81dd6",
+              "rms_dbfs": -19.2,
+              "peak": 0.52423
+            },
+            "speech_queue_wait_ms": "0.12"
+          },
+          {
+            "case": "short",
+            "test_voice_id": "vc_smokedf_567fed9aba2d47d7bd0aa383b535448d",
+            "ok": true,
+            "cleanup_ok": true,
+            "create_status": 200,
+            "create_elapsed_s": 1.621,
+            "denoise": {
+              "selected": "atten24",
+              "deepfilter_applied": true,
+              "policy": "fixed-deepfilter-atten24-v1",
+              "deepfilter_elapsed_s": 1.235098,
+              "prompt_build_s": 1.438,
+              "reference_duration_s": 3.992,
+              "reference_speaker_guard": {
+                "backend": "campplus-window-consistency",
+                "policy": "warn-only-v1",
+                "action": "warn_only",
+                "blocking": false,
+                "comparable": true,
+                "passed": true,
+                "baseline_min_similarity": 0.8277,
+                "candidate_min_similarity": 0.8325,
+                "maximum_relative_drop": 0.05
+              },
+              "reference_quality_warnings": []
+            },
+            "speech_status": 200,
+            "speech_elapsed_s": 0.745,
+            "audio": {
+              "duration_s": 8.48,
+              "bytes": 407084,
+              "sha256": "37d6b9505d5e76d0919af9ef8887a2c6460fbf8664c3dc6460127b05c99e97ae",
+              "rms_dbfs": -20.17,
+              "peak": 0.42642
+            },
+            "speech_queue_wait_ms": "0.22"
+          }
+        ]
+      },
+      "rollback_preflight_ready": true,
+      "bundle": "/root/autodl-tmp/nari-staging/df-warning-verification.zTFFA2/bundle"
+    },
+    "us": {
+      "release": {
+        "backup": "/workspace/castreader-clone/backups/fixed-deepfilter-worker-20260903T070933Z-126236",
+        "release_record": "/workspace/castreader-clone/releases/fast-hotpath-fixed-deepfilter-20260903T070933Z-126236.json",
+        "changed_files": [
+          "clone_worker.py"
+        ],
+        "executed": true,
+        "nari_tts_unchanged": true,
+        "policy": "fixed-deepfilter-atten24-v1",
+        "region": "us",
+        "source_commit": "3c7a1cea4ac1bd1b65d74c98bfa52e2edaf6ee0f",
+        "voice_creation_enabled": true,
+        "worker_pid": 126475,
+        "preflight": {
+          "deepfilter_applied": true,
+          "deepfilter_elapsed_s": 0.477,
+          "diarization_ready": true,
+          "schema": "xvector_v1"
+        }
+      },
+      "preflight": {
+        "changed_files": [
+          "clone_worker.py"
+        ],
+        "executed": false,
+        "preflight": {
+          "deepfilter_applied": true,
+          "deepfilter_elapsed_s": 0.477,
+          "diarization_ready": true,
+          "policy": "fixed-deepfilter-atten24-v1",
+          "schema": "xvector_v1"
+        },
+        "region": "us",
+        "source_commit": "3c7a1cea4ac1bd1b65d74c98bfa52e2edaf6ee0f"
+      },
+      "verification": {
+        "region": "us",
+        "pids": {
+          "worker": 126475,
+          "nari": 4136837,
+          "tts": 3746912
+        },
+        "hashes_and_protected_sources_match": true,
+        "voice_creation_enabled": true,
+        "reference_speaker_policy": "warn-only-v1",
+        "counters": {
+          "created_atten24": 5,
+          "denoise_failures": 0,
+          "denoise_reference_rejections": 0,
+          "speaker_consistency_warnings": 0,
+          "multiple_speaker_rejections": 0,
+          "diarization_unavailable": 0
+        },
+        "queue_depth": 0,
+        "active_voice_tasks": 0,
+        "busy": false,
+        "test_leftovers": {
+          "vc_smokedf_*": 0,
+          ".vc_smokedf_*.*.building": 0,
+          "vc_tmpdn_*": 0
+        },
+        "canary_log_evidence": [
+          {
+            "case": "clean",
+            "timestamp": "2026-09-03T07:10:24.912376+00:00",
+            "policy": "warn-only-v1",
+            "blocking": false
+          },
+          {
+            "case": "kitchen",
+            "timestamp": "2026-09-03T07:10:27.664315+00:00",
+            "policy": "warn-only-v1",
+            "blocking": false
+          },
+          {
+            "case": "washing-machine",
+            "timestamp": "2026-09-03T07:10:30.450659+00:00",
+            "policy": "warn-only-v1",
+            "blocking": false
+          },
+          {
+            "case": "meeting-room",
+            "timestamp": "2026-09-03T07:10:32.618310+00:00",
+            "policy": "warn-only-v1",
+            "blocking": false
+          },
+          {
+            "case": "short",
+            "timestamp": "2026-09-03T07:10:34.297787+00:00",
+            "policy": "warn-only-v1",
+            "blocking": false
+          }
+        ]
+      },
+      "canaries": {
+        "policy": "fixed-deepfilter-atten24-v1",
+        "reference_speaker_policy": "warn-only-v1",
+        "ok": true,
+        "cases": [
+          {
+            "case": "clean",
+            "test_voice_id": "vc_smokedf_97ca429adf0843519f2c026a4bd7dfb7",
+            "ok": true,
+            "cleanup_ok": true,
+            "create_status": 200,
+            "create_elapsed_s": 3.332,
+            "denoise": {
+              "selected": "atten24",
+              "deepfilter_applied": true,
+              "policy": "fixed-deepfilter-atten24-v1",
+              "deepfilter_elapsed_s": 1.281055,
+              "prompt_build_s": 2.674,
+              "reference_duration_s": 8.836,
+              "reference_speaker_guard": {
+                "backend": "campplus-window-consistency",
+                "policy": "warn-only-v1",
+                "action": "warn_only",
+                "blocking": false,
+                "comparable": true,
+                "passed": true,
+                "baseline_min_similarity": 0.7167,
+                "candidate_min_similarity": 0.711,
+                "maximum_relative_drop": 0.05
+              },
+              "reference_quality_warnings": []
+            },
+            "speech_status": 200,
+            "speech_elapsed_s": 0.727,
+            "audio": {
+              "duration_s": 8.64,
+              "bytes": 414764,
+              "sha256": "b985cfbab25a19c5daa64b98b6b89a3e182c9f6faec5660b557b70cc1cf96c2d",
+              "rms_dbfs": -21.26,
+              "peak": 0.37582
+            },
+            "speech_queue_wait_ms": "0.04"
+          },
+          {
+            "case": "kitchen",
+            "test_voice_id": "vc_smokedf_1d0c257cfc654d49843b96e3ba08906d",
+            "ok": true,
+            "cleanup_ok": true,
+            "create_status": 200,
+            "create_elapsed_s": 1.984,
+            "denoise": {
+              "selected": "atten24",
+              "deepfilter_applied": true,
+              "policy": "fixed-deepfilter-atten24-v1",
+              "deepfilter_elapsed_s": 1.406816,
+              "prompt_build_s": 1.687,
+              "reference_duration_s": 8.836,
+              "reference_speaker_guard": {
+                "backend": "campplus-window-consistency",
+                "policy": "warn-only-v1",
+                "action": "warn_only",
+                "blocking": false,
+                "comparable": true,
+                "passed": true,
+                "baseline_min_similarity": 0.6949,
+                "candidate_min_similarity": 0.6844,
+                "maximum_relative_drop": 0.05
+              },
+              "reference_quality_warnings": []
+            },
+            "speech_status": 200,
+            "speech_elapsed_s": 0.867,
+            "audio": {
+              "duration_s": 10.16,
+              "bytes": 487724,
+              "sha256": "cc01eefc9b86070fa34c8819e9e4ac172d6ed07b963f115e7f56c1457dca21b7",
+              "rms_dbfs": -21.57,
+              "peak": 0.46329
+            },
+            "speech_queue_wait_ms": "0.04"
+          },
+          {
+            "case": "washing-machine",
+            "test_voice_id": "vc_smokedf_835a3c8cb3264517986c8f7ca8994887",
+            "ok": true,
+            "cleanup_ok": true,
+            "create_status": 200,
+            "create_elapsed_s": 1.878,
+            "denoise": {
+              "selected": "atten24",
+              "deepfilter_applied": true,
+              "policy": "fixed-deepfilter-atten24-v1",
+              "deepfilter_elapsed_s": 1.305712,
+              "prompt_build_s": 1.584,
+              "reference_duration_s": 8.12,
+              "reference_speaker_guard": {
+                "backend": "campplus-window-consistency",
+                "policy": "warn-only-v1",
+                "action": "warn_only",
+                "blocking": false,
+                "comparable": true,
+                "passed": true,
+                "baseline_min_similarity": 0.6666,
+                "candidate_min_similarity": 0.7064,
+                "maximum_relative_drop": 0.05
+              },
+              "reference_quality_warnings": []
+            },
+            "speech_status": 200,
+            "speech_elapsed_s": 0.663,
+            "audio": {
+              "duration_s": 8.24,
+              "bytes": 395564,
+              "sha256": "6b6d81ae4f8b0293882a9137d11ce2a15b3246327c5aa7ed93789cbe79036eff",
+              "rms_dbfs": -21.3,
+              "peak": 0.55121
+            },
+            "speech_queue_wait_ms": "0.04"
+          },
+          {
+            "case": "meeting-room",
+            "test_voice_id": "vc_smokedf_0d0c4b0823254d4da97130836b601b61",
+            "ok": true,
+            "cleanup_ok": true,
+            "create_status": 200,
+            "create_elapsed_s": 1.471,
+            "denoise": {
+              "selected": "atten24",
+              "deepfilter_applied": true,
+              "policy": "fixed-deepfilter-atten24-v1",
+              "deepfilter_elapsed_s": 1.079731,
+              "prompt_build_s": 1.283,
+              "reference_duration_s": 6.161,
+              "reference_speaker_guard": {
+                "backend": "campplus-window-consistency",
+                "policy": "warn-only-v1",
+                "action": "warn_only",
+                "blocking": false,
+                "comparable": true,
+                "passed": true,
+                "baseline_min_similarity": 0.8382,
+                "candidate_min_similarity": 0.8404,
+                "maximum_relative_drop": 0.05
+              },
+              "reference_quality_warnings": []
+            },
+            "speech_status": 200,
+            "speech_elapsed_s": 0.603,
+            "audio": {
+              "duration_s": 7.44,
+              "bytes": 357164,
+              "sha256": "5cd200c3d32883e7920c27e8264aa977fb5c4b2132972e3a8b0294f9aad5a7ce",
+              "rms_dbfs": -20.48,
+              "peak": 0.41095
+            },
+            "speech_queue_wait_ms": "0.03"
+          },
+          {
+            "case": "short",
+            "test_voice_id": "vc_smokedf_8a916811cfff494b9388408cabc2a78c",
+            "ok": true,
+            "cleanup_ok": true,
+            "create_status": 200,
+            "create_elapsed_s": 1.046,
+            "denoise": {
+              "selected": "atten24",
+              "deepfilter_applied": true,
+              "policy": "fixed-deepfilter-atten24-v1",
+              "deepfilter_elapsed_s": 0.753665,
+              "prompt_build_s": 0.909,
+              "reference_duration_s": 3.992,
+              "reference_speaker_guard": {
+                "backend": "campplus-window-consistency",
+                "policy": "warn-only-v1",
+                "action": "warn_only",
+                "blocking": false,
+                "comparable": true,
+                "passed": true,
+                "baseline_min_similarity": 0.8277,
+                "candidate_min_similarity": 0.8325,
+                "maximum_relative_drop": 0.05
+              },
+              "reference_quality_warnings": []
+            },
+            "speech_status": 200,
+            "speech_elapsed_s": 0.715,
+            "audio": {
+              "duration_s": 8.72,
+              "bytes": 418604,
+              "sha256": "7692c2bc72e4333e52f5acfcd93938af40a912d2385c2e3c175a82f01eb50b3c",
+              "rms_dbfs": -19.39,
+              "peak": 0.49884
+            },
+            "speech_queue_wait_ms": "0.03"
+          }
+        ]
+      },
+      "rollback_preflight_ready": true,
+      "bundle": "/workspace/castreader-clone/df-warning-verification.lUTj3u/bundle"
+    }
+  },
+  "cleanup": {
+    "test_voices_deleted": 10,
+    "remote_fixture_copies_deleted": 10,
+    "local_generated_short_copy_deleted": true,
+    "repository_fixtures_retained": true,
+    "production_user_voices_untouched": true,
+    "release_bundles_and_backups_retained": true
+  },
+  "boundaries": [
+    "Worker HTTP creation, prompt publication, metadata, speech WAV, and cleanup verified.",
+    "Authenticated mobile/account UI not replayed; clients and Web unchanged.",
+    "The warning branch is verified by incident-metric regression, not replay of deleted user audio.",
+    "Five fixtures in two regions, not ten independent recordings or a subjective blind evaluation."
+  ]
+}
