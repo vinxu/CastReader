@@ -1,0 +1,9 @@
+{
+  admin off
+  auto_https off
+}
+
+:8888 {
+  tls /workspace/castreader-clone/tls/origin-cert.pem /workspace/castreader-clone/tls/origin-key.pem
+  reverse_proxy 127.0.0.1:8890
+}

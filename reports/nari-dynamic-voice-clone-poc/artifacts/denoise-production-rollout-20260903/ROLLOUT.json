@@ -1,0 +1,83 @@
+{
+  "rollout_id": "denoise-production-rollout-20260903",
+  "completed_at": "2026-09-03T03:38:26Z",
+  "status": "fully_enabled",
+  "blind_evaluation": {
+    "samples": 12,
+    "adaptive_wins": 11,
+    "online_wins": 1,
+    "adaptive_win_rate": 0.9167,
+    "only_online_win": "03-indoor-washing-machine"
+  },
+  "worker": {
+    "sha256": "552063ec9a1e5e2765e68ab69b60789c3a034ab9d991b7fcaf55b16bfa112b3f",
+    "adaptive_module_sha256": "f03097ce308316016139cf7f9c5aab57ecbd04c1d8c1345922ba2ddb569e0829",
+    "selector": "adaptive-deepfilter-24-100-v1",
+    "probe": "clone-denoise-probe-v1",
+    "build_timeout_seconds": 75
+  },
+  "regions": {
+    "cn": {
+      "mode": "on",
+      "status": "healthy",
+      "voice_creation_enabled": true,
+      "queue_depth": 0,
+      "busy": false,
+      "release_record": "/root/autodl-tmp/nari-staging/releases/fast-hotpath-20260903T033140Z.json",
+      "backup": "/root/autodl-tmp/nari-staging/backups/fast-hotpath-20260903T033140Z",
+      "active_canaries": {
+        "01-indoor-kitchen": "atten100",
+        "03-indoor-washing-machine": "online",
+        "04-indoor-meeting-room": "atten24"
+      },
+      "residual_test_voice_directories": 0
+    },
+    "global": {
+      "mode": "on",
+      "status": "healthy",
+      "voice_creation_enabled": true,
+      "queue_depth": 0,
+      "busy": false,
+      "release_record": "/workspace/castreader-clone/releases/fast-hotpath-20260903T032149Z.json",
+      "backup": "/workspace/castreader-clone/backups/fast-hotpath-20260903T032149Z",
+      "off_host_backup_sha256": "9c3d182ff05b8f21c0949b0be7ba82565773ca2c6c8178e234f0c9a92a11704f",
+      "active_canaries": {
+        "01-indoor-kitchen": "atten100",
+        "03-indoor-washing-machine": "online",
+        "04-indoor-meeting-room": "atten24"
+      },
+      "residual_test_voice_directories": 0
+    }
+  },
+  "control_plane": {
+    "vercel_deployment_id": "dpl_Vay5GDpSso1NPSRQqQ1gs6efiLHq",
+    "ready_state": "READY",
+    "target": "production",
+    "production_domain_verified": "api.castreader.ai",
+    "worker_timeout_seconds": 90,
+    "route_timeout_seconds": 120,
+    "ios_creation_timeout_seconds": 150,
+    "credential_rotated": true,
+    "sensitive_log_header_lines_remaining": 0
+  },
+  "verification": {
+    "server_tests": {"passed": 94, "failed": 0},
+    "cn_final_related_tests": {"passed": 32, "failed": 0},
+    "web_voice_clone_tests": {"passed": 54, "failed": 0},
+    "ios_voice_clone_tests": {"passed": 65, "failed": 0, "skipped": 0},
+    "post_deploy_http_5xx": 0
+  },
+  "models": {
+    "deepfilter_0_5_6_sha256": "70775e251eee44c0f2451a1e833326cf8bcbbe304d3e7cd12851e6fce72ef7da",
+    "diarization_sha256": "220ad67ca923bef2fa91f2390c786097bf305bceb5e261d4af67b38e938e1079",
+    "campplus_sha256": "f682b514c05d947ee3fa91cd6ec6c5c7543479a128373fa29b1faedccd21fd11"
+  },
+  "known_limitations": [
+    "Short overlapping or distant background speech such as sample 06 is not reliably detected as a second speaker.",
+    "The iOS 150-second timeout change requires a future client release, although the server-side denoise applies to existing clients immediately."
+  ],
+  "rollback": {
+    "immediate": "Atomically set the region-specific adaptive denoise mode file to off.",
+    "code": "Restore the recorded regional backup and rebind the x-vector writer marker after service health checks."
+  }
+}
