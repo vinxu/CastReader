@@ -344,20 +344,20 @@ class FixedWorkerReleaseTests(unittest.TestCase):
                 release.start_worker({"region": "us"})
         run.assert_not_called()
 
-    def test_actual_supervisor_pid_zero_exit_three_is_valid(self):
-        response = SimpleNamespace(stdout="0\n", stderr="", returncode=3)
+    def test_actual_supervisor_pid_zero_exit_seven_is_valid(self):
+        response = SimpleNamespace(stdout="0\n", stderr="", returncode=7)
         with patch.object(release.subprocess, "run", return_value=response):
             self.assertEqual(release.supervisor_pid("castreader-clone"), 0)
 
-    def test_actual_supervisor_stopped_status_and_pid_both_exit_three(self):
+    def test_actual_supervisor_stopped_status_exit_three_but_pid_exit_seven(self):
         responses = [SimpleNamespace(stdout="castreader-clone                 STOPPED   Sep 03 12:00 PM\n",
                                      stderr="", returncode=3),
-                     SimpleNamespace(stdout="0\n", stderr="", returncode=3)]
+                     SimpleNamespace(stdout="0\n", stderr="", returncode=7)]
         with patch.object(release.subprocess, "run", side_effect=responses):
             self.assertEqual(release.supervisor_worker_state(), ("STOPPED", 0))
 
     def test_service_pid_snapshot_accepts_stopped_worker_with_running_protected_services(self):
-        responses = [SimpleNamespace(stdout="0\n", stderr="", returncode=3),
+        responses = [SimpleNamespace(stdout="0\n", stderr="", returncode=7),
                      SimpleNamespace(stdout="222\n", stderr="", returncode=0),
                      SimpleNamespace(stdout="333\n", stderr="", returncode=0)]
         with patch.object(release.subprocess, "run", side_effect=responses):
@@ -365,12 +365,27 @@ class FixedWorkerReleaseTests(unittest.TestCase):
                              {"worker": 0, "nari": 222, "tts": 333})
 
     def test_supervisor_pid_rejects_rpc_error_and_inconsistent_status(self):
-        for stdout, code in (("No such process castreader-clone\n", 1), ("444\n", 3), ("0\n", 1)):
+        for stdout, code in (("No such process castreader-clone\n", 1), ("444\n", 3), ("0\n", 1), ("0\n", 3)):
             with self.subTest(stdout=stdout, code=code), \
                  patch.object(release.subprocess, "run", return_value=SimpleNamespace(
                      stdout=stdout, stderr="", returncode=code)):
                 with self.assertRaises(release.ReleaseError):
                     release.supervisor_pid("castreader-clone")
+
+    def test_error_chain_excludes_command_stderr_and_arbitrary_exception_text(self):
+        original = subprocess.CalledProcessError(7, ["secret-command", "secret-token"],
+                                                 stderr="secret-output")
+        recovery = ValueError("secret-value")
+        failure = release.ReleaseError("Safe release diagnostic")
+        failure.__cause__ = original
+        failure.recovery_error = recovery
+        result = release.diagnostic_exception_chain(failure)
+        encoded = json.dumps(result)
+        self.assertNotIn("secret", encoded)
+        self.assertIn('"returncode": 7', encoded)
+        self.assertIn("CalledProcessError", encoded)
+        self.assertIn("ValueError", encoded)
+        self.assertIn("Safe release diagnostic", encoded)
 
     def test_us_respawn_is_frozen_and_supervised_stopped_before_swap(self):
         command = MagicMock()

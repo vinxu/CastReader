@@ -29,6 +29,7 @@ POLICY = "fixed-deepfilter-atten24-v1"
 ALLOWED_FILES = {"clone_worker.py", "adaptive_denoise.py"}
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 SHA64 = re.compile(r"^[0-9a-f]{64}$")
+SUPERVISOR_PID_NOT_RUNNING_EXIT_CODE = 7
 
 
 class ReleaseError(RuntimeError):
@@ -149,10 +150,12 @@ def supervisor_pid(name: str) -> int:
     value = result.stdout.strip()
     require(re.fullmatch(r"\d+", value), "Supervisor PID response is not numeric")
     pid = int(value)
-    # Actual Supervisor returns LSB NOT_RUNNING (3) *and prints 0* for STOPPED,
+    # Actual Supervisor returns LSBInitExitStatuses.NOT_RUNNING (7) and prints 0
+    # for STOPPED (whereas the separate `status` command returns 3).
     # EXITED/FATAL states. This is a valid state snapshot, not a failed command.
-    require((pid == 0 and result.returncode == 3) or (pid > 1 and result.returncode == 0),
-            "Supervisor PID response has an unexpected exit status")
+    require((pid == 0 and result.returncode == SUPERVISOR_PID_NOT_RUNNING_EXIT_CODE)
+            or (pid > 1 and result.returncode == 0),
+            f"Supervisor PID response has an unexpected exit status: service={name}, returncode={result.returncode}")
     return pid
 
 
@@ -656,10 +659,12 @@ def apply_release(config: dict, bundle: Path, manifest: dict, *, execute: bool) 
                         and restored["pids"]["tts"] == pids["tts"],
                         "Original protected Nari/TTS processes did not survive")
                 write_json(backup / "rollback-verification.json", restored)
-            except BaseException:
+            except BaseException as recovery_error:
                 progress = ("original files/marker restored; worker recovery needs attention" if files_restored
                             else "original files/marker were NOT fully restored; recovery needs attention")
-                raise ReleaseError(f"Release failed; {progress}: {backup}") from error
+                failure = ReleaseError(f"Release failed; {progress}: {backup}")
+                failure.recovery_error = recovery_error
+                raise failure from error
         raise ReleaseError(f"Release failed and original worker/marker restored: {backup}") from error
 
 
@@ -768,6 +773,29 @@ def fatal_recovery_without_http(config: dict) -> bool:
     return True
 
 
+def diagnostic_exception_chain(error: BaseException) -> list[dict]:
+    """No command, stderr, arbitrary exception text, or environment is exposed."""
+    items, pending, seen = [], [("failure", error)], set()
+    while pending and len(items) < 8:
+        relation, current = pending.pop(0)
+        if id(current) in seen:
+            continue
+        seen.add(id(current))
+        item = {"relation": relation, "class": type(current).__name__}
+        if isinstance(current, ReleaseError):
+            item["message"] = str(current)[:600]
+        if isinstance(current, subprocess.CalledProcessError):
+            item["returncode"] = current.returncode
+        items.append(item)
+        recovery = getattr(current, "recovery_error", None)
+        if isinstance(recovery, BaseException):
+            pending.append(("recovery", recovery))
+        cause = current.__cause__ or current.__context__
+        if cause is not None:
+            pending.append(("cause", cause))
+    return items
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -805,8 +833,8 @@ def main() -> None:
             result = rollback_release(region_config(args.region), args.backup, execute=args.execute)
         print(json.dumps(result, sort_keys=True))
     except (ReleaseError, OSError, ValueError, subprocess.SubprocessError) as error:
-        # Do not dump subprocess stderr or environment; those may include secrets.
-        print(f"Release aborted: {error}", file=sys.stderr)
+        print(json.dumps({"status": "release_aborted", "errors": diagnostic_exception_chain(error)}),
+              file=sys.stderr)
         sys.exit(1)
 
 
