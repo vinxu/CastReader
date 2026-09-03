@@ -18,12 +18,21 @@ smoke = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(smoke)
 
 
-def metadata(voice_id):
+def metadata(voice_id, passed=True):
     return {"voice_id": voice_id, "runtime_generation_mode": "x-vector",
             "reference_duration_s": 9, "prompt_build_s": 1.1,
+            "reference_quality_warnings": ["speaker_consistency_relative_drop"] if passed is False else [],
             "adaptive_denoise": {"selected": "atten24", "deepfilter_applied": True,
                                  "selector_version": smoke.POLICY, "deepfilter_elapsed_s": 0.5,
-                                 "deepfilter_passes": 1, "prompt_builds": 1, "probe_count": 0}}
+                                 "deepfilter_passes": 1, "prompt_builds": 1, "probe_count": 0,
+                                 "reference_speaker_guard": {
+                                     "backend": "campplus-window-consistency",
+                                     "policy": smoke.REFERENCE_SPEAKER_POLICY,
+                                     "action": "warn_only", "blocking": False,
+                                     "comparable": passed is not None, "passed": passed,
+                                     "baseline_min_similarity": 0.8 if passed is not None else None,
+                                     "candidate_min_similarity": (0.7 if passed is False else 0.8) if passed is not None else None,
+                                     "maximum_relative_drop": 0.05}}}
 
 
 def valid_wav():
@@ -53,7 +62,45 @@ class FixedDeepFilterSmokeTests(unittest.TestCase):
         with self.assertRaises((wave.Error, EOFError)):
             smoke.wav_proof(b"not audio")
 
-    def exercise_case(self, create_status=200, speech_status=200):
+    def test_health_requires_warn_only_reference_policy(self):
+        health = {"status": "healthy", "voice_creation_enabled": True,
+                  "adaptive_denoise": {"pipeline_version": smoke.POLICY,
+                                       "all_recordings": True, "raw_fallback": False,
+                                       "reference_speaker_policy": smoke.REFERENCE_SPEAKER_POLICY}}
+        smoke.health_proof(health)
+        for value in (None, "blocking-v1"):
+            health["adaptive_denoise"]["reference_speaker_policy"] = value
+            with self.assertRaisesRegex(AssertionError, "warn-only"):
+                smoke.health_proof(health)
+
+    def test_guard_requires_explicit_warn_only_nonblocking_contract(self):
+        for key, value in (("policy", "blocking-v1"), ("action", "reject"),
+                           ("blocking", True), ("passed", "false")):
+            with self.subTest(key=key):
+                meta = metadata("vc_test")
+                meta["adaptive_denoise"]["reference_speaker_guard"][key] = value
+                with self.assertRaises(AssertionError):
+                    smoke.denoise_proof(meta, "vc_test")
+
+    def test_relative_drop_succeeds_only_with_explicit_warning(self):
+        meta = metadata("vc_test", passed=False)
+        proof = smoke.denoise_proof(meta, "vc_test")
+        self.assertFalse(proof["reference_speaker_guard"]["passed"])
+        self.assertFalse(proof["reference_speaker_guard"]["blocking"])
+        self.assertEqual(proof["reference_speaker_guard"]["candidate_min_similarity"], 0.7)
+        self.assertIn("speaker_consistency_relative_drop", proof["reference_quality_warnings"])
+        meta["reference_quality_warnings"] = []
+        with self.assertRaisesRegex(AssertionError, "recorded as a warning"):
+            smoke.denoise_proof(meta, "vc_test")
+
+    def test_passing_or_unavailable_relative_statistic_needs_no_warning(self):
+        for passed in (True, None):
+            with self.subTest(passed=passed):
+                proof = smoke.denoise_proof(metadata("vc_test", passed=passed), "vc_test")
+                self.assertIs(proof["reference_speaker_guard"]["passed"], passed)
+                self.assertEqual(proof["reference_quality_warnings"], [])
+
+    def exercise_case(self, create_status=200, speech_status=200, passed=True, persisted_drift=False):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "00-clean.wav").write_bytes(valid_wav())
@@ -71,9 +118,12 @@ class FixedDeepFilterSmokeTests(unittest.TestCase):
                     if create_status == 200:
                         destination = root / created_id
                         destination.mkdir()
-                        (destination / "metadata.json").write_text(json.dumps(metadata(created_id)))
+                        persisted = metadata(created_id, passed=passed)
+                        if persisted_drift:
+                            persisted["adaptive_denoise"]["reference_speaker_guard"]["baseline_min_similarity"] = 0.9
+                        (destination / "metadata.json").write_text(json.dumps(persisted))
                         (destination / "prompt.pt").write_bytes(b"test prompt")
-                    return create_status, json.dumps(metadata(created_id)).encode(), {}, 1.2
+                    return create_status, json.dumps(metadata(created_id, passed=passed)).encode(), {}, 1.2
                 if url.endswith("/v1/speech"):
                     self.assertEqual(json.loads(payload)["voice_id"], created_id)
                     return speech_status, valid_wav(), {"X-TTS-Queue-Wait-Ms": "0"}, 1.4
@@ -95,6 +145,21 @@ class FixedDeepFilterSmokeTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertTrue(result["cleanup_ok"])
         self.assertEqual([method for method, _ in calls], ["POST", "POST", "DELETE"])
+
+    def test_warn_only_relative_drop_completes_speech_and_cleanup(self):
+        result, calls = self.exercise_case(passed=False)
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["cleanup_ok"])
+        self.assertFalse(result["denoise"]["reference_speaker_guard"]["passed"])
+        self.assertIn("speaker_consistency_relative_drop", result["denoise"]["reference_quality_warnings"])
+        self.assertEqual([method for method, _ in calls], ["POST", "POST", "DELETE"])
+
+    def test_persisted_guard_statistics_must_match_response(self):
+        result, calls = self.exercise_case(persisted_drift=True)
+        self.assertFalse(result["ok"])
+        self.assertTrue(result["cleanup_ok"])
+        self.assertEqual(result["error"], "persisted metadata differs")
+        self.assertEqual([method for method, _ in calls], ["POST", "DELETE"])
 
     def test_failed_creation_still_cleans_own_id(self):
         result, calls = self.exercise_case(create_status=503)

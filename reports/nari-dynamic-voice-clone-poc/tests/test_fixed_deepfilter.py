@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import io
+import json
 import os
 import tempfile
 import unittest
@@ -56,11 +57,19 @@ class FixedDeepFilterTests(unittest.TestCase):
             return clone_worker.ScheduledResult(execute(), "fixed-denoise-test", 0, 0.01)
 
         with ExitStack() as stack:
+            telemetry = {
+                "created_atten24": 0,
+                "speaker_consistency_warnings": 0,
+                "denoise_reference_rejections": 0,
+                "denoise_failures": 0,
+            }
             for name, value in (
                 ("VOICE_ROOT", root),
                 ("NARI_CLIENT", Mock()),
+                ("DENOISE_TELEMETRY", telemetry),
             ):
                 stack.enter_context(patch.object(clone_worker, name, value))
+            logged = stack.enter_context(patch.object(clone_worker, "structured_log"))
             stack.enter_context(patch.object(clone_worker, "xvector_writer_enabled", return_value=True))
             stack.enter_context(patch.object(clone_worker, "decode_reference", return_value=(baseline.audio, baseline.sample_rate)))
             stack.enter_context(patch.object(clone_worker, "prepare_decoded_reference", return_value=baseline))
@@ -80,6 +89,8 @@ class FixedDeepFilterTests(unittest.TestCase):
                 scheduled=scheduled,
                 diarization=diarization,
                 nari=clone_worker.NARI_CLIENT,
+                telemetry=telemetry,
+                logged=logged,
             )
 
     @staticmethod
@@ -132,6 +143,11 @@ class FixedDeepFilterTests(unittest.TestCase):
                 self.assertEqual(denoise["probe_count"], 0)
                 self.assertFalse(denoise["raw_fallback"])
                 self.assertEqual(denoise["mode_source"], "fixed-policy")
+                self.assertTrue(denoise["reference_speaker_guard"]["passed"])
+                self.assertFalse(denoise["reference_speaker_guard"]["blocking"])
+                self.assertNotIn("speaker_consistency_relative_drop", result["reference_quality_warnings"])
+                self.assertEqual(harness.telemetry["speaker_consistency_warnings"], 0)
+                self.assertFalse(any(call.args[0] == "voice_denoise_reference_warning" for call in harness.logged.call_args_list))
                 self.assertEqual({path.name for path in (root / "vc_fixed_test").iterdir()}, {"prompt.pt", "metadata.json"})
                 self.assertEqual(tuple(root.glob(".*.building")), ())
 
@@ -165,32 +181,74 @@ class FixedDeepFilterTests(unittest.TestCase):
             harness.builder.save.assert_not_called()
             self.assertEqual(tuple(root.iterdir()), ())
 
-    def test_candidate_quality_or_relative_identity_failure_is_nonretryable_without_fallback(self):
-        for failure in ("quality", "identity"):
-            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as directory:
+    def test_cn_relative_drop_warns_but_publishes_one_deepfilter_prompt(self):
+        # Actual CN incident metrics: both absolute reference-quality gates
+        # passed; the former relative-drop hard gate alone rejected creation.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self._harness(
+                root,
+                baseline=self._reference(min_speaker_similarity=0.7565),
+                candidate=self._reference(min_speaker_similarity=0.6696),
+            ) as harness:
+                result = self._create()
+
+            harness.enhance.assert_called_once()
+            self.assertEqual(harness.enhance.call_args.kwargs["attenuation_db"], 24)
+            harness.quality.assert_called_once()
+            harness.builder.save.assert_called_once()
+            harness.scheduled.assert_called_once()
+            self.assertEqual(harness.nari.mock_calls, [])
+            denoise = result["adaptive_denoise"]
+            self.assertEqual(denoise["selected"], "atten24")
+            self.assertTrue(denoise["deepfilter_applied"])
+            self.assertEqual(denoise["deepfilter_passes"], 1)
+            self.assertEqual(denoise["prompt_builds"], 1)
+            self.assertEqual(denoise["probe_count"], 0)
+            self.assertFalse(denoise["raw_fallback"])
+            guard = denoise["reference_speaker_guard"]
+            self.assertTrue(guard["comparable"])
+            self.assertFalse(guard["passed"])
+            self.assertEqual(guard["action"], "warn_only")
+            self.assertEqual(guard["policy"], "warn-only-v1")
+            self.assertFalse(guard["blocking"])
+            self.assertEqual(guard["baseline_min_similarity"], 0.7565)
+            self.assertEqual(guard["candidate_min_similarity"], 0.6696)
+            self.assertIn("speaker_consistency_relative_drop", result["reference_quality_warnings"])
+            self.assertEqual(harness.telemetry["speaker_consistency_warnings"], 1)
+            self.assertEqual(harness.telemetry["denoise_reference_rejections"], 0)
+            self.assertEqual(harness.telemetry["created_atten24"], 1)
+            warning_logs = [call for call in harness.logged.call_args_list if call.args[0] == "voice_denoise_reference_warning"]
+            self.assertEqual(len(warning_logs), 1)
+            self.assertFalse(any(call.args[0] == "voice_denoise_reference_rejected" for call in harness.logged.call_args_list))
+            destination = root / "vc_fixed_test"
+            self.assertEqual({path.name for path in destination.iterdir()}, {"prompt.pt", "metadata.json"})
+            metadata = json.loads((destination / "metadata.json").read_text(encoding="utf-8"))
+            self.assertEqual(metadata["adaptive_denoise"]["reference_speaker_guard"], guard)
+            self.assertIn("speaker_consistency_relative_drop", metadata["reference_quality_warnings"])
+            self.assertEqual(tuple(root.glob(".*.building")), ())
+
+    def test_true_post_deepfilter_quality_failures_still_reject_without_prompt(self):
+        for code, message, metrics in (
+            ("VOICE_REFERENCE_NO_SPEECH", "No speech", {"speech_duration_s": 0.0}),
+            ("VOICE_REFERENCE_MULTIPLE_SPEAKERS", "Multiple speakers", {"min_speaker_similarity": 0.2}),
+        ):
+            with self.subTest(code=code), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
-                with self._harness(root, candidate=self._reference(min_speaker_similarity=0.7)) as harness:
-                    if failure == "quality":
-                        harness.quality.side_effect = clone_worker.ReferenceQualityError("VOICE_REFERENCE_NO_SPEECH", "No speech", {"speech_duration_s": 0.0})
+                with self._harness(root) as harness:
+                    harness.quality.side_effect = clone_worker.ReferenceQualityError(code, message, metrics)
                     with self.assertRaises(HTTPException) as captured:
                         self._create()
                 self.assertEqual(captured.exception.status_code, 422)
-                code = (
-                    "VOICE_REFERENCE_NO_SPEECH"
-                    if failure == "quality"
-                    else "VOICE_REFERENCE_DENOISE_REJECTED"
-                )
                 self.assertEqual(captured.exception.detail["code"], code)
                 self.assertEqual(captured.exception.headers["X-Voice-Retryable"], "false")
                 self.assertEqual(captured.exception.headers["X-Voice-Error-Code"], code)
-                if failure == "quality":
-                    self.assertEqual(captured.exception.detail["message"], "No speech")
-                    self.assertEqual(captured.exception.detail["metrics"], {"speech_duration_s": 0.0})
-                else:
-                    self.assertIn("quieter", captured.exception.detail["message"])
-                    self.assertFalse(captured.exception.detail["metrics"]["passed"])
+                self.assertEqual(captured.exception.detail["message"], message)
+                self.assertEqual(captured.exception.detail["metrics"], metrics)
                 harness.enhance.assert_called_once()
                 harness.builder.save.assert_not_called()
+                self.assertEqual(harness.telemetry["denoise_reference_rejections"], 1)
+                self.assertEqual(harness.telemetry["speaker_consistency_warnings"], 0)
                 self.assertEqual(tuple(root.iterdir()), ())
 
     def test_short_recording_without_comparable_speaker_windows_still_creates(self):
@@ -201,6 +259,10 @@ class FixedDeepFilterTests(unittest.TestCase):
             guard = result["adaptive_denoise"]["reference_speaker_guard"]
             self.assertFalse(guard["comparable"])
             self.assertIsNone(guard["passed"])
+            self.assertFalse(guard["blocking"])
+            self.assertNotIn("speaker_consistency_relative_drop", result["reference_quality_warnings"])
+            self.assertEqual(harness.telemetry["speaker_consistency_warnings"], 0)
+            self.assertFalse(any(call.args[0] == "voice_denoise_reference_warning" for call in harness.logged.call_args_list))
             harness.enhance.assert_called_once()
             harness.builder.save.assert_called_once()
 
@@ -246,6 +308,7 @@ class FixedDeepFilterTests(unittest.TestCase):
             self.assertGreaterEqual(ready["active_voice_tasks"], 1)
             self.assertTrue(ready["voice_creation_enabled"])
             self.assertEqual(ready["adaptive_denoise"]["pipeline_version"], "fixed-deepfilter-atten24-v1")
+            self.assertEqual(ready["adaptive_denoise"]["reference_speaker_policy"], "warn-only-v1")
             self.assertFalse(missing["voice_creation_enabled"])
             self.assertFalse(missing["voice_creation_dependencies_ready"])
             self.assertEqual(missing["status"], "healthy")

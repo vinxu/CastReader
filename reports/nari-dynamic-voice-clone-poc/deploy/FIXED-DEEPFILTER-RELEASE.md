@@ -2,6 +2,8 @@
 
 Production creation uses `fixed-deepfilter-atten24-v1`: input quality and single-speaker checks, exactly one DeepFilter atten24 pass, enhanced-reference validation, and one x-vector prompt. It never selects raw audio or atten100, and never generates selection probes.
 
+The relative CampPlus window-consistency statistic is `warn-only-v1`: a drop greater than 0.05 emits `voice_denoise_reference_warning`, increments `speaker_consistency_warnings`, and persists `speaker_consistency_relative_drop` without blocking creation. It does not replace the mandatory raw and enhanced quality gates or raw multiple-speaker detection. `reference_speaker_guard.passed=false` is an advisory statistic, not a creation failure; `action=warn_only` and `blocking=false` make that distinction explicit.
+
 `CLONE_DENOISE_MODE`, canary percentages, and `.adaptive-denoise-mode` are obsolete and ignored by this worker. **Setting the old mode file to `off` is not a rollback.** Existing stored prompts and cached previews are not rewritten.
 
 ## Release boundary
@@ -16,6 +18,7 @@ The default `apply` operation is preflight-only. `--execute` additionally waits 
 2. Run `fixed_deepfilter_reference_preflight.py` on consented clean, noisy, mechanical, and short recordings. This does not create production voices.
 3. Commit the scoped changes and package the immutable source with the release tool.
 4. Run release preflight in both regions, without `--execute`.
+   Before a global-region release, run the [isolated real Supervisor lifecycle regression](test-supervisor-release-isolated.md). Its dedicated test daemon must complete and exit; this catches actual CLI stop/start behavior without touching production.
 5. Apply in China, then run `fixed-deepfilter-smoke.py` on loopback. The smoke test verifies actual DeepFilter execution from response and persisted metadata, builds a prompt, generates the exact Chinese preview text, validates its WAV, and deletes only the test IDs it generated.
 6. Repeat apply and the smoke test in the global region. Check the same worker SHA, zero active creation tasks, and unchanged Nari/TTS processes.
 

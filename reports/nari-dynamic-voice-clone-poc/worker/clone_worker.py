@@ -123,6 +123,7 @@ ASR_MODEL_DIR = Path(ASR_MODEL_DIR_VALUE).expanduser() if ASR_MODEL_DIR_VALUE el
 ASR_WARMUP = os.environ.get("CLONE_ASR_WARMUP", "0").strip() == "1"
 DENOISE_PIPELINE_VERSION = "fixed-deepfilter-atten24-v1"
 DENOISE_ATTENUATION_DB = 24
+REFERENCE_SPEAKER_POLICY = "warn-only-v1"
 DEEPFILTER_BIN = Path(
     os.environ.get("CLONE_DEEPFILTER_BIN", DATA_ROOT / "denoise/bin/deep-filter")
 )
@@ -175,6 +176,7 @@ DENOISE_TELEMETRY: dict[str, int] = {
     "created_atten24": 0,
     "denoise_failures": 0,
     "denoise_reference_rejections": 0,
+    "speaker_consistency_warnings": 0,
     "multiple_speaker_rejections": 0,
     "diarization_unavailable": 0,
 }
@@ -388,6 +390,7 @@ def denoise_health() -> dict[str, object]:
         "prompt_builds": 1,
         "probe_count": 0,
         "raw_fallback": False,
+        "reference_speaker_policy": REFERENCE_SPEAKER_POLICY,
         "ready": bool(
             deepfilter["ready"]
             and diarization["ready"]
@@ -1080,11 +1083,15 @@ def _relative_reference_speaker_guard(
         and math.isfinite(float(value))
         for value in (baseline, selected)
     )
-    # Short valid references can contain fewer than two comparable 2.4 s
-    # windows. Absence of that relative statistic is not identity mismatch:
-    # raw diarization and the candidate's input-quality gate still apply.
+    # These are minima over each recording's own VAD-selected windows, not
+    # aligned before/after identity scores. A relative drop is advisory only;
+    # raw diarization and the candidate's input-quality gate remain mandatory.
+    # Short valid references may not provide enough windows for this statistic.
     return {
         "backend": "campplus-window-consistency",
+        "policy": REFERENCE_SPEAKER_POLICY,
+        "action": "warn_only",
+        "blocking": False,
         "comparable": comparable,
         "passed": (
             float(selected) >= float(baseline) - RELATIVE_SPEAKER_FLOOR
@@ -1161,26 +1168,15 @@ def build_voice_pipeline(
                     selected_reference,
                 )
                 if reference_guard["passed"] is False:
-                    increment_denoise_metric("denoise_reference_rejections")
+                    increment_denoise_metric("speaker_consistency_warnings")
+                    selected_reference.warnings.append("speaker_consistency_relative_drop")
                     structured_log(
-                        "voice_denoise_reference_rejected",
+                        "voice_denoise_reference_warning",
                         voice_id=voice_id,
                         pipeline_version=DENOISE_PIPELINE_VERSION,
-                        code="VOICE_REFERENCE_DENOISE_REJECTED",
+                        code="VOICE_REFERENCE_SPEAKER_CONSISTENCY_WARNING",
                         quality=reference_guard,
                         raw_fallback=False,
-                    )
-                    raise HTTPException(
-                        422,
-                        detail={
-                            "code": "VOICE_REFERENCE_DENOISE_REJECTED",
-                            "message": "Noise reduction could not preserve the voice reliably. Please record again in a quieter place.",
-                            "metrics": reference_guard,
-                        },
-                        headers={
-                            "X-Voice-Retryable": "false",
-                            "X-Voice-Error-Code": "VOICE_REFERENCE_DENOISE_REJECTED",
-                        },
                     )
                 raise_if_creation_cancelled()
             except ReferenceQualityError as error:

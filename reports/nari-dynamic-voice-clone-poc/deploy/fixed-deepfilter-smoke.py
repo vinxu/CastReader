@@ -41,6 +41,7 @@ FIXTURES = {
     "short": "short-4s.wav",
 }
 POLICY = "fixed-deepfilter-atten24-v1"
+REFERENCE_SPEAKER_POLICY = "warn-only-v1"
 TEST_PREFIX = "vc_smokedf_"
 PREVIEW_TEXT = "你好，这是我在 CastReader 中创建的声音。现在让我们一起清晰、自然、稳定地读完这段内容。"
 
@@ -111,10 +112,37 @@ def denoise_proof(metadata: dict, voice_id: str) -> dict:
           and math.isfinite(elapsed) and elapsed > 0, "DeepFilter elapsed time missing or invalid")
     check(metadata.get("runtime_generation_mode") == "x-vector", "generation mode changed")
     check(float(metadata.get("reference_duration_s", 0)) > 0, "invalid reference duration")
+    guard = proof.get("reference_speaker_guard")
+    check(isinstance(guard, dict), "reference speaker guard evidence missing")
+    check(guard.get("policy") == REFERENCE_SPEAKER_POLICY
+          and guard.get("action") == "warn_only" and guard.get("blocking") is False,
+          "reference speaker guard is not warn-only")
+    check("passed" in guard and any(guard["passed"] is value for value in (True, False, None)),
+          "reference speaker guard result missing or invalid")
+    warnings = metadata.get("reference_quality_warnings")
+    check(isinstance(warnings, list) and all(isinstance(item, str) for item in warnings),
+          "reference quality warnings missing or invalid")
+    check(guard["passed"] is not False or "speaker_consistency_relative_drop" in warnings,
+          "relative speaker drop was not recorded as a warning")
     return {"selected": proof["selected"], "deepfilter_applied": True,
             "policy": POLICY, "deepfilter_elapsed_s": elapsed,
             "prompt_build_s": metadata.get("prompt_build_s"),
-            "reference_duration_s": metadata["reference_duration_s"]}
+            "reference_duration_s": metadata["reference_duration_s"],
+            "reference_speaker_guard": {key: guard.get(key) for key in (
+                "backend", "policy", "action", "blocking", "comparable", "passed",
+                "baseline_min_similarity", "candidate_min_similarity", "maximum_relative_drop")},
+            "reference_quality_warnings": warnings}
+
+
+def health_proof(health: dict) -> None:
+    check(health.get("status") == "healthy", "worker is not healthy")
+    check(health.get("voice_creation_enabled") is True, "voice creation disabled")
+    policy = health.get("adaptive_denoise", {})
+    check(policy.get("pipeline_version", policy.get("selector_version")) == POLICY
+          and policy.get("all_recordings") is True and policy.get("raw_fallback") is False,
+          "worker health does not attest the fixed policy")
+    check(policy.get("reference_speaker_policy") == REFERENCE_SPEAKER_POLICY,
+          "worker health does not attest the warn-only reference speaker policy")
 
 
 def wav_proof(raw: bytes) -> dict:
@@ -209,12 +237,7 @@ def main() -> int:
     status, raw, _, _ = request(args.url + "/health", token, "GET", timeout=5)
     check(status == 200, "worker health endpoint unavailable")
     health = json.loads(raw)
-    check(health.get("status") == "healthy", "worker is not healthy")
-    check(health.get("voice_creation_enabled") is True, "voice creation disabled")
-    policy = health.get("adaptive_denoise", {})
-    check(policy.get("pipeline_version", policy.get("selector_version")) == POLICY
-          and policy.get("all_recordings") is True and policy.get("raw_fallback") is False,
-          "worker health does not attest the fixed policy")
+    health_proof(health)
     # SIGTERM runs the same narrow finally cleanup as Ctrl-C.
     def interrupted(*_):
         raise KeyboardInterrupt()
@@ -222,7 +245,8 @@ def main() -> int:
     signal.signal(signal.SIGTERM, interrupted)
     results = [run_case(args, token, case) for case in cases]
     passed = all(item["ok"] and item["cleanup_ok"] for item in results)
-    print(json.dumps({"policy": POLICY, "ok": passed, "cases": results}, indent=2), flush=True)
+    print(json.dumps({"policy": POLICY, "reference_speaker_policy": REFERENCE_SPEAKER_POLICY,
+                      "ok": passed, "cases": results}, indent=2), flush=True)
     return 0 if passed else 1
 
 

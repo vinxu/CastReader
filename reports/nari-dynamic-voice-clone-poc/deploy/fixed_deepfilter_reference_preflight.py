@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import tempfile
 import threading
 import time
@@ -64,10 +65,11 @@ def main() -> None:
             )
         baseline = original.metrics.get("min_speaker_similarity")
         candidate = cleaned.metrics.get("min_speaker_similarity")
-        comparable = baseline is not None and candidate is not None
-        guard_passed = not comparable or candidate >= baseline - RELATIVE_SPEAKER_FLOOR
-        if not guard_passed:
-            raise RuntimeError(f"{sample.name}: relative speaker guard failed")
+        comparable = all(
+            isinstance(value, (float, int)) and not isinstance(value, bool)
+            and math.isfinite(float(value)) for value in (baseline, candidate)
+        )
+        guard_passed = candidate >= baseline - RELATIVE_SPEAKER_FLOOR if comparable else None
         record = {
             "sample": sample.name,
             "selected": "atten24",
@@ -79,13 +81,18 @@ def main() -> None:
             "cleaned_snr_db": cleaned.metrics.get("snr_db"),
             "speaker_guard_comparable": comparable,
             "speaker_guard_passed": guard_passed,
+            "speaker_guard_policy": "warn-only-v1",
+            "speaker_guard_action": "warn_only",
+            "speaker_guard_blocking": False,
+            "speaker_guard_warning": guard_passed is False,
             "original_min_speaker_similarity": baseline,
             "cleaned_min_speaker_similarity": candidate,
             "diarization": diarization,
         }
         records.append(record)
         print(json.dumps(record, ensure_ascii=False), flush=True)
-    print(json.dumps({"status": "passed", "samples": len(records)}), flush=True)
+    print(json.dumps({"status": "passed", "samples": len(records),
+                      "speaker_warning_count": sum(r["speaker_guard_warning"] for r in records)}), flush=True)
 
 
 if __name__ == "__main__":
