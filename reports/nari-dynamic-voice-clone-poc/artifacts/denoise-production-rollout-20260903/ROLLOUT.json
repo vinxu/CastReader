@@ -1,4 +1,6 @@
 {
+  "historical_snapshot": true,
+  "superseded_by": "fixed-deepfilter-rollout-20260903",
   "rollout_id": "denoise-production-rollout-20260903",
   "completed_at": "2026-09-03T04:04:31Z",
   "status": "fully_enabled",

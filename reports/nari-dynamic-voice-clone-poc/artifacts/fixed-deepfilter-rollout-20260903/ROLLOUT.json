@@ -1,0 +1,441 @@
+{
+  "rollout_id": "fixed-deepfilter-rollout-20260903",
+  "policy": "fixed-deepfilter-atten24-v1",
+  "worker_sha256": "9be8893828c8f559f94c9548c9b479108bd71b8760fd2db081463b13037d40e3",
+  "adaptive_module_sha256": "1ddacd73ddcd3c9a175d302795f6f50da318fba13d1c63faadd64ff3f742695a",
+  "deepfilter_sha256": "70775e251eee44c0f2451a1e833326cf8bcbbe304d3e7cd12851e6fce72ef7da",
+  "unit_tests": {
+    "worker_linux": 97,
+    "release_tool": 38,
+    "smoke_harness": 6,
+    "smoke_harness_included_in_worker_linux": true
+  },
+  "reference_preflight": {
+    "samples": 6,
+    "passed": 6,
+    "labels": [
+      "clean",
+      "kitchen",
+      "washing-machine",
+      "meeting-room",
+      "cafeteria",
+      "short-4s"
+    ]
+  },
+  "protected_components": [
+    "Nari source and processes",
+    "ordinary TTS processes",
+    "Web control plane",
+    "clients",
+    "user voices",
+    "credentials"
+  ],
+  "us_interrupted_attempts": [
+    {
+      "source_commit": "08a34a4d1cad42ac1c8dceb52fc9dbb65c96104f",
+      "backup": "/workspace/castreader-clone/backups/fixed-deepfilter-worker-20260903T050125Z-66787",
+      "worker_stopped": "2026-09-03T05:01:26.694Z",
+      "original_respawned": "2026-09-03T05:02:09.318Z",
+      "original_running_confirmed": "2026-09-03T05:02:35.031Z",
+      "original_source_and_marker_unchanged": true
+    },
+    {
+      "source_commit": "acd8ba44a254c43c66c9fc053e361ca1b74f321f",
+      "backup": "/workspace/castreader-clone/backups/fixed-deepfilter-worker-20260903T050521Z-68462",
+      "worker_stopped": "2026-09-03T05:05:21.943Z",
+      "original_respawned": "2026-09-03T05:05:48.087Z",
+      "original_running_confirmed": "2026-09-03T05:06:13.351Z",
+      "original_source_and_marker_unchanged": true
+    }
+  ],
+  "incident_root_cause": "Supervisor status returns 3 for STOPPED, while pid returns 7 with stdout 0. Initial tool treated nonzero as fatal; first fix incorrectly conflated status/pid constants. Exact CLI output and system Supervisor constants verified before final fix.",
+  "limits": [
+    "Existing voice prompts and cached previews were not rewritten.",
+    "10 HTTP canaries are five fixtures in two regions, not 10 unique subjective quality samples.",
+    "Worker HTTP creation and preview verified; authenticated account/device UI end-to-end was not replayed.",
+    "No fixed-pipeline blind-listening win rate measured; historical adaptive 11/12 is not applicable.",
+    "First 1–2 second subjective noise improvement remains to be judged with a newly created voice.",
+    "Rejected invalid references do not reach DeepFilter; every successful new voice uses DeepFilter exactly once."
+  ],
+  "status": "fully_deployed_and_worker_http_verified",
+  "completed_at": "2026-09-03T05:13:52Z",
+  "supervisor_integration": {
+    "ok": true,
+    "isolated_runtime": "/tmp/castreader-supervisor-isolated-41q22851",
+    "isolated_supervisord_pid": 70945,
+    "original_test_worker_pid": 70948,
+    "stopped": {
+      "state": "STOPPED",
+      "pid": 0,
+      "status_returncode": 3,
+      "pid_returncode": 7,
+      "pid_stdout": "0"
+    },
+    "restarted_test_worker_pid": 71467,
+    "all_control_commands_isolated": true,
+    "control_call_count": 323,
+    "isolated_daemon_exited": true,
+    "elapsed_s": 52.079
+  },
+  "regions": {
+    "cn": {
+      "release": {
+        "backup": "/root/autodl-tmp/nari-staging/backups/fixed-deepfilter-worker-20260903T045956Z-8485",
+        "release_record": "/root/autodl-tmp/nari-staging/releases/fast-hotpath-fixed-deepfilter-20260903T045956Z-8485.json",
+        "worker_pid": 8744,
+        "source_commit": "08a34a4d1cad42ac1c8dceb52fc9dbb65c96104f",
+        "nari_tts_unchanged": true
+      },
+      "manifest_sha256": "dfd2a3a51bc8a4c96c96fc2d8dfe25c6266f7829d44759beea914eda4b76a16c",
+      "rollback_ready": true,
+      "verification": {
+        "region": "cn",
+        "source_commit": "08a34a4d1cad42ac1c8dceb52fc9dbb65c96104f",
+        "source_and_protected_hashes_match": true,
+        "verified_pids_unchanged": true,
+        "pids": {
+          "worker": 8744,
+          "nari": 959622,
+          "tts": 129484
+        },
+        "policy": "fixed-deepfilter-atten24-v1",
+        "voice_creation_enabled": true,
+        "counters": {
+          "created_atten24": 5,
+          "denoise_failures": 0,
+          "denoise_reference_rejections": 0,
+          "multiple_speaker_rejections": 0,
+          "diarization_unavailable": 0
+        },
+        "queue_depth": 0,
+        "busy": false,
+        "active_voice_tasks": 0,
+        "test_leftovers": {
+          "vc_smokedf_*": 0,
+          ".vc_smokedf_*.*.building": 0,
+          "vc_tmpdn_*": 0
+        },
+        "actual_selection_logs": [
+          {
+            "case": "clean",
+            "timestamp": "2026-09-03T05:00:33.960022+00:00",
+            "selected": "atten24",
+            "deepfilter_elapsed_s": 2.140358
+          },
+          {
+            "case": "kitchen",
+            "timestamp": "2026-09-03T05:00:37.835921+00:00",
+            "selected": "atten24",
+            "deepfilter_elapsed_s": 2.341338
+          },
+          {
+            "case": "washing-machine",
+            "timestamp": "2026-09-03T05:00:41.568432+00:00",
+            "selected": "atten24",
+            "deepfilter_elapsed_s": 2.066513
+          },
+          {
+            "case": "meeting-room",
+            "timestamp": "2026-09-03T05:00:44.666926+00:00",
+            "selected": "atten24",
+            "deepfilter_elapsed_s": 1.788211
+          },
+          {
+            "case": "short",
+            "timestamp": "2026-09-03T05:00:46.871321+00:00",
+            "selected": "atten24",
+            "deepfilter_elapsed_s": 1.058719
+          }
+        ]
+      },
+      "canaries": {
+        "ok": true,
+        "cases": [
+          {
+            "case": "clean",
+            "test_voice_id": "vc_smokedf_0b08641b1dcf4e368b7759a61eb0302d",
+            "create_elapsed_s": 5.216,
+            "deepfilter_elapsed_s": 2.140358,
+            "speech_elapsed_s": 0.771,
+            "audio_duration_s": 8.88,
+            "audio_sha256": "2d3bf16fe48012113b02dd9502d457c4bcd060a99a3107d6a7ee95c7ed814dd6",
+            "create_status": 200,
+            "speech_status": 200,
+            "deepfilter_applied": true,
+            "selected": "atten24",
+            "cleanup_ok": true,
+            "passes": 1,
+            "prompt_builds": 1,
+            "probe_count": 0,
+            "raw_fallback": false
+          },
+          {
+            "case": "kitchen",
+            "test_voice_id": "vc_smokedf_23692116c3fa4250aef926e4005854a6",
+            "create_elapsed_s": 3.038,
+            "deepfilter_elapsed_s": 2.341338,
+            "speech_elapsed_s": 0.822,
+            "audio_duration_s": 9.36,
+            "audio_sha256": "81654b9c0a5cb81ec5b3497fccc6123061de7188ee0853aca022ae59459a1d6d",
+            "create_status": 200,
+            "speech_status": 200,
+            "deepfilter_applied": true,
+            "selected": "atten24",
+            "cleanup_ok": true,
+            "passes": 1,
+            "prompt_builds": 1,
+            "probe_count": 0,
+            "raw_fallback": false
+          },
+          {
+            "case": "washing-machine",
+            "test_voice_id": "vc_smokedf_370be379d92f4e9687f30269b24958da",
+            "create_elapsed_s": 2.842,
+            "deepfilter_elapsed_s": 2.066513,
+            "speech_elapsed_s": 0.718,
+            "audio_duration_s": 8.24,
+            "audio_sha256": "7d9b81e3b736a0b52e65bdccc699a42a0ac0a92a1c564b03072ff99ae6a0f6de",
+            "create_status": 200,
+            "speech_status": 200,
+            "deepfilter_applied": true,
+            "selected": "atten24",
+            "cleanup_ok": true,
+            "passes": 1,
+            "prompt_builds": 1,
+            "probe_count": 0,
+            "raw_fallback": false
+          },
+          {
+            "case": "meeting-room",
+            "test_voice_id": "vc_smokedf_55471eade9c146238dd4c045f92c7cdb",
+            "create_elapsed_s": 2.325,
+            "deepfilter_elapsed_s": 1.788211,
+            "speech_elapsed_s": 0.719,
+            "audio_duration_s": 8.16,
+            "audio_sha256": "3fbb5337bf74f0e27058f15df6ceaecdabb42ccc9017c9e8b5be462603d81dd6",
+            "create_status": 200,
+            "speech_status": 200,
+            "deepfilter_applied": true,
+            "selected": "atten24",
+            "cleanup_ok": true,
+            "passes": 1,
+            "prompt_builds": 1,
+            "probe_count": 0,
+            "raw_fallback": false
+          },
+          {
+            "case": "short",
+            "test_voice_id": "vc_smokedf_208fa4b3c03f47db8df5bb4d87998d36",
+            "create_elapsed_s": 1.429,
+            "deepfilter_elapsed_s": 1.058719,
+            "speech_elapsed_s": 0.733,
+            "audio_duration_s": 8.48,
+            "audio_sha256": "37d6b9505d5e76d0919af9ef8887a2c6460fbf8664c3dc6460127b05c99e97ae",
+            "create_status": 200,
+            "speech_status": 200,
+            "deepfilter_applied": true,
+            "selected": "atten24",
+            "cleanup_ok": true,
+            "passes": 1,
+            "prompt_builds": 1,
+            "probe_count": 0,
+            "raw_fallback": false
+          }
+        ]
+      }
+    },
+    "us": {
+      "release": {
+        "backup": "/workspace/castreader-clone/backups/fixed-deepfilter-worker-20260903T051120Z-71772",
+        "changed_files": [
+          "adaptive_denoise.py",
+          "clone_worker.py"
+        ],
+        "executed": true,
+        "nari_tts_unchanged": true,
+        "policy": "fixed-deepfilter-atten24-v1",
+        "preflight": {
+          "deepfilter_applied": true,
+          "deepfilter_elapsed_s": 0.477,
+          "diarization_ready": true,
+          "policy": "fixed-deepfilter-atten24-v1",
+          "schema": "xvector_v1"
+        },
+        "region": "us",
+        "release_record": "/workspace/castreader-clone/releases/fast-hotpath-fixed-deepfilter-20260903T051120Z-71772.json",
+        "source_commit": "7fcc6e1bb5692761a9ecd8271a6bb05cdf9669fe",
+        "voice_creation_enabled": true,
+        "worker_pid": 71990
+      },
+      "manifest_sha256": "b4847e9aa702f05bde42efd7cf756524c763742c8eeceb4fb91d079af1097dff",
+      "rollback_ready": true,
+      "verification": {
+        "region": "us",
+        "source_commit": "7fcc6e1bb5692761a9ecd8271a6bb05cdf9669fe",
+        "source_and_protected_hashes_match": true,
+        "verified_pids_unchanged": true,
+        "pids": {
+          "worker": 71990,
+          "nari": 4136837,
+          "tts": 3746912
+        },
+        "policy": "fixed-deepfilter-atten24-v1",
+        "voice_creation_enabled": true,
+        "counters": {
+          "created_atten24": 5,
+          "denoise_failures": 0,
+          "denoise_reference_rejections": 0,
+          "multiple_speaker_rejections": 0,
+          "diarization_unavailable": 0
+        },
+        "queue_depth": 0,
+        "busy": false,
+        "active_voice_tasks": 0,
+        "test_leftovers": {
+          "vc_smokedf_*": 0,
+          ".vc_smokedf_*.*.building": 0,
+          "vc_tmpdn_*": 0
+        },
+        "actual_selection_logs": [
+          {
+            "case": "clean",
+            "timestamp": "2026-09-03T05:12:11.157120+00:00",
+            "selected": "atten24",
+            "deepfilter_elapsed_s": 1.255837
+          },
+          {
+            "case": "kitchen",
+            "timestamp": "2026-09-03T05:12:13.814946+00:00",
+            "selected": "atten24",
+            "deepfilter_elapsed_s": 1.331008
+          },
+          {
+            "case": "washing-machine",
+            "timestamp": "2026-09-03T05:12:16.573145+00:00",
+            "selected": "atten24",
+            "deepfilter_elapsed_s": 1.330875
+          },
+          {
+            "case": "meeting-room",
+            "timestamp": "2026-09-03T05:12:18.675009+00:00",
+            "selected": "atten24",
+            "deepfilter_elapsed_s": 1.029764
+          },
+          {
+            "case": "short",
+            "timestamp": "2026-09-03T05:12:20.362251+00:00",
+            "selected": "atten24",
+            "deepfilter_elapsed_s": 0.753401
+          }
+        ]
+      },
+      "canaries": {
+        "ok": true,
+        "cases": [
+          {
+            "case": "clean",
+            "test_voice_id": "vc_smokedf_6e3161e535b242a38ef156e1285ee2a0",
+            "create_elapsed_s": 3.264,
+            "deepfilter_elapsed_s": 1.255837,
+            "speech_elapsed_s": 0.706,
+            "audio_duration_s": 8.64,
+            "audio_sha256": "b985cfbab25a19c5daa64b98b6b89a3e182c9f6faec5660b557b70cc1cf96c2d",
+            "create_status": 200,
+            "speech_status": 200,
+            "deepfilter_applied": true,
+            "selected": "atten24",
+            "cleanup_ok": true,
+            "passes": 1,
+            "prompt_builds": 1,
+            "probe_count": 0,
+            "raw_fallback": false
+          },
+          {
+            "case": "kitchen",
+            "test_voice_id": "vc_smokedf_792522eb11f0419ebbad85e2b890acdd",
+            "create_elapsed_s": 1.913,
+            "deepfilter_elapsed_s": 1.331008,
+            "speech_elapsed_s": 0.813,
+            "audio_duration_s": 10.16,
+            "audio_sha256": "cc01eefc9b86070fa34c8819e9e4ac172d6ed07b963f115e7f56c1457dca21b7",
+            "create_status": 200,
+            "speech_status": 200,
+            "deepfilter_applied": true,
+            "selected": "atten24",
+            "cleanup_ok": true,
+            "passes": 1,
+            "prompt_builds": 1,
+            "probe_count": 0,
+            "raw_fallback": false
+          },
+          {
+            "case": "washing-machine",
+            "test_voice_id": "vc_smokedf_3b9ff2c07c674228b71d677df93ab341",
+            "create_elapsed_s": 1.903,
+            "deepfilter_elapsed_s": 1.330875,
+            "speech_elapsed_s": 0.666,
+            "audio_duration_s": 8.24,
+            "audio_sha256": "6b6d81ae4f8b0293882a9137d11ce2a15b3246327c5aa7ed93789cbe79036eff",
+            "create_status": 200,
+            "speech_status": 200,
+            "deepfilter_applied": true,
+            "selected": "atten24",
+            "cleanup_ok": true,
+            "passes": 1,
+            "prompt_builds": 1,
+            "probe_count": 0,
+            "raw_fallback": false
+          },
+          {
+            "case": "meeting-room",
+            "test_voice_id": "vc_smokedf_58a38c27b86c47da92d4a5990f3f9f1c",
+            "create_elapsed_s": 1.402,
+            "deepfilter_elapsed_s": 1.029764,
+            "speech_elapsed_s": 0.62,
+            "audio_duration_s": 7.44,
+            "audio_sha256": "5cd200c3d32883e7920c27e8264aa977fb5c4b2132972e3a8b0294f9aad5a7ce",
+            "create_status": 200,
+            "speech_status": 200,
+            "deepfilter_applied": true,
+            "selected": "atten24",
+            "cleanup_ok": true,
+            "passes": 1,
+            "prompt_builds": 1,
+            "probe_count": 0,
+            "raw_fallback": false
+          },
+          {
+            "case": "short",
+            "test_voice_id": "vc_smokedf_6566183955e04c4ba449f97dd82fed95",
+            "create_elapsed_s": 1.037,
+            "deepfilter_elapsed_s": 0.753401,
+            "speech_elapsed_s": 0.698,
+            "audio_duration_s": 8.72,
+            "audio_sha256": "7692c2bc72e4333e52f5acfcd93938af40a912d2385c2e3c175a82f01eb50b3c",
+            "create_status": 200,
+            "speech_status": 200,
+            "deepfilter_applied": true,
+            "selected": "atten24",
+            "cleanup_ok": true,
+            "passes": 1,
+            "prompt_builds": 1,
+            "probe_count": 0,
+            "raw_fallback": false
+          }
+        ]
+      }
+    }
+  },
+  "public_unauthenticated_creation_checks": {
+    "global": 401,
+    "china": 401
+  },
+  "cleanup": {
+    "production_test_voices_deleted": 10,
+    "remote_fixture_copies_deleted": 11,
+    "release_bundles_and_backups_retained": true,
+    "local_preview_analysis_env_audio_and_two_plots_deleted": true,
+    "remote_generated_preview_repro_deleted": true,
+    "original_fixture_sources_and_user_voices_untouched": true
+  }
+}
