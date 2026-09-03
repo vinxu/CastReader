@@ -11,6 +11,22 @@ import clone_worker as worker
 
 
 class CaptionedPlaybackPriorityTests(unittest.TestCase):
+    def test_natural_duration_over_estimate_keeps_first_candidate(self) -> None:
+        with (
+            patch.object(worker, "voice_prompt_metadata"),
+            patch.object(worker, "nari_streamed_wav", return_value=(200, b"spoken-audio")) as generate,
+            patch.object(worker, "validate_generated_wav", return_value={"duration_s": 5.5}),
+            patch.object(worker, "structured_log") as log,
+        ):
+            result = worker.request_xvector_fallback(
+                worker.SpeechRequest(text="Azure cactus.", voice_id="vc_test"),
+                reason="VOICE_FAST_XVECTOR",
+            )
+        self.assertEqual(result, b"spoken-audio")
+        self.assertEqual(generate.call_count, 1)
+        warning = next(call for call in log.call_args_list if call.args[0] == "generated_audio_duration_warning")
+        self.assertFalse(warning.kwargs["blocking"])
+
     def test_timing_failure_preserves_encoded_audio_and_voice(self) -> None:
         for error in [worker.SemanticAudioMismatch("incomplete-alignment", {}),
                       ValueError("invalid alignment values")]:

@@ -2,6 +2,8 @@
 
 Continuous usable speech is the primary output. Spectral, clipping and pitch scores are advisory observations, not an admission policy for a whole spoken paragraph. They emit `generated_audio_quality_warning` with `blocking=false` and do not trigger regeneration or change the audio.
 
+The current x-vector path also treats text-length duration estimates as advisory. Numbers and natural pauses may take longer than estimated; this emits `generated_audio_duration_warning`, preserving the first usable candidate. Model token and execution budgets still bound generation. Playback must not expose these technical observations or make the user retry them. This server policy serves read-aloud and explanation audio for iOS, Android, Web and extensions.
+
 Word-timing computation runs after encoding and is optional. Any timing exception preserves the MP3 and voice, returns `timestamps: []`, and logs `captioned_word_timing_unavailable`. Existing clients can use sentence highlighting. Do not add ASR to the synthesis hot path.
 
 Unparseable or non-finite samples, empty/near-silent audio, and genuinely failed generation/conversion still require recovery. Existing voice identity, source recording quality, creation denoising, authentication, regional routing and quota policies are unchanged.

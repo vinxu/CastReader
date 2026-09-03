@@ -1745,15 +1745,16 @@ def request_xvector_fallback(
                 request.text
             )
             if metrics["duration_s"] > expected_duration_limit:
-                raise GeneratedAudioQualityError(
-                    "generated-text-duration-mismatch",
-                    {
-                        **metrics,
-                        "expected_duration_limit_s": round(
-                            expected_duration_limit, 3
-                        ),
-                    },
-                    code="VOICE_OUTPUT_TEXT_MISMATCH",
+                # Text length estimates are a generation budget, not evidence
+                # of wrong speech. X-vector never receives a reference script;
+                # natural pauses or expanded numbers must not discard audio.
+                structured_log(
+                    "generated_audio_duration_warning",
+                    policy="playback-first-v1",
+                    blocking=False,
+                    voice_hash=voice_hash,
+                    expected_duration_limit_s=round(expected_duration_limit, 3),
+                    **metrics,
                 )
         except GeneratedAudioQualityError as error:
             structured_log(
