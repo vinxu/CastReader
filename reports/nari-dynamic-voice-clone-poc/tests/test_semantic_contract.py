@@ -805,7 +805,7 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
             language_id="en",
         )
         rejection = clone_worker.GeneratedAudioQualityError(
-            "electronic-prefix-spectrum",
+            "empty-or-silent",
             {"duration_s": 1.0},
         )
         with (

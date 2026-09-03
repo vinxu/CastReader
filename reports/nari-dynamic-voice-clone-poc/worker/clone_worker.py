@@ -2179,6 +2179,7 @@ def _generated_prefix_metrics(
 
 
 def validate_generated_wav(wav_bytes: bytes) -> dict[str, float]:
+    """Require usable samples; acoustic quality scores never veto playback."""
     try:
         audio, sample_rate = sf.read(
             io.BytesIO(wav_bytes), dtype="float32", always_2d=True
@@ -2227,41 +2228,37 @@ def validate_generated_wav(wav_bytes: bytes) -> dict[str, float]:
     spectral_flatness = float(np.median(flatness_values))
     prefix_metrics = _generated_prefix_metrics(mono, sample_rate)
 
+    # These are acoustic heuristics, not proof that the model failed to speak.
+    # In continuous reading a false positive discards a whole paragraph. Keep
+    # the measurements for diagnosis without retrying or withholding its audio.
+    warnings: list[str] = []
     if clipping_ratio > 0.03:
-        raise GeneratedAudioQualityError("excessive-clipping")
+        warnings.append("excessive-clipping")
     if dc_offset > 0.10:
-        raise GeneratedAudioQualityError("dc-offset")
+        warnings.append("dc-offset")
     if silent_ratio > 0.995:
         raise GeneratedAudioQualityError("mostly-silent")
-    # Sustained broadband noise is substantially flatter than voiced speech.
-    # Use the median across the utterance so a normal fricative or breath does
-    # not reject an otherwise clean result, while white-noise/electronic bursts
-    # that dominate the clip are caught before they reach playback.
+    # Both whole-clip and prefix scores are advisory. Fricatives, breath and
+    # sentence-initial pitch variation can overlap these empirical thresholds.
     if (
         spectral_flatness > 0.35
         or high_frequency_ratio > 0.12
         or (high_frequency_ratio > 0.04 and spectral_flatness > 0.08)
     ):
-        raise GeneratedAudioQualityError("noise-or-electronic-spectrum")
+        warnings.append("noise-or-electronic-spectrum")
     if (
         prefix_metrics["prefix_spectral_flatness_p75"] > 0.10
         and prefix_metrics["prefix_high_frequency_p75"] > 0.02
     ):
-        raise GeneratedAudioQualityError(
-            "electronic-prefix-spectrum",
-            prefix_metrics,
-        )
+        warnings.append("electronic-prefix-spectrum")
     if (
         prefix_metrics["prefix_pitch_frame_count"] >= 8
         and prefix_metrics["body_pitch_frame_count"] >= 8
         and prefix_metrics["prefix_body_pitch_ratio"] > 1.45
         and prefix_metrics["prefix_body_pitch_p90_ratio"] > 1.70
     ):
-        raise GeneratedAudioQualityError(
-            "unstable-prefix-pitch",
-            prefix_metrics,
-        )
-    return {
+        warnings.append("unstable-prefix-pitch")
+    metrics = {
         "duration_s": round(duration, 3),
         "rms": round(rms, 6),
         "peak": round(peak, 6),
@@ -2271,6 +2268,15 @@ def validate_generated_wav(wav_bytes: bytes) -> dict[str, float]:
         "spectral_flatness": round(spectral_flatness, 6),
         **prefix_metrics,
     }
+    if warnings:
+        structured_log(
+            "generated_audio_quality_warning",
+            policy="playback-first-v1",
+            blocking=False,
+            warnings=warnings,
+            **metrics,
+        )
+    return metrics
 
 
 def apply_speed(wav_bytes: bytes, speed: float) -> tuple[bytes, float]:
@@ -2680,21 +2686,17 @@ def captioned_speech(
                         speed=request.speed,
                     )
                     timestamp_mode = "audio-estimated-word"
-        except SemanticAudioMismatch as error:
+        except Exception as error:
+            # Audio is already synthesized and encoded. Word alignment is
+            # optional display metadata and cannot turn it into a failed TTS.
+            timestamps = []
+            timestamp_mode = "segment"
             structured_log(
-                "generated_audio_word_alignment_rejected",
-                reason=error.reason,
-                **error.metrics,
+                "captioned_word_timing_unavailable",
+                policy="playback-first-v1",
+                blocking=False,
+                error_type=type(error).__name__,
             )
-            raise HTTPException(
-                503,
-                detail={
-                    "code": "VOICE_OUTPUT_TEXT_MISMATCH",
-                    "message": "Final audio word alignment was incomplete",
-                    "reason": error.reason,
-                },
-                headers=OUTPUT_TEXT_MISMATCH_HEADERS,
-            ) from error
         structured_log(
             "captioned_timestamps_built",
             language=canonical_language_code(request.language),

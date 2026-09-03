@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import soundfile as sf
@@ -11,6 +12,21 @@ import clone_worker
 
 
 class GeneratedAudioQualityTests(unittest.TestCase):
+    def assert_quality_warning(self, wav: bytes, reason: str) -> dict:
+        with patch.object(clone_worker, "structured_log") as log:
+            metrics = clone_worker.validate_generated_wav(wav)
+        warning = next(call for call in log.call_args_list
+                       if call.args[0] == "generated_audio_quality_warning")
+        self.assertIn(reason, warning.kwargs["warnings"])
+        self.assertFalse(warning.kwargs["blocking"])
+        self.assertEqual(warning.kwargs["policy"], "playback-first-v1")
+        return metrics
+
+    def test_unusable_audio_still_requires_regeneration(self) -> None:
+        for wav in [b"not audio", self.wav_bytes(np.zeros(24000, dtype=np.float32))]:
+            with self.subTest(size=len(wav)), self.assertRaises(clone_worker.GeneratedAudioQualityError):
+                clone_worker.validate_generated_wav(wav)
+
     @staticmethod
     def wav_bytes(audio: np.ndarray) -> bytes:
         output = io.BytesIO()
@@ -33,15 +49,14 @@ class GeneratedAudioQualityTests(unittest.TestCase):
         self.assertGreater(metrics["duration_s"], 1.9)
         self.assertLess(metrics["high_frequency_ratio"], 0.1)
 
-    def test_rejects_obvious_electronic_noise(self) -> None:
+    def test_spectral_score_is_advisory(self) -> None:
         rng = np.random.default_rng(20260826)
         noise = rng.normal(
             0,
             0.2,
             size=clone_worker.SAMPLE_RATE * 2,
         ).astype(np.float32)
-        with self.assertRaises(clone_worker.GeneratedAudioQualityError):
-            clone_worker.validate_generated_wav(self.wav_bytes(noise))
+        self.assert_quality_warning(self.wav_bytes(noise), "noise-or-electronic-spectrum")
 
     def test_accepts_brief_noise_inside_clean_speech(self) -> None:
         rng = np.random.default_rng(20260826)
@@ -60,19 +75,17 @@ class GeneratedAudioQualityTests(unittest.TestCase):
         )
         self.assertLess(metrics["spectral_flatness"], 0.5)
 
-    def test_rejects_heavily_clipped_audio(self) -> None:
+    def test_clipping_score_is_advisory(self) -> None:
         time = np.arange(clone_worker.SAMPLE_RATE * 2) / clone_worker.SAMPLE_RATE
         clipped = np.sign(np.sin(2 * np.pi * 220 * time)).astype(np.float32)
-        with self.assertRaises(clone_worker.GeneratedAudioQualityError):
-            clone_worker.validate_generated_wav(self.wav_bytes(clipped))
+        self.assert_quality_warning(self.wav_bytes(clipped), "excessive-clipping")
 
-    def test_rejects_persistent_high_frequency_tone(self) -> None:
+    def test_high_frequency_score_is_advisory(self) -> None:
         time = np.arange(clone_worker.SAMPLE_RATE * 2) / clone_worker.SAMPLE_RATE
         electronic_tone = (0.2 * np.sin(2 * np.pi * 9_000 * time)).astype(
             np.float32
         )
-        with self.assertRaises(clone_worker.GeneratedAudioQualityError):
-            clone_worker.validate_generated_wav(self.wav_bytes(electronic_tone))
+        self.assert_quality_warning(self.wav_bytes(electronic_tone), "noise-or-electronic-spectrum")
 
     def test_request_payload_keeps_full_audio_non_streaming_contract(self) -> None:
         request = clone_worker.SpeechRequest(
@@ -159,7 +172,7 @@ class GeneratedAudioQualityTests(unittest.TestCase):
         with self.assertRaises(clone_worker.HTTPException):
             clone_worker.validate_prompt_bytes(raw.getvalue())
 
-    def test_rejects_electronic_noise_limited_to_first_words(self) -> None:
+    def test_prefix_spectrum_does_not_discard_the_spoken_body(self) -> None:
         rng = np.random.default_rng(20260826)
         samples = clone_worker.SAMPLE_RATE * 4
         time = np.arange(samples, dtype=np.float64) / clone_worker.SAMPLE_RATE
@@ -170,18 +183,15 @@ class GeneratedAudioQualityTests(unittest.TestCase):
         prefix_samples = round(0.9 * clone_worker.SAMPLE_RATE)
         audio[:prefix_samples] = rng.normal(0, 0.16, prefix_samples)
 
-        with self.assertRaises(clone_worker.GeneratedAudioQualityError) as captured:
-            clone_worker.validate_generated_wav(
-                self.wav_bytes(audio.astype(np.float32))
-            )
-
-        self.assertEqual(str(captured.exception), "electronic-prefix-spectrum")
+        metrics = self.assert_quality_warning(
+            self.wav_bytes(audio.astype(np.float32)), "electronic-prefix-spectrum"
+        )
         self.assertGreater(
-            captured.exception.metrics["prefix_spectral_flatness_p75"],
+            metrics["prefix_spectral_flatness_p75"],
             0.10,
         )
 
-    def test_rejects_large_prefix_pitch_excursion(self) -> None:
+    def test_prefix_pitch_does_not_discard_the_spoken_body(self) -> None:
         seconds = 5.0
         samples = round(seconds * clone_worker.SAMPLE_RATE)
         time = np.arange(samples, dtype=np.float64) / clone_worker.SAMPLE_RATE
@@ -189,14 +199,11 @@ class GeneratedAudioQualityTests(unittest.TestCase):
         phase = 2 * np.pi * np.cumsum(frequency) / clone_worker.SAMPLE_RATE
         audio = 0.22 * np.sin(phase) + 0.08 * np.sin(2 * phase)
 
-        with self.assertRaises(clone_worker.GeneratedAudioQualityError) as captured:
-            clone_worker.validate_generated_wav(
-                self.wav_bytes(audio.astype(np.float32))
-            )
-
-        self.assertEqual(str(captured.exception), "unstable-prefix-pitch")
+        metrics = self.assert_quality_warning(
+            self.wav_bytes(audio.astype(np.float32)), "unstable-prefix-pitch"
+        )
         self.assertGreater(
-            captured.exception.metrics["prefix_body_pitch_ratio"],
+            metrics["prefix_body_pitch_ratio"],
             1.45,
         )
 
