@@ -1,6 +1,7 @@
 # 自适应降噪生产发布记录
 
-完成时间：2026-09-03 11:38 CST（2026-09-03T03:38:26Z）
+初次完成时间：2026-09-03 11:38 CST（2026-09-03T03:38:26Z）
+国际控制面修正完成时间：2026-09-03 12:04 CST（2026-09-03T04:04:31Z）
 
 ## 结论
 
@@ -40,11 +41,27 @@
 
 全球 Web 控制面：
 
-- Vercel deployment：`dpl_Vay5GDpSso1NPSRQqQ1gs6efiLHq`
+- Vercel deployment：`dpl_Bdf2iMYWgwgxrhpVXQbT8ncxrjqX`
+- Git source：`0a55c96a7583a9c776529064d74ac13d986ebe27`，基于上一版生产提交 `36281e791cbc2c5381940d5353e81c27fda2af5c`，工作树干净。
 - 状态：READY / production
 - 正式域名 `api.castreader.ai` 已回读到该 deployment；根路径 200；未登录建声接口 401。
 - worker 建声预算 75 秒，Web 到 worker 为 90 秒，Vercel route 为 120 秒。
 - iOS 源码中的建声请求预算为 150 秒；服务端管线无需等待客户端发版即可对现有三端请求生效，该客户端余量会随下一版 iOS 带出。
+
+## 国际控制面回退事故与修复
+
+11:25 的初次 Web 发布错误地从旧 detached artifact `fd383f5ff0dad64860fbcf1365962ba5f4aa7cc0` 构建了 `dpl_Vay5GDpSso1NPSRQqQ1gs6efiLHq`。该提交比上一版生产源码少 46 个提交，仍包含“存在任意 active voice 即返回 `409 VOICE_SLOT_FULL`”的旧建声槽位门。
+
+11:49 的真实国际版建声请求在 `reserve-entitlement` 阶段触发该错误；请求尚未进入音频解析、GPU worker 或自适应降噪。iOS 按新契约将这个遗留服务端错误显示为“声音服务暂时不可用”。
+
+处理过程：
+
+1. 立即将 `api.castreader.ai` 回滚到上一版生产 deployment `dpl_53Jm6hhhhKYHdHkJ2H4WnSryTvdV`；
+2. 从其源码提交 `36281e791cbc2c5381940d5353e81c27fda2af5c` 建立干净分支，只移植 50 秒到 90 秒的 worker 调用预算；
+3. 171/171 voice-clone 测试、TypeScript 检查和 Vercel 生产构建通过；
+4. 将干净候选 `dpl_Bdf2iMYWgwgxrhpVXQbT8ncxrjqX` 提升为正式生产，并回读正式域名、根路径 200 与未登录建声接口 401。
+
+后续 Web 发布必须验证候选源码是当前生产源码的后代，或明确记录允许回退的版本差异；不得再从陈旧 detached artifact 直接覆盖生产。
 
 ## 固定样本生产 canary
 
@@ -67,9 +84,9 @@
 
 - 服务端真实依赖环境：94/94 测试通过；覆盖 selector、模式热切换、哈希锁定、身份保护、说话人分离 fail-closed、临时 prompt 清理、并发/取消和 Nari x-vector 布局。
 - 中国区最终修补后的相关回归：32/32 通过。
-- 全球 Web：TypeScript 检查通过；voice-clone 54/54 通过；Prettier 与 `git diff --check` 通过；Vercel 生产构建完成。
+- 全球 Web：修正后的生产基线 TypeScript 检查通过；voice-clone 171/171 通过；`git diff --check` 通过；Vercel 生产构建完成。
 - iOS `VoiceCloneTests`：65/65 通过，0 失败、0 跳过。
-- Vercel 新部署发布后：15 分钟内 5xx 为 0；存在 4 条与本次发布无关的既有多语言 `MISSING_MESSAGE` 日志。
+- Vercel 修正部署发布后的即时错误扫描未发现本次 voice-clone 5xx；现有多语言 `MISSING_MESSAGE` 日志与本次发布无关。
 - DeepFilter 0.5.6 SHA-256：`70775e251eee44c0f2451a1e833326cf8bcbbe304d3e7cd12851e6fce72ef7da`。
 - sherpa-onnx pyannote segmentation SHA-256：`220ad67ca923bef2fa91f2390c786097bf305bceb5e261d4af67b38e938e1079`。
 - CampPlus SHA-256：`f682b514c05d947ee3fa91cd6ec6c5c7543479a128373fa29b1faedccd21fd11`。

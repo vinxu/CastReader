@@ -1,6 +1,6 @@
 {
   "rollout_id": "denoise-production-rollout-20260903",
-  "completed_at": "2026-09-03T03:38:26Z",
+  "completed_at": "2026-09-03T04:04:31Z",
   "status": "fully_enabled",
   "blind_evaluation": {
     "samples": 12,
@@ -50,7 +50,9 @@
     }
   },
   "control_plane": {
-    "vercel_deployment_id": "dpl_Vay5GDpSso1NPSRQqQ1gs6efiLHq",
+    "vercel_deployment_id": "dpl_Bdf2iMYWgwgxrhpVXQbT8ncxrjqX",
+    "source_commit": "0a55c96a7583a9c776529064d74ac13d986ebe27",
+    "source_base_commit": "36281e791cbc2c5381940d5353e81c27fda2af5c",
     "ready_state": "READY",
     "target": "production",
     "production_domain_verified": "api.castreader.ai",
@@ -63,9 +65,19 @@
   "verification": {
     "server_tests": {"passed": 94, "failed": 0},
     "cn_final_related_tests": {"passed": 32, "failed": 0},
-    "web_voice_clone_tests": {"passed": 54, "failed": 0},
+    "web_voice_clone_tests": {"passed": 171, "failed": 0},
     "ios_voice_clone_tests": {"passed": 65, "failed": 0, "skipped": 0},
     "post_deploy_http_5xx": 0
+  },
+  "control_plane_incident": {
+    "bad_deployment_id": "dpl_Vay5GDpSso1NPSRQqQ1gs6efiLHq",
+    "bad_source_commit": "fd383f5ff0dad64860fbcf1365962ba5f4aa7cc0",
+    "failure_code": "VOICE_SLOT_FULL",
+    "failure_stage": "reserve-entitlement",
+    "reached_worker": false,
+    "rollback_deployment_id": "dpl_53Jm6hhhhKYHdHkJ2H4WnSryTvdV",
+    "resolution": "Rebased the 90-second worker timeout onto the previous production source, verified it, and promoted the clean candidate.",
+    "prevention": "Require production-source ancestry verification before promotion."
   },
   "models": {
     "deepfilter_0_5_6_sha256": "70775e251eee44c0f2451a1e833326cf8bcbbe304d3e7cd12851e6fce72ef7da",
