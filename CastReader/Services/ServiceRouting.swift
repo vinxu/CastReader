@@ -7,9 +7,9 @@
 //  - ServiceRoute 决定账号、Pro、埋点、文档、上传等账号业务走哪套网络；
 //  - TTS / QuickRead / 音色物料必须跟随同一个 ServiceRoute。
 //
-//  安全原则：新版全球网关永远是默认值。配置缺失、过期、不可达、格式异常或
-//  当前 build 不在灰度范围内时，一律回到 globalGateway。旧已发布二进制的
-//  历史路径由服务端继续兼容，不是新版 App 的第三条线路。线路在进程启动时冻结，
+//  区域原则：权威发行区域决定本区网关。远端配置缺失、过期、不可达、格式异常
+//  或当前 build 不在旧灰度范围内，都不能把已确定的中国区切到全球网关。
+//  旧已发布二进制的历史路径由服务端兼容。线路在进程启动时冻结，
 //  设置页和后台刷新只影响下次完整启动，避免同一会话跨入口发送 token 或业务请求。
 //
 
@@ -145,13 +145,13 @@ enum ServiceRouting {
         var displayMessage: String {
             switch self {
             case .updated(let route):
-                return "后台配置已刷新：\(route.displayName)，下次启动生效"
+                return "后台配置已刷新：\(route.displayName)，所属区域不变"
             case .skippedOutsideChina:
-                return "后台线路只对中国发行区域的“跟随后台”模式生效"
+                return "后台诊断配置仅适用于中国发行区域"
             case .buildNotEligible:
-                return "当前测试 Build 不在后台灰度范围内，将使用全球网关"
+                return "当前测试 Build 不在后台配置范围内，仍使用所属区域网关"
             case .failed:
-                return "后台配置不可用，已安全回退到全球网关"
+                return "后台配置不可用，仍使用所属区域网关"
             }
         }
     }
@@ -169,10 +169,9 @@ enum ServiceRouting {
                 return nil
             }
 
-            // Enabling the new gateway is a fail-closed rollout. Never accept a
-            // malformed/proxied `{ route: "cn" }` response without an explicit,
-            // internally consistent build window, even if the admin API normally
-            // enforces that contract. The global safe route may remain unbounded.
+            // Keep the legacy control-plane schema strict for diagnostics.
+            // Its build window never authorizes a change of regional boundary;
+            // resolve() independently follows the authoritative AppRegion.
             if route == .chinaGateway {
                 guard let minimumBuild, let maximumBuild,
                       minimumBuild <= maximumBuild else { return nil }
@@ -257,7 +256,7 @@ enum ServiceRouting {
     }
 
     private enum Key {
-        /// 空值表示“跟随后台”。
+        /// 空值表示跟随权威发行区域。
         static let override = "serviceRouting.v1.override"
         /// 单个 Codable blob 原子写入，避免进程在三字段写到一半时留下新旧组合。
         static let backendConfiguration = "serviceRouting.v1.backendConfiguration"
@@ -265,10 +264,9 @@ enum ServiceRouting {
 
     private static let remoteConfigurationPath = "/api/mobile/runtime-config/v1"
 
-    /// The rollout document is fetched from the filed mainland control plane for
-    /// an authoritative CHN storefront. This request happens before the business
-    /// route is frozen, so it must not derive its ingress from `current` (which
-    /// would itself freeze the safe global default on a first install).
+    /// Optional rollout diagnostics use the filed mainland control plane for
+    /// authoritative CHN storefronts. Their URL does not resolve/freeze a route;
+    /// cold-start routing never waits for this document.
     static func remoteConfigurationURL(for route: ServiceRoute) -> String {
         route.apiGatewayBaseURL + remoteConfigurationPath
     }
@@ -277,8 +275,7 @@ enum ServiceRouting {
         remoteConfigurationURL(for: current)
     }
 
-    // 配置每次启动都会刷新；这里是“可供下一次启动使用”的最长有效期，不是轮询
-    // 间隔。有效期过短会导致用户隔天启动时永远先回 global、刷新后又不重启。
+    // Optional diagnostic cache lifetime; expiration never changes the region.
     private static let minimumCacheSeconds = 5 * 60
     private static let maximumCacheSeconds = 7 * 24 * 60 * 60
     private static let runtime = ServiceRoutingRuntime()
@@ -334,10 +331,10 @@ enum ServiceRouting {
     @discardableResult
     static func freezeForCurrentProcess() -> Snapshot { currentSnapshot }
 
-    /// Cold-start bootstrap. It is the only production path allowed to refresh
-    /// the CHN rollout document before freezing the route. Explicit launch/local
-    /// test overrides stay deterministic and skip the remote control plane.
-    /// Re-entrancy is harmless: once frozen, the first snapshot always wins.
+    /// Freeze the authoritative region without waiting for the retired rollout
+    /// control plane. A technical configuration failure must neither move an
+    /// account across regions nor delay launch. The optional network arguments
+    /// remain source-compatible with existing callers and regression tests.
     @discardableResult
     static func bootstrapForCurrentProcess(
         appRegionResolution: AppRegion.Resolution,
@@ -359,41 +356,9 @@ enum ServiceRouting {
             buildNumber: buildNumber,
             allowLocalOverride: allowLocalOverride
         )
-        if preflight.provenance == .launchArgument || preflight.provenance == .localOverride {
-            return runtime.snapshot { preflight }
-        }
-
-        // `-CastReaderRegion` is product-UI instrumentation. UI tests that only
-        // need the CN login/onboarding surface must not depend on a live control
-        // plane; tests that exercise networking already pass an explicit
-        // `-CastReaderServiceRoute` and are handled by the branch above.
-        if appRegionResolution.provenance == .launchArgument {
-            return runtime.snapshot {
-                Snapshot(route: .globalGateway, provenance: .safeDefault)
-            }
-        }
-
-        if appRegionResolution.isAuthoritative, appRegionResolution.region == .cn {
-            _ = await refreshBackendConfiguration(
-                session: session,
-                now: now,
-                buildNumber: buildNumber,
-                requestTimeout: requestTimeout,
-                appRegionResolution: appRegionResolution
-            )
-        }
-
-        return runtime.snapshot {
-            resolve(
-                defaults: defaults,
-                arguments: arguments,
-                now: now,
-                appRegion: appRegionResolution.region,
-                isAppRegionAuthoritative: appRegionResolution.isAuthoritative,
-                buildNumber: buildNumber,
-                allowLocalOverride: allowLocalOverride
-            )
-        }
+        _ = session
+        _ = requestTimeout
+        return runtime.snapshot { preflight }
     }
 
     /// 纯解析入口，供严格的路由优先级与过期行为单测使用。
@@ -407,36 +372,31 @@ enum ServiceRouting {
         allowLocalOverride: Bool = allowsLocalOverride
     ) -> Snapshot {
         #if DEBUG
-        if arguments.contains("-CastReaderServiceRoute") {
-            guard let route = launchArgumentRoute(arguments) else {
-                return Snapshot(route: .globalGateway, provenance: .safeDefault)
-            }
+        if let route = launchArgumentRoute(arguments) {
             return Snapshot(route: route, provenance: .launchArgument)
         }
         #endif
 
         if allowLocalOverride,
-           let raw = defaults.string(forKey: Key.override), !raw.isEmpty {
-            guard let route = ServiceRoute.fromPersistedRawValue(raw) else {
-                // 一个损坏的手动覆盖值不能悄悄落到可能为 CN 的后台缓存。
-                return Snapshot(route: .globalGateway, provenance: .safeDefault)
-            }
+           let raw = defaults.string(forKey: Key.override),
+           let route = ServiceRoute.fromPersistedRawValue(raw) {
             return Snapshot(route: route, provenance: .localOverride)
         }
 
-        // 后台只能控制已被 App Store storefront（或内部发行区域覆盖）明确判定为
-        // 中国大陆的客户端。首启时区推断绝不能直接把网络切到新网关。
+        // Only an authoritative storefront or explicit internal distribution
+        // choice selects China. Time zone alone must not migrate an account.
+        // Old rollout data is diagnostic only and cannot cross this boundary.
         guard isAppRegionAuthoritative, appRegion == .cn else {
             return Snapshot(route: .globalGateway, provenance: .safeDefault)
         }
 
         if let record = cachedBackendRecord(defaults: defaults),
            record.expiresAt > now,
-           let route = record.validatedRoute(buildNumber: buildNumber) {
-            return Snapshot(route: route, provenance: .backend)
+           record.validatedRoute(buildNumber: buildNumber) == .chinaGateway {
+            return Snapshot(route: .chinaGateway, provenance: .backend)
         }
 
-        return Snapshot(route: .globalGateway, provenance: .safeDefault)
+        return Snapshot(route: .chinaGateway, provenance: .safeDefault)
     }
 
     static func launchArgumentRoute(_ arguments: [String]) -> ServiceRoute? {
@@ -526,9 +486,9 @@ enum ServiceRouting {
         defaults.set(migrated, forKey: Key.backendConfiguration)
     }
 
-    /// 从中国备案控制面读取不含 URL/密钥的共享枚举配置。启动闸门在线路冻结前
-    /// 调用它；设置页在冻结后调用时，结果只影响下次启动。任何异常都会
-    /// 清除远端缓存，安全回到 globalGateway。
+    /// Optional internal diagnostics fetched only from the China control plane.
+    /// Startup does not await it. Invalid, expired or cross-region configuration
+    /// may clear the cache but never changes the authoritative regional default.
     static func refreshBackendConfiguration(
         session: URLSession? = nil,
         now: Date = Date(),
@@ -568,6 +528,11 @@ enum ServiceRouting {
                 let hasValidSchemaAndRoute = payload.schemaVersion == 1
                     && ServiceRoute(rawValue: payload.iosChinaServiceRoute) != nil
                 return hasValidSchemaAndRoute ? .buildNotEligible : .failed
+            }
+
+            guard route == .chinaGateway else {
+                clearBackendConfiguration()
+                return .failed
             }
 
             let ttl = min(

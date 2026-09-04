@@ -788,10 +788,10 @@ struct SettingsView: View {
 
     private var backendServiceRouteDescription: String {
         guard let route = ServiceRouting.cachedBackendRoute else {
-            return "未获取（默认全球网关）"
+            return "未获取（跟随所属区域）"
         }
         guard ServiceRouting.isBackendCacheValid else {
-            return "已过期（默认全球网关）"
+            return "已过期（跟随所属区域）"
         }
         return route.displayName
     }
