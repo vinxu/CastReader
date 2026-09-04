@@ -3,7 +3,7 @@
 > 生效日：2026-08-23
 > 最新路由变更：2026-08-23 11:52 CST
 > 广告路由切点：2026-08-24 00:00（Asia/Shanghai，UTC+8）
-> 产品 clean cohort：1.2.29 (build 48) 上线后的首个完整 UTC 日；上线后据实填写
+> 数据口径修订：2026-09-04；当前 1.2.33 (build 53)，不同首次安装 build 分开展示，不把升级日当安装日。
 > 状态：**Apple Ads 增长分析的唯一现行口径**
 
 ## 1. 目标与边界
@@ -17,12 +17,12 @@
 | 市场 | Campaign | ID | 价格口径 |
 |---|---|---:|---|
 | US | `CR_US_Search_Discovery_2026Q3` | `2144343127` | v2 新价：`monthly.v2` / `yearly.v2` |
-| GB | `CR_GB_Search_Discovery_2026Q3` | `2144503591` | 当前代码仍展示 v1；新价环节暂不可验证 |
+| GB | `CR_GB_Search_Discovery_2026Q3` | `2144503591` | 新版已展示 v2；历史 v1 单列，GB 净 LTV 单独核定 |
 
 所有决策数据必须满足：
 
 - 获客报表日期不早于 `2026-08-24 00:00 Asia/Shanghai`；`2026-08-23` 是路由调整前后混合日，只作审计；
-- 产品漏斗不得把广告路由切点当产品版本切点。build 47 缺少首次打开调用，只可审计，不可作为 fresh-install 分母；权威产品 cohort 从 build 48 上线后的首个完整 UTC 日开始；
+- 产品漏斗不得把广告路由切点当产品版本切点。build 47 缺少首次打开调用，只可审计；其他 build 必须有原始 `app_first_open.fresh_install` 接收证据，不凭版本号推定完整。按首次打开时的 build 分层，历史缺失不得回填成新安装；
 - US 与 GB 分开计算，不用其他国家补样本；
 - 广告用户必须有 `mobile_ad_attributions.status = attributed` 才能进入广告闭环；
 - 自然量、全渠道 ASC 数据只能做国家趋势辅助，不能冒充广告 cohort。
@@ -46,7 +46,7 @@
 - **仅两年可回本**：¥329 < CAC ≤ ¥386，保持小额验证，不扩量；
 - **停投线**：成熟 CAC > ¥465，或者绑书库人群 W4 留存失败。
 
-GB 在 v1 实际净 LTV 未核定前，只报真实 CAC，不用 US v2 LTV 宣判跑通。
+GB 在当地 v2 实际净 LTV 未核定前，只报真实 CAC，不用 US v2 LTV 宣判跑通；历史 v1 不混算。
 
 ### 2.2 联动漏斗目标
 
@@ -91,7 +91,7 @@ install→paid = 7%
 2. `status = attributed`；
 3. `campaign_id` 属于 US / GB 两个目标 Campaign；
 4. 存在服务端接收并幂等冻结的 `app_first_open.firstOpenKind = fresh_install`；cohort 时间取服务端 `received_at`，不取客户端时间或归因首次出现时间；
-5. 经济性查询必须指定 `required_app_build = 48`，窗口内任何缺失/非 48 build 都阻断结论；`app_build = 48` 只用于版本诊断切片，不得把整条 campaign 花费分摊给产品子集；
+5. 单版本验收用 `required_app_build = <所验收 build>` 断言整日是否纯净；版本诊断用 `app_build = <首次安装 build>`，但不能把整条 campaign 花费/ASA 安装分摊给子集。混合版本按 build 列出人数，跨版本整体仅作诊断，不评价某个新版本；
 6. 同一 `anonymous_id` 只计一次首次打开与一次终态归因。
 
 Apple Ads API 的 `totalInstalls` 与花费一并进入 `growth_ad_spend_daily`，仅用于渠道对账；设备级漏斗的安装分母必须来自 `app_first_open.fresh_install`，归因状态来自 production AdServices 服务端解析。
@@ -100,12 +100,12 @@ Apple Ads API 的 `totalInstalls` 与花费一并进入 `growth_ad_spend_daily`�
 
 | 环节 | 定义 |
 |---|---|
-| 72h 绑书库 | `library_connection.stage = sync_completed` |
-| 72h 导入 | `content_ready.contentFormat IN (epub, pdf)` |
-| 听读日 | 当日 `read_milestone.milestoneSeconds >= 300` |
+| 72h 绑书库 | `library_connection.stage = sync_completed`、`result = success` 且明确非空书库 |
+| 72h 导入 | `content_ready.contentFormat IN (epub, pdf)` 且 `paragraphCountBucket IN (1_5,6_20,21_100,101_plus)` |
+| 听读日 | 同一安装相对的 24h 日桶内有 `read_milestone.milestoneSeconds >= 300`，重复里程碑不重复计日 |
 | W1 | D0–D7 至少 2 个听读日 |
 | W4 | D22–D28 至少 1 个听读日 |
-| 试用开始 | `purchase_result.result = success` 且 `offerType = introductory` |
+| 试用开始 | 客户端 success + introductory 为候选；权威计数要求同安装身份连到 Apple production `zero_price_trial` 交易，US/GB 新价只计 v2 |
 | 直接付费 | 成功购买且非 introductory，并经 Apple 服务端交易验证 |
 | 试用转付费 | Apple 订阅对账确认 `Full price from free trial` / 订阅状态由 trialing 转 active |
 
@@ -182,30 +182,31 @@ ruby scripts/growth_loop.rb --full
 
 ### 5.3 策略迭代时：广告 cohort 漏斗
 
-先把已经跨过 72 小时完整性滞后的 Apple Ads 单日事实写入权威表。每个日期分别执行，脚本只覆盖两个目标 campaign，先全部 spend，成功后才写 campaign 级 coverage：
+后端 `/api/cron/sync-apple-ads` 每小时自动读取两个固定 campaign，将已跨过日末 72h 滞后的 UTC 日事实写入 `growth_ad_spend_daily`，对账后写入 `growth_data_coverage`；原始来源哈希保存在 `growth_apple_ads_sources`。这是后台数据入库任务，不是每日向用户推送报告，不修改广告。优先补最新缺日，全部补齐后重查最近完整日；来源变化或对账失败不得继续宣称完整。
+
+`growth_loop.rb` 的 D+1 快照仍可用于方向判断，但未到完整性滞后的日期不能据此认证 CAC。旧 Ruby 导出器保留为独立只读对账工具，不与自动采集器同时提交 coverage：
 
 ```bash
-GROWTH_ADMIN_SECRET=... ruby scripts/searchads_growth_spend_export.rb \
-  --date YYYY-MM-DD --post --commit
+ruby scripts/searchads_growth_spend_export.rb --date YYYY-MM-DD
 ```
 
-然后从 `readout-web` 使用唯一 cohort API。`from/to` 必须是 UTC 日边界，窗口从 build 48 上线后的首个完整 UTC 日开始：
+然后从 `readout-web` 使用唯一 cohort API。`from/to` 必须是 UTC 日边界，to 不包含；将下方 53 替换为实际所验收版本，不能一直沿用旧 build：
 
 ```bash
 GROWTH_ADMIN_SECRET=... pnpm growth:cohort --from YYYY-MM-DD --to YYYY-MM-DD \
   --platform ios --provider apple_ads --country US --campaign-id 2144343127 \
-  --required-app-build 48 --horizon 10
+  --required-app-build 53 --horizon 10
 
 GROWTH_ADMIN_SECRET=... pnpm growth:cohort --from YYYY-MM-DD --to YYYY-MM-DD \
   --platform ios --provider apple_ads --country GB --campaign-id 2144503591 \
-  --required-app-build 48 --horizon 10
+  --required-app-build 53 --horizon 10
 ```
 
 兼容命令 `scripts/loop-funnel-report.mts` 已改为调用同一个 API，不再接受手工 `coverage-us/coverage-gb`，也不再固定 `spendCny=null`。
 
 权威查询按以下链路聚合：
 
-1. 从 `app_first_open.fresh_install` 冻结安装与 build 48 分母，再连 production AdServices 终态；
+1. 从 `app_first_open.fresh_install` 冻结安装与首次安装 build 分母，再连 production AdServices 终态；
 2. 用 `anonymous_id` 连 72h 非空绑定、听读和试用启动；
 3. 用 Apple 订阅对账将试用连到正价 active 交易；
 4. 用 `growth_ad_spend_daily + growth_data_coverage` 读取同 campaign/UTC 日花费，计算安装 CPA 与真实付费 CAC；
@@ -215,10 +216,12 @@ GROWTH_ADMIN_SECRET=... pnpm growth:cohort --from YYYY-MM-DD --to YYYY-MM-DD \
 
 ### 5.4 状态解释
 
+- 原始事件与明细存在缺失/冲突、试用无法连接身份、客户端试用无法连接 Apple 交易：`BLOCKED_INCOMPLETE`；漏斗比例与 CAC 为 `UNKNOWN`，不得解释成零转化。
+- 报表必须同时列出 `observedTrialsStarted`（已验证、含未成熟）与 `trialsStarted/trialMatureInstalls`（72h 成熟子集），不得把后者称为全部试用。W1/W4 各用独立成熟分母。
 - D+2 分母尚未成熟：`measurementStatus = WAITING_MATURITY`、覆盖率 `UNKNOWN`；不是 0%，也不是 P0。
 - D+2 已成熟且终态覆盖 `<50%`：`P0_DATA_INCIDENT`。
 - D+2 已成熟且覆盖 `50%–<80%`：`BLOCKED_INCOMPLETE`，后续漏斗/CAC 为 `UNKNOWN`。
-- build 48 窗口出现任何其他/缺失 build：`UNEXPECTED_APP_BUILD_IN_COHORT`，禁止把花费与产品漏斗合并。
+- 指定 required build 的窗口出现其他/缺失 build：`UNEXPECTED_APP_BUILD_IN_COHORT`；单 build 子集没有可分摊的 ASA 安装分母，覆盖率必须 UNKNOWN，不能误报 P0。
 
 ## 6. 报告模板
 
@@ -226,7 +229,7 @@ GROWTH_ADMIN_SECRET=... pnpm growth:cohort --from YYYY-MM-DD --to YYYY-MM-DD \
 
 1. **归因可用性**：attributed 数、覆盖率、是否能计算真实 CAC；
 2. **US**：①→⑤各环分子/分母、成熟度、CAC/LTV；
-3. **GB**：同上，但在 v1 LTV 未核定前不宣判新价跑通；
+3. **GB**：同上，新版 v2 与历史 v1 分开，当地 LTV 未核定前不宣判跑通；
 4. **唯一瓶颈**：当前最早失败的环节；
 5. **动作**：继续、减量、暂停或回产品；
 6. **下次可读时间**：明确等待哪个 cohort 成熟。

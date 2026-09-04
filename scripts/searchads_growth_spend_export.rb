@@ -484,6 +484,11 @@ module SearchAdsGrowthSpend
         taps: nonnegative_integer(grand_metrics["taps"], "campaign report grandTotals.taps"),
         installs: nonnegative_integer(grand_metrics["totalInstalls"], "campaign report grandTotals.totalInstalls")
       }
+      # Provider row and grand totals can differ below the CNY minor unit
+      # (2026-08-30 differed by 0.0001 CNY). Counts remain exact; reconcile
+      # money at the same half-up fen precision used by persisted facts.
+      totals[:spend_amount] = (totals[:spend_amount] * 100).round(0, BigDecimal::ROUND_HALF_UP)
+      expected[:spend_amount] = (expected[:spend_amount] * 100).round(0, BigDecimal::ROUND_HALF_UP)
       unless totals == expected
         raise AppleApiError, "campaign report rows do not reconcile to grandTotals"
       end

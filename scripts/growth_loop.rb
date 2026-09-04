@@ -51,8 +51,8 @@ CAMPAIGNS = {
   "GB" => {
     id: 2_144_503_591,
     name: "CR_GB_Search_Discovery_2026Q3",
-    price: "v1",
-    product_ids: %w[ai.castreader.pro.monthly ai.castreader.pro.yearly]
+    price: "v2（历史 v1 单列，不混算）",
+    product_ids: %w[ai.castreader.pro.monthly.v2 ai.castreader.pro.yearly.v2]
   }
 }.freeze
 
@@ -453,7 +453,7 @@ begin
 
   puts "\n闭环硬门：本报告不用全渠道付费冒充广告付费。"
   puts "只有 production attributed 广告设备连到 Apple 正价交易后，才能宣布 CAC < LTV。"
-  puts "GB 当前仍是 v1 价格，在 GBR 开放 v2 且核定当地净 LTV 前，不宣布“新价闭环跑通”。"
+  puts "GB 新版已展示 v2；历史 v1 单列，且当地净 LTV 未核定前，不套用 US ¥329 宣判跑通。"
 rescue PullError, JSON::ParserError, KeyError, Errno::ENOENT => e
   warn "增长闭环拉数失败：#{e.message}"
   exit 1
