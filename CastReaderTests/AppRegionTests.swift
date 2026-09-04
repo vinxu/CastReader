@@ -312,11 +312,11 @@ final class AppRegionTests: XCTestCase {
         XCTAssertEqual(gate.pendingAction, .verifyEmailCode)
     }
 
-    /// CHN 产品体验不能自动改变服务线路；无灰度配置时安全走全球网关。
-    func testChinaProductRegionDefaultsToGlobalGateway() {
+    /// 权威 CHN 发行区域在无灰度配置时也保持中国服务边界。
+    func testChinaProductRegionDefaultsToChinaGateway() {
         UserDefaults.standard.set("CHN", forKey: storefrontKey)
-        XCTAssertEqual(ServiceRouting.current, .globalGateway)
-        XCTAssertEqual(Constants.API.webURL, Constants.API.globalWebURL)
+        XCTAssertEqual(ServiceRouting.current, .chinaGateway)
+        XCTAssertEqual(Constants.API.webURL, "https://api.castreader.cn")
     }
 
     func testWebURLIsAlwaysGlobalOutsideChina() {

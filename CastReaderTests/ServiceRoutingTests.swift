@@ -58,14 +58,14 @@ final class ServiceRoutingTests: XCTestCase {
 
     // MARK: - 安全默认与优先级
 
-    func testAuthoritativeChinaStorefrontDefaultsToGlobalGatewayUntilRollout() {
+    func testAuthoritativeChinaStorefrontDefaultsToChinaWithoutRollout() {
         let snapshot = ServiceRouting.resolve(
             defaults: suite,
             arguments: [],
             appRegion: .cn,
             isAppRegionAuthoritative: true
         )
-        XCTAssertEqual(snapshot, .init(route: .globalGateway, provenance: .safeDefault))
+        XCTAssertEqual(snapshot, .init(route: .chinaGateway, provenance: .safeDefault))
     }
 
     func testTimezoneFallbackCanNeverEnableChinaGateway() {
@@ -105,7 +105,7 @@ final class ServiceRoutingTests: XCTestCase {
         }
     }
 
-    func testExpiredOrCorruptBackendConfigurationFallsBackToGlobal() throws {
+    func testExpiredOrCorruptBackendConfigurationPreservesChinaRegion() throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         try saveBackendRecord(.chinaGateway, now: now, validFor: -1, in: suite)
         XCTAssertEqual(
@@ -116,7 +116,7 @@ final class ServiceRoutingTests: XCTestCase {
                 appRegion: .cn,
                 isAppRegionAuthoritative: true
             ).route,
-            .globalGateway
+            .chinaGateway
         )
 
         suite.set(Data("not-json".utf8), forKey: ServiceRouting.backendConfigurationDefaultsKey)
@@ -128,7 +128,7 @@ final class ServiceRoutingTests: XCTestCase {
                 appRegion: .cn,
                 isAppRegionAuthoritative: true
             ).route,
-            .globalGateway
+            .chinaGateway
         )
     }
 
@@ -153,7 +153,7 @@ final class ServiceRoutingTests: XCTestCase {
         )
     }
 
-    func testCachedChinaRouteIsRevalidatedOnTheFirstLaunchAfterBuildUpgrade() throws {
+    func testCachedChinaRouteCannotMoveRegionsAfterBuildUpgrade() throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         try saveBackendRecord(
             .chinaGateway,
@@ -184,8 +184,8 @@ final class ServiceRoutingTests: XCTestCase {
                 isAppRegionAuthoritative: true,
                 buildNumber: 40
             ),
-            .init(route: .globalGateway, provenance: .safeDefault),
-            "a cached test-build rollout must not leak into an upgraded build"
+            .init(route: .chinaGateway, provenance: .safeDefault),
+            "an expired build window must not move a China account to the global region"
         )
     }
 
@@ -226,9 +226,9 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertNil(ServiceRouting.accountRouteOverride(for: nil))
     }
 
-    func testAppStoreUpgradeIgnoresPersistedTestFlightChinaOverride() throws {
+    func testAppStoreUpgradeIgnoresPersistedTestFlightGlobalOverride() throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
-        suite.set(ServiceRoute.chinaGateway.rawValue, forKey: ServiceRouting.overrideDefaultsKey)
+        suite.set(ServiceRoute.globalGateway.rawValue, forKey: ServiceRouting.overrideDefaultsKey)
         try saveBackendRecord(.globalGateway, now: now, validFor: 3600, in: suite)
 
         XCTAssertEqual(
@@ -240,8 +240,8 @@ final class ServiceRoutingTests: XCTestCase {
                 isAppRegionAuthoritative: true,
                 allowLocalOverride: false
             ),
-            .init(route: .globalGateway, provenance: .backend),
-            "an App Store upgrade must use valid backend config, not the persisted TestFlight switch"
+            .init(route: .chinaGateway, provenance: .safeDefault),
+            "an App Store upgrade must use its authoritative region, not old global rollout data or a TestFlight switch"
         )
 
         suite.removeObject(forKey: ServiceRouting.backendConfigurationDefaultsKey)
@@ -254,8 +254,8 @@ final class ServiceRoutingTests: XCTestCase {
                 isAppRegionAuthoritative: true,
                 allowLocalOverride: false
             ),
-            .init(route: .globalGateway, provenance: .safeDefault),
-            "without valid backend config, production must fall back to the global gateway"
+            .init(route: .chinaGateway, provenance: .safeDefault),
+            "without backend config, production must stay on its authoritative China gateway"
         )
 
         ServiceRouting.discardDisallowedLocalOverride(
@@ -426,7 +426,7 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertLessThan(serviceStart, ready)
     }
 
-    func testMalformedNonemptyOverrideAndLaunchArgumentFailClosed() throws {
+    func testMalformedNonemptyOverrideAndLaunchArgumentKeepAuthoritativeRegion() throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         try saveBackendRecord(.chinaGateway, now: now, validFor: 3600, in: suite)
         suite.set("unexpected", forKey: ServiceRouting.overrideDefaultsKey)
@@ -440,7 +440,7 @@ final class ServiceRoutingTests: XCTestCase {
                 isAppRegionAuthoritative: true,
                 allowLocalOverride: true
             ),
-            .init(route: .globalGateway, provenance: .safeDefault)
+            .init(route: .chinaGateway, provenance: .backend)
         )
         XCTAssertEqual(
             ServiceRouting.resolve(
@@ -450,7 +450,7 @@ final class ServiceRoutingTests: XCTestCase {
                 appRegion: .cn,
                 isAppRegionAuthoritative: true
             ),
-            .init(route: .globalGateway, provenance: .safeDefault)
+            .init(route: .chinaGateway, provenance: .backend)
         )
     }
 
@@ -3476,96 +3476,44 @@ final class ServiceRoutingTests: XCTestCase {
         )
     }
 
-    func testColdStartChinaFetchesFiledControlPlaneBeforeFirstFreeze() async throws {
-        let body: [String: Any] = [
-            "schemaVersion": 1,
-            "iosChinaServiceRoute": "cn",
-            "minimumBuild": 39,
-            "maximumBuild": 39,
-            "cacheSeconds": 604_800,
-        ]
-        RoutingURLProtocol.handler = { request in
-            XCTAssertEqual(
-                request.url?.absoluteString,
-                ServiceRouting.remoteConfigurationURL(for: .chinaGateway)
-            )
-            let response = HTTPURLResponse(
-                url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil
-            )!
-            return (response, try JSONSerialization.data(withJSONObject: body))
+    func testColdStartChinaFreezesWithoutAnyControlPlaneRequest() async {
+        var requests = 0
+        RoutingURLProtocol.handler = { _ in
+            requests += 1
+            throw URLError(.timedOut)
         }
-        let region = AppRegion.Resolution(
-            region: .cn,
-            isAuthoritative: true,
-            provenance: .storefront
-        )
-
+        let startedAt = Date()
         let snapshot = await ServiceRouting.bootstrapForCurrentProcess(
-            appRegionResolution: region,
+            appRegionResolution: .init(region: .cn, isAuthoritative: true, provenance: .storefront),
             session: makeRoutingSession(),
-            buildNumber: 39,
+            buildNumber: 53,
             arguments: [],
             allowLocalOverride: false
         )
-
-        XCTAssertEqual(snapshot, .init(route: .chinaGateway, provenance: .backend))
+        XCTAssertEqual(snapshot, .init(route: .chinaGateway, provenance: .safeDefault))
         XCTAssertEqual(ServiceRouting.current, .chinaGateway)
-        XCTAssertEqual(ServiceRouting.cachedBackendRoute, .chinaGateway)
-    }
-
-    func testColdStartChinaControlPlaneFailureFreezesGlobalOnlyOnce() async {
-        RoutingURLProtocol.handler = { request in
-            XCTAssertEqual(
-                request.url?.absoluteString,
-                ServiceRouting.remoteConfigurationURL(for: .chinaGateway)
-            )
-            let response = HTTPURLResponse(
-                url: request.url!, statusCode: 503, httpVersion: nil, headerFields: nil
-            )!
-            return (response, Data())
-        }
-        let region = AppRegion.Resolution(
-            region: .cn,
-            isAuthoritative: true,
-            provenance: .storefront
-        )
-
-        let first = await ServiceRouting.bootstrapForCurrentProcess(
-            appRegionResolution: region,
-            session: makeRoutingSession(),
-            buildNumber: 39,
-            arguments: [],
-            allowLocalOverride: false
-        )
-        XCTAssertEqual(first, .init(route: .globalGateway, provenance: .safeDefault))
-
-        // A later valid response in the same process cannot thaw the snapshot.
-        RoutingURLProtocol.handler = { request in
-            let body: [String: Any] = [
-                "schemaVersion": 1,
-                "iosChinaServiceRoute": "cn",
-                "minimumBuild": 39,
-                "maximumBuild": 39,
-                "cacheSeconds": 604_800,
-            ]
-            let response = HTTPURLResponse(
-                url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil
-            )!
-            return (response, try JSONSerialization.data(withJSONObject: body))
-        }
-        let second = await ServiceRouting.bootstrapForCurrentProcess(
-            appRegionResolution: region,
-            session: makeRoutingSession(),
-            buildNumber: 39,
-            arguments: [],
-            allowLocalOverride: false
-        )
-        XCTAssertEqual(second, first)
-        XCTAssertEqual(ServiceRouting.current, .globalGateway)
+        XCTAssertEqual(requests, 0, "startup must not depend on rollout availability")
+        XCTAssertLessThan(Date().timeIntervalSince(startedAt), 0.5)
         XCTAssertNil(ServiceRouting.cachedBackendRoute)
     }
 
-    func testProductRegionLaunchArgumentWithoutRouteArgumentStaysDeterministicGlobal() async throws {
+    func testColdStartChinaStaysFrozenWhenLaterRegionOrDebugInputChanges() async {
+        let first = await ServiceRouting.bootstrapForCurrentProcess(
+            appRegionResolution: .init(region: .cn, isAuthoritative: true, provenance: .storefront),
+            arguments: [],
+            allowLocalOverride: false
+        )
+        let second = await ServiceRouting.bootstrapForCurrentProcess(
+            appRegionResolution: .init(region: .global, isAuthoritative: true, provenance: .storefront),
+            arguments: ["app", "-CastReaderServiceRoute", "global"],
+            allowLocalOverride: true
+        )
+        XCTAssertEqual(first.route, .chinaGateway)
+        XCTAssertEqual(second, first)
+        XCTAssertEqual(ServiceRouting.current, .chinaGateway)
+    }
+
+    func testProductRegionLaunchArgumentWithoutRouteArgumentUsesTheSameRegion() async throws {
         try saveBackendRecord(
             .chinaGateway,
             now: Date(),
@@ -3586,14 +3534,14 @@ final class ServiceRoutingTests: XCTestCase {
             allowLocalOverride: false
         )
 
-        XCTAssertEqual(snapshot, .init(route: .globalGateway, provenance: .safeDefault))
-        XCTAssertEqual(ServiceRouting.current, .globalGateway)
+        XCTAssertEqual(snapshot, .init(route: .chinaGateway, provenance: .backend))
+        XCTAssertEqual(ServiceRouting.current, .chinaGateway)
     }
 
-    func testSuccessfulChinaControlPlaneRefreshOnlyChangesNextLaunchWhenAlreadyFrozen() async throws {
+    func testSuccessfulChinaControlPlaneRefreshNeverChangesTheRegionalBoundary() async throws {
         UserDefaults.standard.set("CHN", forKey: "appRegion.v1.storefrontCountryCode")
         resetSnapshots()
-        XCTAssertEqual(ServiceRouting.current, .globalGateway)
+        XCTAssertEqual(ServiceRouting.current, .chinaGateway)
 
         let buildNumber = ServiceRouting.currentBuildNumber
         let body: [String: Any] = [
@@ -3625,7 +3573,7 @@ final class ServiceRoutingTests: XCTestCase {
         )
 
         XCTAssertEqual(outcome, .updated(.chinaGateway))
-        XCTAssertEqual(ServiceRouting.current, .globalGateway, "刷新不得切换当前进程")
+        XCTAssertEqual(ServiceRouting.current, .chinaGateway, "刷新不得切换当前进程")
         XCTAssertEqual(ServiceRouting.nextLaunchSnapshot.route, .chinaGateway)
         XCTAssertEqual(ServiceRouting.cachedBackendFetchedAt, now)
         XCTAssertEqual(
@@ -3634,7 +3582,7 @@ final class ServiceRoutingTests: XCTestCase {
         )
     }
 
-    func testControlPlaneFailureClearsPendingChinaRouteAndFailsBackGlobal() async throws {
+    func testControlPlaneFailureClearsCacheWithoutMovingChinaRegion() async throws {
         UserDefaults.standard.set("CHN", forKey: "appRegion.v1.storefrontCountryCode")
         try saveBackendRecord(
             .chinaGateway,
@@ -3663,13 +3611,13 @@ final class ServiceRoutingTests: XCTestCase {
         XCTAssertEqual(outcome, .failed)
         XCTAssertNil(ServiceRouting.cachedBackendRoute)
         XCTAssertEqual(ServiceRouting.current, .chinaGateway, "当前进程仍不得中途切线")
-        XCTAssertEqual(ServiceRouting.nextLaunchSnapshot.route, .globalGateway)
+        XCTAssertEqual(ServiceRouting.nextLaunchSnapshot.route, .chinaGateway)
     }
 
     func testChinaControlPlaneRejectsRedirectToGlobalIngress() async throws {
         UserDefaults.standard.set("CHN", forKey: "appRegion.v1.storefrontCountryCode")
         resetSnapshots()
-        XCTAssertEqual(ServiceRouting.current, .globalGateway)
+        XCTAssertEqual(ServiceRouting.current, .chinaGateway)
 
         let target = "https://api.castreader.ai/api/mobile/runtime-config/v1"
         RoutingRedirectURLProtocol.configure(status: 307, target: target)
@@ -3681,8 +3629,8 @@ final class ServiceRoutingTests: XCTestCase {
 
         XCTAssertEqual(outcome, .failed)
         XCTAssertNil(ServiceRouting.cachedBackendRoute)
-        XCTAssertEqual(ServiceRouting.current, .globalGateway)
-        XCTAssertEqual(ServiceRouting.nextLaunchSnapshot.route, .globalGateway)
+        XCTAssertEqual(ServiceRouting.current, .chinaGateway)
+        XCTAssertEqual(ServiceRouting.nextLaunchSnapshot.route, .chinaGateway)
         XCTAssertEqual(
             RoutingRedirectURLProtocol.requestURLs,
             [ServiceRouting.remoteConfigurationURL(for: .chinaGateway)],
@@ -3694,7 +3642,7 @@ final class ServiceRoutingTests: XCTestCase {
         UserDefaults.standard.set("CHN", forKey: "appRegion.v1.storefrontCountryCode")
         ServiceRouting.clearBackendConfiguration()
         resetSnapshots()
-        XCTAssertEqual(ServiceRouting.current, .globalGateway)
+        XCTAssertEqual(ServiceRouting.current, .chinaGateway)
 
         let target = "https://api.castreader.ai/api/mobile/runtime-config/v1"
         RoutingRedirectURLProtocol.configure(status: 302, target: target)
@@ -3715,6 +3663,45 @@ final class ServiceRoutingTests: XCTestCase {
             RoutingRedirectURLProtocol.requestURLs,
             [ServiceRouting.remoteConfigurationURL(for: .chinaGateway), target]
         )
+    }
+
+    func testRemoteGlobalRolloutCannotMoveAuthoritativeChinaAccount() async throws {
+        UserDefaults.standard.set("CHN", forKey: "appRegion.v1.storefrontCountryCode")
+        try saveBackendRecord(.globalGateway, now: Date(), validFor: 3600, in: .standard)
+        XCTAssertEqual(ServiceRouting.current, .chinaGateway)
+        RoutingURLProtocol.handler = { request in
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, Data(#"{"schemaVersion":1,"iosChinaServiceRoute":"global","cacheSeconds":3600}"#.utf8))
+        }
+        let outcome = await ServiceRouting.refreshBackendConfiguration(session: makeRoutingSession())
+        XCTAssertEqual(outcome, .failed)
+        XCTAssertNil(ServiceRouting.cachedBackendRoute)
+        XCTAssertEqual(ServiceRouting.nextLaunchSnapshot.route, .chinaGateway)
+    }
+
+    @MainActor
+    func testAuthoritativeChinaDefaultDoesNotReuseGlobalSessionOrProfile() async throws {
+        let globalKey = MobileSessionStore.storageKeys(for: .globalGateway).session
+        let chinaKey = MobileSessionStore.storageKeys(for: .chinaGateway).session
+        let saved = [globalKey: KeychainStore.get(globalKey), chinaKey: KeychainStore.get(chinaKey)]
+        defer {
+            for (key, value) in saved {
+                if let value { KeychainStore.set(value, for: key) }
+                else { KeychainStore.delete(key) }
+            }
+        }
+        KeychainStore.set("cms_preserved_global_session", for: globalKey)
+        KeychainStore.delete(chinaKey)
+        suite.set(Data("global-profile".utf8), forKey: AuthService.accountDefaultsKey(for: .globalGateway))
+        let route = await ServiceRouting.bootstrapForCurrentProcess(
+            appRegionResolution: .init(region: .cn, isAuthoritative: true, provenance: .storefront),
+            arguments: [], allowLocalOverride: false
+        ).route
+        XCTAssertEqual(route, .chinaGateway)
+        XCTAssertNil(MobileSessionStore.persistedSessionToken(for: route))
+        XCTAssertNil(suite.data(forKey: AuthService.accountDefaultsKey(for: route)))
+        XCTAssertEqual(MobileSessionStore.persistedSessionToken(for: .globalGateway), "cms_preserved_global_session")
+        XCTAssertEqual(suite.data(forKey: AuthService.accountDefaultsKey(for: .globalGateway)), Data("global-profile".utf8))
     }
 
     // MARK: - Helpers

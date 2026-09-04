@@ -1,0 +1,9 @@
+# iOS regional routing continuity
+
+An authoritative China storefront previously needed a valid remote rollout record before selecting the China gateway. Missing, expired, corrupt or out-of-build-window records instead selected global, and cold startup waited for the control plane. A newer build could therefore move a known China account to a different service region without an explicit choice.
+
+`ServiceRouting` now defaults to the authoritative AppRegion. China stays China even when the old rollout record is global or unavailable; global remains global. Cold bootstrap freezes this decision without a control-plane request. Valid Debug/internal route choices retain priority, and later configuration or region changes cannot alter the frozen process. A time zone alone still does not authorize moving an account to China. Optional internal diagnostics remain pinned to the China control plane and cannot authorize global routing.
+
+Account, CMS, quota and content namespaces are unchanged. A previously stored global login/profile is preserved in its existing namespace and is not copied into China. Users without a China-region session must sign in there. This is a client source change: an already installed binary does not gain the fix without an updated app. No App Store submission or physical-device installation was performed.
+
+Validation: workspace simulator build and `ServiceRoutingTests`, `AppRegionTests`, `PhoneAuthTests` passed on iPhone 17 Pro / iOS 26.5: **146 passed, 0 failed, 0 skipped**. Coverage includes missing/expired/corrupt/out-of-window/global rollout records, zero-network cold bootstrap, process freezing, allowed explicit overrides, time-zone non-authority, and preservation without reuse of global credentials/profile. Result bundle: `/tmp/castreader-region-continuity-build/Logs/Test/Test-CastReader-2026.09.04_12-15-18-+0800.xcresult`.
