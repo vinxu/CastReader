@@ -1,0 +1,11 @@
+{
+  "pid": 507570,
+  "initial_env_contains_secret": false,
+  "secret_loaded_from_private_dotenv": true,
+  "endpoint": "https://castreader.ai/api/pro/entitlement",
+  "http_status": 200,
+  "consume": false,
+  "business_decision_available": true,
+  "pro": false,
+  "allowed": true
+}

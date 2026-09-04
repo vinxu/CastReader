@@ -1,0 +1,111 @@
+{
+  "directory": "/root/autodl-tmp/nari-staging/run/r131-maintenance-y7c4hgy0",
+  "region": "cn",
+  "before": {
+    "8880": {
+      "pid": 333128,
+      "start_ticks": "2016073105",
+      "cwd": "/root/autodl-tmp/castreader-runtime/releases/20260904-kokoro-compatible-cn-r130",
+      "argv_sha256": "062db979d0deab2ff2b3b78fc6c35a3d733d03c97928c756c14524a8dab42d45"
+    },
+    "18094": {
+      "pid": 629178,
+      "start_ticks": "2019978112",
+      "cwd": "/root",
+      "argv_sha256": "edd41993b3c0d224869ebc898c2dd0d841386a0ead9de6ce95fd36a9e84a1432"
+    },
+    "18890": {
+      "pid": 629877,
+      "start_ticks": "2019980674",
+      "cwd": "/root",
+      "argv_sha256": "13cf9f6363f3e0840293e9fd5965725549de2e29b8dc132abf0bd29f7df02736"
+    }
+  },
+  "backup_sha256": "6c4251b87f270138a07559916bbef864c0d048bfa832e69d73c301ef79a3a32f",
+  "old_source_sha256": "30dc077a4969abfb6519e79a43fb7f7abbac92b2683a19ceacc4b65a77a1f0e3",
+  "new_source_sha256": "489aa17ece6b0ee04d83b234ec86d2f0eeecafa9f8f45bc986572fd4a0d14ca4",
+  "events": [
+    {
+      "stage": "idle_confirmed",
+      "time_unix": 1788495832.5132627,
+      "busy": false,
+      "queue_depth": 0,
+      "active_voice_tasks": 0
+    },
+    {
+      "stage": "supervisor_temporarily_paused",
+      "time_unix": 1788495832.5136716,
+      "pid": 47545
+    },
+    {
+      "stage": "clone_term",
+      "time_unix": 1788495832.5143468,
+      "pid": 629877
+    },
+    {
+      "stage": "clone_drained",
+      "time_unix": 1788495832.7152977,
+      "pid": 629877
+    },
+    {
+      "stage": "nari_term",
+      "time_unix": 1788495832.7162538,
+      "pid": 629178
+    },
+    {
+      "stage": "nari_drained",
+      "time_unix": 1788495832.9178245,
+      "pid": 629178
+    },
+    {
+      "stage": "old_supervisor_retired",
+      "time_unix": 1788495833.4240866,
+      "pid": 47545
+    },
+    {
+      "stage": "supervisor_started",
+      "time_unix": 1788495833.4292936,
+      "logfile": "/root/autodl-tmp/nari-staging/logs/castreader-nari-cn-r131.log"
+    },
+    {
+      "stage": "service_ready",
+      "time_unix": 1788495851.3035262,
+      "port": 18094,
+      "pid": 639323
+    },
+    {
+      "stage": "service_ready",
+      "time_unix": 1788495862.9296088,
+      "port": 18890,
+      "pid": 639681
+    },
+    {
+      "stage": "maintenance_complete",
+      "time_unix": 1788495866.1335483
+    }
+  ],
+  "passed": true,
+  "after": {
+    "18094": {
+      "pid": 639323,
+      "start_ticks": "2020111398",
+      "cwd": "/root",
+      "argv_sha256": "edd41993b3c0d224869ebc898c2dd0d841386a0ead9de6ce95fd36a9e84a1432"
+    },
+    "18890": {
+      "pid": 639681,
+      "start_ticks": "2020113411",
+      "cwd": "/root",
+      "argv_sha256": "13cf9f6363f3e0840293e9fd5965725549de2e29b8dc132abf0bd29f7df02736"
+    }
+  },
+  "new_supervisor": {
+    "pid": 639315,
+    "start_ticks": "2020111392",
+    "cwd": "/root",
+    "argv_sha256": "6407d96fc53a7678017dc156e4f2a62e48a89224eb12cfbb4815c5e8950fb6e0"
+  },
+  "no_forced_kill": true,
+  "old_supervisor_retired": true,
+  "kokoro_unchanged": true
+}

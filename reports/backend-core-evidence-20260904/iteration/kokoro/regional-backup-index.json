@@ -1,0 +1,115 @@
+{
+  "us_pre": {
+    "directory": "/Users/xuxuheng/Backups/CastReader/tts/20260904-r131-us-pre.vr5ux8if",
+    "provider": "private Supabase",
+    "files": {
+      "backup-receipt.json": {
+        "sha256": "87a48922d396bdde0b457fb292d9f63c1f96722a9a05e49686e738f01f302633",
+        "bytes": 827
+      },
+      "delta-readback.json": {
+        "sha256": "bd63cf1e517fa7cf3e893b67da4c3b4f20b9e82c5b5b8f13c06eb707f1bd547d",
+        "bytes": 1311
+      },
+      "receipt-publication-readback.json": {
+        "sha256": "70af970b56eab8921bfffe4651e2a1ba436c0d33edf99d5d56f546452165d0b2",
+        "bytes": 1308
+      }
+    }
+  },
+  "us_post": {
+    "directory": "/Users/xuxuheng/Backups/CastReader/tts/20260904-r131-us-post.wet3e7rs",
+    "provider": "private Supabase",
+    "files": {
+      "backup-receipt.json": {
+        "sha256": "9a03d11748dc74144c723eb0341e535221391574a70bff7460241fe772b3516a",
+        "bytes": 825
+      },
+      "delta-readback.json": {
+        "sha256": "4061b245a620c5d442efa4bab07f4838271e118042f6e1e789101d7b899c2205",
+        "bytes": 1313
+      },
+      "receipt-publication-readback.json": {
+        "sha256": "cd163e5270e7653cbe5c86c5934a5eb88ef6966f330a608baab995d1e433c49d",
+        "bytes": 1310
+      }
+    }
+  },
+  "cn_pre": {
+    "directory": "/Users/xuxuheng/Backups/CastReader/tts/20260904-r131-cn-pre-cos.85al5_1d",
+    "provider": "private Shanghai COS",
+    "files": {
+      "backup-receipt.json": {
+        "sha256": "d9049f9e1eb88f2dbb5f9157ac3648b6a04e1aebc17487aef53713bc0d85604c",
+        "bytes": 834
+      },
+      "delta-readback.json": {
+        "sha256": "145bbd09762c2887959ad4b7fed35c3ce72811e9e6d52031b217ae6d53d74560",
+        "bytes": 427
+      },
+      "receipt-publication-readback.json": {
+        "sha256": "ca709b0153112fe0700a7628703857f90eaadaab48f85e3e7c62bdf64f45270f",
+        "bytes": 432
+      }
+    }
+  },
+  "cn_post": {
+    "directory": "/Users/xuxuheng/Backups/CastReader/tts/20260904-r131-cn-post-cos.9zabgg5k",
+    "provider": "private Shanghai COS",
+    "files": {
+      "backup-receipt.json": {
+        "sha256": "aabe42617e7a7c8869b48e20bbbd9b1e8cec341e91d8ef46642ecf109fbe6522",
+        "bytes": 834
+      },
+      "delta-readback.json": {
+        "sha256": "0e7726e1993a05fdc8f31076f4933554c07145e78f502c9d25486cbd9a9bf5db",
+        "bytes": 428
+      },
+      "receipt-publication-readback.json": {
+        "sha256": "ae21d1e719040bbeea564451792e75c7a81b48917f9ddee8147cbe6783aa5d2a",
+        "bytes": 433
+      }
+    }
+  },
+  "cn_watchdog_pre": {
+    "directory": "/Users/xuxuheng/Backups/CastReader/tts/20260904-cn-watchdog-r131.z34ht3bx",
+    "provider": "private Shanghai COS",
+    "files": {
+      "full-readback.json": {
+        "sha256": "fef2cd109cb0019ce43ddac07fa2c531f2dbfa4337f0051bfcc3d6fb6629459e",
+        "bytes": 438
+      },
+      "upload-spec.json": {
+        "sha256": "34d3b99632f29427a74066de4bf629717090458e3582a3140f6d190a548767e8",
+        "bytes": 402
+      }
+    }
+  },
+  "cn_watchdog_post": {
+    "directory": "/Users/xuxuheng/Backups/CastReader/tts/20260904-cn-watchdog-post.87gnb1zo",
+    "provider": "private Shanghai COS",
+    "files": {
+      "full-readback.json": {
+        "sha256": "a54c800b734e6f9d136fec0388c6d99ceeaa6128fc32a629cfe6d930cd71bcc2",
+        "bytes": 444
+      },
+      "upload-spec.json": {
+        "sha256": "0be8844014d0f3699c78dd321403e2b0fb0439fa8851408ca6421a5e71ce2b6c",
+        "bytes": 413
+      }
+    }
+  },
+  "us_shared_fresh_readback": {
+    "directory": "/Users/xuxuheng/Backups/CastReader/tts/20260904-r131-shared-readback.w15ir1pk",
+    "file": "fresh-shared-readback.json",
+    "bytes_read_back": 3324807745
+  },
+  "cn_shared": {
+    "file": "/tmp/cn-kokoro-base-cos-receipt.json",
+    "region": "ap-shanghai",
+    "private": true,
+    "bytes_read_back": 3324807745,
+    "sha256": "659b6a46de3e86bad826657ffd64fb3e53490e951e991cba9f6c4c074c12b441",
+    "scope": "one-time public model/static base copy; no user documents, recordings or clone references; CN recovery requires no US object"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "sourceCommit": "14b884bb29b4b335a5607b948183304c25e001d4",
+  "globalUnitTests": 1517,
+  "cnTargetedUnitTests": 83,
+  "failed": 0,
+  "packagingKeyGate": {
+    "realKeyPassed": true,
+    "emptyKeyRejected": true
+  },
+  "artifacts": [
+    {
+      "flavor": "global",
+      "apk": "/Users/xuxuheng/Documents/.worktrees/castreader-android-region-continuity/app/build/outputs/apk/global/debug/app-global-debug.apk",
+      "sha256": "a3ffe5a33b8746d9d62402ac46178be2996510993e62a45b291254b3017c641f",
+      "bytes": 103381216,
+      "signatureVerified": true,
+      "signer": [
+        "Signer #1 certificate SHA-256 digest: 381a825d76ed0f3a9914dc04fcc22e7d15f1136c6d11fe43b0c5a4926f608a65"
+      ],
+      "quickReadKeyPresent": true
+    },
+    {
+      "flavor": "cn",
+      "apk": "/Users/xuxuheng/Documents/.worktrees/castreader-android-region-continuity/app/build/outputs/apk/cn/debug/app-cn-debug.apk",
+      "sha256": "4cc35e8f02a0e4670bcb33a286011ef94ae3d26bf073bd3a3e60fc3e850ab074",
+      "bytes": 102825042,
+      "signatureVerified": true,
+      "signer": [
+        "Signer #1 certificate SHA-256 digest: 381a825d76ed0f3a9914dc04fcc22e7d15f1136c6d11fe43b0c5a4926f608a65"
+      ],
+      "quickReadKeyPresent": false
+    }
+  ],
+  "publishedToStore": false,
+  "installedOnUserDevice": false
+}

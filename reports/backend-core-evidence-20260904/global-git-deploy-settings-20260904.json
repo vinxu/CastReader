@@ -1,0 +1,38 @@
+{
+  "at": "2026-09-04T03:55:51.863013+00:00",
+  "projectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
+  "name": "readout-web",
+  "link": {
+    "type": "github",
+    "repo": "readout-web",
+    "org": "scmyyan",
+    "productionBranch": "beta",
+    "deployHooks": [],
+    "sourceless": true
+  },
+  "gitForkProtection": true,
+  "autoExposeSystemEnvs": true,
+  "gitComments": {
+    "onCommit": false,
+    "onPullRequest": true
+  },
+  "gitProviderOptions": {
+    "createDeployments": "enabled"
+  },
+  "buildCommand": "pnpm build",
+  "ignoreCommand": null,
+  "targets": {
+    "production": {
+      "id": "dpl_2CmzKBRfAMhhKYiVF6DwUjnakPRn",
+      "url": "readout-dix2m05hc-castreader.vercel.app",
+      "target": "production",
+      "readyState": "READY"
+    },
+    "preview": {
+      "id": "dpl_ESC7UwP2bE1J3nhVMKxj7aZPZ3Hz",
+      "url": "readout-d1qwe87h9-castreader.vercel.app",
+      "target": null,
+      "readyState": "READY"
+    }
+  }
+}

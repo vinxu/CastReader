@@ -1,0 +1,845 @@
+{
+  "path": "/workspace/castreader-runtime/canaries/r131/run-1iii05c7/diagnostics/playback.jsonl",
+  "canary_allocator_fraction": 0.21,
+  "records": [
+    {
+      "time_unix": 1788493563.9178798,
+      "request_id": "internal",
+      "stage": "canary_memory_before",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 4330193920,
+      "reserved": 4353687552,
+      "global_free": 5308678144,
+      "phonemes": 34
+    },
+    {
+      "time_unix": 1788493564.4473815,
+      "request_id": "internal",
+      "stage": "canary_memory_after",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 4573814784,
+      "reserved": 4661968896,
+      "peak_allocated": 4620661248,
+      "global_free": 4799070208
+    },
+    {
+      "time_unix": 1788493564.4475176,
+      "request_id": "internal",
+      "stage": "canary_model_output",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "phonemes": 34,
+      "pcm_samples": 57600
+    },
+    {
+      "time_unix": 1788493565.3565829,
+      "request_id": "internal",
+      "stage": "canary_all_package_models_bound",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "packages": 13,
+      "allocated": 4573814784,
+      "reserved": 4661968896,
+      "global_free": 4931190784
+    },
+    {
+      "time_unix": 1788493565.5131564,
+      "request_id": "r131-es-test",
+      "stage": "canary_memory_before",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 4574337024,
+      "reserved": 4632608768,
+      "global_free": 4985716736,
+      "phonemes": 47
+    },
+    {
+      "time_unix": 1788493565.5996833,
+      "request_id": "r131-es-test",
+      "stage": "canary_memory_after",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 4808811520,
+      "reserved": 4934598656,
+      "peak_allocated": 4864614912,
+      "global_free": 4681629696
+    },
+    {
+      "time_unix": 1788493565.5998075,
+      "request_id": "r131-es-test",
+      "stage": "canary_model_output",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "phonemes": 47,
+      "pcm_samples": 69600
+    },
+    {
+      "time_unix": 1788493565.7975225,
+      "request_id": "r131-fr-test",
+      "stage": "canary_memory_before",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 4809333760,
+      "reserved": 4886364160,
+      "global_free": 4757127168,
+      "phonemes": 44
+    },
+    {
+      "time_unix": 1788493565.8810134,
+      "request_id": "r131-fr-test",
+      "stage": "canary_memory_after",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 4810382336,
+      "reserved": 4991221760,
+      "peak_allocated": 4903301120,
+      "global_free": 4652269568
+    },
+    {
+      "time_unix": 1788493565.88114,
+      "request_id": "r131-fr-test",
+      "stage": "canary_model_output",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "phonemes": 44,
+      "pcm_samples": 102000
+    },
+    {
+      "time_unix": 1788493566.023778,
+      "request_id": "r131-it-test",
+      "stage": "canary_memory_before",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 4810904576,
+      "reserved": 4886364160,
+      "global_free": 4729864192,
+      "phonemes": 46
+    },
+    {
+      "time_unix": 1788493566.1080968,
+      "request_id": "r131-it-test",
+      "stage": "canary_memory_after",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 4810904576,
+      "reserved": 4961861632,
+      "peak_allocated": 4903301120,
+      "global_free": 4708892672
+    },
+    {
+      "time_unix": 1788493566.1082368,
+      "request_id": "r131-it-test",
+      "stage": "canary_model_output",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "phonemes": 46,
+      "pcm_samples": 79200
+    },
+    {
+      "time_unix": 1788493566.1840165,
+      "request_id": "r131-pt-test",
+      "stage": "canary_memory_before",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 4811426816,
+      "reserved": 4886364160,
+      "global_free": 4784390144,
+      "phonemes": 44
+    },
+    {
+      "time_unix": 1788493566.2694042,
+      "request_id": "r131-pt-test",
+      "stage": "canary_memory_after",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 5047764992,
+      "reserved": 5203034112,
+      "peak_allocated": 5112524800,
+      "global_free": 4467720192
+    },
+    {
+      "time_unix": 1788493566.2695332,
+      "request_id": "r131-pt-test",
+      "stage": "canary_model_output",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "phonemes": 44,
+      "pcm_samples": 81000
+    },
+    {
+      "time_unix": 1788493566.629567,
+      "request_id": "r131-long",
+      "stage": "canary_memory_before",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 5047764992,
+      "reserved": 5117050880,
+      "global_free": 4555800576,
+      "phonemes": 231
+    },
+    {
+      "time_unix": 1788493566.713571,
+      "request_id": "r131-long",
+      "stage": "canary_memory_after",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 5139433984,
+      "reserved": 5272240128,
+      "peak_allocated": 5193111040,
+      "global_free": 4400611328
+    },
+    {
+      "time_unix": 1788493566.7137198,
+      "request_id": "r131-long",
+      "stage": "model_generation_failed",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "text_chars": 255,
+      "causes": [
+        {
+          "type": "OutOfMemoryError",
+          "frames": [
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 309,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 70,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 31,
+              "function": "forward"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "ae1f8a86135b492c"
+    },
+    {
+      "time_unix": 1788493566.715028,
+      "request_id": "r131-long",
+      "stage": "model_unit_retry",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "attempt": 1,
+      "text_chars": 255,
+      "discarded_chunks": 0,
+      "causes": [
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "tts_service.py",
+              "line": 172,
+              "function": "_process_chunk"
+            },
+            {
+              "file": "bootstrap.py",
+              "line": 71,
+              "function": "generate"
+            },
+            {
+              "file": "model_manager.py",
+              "line": 148,
+              "function": "generate"
+            }
+          ]
+        },
+        {
+          "type": "OutOfMemoryError",
+          "frames": [
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 309,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 70,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 31,
+              "function": "forward"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "56fb243536dae783"
+    },
+    {
+      "time_unix": 1788493567.015436,
+      "request_id": "r131-long",
+      "stage": "canary_memory_before",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 5053523968,
+      "reserved": 5152702464,
+      "global_free": 4520148992,
+      "phonemes": 231
+    },
+    {
+      "time_unix": 1788493567.0701215,
+      "request_id": "r131-long",
+      "stage": "canary_memory_after",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "allocated": 5142688256,
+      "reserved": 5293211648,
+      "peak_allocated": 5196365312,
+      "global_free": 4379639808
+    },
+    {
+      "time_unix": 1788493567.0702672,
+      "request_id": "r131-long",
+      "stage": "model_generation_failed",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "text_chars": 255,
+      "causes": [
+        {
+          "type": "OutOfMemoryError",
+          "frames": [
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 309,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 70,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 31,
+              "function": "forward"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "ae1f8a86135b492c"
+    },
+    {
+      "time_unix": 1788493567.0709403,
+      "request_id": "r131-long",
+      "stage": "model_unit_failed",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "attempt": 2,
+      "text_chars": 255,
+      "discarded_chunks": 0,
+      "causes": [
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "tts_service.py",
+              "line": 172,
+              "function": "_process_chunk"
+            },
+            {
+              "file": "bootstrap.py",
+              "line": 71,
+              "function": "generate"
+            },
+            {
+              "file": "model_manager.py",
+              "line": 148,
+              "function": "generate"
+            }
+          ]
+        },
+        {
+          "type": "OutOfMemoryError",
+          "frames": [
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 309,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 70,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 31,
+              "function": "forward"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "56fb243536dae783"
+    },
+    {
+      "time_unix": 1788493567.0714984,
+      "request_id": "r131-long",
+      "stage": "audio_unit_failed",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "causes": [
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "tts_service.py",
+              "line": 172,
+              "function": "_process_chunk"
+            },
+            {
+              "file": "bootstrap.py",
+              "line": 71,
+              "function": "generate"
+            },
+            {
+              "file": "model_manager.py",
+              "line": 148,
+              "function": "generate"
+            }
+          ]
+        },
+        {
+          "type": "OutOfMemoryError",
+          "frames": [
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 309,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 70,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 31,
+              "function": "forward"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "56fb243536dae783"
+    },
+    {
+      "time_unix": 1788493567.0720341,
+      "request_id": "r131-long",
+      "stage": "audio_generation_failed",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "chunk_index": 0,
+      "causes": [
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "tts_service.py",
+              "line": 485,
+              "function": "generate_audio_stream"
+            },
+            {
+              "file": "tts_service.py",
+              "line": 288,
+              "function": "_process_chunk"
+            }
+          ]
+        },
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "tts_service.py",
+              "line": 172,
+              "function": "_process_chunk"
+            },
+            {
+              "file": "bootstrap.py",
+              "line": 71,
+              "function": "generate"
+            },
+            {
+              "file": "model_manager.py",
+              "line": 148,
+              "function": "generate"
+            }
+          ]
+        },
+        {
+          "type": "OutOfMemoryError",
+          "frames": [
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 309,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 70,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 31,
+              "function": "forward"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "171cd727a3fb60c3"
+    },
+    {
+      "time_unix": 1788493567.072817,
+      "request_id": "r131-long",
+      "stage": "complete_audio_failed",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "causes": [
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "tts_service.py",
+              "line": 577,
+              "function": "generate_audio"
+            },
+            {
+              "file": "tts_service.py",
+              "line": 531,
+              "function": "generate_audio_stream"
+            }
+          ]
+        },
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "tts_service.py",
+              "line": 485,
+              "function": "generate_audio_stream"
+            },
+            {
+              "file": "tts_service.py",
+              "line": 288,
+              "function": "_process_chunk"
+            }
+          ]
+        },
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "tts_service.py",
+              "line": 172,
+              "function": "_process_chunk"
+            },
+            {
+              "file": "bootstrap.py",
+              "line": 71,
+              "function": "generate"
+            },
+            {
+              "file": "model_manager.py",
+              "line": 148,
+              "function": "generate"
+            }
+          ]
+        },
+        {
+          "type": "OutOfMemoryError",
+          "frames": [
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 309,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 70,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 31,
+              "function": "forward"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "f0b45ec649cb0df4"
+    },
+    {
+      "time_unix": 1788493567.07361,
+      "request_id": "r131-long",
+      "stage": "captioned_speech_failed",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "causes": [
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "development.py",
+              "line": 326,
+              "function": "create_captioned_speech"
+            },
+            {
+              "file": "tts_service.py",
+              "line": 577,
+              "function": "generate_audio"
+            },
+            {
+              "file": "tts_service.py",
+              "line": 531,
+              "function": "generate_audio_stream"
+            }
+          ]
+        },
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "tts_service.py",
+              "line": 485,
+              "function": "generate_audio_stream"
+            },
+            {
+              "file": "tts_service.py",
+              "line": 288,
+              "function": "_process_chunk"
+            }
+          ]
+        },
+        {
+          "type": "RuntimeError",
+          "frames": [
+            {
+              "file": "tts_service.py",
+              "line": 172,
+              "function": "_process_chunk"
+            },
+            {
+              "file": "bootstrap.py",
+              "line": 71,
+              "function": "generate"
+            },
+            {
+              "file": "model_manager.py",
+              "line": 148,
+              "function": "generate"
+            }
+          ]
+        },
+        {
+          "type": "OutOfMemoryError",
+          "frames": [
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 309,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 70,
+              "function": "forward"
+            },
+            {
+              "file": "module.py",
+              "line": 1779,
+              "function": "_wrapped_call_impl"
+            },
+            {
+              "file": "module.py",
+              "line": 1790,
+              "function": "_call_impl"
+            },
+            {
+              "file": "istftnet.py",
+              "line": 31,
+              "function": "forward"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "a65037d45aca3b8f"
+    },
+    {
+      "time_unix": 1788493567.0749109,
+      "request_id": "r131-long",
+      "stage": "request_failed",
+      "release": "20260904-kokoro-playback-us-r131b",
+      "status": 500,
+      "elapsed_ms": 757
+    }
+  ]
+}

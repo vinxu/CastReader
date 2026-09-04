@@ -1,0 +1,55 @@
+{
+  "kind": "explicit_local_timestamp_fault_injection_not_natural_production_failure",
+  "production_normal_request_utc": "2026-09-04T02:51:46.626219+00:00",
+  "production_http_status": 200,
+  "production_elapsed_seconds": 1.678305622190237,
+  "wav_sha256": "1437fa5ecbc11eaee4c00dc7912b4c4e294719d1be73e558a924af2ee2f554ab",
+  "pcm_sha256": "273f6b555a91809735a1442ad8ff2a5042a02bfecf17eb8791061cd4495eb426",
+  "wav_spec": {
+    "channels": 1,
+    "rate": 24000,
+    "sample_width": 2,
+    "declared_header_frames": 2147483647,
+    "actual_decoded_frames": 68013,
+    "actual_duration_seconds": 2.833875
+  },
+  "pcm_rms_normalized": 0.04807791803879122,
+  "ffprobe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "pcm_s16le",
+        "sample_rate": "24000",
+        "channels": 1
+      }
+    ],
+    "format": {
+      "duration": "2.833875"
+    }
+  },
+  "source_file": "/Users/xuxuheng/Documents/MyProject/castreader-tts-compatible-fix/api/src/services/tts_service.py",
+  "source_sha256_verified_equal_to_both_production_regions": "7e42a26e742f17c0cf63a4ad546cb58d631fe3b89f4a23ee94a575dac1aee680",
+  "function_line": 43,
+  "baseline_passed": true,
+  "baseline_word_count": 6,
+  "injections": [
+    {
+      "case": "first_interval_zero_length",
+      "audio_pcm_sha256": "273f6b555a91809735a1442ad8ff2a5042a02bfecf17eb8791061cd4495eb426",
+      "audio_unchanged": true,
+      "rejected": true,
+      "type": "RuntimeError",
+      "error": "Source timestamp interval is invalid or reordered"
+    },
+    {
+      "case": "last_interval_past_audio",
+      "audio_pcm_sha256": "273f6b555a91809735a1442ad8ff2a5042a02bfecf17eb8791061cd4495eb426",
+      "audio_unchanged": true,
+      "rejected": true,
+      "type": "RuntimeError",
+      "error": "Audio processing removed a source word interval"
+    }
+  ],
+  "method": "Unmodified original function AST with real NumPy; actual production WAV PCM and response timestamps; SimpleNamespace field containers; only copied end_time values changed. No production process mutation."
+}

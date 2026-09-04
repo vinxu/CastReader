@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: restored historical GIF snapshots cannot emit GIF URLs through any QuickRead section boundary
+ok 1 - restored historical GIF snapshots cannot emit GIF URLs through any QuickRead section boundary
+  ---
+  duration_ms: 17.269809
+  type: 'test'
+  ...
+# Subtest: CN runtime is pinned to DeepSeek and cannot inherit a foreign fallback
+ok 2 - CN runtime is pinned to DeepSeek and cannot inherit a foreign fallback
+  ---
+  duration_ms: 1.706886
+  type: 'test'
+  ...
+# Subtest: global runtime preserves the existing model and fallback behavior
+ok 3 - global runtime preserves the existing model and fallback behavior
+  ---
+  duration_ms: 0.395263
+  type: 'test'
+  ...
+# Subtest: CN startup fails closed when its server-only DeepSeek key is absent
+ok 4 - CN startup fails closed when its server-only DeepSeek key is absent
+  ---
+  duration_ms: 0.480823
+  type: 'test'
+  ...
+# Subtest: quickread.castreader.cn startup fails closed unless region is exactly cn
+ok 5 - quickread.castreader.cn startup fails closed unless region is exactly cn
+  ---
+  duration_ms: 0.358343
+  type: 'test'
+  ...
+# Subtest: DeepSeek JSON request uses env-only auth, exact model, and disabled thinking
+ok 6 - DeepSeek JSON request uses env-only auth, exact model, and disabled thinking
+  ---
+  duration_ms: 3.717933
+  type: 'test'
+  ...
+# Subtest: DeepSeek JSON does not forward a 307 redirect
+ok 7 - DeepSeek JSON does not forward a 307 redirect
+  ---
+  duration_ms: 38.389118
+  type: 'test'
+  ...
+# Subtest: DeepSeek stream does not forward a 307 redirect
+ok 8 - DeepSeek stream does not forward a 307 redirect
+  ---
+  duration_ms: 9.269913
+  type: 'test'
+  ...
+# Subtest: DeepSeek JSON does not forward a 308 redirect
+ok 9 - DeepSeek JSON does not forward a 308 redirect
+  ---
+  duration_ms: 4.942173
+  type: 'test'
+  ...
+# Subtest: DeepSeek stream does not forward a 308 redirect
+ok 10 - DeepSeek stream does not forward a 308 redirect
+  ---
+  duration_ms: 7.98584
+  type: 'test'
+  ...
+# Subtest: DeepSeek streaming accumulates SSE content for early block delivery
+ok 11 - DeepSeek streaming accumulates SSE content for early block delivery
+  ---
+  duration_ms: 1.631675
+  type: 'test'
+  ...
+# Subtest: DeepSeek errors do not reflect upstream response bodies or credentials
+ok 12 - DeepSeek errors do not reflect upstream response bodies or credentials
+  ---
+  duration_ms: 1.092833
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 295.039933

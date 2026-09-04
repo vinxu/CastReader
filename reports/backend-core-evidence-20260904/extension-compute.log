@@ -1,0 +1,5 @@
+
+> castreader-extension@1.2.36 test:compute-region /Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-region-continuity-20260904
+> node scripts/test-compute-region-routing.mjs
+
+Fixed regional routing: PASS

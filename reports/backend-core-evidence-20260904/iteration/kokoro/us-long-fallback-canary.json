@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "region": "us",
+  "directory": "/workspace/castreader-runtime/canaries/r131/run-iclavbt5",
+  "cases": [
+    {
+      "id": "r131-long-source-fallback",
+      "status": 200,
+      "seconds": 1.0483618723228574,
+      "audio_sha256": "0a334f9511b85ab003f084d7a85a0bd3b0927326c2631bc8f811e94840698748",
+      "audio_bytes": 971181,
+      "decoded_samples": 1456704,
+      "timestamps": 0
+    }
+  ],
+  "candidate_pid": {
+    "pid": 1142261,
+    "start_ticks": "528011628",
+    "cwd": "/workspace/castreader-runtime/releases/20260904-kokoro-playback-us-r131b",
+    "argv_sha256": "022fe590e9d3317ee1a55a3c7eed755bc3264009c35bdbdc33c93525b474cae5"
+  },
+  "full_original_lifespan": true,
+  "overlay_sha256": "d0004420327dbe4c014b0b4dd9f84c4eb864b2c269115a9fab8232849d0976d8",
+  "backup_sha256": "87a48922d396bdde0b457fb292d9f63c1f96722a9a05e49686e738f01f302633",
+  "candidate_stopped": true,
+  "production_unchanged": true
+}

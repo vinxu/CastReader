@@ -1,0 +1,5 @@
+{"health": {"ok": true, "queue": 0, "active": 0, "concurrency": 3, "jobs_cached": 0}}
+{"unauthenticated": 401}
+{"extract_plan_status": 200, "elapsed_s": 6.126, "job_id": "qr_mtmegg6z_1c550f", "event_count": 3}
+{"compose_invalid_timing_status": 200, "elapsed_s": 0.003, "section_id": "seq-0"}
+{"gif_status": 200, "gif_sections": []}

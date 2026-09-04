@@ -1,0 +1,100 @@
+{
+  "startedAt": "2026-09-04T03:46:55.435Z",
+  "candidate": "e60741cf",
+  "checks": [
+    {
+      "name": "mobile-sts-no-session",
+      "status": 401,
+      "elapsedMs": 52
+    },
+    {
+      "name": "mobile-sts-foreign-session",
+      "status": 401,
+      "elapsedMs": 24
+    },
+    {
+      "name": "legacy-sts",
+      "status": 200,
+      "region": "ap-shanghai",
+      "accelerate": false,
+      "elapsedMs": 170
+    },
+    {
+      "name": "legacy-notify",
+      "status": 200,
+      "processing": "pending",
+      "elapsedMs": 258
+    },
+    {
+      "name": "legacy-converted-markdown",
+      "status": 200,
+      "assetHost": "api.castreader.cn",
+      "wordCount": 25,
+      "chapterCount": 2,
+      "headStatus": 200,
+      "hasFinalSentence": true
+    },
+    {
+      "name": "mobile-sts",
+      "status": 200,
+      "region": "ap-shanghai",
+      "accelerate": false,
+      "elapsedMs": 55
+    },
+    {
+      "name": "mobile-notify",
+      "status": 200,
+      "processing": "pending",
+      "elapsedMs": 137
+    },
+    {
+      "name": "mobile-converted-markdown",
+      "status": 200,
+      "assetHost": "api.castreader.cn",
+      "wordCount": 15,
+      "chapterCount": 1,
+      "headStatus": 200,
+      "hasFinalSentence": true
+    },
+    {
+      "name": "legacy-local-list",
+      "status": 200,
+      "count": 2,
+      "vercelHeader": false
+    },
+    {
+      "name": "markdown-speech",
+      "status": 200,
+      "audioBytes": 71084,
+      "timestamps": 12,
+      "elapsedMs": 5122
+    },
+    {
+      "name": "private-cos-audio-cache",
+      "assetHost": "api.castreader.cn",
+      "rangeStatus": 206,
+      "rangeBytes": 128
+    },
+    {
+      "name": "/api/tts/generate",
+      "status": 200,
+      "elapsedMs": 1038
+    },
+    {
+      "name": "/api/tts/tts_and_transcribe",
+      "status": 200,
+      "elapsedMs": 3626
+    },
+    {
+      "name": "delete-revokes-document-capability",
+      "deleteStatus": 200,
+      "assetStatus": 404
+    },
+    {
+      "name": "foreign-markdown-rejected-before-fetch",
+      "status": 403
+    }
+  ],
+  "success": true,
+  "finishedAt": "2026-09-04T03:47:10.056Z"
+}

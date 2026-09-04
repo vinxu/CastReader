@@ -1,0 +1,81 @@
+{
+  "passed": true,
+  "region": "us",
+  "directory": "/workspace/castreader-runtime/canaries/r131/run-_id4dyq_",
+  "cases": [
+    {
+      "id": "r131-long",
+      "status": 200,
+      "seconds": 2.635360616259277,
+      "audio_sha256": "d60bfe7962216c714b274b0985fe78240c9257318feda26f186e30d0dbffb8f6",
+      "audio_bytes": 1036845,
+      "decoded_samples": 1555200,
+      "timestamps": 167
+    },
+    {
+      "id": "r131-injection-control",
+      "status": 200,
+      "seconds": 0.46519156266003847,
+      "audio_sha256": "308e99d7e0a89be88d6bf5762c7776aefc3573a2c0ac26ef88cee5a1e2cebf38",
+      "audio_bytes": 71853,
+      "decoded_samples": 107712,
+      "timestamps": 9
+    },
+    {
+      "id": "r131-source-fallback",
+      "status": 200,
+      "seconds": 0.12966403644531965,
+      "audio_sha256": "8efea40ede8b576364129b7698f175c5018dcfe90fb2b407dafd74fde7ed2b76",
+      "audio_bytes": 71853,
+      "decoded_samples": 107712,
+      "timestamps": 0
+    },
+    {
+      "id": "r131-duration-fallback",
+      "status": 200,
+      "seconds": 0.41639188304543495,
+      "audio_sha256": "a473077f27aee340e23411a260598c09d0538ad27e0d5c155d3ce1a2d3332405",
+      "audio_bytes": 71853,
+      "decoded_samples": 107712,
+      "timestamps": 0
+    },
+    {
+      "id": "r131-timestamp-fallback",
+      "status": 200,
+      "seconds": 0.416803440079093,
+      "audio_sha256": "e850074f8e26e8320f43fd713c55562a0777f947869754bfabb711cd6d4bb280",
+      "audio_bytes": 71853,
+      "decoded_samples": 107712,
+      "timestamps": 8
+    },
+    {
+      "id": "r131-iterator-retry",
+      "status": 200,
+      "seconds": 0.7370415199548006,
+      "audio_sha256": "266efa2033e796cfaa7d7c3209003bb5eaebc8fe56c73e6da8492b0e02f3c809",
+      "audio_bytes": 71853,
+      "decoded_samples": 107712,
+      "timestamps": 9
+    },
+    {
+      "id": "r131-oom-retry",
+      "status": 200,
+      "seconds": 0.7492574071511626,
+      "audio_sha256": "10662dfbb3a28236df82c6afb593f692e9b5768e9af90379896225a258c50017",
+      "audio_bytes": 71853,
+      "decoded_samples": 107712,
+      "timestamps": 9
+    }
+  ],
+  "candidate_pid": {
+    "pid": 1139633,
+    "start_ticks": "527994203",
+    "cwd": "/workspace/castreader-runtime/releases/20260904-kokoro-playback-us-r131b",
+    "argv_sha256": "1831274495dab122643385aea8910f7ea0979bf5969c8d62dcaa01ce38450cb2"
+  },
+  "full_original_lifespan": true,
+  "overlay_sha256": "d0004420327dbe4c014b0b4dd9f84c4eb864b2c269115a9fab8232849d0976d8",
+  "backup_sha256": "87a48922d396bdde0b457fb292d9f63c1f96722a9a05e49686e738f01f302633",
+  "candidate_stopped": true,
+  "production_unchanged": true
+}

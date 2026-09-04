@@ -1,0 +1,37 @@
+{
+  "bucket": "castreader-tts-backups",
+  "created_at": "2026-09-04T03:31:08.731567+00:00",
+  "downloaded_bytes": 5029507,
+  "expected_bytes": 5029507,
+  "expected_files": 1,
+  "expected_objects": 1,
+  "files": [
+    {
+      "bytes": 5029507,
+      "downloaded_bytes": 5029507,
+      "name": "us-before-source.tar.gz",
+      "object_base": "runtime-releases/us/quickread-20260904-cc18dc4/before-source.tar.gz",
+      "parts": [
+        {
+          "bytes": 5029507,
+          "downloaded_bytes": 5029507,
+          "object": "runtime-releases/us/quickread-20260904-cc18dc4/before-source.tar.gz",
+          "offset": 0,
+          "readback_sha256": "8d4eac28738cb06dd1dea31eca6d8ef0d752f4693a125a5ae4868b69b0174dde",
+          "sha256": "8d4eac28738cb06dd1dea31eca6d8ef0d752f4693a125a5ae4868b69b0174dde",
+          "verified": true
+        }
+      ],
+      "readback_sha256": "8d4eac28738cb06dd1dea31eca6d8ef0d752f4693a125a5ae4868b69b0174dde",
+      "sha256": "8d4eac28738cb06dd1dea31eca6d8ef0d752f4693a125a5ae4868b69b0174dde",
+      "verified": true
+    }
+  ],
+  "plan_sha256": "0d1cbffb4dcc46b9a56548d3ee5c56d9a51c0abf8ca6fbbd43256aad921ae14f",
+  "project_ref": "zqxgmqygirtpttnrvjpf",
+  "public": false,
+  "schema": "castreader.backup-readback.v1",
+  "verified": true,
+  "verified_files": 1,
+  "verified_objects": 1
+}

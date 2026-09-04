@@ -1,0 +1,448 @@
+{"ok":true,"head":"62386e902cb7201919e9680e56c82c8627b47110","previousProductionSha":"97443cef6d9aeec236f0196ad26e06bee260d628","releaseRef":"origin/beta"}
+▸ 校验中国区独立账本连续性
+[billing-authority] GO: active CN authority captured for continuity check
+▸ 构建
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   ▲ Next.js 16.0.7 (Turbopack)
+   - Experiments (use with caution):
+     ✓ mdxRs
+     · optimizePackageImports
+     ✓ turbopackFileSystemCacheForDev
+
+ ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[MDX] updated map file in 16.239959ms
+   Creating an optimized production build ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Turbopack build encountered 2 warnings:
+./node_modules/.pnpm/@react-email+render@1.2.3_react-dom@19.2.1_react@19.2.1__react@19.2.1/node_modules/@react-email/render/dist/node
+Package prettier can't be external
+The request prettier/plugins/html matches serverExternalPackages (or the default list).
+The package resolves to a different version when requested from the project directory (3.6.2) compared to the package requested from the importing module (3.7.4).
+Make sure to install the same version of the package in both locations.
+
+
+./node_modules/.pnpm/@react-email+render@1.2.3_react-dom@19.2.1_react@19.2.1__react@19.2.1/node_modules/@react-email/render/dist/node
+Package prettier can't be external
+The request prettier/standalone matches serverExternalPackages (or the default list).
+The package resolves to a different version when requested from the project directory (3.6.2) compared to the package requested from the importing module (3.7.4).
+Make sure to install the same version of the package in both locations.
+
+
+ ✓ Compiled successfully in 33.7s
+   Running TypeScript ...
+   Collecting page data using 9 workers ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ⚠ Using edge runtime on a page currently disables static generation for that page
+   Generating static pages using 9 workers (0/84) ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   Generating static pages using 9 workers (21/84) 
+   Generating static pages using 9 workers (42/84) 
+   Generating static pages using 9 workers (63/84) 
+ ✓ Generating static pages using 9 workers (84/84) in 989.1ms
+   Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/[slug]
+├ ƒ /[locale]/about
+├ ƒ /[locale]/account
+├ ƒ /[locale]/account/delete
+├ ƒ /[locale]/ai-character-voice-generator
+├ ƒ /[locale]/ai-voice-generator
+├ ƒ /[locale]/auth/popup-complete
+├ ƒ /[locale]/blog
+├ ƒ /[locale]/blog/[slug]
+├ ƒ /[locale]/blog/category/[slug]
+├ ƒ /[locale]/castreader-app
+├ ƒ /[locale]/castreader-for-mac
+├ ƒ /[locale]/compare/[slug]
+├ ƒ /[locale]/docx-to-audio
+├ ƒ /[locale]/epub-to-audio-reader
+├ ƒ /[locale]/extensions
+├ ƒ /[locale]/free-text-to-speech
+├ ƒ /[locale]/free-tts-with-emotion
+├ ƒ /[locale]/google-docs-read-aloud-not-working
+├ ƒ /[locale]/kindle-cloud-reader-not-reading-aloud
+├ ƒ /[locale]/kobo-not-reading-aloud
+├ ƒ /[locale]/learning-ally
+├ ƒ /[locale]/listen-to-17k
+├ ƒ /[locale]/listen-to-aeon
+├ ƒ /[locale]/listen-to-ai
+├ ƒ /[locale]/listen-to-amboss
+├ ƒ /[locale]/listen-to-ao3
+├ ƒ /[locale]/listen-to-aozora
+├ ƒ /[locale]/listen-to-apple-books
+├ ƒ /[locale]/listen-to-arxiv
+├ ƒ /[locale]/listen-to-atlantic
+├ ƒ /[locale]/listen-to-aws-skill-builder
+├ ƒ /[locale]/listen-to-bbc
+├ ƒ /[locale]/listen-to-bbc-mundo
+├ ƒ /[locale]/listen-to-bible-gateway
+├ ƒ /[locale]/listen-to-bible-hub
+├ ƒ /[locale]/listen-to-biorxiv
+├ ƒ /[locale]/listen-to-bloomberg
+├ ƒ /[locale]/listen-to-blueletterbible
+├ ƒ /[locale]/listen-to-bolt
+├ ƒ /[locale]/listen-to-canvas-lms
+├ ƒ /[locale]/listen-to-cell
+├ ƒ /[locale]/listen-to-chabad
+├ ƒ /[locale]/listen-to-chatgpt
+├ ƒ /[locale]/listen-to-ciweimao
+├ ƒ /[locale]/listen-to-claude
+├ ƒ /[locale]/listen-to-confluence
+├ ƒ /[locale]/listen-to-copilot
+├ ƒ /[locale]/listen-to-coursera
+├ ƒ /[locale]/listen-to-cursor
+├ ƒ /[locale]/listen-to-deepseek
+├ ƒ /[locale]/listen-to-devdocs
+├ ƒ /[locale]/listen-to-devto
+├ ƒ /[locale]/listen-to-discord
+├ ƒ /[locale]/listen-to-douban-read
+├ ƒ /[locale]/listen-to-doubao
+├ ƒ /[locale]/listen-to-duokan
+├ ƒ /[locale]/listen-to-edx
+├ ƒ /[locale]/listen-to-el-pais
+├ ƒ /[locale]/listen-to-europepmc
+├ ƒ /[locale]/listen-to-everand
+├ ƒ /[locale]/listen-to-fanfiction
+├ ƒ /[locale]/listen-to-fanqienovel
+├ ƒ /[locale]/listen-to-feedly
+├ ƒ /[locale]/listen-to-feishu
+├ ƒ /[locale]/listen-to-folha
+├ ƒ /[locale]/listen-to-france24
+├ ƒ /[locale]/listen-to-freecodecamp
+├ ƒ /[locale]/listen-to-frontiers
+├ ƒ /[locale]/listen-to-g1
+├ ƒ /[locale]/listen-to-gemini
+├ ƒ /[locale]/listen-to-github
+├ ƒ /[locale]/listen-to-gmail
+├ ƒ /[locale]/listen-to-google-docs
+├ ƒ /[locale]/listen-to-grok
+├ ƒ /[locale]/listen-to-hackernews
+├ ƒ /[locale]/listen-to-harpers
+├ ƒ /[locale]/listen-to-hatena-blog
+├ ƒ /[locale]/listen-to-hbr
+├ ƒ /[locale]/listen-to-hongxiu
+├ ƒ /[locale]/listen-to-infobae
+├ ƒ /[locale]/listen-to-instapaper
+├ ƒ /[locale]/listen-to-ireader
+├ ƒ /[locale]/listen-to-jianshu
+├ ƒ /[locale]/listen-to-jjwxc
+├ ƒ /[locale]/listen-to-jstor
+├ ƒ /[locale]/listen-to-kakuyomu
+├ ƒ /[locale]/listen-to-khan-academy
+├ ƒ /[locale]/listen-to-kimi
+├ ƒ /[locale]/listen-to-kindle
+├ ƒ /[locale]/listen-to-kobo
+├ ƒ /[locale]/listen-to-le-figaro
+├ ƒ /[locale]/listen-to-le-monde
+├ ƒ /[locale]/listen-to-lexisnexis
+├ ƒ /[locale]/listen-to-libby
+├ ƒ /[locale]/listen-to-linkedin
+├ ƒ /[locale]/listen-to-lrb
+├ ƒ /[locale]/listen-to-mdn
+├ ƒ /[locale]/listen-to-mdpi
+├ ƒ /[locale]/listen-to-medium
+├ ƒ /[locale]/listen-to-medrxiv
+├ ƒ /[locale]/listen-to-meta-ai
+├ ƒ /[locale]/listen-to-mistral
+├ ƒ /[locale]/listen-to-narou
+├ ƒ /[locale]/listen-to-nature
+├ ƒ /[locale]/listen-to-nautilus
+├ ƒ /[locale]/listen-to-new-yorker
+├ ƒ /[locale]/listen-to-nhk
+├ ƒ /[locale]/listen-to-note
+├ ƒ /[locale]/listen-to-notion
+├ ƒ /[locale]/listen-to-nyt
+├ ƒ /[locale]/listen-to-obsidian
+├ ƒ /[locale]/listen-to-openreview
+├ ƒ /[locale]/listen-to-oreilly
+├ ƒ /[locale]/listen-to-ouest-france
+├ ƒ /[locale]/listen-to-outlook
+├ ƒ /[locale]/listen-to-oxford-academic
+├ ƒ /[locale]/listen-to-pdf
+├ ƒ /[locale]/listen-to-perplexity
+├ ƒ /[locale]/listen-to-play-books
+├ ƒ /[locale]/listen-to-plos
+├ ƒ /[locale]/listen-to-pmc
+├ ƒ /[locale]/listen-to-pnas
+├ ƒ /[locale]/listen-to-pubmed
+├ ƒ /[locale]/listen-to-qidian
+├ ƒ /[locale]/listen-to-qiita
+├ ƒ /[locale]/listen-to-quanta-magazine
+├ ƒ /[locale]/listen-to-quora
+├ ƒ /[locale]/listen-to-quran-com
+├ ƒ /[locale]/listen-to-qwen
+├ ƒ /[locale]/listen-to-readwise
+├ ƒ /[locale]/listen-to-reddit
+├ ƒ /[locale]/listen-to-researchgate
+├ ƒ /[locale]/listen-to-reuters
+├ ƒ /[locale]/listen-to-scielo
+├ ƒ /[locale]/listen-to-science
+├ ƒ /[locale]/listen-to-sciencedirect
+├ ƒ /[locale]/listen-to-scribd
+├ ƒ /[locale]/listen-to-seekingalpha
+├ ƒ /[locale]/listen-to-sefaria
+├ ƒ /[locale]/listen-to-semanticscholar
+├ ƒ /[locale]/listen-to-sfacg
+├ ƒ /[locale]/listen-to-shuqi
+├ ƒ /[locale]/listen-to-slack
+├ ƒ /[locale]/listen-to-sophia
+├ ƒ /[locale]/listen-to-springer
+├ ƒ /[locale]/listen-to-ssrn
+├ ƒ /[locale]/listen-to-stackoverflow
+├ ƒ /[locale]/listen-to-substack
+├ ƒ /[locale]/listen-to-sunnah
+├ ƒ /[locale]/listen-to-suttacentral
+├ ƒ /[locale]/listen-to-taylor-francis
+├ ƒ /[locale]/listen-to-telegram
+├ ƒ /[locale]/listen-to-twitter
+├ ƒ /[locale]/listen-to-udacity
+├ ƒ /[locale]/listen-to-udemy
+├ ƒ /[locale]/listen-to-uptodate
+├ ƒ /[locale]/listen-to-uworld
+├ ƒ /[locale]/listen-to-v0
+├ ƒ /[locale]/listen-to-vedabase
+├ ƒ /[locale]/listen-to-wattpad
+├ ƒ /[locale]/listen-to-wattpad-espanol
+├ ƒ /[locale]/listen-to-wechat
+├ ƒ /[locale]/listen-to-weread
+├ ƒ /[locale]/listen-to-westlaw
+├ ƒ /[locale]/listen-to-wikipedia
+├ ƒ /[locale]/listen-to-wiley
+├ ƒ /[locale]/listen-to-wsj
+├ ƒ /[locale]/listen-to-yahoo-news-jp
+├ ƒ /[locale]/listen-to-youversion
+├ ƒ /[locale]/listen-to-yuque
+├ ƒ /[locale]/listen-to-zenn
+├ ƒ /[locale]/listen-to-zhihu
+├ ƒ /[locale]/listen-to-zongheng
+├ ƒ /[locale]/live/[sessionId]
+├ ƒ /[locale]/mcp
+├ ƒ /[locale]/md-to-audio
+├ ƒ /[locale]/naturalreader-alternative
+├ ƒ /[locale]/openclaw
+├ ƒ /[locale]/pdf-read-aloud-not-working
+├ ƒ /[locale]/pdf-to-audiobook
+├ ƒ /[locale]/pricing
+├ ƒ /[locale]/read-acrobat-aloud
+├ ƒ /[locale]/read-aider-aloud
+├ ƒ /[locale]/read-aloud-selected-text
+├ ƒ /[locale]/read-and-explain
+├ ƒ /[locale]/read-bbedit-aloud
+├ ƒ /[locale]/read-claude-code-aloud
+├ ƒ /[locale]/read-codex-aloud
+├ ƒ /[locale]/read-copilot-cli-aloud
+├ ƒ /[locale]/read-coteditor-aloud
+├ ƒ /[locale]/read-cursor-aloud
+├ ƒ /[locale]/read-email-aloud
+├ ƒ /[locale]/read-gemini-cli-aloud
+├ ƒ /[locale]/read-notes-aloud
+├ ƒ /[locale]/read-pages-aloud
+├ ƒ /[locale]/read-pdf-expert-aloud
+├ ƒ /[locale]/read-pdf-out-loud
+├ ƒ /[locale]/read-pdfgear-aloud
+├ ƒ /[locale]/read-preview-aloud
+├ ƒ /[locale]/read-script-editor-aloud
+├ ƒ /[locale]/read-skim-aloud
+├ ƒ /[locale]/read-stickies-aloud
+├ ƒ /[locale]/read-terminal-aloud
+├ ƒ /[locale]/read-textedit-aloud
+├ ƒ /[locale]/read-textmate-aloud
+├ ƒ /[locale]/read-this-to-me
+├ ƒ /[locale]/read-vscode-aloud
+├ ƒ /[locale]/read-windsurf-aloud
+├ ƒ /[locale]/read-with-ai
+├ ƒ /[locale]/read-word-aloud
+├ ƒ /[locale]/read-xcode-aloud
+├ ƒ /[locale]/s/[shareId]
+├ ƒ /[locale]/send-to-phone
+├ ƒ /[locale]/speechify-alternative
+├ ƒ /[locale]/text-to-speech-for-adhd
+├ ƒ /[locale]/text-to-speech-for-dyslexia
+├ ƒ /[locale]/text-to-speech-for-students
+├ ƒ /[locale]/txt-to-audio
+├ ƒ /[locale]/uninstall
+├ ƒ /[locale]/upload
+├ ƒ /[locale]/vibe-coding-tts
+├ ƒ /[locale]/vibe-coding-with-claude-code
+├ ƒ /[locale]/voice-cloning
+├ ƒ /[locale]/voice-over-generator
+├ ƒ /[locale]/weread-read-aloud-not-working
+├ ƒ /[locale]/word-pronunciation-dictionary
+├ ƒ /admin/pulse
+├ ƒ /ads.txt
+├ ƒ /api/admin/billing-authority
+├ ƒ /api/admin/growth/cohort
+├ ƒ /api/admin/growth/import/cost
+├ ƒ /api/admin/growth/import/coverage
+├ ƒ /api/admin/growth/import/financial
+├ ƒ /api/admin/growth/import/spend
+├ ƒ /api/admin/mobile-routing
+├ ƒ /api/admin/tts-ops
+├ ƒ /api/admin/tts-upstream
+├ ƒ /api/ai/gemini
+├ ƒ /api/ai/llm
+├ ƒ /api/analytics
+├ ƒ /api/auth/[...all]
+├ ƒ /api/capabilities
+├ ƒ /api/captioned_speech
+├ ƒ /api/captioned_speech_partly
+├ ƒ /api/config/get-configs
+├ ƒ /api/cron/account-revocations
+├ ƒ /api/cron/alipay-renewals
+├ ƒ /api/cron/apple-reconcile
+├ ƒ /api/cron/flush-analytics-events
+├ ƒ /api/cron/phone-auth-cleanup
+├ ƒ /api/cron/resolve-ad-attribution
+├ ƒ /api/cron/rollup-sessions
+├ ƒ /api/cron/security-check
+├ ƒ /api/cron/store-daily
+├ ƒ /api/cron/sync-apple-ads
+├ ƒ /api/cron/tts-health-probe
+├ ƒ /api/cron/tts-ops-evaluate
+├ ƒ /api/cron/update-collections
+├ ƒ /api/cron/voice-gift-guest-cleanup
+├ ƒ /api/cron/voice-gift-notifications
+├ ƒ /api/email/send-email
+├ ƒ /api/epub/book/[book_id]/chapter/[chapter_index]
+├ ƒ /api/epub/book/[book_id]/images/[image_name]
+├ ƒ /api/epub/book/[book_id]/metadata
+├ ƒ /api/epub/books
+├ ƒ /api/epub/recent-books
+├ ƒ /api/epub/upload
+├ ƒ /api/events
+├ ƒ /api/extraction-rules
+├ ƒ /api/extraction-rules/analyze
+├ ƒ /api/extraction-rules/classify
+├ ƒ /api/feedback/add
+├ ƒ /api/feedback/extension
+├ ƒ /api/internal/tts-runtime
+├ ƒ /api/markdown-tts/fetch
+├ ƒ /api/markdown-tts/generate
+├ ƒ /api/md-upload
+├ ƒ /api/md-upload/claim-documents
+├ ƒ /api/md-upload/document/[id]
+├ ƒ /api/md-upload/documents
+├ ƒ /api/md-upload/recent-documents
+├ ƒ /api/mobile-auth/account/delete
+├ ƒ /api/mobile-auth/compute-session
+├ ƒ /api/mobile-auth/session
+├ ƒ /api/mobile-auth/sms/send
+├ ƒ /api/mobile-auth/sms/verify
+├ ƒ /api/mobile/acquisition/redirect
+├ ƒ /api/mobile/acquisition/touch
+├ ƒ /api/mobile/documents
+├ ƒ /api/mobile/documents/[documentId]
+├ ƒ /api/mobile/growth/identity-link
+├ ƒ /api/mobile/network-region/v1
+├ ƒ /api/mobile/pro/listen-track/v2
+├ ƒ /api/mobile/pro/status/v2
+├ ƒ /api/mobile/runtime-config/v1
+├ ƒ /api/mobile/upload/notify
+├ ƒ /api/mobile/upload/sts
+├ ƒ /api/og
+├ ƒ /api/payment/notify/[provider]
+├ ƒ /api/pdf-proxy
+├ ƒ /api/pro/alipay/cancel
+├ ƒ /api/pro/alipay/checkout
+├ ƒ /api/pro/alipay/confirm
+├ ƒ /api/pro/alipay/gateway
+├ ƒ /api/pro/alipay/notify
+├ ƒ /api/pro/apple-webhook
+├ ƒ /api/pro/checkout
+├ ƒ /api/pro/entitlement
+├ ƒ /api/pro/entitlement/consume
+├ ƒ /api/pro/google-webhook
+├ ƒ /api/pro/listen-track
+├ ƒ /api/pro/plans
+├ ƒ /api/pro/portal
+├ ƒ /api/pro/status
+├ ƒ /api/pro/switch-plan
+├ ƒ /api/pro/verify-android
+├ ƒ /api/pro/verify-apple
+├ ƒ /api/pro/webhook
+├ ƒ /api/quickread/[jobId]/[...asset]
+├ ƒ /api/quickread/compose
+├ ƒ /api/quickread/compose-block
+├ ƒ /api/quickread/extract
+├ ƒ /api/quickread/extract-block
+├ ƒ /api/quickread/extract-plan
+├ ƒ /api/quickread/fast-block0
+├ ƒ /api/regional-assets/[...key]
+├ ƒ /api/session
+├ ƒ /api/session/[id]
+├ ƒ /api/session/[id]/push
+├ ƒ /api/session/[id]/stream
+├ ƒ /api/session/lookup
+├ ƒ /api/share
+├ ƒ /api/share/[shareId]
+├ ƒ /api/storage/upload-image
+├ ƒ /api/tts-usage/flush
+├ ƒ /api/tts/assets/voice-library/[...path]
+├ ƒ /api/tts/catalog
+├ ƒ /api/tts/generate
+├ ƒ /api/tts/tts_and_transcribe
+├ ƒ /api/uninstall-feedback
+├ ƒ /api/voice-clone/captioned-speech
+├ ƒ /api/voice-clone/invitations
+├ ƒ /api/voice-clone/invitations/accept
+├ ƒ /api/voice-clone/library
+├ ƒ /api/voice-clone/requests
+├ ƒ /api/voice-clone/requests/[requestId]
+├ ƒ /api/voice-clone/requests/accept
+├ ƒ /api/voice-clone/requests/attach-recovery
+├ ƒ /api/voice-clone/requests/draft-prepare
+├ ƒ /api/voice-clone/requests/draft-preview
+├ ƒ /api/voice-clone/requests/draft-revoke
+├ ƒ /api/voice-clone/requests/fulfill
+├ ƒ /api/voice-clone/requests/fulfill-draft
+├ ƒ /api/voice-clone/requests/invitation
+├ ƒ /api/voice-clone/shares
+├ ƒ /api/voice-clone/shares/[shareId]
+├ ƒ /api/voice-clone/speech
+├ ƒ /api/voice-clone/voices
+├ ƒ /api/voice-clone/voices/[voiceId]
+├ ƒ /api/voice-clone/voices/[voiceId]/preview
+├ ƒ /app-release.apk
+├ ƒ /async-md-upload-by-url
+├ ƒ /documents
+├ ○ /manifest.webmanifest
+├ ƒ /sitemap.xml
+├ ƒ /sts
+└ ƒ /upload
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+▸ 组装发布包
+▸ 上传 release-20260904120513
+BEGIN
+CREATE TABLE
+CREATE INDEX
+psql:/tmp/cn-request-limits.sql:6: NOTICE:  relation "cn_request_limits" already exists, skipping
+psql:/tmp/cn-request-limits.sql:7: NOTICE:  relation "cn_request_limits_expiry" already exists, skipping
+DO
+COMMIT
+GRANT
+CN conversion tools, asset signing and local limiter schema are ready
+▸ 原子切换、运行时账本校验与健康检查
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+✓ 中国区发布已通过运行时账本、声音克隆 Phase-0/邀请数据库、声音克隆合同与入口健康校验

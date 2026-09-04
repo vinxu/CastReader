@@ -1,0 +1,36 @@
+{
+  "voice": "hf_alpha",
+  "language": "hi",
+  "complete": true,
+  "elapsed_s": 3.041,
+  "parts": [
+    {
+      "part": 0,
+      "bytes": 41133,
+      "duration": "2.568000",
+      "timestamps": 6,
+      "last_cue": {
+        "word": "है।",
+        "start_time": 1.8597499999999998,
+        "end_time": 2.499041666666667
+      },
+      "remaining": 35,
+      "region": "global",
+      "node": "castreader-us4090"
+    },
+    {
+      "part": 1,
+      "bytes": 54957,
+      "duration": "3.432000",
+      "timestamps": 7,
+      "last_cue": {
+        "word": "चाहिए।",
+        "start_time": 2.515416666666667,
+        "end_time": 3.365416666666667
+      },
+      "remaining": 0,
+      "region": "global",
+      "node": "castreader-us4090"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "release": "/opt/castreader-quickread-cn/releases/20260814T165413Z-deepseek-v4-pro-cn-optimized-r5",
+  "server_sha256": "afa2acc89c50d07174e363906aee1e9f00b43c1c87f1e5a20548e7acb0d1aac5",
+  "archive": "/tmp/castreader-quickread-continuity-20260904/cn-before-source.tar.gz",
+  "archive_bytes": 6743673,
+  "archive_sha256": "c9206741152570021be4c6d50615c0ba10c3da4f4933c4720861eee525be8668",
+  "candidate": "/opt/castreader-quickread-cn/releases/20260904-quickread-playback-cc18dc4"
+}

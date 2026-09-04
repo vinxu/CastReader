@@ -1,0 +1,7 @@
+{"excluded_process_local_environment": ["NODE_CHANNEL_FD", "NODE_CHANNEL_SERIALIZATION_MODE"]}
+{"region":"global","duration":2.568,"elapsed_ms":71,"timestamps":7}
+
+
+{"node_returncode": 0}
+{"output": "v22.23.2", "stderr": "", "returncode": 0}
+{"output": "import-only", "stderr": "", "returncode": 0}

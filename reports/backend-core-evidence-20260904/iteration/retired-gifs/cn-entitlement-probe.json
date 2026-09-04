@@ -1,0 +1,61 @@
+{
+  "candidate_pid": 1066340,
+  "candidate_start_time": "232475755",
+  "subjects": [
+    "cn-quota-probe-eba160ce703445208e656fcee09c8654-allow",
+    "cn-quota-probe-eba160ce703445208e656fcee09c8654-deny"
+  ],
+  "job_ids": [
+    "qr_mtmhj6zx_817909"
+  ],
+  "jobs_directory": "/var/lib/castreader-quickread-cn/.url-video-agent/jobs",
+  "checks": [
+    {
+      "name": "local_ledger_read_only_allow",
+      "used": 0,
+      "maximum": 3
+    },
+    {
+      "name": "invalid_or_unauthorized_has_no_consumption",
+      "status": 400,
+      "used": 0
+    },
+    {
+      "name": "invalid_or_unauthorized_has_no_consumption",
+      "status": 401,
+      "used": 0
+    },
+    {
+      "name": "one_real_extract_plan",
+      "status": 200,
+      "used": 1,
+      "job_id": "qr_mtmhj6zx_817909"
+    },
+    {
+      "name": "cached_extract_block_has_no_consumption",
+      "status": 200,
+      "used": 1
+    },
+    {
+      "name": "compose_block_has_no_consumption",
+      "status": 200,
+      "used": 1
+    },
+    {
+      "name": "real_local_business_denial",
+      "status": 402,
+      "used": 3,
+      "upgrade_url": "https://castreader.cn/pricing"
+    }
+  ],
+  "started_at": "2026-09-04T05:00:02Z",
+  "passed": true,
+  "cleanup": {
+    "usage_rows_deleted": 2,
+    "job_files_deleted": [
+      "/var/lib/castreader-quickread-cn/.url-video-agent/jobs/qr_mtmhj6zx_817909.json",
+      "/var/lib/castreader-quickread-cn/.url-video-agent/jobs/quickread-state/qr_mtmhj6zx_817909.json"
+    ],
+    "candidate_stopped": true
+  }
+}

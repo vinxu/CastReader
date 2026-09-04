@@ -1,0 +1,1 @@
+{"public":false,"region":"ap-shanghai","bucket":"castreader-voice-1323065328","key":"runtime-backups/20260904/cn-pre-local-core-27-cn-tts.conf","bytes":123,"sha256":"aedbeedf06b1fe31a471f325847d990ce6795d4d6b9b88d723a76244c8bfc97a","readback_sha256":"aedbeedf06b1fe31a471f325847d990ce6795d4d6b9b88d723a76244c8bfc97a","verified":true,"verifiedAt":"2026-09-04T04:06:54.843Z"}

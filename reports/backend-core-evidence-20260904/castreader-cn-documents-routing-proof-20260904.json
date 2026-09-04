@@ -1,0 +1,32 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.castreader.cn/documents?castreader_audit=cn-legacy-documents-20260904-proof-a1",
+    "auditHeader": "cn-legacy-documents-20260904-proof-a1",
+    "authenticated": false,
+    "body": null
+  },
+  "startedUTC": "2026-09-04T02:45:29.221173+00:00",
+  "status": 200,
+  "headers": {
+    "Server": "nginx/1.18.0 (Ubuntu)",
+    "Date": "Fri, 04 Sep 2026 02:45:29 GMT",
+    "Content-Type": "application/json",
+    "Transfer-Encoding": "chunked",
+    "Connection": "close",
+    "Age": "0",
+    "Cache-Control": "public, max-age=0, must-revalidate",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Strict-Transport-Security": "max-age=63072000",
+    "Vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-Matched-Path": "/documents",
+    "X-Vercel-Cache": "MISS",
+    "X-Vercel-Id": "sin1::iad1::9m8x9-1788489929563-8f1048664c96"
+  },
+  "bodyBytes": 41,
+  "bodySHA256": "b6a7a7f79364738fd987e5f07a60e29b9af5ff5c7771c84ca38f525164da3956",
+  "finishedUTC": "2026-09-04T02:45:29.838605+00:00"
+}

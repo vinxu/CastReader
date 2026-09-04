@@ -1,0 +1,5 @@
+
+> castreader-extension@1.2.36 test:voice-clone:architecture /Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-region-continuity-20260904
+> node scripts/verify-voice-clone-architecture-gate.mjs --canonical-doc /tmp/castreader-extension-canonical-voice-clone.md --base 5d335cfd674b1366b7db5e617a8f01a9098e75d0 --head 8681577c56049808823811704cec95ccb9b0fe25
+
+{"ok":true,"architectureId":"voice-clone-system-v1","backendLockState":"pinned","backendCommit":"e42b21ef2899f549f75d7a3bafda051dfed39a8c","canonicalDocumentVerified":true,"sensitive":true,"sensitivePaths":["AGENTS.md","package.json","scripts/test-safari-ios-service-routing.mjs","scripts/test-voice-clone-browser.mjs","scripts/test-voice-clone.mjs","src/core/tts-service.ts","src/core/voice-clone-service.ts","src/entrypoints/background.ts","src/entrypoints/voice-clone-auth.content.ts","src/shared/compute-region.ts","src/shared/global-quickread-routing.ts","src/shared/service-routing-contract.ts","src/ui/quickread-client.ts","wxt.config.ts"],"sensitiveCommits":["8681577c56049808823811704cec95ccb9b0fe25"],"range":"5d335cfd674b1366b7db5e617a8f01a9098e75d0..8681577c56049808823811704cec95ccb9b0fe25"}

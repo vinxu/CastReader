@@ -1,0 +1,127 @@
+{
+  "utc": "2026-09-04T02:50:42.251809+00:00",
+  "kind": "synthetic_text_cpu_frontend_only_no_model_inference",
+  "production_source": "/workspace/castreader-runtime/releases/20260903-kokoro-compatible-1236-r130",
+  "results": [
+    {
+      "case": 0,
+      "text": "This is a playback continuity diagnostic.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 1,
+      "text": "Dr. Smith paid $1,234.50 on January 2, 2024.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 2,
+      "text": "The ship sailed E.S.E. before turning north.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 3,
+      "text": "Please visit https://example.com/docs?id=2#top for details.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 4,
+      "text": "Email hello@example.com or call 555-0123.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 5,
+      "text": "The result was 3.14, or about 12.5% of the total.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 6,
+      "text": "This sentence contains a word [1] and a second footnote.[2]",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 7,
+      "text": "Water is H2O and carbon dioxide is CO2.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 8,
+      "text": "The temperature was 20°C at 8:30 a.m.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 9,
+      "text": "“Yes,” she said—then paused…",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 10,
+      "text": "Chapter IV: Science & Technology (2024–2025).",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 11,
+      "text": "Hello world 😊.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 12,
+      "text": "X is greater than Y: x > y, and a × b = c.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 13,
+      "text": "The dimension is 10×20 cm; the cost is €30.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 14,
+      "text": "The café opened on São Paulo Avenue.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 15,
+      "text": "Attention: user_name, foo/bar, and C++ examples follow.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 16,
+      "text": "It was a 5–10-minute read, i.e., a short chapter.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 17,
+      "text": "He said, “I can’t go; she won’t agree.”",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 18,
+      "text": "ISBN 978-0-306-40615-7 identifies the edition.",
+      "result": "pass",
+      "chunks": 1
+    },
+    {
+      "case": 19,
+      "text": "One two​three four.",
+      "result": "pass",
+      "chunks": 1
+    }
+  ]
+}

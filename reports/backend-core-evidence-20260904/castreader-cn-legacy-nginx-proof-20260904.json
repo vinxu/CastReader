@@ -1,0 +1,28 @@
+{
+  "generatedUTC": "2026-09-04T02:46:14.943225+00:00",
+  "window": "last 24h in active and previous Nginx logs",
+  "diagnosticMarker": [
+    {
+      "file": "/var/log/nginx/access.log",
+      "line": "<audit-client-ip-redacted> - - [04/Sep/2026:10:45:29 +0800] \"GET /documents?castreader_audit=cn-legacy-documents-20260904-proof-a1 HTTP/1.1\" 200 52 \"-\" \"CastReader-readonly-audit/1.0\""
+    }
+  ],
+  "aggregate": [
+    {
+      "path": "/documents",
+      "method": "GET",
+      "status": 200,
+      "count": 1
+    },
+    {
+      "path": "/upload",
+      "method": "GET",
+      "status": 307,
+      "count": 2
+    }
+  ],
+  "latestUTC": {
+    "/upload": "2026-09-03T20:53:59+00:00",
+    "/documents": "2026-09-04T02:45:29+00:00"
+  }
+}

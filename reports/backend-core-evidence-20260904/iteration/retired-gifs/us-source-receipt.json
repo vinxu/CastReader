@@ -1,0 +1,8 @@
+{
+  "release": "/root/castreader/routing-releases/20260904-quickread-playback-22c8326",
+  "server_sha256": "bff3ecd5a3a4f28ac26aada9ea92f6c472cda260ff0806636512701d76031c81",
+  "archive": "/tmp/castreader-quickread-continuity-20260904c/us-before-source.tar.gz",
+  "archive_bytes": 5030763,
+  "archive_sha256": "d5700b74d1239ff14aee376e37382bca42ba4d6407dbb48d0c1f9e67b18c8ed5",
+  "candidate": "/root/castreader/routing-releases/20260904-quickread-gif-retirement"
+}

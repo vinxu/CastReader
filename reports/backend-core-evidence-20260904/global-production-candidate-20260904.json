@@ -1,0 +1,300 @@
+{
+  "observedUtc": "2026-09-04T03:48:09.780468+00:00",
+  "candidate": {
+    "deploymentId": "dpl_2CmzKBRfAMhhKYiVF6DwUjnakPRn",
+    "url": "readout-dix2m05hc-castreader.vercel.app",
+    "state": "READY",
+    "target": "production",
+    "gitSha": "2d5575b6ca8c38fa4b7177bdddc2afeaf12e1ac2",
+    "functions": [
+      {
+        "path": "api/capabilities",
+        "deployedTo": [
+          "iad1"
+        ],
+        "timeout": 300,
+        "runtime": "nodejs22.x"
+      },
+      {
+        "path": "api/tts/generate",
+        "deployedTo": [
+          "iad1"
+        ],
+        "timeout": 120,
+        "runtime": "nodejs22.x"
+      },
+      {
+        "path": "api/tts/tts_and_transcribe",
+        "deployedTo": [
+          "iad1"
+        ],
+        "timeout": 120,
+        "runtime": "nodejs22.x"
+      },
+      {
+        "path": "api/voice-clone/speech",
+        "deployedTo": [
+          "iad1"
+        ],
+        "timeout": 120,
+        "runtime": "nodejs22.x"
+      },
+      {
+        "path": "api/voice-clone/voices/[voiceId]/preview",
+        "deployedTo": [
+          "iad1"
+        ],
+        "timeout": 120,
+        "runtime": "nodejs22.x"
+      },
+      {
+        "path": "api/captioned_speech",
+        "deployedTo": [
+          "iad1"
+        ],
+        "timeout": 300,
+        "runtime": "nodejs22.x"
+      },
+      {
+        "path": "api/captioned_speech_partly",
+        "deployedTo": [
+          "iad1"
+        ],
+        "timeout": 300,
+        "runtime": "nodejs22.x"
+      },
+      {
+        "path": "api/markdown-tts/generate",
+        "deployedTo": [
+          "iad1"
+        ],
+        "timeout": 300,
+        "runtime": "nodejs22.x"
+      },
+      {
+        "path": "api/quickread/compose-block",
+        "deployedTo": [
+          "iad1"
+        ],
+        "timeout": 300,
+        "runtime": "nodejs22.x"
+      }
+    ]
+  },
+  "priorProduction": {
+    "deploymentId": "dpl_HRfYUZQjRGPB2QybnKEYw9ykcZVo",
+    "gitSha": "4720b4cffda5f94469125ac0c91da495dc2420d6",
+    "preservedByMerge": true
+  },
+  "canary": [
+    {
+      "case": "capabilities",
+      "path": "/api/capabilities",
+      "startedUtc": "2026-09-04T03:45:11.982363+00:00",
+      "elapsedSeconds": 3.808,
+      "curlExit": 0,
+      "status": 200,
+      "responseBytes": 1922,
+      "headers": {
+        "x-vercel-id": "sin1::iad1::dz2zx-1788493514539-067377683baf"
+      },
+      "commitSha": "2d5575b6ca8c38fa4b7177bdddc2afeaf12e1ac2",
+      "serviceRoute": "global",
+      "workerRouteReady": true
+    },
+    {
+      "case": "preset-short",
+      "path": "/api/captioned_speech_partly",
+      "startedUtc": "2026-09-04T03:45:15.791096+00:00",
+      "elapsedSeconds": 5.596,
+      "curlExit": 0,
+      "status": 200,
+      "responseBytes": 147471,
+      "headers": {
+        "x-vercel-id": "sin1::iad1::5mwbf-1788493518295-dc21d3de7260",
+        "x-request-id": "core-regional-canary-readout-dix2m05hc-castreader-preset-short",
+        "x-castreader-upstream-region": "global",
+        "x-castreader-upstream-node": "castreader-us4090",
+        "x-castreader-upstream-source": "fallback",
+        "x-castreader-tts-timing": "word"
+      },
+      "audioBytes": 109485,
+      "audioSha256": "10865e13a3b77d1e89dfc82b0c71042ccacb5dfd05953dde341114b0640513af",
+      "audioProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "mp3",
+            "sample_rate": "24000",
+            "channels": 1
+          }
+        ],
+        "format": {
+          "duration": "6.840000"
+        }
+      },
+      "audioProbeExit": 0,
+      "timingCount": 18,
+      "remainingTextLength": 0,
+      "voiceCode": "af_heart",
+      "lastTimestamp": {
+        "word": "sentence",
+        "start_time": 5.991083333333334,
+        "end_time": 6.691083333333333
+      },
+      "meanVolumeDb": [
+        "-26.4"
+      ],
+      "maxVolumeDb": [
+        "-7.8"
+      ]
+    },
+    {
+      "case": "preset-full",
+      "path": "/api/tts/generate",
+      "startedUtc": "2026-09-04T03:45:27.902137+00:00",
+      "elapsedSeconds": 12.047,
+      "curlExit": 0,
+      "status": 200,
+      "responseBytes": 1900952,
+      "headers": {
+        "x-vercel-id": "sin1::iad1::2x6m8-1788493530261-e2e4d1fc89c6",
+        "x-request-id": "core-regional-canary-readout-dix2m05hc-castreader-preset-full",
+        "x-castreader-upstream-region": "global",
+        "x-castreader-upstream-node": "castreader-us4090",
+        "x-castreader-upstream-source": "fallback",
+        "x-castreader-tts-timing": "word"
+      },
+      "audioBytes": 1413933,
+      "audioSha256": "a06a8d491fd78977bae2c20dab9ba581d626fee438d0727340ceab7323c37829",
+      "audioProbe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "mp3",
+            "sample_rate": "24000",
+            "channels": 1
+          }
+        ],
+        "format": {
+          "duration": "88.368000"
+        }
+      },
+      "audioProbeExit": 0,
+      "timingCount": 208,
+      "remainingTextLength": 0,
+      "voiceCode": "af_heart",
+      "lastTimestamp": {
+        "word": "narration",
+        "start_time": 87.41524999999999,
+        "end_time": 88.29024999999999
+      },
+      "meanVolumeDb": [
+        "-25.9"
+      ],
+      "maxVolumeDb": [
+        "-7.1"
+      ]
+    },
+    {
+      "case": "clone-unauthenticated",
+      "path": "/api/captioned_speech_partly",
+      "startedUtc": "2026-09-04T03:45:40.117419+00:00",
+      "elapsedSeconds": 3.612,
+      "curlExit": 0,
+      "status": 401,
+      "responseBytes": 56,
+      "headers": {
+        "x-vercel-id": "sin1::iad1::w79tj-1788493542486-f50c6b1032ca",
+        "x-request-id": "core-regional-canary-readout-dix2m05hc-castreader-clone-unauthenticated"
+      },
+      "errorCode": "AUTH_REQUIRED",
+      "detail": null
+    },
+    {
+      "case": "input-limit",
+      "path": "/api/tts/tts_and_transcribe",
+      "startedUtc": "2026-09-04T03:45:43.730020+00:00",
+      "elapsedSeconds": 2.917,
+      "curlExit": 0,
+      "status": 413,
+      "responseBytes": 43,
+      "headers": {
+        "x-vercel-id": "sin1::iad1::9vrp9-1788493546327-9f1452773369"
+      },
+      "errorCode": null,
+      "detail": "input exceeds 10000 characters"
+    }
+  ],
+  "configuration": {
+    "route": "global-default",
+    "production": "production",
+    "target": "production",
+    "appName": "readout-web",
+    "tts": {
+      "present": true,
+      "masked": false,
+      "matchesExpected": true
+    },
+    "clone": {
+      "present": true,
+      "masked": true,
+      "matchesExpected": null
+    },
+    "supabaseMasked": true,
+    "envCount": 96,
+    "sensitivePlaceholders": 42
+  },
+  "limitations": [
+    "Global Supabase project/R2 bucket physical regions have not been verified through provider control plane.",
+    "worker_route_ready verifies URL/region configuration, not an authenticated end-user clone synthesis.",
+    "No live exhausted-quota principal was used; anonymous authorization and input contract were verified live, explicit quota denial was tested with unit tests.",
+    "Shared preview/restore singleflight still inherits the first request cancellation.",
+    "Timings include local CLI/protection/proxy overhead; these are not GPU generation benchmarks."
+  ],
+  "promotionPerformed": true,
+  "errorLogLines": 0,
+  "liveApiDeploymentAfterPromotion": "dpl_2CmzKBRfAMhhKYiVF6DwUjnakPRn",
+  "productionCapabilities": {
+    "status": 200,
+    "commitSha": "2d5575b6ca8c38fa4b7177bdddc2afeaf12e1ac2",
+    "serviceRoute": "global",
+    "workerRouteReady": true,
+    "vercelId": "sin1::iad1::jsdhx-1788493615282-748f3da8a40e",
+    "elapsedSeconds": 0.705
+  },
+  "productionSmoke": {
+    "status": 200,
+    "startedUtc": "2026-09-04T03:47:18.376512+00:00",
+    "elapsedSeconds": 2.462,
+    "region": "global",
+    "node": "castreader-us4090",
+    "vercelId": "sin1::iad1::gzjp4-1788493638883-29c898f129cf",
+    "requestId": "core-regional-production-20260904-post-promotion",
+    "audioBytes": 73389,
+    "audioProbe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "mp3",
+          "sample_rate": "24000",
+          "channels": 1
+        }
+      ],
+      "format": {
+        "duration": "4.584000"
+      }
+    },
+    "timingCount": 12,
+    "lastTimestamp": {
+      "word": "voice",
+      "start_time": 3.8229583333333337,
+      "end_time": 4.422958333333333
+    }
+  },
+  "sourceHeadAfterDocumentationMerge": "b973ec4ba3fefda68fcc32d6206de0b37b45c27f",
+  "documentationOnlyMergeAfterBuild": "bcbc5ce4: docs, operator audit CLI and safety tests only; no application runtime change"
+}

@@ -1,0 +1,391 @@
+{
+  "runtime_source_commit": "5728d1cbbaf1bbdc57f799cb4ed355fddac0e32f",
+  "regions": {
+    "us": {
+      "activation": {
+        "region": "us",
+        "from": "/root/castreader/routing-releases/20260904-quickread-playback-22c8326",
+        "to": "/root/castreader/routing-releases/20260904-quickread-gif-retirement",
+        "started_at": "2026-09-04T05:02:18Z",
+        "source_commit": "5728d1cbbaf1bbdc57f799cb4ed355fddac0e32f",
+        "patch_files": {
+          "server/server.mjs": "c0ac4ab91043a4c6cf0a360f722cf6c7dc8f0e6e609a2a5e2b807f6d577ae39c",
+          "server/job-assets.mjs": "c4b35c653a3d8ba8d8707efedeb5aade6d53af4cc0846345cfe57de314be40a0",
+          "tools/playback-metadata.mjs": "aca5c642b150583c22c852144a1c31bddee4ac7b5f64f4c40398b4066cb3f589",
+          "tools/generate-tts.mjs": "d66e980c815dd3e75be421509c83352a31addc3dc29c9c14dced72e6d3ae8f5e",
+          "tools/regional-routing.mjs": "bb0d81ff4f61a8809f750632efd5fa58dbc9219a06561b723ce552488a4ccbbc",
+          "server/retired-gif-assets.mjs": "1b86337b02a8645b3eab2136348313c6ad8196f84ed63d6fd19b7f9fbd285e70"
+        },
+        "idle_before": {
+          "ok": true,
+          "queue": 0,
+          "active": false,
+          "jobs_cached": 2
+        },
+        "passed": true,
+        "pid": 507570,
+        "health": {
+          "ok": true,
+          "queue": 0,
+          "active": false,
+          "jobs_cached": 0
+        },
+        "existing_sections": 5,
+        "gif_sections": [],
+        "tts_base": "https://api.castreader.ai",
+        "entitlement_configured": false,
+        "environment_sha256": null,
+        "finished_at": "2026-09-04T05:02:19Z"
+      },
+      "before_source": {
+        "release": "/root/castreader/routing-releases/20260904-quickread-playback-22c8326",
+        "server_sha256": "bff3ecd5a3a4f28ac26aada9ea92f6c472cda260ff0806636512701d76031c81",
+        "archive": "/tmp/castreader-quickread-continuity-20260904c/us-before-source.tar.gz",
+        "archive_bytes": 5030763,
+        "archive_sha256": "d5700b74d1239ff14aee376e37382bca42ba4d6407dbb48d0c1f9e67b18c8ed5",
+        "candidate": "/root/castreader/routing-releases/20260904-quickread-gif-retirement"
+      },
+      "after_source": {
+        "region": "us",
+        "release": "/root/castreader/routing-releases/20260904-quickread-gif-retirement",
+        "source_commit": "5728d1cbbaf1bbdc57f799cb4ed355fddac0e32f",
+        "archive": "/tmp/castreader-quickread-continuity-20260904c/us-after-source.tar.gz",
+        "archive_sha256": "cc44b92e75616e62a888d34ec9a4b2c62112d26368778f2177c4fb01333d66af",
+        "archive_bytes": 5031520,
+        "patch_files": {
+          "server/server.mjs": "c0ac4ab91043a4c6cf0a360f722cf6c7dc8f0e6e609a2a5e2b807f6d577ae39c",
+          "server/job-assets.mjs": "c4b35c653a3d8ba8d8707efedeb5aade6d53af4cc0846345cfe57de314be40a0",
+          "tools/playback-metadata.mjs": "aca5c642b150583c22c852144a1c31bddee4ac7b5f64f4c40398b4066cb3f589",
+          "tools/generate-tts.mjs": "d66e980c815dd3e75be421509c83352a31addc3dc29c9c14dced72e6d3ae8f5e",
+          "tools/regional-routing.mjs": "bb0d81ff4f61a8809f750632efd5fa58dbc9219a06561b723ce552488a4ccbbc",
+          "server/retired-gif-assets.mjs": "1b86337b02a8645b3eab2136348313c6ad8196f84ed63d6fd19b7f9fbd285e70"
+        },
+        "private_runtime_environment": "retained on host, unchanged, excluded from source archive"
+      },
+      "before_readback": {
+        "bucket": "castreader-tts-backups",
+        "created_at": "2026-09-04T04:39:21.065995+00:00",
+        "downloaded_bytes": 5030763,
+        "expected_bytes": 5030763,
+        "expected_files": 1,
+        "expected_objects": 1,
+        "files": [
+          {
+            "bytes": 5030763,
+            "downloaded_bytes": 5030763,
+            "name": "us-before-source.tar.gz",
+            "object_base": "runtime-releases/us/quickread-20260904-gif-retirement/before-source-d5700b74d1239ff1.tar.gz",
+            "parts": [
+              {
+                "bytes": 5030763,
+                "downloaded_bytes": 5030763,
+                "object": "runtime-releases/us/quickread-20260904-gif-retirement/before-source-d5700b74d1239ff1.tar.gz",
+                "offset": 0,
+                "readback_sha256": "d5700b74d1239ff14aee376e37382bca42ba4d6407dbb48d0c1f9e67b18c8ed5",
+                "sha256": "d5700b74d1239ff14aee376e37382bca42ba4d6407dbb48d0c1f9e67b18c8ed5",
+                "verified": true
+              }
+            ],
+            "readback_sha256": "d5700b74d1239ff14aee376e37382bca42ba4d6407dbb48d0c1f9e67b18c8ed5",
+            "sha256": "d5700b74d1239ff14aee376e37382bca42ba4d6407dbb48d0c1f9e67b18c8ed5",
+            "verified": true
+          }
+        ],
+        "plan_sha256": "6b365031ef1d585c7b914ce798b84b7dc6cddfb4a84b2de8997fa9654929b0bf",
+        "project_ref": "zqxgmqygirtpttnrvjpf",
+        "public": false,
+        "schema": "castreader.backup-readback.v1",
+        "verified": true,
+        "verified_files": 1,
+        "verified_objects": 1
+      },
+      "after_readback": {
+        "bucket": "castreader-tts-backups",
+        "created_at": "2026-09-04T05:01:19.906974+00:00",
+        "downloaded_bytes": 5031520,
+        "expected_bytes": 5031520,
+        "expected_files": 1,
+        "expected_objects": 1,
+        "files": [
+          {
+            "bytes": 5031520,
+            "downloaded_bytes": 5031520,
+            "name": "us-after-source.tar.gz",
+            "object_base": "runtime-releases/us/quickread-20260904-gif-retirement/after-source-cc44b92e75616e62.tar.gz",
+            "parts": [
+              {
+                "bytes": 5031520,
+                "downloaded_bytes": 5031520,
+                "object": "runtime-releases/us/quickread-20260904-gif-retirement/after-source-cc44b92e75616e62.tar.gz",
+                "offset": 0,
+                "readback_sha256": "cc44b92e75616e62a888d34ec9a4b2c62112d26368778f2177c4fb01333d66af",
+                "sha256": "cc44b92e75616e62a888d34ec9a4b2c62112d26368778f2177c4fb01333d66af",
+                "verified": true
+              }
+            ],
+            "readback_sha256": "cc44b92e75616e62a888d34ec9a4b2c62112d26368778f2177c4fb01333d66af",
+            "sha256": "cc44b92e75616e62a888d34ec9a4b2c62112d26368778f2177c4fb01333d66af",
+            "verified": true
+          }
+        ],
+        "plan_sha256": "fceeb3b66e6b9345561e8bd670bd4b708e5bd27968282a873dbb65cb783837ac",
+        "project_ref": "zqxgmqygirtpttnrvjpf",
+        "public": false,
+        "schema": "castreader.backup-readback.v1",
+        "verified": true,
+        "verified_files": 1,
+        "verified_objects": 1
+      },
+      "entitlement_readback": {
+        "pid": 507570,
+        "initial_env_contains_secret": false,
+        "secret_loaded_from_private_dotenv": true,
+        "endpoint": "https://castreader.ai/api/pro/entitlement",
+        "http_status": 200,
+        "consume": false,
+        "business_decision_available": true,
+        "pro": false,
+        "allowed": true
+      },
+      "receipt_publication_readback": {
+        "bucket": "castreader-tts-backups",
+        "created_at": "2026-09-04T05:06:33.519751+00:00",
+        "downloaded_bytes": 3134,
+        "expected_bytes": 3134,
+        "expected_files": 1,
+        "expected_objects": 1,
+        "files": [
+          {
+            "bytes": 3134,
+            "downloaded_bytes": 3134,
+            "name": "us-rollout-receipts.tar.gz",
+            "object_base": "runtime-releases/us/quickread-20260904-gif-retirement/receipts-8406f3eb6b771b46.tar.gz",
+            "parts": [
+              {
+                "bytes": 3134,
+                "downloaded_bytes": 3134,
+                "object": "runtime-releases/us/quickread-20260904-gif-retirement/receipts-8406f3eb6b771b46.tar.gz",
+                "offset": 0,
+                "readback_sha256": "8406f3eb6b771b46ebee4c6d4d06f6f5a65a303ad9e2e767bd3d6467cef0dac0",
+                "sha256": "8406f3eb6b771b46ebee4c6d4d06f6f5a65a303ad9e2e767bd3d6467cef0dac0",
+                "verified": true
+              }
+            ],
+            "readback_sha256": "8406f3eb6b771b46ebee4c6d4d06f6f5a65a303ad9e2e767bd3d6467cef0dac0",
+            "sha256": "8406f3eb6b771b46ebee4c6d4d06f6f5a65a303ad9e2e767bd3d6467cef0dac0",
+            "verified": true
+          }
+        ],
+        "plan_sha256": "4b4b730f0788fd06e33cfa9389439fe07e2981b384cc7d10fc5e0a0d238e3dc5",
+        "project_ref": "zqxgmqygirtpttnrvjpf",
+        "public": false,
+        "schema": "castreader.backup-readback.v1",
+        "verified": true,
+        "verified_files": 1,
+        "verified_objects": 1
+      }
+    },
+    "cn": {
+      "activation": {
+        "region": "cn",
+        "from": "/opt/castreader-quickread-cn/releases/20260904-quickread-playback-22c8326",
+        "to": "/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement",
+        "started_at": "2026-09-04T05:04:24Z",
+        "source_commit": "5728d1cbbaf1bbdc57f799cb4ed355fddac0e32f",
+        "patch_files": {
+          "server/server.mjs": "a9341081d273b902681463100e66d1a414d5a92c0dda8619cfe952ac85db3d15",
+          "server/job-assets.mjs": "c4b35c653a3d8ba8d8707efedeb5aade6d53af4cc0846345cfe57de314be40a0",
+          "tools/playback-metadata.mjs": "aca5c642b150583c22c852144a1c31bddee4ac7b5f64f4c40398b4066cb3f589",
+          "tools/generate-tts.mjs": "d66e980c815dd3e75be421509c83352a31addc3dc29c9c14dced72e6d3ae8f5e",
+          "tools/regional-routing.mjs": "bb0d81ff4f61a8809f750632efd5fa58dbc9219a06561b723ce552488a4ccbbc",
+          "server/retired-gif-assets.mjs": "1b86337b02a8645b3eab2136348313c6ad8196f84ed63d6fd19b7f9fbd285e70",
+          "tools/llm-provider.mjs": "b7581d3f3321a2bef43818b43bdcca18b45a462f35ca8a28b83d8bdbe8284dbf"
+        },
+        "idle_before": {
+          "ok": true,
+          "queue": 0,
+          "active": 0,
+          "concurrency": 3,
+          "jobs_cached": 1
+        },
+        "passed": true,
+        "pid": 1067993,
+        "health": {
+          "ok": true,
+          "queue": 0,
+          "active": 0,
+          "concurrency": 3,
+          "jobs_cached": 0
+        },
+        "existing_sections": 4,
+        "gif_sections": [],
+        "tts_base": "https://api.castreader.cn",
+        "entitlement_configured": true,
+        "environment_sha256": "7e59e30baf47089a514b9a7044a54f0bbcd2c29d5bb88dfc61debc01984ef001",
+        "finished_at": "2026-09-04T05:04:24Z"
+      },
+      "before_source": {
+        "release": "/opt/castreader-quickread-cn/releases/20260904-quickread-playback-22c8326",
+        "server_sha256": "0a3ebc45dd8fc4aafc54d83891b0b41915a95a7b61932897415248c5072a7021",
+        "archive": "/tmp/castreader-quickread-continuity-20260904c/cn-before-source.tar.gz",
+        "archive_bytes": 6787645,
+        "archive_sha256": "3823c2d3f337f69cb6b78674accc5f057825776f9d71bacf0b3fd73f8b976b0d",
+        "candidate": "/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement"
+      },
+      "after_source": {
+        "region": "cn",
+        "release": "/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement",
+        "source_commit": "5728d1cbbaf1bbdc57f799cb4ed355fddac0e32f",
+        "archive": "/tmp/castreader-quickread-continuity-20260904c/cn-after-source.tar.gz",
+        "archive_sha256": "249be82a5c80c65a999c850a449795be511877e28f3bfae97b049a23ce8c8498",
+        "archive_bytes": 6789087,
+        "patch_files": {
+          "server/server.mjs": "a9341081d273b902681463100e66d1a414d5a92c0dda8619cfe952ac85db3d15",
+          "server/job-assets.mjs": "c4b35c653a3d8ba8d8707efedeb5aade6d53af4cc0846345cfe57de314be40a0",
+          "tools/playback-metadata.mjs": "aca5c642b150583c22c852144a1c31bddee4ac7b5f64f4c40398b4066cb3f589",
+          "tools/generate-tts.mjs": "d66e980c815dd3e75be421509c83352a31addc3dc29c9c14dced72e6d3ae8f5e",
+          "tools/regional-routing.mjs": "bb0d81ff4f61a8809f750632efd5fa58dbc9219a06561b723ce552488a4ccbbc",
+          "server/retired-gif-assets.mjs": "1b86337b02a8645b3eab2136348313c6ad8196f84ed63d6fd19b7f9fbd285e70",
+          "tools/llm-provider.mjs": "b7581d3f3321a2bef43818b43bdcca18b45a462f35ca8a28b83d8bdbe8284dbf"
+        },
+        "private_runtime_environment": "Stored outside source archive; staged from the existing CN Next ledger credential and separately backed up with full Shanghai readback in cn-env-stage.json."
+      },
+      "before_readback": {
+        "public": false,
+        "region": "ap-shanghai",
+        "bucket": "castreader-voice-1323065328",
+        "key": "runtime-backups/20260904/quickread-before-3823c2d3f337f69c.tar.gz",
+        "bytes": 6787645,
+        "sha256": "3823c2d3f337f69cb6b78674accc5f057825776f9d71bacf0b3fd73f8b976b0d",
+        "readback_sha256": "3823c2d3f337f69cb6b78674accc5f057825776f9d71bacf0b3fd73f8b976b0d",
+        "verified": true,
+        "verifiedAt": "2026-09-04T04:42:26.315Z"
+      },
+      "after_readback": {
+        "public": false,
+        "region": "ap-shanghai",
+        "bucket": "castreader-voice-1323065328",
+        "key": "runtime-backups/20260904/quickread-after-249be82a5c80c65a.tar.gz",
+        "bytes": 6789087,
+        "sha256": "249be82a5c80c65a999c850a449795be511877e28f3bfae97b049a23ce8c8498",
+        "readback_sha256": "249be82a5c80c65a999c850a449795be511877e28f3bfae97b049a23ce8c8498",
+        "verified": true,
+        "verifiedAt": "2026-09-04T05:03:13.387Z"
+      },
+      "environment_stage": {
+        "source": "/etc/castreader/quickread-cn.env",
+        "candidate": "/etc/castreader/quickread-cn.entitlement-candidate-20260904.env",
+        "next_pid": 1048505,
+        "source_env_sha256": "6dd59bbe756e325c85a78213402d56104020bf72cac5145df04a2ec0a4026d34",
+        "candidate_env_sha256": "7e59e30baf47089a514b9a7044a54f0bbcd2c29d5bb88dfc61debc01984ef001",
+        "secret_synced_from_local_next": true,
+        "mode": "0600",
+        "tts_base": "https://api.castreader.cn",
+        "entitlement_url": "http://127.0.0.1:3000/api/pro/entitlement",
+        "activated": false,
+        "backups": [
+          {
+            "public": false,
+            "region": "ap-shanghai",
+            "bucket": "castreader-voice-1323065328",
+            "key": "runtime-backups/20260904/quickread-env-before-6dd59bbe756e325c85a78213402d56104020bf72cac5145df04a2ec0a4026d34.env",
+            "bytes": 432,
+            "sha256": "6dd59bbe756e325c85a78213402d56104020bf72cac5145df04a2ec0a4026d34",
+            "readback_sha256": "6dd59bbe756e325c85a78213402d56104020bf72cac5145df04a2ec0a4026d34",
+            "verified": true,
+            "remote_receipt": "/tmp/quickread-cn-before-env-cos-receipt.json"
+          },
+          {
+            "public": false,
+            "region": "ap-shanghai",
+            "bucket": "castreader-voice-1323065328",
+            "key": "runtime-backups/20260904/quickread-env-candidate-7e59e30baf47089a514b9a7044a54f0bbcd2c29d5bb88dfc61debc01984ef001.env",
+            "bytes": 581,
+            "sha256": "7e59e30baf47089a514b9a7044a54f0bbcd2c29d5bb88dfc61debc01984ef001",
+            "readback_sha256": "7e59e30baf47089a514b9a7044a54f0bbcd2c29d5bb88dfc61debc01984ef001",
+            "verified": true,
+            "remote_receipt": "/tmp/quickread-cn-candidate-env-cos-receipt.json"
+          }
+        ]
+      },
+      "entitlement_probe": {
+        "candidate_pid": 1066340,
+        "candidate_start_time": "232475755",
+        "subjects": [
+          "cn-quota-probe-eba160ce703445208e656fcee09c8654-allow",
+          "cn-quota-probe-eba160ce703445208e656fcee09c8654-deny"
+        ],
+        "job_ids": [
+          "qr_mtmhj6zx_817909"
+        ],
+        "jobs_directory": "/var/lib/castreader-quickread-cn/.url-video-agent/jobs",
+        "checks": [
+          {
+            "name": "local_ledger_read_only_allow",
+            "used": 0,
+            "maximum": 3
+          },
+          {
+            "name": "invalid_or_unauthorized_has_no_consumption",
+            "status": 400,
+            "used": 0
+          },
+          {
+            "name": "invalid_or_unauthorized_has_no_consumption",
+            "status": 401,
+            "used": 0
+          },
+          {
+            "name": "one_real_extract_plan",
+            "status": 200,
+            "used": 1,
+            "job_id": "qr_mtmhj6zx_817909"
+          },
+          {
+            "name": "cached_extract_block_has_no_consumption",
+            "status": 200,
+            "used": 1
+          },
+          {
+            "name": "compose_block_has_no_consumption",
+            "status": 200,
+            "used": 1
+          },
+          {
+            "name": "real_local_business_denial",
+            "status": 402,
+            "used": 3,
+            "upgrade_url": "https://castreader.cn/pricing"
+          }
+        ],
+        "started_at": "2026-09-04T05:00:02Z",
+        "passed": true,
+        "cleanup": {
+          "usage_rows_deleted": 2,
+          "job_files_deleted": [
+            "/var/lib/castreader-quickread-cn/.url-video-agent/jobs/qr_mtmhj6zx_817909.json",
+            "/var/lib/castreader-quickread-cn/.url-video-agent/jobs/quickread-state/qr_mtmhj6zx_817909.json"
+          ],
+          "candidate_stopped": true
+        }
+      },
+      "receipt_publication_readback": {
+        "public": false,
+        "region": "ap-shanghai",
+        "bucket": "castreader-voice-1323065328",
+        "key": "runtime-backups/20260904/quickread-receipts-104e930c795f7a07.tar.gz",
+        "bytes": 4319,
+        "sha256": "104e930c795f7a07a21ba0d07cdf325d4d39765f9755629eca3d710206fd6283",
+        "readback_sha256": "104e930c795f7a07a21ba0d07cdf325d4d39765f9755629eca3d710206fd6283",
+        "verified": true,
+        "verifiedAt": "2026-09-04T05:06:30.866Z"
+      }
+    }
+  },
+  "notes": [
+    "Actual per-region server patches preserve US serial and CN concurrency=3 implementations.",
+    "CN ledger credential is the existing local Next credential; it was not rotated.",
+    "US activation entitlement_configured=false measured the Linux initial environment only. The service loads its existing private .env; the separate real same-region ledger readback passed with consume=false.",
+    "CN isolated first start exited with EADDRINUSE because staged PORT overrode 17777. The candidate override was moved after stage parsing; no production replacement happened in this attempt."
+  ]
+}

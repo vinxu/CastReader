@@ -1,0 +1,6 @@
+{"health": {"ok": true, "queue": 0, "active": 0, "concurrency": 3, "jobs_cached": 1}}
+{"unauthenticated": 401}
+{"full_pipeline_status": 200, "elapsed_s": 11.333, "job_id": "qr_mtmfhb5p_b8a2a5", "event_count": 3}
+{"audio_status": 200, "sections": 5}
+{"compose_invalid_timing_status": 200, "elapsed_s": 0.002, "section_id": null}
+{"gif_status": 200, "gif_sections": []}

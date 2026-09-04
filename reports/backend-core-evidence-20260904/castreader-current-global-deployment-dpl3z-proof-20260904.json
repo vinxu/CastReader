@@ -1,0 +1,51 @@
+{
+  "observedAtUTC": "2026-09-04T02:51:28.186245+00:00",
+  "commands": [
+    [
+      "vercel",
+      "api",
+      "/v13/deployments/dpl_3zYvnPzXRo2hX2tp5AhmQV17z5Wy",
+      "--raw"
+    ],
+    [
+      "vercel",
+      "inspect",
+      "dpl_3zYvnPzXRo2hX2tp5AhmQV17z5Wy",
+      "--json"
+    ]
+  ],
+  "deployment": {
+    "id": "dpl_3zYvnPzXRo2hX2tp5AhmQV17z5Wy",
+    "url": "readout-5o9dg4c07-castreader.vercel.app",
+    "target": "production",
+    "readyState": "READY",
+    "regions": [
+      "iad1"
+    ],
+    "createdAt": 1788454788394
+  },
+  "gitCommitSha": "2be1e9e9e9a9be69d772a556295a85e6e4117983",
+  "gitCommitRef": "codex/tts-playback-priority-global",
+  "functions": [
+    {
+      "path": "/documents",
+      "type": "lambda",
+      "deployedTo": [
+        "iad1"
+      ],
+      "timeout": 300,
+      "runtime": "nodejs22.x",
+      "memorySize": 2048
+    },
+    {
+      "path": "/api/captioned_speech_partly",
+      "type": "lambda",
+      "deployedTo": [
+        "iad1"
+      ],
+      "timeout": 300,
+      "runtime": "nodejs22.x",
+      "memorySize": 2048
+    }
+  ]
+}

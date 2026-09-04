@@ -1,0 +1,36 @@
+{
+  "source": "/etc/castreader/quickread-cn.env",
+  "candidate": "/etc/castreader/quickread-cn.entitlement-candidate-20260904.env",
+  "next_pid": 1048505,
+  "source_env_sha256": "6dd59bbe756e325c85a78213402d56104020bf72cac5145df04a2ec0a4026d34",
+  "candidate_env_sha256": "7e59e30baf47089a514b9a7044a54f0bbcd2c29d5bb88dfc61debc01984ef001",
+  "secret_synced_from_local_next": true,
+  "mode": "0600",
+  "tts_base": "https://api.castreader.cn",
+  "entitlement_url": "http://127.0.0.1:3000/api/pro/entitlement",
+  "activated": false,
+  "backups": [
+    {
+      "public": false,
+      "region": "ap-shanghai",
+      "bucket": "castreader-voice-1323065328",
+      "key": "runtime-backups/20260904/quickread-env-before-6dd59bbe756e325c85a78213402d56104020bf72cac5145df04a2ec0a4026d34.env",
+      "bytes": 432,
+      "sha256": "6dd59bbe756e325c85a78213402d56104020bf72cac5145df04a2ec0a4026d34",
+      "readback_sha256": "6dd59bbe756e325c85a78213402d56104020bf72cac5145df04a2ec0a4026d34",
+      "verified": true,
+      "remote_receipt": "/tmp/quickread-cn-before-env-cos-receipt.json"
+    },
+    {
+      "public": false,
+      "region": "ap-shanghai",
+      "bucket": "castreader-voice-1323065328",
+      "key": "runtime-backups/20260904/quickread-env-candidate-7e59e30baf47089a514b9a7044a54f0bbcd2c29d5bb88dfc61debc01984ef001.env",
+      "bytes": 581,
+      "sha256": "7e59e30baf47089a514b9a7044a54f0bbcd2c29d5bb88dfc61debc01984ef001",
+      "readback_sha256": "7e59e30baf47089a514b9a7044a54f0bbcd2c29d5bb88dfc61debc01984ef001",
+      "verified": true,
+      "remote_receipt": "/tmp/quickread-cn-candidate-env-cos-receipt.json"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "query": [
+    "vercel",
+    "logs",
+    "--request-id",
+    "9m8x9-1788489929563-8f1048664c96",
+    "--since",
+    "2026-09-04T02:45:20Z",
+    "--until",
+    "2026-09-04T02:45:40Z",
+    "--json"
+  ],
+  "cnProbeEvidence": "/tmp/castreader-cn-documents-routing-proof-20260904.json",
+  "rows": [
+    {
+      "id": "9m8x9-1788489929563-8f1048664c96",
+      "timestamp": 1788489929563,
+      "deploymentId": "dpl_3zYvnPzXRo2hX2tp5AhmQV17z5Wy",
+      "domain": "api.castreader.ai",
+      "source": "serverless",
+      "requestMethod": "GET",
+      "requestPath": "/documents",
+      "responseStatusCode": 200,
+      "environment": "production",
+      "cache": "MISS"
+    }
+  ]
+}

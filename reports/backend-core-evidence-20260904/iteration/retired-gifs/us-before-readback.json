@@ -1,0 +1,37 @@
+{
+  "bucket": "castreader-tts-backups",
+  "created_at": "2026-09-04T04:39:21.065995+00:00",
+  "downloaded_bytes": 5030763,
+  "expected_bytes": 5030763,
+  "expected_files": 1,
+  "expected_objects": 1,
+  "files": [
+    {
+      "bytes": 5030763,
+      "downloaded_bytes": 5030763,
+      "name": "us-before-source.tar.gz",
+      "object_base": "runtime-releases/us/quickread-20260904-gif-retirement/before-source-d5700b74d1239ff1.tar.gz",
+      "parts": [
+        {
+          "bytes": 5030763,
+          "downloaded_bytes": 5030763,
+          "object": "runtime-releases/us/quickread-20260904-gif-retirement/before-source-d5700b74d1239ff1.tar.gz",
+          "offset": 0,
+          "readback_sha256": "d5700b74d1239ff14aee376e37382bca42ba4d6407dbb48d0c1f9e67b18c8ed5",
+          "sha256": "d5700b74d1239ff14aee376e37382bca42ba4d6407dbb48d0c1f9e67b18c8ed5",
+          "verified": true
+        }
+      ],
+      "readback_sha256": "d5700b74d1239ff14aee376e37382bca42ba4d6407dbb48d0c1f9e67b18c8ed5",
+      "sha256": "d5700b74d1239ff14aee376e37382bca42ba4d6407dbb48d0c1f9e67b18c8ed5",
+      "verified": true
+    }
+  ],
+  "plan_sha256": "6b365031ef1d585c7b914ce798b84b7dc6cddfb4a84b2de8997fa9654929b0bf",
+  "project_ref": "zqxgmqygirtpttnrvjpf",
+  "public": false,
+  "schema": "castreader.backup-readback.v1",
+  "verified": true,
+  "verified_files": 1,
+  "verified_objects": 1
+}

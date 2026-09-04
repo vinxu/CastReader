@@ -1,0 +1,53 @@
+✔ CN release rejects a domestic ingress with an overseas upstream before submitting text (868.029334ms)
+✔ schema gate recognizes strict consent checks deparsed by PostgreSQL 14 and newer releases (0.480167ms)
+✔ activation admits only the exact four CN guest bridge locations (115.644583ms)
+✔ activation rejects a legacy clone TTS location without its own trusted public-origin envelope (97.485083ms)
+✔ draft schema gate is conditional and validates the isolated draft contract (1120.808875ms)
+✔ runtime draft admission requires a usable capability key or encryption fallback (1094.415375ms)
+✔ Phase-0 mismatch blocks CN activation before any host mutation (1084.65825ms)
+✔ runtime schema mismatch restores old symlink, nginx, and every drop-in without leaking the database URL (2895.694042ms)
+✔ runtime authority mismatch still rolls back before the database schema gate (2331.903ms)
+✔ activation refuses to mutate a host without a verified rollback target (70.153417ms)
+✔ matching runtime authority and public health commit the new CN release (2646.653291ms)
+✔ CN QuickRead ingress matches the 32MB extension/backend request ceiling (0.611458ms)
+✔ CN QuickRead bearer capability paths are excluded from access logs (0.227333ms)
+✔ CN API vhost overwrites the complete trusted public-origin envelope (0.373833ms)
+✔ CN legacy captioned clone route preserves the complete public-origin envelope (0.210625ms)
+✔ CN Voice Gift Web bridge has the exact four-operation allowlist (0.648791ms)
+✔ dedicated quickread.castreader.cn TLS vhost reaches only authenticated handlers (0.308708ms)
+✔ quickread ingress splits by x-api-key without moving the mobile session path (0.122208ms)
+✔ only the api-key branch gets CORS headers (0.215833ms)
+✔ dedicated QuickRead vhost has its own ACME/HTTPS redirect server (0.274041ms)
+✔ the gateway hosts no ad landing page (0.160709ms)
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] routing state unavailable; retaining last-known-good revision
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] routing state unavailable; retaining last-known-good revision
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] persisted routing state invalid; using fallback
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] routing state unavailable; retaining last-known-good revision
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] persisted routing state invalid; using fallback
+✔ global Vercel functions stay in the verified US East runtime region (2.007625ms)
+✔ global rejects foreign, unverified, redirected and disguised upstream configuration (0.347916ms)
+✔ a global ingress cannot be redirected into the CN deployment by a bad region setting (14.660166ms)
+✔ an unapproved global DB/cache target becomes the pinned same-region fallback (2.656292ms)
+✔ global admin switch and rollback reject foreign candidates before any probe or write (4.733291ms)
+✔ CN uses the approved domestic endpoint before every DB/cache/fallback path (0.420458ms)
+✔ CN rejects missing, overseas, malformed and disguised endpoints without stale reuse (1.420416ms)
+✔ CN ingress cannot silently become global when its runtime route is missing or wrong (1.416958ms)
+✔ CN admin switch and rollback are rejected before probing or writing any target (0.686833ms)
+✔ the deployed CN systemd configuration uses the exact approved full endpoint (0.303333ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12635.944292

@@ -1,0 +1,443 @@
+✔ CN release rejects a domestic ingress with an overseas upstream before submitting text (913.303708ms)
+✔ schema gate recognizes strict consent checks deparsed by PostgreSQL 14 and newer releases (0.59375ms)
+✔ activation admits only the exact four CN guest bridge locations (144.75225ms)
+✔ activation rejects a legacy clone TTS location without its own trusted public-origin envelope (136.832541ms)
+✔ draft schema gate is conditional and validates the isolated draft contract (1156.208084ms)
+✔ runtime draft admission requires a usable capability key or encryption fallback (1093.390291ms)
+✔ Phase-0 mismatch blocks CN activation before any host mutation (1070.2985ms)
+✔ runtime schema mismatch restores old symlink, nginx, and every drop-in without leaking the database URL (3140.942125ms)
+✔ runtime authority mismatch still rolls back before the database schema gate (2680.999667ms)
+✔ activation refuses to mutate a host without a verified rollback target (64.157041ms)
+✔ matching runtime authority and public health commit the new CN release (2809.872666ms)
+✔ CN QuickRead ingress matches the 32MB extension/backend request ceiling (4.010667ms)
+✔ CN QuickRead bearer capability paths are excluded from access logs (0.236958ms)
+✔ CN API vhost overwrites the complete trusted public-origin envelope (0.944125ms)
+✔ CN legacy captioned clone route preserves the complete public-origin envelope (1.245625ms)
+✔ CN Voice Gift Web bridge has the exact four-operation allowlist (0.728042ms)
+✔ dedicated quickread.castreader.cn TLS vhost reaches only authenticated handlers (1.206959ms)
+✔ quickread ingress splits by x-api-key without moving the mobile session path (0.163708ms)
+✔ only the api-key branch gets CORS headers (0.278ms)
+✔ dedicated QuickRead vhost has its own ACME/HTTPS redirect server (0.187292ms)
+✔ the gateway hosts no ad landing page (0.137791ms)
+✔ CN ignores stale overseas Redis configuration and keeps its local cache fallback (0.882709ms)
+✔ ad cohort time always uses the receiver clock, never device occurred_at (1.515ms)
+✔ missing, malformed, or future receiver stamps fail closed (0.09225ms)
+✔ 200 + attribution:true → attributed (0.075791ms)
+✔ 200 + attribution:false → organic (0.047375ms)
+✔ 400 → invalid（终态，伪 token） (0.043917ms)
+✔ 404 与 5xx → retry（数据未就绪/瞬时错误同路） (0.056208ms)
+✔ 过期判定：24h 内 false，超 24h true (0.07225ms)
+✔ 归因字段平铺：数值 id 转字符串，clickDate 解析，缺失为 null (1.510292ms)
+✔ resolveToken：网络异常 → retry；200 传递 json (20.302875ms)
+﹣ real Postgres live dual-write: original source wins retries; ledger failure rolls back raw (0.818833ms) # SKIP
+[analytics-buffer] malformed batch, retrying row-by-row, code=22P02
+[analytics-buffer] dropping poison row event=poison_legacy code=22P02
+[analytics-buffer] DB row retained for retry, code=ETIMEDOUT
+[analytics-buffer] DB flush retained for retry, code=25006
+[analytics-buffer] malformed batch, retrying row-by-row, code=22P02
+[analytics-buffer] DB row retained for retry, code=25006
+[analytics-buffer] DB flush retained for retry, code=42501
+[analytics-buffer] malformed batch, retrying row-by-row, code=22P02
+[analytics-buffer] DB row retained for retry, code=42501
+[analytics-buffer] DB flush retained for retry, code=42P01
+[analytics-buffer] malformed batch, retrying row-by-row, code=22P02
+[analytics-buffer] DB row retained for retry, code=42P01
+[analytics-buffer] DB flush retained for retry, code=57014
+[analytics-buffer] malformed batch, retrying row-by-row, code=22P02
+[analytics-buffer] DB row retained for retry, code=57014
+[analytics-buffer] DB flush retained for retry, code=UNKNOWN
+[analytics-buffer] malformed batch, retrying row-by-row, code=22P02
+[analytics-buffer] DB row retained for retry, code=UNKNOWN
+✔ schema keeps the partial unique event_id index used by retry idempotency (0.844416ms)
+✔ validated production mobile events enter the compact server-clocked funnel ledger (14.51775ms)
+✔ reliable-list primitive upgrades old raw rows and preserves the ID after lease recovery (0.558583ms)
+✔ trims only the definitive claim prefix when row fallback hits a transient error (1.416292ms)
+✔ retains and retries the entire claim on infrastructure/unknown error 25006 (0.2435ms)
+✔ retains the untouched tail on row-level infrastructure error 25006 (0.204542ms)
+✔ retains and retries the entire claim on infrastructure/unknown error 42501 (0.145125ms)
+✔ retains the untouched tail on row-level infrastructure error 42501 (0.159458ms)
+✔ retains and retries the entire claim on infrastructure/unknown error 42P01 (0.16925ms)
+✔ retains the untouched tail on row-level infrastructure error 42P01 (0.181083ms)
+✔ retains and retries the entire claim on infrastructure/unknown error 57014 (0.13875ms)
+✔ retains the untouched tail on row-level infrastructure error 57014 (0.10875ms)
+✔ retains and retries the entire claim on infrastructure/unknown error undefined (0.102042ms)
+✔ retains the untouched tail on row-level infrastructure error undefined (0.078916ms)
+✔ counts conflict-skipped rows as processed but not inserted (0.093875ms)
+✔ concurrent drains claim disjoint batches and never acknowledge each other (0.157708ms)
+✔ crash after insert safely replays both mobile and legacy rows with stable IDs (0.361458ms)
+✔ exposes all canonical shared mobile events (1.02875ms)
+✔ accepts the Android onboarding contract (3.002375ms)
+✔ accepts existing Android paywall gate and trial disclosure events (0.286291ms)
+✔ accepts iOS and Android review events (0.150459ms)
+✔ accepts iOS Apple Ads attribution events (0.166291ms)
+✔ accepts iOS growth-loop activation and conversion events (0.227917ms)
+✔ preserves Android first-open and Play Install Referrer events (0.195375ms)
+✔ landing touch bridge is Play-only, attributed-only, and canonical UUID (0.20825ms)
+✔ accepts Android stable composite event IDs and China-direct route metadata (0.20575ms)
+✔ rejects malformed growth-loop and cross-platform attribution events (0.311125ms)
+✔ rejects unsafe Android storefront and billing compatibility shapes (0.202791ms)
+✔ rejects malformed Apple Ads attribution events (0.200834ms)
+✔ accepts Kindle storefront on content, read, and explain events (0.250375ms)
+✔ accepts current bound-library and Android share-sheet sources (0.262125ms)
+✔ runtime definitions and every value domain match the canonical JSON (8.836541ms)
+✔ rejects every canonical privacy-forbidden property before storage (0.275375ms)
+✔ accepts privacy-safe library connection and content-input state fixtures (0.588792ms)
+✔ e56d234 legacy error fixtures are accepted only after privacy-safe normalization (0.343083ms)
+✔ released hostless/custom/unicode navigation shapes are hashed only for the exact tuple (0.199916ms)
+✔ e56d234 Kindle blocked destinations accept only registrable DNS and store a hash (0.388583ms)
+✔ accepts StoreKit transaction environment without mixing distributions (0.0755ms)
+✔ accepts privacy-safe iOS YouTube transcript events (0.5345ms)
+✔ accepts privacy-safe Android YouTube read source without expanding public reasons (0.116834ms)
+✔ rejects unsafe or unbounded iOS YouTube transcript properties (1.555125ms)
+✔ keeps YouTube legacy names in the API events allowlist (2.110292ms)
+✔ keeps canonical required envelope fields and value domains in sync (0.4075ms)
+✔ persists client region/route but treats request ingress as authority (0.183916ms)
+✔ accepts queued unknown/legacy routes but rejects forged values (0.109125ms)
+✔ keeps explicit rejection reasons for invalid mobile events (0.239666ms)
+✔ repair windows are bounded UTC dates and never silently normalize bad dates (4.89275ms)
+﹣ real Postgres: audit, receiver-clock backfill, replay, catalog completeness, conflict protection (0.100875ms) # SKIP
+✔ every registered mobile event has a ledger projection (catalog cannot drift) (2.214667ms)
+✔ purchase success, cancellation, error, entitlement and import are retained (0.114958ms)
+✔ sandbox, unknown/mismatched events, invalid IDs and clocks fail closed (0.090917ms)
+✔ projection is retry-stable and freezes the server receiver clock (0.466459ms)
+✔ growth-cohort-direct.mts never changes shared production session settings (0.609416ms)
+✔ growth-funnel-audit.mts never changes shared production session settings (0.121917ms)
+✔ landing input keeps only controlled campaign dimensions (0.754375ms)
+✔ fixed campaign authority is the only source of marketing country (0.135875ms)
+✔ Google Play redirect carries an opaque touch and controlled referrer (0.213917ms)
+✔ redirect destination is fixed and cannot become an open redirect (0.390666ms)
+✔ destination and platform must agree (0.063167ms)
+✔ generic Android destination is resolved by the first-party hostname (0.122625ms)
+✔ only settled UTC days are attestable, including leap/invalid date validation (1.755834ms)
+✔ money is decimal-exact and never silently assumes a currency (0.254625ms)
+✔ all pages must reconcile with provider totals before filtering to US/GB (0.318042ms)
+✔ provider sub-fen rounding is not a missing-data incident, but a one-fen or count mismatch is (0.11375ms)
+✔ campaign app, org, name and country must all match the fixed scope (1.351875ms)
+✔ retry reuses the archived source clock and immutable coverage identity (0.81775ms)
+✔ observed trials are not hidden by 72h maturity; retention uses its own mature denominator (5.866791ms)
+✔ ledger gaps and unresolved trial ownership block rates and economics, not silently zero (0.477458ms)
+✔ EPUB/PDF activation is counted once while empty or late imports do not qualify (0.137917ms)
+✔ fresh first-open receiver time wins and a restored first-open disables session fallback (0.137083ms)
+✔ legacy session remains visible as a compatibility anchor (0.062292ms)
+✔ 72h bind requires a successful sync and an explicitly nonempty shelf (0.063417ms)
+✔ query parsing is bounded and validates acquisition dimensions (0.553083ms)
+✔ complete mature cross-platform facts can pass the scale gate (0.145459ms)
+✔ diagnostic rates stay unknown until the fixed 72h window matures (0.135375ms)
+✔ attribution coverage stays UNKNOWN before D+2 instead of reporting a false P0 (2.467459ms)
+✔ D+2 waiting remains explicit even while downstream imports are incomplete (0.215416ms)
+✔ sub-50% attribution becomes P0 only after the D+2 denominator matures (0.111292ms)
+✔ attribution above the provider install total is blocked as a scope mismatch (0.07025ms)
+✔ product assignment/version slices never inherit whole-campaign spend (0.071792ms)
+✔ required build audits a whole campaign cohort without discarding spend (0.05825ms)
+✔ missing proceeds remains UNKNOWN and adds an explicit blocker (0.061625ms)
+✔ even one compatibility session anchor blocks scale fail-closed (0.082458ms)
+✔ one fact row never proves complete spend, finance, or cost imports (0.064875ms)
+✔ verified complete cost coverage allows a legitimate zero-cost cohort (0.051167ms)
+✔ coverage is the gap-free union of adjacent UTC days (0.147459ms)
+✔ cost completeness is independent of install login rate and fails on unmatched facts (0.09675ms)
+✔ an explicit cost install id prevents user fallback double attribution (0.061208ms)
+✔ anonymous-to-user link rate is a product metric while every paid user must link (0.083042ms)
+✔ provider revocation/refund wins over a stale paid order status (0.046542ms)
+✔ refunded-only authoritative orders still require financial coverage (0.076875ms)
+✔ mature weeks must be calendar-consecutive (0.036208ms)
+✔ a strong week cannot average away the previous complete week failure (0.092334ms)
+✔ landing-touch-only Android attribution uses server dimensions and conflicts fail closed (0.074625ms)
+✔ growth admin auth is independent and fails closed when unconfigured (12.218375ms)
+✔ growth admin auth requires an exact Bearer token and responses are no-store (0.960333ms)
+﹣ buffered first app-session is immediately assignable, while upgrades and retries stay frozen (1.113625ms) # SKIP
+✔ renders the exact funnel and never invents missing LTV (2.96375ms)
+✔ empty denominators remain UNKNOWN (0.189292ms)
+✔ never reconstructs a conversion masked by the authoritative quality gate (0.150166ms)
+✔ kill switch is fail-closed until both enable flag and cutover exist (1.921625ms)
+✔ quota plan caps concurrent sequential consumption at the five-minute grant (0.131583ms)
+✔ legacy event replay preserves its original snapshot after later usage (0.184708ms)
+✔ concurrent reinstall ids serialize on stable device plus canonical account (0.09225ms)
+✔ pre-cutover legacy assignment remains frozen after reinstall (0.077792ms)
+✔ legacy stable device keeps daily quota when another device has growth (0.076708ms)
+✔ parses only a complete bounded install assignment request (0.32275ms)
+✔ enrolls only post-cutover US installs on the minimum build (0.309792ms)
+✔ release gates are platform-specific for submitted iOS 46 and Android 45 (0.100417ms)
+✔ cost import hashes source event IDs and retains cohort identities (2.69425ms)
+✔ cost import requires identity and rejects unsafe or extra data (0.396417ms)
+✔ same cost event with changed amount conflicts in one payload (0.216667ms)
+✔ parses a UTC-scoped spend completeness attestation (2.166875ms)
+✔ accepts zero-cost complete exports without requiring a fake fact row (0.198375ms)
+✔ accepts provider-scoped financial coverage and signed net proceeds (0.333333ms)
+✔ rejects partial, future, non-UTC, malformed, or privacy-expanding claims (0.17025ms)
+✔ financial import hashes raw transaction IDs and verifies net proceeds FX (3.018208ms)
+✔ refunds retain negative contribution instead of becoming missing data (0.489125ms)
+✔ financial import rejects sign, conversion, unsafe transaction, and extra fields (1.41175ms)
+✔ same transaction fact with different economics conflicts in one payload (0.218708ms)
+✔ spend import is deterministic and verifies the explicit FX conversion (2.908042ms)
+✔ same semantic row from another file keeps one idempotency key (0.202833ms)
+✔ spend import rejects inconsistent money, unsafe dimensions, and extra fields (0.344125ms)
+✔ duplicate semantic rows with different facts fail closed (0.168792ms)
+✔ normalizes the signed growth identity payload without accepting user id (1.004083ms)
+✔ submitted iOS identity payload may omit platform until receiver inference (0.125125ms)
+✔ rejects malformed identifiers and unbounded metadata (0.262833ms)
+✔ freezes one explicit or receiver-verified platform and rejects drift (0.092875ms)
+✔ first-seen never accepts a client occurrence time (0.092167ms)
+✔ receiver-stamped persisted history keeps an upgraded install old (0.062542ms)
+✔ unclassified persisted history fails closed instead of trusting its timestamp (0.060625ms)
+✔ future or malformed receiver evidence also fails closed when a row exists (1.545208ms)
+✔ exact daily replay returns the original authoritative batch snapshot (0.789416ms)
+✔ event replay rejects owner, quota, payload, analytics, and policy conflicts (0.309667ms)
+✔ growth snapshot requires and echoes two-tier grant authority (0.134208ms)
+✔ scale gate requires spend, maturity, every funnel threshold, and CAC <= ¥263 (1.599209ms)
+✔ trusted funnel campaigns are fixed to approved US and GB campaigns (0.094209ms)
+✔ trusted report rejects an implicit or pre-cutover cohort (2.085959ms)
+✔ paid CAC waits until the entire keyword cohort row is D+10 mature (0.459416ms)
+✔ coverage defaults to UNKNOWN and validates the 0..1 boundary (0.142458ms)
+✔ coverage reports P0 and incomplete states without collapsing reasons (0.080083ms)
+✔ unlinked renewal resolves only through one unambiguous period owner (0.078208ms)
+✔ pre-existing subscription renewal cannot become an ad conversion (0.060291ms)
+✔ US full price requires exact v2 price, USD, and USA storefront (0.211ms)
+✔ US legacy-SKU trial or payment is a P0 leakage hard gate (0.178208ms)
+✔ the operating targets imply the paid CAC ceiling (0.595208ms)
+✔ install CPA uses the provider install total without changing product denominators (0.083334ms)
+✔ scale requires CAC <= 263 and contribution LTV strictly above CAC (0.130709ms)
+✔ missing spend, contribution, maturity, and sample size fail closed (0.079125ms)
+✔ negative contribution remains an observed loss and blocks unit economics (0.066375ms)
+✔ every conversion denominator is explicit and cannot be exceeded (0.577125ms)
+✔ web campaign parser keeps controlled dimensions and drops click IDs (1.48175ms)
+✔ redirect builder only emits first-party controlled values (0.304833ms)
+✔ unsafe landing paths and malformed touch IDs fail to the safe defaults (0.15875ms)
+✔ audio ranges preserve AVPlayer prefix, suffix and open-ended reads (6.880125ms)
+✔ CN signed assets reject foreign origins, traversal, signature alteration and clone keys (5.042167ms)
+✔ CN COS is pinned to Shanghai without global acceleration (0.322167ms)
+✔ production CN upload readiness requires local PostgreSQL and no Upstash (0.169833ms)
+[tts-gateway] regional routing rejected {
+  reason: 'CN TTS upstream is missing or is not the approved domestic endpoint'
+}
+[tts-upstream] routing state unavailable; using fallback
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'zh',
+  voice: 'zf_001',
+  inputLength: 18,
+  timestampCount: null,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: 'af_heart',
+  inputLength: 54,
+  timestampCount: 1,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: 'af_heart',
+  inputLength: 17,
+  timestampCount: 3,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: null,
+  inputLength: 12,
+  timestampCount: null,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: null,
+  inputLength: 12,
+  timestampCount: null,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: null,
+  inputLength: 12,
+  timestampCount: null,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: null,
+  inputLength: 12,
+  timestampCount: null,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: null,
+  inputLength: 12,
+  timestampCount: 1,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: null,
+  inputLength: 12,
+  timestampCount: 1,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: null,
+  inputLength: 12,
+  timestampCount: 1,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: null,
+  inputLength: 12,
+  timestampCount: 1,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: null,
+  inputLength: 12,
+  timestampCount: 1,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: null,
+  inputLength: 12,
+  timestampCount: 2,
+  upstreamRequestId: null
+}
+✔ CN preset synthesis reaches only the domestic endpoint and never follows redirects (2020.172667ms)
+✔ legacy preset language inference accepts only unambiguous voice prefixes (0.342917ms)
+✔ read payload infers only missing legacy languages and preserves explicit clients (25.64425ms)
+✔ sentence partition keeps decimals intact and preserves original whitespace (6.465042ms)
+✔ sentence partition protects titles, people, places and dotted initialisms (0.323625ms)
+✔ sentence partition protects domains, email, URLs, versions, IPs and IDNs (2.697584ms)
+✔ sentence partition handles punctuation runs, closing quotes and scripts (0.535ms)
+✔ sentence partition keeps quoted abbreviations and German ordinals together (0.23025ms)
+✔ sentence partition is lossless across whitespace and Unicode boundaries (0.252209ms)
+✔ English batching enforces 74 words and 900 UTF-16 code units (129.632375ms)
+✔ read payload sends decimal text upstream without inserted spaces (0.738167ms)
+✔ numeric webpage citations are removed only from the upstream synthesis copy (0.2485ms)
+✔ English timestamp coverage rejects a valid-looking prefix response (2.919292ms)
+✔ English timestamp coverage accepts Kokoro number expansion without weakening lexical tails (0.086916ms)
+✔ Wikipedia citations cannot make a preset request return prefix-only audio (2.32575ms)
+✔ legacy Chinese preset requests bypass the English-only coverage guard (0.512958ms)
+✔ uncertain word coverage preserves audio and falls back to sentence highlighting (0.329959ms)
+✔ Kindle dotted compass abbreviation cannot interrupt otherwise playable audio (0.404292ms)
+✔ absent or malformed timing never turns successful audio into a playback error (1.835709ms)
+✔ punctuation-only preset requests return a compatible silent MP3 (0.122167ms)
+✔ punctuation-only cloned requests never reach the authenticated GPU path (0.075083ms)
+✔ punctuation-only partial responses preserve their continuation (0.079791ms)
+✔ symbols and letters are not treated as punctuation-only (0.274083ms)
+✔ cached audio and continuation survive missing, failed and malformed timing (15.684125ms)
+✔ a stalled or unavailable database cache is a bounded miss (5.374583ms)
+✔ newly generated audio retains text continuation without requiring a cache URL (0.212167ms)
+✔ reliable cached word timing remains available (0.403167ms)
+✔ cross-region cached audio is a cache miss and never fetches its timing (0.13075ms)
+✔ same-region audio survives foreign timing metadata without following redirects (0.226584ms)
+✔ sentence partition keeps decimals intact and preserves original whitespace (13.792625ms)
+✔ sentence partition protects titles, people, places and dotted initialisms (0.361875ms)
+✔ sentence partition protects domains, email, URLs, versions, IPs and IDNs (6.478792ms)
+✔ sentence partition handles punctuation runs, closing quotes and scripts (0.359083ms)
+✔ sentence partition keeps quoted abbreviations and German ordinals together (0.197292ms)
+✔ sentence partition is lossless across whitespace and Unicode boundaries (0.200042ms)
+✔ English batching enforces 74 words and 900 UTF-16 code units (131.58375ms)
+[tts-upstream] routing state unavailable; using fallback
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: 'af_sarah',
+  inputLength: 2699,
+  timestampCount: 0,
+  upstreamRequestId: null
+}
+[tts-gateway] word timing unavailable; continuing audio {
+  language: 'en',
+  voice: 'af_sarah',
+  inputLength: 2699,
+  timestampCount: 0,
+  upstreamRequestId: null
+}
+✔ legacy whole-text tools send the entire input to their own regional node (1017.082ms)
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] routing state unavailable; retaining last-known-good revision
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] routing state unavailable; retaining last-known-good revision
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] persisted routing state invalid; using fallback
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] routing state unavailable; retaining last-known-good revision
+[tts-upstream] rejected unapproved target; using pinned global node
+[tts-upstream] persisted routing state invalid; using fallback
+✔ global Vercel functions stay in the verified US East runtime region (0.912375ms)
+✔ global rejects foreign, unverified, redirected and disguised upstream configuration (0.300708ms)
+✔ a global ingress cannot be redirected into the CN deployment by a bad region setting (10.158792ms)
+✔ an unapproved global DB/cache target becomes the pinned same-region fallback (1.139541ms)
+✔ global admin switch and rollback reject foreign candidates before any probe or write (2.804917ms)
+✔ CN uses the approved domestic endpoint before every DB/cache/fallback path (0.40925ms)
+✔ CN rejects missing, overseas, malformed and disguised endpoints without stale reuse (0.413209ms)
+✔ CN ingress cannot silently become global when its runtime route is missing or wrong (0.620458ms)
+✔ CN admin switch and rollback are rejected before probing or writing any target (0.6525ms)
+✔ the deployed CN systemd configuration uses the exact approved full endpoint (0.213042ms)
+✔ reader origin must be explicit, allowlisted, and non-recursive (1.084334ms)
+✔ async compatibility proxy forwards only validated legacy fields (2.962709ms)
+✔ async compatibility rejects unknown fields and mismatched object keys (1.226708ms)
+✔ released async wire forwards book.epub without inventing a gateway 400 (0.54ms)
+✔ released async wire forwards paper.pdf without inventing a gateway 400 (0.466583ms)
+✔ released async wire forwards text_1720000000.125.txt without inventing a gateway 400 (0.468292ms)
+✔ released async wire forwards camera.jpg without inventing a gateway 400 (0.577542ms)
+✔ released async wire forwards photo.jpeg without inventing a gateway 400 (0.519917ms)
+✔ released async wire forwards scan.png without inventing a gateway 400 (0.388625ms)
+✔ released async wire forwards fallback_1720000000.125.unknown without inventing a gateway 400 (0.3275ms)
+✔ released async wire forwards fallback_without_extension without inventing a gateway 400 (0.294917ms)
+✔ released async wire forwards _leading_underscore.data without inventing a gateway 400 (0.259792ms)
+✔ released async wire forwards .hidden.data without inventing a gateway 400 (0.243459ms)
+✔ released async wire forwards -leading-dash.data without inventing a gateway 400 (0.19025ms)
+✔ released async wire forwards chapter..backup.data without inventing a gateway 400 (0.204542ms)
+✔ released async wire forwards 扫描📚（最终）！.data without inventing a gateway 400 (0.37225ms)
+✔ legacy unknown-extension fixture stays basename-bound and rejects path traversal (0.404167ms)
+✔ legacy filename safety follows basename and UTF-8 byte limits, not ASCII shape (0.812459ms)
+✔ compatibility proxy rejects HTML success pages instead of fooling clients (0.27925ms)
+✔ sync compatibility proxy enforces file contract and forwards JSON (5.989375ms)
+✔ human GET /upload redirects to the existing localized page (0.242792ms)
+✔ CN upload page redirect uses its public origin behind standalone Nginx (0.101375ms)
+✔ mobile notify derives canonical upstream identity on global (1.0115ms)
+✔ mobile notify derives canonical upstream identity on cn (0.392584ms)
+✔ mobile notify rejects a valid prefix copied across routes (0.2885ms)
+✔ mobile notify rejects client-supplied user_id instead of trusting it (0.339375ms)
+✔ STS configuration is explicit and never defaults long-lived credentials (1.113167ms)
+✔ production issuance fails closed without distributed rate limiting (0.141708ms)
+✔ legacy and mobile prefixes are isolated UUID namespaces (0.227541ms)
+✔ COS policy has one prefix, only upload actions, and a 20MB ceiling (0.179875ms)
+✔ wire response contains temporary credentials but never the master secret (0.125417ms)
+[upload/sts] legacy credential issuance failed
+✔ legacy GET preserves the released anonymous response shape (2.087167ms)
+✔ legacy issuance is rate limited before any credential work (0.429041ms)
+✔ legacy STS ignores spoofed XFF and fails closed without trusted ingress IP (0.430167ms)
+✔ missing long-lived env fails closed without invoking STS (0.516541ms)
+✔ mobile GET requires cms principal before deriving its route prefix (0.754916ms)
+✔ mobile GET binds the issued prefix to canonical principal and ingress route (0.333291ms)
+✔ voice-clone route defaults safely to global and recognizes only explicit CN (0.473708ms)
+✔ contract headers make region and compatibility version observable (0.112667ms)
+✔ capability matrix keeps Web and extension global-only (0.670625ms)
+✔ capability manifest prefers the immutable build commit identity (0.104208ms)
+✔ CN minimal Voice Gift requires its independent schema and release flags (0.09275ms)
+✔ enabled CN capability advertises only create, inspect, library and submit (0.175333ms)
+✔ disabled CN capability stays CN-shaped and exposes no routes (0.1105ms)
+✔ public worker readiness reports exact regional configuration without revealing its URL (0.277292ms)
+✔ default retry budget covers a measured warm GPU restart (0.490542ms)
+✔ retries transient worker responses and returns the recovery (15.074667ms)
+✔ does not retry permanent worker responses (0.241959ms)
+✔ does not retry a deterministic generated-audio rejection (0.344458ms)
+✔ does not retry a deterministic output-text mismatch (0.185291ms)
+✔ retries an ambiguous transport error (2.525792ms)
+✔ returns the final transient response after the retry budget (1.485083ms)
+✔ retries a broken 200 audio body or cut-off JSON before accepting synthesis (2.089292ms)
+✔ clone workers are bound to the deployment region before sending references or text (0.73975ms)
+✔ all clone worker operations reject HTTP redirects (0.269875ms)
+ℹ tests 292
+ℹ suites 0
+ℹ pass 289
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 3
+ℹ todo 0
+ℹ duration_ms 13556.16825

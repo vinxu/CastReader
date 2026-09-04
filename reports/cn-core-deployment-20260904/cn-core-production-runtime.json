@@ -1,0 +1,17 @@
+{
+  "verifiedAt": "2026-09-04T04:08:09.000955+00:00",
+  "manifest": {
+    "releaseId": "release-20260904120513",
+    "sourceCommit": "62386e902cb7201919e9680e56c82c8627b47110",
+    "contract": "voice-clone-v3"
+  },
+  "nodePid": 1048505,
+  "route": "cn",
+  "ttsUpstream": "http://127.0.0.1:18880/dev/captioned_speech",
+  "cosRegion": "ap-shanghai",
+  "cosEndpointConfigured": false,
+  "globalNginxReferences": 0,
+  "ttsTunnelActive": true,
+  "cloneTunnelActive": true,
+  "redisSourcePolicy": "CN getRedis early-null before any Upstash initialization; analytics falls back to local PostgreSQL"
+}

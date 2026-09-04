@@ -1,0 +1,119 @@
+{
+  "startedAt": "2026-09-04T04:07:19.329Z",
+  "candidate": "62386e902cb7201919e9680e56c82c8627b47110",
+  "checks": [
+    {
+      "name": "active-runtime",
+      "sourceCommit": "62386e902cb7201919e9680e56c82c8627b47110",
+      "releaseId": "release-20260904120513",
+      "ttsRoute": "http://127.0.0.1:18880/dev/captioned_speech",
+      "serviceRoute": "cn"
+    },
+    {
+      "name": "public-preset-route",
+      "status": 200,
+      "region": "cn",
+      "node": "castreader-cn4090",
+      "source": "cn-environment"
+    },
+    {
+      "name": "mobile-sts-no-session",
+      "status": 401,
+      "elapsedMs": 42
+    },
+    {
+      "name": "mobile-sts-foreign-session",
+      "status": 401,
+      "elapsedMs": 26
+    },
+    {
+      "name": "legacy-sts",
+      "status": 200,
+      "region": "ap-shanghai",
+      "accelerate": false,
+      "elapsedMs": 161
+    },
+    {
+      "name": "legacy-notify",
+      "status": 200,
+      "processing": "pending",
+      "elapsedMs": 233
+    },
+    {
+      "name": "legacy-converted-markdown",
+      "status": 200,
+      "assetHost": "api.castreader.cn",
+      "wordCount": 25,
+      "chapterCount": 2,
+      "headStatus": 200,
+      "hasFinalSentence": true
+    },
+    {
+      "name": "mobile-sts",
+      "status": 200,
+      "region": "ap-shanghai",
+      "accelerate": false,
+      "elapsedMs": 49
+    },
+    {
+      "name": "mobile-notify",
+      "status": 200,
+      "processing": "pending",
+      "elapsedMs": 120
+    },
+    {
+      "name": "mobile-converted-markdown",
+      "status": 200,
+      "assetHost": "api.castreader.cn",
+      "wordCount": 15,
+      "chapterCount": 1,
+      "headStatus": 200,
+      "hasFinalSentence": true
+    },
+    {
+      "name": "upload-page-redirect",
+      "status": 307,
+      "locationHost": "api.castreader.cn"
+    },
+    {
+      "name": "legacy-local-list",
+      "status": 200,
+      "count": 2,
+      "vercelHeader": false
+    },
+    {
+      "name": "markdown-speech",
+      "status": 200,
+      "audioBytes": 71084,
+      "timestamps": 12,
+      "elapsedMs": 1191
+    },
+    {
+      "name": "private-cos-audio-cache",
+      "assetHost": "api.castreader.cn",
+      "rangeStatus": 206,
+      "rangeBytes": 128
+    },
+    {
+      "name": "/api/tts/generate",
+      "status": 200,
+      "elapsedMs": 1047
+    },
+    {
+      "name": "/api/tts/tts_and_transcribe",
+      "status": 200,
+      "elapsedMs": 814
+    },
+    {
+      "name": "delete-revokes-document-capability",
+      "deleteStatus": 200,
+      "assetStatus": 404
+    },
+    {
+      "name": "foreign-markdown-rejected-before-fetch",
+      "status": 403
+    }
+  ],
+  "success": true,
+  "finishedAt": "2026-09-04T04:07:26.230Z"
+}

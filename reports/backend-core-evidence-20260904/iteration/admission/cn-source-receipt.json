@@ -1,0 +1,8 @@
+{
+  "release": "/opt/castreader-quickread-cn/releases/20260904-quickread-playback-cc18dc4",
+  "server_sha256": "31b8a169a76f72f0dac6bc02270c62fbe86e2eb428a1a5f3a3a9286ccc2a956a",
+  "archive": "/tmp/castreader-quickread-continuity-20260904b/cn-before-source.tar.gz",
+  "archive_bytes": 6788208,
+  "archive_sha256": "40894738c9cd3ee105cad59870d4e3e4253fd477aa9a1c0473dcb01c0848843f",
+  "candidate": "/opt/castreader-quickread-cn/releases/20260904-quickread-playback-22c8326"
+}

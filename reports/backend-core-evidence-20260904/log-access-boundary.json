@@ -1,0 +1,23 @@
+{
+  "us": {
+    "worker_stdout": "/dev/stdout -> supervisor pipe; no regular per-process TTS log recovered",
+    "vastLogRequest": "tool returned a download URL, then 30 waiting results without log content",
+    "rootDownloadAttempt": {
+      "httpStatus": 403,
+      "urlOmitted": true
+    },
+    "conclusion": "No internal cause stack recovered for the 26 observed public-gateway HTTP 500 requests"
+  },
+  "cn": {
+    "read": "last 16 MB of watchdog.log",
+    "targetErrorMatches": 0,
+    "timeWindow": "not established",
+    "conclusion": "Cannot infer no historical errors from this sample"
+  },
+  "syntheticFrontendProbe": {
+    "cases": 20,
+    "passed": 20,
+    "method": "same-version frontend in independent CPU process",
+    "conclusion": "No natural failing example found in these 20 synthetic inputs"
+  }
+}

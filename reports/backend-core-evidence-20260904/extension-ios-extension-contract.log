@@ -1,0 +1,5 @@
+
+> castreader-extension@1.2.36 test:safari:extension-routing /Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-region-continuity-20260904
+> node scripts/test-safari-ios-service-routing.mjs --extension-only
+
+Safari extension runtime and built resources: PASS (native iOS app integration not included).

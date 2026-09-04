@@ -1,0 +1,39 @@
+[
+  {
+    "url": "https://api.castreader.cn/api/markdown-tts/generate",
+    "method": "HEAD",
+    "startedUTC": "2026-09-04T02:46:33.878731+00:00",
+    "status": 404,
+    "headers": {
+      "Server": "nginx/1.18.0 (Ubuntu)",
+      "Date": "Fri, 04 Sep 2026 02:46:34 GMT",
+      "Content-Type": "text/html"
+    },
+    "finishedUTC": "2026-09-04T02:46:34.223398+00:00"
+  },
+  {
+    "url": "https://api.castreader.cn/api/tts/generate",
+    "method": "HEAD",
+    "startedUTC": "2026-09-04T02:46:34.223411+00:00",
+    "status": 404,
+    "headers": {
+      "Server": "nginx/1.18.0 (Ubuntu)",
+      "Date": "Fri, 04 Sep 2026 02:46:34 GMT",
+      "Content-Type": "text/html"
+    },
+    "finishedUTC": "2026-09-04T02:46:34.751614+00:00"
+  },
+  {
+    "url": "https://quickread.castreader.cn/api/quickread",
+    "method": "HEAD",
+    "startedUTC": "2026-09-04T02:46:34.751626+00:00",
+    "status": 301,
+    "headers": {
+      "Server": "nginx/1.18.0 (Ubuntu)",
+      "Date": "Fri, 04 Sep 2026 02:46:37 GMT",
+      "Content-Type": "text/html",
+      "Location": "https://quickread.castreader.cn/api/quickread/"
+    },
+    "finishedUTC": "2026-09-04T02:46:37.163339+00:00"
+  }
+]

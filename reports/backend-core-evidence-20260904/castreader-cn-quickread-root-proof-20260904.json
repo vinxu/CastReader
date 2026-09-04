@@ -1,0 +1,100 @@
+[
+  {
+    "url": "https://quickread.castreader.cn/api/quickread",
+    "method": "HEAD",
+    "redirectPolicy": "do not follow",
+    "xApiKey": "absent",
+    "startedUTC": "2026-09-04T02:47:20.240480+00:00",
+    "status": 301,
+    "headers": {
+      "Server": "nginx/1.18.0 (Ubuntu)",
+      "Date": "Fri, 04 Sep 2026 02:47:20 GMT",
+      "Content-Type": "text/html",
+      "Location": "https://quickread.castreader.cn/api/quickread/",
+      "X-Accel-Buffering": "no"
+    },
+    "finishedUTC": "2026-09-04T02:47:20.360879+00:00"
+  },
+  {
+    "url": "https://quickread.castreader.cn/api/quickread/",
+    "method": "HEAD",
+    "redirectPolicy": "do not follow",
+    "xApiKey": "absent",
+    "startedUTC": "2026-09-04T02:47:20.360893+00:00",
+    "status": 308,
+    "headers": {
+      "Server": "nginx/1.18.0 (Ubuntu)",
+      "Date": "Fri, 04 Sep 2026 02:47:20 GMT",
+      "location": "/api/quickread",
+      "X-Accel-Buffering": "no"
+    },
+    "finishedUTC": "2026-09-04T02:47:20.393225+00:00"
+  },
+  {
+    "url": "https://quickread.castreader.cn/api/quickread/",
+    "method": "HEAD",
+    "redirectPolicy": "do not follow",
+    "xApiKey": "dummy routing marker, not a credential",
+    "startedUTC": "2026-09-04T02:47:20.393238+00:00",
+    "status": 404,
+    "headers": {
+      "Server": "nginx/1.18.0 (Ubuntu)",
+      "Date": "Fri, 04 Sep 2026 02:47:20 GMT",
+      "Content-Type": "application/json",
+      "X-Accel-Buffering": "no"
+    },
+    "finishedUTC": "2026-09-04T02:47:20.427308+00:00"
+  },
+  {
+    "url": "https://quickread.castreader.cn/api/quickread",
+    "method": "GET",
+    "redirectPolicy": "do not follow",
+    "xApiKey": "absent",
+    "startedUTC": "2026-09-04T02:47:52.475981+00:00",
+    "status": 301,
+    "bodyBytes": 178,
+    "bodySHA256": "2e04a18ff185ba5b16f762a0538339bc4049aceaef9738edd43af77d2ceb788b",
+    "headers": {
+      "Server": "nginx/1.18.0 (Ubuntu)",
+      "Date": "Fri, 04 Sep 2026 02:47:52 GMT",
+      "Content-Type": "text/html",
+      "Location": "https://quickread.castreader.cn/api/quickread/",
+      "X-Accel-Buffering": "no"
+    },
+    "finishedUTC": "2026-09-04T02:47:52.543304+00:00"
+  },
+  {
+    "url": "https://quickread.castreader.cn/api/quickread/",
+    "method": "GET",
+    "redirectPolicy": "do not follow",
+    "xApiKey": "absent",
+    "startedUTC": "2026-09-04T02:47:52.543316+00:00",
+    "status": 308,
+    "bodyBytes": 14,
+    "bodySHA256": "49c83a8ba821dbd154649936a30051d97d4873756c37e368cc55238030cceba6",
+    "headers": {
+      "Server": "nginx/1.18.0 (Ubuntu)",
+      "Date": "Fri, 04 Sep 2026 02:47:52 GMT",
+      "location": "/api/quickread",
+      "X-Accel-Buffering": "no"
+    },
+    "finishedUTC": "2026-09-04T02:47:52.578208+00:00"
+  },
+  {
+    "url": "https://quickread.castreader.cn/api/quickread/",
+    "method": "GET",
+    "redirectPolicy": "do not follow",
+    "xApiKey": "dummy routing marker, not a credential",
+    "startedUTC": "2026-09-04T02:47:52.578219+00:00",
+    "status": 404,
+    "bodyBytes": 43,
+    "bodySHA256": "fd0474231e48790cc80d25aba6a7e0f0e28f057166ff3458e89812b07e89d324",
+    "headers": {
+      "Server": "nginx/1.18.0 (Ubuntu)",
+      "Date": "Fri, 04 Sep 2026 02:47:52 GMT",
+      "Content-Type": "application/json",
+      "X-Accel-Buffering": "no"
+    },
+    "finishedUTC": "2026-09-04T02:47:52.608365+00:00"
+  }
+]

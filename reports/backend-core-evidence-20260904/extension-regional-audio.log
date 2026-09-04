@@ -1,0 +1,59 @@
+
+> castreader-extension@1.2.36 test:regional-audio /Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-region-continuity-20260904
+> node scripts/test-regional-tts-audio.mjs
+
+[TTS] ========== TTS Request Start ==========
+[TTS] URL: https://api.castreader.ai/api/captioned_speech_partly
+[TTS] Request metadata: {
+  model: 'kokoro',
+  inputLength: 13,
+  language: 'en',
+  speed: 1.25,
+  hasVoice: true
+}
+[TTS] Base URL: https://api.castreader.ai (default: https://api.castreader.cn )
+[TTS] Attempt 1: Response status=200, ok=true, headers= { 'content-type': 'text/plain;charset=UTF-8' }
+[TTS] Success: {
+  audioUrlLength: 39,
+  timestampsCount: 0,
+  duration: 1,
+  durationSource: 'response',
+  hasProcessedText: true,
+  hasUnprocessedText: false,
+  attempt: 1
+}
+[Route] ✓ tts region=global host=api.castreader.ai 12ms /api/captioned_speech_partly 13 字 flow=-
+[TTS] ========== TTS Request Start ==========
+[TTS] URL: https://api.castreader.ai/api/captioned_speech_partly
+[TTS] Request metadata: {
+  model: 'kokoro',
+  inputLength: 13,
+  language: 'en',
+  speed: 1.25,
+  hasVoice: true
+}
+[TTS] Base URL: https://api.castreader.ai (default: https://api.castreader.cn )
+[TTS] Attempt 1: Response status=200, ok=true, headers= { 'content-type': 'text/plain;charset=UTF-8' }
+[TTS] Success: {
+  audioUrlLength: 39,
+  timestampsCount: 0,
+  duration: 1,
+  durationSource: 'response',
+  hasProcessedText: true,
+  hasUnprocessedText: false,
+  attempt: 1
+}
+[Route] ✓ tts region=global host=api.castreader.ai 1ms /api/captioned_speech_partly 13 字 flow=-
+[TTS] ========== TTS Request Start ==========
+[TTS] URL: https://api.castreader.ai/api/captioned_speech_partly
+[TTS] Request metadata: {
+  model: 'kokoro',
+  inputLength: 13,
+  language: 'en',
+  speed: 1.25,
+  hasVoice: true
+}
+[TTS] Base URL: https://api.castreader.ai (default: https://api.castreader.cn )
+[TTS] Attempt 1: Response status=200, ok=true, headers= { 'content-type': 'text/plain;charset=UTF-8' }
+[Route] ✗ tts region=global host=api.castreader.ai 0ms 失败 parse：Invalid TTS audio origin
+Regional TTS transport and inline-audio/cache independence: PASS

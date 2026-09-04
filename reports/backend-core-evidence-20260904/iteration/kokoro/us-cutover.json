@@ -1,0 +1,56 @@
+{
+  "region": "us",
+  "started_at": "2026-09-04T04:07:45.041907+00:00",
+  "from": "/workspace/castreader-runtime/releases/20260903-kokoro-compatible-1236-r130",
+  "to": "/workspace/castreader-runtime/releases/20260904-kokoro-playback-us-r131b",
+  "old_process": {
+    "pid": 1154859,
+    "start_ticks": "528080070",
+    "cwd": "/workspace/castreader-runtime/releases/20260903-kokoro-compatible-1236-r130",
+    "argv_sha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83"
+  },
+  "protected_before": [
+    {
+      "pid": 568834,
+      "start_ticks": "524136804",
+      "cwd": "/workspace/castreader-clone",
+      "argv_sha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e"
+    },
+    {
+      "pid": 4136837,
+      "start_ticks": "519185503",
+      "cwd": "/workspace/nari-qwen3-tts-clean",
+      "argv_sha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2"
+    }
+  ],
+  "overlay_sha256": "d0004420327dbe4c014b0b4dd9f84c4eb864b2c269115a9fab8232849d0976d8",
+  "backup_sha256": "87a48922d396bdde0b457fb292d9f63c1f96722a9a05e49686e738f01f302633",
+  "passed": true,
+  "current": "/workspace/castreader-runtime/releases/20260904-kokoro-playback-us-r131b",
+  "new_process": {
+    "pid": 1158018,
+    "start_ticks": "528101142",
+    "cwd": "/workspace/castreader-runtime/releases/20260904-kokoro-playback-us-r131b",
+    "argv_sha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83"
+  },
+  "audio_bytes": 51885,
+  "decoded_samples": 77760,
+  "audio_sha256": "556eb68e86eb3a2870eb6e87d7917d59e41f12c8f121bbc4b03899b577eb8cc8",
+  "protected_after": [
+    {
+      "pid": 568834,
+      "start_ticks": "524136804",
+      "cwd": "/workspace/castreader-clone",
+      "argv_sha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e"
+    },
+    {
+      "pid": 4136837,
+      "start_ticks": "519185503",
+      "cwd": "/workspace/nari-qwen3-tts-clean",
+      "argv_sha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2"
+    }
+  ],
+  "protected_pids_unchanged": true,
+  "diagnostic_path": "/workspace/castreader-runtime/logs/playback.jsonl",
+  "finished_at": "2026-09-04T04:08:10.259467+00:00"
+}

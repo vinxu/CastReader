@@ -1,0 +1,132 @@
+{
+  "verifiedAt": "2026-09-04T05:01:36.327820+00:00",
+  "sourceBaseCommit": "14b884bb29b4b335a5607b948183304c25e001d4",
+  "buildFlags": [
+    "-Dorg.gradle.jvmargs=-Xmx6g -Dfile.encoding=UTF-8",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    "-PdebugUsesReleaseSigning",
+    "--max-workers=1"
+  ],
+  "productionChanged": false,
+  "devicePlaybackTested": false,
+  "artifacts": [
+    {
+      "flavor": "global",
+      "apk": "/Users/xuxuheng/Documents/.worktrees/castreader-android-region-continuity/app/build/outputs/apk/global/debug/app-global-debug.apk",
+      "sha256": "0d83d2e138752d585702223af820f7304a35bc6d6924c5f35c63778166aee193",
+      "bytes": 102607279,
+      "modifiedAt": "2026-09-04T04:57:44.698588+00:00",
+      "signerCertificateSha256": "381a825d76ed0f3a9914dc04fcc22e7d15f1136c6d11fe43b0c5a4926f608a65",
+      "signatureVerified": true,
+      "zipAlignmentVerified": true,
+      "appRegion": "global",
+      "quickReadKeyPresent": true,
+      "playBillingPermissionPresent": true,
+      "metadata": [
+        "package: name='com.same.castreader' versionCode='51' versionName='1.0.44' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'",
+        "sdkVersion:'24'",
+        "targetSdkVersion:'36'",
+        "application-debuggable"
+      ],
+      "testCount": 51,
+      "tests": [
+        {
+          "name": "com.same.castreader.NarrationContinuationTest",
+          "tests": "18",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "timestamp": "2026-09-04T04:56:50.934Z"
+        },
+        {
+          "name": "com.same.castreader.data.remote.QuickReadRegionalRequestTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "timestamp": "2026-09-04T04:56:51.167Z"
+        },
+        {
+          "name": "com.same.castreader.TtsTimestampPolicyTest",
+          "tests": "29",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "timestamp": "2026-09-04T04:56:51.084Z"
+        },
+        {
+          "name": "com.same.castreader.data.remote.PresetTtsFallbackPolicyTest",
+          "tests": "1",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "timestamp": "2026-09-04T04:56:51.166Z"
+        }
+      ]
+    },
+    {
+      "flavor": "cn",
+      "apk": "/Users/xuxuheng/Documents/.worktrees/castreader-android-region-continuity/app/build/outputs/apk/cn/debug/app-cn-debug.apk",
+      "sha256": "eb254ad3fc4c9b01df9b637a4a898eafeacd4f4a79b284f4db5f3f45e826b21e",
+      "bytes": 102056041,
+      "modifiedAt": "2026-09-04T05:00:27.806526+00:00",
+      "signerCertificateSha256": "381a825d76ed0f3a9914dc04fcc22e7d15f1136c6d11fe43b0c5a4926f608a65",
+      "signatureVerified": true,
+      "zipAlignmentVerified": true,
+      "appRegion": "cn",
+      "quickReadKeyPresent": false,
+      "playBillingPermissionPresent": false,
+      "metadata": [
+        "package: name='com.same.castreader' versionCode='51' versionName='1.0.44' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'",
+        "sdkVersion:'24'",
+        "targetSdkVersion:'36'",
+        "application-debuggable"
+      ],
+      "testCount": 54,
+      "tests": [
+        {
+          "name": "com.same.castreader.NarrationContinuationTest",
+          "tests": "18",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "timestamp": "2026-09-04T04:59:58.971Z"
+        },
+        {
+          "name": "com.same.castreader.data.remote.QuickReadRegionalRequestTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "timestamp": "2026-09-04T04:59:59.181Z"
+        },
+        {
+          "name": "com.same.castreader.TtsTimestampPolicyTest",
+          "tests": "29",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "timestamp": "2026-09-04T04:59:59.100Z"
+        },
+        {
+          "name": "com.same.castreader.data.remote.PresetTtsFallbackPolicyTest",
+          "tests": "1",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "timestamp": "2026-09-04T04:59:59.180Z"
+        },
+        {
+          "name": "com.same.castreader.ChinaTtsRoutingTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "skipped": "0",
+          "timestamp": "2026-09-04T04:59:58.956Z"
+        }
+      ]
+    }
+  ],
+  "sourceCommit": "91e3040a3809814a63550b07394de88767507e30",
+  "worktreeClean": true
+}

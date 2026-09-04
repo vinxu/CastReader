@@ -1,0 +1,15 @@
+{
+  "cleanup": {
+    "usage_rows_deleted": 2,
+    "job_files_deleted": [
+      "/var/lib/castreader-quickread-cn/.url-video-agent/jobs/qr_mtmhj6zx_817909.json",
+      "/var/lib/castreader-quickread-cn/.url-video-agent/jobs/quickread-state/qr_mtmhj6zx_817909.json"
+    ],
+    "candidate_stopped": true
+  },
+  "candidate_pid": 1066340,
+  "job_ids": [
+    "qr_mtmhj6zx_817909"
+  ],
+  "verified_at": "2026-09-04T05:05:11.175634+00:00"
+}

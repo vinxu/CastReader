@@ -1,0 +1,8 @@
+{
+  "release": "/opt/castreader-quickread-cn/releases/20260904-quickread-playback-22c8326",
+  "server_sha256": "0a3ebc45dd8fc4aafc54d83891b0b41915a95a7b61932897415248c5072a7021",
+  "archive": "/tmp/castreader-quickread-continuity-20260904c/cn-before-source.tar.gz",
+  "archive_bytes": 6787645,
+  "archive_sha256": "3823c2d3f337f69cb6b78674accc5f057825776f9d71bacf0b3fd73f8b976b0d",
+  "candidate": "/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement"
+}

@@ -1,0 +1,80 @@
+{
+  "sourceCommit": "8681577c56049808823811704cec95ccb9b0fe25",
+  "sourceBase": "5d335cfd674b1366b7db5e617a8f01a9098e75d0",
+  "branch": "codex/extension-region-continuity-20260904",
+  "runtimeChanges": [
+    "ordinary Global-only routing",
+    "native iOS frozen region preserved",
+    "no geographic probe or remote QuickRead config",
+    "Global anonymous QuickRead compatibility preserved",
+    "no CN credential bundled",
+    "same-region request/asset redirect boundaries",
+    "inline audio preferred over optional cache URL"
+  ],
+  "validation": {
+    "typecheck": "passed",
+    "cloneIdentityAssertions": 69,
+    "cloneContractAssertions": 327,
+    "uploadReference": "passed",
+    "voiceGiftAssertions": 78,
+    "voiceBrowser": "passed",
+    "chromiumAssertions": 393,
+    "chromiumScenarios": 46,
+    "pageLoadingAssertions": 9,
+    "regionalHTTPAndAudioTransport": "passed",
+    "safariExtensionRuntimeAndBuiltResources": "passed",
+    "releaseStaticBlockers": 0,
+    "releaseStaticWarnings": 1,
+    "warningAssessment": "Inbox local UI preview only, requires absent extension storage and explicit preview query",
+    "architecturePinnedDocumentAndCommitTrailer": "passed",
+    "globalKeyPositiveInjection": "passed",
+    "malformedKeyNegativePackaging": "passed"
+  },
+  "artifacts": [
+    {
+      "artifact": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-region-continuity-20260904/.output/chrome-mv3",
+      "fileCount": 64,
+      "bytes": 13864556,
+      "treeSha256": "7d579c745114b072267929dafeceee800931c7ab9c5c9df3163a40737eaa6365",
+      "globalKeyCompiled": true,
+      "cnKeyCompiled": false,
+      "placeholderCount": 0,
+      "legacyConfigProbeOrEndpointCount": 0,
+      "cnGatewayPermissions": [],
+      "version": "1.2.36"
+    },
+    {
+      "artifact": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-region-continuity-20260904/.output/safari-macos-mv2",
+      "fileCount": 62,
+      "bytes": 13845088,
+      "treeSha256": "d5685ccaad5c8636a0ac352d82d3b22c058bdc15a2a9c02ceeb2cd1ae3330488",
+      "globalKeyCompiled": true,
+      "cnKeyCompiled": false,
+      "placeholderCount": 0,
+      "legacyConfigProbeOrEndpointCount": 0,
+      "cnGatewayPermissions": [],
+      "version": "1.2.36"
+    },
+    {
+      "artifact": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-region-continuity-20260904/.output/safari-ios-mv2",
+      "fileCount": 61,
+      "bytes": 13860926,
+      "treeSha256": "b69d6f20d5ee9588ff980567b6c2ec42b70c69a8c7944cee9dcce916f7ec8f34",
+      "globalKeyCompiled": false,
+      "cnKeyCompiled": false,
+      "placeholderCount": 0,
+      "legacyConfigProbeOrEndpointCount": 0,
+      "cnGatewayPermissions": [
+        "*://api.castreader.cn/*",
+        "*://quickread.castreader.cn/*"
+      ],
+      "version": "1.2.36"
+    }
+  ],
+  "limits": [
+    "Current native iOS repository has no Safari bridge/target/resources; default full native integration check remains unmet. Standalone extension-runtime check passes.",
+    "No extension store or native app submission.",
+    "No user account or user recording was used.",
+    "Physical Global Supabase/R2 and external LLM region remains pending provider control-plane evidence."
+  ]
+}

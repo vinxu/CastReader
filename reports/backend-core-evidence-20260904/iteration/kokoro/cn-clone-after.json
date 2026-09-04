@@ -1,0 +1,55 @@
+{
+  "restored_and_new": [
+    {
+      "voice_id": "vc_r131_cn_synthetic_1788495739",
+      "language": "en",
+      "http": 200,
+      "seconds": 0.039093442261219025,
+      "audio_bytes": 29229,
+      "decoded_samples": 87552,
+      "sample_rate": 24000,
+      "audio_seconds": 3.648,
+      "audio_sha256": "e8f3d83a1a755d393d3e006aafabe9df2be1be06c3106f3bc9d44f39b20df1d6"
+    },
+    {
+      "voice_id": "vc_r131_cn_synthetic_1788495739",
+      "language": "zh",
+      "http": 200,
+      "seconds": 0.6362678706645966,
+      "audio_bytes": 42669,
+      "decoded_samples": 127872,
+      "sample_rate": 24000,
+      "audio_seconds": 5.328,
+      "audio_sha256": "10bb4d95c0a7a747b1696fa763f723f52b2b68d837bd444a29b280f6dca58d67"
+    },
+    {
+      "voice_id": "vc_r131_cn_synthetic_1788495739_after",
+      "language": "en",
+      "http": 200,
+      "seconds": 0.449112381786108,
+      "audio_bytes": 29229,
+      "decoded_samples": 87552,
+      "sample_rate": 24000,
+      "audio_seconds": 3.648,
+      "audio_sha256": "e8f3d83a1a755d393d3e006aafabe9df2be1be06c3106f3bc9d44f39b20df1d6"
+    }
+  ],
+  "creation": {
+    "http": 200,
+    "seconds": 6.482102185487747,
+    "deepfilter_applied": true,
+    "deepfilter_passes": 1,
+    "prompt_builds": 1
+  },
+  "cleanup": [
+    {
+      "voice_id": "vc_r131_cn_synthetic_1788495739",
+      "http": 200
+    },
+    {
+      "voice_id": "vc_r131_cn_synthetic_1788495739_after",
+      "http": 200
+    }
+  ],
+  "source": "Kokoro synthetic fixture; no customer reference accessed"
+}

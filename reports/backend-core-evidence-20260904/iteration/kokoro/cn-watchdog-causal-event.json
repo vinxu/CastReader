@@ -1,0 +1,30 @@
+{
+  "source": "screen47543 watchdog only",
+  "events": [
+    "curl: (28) Operation timed out after 2001 milliseconds with 0 bytes received",
+    "2026-09-04T04:01:36Z runtime safety gate failed gpu_free=8141MiB",
+    "2026-09-04T04:01:37Z isolated staging stopped; restarting in 2s",
+    "2026-09-04T04:01:40Z starting isolated Nari staging",
+    "curl: (7) Failed to connect to 127.0.0.1 port 18094 after 0 ms: Connection refus",
+    "ed",
+    "curl: (7) Failed to connect to 127.0.0.1 port 18094 after 0 ms: Connection refus",
+    "ed",
+    "curl: (7) Failed to connect to 127.0.0.1 port 18094 after 0 ms: Connection refus",
+    "ed",
+    "curl: (7) Failed to connect to 127.0.0.1 port 18094 after 0 ms: Connection refus",
+    "ed",
+    "curl: (7) Failed to connect to 127.0.0.1 port 18094 after 0 ms: Connection refus",
+    "ed",
+    "2026-09-04T04:02:06Z Nari ready gpu_free=12750MiB",
+    "2026-09-04T04:02:06Z starting clone adapter",
+    "curl: (7) Failed to connect to 127.0.0.1 port 18890 after 0 ms: Connection refus",
+    "ed",
+    "curl: (7) Failed to connect to 127.0.0.1 port 18890 after 0 ms: Connection refus",
+    "ed",
+    "curl: (7) Failed to connect to 127.0.0.1 port 18890 after 0 ms: Connection refus",
+    "ed",
+    "curl: (7) Failed to connect to 127.0.0.1 port 18890 after 0 ms: Connection refus",
+    "ed",
+    ""
+  ]
+}

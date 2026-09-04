@@ -1,0 +1,5 @@
+{"health": {"ok": true, "queue": 0, "active": false, "jobs_cached": 1}}
+{"unauthenticated": 401}
+{"same_origin_requests": 35, "validation_status": 400, "technical_429": false, "max_elapsed_s": 0.002}
+{"legacy_compose_status": 200, "invalid_timing_accepted": true, "elapsed_s": 0.004}
+{"gifs": []}

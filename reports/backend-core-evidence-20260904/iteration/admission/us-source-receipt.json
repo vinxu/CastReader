@@ -1,0 +1,8 @@
+{
+  "release": "/root/castreader/routing-releases/20260904-quickread-playback-cc18dc4",
+  "server_sha256": "4403981ce2dbb8523f91f42285074fc8bf7bcb8179438d5146c9957974a87929",
+  "archive": "/tmp/castreader-quickread-continuity-20260904b/us-before-source.tar.gz",
+  "archive_bytes": 5031271,
+  "archive_sha256": "04a342c37e9bbdca1d944b4e29c309a1415dcc0d6271d00d0d8f23ca61afbd0f",
+  "candidate": "/root/castreader/routing-releases/20260904-quickread-playback-22c8326"
+}

@@ -1,0 +1,117 @@
+{
+  "shared_source_commit": "b6bf222",
+  "regions": {
+    "us": {
+      "old_server_sha256": "5c1f220a276fa57c66b642f27289727a1b8a648fb1da85e236ab7d83a4131c1a",
+      "patch_sha256": "915879ffa4267b8116b5230885fb9d0b8a7b4c55f562403a17e397efdf3387b5",
+      "deployed_files": {
+        "server/server.mjs": "4403981ce2dbb8523f91f42285074fc8bf7bcb8179438d5146c9957974a87929",
+        "server/job-assets.mjs": "c4b35c653a3d8ba8d8707efedeb5aade6d53af4cc0846345cfe57de314be40a0",
+        "tools/playback-metadata.mjs": "aca5c642b150583c22c852144a1c31bddee4ac7b5f64f4c40398b4066cb3f589",
+        "tools/generate-tts.mjs": "d66e980c815dd3e75be421509c83352a31addc3dc29c9c14dced72e6d3ae8f5e",
+        "tools/regional-routing.mjs": "0e91c3f5e978c7968280220f62ac9a4169201cc616827b3c0028b3847b174248"
+      },
+      "before_source_archive_sha256": "8d4eac28738cb06dd1dea31eca6d8ef0d752f4693a125a5ae4868b69b0174dde",
+      "after_source_archive_sha256": "1a671e07d66ebc3056ebc20d880b33f6f367205442881c5be88df615c55480f0",
+      "activation": {
+        "region": "us",
+        "from": "/root/castreader/routing-releases/20260903-global-routing/candidate",
+        "to": "/root/castreader/routing-releases/20260904-quickread-playback-cc18dc4",
+        "started_at": "2026-09-04T04:01:24Z",
+        "source_commit": "b6bf222",
+        "patch_files": {
+          "server/server.mjs": "4403981ce2dbb8523f91f42285074fc8bf7bcb8179438d5146c9957974a87929",
+          "server/job-assets.mjs": "c4b35c653a3d8ba8d8707efedeb5aade6d53af4cc0846345cfe57de314be40a0",
+          "tools/playback-metadata.mjs": "aca5c642b150583c22c852144a1c31bddee4ac7b5f64f4c40398b4066cb3f589",
+          "tools/generate-tts.mjs": "d66e980c815dd3e75be421509c83352a31addc3dc29c9c14dced72e6d3ae8f5e",
+          "tools/regional-routing.mjs": "0e91c3f5e978c7968280220f62ac9a4169201cc616827b3c0028b3847b174248"
+        },
+        "idle_before": {
+          "ok": true,
+          "queue": 0,
+          "active": false,
+          "jobs_cached": 133
+        },
+        "passed": true,
+        "pid": 505424,
+        "health": {
+          "ok": true,
+          "queue": 0,
+          "active": false,
+          "jobs_cached": 0
+        },
+        "existing_sections": 5,
+        "gif_sections": [],
+        "tts_base": "https://api.castreader.ai",
+        "finished_at": "2026-09-04T04:01:25Z"
+      }
+    },
+    "cn": {
+      "old_server_sha256": "afa2acc89c50d07174e363906aee1e9f00b43c1c87f1e5a20548e7acb0d1aac5",
+      "patch_sha256": "d488ede6c9c9d415fc46ed79f22aa6dacdba560e167ddcc44a0216cbcca53b99",
+      "deployed_files": {
+        "server/server.mjs": "31b8a169a76f72f0dac6bc02270c62fbe86e2eb428a1a5f3a3a9286ccc2a956a",
+        "server/job-assets.mjs": "c4b35c653a3d8ba8d8707efedeb5aade6d53af4cc0846345cfe57de314be40a0",
+        "tools/playback-metadata.mjs": "aca5c642b150583c22c852144a1c31bddee4ac7b5f64f4c40398b4066cb3f589",
+        "tools/generate-tts.mjs": "d66e980c815dd3e75be421509c83352a31addc3dc29c9c14dced72e6d3ae8f5e",
+        "tools/regional-routing.mjs": "0e91c3f5e978c7968280220f62ac9a4169201cc616827b3c0028b3847b174248"
+      },
+      "before_source_archive_sha256": "c9206741152570021be4c6d50615c0ba10c3da4f4933c4720861eee525be8668",
+      "after_source_archive_sha256": "0077f240bb4f6426aa6dde44f94f6acaeda9e8a5bd73c6f0c1bd886c69b4bb5f",
+      "activation": {
+        "region": "cn",
+        "from": "/opt/castreader-quickread-cn/releases/20260814T165413Z-deepseek-v4-pro-cn-optimized-r5",
+        "to": "/opt/castreader-quickread-cn/releases/20260904-quickread-playback-cc18dc4",
+        "started_at": "2026-09-04T04:02:22Z",
+        "source_commit": "b6bf222",
+        "patch_files": {
+          "server/server.mjs": "31b8a169a76f72f0dac6bc02270c62fbe86e2eb428a1a5f3a3a9286ccc2a956a",
+          "server/job-assets.mjs": "c4b35c653a3d8ba8d8707efedeb5aade6d53af4cc0846345cfe57de314be40a0",
+          "tools/playback-metadata.mjs": "aca5c642b150583c22c852144a1c31bddee4ac7b5f64f4c40398b4066cb3f589",
+          "tools/generate-tts.mjs": "d66e980c815dd3e75be421509c83352a31addc3dc29c9c14dced72e6d3ae8f5e",
+          "tools/regional-routing.mjs": "0e91c3f5e978c7968280220f62ac9a4169201cc616827b3c0028b3847b174248"
+        },
+        "idle_before": {
+          "ok": true,
+          "queue": 0,
+          "active": 0,
+          "concurrency": 3,
+          "jobs_cached": 278
+        },
+        "passed": true,
+        "pid": 1045879,
+        "health": {
+          "ok": true,
+          "queue": 0,
+          "active": 0,
+          "concurrency": 3,
+          "jobs_cached": 0
+        },
+        "existing_sections": 4,
+        "gif_sections": [],
+        "tts_base": "https://api.castreader.cn",
+        "finished_at": "2026-09-04T04:02:23Z"
+      }
+    }
+  },
+  "runtime_dependencies": [
+    "node",
+    "ffmpeg",
+    "ffprobe"
+  ],
+  "environment": {
+    "global": {
+      "QUICKREAD_REGION": "global",
+      "TTS_API_BASE": "https://api.castreader.ai"
+    },
+    "cn": {
+      "QUICKREAD_REGION": "cn",
+      "TTS_API_BASE": "https://api.castreader.cn"
+    }
+  },
+  "notes": [
+    "Region variants are patched from exact live baseline; no unrelated provider or concurrency changes.",
+    "Secrets and user jobs are excluded from source archives; existing private runtime configuration and local jobs are retained.",
+    "Only runtime server calls to the retired GIF pipeline are removed; old asset compatibility may remain."
+  ]
+}

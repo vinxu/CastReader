@@ -1,0 +1,10 @@
+{
+  "region": "ap-shanghai",
+  "bucket": "castreader-voice-1323065328",
+  "key": "runtime-backups/20260904/quickread-before-c920674115257002.tar.gz",
+  "bytes": 6743673,
+  "sha256": "c9206741152570021be4c6d50615c0ba10c3da4f4933c4720861eee525be8668",
+  "readback_sha256": "c9206741152570021be4c6d50615c0ba10c3da4f4933c4720861eee525be8668",
+  "verified": true,
+  "verifiedAt": "2026-09-04T03:36:32.134Z"
+}
