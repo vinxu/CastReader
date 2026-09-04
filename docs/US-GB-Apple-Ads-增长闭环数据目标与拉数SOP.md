@@ -196,6 +196,8 @@ ruby scripts/searchads_growth_spend_export.rb --date YYYY-MM-DD
 
 此次生产回查：8 月 24 日至 9 月 4 日验收时的 26,040 条 iOS 原始事件，漏斗明细缺失 0、冲突 0；累计从原始记录修复 13,959 条。此结果只证明源表→漏斗表一致，不代表无来源记录的历史安装/试用已补齐。仍有一笔 US 全渠道试用缺少安装身份，不得补造归因。数据库异常时队列保留重试、降级返回 503；原样重发真实事件已验证不改变原始时间且不重复计数。完整记录见后端 `docs/growth-funnel-integrity-2026-09-04.md`。
 
+后续发布基线更新（2026-09-04 03:47 UTC）：核心服务任务已将增长修复合入 `2d5575b6`，并报告部署为 `dpl_2CmzKBRfAMhhKYiVF6DwUjnakPRn`。本地 Git 已核对：`4720b4cf` 是该 merge commit 的直接父提交，增长事件入库、聚合、花费采集、两个 cron handler 均无代码差异，cron 配置保留。后续部署须从包含 `2d5575b6` 的生产基线继续，保留 TTS/QuickRead 两区修复；不得直接重部署本增长隔离分支旧 runtime。核心服务源码工作树为 `/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity`。
+
 ```bash
 GROWTH_ADMIN_SECRET=... pnpm growth:cohort --from YYYY-MM-DD --to YYYY-MM-DD \
   --platform ios --provider apple_ads --country US --campaign-id 2144343127 \
