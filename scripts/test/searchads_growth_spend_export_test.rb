@@ -18,10 +18,11 @@ class SearchAdsGrowthSpendExportTest < Minitest::Test
   class FakeAppleClient
     attr_reader :posts
 
-    def initialize(fixture, report_error_at: nil, declared_report_total: nil)
+    def initialize(fixture, report_error_at: nil, declared_report_total: nil, grand_amount_delta: "0")
       @fixture = fixture
       @report_error_at = report_error_at
       @declared_report_total = declared_report_total
+      @grand_amount_delta = BigDecimal(grand_amount_delta)
       @posts = []
     end
 
@@ -73,7 +74,7 @@ class SearchAdsGrowthSpendExportTest < Minitest::Test
       end
       {
         "localSpend" => {
-          "amount" => amount.to_s("F"),
+          "amount" => (amount + @grand_amount_delta).to_s("F"),
           "currency" => "RMB"
         },
         "impressions" => rows.sum { |row| row.dig("total", "impressions") },
@@ -198,6 +199,14 @@ class SearchAdsGrowthSpendExportTest < Minitest::Test
     first_hashes = first.artifacts.to_h { |artifact| [artifact.country, artifact.source_sha256] }
     second_hashes = second.artifacts.to_h { |artifact| [artifact.country, artifact.source_sha256] }
     assert_equal first_hashes, second_hashes
+  end
+
+  def test_sub_fen_provider_rounding_is_accepted_but_one_fen_is_rejected
+    result = exporter(client: FakeAppleClient.new(@fixture, grand_amount_delta: "0.0001")).build
+    assert_equal %w[GB US], result.artifacts.map(&:country)
+    assert_raises(SearchAdsGrowthSpend::AppleApiError) do
+      exporter(client: FakeAppleClient.new(@fixture, grand_amount_delta: "0.01")).build
+    end
   end
 
   def test_report_api_or_incomplete_pagination_fails_before_coverage_files

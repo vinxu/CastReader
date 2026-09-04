@@ -192,6 +192,10 @@ ruby scripts/searchads_growth_spend_export.rb --date YYYY-MM-DD
 
 然后从 `readout-web` 使用唯一 cohort API。`from/to` 必须是 UTC 日边界，to 不包含；将下方 53 替换为实际所验收版本，不能一直沿用旧 build：
 
+2026-09-04 后端修复的已部署 runtime commits 为 `5e69d2cc`、`4720b4cf`（生产部署 `dpl_HRfYUZQjRGPB2QybnKEYw9ykcZVo`），源码隔离工作树 `/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-growth-funnel-integrity`。本机若没有独立 GROWTH_ADMIN_SECRET，不替换/降低权限；在此工作树执行 `pnpm exec tsx scripts/growth-cohort-direct.mts --env-file /Users/xuxuheng/Documents/MyProject/readout-web/.env.local --from YYYY-MM-DD --to YYYY-MM-DD --country US`。该命令仅调用同一个 SELECT 聚合函数；严禁对共享生产连接池设置会话级参数（包括 `SET default_transaction_read_only`），防止污染应用连接。不得用原脏工作区的旧统计代码冒充已部署口径；后续部署须保留此修复。
+
+此次生产回查：8 月 24 日至 9 月 4 日验收时的 26,040 条 iOS 原始事件，漏斗明细缺失 0、冲突 0；累计从原始记录修复 13,959 条。此结果只证明源表→漏斗表一致，不代表无来源记录的历史安装/试用已补齐。仍有一笔 US 全渠道试用缺少安装身份，不得补造归因。数据库异常时队列保留重试、降级返回 503；原样重发真实事件已验证不改变原始时间且不重复计数。完整记录见后端 `docs/growth-funnel-integrity-2026-09-04.md`。
+
 ```bash
 GROWTH_ADMIN_SECRET=... pnpm growth:cohort --from YYYY-MM-DD --to YYYY-MM-DD \
   --platform ios --provider apple_ads --country US --campaign-id 2144343127 \
