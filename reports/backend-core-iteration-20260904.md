@@ -106,6 +106,7 @@ Hindi 本轮验证的是代表音色 hf_alpha，不能扩展成全部 20 个音�
 
 ## 6. 可追溯证据
 
+- [跨仓库代码与证据提交索引](/Users/xuxuheng/Documents/CastReader/reports/backend-core-commit-index-20260904.md)。
 - [修复前审计](/Users/xuxuheng/Documents/CastReader/reports/backend-core-audit-20260904.md)与[原始问题实证](/Users/xuxuheng/Documents/CastReader/reports/backend-core-evidence-20260904/README.md)。
 - [最终 QuickRead 部署、配置与备份清单](/Users/xuxuheng/Documents/CastReader/reports/backend-core-evidence-20260904/iteration/retired-gifs/quickread-final-rollout.json)。
 - [Kokoro / watchdog 区域备份索引](/Users/xuxuheng/Documents/CastReader/reports/backend-core-evidence-20260904/iteration/kokoro/regional-backup-index.json)。
