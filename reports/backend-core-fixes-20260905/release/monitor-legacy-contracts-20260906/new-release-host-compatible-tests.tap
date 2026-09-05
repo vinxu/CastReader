@@ -1,0 +1,130 @@
+TAP version 13
+# Subtest: CN probe follows every remainder and validates multiple decodable segments
+ok 1 - CN probe follows every remainder and validates multiple decodable segments
+  ---
+  duration_ms: 26.508451
+  type: 'test'
+  ...
+# Subtest: US probe uses its global route and follows an exact English remainder
+ok 2 - US probe uses its global route and follows an exact English remainder
+  ---
+  duration_ms: 1.886196
+  type: 'test'
+  ...
+# Subtest: timestamp failure degrades alignment without failing playable supply
+ok 3 - timestamp failure degrades alignment without failing playable supply
+  ---
+  duration_ms: 3.082595
+  type: 'test'
+  ...
+# Subtest: a changed or lost remainder fails the continuity contract
+ok 4 - a changed or lost remainder fails the continuity contract
+  ---
+  duration_ms: 1.096379
+  type: 'test'
+  ...
+# Subtest: a one-response success cannot claim continuous multi-segment supply
+ok 5 - a one-response success cannot claim continuous multi-segment supply
+  ---
+  duration_ms: 1.469762
+  type: 'test'
+  ...
+# Subtest: a response claiming the other service region fails supply
+ok 6 - a response claiming the other service region fails supply
+  ---
+  duration_ms: 0.599785
+  type: 'test'
+  ...
+# Subtest: one transient request failure retries the same segment within the fixed budget
+ok 7 - one transient request failure retries the same segment within the fixed budget
+  ---
+  duration_ms: 11.026161
+  type: 'test'
+  ...
+# Subtest: legacy omitted-stream failure is detected even when explicit false works
+ok 8 - legacy omitted-stream failure is detected even when explicit false works
+  ---
+  duration_ms: 5.987349
+  type: 'test'
+  ...
+# Subtest: local segment limit does not attribute a failure to a successful request contract
+ok 9 - local segment limit does not attribute a failure to a successful request contract
+  ---
+  duration_ms: 1.584723
+  type: 'test'
+  ...
+# Subtest: endpoint pin rejects cross-region and wrong-path probes before fetch
+ok 10 - endpoint pin rejects cross-region and wrong-path probes before fetch
+  ---
+  duration_ms: 0.751377
+  type: 'test'
+  ...
+# Subtest: fixed US passage is long enough to force the partly compatibility path
+ok 11 - fixed US passage is long enough to force the partly compatibility path
+  ---
+  duration_ms: 0.202211
+  type: 'test'
+  ...
+# Subtest: ffmpeg progress requires a completed positive audio decode
+ok 12 - ffmpeg progress requires a completed positive audio decode
+  ---
+  duration_ms: 0.261311
+  type: 'test'
+  ...
+# Subtest: local lock provides single flight and releases only its own token
+ok 13 - local lock provides single flight and releases only its own token
+  ---
+  duration_ms: 8.871783
+  type: 'test'
+  ...
+# Subtest: a stale lock whose owner is gone is removed safely
+ok 14 - a stale lock whose owner is gone is removed safely
+  ---
+  duration_ms: 2.692903
+  type: 'test'
+  ...
+# Subtest: supply failures alert once as warning, confirm as critical, then recover
+ok 15 - supply failures alert once as warning, confirm as critical, then recover
+  ---
+  duration_ms: 14.699042
+  type: 'test'
+  ...
+# Subtest: alignment degradation is recorded separately from supply failure
+ok 16 - alignment degradation is recorded separately from supply failure
+  ---
+  duration_ms: 5.853729
+  type: 'test'
+  ...
+# Subtest: retention removes expired and over-cap result files
+ok 17 - retention removes expired and over-cap result files
+  ---
+  duration_ms: 3.831591
+  type: 'test'
+  ...
+# Subtest: systemd contract bounds runs, separates regional state and cannot restart production
+ok 18 - systemd contract bounds runs, separates regional state and cannot restart production
+  ---
+  duration_ms: 2.609862
+  type: 'test'
+  ...
+# Subtest: invalid region is rejected before a lock or state file is created
+ok 19 - invalid region is rejected before a lock or state file is created
+  ---
+  duration_ms: 3.52999
+  type: 'test'
+  ...
+# Subtest: the production current symlink still executes the monitor CLI
+ok 20 - the production current symlink still executes the monitor CLI
+  ---
+  duration_ms: 38.910172
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 245.412631

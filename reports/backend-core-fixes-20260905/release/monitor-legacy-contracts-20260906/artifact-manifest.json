@@ -1,0 +1,74 @@
+{
+  "artifact": {
+    "bytes": 13326,
+    "name": "castreader-core-audio-monitor-f6eb6691-7a2c0b1f.tar.gz",
+    "sha256": "7ec7b782a08d5d287b7b6feba253ec4e2472dc104f1ed2d9f3d9d24d89290eeb"
+  },
+  "business_service_files": 0,
+  "changed_from_release": [
+    "README.md",
+    "probe-core.mjs",
+    "probe-core.test.mjs"
+  ],
+  "created_at": "2026-09-05T17:53:40.714011+00:00",
+  "files": [
+    {
+      "bytes": 3317,
+      "mode": "0644",
+      "path": "README.md",
+      "sha256": "5e45d548351b486d50f4aad984415b5d416bbd7d50143c4585ee891f1121247f"
+    },
+    {
+      "bytes": 892,
+      "mode": "0644",
+      "path": "alert-envelope.schema.json",
+      "sha256": "369b79bdae103d4576a53beb48d482400b15410953ad4dea8990821c736e2828"
+    },
+    {
+      "bytes": 15425,
+      "mode": "0644",
+      "path": "probe-core.mjs",
+      "sha256": "51c38ca9c4a9c4b5c4f0af9dbe78510e90809eb39574f6f1ff9cff7c7e5ee964"
+    },
+    {
+      "bytes": 11294,
+      "mode": "0644",
+      "path": "probe-core.test.mjs",
+      "sha256": "b5a0fdc40492e07d5baee1a110c575a4be4e571c2d8b946ee6886cd15d2a3af7"
+    },
+    {
+      "bytes": 2754,
+      "mode": "0755",
+      "path": "run.mjs",
+      "sha256": "8f8972921d9fae2132111cdadefc4f80ecc9dc02fb473f5cf7e076e3604cfe2e"
+    },
+    {
+      "bytes": 5741,
+      "mode": "0644",
+      "path": "state-store.mjs",
+      "sha256": "4f800b073d9e81e6ea59a9689e1fed4a3f6a0906c0fae0c5cbe941ef56e306c3"
+    },
+    {
+      "bytes": 5953,
+      "mode": "0644",
+      "path": "state-store.test.mjs",
+      "sha256": "fcedbd39655995cbf4a5a438b3b9ebf48ad08125a36ba84b6016c780805629b7"
+    },
+    {
+      "bytes": 932,
+      "mode": "0644",
+      "path": "systemd/castreader-core-audio-monitor@.service",
+      "sha256": "65fe20188f2b15af652e614d81e3fdf6b3e90de71670c1e352f5827a9e6f6916"
+    },
+    {
+      "bytes": 264,
+      "mode": "0644",
+      "path": "systemd/castreader-core-audio-monitor@.timer",
+      "sha256": "d7cf2893eb75f9c9397958ce8fe0c3833228c9c6decedae2bee36b6bc076be92"
+    }
+  ],
+  "schema": "castreader.core-audio-monitor-artifact.v2",
+  "source_commit": "f6eb669178c665defff239fd8a60210b54894aeb",
+  "tree_sha256": "7a2c0b1f0715d4db766a26fe84a5899a1c77b3107f2119d0907d766cef12236a",
+  "unit_files_changed": false
+}

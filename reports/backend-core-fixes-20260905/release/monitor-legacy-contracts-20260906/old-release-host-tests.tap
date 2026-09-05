@@ -1,0 +1,148 @@
+TAP version 13
+# Subtest: CN probe follows every remainder and validates multiple decodable segments
+ok 1 - CN probe follows every remainder and validates multiple decodable segments
+  ---
+  duration_ms: 26.632361
+  type: 'test'
+  ...
+# Subtest: US probe uses its global route and follows an exact English remainder
+ok 2 - US probe uses its global route and follows an exact English remainder
+  ---
+  duration_ms: 1.796994
+  type: 'test'
+  ...
+# Subtest: timestamp failure degrades alignment without failing playable supply
+ok 3 - timestamp failure degrades alignment without failing playable supply
+  ---
+  duration_ms: 3.034105
+  type: 'test'
+  ...
+# Subtest: a changed or lost remainder fails the continuity contract
+ok 4 - a changed or lost remainder fails the continuity contract
+  ---
+  duration_ms: 1.556333
+  type: 'test'
+  ...
+# Subtest: a one-response success cannot claim continuous multi-segment supply
+ok 5 - a one-response success cannot claim continuous multi-segment supply
+  ---
+  duration_ms: 0.655155
+  type: 'test'
+  ...
+# Subtest: a response claiming the other service region fails supply
+ok 6 - a response claiming the other service region fails supply
+  ---
+  duration_ms: 0.583265
+  type: 'test'
+  ...
+# Subtest: one transient request failure retries the same segment within the fixed budget
+ok 7 - one transient request failure retries the same segment within the fixed budget
+  ---
+  duration_ms: 11.323404
+  type: 'test'
+  ...
+# Subtest: a stalled request is aborted by the segment deadline
+not ok 8 - a stalled request is aborted by the segment deadline
+  ---
+  duration_ms: 4.850769
+  type: 'test'
+  location: '/opt/castreader-core-audio-monitor/releases/272d3148-5c085a61/probe-core.test.mjs:191:1'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: endpoint pin rejects cross-region and wrong-path probes before fetch
+not ok 9 - endpoint pin rejects cross-region and wrong-path probes before fetch
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/opt/castreader-core-audio-monitor/releases/272d3148-5c085a61/probe-core.test.mjs:203:1'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: fixed US passage is long enough to force the partly compatibility path
+not ok 10 - fixed US passage is long enough to force the partly compatibility path
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/opt/castreader-core-audio-monitor/releases/272d3148-5c085a61/probe-core.test.mjs:227:1'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: ffmpeg progress requires a completed positive audio decode
+not ok 11 - ffmpeg progress requires a completed positive audio decode
+  ---
+  duration_ms: 0
+  type: 'test'
+  location: '/opt/castreader-core-audio-monitor/releases/272d3148-5c085a61/probe-core.test.mjs:234:1'
+  failureType: 'cancelledByParent'
+  error: 'Promise resolution is still pending but the event loop has already resolved'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    process.emit (node:events:519:28)
+  ...
+# Subtest: local lock provides single flight and releases only its own token
+ok 12 - local lock provides single flight and releases only its own token
+  ---
+  duration_ms: 8.495509
+  type: 'test'
+  ...
+# Subtest: a stale lock whose owner is gone is removed safely
+ok 13 - a stale lock whose owner is gone is removed safely
+  ---
+  duration_ms: 2.679723
+  type: 'test'
+  ...
+# Subtest: supply failures alert once as warning, confirm as critical, then recover
+ok 14 - supply failures alert once as warning, confirm as critical, then recover
+  ---
+  duration_ms: 14.725651
+  type: 'test'
+  ...
+# Subtest: alignment degradation is recorded separately from supply failure
+ok 15 - alignment degradation is recorded separately from supply failure
+  ---
+  duration_ms: 4.985602
+  type: 'test'
+  ...
+# Subtest: retention removes expired and over-cap result files
+ok 16 - retention removes expired and over-cap result files
+  ---
+  duration_ms: 4.366246
+  type: 'test'
+  ...
+# Subtest: systemd contract bounds runs, separates regional state and cannot restart production
+ok 17 - systemd contract bounds runs, separates regional state and cannot restart production
+  ---
+  duration_ms: 1.833276
+  type: 'test'
+  ...
+# Subtest: invalid region is rejected before a lock or state file is created
+ok 18 - invalid region is rejected before a lock or state file is created
+  ---
+  duration_ms: 4.230995
+  type: 'test'
+  ...
+# Subtest: the production current symlink still executes the monitor CLI
+ok 19 - the production current symlink still executes the monitor CLI
+  ---
+  duration_ms: 40.756227
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 15
+# fail 0
+# cancelled 4
+# skipped 0
+# todo 0
+# duration_ms 239.886216

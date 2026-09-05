@@ -1,0 +1,62 @@
+{
+  "generated_at_utc": "2026-09-05T18:09:58.427757+00:00",
+  "manual_result": {
+    "alignmentOk": false,
+    "elapsedMs": 14909,
+    "endpoint": "https://api.castreader.ai/api/captioned_speech_partly",
+    "failedRequestContract": "stream_omitted",
+    "failureCode": "http_502",
+    "inputCharacters": 577,
+    "inputSha256": "b092e28426b5826b3803505221bdf1d17f1c42cd01f22a886386e83d7fc9c12f",
+    "language": "en",
+    "locale": "en-US",
+    "observedAt": "2026-09-05T18:08:34.685Z",
+    "probe": "core-audio-continuity",
+    "region": "us",
+    "schemaVersion": 1,
+    "segmentCount": 0,
+    "segments": [],
+    "status": "supply_failed",
+    "supplyOk": false,
+    "totalAudioBytes": 0,
+    "totalDurationSeconds": 0,
+    "voice": "af_heart"
+  },
+  "monitor": {
+    "after_current": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f",
+    "after_tree_sha256": "7a2c0b1f0715d4db766a26fe84a5899a1c77b3107f2119d0907d766cef12236a",
+    "before_current": "/opt/castreader-core-audio-monitor/releases/272d3148-5c085a61",
+    "before_tree_sha256": "07a96474a70a9814e9b7882b3e26ac9b16a8681bcfdc305b19ce033987841833",
+    "timer_after": {
+      "ActiveState": "active",
+      "LastTriggerUSec": "Sat 2026-09-05 18:04:36 UTC",
+      "NextElapseUSecRealtime": "",
+      "SubState": "waiting",
+      "UnitFileState": "enabled"
+    },
+    "units_unchanged": true
+  },
+  "protected_business": {
+    "quickread_health_after": {
+      "active": false,
+      "http_status": 200,
+      "jobs_cached": 1,
+      "ok": true,
+      "queue": 0
+    },
+    "quickread_link_unchanged": true,
+    "quickread_pm2_unchanged": true,
+    "quickread_process_unchanged": true,
+    "quickread_source_tree_unchanged": true,
+    "quickread_target_unchanged": true,
+    "restarted_services": [],
+    "reverse_proxy_unchanged": true,
+    "runtime_unchanged": true
+  },
+  "schema": "castreader.us-monitor-before-after.v1",
+  "scope": {
+    "business_services_changed": false,
+    "cn_changed": false,
+    "monitor_units_changed": false
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "host_scope": "US control host; disposable temporary directory",
+  "immutable_release_modified": false,
+  "network_or_synthesis_used": false,
+  "node": "v22.23.2",
+  "production_code_release": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f",
+  "production_code_tree_sha256": "7a2c0b1f0715d4db766a26fe84a5899a1c77b3107f2119d0907d766cef12236a",
+  "recorded_at_utc": "2026-09-05T18:14:48.453535+00:00",
+  "schema": "castreader.monitor-node22-full-suite.v1",
+  "tap": {
+    "bytes": 4393,
+    "cancelled": 0,
+    "failed": 0,
+    "passed": 21,
+    "path": "node22-full-21-tests.tap",
+    "sha256": "93a67df844b1d6f161373ca52214e4f0210800b5328c7092ef65fe36d791783f",
+    "skipped": 0
+  },
+  "test_file_sha256": "ff7c56b817023168c33245617f1b90896737d85889066183cc531e0af924fe80"
+}

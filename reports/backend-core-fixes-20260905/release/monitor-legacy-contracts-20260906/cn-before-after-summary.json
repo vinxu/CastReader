@@ -1,0 +1,56 @@
+{
+  "generated_at_utc": "2026-09-05T18:33:27.247361+00:00",
+  "manual_result": {
+    "alignmentOk": false,
+    "elapsedMs": 6702,
+    "endpoint": "https://api.castreader.cn/api/captioned_speech_partly",
+    "failedRequestContract": "stream_omitted",
+    "failureCode": "http_502",
+    "inputCharacters": 61,
+    "inputSha256": "1465ec2c5a379439a03e0ff20b475781b2f8ea4ab48ed89bb6aa69a188d6254a",
+    "language": "zh",
+    "locale": "zh-CN",
+    "observedAt": "2026-09-05T18:31:49.911Z",
+    "probe": "core-audio-continuity",
+    "region": "cn",
+    "schemaVersion": 1,
+    "segmentCount": 0,
+    "segments": [],
+    "status": "supply_failed",
+    "supplyOk": false,
+    "totalAudioBytes": 0,
+    "totalDurationSeconds": 0,
+    "voice": "zf_001"
+  },
+  "monitor": {
+    "after_current": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f",
+    "after_tree_sha256": "7a2c0b1f0715d4db766a26fe84a5899a1c77b3107f2119d0907d766cef12236a",
+    "before_current": "/opt/castreader-core-audio-monitor/releases/272d3148-5c085a61",
+    "before_tree_sha256": "07a96474a70a9814e9b7882b3e26ac9b16a8681bcfdc305b19ce033987841833",
+    "timer_after": {
+      "ActiveState": "active",
+      "LoadState": "loaded",
+      "SubState": "waiting",
+      "UnitFileState": "enabled"
+    }
+  },
+  "protected_business": {
+    "config_unchanged": true,
+    "health_after": {
+      "clone": 200,
+      "kokoro": 200,
+      "next": 200,
+      "quickread": 200
+    },
+    "next_target_process_material_unchanged": true,
+    "quickread_process_unchanged": true,
+    "restarted_services": [],
+    "services_unchanged": true
+  },
+  "schema": "castreader.cn-monitor-before-after.v1",
+  "scope": {
+    "business_services_changed": false,
+    "monitor_units_changed": false,
+    "us_changed_in_this_transaction": false
+  }
+}

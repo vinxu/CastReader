@@ -1,0 +1,22 @@
+{
+  "alignmentOk": false,
+  "elapsedMs": 6702,
+  "endpoint": "https://api.castreader.cn/api/captioned_speech_partly",
+  "failedRequestContract": "stream_omitted",
+  "failureCode": "http_502",
+  "inputCharacters": 61,
+  "inputSha256": "1465ec2c5a379439a03e0ff20b475781b2f8ea4ab48ed89bb6aa69a188d6254a",
+  "language": "zh",
+  "locale": "zh-CN",
+  "observedAt": "2026-09-05T18:31:49.911Z",
+  "probe": "core-audio-continuity",
+  "region": "cn",
+  "schemaVersion": 1,
+  "segmentCount": 0,
+  "segments": [],
+  "status": "supply_failed",
+  "supplyOk": false,
+  "totalAudioBytes": 0,
+  "totalDurationSeconds": 0,
+  "voice": "zf_001"
+}
