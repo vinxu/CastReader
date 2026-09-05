@@ -1,0 +1,212 @@
+{
+  "repo": {
+    "full_name": "scmyyan/readout-web",
+    "private": true,
+    "default_branch": "beta",
+    "permissions": {
+      "admin": false,
+      "maintain": false,
+      "push": true,
+      "triage": true,
+      "pull": true
+    },
+    "allow_auto_merge": false,
+    "allow_update_branch": false,
+    "archived": false
+  },
+  "beta_protection": {
+    "exit_code": 1,
+    "error": "gh: Not Found (HTTP 404)\n"
+  },
+  "rulesets": {
+    "exit_code": 1,
+    "error": "gh: Upgrade to GitHub Pro or make this repository public to enable this feature. (HTTP 403)\n"
+  },
+  "production_environment": {
+    "id": 9436957898,
+    "node_id": "EN_kwDOQGajy88AAAACMnyMyg",
+    "name": "Production",
+    "url": "https://api.github.com/repos/scmyyan/readout-web/environments/Production",
+    "html_url": "https://github.com/scmyyan/readout-web/deployments/activity_log?environments_filter=Production",
+    "created_at": "2025-10-21T13:35:26Z",
+    "updated_at": "2025-10-21T13:35:26Z",
+    "can_admins_bypass": true,
+    "protection_rules": [],
+    "deployment_branch_policy": null
+  },
+  "release_runs": {
+    "total_count": 34,
+    "runs": [
+      {
+        "id": 33589009978,
+        "head_branch": "beta",
+        "head_sha": "91a9b393a2ae078338a21615c1653ab404889601",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-09-02T03:58:07Z",
+        "updated_at": "2026-09-02T04:13:07Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33589009978"
+      },
+      {
+        "id": 33581153740,
+        "head_branch": "beta",
+        "head_sha": "f182191f6c7f7a81c9013b0ddbe89e793b63ca58",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-02T01:53:50Z",
+        "updated_at": "2026-09-02T02:08:18Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33581153740"
+      },
+      {
+        "id": 33580861283,
+        "head_branch": "beta",
+        "head_sha": "f182191f6c7f7a81c9013b0ddbe89e793b63ca58",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-02T01:49:09Z",
+        "updated_at": "2026-09-02T01:52:02Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33580861283"
+      },
+      {
+        "id": 33580405013,
+        "head_branch": "beta",
+        "head_sha": "f182191f6c7f7a81c9013b0ddbe89e793b63ca58",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-02T01:41:55Z",
+        "updated_at": "2026-09-02T01:44:40Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33580405013"
+      },
+      {
+        "id": 33493516407,
+        "head_branch": "beta",
+        "head_sha": "1bbac72653d5889f6873f8e6487dfb7ef910e97c",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-09-01T09:41:13Z",
+        "updated_at": "2026-09-01T09:56:18Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33493516407"
+      },
+      {
+        "id": 33493476673,
+        "head_branch": "beta",
+        "head_sha": "1bbac72653d5889f6873f8e6487dfb7ef910e97c",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "created_at": "2026-09-01T09:40:46Z",
+        "updated_at": "2026-09-01T09:41:10Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33493476673"
+      },
+      {
+        "id": 33491508241,
+        "head_branch": "beta",
+        "head_sha": "0804bc8d697ada4a1b767133a4a49d3b5e6bb55c",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-09-01T09:18:18Z",
+        "updated_at": "2026-09-01T09:33:57Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33491508241"
+      },
+      {
+        "id": 33468873685,
+        "head_branch": "beta",
+        "head_sha": "195c07097e487038581bc7ddecb42e220a8e5012",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-09-01T04:10:51Z",
+        "updated_at": "2026-09-01T04:25:32Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33468873685"
+      },
+      {
+        "id": 33468649633,
+        "head_branch": "beta",
+        "head_sha": "195c07097e487038581bc7ddecb42e220a8e5012",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-01T04:07:11Z",
+        "updated_at": "2026-09-01T04:10:03Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33468649633"
+      },
+      {
+        "id": 33468407891,
+        "head_branch": "beta",
+        "head_sha": "195c07097e487038581bc7ddecb42e220a8e5012",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-01T04:03:13Z",
+        "updated_at": "2026-09-01T04:05:53Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33468407891"
+      }
+    ]
+  },
+  "beta": {
+    "name": "beta",
+    "sha": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+    "protected": false
+  },
+  "collected_at": "2026-09-05T10:32:52.056229+00:00",
+  "maintenance_release_runs": {
+    "total_count": 4,
+    "runs": [
+      {
+        "id": 33934272517,
+        "head_branch": "beta",
+        "head_sha": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-09-05T00:50:15Z",
+        "updated_at": "2026-09-05T01:08:29Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33934272517"
+      },
+      {
+        "id": 33906122909,
+        "head_branch": "beta",
+        "head_sha": "3e5c3de694797983bf4376f1db849fb609c50e3e",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-09-04T18:29:01Z",
+        "updated_at": "2026-09-04T18:40:03Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33906122909"
+      },
+      {
+        "id": 33904323015,
+        "head_branch": "beta",
+        "head_sha": "9bb3a1290a7c671a8e7553c56bf58c1561c98eff",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-04T18:08:55Z",
+        "updated_at": "2026-09-04T18:19:17Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33904323015"
+      },
+      {
+        "id": 33903849481,
+        "head_branch": "beta",
+        "head_sha": "9bb3a1290a7c671a8e7553c56bf58c1561c98eff",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "failure",
+        "created_at": "2026-09-04T18:03:36Z",
+        "updated_at": "2026-09-04T18:07:02Z",
+        "html_url": "https://github.com/scmyyan/readout-web/actions/runs/33903849481"
+      }
+    ]
+  },
+  "observability_metrics": {
+    "available": false,
+    "http_code": 402,
+    "reason": "Observability Plus required; no plan changes performed"
+  }
+}

@@ -1,0 +1,508 @@
+import { createHash, randomUUID } from 'node:crypto';
+
+import {
+  TTSRegionalConfigurationError,
+  ttsServiceRoute,
+} from '@/shared/ops/tts-regional-routing';
+import { resolveTTSUpstreamRoute } from '@/shared/ops/tts-upstream-routing-store';
+import { handleCaptionedCloneRequest } from '@/shared/voice-clone/captioned';
+
+import {
+  retrySpeechRequest,
+  speechRequestSignal,
+} from './speech-request-budget';
+import { playbackTimestamps } from './tts-response-timing';
+import { splitTtsInputForCompatibility } from './tts-sentence-boundary';
+
+export const TTS_CATALOG_URL =
+  'https://zqxgmqygirtpttnrvjpf.supabase.co/storage/v1/object/public/castreader-public/config/tts-catalog-r81-v2.json';
+
+const MAX_INPUT_CHARACTERS = 10_000;
+const UNAMBIGUOUS_PRESET_LANGUAGE_BY_PREFIX: Readonly<Record<string, string>> =
+  {
+    af: 'en',
+    am: 'en',
+    bf: 'en',
+    bm: 'en',
+    df: 'de',
+    dm: 'de',
+    ff: 'fr',
+    fm: 'fr',
+    hf: 'hi',
+    hm: 'hi',
+    if: 'it',
+    im: 'it',
+    jf: 'ja',
+    jm: 'ja',
+    pf: 'pt',
+    pm: 'pt',
+    zf: 'zh',
+    zm: 'zh',
+  };
+const INLINE_NUMERIC_CITATION_PATTERN =
+  /(?<![\p{L}\p{M}\p{N}_])\[(?:\d{1,4}(?:\s*[-–,]\s*\d{1,4})*)\]/gu;
+const PUNCTUATION_ONLY_SILENCE_MP3 =
+  '//NExAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMu//NExFMAAANIAAAAADEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMu//NExKYAAANIAAAAADEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMu//NExKwAAANIAAAAADEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVTEFNRTMu//NExKwAAANIAAAAADEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//NExKwAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//NExKwAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV';
+
+function isPunctuationOnly(input: string) {
+  return /^[\p{P}\p{M}\s]+$/u.test(input);
+}
+
+/**
+ * Recover the language for legacy preset requests that predate the explicit
+ * `language` field. Only stable, unambiguous voice prefixes are accepted.
+ * Some newer English voices reuse the historical Spanish `ef`/`em` prefixes,
+ * so ambiguous or cloned/unknown voices deliberately keep the legacy default.
+ */
+export function inferLanguageFromPresetVoice(voice: unknown) {
+  if (typeof voice !== 'string') return undefined;
+  const match = voice
+    .trim()
+    .toLowerCase()
+    .match(/^([a-z]{2})_/u);
+  return match ? UNAMBIGUOUS_PRESET_LANGUAGE_BY_PREFIX[match[1]] : undefined;
+}
+
+/**
+ * Browser extraction intentionally preserves visible footnote markers, but
+ * they are document metadata rather than spoken content. The legacy Kokoro
+ * upstream interprets a marker attached to sentence punctuation (for example
+ * `literacy.[5]`) as generation syntax and can return a valid MP3 whose audio
+ * and timestamps stop before the preceding word. Remove only unambiguous
+ * numeric citations from the synthesis copy; the original request remains the
+ * client-visible partly-text partition.
+ */
+export function stripInlineNumericCitations(input: string) {
+  return input
+    .replace(INLINE_NUMERIC_CITATION_PATTERN, ' ')
+    .replace(/\s+([,.;:!?。，！？；：])/gu, '$1')
+    .replace(/\s+/gu, ' ')
+    .trim();
+}
+
+function readableCoverageTokens(input: string) {
+  return input.match(/[\p{L}\p{M}\p{N}]+(?:[’'\-][\p{L}\p{M}\p{N}]+)*/gu) || [];
+}
+
+function canonicalCoverageToken(input: string) {
+  return input
+    .normalize('NFKC')
+    .toLocaleLowerCase('und')
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, '');
+}
+
+/**
+ * Estimate whether English word highlighting covers the requested text.
+ * Tokenization changes (E.S.E. -> E-S-E., numbers, contractions) can make
+ * this heuristic fail even for complete audio. It must never gate playback.
+ */
+export function timestampsCoverEnglishInput(
+  input: string,
+  timestamps: unknown
+) {
+  const expected = readableCoverageTokens(input);
+  if (expected.length === 0) return true;
+  if (!Array.isArray(timestamps)) return false;
+  const actual = readableCoverageTokens(
+    timestamps
+      .map((timestamp) =>
+        timestamp &&
+        typeof timestamp === 'object' &&
+        typeof (timestamp as { word?: unknown }).word === 'string'
+          ? String((timestamp as { word: string }).word)
+          : ''
+      )
+      .join(' ')
+  );
+  if (actual.length === 0) return false;
+
+  // Kokoro expands numeric tokens in its word timeline (`2026` becomes
+  // `twenty`, `twenty-six`). Anchor the tail check on the last lexical token
+  // whose spelling is stable instead of rejecting valid number narration.
+  const expectedStableTail = [...expected]
+    .reverse()
+    .find((token) => /[\p{L}\p{M}]/u.test(token) && !/[\p{N}]/u.test(token));
+  const actualTail = actual.slice(-16).map(canonicalCoverageToken);
+  const hasStableTail = expectedStableTail
+    ? actualTail.includes(canonicalCoverageToken(expectedStableTail))
+    : true;
+  if (expected.length < 8) {
+    return actual.length >= expected.length && hasStableTail;
+  }
+  const coverageRatio = actual.length / expected.length;
+  return coverageRatio >= 0.85 && hasStableTail;
+}
+
+function safeInputShape(input: string) {
+  const shape = {
+    letters: 0,
+    numbers: 0,
+    marks: 0,
+    punctuation: 0,
+    symbols: 0,
+    whitespace: 0,
+    other: 0,
+  };
+  for (const character of input) {
+    if (/\p{L}/u.test(character)) shape.letters += 1;
+    else if (/\p{N}/u.test(character)) shape.numbers += 1;
+    else if (/\p{M}/u.test(character)) shape.marks += 1;
+    else if (/\p{P}/u.test(character)) shape.punctuation += 1;
+    else if (/\p{S}/u.test(character)) shape.symbols += 1;
+    else if (/\s/u.test(character)) shape.whitespace += 1;
+    else shape.other += 1;
+  }
+  return shape;
+}
+
+function upstreamFailureFingerprint(rawBody: string) {
+  try {
+    const parsed = JSON.parse(rawBody) as {
+      detail?: string | { error?: unknown; message?: unknown; type?: unknown };
+    };
+    const detail = parsed.detail;
+    const message =
+      typeof detail === 'string'
+        ? detail
+        : typeof detail?.message === 'string'
+          ? detail.message
+          : '';
+    return {
+      error:
+        typeof detail === 'object' && typeof detail?.error === 'string'
+          ? detail.error
+          : null,
+      type:
+        typeof detail === 'object' && typeof detail?.type === 'string'
+          ? detail.type
+          : null,
+      // Never log upstream exception text because it can contain source text.
+      // A stable hash is enough to group recurring failures safely.
+      messageHash: message
+        ? createHash('sha256').update(message).digest('hex').slice(0, 16)
+        : null,
+    };
+  } catch {
+    return {
+      error: null,
+      type: null,
+      messageHash: rawBody
+        ? createHash('sha256').update(rawBody).digest('hex').slice(0, 16)
+        : null,
+    };
+  }
+}
+
+type PreparedTtsPayload = {
+  payload: Record<string, unknown>;
+  processedText?: string;
+  unprocessedText?: string;
+  voiceCode?: string;
+  fullInput?: boolean;
+};
+
+export async function readTtsPayload(
+  request: Request,
+  options: { fullInput?: boolean } = {}
+): Promise<PreparedTtsPayload> {
+  let payload: Record<string, unknown>;
+  try {
+    payload = (await request.json()) as Record<string, unknown>;
+  } catch {
+    throw new Response(JSON.stringify({ detail: 'Invalid JSON body' }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const input = payload.input;
+  if (typeof input !== 'string' || !input.trim()) {
+    throw new Response(JSON.stringify({ detail: 'input is required' }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+  if (input.length > MAX_INPUT_CHARACTERS) {
+    throw new Response(
+      JSON.stringify({ detail: 'input exceeds 10000 characters' }),
+      { status: 413, headers: { 'content-type': 'application/json' } }
+    );
+  }
+
+  const requestedVoice = payload.voice ?? payload.voice_code;
+
+  const normalizedInput = input.trim().replace(/-+/g, '-');
+  const language = String(
+    payload.language || inferLanguageFromPresetVoice(requestedVoice) || 'en'
+  )
+    .trim()
+    .toLowerCase()
+    .replace('_', '-')
+    .split('-', 1)[0];
+  const { processed, unprocessed } = options.fullInput
+    ? { processed: normalizedInput, unprocessed: '' }
+    : splitTtsInputForCompatibility(normalizedInput, language);
+  payload.input = stripInlineNumericCitations(processed);
+  if (!payload.voice && typeof payload.voice_code === 'string') {
+    payload.voice = payload.voice_code;
+  }
+  payload.language = language;
+  return {
+    payload,
+    fullInput: options.fullInput,
+    processedText: unprocessed ? processed : undefined,
+    unprocessedText: unprocessed || undefined,
+    voiceCode:
+      typeof requestedVoice === 'string' && requestedVoice
+        ? requestedVoice
+        : undefined,
+  };
+}
+
+export async function proxyTtsPayload(
+  prepared: PreparedTtsPayload,
+  originalRequest?: Request,
+  scheduleAfterResponse?: (task: () => Promise<void>) => void
+) {
+  const { payload, processedText, unprocessedText, voiceCode } = prepared;
+  ttsServiceRoute(process.env, originalRequest);
+  if (
+    typeof payload.input === 'string' &&
+    (!payload.input.trim() || isPunctuationOnly(payload.input))
+  ) {
+    const result: Record<string, unknown> = {
+      audio: PUNCTUATION_ONLY_SILENCE_MP3,
+      audio_format: 'audio/mpeg',
+      timestamps: [],
+    };
+    if (voiceCode) result.voice_code = voiceCode;
+    if (processedText && unprocessedText) {
+      result.processed_text = processedText;
+      result.unprocessed_text = unprocessedText;
+    }
+    return Response.json(result, {
+      headers: {
+        'content-type': 'application/json',
+        'cache-control': 'private, no-store',
+        'x-castreader-gateway': 'vercel-r2',
+        'x-castreader-tts-noop': 'punctuation-only',
+      },
+    });
+  }
+  if (voiceCode?.startsWith('vc_')) {
+    if (!originalRequest) {
+      return Response.json(
+        { detail: 'Authenticated clone request context is required' },
+        { status: 500 }
+      );
+    }
+    const requestHeaders = new Headers(originalRequest.headers);
+    requestHeaders.delete('content-length');
+    requestHeaders.set('content-type', 'application/json');
+    const response = await handleCaptionedCloneRequest(
+      new Request(originalRequest.url, {
+        method: 'POST',
+        headers: requestHeaders,
+        body: JSON.stringify(payload),
+        signal: originalRequest.signal,
+      }),
+      { scheduleAfterResponse }
+    );
+    if (!response.ok) return response;
+    const result = (await response.json()) as Record<string, unknown>;
+    if (processedText && unprocessedText) {
+      result.processed_text = processedText;
+      result.unprocessed_text = unprocessedText;
+    }
+    const headers = new Headers({
+      'content-type': 'application/json',
+      'cache-control': 'private, no-store',
+      'x-castreader-gateway': 'vercel-r2',
+    });
+    for (const name of [
+      'x-tts-request-id',
+      'x-tts-queue-wait-ms',
+      'x-tts-run-ms',
+      'x-clone-quota-limit-seconds',
+      'x-clone-quota-used-seconds',
+      'x-clone-quota-remaining-seconds',
+      'x-clone-quota-reset-at',
+      'x-clone-quota-mode',
+      'x-request-id',
+    ]) {
+      const value = response.headers.get(name);
+      if (value) headers.set(name, value);
+    }
+    return Response.json(result, { headers });
+  }
+  const upstreamRoute = await resolveTTSUpstreamRoute(originalRequest);
+  // Native partly clients allow 30 seconds to first response. Full-document
+  // tools are a separate non-streaming contract and need a larger budget.
+  const signal = speechRequestSignal(
+    originalRequest?.signal,
+    prepared.fullInput ? 90_000 : 28_000
+  );
+  const requestId =
+    originalRequest?.headers.get('x-request-id')?.trim().slice(0, 128) ||
+    randomUUID();
+  const upstream = await retrySpeechRequest(
+    async (attemptSignal) => {
+      return fetch(upstreamRoute.url, {
+        method: 'POST',
+        redirect: 'error',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          'x-request-id': requestId,
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.any([
+          attemptSignal,
+          AbortSignal.timeout(prepared.fullInput ? 65_000 : 20_000),
+        ]),
+      });
+    },
+    { signal }
+  );
+
+  const headers = {
+    'content-type': 'application/json',
+    'cache-control': 'no-store',
+    'x-castreader-gateway': 'vercel-r2',
+    'x-castreader-upstream-region': upstreamRoute.serviceRoute,
+    'x-castreader-upstream-node': upstreamRoute.nodeId,
+    'x-castreader-upstream-revision': String(upstreamRoute.revision),
+    'x-castreader-upstream-source': upstreamRoute.source,
+    'x-request-id': requestId,
+  };
+  if (!upstream.ok) {
+    const failureBody = await upstream.text();
+    console.error('[tts-gateway] preset upstream rejected request', {
+      status: upstream.status,
+      language: typeof payload.language === 'string' ? payload.language : null,
+      voice: typeof payload.voice === 'string' ? payload.voice : null,
+      inputLength:
+        typeof payload.input === 'string' ? payload.input.length : null,
+      inputShape:
+        typeof payload.input === 'string'
+          ? safeInputShape(payload.input)
+          : null,
+      upstreamRequestId:
+        upstream.headers.get('x-request-id') ||
+        upstream.headers.get('x-correlation-id'),
+      ...upstreamFailureFingerprint(failureBody),
+    });
+    return new Response(failureBody, {
+      status: upstream.status,
+      headers,
+    });
+  }
+
+  const body = await upstream.text();
+  const firstDocument = body
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .find(Boolean);
+  if (!firstDocument) {
+    return Response.json(
+      { detail: 'TTS upstream returned an empty response' },
+      { status: 502, headers }
+    );
+  }
+
+  let result: Record<string, unknown>;
+  try {
+    result = JSON.parse(firstDocument) as Record<string, unknown>;
+    if (!result || typeof result !== 'object' || Array.isArray(result))
+      throw new Error('invalid response');
+  } catch {
+    return Response.json(
+      { detail: 'TTS upstream returned invalid JSON' },
+      { status: 502, headers }
+    );
+  }
+  if (typeof result.audio !== 'string' || !result.audio.trim()) {
+    return Response.json(
+      { detail: 'TTS upstream returned no audio' },
+      { status: 502, headers }
+    );
+  }
+  if (
+    prepared.fullInput &&
+    typeof result.unprocessed_text === 'string' &&
+    result.unprocessed_text.trim()
+  ) {
+    return Response.json(
+      { detail: 'TTS upstream returned incomplete full-document audio' },
+      { status: 502, headers }
+    );
+  }
+  const normalizedTimestamps = playbackTimestamps(result.timestamps);
+  const degradedTiming =
+    normalizedTimestamps.length === 0 ||
+    (payload.return_timestamps === true &&
+      payload.language === 'en' &&
+      typeof payload.input === 'string' &&
+      !timestampsCoverEnglishInput(payload.input, normalizedTimestamps));
+  if (degradedTiming && payload.return_timestamps === true) {
+    console.warn('[tts-gateway] word timing unavailable; continuing audio', {
+      language: payload.language,
+      voice: typeof payload.voice === 'string' ? payload.voice : null,
+      inputLength:
+        typeof payload.input === 'string' ? payload.input.length : null,
+      timestampCount: Array.isArray(result.timestamps)
+        ? result.timestamps.length
+        : null,
+      upstreamRequestId:
+        upstream.headers.get('x-request-id') ||
+        upstream.headers.get('x-correlation-id'),
+    });
+  }
+  result.timestamps = degradedTiming ? [] : normalizedTimestamps;
+  if (voiceCode) result.voice_code = voiceCode;
+  if (processedText && unprocessedText) {
+    result.processed_text = processedText;
+    result.unprocessed_text = unprocessedText;
+  }
+  return Response.json(result, {
+    status: 200,
+    headers: {
+      ...headers,
+      'x-castreader-tts-timing': degradedTiming ? 'segment' : 'word',
+    },
+  });
+}
+
+export function gatewayError(error: unknown) {
+  if (error instanceof Response) return error;
+  if (error instanceof TTSRegionalConfigurationError) {
+    console.error('[tts-gateway] regional routing rejected', {
+      reason: error.message,
+    });
+    return Response.json(
+      {
+        code: 'TTS_REGIONAL_ROUTE_UNAVAILABLE',
+        detail: 'Speech is temporarily unavailable',
+      },
+      { status: 503 }
+    );
+  }
+  const isTimeout =
+    error instanceof Error &&
+    (error.name === 'TimeoutError' || error.name === 'AbortError');
+  return Response.json(
+    { detail: isTimeout ? 'TTS upstream timeout' : 'TTS upstream unavailable' },
+    { status: isTimeout ? 504 : 502 }
+  );
+}
+
+export function ttsUpstreamRouteHeaders(
+  route: Awaited<ReturnType<typeof resolveTTSUpstreamRoute>>
+) {
+  return {
+    'x-castreader-upstream-region': route.serviceRoute,
+    'x-castreader-upstream-node': route.nodeId,
+    'x-castreader-upstream-revision': String(route.revision),
+    'x-castreader-upstream-source': route.source,
+  };
+}

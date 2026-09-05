@@ -1,0 +1,47 @@
+{
+  "window": {
+    "from_utc": "2026-09-04T10:43:00Z",
+    "to_utc": "2026-09-05T10:43:00Z",
+    "precision": "minute",
+    "source": "/var/log/nginx/access.log current file only",
+    "limitations": [
+      "Rotated files were not included.",
+      "QuickRead and regional-asset locations have access_log off.",
+      "This is route-level HTTP accounting, not end-user playback success."
+    ]
+  },
+  "captioned_speech_partly": {
+    "requests": 3870,
+    "methods": {"POST": 3869, "HEAD": 1},
+    "statuses": {"200": 3867, "500": 3},
+    "post_http_200_rate_percent": 99.92,
+    "post_500_times_utc": [
+      "2026-09-04T16:20:14Z",
+      "2026-09-04T16:24:27Z",
+      "2026-09-05T06:19:19Z"
+    ],
+    "statuses_not_seen": [502, 503, 504, 499],
+    "root_cause_of_500": "not provable from current logs"
+  },
+  "catalog": {
+    "requests": 2808,
+    "GET_200": 2781,
+    "OPTIONS_405": 27,
+    "public_source": "nginx static alias",
+    "catalog_bytes": 333187,
+    "catalog_urls_checked": 849,
+    "catalog_url_hosts": ["api.castreader.cn"]
+  },
+  "monitoring": {
+    "local_tts_health_timer_or_cron_present": false,
+    "local_tts_ops_timer_or_cron_present": false,
+    "controller_exporter_to_api_castreader_ai_found": false,
+    "gpu_exporter_checked": false,
+    "note": "Vercel cron declarations are not a scheduler on the CN controller."
+  },
+  "logging_gap": {
+    "next_stderr_has_timestamps": false,
+    "nginx_log_has_request_id_or_upstream_timing": false,
+    "effect": "The three HTTP 500 responses cannot be joined to a specific application error or upstream phase."
+  }
+}

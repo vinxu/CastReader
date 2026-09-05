@@ -1,0 +1,44 @@
+{
+  "vercel.json": {
+    "remote_sha256": "116ac5a141141c04eb4d95be4a84660195f64b91b8dca06ff0077f022ce40672",
+    "prior_worktree_sha256": "540c6abe136c49c365cb2562b0f9df44b2411603e6edb53d612856804435ddc3",
+    "identical": false,
+    "remote_lines": 113,
+    "snapshot": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/global/source-at-3ce12a7c/vercel.json.txt"
+  },
+  ".github/CODEOWNERS": {
+    "remote_sha256": "4ff2e00d92e79631d21da62479f03809291686ec537e2aaaf372d5de80dfe5d0",
+    "prior_worktree_sha256": "4ff2e00d92e79631d21da62479f03809291686ec537e2aaaf372d5de80dfe5d0",
+    "identical": true,
+    "remote_lines": 12,
+    "snapshot": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/global/source-at-3ce12a7c/.github/CODEOWNERS.txt"
+  },
+  "src/shared/voice-clone/worker.ts": {
+    "remote_sha256": "a72325c7b6aab55b530f5a39eda16c271b518fa9e8f58f2160e747172fd86277",
+    "prior_worktree_sha256": "161510c9c4a450dfd3fef4a44b2358a3bea0fb614a156d1331940a16fee8c27e",
+    "identical": false,
+    "remote_lines": 373,
+    "snapshot": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/global/source-at-3ce12a7c/src/shared/voice-clone/worker.ts.txt"
+  },
+  "src/shared/voice-clone/auth.ts": {
+    "remote_sha256": "4016e9f0563940423ff20ec5a9bfd5b6dbda6d3429b23ce39f6449b365e4318a",
+    "prior_worktree_sha256": "b116524295f19bc2a533124a31a02a0366c2e4b88a918b72f488c30028096c16",
+    "identical": false,
+    "remote_lines": 1262,
+    "snapshot": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/global/source-at-3ce12a7c/src/shared/voice-clone/auth.ts.txt"
+  },
+  "src/shared/lib/tts-gateway.ts": {
+    "remote_sha256": "8b610c68a41e5ac80d7c0d3a7f160ef721e530d20af905e1c57ce01d591735a0",
+    "prior_worktree_sha256": "3070e3410159b7de7edbbd2033db1e6b99119db4a90c9caecb3ac4240fbfcd2f",
+    "identical": false,
+    "remote_lines": 508,
+    "snapshot": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/global/source-at-3ce12a7c/src/shared/lib/tts-gateway.ts.txt"
+  },
+  ".github/workflows/backend-maintenance-release.yml": {
+    "remote_sha256": "3f6ddd453ab0751345e12d406175a0244b38ba62539c4e3abc73580d079a5181",
+    "prior_worktree_sha256": null,
+    "identical": false,
+    "remote_lines": 534,
+    "snapshot": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/global/source-at-3ce12a7c/.github/workflows/backend-maintenance-release.yml.txt"
+  }
+}

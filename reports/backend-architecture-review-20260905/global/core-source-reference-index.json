@@ -1,0 +1,95 @@
+{
+  "basis": "Remote GitHub comparison 2d5575b6...3ce12a7c plus local b973ec4b evidence. Fields labelled unchanged mean no net diff in comparison, not a live process hash.",
+  "files": [
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/shared/lib/tts-gateway.ts",
+      "relative_path": "src/shared/lib/tts-gateway.ts",
+      "sha256": "3070e3410159b7de7edbbd2033db1e6b99119db4a90c9caecb3ac4240fbfcd2f",
+      "unchanged_in_current_production_commit": false
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/shared/lib/speech-request-budget.ts",
+      "relative_path": "src/shared/lib/speech-request-budget.ts",
+      "sha256": "2b10141f4171571d3f2f90a9f00c4c75d8a9f560baec6233d766e5b708a9104d",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/shared/lib/tts-playback-cache.ts",
+      "relative_path": "src/shared/lib/tts-playback-cache.ts",
+      "sha256": "1a1331113ee6b843287d03f6136f51b990c6458b77d4d1ad11162caab72ecc91",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/shared/voice-clone/captioned.ts",
+      "relative_path": "src/shared/voice-clone/captioned.ts",
+      "sha256": "b0972b295ae0e991fdf9e34e0d9bb084b2429da39eeadd13e0c6be68d8c24bf0",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/shared/voice-clone/transient-retry.ts",
+      "relative_path": "src/shared/voice-clone/transient-retry.ts",
+      "sha256": "f8b14c2e37d2288e3ed7a18879e54e7ca952d35b3ad81e925d1741cb0cc71aef",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/shared/voice-clone/worker-restore.ts",
+      "relative_path": "src/shared/voice-clone/worker-restore.ts",
+      "sha256": "195af11b51969dada7fc5c24425c947f67741c2e3e01220b2f1d0e0acb5358f6",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/shared/ops/tts-upstream-routing-store.ts",
+      "relative_path": "src/shared/ops/tts-upstream-routing-store.ts",
+      "sha256": "b380bdbcbf06e73761ec9e0707c538c2fba02f7b67199680f1633d040da97dde",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/shared/ops/tts-regional-routing.ts",
+      "relative_path": "src/shared/ops/tts-regional-routing.ts",
+      "sha256": "6f407ea6392ad2e1152db085081ddd79b0cddf9832f0ccdcd95067fa5916e21f",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/shared/monitor/tts-probe.ts",
+      "relative_path": "src/shared/monitor/tts-probe.ts",
+      "sha256": "78c997a27f023ab9028dfc592e1994020a6869bf26cd71901cd6ec97f7317ab0",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/shared/monitor/tts-ops-evaluator.ts",
+      "relative_path": "src/shared/monitor/tts-ops-evaluator.ts",
+      "sha256": "24cd4607b5cc7db9612982b4a261a7f637f919f7ea6d1deb2436b891b88c19b5",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/shared/quickread/mobile-quickread-proxy.ts",
+      "relative_path": "src/shared/quickread/mobile-quickread-proxy.ts",
+      "sha256": "409112587c5a5c53ab03cc080db7dd726700d6488f6f71eafbb970a451ffb675",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/shared/quickread/mobile-quickread-job.ts",
+      "relative_path": "src/shared/quickread/mobile-quickread-job.ts",
+      "sha256": "cd1162e81f9dea1a8bc9ac98b3a4be82b2830d9715b24aab37719f27137fdfd6",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/src/core/db/index.ts",
+      "relative_path": "src/core/db/index.ts",
+      "sha256": "a4597d698a100ac08dfbc1e4efdc12c5f20fd69fa592a3eabed46264900c019c",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/.github/workflows/backend-production-release.yml",
+      "relative_path": ".github/workflows/backend-production-release.yml",
+      "sha256": "e08d77b3bae3c1353808535db7dcac89174c36776f7e5dce883c8e3d84c1a0d5",
+      "unchanged_in_current_production_commit": true
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-core-audio-regional-continuity/.github/CODEOWNERS",
+      "relative_path": ".github/CODEOWNERS",
+      "sha256": "4ff2e00d92e79631d21da62479f03809291686ec537e2aaaf372d5de80dfe5d0",
+      "unchanged_in_current_production_commit": true
+    }
+  ]
+}

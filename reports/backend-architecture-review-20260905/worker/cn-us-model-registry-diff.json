@@ -1,0 +1,47 @@
+{
+  "contract": "sanitized-regional-model-registry-diff-v1",
+  "captured_at_utc": "2026-09-05T10:52:38.847510+00:00",
+  "global_or_local": {
+    "bytes": 26697,
+    "sha256": "94e50c4449bcfe1e74614b68881f80df47abc6693cd5069da28ead238ecdaaac",
+    "package": {
+      "id": "kokoro-ja-public-mio-aoi-ren-haruto-r4",
+      "enabled": false,
+      "priority": 815,
+      "languages": [
+        "ja"
+      ],
+      "route_by_language": false,
+      "exact_voice_count": 0,
+      "voice_pattern_count": 0,
+      "model_runtime": "training-source-kmodel-v1",
+      "model_file": "v1_0/castreader-kokoro-ja-shared-anchor-exact-s985-r8-v4.pth",
+      "pipeline_language": "j"
+    }
+  },
+  "china": {
+    "bytes": 26702,
+    "sha256": "d1c8fe31b62415ae382d589dfbc143ffe0983df5b89d74dca2339f8725d79ca7",
+    "removed_package": "kokoro-ja-public-mio-aoi-ren-haruto-r4",
+    "added_package": {
+      "id": "kokoro-ja-public-mio-aoi-ren-haruto-kaori-r5",
+      "enabled": true,
+      "priority": 816,
+      "languages": [
+        "ja"
+      ],
+      "route_by_language": false,
+      "exact_voice_count": 0,
+      "voice_pattern_count": 0,
+      "model_runtime": "training-source-kmodel-v1",
+      "model_file": "v1_0/castreader-kokoro-ja-shared-anchor-exact-s985-r8-v4.pth",
+      "pipeline_language": "j"
+    }
+  },
+  "static_resolver_assessment": {
+    "active_voice_routing_change_proven": false,
+    "reason": "The China-only enabled package has no exact voice, voice pattern, or language route and is not the default package, so the current resolver cannot select it.",
+    "runtime_effect": "KokoroV1 eagerly loads every enabled package, so this entry can still add model initialization and resident-memory work even though no request resolves to it."
+  },
+  "data_safety": "No request text, voice asset, credential, host key, token, or raw registry document is retained."
+}

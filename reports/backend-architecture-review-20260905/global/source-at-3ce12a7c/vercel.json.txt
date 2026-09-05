@@ -1,0 +1,113 @@
+{
+  "regions": ["iad1"],
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": "nextjs",
+  "git": {
+    "deploymentEnabled": {
+      "beta": false
+    }
+  },
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=4096",
+      "NEXT_TELEMETRY_DISABLED": "1"
+    }
+  },
+  "functions": {
+    "app/api/cron/google-play-reconcile/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/cron/sync-apple-ads/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/explore/book/*/analyze/process-all/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/explore/book/*/analyze/batch/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/explore/book/*/analyze/merge/route.ts": {
+      "maxDuration": 120
+    },
+    "app/api/ai/**/*.ts": {
+      "maxDuration": 120
+    },
+    "app/api/books/search/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/cron/tts-health-probe/route.ts": {
+      "maxDuration": 90
+    },
+    "app/api/cron/tts-ops-evaluate/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/admin/tts-upstream/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/cron/resolve-ad-attribution/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/google-play-reconcile",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/sync-apple-ads",
+      "schedule": "15 * * * *"
+    },
+    {
+      "path": "/api/cron/security-check",
+      "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/cron/rollup-sessions",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/flush-analytics-events",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/apple-reconcile",
+      "schedule": "30 14 * * *"
+    },
+    {
+      "path": "/api/cron/store-daily",
+      "schedule": "20 13 * * *"
+    },
+    {
+      "path": "/api/cron/tts-health-probe",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/tts-ops-evaluate",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/account-revocations",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/voice-gift-notifications",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/voice-gift-guest-cleanup",
+      "schedule": "7,37 * * * *"
+    },
+    {
+      "path": "/api/cron/phone-auth-cleanup",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/cron/resolve-ad-attribution",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}

@@ -1,0 +1,274 @@
+{
+  "default_package": "kokoro-v1.0",
+  "duplicate_exact_voice_routes": {},
+  "enabled_package_count": 13,
+  "enabled_packages": [
+    {
+      "declared_timestamp_mode": "word",
+      "exact_voice_count": 52,
+      "id": "kokoro-v1.0",
+      "languages": [
+        "a",
+        "b",
+        "e",
+        "f",
+        "h",
+        "i",
+        "j",
+        "p"
+      ],
+      "model_runtime": "pip-kokoro",
+      "pipeline_language": null,
+      "priority": 10,
+      "route_by_language": false,
+      "route_languages": [],
+      "source_kind": "local",
+      "source_locator": "<default-v1.0-model>",
+      "statically_routable": true,
+      "voice_pattern_count": 0
+    },
+    {
+      "declared_timestamp_mode": "segment",
+      "exact_voice_count": 3,
+      "id": "kokoro-v1.1-zh",
+      "languages": [
+        "a",
+        "b",
+        "z"
+      ],
+      "model_runtime": "pip-kokoro",
+      "pipeline_language": null,
+      "priority": 100,
+      "route_by_language": true,
+      "route_languages": [
+        "z"
+      ],
+      "source_kind": "huggingface",
+      "source_locator": "hexgrad/Kokoro-82M-v1.1-zh",
+      "statically_routable": true,
+      "voice_pattern_count": 1
+    },
+    {
+      "declared_timestamp_mode": "segment",
+      "exact_voice_count": 0,
+      "id": "castreader-kokoro-es-em-mateo-v1",
+      "languages": [
+        "e"
+      ],
+      "model_runtime": "pip-kokoro",
+      "pipeline_language": null,
+      "priority": 310,
+      "route_by_language": false,
+      "route_languages": [],
+      "source_kind": "local",
+      "source_locator": "v1_0/castreader-kokoro-es-em-mateo-v1.pth",
+      "statically_routable": false,
+      "voice_pattern_count": 0
+    },
+    {
+      "declared_timestamp_mode": "segment",
+      "exact_voice_count": 0,
+      "id": "kokoro-es-shared-r24-v1",
+      "languages": [
+        "es"
+      ],
+      "model_runtime": "training-source-kmodel-v1",
+      "pipeline_language": null,
+      "priority": 900,
+      "route_by_language": false,
+      "route_languages": [],
+      "source_kind": "local",
+      "source_locator": "v1_0/castreader-kokoro-es-shared-r24-v1.pth",
+      "statically_routable": false,
+      "voice_pattern_count": 0
+    },
+    {
+      "declared_timestamp_mode": "word",
+      "exact_voice_count": 0,
+      "id": "kokoro-pt-public-rafael-lucas-mariana-r3",
+      "languages": [
+        "pt"
+      ],
+      "model_runtime": "training-source-kmodel-v1",
+      "pipeline_language": "pt-br",
+      "priority": 814,
+      "route_by_language": false,
+      "route_languages": [],
+      "source_kind": "local",
+      "source_locator": "v1_0/castreader-kokoro-pt-shared-anchor-v1.pth",
+      "statically_routable": false,
+      "voice_pattern_count": 0
+    },
+    {
+      "declared_timestamp_mode": "word",
+      "exact_voice_count": 0,
+      "id": "kokoro-pt-public-beatriz-r1",
+      "languages": [
+        "pt"
+      ],
+      "model_runtime": "training-source-kmodel-v1",
+      "pipeline_language": "pt-br",
+      "priority": 821,
+      "route_by_language": false,
+      "route_languages": [],
+      "source_kind": "local",
+      "source_locator": "v1_0/castreader-kokoro-pt-shared-anchor-v1.pth",
+      "statically_routable": false,
+      "voice_pattern_count": 0
+    },
+    {
+      "declared_timestamp_mode": "word",
+      "exact_voice_count": 0,
+      "id": "kokoro-fr-ff-elodie-voicepack-r1",
+      "languages": [
+        "f"
+      ],
+      "model_runtime": "pip-kokoro",
+      "pipeline_language": "fr-fr",
+      "priority": 850,
+      "route_by_language": false,
+      "route_languages": [],
+      "source_kind": "local",
+      "source_locator": "<default-v1.0-model>",
+      "statically_routable": false,
+      "voice_pattern_count": 0
+    },
+    {
+      "declared_timestamp_mode": "word",
+      "exact_voice_count": 17,
+      "id": "kokoro-es8-voicepack-shared-r2",
+      "languages": [
+        "e"
+      ],
+      "model_runtime": "pip-kokoro",
+      "pipeline_language": "es",
+      "priority": 960,
+      "route_by_language": false,
+      "route_languages": [],
+      "source_kind": "local",
+      "source_locator": "<default-v1.0-model>",
+      "statically_routable": true,
+      "voice_pattern_count": 0
+    },
+    {
+      "declared_timestamp_mode": "sentence",
+      "exact_voice_count": 10,
+      "id": "kokoro-ja-haruto-voicepack-shared-r1",
+      "languages": [
+        "j"
+      ],
+      "model_runtime": "pip-kokoro",
+      "pipeline_language": "ja",
+      "priority": 970,
+      "route_by_language": false,
+      "route_languages": [],
+      "source_kind": "local",
+      "source_locator": "<default-v1.0-model>",
+      "statically_routable": true,
+      "voice_pattern_count": 0
+    },
+    {
+      "declared_timestamp_mode": "word",
+      "exact_voice_count": 14,
+      "id": "kokoro-pt-lucas-mariana-beatriz-voicepack-shared-r1",
+      "languages": [
+        "p"
+      ],
+      "model_runtime": "pip-kokoro",
+      "pipeline_language": "pt",
+      "priority": 980,
+      "route_by_language": false,
+      "route_languages": [],
+      "source_kind": "local",
+      "source_locator": "<default-v1.0-model>",
+      "statically_routable": true,
+      "voice_pattern_count": 0
+    },
+    {
+      "declared_timestamp_mode": "word",
+      "exact_voice_count": 14,
+      "id": "kokoro-fr12-stockshared-celine-r2",
+      "languages": [
+        "fr"
+      ],
+      "model_runtime": "training-source-kmodel-v1",
+      "pipeline_language": "fr-fr",
+      "priority": 1100,
+      "route_by_language": false,
+      "route_languages": [],
+      "source_kind": "local",
+      "source_locator": "v1_0/castreader-kokoro-fr-stock-shared-celine-r2.pth",
+      "statically_routable": true,
+      "voice_pattern_count": 0
+    },
+    {
+      "declared_timestamp_mode": "word",
+      "exact_voice_count": 15,
+      "id": "kokoro-it6-custom-shared-alessandro-r6",
+      "languages": [
+        "it"
+      ],
+      "model_runtime": "training-source-kmodel-v1",
+      "pipeline_language": "it",
+      "priority": 1130,
+      "route_by_language": false,
+      "route_languages": [],
+      "source_kind": "local",
+      "source_locator": "v1_0/castreader-kokoro-it-shared-alessandro-r6.pth",
+      "statically_routable": true,
+      "voice_pattern_count": 0
+    },
+    {
+      "declared_timestamp_mode": "word",
+      "exact_voice_count": 20,
+      "id": "kokoro-de-community-20voices-source-curated-r3",
+      "languages": [
+        "de"
+      ],
+      "model_runtime": "training-source-kmodel-v1",
+      "pipeline_language": "de",
+      "priority": 1500,
+      "route_by_language": true,
+      "route_languages": [
+        "de"
+      ],
+      "source_kind": "local",
+      "source_locator": "v1_0/kikiri_german_base_51spk_ep4.pth",
+      "statically_routable": true,
+      "voice_pattern_count": 0
+    }
+  ],
+  "same_model_source_loaded_by_multiple_enabled_packages": [
+    {
+      "package_ids": [
+        "kokoro-v1.0",
+        "kokoro-fr-ff-elodie-voicepack-r1",
+        "kokoro-es8-voicepack-shared-r2",
+        "kokoro-ja-haruto-voicepack-shared-r1",
+        "kokoro-pt-lucas-mariana-beatriz-voicepack-shared-r1"
+      ],
+      "runtime": "pip-kokoro",
+      "source_kind": "local",
+      "source_locator": "<default-v1.0-model>"
+    },
+    {
+      "package_ids": [
+        "kokoro-pt-public-rafael-lucas-mariana-r3",
+        "kokoro-pt-public-beatriz-r1"
+      ],
+      "runtime": "training-source-kmodel-v1",
+      "source_kind": "local",
+      "source_locator": "v1_0/castreader-kokoro-pt-shared-anchor-v1.pth"
+    }
+  ],
+  "sha256": "94e50c4449bcfe1e74614b68881f80df47abc6693cd5069da28ead238ecdaaac",
+  "source": "/Users/xuxuheng/Documents/MyProject/.worktrees/castreader-tts-playback-priority/api/src/inference/model_packages.json",
+  "statically_unroutable_enabled_packages": [
+    "castreader-kokoro-es-em-mateo-v1",
+    "kokoro-es-shared-r24-v1",
+    "kokoro-pt-public-rafael-lucas-mariana-r3",
+    "kokoro-pt-public-beatriz-r1",
+    "kokoro-fr-ff-elodie-voicepack-r1"
+  ],
+  "timestamp_mode_runtime_references": "none outside registry loader (rg confirmed)"
+}

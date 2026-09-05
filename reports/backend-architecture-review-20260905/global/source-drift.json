@@ -1,0 +1,975 @@
+{
+  "status": "ahead",
+  "ahead_by": 52,
+  "behind_by": 0,
+  "total_commits": 52,
+  "html_url": "https://github.com/scmyyan/readout-web/compare/2d5575b6ca8c38fa4b7177bdddc2afeaf12e1ac2...3ce12a7c794e3d9788a7982a66a62f70a9407678",
+  "commits": [
+    {
+      "sha": "c6d8410e86b38795786d36f03689674dd4519d83",
+      "message": "fix(tts): preserve contextual sentence boundaries"
+    },
+    {
+      "sha": "1eaff9ffdc5b316132823ed965b71934330b931c",
+      "message": "feat(cn): add requester-owned voice invitations"
+    },
+    {
+      "sha": "9ec09e67d8e1c40d61ec00e2dd36896868bdee63",
+      "message": "fix(cn): verify voice gift consent schema"
+    },
+    {
+      "sha": "15242434e4c3dd7afc0663e5c876ad4d3aa5219b",
+      "message": "Merge pull request #7 from scmyyan/codex/cn-voice-gift-minimal-e2e"
+    },
+    {
+      "sha": "f38d2a1a36b6a89f7f71bdb9dbe2c8551982de3a",
+      "message": "merge: converge CN production TTS ancestry"
+    },
+    {
+      "sha": "5d73ef9d0c8dab5384c68e0bdefba7a3630b2797",
+      "message": "Merge pull request #8 from scmyyan/codex/cn-voice-gift-production-ancestry"
+    },
+    {
+      "sha": "4e140dd6ed25f8b58db0dfd71d26d6915d13b758",
+      "message": "fix(cn): accept PostgreSQL 14 consent deparse"
+    },
+    {
+      "sha": "32dafaa3f725b539c6db82648fb7b67949a6e59d",
+      "message": "Merge pull request #9 from scmyyan/codex/cn-voice-gift-pg14-schema-gate"
+    },
+    {
+      "sha": "ad5f1f367b91b7a27d0f8df149bc52fa438d0356",
+      "message": "feat(cn): add two-phase Voice Gift drafts"
+    },
+    {
+      "sha": "ab110d864b5705634211e17ec4359a078faafc93",
+      "message": "Merge pull request #10 from scmyyan/codex/cn-voice-gift-pg14-schema-gate"
+    },
+    {
+      "sha": "2b824690c158d9f8f6a86ff4bacc9ce68c6d5629",
+      "message": "chore(cn): enable Voice Gift draft schema"
+    },
+    {
+      "sha": "35b4aea2c8155ff081baccdf277ba5de1e31fc31",
+      "message": "Merge pull request #11 from scmyyan/codex/cn-voice-gift-pg14-schema-gate"
+    },
+    {
+      "sha": "e5545767c8fb7847a0e912bba87e2cd7245f5502",
+      "message": "fix(cn): gate release on clone phase0 schema"
+    },
+    {
+      "sha": "cf524fd74aebb2adac1d219114dc997a562cc52b",
+      "message": "Merge pull request #12 from scmyyan/codex/cn-voice-gift-pg14-schema-gate"
+    },
+    {
+      "sha": "17aac57a15819fdada004afb75e2c84645ab32ec",
+      "message": "fix(cn): preserve clone TTS mobile session"
+    },
+    {
+      "sha": "2584308ccc3cb0bf6f3241ef788f649b978c35d9",
+      "message": "Merge pull request #13 from scmyyan/codex/cn-clone-tts-auth-proxy-fix"
+    },
+    {
+      "sha": "1117339bae5ee0b7c040ef932c5c9d9fccc9bbbb",
+      "message": "feat(voice-clone): expose invitation voice origin"
+    },
+    {
+      "sha": "d914f9efe1200e50602871256099aef0f8192123",
+      "message": "Merge pull request #14 from scmyyan/codex/cn-invited-voice-provenance"
+    },
+    {
+      "sha": "c1033c5a4089284d535ac32157a300d6c365ef7c",
+      "message": "fix: keep China preset TTS on approved domestic upstream"
+    },
+    {
+      "sha": "13de2ff85ba19d5c3d1f08087f5118927aef308f",
+      "message": "Merge pull request #15 from scmyyan/codex/cn-tts-regional-routing"
+    },
+    {
+      "sha": "9ce83dce5120edafcd8bab5af9d0335f9c3af19f",
+      "message": "fix(tts): keep playback independent of word timing"
+    },
+    {
+      "sha": "91ebb46705f8815d6a78ace2ccd3de67eb9799aa",
+      "message": "Merge pull request #17 from scmyyan/codex/tts-playback-priority"
+    },
+    {
+      "sha": "d411485210d53ee776655ae99a4135471e5b786c",
+      "message": "fix(tts): return file-reader audio before optional cache writes"
+    },
+    {
+      "sha": "97443cef6d9aeec236f0196ad26e06bee260d628",
+      "message": "Merge pull request #18 from scmyyan/codex/tts-file-playback-priority-cn"
+    },
+    {
+      "sha": "7bdd5599aba334921fffec95161e02a43d1f1006",
+      "message": "fix(cn): keep document and TTS service paths in China"
+    },
+    {
+      "sha": "130828efd2b3abe0e7436e210c15170ad6618c93",
+      "message": "fix(tts): pin regional synthesis routes and reject foreign targets"
+    },
+    {
+      "sha": "3f184bf8d96544b654bc058ba570a558215b359b",
+      "message": "fix(tts): retry locally within playback budgets and preserve full audio"
+    },
+    {
+      "sha": "c7d96570cd94091d7dd28415b2fa3ffa8691f4dc",
+      "message": "fix(voice-clone): bound regional retries and decouple preview persistence"
+    },
+    {
+      "sha": "fb171376072055547e3a2877b73a21ffcf2c97a4",
+      "message": "fix(quickread): keep optional composition off playback failures and renew active jobs"
+    },
+    {
+      "sha": "8586e26192acad47fcaf180c48129bcfd25f874d",
+      "message": "fix(tts): preserve explicit business quota denials during retries"
+    },
+    {
+      "sha": "ad7372fe1594df331969e5c4c8c4b77c3d787500",
+      "message": "fix(tts): retry incomplete audio bodies within the same request budget"
+    },
+    {
+      "sha": "2c9b8194d7829eeeafeb22374dbc66803ccec441",
+      "message": "fix(cn): validate asset capabilities behind local ingress and cap OCR CPU"
+    },
+    {
+      "sha": "53ba6326d2febdd37a071a39f5bec7e2e8d96b39",
+      "message": "fix(cn): provision runtime limiter grants and typed timestamp arrays"
+    },
+    {
+      "sha": "e60741cfe4f14ca6d6766a69e03364ca7fdfd8c0",
+      "message": "feat(ops): expose safe clone regional configuration readiness"
+    },
+    {
+      "sha": "bcbc5ce42348ea0cd7e9d8efb592002f3cd46531",
+      "message": "test(growth): record production acceptance and isolate operator sessions"
+    },
+    {
+      "sha": "d70839c1ca05d727253e4af45e5652f37af54e53",
+      "message": "fix(cn): keep analytics caches local and provision media tools"
+    },
+    {
+      "sha": "fc619f5f46dadf44f442de25d5d2ac6b7f0b8e1d",
+      "message": "fix(cn): keep upload page redirects on the public regional origin"
+    },
+    {
+      "sha": "8025e38a1e0cc78734e6198572b880755cce990d",
+      "message": "merge: preserve current global production alongside CN local service fixes"
+    },
+    {
+      "sha": "7b1ec4a6754bf1d714778dfeaae8b4406d493bb2",
+      "message": "merge: retain production growth acceptance and operator isolation"
+    },
+    {
+      "sha": "b3ed9b352c65af94068b72a3e2fd0a25b28bae2e",
+      "message": "Merge pull request #19 from scmyyan/codex/cn-local-core-services"
+    },
+    {
+      "sha": "47e9426d487ed8b0c544b4d47ac8034ff03e7163",
+      "message": "fix(cn): activate the existing TTS override transactionally"
+    },
+    {
+      "sha": "62386e902cb7201919e9680e56c82c8627b47110",
+      "message": "Merge pull request #20 from scmyyan/codex/cn-local-core-services"
+    },
+    {
+      "sha": "a618600acc7efa91e6d4ba49cd4b7a6393167ad2",
+      "message": "fix(pro): reconcile missed Google Play renewals safely"
+    },
+    {
+      "sha": "83061da2fb91f5fa7806757678f2e97e262e51a3",
+      "message": "merge: integrate beta baseline for Google Play recovery release"
+    },
+    {
+      "sha": "e07bc5ff3b4505ea01d7d204459f744944b16afa",
+      "message": "fix(pro): accept unwrapped Play renewal notifications"
+    },
+    {
+      "sha": "b21ecec4a77f051bc2c7a2e779926bf745ff2853",
+      "message": "ci: add configuration-preserving Global maintenance release"
+    },
+    {
+      "sha": "9bb3a1290a7c671a8e7553c56bf58c1561c98eff",
+      "message": "Merge pull request #21 from scmyyan/codex/google-play-renewal-recovery-20260904"
+    },
+    {
+      "sha": "f282a8b856f1ac2ef0f3a0271427df566188e49b",
+      "message": "test(tts): accept source decimal timestamp tokens"
+    },
+    {
+      "sha": "3e5c3de694797983bf4376f1db849fb609c50e3e",
+      "message": "Merge pull request #22 from scmyyan/codex/tts-decimal-probe-stability-20260904"
+    },
+    {
+      "sha": "ae0d29426e72b1ae016241f42059adc67a1d57f9",
+      "message": "Harden Google Play account recovery"
+    },
+    {
+      "sha": "92448b49a68666efa65c8889dd5117285e79c778",
+      "message": "Restore cross-device Pro identity resolution and fresh reads"
+    },
+    {
+      "sha": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+      "message": "Merge pull request #23 from scmyyan/codex/google-play-authority-hardening-20260905"
+    }
+  ],
+  "files": [
+    {
+      "filename": ".env.example",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "changes": 10
+    },
+    {
+      "filename": ".github/workflows/backend-maintenance-release.yml",
+      "status": "added",
+      "additions": 534,
+      "deletions": 0,
+      "changes": 534
+    },
+    {
+      "filename": "docs/contracts/fixtures/voice-gift-v1.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "changes": 1
+    },
+    {
+      "filename": "docs/contracts/voice-gift-v1.md",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "changes": 7
+    },
+    {
+      "filename": "docs/feature-voice-cloning.md",
+      "status": "modified",
+      "additions": 50,
+      "deletions": 14,
+      "changes": 64
+    },
+    {
+      "filename": "docs/growth-funnel-integrity-2026-09-04.md",
+      "status": "modified",
+      "additions": 23,
+      "deletions": 1,
+      "changes": 24
+    },
+    {
+      "filename": "docs/incidents/2026-09-03-cn-kokoro-routing.md",
+      "status": "added",
+      "additions": 30,
+      "deletions": 0,
+      "changes": 30
+    },
+    {
+      "filename": "docs/incidents/2026-09-04-google-play-renewal-sync.md",
+      "status": "added",
+      "additions": 144,
+      "deletions": 0,
+      "changes": 144
+    },
+    {
+      "filename": "docs/migrations/2026-09-02-cn-voice-gift-minimal.sql",
+      "status": "added",
+      "additions": 280,
+      "deletions": 0,
+      "changes": 280
+    },
+    {
+      "filename": "docs/migrations/2026-09-05-google-account-subject-unique.sql",
+      "status": "added",
+      "additions": 50,
+      "deletions": 0,
+      "changes": 50
+    },
+    {
+      "filename": "docs/migrations/README.md",
+      "status": "modified",
+      "additions": 34,
+      "deletions": 0,
+      "changes": 34
+    },
+    {
+      "filename": "package.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "changes": 4
+    },
+    {
+      "filename": "scripts/activate-cn-release.sh",
+      "status": "modified",
+      "additions": 1530,
+      "deletions": 18,
+      "changes": 1548
+    },
+    {
+      "filename": "scripts/activate-cn-release.test.ts",
+      "status": "modified",
+      "additions": 676,
+      "deletions": 7,
+      "changes": 683
+    },
+    {
+      "filename": "scripts/castreader-cn-kokoro-tunnel.service",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0,
+      "changes": 18
+    },
+    {
+      "filename": "scripts/castreader-cn-route.conf",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 1,
+      "changes": 11
+    },
+    {
+      "filename": "scripts/convert-cn-document.py",
+      "status": "added",
+      "additions": 164,
+      "deletions": 0,
+      "changes": 164
+    },
+    {
+      "filename": "scripts/deploy-cn.sh",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "changes": 4
+    },
+    {
+      "filename": "scripts/google-play-reconcile-local.test.ts",
+      "status": "added",
+      "additions": 193,
+      "deletions": 0,
+      "changes": 193
+    },
+    {
+      "filename": "scripts/growth-funnel-audit.mts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 2,
+      "changes": 3
+    },
+    {
+      "filename": "scripts/nginx-api-castreader-cn.conf",
+      "status": "modified",
+      "additions": 195,
+      "deletions": 45,
+      "changes": 240
+    },
+    {
+      "filename": "scripts/nginx-api-castreader-cn.test.ts",
+      "status": "modified",
+      "additions": 67,
+      "deletions": 3,
+      "changes": 70
+    },
+    {
+      "filename": "scripts/prepare-cn-document-services.sh",
+      "status": "added",
+      "additions": 36,
+      "deletions": 0,
+      "changes": 36
+    },
+    {
+      "filename": "scripts/probe-tts-sentence-boundaries.mts",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 11,
+      "changes": 28
+    },
+    {
+      "filename": "scripts/sql/cn-request-limits.sql",
+      "status": "added",
+      "additions": 15,
+      "deletions": 0,
+      "changes": 15
+    },
+    {
+      "filename": "scripts/test-cn-document-converter.py",
+      "status": "added",
+      "additions": 50,
+      "deletions": 0,
+      "changes": 50
+    },
+    {
+      "filename": "scripts/test-cn-voice-gift-minimal-migration.sh",
+      "status": "added",
+      "additions": 237,
+      "deletions": 0,
+      "changes": 237
+    },
+    {
+      "filename": "scripts/test-manual-migrations.sh",
+      "status": "modified",
+      "additions": 30,
+      "deletions": 0,
+      "changes": 30
+    },
+    {
+      "filename": "src/app/api/captioned_speech_partly/route.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 0,
+      "changes": 18
+    },
+    {
+      "filename": "src/app/api/cron/google-play-reconcile/route.ts",
+      "status": "added",
+      "additions": 20,
+      "deletions": 0,
+      "changes": 20
+    },
+    {
+      "filename": "src/app/api/cron/voice-gift-guest-cleanup/route.ts",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 3,
+      "changes": 17
+    },
+    {
+      "filename": "src/app/api/markdown-tts/fetch/route.ts",
+      "status": "modified",
+      "additions": 38,
+      "deletions": 1,
+      "changes": 39
+    },
+    {
+      "filename": "src/app/api/md-upload/document/[id]/route.ts",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 0,
+      "changes": 16
+    },
+    {
+      "filename": "src/app/api/md-upload/documents/route.ts",
+      "status": "modified",
+      "additions": 40,
+      "deletions": 5,
+      "changes": 45
+    },
+    {
+      "filename": "src/app/api/md-upload/recent-documents/route.ts",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 0,
+      "changes": 13
+    },
+    {
+      "filename": "src/app/api/md-upload/route.ts",
+      "status": "modified",
+      "additions": 27,
+      "deletions": 8,
+      "changes": 35
+    },
+    {
+      "filename": "src/app/api/pro/google-webhook/route.test.ts",
+      "status": "modified",
+      "additions": 330,
+      "deletions": 22,
+      "changes": 352
+    },
+    {
+      "filename": "src/app/api/pro/google-webhook/route.ts",
+      "status": "modified",
+      "additions": 43,
+      "deletions": 28,
+      "changes": 71
+    },
+    {
+      "filename": "src/app/api/pro/status/route.test.ts",
+      "status": "added",
+      "additions": 160,
+      "deletions": 0,
+      "changes": 160
+    },
+    {
+      "filename": "src/app/api/pro/status/route.ts",
+      "status": "modified",
+      "additions": 108,
+      "deletions": 111,
+      "changes": 219
+    },
+    {
+      "filename": "src/app/api/pro/verify-android/route.test.ts",
+      "status": "added",
+      "additions": 389,
+      "deletions": 0,
+      "changes": 389
+    },
+    {
+      "filename": "src/app/api/pro/verify-android/route.ts",
+      "status": "modified",
+      "additions": 332,
+      "deletions": 119,
+      "changes": 451
+    },
+    {
+      "filename": "src/app/api/regional-assets/[...key]/route.ts",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "changes": 5
+    },
+    {
+      "filename": "src/app/api/voice-clone/library/route.ts",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 2,
+      "changes": 18
+    },
+    {
+      "filename": "src/app/api/voice-clone/requests/draft-prepare/route.ts",
+      "status": "modified",
+      "additions": 590,
+      "deletions": 2,
+      "changes": 592
+    },
+    {
+      "filename": "src/app/api/voice-clone/requests/draft-preview/route.ts",
+      "status": "modified",
+      "additions": 110,
+      "deletions": 2,
+      "changes": 112
+    },
+    {
+      "filename": "src/app/api/voice-clone/requests/fulfill-draft/route.ts",
+      "status": "modified",
+      "additions": 92,
+      "deletions": 1,
+      "changes": 93
+    },
+    {
+      "filename": "src/app/api/voice-clone/requests/invitation/route.ts",
+      "status": "modified",
+      "additions": 62,
+      "deletions": 1,
+      "changes": 63
+    },
+    {
+      "filename": "src/app/api/voice-clone/requests/route.ts",
+      "status": "modified",
+      "additions": 108,
+      "deletions": 0,
+      "changes": 108
+    },
+    {
+      "filename": "src/app/documents/route.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "changes": 7
+    },
+    {
+      "filename": "src/app/upload/route.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 1,
+      "changes": 9
+    },
+    {
+      "filename": "src/config/db/migrations/0026_cn_voice_gift_minimal.sql",
+      "status": "added",
+      "additions": 154,
+      "deletions": 0,
+      "changes": 154
+    },
+    {
+      "filename": "src/config/db/migrations/0027_cn_voice_gift_draft_two_phase.sql",
+      "status": "added",
+      "additions": 346,
+      "deletions": 0,
+      "changes": 346
+    },
+    {
+      "filename": "src/config/db/migrations/0028_google_account_subject_unique.sql",
+      "status": "added",
+      "additions": 45,
+      "deletions": 0,
+      "changes": 45
+    },
+    {
+      "filename": "src/config/db/schema.ts",
+      "status": "modified",
+      "additions": 399,
+      "deletions": 1,
+      "changes": 400
+    },
+    {
+      "filename": "src/core/redis/cn-regional.test.ts",
+      "status": "added",
+      "additions": 29,
+      "deletions": 0,
+      "changes": 29
+    },
+    {
+      "filename": "src/core/redis/index.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "changes": 6
+    },
+    {
+      "filename": "src/extensions/storage/cn-cos.ts",
+      "status": "added",
+      "additions": 34,
+      "deletions": 0,
+      "changes": 34
+    },
+    {
+      "filename": "src/shared/analytics/operator-cli-safety.test.ts",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0,
+      "changes": 18
+    },
+    {
+      "filename": "src/shared/documents/cn-documents.ts",
+      "status": "added",
+      "additions": 318,
+      "deletions": 0,
+      "changes": 318
+    },
+    {
+      "filename": "src/shared/documents/mobile-documents-proxy.ts",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 0,
+      "changes": 17
+    },
+    {
+      "filename": "src/shared/hooks/use-document-upload.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 10,
+      "changes": 18
+    },
+    {
+      "filename": "src/shared/lib/cn-rate-limit.ts",
+      "status": "added",
+      "additions": 57,
+      "deletions": 0,
+      "changes": 57
+    },
+    {
+      "filename": "src/shared/lib/cn-regional-assets.test.ts",
+      "status": "added",
+      "additions": 82,
+      "deletions": 0,
+      "changes": 82
+    },
+    {
+      "filename": "src/shared/lib/cn-regional-assets.ts",
+      "status": "added",
+      "additions": 243,
+      "deletions": 0,
+      "changes": 243
+    },
+    {
+      "filename": "src/shared/lib/rate-limit.ts",
+      "status": "modified",
+      "additions": 34,
+      "deletions": 0,
+      "changes": 34
+    },
+    {
+      "filename": "src/shared/lib/server-cache.test.ts",
+      "status": "added",
+      "additions": 40,
+      "deletions": 0,
+      "changes": 40
+    },
+    {
+      "filename": "src/shared/lib/server-cache.ts",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 5,
+      "changes": 19
+    },
+    {
+      "filename": "src/shared/lib/tts-gateway.test.ts",
+      "status": "modified",
+      "additions": 62,
+      "deletions": 0,
+      "changes": 62
+    },
+    {
+      "filename": "src/shared/lib/tts-gateway.ts",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 0,
+      "changes": 11
+    },
+    {
+      "filename": "src/shared/lib/tts-sentence-boundary.test.ts",
+      "status": "added",
+      "additions": 226,
+      "deletions": 0,
+      "changes": 226
+    },
+    {
+      "filename": "src/shared/lib/tts-storage.ts",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 3,
+      "changes": 17
+    },
+    {
+      "filename": "src/shared/models/google-play-periods.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2
+    },
+    {
+      "filename": "src/shared/models/google-play-pro.test.ts",
+      "status": "modified",
+      "additions": 43,
+      "deletions": 0,
+      "changes": 43
+    },
+    {
+      "filename": "src/shared/models/google-play-pro.ts",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 3,
+      "changes": 14
+    },
+    {
+      "filename": "src/shared/models/google-play-reconcile.ts",
+      "status": "added",
+      "additions": 134,
+      "deletions": 0,
+      "changes": 134
+    },
+    {
+      "filename": "src/shared/models/pro.ts",
+      "status": "modified",
+      "additions": 33,
+      "deletions": 0,
+      "changes": 33
+    },
+    {
+      "filename": "src/shared/models/voice-gift-cn-draft.ts",
+      "status": "added",
+      "additions": 1282,
+      "deletions": 0,
+      "changes": 1282
+    },
+    {
+      "filename": "src/shared/models/voice-gift-cn-minimal.ts",
+      "status": "added",
+      "additions": 850,
+      "deletions": 0,
+      "changes": 850
+    },
+    {
+      "filename": "src/shared/models/voice-gift-library.ts",
+      "status": "modified",
+      "additions": 121,
+      "deletions": 84,
+      "changes": 205
+    },
+    {
+      "filename": "src/shared/ops/tts-regional-routing.test.ts",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 0,
+      "changes": 21
+    },
+    {
+      "filename": "src/shared/pro/account-identity.ts",
+      "status": "added",
+      "additions": 21,
+      "deletions": 0,
+      "changes": 21
+    },
+    {
+      "filename": "src/shared/pro/cors.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "changes": 3
+    },
+    {
+      "filename": "src/shared/pro/google-play-reconcile.test.ts",
+      "status": "added",
+      "additions": 250,
+      "deletions": 0,
+      "changes": 250
+    },
+    {
+      "filename": "src/shared/pro/google-play-reconcile.ts",
+      "status": "added",
+      "additions": 137,
+      "deletions": 0,
+      "changes": 137
+    },
+    {
+      "filename": "src/shared/pro/google-play-timeout.test.ts",
+      "status": "added",
+      "additions": 227,
+      "deletions": 0,
+      "changes": 227
+    },
+    {
+      "filename": "src/shared/pro/google-play.test.ts",
+      "status": "modified",
+      "additions": 119,
+      "deletions": 0,
+      "changes": 119
+    },
+    {
+      "filename": "src/shared/pro/google-play.ts",
+      "status": "modified",
+      "additions": 216,
+      "deletions": 68,
+      "changes": 284
+    },
+    {
+      "filename": "src/shared/services/storage.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "changes": 7
+    },
+    {
+      "filename": "src/shared/upload-gateway/compatibility-proxy.test.ts",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 0,
+      "changes": 17
+    },
+    {
+      "filename": "src/shared/upload-gateway/compatibility-proxy.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "changes": 5
+    },
+    {
+      "filename": "src/shared/upload-gateway/cos-sts.ts",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 1,
+      "changes": 14
+    },
+    {
+      "filename": "src/shared/voice-clone/auth-mobile-session.test.ts",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 0,
+      "changes": 22
+    },
+    {
+      "filename": "src/shared/voice-clone/auth.ts",
+      "status": "modified",
+      "additions": 27,
+      "deletions": 0,
+      "changes": 27
+    },
+    {
+      "filename": "src/shared/voice-clone/cn-draft-cleanup.ts",
+      "status": "added",
+      "additions": 35,
+      "deletions": 0,
+      "changes": 35
+    },
+    {
+      "filename": "src/shared/voice-clone/cn-minimal-contract.test.ts",
+      "status": "added",
+      "additions": 427,
+      "deletions": 0,
+      "changes": 427
+    },
+    {
+      "filename": "src/shared/voice-clone/cn-minimal-contract.ts",
+      "status": "added",
+      "additions": 180,
+      "deletions": 0,
+      "changes": 180
+    },
+    {
+      "filename": "src/shared/voice-clone/contract.test.ts",
+      "status": "modified",
+      "additions": 133,
+      "deletions": 0,
+      "changes": 133
+    },
+    {
+      "filename": "src/shared/voice-clone/contract.ts",
+      "status": "modified",
+      "additions": 183,
+      "deletions": 47,
+      "changes": 230
+    },
+    {
+      "filename": "src/shared/voice-clone/gift-feature.ts",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 0,
+      "changes": 22
+    },
+    {
+      "filename": "src/shared/voice-clone/guest-draft-contract.test.ts",
+      "status": "modified",
+      "additions": 102,
+      "deletions": 0,
+      "changes": 102
+    },
+    {
+      "filename": "src/shared/voice-clone/guest-draft-contract.ts",
+      "status": "modified",
+      "additions": 30,
+      "deletions": 0,
+      "changes": 30
+    },
+    {
+      "filename": "src/shared/voice-clone/library-origin.test.ts",
+      "status": "added",
+      "additions": 36,
+      "deletions": 0,
+      "changes": 36
+    },
+    {
+      "filename": "src/shared/voice-clone/library-origin.ts",
+      "status": "added",
+      "additions": 15,
+      "deletions": 0,
+      "changes": 15
+    },
+    {
+      "filename": "src/shared/voice-clone/voice-gift-v1-contract.test.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "changes": 5
+    },
+    {
+      "filename": "src/shared/voice-clone/web-bridge.ts",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 5,
+      "changes": 16
+    },
+    {
+      "filename": "src/shared/voice-clone/worker.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 3,
+      "changes": 10
+    },
+    {
+      "filename": "vercel.json",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "changes": 7
+    }
+  ]
+}

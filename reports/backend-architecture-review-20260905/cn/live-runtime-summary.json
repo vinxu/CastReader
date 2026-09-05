@@ -1,0 +1,66 @@
+{
+  "audit": {
+    "mode": "read-only",
+    "observed_at_utc_range": [
+      "2026-09-05T10:37:00Z",
+      "2026-09-05T10:48:00Z"
+    ],
+    "prohibited_actions_observed": {
+      "production_writes": false,
+      "synthesis_requests": false,
+      "restarts": false,
+      "deployments": false
+    }
+  },
+  "controller": {
+    "host": "106.54.47.163",
+    "hostname": "VM-0-5-ubuntu",
+    "cpu_count": 2,
+    "memory_kib_total": 3743572,
+    "memory_available_approx_gib": 2.32,
+    "swap_bytes": 0,
+    "disk_bytes_total_approx": 52700000000,
+    "disk_used_percent": 29
+  },
+  "releases": {
+    "next": {
+      "current": "/opt/castreader/release-20260904120513",
+      "source_commit": "62386e902cb7201919e9680e56c82c8627b47110",
+      "capabilities_public_commit_matches": true
+    },
+    "quickread": {
+      "current": "/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement",
+      "source_commit": "5728d1cbbaf1bbdc57f799cb4ed355fddac0e32f",
+      "activated_at_utc": "2026-09-04T05:04:24Z",
+      "activation_file_hashes_match": true
+    }
+  },
+  "services": [
+    {"unit": "castreader.service", "listen": "127.0.0.1:3000", "active": true, "n_restarts": 0},
+    {"unit": "castreader-voice-gift-cn.service", "listen": "127.0.0.1:3001", "active": true, "n_restarts": 0},
+    {"unit": "castreader-quickread-cn.service", "listen": "127.0.0.1:7777", "active": true, "n_restarts": 0},
+    {"unit": "castreader-cn-kokoro-tunnel.service", "listen": "127.0.0.1:18880", "active": true, "n_restarts": 0},
+    {"unit": "castreader-cn-clone-tunnel.service", "listen": "127.0.0.1:18890", "active": true, "n_restarts": 0}
+  ],
+  "health": {
+    "public_capabilities": {"http_status": 200, "region": "cn", "voice_clone_worker_route_ready": true},
+    "preset_route_head": {"http_status": 200, "region": "cn", "node": "castreader-cn4090", "source": "cn-environment"},
+    "quickread": {"http_status": 200, "active": 0, "queued": 0, "concurrency": 3, "jobs_cached": 11},
+    "kokoro_tunnel": {"http_status": 200, "healthy": true},
+    "clone_tunnel": {"http_status": 200, "healthy": true, "nari_ready": true, "queue_depth": 0},
+    "scope_warning": "These checks prove process/config reachability only. They do not prove synthesis quality, storage, authentication, quota, client playback, or physical region."
+  },
+  "data_plane": {
+    "postgres": {
+      "listen": "127.0.0.1:5432",
+      "version": "14.23",
+      "max_connections": 100,
+      "observed_active_connections": 6,
+      "required_tables_present": ["documents", "cn_request_limits", "mobile_funnel_events"]
+    },
+    "documents_count": 0,
+    "voice_storage_namespace_counts": {"voice-clone-cn": 23},
+    "cos_config": {"region": "ap-shanghai", "bucket": "castreader-voice-1323065328", "endpoint_override_present": false},
+    "physical_cos_region_attested_in_this_audit": false
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "repository_head": "611a6dff032b3097bbaa75e73154456ed5b55b8b",
+  "deployment_manifest_runtime_source_commit": "5728d1cbbaf1bbdc57f799cb4ed355fddac0e32f",
+  "global_runtime_extract_content": {
+    "sha256": "8eba87646a36fc5969b3fd989e9093bc5c3d77d80d03bfb5d3184197cad96a8e",
+    "git_blob_id": "0bcc03245e9a25921d277ccf75a1504eed0739ed",
+    "reachable_git_object_matches": 0
+  },
+  "cn_runtime_extract_content": {
+    "sha256": "199489b2b665967ee03b460590f3ca43a4951a2c9126c19faf5aef796fde8533",
+    "git_blob_id": "3e09f8c54018a50893cda2eb98db3e5273e7b70e",
+    "reachable_git_object_matches": 0
+  },
+  "manifest_lists_extract_content": false,
+  "note": "Hashes only. Runtime source snapshots are stored as .mjs.txt evidence files; no credentials are included. A zero reachable match means the exact runtime file is not present as a reachable Git object in this local repository clone."
+}

@@ -1,0 +1,24 @@
+{
+  "contract": "safe-production-to-local-source-hash-comparison-v1",
+  "local_kokoro_head": "77daa03648c434d518a53afde7e2df811200b8e4",
+  "us": {
+    "compared_files": 18,
+    "mismatches": [],
+    "assessment": "All compared current Kokoro, clone and Nari source files match the reviewed local source byte-for-byte."
+  },
+  "cn": {
+    "compared_files": 21,
+    "mismatches": [
+      {
+        "file": "api/src/inference/model_packages.json",
+        "production_sha256": "d1c8fe31b62415ae382d589dfbc143ffe0983df5b89d74dca2339f8725d79ca7",
+        "reviewed_local_sha256": "94e50c4449bcfe1e74614b68881f80df47abc6693cd5069da28ead238ecdaaac",
+        "detail_file": "cn-us-model-registry-diff.json"
+      }
+    ],
+    "assessment": "Every compared executable source and deployment script matched. The only mismatch was the documented model registry data file."
+  },
+  "method": "SHA-256 of local reviewed files compared with safe production SHA-256 values already captured in us-runtime-governance.json and cn-runtime-snapshot.json.",
+  "production_queries_added": false,
+  "secrets_or_user_content_retained": false
+}

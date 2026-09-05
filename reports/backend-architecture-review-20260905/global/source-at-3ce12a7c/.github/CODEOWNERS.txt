@@ -1,0 +1,12 @@
+# Voice-clone authority, regional identity and production release controls.
+# Replace this team with another protected GitHub team only through an explicit
+# ownership change; individual feature agents must not own these paths alone.
+/src/shared/voice-clone/ @scmyyan
+/src/app/api/voice-clone/ @scmyyan
+/src/app/api/capabilities/ @scmyyan
+/src/shared/mobile-routing/ @scmyyan
+/src/config/db/schema.ts @scmyyan
+/src/config/db/migrations/ @scmyyan
+/scripts/verify-production-source.mjs @scmyyan
+/scripts/verify-voice-clone-capabilities.mjs @scmyyan
+/.github/workflows/backend-production-release.yml @scmyyan

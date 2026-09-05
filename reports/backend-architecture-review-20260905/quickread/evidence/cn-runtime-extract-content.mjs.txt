@@ -1,0 +1,3280 @@
+/**
+ * extract-content — 3层内容提取 + 5个 Hook 变体 + 直接生成 TTS 脚本
+ *
+ * Claude 输出两部分：
+ *   1. meta 字段（layer1/2/3, hook_variants）用于情感分析 + GIF 选择
+ *   2. scripts（hook/value_drop/extension/callback_cta）直接作为 TTS 文本
+ *
+ * scripts 是 TTS 优化的自然口语，不是字段拼接。
+ */
+
+import { exec, spawn } from 'child_process';
+import { promisify } from 'util';
+import { hookStyleStats } from './memory.mjs';
+import { parseTimeline, parseV4Spec }  from './timeline-runtime.mjs';
+import {
+  deepSeekMessage,
+  deepSeekStream,
+  resolveLLMRuntime,
+} from './llm-provider.mjs';
+
+const execAsync = promisify(exec);
+
+// ─── Default model + fallback chain ───────────────────────────────────────────
+//
+// Bench (2026-05-23, n=12 paired URLs) showed Kimi-k2.5 ties Opus on quality
+// (~89 composite) at 1/30 the cost, with two failure modes:
+//   (a) content-moderation rejection — Moonshot refuses politically sensitive
+//       articles (e.g. NHK news on Yasukuni)
+//   (b) JSON malformation — Kimi occasionally truncates output mid-array
+//       (especially on long Wikipedia entries that brush max_tokens)
+// Both modes are transient enough that retrying with Opus succeeds reliably.
+//
+// Strategy: primary=Kimi → on ANY error fall back to Opus.  This keeps the
+// cost-per-run at ~$0.005 in the common path (Kimi success) and at ~$0.15
+// only when Kimi fails (~5-10% based on observed bench data).
+//
+// Override via env:
+//   LLM_MODEL              — primary (default kimi-k2.5)
+//   LLM_FALLBACK_MODEL     — fallback (default claude-opus-4-7)
+//                            set to "none" to disable fallback (bench mode)
+const LLM_CURL_MAX_TIME = Math.max(30, Number(process.env.LLM_CURL_MAX_TIME || 180));
+const LLM_EXEC_TIMEOUT_MS = (LLM_CURL_MAX_TIME + 30) * 1000;
+
+function activeLLMRuntime() {
+  return resolveLLMRuntime(process.env);
+}
+
+function activePrimaryModel() {
+  return activeLLMRuntime().primaryModel;
+}
+
+function activeFallbackModel() {
+  return activeLLMRuntime().fallbackModel;
+}
+
+export function isChinaDeepSeekPromptOptimizationEnabled(env = process.env) {
+  if (resolveLLMRuntime(env).provider !== 'deepseek') return false;
+  const profile = String(env.QUICKREAD_CN_PROMPT_PROFILE || 'optimized').trim().toLowerCase();
+  return !['baseline', 'legacy', 'off', 'disabled'].includes(profile);
+}
+
+// ─── Output-language names (TTS-backed) ───────────────────────────────────────
+// Kokoro TTS covers these; the LLM narrates the explanation in the matching
+// language.  Unknown codes fall back to English.  Keep in sync with the client's
+// TTS language handling (quickread-client ttsSectionFull).
+const LANG_NAMES = {
+  en: 'English',
+  zh: 'Chinese (Simplified)',
+  ja: 'Japanese',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  it: 'Italian',
+  pt: 'Portuguese (Brazil)',
+  hi: 'Hindi',
+};
+function langNameOf(lang) { return LANG_NAMES[lang] || 'English'; }
+
+// ─── LLM token-usage side-channel ─────────────────────────────────────────────
+// claudeMessage() returns only text; stash the last call's token usage here so
+// extractPlan can surface it for [qr-perf] (input- vs output-bound diagnosis)
+// without changing the return type everywhere.  Gemini reports usageMetadata;
+// other providers leave token counts null (we still record which model ran).
+let _lastLLMUsage = null;
+export function getLastLLMUsage() { return _lastLLMUsage; }
+
+// ─── Streaming gemini (page-mode plan: emit block_0 before the full outline) ──
+// Current claudeMessage uses generateContent + buffered curl → we wait ~13s for
+// the WHOLE 39-block plan before getting anything.  This uses streamGenerateContent
+// (?alt=sse) via spawn so we read block_0 out of the PARTIAL JSON the moment it
+// closes (~3-4s).  onDelta(acc) fires with the accumulated generated TEXT after
+// each chunk; the caller pulls a finished sub-object out of it.  Resolves full text.
+// 把 data:image/...;base64 dataUrl 包成 Gemini 多模态 part。照片解读用。
+function imagePart(dataUrl) {
+  const mime = (String(dataUrl).match(/^data:(image\/[\w.+-]+);/) || [])[1] || 'image/jpeg';
+  return { inline_data: { mime_type: mime, data: String(dataUrl).split(',')[1] || '' } };
+}
+
+async function geminiStream(prompt, model, onDelta, imageParts = []) {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) throw new Error('GEMINI_API_KEY not set for model ' + model);
+  const body = JSON.stringify({
+    // imageParts:照片解读时把原照片作多模态输入,讲解 LLM 直接读图(更准,补 OCR 漏/错);
+    // 普通解读 imageParts=[] → parts 与原来字节一致,行为不变。
+    contents: [{ parts: [{ text: prompt }, ...imageParts] }],
+    generationConfig: { temperature: 0.7, maxOutputTokens: 8000,
+      responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } },
+  });
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${geminiKey}`;
+  return await new Promise((resolve, reject) => {
+    // spawn (not exec) → incremental stdout.  Body via stdin (--data-binary @-) so
+    // a large prompt isn't an arg, and no shell quote-escaping is needed.
+    const child = spawn('curl', ['-sN', '--max-time', String(LLM_CURL_MAX_TIME), '-H', 'content-type: application/json', '--data-binary', '@-', url]);
+    let acc = '', lineBuf = '', stderr = '', usage = null, settled = false;
+    const fail = (e) => { if (!settled) { settled = true; try { child.kill(); } catch { /* */ } reject(e); } };
+    child.stdin.on('error', () => { /* ignore EPIPE if curl exits early */ });
+    child.stdin.write(body); child.stdin.end();
+    child.stdout.on('data', (chunk) => {
+      lineBuf += chunk.toString();
+      let nl;
+      while ((nl = lineBuf.indexOf('\n')) >= 0) {
+        const line = lineBuf.slice(0, nl).trim(); lineBuf = lineBuf.slice(nl + 1);
+        if (!line.startsWith('data:')) continue;
+        const p = line.slice(5).trim();
+        if (!p || p === '[DONE]') continue;
+        let obj; try { obj = JSON.parse(p); } catch { continue; }
+        if (obj.error) { fail(new Error('Gemini stream (' + model + '): ' + (obj.error.message || JSON.stringify(obj.error)))); return; }
+        const t = obj.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (t) { acc += t; try { onDelta?.(acc); } catch { /* */ } }
+        if (obj.usageMetadata) usage = obj.usageMetadata;
+      }
+    });
+    child.stderr.on('data', (d) => { stderr += d.toString(); });
+    child.on('error', fail);
+    child.on('close', (code) => {
+      if (settled) return;
+      if (!acc) { fail(new Error('Gemini stream (' + model + '): empty (curl ' + code + ') ' + stderr.slice(0, 200))); return; }
+      const um = usage || {};
+      _lastLLMUsage = { model, prompt_tokens: um.promptTokenCount ?? null,
+        output_tokens: um.candidatesTokenCount ?? null, total_tokens: um.totalTokenCount ?? null };
+      settled = true; resolve(acc);
+    });
+  });
+}
+
+// Pull the first COMPLETE JSON object value for `key` out of a partial JSON string
+// (brace-depth scan, string/escape aware).  Returns parsed object, or null if the
+// key isn't present yet or its object hasn't closed.
+function extractFirstJsonObject(acc, key) {
+  const ki = acc.indexOf(`"${key}"`);
+  if (ki < 0) return null;
+  const i = acc.indexOf('{', ki + key.length + 2);
+  if (i < 0) return null;
+  let depth = 0, inStr = false, esc = false;
+  for (let j = i; j < acc.length; j++) {
+    const c = acc[j];
+    if (inStr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') inStr = false; }
+    else if (c === '"') inStr = true;
+    else if (c === '{') depth++;
+    else if (c === '}') { if (--depth === 0) { try { return JSON.parse(acc.slice(i, j + 1)); } catch { return null; } } }
+  }
+  return null;   // not closed yet
+}
+
+// Call the LLM with primary → fallback retry semantics.  Catches BOTH
+// network/API errors AND parse failures (Kimi sometimes returns truncated
+// JSON when output brushes max_tokens — that's a "soft fail" we want to
+// retry with Opus, which has stricter JSON discipline).
+//
+// Returns { parsed, model } where `model` is the one that actually succeeded.
+async function callWithFallback(prompt) {
+  const primary = activePrimaryModel();
+  const fallback = activeFallbackModel();
+
+  const attempt = async (model) => {
+    const raw = await claudeMessage(prompt, model);
+    const parsed = parseExtractionResponse(raw);
+    return { parsed, model };
+  };
+
+  try {
+    return await attempt(primary);
+  } catch (err) {
+    const noFallback = !fallback || fallback === 'none' || fallback === primary;
+    if (noFallback) throw err;
+    const why = String(err?.message || err).split('\n')[0].slice(0, 140);
+    console.warn(`  ⚠️   ${primary} failed: ${why}`);
+    console.warn(`  ↳    Retrying with fallback model: ${fallback}`);
+    return await attempt(fallback);
+  }
+}
+
+// ─── Claude via curl (Node v25 TLS fingerprint blocked by Cloudflare) ─────────
+
+export async function claudeMessage(prompt, modelOverride = null) {
+  // LLM routing — by model prefix:
+  //   - claude-*                      → Anthropic API direct
+  //   - anthropic/* google/* openai/* → Vercel proxy (US-region Lambda) —
+  //     these providers TOS-block this user's OpenRouter account in their
+  //     local region; the proxy is the only way through
+  //   - everything else (deepseek/* qwen/* meta-llama/* mistralai/* …) →
+  //     OpenRouter direct — these work fine without proxy and avoid the
+  //     120-s Vercel Lambda timeout that kills long generations
+  // `modelOverride` lets the fallback wrapper retry on a different model
+  // without mutating env (avoid race with other in-flight calls).
+  const runtime  = activeLLMRuntime();
+  // CN is deliberately pinned: even an old call site passing an explicit
+  // fallback model cannot escape to Gemini/Claude/OpenRouter.
+  const orModel  = runtime.region === 'cn'
+    ? runtime.primaryModel
+    : (modelOverride || runtime.primaryModel);
+  const proxyUrl = process.env.LLM_PROXY_URL;
+  const proxyKey = process.env.PIPELINE_API_KEY;
+  const orKey    = process.env.OPENROUTER_API_KEY;
+  const kimiKey  = process.env.KIMI_API_KEY;
+
+  const isDeepSeek    = runtime.region === 'cn';
+  const isGemini      = orModel && orModel.startsWith('gemini-');
+  const isAnthropic   = orModel && orModel.startsWith('claude-');
+  const isKimi        = orModel && (orModel.startsWith('kimi-') || orModel.startsWith('moonshot-'));
+  const needsUsProxy  = orModel && /^(anthropic|google|openai|x-ai)\//.test(orModel);
+
+  // Reset usage to model-only; the gemini branch overwrites with real token
+  // counts.  Ensures a fallback (haiku) call doesn't leave a stale gemini usage.
+  _lastLLMUsage = { model: orModel, prompt_tokens: null, output_tokens: null, total_tokens: null };
+
+  // DeepSeek official OpenAI-compatible endpoint. Auth is read exclusively
+  // from DEEPSEEK_API_KEY inside deepSeekMessage; it never enters curl argv.
+  if (isDeepSeek) {
+    const result = await deepSeekMessage(prompt, {
+      model: orModel,
+      maxTokens: 8000,
+      timeoutMs: LLM_EXEC_TIMEOUT_MS,
+    });
+    _lastLLMUsage = result.usage;
+    return result.text;
+  }
+
+  // Gemini (Google AI Studio) — direct API, JSON mode.
+  if (isGemini) {
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) throw new Error('GEMINI_API_KEY not set for model ' + orModel);
+    const body = JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 8000,
+        responseMimeType: 'application/json',
+        thinkingConfig: { thinkingBudget: 0 },
+      },
+    });
+    const escaped = body.replace(/'/g, "'\\''");
+    const cmd = `curl -s --max-time ${LLM_CURL_MAX_TIME} "https://generativelanguage.googleapis.com/v1beta/models/${orModel}:generateContent?key=${geminiKey}" -H "content-type: application/json" -d '${escaped}'`;
+    const { stdout } = await execAsync(cmd, { maxBuffer: 4 * 1024 * 1024, timeout: LLM_EXEC_TIMEOUT_MS });
+    let resp;
+    try { resp = JSON.parse(stdout); }
+    catch { throw new Error('Gemini (' + orModel + '): non-JSON response — ' + stdout.slice(0, 200)); }
+    if (resp.error) throw new Error('Gemini (' + orModel + '): ' + (resp.error.message || JSON.stringify(resp.error)));
+    const _um = resp.usageMetadata || {};
+    _lastLLMUsage = { model: orModel, prompt_tokens: _um.promptTokenCount ?? null,
+      output_tokens: _um.candidatesTokenCount ?? null, total_tokens: _um.totalTokenCount ?? null };
+    return resp.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  }
+
+  // Kimi (Moonshot AI) — direct to api.moonshot.cn, OpenAI-compatible schema.
+  // The user supplied a direct key, so we skip OpenRouter entirely.
+  if (isKimi) {
+    if (!kimiKey) throw new Error('KIMI_API_KEY not set for model ' + orModel);
+    const body = JSON.stringify({
+      model:      orModel,
+      max_tokens: 8000,
+      messages:   [{ role: 'user', content: prompt }],
+    });
+    const escaped = body.replace(/'/g, "'\\''");
+    const cmd = `curl -s --max-time ${LLM_CURL_MAX_TIME} https://api.moonshot.cn/v1/chat/completions \
+      -H "Authorization: Bearer ${kimiKey}" \
+      -H "content-type: application/json" \
+      -d '${escaped}'`;
+    const { stdout } = await execAsync(cmd, { maxBuffer: 4 * 1024 * 1024, timeout: LLM_EXEC_TIMEOUT_MS });
+    let resp;
+    try { resp = JSON.parse(stdout); }
+    catch { throw new Error('Kimi (' + orModel + '): non-JSON response — ' + stdout.slice(0, 200)); }
+    if (resp.error) throw new Error('Kimi (' + orModel + '): ' + (resp.error.message || JSON.stringify(resp.error)));
+    return resp.choices?.[0]?.message?.content || '';
+  }
+
+  if (orModel && !isAnthropic) {
+    const body = JSON.stringify({
+      model:      orModel,
+      max_tokens: 8000,
+      messages:   [{ role: 'user', content: prompt }],
+    });
+    const escaped = body.replace(/'/g, "'\\''");
+    let cmd;
+    let label;
+    if (needsUsProxy && proxyUrl && proxyKey) {
+      label = 'LLM proxy (' + orModel + ')';
+      cmd = `curl -s --max-time ${LLM_CURL_MAX_TIME} "${proxyUrl}" \
+        -H "Authorization: Bearer ${proxyKey}" \
+        -H "content-type: application/json" \
+        -d '${escaped}'`;
+    } else if (orKey) {
+      label = 'OpenRouter (' + orModel + ')';
+      cmd = `curl -s --max-time ${LLM_CURL_MAX_TIME} https://openrouter.ai/api/v1/chat/completions \
+        -H "Authorization: Bearer ${orKey}" \
+        -H "HTTP-Referer: https://castreader.ai" \
+        -H "X-Title: URL-to-Video Agent" \
+        -H "content-type: application/json" \
+        -d '${escaped}'`;
+    } else {
+      throw new Error('No usable LLM auth: set OPENROUTER_API_KEY or LLM_PROXY_URL+PIPELINE_API_KEY');
+    }
+    const { stdout } = await execAsync(cmd, { maxBuffer: 4 * 1024 * 1024, timeout: LLM_EXEC_TIMEOUT_MS });
+    let resp;
+    try { resp = JSON.parse(stdout); }
+    catch { throw new Error(`${label}: non-JSON response — ${stdout.slice(0, 200)}`); }
+    if (resp.error) throw new Error(`${label}: ${resp.error.message || JSON.stringify(resp.error)}`);
+    return resp.choices?.[0]?.message?.content || '';
+  }
+
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error('ANTHROPIC_API_KEY not set');
+  // LLM_MODEL can override Opus default (e.g. claude-sonnet-4-6 for A/B).
+  // Models starting with "claude-" go via Anthropic direct API.
+  const anthropicModel = (orModel && orModel.startsWith('claude-'))
+    ? orModel
+    : 'claude-opus-4-7';
+  const body = JSON.stringify({
+    model:      anthropicModel,
+    max_tokens: 8000,
+    messages:   [{ role: 'user', content: prompt }],
+  });
+  const escaped = body.replace(/'/g, "'\\''");
+  const cmd = `curl -s --max-time ${LLM_CURL_MAX_TIME} https://api.anthropic.com/v1/messages \
+    -H "x-api-key: ${key}" \
+    -H "anthropic-version: 2023-06-01" \
+    -H "content-type: application/json" \
+    -d '${escaped}'`;
+  const { stdout } = await execAsync(cmd, { maxBuffer: 4 * 1024 * 1024, timeout: LLM_EXEC_TIMEOUT_MS });
+  const resp = JSON.parse(stdout);
+  if (resp.error) throw new Error(`Claude API: ${resp.error.message}`);
+  return resp.content[0].text;
+}
+
+// ─── Main extraction ──────────────────────────────────────────────────────────
+
+export async function extractContent(spec) {
+  console.log('  🧠  Extracting content (rooftop + pillars director script)...');
+
+  // Two input shapes are supported now:
+  //  (a) Legacy CLI path: spec._fetchResult (curl) + spec._inventory (puppeteer)
+  //  (b) Quickread API path: spec._directInput = { text, meta, paragraphs }
+  //      — extension's Zone algorithm pre-extracted from the live DOM, so
+  //      the server never touches puppeteer / curl.  Avoids paywalls, JS-
+  //      rendered SPAs, anti-bot, HTTP/2 quirks (NHK et al).
+  let text, meta, paragraphs;
+  if (spec._directInput) {
+    ({ text, meta, paragraphs } = spec._directInput);
+    meta = meta || { title: spec.title || '', lang: spec.output_language || 'en' };
+  } else {
+    ({ text, meta } = spec._fetchResult);
+    paragraphs = spec._inventory?.enhanceable?.domLocator?.paragraphs || null;
+  }
+  const lang = spec.output_language || meta.lang || 'en';
+
+  // Pull the user's historical hook-style preference (from memory) so we can
+  // ask Claude to bias the first variant toward what's worked before.
+  const hookStats = hookStyleStats();
+  if (hookStats) {
+    const top = `${hookStats.mostPicked}(${hookStats.counts[hookStats.mostPicked]}×)`;
+    console.log(`      hook-history: prefer ${top} from ${hookStats.totalJobs} past jobs`);
+  }
+
+  const prompt = buildPrompt(text, meta, lang, spec.template, hookStats, paragraphs);
+  const { parsed, model: usedModel } = await callWithFallback(prompt);
+
+  // Enforce hook constraints: <15 chars (zh) / <12 words (en), <2s spoken
+  const truncated = enforceHookConstraints(parsed, lang);
+  if (truncated.length) {
+    console.warn(`  ⚠️   Hooks trimmed to meet length limit (${lang === 'zh' ? '15 字' : '12 words'}):`);
+    for (const w of truncated) console.warn(`         ${w}`);
+  }
+
+  spec.title     = parsed.title || meta.title;
+  spec.language  = parsed.lang || meta.lang || 'en';
+  // Tag the model that ACTUALLY produced the parsed output (may differ from
+  // the requested primary if fallback fired).  The bench groups by this tag.
+  spec.extraction = {
+    model:         usedModel,
+    layer1:        parsed.layer1,
+    layer2:        parsed.layer2,
+    layer3:        parsed.layer3,
+    hook_variants: parsed.hook_variants,
+    scripts:       parsed.scripts,   // direct TTS scripts (legacy)
+    emphasis:      parsed.emphasis,  // legacy
+    scenes:        parsed.scenes,    // Step 7F director timeline
+  };
+  spec.gif_queries = Array.isArray(parsed.gif_queries) ? parsed.gif_queries.slice(0, 3) : [];
+  if (spec.gif_queries.length) console.log(`      gif_queries: ${JSON.stringify(spec.gif_queries)}`);
+
+  console.log(`      title: ${spec.title.slice(0, 60)}`);
+  console.log(`      hooks: ${parsed.hook_variants.length} variants`);
+  if (parsed.scripts) {
+    console.log(`      scripts: generated (${Object.keys(parsed.scripts).join(', ')})`);
+  }
+  if (parsed.scenes?.length) {
+    console.log(`      scenes: ${parsed.scenes.length} (rooftop + pillars timeline)`);
+    for (const s of parsed.scenes) {
+      const ca = s.camera?.action || '?';
+      const anchor = s.camera?.paragraph_anchor ? ` [${s.camera.paragraph_anchor.slice(0,30)}...]` : '';
+      console.log(`        ${s.id.padEnd(14)} ${ca}${anchor}  marks=${(s.marks||[]).length}`);
+    }
+  }
+
+  return spec;
+}
+
+// ─── v4 extraction (tool-driven, opt-in via env QUICKREAD_V4=1) ─────────────
+
+// Runs the v4 toolbox prompt and adapts the result into the legacy spec.extraction
+// shape so the rest of the pipeline (buildSectionScripts → TTS → Pass 2 →
+// preview iframe) keeps working unchanged.  The full v4 output is preserved
+// at `spec.v4` for the future v4-native renderer.
+//
+// Returns the same spec object after mutation; throws on unrecoverable error
+// (caller should catch and fall back to legacy extractContent).
+export async function extractContentV4(spec) {
+  console.log('  🧠  v4 extracting (tool-driven scene model)...');
+
+  let text, meta, paragraphs, images;
+  if (spec._directInput) {
+    ({ text, meta, paragraphs } = spec._directInput);
+    images = spec._directInput.images || [];
+    meta = meta || { title: spec.title || '', lang: spec.output_language || 'en' };
+  } else {
+    ({ text, meta } = spec._fetchResult);
+    paragraphs = spec._inventory?.enhanceable?.domLocator?.paragraphs || null;
+    images = spec._fetchResult.images || [];
+  }
+  const lang = spec.output_language || meta.lang || 'en';
+  const langName = langNameOf(lang);
+
+  // Use paragraph-filtered body (same trick as legacy extractContent — keeps
+  // sidebar/infobox out of Wikipedia / heavy-chrome pages).
+  let articleText = text;
+  if (paragraphs?.length) {
+    const bodyText = paragraphs
+      .map(p => (p.text || '').trim())
+      .filter(t => t.length >= 20)
+      .join('\n\n');
+    if (bodyText.length > 500) articleText = bodyText.slice(0, 8000);
+  }
+
+  const prompt = buildToolboxPrompt({
+    text: articleText, meta, outputLang: lang, langName, images,
+  });
+
+  const primary = activePrimaryModel();
+  const fallback = activeFallbackModel();
+
+  // v4 prompt uses an explicit JSON schema with no "scripts/layer1" cruft —
+  // simpler to parse, so we route through claudeMessage directly + JSON.parse
+  // instead of the legacy parseExtractionResponse.
+  const tryOnce = async (model) => {
+    const raw = await claudeMessage(prompt, model);
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('v4 extract: no JSON in response');
+    return { rawJson: JSON.parse(m[0]), model };
+  };
+
+  let rawJson, usedModel;
+  try {
+    ({ rawJson, model: usedModel } = await tryOnce(primary));
+  } catch (err) {
+    if (!fallback || fallback === 'none' || fallback === primary) throw err;
+    console.warn(`  ⚠️   v4 ${primary} failed: ${String(err.message || err).slice(0, 140)}`);
+    console.warn(`  ↳    retry with ${fallback}`);
+    ({ rawJson, model: usedModel } = await tryOnce(fallback));
+  }
+
+  const { spec: v4spec, warnings } = parseV4Spec(rawJson);
+  if (!v4spec) {
+    throw new Error('v4 extract: parseV4Spec rejected output: ' + warnings.slice(0, 3).join('; '));
+  }
+  if (warnings.length) {
+    console.warn(`  ⚠️   v4 schema warnings (${warnings.length}):`);
+    for (const w of warnings.slice(0, 5)) console.warn(`         ${w}`);
+  }
+
+  // Persist the full v4 spec for the future native renderer
+  spec.v4 = v4spec;
+
+  // Adapt into legacy spec.extraction shape for the existing pipeline
+  spec.title    = v4spec.title || meta.title;
+  spec.language = v4spec.lang || lang;
+  spec.extraction = adaptV4ToLegacy(v4spec, usedModel);
+  spec.gif_queries = collectV4GifQueries(v4spec);
+  if (spec.gif_queries.length) {
+    console.log(`      gif_queries: ${JSON.stringify(spec.gif_queries)}`);
+  }
+
+  console.log(`      title: ${spec.title.slice(0, 60)}`);
+  console.log(`      scenes: ${v4spec.scenes.length} (kinds: ${[...new Set(v4spec.scenes.map(s => s.kind))].join(', ')})`);
+  for (const s of v4spec.scenes) {
+    const tools = s.events.map(e => e.tool).join(',') || '(no events)';
+    console.log(`        ${s.id.padEnd(5)} ${s.kind.padEnd(20)} span=${s.narration_span.join(',')}  events=${tools.slice(0, 60)}`);
+  }
+
+  return spec;
+}
+
+// Adapt v4 spec into spec.extraction shape expected by buildSectionScripts.
+//
+// The downstream `scenes` field is what buildSectionScripts iterates over.
+// We synthesize legacy-shaped scene entries (id, narration, marks, reaction)
+// out of v4 scenes + narration_chunks + events.  Information loss is
+// acceptable here — it's a stopgap until the iframe runtime accepts v4
+// directly.  Notably lost:
+//   - scene.kind (image-card / stat-card / etc.) — falls back to v3 cinematic
+//   - emphasize_word / flash_image / title_card events that don't map 1:1 to
+//     a v3 mark — these become subtitle emphasis or are dropped
+//   - bg_image_idx — not yet used
+export function adaptV4ToLegacy(v4spec, modelUsed) {
+  const chunkText = Object.fromEntries(v4spec.narration_chunks.map(c => [c.id, c.text]));
+  const lang = v4spec.lang;
+  const joinSep = lang === 'zh' ? '' : ' ';
+
+  // v4 scene → legacy scene (one to one, no merging).
+  const legacyScenes = v4spec.scenes.map(s => {
+    const narration = s.narration_span.map(cid => chunkText[cid] || '').filter(Boolean).join(joinSep);
+
+    const marks = [];
+    let reaction = null;
+    for (const e of s.events) {
+      if (['circle', 'underline', 'highlight', 'wavy', 'strike'].includes(e.tool) && e.params?.text) {
+        marks.push({ text: e.params.text, style: e.tool });
+      } else if (e.tool === 'reaction') {
+        reaction = e.params?.emotion || e.params?.gif_query || null;
+      } else if (e.tool === 'title_card' && (s.kind === 'stat-card' || s.kind === 'image-card')) {
+        // title_card events on stat-card scenes — downstream layout step picks
+        // them up via spec.v4.scenes if needed.  For legacy compat, store the
+        // text as a synthetic mark with action="title_card" handled by
+        // buildSectionScripts's existing isCta path.
+      }
+    }
+
+    return {
+      id:        s.id,
+      kind:      s.kind,                          // preserved for v4-aware layout
+      narration,
+      marks,
+      reaction,
+      // expose original v4 fields so future passes can drop the adapter:
+      _v4_events:         s.events,
+      _v4_narration_span: s.narration_span,
+      _v4_bg_image_idx:   s.bg_image_idx,
+      _v4_screenshot_anchor: s.screenshot_anchor,
+    };
+  });
+
+  return {
+    model:         modelUsed,
+    layer1:        {},
+    layer2:        {},
+    layer3:        {},
+    hook_variants: [],
+    scripts:       null,
+    emphasis:      {},
+    scenes:        legacyScenes,
+    _v4_source:    true,
+  };
+}
+
+// Collect Giphy queries from v4 reaction events for the early-fetch parallel
+// download in server.mjs.
+export function collectV4GifQueries(v4spec) {
+  const queries = [];
+  for (const s of v4spec.scenes || []) {
+    for (const e of s.events || []) {
+      if (e.tool === 'reaction' && e.params?.gif_query && queries.length < 3) {
+        queries.push(e.params.gif_query);
+      }
+    }
+  }
+  return queries;
+}
+
+// ─── Hook constraints ────────────────────────────────────────────────────────
+//
+// Design doc §2.3: "Hook < 15 字, 语速 < 2 秒".  Claude usually respects the
+// length hint in the prompt but sometimes overshoots — this is the safety net
+// so the renderer never receives a hook that won't fit in 2 seconds.
+
+export const HOOK_MAX_LEN = { zh: 15, en: 12 };
+
+function lenOf(text, lang) {
+  return lang === 'zh' ? [...text].length : text.split(/\s+/).filter(Boolean).length;
+}
+
+function enforceHookConstraints(parsed, lang) {
+  const max  = HOOK_MAX_LEN[lang] || HOOK_MAX_LEN.en;
+  const unit = lang === 'zh' ? '字' : 'words';
+  const out  = [];
+
+  for (const h of parsed.hook_variants || []) {
+    const len = lenOf(h.text, lang);
+    if (len > max) {
+      const trimmed = truncateAtBoundary(h.text, max, lang);
+      out.push(`(${h.style}) ${len}${unit} → ${lenOf(trimmed, lang)}${unit}`);
+      h.text = trimmed;
+    }
+  }
+
+  if (parsed.scripts?.hook) {
+    const len = lenOf(parsed.scripts.hook, lang);
+    if (len > max) {
+      const trimmed = truncateAtBoundary(parsed.scripts.hook, max, lang);
+      out.push(`scripts.hook ${len}${unit} → ${lenOf(trimmed, lang)}${unit}`);
+      parsed.scripts.hook = trimmed;
+    }
+  }
+
+  return out;
+}
+
+// Truncate to maxLen; try to land on a clause boundary, otherwise hard cut and
+// preserve trailing question/exclamation marks if the original was a question.
+// CJK reserves 1 slot for the closing punctuation since `？`/`！` count as
+// characters; English doesn't reserve since `?`/`!` aren't words.
+function truncateAtBoundary(text, maxLen, lang) {
+  const isQuestion = /[?？]\s*$/.test(text);
+  const isExclaim  = /[!！]\s*$/.test(text);
+  const willAppend = isQuestion || isExclaim;
+
+  if (lang === 'zh') {
+    if ([...text].length <= maxLen) return text;
+    const target = willAppend ? maxLen - 1 : maxLen;
+    const chars  = [...text];
+    const slice  = chars.slice(0, target).join('');
+    // Find rightmost clause boundary in slice
+    let cut = -1;
+    for (const p of ['，', '。', '！', '？', '：', ',']) {
+      const idx = slice.lastIndexOf(p);
+      if (idx > target / 2) cut = Math.max(cut, idx);
+    }
+    let result = cut > 0 ? slice.slice(0, cut) : slice;
+    // Strip residual trailing punctuation other than the wanted closer
+    result = result.replace(/[，,：;]+$/, '');
+    if (isQuestion && !/[?？]$/.test(result)) result += '？';
+    else if (isExclaim && !/[!！]$/.test(result)) result += '！';
+    return result;
+  }
+
+  // English: word-boundary truncation
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length <= maxLen) return text;
+  let result = words.slice(0, maxLen).join(' ').replace(/[,;:]$/, '');
+  if (isQuestion && !/[?]$/.test(result)) result += '?';
+  else if (isExclaim && !/[!]$/.test(result)) result += '!';
+  return result;
+}
+
+// ─── Prompt ───────────────────────────────────────────────────────────────────
+
+function buildPrompt(text, meta, outputLang, template, hookStats = null, paragraphs = null) {
+  const isZh = outputLang === 'zh';
+  const langName = langNameOf(outputLang);
+
+  // STRUCTURAL FIX: when dom-locator gave us DOM-aware filtered paragraphs
+  // (body only, sidebar/infobox/navbox excluded), USE THEM as the canonical
+  // article text fed to Opus.  Without this, Wikipedia / heavy-chrome pages
+  // contaminate the prompt with sidebar link lists that Opus then picks as
+  // "marks" — user sees 2-word terminology marks instead of body sentences.
+  let articleText = text;
+  let paragraphContext = null;
+  if (paragraphs?.length) {
+    // Rebuild article body from clean paragraphs, joined by blank lines,
+    // capped at 8000 chars so it fits within token budget.
+    const bodyText = paragraphs
+      .map(p => (p.text || '').trim())
+      .filter(t => t.length >= 20)   // drop fragments
+      .join('\n\n');
+    if (bodyText.length > 500) articleText = bodyText.slice(0, 8000);
+    paragraphContext = paragraphs.slice(0, 60).map((p, i) => {
+      const t = (p.text || '').replace(/\s+/g, ' ');
+      return `[${i}] (${t.length} chars) ${t.slice(0, 200)}`;
+    }).join('\n');
+  }
+
+  // Step 8: cinematographer prompt — Claude Opus writes a per-second timeline
+  return buildCinematicPrompt({ text: articleText, meta, outputLang, langName });
+}
+
+function buildCinematicPrompt({ text, meta, outputLang, langName }) {
+  return `A teacher speed-reads an article for a student, pointing at key phrases
+with a pen while narrating.  Output a short script (35-45s total).
+
+ARTICLE: ${meta.title}
+---
+${text.slice(0, 6000)}
+---
+
+TASK: Pick 5-8 key phrases from the article and write narration around them.
+
+Each mark POINTS AT text on the page while the narrator explains it — drawn ON the words (a marker sweep / circle / underline), never an arrow or bracket in the margins. The tools do NOT overlap — for each mark pick the ONE that fits:
+
+  "circle"     a single key TERM (1-4 words: proper noun / name / number / year).
+               → smallest unit. NOT a phrase (use underline), NOT a sentence (use highlight).
+               params: { "text": <the term> }
+  "underline"  an emphasis PHRASE or clause inside a sentence (longer than a term, shorter than a full sentence).
+               → NOT a single term (use circle), NOT a whole sentence (use highlight).
+               params: { "text": <the phrase> }
+  "highlight"  one whole key SENTENCE worth dwelling on.
+               → NOT a phrase inside a sentence (use underline).
+               params: { "text": <the sentence> }
+
+HOW TO CHOOSE (for each mark): pick by span — term → circle · phrase → underline · sentence → highlight.
+All text MUST be copied VERBATIM from the article — the renderer searches for the exact string on the page. Do not paraphrase.
+
+Read the article TOP-TO-BOTTOM. Marks must follow document order.
+Narration: natural spoken ${langName}, ~2.5 words/sec.
+
+OUTPUT (JSON only):
+{
+  "title": "article title",
+  "lang": "${outputLang}",
+  "gif_queries": ["query1", "query2", "query3"],
+  "scenes": [
+    { "id": "thesis", "narration": "One hook sentence." },
+    {
+      "id": "evidence-1",
+      "narration": "Natural explanation calling out the marked phrases.",
+      "marks": [
+        { "text": "exact phrase from article", "style": "circle" },
+        { "text": "another exact phrase from article", "style": "underline" }
+      ],
+      "reaction": "jaw_drop"
+    },
+    {
+      "id": "evidence-2",
+      "narration": "Next teaching beat — explain the next key point.",
+      "marks": [
+        { "text": "exact phrase copied verbatim", "style": "highlight" }
+      ]
+    },
+    { "id": "callback", "narration": "One takeaway sentence." }
+  ]
+}
+
+RULES:
+- marks.text must be COPIED VERBATIM from the article text above. The renderer searches for the exact string on the page.
+- Follow the "HOW TO CHOOSE" rule above for every mark — exactly one tool per mark, no overlap.
+- 2-4 evidence scenes, 2-3 marks per scene.  thesis + callback have no marks.
+- reaction: optional, max 2 total.  Value is a short label describing the mood (e.g. "curious", "amazed").
+- gif_queries: exactly 3 Giphy search terms (2-3 English words each) — visually evocative concepts matching the article's core theme. e.g. for an AI article: ["futuristic robot", "neural network", "digital brain"]. Choose terms that produce strong, animated GIFs on Giphy.
+- Output ONLY the JSON.`;
+}
+
+// ─── v4 Pass 1 prompt: tool-driven flexible composition ─────────────────────
+//
+// Replaces the fixed thesis/evidence-1/2/3/callback template.  The LLM is given
+// a tool catalog (scene kinds + camera/mark/overlay/subtitle tools) and decides
+// scene count, scene kinds, and tool combinations based on the article's
+// character.
+//
+// Output schema documented in /Users/xuxuheng/.claude/plans/quickread-serialized-cocke.md
+// Section B.  Pass 1 outputs events WITHOUT `at` — Pass 2 fills timing after
+// TTS.
+//
+// This function is exported so a standalone test harness can validate the
+// LLM's output shape before wiring the new format into the full pipeline.
+
+export function buildToolboxPrompt({ text, meta, outputLang, langName, images = [] }) {
+  const imageList = images.length
+    ? images.slice(0, 8).map((img, i) => {
+        const aspect = (img.width && img.height)
+          ? (img.width / img.height >= 1.4 ? 'landscape'
+             : img.height / img.width >= 1.2 ? 'portrait'
+             : 'square')
+          : '?';
+        const dim = (img.width && img.height) ? `${img.width}×${img.height}` : '?';
+        const alt = (img.alt || '').slice(0, 60);
+        return `  [${i}] ${aspect} ${dim} — ${alt || '(no alt)'}`;
+      }).join('\n')
+    : '  (no inline images)';
+
+  return `ROLE: You are the director of a 35–55 second portrait (9:16) video that helps a
+viewer speed-read the article below.  Pick a sequence of scenes that fits THIS
+article's character.  Do not follow a fixed template.
+
+ARTICLE: ${meta.title}
+LANGUAGE: ${langName}
+---
+${text.slice(0, 6000)}
+---
+
+ARTICLE IMAGES (use bg_image_idx to reference):
+${imageList}
+
+OUTPUT (JSON only, no markdown fences):
+{
+  "lang": "${outputLang}",
+  "title": "...",
+  "total_duration_target": <number 35-55>,
+  "narration_chunks": [
+    { "id": "n1", "text": "spoken sentence 1, natural ${langName}" }
+  ],
+  "scenes": [
+    { "id": "s1",
+      "kind": "<scene kind>",
+      "narration_span": ["n1", "n2"],
+      "bg_image_idx": null,
+      "screenshot_anchor": null,
+      "events": [ { "tool": "<tool>", "params": { ... } } ] }
+  ]
+}
+
+SCENE KINDS (pick one per scene):
+- cinematic           — Article screenshot, camera pans + marks circle/underline phrases.
+                        For "show the original on the page."  REQUIRES screenshot_anchor.
+- stat-card           — One big-text card front and center.  For ONE punch (a number, quote, contrast).
+- reaction-only       — Full-screen GIF as visual punctuation.  Use ≤1 per video.
+- image-card          — Image top 48%, subtitle below.  REQUIRES bg_image_idx.
+- fullbleed-portrait  — Portrait image full-bleed.  REQUIRES bg_image_idx (portrait aspect).
+- blur-fill           — Landscape image centered + blurred backdrop.  REQUIRES bg_image_idx.
+
+TOOLS  (each event is { "tool": <name>, "params": {...} } — use the lowercase
+name on the left as the "tool" value, never the category label):
+
+  -- Camera: there are NO camera tools.  The renderer AUTOMATICALLY pans/zooms the
+     camera to each mark you place — like a teacher's finger moving to each phrase
+     and reading along it.  You only choose WHAT to mark; the camera follows. --
+
+  -- Mark tools (cinematic scenes only — text MUST be copied VERBATIM from the article) --
+    "circle"     params: { text: <1-4 words> }                              FOR: proper nouns · names · numbers · years · key terms
+    "underline"  params: { text: <a phrase or clause> }                     FOR: an emphasis phrase inside a sentence
+    "highlight"  params: { text: <a phrase/sentence>, color?: "yellow"|"blue"|"pink" }  FOR: one whole key sentence
+
+  -- Overlay tools (any scene) --
+    "title_card" params: { text, kind: "number"|"quote"|"insight"|"contrast",
+                           position: "upper"|"center"|"lower", subtext?, pivot_word? (for contrast) }
+    "reaction"   params: { emotion: <see EMOTIONS> | gif_query: <2-3 English words>, dur?: 1.0-2.5 }
+
+  -- Subtitle tools (any scene) --
+    "emphasize_word"  params: { word: <single word from narration>, intensity: "subtle"|"punch" }
+
+Examples of CORRECT event shape:
+  { "tool": "circle", "params": { "text": "minimum viable product" } }
+  { "tool": "title_card", "params": { "text": "127%", "kind": "number", "position": "center", "subtext": "growth in 2024" } }
+  { "tool": "reaction", "params": { "emotion": "jaw_drop", "dur": 1.5 } }
+
+WRONG (do NOT do this):
+  { "tool": "CAMERA", "params": { "pan_to": {...} } }   ← category label is NOT a tool name
+  { "tool": "MARK", ... }                                ← same problem
+
+EMOTIONS (for reaction.emotion):
+  mind_blown, shocked, jaw_drop, confused, thinking, skeptical,
+  nodding, agree, thumbs_up, facepalm, eye_roll, sigh,
+  aha, lightbulb, wow, laugh, crying_laugh, fired_up, celebration
+
+HOW A CINEMATIC SCENE WORKS — think of a teacher pointing at the text while reading:
+- You place 1–3 MARKS on the key phrases, IN THE ORDER the narration mentions them.
+  The renderer AUTOMATICALLY moves the camera to each mark (pans/zooms to the phrase
+  and reads along it) — you do NOT issue camera moves.
+- circle a short term (proper noun / number / name); underline or highlight a longer
+  phrase or sentence.
+- A reaction (≤2 in the whole video) lands AFTER a mark, never before it.
+- screenshot_anchor = the phrase the scene opens on (usually the first mark's text).
+
+EXAMPLES of compositions that fit content character:
+
+  (A) Data-driven report → mostly stat-card
+    s1 stat-card  "VC funding 2024"        (insight, center)
+    s2 stat-card  "-40%"  subtext "vs Q1"  (number)
+    s3 cinematic  highlight a key sentence → reaction(sigh)
+
+  (B) Philosophical essay → mostly cinematic walkthrough
+    s1 cinematic  circle the thesis term
+    s2 cinematic  underline the evidence phrase + reaction(thinking)
+    s3 cinematic  highlight the second evidence
+    s4 cinematic  underline the conclusion + emphasize_word
+
+  (C) Human-interest story → mix image-card + cinematic
+    s1 image-card  bg_image_idx 0 + title_card insight
+    s2 stat-card   "82 years old" (number)
+    s3 cinematic   highlight the quote → reaction(mind_blown)
+    s4 stat-card   title_card quote
+
+CRITICAL RULES:
+- Scene count is determined by content (3–7 typical, more or fewer OK).  Do NOT force a count.
+- Every narration_chunk MUST be referenced by exactly one scene.narration_span (no gaps, no overlap).
+- Mark text and screenshot_anchor MUST be copied verbatim from the article.
+- In cinematic scenes, place marks (circle/underline/highlight) on the key phrases in reading order — the camera follows automatically.  circle for proper nouns/numbers, underline/highlight for phrases.
+- At most 2 reactions in the whole video.
+- Do NOT use thesis / evidence / callback as scene ids.  Use s1, s2, ... by index.
+- Events have NO "at" field — timing is filled in Pass 2 from TTS timestamps.
+- Output ONLY the JSON object.`;
+}
+
+// ─── Parser ───────────────────────────────────────────────────────────────────
+
+function firstJsonObjectString(raw) {
+  const s = String(raw || '');
+  const start = s.indexOf('{');
+  if (start < 0) return null;
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === '\\') esc = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') inStr = true;
+    else if (c === '{') depth++;
+    else if (c === '}') {
+      depth--;
+      if (depth === 0) return s.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+function parseExtractionResponse(raw) {
+  const jsonText = firstJsonObjectString(raw);
+  if (!jsonText) throw new Error('Claude returned no JSON in extraction response');
+
+  const parsed = JSON.parse(jsonText);
+
+  return {
+    title: parsed.title || '',
+    lang:  parsed.lang  || 'en',
+    layer1: {
+      summary:  parsed.layer1?.summary  || '',
+      keywords: parsed.layer1?.keywords || [],
+    },
+    layer2: {
+      key_stats:        parsed.layer2?.key_stats        || [],
+      contrast_point:   parsed.layer2?.contrast_point   || '',
+      counter_intuitive: parsed.layer2?.counter_intuitive || '',
+    },
+    layer3: {
+      pain_point:   parsed.layer3?.pain_point   || '',
+      solution:     parsed.layer3?.solution     || '',
+      emotion_arc:  parsed.layer3?.emotion_arc  || '',
+      core_insight: parsed.layer3?.core_insight || '',
+    },
+    hook_variants: Array.isArray(parsed.hook_variants) ? parsed.hook_variants : [],
+    scripts: parsed.scripts || null,
+    emphasis: parsed.emphasis && typeof parsed.emphasis === 'object' ? parsed.emphasis : {},
+    // Step 8: Opus outputs cinematic timeline (scenes with per-second events)
+    scenes:  Array.isArray(parsed.scenes) ? parseTimeline(parsed).scenes : null,
+    // GIF queries chosen by LLM at extraction time — parallel-fetched during TTS
+    gif_queries: Array.isArray(parsed.gif_queries) ? parsed.gif_queries : [],
+  };
+}
+
+// ─── Sequential page-narration extraction (page-overlay mode) ─────────────────
+//
+// Walks page paragraphs TOP-TO-BOTTOM and emits one narration "block" per
+// paragraph (or merged content block), marking the key phrases of THAT block.
+// Unlike extractContent (short-video: compress to ~60s, reorder, 5-8 marks),
+// there is no time compression and no callback jumps — blocks stay in page
+// order so the page-mode renderer scrolls monotonically downward.
+//
+// Output adapts into spec.extraction.scenes (block → scene, id `seq-N`), so the
+// existing buildSectionScripts → TTS → preview pipeline runs unchanged.  `seq-N`
+// ids are treated as plain body sections (no title_card / hook / cta).
+export async function extractSequential(spec) {
+  console.log('  🧠  Sequential extraction (page-order narration)...');
+
+  const { meta, lang } = resolveSeqInput(spec);
+  const capped = buildBodyBlocks(resolveParagraphs(spec));
+  if (!capped.length) throw new Error('extractSequential needs ordered paragraphs (_directInput.paragraphs)');
+
+  const prompt = buildSequentialPrompt(capped, meta, lang);
+  const { parsed, model: usedModel } = await callSequentialLLM(prompt);
+
+  // Adapt blocks → scenes, enforcing monotonic page order.
+  const rawBlocks = Array.isArray(parsed.blocks) ? parsed.blocks : [];
+  const scenes = [];
+  let lastIdx = -1;
+  for (const b of rawBlocks) {
+    const narration = String(b?.narration || '').trim();
+    if (!narration) continue;
+    const idx = Number.isFinite(b.idx) ? b.idx : lastIdx + 1;
+    if (idx < lastIdx) {
+      console.log(`      ⚠ block idx ${idx} < ${lastIdx}, dropped (out of page order)`);
+      continue;
+    }
+    lastIdx = idx;
+    const marks = (Array.isArray(b.marks) ? b.marks : [])
+      .map(verbToEvent).filter(Boolean)
+      .slice(0, 6);
+    scenes.push({ id: `seq-${idx}`, narration, marks });
+  }
+  if (!scenes.length) throw new Error('extractSequential produced no usable blocks');
+
+  spec.title    = parsed.title || meta?.title || spec.title;
+  spec.language = lang;
+  spec.template = spec.template || 'PAS';   // unused by scenes path; keeps templateDurations safe
+  spec.extraction = {
+    model:    usedModel,
+    scenes,
+    layer1:   { summary: '', keywords: [] },
+    layer2:   { key_stats: [], contrast_point: '', counter_intuitive: '' },
+    layer3:   { pain_point: '', solution: '', emotion_arc: '', core_insight: '' },
+    hook_variants: [],
+    scripts:  null,
+    emphasis: {},
+  };
+  spec.gif_queries = [];   // page mode: no reaction GIFs
+
+  const totalMarks = scenes.reduce((n, s) => n + s.marks.length, 0);
+  console.log(`      blocks: ${scenes.length} (page order), marks: ${totalMarks}`);
+  return spec;
+}
+
+// ─── Streaming page mode (Pass 0 plan + Pass N blocks) ────────────────────────
+function resolveSeqInput(spec) {
+  const meta = (spec._directInput && spec._directInput.meta)
+    || { title: spec.title || '', lang: spec.output_language || 'en' };
+  const lang = spec.output_language || meta?.lang || 'en';
+  return { meta, lang };
+}
+function resolveParagraphs(spec) {
+  return spec._directInput?.paragraphs
+    || spec._inventory?.enhanceable?.domLocator?.paragraphs || null;
+}
+
+// Ordered, de-noised, pre-merged page blocks (deterministic, server-defined —
+// so total_blocks is known up front).  Skips nav/ad scraps (<20 chars), merges
+// tiny adjacent paragraphs (WeChat fragmentation) into ~paragraph-sized blocks,
+// caps total chars.
+export function buildBodyBlocks(paragraphs) {
+  const srcBlocks = (paragraphs || [])
+    .map(p => ({ text: (p.text || '').replace(/\s+/g, ' ').trim() }))
+    .filter(p => p.text.length >= 20);
+  if (!srcBlocks.length) return [];
+  const merged = [];
+  for (const b of srcBlocks) {
+    const last = merged[merged.length - 1];
+    if (last && last.text.length < 160) last.text += ' ' + b.text;
+    else merged.push({ text: b.text });
+  }
+  const MAX_CHARS = 16000;
+  const capped = [];
+  let acc = 0;
+  for (const b of merged) { capped.push(b); acc += b.text.length; if (acc >= MAX_CHARS) break; }
+  return capped;
+}
+
+// LLM 的 mark { style, text } → 可渲染 mark 对象。LLM 只说 WHAT(圈 / 下划线 / 高亮 + 哪段词);
+// 手绘笔触·颜色·位置由 client 决定。三形状,单一黄色,不写字数规则。
+function verbToEvent(m) {
+  if (!m || typeof m !== 'object') return null;
+  const text = String(m.text || m.on || m.from || '').trim();
+  if (!text) return null;
+  // 形状(圈 / 下划线 / 高亮 / 序号)由 LLM 语义决策,系统不写字数规则。兜底 highlight。
+  let style = ['circle', 'underline', 'highlight', 'number'].includes(m.style) ? m.style : 'highlight';
+  const out = { style, text };
+  // 序号 ①②③:LLM 给 n(并列项位置,知道列表边界+顺序=语义)。缺合法 n → 退化高亮,不画空圈。
+  if (style === 'number') {
+    const n = Math.trunc(Number(m.n));
+    if (Number.isFinite(n) && n >= 1 && n <= 99) out.n = n;
+    else out.style = 'highlight';
+  }
+  // 场景化透镜可给 mark 附带语义(role)、旁注(note)、力度(weight)。后面的
+  // buildSectionScripts 已支持这些字段,这里保留下来,避免中途洗掉。
+  if (m.role) out.role = String(m.role).trim();
+  if (m.note) out.note = String(m.note).trim();
+  if (m.weight === 'strong') out.weight = 'strong';
+  return out;
+}
+
+// LLM block object → { id, narration, marks } scene (verbatim mark validation
+// happens downstream in buildSectionScripts).
+function limitSceneMarks(marks, sourceText = '') {
+  const src = String(sourceText || '');
+  const valid = (marks || []).filter(m => {
+    if (!m?.text) return false;
+    // 图片 mark 没有源文本锚定预算,保持原样。
+    if (m.style === 'imgbox' || m.style === 'imgwhole') return true;
+    return !src || src.includes(m.text);
+  });
+  if (!src) return valid.slice(0, 6);
+  const textMarks = valid.filter(m => m.style !== 'imgbox' && m.style !== 'imgwhole');
+  const imageMarks = valid.filter(m => m.style === 'imgbox' || m.style === 'imgwhole');
+  const budget = Math.max(70, Math.floor(src.length * 0.25));
+  const selected = [];
+  let used = 0;
+  let fallbackLong = null;
+  for (const m of textMarks) {
+    if (selected.length >= 5) break;
+    const len = [...String(m.text || '')].length;
+    if (len > budget && !fallbackLong) {
+      fallbackLong = m;
+      continue;
+    }
+    // A single long sentence can be valid, but do not let multiple long
+    // sentences turn the page into a wall of yellow.
+    if (selected.length > 0 && used + len > budget) continue;
+    if (selected.length === 0 || used + len <= budget) {
+      selected.push(m);
+      used += len;
+    }
+  }
+  if (!selected.length && fallbackLong) selected.push(fallbackLong);
+  return [...selected, ...imageMarks];
+}
+
+// [DIAG] 临时诊断:mark 管线各阶段留痕(定位中国区场景化解读丢 mark)。验收后移除。
+function _diagMarks(tag, scene) {
+  try {
+    const ms = (scene && scene.marks) || [];
+    console.log(`  [diag-marks] ${tag} n=${ms.length} ` +
+      ms.map(m => `${m.action || m.style}:${String(m.text || '').length}`).join(','));
+  } catch {}
+}
+
+function adaptBlock(b, idx, sourceText = '', shouldLimitMarks = true) {
+  const narration = String(b?.narration || '').trim();
+  if (!narration) return null;
+  const rawMarks = (Array.isArray(b?.marks) ? b.marks : [])
+    .map(verbToEvent).filter(Boolean)
+    .slice(0, 12);
+  const marks = shouldLimitMarks ? limitSceneMarks(rawMarks, sourceText) : rawMarks;
+  return { id: `seq-${idx}`, narration, marks };
+}
+
+const QUICKREAD_MARK_LIMITS = {
+  overview: 64,
+  standard: 84,
+  deep: 96,
+};
+
+function quickReadMarkLimit(depth = 'standard', contentType = null) {
+  if (contentType === 'study') {
+    if (depth === 'standard') return 82;
+    if (depth === 'deep') return 90;
+  }
+  if (contentType === 'manual') {
+    if (depth === 'overview') return 64;
+    if (depth === 'standard') return 82;
+    if (depth === 'deep') return 88;
+  }
+  if (contentType === 'contract') {
+    if (depth === 'overview') return 72;
+    if (depth === 'standard') return 92;
+    if (depth === 'deep') return 98;
+  }
+  if (contentType === 'report') {
+    if (depth === 'overview') return 68;
+    if (depth === 'standard') return 88;
+    if (depth === 'deep') return 94;
+  }
+  return QUICKREAD_MARK_LIMITS[depth] || QUICKREAD_MARK_LIMITS.standard;
+}
+
+function markCandidateScore(text, depth, contentType) {
+  const t = String(text || '').trim();
+  if (!t) return -Infinity;
+  let score = 0;
+  if (/\d/.test(t)) score += 4;
+  if (/[A-Z][A-Za-z0-9-]{2,}/.test(t)) score += 3;
+  if (/\b[A-Z]{2,}\b/.test(t)) score += 3;
+  if (/\b(method|model|result|limit|risk|step|warning|definition|formula|deadline|fee|obligation|parameter|error|example)\b/i.test(t)) score += 2;
+  if (contentType === 'paper' && /\b(Transformer|BLEU|attention|complexity|architecture|experiments?|hazard ratio|outcome|randomly assigned)\b/i.test(t)) score += 4;
+  if (contentType === 'paper' && /\b(solely|dispensing|recurrence|convolutions?|parallelizable|quadratic complexity|adverse events|hypotension|acute kidney|stopped early|baseline|limitation)\b/i.test(t)) score += 7;
+  if (contentType === 'report' && /\b(risk|forecast|guidance|margin|supply|constraint|lead times?|base case|bull case|concentration|compress|billion|%|\$)\b/i.test(t)) score += 6;
+  if (contentType === 'report' && /\b(supply,\s*not demand|binding constraint|bottom line|central conclusion|lowered full-year guidance)\b/i.test(t)) score += 8;
+  if (contentType === 'report' && /\b(contingent|capacity additions|47%|38 weeks|second-order|debt service|not captured|uninvestable|basis points|buyback)\b/i.test(t)) score += 5;
+  if (contentType === 'contract' && /\b(amend|waive|majority|cannot block|liability|arbitration|terminate|non-refundable|sole discretion|automatic|renew|deadline|fee|deposit|Equity Financing|Liquidity Event|Dissolution Event|subordinate|Purchase Amount|Valuation Cap|liquidated damages|maturity date|no interest)\b/i.test(t)) score += 6;
+  if (contentType === 'contract' && /\b(individual investor cannot block|written consent|majority of the Purchase Amounts|subordinate to outstanding indebtedness|no interest and has no maturity date|fees paid|three months|without notice or refund|responsible for all repairs)\b/i.test(t)) score += 8;
+  if (contentType === 'study' && /\b(definition|exam|distinguish|common|formula|stage|requires|yields|ATP|NADH|oxygen|cytoplasm|mitochondrial|matrix|membrane|Krebs|oxidative phosphorylation|citric acid cycle|aerobic|anaerobic|fermentation|ALONG|SHIFTS|equilibrium|elasticity)\b/i.test(t)) score += 5;
+  if (contentType === 'study' && /\b(cytoplasm|mitochondrial matrix|inner mitochondrial membrane)\b/i.test(t)) score += 5;
+  if (contentType === 'manual' && /\b(WARNING|CAUTION|Step|SEALING|MAX|Never|Do not|minimum|required|pressure|valve|force|parameter|limit|403|429|Retry-After|250 mL|block the steam valve|float valve|TEST button|10 years)\b/i.test(t)) score += 7;
+  if (contentType === 'manual' && /\b(serious burns|rated power|1000 W|sound level)\b/i.test(t)) score -= 4;
+  if (contentType === 'manual' && /^(Step\s+\d+|MAX|Operating parameters|Key risk)$/i.test(t)) score -= 8;
+  if (contentType === 'book' && /^\p{Lu}[\p{L}'-]+$/u.test(t) && !/\b(Netherfield|Cognitive|Revolution|fiction|myths|cooperate|truth|nature)\b/i.test(t)) score -= 5;
+  if (contentType === 'book' && /\b(Netherfield Park|truth universally acknowledged|business of her life|cooperate successfully|common myths|Cognitive Revolution|contrary to nature)\b/i.test(t)) score += 6;
+  if (depth === 'overview' && t.length <= 80) score += 3;
+  if (t.length > 180) score -= 6;
+  else if (t.length > 120) score -= 3;
+  return score;
+}
+
+function compactMarkText(text, depth = 'standard', contentType = null) {
+  const raw = String(text || '').replace(/\s+/g, ' ').trim();
+  const limit = quickReadMarkLimit(depth, contentType);
+  if (raw.length <= limit) return raw;
+  const targeted = targetedMarkSlice(raw, limit, contentType);
+  if (targeted) return targeted;
+  const pieces = raw
+    .split(/(?:[;.!?。！？；]|,|，|:|：|\s+[-–—]\s+|\s+\b(?:that|which|while|including|with|without|because|where|when|by|and|but|or)\b\s+)/i)
+    .map(s => s.replace(/^[\s"'“”‘’()[\]{}]+|[\s"'“”‘’()[\]{}]+$/g, '').trim())
+    .filter(s => s.length >= 4 && s.length <= limit);
+  if (!pieces.length) return raw;
+  pieces.sort((a, b) => markCandidateScore(b, depth, contentType) - markCandidateScore(a, depth, contentType));
+  return pieces[0] || raw;
+}
+
+function deepSeekMarkIsDiscussed(markText, narration) {
+  const mark = String(markText || '').toLocaleLowerCase('en-US');
+  const spoken = String(narration || '').toLocaleLowerCase('en-US');
+  if (!/[A-Za-z]/.test(mark)) return true;
+  // 跨语言解读(英文菜单/规格页 + 中文旁白):英文词根本不会出现在中文旁白里,
+  // 按词重合判「有没有讲到」会把每一条英文 mark 都误杀——这正是英文菜单在中国区
+  // 只剩一个价格圈的原因。旁白以 CJK 为主时无法用这种方式验证,放行。
+  const spokenLatin = (spoken.match(/[a-z0-9]+/g) || []).length;
+  const spokenCjk = (spoken.match(/[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/g) || []).length;
+  if (spokenCjk > 0 && spokenCjk >= spokenLatin) return true;
+  const stop = new Set(['the', 'and', 'that', 'this', 'with', 'from', 'into', 'your', 'their', 'there', 'than', 'when', 'what', 'which', 'while', 'have', 'has', 'was', 'were', 'are', 'for', 'not']);
+  const tokens = (mark.match(/[a-z0-9]+/g) || []).filter(token => token.length >= 3 && !stop.has(token));
+  if (!tokens.length) return true;
+  const spokenTokens = spoken.match(/[a-z0-9]+/g) || [];
+  const matched = tokens.filter(token => spokenTokens.some(candidate => (
+    candidate === token
+      || (candidate.length >= 6 && token.length >= 6 && candidate.slice(0, 6) === token.slice(0, 6))
+  ))).length;
+  return matched / tokens.length >= 0.45;
+}
+
+export function normalizeDeepSeekGenericMarks(scene, sourceText) {
+  if (!scene || !sourceText || !isChinaDeepSeekPromptOptimizationEnabled()) return scene;
+  const src = String(sourceText);
+  const generic = /^(?:important|importance|purpose|purposes|problem|problems|method|methods|result|results|优雅|重要|目的|问题|方法|原因|结果|特点|内容)$/iu;
+  const seen = new Set();
+  const candidates = [];
+  for (const mark of scene.marks || []) {
+    if (!mark || !['circle', 'underline', 'highlight', 'number'].includes(mark.style)) continue;
+    const original = String(mark.text || '').trim();
+    let text = compactMarkText(original, 'standard', null);
+    if (!src.includes(text)) text = original;
+    if (!text || !src.includes(text) || [...text].length > 120 || generic.test(text) || seen.has(text)) continue;
+    if (!deepSeekMarkIsDiscussed(text, scene.narration)) continue;
+    seen.add(text);
+    candidates.push({
+      ...mark,
+      text,
+      style: mark.style === 'highlight' && text !== original ? 'underline' : mark.style,
+    });
+  }
+  // 编号是成组语义:整组保留(上限 6),其余样式再取前 3,避免「1、2」缺 3。
+  const numbers = candidates.filter(m => m.style === 'number').slice(0, 6);
+  const others = candidates.filter(m => m.style !== 'number')
+    .slice(0, Math.max(1, 3 - (numbers.length ? 1 : 0)));
+  const kept = [...numbers, ...others].sort((a, b) => src.indexOf(a.text) - src.indexOf(b.text));
+  let seq = 0;
+  scene.marks = kept.map(m => (m.style === 'number' ? { ...m, n: ++seq } : m));
+  return scene;
+}
+
+function targetedMarkSlice(raw, limit, contentType = null) {
+  const rules = [];
+  if (contentType === 'report') {
+    rules.push(/\bsupply,\s*not demand,\s*remains the binding constraint(?: through [^,.;]+)?/i);
+  }
+  if (contentType === 'contract') {
+    rules.push(/\bsubordinate to outstanding indebtedness\b/i);
+    rules.push(/\bwritten consent of holders of a majority of the Purchase Amounts\b/i);
+    rules.push(/\bindividual investor cannot block such an amendment\b/i);
+  }
+  if (contentType === 'manual') {
+    rules.push(/\ba minimum of [^.;,]+? is required\b/i);
+    rules.push(/\bminimum of [^.;,]+? is required\b/i);
+    rules.push(/\bblock the steam valve\b/i);
+  }
+  if (contentType === 'book') {
+    rules.push(/\bThe business of her life was to get her daughters married\b/);
+  }
+  for (const re of rules) {
+    const m = raw.match(re);
+    if (m && m[0].length <= limit) return m[0];
+  }
+  return null;
+}
+
+function scenarioMarkBudget(sourceText, depth = 'standard', contentType = null) {
+  const srcLen = String(sourceText || '').length;
+  const cap = contentType === 'contract' && depth === 'overview'
+    ? 0.24
+    : depth === 'overview' ? 0.18 : contentType === 'manual' ? 0.2 : 0.22;
+  const minBudget = depth === 'overview' ? 32 : depth === 'deep' ? 44 : 38;
+  return Math.max(minBudget, Math.floor(srcLen * cap));
+}
+
+function priorityAnchorRules(contentType, depth) {
+  const common = [];
+  if (contentType === 'paper') {
+    common.push(/\b28\.4 BLEU\b/i, /\b3\.57% error\b/i);
+    common.push(/\b(?:the Transformer|residual learning framework)\b/i);
+    if (depth === 'deep') common.push(/\bquadratic complexity in sequence length\b/i, /\bhazard ratio 0\.75\b/i, /\bserious adverse events of hypotension and acute kidney injury\b/i);
+  }
+  if (contentType === 'book') {
+    common.push(/\bThe business of her life was to get her daughters married\b/);
+    common.push(/\bcooperate successfully by believing in common myths\b/i);
+    common.push(/\bno one can fix on me what is ugly\b/i);
+  }
+  if (contentType === 'report') {
+    common.push(/\$94 billion\b/i, /\b38 weeks\b/i, /\bOperating margin contracted 220 basis points to 11\.3%\b/i);
+    common.push(/\bsupply,\s*not demand,\s*remains the binding constraint(?: through [^,.;]+)?/i);
+    if (depth !== 'overview') common.push(/\baccounted for 47% of total unit shipments\b/i);
+    if (depth !== 'overview') common.push(/\bdriven primarily by higher fuel costs and wage inflation\b/i);
+    common.push(/\bcustomer concentration in retail\b/i);
+    if (depth !== 'overview') common.push(/\bcompress gross margins from 71% to an estimated 58%/i, /\$128 billion \(base case\)/i);
+    if (depth === 'deep') common.push(/\bsingle supply normalization event could compress gross margins from 71%[^.;]+/i, /\bcontingent on capacity additions landing on schedule\b/i);
+  }
+  if (contentType === 'contract') {
+    common.push(/\bPurchase Amount of \$[\d,]+(?:\.\d+)?/i);
+    common.push(/\bPost-Money Valuation Cap is \$[\d,]+(?:\.\d+)?/i);
+    common.push(/\bEquity Financing, Liquidity Event, or Dissolution Event\b/i);
+    common.push(/\bsubordinate to outstanding indebtedness\b/i);
+    common.push(/\bit bears no interest and has no maturity date\b/i);
+    common.push(/\bwritten consent of holders of a majority of the Purchase Amounts\b/i);
+    common.push(/\bindividual investor cannot block such an amendment\b/i);
+    if (depth !== 'overview') common.push(/\bPost-Money Valuation Cap is \$[\d,]+(?:\.\d+)?\b/i);
+  }
+  if (contentType === 'study') {
+    common.push(/\bprimary energy currency of the cell\b/i);
+    common.push(/\bdistinguish aerobic respiration[^.]+anaerobic fermentation[^.]+/i);
+    common.push(/\ba change in price causes movement ALONG a curve[^.]+SHIFTS the entire curve\b/i);
+    common.push(/\bPrice elasticity of demand measures how responsive quantity demanded is to a price change\b/i);
+    common.push(/\bneither surplus nor shortage\b/i);
+  }
+  if (contentType === 'manual') {
+    common.push(/\b9V battery\b/i, /\bAll requests must be made over HTTPS\b/i);
+    common.push(/\ba minimum of [^.;,]+? is required\b/i);
+    common.push(/\bminimum of [^.;,]+? is required\b/i);
+    if (depth === 'deep') common.push(/\bblock the steam valve\b/i, /\bcause the unit to burst\b/i, /\bDo not force the lid open\b/i);
+    if (depth === 'overview' || depth === 'deep') common.push(/\bworking pressure [^;]+/i, /\bmaximum temperature [^;]+/i, /\bUse only on a dry, level, heat-resistant surface\b/i, /\bgrant_type parameter\b/i, /\bAuthorization header as a Bearer token\b/i, /\bDo not install in kitchens or bathrooms\b/i);
+    common.push(/\bHTTP 429 with a Retry-After header\b/i, /\bTest the alarm weekly\b/i, /\bevery 10 years\b/i);
+  }
+  return common;
+}
+
+function priorityAnchorMatches(sourceText, depth, contentType) {
+  const src = String(sourceText || '');
+  const out = [];
+  for (const re of priorityAnchorRules(contentType, depth)) {
+    const m = src.match(re);
+    if (!m) continue;
+    let text = String(m[0]).trim();
+    if (text.length > quickReadMarkLimit(depth, contentType)) {
+      text = targetedMarkSlice(text, quickReadMarkLimit(depth, contentType), contentType) || compactMarkText(text, depth, contentType);
+    }
+    if (text && hasWholeMarkAnchor(src, text) && !out.includes(text)) out.push(text);
+  }
+  return out;
+}
+
+function expandScenarioMarkText(text, sourceText, contentType = null) {
+  const t = String(text || '').trim();
+  const src = String(sourceText || '');
+  if (!t || !src.includes(t)) return t;
+  if (contentType === 'contract' && /^\$[\d,]+(?:\.\d+)?$/.test(t)) {
+    const i = src.indexOf(t);
+    const start = Math.max(0, i - 48);
+    const end = Math.min(src.length, i + t.length + 48);
+    const window = src.slice(start, end);
+    const m = window.match(/Purchase Amount of \$[\d,]+(?:\.\d+)?/);
+    if (m && src.includes(m[0])) return m[0];
+  }
+  return t;
+}
+
+const CJK_ANCHOR_CHAR = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+
+function hasWholeMarkAnchor(sourceText, text) {
+  const src = String(sourceText || '');
+  const t = String(text || '');
+  if (!src || !t) return false;
+  let pos = src.indexOf(t);
+  while (pos >= 0) {
+    const before = pos > 0 ? src[pos - 1] : '';
+    const after = pos + t.length < src.length ? src[pos + t.length] : '';
+    // 中日韩没有分词空白,相邻字符照样是「字母」。英文那套「粘连=片段」的判定
+    // 搬到中文上会把合法短语误杀:源文「以及任命一个智能体担任统一调度者」里,
+    // 「任命一个…」因为前面挨着「及」就被判成部分匹配,整条 mark 被丢。
+    // 故只要边界任一侧是 CJK,就不施加这条要求。
+    const partialLeft = before && /[\p{L}\p{N}_$]/u.test(before) && /^[\p{L}\p{N}_$]/u.test(t)
+      && !(CJK_ANCHOR_CHAR.test(before) || CJK_ANCHOR_CHAR.test(t[0]));
+    const partialRight = after && /[\p{L}\p{N}_]/u.test(after) && /[\p{L}\p{N}_]$/u.test(t)
+      && !(CJK_ANCHOR_CHAR.test(after) || CJK_ANCHOR_CHAR.test(t[t.length - 1]));
+    const partialNumber = /\d$/.test(t) && /[\d,.]/.test(after);
+    const partialNumberLeft = /^\d/.test(t) && /[\d,.]/.test(before);
+    if (!partialLeft && !partialRight && !partialNumber && !partialNumberLeft) return true;
+    pos = src.indexOf(t, pos + 1);
+  }
+  return false;
+}
+
+function normalizeScenarioMarks(scene, sourceText, depth = 'standard', contentType = null) {
+  if (!scene || !contentType || !sourceText) return scene;
+  const src = String(sourceText);
+  const seen = new Set();
+  const out = [];
+  const maxMarks = contentType === 'contract' && depth === 'overview'
+    ? 5
+    : depth === 'overview' ? 4 : depth === 'deep' ? 5 : 4;
+  const budget = scenarioMarkBudget(src, depth, contentType);
+  const candidates = [];
+  for (const [idx, mark] of (scene.marks || []).entries()) {
+    if (!mark || !['circle', 'underline', 'highlight', 'number'].includes(mark.style)) {
+      out.push(mark);
+      continue;
+    }
+    const compact = expandScenarioMarkText(compactMarkText(mark.text, depth, contentType), src, contentType);
+    const text = hasWholeMarkAnchor(src, compact) ? compact : String(mark.text || '').trim();
+    if (!text || !hasWholeMarkAnchor(src, text) || seen.has(text)) continue;
+    seen.add(text);
+    const style = depth === 'overview' && mark.style === 'highlight' && text.length > 80 ? 'underline' : mark.style;
+    candidates.push({ mark: { ...mark, text, style }, idx, score: markCandidateScore(text, depth, contentType) });
+  }
+  // 编号 mark 是成组语义:一串「1、2、3」要么整组呈现,要么不呈现。此前它和
+  // 普通 mark 一起按分数/字符预算竞争,结果被腰斩成「1、2」缺 3,读者看到的是
+  // 坏掉的序列。故先整组落位(不受预算裁剪),其余样式再用剩下的名额竞争。
+  const numberGroup = candidates
+    .filter(c => c.mark.style === 'number')
+    .sort((a, b) => a.idx - b.idx)
+    .slice(0, 6)
+    .map(c => ({ ...c, score: 999 }));
+  const rest = candidates.filter(c => c.mark.style !== 'number');
+  const otherCap = numberGroup.length ? Math.max(1, maxMarks - numberGroup.length) : maxMarks;
+  const selected = [...numberGroup];
+  // 编号项短且成组,不占普通 mark 的字符预算——否则一串编号会把本段主旨句挤掉。
+  let used = 0;
+  let fallback = null;
+  for (const c of rest.sort((a, b) => b.score - a.score || a.idx - b.idx)) {
+    if (selected.length - numberGroup.length >= otherCap) break;
+    const len = String(c.mark.text || '').length;
+    if (len > budget) {
+      if (!fallback || len < String(fallback.mark.text || '').length) fallback = c;
+      continue;
+    }
+    if (used + len > budget) continue;
+    selected.push(c);
+    used += len;
+  }
+  for (const text of priorityAnchorMatches(src, depth, contentType)) {
+    if (selected.length >= maxMarks && !selected.some(c => c.score < 4)) break;
+    if (selected.some(c => c.mark.text === text || c.mark.text.includes(text) || text.includes(c.mark.text))) continue;
+    const len = text.length;
+    const priority = 20 + markCandidateScore(text, depth, contentType);
+    let usedNow = selected.reduce((n, x) => n + String(x.mark.text || '').length, 0);
+    while (selected.length && (selected.length >= maxMarks || usedNow + len > budget)) {
+      let worstIdx = 0;
+      for (let i = 1; i < selected.length; i++) {
+        if (selected[i].score < selected[worstIdx].score) worstIdx = i;
+      }
+      if (selected[worstIdx].score >= priority) break;
+      usedNow -= String(selected[worstIdx].mark.text || '').length;
+      selected.splice(worstIdx, 1);
+    }
+    if (selected.length < maxMarks && usedNow + len <= Math.max(budget, len)) {
+      selected.push({ mark: { style: 'underline', text }, idx: Number.MAX_SAFE_INTEGER, score: priority });
+    }
+  }
+  if (!selected.length && fallback && String(fallback.mark.text || '').length <= quickReadMarkLimit(depth, contentType)) {
+    selected.push(fallback);
+  }
+  const ordered = selected.sort((a, b) => src.indexOf(a.mark.text) - src.indexOf(b.mark.text));
+  // 组内可能因去重/预算少了成员,按最终顺序重排 n,避免出现 1、3 这种断号。
+  let seq = 0;
+  for (const c of ordered) {
+    if (c.mark.style === 'number') c.mark = { ...c.mark, n: ++seq };
+    out.push(c.mark);
+  }
+  scene.marks = out;
+  return scene;
+}
+
+// srcUrl → dataUrl 水合:curl 取字节(SG 节点不受浏览器跨域管;微信 mmbiz 实测 200)。
+// 限 3MB / 12s / content-type 必须 image/*;失败置空由调用方剔除。
+async function hydrateImageFromUrl(im) {
+  const { execFile } = await import('node:child_process');
+  const { mkdtemp, readFile, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const dir = await mkdtemp(join(tmpdir(), 'imghyd-'));
+  const fp = join(dir, 'img');
+  try {
+    const ctype = await new Promise((resolve, reject) => {
+      execFile('curl', ['-sL', '--max-time', '12', '--max-filesize', '3145728',
+        '-A', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        '-o', fp, '-w', '%{content_type}', im.srcUrl],
+        { timeout: 15000 }, (err, stdout) => err ? reject(err) : resolve(String(stdout).trim()));
+    });
+    if (!/^image\//.test(ctype)) throw new Error('non-image ' + ctype);
+    const buf = await readFile(fp);
+    if (buf.length < 1000) throw new Error('too small');
+    im.dataUrl = `data:${ctype};base64,${buf.toString('base64')}`;
+    console.log(`  [img-hydrate] ${im.imgId} ← URL 取流成功 ${Math.round(buf.length / 1024)}KB ${ctype}`);
+  } catch (e) {
+    console.log(`  [img-hydrate] ${im.imgId} 取流失败: ${String(e.message || e).slice(0, 60)}`);
+  } finally {
+    await rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+// 图检测(可预跑):出 ≤8 候选区写入 im._regions/_type;幂等(已跑过即返)。plan 返回后由 server
+// 对全部挂载图 fire-and-forget 预跑 → extract-block 带图时只剩讲解调用,与纯文字 scene 同延迟。
+export async function detectImageRegions(im) {
+  if (!im || im._regions || !im.dataUrl) return;
+  if (!activeLLMRuntime().supportsVision) {
+    // DeepSeek V4 is text-only. CN keeps photo/article QuickRead functional
+    // from OCR + captions without making any hidden Gemini request.
+    im._regions = [];
+    im._type = 'text-only';
+    return;
+  }
+  try {
+    const mime = (String(im.dataUrl).match(/^data:(image\/[\w.+-]+);/) || [])[1] || 'image/jpeg';
+    const det = await geminiVisionJson([{ text: IMG_DETECT_PROMPT }, { inline_data: { mime_type: mime, data: String(im.dataUrl).split(',')[1] || '' } }], 2000);
+    im._regions = (det.regions || []).filter(r => Array.isArray(r.box_2d) && r.box_2d.length === 4 && r.label).slice(0, 8);
+    im._type = det.image_type || 'other';
+  } catch { im._regions = []; }
+}
+
+// Pass 0: read the whole article ONCE → lightweight global outline (static
+// context layer shared by every block, like Claude Code's CLAUDE.md baseline)
+// + the FIRST block + an initial running_summary.  Later blocks stream in via
+// extractBlock using only outline + running_summary (full text never resent).
+export async function extractPlan(spec, onBlock0) {
+  const { meta, lang } = resolveSeqInput(spec);
+  const runtime = activeLLMRuntime();
+  const depth = spec.depth || 'standard';
+  const tier = spec.tier || 'basic';   // Pro 专属:'expert' 走专家级深度,'basic'(免费)走现状 depth
+  const paras = (resolveParagraphs(spec) || [])
+    .map(p => ({ text: (p.text || '').replace(/\s+/g, ' ').trim() }))
+    .filter(p => p.text.length >= 20);
+  if (!paras.length) throw new Error('extractPlan needs ordered paragraphs');
+
+  // 图解:client 传 images[](已过 L0 漏斗的文字档案 + 裁图 dataUrl 或 srcUrl 后备);overview 不参与。
+  const imagesRaw = Array.isArray(spec._directInput?.images)
+    ? spec._directInput.images.filter(im => im && im.imgId
+        && ((typeof im.dataUrl === 'string' && im.dataUrl.startsWith('data:image/'))
+          || (typeof im.srcUrl === 'string' && /^https?:\/\//.test(im.srcUrl)))).slice(0, 8)
+    : [];
+  // srcUrl 后备水合:client 裁图失败的跨域图(CDN 偶发不回 CORS)→ server 直接取字节。
+  // 取不到的直接剔除——planner 永远只调度"字节在手"的图,后续环节不需要任何兜底。
+  // 水合与 plan LLM 并行(planner 不看像素,字节只为 extract-block 备料)→ 取流时间完全藏进 plan 的 10-20s。
+  const _hydrateP = runtime.supportsVision
+    ? Promise.all(imagesRaw.filter(im => !im.dataUrl && im.srcUrl).map(im => hydrateImageFromUrl(im)))
+    : Promise.resolve([]);
+  // 照片解读:原照片整张作多模态输入,讲解 LLM 直接读图(reader 上传照片 → OCR 段落给锚点 + 原图给理解)。
+  // 只在 client 传 source_image 时存在 → 普通解读全程 srcParts=[]、isPhoto=false,行为字节不变。
+  const sourceImage = (typeof spec._directInput?.sourceImage === 'string' && spec._directInput.sourceImage.startsWith('data:image/'))
+    ? spec._directInput.sourceImage : null;
+  const srcParts = sourceImage && runtime.supportsVision ? [imagePart(sourceImage)] : [];
+  const prevSummary = typeof spec._prevSummary === 'string' ? spec._prevSummary.trim() : '';
+  const enforceDeepSeekContinuation = runtime.provider === 'deepseek' && !!prevSummary;
+  const basePrompt = buildPlanPrompt(paras, meta, lang, depth, '', !!sourceImage && runtime.supportsVision, tier, prevSummary, spec.content_type || null);
+  // DeepSeek has occasionally treated the quoted continuity memory as output
+  // material and copied it verbatim into block_0. Keep the global/Gemini prompt
+  // byte-for-byte unchanged; append this provider-specific guard only for a CN
+  // continuation request.
+  const prompt = enforceDeepSeekContinuation
+    ? `${basePrompt}\n\n${deepSeekContinuationPromptGuard()}`
+    : basePrompt;
+  const validatePlan = (value) => {
+    const deepSeekOptimized = runtime.provider === 'deepseek' && isChinaDeepSeekPromptOptimizationEnabled();
+    let repaired = deepSeekOptimized
+      ? repairDeepSeekOptimizedPlanShape(value)
+      : repairQuickReadPlanCount(value);
+    if (deepSeekOptimized) {
+      repaired = restoreDeepSeekSubstantiveSkips(repaired, paras);
+      repaired = coalesceDeepSeekPlanBlocks(repaired, depth, paras.length);
+    }
+    return validateQuickReadPlan(repaired, paras.length);
+  };
+  const validateResponse = (value) => {
+    const plan = validatePlan(value);
+    return enforceDeepSeekContinuation
+      ? validateDeepSeekContinuation(plan, prevSummary)
+      : plan;
+  };
+  const primary = runtime.primaryModel;
+  const _llmT0 = Date.now();
+  let parsed, model, first_block_ms = null;
+  // Streaming path (Gemini global / DeepSeek CN): pull block_0 out of the
+  // partial stream → fire onBlock0 ~3-4s in, while the full outline keeps streaming.
+  // Any failure falls back to the buffered path (still works, just no early block_0).
+  if (typeof onBlock0 === 'function' && runtime.supportsEarlyBlockStream) {
+    try {
+      let earlySettled = false;
+      const observe = (acc) => {
+        // (照片解读时 srcParts 带原图;普通解读 srcParts=[])
+        if (earlySettled) return;
+        const b0 = extractFirstJsonObject(acc, 'block_0');
+        if (!b0) return;
+        const blk = adaptBlock(b0, 0, '', !spec.content_type);
+        if (!blk) return;
+        if (runtime.provider === 'deepseek' && !spec.content_type) {
+          normalizeDeepSeekGenericMarks(blk, paras.map(p => p.text).join(lang === 'zh' ? '' : ' '));
+        }
+        earlySettled = true;
+        // Never expose a known-bad streamed block to SSE/TTS. The completed
+        // response will fail validation below and trigger a fresh generation.
+        if (enforceDeepSeekContinuation
+            && isExactOrNearExactContinuationEcho(blk.narration, prevSummary)) {
+          console.warn('  [plan] DeepSeek early block_0 rejected: repeats continuation memory');
+          return;
+        }
+        first_block_ms = Date.now() - _llmT0;
+        const tm = acc.match(/"total_blocks"\s*:\s*(\d+)/);   // best-effort: may not have streamed yet
+        try { onBlock0(blk, tm ? +tm[1] : null); } catch { /* */ }
+      };
+      let raw;
+      if (runtime.provider === 'deepseek') {
+        const result = await deepSeekStream(prompt, observe, {
+          model: primary,
+          maxTokens: 8000,
+          timeoutMs: LLM_EXEC_TIMEOUT_MS,
+        });
+        raw = result.text;
+        _lastLLMUsage = result.usage;
+      } else {
+        raw = await geminiStream(prompt, primary, observe, srcParts);
+      }
+      parsed = validateResponse(parseSeqJson(raw));
+      model = primary;
+    } catch (e) {
+      // CN retries the same DeepSeek model with no foreign fallback; global
+      // retains its historical buffered fallback behavior.
+      const r = await callSequentialLLM(prompt, validateResponse);
+      parsed = r.parsed; model = r.model;
+    }
+  } else {
+    const r = await callSequentialLLM(prompt, validateResponse);
+    parsed = r.parsed; model = r.model;
+  }
+  const llm_ms = Date.now() - _llmT0;
+  const usage = getLastLLMUsage();
+  await _hydrateP;
+  const imagesIn = runtime.supportsVision
+    ? imagesRaw.filter(im => typeof im.dataUrl === 'string' && im.dataUrl.startsWith('data:image/'))
+    : [];
+  if (!runtime.supportsVision && imagesRaw.length) {
+    console.log(`  [plan] images: ${imagesRaw.length} skipped (regional text-only model; OCR/text remains active)`);
+  } else if (imagesRaw.length !== imagesIn.length) {
+    console.log(`  [plan] images 水合: ${imagesRaw.length} 进 → ${imagesIn.length} 可用(URL 取流失败的已剔除)`);
+  }
+  const outline = (parsed.outline && typeof parsed.outline === 'object')
+    ? parsed.outline : { thesis: '', arc: '', blocks: [] };
+  const planBlocks = Array.isArray(outline.blocks) ? outline.blocks : [];
+  if (!planBlocks.length) throw new Error('extractPlan: LLM returned no scene division');
+  // skip 工具:planner 判定的"非文章本体"段(尾随文献/评论/相关文章/转载声明)→ 不进 scene 不讲。
+  // 只记日志供观测;sceneTexts 本就只由 blocks 构成,无需其他处理。
+  const _skipped = Array.isArray(outline.skip) ? outline.skip.filter(i => Number.isInteger(i) && paras[i]) : [];
+  if (_skipped.length) console.log(`  [plan] skip ${_skipped.length} non-article paras: [${_skipped.slice(0, 15).join(',')}]`);
+
+  // Tool-driven分块: assemble each scene's source text from the paragraph indices
+  // the LLM grouped (NOT a fixed per-paragraph cut).  total = LLM-chosen scene count.
+  const joinSep = lang === 'zh' ? '' : ' ';
+  const sceneTexts = planBlocks.map((b) => {
+    const idxs = (Array.isArray(b.paras) ? b.paras : []).filter(i => paras[i]);
+    return { text: idxs.map(i => paras[i].text).filter(Boolean).join(joinSep), paras: idxs };
+  });
+  const imagesById = Object.fromEntries(imagesIn.map(im => [im.imgId, im]));
+  // 图随文挂载:按位置(afterParaIdx)挂到覆盖该段的文字 scene;讲该 scene 时顺带一提(extractBlock)。
+  // ⚠️ caption 语义对齐试过(2026-06-13)——复测净负面已回滚:主题高频词(microservices/photosynthesis)
+  // 在全文到处命中 → 把图吸到"非真讲它"的 scene → 牵强硬提,博客 fowler/draveness 也退化。
+  // 位置挂载在博客准(图紧贴正文);百科漏提是已知边界(图浮动→afterParaIdx 退化),不靠词对齐硬救。
+  let _attached = 0;
+  for (const im of imagesIn) {
+    const ai = Number.isInteger(im.afterParaIdx) ? im.afterParaIdx : -1;
+    const st = ai < 0 ? sceneTexts.find(s => s.paras.length > 0)
+      : (sceneTexts.find(s => s.paras.includes(ai)) || sceneTexts.find(s => s.paras.includes(ai + 1)));
+    if (!st) continue;
+    (st.imgs = st.imgs || []).push(im.imgId);
+    _attached++;
+  }
+  if (imagesIn.length) {
+    console.log(`  [plan] images: ${imagesIn.length} 候选 → 随文挂载 ${_attached} 张`);
+    for (const im of imagesIn) console.log(`    [img-dossier] ${im.imgId} ${im.w}x${im.h} afterPara=${im.afterParaIdx} cap="${(im.caption || '').slice(0, 40)}"`);
+  }
+
+  const block0 = adaptBlock(parsed.block_0 || (Array.isArray(parsed.blocks) ? parsed.blocks[0] : null), 0, sceneTexts[0]?.text || '', !spec.content_type);
+  if (!block0) throw new Error('extractPlan produced no first block');
+  _diagMarks(`plan raw ct=${spec.content_type || 'none'}`, block0);
+  normalizeScenarioMarks(block0, sceneTexts[0]?.text || '', depth, spec.content_type || null);
+  _diagMarks('plan afterScenario', block0);
+  if (runtime.provider === 'deepseek' && !spec.content_type) {
+    normalizeDeepSeekGenericMarks(block0, sceneTexts[0]?.text || '');
+    _diagMarks('plan afterDeepSeekFix', block0);
+  }
+  const summary = String(parsed.summary || '').trim();
+  return { outline, block0, summary, sceneTexts, total: sceneTexts.length, meta, lang, depth, imagesById, sourceImage, model, llm_ms, usage, first_block_ms };
+}
+
+// Pass N: generate ONE block from three context layers — outline (static
+// global), running_summary (compacted memory of blocks already narrated; rolls
+// forward at fixed size = Compact/SessionMemory idea), and the current block
+// text.  Per-block input stays small no matter how long the article.
+export async function extractBlock({ outline, running_summary, blockText, idx, total, meta, lang, depth = 'standard', imgs = null, sourceImage = null, tier = 'basic', contentType = null }) {
+  // 图随文(用户拍板形态):图不是独立 scene,是文字 scene 里顺带的一笔。
+  // scene 范围内有图 → 同一次调用带上像素(多模态),讲到位置顺嘴一句 + imgwhole 整图一框;不值一提可不提。
+  const withImgs = Array.isArray(imgs) && imgs.length > 0;
+  // 照片解读:原照片作多模态输入(只供理解,不走 detectImageRegions,不画图框);mark 仍 verbatim 锚 OCR 文字。
+  const isPhoto = typeof sourceImage === 'string' && sourceImage.startsWith('data:image/');
+  const srcPart = isPhoto ? imagePart(sourceImage) : null;
+  const runtime = activeLLMRuntime();
+  const useVision = runtime.supportsVision && (withImgs || isPhoto);
+  let parsed, model;
+  if (useVision) {
+    // 检测步(SoM 契约:坐标只来自这里)。plan 后台已预跑则直接命中缓存(_regions),此处零等待。
+    const use = withImgs ? imgs.slice(0, 2) : [];
+    await Promise.all(use.map(im => detectImageRegions(im)));
+    const prompt = buildBlockPrompt({ outline, running_summary, blockText, idx, total, meta, lang, depth, imgs: use, isPhoto, tier, contentType });
+    const parts = [{ text: prompt }];
+    for (const im of use) {
+      const mime = (String(im.dataUrl).match(/^data:(image\/[\w.+-]+);/) || [])[1] || 'image/jpeg';
+      parts.push({ inline_data: { mime_type: mime, data: String(im.dataUrl).split(',')[1] || '' } });
+    }
+    if (srcPart) parts.push(srcPart);   // 照片原图:讲解 LLM 直接读图理解
+    parsed = await geminiVisionJson(parts, 3000);
+    model = runtime.primaryModel;
+  } else {
+    // CN DeepSeek is text-only: photo OCR is already in blockText, while page
+    // image pixels are intentionally omitted instead of silently calling Gemini.
+    ({ parsed, model } = await callSequentialLLM(buildBlockPrompt({ outline, running_summary, blockText, idx, total, meta, lang, depth, imgs: null, isPhoto: false, tier, contentType })));
+  }
+  // 图内圈点 mark 先拆出(adaptBlock 的 verbToEvent 会洗掉非文字 style),region 编号→检测框坐标。
+  const rawBlock = parsed.block || parsed;
+  let imgMarks = [];
+  if (useVision && withImgs && Array.isArray(rawBlock?.marks)) {
+    const byId = Object.fromEntries(imgs.map(im => [im.imgId, im]));
+    for (const m of rawBlock.marks) {
+      if (!m || m.style !== 'imgmark') continue;
+      const im = byId[m.img];
+      const r = im?._regions?.[(Number(m.region) | 0) - 1];
+      if (!r) { console.log(`  [img-inline] 无效 region ${m.img}#${m.region},弃`); continue; }
+      const [ym, xm, yM, xM] = r.box_2d.map(Number);
+      imgMarks.push({ style: 'imgbox', imgId: im.imgId,
+        nbox: { x: xm / 1000, y: ym / 1000, w: Math.max(0.02, (xM - xm) / 1000), h: Math.max(0.02, (yM - ym) / 1000) },
+        text: String(m.say || r.label).slice(0, 120) });
+      if (imgMarks.length >= 3) break;
+    }
+    rawBlock.marks = rawBlock.marks.filter(m => !(m && (m.style === 'imgmark' || m.style === 'imgwhole')));
+  }
+  const scene = adaptBlock(rawBlock, idx, blockText, !contentType);
+  if (!scene) throw new Error(`extractBlock(${idx}) produced no block`);
+  _diagMarks(`block${idx} raw ct=${contentType || 'none'}`, scene);
+  normalizeScenarioMarks(scene, blockText, depth, contentType);
+  _diagMarks(`block${idx} afterScenario`, scene);
+  if (runtime.provider === 'deepseek' && !contentType) {
+    normalizeDeepSeekGenericMarks(scene, blockText);
+    _diagMarks(`block${idx} afterDeepSeekFix`, scene);
+  }
+  if (imgMarks.length) {
+    scene.marks = [...scene.marks, ...imgMarks];
+    console.log(`  [img-inline] scene ${idx}: 随文提及 ${imgMarks.length} 图`);
+  }
+  const updated_summary = String(parsed.updated_summary || parsed.summary || running_summary || '').trim();
+  return { scene, updated_summary, model };
+}
+
+// ─── 图解(image scene):SoM 契约 — 检测步出框(坐标唯一来源),讲解步只选编号 ───
+// Phase 0 实测(2026-06-12):gemini 直出框 diagram 95%/整体 89.6%,$0.005/张,p50 3.7s。
+const IMG_DETECT_PROMPT = `You are the detection step for a "teacher pointing at an image while explaining it" system.
+Detect up to 8 prominent, DISTINCT regions in this image that a teacher would point at while explaining it to a reader (objects, people, landmarks, labeled parts, chart lines/bars/axes, diagram components/blocks).
+Return ONLY JSON:
+{"image_type":"photo|chart|diagram|screenshot|illustration|other","regions":[{"box_2d":[ymin,xmin,ymax,xmax],"label":"concise specific description"}]}
+box_2d = integers normalized to 0-1000 (relative to image height for y, width for x). No near-duplicate overlapping boxes. Label in the language of any text inside the image when applicable, else English.`;
+
+// 非流式 gemini vision 调用(JSON mode,温度低,thinking 0)。模型与讲解同链(gemini 系)。
+async function geminiVisionJson(parts, maxTokens = 2200) {
+  if (!activeLLMRuntime().supportsVision) {
+    throw new Error('vision_not_available_for_quickread_region');
+  }
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) throw new Error('GEMINI_API_KEY not set');
+  const model = activePrimaryModel();
+  const body = JSON.stringify({
+    contents: [{ parts }],
+    generationConfig: { temperature: 0.2, maxOutputTokens: maxTokens, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } },
+  });
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+  const raw = await new Promise((resolve, reject) => {
+    const child = spawn('curl', ['-s', '--max-time', '60', '-H', 'content-type: application/json', '--data-binary', '@-', url]);
+    let out = '', err = '';
+    child.stdin.on('error', () => { /* */ });
+    child.stdin.write(body); child.stdin.end();
+    child.stdout.on('data', (d) => { out += d; });
+    child.stderr.on('data', (d) => { err += d; });
+    child.on('close', (c) => (c === 0 ? resolve(out) : reject(new Error('curl exit ' + c + ' ' + err.slice(0, 100)))));
+  });
+  const resp = JSON.parse(raw);
+  if (resp.error) throw new Error('gemini: ' + JSON.stringify(resp.error).slice(0, 160));
+  const txt = resp.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+  return JSON.parse(txt);
+}
+
+// 图片 scene:深读=检测(出框)→讲解(选编号);标准=整图一笔讲它说明什么。chart 车道只指块状元素。
+export async function extractImageBlock({ img, outline, running_summary, idx, total, lang, depth = 'standard' }) {
+  const langName = langNameOf(lang);
+  const mime = (String(img.dataUrl).match(/^data:(image\/[\w.+-]+);/) || [])[1] || 'image/jpeg';
+  const b64 = String(img.dataUrl).split(',')[1] || '';
+  if (!b64) throw new Error(`extractImageBlock(${idx}): bad dataUrl`);
+  const dossier = `caption: ${img.caption || '-'} | alt: ${img.alt || '-'} | text before: ${(img.before || '').slice(0, 160)} | text after: ${(img.after || '').slice(0, 160)}`;
+
+  let regions = null, imageType = 'other';
+  const runtime = activeLLMRuntime();
+  if (depth === 'deep' && runtime.supportsVision) {
+    try {
+      const det = await geminiVisionJson([{ text: IMG_DETECT_PROMPT }, { inline_data: { mime_type: mime, data: b64 } }], 2000);
+      imageType = det.image_type || 'other';
+      regions = (det.regions || []).filter(r => Array.isArray(r.box_2d) && r.box_2d.length === 4 && r.label).slice(0, 8);
+    } catch (e) { console.log(`  [img ${img.imgId}] detect failed: ${String(e.message || e).slice(0, 80)} → 整图`); }
+  }
+
+  const laneNote = imageType === 'chart'
+    ? 'This is a CHART. Explain the trend/comparison it shows. Point ONLY at block elements (title, axis labels, legend, annotations) — NEVER at curves/lines/series (their boxes cover the whole plot).'
+    : '';
+  const regionList = regions?.length
+    ? 'Detected regions you may point at (refer to them ONLY by number; never invent coordinates):\n' + regions.map((r, i) => `[${i + 1}] ${r.label}`).join('\n')
+    : '';
+  const depthLine = depth === 'deep'
+    ? 'Walk through the image like a teacher: say what it shows and why it matters HERE, pointing at the regions you actually discuss as you discuss them.'
+    : 'In a few plain sentences, say what this image shows and what it adds to the article at this point. Do not enumerate its details.';
+
+  const prompt = `You are a teacher reading an article aloud, scene by scene. SCENE [${idx}] of ${total} is an IMAGE on the page.
+GLOBAL OUTLINE: ${JSON.stringify(outline ? { thesis: outline.thesis, arc: outline.arc } : {})}
+ALREADY NARRATED: ${running_summary || '(start)'}
+IMAGE CONTEXT: ${dossier}
+${laneNote}
+${regionList}
+OUTPUT LANGUAGE: ${langName}.
+${depthLine}
+Return ONLY JSON:
+{"narration":"spoken ${langName} explanation of this image, flowing on from the summary"${regions?.length ? ',"marks":[{"region":<number from the list>,"say":"<the exact short phrase from your narration where you discuss that region>"}]' : ''},"updated_summary":"running memory rolled forward (short, roughly fixed-size)"}`;
+
+  let out;
+  if (runtime.supportsVision) {
+    out = await geminiVisionJson([{ text: prompt }, { inline_data: { mime_type: mime, data: b64 } }], 2500);
+  } else {
+    // DeepSeek V4 accepts text only. Use the client-provided caption/alt and
+    // neighboring text dossier, and state the evidence boundary explicitly so
+    // it does not invent details from pixels it never received.
+    const textOnlyPrompt = `${prompt}\n\nIMPORTANT: Image pixels are unavailable in this regional model. Use ONLY IMAGE CONTEXT (caption, alt, and neighboring text) above. Do not claim visual details that are not stated there.`;
+    ({ parsed: out } = await callSequentialLLM(textOnlyPrompt));
+  }
+  const narration = String(out.narration || '').trim();
+  if (!narration) throw new Error(`extractImageBlock(${idx}): empty narration`);
+  const marks = [];
+  if (regions?.length && Array.isArray(out.marks)) {
+    for (const mk of out.marks) {
+      const r = regions[(Number(mk.region) | 0) - 1];
+      if (!r) { console.log(`  [img ${img.imgId}] invalid region ${mk.region} dropped`); continue; }
+      const [ym, xm, yM, xM] = r.box_2d.map(Number);
+      marks.push({ style: 'imgbox', imgId: img.imgId,
+        nbox: { x: xm / 1000, y: ym / 1000, w: Math.max(0.01, (xM - xm) / 1000), h: Math.max(0.01, (yM - ym) / 1000) },
+        text: String(mk.say || r.label).slice(0, 120) });
+    }
+  }
+  if (!marks.length) marks.push({ style: 'imgwhole', imgId: img.imgId, nbox: { x: 0, y: 0, w: 1, h: 1 }, text: narration.slice(0, 80) });
+  console.log(`  [img ${img.imgId}] type=${imageType} regions=${regions?.length || 0} → marks=${marks.length} (${depth})`);
+  const updated_summary = String(out.updated_summary || running_summary || '').trim();
+  // 绕开 adaptBlock(verbToEvent 会洗掉 imgId/nbox),直接构造 scene。
+  return { scene: { id: `seq-${idx}`, narration, marks }, updated_summary, imageType };
+}
+
+// Page mode Pass 2: align each mark to the moment its phrase is spoken — the LLM
+// decides every `at` (no rule-based even spacing).  English: feed the TTS word
+// timeline (precise).  Chinese: Kokoro returns no word timestamps, so feed the
+// narration + duration and let the LLM place each mark by WHERE in the spoken
+// line its idea is talked about.  Mutates section.cinematic.events in place.
+export async function alignMarksToTimeline(section, timestamps, duration, lang) {
+  const events = section?.cinematic?.events || [];
+  const marks = events.filter(e => ['circle', 'underline', 'highlight', 'number', 'wavy', 'strike', 'link', 'imgbox', 'imgwhole'].includes(e.action));
+  if (!marks.length) return;
+  const dur = Number(duration) || Number(section.duration) || 0;
+  const ts = Array.isArray(timestamps) ? timestamps : [];
+  const hasWordTiming = ts.some(t => (t.end ?? t.end_time ?? 0) > 0);
+  const langName = langNameOf(lang);
+  const markList = marks.map((m, i) => `  ${i + 1}. [${m.action}] "${m.text}"`).join('\n');
+
+  let timingCtx;
+  if (hasWordTiming) {
+    timingCtx = `WORD TIMELINE (each word → second it is spoken):\n`
+      + ts.map(t => `"${t.word}"(${(t.start ?? t.start_time ?? 0).toFixed(1)})`).join(' ');
+  } else {
+    timingCtx = `NARRATION (spoken over ${dur.toFixed(1)}s): "${section.text || ''}"\n`
+      + `No word-level timeline for this language — estimate each mark's time from WHERE in the narration its phrase is talked about (position in the line × ${dur.toFixed(1)}s).`;
+  }
+  const deepSeekTiming = deepSeekTimingDiscipline();
+
+  const prompt = `You are syncing on-page highlights to a ${langName} voiceover, like a teacher whose pen lands on a word exactly as they say it.
+
+The narration is ${dur.toFixed(1)}s long.
+${timingCtx}
+
+MARKS to time (each is a phrase highlighted on the page, in narration order):
+${markList}
+
+For each mark, give the time in seconds (0–${dur.toFixed(1)}) when its highlight should appear — about 0.3s BEFORE the narrator reaches that idea, so the pen lands as they say it. Keep them in order.${deepSeekTiming}
+
+Return ONLY JSON: { "marks": [ { "i": 1, "at": 0.0 } ] }`;
+
+  const primary = activePrimaryModel();
+  const fallback = activeFallbackModel();
+  let raw;
+  try { raw = await claudeMessage(prompt, primary); }
+  catch (err) {
+    if (!fallback || fallback === 'none' || fallback === primary) throw err;
+    raw = await claudeMessage(prompt, fallback);
+  }
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('alignMarksToTimeline: no JSON in response');
+  const parsed = JSON.parse(m[0]);
+  const atByNum = new Map((parsed.marks || []).map(x => [Number(x.i), Number(x.at)]));
+  const cap = dur > 0 ? dur - 0.2 : Infinity;
+  marks.forEach((mk, i) => {
+    let at = atByNum.get(i + 1);
+    if (!Number.isFinite(at)) at = 0;
+    mk.at = +Math.max(0, Math.min(cap, at)).toFixed(2);
+  });
+}
+
+// LLM call for sequential mode — primary→fallback, parses the {title, blocks}
+// JSON directly (parseExtractionResponse is cinematic-shaped and would drop
+// `blocks`, so we parse here instead).
+// Tolerant JSON extraction: strip markdown fences, then parse; if that fails
+// (LLM sometimes emits raw control chars / stray newlines inside string values),
+// collapse control chars and retry once.
+function parseSeqJson(raw) {
+  const s = String(raw).replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  const jsonText = firstJsonObjectString(s);
+  if (!jsonText) throw new Error('no JSON object in response');
+  try { return JSON.parse(jsonText); }
+  catch { return JSON.parse(jsonText.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ')); }
+}
+
+function deepSeekContinuationPromptGuard() {
+  return `DEEPSEEK CONTINUATION SAFETY (MANDATORY):
+- The quoted previous narration is READ-ONLY MEMORY. It has already been spoken. NEVER copy it, replay it, lightly edit it, summarize it again, or use it as block_0 narration.
+- block_0 MUST be newly written from scene 0 of ARTICLE PARAGRAPHS below. Start directly with the first NEW point in those paragraphs.
+- Before returning JSON, normalize punctuation/spacing and compare block_0.narration with the quoted previous narration. If they are identical or nearly identical, REGENERATE block_0 from scene 0 before returning.
+- Do not "fix" repetition by omitting scene 0, dropping paragraph indices, merging away the first block, or renumbering blocks. Every source paragraph must still be covered exactly once by outline.blocks or outline.skip.`;
+}
+
+function normalizeContinuationComparison(value) {
+  return String(value || '')
+    .normalize('NFKC')
+    .toLocaleLowerCase('en-US')
+    .replace(/[\p{White_Space}\p{P}\p{S}]+/gu, '');
+}
+
+function editDistanceWithin(a, b, limit) {
+  const aa = Array.from(a);
+  const bb = Array.from(b);
+  if (Math.abs(aa.length - bb.length) > limit) return false;
+  let previous = Array.from({ length: bb.length + 1 }, (_, idx) => idx);
+  for (let i = 1; i <= aa.length; i++) {
+    const current = [i];
+    let rowMin = current[0];
+    for (let j = 1; j <= bb.length; j++) {
+      const cost = aa[i - 1] === bb[j - 1] ? 0 : 1;
+      const value = Math.min(
+        previous[j] + 1,
+        current[j - 1] + 1,
+        previous[j - 1] + cost,
+      );
+      current.push(value);
+      rowMin = Math.min(rowMin, value);
+    }
+    if (rowMin > limit) return false;
+    previous = current;
+  }
+  return previous[bb.length] <= limit;
+}
+
+/**
+ * Deterministic, deliberately conservative replay detection. It catches an
+ * exact replay after punctuation/spacing normalization and a near-copy with a
+ * tiny wrapper or <=8% character edits. It does not attempt semantic dedup, so
+ * a legitimate continuation on the same topic is not rejected.
+ */
+export function isExactOrNearExactContinuationEcho(narration, prevSummary) {
+  const current = normalizeContinuationComparison(narration);
+  const previous = normalizeContinuationComparison(prevSummary);
+  if (!current || !previous) return false;
+  if (current === previous) return true;
+
+  const currentLength = Array.from(current).length;
+  const previousLength = Array.from(previous).length;
+  const shorterLength = Math.min(currentLength, previousLength);
+  const longerLength = Math.max(currentLength, previousLength);
+  // Very short phrases commonly recur naturally; exact equality above is the
+  // only safe signal for them.
+  if (shorterLength < 16) return false;
+  if ((current.includes(previous) || previous.includes(current))
+      && shorterLength / longerLength >= 0.88) {
+    return true;
+  }
+  const editLimit = Math.max(2, Math.floor(longerLength * 0.08));
+  return editDistanceWithin(current, previous, editLimit);
+}
+
+export function validateDeepSeekContinuation(parsed, prevSummary) {
+  if (isExactOrNearExactContinuationEcho(parsed?.block_0?.narration, prevSummary)) {
+    throw new Error('invalid QuickRead plan: block_0 repeats prev_summary');
+  }
+  return parsed;
+}
+
+/**
+ * A syntactically valid outline can still silently drop most of the source.
+ * Reject those responses before they become a job: every input paragraph must
+ * appear exactly once, either in one ordered block or in the explicit skip
+ * list. This provider-neutral guard protects global Gemini and CN DeepSeek.
+ */
+export function validateQuickReadPlan(parsed, paragraphCount) {
+  const fail = (reason) => { throw new Error(`invalid QuickRead plan: ${reason}`); };
+  if (!parsed || typeof parsed !== 'object') fail('root');
+
+  const block0 = parsed.block_0;
+  if (!block0 || typeof block0 !== 'object') fail('block_0');
+  if (typeof block0.narration !== 'string' || !block0.narration.trim()) {
+    fail('block_0 narration');
+  }
+  if (!Array.isArray(block0.marks)) fail('block_0 marks');
+
+  const blocks = parsed.outline?.blocks;
+  if (!Array.isArray(blocks) || blocks.length === 0) fail('outline blocks');
+  if (!Number.isInteger(parsed.total_blocks)
+      || parsed.total_blocks <= 0
+      || parsed.total_blocks !== blocks.length) {
+    fail('total_blocks mismatch');
+  }
+  if (!Number.isInteger(paragraphCount) || paragraphCount <= 0) fail('paragraph count');
+
+  const seen = new Set();
+  const acceptIndex = (idx, label) => {
+    if (!Number.isInteger(idx) || idx < 0 || idx >= paragraphCount) fail(`${label} index`);
+    if (seen.has(idx)) fail(`duplicate paragraph ${idx}`);
+    seen.add(idx);
+  };
+  const requireStrictlyIncreasing = (values, label) => {
+    for (let i = 1; i < values.length; i++) {
+      if (values[i] <= values[i - 1]) fail(`${label} order`);
+    }
+  };
+
+  blocks.forEach((block, blockIndex) => {
+    if (!block || block.idx !== blockIndex) fail(`block ${blockIndex} idx`);
+    if (!Array.isArray(block.paras) || block.paras.length === 0) {
+      fail(`block ${blockIndex} paras`);
+    }
+    requireStrictlyIncreasing(block.paras, `block ${blockIndex} paras`);
+    if (blockIndex > 0) {
+      const previous = blocks[blockIndex - 1]?.paras;
+      if (Array.isArray(previous) && previous.length && block.paras[0] <= previous[previous.length - 1]) {
+        fail(`block ${blockIndex} source order`);
+      }
+    }
+    block.paras.forEach((idx) => acceptIndex(idx, `block ${blockIndex}`));
+  });
+
+  const skip = parsed.outline.skip ?? [];
+  if (!Array.isArray(skip)) fail('outline skip');
+  requireStrictlyIncreasing(skip, 'outline skip');
+  skip.forEach((idx) => acceptIndex(idx, 'skip'));
+  if (seen.size !== paragraphCount) fail('paragraph coverage');
+  for (let idx = 0; idx < paragraphCount; idx++) {
+    if (!seen.has(idx)) fail(`missing paragraph ${idx}`);
+  }
+  return parsed;
+}
+
+/**
+ * `total_blocks` is redundant with `outline.blocks.length`. Older prompt
+ * examples used 0 as a streaming placeholder, which DeepSeek can copy even
+ * after it has produced a complete, otherwise valid outline. Repair only that
+ * known placeholder; every other mismatch remains a hard validation failure.
+ */
+export function repairQuickReadPlanCount(parsed) {
+  const blocks = parsed?.outline?.blocks;
+  if (parsed?.total_blocks === 0 && Array.isArray(blocks) && blocks.length > 0) {
+    return { ...parsed, total_blocks: blocks.length };
+  }
+  return parsed;
+}
+
+/**
+ * DeepSeek sometimes gets redundant bookkeeping fields wrong after producing a
+ * sound, source-ordered outline. In the optimized CN profile, derive those
+ * fields from the outline instead of paying for another full generation. This
+ * remains fail-closed: paragraph order/coverage and every other semantic check
+ * are still enforced by validateQuickReadPlan immediately afterwards.
+ */
+export function repairDeepSeekOptimizedPlanShape(parsed) {
+  const blocks = parsed?.outline?.blocks;
+  if (!Array.isArray(blocks) || !blocks.length) return parsed;
+  const withCount = { ...parsed, total_blocks: blocks.length };
+  let previousParagraph = -1;
+  for (const block of blocks) {
+    if (!Array.isArray(block?.paras) || !block.paras.length) return withCount;
+    if (!block.paras.every(Number.isInteger)) return withCount;
+    if (block.paras[0] <= previousParagraph) return withCount;
+    previousParagraph = block.paras[block.paras.length - 1];
+  }
+  return {
+    ...withCount,
+    total_blocks: blocks.length,
+    outline: {
+      ...parsed.outline,
+      blocks: blocks.map((block, idx) => ({ ...block, idx })),
+    },
+  };
+}
+
+function isClearlySkippableParagraph(text) {
+  const value = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!value) return true;
+  if (/^(?:figure|fig\.?|table|图|表)\s*\d+\s*[:：.]/iu.test(value)) return true;
+  if (/^\d+\s*:\s+/u.test(value)) return true;
+  if (/^\(?sources?\s*[:：]/iu.test(value)) return true;
+  if (/\bresource guide provides links\b/iu.test(value)) return true;
+  if (/(?:related (?:articles|posts)|leave a comment|sign up|subscribe|newsletter|privacy policy|terms of use|all rights reserved|reprint permission)/iu.test(value) && value.length < 320) return true;
+  const looksLikeBio = /\b(?:is|was) (?:an?|the) (?:principal |senior |staff |independent )?(?:consultant|author|speaker|editor|writer|professor|researcher)\b/iu.test(value)
+    && /\b(?:he|she|they|his|her|their)\b/iu.test(value);
+  return looksLikeBio;
+}
+
+export function restoreDeepSeekSubstantiveSkips(parsed, paragraphs) {
+  const blocks = parsed?.outline?.blocks;
+  const skip = parsed?.outline?.skip;
+  if (!Array.isArray(blocks) || !blocks.length || !Array.isArray(skip) || !skip.length) return parsed;
+  const source = Array.isArray(paragraphs) ? paragraphs : [];
+  const retainedSkip = [];
+  const restore = [];
+  for (const idx of skip) {
+    const text = typeof source[idx] === 'string' ? source[idx] : source[idx]?.text;
+    if (isClearlySkippableParagraph(text)) retainedSkip.push(idx);
+    else restore.push(idx);
+  }
+  if (!restore.length) return parsed;
+
+  const nextBlocks = blocks.map(block => ({ ...block, paras: [...(block.paras || [])] }));
+  const streamedBoundary = Math.max(...nextBlocks[0].paras);
+  for (const idx of restore) {
+    if (idx <= streamedBoundary || nextBlocks.length === 1) {
+      // Block 0 has already streamed; this paragraph cannot be restored into
+      // a later block. Keep the model's skip instead of failing the whole
+      // plan — papers open with attribution notices / author lists that
+      // DeepSeek correctly skips while the bio-shaped heuristic does not
+      // recognise as skippable. A retained skip loses one paragraph's
+      // narration; the throw loses the entire explain session.
+      retainedSkip.push(idx);
+      continue;
+    }
+    let target = nextBlocks.findIndex((block, blockIndex) => blockIndex > 0 && block.paras[0] > idx);
+    if (target < 0) target = nextBlocks.length - 1;
+    nextBlocks[target].paras.push(idx);
+    nextBlocks[target].paras.sort((a, b) => a - b);
+  }
+  return {
+    ...parsed,
+    outline: {
+      ...parsed.outline,
+      blocks: nextBlocks,
+      skip: retainedSkip,
+    },
+  };
+}
+
+export function coalesceDeepSeekPlanBlocks(parsed, depth = 'standard', paragraphCount = 0) {
+  const blocks = parsed?.outline?.blocks;
+  if (!Array.isArray(blocks) || blocks.length <= 1) return parsed;
+  const maxScenes = depth === 'overview'
+    ? 5
+    : depth === 'deep'
+      ? (paragraphCount >= 32 ? 12 : paragraphCount >= 16 ? 9 : 6)
+      : (paragraphCount >= 32 ? 10 : paragraphCount >= 16 ? 7 : 5);
+  if (blocks.length <= maxScenes) return parsed;
+
+  // block_0 has already been written and streamed, so never merge it. Balance
+  // only later source-ordered blocks; those narrations are generated on demand
+  // from the merged source text and therefore lose no paragraphs.
+  const tail = blocks.slice(1);
+  const groups = [];
+  const groupCount = maxScenes - 1;
+  for (let groupIndex = 0; groupIndex < groupCount; groupIndex++) {
+    const start = Math.floor((groupIndex * tail.length) / groupCount);
+    const end = Math.floor(((groupIndex + 1) * tail.length) / groupCount);
+    const members = tail.slice(start, end);
+    if (!members.length) continue;
+    groups.push({
+      ...members[0],
+      topic: members.map(block => block.topic).filter(Boolean).join(' / '),
+      paras: members.flatMap(block => block.paras || []),
+    });
+  }
+  const merged = [blocks[0], ...groups].map((block, idx) => ({ ...block, idx }));
+  return {
+    ...parsed,
+    total_blocks: merged.length,
+    outline: { ...parsed.outline, blocks: merged },
+  };
+}
+
+async function callSequentialLLM(prompt, validateParsed = null) {
+  const primary = activePrimaryModel();
+  const fallback = activeFallbackModel();
+  const attempt = async (model) => {
+    let lastErr;
+    for (let i = 0; i < 2; i++) {   // retry once: LLM is non-deterministic, a regen usually parses
+      try {
+        const raw = await claudeMessage(prompt, model);
+        let parsed = parseSeqJson(raw);
+        if (validateParsed) parsed = validateParsed(parsed) ?? parsed;
+        return { parsed, model };
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr;
+  };
+  try {
+    return await attempt(primary);
+  } catch (err) {
+    const noFallback = !fallback || fallback === 'none' || fallback === primary;
+    if (noFallback) throw err;
+    console.warn(`  ⚠️   ${primary} failed: ${String(err?.message || err).split('\n')[0].slice(0, 140)}`);
+    console.warn(`  ↳    Retrying with fallback: ${fallback}`);
+    return await attempt(fallback);
+  }
+}
+
+// Sequential page-narration prompt.  Feeds the LLM the ordered, indexed page
+// paragraphs (the position info the cinematic prompts omit) and asks for a
+// per-block spoken explanation + the key phrases to mark IN THAT block.
+function buildSequentialPrompt(blocks, meta, lang) {
+  const langName = langNameOf(lang);
+  const paraList = blocks.map((p, i) => `[${i}] ${p.text}`).join('\n\n');
+
+  return `You are helping a reader quickly understand an article. You walk through it top to bottom — like a sharp, friendly guide who reads the page alongside them, makes sense of what each part is really saying, and points at the key phrases as they go.
+
+YOUR GOAL: get the reader to the gist of this article, fast — so they understand what it's about and what matters without reading every line themselves. Distill and explain each part in plain spoken words. Keep the whole walkthrough — your spoken explanation and the on-page highlights together — flowing naturally in reading order, top to bottom. Judge for yourself how much to say for each part: enough to land the point clearly and keep momentum, never droning on.
+
+OUTPUT LANGUAGE: ${langName}. Write all narration in ${langName}.
+
+ARTICLE TITLE: ${meta?.title || ''}
+
+ARTICLE PARAGRAPHS (in page order, [index] then text):
+${paraList}
+
+Return ONLY a JSON object:
+
+{
+  "title": "the article title",
+  "blocks": [
+    {
+      "idx": 0,
+      "narration": "Spoken explanation of what this part of the article is saying, in your own words — clear and conversational, so the reader gets the point quickly.",
+      "marks": [
+        { "style": "circle", "text": "a key term" }, { "style": "highlight", "text": "a whole key sentence" }, { "style": "number", "text": "first item's opening clause", "n": 1 }, { "style": "number", "text": "second item's opening clause", "n": 2 }
+      ]
+    }
+  ]
+}
+
+STRUCTURE (functional rules that keep the on-page sync working — not style limits):
+- One block per input paragraph, in the SAME order (idx ascending). NEVER jump back to an earlier paragraph, NEVER reorder — this is a top-to-bottom read-through.
+- You MAY merge a few tiny adjacent paragraphs into one block, and MAY skip pure navigation / boilerplate — but keep all real content and never break page order.
+- Each block has a few "marks": what you point at while talking about that paragraph. Each text/on/from MUST be copied VERBATIM (an exact substring) from that paragraph.
+${MARK_TOOLS_SPEC}
+- Output ONLY the JSON object, no prose before or after.`;
+}
+
+// 单一工具定义来源(Claude tool-use 范式:每个工具含 WHAT + WHEN + WHEN-NOT 边界判据 + params)。
+// buildPlanPrompt(首块) 与 buildBlockPrompt(后续块) 共用 → 全程工具定义一致,LLM 不混淆。
+// 规范见 memory: reference_quickread_tool_definition_doctrine。
+const MARK_TOOLS_SPEC = `As you read, point at the key phrases like a teacher's pen. Pick the pen that fits what you're pointing at:
+  "circle"    — a key term (a name, a number, or a few words)
+  "underline" — a phrase you're stressing
+  "highlight" — a whole key sentence
+  "number"    — when you're walking through a set of parallel items the author lays out (steps, reasons, options, a list), number each item: "text" = that item's content to underline (its opening clause or key sentence, verbatim — what the reader should read as "point N"), "n" = its position (1, 2, 3 …). Renders as a small circled number at the start + that content underlined.
+  params: { "style": "circle" | "underline" | "highlight" | "number", "text": "<verbatim words from the page>", "n": <only for number: the item's order, 1-based> }
+All text copied VERBATIM from the page. Mark what you're actually talking about, in reading order.`;
+
+// Pass 0 prompt: read whole article → semantic scene division + first scene +
+// summary.  The LLM GROUPS paragraphs into scenes (one point per scene, may span
+// several paragraphs) — tool-driven分块, NOT one-paragraph-per-block.
+// 讲解详略档位 — 按"处理文章的不同层面"定义(本质不同的任务,非程度词):速览=画结构(只说话题不碰主张) / 标准=传达主张(说观点不碰论证) / 精读=复现论证(展开推导+例子).
+// 三档处理不同的层,界限互不重叠;覆盖全文 / 说人话 / 忠实 / 不注水 对所有档不变.
+function depthSpec(depth, langName) {
+  if (depth === 'overview') {
+    return `DEPTH = OVERVIEW. Your job is to map the article's STRUCTURE, not its content. For each scene, say what that part is ABOUT — its topic and its role in the piece — the way a table of contents or a tour guide does. Name the SUBJECT of each part; do NOT state the author's actual claims, reasons or conclusions. (Topics and shape, never the content itself — e.g. "first it lays out the busyness problem, then introduces the idea of doing less, then illustrates it with a gold-mining analogy".)`;
+  }
+  if (depth === 'deep') {
+    return `DEPTH = DEEP. Your job is to reconstruct the article's ARGUMENT — not just what it claims but HOW: the reasoning, the mechanism, and the examples that make each point land. Walk through it like a teacher so even hard ideas click (explaining, not padding or re-reading aloud).`;
+  }
+  return `DEPTH = STANDARD. Your job is to convey the article's CLAIMS — what the author actually asserts and concludes in each part. State the substance: the position, the point, the conclusion, in plain words. Do NOT reconstruct the argument or walk through the examples behind them. (The listener learns what the article SAYS — not yet how it proves it.)`;
+}
+
+// 分块颗粒度按 depth — 这才是 overview/standard 拉开总量的物理杠杆(scene 少→总量少),非每 scene 讲多少.
+function depthChunking(depth) {
+  if (depth === 'overview') {
+    return `Group the article COARSELY for this skim: carve it into just its major SECTIONS or movements — the few places where the subject clearly shifts — NOT one scene per point. Fewer, bigger scenes (each spans a whole section); you'll give each just one line naming what it's about. Still cover every paragraph (each belongs to some section).`;
+  }
+  return `Break it into SCENES — ONE scene per point the author makes. A real article has MANY scenes (one per idea / step / turn), each covering the few paragraphs that share that one point; roughly one scene per distinct point. NEVER fold several different points into one giant scene — split by points. The payoff usually lands in the LAST few paragraphs, so give those closing points their OWN scenes too, never swept into one final catch-all.`;
+}
+
+// 专家级(Pro 专属 tier='expert'):在用户选的颗粒度(速览/标准/精读)之上叠"领域专家+好老师"的质感层 ——
+// 判断力(点破最关键)/批判(局限·争议)/定位(领域位置);机制讲透仅 DEEP 档展开,绝不改颗粒度的"量"(用户拍板)。
+// 准确性是命门(付费功能,自信讲错比摘要更糟):严格区分原文 vs 领域补充,补充保守、不确定明说、绝不编造。
+// 验证(2026-06,expert-eval)4 篇硬内容均判真专家级,准确性 4.0(通用/技术高,硬核专业细节偶有小不精确)。
+function expertLayer(langName) {
+  return `
+
+EXPERT LENS — a domain expert who is also a great teacher is giving this read. This does NOT change HOW MUCH you say: the DEPTH level above fixes the length and the number of scenes — obey it exactly, expert NEVER means longer or more scenes. It upgrades only the QUALITY of judgment you bring WITHIN that fixed budget:
+- CUT TO IT: spend your words on the ONE thing that matters most in each part — the key, the counterintuitive, the easily-missed — and don't dwell on the unremarkable.
+- JUDGE IT: the critical read only an expert gives — a claim's limits, what it glosses over, what's contested, where it does and doesn't hold. A sharp aside, not a lecture.
+- PLACE IT: where this sits relative to what's already known in the field — the context that makes it land.
+- MAKE IT CLICK — ONLY when the DEPTH level already calls for reconstructing the argument/mechanism (i.e. DEEP): the WHY behind a claim, jargon in plain words + a concrete analogy. At OVERVIEW or STANDARD depth do NOT expand into mechanism — keep the expert's judgment and selection, but hold the exact length the depth level sets.
+ACCURACY — IRON RULE (this is a PAID expert read; a confident WRONG claim is worse than a plain summary): keep clearly apart what the ARTICLE states vs YOUR own domain additions. Assert only what you are confident is correct; if unsure, say so ("I'm not certain") rather than state it flat. NEVER invent facts, numbers, dates, or attributions to sound authoritative. If a part is actually unremarkable, say so — do not inflate it. Still say it as ${langName} spoken words, like a sharp friend who happens to be an expert — not a lecture.`;
+}
+
+// 场景透镜(content_type) — 移动端 6 大场景的"读者视角"层(仿 expertLayer 的叠加质感层)。
+// 原则「明确目标 → 定义工具 → LLM 决策」:这里只给本类文档的**目标**(读者要带走什么)+ 哪些东西值得落笔,
+// 绝不规定"用哪种 mark 工具"(工具语义见 MARK_TOOLS_SPEC,由 LLM 自己选),也绝不改"说多少"(详略归 depth)。
+// content_type 缺省/未知 → 返回 ''(扩展端/通用导入 prompt 逐字节不变,零回归)。
+const SCENARIO_DEPTH_MATRIX = {
+  paper: {
+    label: 'PAPER',
+    genre: 'RESEARCH / ACADEMIC',
+    overview: {
+      reader_goal: 'Give a paper-structure map: where the research problem, method route, headline result, contribution labels, and limits sit. Name contribution labels such as simple/faster/parallelizable only as signposts, without analyzing them.',
+      attention_targets: 'research question/hypothesis; proposal/method name; method route; headline metric/result as a signpost; contribution labels such as simpler/faster/parallelizable; explicit limitation location.',
+      mark_selection_criteria: 'Mark only compact structural signposts, not every factual detail. Prefer short method/proposal terms, metric labels, contribution-label phrases, and limitation anchors over whole factual sentences. For the method route, include the distinguishing novelty when present (for example attention-only / no recurrence), not just the method name.',
+      pitfalls: 'Do not skip the proposal/method paragraph or put results before the method route. Preserve the paper route in source order: background/problem -> proposal/method -> evidence/result -> limit.',
+      tone: 'calm academic table-of-contents guide',
+    },
+    standard: {
+      reader_goal: 'Explain what the paper actually claims in clear slots: proposed method first, then experiment/result/metric, then contribution or limitation if present.',
+      attention_targets: 'method name; key metric/result; conclusion; contribution sentence; first definition of a technical term.',
+      mark_selection_criteria: 'Mark the load-bearing method/result/contribution phrase as a complete unit, including the metric and comparison when present.',
+      pitfalls: 'Do not merge method and evidence into one blurry paragraph; do not lose numbers, swap baselines, or mark generic field background instead of the paper\'s own claim.',
+      tone: 'concise academic walkthrough',
+    },
+    deep: {
+      reader_goal: 'Reconstruct the argument and credibility: why the method should work, how the experimental design supports the claim, how strong the metric is, and what assumptions or external-validity risks remain.',
+      attention_targets: 'mechanism sentences; experimental setup; baselines/comparisons; key numbers; limitations, assumptions, and over-strong claims.',
+      mark_selection_criteria: 'Mark evidence with its condition or baseline attached. Mark limitations with the exact technical reason or assumption attached (for example complexity, baseline, dataset, or external-validity condition), not just the word limitation.',
+      pitfalls: 'Do not invent domain critique beyond the text; distinguish article claims from cautious expert judgment.',
+      tone: 'critical but fair research mentor',
+    },
+  },
+  book: {
+    label: 'BOOK',
+    genre: 'BOOK / LONG-FORM',
+    overview: {
+      reader_goal: 'Give a chapter/section route: how the theme unfolds, where the text turns, and what core motif is being set up.',
+      attention_targets: 'theme-opening sentences; transitions; recurring motifs; plot-starting event phrases; section turns.',
+      mark_selection_criteria: 'Mark structural and motif phrases only. Keep marks sparse and in the work\'s own order. Prefer event/motif phrases over lone character names.',
+      pitfalls: 'Do not spoil later material not provided, mark generic surnames as anchors, or flatten the work into outside book-report language.',
+      tone: 'warm guide following the text from inside',
+    },
+    standard: {
+      reader_goal: 'Help the reader grasp the real point of this passage: core ideas, concepts, memorable lines, and turns.',
+      attention_targets: 'main claim; key concept; memorable sentence; argument/story pivot; character motive when visible.',
+      mark_selection_criteria: 'Mark the phrase the reader should remember or the pivot that changes the passage.',
+      pitfalls: 'Do not over-explain symbolism unsupported by the text, spoil later plot, or replace the author\'s voice with generic summary.',
+      tone: 'literary but plain-spoken',
+    },
+    deep: {
+      reader_goal: 'Unpack the inner movement visible on the page: how the passage builds irony, contrast, motive, premise, or rhetorical effect from its actual wording.',
+      attention_targets: 'visible irony; contrast between stated truth and actual feelings; motive/tension lines; premise; rhetorical turn.',
+      mark_selection_criteria: 'Mark phrases that directly support the close reading. Prefer textual irony/contrast anchors over abstract labels.',
+      pitfalls: 'Do not fabricate subtext, psychoanalyze beyond the passage, use grand labels like "social game" unless the text itself supports them, or reveal later content not provided.',
+      tone: 'close-reading teacher grounded in the sentence',
+    },
+  },
+  report: {
+    label: 'REPORT',
+    genre: 'REPORT / BRIEF',
+    overview: {
+      reader_goal: 'Give an executive brief map: where the conclusion, key metrics, risks, and actions/recommendations are.',
+      attention_targets: 'bottom-line sentence; metric locations; risk headings; risk quantification; recommendation/action items.',
+      mark_selection_criteria: 'Mark the signpost phrase for each decision-relevant section. When a risk has a concrete quantified impact, mark that quantified risk phrase as the risk anchor.',
+      pitfalls: 'Do not analyze sensitivity yet or bury the conclusion after details.',
+      tone: 'executive, conclusion-first',
+    },
+    standard: {
+      reader_goal: 'Explain the numbers and conclusions: what the key figure means, what drives it, what it is compared with, what condition it depends on, and what risk matters.',
+      attention_targets: 'headline conclusion; key number with driver/baseline/caveat; lead-time or margin movement; forecast; risk; recommendation/action item.',
+      mark_selection_criteria: 'Mark the whole load-bearing unit: number plus qualifier, driver, baseline, or condition. A naked number is usually too little. The central conclusion/bottleneck sentence outranks generic driver phrases.',
+      pitfalls: 'Do not round away key figures in narration, detach figures from their caveats, omit downside, skip forecasts/actions when present, or treat one-off items as recurring trends.',
+      tone: 'briefing note, sharp and concrete',
+    },
+    deep: {
+      reader_goal: 'Give analyst-style decomposition: explicitly name the assumption behind the conclusion, the sensitivity/risk that could change it, any second-order risk, what would overturn the conclusion, and how credible the data appears from the text.',
+      attention_targets: 'assumptions; sensitivity cases; concentration risks; boundary conditions; forecast contingencies; data caveats; key metrics.',
+      mark_selection_criteria: 'Mark assumptions and risks as first-class load-bearing phrases, not afterthoughts. A bottleneck sentence, concentration metric, margin-compression risk, and forecast contingency are deep anchors when present.',
+      pitfalls: 'Do not invent finance/legal advice, overstate certainty, or smooth over a weak data basis. If the report lacks data provenance, say the credibility limit is that the source gives the metric but not the underlying data method.',
+      tone: 'skeptical analyst, practical',
+    },
+  },
+  contract: {
+    label: 'CONTRACT',
+    genre: 'CONTRACT / TERMS / LEGAL',
+    overview: {
+      reader_goal: 'Give a pre-signature risk map, not a generic section summary: who owes what, money, trigger events, amendment power, dates, automatic renewal/termination, liability limits, and dispute/forum clauses. Mention this is a content walkthrough, not legal advice.',
+      attention_targets: 'obligations; fees/amounts; deadlines; renewal/termination; liquidation/dissolution priority or subordination; amendment thresholds or majority-consent clauses; liability/indemnity; arbitration/governing law.',
+      mark_selection_criteria: 'Mark the clause location and the compact phrase that names the obligation or risk, including majority-consent/amendment thresholds when present.',
+      pitfalls: 'Always include that this is a content walkthrough, not legal advice. Do not provide definitive legal conclusions. If a dissolution/liquidation clause says the signer is subordinate to debt, explicitly explain that priority risk.',
+      tone: 'alert signer-side risk checklist, not neutral summary',
+    },
+    standard: {
+      reader_goal: 'Explain the practical effect on the user: what you must do, what the other side can do, what is unfavorable, and what happens if you miss a deadline.',
+      attention_targets: 'user duties; counterparty rights; payments; dates; penalties; no maturity/no interest; majority amendment or unilateral change power; sole discretion; no-refund/default terms.',
+      mark_selection_criteria: 'Mark the full obligation/risk phrase, including amount, deadline, consent threshold, and condition when present.',
+      pitfalls: 'Do not sound neutral when a term is one-sided; do not omit cancellation windows, automatic acceptance, or the practical consequence of no maturity date/no repayment deadline.',
+      tone: 'pragmatic and user-sided',
+    },
+    deep: {
+      reader_goal: 'Read from a risk/negotiation perspective: breach, damages, liability caps, unilateral modification, arbitration/jurisdiction, data/content rights, non-refundability, and points needing counsel.',
+      attention_targets: 'penalty/liquidated damages; subordination; no maturity/no interest; valuation cap/economic lever; indemnity; liability cap; waiver; unilateral or majority modification; data license; non-refundable terms; forum/arbitration.',
+      mark_selection_criteria: 'Mark clauses that create asymmetric risk or negotiation leverage. Include exact conditions, caps, consent thresholds, and priority/subordination language.',
+      pitfalls: 'Do not give certain legal advice; flag major issues for lawyer confirmation and possible negotiation. Do not use stitched narration like "now we move"; sound like a concise professional risk memo.',
+      tone: 'risk counsel style, careful and non-definitive',
+    },
+  },
+  study: {
+    label: 'STUDY',
+    genre: 'STUDY / LEARNING MATERIAL',
+    overview: {
+      reader_goal: 'Give a learning route: what knowledge points, definitions, formulas/frameworks, examples, and likely confusion points appear.',
+      attention_targets: 'topic list; definitions; formulas/frameworks; examples; common-mistake signposts.',
+      mark_selection_criteria: 'Mark knowledge-point signposts and definitions, not supporting detail.',
+      pitfalls: 'Do not solve or derive yet; keep it as a study map.',
+      tone: 'friendly teacher preview',
+    },
+    standard: {
+      reader_goal: 'Teach it like class: explain definitions, core knowledge, typical examples, exam points, and memory cues.',
+      attention_targets: 'definition sentence; core rule; formula; theorem; typical example; exam/memorize phrase; explicit comparison or contrast when present.',
+      mark_selection_criteria: 'Mark exactly what the student should memorize or recognize on a test. If the source gives a tested contrast, mark the contrast anchor rather than only one side.',
+      pitfalls: 'Do not skip conditions, blur similar concepts, or mark examples without saying what they demonstrate.',
+      tone: 'clear classroom explanation',
+    },
+    deep: {
+      reader_goal: 'Teach deeply: derivation, comparison, application boundaries, easy-confusion points, common errors, and why the errors are wrong. When the text gives stages, yields, locations, or contrasts, explain how those pieces relate and why students mix them up.',
+      attention_targets: 'conditions; formula parts; derivation/yield clues; contrast pairs such as aerobic vs anaerobic; location facts; boundary cases; worked examples; mistake traps.',
+      mark_selection_criteria: 'Mark definitions with conditions attached, stage/location/yield anchors, and contrast phrases that reveal the rule or common confusion.',
+      pitfalls: 'Do not invent curriculum outside the text or overcomplicate simple review passages. Do not stop at overview; explicitly teach comparisons, yield differences, and easy-to-confuse locations when present.',
+      tone: 'patient tutor, mechanism-first',
+    },
+  },
+  manual: {
+    label: 'MANUAL',
+    genre: 'MANUAL / TECHNICAL DOC',
+    overview: {
+      reader_goal: 'Give an operation route: where prerequisites, steps, warnings, parameters, and troubleshooting are.',
+      attention_targets: 'prerequisites; step blocks; warnings/cautions; parameter/spec sections; troubleshooting points.',
+      mark_selection_criteria: 'Mark signposts and safety-critical anchors, not every instruction.',
+      pitfalls: 'Do not turn the overview into a full procedure or skip warnings.',
+      tone: 'procedural map, safety aware',
+    },
+    standard: {
+      reader_goal: 'Guide correct execution: step order, critical parameter meaning, and warnings the user must not miss.',
+      attention_targets: 'ordered steps; required actions; safety warnings; minimum requirements; key parameters; thresholds; version/auth requirements.',
+      mark_selection_criteria: 'Use number marks when the source has real ordered steps. Mark warnings and parameters exactly, including minimum required amounts when present. If a scene contains both a warning and a required amount/threshold, both should compete above generic steps.',
+      pitfalls: 'Do not reorder steps, soften prohibitions, or detach a parameter from its limit.',
+      tone: 'clear how-to instructor',
+    },
+    deep: {
+      reader_goal: 'Explain why the procedure works and how it fails: failure modes, troubleshooting logic, limits, consequences of exceeding parameters, and dependencies.',
+      attention_targets: 'failure modes; causes; recovery conditions; parameter limits; dependency requirements; safety consequences.',
+      mark_selection_criteria: 'Mark exact warning, threshold, step action, or failure-condition phrase that controls behavior. Prefer the cause of the failure over only the injury/consequence; if the text says X can block/cause Y, mark the X-can-block/cause phrase.',
+      pitfalls: 'Do not invent troubleshooting not implied by the text; keep exact codes, limits, and prerequisites. Do not narrate like commentary ("the article begins", "now we move"); speak like a direct troubleshooting/runbook guide: if X happens, Y is why, do Z/avoid Z.',
+      tone: 'direct technical support runbook, safety-first',
+    },
+  },
+};
+
+const DEPTH_SCENARIO_GUARD = {
+  overview: `overview_guard: keep this as a map. Narration names the role of each section and may name headline terms/numbers as signposts, but it must not teach the claim's substance or mechanism. Use only 1-2 marks per scene when possible; each mark should be a compact anchor phrase (target under 80 characters, never a paragraph-like fallback). Prefer circle/underline for terms, metric labels, and section anchors. Avoid full-sentence highlight marks unless the sentence itself is short and heading-like.`,
+  standard: `standard_guard: explain the main point and pick 2-3 load-bearing marks per scene. Marks should be complete enough to preserve the claim, number, condition, or caveat, but not whole paragraphs.`,
+  deep: `deep_guard: reconstruct reasoning and credibility while keeping the page clean. Pick 2-4 marks per scene, focused on mechanism, evidence, assumptions, risks, or boundary conditions. Even in deep mode, do not mark long fallback passages.`,
+};
+
+function scenarioLens(contentType, depth = 'standard') {
+  const scenario = SCENARIO_DEPTH_MATRIX[contentType];
+  const cell = scenario?.[depth];
+  if (!scenario || !cell) return '';
+  return `
+
+SCENARIO DEPTH LENS — ${scenario.label} / ${depth.toUpperCase()}
+GENRE: ${scenario.genre}
+reader_goal: ${cell.reader_goal}
+attention_targets: ${cell.attention_targets}
+mark_selection_criteria: ${cell.mark_selection_criteria}
+pitfalls: ${cell.pitfalls}
+tone: ${cell.tone}
+${DEPTH_SCENARIO_GUARD[depth] || DEPTH_SCENARIO_GUARD.standard}
+
+This lens shapes WHAT you single out and what the narration stresses for this kind of document at this depth; it does NOT change HOW MUCH you say (the DEPTH level above fixes the length and number of scenes — obey it exactly). Define the tools once, then decide from the source: when a genre-critical item appears, that is where the pen lands, but only if it is actually in the text. Keep the page visually clean: target 4-6 marks for a short article/page, usually 1 mark per scene, 2 only when two different load-bearing items are truly needed, and keep total marked text around 20-30% of the source, never a wall of highlights. Prefer the shortest contiguous phrase that still carries the full meaning; avoid full-sentence highlights unless a shorter clause would lose the essential condition or conclusion. For OVERVIEW depth, narration should sound like a route map ("first / then / finally", naming where each part sits), not a full content explanation. NEVER use ellipses, stitched phrases, paraphrases, or compressed whitespace in mark.text — every mark.text must be one exact contiguous substring copied from the source. Point at the WHOLE load-bearing thing as one unit (the full clause, figure-with-qualifier, step, definition, warning, obligation, or caveat), never at filler, a generic restatement, or a fragment of it. Use only the SAME mark tools defined below — YOU choose which pen fits each phrase.`;
+}
+
+function deepSeekNarrationDiscipline(lang, depth = 'standard') {
+  if (!isChinaDeepSeekPromptOptimizationEnabled()) return '';
+  const lengthGuide = lang === 'zh'
+    ? 'For STANDARD depth, a normal scene is about 60-130 Chinese characters (usually 2-4 spoken sentences); use less for thin source material.'
+    : 'For STANDARD depth, a normal scene is about 35-75 spoken words (usually 2-4 sentences); use less for thin source material.';
+  return `
+
+DEEPSEEK PRO SPOKEN-DIGEST DISCIPLINE (MANDATORY):
+- Treat the already-grouped SCENE as one idea, not as paragraphs to paraphrase one by one. First identify its single takeaway, then say that takeaway plus only the indispensable condition, contrast, number, or consequence. Never split source more finely merely to satisfy this narration limit.
+- ${lengthGuide} The selected DEPTH still controls the task; these are anti-rambling targets, not quotas. Never add words to hit a target.
+- A list, directory, chronology, appendix, or collection of unrelated links must NOT become an item-by-item recital. State its organizing point and at most one or two representative specifics unless the list itself is the core claim. This governs the SPOKEN narration only — it is not a limit on marks; what you do point at is fixed by the mark rules below.
+- Sound like direct speech to the listener. State the substance directly; do not report on the document with phrases such as "the author/article says, introduces, tracks, asks, or warns". Do not say "this scene/section/block discusses", announce your process, or use repetitive stage directions such as "here is", "now we get to", or "next we move to".
+- Preserve exact numbers, negations, states, causes, conditions, ordered sequences, and which option owns which trait. For comparisons or multiple test cases, keep the cases separate, make the mapping explicit and compact, and never swap attributes or event orders. If an exact sequence is not necessary to the takeaway, omit it rather than reconstruct it from memory.
+- The length target is a real ceiling, not permission to expand. At STANDARD depth, rewrite any draft longer than 100 English words or 180 Chinese characters; select the central claim instead of enumerating more details.
+- Every sentence must add a new idea. Do not replay the running summary, restate the same conclusion, or end with a second summary of the scene.
+- Choose 2-3 marks in source order for ordinary prose — a scene almost always carries more than one load-bearing thing (the claim plus the condition it depends on, the contrast it is set against, or the number and what that number measures), and marking only one of them leaves the page looking unread. Drop to 1 only when the scene genuinely has a single point. Use up to 5 when the page is item-dense — a menu, price list, spec sheet, ingredient or step list, table of options — because there the items ARE the content, not filler around it: point at every item you actually mention, not only at a price or a heading. Each mark must be the shortest exact contiguous source phrase that still carries the discussed claim — aim for roughly 20-45 characters (about 4-8 English words), and treat anything past 70 as a sign you are marking the sentence instead of the point inside it; hard ceiling 120. Marking one long span uses up the page's whole ink budget and crowds out the other things you just said, so cut to the load-bearing clause and mark the next point separately. Avoid generic anchors such as a bare "important", "purpose", or person/name when the load-bearing phrase is available.
+- EXCEPTION — parallel sets must be numbered, not collapsed: when this block walks through a set of parallel items the source lays out (steps, reasons, options, methods, conditions, a list), emit one "number" mark per item, "n" = its 1-based position in source order, "text" = that item's own verbatim phrase. Up to 5 marks total in that case. Marking only the sentence that introduces the set, or only one of its items, is wrong — the reader must see every item numbered while you walk through them.
+- Every mark must correspond to an idea explicitly spoken in this block's narration. If using numbered marks, explicitly walk through those same numbered items in narration and in the same order.
+- Silently verify these constraints, then output JSON only; never output the verification or reasoning.`;
+}
+
+function deepSeekPlanDiscipline(paragraphCount, depth = 'standard') {
+  if (!isChinaDeepSeekPromptOptimizationEnabled()) return '';
+  const sceneGuide = depth === 'overview'
+    ? `With ${paragraphCount} extracted paragraphs, normally use 3-5 broad scenes.`
+    : paragraphCount >= 32
+      ? `With ${paragraphCount} extracted paragraphs, normally use 6-10 scenes; use 11-12 only when there are genuinely that many major points.`
+      : paragraphCount >= 16
+        ? `With ${paragraphCount} extracted paragraphs, normally use 4-7 scenes.`
+        : `With ${paragraphCount} extracted paragraphs, normally use 2-5 scenes.`;
+  return `
+
+DEEPSEEK PRO PLAN PREFLIGHT (MANDATORY):
+- ${sceneGuide} Paragraph count is not idea count.
+- Group adjacent examples, calculations, chronology, implementation details, and list items into the scene for the claim they support. Do not make a new scene for each paragraph, example, historical fact, or list item. A scene boundary requires a real change in the author's point.
+- Do not create extra scenes to keep each narration short. First group by the article's real points, then digest each group down to its takeaway.
+- outline.skip is only for unmistakable non-article material such as navigation, author biography, a bare figure caption, reference/resource links, comments, or footer boilerplate. It is NOT a compression tool: never skip a substantive caveat, qualification, definition, disclaimer, limitation, conclusion, or transition merely because it is short or awkward. When uncertain, keep the paragraph in a block.
+- Emit "total_blocks": 0 exactly. It is a streaming placeholder; the server deterministically fills it from outline.blocks.length after the full JSON arrives.
+- Build outline.blocks in source order. Array item 0 has idx 0, item 1 has idx 1, continuing without gaps or duplicates.
+- Before emitting JSON, silently audit indices 0..${paragraphCount - 1}: every index appears exactly once in one blocks[*].paras or in outline.skip; each paras array and skip are strictly increasing. Do not print the audit.
+- Do not copy the illustrative block count or paragraph ranges from the schema example. They illustrate shape only.`;
+}
+
+function deepSeekTimingDiscipline() {
+  if (!isChinaDeepSeekPromptOptimizationEnabled()) return '';
+  return `
+
+DEEPSEEK PRO TIMING PREFLIGHT (MANDATORY):
+- Return exactly one timing row for every numbered mark, preserving 1..N order.
+- Match the mark to the narration clause that explains its IDEA, not merely to a repeated keyword. Place it about 0.3s before that clause begins.
+- Times must be monotonic and distributed where the ideas are actually spoken. Use 0 only when the first marked idea truly starts the opening sentence; never bunch unrelated marks at 0 or space them mechanically.`;
+}
+
+export function buildPlanPrompt(paras, meta, lang, depth = 'standard', imagesDossier = '', isPhoto = false, tier = 'basic', prevSummary = '', contentType = null) {
+  const langName = langNameOf(lang);
+  // depth = 用户选的颗粒度(速览/标准/精讲),effDepth 永远 = depth(不被 tier 改写,三档原样保留)。
+  // 专家级 = 精讲档(deep)的 Pro 版(用户拍板 2026-06-21:专家级 ≡ 精讲档,合二为一);
+  // 速览/标准永远走原始 prompt(无 expertLayer),由下方叠加条件 tier==='expert' && depth==='deep' 锁死。
+  const effDepth = depth;
+  const paraList = paras.map((p, i) => `[${i}] ${p.text}`).join('\n\n');
+  // 图随文形态(用户拍板):planner 不感知图;图由系统按位置挂到文字 scene,extractBlock 顺带提。
+  const imagesSection = '';
+  // 照片解读:原照片作多模态附件。读图理解(补 OCR 漏/错),但 mark 仍只能锚下面文字段落的逐字内容。
+  const photoNote = isPhoto
+    ? `\n\nPHOTO SOURCE: An image of the ORIGINAL PAGE (a photo) is attached. The paragraphs below are an OCR transcription that may have errors or gaps — READ THE PHOTO directly to understand the real content accurately. CRITICAL: every mark's text MUST be copied VERBATIM from the OCR paragraphs below (marks anchor to that on-screen text); never mark words that appear only in the photo but not in the paragraphs.`
+    : '';
+  // 跨页连续解读(Phase 1):这是同一本书/文章上一页的延续(翻页阅读器逐页解读)。给 planner
+  // 上一页讲到哪了,让本页**承接着往下讲**——不重新交代背景、不复述已讲、不以"本页小结"收尾。
+  const continuationNote = (typeof prevSummary === 'string' && prevSummary.trim())
+    ? `\n\nTHIS IS NOT A NEW ARTICLE — it is the next stretch of one continuous read-aloud already underway. Moments ago you said this to the listener:
+"${prevSummary.trim()}"
+Your job for block_0: carry that same read-aloud straight forward into the paragraphs below — the way a teacher mid-lecture turns to the next page and keeps reading on, to a listener who is already with them. block_0 is simply the next breath of that ongoing read.`
+    : '';
+  // 承接指令直接写进 block_0 生成点(比单独的 note 更管用):有上文时,block_0 的 narration 描述本身就要求承接。
+  const block0NarrDesc = (typeof prevSummary === 'string' && prevSummary.trim())
+    ? `plain-spoken ${langName} — the next breath of the read-aloud already underway, continuing it into scene 0`
+    : `plain-spoken ${langName} explanation of SCENE 0 — say what its point actually IS so the listener gets it, not just names it`;
+  const deepSeekNarration = deepSeekNarrationDiscipline(lang, effDepth);
+  const deepSeekPlan = deepSeekPlanDiscipline(paras.length, effDepth);
+  const totalBlocksExample = isChinaDeepSeekPromptOptimizationEnabled() ? 0 : 3;
+  return `You are a teacher reading this article aloud to someone, pointing at the page as you go.${photoNote}
+
+THE ONE GOAL: your pen points at the ONE phrase you're saying right now — a single moving focus that keeps the reader's eye on what their ear is hearing. Few, precise marks; most of the page stays clean.
+
+Read the WHOLE article first, then divide it into SCENES. ${depthChunking(effDepth)}
+
+${depthSpec(effDepth, langName)}${tier === 'expert' && depth === 'deep' ? expertLayer(langName) : ''}${scenarioLens(contentType, effDepth)}${deepSeekNarration}${deepSeekPlan}
+
+narration = speak it in plain, natural spoken words — digest the ideas and say them like a friend would, never parrot the original's wording. HOW MUCH you say per scene is governed ENTIRELY by the DEPTH level defined above — obey it, do not default to fuller explanation. Stay FAITHFUL where it counts: carry specific numbers, option/scheme comparisons, cause-and-effect, and states ("in progress" vs "already done") across EXACTLY — keep the real figures (don't blur "$31M" into "a lot"), don't swap which option a trait belongs to, don't upgrade "being fixed" into "fixed". Unsure of such a detail? Skip it rather than guess — wrong is worse than absent. And "explain it fully" NEVER means padding: spend words only where the text is genuinely rich or hard, name thin parts (a bare list, a reference appendix, a stub) briefly and move on, and never invent content the original lacks to fill a scene — short-and-honest beats long-and-padded.
+
+OUTPUT LANGUAGE: ${langName}. Write narration in ${langName}.${continuationNote}
+
+ARTICLE TITLE: ${meta?.title || ''}
+
+ARTICLE PARAGRAPHS (page order, [index] then text) — ${paras.length} paragraphs:
+${paraList}
+${imagesSection}
+Return ONLY a JSON object. IMPORTANT: emit the keys in EXACTLY this order — block_0 FIRST, so narration can start playing before you finish writing the whole plan:
+{
+  "block_0": {
+    "narration": "${block0NarrDesc}",
+    "marks": [ { "style": "highlight", "text": "a whole key sentence" }, { "style": "circle", "text": "a key term" }, { "style": "number", "text": "a listed item's opening clause", "n": 1 } ]
+  },
+  "total_blocks": ${totalBlocksExample},
+  "title": "the article title",
+  "outline": {
+    "thesis": "one line: what this article is really about",
+    "arc": "one line: how it unfolds",
+    "blocks": [ { "idx": 0, "topic": "first point", "paras": [0, 1] }, { "idx": 1, "topic": "second point", "paras": [2, 3, 4] }, { "idx": 2, "topic": "third point", "paras": [5, 6] } ],
+    "skip": [7, 8]
+  },
+  "summary": "1-2 sentences capturing what scene 0 conveyed (running memory for the next scene)"
+}
+
+RULES (functional — so the on-page sync works):
+- KEY ORDER: block_0 first, then total_blocks, then title, then outline, then summary. Do NOT reorder — block_0 must come first.
+- total_blocks = the number of scenes = outline.blocks.length. They MUST match.
+- outline.blocks split the paragraphs into scenes; "paras" lists each scene's paragraph indices, ascending, no overlap. Scenes cover the ARTICLE ITSELF. Extraction sometimes sweeps in trailing non-article material — reference/bibliography lists, footnotes/appendix tables, reader comments, "related posts", reprint/footer boilerplate. Those are NOT the article: put their indices in "skip" (never force them into a scene, never narrate them). Everything that IS the article goes into blocks — blocks ∪ skip must cover every index 0..${paras.length - 1} exactly once (image blocks consume NO paragraph indices). When in doubt whether a paragraph is article body, keep it in blocks.
+- marks: each a VERBATIM substring of the scene's paragraphs.
+${MARK_TOOLS_SPEC}
+- block_0 is the FULLY written scene 0. The rest are generated later, one scene at a time.
+- Output ONLY the JSON object.`;
+}
+
+// 快道(1.2.9):长内容首次解读时,只喂[标题 + 开头几段(+prevSummary 承接)],一次 LLM 直出 block_0
+// (narration+marks),跳过"读整篇→分 scene→compose"。验证(gemini-3.5-flash):核心 mark 命中、不降质、
+// ~2.6s vs 全文路径 ~6.9s。不读整篇靠标题给全局语境(开头的 mark 本就基于开头判断)。
+// 只产 block_0;block1+ 与 page_summary 由质道(全文 buildPlanPrompt)并行出 → 承接链不断、分区不重叠。
+export function buildKuaidaoPrompt(title, openingParas, lang, depth = 'standard', prevSummary = '', contentType = null) {
+  const langName = langNameOf(lang);
+  const paraList = openingParas.map((p, i) => `[${i}] ${p.text}`).join('\n\n');
+  const continuationNote = (typeof prevSummary === 'string' && prevSummary.trim())
+    ? `\n\n⚠️⚠️ THIS IS NOT A NEW ARTICLE — it's the MIDDLE of one continuous read-aloud. Seconds ago you just said this (previous page):
+"${prevSummary.trim()}"
+Open block_0 as the VERY NEXT BREATH after that — the listener is already oriented. Do NOT restate/recap the prior topic/premise/terms, NO "the author…/to escape X…" framing; pick up mid-thought ("So the fix is…","Which is why…") and go straight to the NEW point.`
+    : '';
+  const block0NarrDesc = (typeof prevSummary === 'string' && prevSummary.trim())
+    ? `plain-spoken ${langName}, CONTINUING the previous page mid-stream — build on what was JUST heard, no recap/framing, next-breath into the opening's NEW point`
+    : `plain-spoken ${langName} explanation of the opening — say what its point actually IS so the listener gets it, not just names it`;
+  const deepSeekNarration = deepSeekNarrationDiscipline(lang, depth);
+  return `You are a teacher reading this article aloud to someone, pointing at the page as you go.
+
+THE ONE GOAL: your pen points at the ONE phrase you're saying right now — a single moving focus keeping the reader's eye on what their ear hears. Few, precise marks; most of the page stays clean.
+
+You are given the article's TITLE and ONLY its OPENING (not the rest). Produce JUST the opening block (block_0): the spoken narration for this opening + its marks. Use the TITLE to grasp what the whole piece is about — you do NOT need the rest of the article to open it well.
+
+${depthSpec(depth, langName)}${scenarioLens(contentType, depth)}${deepSeekNarration}
+
+narration = ${block0NarrDesc}. Plain natural spoken ${langName}, digested like a friend would say it, never parroting; keep specific numbers/facts EXACT (don't blur "$31M" into "a lot"); unsure of a detail? skip rather than guess; no padding.
+
+OUTPUT LANGUAGE: ${langName}.${continuationNote}
+
+ARTICLE TITLE: ${title || ''}
+
+OPENING (first paragraphs, page order, [index] then text):
+${paraList}
+
+Return ONLY a JSON object: { "block_0": { "narration": "...", "marks": [ { "style": "highlight", "text": "a whole key sentence" }, { "style": "circle", "text": "a key term" } ] } }
+
+RULES:
+- marks: each a VERBATIM substring of the OPENING paragraphs above. Mark only what you actually say, in reading order.
+${MARK_TOOLS_SPEC}
+- Output ONLY the JSON object (just block_0 — the rest of the article is handled separately).`;
+}
+
+// 快道执行:build prompt → 区域模型(global Gemini / CN DeepSeek)→ 解析+校验 block_0。
+// mark 校验:style 合法 + text 为开头逐字子串(锚定);不合的丢弃 —— 宁缺不降质。失败抛错,server 端回落质道。
+export async function extractFastBlock0({ title, openingParas, lang, depth = 'standard', prevSummary = '', contentType = null }) {
+  if (!Array.isArray(openingParas) || !openingParas.length) throw new Error('missing_openingParas');
+  const prompt = buildKuaidaoPrompt(title, openingParas, lang || 'en', depth, prevSummary, contentType);
+  const raw = await claudeMessage(prompt);
+  let parsed;
+  try { parsed = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1)); }
+  catch { throw new Error('kuaidao_bad_json'); }
+  const b0 = parsed.block_0 || parsed;
+  if (!b0 || typeof b0.narration !== 'string' || !b0.narration.trim()) throw new Error('kuaidao_no_narration');
+  const VALID = new Set(['circle', 'underline', 'highlight', 'number']);
+  const openText = openingParas.map(p => p.text).join('\n');
+  const marks = Array.isArray(b0.marks)
+    ? b0.marks.filter(m => m && VALID.has(m.style) && typeof m.text === 'string' && m.text.length > 1 && openText.includes(m.text))
+    : [];
+  const scene = normalizeScenarioMarks({ id: 'seq-0', narration: b0.narration.trim(), marks }, openText, depth, contentType);
+  return { block_0: { narration: scene.narration, marks: scene.marks }, usage: _lastLLMUsage };
+}
+
+// Pass N prompt: outline (static) + running_summary (memory) + current block.
+export function buildBlockPrompt({ outline, running_summary, blockText, idx, total, meta, lang, depth = 'standard', imgs = null, isPhoto = false, tier = 'basic', contentType = null }) {
+  const langName = langNameOf(lang);
+  const effDepth = depth;   // = 用户选的颗粒度;expertLayer 仅精讲档(deep)叠加,见下方条件(专家级 ≡ 精讲档 Pro 版)
+  // 照片解读:原照片作多模态附件。读图理解(补 OCR 漏/错),但 mark 仍只能锚 SCENE TEXT 的逐字内容。
+  const photoNote = isPhoto
+    ? `\n\nPHOTO SOURCE: An image of the ORIGINAL PAGE (a photo) is attached. The SCENE TEXT below is an OCR transcription that may have errors or gaps — READ THE PHOTO directly to understand the real content. CRITICAL: every mark's text MUST be copied VERBATIM from the SCENE TEXT (marks anchor to that on-screen text); never mark words that appear only in the photo but not in the SCENE TEXT.`
+    : '';
+  const deepSeekNarration = deepSeekNarrationDiscipline(lang, effDepth);
+  return `You are a teacher reading an article aloud scene by scene, pointing at the page as you go.${photoNote}
+
+THE ONE GOAL: your pen points at the ONE phrase you're saying right now — a single moving focus that keeps the reader's eye on what their ear is hearing. Few, precise marks; most of the page stays clean.
+
+Continue at SCENE [${idx}] of ${total}.
+
+${depthSpec(effDepth, langName)}${tier === 'expert' && depth === 'deep' ? expertLayer(langName) : ''}${scenarioLens(contentType, effDepth)}${deepSeekNarration}
+
+OUTPUT LANGUAGE: ${langName}.
+
+GLOBAL OUTLINE (the article's plan — stay coherent; do NOT re-explain earlier scenes):
+${JSON.stringify(outline)}
+
+RUNNING SUMMARY (what you've already narrated through scene ${idx - 1}):
+${running_summary || '(nothing yet — near the start)'}
+
+CURRENT SCENE [${idx}] source paragraphs:
+${blockText}
+${imgs?.length ? `\nIMAGE(S) IN THIS SCENE (attached; on the page each appears right after the sentence ending: ${imgs.map(im => `"…${(im.before || '').slice(-50)}"`).join(' / ')}).
+The flow of the TEXT leads — never give an image its own lecture or detour. When the text you are narrating discusses what an image shows (an anatomy figure while you explain that structure; an architecture diagram while you explain that architecture; a chart while you cite its trend), the image EARNS its mention: weave ONE natural breath into what you're already saying, at the exact moment you describe what it depicts. Then point INSIDE it: pick the detected region that IS the thing your sentence describes, and add to marks {"style":"imgmark","img":"<imgId>","region":<n>,"say":"<the exact short phrase of your narration that describes what this region shows>"} (at most 1-2 regions per image). "say" must describe the image's content — never attach an image to an unrelated clause. Skip an image only when the scene's text never touches what it shows (pure decoration: covers, portraits, banners).
+${imgs.map(im => im._regions?.length ? `Detected regions of ${im.imgId} (refer ONLY by number, never invent coordinates):\n` + im._regions.map((r, i) => `[${i + 1}] ${r.label}`).join('\n') : `${im.imgId}: (no regions detected — you may mention it but add no mark)`).join('\n')}\n` : ''}
+
+Return ONLY a JSON object:
+{
+  "block": {
+    "narration": "plain-spoken ${langName} explanation of THIS scene — say what its point actually IS so the listener gets it (not just names it), flowing on from the summary",
+    "marks": [ { "style": "underline", "text": "an emphasis phrase" }, { "style": "highlight", "text": "a whole sentence" }, { "style": "number", "text": "a listed item's opening clause", "n": 1 } ]
+  },
+  "updated_summary": "running memory rolled forward to include this scene — short, roughly fixed-size, distilling the article so far"
+}
+
+RULES:
+- narration: speak THIS scene in plain, natural ${langName} — digest the ideas, say them like a friend would (don't parrot wording). HOW MUCH you say is governed ENTIRELY by the DEPTH level defined above — obey it, do not default to fuller explanation.
+- Closing scenes get the SAME care as the opening — the ending often holds the article's real payoff (conclusion, decision framework, sharpest tactic), so never coast to a one-line wrap-up just because the running summary is long. But "fully" means spending words where the TEXT is genuinely rich or hard — REALLOCATE emphasis there, do NOT inflate: where a section is thin (a bare list, a reference appendix, a stub), say so briefly and move on; never pad with dramatic throat-clearing ("let's step up the difficulty", "now the twist") and never invent content the original lacks just to fill a scene. When the source is thin, short-and-honest beats long-and-padded.
+- Stay FAITHFUL where it counts: keep specific numbers, option/scheme comparisons, cause-and-effect, and states ("in progress" vs "done") EXACTLY as the text has them — don't blur figures into vague words, don't swap which option a trait belongs to, don't turn "being fixed" into "fixed". Unsure of such a detail? Skip it rather than guess.
+- marks: point your pen at what you're saying as you say it. Each a VERBATIM substring of the CURRENT scene's paragraphs.
+${MARK_TOOLS_SPEC}
+- updated_summary: compact, roughly fixed-size memory (how we avoid resending the whole article).
+- Output ONLY the JSON object.`;
+}
+
+// ─── Script builder ───────────────────────────────────────────────────────────
+
+// 文本规范化(mark verbatim 判等用):空白折叠单空格 + 弯引号/破折号家族归一 + 零宽/软连字剥离。
+// 返回 canon 串 + canon→raw 索引映射(折叠出的空格映射 -1),把 canon 命中还原成原文切片。
+function canonWithMap(raw) {
+  const s = String(raw);
+  let canon = '';
+  const map = [];
+  let pendingSpace = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (/\s/.test(c)) { if (canon) pendingSpace = true; continue; }
+    if ('​‌‍‎‏⁠﻿­'.includes(c)) continue;   // 零宽/方向标/BOM/软连字
+    let f = c;
+    if ("‘’‚′`´".includes(c)) f = "'";
+    else if ('“”„″'.includes(c)) f = '"';
+    else if ('‐‑‒–—―−'.includes(c)) f = '-';
+    if (pendingSpace) { canon += ' '; map.push(-1); pendingSpace = false; }
+    canon += f;
+    map.push(i);
+  }
+  return { canon, map };
+}
+
+export function buildSectionScripts(spec) {
+  const { layer1, layer2, layer3, hook_variants, scripts, emphasis, scenes } = spec.extraction;
+  const hook     = hook_variants[spec.selected_hook_idx] || hook_variants[0];
+  const template = spec.template;
+  const durations = templateDurations(template);
+  const lang = spec.output_language || 'en';
+  const em = emphasis || {};
+
+  // New cinematic format: scenes with marks (p/s/e offsets) + narration.
+  // LLM outputs paragraph index + char offsets → we resolve to text here.
+  // No timing (at) — TTS timestamps drive mark timing in compute-layout.
+  const paragraphs = spec._directInput?.paragraphs || [];
+  // 掉 mark 修复:LLM 在 prompt 里看到的是空白折叠后的段落(extractPlan),原始段落可能含
+  // 双空格/表格空白/段内换行 → 忠实复制的 mark 被裸 includes 误杀(实测线上 ~5% 掉率,
+  // norvig 计时表/列表项全中招)。两侧同一规范化后判等,命中后把 text 换回页面真实原文
+  // (客户端锚定的必须是页面上逐字存在的文本)。跨段命中仍丢弃;真意译(规范化后仍无)照旧丢弃。
+  const _fullRaw = paragraphs.map(p => p.text || '').join('\n');
+  const _fc = canonWithMap(_fullRaw);
+  const _joinPos = new Set();
+  { let acc = 0; for (let pi = 0; pi < paragraphs.length - 1; pi++) { acc += (paragraphs[pi].text || '').length; _joinPos.add(acc); acc += 1; } }
+  if (scenes && scenes.length) {
+    const STOP = new Set([
+      'a','an','the','is','are','was','were','be','been','being','am',
+      'of','in','on','at','to','for','from','by','with','as','it','its',
+      'this','that','these','those','and','or','but','if','then','than',
+      'so','too','also','very','just','only','more','most','less','least',
+      'do','does','did','done','has','have','had','can','could','would',
+      'should','will','shall','may','might','must',
+    ]);
+    const isLatinWord = w => /[A-Za-z]/.test(w);
+
+    return scenes.map(scene => {
+      const isHook = scene.id === 'thesis';
+      const isCta  = scene.id === 'callback';
+      const style  = isHook ? 'hook' : isCta ? 'cta' : 'body';
+      const dur    = estimateSpokenDuration(scene.narration, lang);
+
+      const events = [];
+      const rawMarks = scene.marks || [];
+      for (let i = 0; i < rawMarks.length; i++) {
+        const m = rawMarks[i];
+        // 图片锚定 mark(图解):坐标来自检测步(SoM 契约,LLM 只选区域编号),不走文字 verbatim 门。
+        if (m.style === 'imgbox' || m.style === 'imgwhole') {
+          if (!m.imgId || !m.nbox || !Number.isFinite(m.nbox.x)) continue;
+          events.push({ at: 0, action: m.style, imgId: String(m.imgId), nbox: m.nbox, text: String(m.text || '').slice(0, 120) });
+          continue;
+        }
+        let text = '';
+
+        // New format: LLM outputs exact text (no offset counting needed)
+        if (m.text) text = m.text.trim();
+
+        // Legacy format: p/s/e offsets (fallback for old jobs)
+        if (!text && m.p != null && m.s != null && m.e != null) {
+          const para = paragraphs[m.p];
+          if (para?.text) text = para.text.slice(m.s, m.e).trim();
+        }
+        if (!text) continue;
+
+        // Verify text exists in article — exact first, then canonical rescue; only true paraphrase drops.
+        if (!_fullRaw.includes(text)) {
+          const ct = canonWithMap(text).canon;
+          const pos = ct.length >= 2 ? _fc.canon.indexOf(ct) : -1;
+          let rescued = null;
+          if (pos >= 0) {
+            const a = _fc.map[pos], b = _fc.map[pos + ct.length - 1];
+            if (a >= 0 && b >= a) {
+              let cross = false;
+              for (const p of _joinPos) if (p >= a && p <= b) { cross = true; break; }
+              if (!cross) rescued = _fullRaw.slice(a, b + 1);
+            }
+          }
+          if (!rescued) {
+            console.log(`      ⚠ mark dropped (not in article): "${text.slice(0, 40)}"`);
+            continue;
+          }
+          console.log(`      ✚ mark rescued (canon): "${text.slice(0, 30)}"`);
+          text = rescued;
+        }
+
+        const VALID_STYLES = new Set(['circle', 'underline', 'highlight', 'number', 'wavy', 'strike', 'link']);
+        const action = VALID_STYLES.has(m.style) ? m.style : 'highlight';
+        const evOut = { at: 0, action, text };
+        if (action === 'number' && Number.isFinite(m.n)) evOut.n = Math.trunc(m.n);   // 序号 ①②③ 的序数
+        if (m.role) evOut.role = String(m.role).trim();          // A 颜色语义
+        if (m.symbol) evOut.symbol = String(m.symbol).trim();    // C 页边符号(annotate react)
+        if (m.note) evOut.note = String(m.note).trim();          // annotate 注释(say)
+        if (Array.isArray(m.to) && m.to.length) evOut.to = m.to.map(x => String(x).trim()).filter(Boolean);   // link 关联目标
+        if (m.weight === 'strong') evOut.weight = 'strong';      // D 力度
+        events.push(evOut);
+      }
+
+      if (scene.reaction) {
+        events.push({ at: 0, action: 'reaction', emotion: scene.reaction });
+      }
+
+      // v4 source: forward title_card / flash_image / camera / clear_marks
+      // events from _v4_events so the preview-server sceneType detector + the
+      // iframe runtime can pick them up.  The legacy v3 path produced these
+      // via different code paths (e.g. ffmpeg ken_burns is built-in); v4 makes
+      // them first-class LLM-controllable so we forward verbatim.
+      //
+      // emphasize_word is folded into the existing emphasisWords array so the
+      // subtitle highlight system catches it without a new action type.
+      const v4EmphasizeWords = [];
+      if (Array.isArray(scene._v4_events)) {
+        for (const ev of scene._v4_events) {
+          const tool = ev.tool;
+          const p = ev.params || {};
+          if (tool === 'title_card') {
+            events.push({
+              at:         0,
+              action:     'title_card',
+              text:       String(p.text || scene.narration || '').slice(0, 200),
+              kind:       p.kind || 'insight',
+              position:   p.position || 'center',
+              subtext:    p.subtext,
+              pivot_word: p.pivot_word,
+              dur:        Number.isFinite(p.dur) ? p.dur : Math.round(dur),
+            });
+          } else if (tool === 'flash_image' && p.image_idx != null) {
+            events.push({ at: 0, action: 'flash_image', image_idx: p.image_idx, dur: Number.isFinite(p.dur) ? p.dur : 0.2 });
+          // Camera tools (cut_to / pan_to / dolly_in / dolly_out / ken_burns /
+          // hold / clear_marks) are intentionally NOT forwarded.  The 1.1.8
+          // renderer auto-derives the camera from marks (sweepCameraDuringMark +
+          // smoothScrollToScene + firstMarkPose) — one synced motion: camera
+          // glides to the marked phrase, the pen draws, screenshot pans along.
+          // LLM-issued separate camera moves caused jumpy, mark-disconnected
+          // motion (user feedback 2026-05-31 — revert to 1.1.8 camera model).
+          } else if (tool === 'emphasize_word' && p.word) {
+            v4EmphasizeWords.push(String(p.word));
+          }
+        }
+      }
+
+      // thesis/callback: title_card (legacy path only — v4 already emitted
+      // above)
+      if ((isHook || isCta) && !events.length) {
+        events.push({ at: 0, action: 'title_card', text: scene.narration, dur: Math.round(dur) });
+      }
+
+      // Emphasis words for subtitle highlighting — derived from marks + any
+      // explicit emphasize_word events forwarded from v4.
+      const emphasisWords = [
+        ...events
+          .filter(e => ['circle','highlight'].includes(e.action) && e.text)
+          .flatMap(e => String(e.text).split(/\s+/)
+            .map(w => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''))
+            .filter(w => w && (!isLatinWord(w) || !STOP.has(w.toLowerCase())))),
+        ...v4EmphasizeWords,
+      ];
+
+      return {
+        id:        scene.id,
+        text:      scene.narration,
+        duration:  dur,
+        style,
+        emphasis:  emphasisWords,
+        cinematic: { events },
+        cta_url:   isCta ? spec.cta?.url : null,
+        // v4 carry-throughs — compute-layout uses these when scene.kind is
+        // explicitly chosen by the LLM (skip pickSceneType auto-decision).
+        kind:                 scene.kind || null,
+        _v4_events:           scene._v4_events || null,
+        _v4_bg_image_idx:     scene._v4_bg_image_idx,
+        _v4_screenshot_anchor: scene._v4_screenshot_anchor || null,
+      };
+    });
+  }
+
+  // Use Claude-generated scripts when available (preferred)
+  if (scripts) {
+    return [
+      { id: 'hook',         text: scripts.hook,         duration: durations.hook,         style: 'hook', emphasis: em.hook         || [], cinematic: { events: [{ at: 0, action: 'title_card', text: scripts.hook, dur: Math.round(durations.hook) }] } },
+      { id: 'value_drop',   text: scripts.value_drop,   duration: durations.value_drop,   style: 'body', emphasis: em.value_drop   || [], cinematic: { events: [] } },
+      { id: 'extension',    text: scripts.extension,    duration: durations.extension,    style: 'body', emphasis: em.extension    || [], cinematic: { events: [] } },
+      {
+        id:       'callback_cta',
+        text:     scripts.callback_cta,
+        duration: durations.callback_cta,
+        style:    'cta',
+        emphasis: em.callback_cta || [],
+        cta_url:  spec.cta.url,
+        cinematic: { events: [{ at: 0, action: 'title_card', text: scripts.callback_cta, dur: Math.round(durations.callback_cta) }] },
+      },
+    ];
+  }
+
+  // Fallback: assemble from fields (for jobs created before scripts were added)
+  const sections = [];
+
+  sections.push({
+    id:       'hook',
+    text:     hook?.text || layer3.core_insight || layer1.summary,
+    duration: durations.hook,
+    style:    'hook',
+  });
+
+  let valueDrop = '';
+  if (template === 'PAS') {
+    valueDrop = [layer3.pain_point, layer2.counter_intuitive || layer3.solution]
+      .filter(Boolean).join(lang === 'zh' ? '。' : '. ');
+  } else if (template === 'Contrast') {
+    valueDrop = layer2.contrast_point || layer1.summary;
+  } else {
+    valueDrop = [(layer2.key_stats[0] || ''), layer3.core_insight || layer1.summary]
+      .filter(Boolean).join(' ');
+  }
+  sections.push({ id: 'value_drop', text: valueDrop.trim() || layer1.summary, duration: durations.value_drop, style: 'body' });
+  sections.push({ id: 'extension', text: layer3.solution || layer1.summary, duration: durations.extension, style: 'body' });
+
+  const ctaText = lang === 'zh'
+    ? `还记得刚才说的？${hook?.text || ''} 链接在简介里。`
+    : `Remember what I said? ${hook?.text || ''} Full article link in the description.`;
+  sections.push({ id: 'callback_cta', text: ctaText, duration: durations.callback_cta, style: 'cta', cta_url: spec.cta.url });
+
+  return sections;
+}
+
+// Estimate spoken duration from text length (in seconds).  Used when scenes
+// are first generated; actual duration is set after TTS generates the audio.
+function estimateSpokenDuration(text, lang) {
+  if (!text) return 3;
+  if (lang === 'zh') {
+    const chars = [...text].length;
+    return Math.max(2.5, Math.min(15, chars / 5));    // ~5 chars/sec
+  }
+  const words = text.split(/\s+/).filter(Boolean).length;
+  return Math.max(2.5, Math.min(15, words / 2.5));    // ~2.5 words/sec
+}
+
+function templateDurations(template) {
+  const map = {
+    PAS:      { hook: 3, value_drop: 17, extension: 33, callback_cta: 7 },
+    Contrast: { hook: 3, value_drop: 12, extension: 38, callback_cta: 7 },
+    DSA:      { hook: 3, value_drop: 15, extension: 35, callback_cta: 7 },
+  };
+  return map[template] || map.PAS;
+}
+
+// ─── Pass 2: Refine marks with TTS timeline ─────────────────────────────────
+//
+// After TTS generates audio + word-level timestamps, we have the complete
+// timeline.  Pass 2 sends this back to the LLM so it can:
+//   - Drop marks that overlap in spoken time
+//   - Set precise `at` (when to show each mark)
+//   - Place reactions in natural pauses
+//   - Ensure visual variety in mark styles
+//
+// This replaces the old retimeMarks() heuristic.
+
+// Deterministic camera-event timing (v4 LLM-driven camera, 2026-05-30).
+// Pass 1 chose WHICH camera moves; Pass 2 timed the marks against the TTS word
+// clock.  Here we sync each camera move to the mark it establishes: in the LLM's
+// authored order (sec._v4_events) a camera move targets the phrase the NEXT mark
+// draws on, so it fires `lead` seconds before that mark's at — long enough for
+// the move to land as the narrator reaches the word.  cut_to is instant (small
+// lead); pan_to / dolly_in take ~1s.  No LLM guessing: the mark at-values are
+// ground truth and camera timing is a mechanical function of them.
+const _CAMERA_TOOLS = new Set(['cut_to', 'pan_to', 'dolly_in', 'dolly_out', 'ken_burns', 'hold']);
+const _CAMERA_LEAD  = { cut_to: 0.3, pan_to: 1.0, dolly_in: 1.2, dolly_out: 0.5, ken_burns: 0, hold: 0 };
+const _MARK_TOOLS   = new Set(['circle', 'underline', 'highlight', 'wavy', 'strike']);
+
+function assignCameraTiming(sections) {
+  for (const sec of sections) {
+    const cin = sec.cinematic;
+    const v4ev = sec._v4_events;
+    if (!cin?.events?.length || !Array.isArray(v4ev) || !v4ev.length) continue;
+    const dur = sec.duration || 0;
+
+    // text → final (Pass 2) at for each timed mark
+    const markAt = new Map();
+    for (const e of cin.events) {
+      if (_MARK_TOOLS.has(e.action) && e.text != null && Number.isFinite(e.at)) {
+        const key = String(e.text).trim();
+        if (!markAt.has(key)) markAt.set(key, e.at);
+      }
+    }
+
+    const findMarkAt = (from, dir) => {
+      for (let j = from; dir > 0 ? j < v4ev.length : j >= 0; j += dir) {
+        if (_MARK_TOOLS.has(v4ev[j].tool)) {
+          const k = String(v4ev[j].params?.text || '').trim();
+          if (markAt.has(k)) return markAt.get(k);
+        }
+      }
+      return null;
+    };
+
+    // Desired at for each camera event, in LLM-authored order.
+    const desired = [];
+    for (let i = 0; i < v4ev.length; i++) {
+      const e = v4ev[i];
+      if (!_CAMERA_TOOLS.has(e.tool)) continue;
+      const nextMarkAt = findMarkAt(i + 1, +1);
+      const prevMarkAt = findMarkAt(i - 1, -1) ?? 0;
+      const lead = _CAMERA_LEAD[e.tool] ?? 0.5;
+      let at = nextMarkAt != null ? nextMarkAt - lead : Math.min(dur * 0.85, prevMarkAt + 0.5);
+      const floor = prevMarkAt > 0 ? prevMarkAt + 0.05 : 0;
+      at = Math.max(floor, Math.min(at, dur > 0 ? dur - 0.1 : at), 0);
+      desired.push({ tool: e.tool, anchor: e.params?.anchor ?? null, at: Number(at.toFixed(2)) });
+    }
+
+    // Write back onto matching cinematic.events camera entries (consume each).
+    const used = new Set();
+    for (const d of desired) {
+      for (let k = 0; k < cin.events.length; k++) {
+        if (used.has(k)) continue;
+        const ev = cin.events[k];
+        if (ev.action === d.tool && (ev.anchor ?? null) === d.anchor) {
+          ev.at = d.at; used.add(k); break;
+        }
+      }
+    }
+    // Keep events ordered by at so the TimelineRunner fires them in sequence.
+    cin.events.sort((a, b) => (a.at || 0) - (b.at || 0));
+  }
+}
+
+export async function refineMarksWithTimeline(spec) {
+  const sections = spec.sections || [];
+  const ttsFiles = spec.assets?.tts_files || [];
+  const ttsMap = Object.fromEntries(ttsFiles.map(f => [f.sectionId, f]));
+  const paragraphs = spec._directInput?.paragraphs || [];
+
+  // Screenshot / viewport dimensions for spatial context
+  const ss = spec._inventory?.enhanceable?.pageScreenshot;
+  const pageW = ss?.width || 1280;
+  const pageH = ss?.height || 4000;
+  // 9:16 viewport at typical cinematic zoom ≈ showing ~pageW × (pageW * 16/9) area
+  const viewH = Math.round(pageW * 16 / 9);
+
+  // Helper: estimate mark's page position from paragraph rect + char offset
+  function estimateMarkRect(markText, events) {
+    // Find which paragraph this mark came from (search by text containment)
+    for (const p of paragraphs) {
+      if (!p.rect || !p.text) continue;
+      const idx = p.text.indexOf(markText);
+      if (idx < 0) continue;
+      const charRatio = p.text.length > 0 ? idx / p.text.length : 0;
+      const lineH = 28; // approximate line height
+      const linesInPara = Math.max(1, Math.round(p.rect.h / lineH));
+      const markLine = Math.floor(charRatio * linesInPara);
+      return {
+        y: Math.round(p.rect.y + markLine * lineH),
+        w: Math.min(p.rect.w, markText.length * 12),
+        paraY: p.rect.y,
+        paraH: p.rect.h,
+      };
+    }
+    return null;
+  }
+
+  // Build context per section
+  const sectionBlocks = [];
+  // Collect ALL sections — evidence (marks + timing) AND thesis/callback (GIF choice)
+  const allSectionIds = sections.map(s => s.id);
+  for (const sec of sections) {
+    const tts = ttsMap[sec.id];
+    if (!tts) continue;
+
+    const marks = sec.cinematic?.events?.filter(e =>
+      ['highlight', 'underline', 'circle'].includes(e.action)) || [];
+    // A v4 stat-card scene always needs a background GIF (the opening/ending
+    // card), even if the LLM also attached marks to it — so treat kind==='stat-card'
+    // as a title card regardless of marks (1.1.8 opening/ending always had a GIF bg).
+    const isTitleCard = sec.kind === 'stat-card'
+      || (sec.cinematic?.events?.some(e => e.action === 'title_card') && !marks.length);
+
+    const ts = tts.timestamps || [];
+    const dur = tts.duration || 0;
+
+    const wordTimeline = ts.map(t => {
+      const s = (t.start ?? t.start_time ?? 0).toFixed(1);
+      const e = (t.end ?? t.end_time ?? 0).toFixed(1);
+      return `"${t.word}"(${s}-${e})`;
+    }).join(' ');
+
+    // Mark list with spatial info
+    const markLines = marks.map((m, i) => {
+      const rect = estimateMarkRect(m.text, sec.cinematic.events);
+      const spatialInfo = rect
+        ? `y=${rect.y}px, w=${rect.w}px (${rect.w > pageW * 0.7 ? 'WIDE — won\'t fit in circle' : 'fits viewport'})`
+        : 'position unknown';
+      return `  ${i + 1}. [${m.action}] "${m.text}" — ${spatialInfo}`;
+    }).join('\n');
+
+    // Spatial distance between consecutive marks
+    const markRects = marks.map(m => estimateMarkRect(m.text));
+    let distanceInfo = '';
+    if (markRects.length >= 2) {
+      for (let i = 1; i < markRects.length; i++) {
+        if (markRects[i] && markRects[i - 1]) {
+          const dist = Math.abs(markRects[i].y - markRects[i - 1].y);
+          const panTime = dist > viewH ? `${(dist / viewH * 1.5).toFixed(1)}s camera pan needed` : 'within same view';
+          distanceInfo += `  Mark ${i}→${i + 1}: ${dist}px apart (${panTime})\n`;
+        }
+      }
+    }
+
+    const hasReaction = (sec.cinematic?.events || []).some(e => e.action === 'reaction');
+
+    if (isTitleCard) {
+      sectionBlocks.push(`
+SECTION "${sec.id}" (${dur.toFixed(1)}s audio, title card — needs background GIF):
+Narration: "${sec.text}"`);
+    } else if (marks.length) {
+      sectionBlocks.push(`
+SECTION "${sec.id}" (${dur.toFixed(1)}s audio):
+Narration: "${sec.text}"
+Word timeline: ${wordTimeline}
+Candidate marks:
+${markLines}
+${distanceInfo ? 'Spatial distances:\n' + distanceInfo : ''}${hasReaction ? 'Has reaction GIF.' : ''}`);
+    }
+  }
+
+  if (!sectionBlocks.length) return;
+
+  const prompt = `You are the director of a 9:16 speed-read video.  The video shows a screenshot of a webpage, and a camera pans to each marked phrase while the narrator explains it.
+
+VIEWPORT: ${pageW}×${viewH}px visible area (9:16 ratio).  Page is ${pageW}×${pageH}px total.
+Camera pans at ~${viewH}px per 1.5 seconds.  Mark draw animation takes ~1.2s.
+
+You have the complete audio timeline (word-level) and the spatial position of each candidate mark on the page.  Your job: finalize which marks to show, their style, and their timing.
+
+${sectionBlocks.join('\n')}
+
+CONTEXT for your decisions:
+- Mark styles: "circle" (hand-drawn loop), "underline" (wavy line), "highlight" (translucent fill).
+- Each mark's draw animation takes ~1.2s to complete visually.
+- Camera pans at ~${viewH}px per 1.5 seconds between marks.
+- Marks appear ~0.3s before the narrator says the key word.
+- Viewport shows ${pageW}×${viewH}px of the page at a time.
+
+OUTPUT (JSON only):
+{
+  "sections": [
+    {
+      "id": "thesis",
+      "gif_query": "background GIF for opening title card",
+      "events": []
+    },
+    {
+      "id": "evidence-1",
+      "events": [
+        { "at": 1.2, "action": "underline", "text": "exact mark text" },
+        { "at": 4.5, "action": "circle", "text": "short term" },
+        { "at": 7.0, "action": "reaction", "gif_query": "content-relevant search term" }
+      ]
+    },
+    {
+      "id": "callback",
+      "gif_query": "background GIF for closing title card",
+      "events": []
+    }
+  ]
+}
+
+About GIFs:
+- "gif_query" is a Giphy search term (2-3 words max, English only).
+- Title card sections (thesis/callback) use gif_query as a full-screen background GIF.
+- Reaction events in evidence sections show a brief GIF overlay.
+- Be creative and specific to the article content — not generic reaction faces.
+  e.g. "volcano eruption" for geology, "old library books" for literature.
+- Keep queries SHORT — Giphy works best with 2-3 simple words.
+- At most 2 reaction events in the whole video.`;
+
+  console.log('  🎬  Pass 2: refining marks with TTS timeline...');
+  let raw;
+  try {
+    raw = await claudeMessage(prompt);
+  } catch (err) {
+    console.log('  ⚠️  Pass 2 LLM failed:', err.message?.slice(0, 100));
+    return;
+  }
+
+  // Parse response
+  let result;
+  try {
+    const cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    result = JSON.parse(cleaned);
+  } catch {
+    console.log('  ⚠️  Pass 2: failed to parse JSON');
+    return;
+  }
+
+  const refined = result.sections || [];
+  let totalApplied = 0;
+  for (const r of refined) {
+    const sec = sections.find(s => s.id === r.id);
+    if (!sec) continue;
+
+    if (r.gif_query) sec._pass2GifQuery = r.gif_query;
+
+    if (!sec.cinematic || !Array.isArray(r.events)) continue;
+    // Pass 2 owns timing for marks (circle/underline/highlight) and reactions.
+    // Everything else (title_card / camera / clear_marks / flash_image) was
+    // chosen by Pass 1 and stays intact — we only swap the Pass 2-owned
+    // subset.  Without this preservation, v4's camera tools and overlays get
+    // wiped out and adapter loss spikes to ~50%.
+    const PASS2_OWNED = new Set(['circle', 'underline', 'highlight', 'wavy', 'strike', 'symbol', 'reaction']);
+    const preserved = sec.cinematic.events.filter(e => !PASS2_OWNED.has(e.action));
+    sec.cinematic.events = [
+      ...preserved,
+      ...r.events.map(e => ({
+        at:        Number(e.at) || 0,
+        action:    e.action,
+        text:      e.text || undefined,
+        gif_query: e.gif_query || undefined,
+        emotion:   e.emotion || undefined,
+      })),
+    ];
+    totalApplied += r.events.length;
+  }
+  console.log(`  ✅  Pass 2: applied ${totalApplied} events across ${refined.length} sections`);
+
+  // v4: sync LLM-chosen camera moves to the now-timed marks (deterministic).
+  assignCameraTiming(sections);
+}

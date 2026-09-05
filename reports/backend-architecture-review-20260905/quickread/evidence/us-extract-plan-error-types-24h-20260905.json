@@ -1,0 +1,11 @@
+{
+  "events": [
+    {
+      "utc": "2026-09-04T23:11:45.300Z",
+      "category": "ordered_paragraphs_missing",
+      "line_sha256": "03c1fb319710a2975fc9b008bcbc5cc412dab69b17d71d343b6e54108529198e",
+      "line_bytes": 106
+    }
+  ],
+  "note": "No raw message or user data retained; category is fixed-pattern classification and hash is for correlation only."
+}

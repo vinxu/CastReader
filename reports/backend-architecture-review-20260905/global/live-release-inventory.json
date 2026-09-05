@@ -1,0 +1,548 @@
+{
+  "global_capabilities": {
+    "curl_exit": 0,
+    "manifest": {
+      "service": "castreader-control-plane",
+      "releaseId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "commitSha": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+      "voiceClone": {
+        "version": "voice-clone-v3",
+        "policyVersion": "multiple-create-monthly-120-v2",
+        "serviceRoute": "global",
+        "assetVersion": 1,
+        "workerApiVersion": "captioned-speech-v1",
+        "worker_route_ready": true,
+        "routes": {
+          "listAndCreate": "/api/voice-clone/voices",
+          "fixedPreview": "/api/voice-clone/voices/{voiceId}/preview",
+          "captionedSpeech": "/api/voice-clone/captioned-speech",
+          "legacyCaptionedSpeech": "/api/captioned_speech_partly",
+          "mobileProStatus": "/api/mobile/pro/status/v2"
+        },
+        "clients": {
+          "ios": [
+            "global",
+            "cn"
+          ],
+          "android": [
+            "global",
+            "cn"
+          ],
+          "web": [
+            "global"
+          ],
+          "extension": [
+            "global"
+          ]
+        }
+      },
+      "voiceGift": {
+        "version": "voice-gift-v1",
+        "libraryVersion": "voice-library-v1",
+        "enabled": true,
+        "releaseEnabled": true,
+        "schemaReady": true,
+        "draftSchemaReady": true,
+        "serviceRoute": "global",
+        "supportedRegions": [
+          "global"
+        ],
+        "authorizationModes": [
+          "until_revoked",
+          "expires"
+        ],
+        "legacyExpiryDays": [
+          7,
+          30,
+          90
+        ],
+        "invitationPolicy": {
+          "activeInvitationLimit": 20,
+          "rolling24hLimit": 20,
+          "requestTtlSeconds": 172800
+        },
+        "routes": {
+          "requests": "/api/voice-clone/requests",
+          "inspect": "/api/voice-clone/requests/invitation",
+          "claim": "/api/voice-clone/requests/accept",
+          "fulfill": "/api/voice-clone/requests/fulfill",
+          "shares": "/api/voice-clone/shares",
+          "library": "/api/voice-clone/library"
+        },
+        "draftFlow": {
+          "version": "voice-gift-draft-v1",
+          "processingConsentVersion": "voice-gift-recording-processing-2026-09-v1",
+          "ttlSeconds": 86400,
+          "maxRecordingAttempts": 3,
+          "previewPolicy": "fixed-cached-sample",
+          "capabilitiesInRequestBodyOnly": true,
+          "routes": {
+            "prepare": "/api/voice-clone/requests/draft-prepare",
+            "preview": "/api/voice-clone/requests/draft-preview",
+            "fulfill": "/api/voice-clone/requests/fulfill-draft",
+            "revoke": "/api/voice-clone/requests/draft-revoke",
+            "attachRecovery": "/api/voice-clone/requests/attach-recovery"
+          }
+        },
+        "recipientRequiresPro": false,
+        "synthesisRequiresPro": true
+      }
+    }
+  },
+  "cn_capabilities": {
+    "curl_exit": 0,
+    "manifest": {
+      "service": "castreader-control-plane",
+      "releaseId": "release-20260904120513",
+      "commitSha": "62386e902cb7201919e9680e56c82c8627b47110",
+      "voiceClone": {
+        "version": "voice-clone-v3",
+        "policyVersion": "multiple-create-monthly-120-v2",
+        "serviceRoute": "cn",
+        "assetVersion": 1,
+        "workerApiVersion": "captioned-speech-v1",
+        "worker_route_ready": true,
+        "routes": {
+          "listAndCreate": "/api/voice-clone/voices",
+          "fixedPreview": "/api/voice-clone/voices/{voiceId}/preview",
+          "captionedSpeech": "/api/voice-clone/captioned-speech",
+          "legacyCaptionedSpeech": "/api/captioned_speech_partly",
+          "mobileProStatus": "/api/mobile/pro/status/v2"
+        },
+        "clients": {
+          "ios": [
+            "global",
+            "cn"
+          ],
+          "android": [
+            "global",
+            "cn"
+          ],
+          "web": [
+            "global"
+          ],
+          "extension": [
+            "global"
+          ]
+        }
+      },
+      "voiceGift": {
+        "version": "voice-gift-v1",
+        "libraryVersion": "voice-library-v1",
+        "enabled": true,
+        "releaseEnabled": true,
+        "schemaReady": true,
+        "draftSchemaReady": true,
+        "serviceRoute": "cn",
+        "supportedRegions": [
+          "cn"
+        ],
+        "authorizationModes": [],
+        "legacyExpiryDays": [],
+        "invitationPolicy": {
+          "activeInvitationLimit": 20,
+          "rolling24hLimit": 20,
+          "requestTtlSeconds": 172800
+        },
+        "routes": {
+          "requests": "/api/voice-clone/requests",
+          "inspect": "/api/voice-clone/requests/invitation",
+          "library": "/api/voice-clone/library"
+        },
+        "draftFlow": {
+          "version": "voice-gift-draft-v1",
+          "processingConsentVersion": "voice-gift-recording-processing-2026-09-v1",
+          "sendConsentVersion": "voice-gift-cn-send-2026-09-v1",
+          "ttlSeconds": 86400,
+          "maxRecordingAttempts": 3,
+          "previewPolicy": "fixed-cached-sample",
+          "capabilitiesInRequestBodyOnly": true,
+          "routes": {
+            "prepare": "/api/voice-clone/requests/draft-prepare",
+            "preview": "/api/voice-clone/requests/draft-preview",
+            "fulfill": "/api/voice-clone/requests/fulfill-draft"
+          }
+        },
+        "recipientRequiresPro": false,
+        "synthesisRequiresPro": true
+      }
+    }
+  },
+  "project": {
+    "id": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
+    "name": "readout-web",
+    "framework": "nextjs",
+    "nodeVersion": "22.x",
+    "rootDirectory": null,
+    "gitComments": {
+      "onCommit": false,
+      "onPullRequest": true
+    },
+    "gitForkProtection": true,
+    "productionDeploymentsFastLane": true,
+    "buildCommand": "pnpm build",
+    "installCommand": "pnpm install --frozen-lockfile",
+    "serverlessFunctionRegion": "iad1",
+    "resourceConfig": {
+      "fluid": true,
+      "functionDefaultRegions": [
+        "iad1"
+      ],
+      "elasticConcurrencyEnabled": true,
+      "buildMachineType": "enhanced",
+      "buildMachineSelection": "fixed"
+    },
+    "autoExposeSystemEnvs": true,
+    "link": {
+      "type": "github",
+      "repo": "readout-web",
+      "repoId": 1080468427,
+      "org": "scmyyan",
+      "repoOwnerId": 1745611,
+      "productionBranch": "beta",
+      "sourceless": true,
+      "createdAt": 1761053617820,
+      "updatedAt": 1761053617820,
+      "deployHooks": []
+    },
+    "targets": [
+      {
+        "id": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+        "url": "readout-4a0q9kfdf-castreader.vercel.app",
+        "createdAt": 1788570219102,
+        "readyState": "READY",
+        "target": "production",
+        "source": null,
+        "meta": {
+          "githubCommitAuthorName": "vinxu",
+          "githubCommitMessage": "Merge pull request #23 from scmyyan/codex/google-play-authority-hardening-20260905",
+          "githubCommitOrg": "scmyyan",
+          "githubCommitRef": "HEAD",
+          "githubCommitRepo": "readout-web",
+          "githubCommitSha": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+          "githubDeployment": "1",
+          "githubOrg": "scmyyan",
+          "githubRepo": "readout-web",
+          "gitRootDirectory": "",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        },
+        "regions": null,
+        "alias": [
+          "readout-web-castreader.vercel.app"
+        ],
+        "gitSource": null
+      },
+      {
+        "id": "dpl_Eys4TggCh6Apwi3idbaMrzvDTsfw",
+        "url": "readout-1khif4xbi-castreader.vercel.app",
+        "createdAt": 1788569144806,
+        "readyState": "READY",
+        "target": null,
+        "source": null,
+        "meta": {
+          "githubCommitAuthorName": "vinxu",
+          "githubCommitMessage": "Restore cross-device Pro identity resolution and fresh reads",
+          "githubCommitOrg": "scmyyan",
+          "githubCommitRef": "codex/google-play-authority-hardening-20260905",
+          "githubCommitRepo": "readout-web",
+          "githubCommitSha": "92448b49a68666efa65c8889dd5117285e79c778",
+          "githubDeployment": "1",
+          "githubOrg": "scmyyan",
+          "githubRepo": "readout-web",
+          "githubRepoOwnerType": "User",
+          "githubCommitRepoId": "1080468427",
+          "githubRepoId": "1080468427",
+          "githubRepoVisibility": "private",
+          "githubHost": "github.com",
+          "githubCommitAuthorLogin": "vinxu",
+          "githubCommitVerification": "unverified",
+          "repoPushedAt": "1788569142000",
+          "branchAlias": "readout-web-git-codex-google-play-authority-h-32c7c5-castreader.vercel.app",
+          "githubPrId": "23",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        },
+        "regions": null,
+        "alias": [
+          "readout-web-git-codex-google-play-authority-h-32c7c5-castreader.vercel.app"
+        ],
+        "gitSource": null
+      }
+    ],
+    "latestDeployments": [
+      {
+        "id": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+        "url": "readout-4a0q9kfdf-castreader.vercel.app",
+        "createdAt": 1788570219102,
+        "readyState": "READY",
+        "target": "production",
+        "source": null,
+        "meta": {
+          "githubCommitAuthorName": "vinxu",
+          "githubCommitMessage": "Merge pull request #23 from scmyyan/codex/google-play-authority-hardening-20260905",
+          "githubCommitOrg": "scmyyan",
+          "githubCommitRef": "HEAD",
+          "githubCommitRepo": "readout-web",
+          "githubCommitSha": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+          "githubDeployment": "1",
+          "githubOrg": "scmyyan",
+          "githubRepo": "readout-web",
+          "gitRootDirectory": "",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        },
+        "regions": null,
+        "alias": [
+          "readout-web-castreader.vercel.app"
+        ],
+        "gitSource": null
+      },
+      {
+        "id": "dpl_Eys4TggCh6Apwi3idbaMrzvDTsfw",
+        "url": "readout-1khif4xbi-castreader.vercel.app",
+        "createdAt": 1788569144806,
+        "readyState": "READY",
+        "target": null,
+        "source": null,
+        "meta": {
+          "githubCommitAuthorName": "vinxu",
+          "githubCommitMessage": "Restore cross-device Pro identity resolution and fresh reads",
+          "githubCommitOrg": "scmyyan",
+          "githubCommitRef": "codex/google-play-authority-hardening-20260905",
+          "githubCommitRepo": "readout-web",
+          "githubCommitSha": "92448b49a68666efa65c8889dd5117285e79c778",
+          "githubDeployment": "1",
+          "githubOrg": "scmyyan",
+          "githubRepo": "readout-web",
+          "githubRepoOwnerType": "User",
+          "githubCommitRepoId": "1080468427",
+          "githubRepoId": "1080468427",
+          "githubRepoVisibility": "private",
+          "githubHost": "github.com",
+          "githubCommitAuthorLogin": "vinxu",
+          "githubCommitVerification": "unverified",
+          "repoPushedAt": "1788569142000",
+          "branchAlias": "readout-web-git-codex-google-play-authority-h-32c7c5-castreader.vercel.app",
+          "githubPrId": "23",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        },
+        "regions": null,
+        "alias": [
+          "readout-web-git-codex-google-play-authority-h-32c7c5-castreader.vercel.app"
+        ],
+        "gitSource": null
+      }
+    ]
+  },
+  "deployments": {
+    "deployments": [
+      {
+        "uid": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+        "url": "readout-4a0q9kfdf-castreader.vercel.app",
+        "created": 1788570219102,
+        "state": "READY",
+        "target": "production",
+        "source": "cli",
+        "meta": {
+          "githubCommitAuthorName": "vinxu",
+          "githubCommitMessage": "Merge pull request #23 from scmyyan/codex/google-play-authority-hardening-20260905",
+          "githubCommitOrg": "scmyyan",
+          "githubCommitRef": "HEAD",
+          "githubCommitRepo": "readout-web",
+          "githubCommitSha": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+          "githubDeployment": "1",
+          "githubOrg": "scmyyan",
+          "githubRepo": "readout-web",
+          "gitRootDirectory": "",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        }
+      },
+      {
+        "uid": "dpl_Cxiru8BAi8s94xip6ydTc8haCX5x",
+        "url": "readout-ooy15weir-castreader.vercel.app",
+        "created": 1788546978108,
+        "state": "READY",
+        "target": "production",
+        "source": "cli",
+        "meta": {
+          "githubCommitAuthorName": "vinxu",
+          "githubCommitMessage": "Merge pull request #22 from scmyyan/codex/tts-decimal-probe-stability-20260904",
+          "githubCommitOrg": "scmyyan",
+          "githubCommitRef": "HEAD",
+          "githubCommitRepo": "readout-web",
+          "githubCommitSha": "3e5c3de694797983bf4376f1db849fb609c50e3e",
+          "githubDeployment": "1",
+          "githubOrg": "scmyyan",
+          "githubRepo": "readout-web",
+          "gitRootDirectory": "",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        }
+      },
+      {
+        "uid": "dpl_GZViZvmn4UTrtbSu3MvLXjPcfqGn",
+        "url": "readout-2uke24p69-castreader.vercel.app",
+        "created": 1788545822587,
+        "state": "READY",
+        "target": "production",
+        "source": "cli",
+        "meta": {
+          "githubCommitAuthorName": "vinxu",
+          "githubCommitMessage": "Merge pull request #21 from scmyyan/codex/google-play-renewal-recovery-20260904",
+          "githubCommitOrg": "scmyyan",
+          "githubCommitRef": "HEAD",
+          "githubCommitRepo": "readout-web",
+          "githubCommitSha": "9bb3a1290a7c671a8e7553c56bf58c1561c98eff",
+          "githubDeployment": "1",
+          "githubOrg": "scmyyan",
+          "githubRepo": "readout-web",
+          "gitRootDirectory": "",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        }
+      },
+      {
+        "uid": "dpl_2CmzKBRfAMhhKYiVF6DwUjnakPRn",
+        "url": "readout-dix2m05hc-castreader.vercel.app",
+        "created": 1788493375643,
+        "state": "READY",
+        "target": "production",
+        "source": "cli",
+        "meta": {
+          "gitCommitAuthorName": "vinxu",
+          "gitCommitMessage": "Merge commit '4720b4cffda5f94469125ac0c91da495dc2420d6' into codex/core-audio-regional-continuity",
+          "gitCommitRef": "codex/core-audio-regional-continuity",
+          "gitCommitSha": "2d5575b6ca8c38fa4b7177bdddc2afeaf12e1ac2",
+          "gitRootDirectory": "",
+          "castreaderApprovedCommit": "2d5575b6ca8c38fa4b7177bdddc2afeaf12e1ac2",
+          "castreaderPreviousDeployment": "dpl_HRfYUZQjRGPB2QybnKEYw9ykcZVo",
+          "actor": "codex",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        }
+      },
+      {
+        "uid": "dpl_HRfYUZQjRGPB2QybnKEYw9ykcZVo",
+        "url": "readout-d3ihbayfj-castreader.vercel.app",
+        "created": 1788492886996,
+        "state": "READY",
+        "target": "production",
+        "source": "cli",
+        "meta": {
+          "gitCommitAuthorName": "vinxu",
+          "gitCommitMessage": "fix(analytics): retain queued events on persistence failures",
+          "gitCommitRef": "codex/growth-funnel-integrity-20260904",
+          "gitCommitSha": "4720b4cffda5f94469125ac0c91da495dc2420d6",
+          "gitRootDirectory": "",
+          "actor": "codex",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        }
+      },
+      {
+        "uid": "dpl_9MyEWw7MJVjaC8q4R1aXp2ZySvuH",
+        "url": "readout-fgt83182w-castreader.vercel.app",
+        "created": 1788492765362,
+        "state": "READY",
+        "target": "production",
+        "source": "cli",
+        "meta": {
+          "gitCommitAuthorName": "vinxu",
+          "gitCommitMessage": "feat(ops): expose safe clone regional configuration readiness",
+          "gitCommitRef": "codex/core-audio-regional-continuity",
+          "gitCommitSha": "c426f0e4c3078a27324bf334a032531eacc740c9",
+          "gitRootDirectory": "",
+          "castreaderApprovedCommit": "c426f0e4c3078a27324bf334a032531eacc740c9",
+          "castreaderPreviousDeployment": "dpl_FZHGPfG5eRrRgn3EoZMD3bTNh5Pa",
+          "actor": "codex",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        }
+      },
+      {
+        "uid": "dpl_27jLLX7rJiCqB43aXQ2HphKM53jm",
+        "url": "readout-kyzizhnx0-castreader.vercel.app",
+        "created": 1788492535105,
+        "state": "READY",
+        "target": "production",
+        "source": "cli",
+        "meta": {
+          "gitCommitAuthorName": "vinxu",
+          "gitCommitMessage": "Merge commit '5e69d2cc911f12d13e4ec7c0cd00adbd92de264b' into codex/core-audio-regional-continuity",
+          "gitCommitRef": "codex/core-audio-regional-continuity",
+          "gitCommitSha": "10a5b0d8076a12c519c326c301103edd1dba53c8",
+          "gitRootDirectory": "",
+          "castreaderApprovedCommit": "10a5b0d8076a12c519c326c301103edd1dba53c8",
+          "castreaderPreviousDeployment": "dpl_FZHGPfG5eRrRgn3EoZMD3bTNh5Pa",
+          "actor": "codex",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        }
+      },
+      {
+        "uid": "dpl_FZHGPfG5eRrRgn3EoZMD3bTNh5Pa",
+        "url": "readout-5u09vlmbj-castreader.vercel.app",
+        "created": 1788491179356,
+        "state": "READY",
+        "target": "production",
+        "source": "cli",
+        "meta": {
+          "gitCommitAuthorName": "vinxu",
+          "gitCommitMessage": "fix(growth): enforce source parity and automate authoritative ad ingestion",
+          "gitCommitRef": "codex/growth-funnel-integrity-20260904",
+          "gitCommitSha": "5e69d2cc911f12d13e4ec7c0cd00adbd92de264b",
+          "gitRootDirectory": "",
+          "actor": "codex",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        }
+      },
+      {
+        "uid": "dpl_3zYvnPzXRo2hX2tp5AhmQV17z5Wy",
+        "url": "readout-5o9dg4c07-castreader.vercel.app",
+        "created": 1788454788394,
+        "state": "READY",
+        "target": "production",
+        "source": "cli",
+        "meta": {
+          "gitCommitAuthorName": "vinxu",
+          "gitCommitMessage": "fix(tts): return file-reader audio before optional cache writes",
+          "gitCommitRef": "codex/tts-playback-priority-global",
+          "gitCommitSha": "2be1e9e9e9a9be69d772a556295a85e6e4117983",
+          "gitRootDirectory": "",
+          "githubCommitSha": "2be1e9e9e9a9be69d772a556295a85e6e4117983",
+          "actor": "codex",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        }
+      },
+      {
+        "uid": "dpl_84trHMszcv95Z3wGH8ro95j51UT7",
+        "url": "readout-f55620c6j-castreader.vercel.app",
+        "created": 1788450079389,
+        "state": "READY",
+        "target": "production",
+        "source": "cli",
+        "meta": {
+          "gitCommitAuthorName": "vinxu",
+          "gitCommitMessage": "fix(tts): keep playback independent of word timing",
+          "gitCommitRef": "codex/tts-playback-priority-global",
+          "gitCommitSha": "cb55665dd5ebeac1a1e23e2f217c241e6a609560",
+          "gitRootDirectory": "",
+          "actor": "codex",
+          "lambdaRuntimeStats": "{\"nodejs\":17}",
+          "bundler": "turbopack"
+        }
+      }
+    ],
+    "pagination": {
+      "count": 10,
+      "next": 1788450079389,
+      "prev": 1788570219102
+    }
+  },
+  "collected_at": "2026-09-05T10:33:54.070672+00:00"
+}

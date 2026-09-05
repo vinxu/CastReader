@@ -1,0 +1,373 @@
+import { Agent, FormData, fetch as undiciFetch } from 'undici';
+
+import { speechRequestSignal } from '@/shared/lib/speech-request-budget';
+import { VoiceCloneError } from '@/shared/voice-clone/errors';
+
+import { voiceWorkerBaseURL } from './worker-regional-routing';
+
+let pinnedOriginAgent: Agent | null = null;
+
+function originAgent(): Agent | undefined {
+  const certificate = process.env.VOICE_CLONE_WORKER_CA_CERT?.trim();
+  if (!certificate) return undefined;
+  if (
+    certificate.length > 16_384 ||
+    !certificate.startsWith('-----BEGIN CERTIFICATE-----')
+  ) {
+    throw new VoiceCloneError(
+      503,
+      'VOICE_WORKER_CA_INVALID',
+      'Voice worker origin certificate is invalid'
+    );
+  }
+  pinnedOriginAgent ??= new Agent({
+    connect: { ca: certificate, rejectUnauthorized: true },
+  });
+  return pinnedOriginAgent;
+}
+
+async function workerFetch(
+  url: string,
+  init: NonNullable<Parameters<typeof undiciFetch>[1]>
+): Promise<Response> {
+  const dispatcher = originAgent();
+  if (dispatcher && !url.startsWith('https://')) {
+    throw new VoiceCloneError(
+      503,
+      'VOICE_WORKER_TLS_REQUIRED',
+      'Pinned voice worker origin must use HTTPS'
+    );
+  }
+  const response = await undiciFetch(url, {
+    ...init,
+    redirect: 'error',
+    ...(dispatcher ? { dispatcher } : {}),
+  });
+  return response as unknown as Response;
+}
+
+function workerConfig() {
+  const baseUrl = voiceWorkerBaseURL(process.env);
+  const token = process.env.VOICE_CLONE_WORKER_TOKEN;
+  if (!baseUrl || !token) {
+    throw new VoiceCloneError(
+      503,
+      'VOICE_WORKER_NOT_CONFIGURED',
+      'Voice worker is not configured'
+    );
+  }
+  return { baseUrl, token };
+}
+
+async function workerError(
+  response: Response,
+  busyCode: 'VOICE_WORKER_BUSY' | 'CLONE_WORKER_BUSY' = 'VOICE_WORKER_BUSY'
+): Promise<VoiceCloneError> {
+  let message = 'Voice worker request failed';
+  let workerCode = response.headers.get('x-voice-error-code') || '';
+  try {
+    const body = await response.json();
+    if (typeof body?.detail === 'string') {
+      message = body.detail;
+    } else if (body?.detail && typeof body.detail === 'object') {
+      if (typeof body.detail.message === 'string')
+        message = body.detail.message;
+      if (typeof body.detail.code === 'string') workerCode = body.detail.code;
+    }
+  } catch {}
+  return new VoiceCloneError(
+    response.status === 429
+      ? 429
+      : response.status >= 500
+        ? 503
+        : response.status,
+    response.status === 429 ? busyCode : workerCode || 'VOICE_WORKER_ERROR',
+    message,
+    response.headers.get('retry-after')
+      ? { retryAfterSeconds: Number(response.headers.get('retry-after')) }
+      : undefined
+  );
+}
+
+export type WorkerVoiceRegistration = {
+  voice_id: string;
+  reference_duration_s: number;
+};
+
+export async function parseWorkerVoiceRegistrationResponse(
+  response: Response,
+  expectedVoiceId: string,
+  allowExisting: boolean
+): Promise<WorkerVoiceRegistration | null> {
+  if (!response.ok) {
+    const error = await workerError(response);
+    if (
+      allowExisting &&
+      response.status === 409 &&
+      error.code === 'VOICE_ALREADY_READY'
+    ) {
+      return null;
+    }
+    throw error;
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new VoiceCloneError(
+      503,
+      'VOICE_WORKER_CONTRACT_MISMATCH',
+      'Voice worker returned an invalid registration response'
+    );
+  }
+  const candidate = body as Partial<WorkerVoiceRegistration> | null;
+  if (
+    candidate?.voice_id !== expectedVoiceId ||
+    typeof candidate.reference_duration_s !== 'number' ||
+    !Number.isFinite(candidate.reference_duration_s) ||
+    candidate.reference_duration_s <= 0 ||
+    candidate.reference_duration_s > 120
+  ) {
+    throw new VoiceCloneError(
+      503,
+      'VOICE_WORKER_CONTRACT_MISMATCH',
+      'Voice worker returned an incompatible registration response'
+    );
+  }
+  return candidate as WorkerVoiceRegistration;
+}
+
+function workerHeaders(token: string, requestId = '') {
+  const normalizedRequestId = requestId.trim().slice(0, 128);
+  return {
+    'X-Clone-Token': token,
+    ...(normalizedRequestId ? { 'X-Request-ID': normalizedRequestId } : {}),
+  };
+}
+
+export async function registerWorkerVoice(
+  voiceId: string,
+  reference: Buffer,
+  referenceText: string,
+  contentType = 'audio/wav',
+  allowExisting = false,
+  referenceLanguage = '',
+  requestId = '',
+  signal?: AbortSignal
+) {
+  const { baseUrl, token } = workerConfig();
+  const form = new FormData();
+  form.set(
+    'reference',
+    new File([Uint8Array.from(reference)], 'reference.wav', {
+      type: contentType,
+    })
+  );
+  form.set('consent_confirmed', 'true');
+  form.set('requested_voice_id', voiceId);
+  if (referenceText) form.set('reference_text', referenceText);
+  if (referenceLanguage) form.set('reference_language', referenceLanguage);
+  const response = await workerFetch(`${baseUrl}/v1/voices`, {
+    method: 'POST',
+    headers: workerHeaders(token, requestId),
+    body: form,
+    // CN released mobile clients allow 60 seconds for registration. Preserve
+    // its 50-second gateway envelope while forwarding caller cancellation.
+    // Global registration retains its 90-second worker budget.
+    signal: speechRequestSignal(
+      signal,
+      process.env.CASTREADER_SERVICE_ROUTE === 'cn' ? 50_000 : 90_000
+    ),
+  });
+  return parseWorkerVoiceRegistrationResponse(response, voiceId, allowExisting);
+}
+
+const WORKER_DELETE_RETRY_DELAYS_MS = [250, 750] as const;
+
+function retryableWorkerCleanup(error: unknown) {
+  return (
+    !(error instanceof VoiceCloneError) ||
+    error.status === 429 ||
+    error.status >= 500
+  );
+}
+
+export async function runReliableWorkerCleanup<T>(
+  operation: () => Promise<T>,
+  retryDelaysMs: readonly number[] = WORKER_DELETE_RETRY_DELAYS_MS
+) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (attempt >= retryDelaysMs.length || !retryableWorkerCleanup(error)) {
+        throw error;
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, retryDelaysMs[attempt])
+      );
+    }
+  }
+}
+
+export type WorkerVoiceDeleteResult = 'deleted' | 'not-found';
+
+export type DeleteWorkerVoiceOptions = {
+  recheckNotFound?: boolean;
+  notFoundRecheckDelayMs?: number;
+  retryDelaysMs?: readonly number[];
+};
+
+export async function runWorkerVoiceDeleteCleanup(
+  operation: () => Promise<WorkerVoiceDeleteResult>,
+  options: DeleteWorkerVoiceOptions = {}
+) {
+  const result = await runReliableWorkerCleanup(
+    operation,
+    options.retryDelaysMs
+  );
+  if (result !== 'not-found' || !options.recheckNotFound) return result;
+
+  // A timed-out multipart registration can reach the worker after the first
+  // compensating DELETE. Recheck a first 404 before declaring the ambiguous
+  // registration clean; explicit user deletes retain ordinary 404 idempotency.
+  await new Promise((resolve) =>
+    setTimeout(resolve, options.notFoundRecheckDelayMs ?? 1_000)
+  );
+  return runReliableWorkerCleanup(operation, options.retryDelaysMs);
+}
+
+export async function deleteWorkerVoice(
+  voiceId: string,
+  requestId = '',
+  options: DeleteWorkerVoiceOptions = {}
+) {
+  const { baseUrl, token } = workerConfig();
+  await runWorkerVoiceDeleteCleanup(async () => {
+    const response = await workerFetch(
+      `${baseUrl}/v1/voices/${encodeURIComponent(voiceId)}`,
+      {
+        method: 'DELETE',
+        headers: workerHeaders(token, requestId),
+        // The worker's own cleanup budget is 15 seconds. Keep transport time
+        // above it so an acknowledged cancellation is not mistaken for loss.
+        signal: AbortSignal.timeout(20_000),
+      }
+    );
+    if (response.ok || response.status === 404) {
+      await response.arrayBuffer().catch(() => undefined);
+      return response.status === 404 ? 'not-found' : 'deleted';
+    }
+    throw await workerError(response);
+  }, options);
+}
+
+export async function exportWorkerVoicePrompt(voiceId: string, requestId = '') {
+  const { baseUrl, token } = workerConfig();
+  const response = await workerFetch(
+    `${baseUrl}/v1/voices/${encodeURIComponent(voiceId)}/prompt`,
+    {
+      headers: workerHeaders(token, requestId),
+      signal: AbortSignal.timeout(15_000),
+    }
+  );
+  if (!response.ok) throw await workerError(response);
+  const prompt = Buffer.from(await response.arrayBuffer());
+  if (!prompt.length || prompt.length > 2 * 1024 * 1024) {
+    throw new VoiceCloneError(
+      503,
+      'VOICE_WORKER_PROMPT_INVALID',
+      'Voice worker returned an invalid compiled prompt'
+    );
+  }
+  return prompt;
+}
+
+export async function importWorkerVoicePrompt(
+  voiceId: string,
+  prompt: Buffer,
+  requestId = '',
+  signal?: AbortSignal
+) {
+  const { baseUrl, token } = workerConfig();
+  const form = new FormData();
+  form.set(
+    'prompt',
+    new File([Uint8Array.from(prompt)], 'prompt.pt', {
+      type: 'application/octet-stream',
+    })
+  );
+  const response = await workerFetch(
+    `${baseUrl}/v1/voices/${encodeURIComponent(voiceId)}/prompt`,
+    {
+      method: 'PUT',
+      headers: workerHeaders(token, requestId),
+      body: form,
+      signal: speechRequestSignal(signal, 15_000),
+    }
+  );
+  if (!response.ok) throw await workerError(response);
+}
+
+export async function synthesizeWorkerVoice(input: {
+  voiceId: string;
+  text: string;
+  languageId: string;
+  seed?: number;
+  requestId?: string;
+  signal?: AbortSignal;
+}) {
+  const { baseUrl, token } = workerConfig();
+  return workerFetch(`${baseUrl}/v1/speech`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Clone-Token': token,
+      ...(input.requestId ? { 'X-Request-ID': input.requestId } : {}),
+    },
+    body: JSON.stringify({
+      voice_id: input.voiceId,
+      text: input.text,
+      language_id: input.languageId,
+      seed: input.seed,
+    }),
+    signal: speechRequestSignal(input.signal, 65_000),
+  });
+}
+
+export async function synthesizeCaptionedWorkerVoice(input: {
+  voiceId: string;
+  text: string;
+  language: string;
+  speed: number;
+  returnTimestamps: boolean;
+  priority: 'interactive' | 'prefetch';
+  requestId: string;
+  signal?: AbortSignal;
+}) {
+  const { baseUrl, token } = workerConfig();
+  return workerFetch(`${baseUrl}/v1/captioned-speech`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Clone-Token': token,
+      'X-TTS-Priority': input.priority,
+      'X-Request-ID': input.requestId,
+    },
+    body: JSON.stringify({
+      input: input.text,
+      voice: input.voiceId,
+      language: input.language,
+      speed: input.speed,
+      response_format: 'mp3',
+      return_timestamps: input.returnTimestamps,
+      stream: false,
+    }),
+    signal: speechRequestSignal(input.signal, 65_000),
+  });
+}
+
+export async function parseWorkerFailure(response: Response) {
+  return workerError(response);
+}

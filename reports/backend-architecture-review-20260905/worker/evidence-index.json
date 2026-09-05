@@ -1,0 +1,85 @@
+{
+  "contract": "castreader-worker-audit-evidence-index-v1",
+  "generated_at_utc": "2026-09-05T14:13:14.596017+00:00",
+  "scope": "Read-only GPU worker, clone build, Nari, supervision, storage-runtime and safe log audit.",
+  "production_mutations": false,
+  "synthesis_or_voice_build_requests_sent": false,
+  "user_text_audio_voice_ids_or_credentials_retained": false,
+  "source_heads": {
+    "/Users/xuxuheng/Documents/MyProject/.worktrees/castreader-tts-playback-priority": "77daa03648c434d518a53afde7e2df811200b8e4",
+    "/Users/xuxuheng/Documents/CastReader": "7742360ff15a7f779932dde69201973e2eb1cbbd"
+  },
+  "files": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/README.md",
+      "bytes": 55350,
+      "sha256": "255a4db22ad4565c618f87d250bf7c232913b0eb150cd79090d450e6abc55c83"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/cn-runtime-snapshot.json",
+      "bytes": 7755,
+      "sha256": "43842d506a35ad787d478ef1ca80312d20b2eca4ac5cbfffb1c66a5dac41b029"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/cn-us-model-registry-diff.json",
+      "bytes": 1868,
+      "sha256": "589707c557bfb38490c8dd88c6e394d4b46a23645194697372784bcc5bcb7a25"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/kokoro-model-registry-summary.json",
+      "bytes": 8035,
+      "sha256": "b4690df249a5c8bddcbcb4001081cf4a0ec2b3b00bd669d8f3ca3b32b9c047a7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/source-hash-comparison.json",
+      "bytes": 1118,
+      "sha256": "614d659e4bc979885400c03b325b596de7f9d1a2b25cb54572ac4d5385bd1f2a"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/us-gateway-worker-correlation.json",
+      "bytes": 33246,
+      "sha256": "ff684ad414f7d935d0921ba91fe8d03167a174b0e785b8958894681ef52e2c89"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/us-playback-fatal-shape.json",
+      "bytes": 902,
+      "sha256": "d222b4d666cce7420a9cb2e7bc14c61df56c708ad2d08d79b1dd120c5844073e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/us-playback-log-aggregate.json",
+      "bytes": 20018,
+      "sha256": "f7970b8514e9e304152b9b141103bb48f92112337ac5b7d36fb9dac975667168"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/us-runtime-agent-domain.json",
+      "bytes": 454,
+      "sha256": "cd5a0594d709127b64210548660346c403ce7da361cc6ba1b277b811bb93d724"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/us-runtime-governance.json",
+      "bytes": 6363,
+      "sha256": "92ec8d718ceb0821c890acab86f4e8600eb304b47c7c175c4505e25dbe428106"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/us-runtime-snapshot.json",
+      "bytes": 1679,
+      "sha256": "1fc8d93d748cfa8e7c470e458a3fb4eee21080074b3fcba21d2a2fdf74d7f503"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/us-supervisor-log-tail-aggregate.json",
+      "bytes": 3189,
+      "sha256": "c92c7de37602bc8b69d3ea2c67308629403ca5808b16d52bdc5d50d8b58a3347"
+    }
+  ],
+  "external_global_evidence": [
+    "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/global/production-5xx-sample.json",
+    "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/global/tts-recent-error-diagnostics.json"
+  ],
+  "limitations": [
+    "Point-in-time process and health snapshots are not an availability SLO.",
+    "The 500 counts are response log events and cannot be converted to user counts.",
+    "Supervisor tail aggregates are not retention-complete.",
+    "Configured domains and process environments are not packet-level egress proof.",
+    "No cloud-provider legal physical-region attestation was collected in this worker audit."
+  ]
+}

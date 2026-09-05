@@ -1,0 +1,534 @@
+name: Backend maintenance release
+
+# Code-only Global releases preserve the existing production configuration and
+# schema. Feature activation and schema changes use the production release flow.
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Full SHA at the tip of protected beta
+        required: true
+        type: string
+      previous_production_sha:
+        description: Full SHA currently serving production
+        required: true
+        type: string
+
+concurrency:
+  group: castreader-backend-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_sha }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.25.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Fetch the protected release ref
+        run: git fetch --no-tags origin '+refs/heads/beta:refs/remotes/origin/beta'
+
+      - name: Verify immutable release source
+        run: pnpm release:verify-source
+        env:
+          CASTREADER_RELEASE_APPROVED: '1'
+          CASTREADER_RELEASE_SHA: ${{ inputs.release_sha }}
+          CASTREADER_PREVIOUS_PRODUCTION_SHA: ${{ inputs.previous_production_sha }}
+          CASTREADER_PRODUCTION_GIT_REF: origin/beta
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:tts-gateway
+      - run: pnpm test:voice-clone-contract
+      - run: pnpm test:tts-monitoring
+
+      - name: Configure PostgreSQL migration-test binaries
+        run: |
+          set -euo pipefail
+          postgres_bin="$(pg_config --bindir)"
+          test -x "$postgres_bin/initdb"
+          test -x "$postgres_bin/pg_ctl"
+          test -x "$postgres_bin/psql"
+          echo "$postgres_bin" >> "$GITHUB_PATH"
+
+      - run: pnpm test:google-play-recovery
+      - run: pnpm test:voice-gift-migration
+      - run: pnpm test:tts-runtime-migration
+      - run: pnpm test:tts-production-migration-gate
+      - run: pnpm test:voice-gift-request-migration
+      - run: pnpm test:voice-gift-v1-migration
+      - run: pnpm test:voice-gift-guest-draft-migration
+      - run: pnpm test:voice-gift-request-locale-migration
+      - run: pnpm test:voice-gift-request-expiry-migration
+      - run: pnpm test:voice-gift-guest-draft-release
+      - run: pnpm exec tsx --test scripts/voice-gift-candidate-e2e.test.ts
+      - name: Verify upload and CN regional isolation regressions
+        run: pnpm exec tsx --test src/shared/upload-gateway/*.test.ts src/shared/lib/cn-regional-assets.test.ts src/core/redis/cn-regional.test.ts
+      - run: pnpm exec tsc --noEmit
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+
+      - name: Capture and verify the current production baseline
+        id: baseline
+        run: |
+          set -euo pipefail
+          baseline_file="$RUNNER_TEMP/backend-maintenance-baseline.json"
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+            --retry 3 --retry-all-errors --header 'Cache-Control: no-cache' \
+            "https://api.castreader.ai/api/capabilities?release_probe=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-baseline" \
+            --output "$baseline_file"
+          node - "$baseline_file" <<'NODE'
+          const fs = require('node:fs');
+          const manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const valid =
+            manifest.commitSha === process.env.EXPECTED_PREVIOUS_SHA &&
+            /^dpl_[A-Za-z0-9]+$/.test(manifest.releaseId || '') &&
+            manifest.voiceClone?.version === 'voice-clone-v3' &&
+            manifest.voiceClone?.serviceRoute === 'global' &&
+            manifest.voiceClone?.clients?.web?.join() === 'global' &&
+            manifest.voiceClone?.clients?.extension?.join() === 'global' &&
+            manifest.voiceGift?.version === 'voice-gift-v1' &&
+            manifest.voiceGift?.libraryVersion === 'voice-library-v1' &&
+            manifest.voiceGift?.enabled === true &&
+            manifest.voiceGift?.releaseEnabled === true &&
+            manifest.voiceGift?.schemaReady === true &&
+            manifest.voiceGift?.draftSchemaReady === true &&
+            manifest.voiceGift?.draftFlow?.version === 'voice-gift-draft-v1' &&
+            manifest.voiceGift?.recipientRequiresPro === false &&
+            manifest.voiceGift?.synthesisRequiresPro === true;
+          if (!valid) {
+            console.error('production baseline is not eligible for a configuration-preserving maintenance release');
+            process.exit(1);
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `release_id=${manifest.releaseId}\n`);
+          NODE
+        env:
+          EXPECTED_PREVIOUS_SHA: ${{ inputs.previous_production_sha }}
+
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@59.9.1
+
+      - name: Pull and audit the existing Global production configuration
+        run: |
+          set -euo pipefail
+          test ! -e .env.local
+          vercel pull --yes --environment=production
+          pnpm exec tsx scripts/assert-global-vercel-target.ts -- \
+            --project-file .vercel/project.json \
+            --env-file .vercel/.env.production.local
+          test ! -e .env.local
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build one immutable configuration-preserving candidate
+        run: |
+          set -euo pipefail
+          test ! -e .env.local
+          vercel build --prod
+          test ! -e .env.local
+          if grep -R -I -q '/vercel/path0/.env.local' .vercel/output; then
+            echo 'candidate artifact captured forbidden root .env.local'
+            exit 1
+          fi
+        env:
+          CASTREADER_GIT_COMMIT_SHA: ${{ inputs.release_sha }}
+          NODE_OPTIONS: --max-old-space-size=6144
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy the candidate without assigning production domains
+        id: deploy
+        run: |
+          set -euo pipefail
+          deployment_url="$(vercel deploy --prebuilt --prod --skip-domain --yes)"
+          case "$deployment_url" in
+            https://*.vercel.app) ;;
+            *) echo 'deployment did not return an exact Vercel candidate URL'; exit 1 ;;
+          esac
+          echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Verify candidate contracts preserve the production baseline
+        id: candidate_capabilities
+        run: |
+          set -euo pipefail
+          candidate_file="$RUNNER_TEMP/backend-maintenance-candidate.json"
+          vercel curl /api/capabilities --deployment "$CANDIDATE_URL" -- \
+            --silent --show-error --fail --connect-timeout 5 --max-time 15 \
+            --output "$candidate_file"
+          node - "$RUNNER_TEMP/backend-maintenance-baseline.json" "$candidate_file" <<'NODE'
+          const fs = require('node:fs');
+          const { isDeepStrictEqual } = require('node:util');
+          const baseline = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const candidate = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+          if (
+            candidate.commitSha !== process.env.EXPECTED_RELEASE_SHA ||
+            !/^dpl_[A-Za-z0-9]+$/.test(candidate.releaseId || '') ||
+            candidate.releaseId === baseline.releaseId ||
+            !isDeepStrictEqual(candidate.voiceClone, baseline.voiceClone) ||
+            !isDeepStrictEqual(candidate.voiceGift, baseline.voiceGift)
+          ) {
+            console.error('candidate changed an existing production capability or release identity is invalid');
+            process.exit(1);
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `release_id=${candidate.releaseId}\n`);
+          NODE
+          for endpoint in /api/voice-clone/voices /api/voice-clone/voices/vc_capability_probe/preview /api/voice-clone/requests /api/voice-clone/shares /api/voice-clone/library; do
+            status="$(vercel curl "$endpoint" --deployment "$CANDIDATE_URL" -- --silent --output /dev/null --write-out '%{http_code}')"
+            test "$status" = 401
+          done
+          for endpoint in /api/voice-clone/captioned-speech /api/captioned_speech_partly; do
+            status="$(vercel curl "$endpoint" --deployment "$CANDIDATE_URL" -- --silent --output /dev/null --write-out '%{http_code}' --request POST --header 'Content-Type: application/json' --data '{"input":"probe","voice":"vc_capability_probe"}')"
+            test "$status" = 401
+          done
+          inspection="$(vercel curl /api/voice-clone/requests/invitation --deployment "$CANDIDATE_URL" -- --silent --request POST --header 'Content-Type: application/json' --data '{"token":"invalid-capability-probe"}')"
+          node -e 'const b=JSON.parse(process.argv[1]); if(b.code!=="VOICE_GIFT_REQUEST_NOT_FOUND") process.exit(1)' "$inspection"
+        env:
+          CANDIDATE_URL: ${{ steps.deploy.outputs.url }}
+          EXPECTED_RELEASE_SHA: ${{ inputs.release_sha }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Verify the Google Play cron is authenticated and non-cacheable
+        run: |
+          set -euo pipefail
+          headers_file="$RUNNER_TEMP/google-play-cron-headers.txt"
+          status="$(vercel curl /api/cron/google-play-reconcile --deployment "$CANDIDATE_URL" -- \
+            --silent --show-error --connect-timeout 5 --max-time 15 \
+            --dump-header "$headers_file" --output /dev/null --write-out '%{http_code}')"
+          test "$status" = 401
+          node - "$headers_file" <<'NODE'
+          const fs = require('node:fs');
+          const headers = fs.readFileSync(process.argv[2], 'utf8');
+          if (!/^cache-control:\s*[^\r\n]*\bno-store\b/im.test(headers)) {
+            console.error('Google Play reconciliation response must be non-cacheable');
+            process.exit(1);
+          }
+          NODE
+        env:
+          CANDIDATE_URL: ${{ steps.deploy.outputs.url }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Verify both RTDN formats without claiming a purchase
+        run: |
+          set -euo pipefail
+          for format in wrapped unwrapped; do
+            payload="$(node -e '
+              const notification = {subscriptionNotification: {
+                purchaseToken: `synthetic-release-probe-${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}`,
+                notificationType: 2
+              }};
+              process.stdout.write(JSON.stringify(process.argv[1] === "wrapped"
+                ? {message: {data: Buffer.from(JSON.stringify(notification)).toString("base64")}}
+                : notification));
+            ' "$format")"
+            response="$(vercel curl /api/pro/google-webhook --deployment "$CANDIDATE_URL" -- \
+              --silent --show-error --fail --connect-timeout 5 --max-time 15 \
+              --request POST --header 'Content-Type: application/json' --data "$payload")"
+            node -e '
+              const result = JSON.parse(process.argv[1]);
+              if (result.ok !== true || result.reason !== "unknown_purchase") process.exit(1);
+            ' "$response"
+          done
+        env:
+          CANDIDATE_URL: ${{ steps.deploy.outputs.url }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Install ffmpeg for candidate audio validation
+        run: |
+          set -euo pipefail
+          sudo apt-get update --quiet
+          sudo apt-get install --yes --no-install-recommends ffmpeg
+          ffmpeg -version
+
+      - name: Verify TTS sentence boundaries against the exact candidate
+        run: pnpm exec tsx scripts/probe-tts-sentence-boundaries.mts -- --deployment "$CANDIDATE_URL"
+        env:
+          CANDIDATE_URL: ${{ steps.deploy.outputs.url }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Run Voice Gift authenticated and guest E2E against the exact candidate
+        id: candidate_e2e
+        run: |
+          set -euo pipefail
+          attestation_dir="$RUNNER_TEMP/voice-gift-maintenance-e2e"
+          raw_attestation="$attestation_dir/raw.json"
+          release_attestation="$attestation_dir/release-attestation.json"
+          mkdir -p "$attestation_dir"
+          printf '%s\n' '{"status":"not_started"}' > "$release_attestation"
+          test -s .vercel/.env.production.local
+          test -n "$EXPECTED_BILLING_AUTHORITY_FINGERPRINT"
+          test "${#VOICE_GIFT_E2E_BRIDGE_SECRET}" -ge 32
+          command -v ffmpeg >/dev/null
+
+          set +e
+          pnpm exec tsx scripts/voice-gift-candidate-e2e.mts -- \
+            --base-url "$CANDIDATE_URL" \
+            --github-run-id "$GITHUB_RUN_ID" \
+            --env-file .vercel/.env.production.local > "$raw_attestation"
+          e2e_status="$?"
+          set -e
+
+          if test "$e2e_status" -ne 0; then
+            node - "$raw_attestation" "$release_attestation" <<'NODE'
+          const fs = require('node:fs');
+          const [rawPath, outputPath] = process.argv.slice(2);
+          let code = 'candidate_e2e_failed';
+          try {
+            const result = JSON.parse(fs.readFileSync(rawPath, 'utf8'));
+            if (result.status === 'failed' && /^[a-z0-9_]{1,128}$/i.test(result.code || '')) {
+              code = result.code;
+            }
+          } catch {}
+          fs.writeFileSync(outputPath, `${JSON.stringify({ status: 'failed', code })}\n`, { mode: 0o600 });
+          NODE
+            exit "$e2e_status"
+          fi
+
+          node - "$raw_attestation" "$release_attestation" <<'NODE'
+          const fs = require('node:fs');
+          const [rawPath, outputPath] = process.argv.slice(2);
+          const result = JSON.parse(fs.readFileSync(rawPath, 'utf8'));
+          const requiredPhases = [
+            'fixtures', 'reference_audio', 'request_created', 'anonymous_inspection',
+            'claimed', 'voice_created', 'fulfilled', 'library', 'preview', 'clone_tts',
+            'revoked', 'revocation_enforced', 'guest_invitation', 'guest_prepare',
+            'guest_preview', 'guest_fulfill', 'guest_library', 'guest_tts',
+            'guest_revoke', 'guest_cleanup', 'cleanup',
+          ];
+          const candidateHost = new URL(process.env.CANDIDATE_URL).hostname;
+          const phases = Array.isArray(result.phases) ? result.phases : [];
+          const valid =
+            result.status === 'passed' &&
+            result.githubRunId === process.env.GITHUB_RUN_ID &&
+            result.candidateHost === candidateHost &&
+            result.databaseAuthority === 'global-approved' &&
+            result.databaseSchema === 'verified' &&
+            result.cleanup === 'verified' &&
+            Number.isInteger(result.appendOnlyAuditEvents) &&
+            result.appendOnlyAuditEvents > 0 &&
+            requiredPhases.every((phase) => phases.includes(phase));
+          if (!valid) {
+            fs.writeFileSync(outputPath, '{"status":"failed","code":"candidate_attestation_incomplete"}\n', { mode: 0o600 });
+            console.error('candidate E2E attestation is incomplete');
+            process.exit(1);
+          }
+          // Only the explicitly allowlisted, non-secret attestation fields leave
+          // the runner; raw output and the Vercel environment file are not uploaded.
+          fs.writeFileSync(outputPath, `${JSON.stringify({
+            status: 'passed',
+            releaseSha: process.env.EXPECTED_RELEASE_SHA,
+            previousReleaseId: process.env.PREVIOUS_RELEASE_ID,
+            githubRunId: process.env.GITHUB_RUN_ID,
+            githubRunAttempt: process.env.GITHUB_RUN_ATTEMPT,
+            candidateHost,
+            e2e: {
+              status: 'passed',
+              githubRunId: result.githubRunId,
+              candidateHost,
+              phases: requiredPhases,
+              appendOnlyAuditEvents: result.appendOnlyAuditEvents,
+              databaseAuthority: 'global-approved',
+              databaseSchema: 'verified',
+              cleanup: 'verified',
+            },
+          })}\n`, { mode: 0o600 });
+          NODE
+        env:
+          CANDIDATE_URL: ${{ steps.deploy.outputs.url }}
+          EXPECTED_RELEASE_SHA: ${{ inputs.release_sha }}
+          PREVIOUS_RELEASE_ID: ${{ steps.baseline.outputs.release_id }}
+          EXPECTED_BILLING_AUTHORITY_FINGERPRINT: ${{ vars.EXPECTED_BILLING_AUTHORITY_FINGERPRINT }}
+          VOICE_CLONE_WEB_BRIDGE_SECRET: ${{ secrets.VOICE_CLONE_WEB_BRIDGE_SECRET }}
+          VOICE_GIFT_E2E_BRIDGE_SECRET: ${{ secrets.VOICE_GIFT_E2E_BRIDGE_SECRET }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Preserve the redacted candidate E2E attestation
+        if: ${{ always() && steps.candidate_e2e.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: voice-gift-maintenance-e2e-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/voice-gift-maintenance-e2e/release-attestation.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Recheck production has not moved before promotion
+        run: |
+          set -euo pipefail
+          current_file="$RUNNER_TEMP/backend-maintenance-pre-promotion.json"
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+            --header 'Cache-Control: no-cache' \
+            "https://api.castreader.ai/api/capabilities?release_probe=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-pre-promotion" \
+            --output "$current_file"
+          node - "$RUNNER_TEMP/backend-maintenance-baseline.json" "$current_file" <<'NODE'
+          const fs = require('node:fs');
+          const { isDeepStrictEqual } = require('node:util');
+          const baseline = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const current = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+          if (
+            current.releaseId !== baseline.releaseId ||
+            current.commitSha !== baseline.commitSha ||
+            !isDeepStrictEqual(current.voiceClone, baseline.voiceClone) ||
+            !isDeepStrictEqual(current.voiceGift, baseline.voiceGift)
+          ) {
+            console.error('production baseline moved while candidate verification was running');
+            process.exit(1);
+          }
+          NODE
+
+      - name: Promote the verified artifact
+        id: promote
+        run: |
+          set -euo pipefail
+          # The CLI may fail after an alias has moved. Record the attempt before
+          # calling it so an ambiguous result is still eligible for recovery.
+          echo 'attempted=true' >> "$GITHUB_OUTPUT"
+          vercel promote "$CANDIDATE_URL" --yes
+        env:
+          CANDIDATE_URL: ${{ steps.deploy.outputs.url }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Wait for promoted production alias convergence
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          consecutive_matches=0
+          for attempt in $(seq 1 30); do
+            manifest_file="$RUNNER_TEMP/backend-maintenance-production.json"
+            if curl --fail --silent --show-error --connect-timeout 5 --max-time 10 \
+              --header 'Cache-Control: no-cache' \
+              "https://api.castreader.ai/api/capabilities?release_probe=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$attempt" \
+              --output "$manifest_file" &&
+              node - "$RUNNER_TEMP/backend-maintenance-candidate.json" "$manifest_file" <<'NODE'
+          const fs = require('node:fs');
+          const { isDeepStrictEqual } = require('node:util');
+          const expected = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const live = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+          const valid =
+            live.releaseId === expected.releaseId && live.commitSha === expected.commitSha &&
+            isDeepStrictEqual(live.voiceClone, expected.voiceClone) &&
+            isDeepStrictEqual(live.voiceGift, expected.voiceGift);
+          process.exit(valid ? 0 : 1);
+          NODE
+            then
+              consecutive_matches=$((consecutive_matches + 1))
+              if test "$consecutive_matches" -ge 3; then
+                echo 'production alias converged to the verified candidate'
+                exit 0
+              fi
+            else
+              consecutive_matches=0
+            fi
+            if test "$attempt" -lt 30; then sleep 3; fi
+          done
+          echo 'production alias did not converge to the verified candidate' >&2
+          exit 1
+
+      - name: Verify TTS sentence boundaries on production aliases
+        run: pnpm exec tsx scripts/probe-tts-sentence-boundaries.mts -- --base-url https://api.castreader.ai
+
+      - name: Verify production aliases
+        run: pnpm release:probe-voice-clone
+        env:
+          CASTREADER_EXPECTED_COMMIT_SHA: ${{ inputs.release_sha }}
+
+      - name: Inspect final deployment
+        id: verify_deployment
+        run: |
+          set -euo pipefail
+          vercel inspect "$CANDIDATE_URL"
+          echo 'verified=true' >> "$GITHUB_OUTPUT"
+        env:
+          CANDIDATE_URL: ${{ steps.deploy.outputs.url }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Restore the original complete production artifact if verification fails
+        if: ${{ always() && (failure() || cancelled()) && steps.promote.outputs.attempted == 'true' && steps.verify_deployment.outputs.verified != 'true' }}
+        timeout-minutes: 4
+        run: |
+          set -euo pipefail
+          # No env mutation and no same-code disabled artifact: restore the exact
+          # complete deployment captured before this maintenance release began.
+          # The concurrency group excludes other approved workflows, but not a
+          # manual promotion. Never overwrite an independently changed release.
+          current_file="$RUNNER_TEMP/backend-maintenance-before-rollback.json"
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+            --header 'Cache-Control: no-cache' \
+            "https://api.castreader.ai/api/capabilities?release_probe=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-before-rollback" \
+            --output "$current_file"
+          rollback_action="$(node - "$RUNNER_TEMP/backend-maintenance-baseline.json" "$RUNNER_TEMP/backend-maintenance-candidate.json" "$current_file" <<'NODE'
+          const fs = require('node:fs');
+          const [baseline, candidate, current] = process.argv.slice(2).map((path) =>
+            JSON.parse(fs.readFileSync(path, 'utf8'))
+          );
+          if (current.releaseId === baseline.releaseId && current.commitSha === baseline.commitSha) {
+            console.log('verify_baseline');
+          } else if (current.releaseId === candidate.releaseId && current.commitSha === candidate.commitSha) {
+            console.log('restore_baseline');
+          } else {
+            console.error('production changed to an unrelated release; refusing automatic rollback');
+            process.exit(1);
+          }
+          NODE
+          )"
+          if test "$rollback_action" = restore_baseline; then
+            vercel promote "$PREVIOUS_RELEASE_ID" --yes
+          else
+            test "$rollback_action" = verify_baseline
+            echo 'production still points to the original artifact; verifying without mutation'
+          fi
+          consecutive_matches=0
+          for attempt in $(seq 1 30); do
+            manifest_file="$RUNNER_TEMP/backend-maintenance-rollback.json"
+            if curl --fail --silent --show-error --connect-timeout 5 --max-time 10 \
+              --header 'Cache-Control: no-cache' \
+              "https://api.castreader.ai/api/capabilities?release_probe=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-rollback-$attempt" \
+              --output "$manifest_file" &&
+              node - "$RUNNER_TEMP/backend-maintenance-baseline.json" "$manifest_file" <<'NODE'
+          const fs = require('node:fs');
+          const { isDeepStrictEqual } = require('node:util');
+          const expected = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const live = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+          const valid =
+            live.releaseId === expected.releaseId && live.commitSha === expected.commitSha &&
+            isDeepStrictEqual(live.voiceClone, expected.voiceClone) &&
+            isDeepStrictEqual(live.voiceGift, expected.voiceGift);
+          process.exit(valid ? 0 : 1);
+          NODE
+            then
+              consecutive_matches=$((consecutive_matches + 1))
+              if test "$consecutive_matches" -ge 3; then
+                echo 'original production artifact restored and verified'
+                exit 0
+              fi
+            else
+              consecutive_matches=0
+            fi
+            if test "$attempt" -lt 30; then sleep 3; fi
+          done
+          echo 'original production artifact restoration could not be verified' >&2
+          exit 1
+        env:
+          PREVIOUS_RELEASE_ID: ${{ steps.baseline.outputs.release_id }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

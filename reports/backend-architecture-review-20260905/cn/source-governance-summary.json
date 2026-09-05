@@ -1,0 +1,36 @@
+{
+  "source_worktree": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-cn-local-core-services",
+  "source_head": "9852d15347833e6135df1f388a67cfe2b88c3041",
+  "production_next_source": "62386e902cb7201919e9680e56c82c8627b47110",
+  "difference_from_production_next": "documentation-only commit",
+  "github_beta": {
+    "observed_tip": "3ce12a7c794e",
+    "protected": false,
+    "protection_rules": [],
+    "required_reviews": false,
+    "required_status_checks": false
+  },
+  "deployment": {
+    "global_github_workflow_deploys_cn": false,
+    "cn_next_deploy_entry": "scripts/deploy-cn.sh",
+    "source_sha_and_ancestor_gates_present": true,
+    "nginx_preserve_live_mode_present": true,
+    "quickread_has_separate_release_and_activation_receipt": true,
+    "quickread_is_part_of_same_next_manifest": false
+  },
+  "configuration_layers": [
+    "systemd base unit",
+    "20-regional-routing.conf",
+    "25-quickread-cn.conf",
+    "26-voice-clone-worker.conf",
+    "27-cn-tts-upstream.conf",
+    "30-release.conf",
+    "/etc/castreader/quickread-cn.env"
+  ],
+  "catalog_boundary": {
+    "public_cn_catalog_shadowed_by_nginx_static_alias": true,
+    "next_route_contains_global_supabase_default": true,
+    "next_fetch_redirect_mode_explicit_error": false,
+    "classification": "latent international metadata dependency if the exact nginx route is bypassed or drifts; no evidence of current public content/audio crossing"
+  }
+}

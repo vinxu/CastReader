@@ -1,0 +1,1262 @@
+import {
+  createPublicKey,
+  randomBytes,
+  verify,
+  type JsonWebKey as NodeJsonWebKey,
+} from 'node:crypto';
+import { and, desc, eq, gt, isNull, like, notLike, or, sql } from 'drizzle-orm';
+import { OAuth2Client } from 'google-auth-library';
+
+import { getAuth } from '@/core/auth';
+import { db } from '@/core/db';
+import {
+  account,
+  accountDeletionRequest,
+  phoneIdentity,
+  session,
+  user,
+} from '@/config/db/schema';
+import { getUuid } from '@/shared/lib/hash';
+import {
+  mobileIngressRoute,
+  type MobileIngressRoute,
+} from '@/shared/mobile-routing/mobile-quota-identity';
+import { getAllConfigs } from '@/shared/models/config';
+import { isProUser } from '@/shared/models/pro';
+import {
+  isCandidateE2EFixtureIdentity,
+  verifyCandidateE2EBridgeRequest,
+} from '@/shared/voice-clone/candidate-e2e';
+import { VoiceCloneError } from '@/shared/voice-clone/errors';
+import { verifyVoiceCloneWebBridgeRequest } from '@/shared/voice-clone/web-bridge';
+
+const IOS_GOOGLE_CLIENT_ID =
+  '338957209183-b47lfgk489burf418j3uqs88ghtp35fb.apps.googleusercontent.com';
+const ANDROID_GOOGLE_CLIENT_ID =
+  '338957209183-rpr439hlnq9274dh19qtcp8d63mh27lk.apps.googleusercontent.com';
+const DEFAULT_APPLE_AUDIENCE = 'com.same.castreader';
+const MOBILE_SESSION_PREFIX = 'cms_';
+const MOBILE_SESSION_USER_AGENT_PREFIX = 'CastReader-Mobile/';
+const MOBILE_SESSION_ROUTE_MARKER = ';route=';
+const MOBILE_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const MOBILE_SESSION_REFRESH_MS = 7 * 24 * 60 * 60 * 1000;
+const MOBILE_COMPUTE_SESSION_PREFIX = 'cmc_';
+const MOBILE_COMPUTE_SESSION_USER_AGENT_PREFIX = 'CastReader-Mobile-Compute/';
+const MOBILE_COMPUTE_SESSION_TTL_MS = 15 * 60 * 1000;
+const MOBILE_COMPUTE_SESSION_REUSE_MS = 2 * 60 * 1000;
+type AppleJwk = NodeJsonWebKey & { kid: string };
+let appleKeysCache: { expiresAt: number; keys: AppleJwk[] } | null = null;
+
+export type VoiceClonePrincipal = {
+  userId: string;
+  email: string | null;
+  // `phone` 是中国区手机号登录签发的会话；除签发路径外，与其他
+  // provider 完全等价（同一张 session 表、同一个 cms_ 前缀、同样的续期规则）。
+  provider:
+    | 'google'
+    | 'apple'
+    | 'email'
+    | 'session'
+    | 'phone'
+    | 'web'
+    | 'candidate-e2e';
+  providerAccountId: string;
+};
+
+export type MobileComputeAudience = 'quickread';
+
+export type MobileComputePrincipal = VoiceClonePrincipal & {
+  audience: MobileComputeAudience;
+  accountRoute: MobileIngressRoute;
+  targetRoute: MobileIngressRoute;
+};
+
+function bearerToken(request: Request): string {
+  const authorization = request.headers.get('authorization') || '';
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  if (!match?.[1]) {
+    throw new VoiceCloneError(401, 'AUTH_REQUIRED', 'Sign in is required');
+  }
+  return match[1].trim();
+}
+
+async function verifyGoogleToken(token: string) {
+  const configs = await getAllConfigs();
+  const audiences = [
+    configs.google_client_id,
+    IOS_GOOGLE_CLIENT_ID,
+    ANDROID_GOOGLE_CLIENT_ID,
+  ].filter(Boolean) as string[];
+  const ticket = await new OAuth2Client().verifyIdToken({
+    idToken: token,
+    audience: audiences,
+  });
+  const payload = ticket.getPayload();
+  if (!payload?.sub) throw new Error('Google token has no subject');
+  return {
+    sub: payload.sub,
+    email: payload.email?.trim().toLowerCase() || null,
+  };
+}
+
+export async function verifyAppleIdentityToken(token: string) {
+  const audiences = [
+    ...(
+      process.env.VOICE_CLONE_APPLE_AUDIENCES || DEFAULT_APPLE_AUDIENCE
+    ).split(','),
+    process.env.APPLE_SIWA_CLIENT_ID || '',
+  ]
+    .map((value) => value.trim())
+    .filter(
+      (value, index, all) => Boolean(value) && all.indexOf(value) === index
+    );
+  const segments = token.split('.');
+  if (segments.length !== 3) throw new Error('Malformed Apple token');
+  const header = JSON.parse(
+    Buffer.from(segments[0], 'base64url').toString('utf8')
+  ) as { alg?: string; kid?: string };
+  const payload = JSON.parse(
+    Buffer.from(segments[1], 'base64url').toString('utf8')
+  ) as {
+    sub?: string;
+    email?: string;
+    iss?: string;
+    aud?: string | string[];
+    exp?: number;
+  };
+  if (header.alg !== 'RS256' || !header.kid) {
+    throw new Error('Unsupported Apple token algorithm');
+  }
+  const keys = await getAppleKeys();
+  const jwk = keys.find((key) => key.kid === header.kid);
+  if (!jwk) throw new Error('Apple signing key not found');
+  const validSignature = verify(
+    'RSA-SHA256',
+    Buffer.from(`${segments[0]}.${segments[1]}`),
+    createPublicKey({ key: jwk, format: 'jwk' }),
+    Buffer.from(segments[2], 'base64url')
+  );
+  const tokenAudiences = Array.isArray(payload.aud)
+    ? payload.aud
+    : payload.aud
+      ? [payload.aud]
+      : [];
+  if (
+    !validSignature ||
+    payload.iss !== 'https://appleid.apple.com' ||
+    !tokenAudiences.some((audience) => audiences.includes(audience)) ||
+    !payload.exp ||
+    payload.exp <= Math.floor(Date.now() / 1000)
+  ) {
+    throw new Error('Invalid Apple token claims');
+  }
+  if (!payload.sub) throw new Error('Apple token has no subject');
+  return {
+    sub: payload.sub,
+    email:
+      typeof payload.email === 'string'
+        ? payload.email.trim().toLowerCase()
+        : null,
+  };
+}
+
+async function getAppleKeys(): Promise<AppleJwk[]> {
+  if (appleKeysCache && appleKeysCache.expiresAt > Date.now()) {
+    return appleKeysCache.keys;
+  }
+  const response = await fetch('https://appleid.apple.com/auth/keys', {
+    signal: AbortSignal.timeout(5_000),
+  });
+  if (!response.ok) throw new Error('Could not load Apple signing keys');
+  const body = (await response.json()) as { keys?: AppleJwk[] };
+  if (!Array.isArray(body.keys)) throw new Error('Invalid Apple signing keys');
+  appleKeysCache = { expiresAt: Date.now() + 60 * 60 * 1000, keys: body.keys };
+  return body.keys;
+}
+
+async function resolveUser(
+  provider: 'google' | 'apple',
+  providerAccountId: string,
+  verifiedEmail: string | null
+) {
+  const [linked] = await db()
+    .select({ userId: account.userId, email: user.email })
+    .from(account)
+    .innerJoin(user, eq(user.id, account.userId))
+    .where(
+      and(
+        eq(account.providerId, provider),
+        eq(account.accountId, providerAccountId)
+      )
+    )
+    .limit(1);
+  if (linked) return linked;
+
+  if (verifiedEmail) {
+    const [byEmail] = await db()
+      .select({ userId: user.id, email: user.email })
+      .from(user)
+      .where(sql`lower(${user.email}) = ${verifiedEmail}`)
+      .limit(1);
+    if (byEmail) return byEmail;
+  }
+
+  throw new VoiceCloneError(
+    401,
+    'ACCOUNT_NOT_LINKED',
+    'Sign in to CastReader before using voice cloning'
+  );
+}
+
+async function resolveOrCreateMobileUser(
+  provider: 'google' | 'apple',
+  providerAccountId: string,
+  verifiedEmail: string | null
+) {
+  const [linked] = await db()
+    .select({ userId: account.userId, email: user.email })
+    .from(account)
+    .innerJoin(user, eq(user.id, account.userId))
+    .where(
+      and(
+        eq(account.providerId, provider),
+        eq(account.accountId, providerAccountId)
+      )
+    )
+    .limit(1);
+  if (linked) return linked;
+  if (!verifiedEmail) {
+    throw new VoiceCloneError(
+      401,
+      'ACCOUNT_NOT_LINKED',
+      'Sign in again and share an email to create the CastReader account'
+    );
+  }
+
+  let [existing] = await db()
+    .select({ userId: user.id, email: user.email })
+    .from(user)
+    .where(sql`lower(${user.email}) = ${verifiedEmail}`)
+    .limit(1);
+  if (!existing) {
+    const userId = getUuid();
+    await db()
+      .insert(user)
+      .values({
+        id: userId,
+        name: verifiedEmail.split('@')[0] || 'CastReader User',
+        email: verifiedEmail,
+        emailVerified: true,
+      })
+      .onConflictDoNothing();
+    [existing] = await db()
+      .select({ userId: user.id, email: user.email })
+      .from(user)
+      .where(sql`lower(${user.email}) = ${verifiedEmail}`)
+      .limit(1);
+  }
+  if (!existing) {
+    throw new VoiceCloneError(
+      503,
+      'ACCOUNT_CREATE_FAILED',
+      'Could not create the CastReader account'
+    );
+  }
+
+  await db()
+    .insert(account)
+    .values({
+      id: getUuid(),
+      accountId: providerAccountId,
+      providerId: provider,
+      userId: existing.userId,
+    })
+    .onConflictDoNothing();
+  return existing;
+}
+
+export async function resolveIdentityPrincipal(
+  provider: 'google' | 'apple',
+  token: string,
+  createMobileAccount = false
+): Promise<VoiceClonePrincipal> {
+  try {
+    const verified =
+      provider === 'google'
+        ? await verifyGoogleToken(token)
+        : await verifyAppleIdentityToken(token);
+    const resolved = createMobileAccount
+      ? await resolveOrCreateMobileUser(provider, verified.sub, verified.email)
+      : await resolveUser(provider, verified.sub, verified.email);
+    return {
+      userId: resolved.userId,
+      email: resolved.email?.trim().toLowerCase() || verified.email,
+      provider,
+      providerAccountId: verified.sub,
+    };
+  } catch (error) {
+    if (error instanceof VoiceCloneError) throw error;
+    console.warn('[voice-clone] identity token verification failed');
+    throw new VoiceCloneError(401, 'INVALID_TOKEN', 'Sign-in token is invalid');
+  }
+}
+
+export async function createMobileSession(
+  principal: VoiceClonePrincipal,
+  request: Request
+) {
+  const serviceRoute = mobileIngressRoute(request);
+  const token = `${MOBILE_SESSION_PREFIX}${randomBytes(32).toString('base64url')}`;
+  const expiresAt = new Date(Date.now() + MOBILE_SESSION_TTL_MS);
+  const forwardedFor = request.headers
+    .get('x-forwarded-for')
+    ?.split(',')[0]
+    ?.trim();
+  const values = {
+    id: getUuid(),
+    token,
+    userId: principal.userId,
+    expiresAt,
+    ipAddress: forwardedFor || null,
+    userAgent: mobileSessionUserAgent(principal.provider, serviceRoute),
+  };
+
+  await db().transaction(async (tx) => {
+    // The canonical user lock is shared by every provider and both ingress
+    // routes. It closes the deletion/session issuance race without trusting a
+    // phone number, device id or client-selected service route.
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${principal.userId}, 0))`
+    );
+    const [pending] = await tx
+      .select({ userId: accountDeletionRequest.userId })
+      .from(accountDeletionRequest)
+      .where(
+        and(
+          eq(accountDeletionRequest.userId, principal.userId),
+          eq(accountDeletionRequest.status, 'pending')
+        )
+      )
+      .limit(1);
+    if (pending) {
+      throw new VoiceCloneError(
+        409,
+        'ACCOUNT_PENDING_DELETION',
+        'This account is pending deletion'
+      );
+    }
+
+    if (principal.provider === 'phone') {
+      const identities = await tx
+        .select({ deletionRequestedAt: phoneIdentity.deletionRequestedAt })
+        .from(phoneIdentity)
+        .where(eq(phoneIdentity.userId, principal.userId));
+      if (
+        identities.length === 0 ||
+        identities.some((identity) => identity.deletionRequestedAt)
+      ) {
+        throw new VoiceCloneError(
+          409,
+          'ACCOUNT_PENDING_DELETION',
+          'This account is pending deletion'
+        );
+      }
+    }
+    await tx.insert(session).values(values);
+  });
+  return { token, expiresAt };
+}
+
+type ReusableMobileComputeSession = { token: string; expiresAt: Date };
+
+type NewMobileComputeSession = ReusableMobileComputeSession & {
+  id: string;
+  userId: string;
+  userAgent: string;
+};
+
+export type MobileComputeSessionRepository = {
+  hasPendingDeletion: () => Promise<boolean>;
+  findReusable: (
+    userAgent: string,
+    reusableAfter: Date
+  ) => Promise<ReusableMobileComputeSession | null>;
+  replaceUserComputeSessions: (
+    record: NewMobileComputeSession
+  ) => Promise<void>;
+};
+
+export type MobileComputeSessionIssuerDependencies = {
+  now: () => Date;
+  newToken: () => string;
+  newID: () => string;
+  accountRouteForRequest: (request: Request) => MobileIngressRoute;
+  withCanonicalUserLock: <T>(
+    userId: string,
+    operation: (repository: MobileComputeSessionRepository) => Promise<T>
+  ) => Promise<T>;
+};
+
+/**
+ * Testable issuer for the cross-route QuickRead compute handoff.
+ * Every repository operation runs under the canonical-user advisory lock.
+ *
+ * The contract is symmetric but strictly *cross*-route: a global account may
+ * mint a CN compute credential (a Play-distribution user physically in
+ * mainland China) and a CN account may mint a global one (a China-edition
+ * user travelling abroad). A same-route request stays rejected — the
+ * account's own ingress already serves it, and refusing the degenerate form
+ * keeps the audit surface at exactly "handoffs".
+ */
+export function createMobileComputeSessionIssuer(
+  dependencies: MobileComputeSessionIssuerDependencies
+) {
+  return async function issueMobileComputeSession(
+    principal: VoiceClonePrincipal,
+    request: Request,
+    audience: MobileComputeAudience,
+    targetRoute: MobileIngressRoute
+  ) {
+    const accountRoute = dependencies.accountRouteForRequest(request);
+    if (audience !== 'quickread' || targetRoute === accountRoute) {
+      throw new VoiceCloneError(
+        422,
+        'INVALID_COMPUTE_SESSION_REQUEST',
+        'This compute handoff is not supported'
+      );
+    }
+
+    const now = dependencies.now();
+    const reusableAfter = new Date(
+      now.getTime() + MOBILE_COMPUTE_SESSION_REUSE_MS
+    );
+    const userAgent = mobileComputeSessionUserAgent({
+      audience,
+      accountRoute,
+      targetRoute,
+    });
+
+    return dependencies.withCanonicalUserLock(
+      principal.userId,
+      async (repository) => {
+        if (await repository.hasPendingDeletion()) {
+          throw new VoiceCloneError(
+            409,
+            'ACCOUNT_PENDING_DELETION',
+            'This account is pending deletion'
+          );
+        }
+
+        // Retries return the same opaque token while it has useful life. This
+        // makes the endpoint idempotent and bounds a request storm to one row.
+        const reusable = await repository.findReusable(
+          userAgent,
+          reusableAfter
+        );
+        if (reusable) return { ...reusable, audience, targetRoute };
+
+        const record: NewMobileComputeSession = {
+          id: dependencies.newID(),
+          token: dependencies.newToken(),
+          userId: principal.userId,
+          expiresAt: new Date(now.getTime() + MOBILE_COMPUTE_SESSION_TTL_MS),
+          userAgent,
+        };
+        await repository.replaceUserComputeSessions(record);
+        return {
+          token: record.token,
+          expiresAt: record.expiresAt,
+          audience,
+          targetRoute,
+        };
+      }
+    );
+  };
+}
+
+const defaultMobileComputeSessionIssuer = createMobileComputeSessionIssuer({
+  now: () => new Date(),
+  newToken: () =>
+    `${MOBILE_COMPUTE_SESSION_PREFIX}${randomBytes(32).toString('base64url')}`,
+  newID: getUuid,
+  accountRouteForRequest: (request) => mobileIngressRoute(request),
+  withCanonicalUserLock: (userId, operation) =>
+    db().transaction(async (tx) => {
+      // Account deletion and compute rotation serialize on the same canonical
+      // user lock as ordinary session issuance.
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`
+      );
+      return operation({
+        hasPendingDeletion: async () => {
+          const [pending] = await tx
+            .select({ userId: accountDeletionRequest.userId })
+            .from(accountDeletionRequest)
+            .where(
+              and(
+                eq(accountDeletionRequest.userId, userId),
+                eq(accountDeletionRequest.status, 'pending')
+              )
+            )
+            .limit(1);
+          return !!pending;
+        },
+        findReusable: async (userAgent, reusableAfter) => {
+          const [reusable] = await tx
+            .select({ token: session.token, expiresAt: session.expiresAt })
+            .from(session)
+            .where(
+              and(
+                eq(session.userId, userId),
+                eq(session.userAgent, userAgent),
+                gt(session.expiresAt, reusableAfter)
+              )
+            )
+            .orderBy(desc(session.expiresAt))
+            .limit(1);
+          return reusable ?? null;
+        },
+        replaceUserComputeSessions: async (record) => {
+          // There is one supported scope. Rotation first removes every older
+          // compute row for this canonical user, keeping active-row count <= 1.
+          await tx
+            .delete(session)
+            .where(
+              and(
+                eq(session.userId, userId),
+                like(
+                  session.userAgent,
+                  `${MOBILE_COMPUTE_SESSION_USER_AGENT_PREFIX}%`
+                )
+              )
+            );
+          await tx.insert(session).values({
+            ...record,
+            ipAddress: null,
+          });
+        },
+      });
+    }),
+});
+
+/**
+ * Mint a short-lived, audience-restricted compute credential without moving
+ * the user's account session to another ingress. The resulting `cmc_` token is
+ * never accepted by account, Pro, payment, document or upload resolvers.
+ */
+export async function createMobileComputeSession(
+  principal: VoiceClonePrincipal,
+  request: Request,
+  audience: MobileComputeAudience,
+  targetRoute: MobileIngressRoute
+) {
+  return defaultMobileComputeSessionIssuer(
+    principal,
+    request,
+    audience,
+    targetRoute
+  );
+}
+
+/** Fast preflight for routes that have provider work before session creation. */
+export async function assertMobileAccountCanSignIn(userId: string) {
+  const [pending] = await db()
+    .select({ userId: accountDeletionRequest.userId })
+    .from(accountDeletionRequest)
+    .where(
+      and(
+        eq(accountDeletionRequest.userId, userId),
+        eq(accountDeletionRequest.status, 'pending')
+      )
+    )
+    .limit(1);
+  if (pending) {
+    throw new VoiceCloneError(
+      409,
+      'ACCOUNT_PENDING_DELETION',
+      'This account is pending deletion'
+    );
+  }
+}
+
+/**
+ * Exchange only a real, unexpired Better Auth session token returned by the
+ * email-OTP sign-in flow. Email/user id supplied by the client is never an
+ * identity authority.
+ */
+export async function resolveBetterAuthSessionPrincipal(
+  token: string
+): Promise<VoiceClonePrincipal> {
+  const normalized = token.trim();
+  if (
+    !normalized ||
+    normalized.startsWith(MOBILE_SESSION_PREFIX) ||
+    normalized.startsWith(MOBILE_COMPUTE_SESSION_PREFIX)
+  ) {
+    throw new VoiceCloneError(
+      401,
+      'INVALID_TOKEN',
+      'Email session token is invalid'
+    );
+  }
+  const [active] = await db()
+    .select({
+      userId: session.userId,
+      email: user.email,
+      expiresAt: session.expiresAt,
+    })
+    .from(session)
+    .innerJoin(user, eq(user.id, session.userId))
+    .where(
+      and(
+        eq(session.token, normalized),
+        gt(session.expiresAt, new Date()),
+        // A compute credential lives in the shared session table only as a
+        // short-lived storage implementation detail. It must never be
+        // exchangeable through the Better Auth email-session bridge, even if
+        // a malformed row is created without the reserved cmc_ prefix.
+        or(
+          isNull(session.userAgent),
+          notLike(
+            session.userAgent,
+            `${MOBILE_COMPUTE_SESSION_USER_AGENT_PREFIX}%`
+          )
+        )
+      )
+    )
+    .limit(1);
+  if (!active) {
+    throw new VoiceCloneError(
+      401,
+      'SESSION_EXPIRED',
+      'Email session has expired; sign in again'
+    );
+  }
+  return {
+    userId: active.userId,
+    email: active.email?.trim().toLowerCase() || null,
+    provider: 'email',
+    providerAccountId: active.userId,
+  };
+}
+
+/**
+ * 按 `cms_` 令牌解析移动端会话。
+ *
+ * 与 `requireMobileSessionPrincipal` 的区别：不要求 `x-auth-provider: session`
+ * 头。那个头是声音克隆端点的历史约定，`cms_` 前缀本身已经足以判定令牌类型，
+ * 后加的端点（如手机号注销）直接用这个。
+ */
+type ActiveMobileSession = {
+  userId: string;
+  email: string | null;
+  expiresAt: Date;
+  deletionRequestedAt: Date | null;
+  userAgent: string | null;
+};
+
+export type MobileSessionResolverDependencies = {
+  now: () => Date;
+  findActiveSession: (
+    token: string,
+    now: Date
+  ) => Promise<ActiveMobileSession | null>;
+  refreshSession: (token: string, expiresAt: Date) => Promise<void>;
+  routeForRequest: (request: Request) => MobileIngressRoute;
+};
+
+/** 可注入解析器：覆盖 pending-deletion 与续期分支时无需真实数据库。 */
+export function createMobileSessionResolver(
+  dependencies: MobileSessionResolverDependencies
+) {
+  return async function resolveSession(
+    token: string,
+    request: Request
+  ): Promise<VoiceClonePrincipal> {
+    if (!token.startsWith(MOBILE_SESSION_PREFIX)) {
+      throw new VoiceCloneError(
+        401,
+        'INVALID_SESSION',
+        'Mobile session is invalid'
+      );
+    }
+
+    const now = dependencies.now();
+    const active = await dependencies.findActiveSession(token, now);
+    if (!active || active.deletionRequestedAt) {
+      // pending 的手机号 identity 必须与已删除 token 等价。非手机号账号没有
+      // identity，deletionRequestedAt 为 null，仍保持原有行为。
+      throw new VoiceCloneError(
+        401,
+        'SESSION_EXPIRED',
+        'Sign in again to continue using cloned voices'
+      );
+    }
+
+    const requestedRoute = dependencies.routeForRequest(request);
+    const boundRoute = mobileSessionRoute(active.userAgent);
+    // Sessions issued before route binding existed are a global-only
+    // compatibility contract. They must never be replayed against CN ingress.
+    if (
+      (boundRoute == null && requestedRoute !== 'global') ||
+      (boundRoute != null && boundRoute !== requestedRoute)
+    ) {
+      throw new VoiceCloneError(
+        401,
+        'SESSION_ROUTE_MISMATCH',
+        'Sign in again on this service route'
+      );
+    }
+
+    if (
+      active.expiresAt.getTime() - now.getTime() <
+      MOBILE_SESSION_REFRESH_MS
+    ) {
+      await dependencies.refreshSession(
+        token,
+        new Date(now.getTime() + MOBILE_SESSION_TTL_MS)
+      );
+    }
+    return {
+      userId: active.userId,
+      email: active.email?.trim().toLowerCase() || null,
+      provider: 'session',
+      providerAccountId: active.userId,
+    };
+  };
+}
+
+const defaultMobileSessionResolverDependencies: MobileSessionResolverDependencies =
+  {
+    now: () => new Date(),
+    findActiveSession: async (token, now) => {
+      const [active] = await db()
+        .select({
+          userId: session.userId,
+          email: user.email,
+          expiresAt: session.expiresAt,
+          deletionRequestedAt: accountDeletionRequest.requestedAt,
+          userAgent: session.userAgent,
+        })
+        .from(session)
+        .innerJoin(user, eq(user.id, session.userId))
+        .leftJoin(
+          accountDeletionRequest,
+          and(
+            eq(accountDeletionRequest.userId, session.userId),
+            eq(accountDeletionRequest.status, 'pending')
+          )
+        )
+        .where(
+          and(
+            eq(session.token, token),
+            gt(session.expiresAt, now),
+            like(session.userAgent, `${MOBILE_SESSION_USER_AGENT_PREFIX}%`)
+          )
+        )
+        .limit(1);
+      return active ?? null;
+    },
+    refreshSession: async (token, expiresAt) => {
+      await db()
+        .update(session)
+        .set({ expiresAt })
+        .where(
+          and(
+            eq(session.token, token),
+            like(session.userAgent, `${MOBILE_SESSION_USER_AGENT_PREFIX}%`)
+          )
+        );
+    },
+    routeForRequest: (request) => mobileIngressRoute(request),
+  };
+
+export const resolveMobileSession = createMobileSessionResolver(
+  defaultMobileSessionResolverDependencies
+);
+
+/**
+ * A route/proxy/database failure while checking an ordinary cms_ bearer does
+ * not prove that the bearer is invalid. Returning 401 in that case makes native
+ * clients revoke a healthy session and traps the user in a login loop. Preserve
+ * authoritative session errors, but classify every unexpected validation
+ * failure as a temporary service error.
+ */
+export function normalizeMobileSessionResolutionFailure(
+  error: unknown
+): VoiceCloneError {
+  if (error instanceof VoiceCloneError) return error;
+  return new VoiceCloneError(
+    503,
+    'MOBILE_SESSION_VALIDATION_UNAVAILABLE',
+    'Voice service is temporarily unavailable'
+  );
+}
+
+type ActiveMobileComputeSession = {
+  userId: string;
+  email: string | null;
+  expiresAt: Date;
+  deletionRequestedAt: Date | null;
+  userAgent: string | null;
+};
+
+export type MobileComputeSessionResolverDependencies = {
+  now: () => Date;
+  findActiveSession: (
+    token: string,
+    now: Date
+  ) => Promise<ActiveMobileComputeSession | null>;
+  routeForRequest: (request: Request) => MobileIngressRoute;
+};
+
+export function createMobileComputeSessionResolver(
+  dependencies: MobileComputeSessionResolverDependencies
+) {
+  return async function resolveComputeSession(
+    token: string,
+    request: Request,
+    requiredAudience: MobileComputeAudience
+  ): Promise<MobileComputePrincipal> {
+    if (!token.startsWith(MOBILE_COMPUTE_SESSION_PREFIX)) {
+      throw new VoiceCloneError(
+        401,
+        'INVALID_COMPUTE_SESSION',
+        'Compute session is invalid'
+      );
+    }
+
+    const active = await dependencies.findActiveSession(
+      token,
+      dependencies.now()
+    );
+    if (!active || active.deletionRequestedAt) {
+      throw new VoiceCloneError(
+        401,
+        'COMPUTE_SESSION_EXPIRED',
+        'Compute session has expired'
+      );
+    }
+
+    const scope = mobileComputeSessionScope(active.userAgent);
+    const requestedRoute = dependencies.routeForRequest(request);
+    if (
+      !scope ||
+      scope.audience !== requiredAudience ||
+      scope.targetRoute !== requestedRoute
+    ) {
+      throw new VoiceCloneError(
+        401,
+        'COMPUTE_SESSION_SCOPE_MISMATCH',
+        'Compute session is not valid for this service'
+      );
+    }
+
+    return {
+      userId: active.userId,
+      email: active.email?.trim().toLowerCase() || null,
+      provider: 'session',
+      providerAccountId: active.userId,
+      audience: scope.audience,
+      accountRoute: scope.accountRoute,
+      targetRoute: scope.targetRoute,
+    };
+  };
+}
+
+const defaultMobileComputeSessionResolverDependencies: MobileComputeSessionResolverDependencies =
+  {
+    now: () => new Date(),
+    findActiveSession: async (token, now) => {
+      const [active] = await db()
+        .select({
+          userId: session.userId,
+          email: user.email,
+          expiresAt: session.expiresAt,
+          deletionRequestedAt: accountDeletionRequest.requestedAt,
+          userAgent: session.userAgent,
+        })
+        .from(session)
+        .innerJoin(user, eq(user.id, session.userId))
+        .leftJoin(
+          accountDeletionRequest,
+          and(
+            eq(accountDeletionRequest.userId, session.userId),
+            eq(accountDeletionRequest.status, 'pending')
+          )
+        )
+        .where(
+          and(
+            eq(session.token, token),
+            gt(session.expiresAt, now),
+            like(
+              session.userAgent,
+              `${MOBILE_COMPUTE_SESSION_USER_AGENT_PREFIX}%`
+            )
+          )
+        )
+        .limit(1);
+      return active ?? null;
+    },
+    routeForRequest: (request) => mobileIngressRoute(request),
+  };
+
+export const resolveMobileComputeSession = createMobileComputeSessionResolver(
+  defaultMobileComputeSessionResolverDependencies
+);
+
+/** Resolve an authenticated first-party mobile session without requiring Pro. */
+export async function requireMobileSessionPrincipal(
+  request: Request
+): Promise<VoiceClonePrincipal> {
+  const provider = request.headers.get('x-auth-provider')?.trim().toLowerCase();
+  if (provider !== 'session') {
+    throw new VoiceCloneError(
+      401,
+      'AUTH_PROVIDER_REQUIRED',
+      'A CastReader mobile session is required'
+    );
+  }
+  return resolveMobileSession(bearerToken(request), request);
+}
+
+/**
+ * QuickRead is the only API audience that accepts a cross-ingress compute
+ * credential. Ordinary route-local `cms_` sessions remain supported. No other
+ * backend route imports this function, so `cmc_` cannot become an account or
+ * billing credential by changing a client header.
+ */
+export async function requireMobileQuickReadPrincipal(
+  request: Request
+): Promise<MobileComputePrincipal> {
+  const provider = request.headers.get('x-auth-provider')?.trim().toLowerCase();
+  if (provider === 'session') {
+    const principal = await requireMobileSessionPrincipal(request);
+    const route = mobileIngressRoute(request);
+    return {
+      ...principal,
+      audience: 'quickread',
+      accountRoute: route,
+      targetRoute: route,
+    };
+  }
+  if (provider === 'compute-session') {
+    return resolveMobileComputeSession(
+      bearerToken(request),
+      request,
+      'quickread'
+    );
+  }
+  throw new VoiceCloneError(
+    401,
+    'AUTH_PROVIDER_REQUIRED',
+    'A CastReader mobile or compute session is required'
+  );
+}
+
+export async function revokeMobileSession(token: string) {
+  if (!token.startsWith(MOBILE_SESSION_PREFIX)) return;
+  await db()
+    .delete(session)
+    .where(
+      and(
+        eq(session.token, token),
+        like(session.userAgent, `${MOBILE_SESSION_USER_AGENT_PREFIX}%`)
+      )
+    );
+}
+
+async function resolveWebBridgePrincipal(
+  request: Request
+): Promise<VoiceClonePrincipal> {
+  const secret = process.env.VOICE_CLONE_WEB_BRIDGE_SECRET || '';
+  if (secret.length < 32) {
+    throw new VoiceCloneError(
+      503,
+      'WEB_BRIDGE_NOT_CONFIGURED',
+      'Voice cloning for the website is temporarily unavailable'
+    );
+  }
+
+  let claims: Awaited<ReturnType<typeof verifyVoiceCloneWebBridgeRequest>>;
+  try {
+    claims = await verifyVoiceCloneWebBridgeRequest(request, secret);
+  } catch {
+    throw new VoiceCloneError(
+      401,
+      'INVALID_WEB_BRIDGE',
+      'Website sign-in could not be verified'
+    );
+  }
+
+  const [resolved] = await db()
+    .select({ userId: user.id, email: user.email })
+    .from(user)
+    .where(eq(user.id, claims.userId))
+    .limit(1);
+  if (!resolved) {
+    throw new VoiceCloneError(
+      401,
+      'ACCOUNT_NOT_LINKED',
+      'Sign in to CastReader before using voice cloning'
+    );
+  }
+  const [pending] = await db()
+    .select({ userId: accountDeletionRequest.userId })
+    .from(accountDeletionRequest)
+    .where(
+      and(
+        eq(accountDeletionRequest.userId, resolved.userId),
+        eq(accountDeletionRequest.status, 'pending')
+      )
+    )
+    .limit(1);
+  if (pending) {
+    throw new VoiceCloneError(
+      409,
+      'ACCOUNT_PENDING_DELETION',
+      'This account is pending deletion'
+    );
+  }
+  return {
+    userId: resolved.userId,
+    email: resolved.email?.trim().toLowerCase() || null,
+    provider: 'web',
+    providerAccountId: resolved.userId,
+  };
+}
+
+async function resolveCandidateE2EPrincipal(
+  request: Request
+): Promise<VoiceClonePrincipal> {
+  let claims: Awaited<ReturnType<typeof verifyCandidateE2EBridgeRequest>>;
+  try {
+    claims = await verifyCandidateE2EBridgeRequest(request);
+  } catch {
+    throw new VoiceCloneError(
+      401,
+      'INVALID_CANDIDATE_E2E_BRIDGE',
+      'Candidate E2E sign-in could not be verified'
+    );
+  }
+
+  const [resolved] = await db()
+    .select({ userId: user.id, email: user.email })
+    .from(user)
+    .where(eq(user.id, claims.userId))
+    .limit(1);
+  if (!resolved) {
+    throw new VoiceCloneError(
+      401,
+      'ACCOUNT_NOT_LINKED',
+      'Sign in to CastReader before using voice cloning'
+    );
+  }
+  if (!isCandidateE2EFixtureIdentity(resolved.userId, resolved.email)) {
+    throw new VoiceCloneError(
+      401,
+      'INVALID_CANDIDATE_E2E_IDENTITY',
+      'Candidate E2E credentials are restricted to disposable fixtures'
+    );
+  }
+  const [pending] = await db()
+    .select({ userId: accountDeletionRequest.userId })
+    .from(accountDeletionRequest)
+    .where(
+      and(
+        eq(accountDeletionRequest.userId, resolved.userId),
+        eq(accountDeletionRequest.status, 'pending')
+      )
+    )
+    .limit(1);
+  if (pending) {
+    throw new VoiceCloneError(
+      409,
+      'ACCOUNT_PENDING_DELETION',
+      'This account is pending deletion'
+    );
+  }
+  return {
+    userId: resolved.userId,
+    email: resolved.email?.trim().toLowerCase() || null,
+    provider: 'candidate-e2e',
+    providerAccountId: resolved.userId,
+  };
+}
+
+async function resolveWebSessionPrincipal(
+  request: Request
+): Promise<VoiceClonePrincipal> {
+  const auth = await getAuth();
+  const authSession = await auth.api.getSession({
+    headers: new Headers(request.headers),
+  });
+  const sessionUserId = authSession?.user?.id?.trim();
+  if (!sessionUserId) {
+    throw new VoiceCloneError(401, 'AUTH_REQUIRED', 'Sign in is required');
+  }
+
+  // Resolve the Better Auth subject back through the route-local database.
+  // This is the canonical account boundary and prevents a browser field or a
+  // bridge claim from selecting somebody else's voice/quota ledger.
+  const [resolved] = await db()
+    .select({ userId: user.id, email: user.email })
+    .from(user)
+    .where(eq(user.id, sessionUserId))
+    .limit(1);
+  if (!resolved) {
+    throw new VoiceCloneError(
+      401,
+      'ACCOUNT_NOT_LINKED',
+      'Sign in to CastReader before using voice cloning'
+    );
+  }
+  const [pending] = await db()
+    .select({ userId: accountDeletionRequest.userId })
+    .from(accountDeletionRequest)
+    .where(
+      and(
+        eq(accountDeletionRequest.userId, resolved.userId),
+        eq(accountDeletionRequest.status, 'pending')
+      )
+    )
+    .limit(1);
+  if (pending) {
+    throw new VoiceCloneError(
+      409,
+      'ACCOUNT_PENDING_DELETION',
+      'This account is pending deletion'
+    );
+  }
+  return {
+    userId: resolved.userId,
+    email: resolved.email?.trim().toLowerCase() || null,
+    provider: 'web',
+    providerAccountId: resolved.userId,
+  };
+}
+
+/** Resolve any supported first-party identity without applying a Pro gate. */
+export async function requireVoiceCloneUser(
+  request: Request
+): Promise<VoiceClonePrincipal> {
+  const providerHeader = request.headers
+    .get('x-auth-provider')
+    ?.trim()
+    .toLowerCase();
+  if (!providerHeader) {
+    try {
+      return await resolveWebSessionPrincipal(request);
+    } catch (error) {
+      if (error instanceof VoiceCloneError) throw error;
+      console.warn('[voice-clone] web session verification failed');
+      throw new VoiceCloneError(
+        401,
+        'INVALID_SESSION',
+        'Website sign-in could not be verified'
+      );
+    }
+  }
+  if (
+    providerHeader !== 'google' &&
+    providerHeader !== 'apple' &&
+    providerHeader !== 'session' &&
+    providerHeader !== 'web-bridge' &&
+    providerHeader !== 'candidate-e2e'
+  ) {
+    throw new VoiceCloneError(
+      401,
+      'AUTH_PROVIDER_REQUIRED',
+      'A supported sign-in provider is required'
+    );
+  }
+
+  try {
+    return providerHeader === 'web-bridge'
+      ? await resolveWebBridgePrincipal(request)
+      : providerHeader === 'candidate-e2e'
+        ? await resolveCandidateE2EPrincipal(request)
+        : providerHeader === 'session'
+          ? await resolveMobileSession(bearerToken(request), request)
+          : await resolveIdentityPrincipal(
+              providerHeader,
+              bearerToken(request)
+            );
+  } catch (error) {
+    if (providerHeader === 'session') {
+      const normalized = normalizeMobileSessionResolutionFailure(error);
+      if (normalized !== error) {
+        console.error('[voice-clone] mobile session validation unavailable', {
+          errorType: error instanceof Error ? error.name : typeof error,
+        });
+      }
+      throw normalized;
+    }
+    if (error instanceof VoiceCloneError) throw error;
+    console.warn('[voice-clone] identity token verification failed');
+    throw new VoiceCloneError(401, 'INVALID_TOKEN', 'Sign-in token is invalid');
+  }
+}
+
+export async function requireVoiceClonePro(
+  request: Request
+): Promise<VoiceClonePrincipal> {
+  const principal = await requireVoiceCloneUser(request);
+  if (!(await isProUser(principal.userId))) {
+    throw new VoiceCloneError(
+      403,
+      'PRO_REQUIRED',
+      'CastReader Pro is required to use cloned voices for Read Aloud and Explain'
+    );
+  }
+  return principal;
+}
+
+export function mobileSessionUserAgent(
+  provider: VoiceClonePrincipal['provider'],
+  route: MobileIngressRoute
+): string {
+  return `${MOBILE_SESSION_USER_AGENT_PREFIX}${provider}${MOBILE_SESSION_ROUTE_MARKER}${route}`;
+}
+
+export function mobileSessionRoute(
+  userAgent: string | null
+): MobileIngressRoute | null {
+  if (!userAgent?.startsWith(MOBILE_SESSION_USER_AGENT_PREFIX)) return null;
+  const markerIndex = userAgent.lastIndexOf(MOBILE_SESSION_ROUTE_MARKER);
+  if (markerIndex < 0) return null;
+  const raw = userAgent.slice(markerIndex + MOBILE_SESSION_ROUTE_MARKER.length);
+  return raw === 'global' || raw === 'cn' ? raw : null;
+}
+
+export function mobileComputeSessionUserAgent(input: {
+  audience: MobileComputeAudience;
+  accountRoute: MobileIngressRoute;
+  targetRoute: MobileIngressRoute;
+}): string {
+  return `${MOBILE_COMPUTE_SESSION_USER_AGENT_PREFIX}${input.audience};origin=${input.accountRoute};target=${input.targetRoute}`;
+}
+
+export function mobileComputeSessionScope(userAgent: string | null): {
+  audience: MobileComputeAudience;
+  accountRoute: MobileIngressRoute;
+  targetRoute: MobileIngressRoute;
+} | null {
+  if (!userAgent) return null;
+  const match = userAgent.match(
+    /^CastReader-Mobile-Compute\/(quickread);origin=(global|cn);target=(global|cn)$/
+  );
+  if (!match) return null;
+  const audience = match[1] as MobileComputeAudience;
+  const accountRoute = match[2] as MobileIngressRoute;
+  const targetRoute = match[3] as MobileIngressRoute;
+  // The released contract is one-audience and strictly cross-route: both
+  // handoff directions are valid (global account → CN compute, CN account →
+  // global compute), but a same-route row is refused even if somebody writes
+  // it directly to the shared table — the account's own ingress serves that
+  // case with its ordinary cms_ session, so such a row can only be forged.
+  if (audience !== 'quickread' || accountRoute === targetRoute) {
+    return null;
+  }
+  return { audience, accountRoute, targetRoute };
+}

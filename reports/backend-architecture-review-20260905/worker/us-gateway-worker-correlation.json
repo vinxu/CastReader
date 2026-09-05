@@ -1,0 +1,1150 @@
+{
+  "all_gateway_input_lengths_match_worker_text_chars": true,
+  "contract": "safe-cross-layer-request-id-hash-correlation-v1",
+  "matched_rows": 30,
+  "rows": [
+    {
+      "gateway": {
+        "inputLength": 141,
+        "language": "en",
+        "letters": 108,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 7,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 26
+      },
+      "gateway_timestamp_ms": 1788602527077,
+      "upstream_request_id_sha256_12": "9ae5450957b2",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788602527.870588,
+        "http500_elapsed_ms": 965,
+        "last_time_unix": 1788602532.441453,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 141
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 141,
+        "language": "en",
+        "letters": 108,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 7,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 26
+      },
+      "gateway_timestamp_ms": 1788602525558,
+      "upstream_request_id_sha256_12": "7d2f4fb336a7",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788602526.7904816,
+        "http500_elapsed_ms": 1741,
+        "last_time_unix": 1788602530.9965308,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 141
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 141,
+        "language": "en",
+        "letters": 108,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 7,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 26
+      },
+      "gateway_timestamp_ms": 1788602510422,
+      "upstream_request_id_sha256_12": "39d2b794511e",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788602510.9426222,
+        "http500_elapsed_ms": 636,
+        "last_time_unix": 1788602514.566559,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 141
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 141,
+        "language": "en",
+        "letters": 108,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 7,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 26
+      },
+      "gateway_timestamp_ms": 1788602502637,
+      "upstream_request_id_sha256_12": "753cd7a5042b",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788602503.061857,
+        "http500_elapsed_ms": 641,
+        "last_time_unix": 1788602506.8839514,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 141
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 104,
+        "language": "en",
+        "letters": 76,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 7,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 21
+      },
+      "gateway_timestamp_ms": 1788602450547,
+      "upstream_request_id_sha256_12": "87f2aaec479e",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788602450.965515,
+        "http500_elapsed_ms": 640,
+        "last_time_unix": 1788602454.6149719,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 104
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 104,
+        "language": "en",
+        "letters": 76,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 7,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 21
+      },
+      "gateway_timestamp_ms": 1788602436723,
+      "upstream_request_id_sha256_12": "db5e3f57d996",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788602437.1083581,
+        "http500_elapsed_ms": 648,
+        "last_time_unix": 1788602441.9022934,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 104
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 104,
+        "language": "en",
+        "letters": 76,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 7,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 21
+      },
+      "gateway_timestamp_ms": 1788602428626,
+      "upstream_request_id_sha256_12": "16bbab63eb7e",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788602429.0206609,
+        "http500_elapsed_ms": 645,
+        "last_time_unix": 1788602432.6623793,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 104
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 104,
+        "language": "en",
+        "letters": 76,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 7,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 21
+      },
+      "gateway_timestamp_ms": 1788602424374,
+      "upstream_request_id_sha256_12": "dfb8ad999c59",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788602424.7916045,
+        "http500_elapsed_ms": 634,
+        "last_time_unix": 1788602428.412374,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 104
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601996264,
+      "upstream_request_id_sha256_12": "c76b7923cb39",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601996.7605553,
+        "http500_elapsed_ms": 646,
+        "last_time_unix": 1788602000.756686,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601989619,
+      "upstream_request_id_sha256_12": "536383f47fe1",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601990.4460967,
+        "http500_elapsed_ms": 984,
+        "last_time_unix": 1788601994.2092783,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601985529,
+      "upstream_request_id_sha256_12": "e12f7a039d33",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601986.454176,
+        "http500_elapsed_ms": 976,
+        "last_time_unix": 1788601990.126411,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601984021,
+      "upstream_request_id_sha256_12": "5e64cc1a308a",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601984.6322277,
+        "http500_elapsed_ms": 733,
+        "last_time_unix": 1788601988.5996962,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601937965,
+      "upstream_request_id_sha256_12": "761c14449ac4",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601938.3912342,
+        "http500_elapsed_ms": 634,
+        "last_time_unix": 1788601942.5229764,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601931267,
+      "upstream_request_id_sha256_12": "62ea8dc2a095",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601931.6315458,
+        "http500_elapsed_ms": 636,
+        "last_time_unix": 1788601936.3240867,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601928566,
+      "upstream_request_id_sha256_12": "ea0f6c4c4efb",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601928.9733527,
+        "http500_elapsed_ms": 629,
+        "last_time_unix": 1788601933.5227861,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601919450,
+      "upstream_request_id_sha256_12": "b74a475f01fb",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601919.8667884,
+        "http500_elapsed_ms": 646,
+        "last_time_unix": 1788601924.175694,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601897111,
+      "upstream_request_id_sha256_12": "e6bb42c6fd43",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601897.99456,
+        "http500_elapsed_ms": 1007,
+        "last_time_unix": 1788601903.0501008,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601875902,
+      "upstream_request_id_sha256_12": "f616ad889f31",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601876.4856231,
+        "http500_elapsed_ms": 1081,
+        "last_time_unix": 1788601881.415465,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601865054,
+      "upstream_request_id_sha256_12": "4969fcde2a18",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601865.4515197,
+        "http500_elapsed_ms": 628,
+        "last_time_unix": 1788601869.4135964,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601851095,
+      "upstream_request_id_sha256_12": "496f601f08b1",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601851.4944067,
+        "http500_elapsed_ms": 624,
+        "last_time_unix": 1788601856.614988,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601845402,
+      "upstream_request_id_sha256_12": "0989f662eaa4",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601845.7795687,
+        "http500_elapsed_ms": 618,
+        "last_time_unix": 1788601849.381757,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601835789,
+      "upstream_request_id_sha256_12": "1c0b6990bc1a",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601836.1752694,
+        "http500_elapsed_ms": 633,
+        "last_time_unix": 1788601839.776178,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601822822,
+      "upstream_request_id_sha256_12": "0ef8a58f8e33",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601823.547821,
+        "http500_elapsed_ms": 641,
+        "last_time_unix": 1788601827.2611446,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601815585,
+      "upstream_request_id_sha256_12": "880dd69647c0",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601816.3600364,
+        "http500_elapsed_ms": 651,
+        "last_time_unix": 1788601820.5798738,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601814840,
+      "upstream_request_id_sha256_12": "1aa052027c67",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601815.2606485,
+        "http500_elapsed_ms": 632,
+        "last_time_unix": 1788601819.4966607,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601808069,
+      "upstream_request_id_sha256_12": "071fede325cf",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601808.477466,
+        "http500_elapsed_ms": 643,
+        "last_time_unix": 1788601812.5100806,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601783387,
+      "upstream_request_id_sha256_12": "d34cb681539e",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601783.760944,
+        "http500_elapsed_ms": 623,
+        "last_time_unix": 1788601787.6685445,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601776981,
+      "upstream_request_id_sha256_12": "8372b2dd9f9f",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601777.374156,
+        "http500_elapsed_ms": 646,
+        "last_time_unix": 1788601781.6887627,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601757056,
+      "upstream_request_id_sha256_12": "07ebc1ec8082",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601758.0155706,
+        "http500_elapsed_ms": 967,
+        "last_time_unix": 1788601762.0567708,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    },
+    {
+      "gateway": {
+        "inputLength": 114,
+        "language": "en",
+        "letters": 88,
+        "marks": 0,
+        "messageHash": "eeebd1874eb4d4a3",
+        "numbers": 0,
+        "other": 0,
+        "punctuation": 10,
+        "status": 500,
+        "symbols": 0,
+        "voice": "am_adam",
+        "whitespace": 16
+      },
+      "gateway_timestamp_ms": 1788601753536,
+      "upstream_request_id_sha256_12": "dede68be4b1d",
+      "worker": {
+        "fatal_fingerprint": "3ef1bc0c61544fd8",
+        "first_time_unix": 1788601753.9310718,
+        "http500_elapsed_ms": 645,
+        "last_time_unix": 1788601757.7124891,
+        "matched": true,
+        "source_frontend_fingerprint": "6095381ec5d327c0",
+        "stages": [
+          "audio_generation_failed",
+          "audio_unit_failed",
+          "captioned_speech_failed",
+          "complete_audio_failed",
+          "model_generation_failed",
+          "model_unit_failed",
+          "model_unit_retry",
+          "request_failed",
+          "source_frontend_unavailable"
+        ],
+        "text_chars": 114
+      }
+    }
+  ],
+  "sample_rows": 30,
+  "source_gateway": "../global/tts-recent-error-diagnostics.json",
+  "worker_log": "US /workspace/castreader-runtime/logs/playback.jsonl"
+}

@@ -1,0 +1,1333 @@
+#!/usr/bin/env node
+/**
+ * 速读 (quickread) HTTP service — wraps the URL-to-Video pipeline behind a
+ * single SSE endpoint.  Designed to be deployed on api.castreader.ai and
+ * called by the Chrome extension when a user clicks the 速读 button.
+ *
+ * Contract: see ./API.md
+ *
+ * Architecture:
+ *   - SSE for progress streaming (extension shows 3-stage progress overlay)
+ *   - Serial job queue — puppeteer parallel runs contaminate anchor rects
+ *   - Per-job asset dir under ~/.url-video-agent/jobs/<job_id>/
+ *   - Asset endpoints serve directly from disk (no S3 / CDN dep for MVP)
+ *
+ * Run locally:
+ *   node server/server.mjs           # listens on :7777
+ *   PORT=8123 node server/server.mjs
+ *
+ * Deploy: copy scripts/video-pipeline/ to the api.castreader.ai host and
+ * run with pm2 / systemd.  Requires Node v22+, ffmpeg, ANTHROPIC_API_KEY,
+ * KIMI_API_KEY, OPENROUTER_API_KEY in env (or .env).
+ */
+
+import { createServer }                              from 'http';
+import { readFileSync, writeFileSync, existsSync, statSync,
+         createReadStream, mkdirSync }               from 'fs';
+import { join, dirname }                             from 'path';
+import { fileURLToPath }                             from 'url';
+import { randomBytes }                               from 'crypto';
+import { homedir, tmpdir }                           from 'os';
+
+// Screenshots get stashed here, GC'd after 1h idle (TODO).  Kept outside
+// JOBS_DIR so old spec history doesn't bloat with binary blobs.
+const SCREENSHOT_DIR = join(homedir(), '.url-video-agent', 'quickread-screenshots');
+mkdirSync(SCREENSHOT_DIR, { recursive: true });
+
+// ARCHITECTURE NOTE (2026-05-23 pivot):
+// The Chrome extension's Visual Zone algorithm extracts content from the
+// LIVE rendered DOM in the user's browser — no anti-bot, no JS-render
+// limitations, no paywalls (the user has logged-in access).  The server's
+// job shrinks to LLM + TTS only.  No more curl-fetch, no more puppeteer.
+//
+// Extension uploads to us:
+//   - source_url + title (display / job naming)
+//   - text (concatenated paragraphs, what the LLM sees)
+//   - paragraphs[]  (text + DOM rect for each, for LLM ground-truth)
+//   - screenshot (base64 PNG, the cinematic background)
+// We return:
+//   - cinematic events per section (mark text + at-time + reactions)
+//   - audio URLs per section (mp3 streams from this server)
+//   - the same screenshot we received (echoed via /screenshot endpoint)
+// Anchor resolution (event.text → DOM rect) is done by the extension client-
+// side, since it already holds the live DOM.
+import { extractContent, extractContentV4, extractSequential, extractPlan, extractBlock, extractImageBlock, detectImageRegions, buildSectionScripts, extractFastBlock0 } from '../tools/extract-content.mjs';
+import { generateAllTTS }                            from '../tools/generate-tts.mjs';
+import { computeLayout }                             from '../tools/compute-layout.mjs';
+import { PREVIEW_HTML, buildPreviewSpec }            from '../tools/preview-server.mjs';
+import { ensureDirs, saveJob as persistJob, JOBS_DIR }                       from '../video-spec.mjs';
+
+import { regionalEntitlementURL, regionalPricingURL } from '../tools/regional-routing.mjs';
+import { applyPlaybackTiming } from '../tools/playback-metadata.mjs';
+import { JobAssets } from './job-assets.mjs';
+import { withoutRetiredGifAssets } from './retired-gif-assets.mjs';
+function saveJob(spec) {
+  try { persistJob(spec); } catch { console.warn('[quickread] optional job snapshot unavailable'); }
+}
+
+// ─── Setup ───────────────────────────────────────────────────────────────────
+
+const __dir = dirname(fileURLToPath(import.meta.url));
+const ROOT  = join(__dir, '..');
+loadEnv(join(ROOT, '.env'));
+ensureDirs();
+
+const PORT     = parseInt(process.env.PORT || '7777', 10);
+const API_KEY  = process.env.QUICKREAD_API_KEY || '';  // set in prod to gate
+const ENABLE_CORS = process.env.QUICKREAD_CORS !== 'false';
+const MAX_QUEUE   = parseInt(process.env.QUICKREAD_MAX_QUEUE || '30', 10);
+
+const log = (...args) => console.log(new Date().toISOString(), '·', ...args);
+
+function headerString(value) {
+  return Array.isArray(value) ? (value[0] || '') : (value || '');
+}
+
+function redactId(value) {
+  const s = String(value || '');
+  if (!s) return '-';
+  if (s.length <= 10) return s[0] + '…';
+  return `${s.slice(0, 4)}…${s.slice(-4)}`;
+}
+
+function redactEmail(value) {
+  const s = String(value || '');
+  if (!s) return '-';
+  const at = s.indexOf('@');
+  if (at <= 0) return redactId(s);
+  return `${s.slice(0, Math.min(2, at))}…${s.slice(at)}`;
+}
+
+// ─── CastReader Pro entitlement gating ───────────────────────────────────────
+// 解读 (quickread) is a paid feature: free users get N/day, Pro unlimited.
+// Counting / decisioning lives in readout-web's entitlement API; this server
+// only calls it at quickread SESSION START points to gate.  朗读 (read-aloud)
+// never goes through here — zero impact.
+const PRO_ENTITLEMENT_URL  = regionalEntitlementURL();
+const PRO_INTERNAL_SECRET  = process.env.PRO_INTERNAL_SECRET || '';
+const CORS_ALLOW_HEADERS = 'content-type, x-api-key, x-device-id, x-local-date, x-user-id, x-user-email, x-email';
+
+// Returns { allow: boolean, status?, body? }.
+// fail-open: if the backend is unreachable / errors, allow (don't break 解读 on a blip).
+async function gateEntitlement(req) {
+  const deviceId = headerString(req.headers['x-device-id']);
+  const userId = headerString(req.headers['x-user-id']);
+  const email = headerString(req.headers['x-user-email'] || req.headers['x-email']);
+  const localDate = headerString(req.headers['x-local-date']);
+  if (!deviceId && !userId && !email) return { allow: true };  // internal / legacy call → allow
+  if (!PRO_INTERNAL_SECRET) return { allow: true };  // gating not configured → allow
+  try {
+    const r = await fetch(PRO_ENTITLEMENT_URL, {
+      method: 'POST',
+      redirect: 'error',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${PRO_INTERNAL_SECRET}` },
+      body: JSON.stringify({
+        device_id: deviceId,
+        user_id: userId,
+        email,
+        local_date: localDate,
+        consume: true,
+      }),
+      signal: AbortSignal.timeout(5000),
+    });
+    // This is an internal ledger request, so even 401/403/429 indicates an
+    // internal call failure. Only its valid business decision can deny quota.
+    if (!r.ok) throw new Error('entitlement_unavailable');
+    const j = await r.json().catch(() => ({}));
+    const d = j?.data || j || {};
+    if (typeof d.allowed !== 'boolean') {
+      throw new Error('entitlement_response_unavailable');
+    }
+    const allowed = d.allowed;
+    if (allowed) {
+      log(`[pro-gate] allow device=${redactId(deviceId)} user=${redactId(userId)} email=${redactEmail(email)} pro=${d.pro ? 'Y' : 'N'} source=${d.source || '-'} date=${localDate || '-'}`);
+      return { allow: true };
+    }
+    log(`[pro-gate] deny device=${redactId(deviceId)} user=${redactId(userId)} email=${redactEmail(email)} pro=${d.pro ? 'Y' : 'N'} source=${d.source || '-'} remaining=${d.freeRemaining ?? '-'} max=${d.freeMax ?? '-'} status=${r.status}`);
+    return {
+      allow: false,
+      status: 402,
+      body: {
+        error: 'quota_exceeded',
+        reason: 'free_daily_limit',
+        upgrade_url: regionalPricingURL(),
+        freeMax: d.freeMax,
+      },
+    };
+  } catch (e) {
+    log('[pro-gate] entitlement check failed (fail-open): ' + e.message);
+    return { allow: true };  // fail-open
+  }
+}
+
+// Entitlement/quota checks remain authoritative. Page continuation and
+// optional mark work must not consume an additional technical request quota.
+
+// ─── Job queue (serial — puppeteer can't parallel) ───────────────────────────
+
+const queue = [];
+let activeJob = null;
+let pendingAdmissions = 0;
+
+// Reserve existing queue capacity before an asynchronous quota check. Fast
+// openings share the reservation pool without consuming another entitlement.
+function reserveAdmission() {
+  if (queue.length + pendingAdmissions >= MAX_QUEUE) return null;
+  pendingAdmissions++;
+  let held = true;
+  const release = () => {
+    if (!held) return;
+    held = false;
+    pendingAdmissions--;
+  };
+  return {
+    release,
+    enqueue(jobFn) {
+      try { return enqueue(jobFn); }
+      finally { release(); } // The synchronous push owns the place now.
+    },
+  };
+}
+
+function enqueue(jobFn) {
+  return new Promise((resolve, reject) => {
+    queue.push({ jobFn, resolve, reject });
+    drain();
+  });
+}
+
+async function drain() {
+  if (activeJob || !queue.length) return;
+  const { jobFn, resolve, reject } = queue.shift();
+  activeJob = jobFn;
+  try { resolve(await jobFn()); }
+  catch (err) { reject(err); }
+  finally { activeJob = null; setImmediate(drain); }
+}
+
+// ─── SSE helpers ─────────────────────────────────────────────────────────────
+
+function openSSE(res) {
+  const headers = {
+    'Content-Type':  'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    'Connection':    'keep-alive',
+    'X-Accel-Buffering': 'no',          // disable nginx buffering
+  };
+  if (ENABLE_CORS) {
+    headers['Access-Control-Allow-Origin']  = '*';
+    headers['Access-Control-Allow-Headers'] = CORS_ALLOW_HEADERS;
+  }
+  res.writeHead(200, headers);
+  res.write(': stream-start\n\n');
+  return {
+    event(name, data) {
+      res.write(`event: ${name}\ndata: ${JSON.stringify(data)}\n\n`);
+    },
+    ping() { res.write(': ping\n\n'); },
+    end() { res.end(); },
+  };
+}
+
+// ─── Pipeline runner ─────────────────────────────────────────────────────────
+
+async function runPipeline(input, sse) {
+  const { source_url, title, lang: langHint, text, fullText, paragraphs, screenshot_base64 } = input;
+  const job_id = `qr_${Date.now().toString(36)}_${randomBytes(3).toString('hex')}`;
+
+  // Lang resolution: explicit hint > content-detect from first 500 chars
+  // (CJK char ratio > 25% → zh) > 'en' default.
+  const langDetected = detectLang(text);
+  const lang = langHint || langDetected || 'en';
+
+  const spec = {
+    job_id,
+    source_url,
+    title:           title || '',
+    output_language: lang,
+    template:        'PAS',
+    platform:        'youtube_shorts',
+    status:          'extracting',
+    assets:          { tts_files: [] },
+    visual_layers:   { giphy_reactions: false, cartoon_avatar: false },
+    // Skip preview-server's "fit marks within scene dur" backward-shift pass.
+    // That pass is designed for ffmpeg video assembly (animation must finish
+    // before cut to next scene) but actively breaks retimed marks in the
+    // interactive speed-read mode — it collapses everything to t=0.1 when
+    // MARK_PRE_PAN + draw + MARK_READ_MS exceeds short section durations.
+    _skipMarkFit:    true,
+    _forceTier:      'cinematic-only',
+    // Client timezone → TTS geo routing (CN vs US node) by the user's location.
+    _clientTz:       input.tz || null,
+    // Direct-input contract for extractContent — text + meta + paragraphs.
+    _directInput: {
+      text:       fullText || text,
+      meta:       { title: title || '', lang },
+      paragraphs: Array.isArray(paragraphs) ? paragraphs : null,
+    },
+  };
+
+  // Persist screenshot to disk (if provided) so the asset endpoint can serve
+  let screenshot_url = null;
+
+  // Stage 1: LLM extract — Kimi → Opus fallback chain inside extract-content
+  sse.event('stage', { stage: 'extract', label: '标注重点…' });
+  if (process.env.QUICKREAD_V4) {
+    try {
+      await extractContentV4(spec);
+    } catch (err) {
+      console.warn(`  ⚠️   v4 extract failed, falling back to legacy: ${err.message}`);
+      await extractContent(spec);
+    }
+  } else {
+    await extractContent(spec);
+  }
+  const modelUsed = spec.extraction?.model || '(unknown)';
+  spec.sections = buildSectionScripts(spec);
+
+  // Server does NOT build anchorMap — extension resolves rects from live DOM
+  // via Range.getClientRects() and injects via postMessage.  No approximate
+  // rects here: if extension can't find the text, the mark is not drawn.
+  for (const sec of spec.sections || []) {
+    if (sec.cinematic) sec.cinematic.anchorMap = {};
+  }
+
+  if (input.capture?.viewportWidth) {
+    spec._inventory = spec._inventory || { enhanceable: {} };
+    spec._inventory.enhanceable = spec._inventory.enhanceable || {};
+    spec._inventory.enhanceable.pageScreenshot = {
+      path:   null,
+      width:  input.capture.viewportWidth,
+      height: input.capture.viewportHeight || 720,
+    };
+  }
+
+
+  // Generate narration without retired visual-media requests.
+  await generateAllTTS(spec);
+
+  // If EVERY section's TTS failed (e.g. TTS API returning 502), there is no
+  // audio → buildPreviewSpec yields zero sections → the iframe would silently
+  // jump to the end card.  Surface the real failure instead of faking success.
+  if (!spec.assets?.tts_files?.length) {
+    throw new Error('TTS unavailable: all narration failed (TTS API may be down / 502). Please retry shortly.');
+  }
+
+  // Stage 3: Pass 2 — refine marks with complete TTS timeline
+  sse.event('stage', { stage: 'refine', label: '编排节奏…' });
+  assignSequentialMarkTiming(spec);
+
+  // Build preview spec WITHOUT GIFs → send `done` immediately (async GIF, 1.1.8
+  // model): GIF search/download must NOT block playback.  Safe to go async now:
+  //  - the TTS guard above guarantees non-empty sections (the earlier "empty
+  //    sections / jump-to-end" was the TTS outage, NOT the background rebuild)
+  //  - _skipMarkFit=true ⇒ the background re-run won't double-shift mark timing.
+  let previewSpec = null;
+  try {
+    const layout = computeLayout(spec);
+    previewSpec = await buildPreviewSpec(spec, layout, { skipGifs: true });
+  } catch (err) {
+    log('buildPreviewSpec failed:', err.message || err);
+  }
+
+  spec.status = 'done';
+  saveJob(spec);
+
+  const audio = (spec.sections || [])
+    .map(sec => {
+      const meta = spec.assets.tts_files.find(f => f.sectionId === sec.id);
+      if (!meta?.path) return null;
+      const url = `/api/quickread/${job_id}/audio/${encodeURIComponent(sec.id)}`;
+      return { section_id: sec.id, url, duration: meta.duration };
+    })
+    .filter(Boolean);
+
+  const jobData = {
+    audioBySection: Object.fromEntries(spec.assets.tts_files.map(f => [f.sectionId, f.path])),
+    screenshot: null,
+    spec,
+    previewSpec,
+    _initialPreviewSpec: previewSpec,
+  };
+  jobAssets.set(job_id, jobData);
+  urlToJobId.set(source_url, job_id);
+
+
+  return {
+    job_id,
+    spec_url:       `/api/quickread/${job_id}/spec`,
+    preview_url:    previewSpec ? `/api/quickread/${job_id}/preview` : null,
+    screenshot_url,
+    audio,
+    model_used:     modelUsed,
+  };
+}
+
+// ─── Two-phase pipeline (client-side TTS) ────────────────────────────────────
+// The browser generates TTS itself (per its own geography, CN/US) so audio
+// bytes never touch this server.  /extract = Pass1 (LLM marks, no audio);
+// client then synthesizes audio locally + posts word timestamps to /compose
+// (Pass2 refine + layout).  Old /api/quickread (server-side TTS) stays as a
+// fallback for one release cycle.
+
+async function runExtract(input, sse) {
+  const { source_url, title, lang: langHint, text, fullText, paragraphs } = input;
+  const job_id = `qr_${Date.now().toString(36)}_${randomBytes(3).toString('hex')}`;
+  const lang = langHint || detectLang(text) || 'en';
+
+  const spec = {
+    job_id, source_url, title: title || '', output_language: lang,
+    template: 'PAS', platform: 'youtube_shorts', status: 'extracting',
+    assets: { tts_files: [] },
+    visual_layers: { giphy_reactions: false, cartoon_avatar: false },
+    _skipMarkFit: true, _forceTier: 'cinematic-only', _clientTz: input.tz || null,
+    // 'page' = original-page sequential narration (top-to-bottom guided read,
+    // no camera/reaction); 'cinematic' = 9:16 short video (default).
+    renderMode: input.renderMode === 'page' ? 'page' : 'cinematic',
+    _directInput: {
+      text: fullText || text, meta: { title: title || '', lang },
+      paragraphs: Array.isArray(paragraphs) ? paragraphs : null,
+    },
+  };
+
+  sse.event('stage', { stage: 'extract', label: '标注重点…' });
+  if (spec.renderMode === 'page') {
+    await extractSequential(spec);
+  } else if (process.env.QUICKREAD_V4) {
+    try { await extractContentV4(spec); }
+    catch (err) { console.warn(`  ⚠️   v4 extract failed, fallback legacy: ${err.message}`); await extractContent(spec); }
+  } else { await extractContent(spec); }
+  const modelUsed = spec.extraction?.model || '(unknown)';
+  spec.sections = buildSectionScripts(spec);
+  for (const sec of spec.sections || []) { if (sec.cinematic) sec.cinematic.anchorMap = {}; }
+
+  if (input.capture?.viewportWidth) {
+    spec._inventory = { enhanceable: { pageScreenshot: {
+      path: null, width: input.capture.viewportWidth, height: input.capture.viewportHeight || 720,
+    } } };
+  }
+
+  spec.status = 'extracted';
+  saveJob(spec);
+  jobAssets.set(job_id, { spec, screenshot: null });
+  urlToJobId.set(source_url, job_id);
+
+  // Client needs sections (id + text + marks) to generate TTS per geography.
+  return { job_id, ...sectionsForClient(spec), model_used: modelUsed };
+}
+
+// ─── Streaming page mode (per-block on-demand generation) ─────────────────────
+
+// Per-job serial chain: blocks of ONE job generate in order (running_summary
+// depends on the previous block), but different jobs never block each other.
+const blockChains = new Map();   // job_id → tail Promise
+function enqueueBlock(job_id, fn) {
+  const prev = blockChains.get(job_id) || Promise.resolve();
+  const next = prev.then(fn, fn);
+  blockChains.set(job_id, next.catch(() => {}));
+  return next;
+}
+
+// scene → section, reusing buildSectionScripts (marks→events + verbatim
+// validation vs spec._directInput).  Temporarily swaps extraction.scenes.
+function sectionFromScene(spec, scene) {
+  const saved = spec.extraction.scenes;
+  spec.extraction.scenes = [scene];
+  const out = buildSectionScripts(spec);
+  spec.extraction.scenes = saved;
+  const sec = out[0] || null;
+  if (sec && sec.cinematic) sec.cinematic.anchorMap = {};
+  return sec;
+}
+
+function clientSection(s) {
+  s = withoutRetiredGifAssets(s);
+  // sceneType:'cinematic' so the iframe's playSection treats consecutive page
+  // blocks as a continuation (smooth scroll + marks accumulate), not a re-setup.
+  return s ? { id: s.id, style: s.style, text: s.text, duration: s.duration, sceneType: 'cinematic', cinematic: s.cinematic || null } : null;
+}
+
+function metaForClient(spec) {
+  const ss = spec._inventory?.enhanceable?.pageScreenshot || null;
+  let canvas = null, subtitle = null;
+  try { const L = computeLayout(spec); canvas = L.canvas; subtitle = L.subtitle; } catch (e) { log('metaForClient layout: ' + (e.message || e)); }
+  return {
+    title: spec.title, source_url: spec.source_url, output_language: spec.output_language,
+    screenshotMeta: ss ? { width: ss.width, height: ss.height } : null,
+    canvas, subtitle,
+  };
+}
+
+// Pass 0: read the whole article once → outline + block 0 + total_blocks.
+// Stores _streamState on the job so later /extract-block calls stream in.
+async function runExtractPlan(input, sse, enqT0) {
+  const _srvT0 = Date.now();
+  const queue_ms = enqT0 ? _srvT0 - enqT0 : 0;   // 队列等待(enqueue 到真正开跑)
+  const { source_url, title, lang: langHint, text, fullText, paragraphs, prev_summary, content_type } = input;
+  const job_id = `qr_${Date.now().toString(36)}_${randomBytes(3).toString('hex')}`;
+  // 讲解语言:① 用户显式指定(langHint)优先;② Follow page → 文本脚本检测,ja/zh/hi 是确定性脚本、
+  // 直接采用;③ 拉丁文本(detect=en)无法区分 es/fr/pt/it → 信页面 <html lang>(若是支持语言);
+  // ④ 都不行 → 英文。这样:日文页→ja、中文页→zh、西/法页→es/fr、乌克兰语等不支持→en。
+  const detected = detectLang(text);
+  const htmlLang = (input.htmlLang || '').split('-')[0].toLowerCase();
+  const lang = langHint
+    || (detected && detected !== 'en' ? detected : null)
+    || (SUPPORTED_LANGS.has(htmlLang) ? htmlLang : null)
+    || 'en';
+  const spec = {
+    job_id, source_url, title: title || '', output_language: lang, depth: input.depth || 'standard', tier: input.tier || 'basic',
+    content_type: content_type || null,   // 移动端 6 场景透镜(null=通用,扩展端零回归);extractPlan 读 spec.content_type
+    template: 'PAS', platform: 'youtube_shorts', status: 'extracting',
+    assets: { tts_files: [] }, renderMode: 'page',
+    _skipMarkFit: true, _forceTier: 'cinematic-only', _clientTz: input.tz || null,
+    _directInput: { text: fullText || text, meta: { title: title || '', lang },
+      paragraphs: Array.isArray(paragraphs) ? paragraphs : null, images: input.images || null,
+      sourceImage: input.source_image || null },   // 照片解读:原图供讲解 LLM 多模态读
+  };
+  if (input.capture?.viewportWidth) {
+    spec._inventory = { enhanceable: { pageScreenshot: {
+      path: null, width: input.capture.viewportWidth, height: input.capture.viewportHeight || 720 } } };
+  }
+  // 跨页连续解读(Phase 1):上一页讲解 summary → 注入 plan prompt 让本页承接(不重新交代背景/不小结)。
+  // 方式 B:只回看一页,不进 running_summary 滚动 → 不累积、跨章一页自愈。1200 字防御截断。
+  spec._prevSummary = (typeof prev_summary === 'string' && prev_summary.trim())
+    ? prev_summary.trim().slice(0, 1200) : null;
+
+  // Pre-init extraction so the early block_0 callback's sectionFromScene works
+  // (it reads/writes spec.extraction.scenes) BEFORE the full outline exists.
+  spec.extraction = {
+    model: null, scenes: [], outline: null,
+    layer1: { summary: '', keywords: [] }, layer2: { key_stats: [], contrast_point: '', counter_intuitive: '' },
+    layer3: { pain_point: '', solution: '', emotion_arc: '', core_insight: '' },
+    hook_variants: [], scripts: null, emphasis: {},
+  };
+
+  sse.event('stage', { stage: 'extract', label: '通读全文…' });
+  // Early block_0: gemini streams block_0 out (~3-4s) before the full N-block
+  // outline (~13s) → send it now so the client starts TTS/playback immediately.
+  let earlySection0 = null;
+  const plan = await extractPlan(spec, (blk, totalHint) => {
+    try {
+      const s0 = sectionFromScene(spec, blk);
+      if (!s0) return;
+      earlySection0 = s0;
+      // compose-block(0) 在流式途中(整篇 outline 还没吐完、行 482 的 jobAssets.set 还没跑)就会被
+      // 客户端调用 → 必须现在就注册 job + 放好 seq-0,否则 runComposeBlock 抛 unknown job_id,
+      // block_0 的 marks 拿不到 at → 客户端退回未对齐版本 → 第一段 marks 一上来全画好。
+      spec.sections = [s0];
+      jobAssets.set(job_id, { spec, screenshot: null });
+      sse.event('block0', { job_id, block_0: clientSection(s0),
+        output_language: spec.output_language, total_blocks: totalHint || 0 });
+    } catch (e) { log('block0 early emit: ' + (e.message || e)); }
+  });   // { outline, block0, summary, sceneTexts, total, meta, lang, model, first_block_ms }
+  spec.extraction.model = plan.model;
+  spec.extraction.outline = plan.outline;
+  spec.extraction.scenes = [plan.block0];
+  const section0 = earlySection0 || sectionFromScene(spec, plan.block0);
+  spec.sections = section0 ? [section0] : [];
+  spec.status = 'streaming';
+  spec._streamState = {
+    outline: plan.outline, running_summary: plan.summary,
+    sceneTexts: plan.sceneTexts, total: plan.total, nextIdx: 1, meta: plan.meta, lang: plan.lang, depth: plan.depth, tier: spec.tier, content_type: spec.content_type || null,
+    images: plan.imagesById || {},
+    sourceImage: plan.sourceImage || null,   // 照片解读:block 1+ 也带原图给讲解 LLM
+  };
+  saveJob(spec);
+  jobAssets.set(job_id, { spec, screenshot: null });
+  urlToJobId.set(source_url, job_id);
+  // 图检测后台预跑(不阻塞 plan 响应):挂载图的候选区提前备好,extract-block 带图时零检测等待。
+  const _attachedIds = [...new Set((plan.sceneTexts || []).flatMap(st => st.imgs || []))];
+  if (_attachedIds.length) {
+    Promise.all(_attachedIds.map(id => detectImageRegions(plan.imagesById?.[id]).catch(() => {})))
+      .then(() => log(`[img-predetect] ${_attachedIds.length} 张候选区预跑完成`)).catch(() => {});
+  }
+
+  return { job_id, total_blocks: plan.total, outline: plan.outline,
+    ...metaForClient(spec), model_used: plan.model,
+    page_summary: plan.summary || null,   // 跨页连续解读:本页 summary → 客户端缓存,下一页作 prev_summary 接力
+    usage: plan.usage || null, llm_ms: plan.llm_ms ?? null,   // [qr-perf] 输入/输出 token + plan LLM 墙钟,供诊断输入- vs 输出-bound
+    srv_ms: Date.now() - _srvT0, queue_ms,   // [qr-perf] 服务端总耗时(含 LLM)+ 队列等待 → 定位非-LLM 的 ~10s 在哪
+    first_block_ms: plan.first_block_ms ?? null,   // [qr-perf] block_0 在 LLM 流里多早就绪(真流式收益)
+    block_0: clientSection(section0) };
+}
+
+// Pass N: generate ONE block on demand (outline + running_summary + block text).
+async function runExtractBlock(job_id, blockIdx) {
+  const job = jobAssets.get(job_id);
+  if (!job?.spec?._streamState) throw new Error('unknown or expired job_id');
+  const spec = job.spec; const ss = spec._streamState;
+  if (blockIdx < 0 || blockIdx >= ss.total) throw new Error(`block_idx ${blockIdx} out of range (total ${ss.total})`);
+  if (spec.sections[blockIdx]) return { block_idx: blockIdx, section: clientSection(spec.sections[blockIdx]) };  // cached
+
+  const _st = ss.sceneTexts[blockIdx];
+  let scene, updated_summary;
+  if (_st && _st.kind === 'image' && ss.images?.[_st.imgId]) {
+    // 图片 scene:深读=检测出框→讲解选编号(SoM 契约);标准=整图一笔。
+    ({ scene, updated_summary } = await extractImageBlock({
+      img: ss.images[_st.imgId], outline: ss.outline, running_summary: ss.running_summary,
+      idx: blockIdx, total: ss.total, lang: ss.lang, depth: ss.depth,
+    }));
+  } else {
+    ({ scene, updated_summary } = await extractBlock({
+      outline: ss.outline, running_summary: ss.running_summary,
+      blockText: _st.text, idx: blockIdx, total: ss.total, meta: ss.meta, lang: ss.lang, depth: ss.depth, tier: ss.tier, contentType: ss.content_type || null,
+      imgs: (_st.imgs || []).map(id => ss.images?.[id]).filter(im => im && im.dataUrl),
+      sourceImage: ss.sourceImage || null,   // 照片解读:多模态读原图
+    }));
+  }
+  ss.running_summary = updated_summary;
+  const section = sectionFromScene(spec, scene);
+  spec.sections[blockIdx] = section;
+  ss.nextIdx = Math.max(ss.nextIdx, blockIdx + 1);
+  jobAssets.persist(job_id);
+  return { block_idx: blockIdx, section: clientSection(section) };
+}
+
+// Per-block compose: client posts the block's TTS timestamps → assign marks.at
+// for that block only → return the section (marks now timed) for the iframe.
+async function runComposeBlock(job_id, blockIdx, timestamps, duration) {
+  const job = jobAssets.get(job_id);
+  if (!job?.spec) throw new Error('unknown or expired job_id');
+  const spec = job.spec;
+  const secId = `seq-${blockIdx}`;
+  const section = (spec.sections || []).find(s => s && s.id === secId) || null;
+  const timing = applyPlaybackTiming(section, timestamps, duration);
+  spec.assets ||= {};
+  const previous = Array.isArray(spec.assets.tts_files) ? spec.assets.tts_files : [];
+  spec.assets.tts_files = previous.filter(t => t?.sectionId !== secId);
+  spec.assets.tts_files.push({ sectionId: secId, path: null, ...timing });
+  jobAssets.persist(job_id);
+  return { block_idx: blockIdx, section: clientSection(section) };
+}
+
+// Page mode: assign each mark a time within its block's spoken audio, spread
+// evenly in mark order.  No global camera planning (the renderer just scrolls
+// monotonically down).  extractSequential already emits marks in page order, so
+// even spacing tracks the narration's progress through the block.  Replaces the
+// cinematic Pass-2 LLM (refineMarksWithTimeline) for renderMode==='page'.
+function assignSequentialMarkTiming(spec, onlyIds = null) {
+  const assets = Array.isArray(spec.assets?.tts_files) ? spec.assets.tts_files : [];
+  for (const section of spec.sections || []) {
+    if (!section || (onlyIds && !onlyIds.includes(section.id))) continue;
+    const audio = assets.find(item => item?.sectionId === section.id);
+    applyPlaybackTiming(section, audio?.timestamps, audio?.duration);
+  }
+}
+
+async function runCompose(job_id, clientSections, sse) {
+  const job = jobAssets.get(job_id);
+  if (!job?.spec) throw new Error('unknown or expired job_id');
+  const spec = job.spec;
+
+  // Audio lives in the browser — we only need timestamps + duration to refine
+  // mark timing + lay out the scenes.  path:null (no server-side mp3).
+  spec.assets.tts_files = (clientSections || [])
+    .filter(c => c && c.sectionId)
+    .map(c => ({ sectionId: c.sectionId, path: null, ...applyPlaybackTiming(null, c.timestamps, c.duration) }));
+  if (!spec.assets.tts_files.length) throw new Error('compose: no client TTS sections');
+
+  sse.event('stage', { stage: 'refine', label: '编排节奏…' });
+  assignSequentialMarkTiming(spec);
+
+  // GIF generation is retired; presentation must not delay audio delivery.
+  let previewSpec = null;
+  try {
+    previewSpec = await buildPreviewSpec(spec, computeLayout(spec), { skipGifs: true });
+  } catch (err) { log('buildPreviewSpec failed: ' + (err.message || err)); }
+
+  spec.status = 'done';
+  saveJob(spec);
+  job.previewSpec = previewSpec;
+  job._initialPreviewSpec = previewSpec;
+  jobAssets.persist(job_id);
+  log(`compose done: ${(previewSpec?.sections || []).length} sections`);
+
+  return { job_id, spec_url: `/api/quickread/${job_id}/spec`, preview_url: previewSpec ? `/api/quickread/${job_id}/preview` : null };
+}
+
+// Find the screenshot rect for an LLM-emitted mark.text by searching the
+// extension's pre-extracted paragraph list.
+//
+// Three-tier match (precision descending):
+//   1a. Sentence-level rect (when extension supplies sentences[])
+//   1b. Char-offset sub-rect inside paragraph rect (proportional approx)
+//   2.  Token-overlap fallback (Jaccard ≥60%, returns whole para rect)
+//
+// Replaces the standalone CLI's puppeteer-based anchor-resolver, which
+// used Range.getClientRects() for pixel-perfect sub-paragraph rects.  The
+// proportional approximation in 1b is coarser but works for the common
+// case (mark phrase ≈ 1-2 lines inside the paragraph).
+function findRectForText(needle, paragraphs) {
+  const norm = (s) => String(s || '')
+    .toLowerCase()
+    .replace(/['’‘`]/g, "'").replace(/[""]/g, '"').replace(/[—–]/g, '-')
+    .replace(/\s+/g, ' ').trim();
+  const target = norm(needle);
+  if (target.length < 3) return null;
+
+  // 1a. Sentence-level (if extension provided)
+  for (const p of paragraphs) {
+    if (!p.rect || !Array.isArray(p.sentences)) continue;
+    for (const s of p.sentences) {
+      if (s?.rect && norm(s.text).includes(target)) return s.rect;
+    }
+  }
+
+  // 1b. Char-offset sub-rect inside the paragraph rect.  The mark phrase
+  // covers `len` chars starting at `idx` within the para's `totalLen`-char
+  // text — approximate the visual position by assuming flat char density.
+  for (const p of paragraphs) {
+    if (!p.rect) continue;
+    const pNorm = norm(p.text);
+    const idx = pNorm.indexOf(target);
+    if (idx >= 0) return subRectFromCharOffset(p.rect, p.text, idx, needle.length);
+  }
+
+  // 2. Token-overlap (Jaccard) — paraphrased / partial mark.  Falls back to
+  // whole paragraph rect since we have no character anchor.
+  const targetTokens = new Set(target.split(/[^\p{L}\p{N}]+/u).filter(t => t && t.length >= 2));
+  if (targetTokens.size < 2) return null;
+  let bestRect = null, bestScore = 0;
+  for (const p of paragraphs) {
+    if (!p.rect) continue;
+    const pTokens = new Set(norm(p.text).split(/[^\p{L}\p{N}]+/u).filter(t => t && t.length >= 2));
+    let overlap = 0;
+    for (const t of targetTokens) if (pTokens.has(t)) overlap++;
+    const score = overlap / targetTokens.size;
+    if (score > bestScore && score >= 0.6) {
+      bestScore = score;
+      bestRect  = p.rect;
+    }
+  }
+  return bestRect;
+}
+
+// Approximate the sub-rect of a substring inside a paragraph rect, assuming
+// uniform character density.  Multi-line paragraphs: split rect.h by the
+// estimated line count and place the mark on the line(s) covering the
+// character range.  Crucially, use ACTUAL line height (rect.h / lines)
+// rather than a hardcoded constant — NHK + other CMSes use varied line-
+// heights, and a fixed 24px drifts the rect below the text on tall lines.
+function subRectFromCharOffset(paraRect, paraText, idx, len) {
+  const totalLen = paraText.length || 1;
+  // Estimate line count: 24px is a reasonable lower bound; round() so we
+  // get 1 for short paragraphs even when rect.h is 28-36px (single line).
+  const lines = Math.max(1, Math.round(paraRect.h / 28));
+  // ACTUAL line height (vs the estimate) — keeps the mark on the
+  // pixel-true line even when the page uses 30+ px line-heights.
+  const lineH = paraRect.h / lines;
+  if (lines === 1) {
+    const charW = paraRect.w / totalLen;
+    return {
+      x: Math.round(paraRect.x + idx * charW),
+      y: paraRect.y,
+      w: Math.max(40, Math.round(len * charW)),
+      h: paraRect.h,
+    };
+  }
+  // Multi-line — divide totalLen evenly across lines (uniform density)
+  const charsPerLine = totalLen / lines;
+  const rawStart = Math.floor(idx / charsPerLine);
+  const rawEnd   = Math.floor((idx + len - 1) / charsPerLine);
+  // Clamp to [0, lines-1] so we never overshoot the paragraph rect
+  const startLine = Math.max(0, Math.min(lines - 1, rawStart));
+  const endLine   = Math.max(startLine, Math.min(lines - 1, rawEnd));
+  if (startLine === endLine) {
+    const localStart = idx - startLine * charsPerLine;
+    const charW = paraRect.w / charsPerLine;
+    return {
+      x: Math.round(paraRect.x + localStart * charW),
+      y: Math.round(paraRect.y + startLine * lineH),
+      w: Math.max(40, Math.round(len * charW)),
+      h: Math.round(lineH),
+    };
+  }
+  // Spans multiple lines — bounding box; clamped to stay within paragraph
+  return {
+    x: paraRect.x,
+    y: Math.round(paraRect.y + startLine * lineH),
+    w: paraRect.w,
+    h: Math.round((endLine - startLine + 1) * lineH),
+  };
+}
+
+// CJK char ratio in first 1000 chars; >25% → zh.  Good enough for the
+// extension's already-extracted text — no need for full language detection.
+// 脚本级语言检测(对非拉丁脚本可靠;拉丁语系靠 <html lang> 区分,见 runExtractPlan)。
+// 关键:假名(ひらがな/カタカナ)是日文专属 —— 日文汉字与中文同属 Han 区,只看汉字会把日文误判成中文。
+function detectLang(text) {
+  if (!text) return null;
+  const s = text.slice(0, 2000);
+  const len = s.length || 1;
+  if ((s.match(/[぀-ヿ]/g) || []).length / len > 0.05) return 'ja';   // 假名 → 日文
+  if ((s.match(/[一-鿿]/g) || []).length / len > 0.2)  return 'zh';   // 汉字(无假名)→ 中文
+  if (/[ऀ-ॿ]/.test(s)) return 'hi';                                  // 天城文 → 印地文
+  return 'en';   // 拉丁/西里尔/谚文/阿拉伯/希腊… → 默认英文(非支持讲解语言,如乌克兰语)
+}
+const SUPPORTED_LANGS = new Set(['en', 'zh', 'ja', 'es', 'fr', 'pt', 'it', 'hi']);
+// 移动端场景化 content_type 白名单(6 大场景)。校验后才注入 prompt 透镜;不在表内/缺省 → null → 通用解读(扩展端零回归)。
+const VALID_CONTENT_TYPES = new Set(['paper', 'book', 'report', 'contract', 'study', 'manual']);
+
+
+// Asset cache: job_id → { audioBySection, screenshot, spec }
+const jobAssets = new JobAssets(join(JOBS_DIR, 'quickread-state'), { legacyDirectory: JOBS_DIR });
+const urlToJobId = new Map();  // URL → job_id cache (skip re-generation)
+
+// ─── HTTP routing ────────────────────────────────────────────────────────────
+
+const server = createServer(async (req, res) => {
+  const url    = new URL(req.url, `http://${req.headers.host}`);
+  const path   = url.pathname;
+
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, ENABLE_CORS ? {
+      'Access-Control-Allow-Origin':  '*',
+      'Access-Control-Allow-Headers': CORS_ALLOW_HEADERS,
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    } : {});
+    return res.end();
+  }
+
+  // POST /api/quickread — main SSE endpoint
+  if (req.method === 'POST' && path === '/api/quickread') {
+    if (API_KEY && req.headers['x-api-key'] !== API_KEY) {
+      return reject(res, 401, 'invalid_api_key');
+    }
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', async () => {
+      let input;
+      try {
+        const parsed = JSON.parse(body || '{}');
+        if (!parsed.source_url) return reject(res, 400, 'missing_source_url');
+        if (!/^https?:\/\//.test(parsed.source_url)) return reject(res, 400, 'invalid_source_url');
+        if (!parsed.text || typeof parsed.text !== 'string') return reject(res, 400, 'missing_text');
+        if (parsed.text.length < 50) return reject(res, 400, 'text_too_short');
+        input = {
+          source_url:        parsed.source_url,
+          title:             parsed.title || '',
+          lang:              parsed.lang || null,
+          text:              parsed.text,
+          fullText:          parsed.fullText || null,
+          paragraphs:        Array.isArray(parsed.paragraphs) ? parsed.paragraphs : null,
+          screenshot_base64: parsed.screenshot || null,
+          // `capture` carries scrollX/Y + scrollWidth/Height + DPR from the
+          // extension's preCaptureScreenshot() — required so screenshotMeta
+          // dimensions match the actual PNG (otherwise camera math collapses
+          // to a fake 1280×720 box and the cinematic only pans the top
+          // sliver of a tall article).
+          capture:           parsed.capture || null,
+          // Client IANA timezone — used to route TTS to the CN vs US node by
+          // the USER's geography (not the server's fixed process tz).
+          tz:                typeof parsed.tz === 'string' ? parsed.tz : null,
+        };
+      } catch (err) {
+        return reject(res, 400, 'bad_json', err.message);
+      }
+
+      const admission = reserveAdmission();
+      if (!admission) return reject(res, 503, 'server_busy');
+      try {
+        const gate = await gateEntitlement(req);
+        if (!gate.allow) return rejectBody(res, gate.status || 402, gate.body);
+
+        const sse = openSSE(res);
+        const heartbeat = setInterval(() => sse.ping(), 15_000);
+        req.on('close', () => clearInterval(heartbeat));
+
+        if (activeJob || queue.length) {
+          sse.event('queued', { position: queue.length + (activeJob ? 1 : 0) });
+        }
+
+        try {
+          const result = await admission.enqueue(() => runPipeline(input, sse));
+          const writable = !res.destroyed && res.writable;
+          log('pipeline done, sending SSE done event (writable=' + writable + ')');
+          sse.event('done', result);
+          log('SSE done event sent');
+        } catch (err) {
+          log('pipeline error:', err.message, err.stack?.split('\n').slice(0, 3).join(' | '));
+          sse.event('error', {
+            message: err.message?.slice(0, 500) || 'pipeline_error',
+          });
+        }
+        clearInterval(heartbeat);
+        sse.end();
+      } finally { admission.release(); }
+    });
+    return;
+  }
+
+  // POST /api/quickread/extract — Pass1 only; client generates TTS next.
+  if (req.method === 'POST' && path === '/api/quickread/extract') {
+    if (API_KEY && req.headers['x-api-key'] !== API_KEY) return reject(res, 401, 'invalid_api_key');
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      let input;
+      try {
+        const parsed = JSON.parse(body || '{}');
+        if (!parsed.source_url) return reject(res, 400, 'missing_source_url');
+        if (!parsed.text || typeof parsed.text !== 'string') return reject(res, 400, 'missing_text');
+        if (parsed.text.length < 50) return reject(res, 400, 'text_too_short');
+        input = {
+          source_url: parsed.source_url, title: parsed.title || '', lang: parsed.lang || null,
+          text: parsed.text, fullText: parsed.fullText || null,
+          paragraphs: Array.isArray(parsed.paragraphs) ? parsed.paragraphs : null,
+          capture: parsed.capture || null, tz: typeof parsed.tz === 'string' ? parsed.tz : null,
+          htmlLang: typeof parsed.htmlLang === 'string' ? parsed.htmlLang : null,   // 页面 <html lang>:Follow page 时区分拉丁语系
+          renderMode: parsed.renderMode === 'page' ? 'page' : 'cinematic',
+        };
+      } catch (err) { return reject(res, 400, 'bad_json', err.message); }
+      const admission = reserveAdmission();
+      if (!admission) return reject(res, 503, 'server_busy');
+      try {
+        const gate = await gateEntitlement(req);
+        if (!gate.allow) return rejectBody(res, gate.status || 402, gate.body);
+
+        const sse = openSSE(res);
+        const heartbeat = setInterval(() => sse.ping(), 15_000);
+        req.on('close', () => clearInterval(heartbeat));
+        if (activeJob || queue.length) sse.event('queued', { position: queue.length + (activeJob ? 1 : 0) });
+        try {
+          const result = await admission.enqueue(() => runExtract(input, sse));
+          sse.event('done', result);
+        } catch (err) {
+          log('extract error: ' + err.message);
+          sse.event('error', { message: err.message?.slice(0, 500) || 'extract_error' });
+        }
+        clearInterval(heartbeat);
+        sse.end();
+      } finally { admission.release(); }
+    });
+    return;
+  }
+
+  // POST /api/quickread/extract-plan — streaming page mode Pass 0 (outline + block 0).
+  if (req.method === 'POST' && path === '/api/quickread/extract-plan') {
+    if (API_KEY && req.headers['x-api-key'] !== API_KEY) return reject(res, 401, 'invalid_api_key');
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      let input;
+      try {
+        const parsed = JSON.parse(body || '{}');
+        if (!parsed.source_url) return reject(res, 400, 'missing_source_url');
+        if (!parsed.text || typeof parsed.text !== 'string') return reject(res, 400, 'missing_text');
+        if (parsed.text.length < 50) return reject(res, 400, 'text_too_short');
+        input = {
+          source_url: parsed.source_url, title: parsed.title || '', lang: parsed.lang || null,
+          text: parsed.text, fullText: parsed.fullText || null,
+          paragraphs: Array.isArray(parsed.paragraphs) ? parsed.paragraphs : null,
+          capture: parsed.capture || null, tz: typeof parsed.tz === 'string' ? parsed.tz : null,
+          depth: parsed.depth || 'standard',
+          tier: parsed.tier === 'expert' ? 'expert' : 'basic',   // Pro 专属:专家级深度;免费/缺省=basic
+          htmlLang: typeof parsed.htmlLang === 'string' ? parsed.htmlLang : '',   // 语言检测兜底(此前漏转发)
+          prev_summary: typeof parsed.prev_summary === 'string' ? parsed.prev_summary : null,   // 跨页连续:上一页讲解 summary → 本页承接
+          content_type: VALID_CONTENT_TYPES.has(parsed.content_type) ? parsed.content_type : null,   // 移动端 6 场景透镜;缺省/未知→null(扩展端零回归)
+          // 图解:候选图(已过 client L0 漏斗)。≤8 张、单张 dataUrl ≤2MB(裁图后 ≤1024px 远小于此)。
+          images: Array.isArray(parsed.images)
+            ? parsed.images.filter(im => im && ((typeof im.dataUrl === 'string' && im.dataUrl.length < 2_000_000) || (typeof im.srcUrl === 'string' && /^https?:/.test(im.srcUrl)))).slice(0, 8)
+            : null,
+          // 照片解读:reader 上传照片时传原图 dataUrl,讲解 LLM 多模态读图(≤6MB)。仅照片源有此字段。
+          source_image: (typeof parsed.source_image === 'string' && parsed.source_image.startsWith('data:image/') && parsed.source_image.length < 6_000_000)
+            ? parsed.source_image : null,
+        };
+      } catch (err) { return reject(res, 400, 'bad_json', err.message); }
+      const admission = reserveAdmission();
+      if (!admission) return reject(res, 503, 'server_busy');
+      try {
+        const gate = await gateEntitlement(req);
+        if (!gate.allow) return rejectBody(res, gate.status || 402, gate.body);
+
+        const sse = openSSE(res);
+        const heartbeat = setInterval(() => sse.ping(), 15_000);
+        req.on('close', () => clearInterval(heartbeat));
+        if (activeJob || queue.length) sse.event('queued', { position: queue.length + (activeJob ? 1 : 0) });
+        const _enqT0 = Date.now();
+        try {
+          const result = await admission.enqueue(() => runExtractPlan(input, sse, _enqT0));
+          sse.event('done', result);
+        } catch (err) {
+          log('extract-plan error: ' + err.message);
+          sse.event('error', { message: err.message?.slice(0, 500) || 'extract_plan_error' });
+        }
+        clearInterval(heartbeat);
+        sse.end();
+      } finally { admission.release(); }
+    });
+    return;
+  }
+
+  // POST /api/quickread/fast-block0 — 快道(1.2.9):长内容首次解读,只喂[标题+开头(+prev_summary 承接)],
+  // 一次 LLM 直出 block_0(narration+marks),跳过读整篇/分 scene/compose → ~2.6s 出首 mark+TTS。
+  // 质道 extract-plan 并行出 block1+ 和 page_summary(承接链不断)。
+  // ⚠️ 不 gateEntitlement(避免与质道双扣额度;额度由质道单次消费,client 已门控:只在已授权+长内容+无预生成时发)。
+  if (req.method === 'POST' && path === '/api/quickread/fast-block0') {
+    if (API_KEY && req.headers['x-api-key'] !== API_KEY) return reject(res, 401, 'invalid_api_key');
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      let args;
+      try {
+        const parsed = JSON.parse(body || '{}');
+        const openingParas = Array.isArray(parsed.openingParas)
+          ? parsed.openingParas.filter(p => p && typeof p.text === 'string' && p.text.trim()).slice(0, 12)
+          : null;
+        if (!openingParas || !openingParas.length) return reject(res, 400, 'missing_openingParas');
+        args = {
+          title: typeof parsed.title === 'string' ? parsed.title : '',
+          openingParas,
+          lang: parsed.lang || null,
+          depth: parsed.depth || 'standard',
+          prevSummary: typeof parsed.prev_summary === 'string' ? parsed.prev_summary : '',
+          contentType: VALID_CONTENT_TYPES.has(parsed.content_type) ? parsed.content_type : null,   // 6 场景透镜;缺省/未知→null
+        };
+      } catch (err) { return reject(res, 400, 'bad_json', err.message); }
+      const admission = reserveAdmission();
+      if (!admission) return reject(res, 503, 'server_busy');
+      const _t0 = Date.now();
+      try {
+        const result = await admission.enqueue(() => extractFastBlock0(args));
+        sendJSON(res, { block_0: result.block_0, fast_ms: Date.now() - _t0, usage: result.usage });
+      } catch (err) {
+        log('fast-block0 error: ' + err.message);
+        return rejectBody(res, 502, { error: 'kuaidao_error', message: (err.message || '').slice(0, 200) });
+      } finally { admission.release(); }
+    });
+    return;
+  }
+
+  // POST /api/quickread/extract-block — streaming Pass N (one block, per-job serial).
+  if (req.method === 'POST' && path === '/api/quickread/extract-block') {
+    if (API_KEY && req.headers['x-api-key'] !== API_KEY) return reject(res, 401, 'invalid_api_key');
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(body || '{}');
+        if (!parsed.job_id) return reject(res, 400, 'missing_job_id');
+        if (!Number.isFinite(parsed.block_idx)) return reject(res, 400, 'missing_block_idx');
+      } catch (err) { return reject(res, 400, 'bad_json', err.message); }
+      try {
+        const result = await enqueueBlock(parsed.job_id, () => runExtractBlock(parsed.job_id, parsed.block_idx));
+        sendJSON(res, result);
+      } catch (err) {
+        log('extract-block error: ' + err.message);
+        reject(res, 400, 'extract_block_error', err.message?.slice(0, 200));
+      }
+    });
+    return;
+  }
+
+  // POST /api/quickread/compose-block — optional local mark timing.
+  // It never waits for the LLM queue or starts another model request.
+  if (req.method === 'POST' && path === '/api/quickread/compose-block') {
+    if (API_KEY && req.headers['x-api-key'] !== API_KEY) return reject(res, 401, 'invalid_api_key');
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(body || '{}');
+        if (!parsed.job_id) return reject(res, 400, 'missing_job_id');
+        if (!Number.isFinite(parsed.block_idx)) return reject(res, 400, 'missing_block_idx');
+      } catch (err) { return reject(res, 400, 'bad_json', err.message); }
+      try {
+        const result = await runComposeBlock(parsed.job_id, parsed.block_idx, parsed.timestamps, parsed.duration);
+        sendJSON(res, result);
+      } catch (err) {
+        log('compose-block error: ' + err.message);
+        reject(res, 400, 'compose_block_error', err.message?.slice(0, 200));
+      }
+    });
+    return;
+  }
+
+  // POST /api/quickread/compose — client posts TTS timestamps → Pass2 + layout.
+  if (req.method === 'POST' && path === '/api/quickread/compose') {
+    if (API_KEY && req.headers['x-api-key'] !== API_KEY) return reject(res, 401, 'invalid_api_key');
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(body || '{}');
+        if (!parsed.job_id) return reject(res, 400, 'missing_job_id');
+        if (!Array.isArray(parsed.sections) || !parsed.sections.length) return reject(res, 400, 'missing_sections');
+      } catch (err) { return reject(res, 400, 'bad_json', err.message); }
+      const sse = openSSE(res);
+      const heartbeat = setInterval(() => sse.ping(), 15_000);
+      req.on('close', () => clearInterval(heartbeat));
+      try {
+        const result = await runCompose(parsed.job_id, parsed.sections, sse);
+        sse.event('done', result);
+      } catch (err) {
+        log('compose error: ' + err.message);
+        sse.event('error', { message: err.message?.slice(0, 500) || 'compose_error' });
+      }
+      clearInterval(heartbeat);
+      sse.end();
+    });
+    return;
+  }
+
+  // GET /api/quickread/:job_id/spec
+  let m = path.match(/^\/api\/quickread\/([^/]+)\/spec$/);
+  if (req.method === 'GET' && m) {
+    const job = jobAssets.get(m[1]);
+    if (!job) return reject(res, 404, 'unknown_job');
+    return sendJSON(res, sectionsForClient(job.spec));
+  }
+
+  // GET /api/quickread/:job_id/preview — preview-server cinematic HTML
+  // (verbatim from tools/preview-server.mjs).  All /spec.json and /file?path=
+  // references inside the HTML are rewritten to relative paths so they
+  // resolve under this job_id subtree.
+  m = path.match(/^\/api\/quickread\/([^/]+)\/preview$/);
+  if (req.method === 'GET' && m) {
+    const job = jobAssets.get(m[1]);
+    if (!job) return reject(res, 404, 'unknown_job');
+    const hideChromeCss = `
+<style>
+  #btnRenderMp4, #info { display: none !important; }
+</style></head>`;
+    const html = PREVIEW_HTML
+      .replace(/'\/spec\.json'/g, "'./spec.json'")
+      .replace(/'\/file\?path=/g, "'./file?path=")
+      .replace('</head>', hideChromeCss);
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+      ...(ENABLE_CORS && { 'Access-Control-Allow-Origin': '*' }),
+    });
+    return res.end(html);
+  }
+
+  // GET /api/quickread/:job_id/spec.json — preview-server's expected shape
+  // (remapped absolute paths → relative ./file?path= URLs).
+  m = path.match(/^\/api\/quickread\/([^/]+)\/spec\.json$/);
+  if (req.method === 'GET' && m) {
+    const job = jobAssets.get(m[1]);
+    if (!job?.previewSpec) return reject(res, 404, 'no_preview_spec');
+    return sendJSON(res, remapForFiles(job.previewSpec));
+  }
+
+  // GET /api/quickread/:job_id/file?path=<abs> — serves any asset (audio,
+  // screenshot) by absolute path.  Restricted to paths inside the job's
+  // known asset set to prevent path-traversal.
+  m = path.match(/^\/api\/quickread\/([^/]+)\/file$/);
+  if (req.method === 'GET' && m) {
+    const job = jobAssets.get(m[1]);
+    if (!job) return reject(res, 404, 'unknown_job');
+    const filePath = url.searchParams.get('path');
+    if (!filePath) return reject(res, 400, 'missing_path');
+    // Whitelist: audio, screenshot, and GIF assets from previewSpec
+    const gifPaths = new Set();
+    if (job.previewSpec?.sections) {
+      for (const s of job.previewSpec.sections) {
+        for (const g of (s.gifs || [])) { if (g) gifPaths.add(g); }
+        if (s.statBgGifPath) gifPaths.add(s.statBgGifPath);
+        if (s.cinematic?.giphyMap) {
+          for (const p of Object.values(s.cinematic.giphyMap)) { if (p) gifPaths.add(p); }
+        }
+        for (const ev of (s.cinematic?.events || [])) {
+          if (ev._gifPath) gifPaths.add(ev._gifPath);
+        }
+      }
+    }
+    // audioBySection no longer exists in the client-TTS flow (audio is in the
+    // browser) → guard against undefined, else /file throws and GIFs 000.
+    const ok = Object.values(job.audioBySection || {}).includes(filePath)
+            || filePath === job.screenshot
+            || gifPaths.has(filePath);
+    if (!ok || !existsSync(filePath)) return reject(res, 404, 'not_in_whitelist');
+    const ext = filePath.toLowerCase();
+    const mime = ext.endsWith('.mp3')  ? 'audio/mpeg'
+              : ext.endsWith('.png')  ? 'image/png'
+              : ext.endsWith('.jpg')  ? 'image/jpeg'
+              : ext.endsWith('.jpeg') ? 'image/jpeg'
+              : ext.endsWith('.webp') ? 'image/webp'
+              : ext.endsWith('.gif')  ? 'image/gif'
+              : 'application/octet-stream';
+    return sendFile(res, filePath, mime);
+  }
+
+  // GET /api/quickread/:job_id/screenshot
+  m = path.match(/^\/api\/quickread\/([^/]+)\/screenshot$/);
+  if (req.method === 'GET' && m) {
+    const job = jobAssets.get(m[1]);
+    if (!job?.screenshot) return reject(res, 404, 'unknown_screenshot');
+    return sendFile(res, job.screenshot, 'image/png');
+  }
+
+  // GET /api/quickread/:job_id/audio/:section_id
+  m = path.match(/^\/api\/quickread\/([^/]+)\/audio\/([^/]+)$/);
+  if (req.method === 'GET' && m) {
+    const job = jobAssets.get(m[1]);
+    const filePath = job?.audioBySection?.[decodeURIComponent(m[2])];
+    if (!filePath || !existsSync(filePath)) return reject(res, 404, 'unknown_audio');
+    return sendFile(res, filePath, 'audio/mpeg');
+  }
+
+  // Compatibility response for retired GIF polling: no network/media work.
+  m = path.match(/^\/api\/quickread\/([^/]+)\/gifs$/);
+  if (m) {
+    if (!jobAssets.get(m[1])) return reject(res, 404, 'job_not_found');
+    return sendJSON(res, { ready: true, sections: [] });
+  }
+
+  // Health probe
+  if (req.method === 'GET' && (path === '/health' || path === '/')) {
+    return sendJSON(res, {
+      ok: true, queue: queue.length, active: !!activeJob,
+      jobs_cached: jobAssets.size,
+    });
+  }
+
+  reject(res, 404, 'not_found');
+});
+
+server.listen(PORT, process.env.QUICKREAD_BIND_HOST || '0.0.0.0', () => {
+  log(`quickread server listening on :${PORT}`);
+  log(`  POST /api/quickread             — start SSE pipeline`);
+  log(`  GET  /api/quickread/<id>/spec   — cinematic spec`);
+  log(`  GET  /api/quickread/<id>/screenshot`);
+  log(`  GET  /api/quickread/<id>/audio/<section_id>`);
+  log(`  GET  /health                    — queue depth`);
+});
+
+
+// Finish accepted requests and durable snapshots before a supervised restart.
+let shuttingDown = false;
+function stopGracefully() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  server.close(async () => {
+    await jobAssets.flush();
+    process.exit(0);
+  });
+  server.closeIdleConnections?.();
+}
+process.on('SIGTERM', stopGracefully);
+process.on('SIGINT', stopGracefully);
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function reject(res, status, code, msg = '') {
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    ...(ENABLE_CORS && { 'Access-Control-Allow-Origin': '*' }),
+  });
+  res.end(JSON.stringify({ error: code, message: msg || code }));
+}
+
+// Like reject() but sends an arbitrary JSON body (e.g. the Pro-gate 402 with
+// upgrade_url / freeMax).  reject() only emits { error, message }.
+function rejectBody(res, status, body) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    ...(ENABLE_CORS && { 'Access-Control-Allow-Origin': '*' }),
+  });
+  res.end(JSON.stringify(body || { error: 'quota_exceeded' }));
+}
+
+function sendJSON(res, obj) {
+  res.writeHead(200, {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store',
+    ...(ENABLE_CORS && { 'Access-Control-Allow-Origin': '*' }),
+  });
+  res.end(JSON.stringify(obj));
+}
+
+function sendFile(res, path, mime) {
+  const stat = statSync(path);
+  res.writeHead(200, {
+    'Content-Type':   mime,
+    'Content-Length': stat.size,
+    // Strong client-side cache: artifacts live in the user's browser cache (no
+    // cloud storage).  URLs are job-scoped + content-stable → safe to keep 7d
+    // immutable, so replays / re-opens load audio + GIF from local cache.
+    'Cache-Control':  'private, max-age=604800, immutable',
+    ...(ENABLE_CORS && { 'Access-Control-Allow-Origin': '*' }),
+  });
+  createReadStream(path).pipe(res);
+}
+
+// Strip the heavy internal state out of the spec before sending to the
+// extension — it only needs sections + their cinematic events / anchorMap.
+// The extension consumes this — sections + their cinematic events.  Anchor
+// rects are resolved client-side from the live DOM, so we don't ship rect
+// data here.  Each event carries `text` which the client matches against
+// its in-memory paragraph list.
+// Mirror of preview-server.mjs's serveSpec remapper — rewrites absolute file
+// paths into relative `./file?path=...` URLs that resolve under the iframe's
+// base URL.  Keeps preview-server's cinematic JS happy without changes.
+function remapForFiles(previewSpec) {
+  previewSpec = withoutRetiredGifAssets(previewSpec);
+  // COS URLs (https://, global-accel CDN) pass through; local paths → ./file?path=
+  const mapPath = (p) => !p ? null : (/^https?:\/\//.test(p) ? p : `./file?path=${encodeURIComponent(p)}`);
+  return {
+    ...previewSpec,
+    screenshotMeta: previewSpec.screenshotMeta ? {
+      ...previewSpec.screenshotMeta,
+      path: mapPath(previewSpec.screenshotMeta.path),
+    } : null,
+    sections: (previewSpec.sections || []).map(s => ({
+      ...s,
+      ttsPath:       mapPath(s.ttsPath),
+      bgImage:       s.bgImage ? mapPath(s.bgImage) : null,
+      gifs:          (s.gifs || []).map(mapPath),
+      statBgGifPath: s.statBgGifPath ? mapPath(s.statBgGifPath) : null,
+      cinematic: s.cinematic ? {
+        ...s.cinematic,
+        events: (s.cinematic.events || []).map(ev =>
+          ev._gifPath ? { ...ev, _gifPath: mapPath(ev._gifPath) } : ev
+        ),
+        giphyMap: s.cinematic.giphyMap
+          ? Object.fromEntries(Object.entries(s.cinematic.giphyMap).map(([k,v]) => [k, mapPath(v)]))
+          : {},
+      } : null,
+      imageFlashes: (s.imageFlashes || []).map(f => ({ ...f, imagePath: mapPath(f.imagePath) })),
+      photoOverlay: s.photoOverlay ? {
+        ...s.photoOverlay,
+        imagePath: s.photoOverlay.imagePath ? mapPath(s.photoOverlay.imagePath) : null,
+        windows: (s.photoOverlay.windows || []).map(w => ({
+          ...w,
+          imagePath: mapPath(w.imagePath || s.photoOverlay.imagePath),
+        })),
+      } : null,
+    })),
+  };
+}
+
+function sectionsForClient(spec) {
+  spec = withoutRetiredGifAssets(spec);
+  const scenes = spec.sections || [];
+  return {
+    title:           spec.title,
+    source_url:      spec.source_url,
+    output_language: spec.output_language,
+    model_used:      spec.extraction?.model || null,
+    sections: scenes.map(s => ({
+      id:        s.id,
+      style:     s.style,
+      text:      s.text,
+      duration:  s.duration,
+      // section.cinematic is set by extractContent (the LLM authored
+      // timeline) — preserved as-is.  Renderer reads .events.
+      cinematic: s.cinematic || null,
+    })),
+  };
+}
+
+function loadEnv(path) {
+  if (!existsSync(path)) return;
+  for (const line of readFileSync(path, 'utf8').split('\n')) {
+    const m = line.match(/^([A-Z_][A-Z0-9_]*)\s*=\s*"?([^"#\n]+)"?/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
+  }
+}

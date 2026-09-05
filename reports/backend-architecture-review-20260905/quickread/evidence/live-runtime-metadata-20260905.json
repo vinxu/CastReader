@@ -1,0 +1,19 @@
+{
+  "captured_at_utc": "2026-09-05T10:41:00Z",
+  "collection": "Read-only local health, process cwd/current release, PID and source SHA-256; no request body, synthesis, quota consumption, environment value or credential was read into this artifact.",
+  "global": {
+    "pid": 507570,
+    "release": "/root/castreader/routing-releases/20260904-quickread-gif-retirement",
+    "health": {"ok": true, "queue": 0, "active": false, "jobs_cached": 192},
+    "server_sha256": "c0ac4ab91043a4c6cf0a360f722cf6c7dc8f0e6e609a2a5e2b807f6d577ae39c",
+    "extract_content_sha256": "8eba87646a36fc5969b3fd989e9093bc5c3d77d80d03bfb5d3184197cad96a8e"
+  },
+  "cn": {
+    "pid": 1067993,
+    "release": "/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement",
+    "health": {"ok": true, "queue": 0, "active": 0, "concurrency": 3, "jobs_cached": 11},
+    "server_sha256": "a9341081d273b902681463100e66d1a414d5a92c0dda8619cfe952ac85db3d15",
+    "extract_content_sha256": "199489b2b665967ee03b460590f3ca43a4951a2c9126c19faf5aef796fde8533"
+  },
+  "comparison_to_activation_receipt": "Both current PIDs and server hashes match the 2026-09-04 activation receipt. jobs_cached increased from 0 to 192 global and from 0 to 11 CN; this is cache cardinality, not a success count."
+}
