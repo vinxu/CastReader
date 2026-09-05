@@ -1,0 +1,71 @@
+{
+  "alert_files": 0,
+  "result": {
+    "alignmentOk": true,
+    "elapsedMs": 2349,
+    "endpoint": "https://api.castreader.ai/api/captioned_speech_partly",
+    "inputCharacters": 577,
+    "inputSha256": "b092e28426b5826b3803505221bdf1d17f1c42cd01f22a886386e83d7fc9c12f",
+    "language": "en",
+    "locale": "en-US",
+    "observedAt": "2026-09-05T16:15:00.370Z",
+    "probe": "core-audio-continuity",
+    "region": "us",
+    "schemaVersion": 1,
+    "segmentCount": 2,
+    "segments": [
+      {
+        "attempts": 1,
+        "audioBytes": 369837,
+        "durationSeconds": 23.088,
+        "gateway": "vercel-r2",
+        "index": 0,
+        "processedCharacters": 366,
+        "remainingCharacters": 211,
+        "timestampCount": 55,
+        "timestampsOk": true,
+        "upstreamNode": "castreader-us4090",
+        "upstreamRevision": "0",
+        "upstreamSource": "fallback"
+      },
+      {
+        "attempts": 1,
+        "audioBytes": 230445,
+        "durationSeconds": 14.376,
+        "gateway": "vercel-r2",
+        "index": 1,
+        "processedCharacters": 211,
+        "remainingCharacters": 0,
+        "timestampCount": 31,
+        "timestampsOk": true,
+        "upstreamNode": "castreader-us4090",
+        "upstreamRevision": "0",
+        "upstreamSource": "fallback"
+      }
+    ],
+    "status": "healthy",
+    "supplyOk": true,
+    "totalAudioBytes": 600282,
+    "totalDurationSeconds": 37.464,
+    "voice": "af_heart"
+  },
+  "result_files": 1,
+  "service": {
+    "ActiveState": "inactive",
+    "ExecMainExitTimestamp": "",
+    "ExecMainStartTimestamp": "",
+    "ExecMainStatus": "0",
+    "Result": "success",
+    "SubState": "dead"
+  },
+  "state": {
+    "consecutiveAlignmentDegradations": 0,
+    "consecutiveSupplyFailures": 0,
+    "lastAlertAt": null,
+    "lastHealthyAt": "2026-09-05T16:15:00.370Z",
+    "lastStatus": "healthy",
+    "schemaVersion": 1,
+    "updatedAt": "2026-09-05T16:15:00.370Z"
+  },
+  "timer_enabled": "disabled"
+}

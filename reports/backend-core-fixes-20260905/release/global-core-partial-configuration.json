@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "sourceProject": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
+  "targetProject": "prj_EknF8IKAv8mDy4QEGb2z4VoX6n2f",
+  "copiedKeys": [
+    "DATABASE_PROVIDER",
+    "DATABASE_URL",
+    "AUTH_SECRET",
+    "CRON_SECRET",
+    "KV_REST_API_URL",
+    "KV_REST_API_TOKEN",
+    "NEXT_PUBLIC_APP_URL",
+    "NEXT_PUBLIC_APP_NAME",
+    "NEXT_PUBLIC_THEME",
+    "NEXT_PUBLIC_APPEARANCE",
+    "TTS_UPSTREAM_URL",
+    "TTS_UPSTREAM_NODE_ID",
+    "TTS_UPSTREAM_RELEASE_ID",
+    "TTS_UPSTREAM_RECEIPT_SHA256",
+    "TTS_RUNTIME_NODE_ALLOWLIST_JSON",
+    "VOICE_GIFT_V1_ENABLED",
+    "VOICE_GIFT_V1_SCHEMA_READY",
+    "VOICE_GIFT_DRAFT_V1_SCHEMA_READY",
+    "VOICE_GIFT_WEB_BASE_URL"
+  ],
+  "failed": [],
+  "scope": "available core configuration only; clone/QuickRead Sensitive inputs are still missing",
+  "recordedAt": "2026-09-05T16:18:37.217Z"
+}

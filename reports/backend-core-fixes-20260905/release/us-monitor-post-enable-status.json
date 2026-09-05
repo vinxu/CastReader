@@ -1,0 +1,68 @@
+{
+  "alert_files": 0,
+  "captured_at_utc": "2026-09-05T16:21:56Z",
+  "result_files": 3,
+  "results": [
+    {
+      "alignmentOk": true,
+      "allDecoded": true,
+      "elapsedMs": 2349,
+      "observedAt": "2026-09-05T16:15:00.370Z",
+      "region": "us",
+      "remainingCharacters": 0,
+      "segmentCount": 2,
+      "status": "healthy",
+      "supplyOk": true,
+      "totalAudioBytes": 600282,
+      "totalDurationSeconds": 37.464,
+      "upstreamNodes": [
+        "castreader-us4090"
+      ]
+    },
+    {
+      "alignmentOk": true,
+      "allDecoded": true,
+      "elapsedMs": 3069,
+      "observedAt": "2026-09-05T16:16:12.962Z",
+      "region": "us",
+      "remainingCharacters": 0,
+      "segmentCount": 2,
+      "status": "healthy",
+      "supplyOk": true,
+      "totalAudioBytes": 600282,
+      "totalDurationSeconds": 37.464,
+      "upstreamNodes": [
+        "castreader-us4090"
+      ]
+    },
+    {
+      "alignmentOk": true,
+      "allDecoded": true,
+      "elapsedMs": 2257,
+      "observedAt": "2026-09-05T16:21:14.862Z",
+      "region": "us",
+      "remainingCharacters": 0,
+      "segmentCount": 2,
+      "status": "healthy",
+      "supplyOk": true,
+      "totalAudioBytes": 600282,
+      "totalDurationSeconds": 37.464,
+      "upstreamNodes": [
+        "castreader-us4090"
+      ]
+    }
+  ],
+  "service": {
+    "ActiveState": "inactive",
+    "ExecMainStatus": "0",
+    "Result": "success",
+    "SubState": "dead"
+  },
+  "timer": {
+    "ActiveState": "active",
+    "LastTriggerUSec": "Sat 2026-09-05 16:21:12 UTC",
+    "NextElapseUSecRealtime": "",
+    "SubState": "waiting",
+    "UnitFileState": "enabled"
+  }
+}

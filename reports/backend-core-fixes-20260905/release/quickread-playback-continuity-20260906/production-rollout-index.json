@@ -1,0 +1,36 @@
+{
+  "client_release_boundary": "Installed clients gain the server-side durable extract-block recovery now, but a client that disconnects before it has received and retained the published job_id/block0 cannot initiate the new resume flow; the extension improvement in 15f4e72 remains unshipped and equivalent native-client behavior still requires a future app release.",
+  "commits": {
+    "backend_server": "3d68d82e307cba36710f1a8100f80ea50a1f178b",
+    "extension_client_not_published": "15f4e72aaa9db197a0d4c1ce551c6a162febc614",
+    "immutable_release": "dae4e5ecd05b234a9235c26c88ce418a09b6c051",
+    "private_env_exclusion": "4ab07615ac4bb4781019775c853c8a51ce6a6aa0"
+  },
+  "created_at": "2026-09-05T17:53:19.063381Z",
+  "regions": {
+    "cn": {
+      "current_release": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+      "rollout_receipt_path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/cn-production-rollout-receipt.json",
+      "rollout_receipt_sha256": "5998ced577b42c0c910a9aad416b2cd12fa54cdf84a6d3abe713c7b754e0330d",
+      "verified": true
+    },
+    "us": {
+      "current_release": "/root/castreader/routing-releases/20260906-quickread-playback-continuity-3d68d82-us",
+      "rollout_receipt_path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/us-production-rollout-receipt.json",
+      "rollout_receipt_sha256": "78435697a566b1a4943fd5d40661d2ab4ad344c9fd847ce18d07b65904c18154",
+      "verified": true
+    }
+  },
+  "reports_commit_owner": "root task will commit this safe report directory together with the consolidated evidence",
+  "reviewed_cutover_payload": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/cutover-review.json",
+    "sha256": "2a6b4bcd9a1092c2f734190e141be54d7efd23b137c520e3e997bf6c976b5315"
+  },
+  "schema": "castreader.quickread-production-rollout-index.v1",
+  "server_effective_boundary": "Both production QuickRead workers now checkpoint the published first block and exact source progress before exposure, recover old-client continuation through the existing extract-block contract, share continuation work, propagate one provider deadline/cancellation signal, and return retryable 5xx for technical faults without changing regional provider, identity, membership, or quota policy.",
+  "source_branch": "codex/quickread-cancellation-recovery-20260905",
+  "source_head": "4ab07615ac4bb4781019775c853c8a51ce6a6aa0",
+  "source_worktree": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-quickread-cancellation-recovery-20260905",
+  "source_worktree_clean": true,
+  "verified": true
+}

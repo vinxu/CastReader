@@ -1,0 +1,53 @@
+{
+  "cn_gpu": {
+    "clone_identity_matches_cutover": true,
+    "freshness_limit": "last-proven snapshot reused; live refresh unavailable because SSH provider closed connection",
+    "kokoro_identity_matches_cutover": true,
+    "nari_identity_matches_cutover": true,
+    "reference": "reports/backend-core-evidence-20260904/iteration/kokoro/cn-cutover.json",
+    "snapshot_release_matches_cutover": true
+  },
+  "generated_at_utc": "2026-09-05T15:07:13.207702+00:00",
+  "quickread": {
+    "cn": {
+      "all_expected_patch_files_match": true,
+      "expected_reference": "reports/backend-core-evidence-20260904/iteration/retired-gifs/quickread-final-rollout.json",
+      "matched": {
+        "server/job-assets.mjs": true,
+        "server/retired-gif-assets.mjs": true,
+        "server/server.mjs": true,
+        "tools/generate-tts.mjs": true,
+        "tools/llm-provider.mjs": true,
+        "tools/playback-metadata.mjs": true,
+        "tools/regional-routing.mjs": true
+      },
+      "note": "extract-content.mjs is not covered by the old activation patch_files manifest and is separately pinned in the new baseline."
+    },
+    "us": {
+      "all_expected_patch_files_match": true,
+      "expected_reference": "reports/backend-core-evidence-20260904/iteration/retired-gifs/quickread-final-rollout.json",
+      "matched": {
+        "server/job-assets.mjs": true,
+        "server/retired-gif-assets.mjs": true,
+        "server/server.mjs": true,
+        "tools/generate-tts.mjs": true,
+        "tools/playback-metadata.mjs": true,
+        "tools/regional-routing.mjs": true
+      },
+      "note": "extract-content.mjs is not covered by the old activation patch_files manifest and is separately pinned in the new baseline."
+    }
+  },
+  "quickread_region_specific_extract_content": {
+    "cn": "199489b2b665967ee03b460590f3ca43a4951a2c9126c19faf5aef796fde8533",
+    "release_rule": "Never copy one region full extract-content.mjs over the other; patch each exact baseline and pin both before/after hashes.",
+    "same": false,
+    "us": "8eba87646a36fc5969b3fd989e9093bc5c3d77d80d03bfb5d3184197cad96a8e"
+  },
+  "us_gpu": {
+    "clone_identity_matches_cutover": true,
+    "kokoro_identity_matches_cutover": true,
+    "nari_identity_matches_cutover": true,
+    "reference": "reports/backend-core-evidence-20260904/iteration/kokoro-r131b-us-cutover-final.json",
+    "release_matches_cutover": true
+  }
+}

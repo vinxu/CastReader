@@ -1,0 +1,317 @@
+{
+  "captured_at_utc": "2026-09-05T15:05:35.506194+00:00",
+  "collection": "read-only; no synthesis; excludes env values, logs and user data",
+  "current_link": "/workspace/castreader-runtime/current",
+  "files": [
+    {
+      "bytes": 2500,
+      "path": "api/src/builds/v1_0/config.json",
+      "sha256": "bdad19b3570bdd0e2fca41525f91b958fcb6d1b24bb1e66e4a1e555914ff2bdd"
+    },
+    {
+      "bytes": 53,
+      "path": "api/src/core/__init__.py",
+      "sha256": "f9152148c12165c8c8161ebdd5058165a020527d96a952acb2c72661467218a3"
+    },
+    {
+      "bytes": 1654,
+      "path": "api/src/core/audio_timing.py",
+      "sha256": "0eacd8e5fff532a6eb889493f1c712a639e705d771890d502da1b73664a4fbdd"
+    },
+    {
+      "bytes": 3122,
+      "path": "api/src/core/config.py",
+      "sha256": "8859ea70a4273ca414c68cbb9f280de9bd4f62e7871d45e0a4b6fb8c517fe42a"
+    },
+    {
+      "bytes": 1363,
+      "path": "api/src/core/model_config.py",
+      "sha256": "59da8011e5ec1593865e174e59f9b4daf7f2534a26587df1e55e8a8baecd8594"
+    },
+    {
+      "bytes": 414,
+      "path": "api/src/core/openai_mappings.json",
+      "sha256": "33fa75cc0c328c408e9bf926c7b07a6fd969c90670a824bedf2373c87c73eb58"
+    },
+    {
+      "bytes": 11300,
+      "path": "api/src/core/paths.py",
+      "sha256": "38911fe6cec6086c4986c106e3e78c7c70c35d598310500aed4a788f274712df"
+    },
+    {
+      "bytes": 4134,
+      "path": "api/src/core/playback_diagnostics.py",
+      "sha256": "027cb5fd9ecf2a2dd41a5a20ccb583d04497526c6cf585bb6f285e3edfb2138a"
+    },
+    {
+      "bytes": 246,
+      "path": "api/src/inference/__init__.py",
+      "sha256": "ef4b2c104643a4662db970d4c5678ba6f0671e36b1d35d0f82ff9802e41bf047"
+    },
+    {
+      "bytes": 3200,
+      "path": "api/src/inference/base.py",
+      "sha256": "388a0ba333f261f62e97c7e9ca16f7747c7ba1e0ac4848cb076e4615cbdff881"
+    },
+    {
+      "bytes": 7500,
+      "path": "api/src/inference/compatible_english_timestamps.py",
+      "sha256": "6253e1f9574b000bf2402141cd8be1ad4c698931853a2e0522ded3f333cc7996"
+    },
+    {
+      "bytes": 14254,
+      "path": "api/src/inference/kokoro_v0.py",
+      "sha256": "1d5057192cbdfdcf663cd853b14894f1e39bd09b9c2a60007634542f661da3fa"
+    },
+    {
+      "bytes": 49467,
+      "path": "api/src/inference/kokoro_v1.py",
+      "sha256": "5d04ce250bb94fc2008eb65ddd5efea46186b84f74d984c0e9ad53f3048aab92"
+    },
+    {
+      "bytes": 6782,
+      "path": "api/src/inference/language_adapters.py",
+      "sha256": "1eb86022c4e6853a59dfa39ce3c47d08789c9532269fcd70f05acc52e3a4fa68"
+    },
+    {
+      "bytes": 5304,
+      "path": "api/src/inference/model_manager.py",
+      "sha256": "ad08b84eff78fa7775068c676373eb01177f6e0003c2fbce68096e149948a23d"
+    },
+    {
+      "bytes": 26697,
+      "path": "api/src/inference/model_packages.json",
+      "sha256": "94e50c4449bcfe1e74614b68881f80df47abc6693cd5069da28ead238ecdaaac"
+    },
+    {
+      "bytes": 8303,
+      "path": "api/src/inference/model_packages.py",
+      "sha256": "a84cb16a33805359a8e667be50c439b0216086c15d35b087b29a9abf342b7f35"
+    },
+    {
+      "bytes": 48,
+      "path": "api/src/inference/source_kokoro_runtime/__init__.py",
+      "sha256": "009c7d57d39677701f1b5e6dbe681c786819dc67cc415710e0c89b9c21af5cd9"
+    },
+    {
+      "bytes": 7746,
+      "path": "api/src/inference/source_kokoro_runtime/custom_stft.py",
+      "sha256": "94fed3f9ac22bba31135bf8c4ea795762c7ab3ff44f1984d11e7babf27462d69"
+    },
+    {
+      "bytes": 19505,
+      "path": "api/src/inference/source_kokoro_runtime/istftnet.py",
+      "sha256": "66515cb3369d1c0bbb2015ad7293d019fb1f80fefcb2d56e70e73b6b146af11c"
+    },
+    {
+      "bytes": 6605,
+      "path": "api/src/inference/source_kokoro_runtime/model.py",
+      "sha256": "301c55350a068c4ed3b4cbd1209d2afb848bebca72db5657405e47e9dfb604db"
+    },
+    {
+      "bytes": 7784,
+      "path": "api/src/inference/source_kokoro_runtime/modules.py",
+      "sha256": "6e14dadc706efc9a8d90e8b4919d45d57342555b242c642cd26f26c65eedc085"
+    },
+    {
+      "bytes": 3102,
+      "path": "api/src/inference/voice_manager.py",
+      "sha256": "f5c21d61f88b6896c17794ae60b4464ba973ed04a625e7b55e4ded010d0ccf1d"
+    },
+    {
+      "bytes": 4285,
+      "path": "api/src/main.py",
+      "sha256": "eb404ec87f6f1614b5b10235b82d8e6c27384bf9c9a6248103e45ab15546dfb7"
+    },
+    {
+      "bytes": 2351,
+      "path": "api/src/models/v1_0/config.json",
+      "sha256": "5abb01e2403b072bf03d04fde160443e209d7a0dad49a423be15196b9b43c17f"
+    },
+    {
+      "bytes": 2,
+      "path": "api/src/routers/__init__.py",
+      "sha256": "32c4858e22cc2c967b42150fa550562a2c839c2cebcaab91cabdf6f4da020022"
+    },
+    {
+      "bytes": 6200,
+      "path": "api/src/routers/debug.py",
+      "sha256": "ead98b582285b7a496149584ec0082cf5eaf11b6dced121d845ca00c48e3fd9c"
+    },
+    {
+      "bytes": 17691,
+      "path": "api/src/routers/development.py",
+      "sha256": "080365da6cf0b4c0f6636dd6ca5026d5ab3d247f6f0a842bc05a0dd47bee42b3"
+    },
+    {
+      "bytes": 22710,
+      "path": "api/src/routers/openai_compatible.py",
+      "sha256": "88bf782747daae8896f4ee91279513120233b04bce606358fe6edaeadd0ce83a"
+    },
+    {
+      "bytes": 1532,
+      "path": "api/src/routers/web_player.py",
+      "sha256": "fda8ff6c76c784f27bc4cfe8f4ff6edb87d27cfc8580ab86bdb1a172ce1260d2"
+    },
+    {
+      "bytes": 62,
+      "path": "api/src/services/__init__.py",
+      "sha256": "f1bbdcbd79d61105f4b3178f133f06e6d48dde1d9506a90bc07547b2ef3c4613"
+    },
+    {
+      "bytes": 10831,
+      "path": "api/src/services/audio.py",
+      "sha256": "92b6c501fca2cdc323c4d2972817a68adf0be45d936ba837ba16cb396de8b135"
+    },
+    {
+      "bytes": 4087,
+      "path": "api/src/services/streaming_audio_writer.py",
+      "sha256": "57fda384cc40cc58b96dc6311a1a573b09998dacde04f6b35986b44c240eb17e"
+    },
+    {
+      "bytes": 5838,
+      "path": "api/src/services/temp_manager.py",
+      "sha256": "da212e53d2784f03533380aab1e869ac2d0c713f6e06583e909276c8fe3936f9"
+    },
+    {
+      "bytes": 483,
+      "path": "api/src/services/text_processing/__init__.py",
+      "sha256": "8c3fc77ec3eb47f3f499dc6fe75fdab9173d22b5c4c965df3e0cac2e5ae71e8f"
+    },
+    {
+      "bytes": 13706,
+      "path": "api/src/services/text_processing/normalizer.py",
+      "sha256": "d5d78c2c3f31a4bf38413fbf7e95de1bc3385927fc11db3100e8c5cb79ec3a97"
+    },
+    {
+      "bytes": 2922,
+      "path": "api/src/services/text_processing/phonemizer.py",
+      "sha256": "40fb3b18cb3e0a2f1476f4733034a0351ab9faf0c69600e4396a6e587f72fd57"
+    },
+    {
+      "bytes": 13768,
+      "path": "api/src/services/text_processing/text_processor.py",
+      "sha256": "36929c095ab36876ce017e5b3da7384d2d1207639db2f38c947e332a2abad4b1"
+    },
+    {
+      "bytes": 1385,
+      "path": "api/src/services/text_processing/vocabulary.py",
+      "sha256": "01a3fb8839176c88a1bb3cb9b979fc01786e7e84ffec3be603e1584842872dae"
+    },
+    {
+      "bytes": 31663,
+      "path": "api/src/services/tts_service.py",
+      "sha256": "ac1ec2b158f4b2fd9857bf53d743631419eb934729070c5df73d285430b1a910"
+    },
+    {
+      "bytes": 334,
+      "path": "api/src/structures/__init__.py",
+      "sha256": "b7de0a29f038fabbe375041f035ee186aabefa5c993756e6bf51417242d4db24"
+    },
+    {
+      "bytes": 1661,
+      "path": "api/src/structures/custom_responses.py",
+      "sha256": "f06cdc73025d26e07cfb4715bcee9cccbdb73f40eb6a4c8b1a09185ca7010126"
+    },
+    {
+      "bytes": 466,
+      "path": "api/src/structures/model_schemas.py",
+      "sha256": "4a4f88b8169325ba8ecc3b7fdf5baa0af49c978079070d0be0ef66e0dc06125e"
+    },
+    {
+      "bytes": 6762,
+      "path": "api/src/structures/schemas.py",
+      "sha256": "3169412a1d5bf4989f59f564ddaa861c7cdd6abb1bfee772555f9cfd5f94f7c8"
+    },
+    {
+      "bytes": 1178,
+      "path": "api/src/structures/text_schemas.py",
+      "sha256": "98bc87bf2a750bc1c10db36dc38c7d9c0348b5f271fa70d8e9cd3a732d649783"
+    }
+  ],
+  "gpu_csv_fields": [
+    "name",
+    "memory_total_mib",
+    "memory_used_mib",
+    "memory_free_mib",
+    "utilization_pct"
+  ],
+  "gpu_row": "NVIDIA GeForce RTX 4090, 24564, 13928, 10165, 0",
+  "health": {
+    "clone": {
+      "data": {
+        "accepting": true,
+        "active_voice_tasks": 0,
+        "busy": false,
+        "nari_ready": true,
+        "queue_depth": 0,
+        "status": "healthy"
+      },
+      "http_status": 200
+    },
+    "kokoro": {
+      "data": {
+        "status": "healthy"
+      },
+      "http_status": 200
+    },
+    "nari": {
+      "data": {
+        "phase": "ready",
+        "ready": true
+      },
+      "http_status": 200
+    }
+  },
+  "processes": {
+    "clone": {
+      "cwd": "/workspace/castreader-clone",
+      "pid": 568834,
+      "start_ticks": "524136804"
+    },
+    "kokoro": {
+      "cwd": "/workspace/castreader-runtime/releases/20260904-kokoro-playback-us-r131b",
+      "pid": 1158018,
+      "start_ticks": "528101142"
+    },
+    "nari": {
+      "cwd": "/workspace/nari-qwen3-tts-clean",
+      "pid": 4136837,
+      "start_ticks": "519185503"
+    }
+  },
+  "region": "us",
+  "release": "/workspace/castreader-runtime/releases/20260904-kokoro-playback-us-r131b",
+  "runtime_control": {
+    "launcher": "/opt/supervisor-scripts/castreader-tts.sh",
+    "launcher_sha256": "3dd1fdbcf60b984a14db5142de9b7d2de3011e7123b0f75e0b82d4f6dba50a28",
+    "program": "castreader-tts",
+    "protected_programs": [
+      "castreader-clone",
+      "castreader-nari-base"
+    ],
+    "stop_signal": "TERM",
+    "supervisor_config": "/etc/supervisor/conf.d/castreader-tts.conf",
+    "supervisor_config_sha256": "d25647b4735984ab678cd2b4ad13c621cd5d3bfb8295dcda8102fb555e5a177c"
+  },
+  "source_manifest_algorithm": "sha256(path\\0bytes\\0sha256\\n, paths sorted); api/src .py and .json; excludes __pycache__",
+  "source_tree_files": 45,
+  "source_tree_sha256": "40e6ab1dc62c784bba630bdd054dd072272b0da64dd96d2d8df4bc3b49164bc6",
+  "supervisor": [
+    "castreader-clone                                            RUNNING   pid 568834, uptime 1 day, 21:58:32",
+    "castreader-clone-cloudflare                                 STOPPED   Not started",
+    "castreader-clone-tls                                        RUNNING   pid 4138616, uptime 2 days, 11:41:27",
+    "castreader-clone-tunnel                                     FATAL     Exited too quickly (process log may have details)",
+    "castreader-nari-base                                        RUNNING   pid 4136837, uptime 2 days, 11:43:45",
+    "castreader-tts                                              RUNNING   pid 1158018, uptime 1 day, 10:57:49",
+    "castreader-tts-candidate                                    STOPPED   Not started",
+    "castreader-tts-compatible-canary                            STOPPED   Sep 03 12:27 PM",
+    "castreader-tts-de-isolated                                  STOPPED   Not started",
+    "castreader-tts-es7-isolated                                 STOPPED   Jul 17 03:40 PM",
+    "castreader-tts-fr-elodie-isolated                           STOPPED   Jul 20 04:34 PM",
+    "castreader-tts-fr-elodie-isolated-r41                       STOPPED   Jul 20 07:29 PM",
+    "castreader-tts-multilingual-isolated                        STOPPED   Not started",
+    "castreader-tts-runtime-agent                                RUNNING   pid 1879010, uptime 4 days, 4:36:28",
+    "castreader-tts-shadow                                       STOPPED   Jul 15 11:08 AM"
+  ]
+}

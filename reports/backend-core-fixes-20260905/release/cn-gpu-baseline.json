@@ -1,0 +1,174 @@
+{
+  "baseline_kind": "last-proven snapshot reused; live refresh unavailable because SSH provider closed connection",
+  "captured_at_utc": "2026-09-05T10:52:38.847510+00:00",
+  "cas_limitation": "Must refresh PID/start_ticks/current target and complete candidate/baseline manifest immediately before any cutover; this file alone does not authorize a production mutation.",
+  "collection": "read-only; no synthesis; excludes env secret values and user content",
+  "critical_source_hashes": {
+    "/root/autodl-tmp/castreader-runtime/current/api/src/core/audio_timing.py": {
+      "bytes": 1654,
+      "sha256": "0eacd8e5fff532a6eb889493f1c712a639e705d771890d502da1b73664a4fbdd"
+    },
+    "/root/autodl-tmp/castreader-runtime/current/api/src/core/playback_diagnostics.py": {
+      "bytes": 4134,
+      "sha256": "027cb5fd9ecf2a2dd41a5a20ccb583d04497526c6cf585bb6f285e3edfb2138a"
+    },
+    "/root/autodl-tmp/castreader-runtime/current/api/src/inference/compatible_english_timestamps.py": {
+      "bytes": 7500,
+      "sha256": "6253e1f9574b000bf2402141cd8be1ad4c698931853a2e0522ded3f333cc7996"
+    },
+    "/root/autodl-tmp/castreader-runtime/current/api/src/inference/kokoro_v1.py": {
+      "bytes": 49467,
+      "sha256": "5d04ce250bb94fc2008eb65ddd5efea46186b84f74d984c0e9ad53f3048aab92"
+    },
+    "/root/autodl-tmp/castreader-runtime/current/api/src/inference/model_packages.json": {
+      "bytes": 26702,
+      "sha256": "d1c8fe31b62415ae382d589dfbc143ffe0983df5b89d74dca2339f8725d79ca7"
+    },
+    "/root/autodl-tmp/castreader-runtime/current/api/src/routers/development.py": {
+      "bytes": 17691,
+      "sha256": "080365da6cf0b4c0f6636dd6ca5026d5ab3d247f6f0a842bc05a0dd47bee42b3"
+    },
+    "/root/autodl-tmp/castreader-runtime/current/api/src/services/tts_service.py": {
+      "bytes": 31663,
+      "sha256": "ac1ec2b158f4b2fd9857bf53d743631419eb934729070c5df73d285430b1a910"
+    }
+  },
+  "current_release": "/root/autodl-tmp/castreader-runtime/releases/20260904-kokoro-playback-cn-r131b",
+  "gpu_rows": [
+    "0, NVIDIA GeForce RTX 4090, 24564, 14661, 9420, 0, 29"
+  ],
+  "guide_probe": "no AGENTS.md at /root, /root/autodl-tmp, or /etc",
+  "health": {
+    "clone": {
+      "data": {
+        "accepting": true,
+        "active_kind": null,
+        "active_voice_tasks": 0,
+        "adaptive_denoise": {
+          "all_recordings": true,
+          "attenuation_db": 24,
+          "counters": {
+            "created_atten24": 1,
+            "denoise_failures": 0,
+            "denoise_reference_rejections": 0,
+            "diarization_unavailable": 0,
+            "multiple_speaker_rejections": 0,
+            "speaker_consistency_warnings": 0
+          },
+          "deepfilter": {
+            "ready": true,
+            "reason": null,
+            "version": "0.5.6"
+          },
+          "deepfilter_passes": 1,
+          "diarization": {
+            "load_error": null,
+            "ready": true,
+            "reason": null
+          },
+          "mode": "on",
+          "mode_source": "fixed-policy",
+          "pipeline_version": "fixed-deepfilter-atten24-v1",
+          "probe_count": 0,
+          "prompt_builds": 1,
+          "raw_fallback": false,
+          "ready": true,
+          "reference_speaker_policy": "warn-only-v1",
+          "selector_version": "fixed-deepfilter-atten24-v1"
+        },
+        "busy": false,
+        "completed": 4,
+        "expired": 0,
+        "failed": 0,
+        "max_queue_size": 32,
+        "model": "qwen3-tts-0.6b-base-nari",
+        "nari_ready": true,
+        "queue_by_priority": {
+          "background": 0,
+          "interactive": 0,
+          "prefetch": 0
+        },
+        "queue_depth": 0,
+        "queue_wait_p50_ms": 0.08,
+        "queue_wait_p95_ms": 0.17,
+        "run_p50_ms": 381.57,
+        "run_p95_ms": 1829.4,
+        "semantic_asr_loaded": false,
+        "semantic_asr_ready": true,
+        "semantic_asr_required": false,
+        "status": "healthy",
+        "submitted": 4,
+        "voice_clone_generation_mode": "x-vector",
+        "voice_creation_dependencies_ready": true,
+        "voice_creation_enabled": true,
+        "voice_prompt_writer_schema": "xvector_v1"
+      },
+      "status_code": 200
+    },
+    "kokoro": {
+      "data": {
+        "status": "healthy"
+      },
+      "status_code": 200
+    },
+    "nari_health": {
+      "data": {
+        "phase": "ready"
+      },
+      "status_code": 200
+    },
+    "nari_ready": {
+      "data": {
+        "phase": "ready",
+        "ready": true,
+        "reason": "ready"
+      },
+      "status_code": 200
+    }
+  },
+  "processes": {
+    "18094": {
+      "cwd": "/root",
+      "pid": 639323,
+      "ppid": 639315,
+      "rss": "2752452 kB",
+      "start_ticks": "2020111398",
+      "started_at_utc": "2026-09-04T04:23:52.980000+00:00"
+    },
+    "18890": {
+      "cwd": "/root",
+      "pid": 639681,
+      "ppid": 639315,
+      "rss": "2512156 kB",
+      "start_ticks": "2020113411",
+      "started_at_utc": "2026-09-04T04:24:13.110000+00:00"
+    },
+    "8880": {
+      "cwd": "/root/autodl-tmp/castreader-runtime/releases/20260904-kokoro-playback-cn-r131b",
+      "pid": 640207,
+      "ppid": 60384,
+      "rss": "4934392 kB",
+      "start_ticks": "2020118568",
+      "started_at_utc": "2026-09-04T04:25:04.680000+00:00"
+    }
+  },
+  "refresh_attempted_at_utc": "2026-09-05T15:06:36.792727+00:00",
+  "region": "cn",
+  "source_evidence": "/Users/xuxuheng/Documents/CastReader/reports/backend-architecture-review-20260905/worker/cn-runtime-snapshot.json",
+  "storage_mount": {
+    "fstype": "xfs",
+    "options": "rw,relatime,attr2,inode64,logbufs=8,logbsize=32k,prjquota",
+    "source": "/dev/md0[/docker/volumes/autodl-container-d0884780b4-9c6a8f65-storage/_data]",
+    "target": "/root/autodl-tmp"
+  },
+  "watchdog_processes": [
+    {
+      "cwd": "/root",
+      "pid": 639314
+    },
+    {
+      "cwd": "/root",
+      "pid": 639315
+    }
+  ]
+}

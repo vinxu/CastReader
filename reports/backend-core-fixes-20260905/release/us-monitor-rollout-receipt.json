@@ -1,0 +1,101 @@
+{
+  "artifact": {
+    "bytes": 12698,
+    "path": "/tmp/castreader-core-audio-monitor-272d3148.tar.gz",
+    "sha256": "5c085a6187cd3ed9b13102369ff09c559dc7ad3006d499ceb4f033ce02a5f0d3"
+  },
+  "businessProcessesRestarted": false,
+  "checks": {
+    "alerts_dry_run_none": true,
+    "first_regular_run_healthy": true,
+    "manual_all_decoded": true,
+    "manual_full_remainder": true,
+    "manual_multisegment": true,
+    "manual_supply_healthy": true,
+    "node_runtime_unchanged": true,
+    "persistent_catchup_healthy": true,
+    "quickread_healthy_after": true,
+    "quickread_pm2_identity_unchanged": true,
+    "quickread_source_tree_unchanged": true,
+    "quickread_target_unchanged": true,
+    "reverse_proxy_tree_unchanged": true,
+    "timer_enabled_active": true
+  },
+  "enabledAtUtc": "2026-09-05T16:16:09Z",
+  "evidence": {
+    "us-monitor-enable-transaction.txt": "770738d30908322ae67318a9fac02c2acbdfd03966b993d668df3316a18d6dac",
+    "us-monitor-install-transaction.txt": "4a57e7446505950f26aefc6c807837c2b9d04816f57abf11c8503a7acd45c6cb",
+    "us-monitor-manual-oneshot.json": "213492efa1de89989c9a8dd0fc7ba445d82df529a1fcb07c734f56a15ce60f13",
+    "us-monitor-post-enable-status.json": "1c32d2829b287b6e0f5565a6f0141075a6df03a649cfe9cd81693f37061754ae",
+    "us-monitor-rollout-after.json": "e1c7fe81bc3892a1973ad5af33410f1c2d5f173485dae52f4826832f1e5895f3",
+    "us-monitor-rollout-before.json": "4c9cb149942aeddb1b1831e586599bd05cebc0f966a7d4794b5ec5f0bc585a3f"
+  },
+  "existingVercelHealthCronChanged": false,
+  "externalNotificationsConfigured": false,
+  "manual": {
+    "alignmentOk": true,
+    "elapsedMs": 2349,
+    "observedAt": "2026-09-05T16:15:00.370Z",
+    "segmentCount": 2,
+    "status": "healthy",
+    "supplyOk": true,
+    "totalAudioBytes": 600282,
+    "totalDurationSeconds": 37.464
+  },
+  "postEnableResults": [
+    {
+      "alignmentOk": true,
+      "allDecoded": true,
+      "elapsedMs": 3069,
+      "observedAt": "2026-09-05T16:16:12.962Z",
+      "region": "us",
+      "remainingCharacters": 0,
+      "segmentCount": 2,
+      "status": "healthy",
+      "supplyOk": true,
+      "totalAudioBytes": 600282,
+      "totalDurationSeconds": 37.464,
+      "upstreamNodes": [
+        "castreader-us4090"
+      ]
+    },
+    {
+      "alignmentOk": true,
+      "allDecoded": true,
+      "elapsedMs": 2257,
+      "observedAt": "2026-09-05T16:21:14.862Z",
+      "region": "us",
+      "remainingCharacters": 0,
+      "segmentCount": 2,
+      "status": "healthy",
+      "supplyOk": true,
+      "totalAudioBytes": 600282,
+      "totalDurationSeconds": 37.464,
+      "upstreamNodes": [
+        "castreader-us4090"
+      ]
+    }
+  ],
+  "region": "us",
+  "remoteRelease": "/opt/castreader-core-audio-monitor/releases/272d3148-5c085a61",
+  "rollback": {
+    "businessRollbackRequired": false,
+    "disable": "systemctl disable --now castreader-core-audio-monitor@us.timer",
+    "reload": "systemctl daemon-reload",
+    "removeMonitorRoot": "/opt/castreader-core-audio-monitor",
+    "removeUnits": [
+      "/etc/systemd/system/castreader-core-audio-monitor@.service",
+      "/etc/systemd/system/castreader-core-audio-monitor@.timer"
+    ]
+  },
+  "schemaVersion": 1,
+  "scope": "public multi-segment supply/decode/progress monitor on US QuickRead control host; local dry-run alerts only",
+  "sourceCommit": "272d3148d6a93cec079d7dc649a78d406e5fe36f",
+  "timer": {
+    "ActiveState": "active",
+    "LastTriggerUSec": "Sat 2026-09-05 16:21:12 UTC",
+    "NextElapseUSecRealtime": "",
+    "SubState": "waiting",
+    "UnitFileState": "enabled"
+  }
+}

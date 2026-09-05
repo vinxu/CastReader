@@ -1,0 +1,8 @@
+{
+  "ok": false,
+  "stage": "vercel-create",
+  "httpStatus": 403,
+  "errorCode": "forbidden",
+  "message": "Cannot create tokens for this app.",
+  "mutationPerformed": false
+}

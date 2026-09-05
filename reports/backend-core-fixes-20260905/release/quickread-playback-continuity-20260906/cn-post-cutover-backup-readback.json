@@ -1,0 +1,11 @@
+{
+  "public": false,
+  "region": "ap-shanghai",
+  "bucket": "castreader-voice-1323065328",
+  "key": "runtime-backups/20260904/quickread-20260906-playback-continuity-post-source-37d756949f2438c1.tar.gz",
+  "bytes": 605823,
+  "sha256": "37d756949f2438c1236d438ee5760c75b50184a6e6dc8e5e32d7f05bb5bab1ad",
+  "readback_sha256": "37d756949f2438c1236d438ee5760c75b50184a6e6dc8e5e32d7f05bb5bab1ad",
+  "verified": true,
+  "verifiedAt": "2026-09-05T17:51:04.715Z"
+}

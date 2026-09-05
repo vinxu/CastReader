@@ -1,0 +1,14 @@
+{
+  "bucket": "castreader-tts-backups",
+  "created_at": "2026-09-05T16:38:16.787744+00:00",
+  "downloaded_bytes": 5031520,
+  "expected_bytes": 5031520,
+  "object": "runtime-releases/us/quickread-20260904-gif-retirement/after-source-cc44b92e75616e62.tar.gz",
+  "operation": "read_only_existing_object_full_get",
+  "project_ref": "zqxgmqygirtpttnrvjpf",
+  "public": false,
+  "readback_sha256": "cc44b92e75616e62a888d34ec9a4b2c62112d26368778f2177c4fb01333d66af",
+  "schema": "castreader.backup-readback.v1",
+  "sha256": "cc44b92e75616e62a888d34ec9a4b2c62112d26368778f2177c4fb01333d66af",
+  "verified": true
+}

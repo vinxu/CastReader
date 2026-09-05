@@ -1,0 +1,11 @@
+Created symlink /etc/systemd/system/timers.target.wants/castreader-core-audio-monitor@cn.timer → /etc/systemd/system/castreader-core-audio-monitor@.timer.
+NextElapseUSecRealtime=
+LastTriggerUSec=Sat 2026-09-05 23:58:40 CST
+ActiveState=active
+SubState=running
+UnitFileState=enabled
+NEXT LEFT LAST                PASSED   UNIT                 ACTIVATES
+n/a  n/a  Sat 2026-09-05 23:… 50ms ago castreader-core-aud… castreader-core-aud…
+
+1 timers listed.
+Pass --all to see loaded but inactive timers, too.

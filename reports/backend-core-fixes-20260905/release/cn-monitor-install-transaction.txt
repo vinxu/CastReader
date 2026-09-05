@@ -1,0 +1,6 @@
+before_cas_ok
+install_staged_ok
+release=/opt/castreader-core-audio-monitor/releases/37d6f4d8-b12f3afd
+current=/opt/castreader-core-audio-monitor/releases/37d6f4d8-b12f3afd
+service_unit_sha=65fe20188f2b15af652e614d81e3fdf6b3e90de71670c1e352f5827a9e6f6916
+timer_unit_sha=d7cf2893eb75f9c9397958ce8fe0c3833228c9c6decedae2bee36b6bc076be92

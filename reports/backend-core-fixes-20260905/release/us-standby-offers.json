@@ -1,0 +1,45 @@
+{
+  "captured_at_utc": "2026-09-05T15:11:51.799004+00:00",
+  "current_production_machine_id_excluded": 9236,
+  "limits": [
+    "Offers and prices are transient and must be re-queried before approval.",
+    "Provider labels US geography; this is control-plane metadata, not independent datacenter attestation.",
+    "A rentable VM is not a warm standby until the exact release is restored, hashes/voice catalog match, fixed routing is configured, and model prewarm/health/drain tests pass."
+  ],
+  "query": "on-demand; default rentable=true verified=true external=false; RTX 4090; 1 GPU; >=24GB; >=256GB; US; rented=false; reliability>=0.98; >=2 direct ports; pricing with 256GB storage",
+  "selected_offers": [
+    {
+      "cuda_max_good": 12.2,
+      "direct_port_count": 256,
+      "disk_space_gb": 741.5,
+      "estimated_730h_usd": 291.57,
+      "geolocation": "Texas, US",
+      "gpu": "RTX 4090",
+      "gpu_ram_mib": 24564,
+      "hourly_total_usd_for_256gb": 0.39940740740740743,
+      "inet_down_mbps": 871.5,
+      "inet_up_mbps": 919.4,
+      "machine_id": 15261,
+      "offer_id": 29929805,
+      "reliability": 0.9936351,
+      "static_ip": false
+    },
+    {
+      "cuda_max_good": 12.7,
+      "direct_port_count": 122,
+      "disk_space_gb": 1281.5625,
+      "estimated_730h_usd": 304.44,
+      "geolocation": "Pennsylvania, US",
+      "gpu": "RTX 4090",
+      "gpu_ram_mib": 24564,
+      "hourly_total_usd_for_256gb": 0.417037037037037,
+      "inet_down_mbps": 2097.2,
+      "inet_up_mbps": 88.3,
+      "machine_id": 10447,
+      "offer_id": 48654836,
+      "reliability": 0.9983376,
+      "static_ip": true
+    }
+  ],
+  "status": "read-only market snapshot; no offer was rented, reserved or modified"
+}

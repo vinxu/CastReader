@@ -1,0 +1,48 @@
+{
+  "candidate": {
+    "env_files": [
+      ".env"
+    ],
+    "health": {
+      "active": false,
+      "jobs_cached": 1,
+      "ok": true,
+      "queue": 0
+    },
+    "listen": "127.0.0.1:17777",
+    "node_modules_independent": true,
+    "path": "/root/castreader/routing-releases/20260906-quickread-playback-continuity-3d68d82-us",
+    "pid": 540886,
+    "source": {
+      "files": 103,
+      "matches": true,
+      "tree_sha256": "308bf161596a15dab2d1de86d0548172ad8bad70eb3edce2b423b7da6050fe57"
+    },
+    "start_ticks": "181857484"
+  },
+  "checked_at_epoch_ms": 1788627994204,
+  "current_source": {
+    "files": 90,
+    "matches": true,
+    "tree_sha256": "8da1d216c57215b062d10f94e007a9a5a17d81645256efaddb4d8407880bebfb"
+  },
+  "key_file_sha256": {
+    "server/job-assets.mjs": "a2217876634183d1fc064dd318573d81d8c6fba97c213c2f3c2a49bc9ccafe90",
+    "server/server.mjs": "d7ba0a21cafd3208fcb8025f5580580e38c8b2a300a5169e4f54bb8306e43c8f",
+    "tools/extract-content.mjs": "6e5f44b603242adad06c053ef288183c28fedc9e98ff1af66b98e3d72dbf77cf",
+    "tools/llm-deadline.mjs": "0066eb2a3a39e55539184b5275d6ffc6aa0e8e2d1e23cc2525bfd72a8d90bfde",
+    "tools/regional-routing.mjs": "bb0d81ff4f61a8809f750632efd5fa58dbc9219a06561b723ce552488a4ccbbc"
+  },
+  "production": {
+    "current": "/root/castreader/routing-releases/20260904-quickread-gif-retirement",
+    "health": {
+      "active": false,
+      "jobs_cached": 215,
+      "ok": true,
+      "queue": 0
+    },
+    "pid": 507570,
+    "start_ticks": "168905163"
+  },
+  "region": "us"
+}

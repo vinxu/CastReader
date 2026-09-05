@@ -1,0 +1,37 @@
+{
+  "bucket": "castreader-tts-backups",
+  "created_at": "2026-09-05T17:43:36.902915+00:00",
+  "downloaded_bytes": 421460,
+  "expected_bytes": 421460,
+  "expected_files": 1,
+  "expected_objects": 1,
+  "files": [
+    {
+      "bytes": 421460,
+      "downloaded_bytes": 421460,
+      "name": "us-candidate.tar.gz",
+      "object_base": "runtime-releases/us/quickread-20260906-playback-continuity/post-source-31ad3272d6ddc12f.tar.gz",
+      "parts": [
+        {
+          "bytes": 421460,
+          "downloaded_bytes": 421460,
+          "object": "runtime-releases/us/quickread-20260906-playback-continuity/post-source-31ad3272d6ddc12f.tar.gz",
+          "offset": 0,
+          "readback_sha256": "31ad3272d6ddc12f30dc6922c8e1e1ff0b6648d49cdef425e11c09c8e9391cf8",
+          "sha256": "31ad3272d6ddc12f30dc6922c8e1e1ff0b6648d49cdef425e11c09c8e9391cf8",
+          "verified": true
+        }
+      ],
+      "readback_sha256": "31ad3272d6ddc12f30dc6922c8e1e1ff0b6648d49cdef425e11c09c8e9391cf8",
+      "sha256": "31ad3272d6ddc12f30dc6922c8e1e1ff0b6648d49cdef425e11c09c8e9391cf8",
+      "verified": true
+    }
+  ],
+  "plan_sha256": "da291415b529693dcb46f40c79a9bf9e8c528c1dd94eb632d36c25b9c0fc5efd",
+  "project_ref": "zqxgmqygirtpttnrvjpf",
+  "public": false,
+  "schema": "castreader.backup-readback.v1",
+  "verified": true,
+  "verified_files": 1,
+  "verified_objects": 1
+}

@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+# REVIEW COPY ONLY. Run on the CN QuickRead control host through sudo only after
+# the exact manifest below and this script have been reviewed. No secret is embedded.
+set -euo pipefail
+set +x
+
+REGION=cn
+CURRENT=/opt/castreader-quickread-cn/current
+OLD=/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement
+NEW=/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn
+MANIFEST=${MANIFEST:-/tmp/castreader-quickread-playback-continuity-release-manifest.json}
+EXPECTED_MANIFEST_SHA=e81428e25433d23da2cb12372d15b555b28432520e5a5e42c9435e62e7160b2a
+EXPECTED_AFTER_TREE=c9891423599d4f988b3eaeb9b623d0a0fbaa7ef1ccd6b0983a9cc8b99b9148e0
+CANDIDATE_PORT=17778
+LIVE_PORT=7777
+SERVICE=castreader-quickread-cn.service
+CANDIDATE_SERVICE=castreader-quickread-cn-candidate-3d68d82-4ab-final.service
+ENV_FILE=/etc/castreader/quickread-cn.env
+LOCK_FILE=/var/lock/castreader-quickread-release.lock
+SWITCHED=0
+
+die() { printf 'CN QuickRead cutover refused: %s\n' "$*" >&2; exit 65; }
+
+verify_tree_side() {
+  local tree="$1" side="$2"
+  python3 - "$MANIFEST" "$REGION" "$tree" "$side" <<'PY'
+import hashlib, json, pathlib, sys
+manifest_path, region, tree_path, side = sys.argv[1:]
+tree = pathlib.Path(tree_path).resolve()
+if not tree.is_dir():
+    raise SystemExit(f"tree is not a directory: {tree}")
+region_data = json.load(open(manifest_path, encoding="utf-8"))["regions"][region]
+expected = {item["path"]: item for item in region_data[side]["files"]}
+excluded_parts = {".git", "node_modules", "output", "bench-out", "test-results"}
+actual = {}
+for path in tree.rglob("*"):
+    rel_path = path.relative_to(tree)
+    if any(part in excluded_parts for part in rel_path.parts):
+        continue
+    if any(part == ".env" or part.startswith(".env.") for part in rel_path.parts):
+        continue
+    if not path.is_file() or path.is_symlink():
+        continue
+    data = path.read_bytes()
+    actual[rel_path.as_posix()] = {
+        "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)
+    }
+missing = sorted(set(expected) - set(actual))
+extra = sorted(set(actual) - set(expected))
+mismatch = sorted(
+    name for name in set(expected) & set(actual)
+    if actual[name] != {"sha256": expected[name]["sha256"], "bytes": expected[name]["bytes"]}
+)
+if missing or extra or mismatch:
+    print(json.dumps({"missing": missing, "extra": extra, "mismatch": mismatch}, separators=(",", ":")), file=sys.stderr)
+    raise SystemExit(1)
+print(region_data[side]["tree_sha256"])
+PY
+}
+
+health_is_idle() {
+  curl --fail --silent --show-error --max-time 3 "http://127.0.0.1:${LIVE_PORT}/health" |
+    node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const h=JSON.parse(s);if(h.ok!==true||h.queue!==0||!(h.active===false||h.active===0))process.exit(1)})'
+}
+
+wait_live_health() {
+  local i
+  for i in $(seq 1 40); do
+    if curl --fail --silent --show-error --max-time 2 "http://127.0.0.1:${LIVE_PORT}/health" |
+      node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const h=JSON.parse(s);if(h.ok!==true)process.exit(1)})' 2>/dev/null; then
+      return 0
+    fi
+    sleep 0.25
+  done
+  return 1
+}
+
+auth_contract() {
+  local env_file="$1"
+  python3 - "$env_file" "$LIVE_PORT" <<'PY'
+import http.client, pathlib, sys
+env_path, port_text = sys.argv[1:]
+values = {}
+for raw in pathlib.Path(env_path).read_text().splitlines():
+    line = raw.strip()
+    if not line or line.startswith("#") or "=" not in line:
+        continue
+    key, value = line.split("=", 1)
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        value = value[1:-1]
+    values[key.strip()] = value
+api_key = values.get("QUICKREAD_API_KEY", "")
+if not api_key:
+    raise SystemExit("runtime QuickRead key is empty")
+def post(key):
+    conn = http.client.HTTPConnection("127.0.0.1", int(port_text), timeout=5)
+    conn.request("POST", "/api/quickread/extract-plan", body=b"{}", headers={
+        "content-type": "application/json", "x-api-key": key, "connection": "close",
+    })
+    response = conn.getresponse()
+    status = response.status
+    response.read(4096)
+    conn.close()
+    return status
+print(post("castreader-invalid-cutover-check"), post(api_key))
+PY
+}
+
+atomic_link() {
+  local target="$1" tmp="${CURRENT}.next.$$"
+  rm -f -- "$tmp"
+  ln -s -- "$target" "$tmp"
+  mv -Tf -- "$tmp" "$CURRENT"
+}
+
+rollback() {
+  # Clear the flag and disarm every trap before rollback starts. Even if a
+  # rollback command fails, EXIT cannot invoke this transaction twice.
+  SWITCHED=0
+  trap - EXIT HUP INT TERM
+  set +e
+  printf 'CN QuickRead activation failed; rolling symlink back to reviewed baseline.\n' >&2
+  atomic_link "$OLD"
+  systemctl restart "$SERVICE"
+  wait_live_health
+  printf 'CN QuickRead rollback health=%s target=%s\n' \
+    "$(curl --fail --silent --show-error --max-time 3 "http://127.0.0.1:${LIVE_PORT}/health")" \
+    "$(readlink -f "$CURRENT")" >&2
+}
+
+on_exit() {
+  local rc=$?
+  trap - EXIT HUP INT TERM
+  if [[ "$SWITCHED" == 1 ]]; then rollback; fi
+  exit "$rc"
+}
+trap on_exit EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+[[ "$(id -u)" == 0 ]] || die "must run as root"
+# Candidate staging, immutable install, activation, and rollback on this host
+# must all use this same named lock. This cutover refuses concurrent mutation.
+exec 9>"$LOCK_FILE"
+flock -n 9 || die "another QuickRead release transaction holds $LOCK_FILE"
+[[ -f "$MANIFEST" ]] || die "manifest was not staged"
+[[ "$(sha256sum "$MANIFEST" | awk '{print $1}')" == "$EXPECTED_MANIFEST_SHA" ]] || die "manifest SHA mismatch"
+[[ "$(readlink -f "$CURRENT")" == "$OLD" ]] || die "current release target changed"
+[[ -d "$NEW" && ! -L "$NEW" ]] || die "candidate release missing or is a symlink"
+[[ -d "$NEW/node_modules" && ! -L "$NEW/node_modules" ]] || die "candidate dependencies are not independent"
+[[ "$(stat -c '%U:%G:%a' "$ENV_FILE")" == "root:root:600" ]] || die "external runtime env ownership or mode changed"
+[[ -z "$(find "$NEW" -maxdepth 1 -name '.env*' -print -quit)" ]] || die "candidate contains a top-level env file"
+
+before_tree="$(verify_tree_side "$OLD" before)"
+after_tree="$(verify_tree_side "$NEW" after)"
+[[ "$after_tree" == "$EXPECTED_AFTER_TREE" ]] || die "candidate after-tree mismatch"
+
+live_pid="$(systemctl show "$SERVICE" -p MainPID --value)"
+[[ "$live_pid" =~ ^[0-9]+$ && "$live_pid" != 0 ]] || die "production systemd process is unavailable"
+[[ "$(readlink -f "/proc/${live_pid}/cwd")" == "$OLD" ]] || die "production process cwd is not the reviewed current release"
+
+candidate_pid="$(systemctl show "$CANDIDATE_SERVICE" -p MainPID --value)"
+[[ "$candidate_pid" =~ ^[0-9]+$ && "$candidate_pid" != 0 ]] || die "candidate service is unavailable"
+[[ "$(readlink -f "/proc/${candidate_pid}/cwd")" == "$NEW" ]] || die "candidate process cwd mismatch"
+curl --fail --silent --show-error --max-time 3 "http://127.0.0.1:${CANDIDATE_PORT}/health" |
+  node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const h=JSON.parse(s);if(h.ok!==true||h.queue!==0||!(h.active===false||h.active===0))process.exit(1)})'
+
+# Stop only the isolated candidate unit. The production service remains live.
+systemctl stop "$CANDIDATE_SERVICE"
+[[ "$(systemctl show "$CANDIDATE_SERVICE" -p ActiveState --value 2>/dev/null || true)" != active ]] || die "candidate unit did not stop"
+
+# Three consecutive idle observations reduce the admission race. The currently
+# deployed server has no admission-pause endpoint, so this is not a zero-race
+# drain; the reviewed operator must keep the restart window short.
+for _ in 1 2 3; do health_is_idle; sleep 1; done
+[[ "$(readlink -f "$CURRENT")" == "$OLD" ]] || die "current target changed during preflight"
+verify_tree_side "$OLD" before >/dev/null
+health_is_idle
+[[ "$(systemctl show "$SERVICE" -p MainPID --value)" == "$live_pid" ]] || die "production process changed during final idle gate"
+[[ "$(readlink -f "$CURRENT")" == "$OLD" ]] || die "current target changed during final idle gate"
+[[ "$(readlink -f "/proc/${live_pid}/cwd")" == "$OLD" ]] || die "production cwd changed during final idle gate"
+
+old_pid="$live_pid"
+SWITCHED=1
+atomic_link "$NEW"
+systemctl restart "$SERVICE"
+wait_live_health || die "new production health did not become ready"
+
+new_pid="$(systemctl show "$SERVICE" -p MainPID --value)"
+[[ "$new_pid" =~ ^[0-9]+$ && "$new_pid" != 0 && "$new_pid" != "$old_pid" ]] || die "systemd did not replace the process"
+[[ "$(readlink -f "$CURRENT")" == "$NEW" ]] || die "current symlink did not activate candidate"
+[[ "$(readlink -f "/proc/${new_pid}/cwd")" == "$NEW" ]] || die "new process cwd mismatch"
+tr '\0' '\n' < "/proc/${new_pid}/environ" | grep -qx 'QUICKREAD_REGION=cn' || die "new process is not pinned to CN"
+
+read -r wrong_status right_status < <(auth_contract "$ENV_FILE")
+[[ "$wrong_status" == 401 ]] || die "wrong-key contract check failed"
+[[ "$right_status" == 400 ]] || die "configured-key invalid-body contract check failed"
+
+final_health="$(curl --fail --silent --show-error --max-time 3 "http://127.0.0.1:${LIVE_PORT}/health")"
+SWITCHED=0
+trap - EXIT HUP INT TERM
+printf '{"region":"cn","from":"%s","to":"%s","before_tree":"%s","after_tree":"%s","old_pid":%s,"new_pid":%s,"wrong_key_status":%s,"invalid_body_status":%s,"health":%s}\n' \
+  "$OLD" "$NEW" "$before_tree" "$after_tree" "$old_pid" "$new_pid" "$wrong_status" "$right_status" "$final_health"

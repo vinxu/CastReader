@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "region": "cn",
+  "completed_at_utc": "2026-09-05T15:59:26.927210Z",
+  "status": "active",
+  "source": {
+    "commit": "272d3148d6a93cec079d7dc649a78d406e5fe36f",
+    "artifact_sha256": "5c085a6187cd3ed9b13102369ff09c559dc7ad3006d499ceb4f033ce02a5f0d3",
+    "artifact_bytes": 12698,
+    "release_target": "/opt/castreader-core-audio-monitor/releases/272d3148-5c085a61",
+    "release_tree_sha256": "139f35ae44ac6dd002e2e40638eba4819f73702141add4f33f215bb4c64ce933",
+    "run_sha256": "8f8972921d9fae2132111cdadefc4f80ecc9dc02fb473f5cf7e076e3604cfe2e",
+    "service_unit_sha256": "65fe20188f2b15af652e614d81e3fdf6b3e90de71670c1e352f5827a9e6f6916",
+    "timer_unit_sha256": "d7cf2893eb75f9c9397958ce8fe0c3833228c9c6decedae2bee36b6bc076be92",
+    "network_free_tests_passed": 19
+  },
+  "pre_activation_cas": {
+    "captured_at_utc": "2026-09-05T15:53:34.951505Z",
+    "evidence_file": "cn-monitor-rollout-before.json",
+    "result": "pass",
+    "monitor_absent": true,
+    "business_services_active": true,
+    "business_services_restart_count_zero": true,
+    "next_release_tree_sha256": "2c29803bdabc1573e5ecab0271b8446410684139f70ea4a71d5a588780b34d19",
+    "quickread_release_tree_sha256": "34c11b05196d89e97706ae504e303ddc6df5aafa5cd6ab697a1e221e9e089802",
+    "nginx_effective_sha256": "8a76a673812f30c04c421c0f77f63e8d825a8b93571864c8b406726a4471a759"
+  },
+  "preflight_issue_and_correction": {
+    "initial_artifact_commit": "37d6f4d80c22199e2707df9fdbb16e36a8ebfe00",
+    "initial_artifact_sha256": "b12f3afd80a209e3dba38892d9cf14120dd02576817937589d84c54b6d85d4eb",
+    "observed_behavior": "the first systemd oneshot exited 0 in about 0.09 seconds but wrote no result",
+    "cause": "Node resolved import.meta.url to the immutable release while argv retained the current symlink, so lexical direct-execution detection skipped main()",
+    "request_count_for_failed_oneshot": 0,
+    "timer_was_enabled": false,
+    "fix": "direct execution now compares real paths; a symlink CLI regression test executes an invalid-region invocation and requires exit 2",
+    "fix_commit": "272d3148d6a93cec079d7dc649a78d406e5fe36f",
+    "superseded_release_preserved_for_forensics": "/opt/castreader-core-audio-monitor/releases/37d6f4d8-b12f3afd",
+    "superseded_release_is_not_a_valid_runtime_rollback": true
+  },
+  "manual_multisegment_gate": {
+    "evidence_file": "cn-monitor-manual-oneshot.json",
+    "observed_at_utc": "2026-09-05T15:58:13.669Z",
+    "result": "healthy",
+    "supply_ok": true,
+    "alignment_ok": true,
+    "segment_count": 3,
+    "processed_characters_by_segment": [16, 22, 23],
+    "remaining_characters_by_segment": [45, 23, 0],
+    "total_audio_bytes": 216324,
+    "total_decoded_duration_seconds": 13.44,
+    "all_segments_decoded": true,
+    "all_segments_region_cn": true,
+    "input_sha256": "1465ec2c5a379439a03e0ff20b475781b2f8ea4ab48ed89bb6aa69a188d6254a"
+  },
+  "timer_activation": {
+    "enabled": true,
+    "active_state": "active",
+    "sub_state": "waiting",
+    "last_trigger_local": "2026-09-05T23:58:40+08:00",
+    "observed_next_trigger_local": "2026-09-06T00:03:42+08:00",
+    "first_timer_result": "healthy",
+    "first_timer_segment_count": 3,
+    "first_timer_result_sha256": "f362b1bd58e47684f7f91ec4921628dd4d80ec1079ccd9af723bb7e1da7c6e66",
+    "note": "Persistent=true caused an immediate catch-up run when the timer was first enabled; it completed successfully before the five-minute schedule began."
+  },
+  "first_regular_scheduled_run": {
+    "observed_at_utc": "2026-09-05T16:03:53.028Z",
+    "timer_last_trigger_local": "2026-09-06T00:03:49+08:00",
+    "result": "healthy",
+    "supply_ok": true,
+    "alignment_ok": true,
+    "segment_count": 3,
+    "elapsed_ms": 3257,
+    "total_audio_bytes": 216324,
+    "total_decoded_duration_seconds": 13.44,
+    "persisted_result_files_after_run": 3,
+    "local_alert_files_after_run": 0,
+    "timer_state_after_run": "enabled/active/waiting",
+    "service_exit_status": 0
+  },
+  "post_activation_cas": {
+    "captured_at_utc": "2026-09-05T15:59:26.927210Z",
+    "evidence_file": "cn-monitor-rollout-after.json",
+    "result": "pass",
+    "next_target_unchanged": true,
+    "next_release_tree_unchanged": true,
+    "quickread_target_unchanged": true,
+    "quickread_release_tree_unchanged": true,
+    "nginx_effective_config_unchanged": true,
+    "all_six_business_process_identities_unchanged": true,
+    "all_six_business_unit_hashes_unchanged": true,
+    "all_business_restart_counts_zero": true
+  },
+  "notification": {
+    "external_sender_configured": false,
+    "external_notification_sent": false,
+    "local_policy": "dry-run",
+    "state_path": "/var/lib/castreader-core-audio-monitor/cn"
+  },
+  "rollback_contract": {
+    "prior_monitor_state": "absent",
+    "actions": [
+      "disable and stop castreader-core-audio-monitor@cn.timer",
+      "stop only castreader-core-audio-monitor@cn.service if active",
+      "remove the two monitor unit files and current symlink",
+      "run systemctl daemon-reload",
+      "preserve both immutable releases and local result evidence",
+      "recompare the six business process identities, unit hashes, Next and QuickRead trees, and effective Nginx hash with cn-monitor-rollout-before.json"
+    ],
+    "must_not_restart": [
+      "castreader.service",
+      "castreader-quickread-cn.service",
+      "castreader-cn-kokoro-tunnel.service",
+      "castreader-cn-clone-tunnel.service",
+      "castreader-voice-gift-cn.service",
+      "nginx.service",
+      "GPU Kokoro",
+      "clone",
+      "Nari"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+enable_cas_ok
+enabled=enabled
+active=active
+NextElapseUSecRealtime=
+LastTriggerUSec=Sat 2026-09-05 16:16:09 UTC
+ActiveState=active
+SubState=running
+UnitFileState=enabled

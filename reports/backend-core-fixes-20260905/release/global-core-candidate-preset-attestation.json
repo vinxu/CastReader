@@ -1,0 +1,100 @@
+{
+  "ok": true,
+  "deployment": {
+    "url": "https://castreader-core-audio-1picgxal5-castreader.vercel.app",
+    "releaseId": "dpl_46biYYh2Lj8jMeZnii5JynpFWBKG"
+  },
+  "identity": {
+    "service": "castreader-core-audio",
+    "contract": "core-audio-v1",
+    "commit": "18929fa7a38042cf1c7f65ab23af5f6263a33957",
+    "sourceSha256": "9807d001431ec538d250cbe35797b152b769eacd9dc26b332fdde5b69fa5f314",
+    "region": "global",
+    "releaseId": "dpl_46biYYh2Lj8jMeZnii5JynpFWBKG"
+  },
+  "continuity": {
+    "schemaVersion": 1,
+    "probe": "core-audio-continuity",
+    "observedAt": "2026-09-05T17:14:19.506Z",
+    "region": "us",
+    "endpoint": "https://api.castreader.ai/api/captioned_speech_partly",
+    "inputSha256": "b092e28426b5826b3803505221bdf1d17f1c42cd01f22a886386e83d7fc9c12f",
+    "inputCharacters": 577,
+    "language": "en",
+    "locale": "en-US",
+    "voice": "af_heart",
+    "supplyOk": true,
+    "alignmentOk": true,
+    "status": "healthy",
+    "elapsedMs": 39777,
+    "segmentCount": 2,
+    "totalAudioBytes": 600282,
+    "totalDurationSeconds": 37.512,
+    "segments": [
+      {
+        "index": 0,
+        "attempts": 1,
+        "processedCharacters": 366,
+        "remainingCharacters": 211,
+        "audioBytes": 369837,
+        "durationSeconds": 23.112,
+        "timestampsOk": true,
+        "timestampCount": 55,
+        "gateway": "vercel-r2",
+        "upstreamNode": "castreader-us4090",
+        "upstreamSource": "fallback",
+        "upstreamRevision": "0"
+      },
+      {
+        "index": 1,
+        "attempts": 1,
+        "processedCharacters": 211,
+        "remainingCharacters": 0,
+        "audioBytes": 230445,
+        "durationSeconds": 14.4,
+        "timestampsOk": true,
+        "timestampCount": 31,
+        "gateway": "vercel-r2",
+        "upstreamNode": "castreader-us4090",
+        "upstreamSource": "fallback",
+        "upstreamRevision": "0"
+      }
+    ]
+  },
+  "regression": [
+    {
+      "stream": "omitted",
+      "httpStatus": 200,
+      "audioBytes": 77997,
+      "pcmSamples": 116928,
+      "sampleRate": 24000,
+      "unprocessedCharacters": 0,
+      "region": "global",
+      "elapsedMs": 8136
+    },
+    {
+      "stream": true,
+      "httpStatus": 200,
+      "audioBytes": 77997,
+      "pcmSamples": 116928,
+      "sampleRate": 24000,
+      "unprocessedCharacters": 0,
+      "region": "global",
+      "elapsedMs": 30719
+    },
+    {
+      "stream": false,
+      "httpStatus": 200,
+      "audioBytes": 77997,
+      "pcmSamples": 116928,
+      "sampleRate": 24000,
+      "unprocessedCharacters": 0,
+      "region": "global",
+      "elapsedMs": 7973
+    }
+  ],
+  "validatedAt": "2026-09-05T17:15:06.334Z",
+  "scope": "Independent candidate only. Preset audio and framing verified; clone encryption key missing, no production ingress cutover.",
+  "operationsAccess": "Temporary existing-US-controller SOCKS used only for protected deployment verification; closed after probes. No product route changed.",
+  "elapsedTimeScope": "Probe elapsedMs includes Vercel CLI control-plane authentication plus operations SOCKS/network overhead; not model generation latency."
+}

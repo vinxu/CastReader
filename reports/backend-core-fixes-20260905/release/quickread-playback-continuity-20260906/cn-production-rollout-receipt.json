@@ -1,0 +1,157 @@
+{
+  "activation": {
+    "after_tree": "c9891423599d4f988b3eaeb9b623d0a0fbaa7ef1ccd6b0983a9cc8b99b9148e0",
+    "before_tree": "0fc42c7339ec8acb36f79ded9cb252bac16a499dff3d147765790e87d48c4ac3",
+    "from": "/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement",
+    "health": {
+      "active": 0,
+      "concurrency": 3,
+      "jobs_cached": 0,
+      "ok": true,
+      "queue": 0
+    },
+    "invalid_body_status": 400,
+    "new_pid": 1608646,
+    "old_pid": 1067993,
+    "region": "cn",
+    "to": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+    "wrong_key_status": 401
+  },
+  "availability_monitor": {
+    "claim": "Observed failed-sample interval and conservative adjacent-good bracket; not a claim of zero downtime.",
+    "first_epoch_ms": 1788630490441,
+    "last_epoch_ms": 1788630520383,
+    "loopback": {
+      "conservative_good_to_good_bracket_ms": 422,
+      "expected_status": 200,
+      "failed_sample_span_ms": 67,
+      "failed_samples": 2,
+      "first_failed_epoch_ms": 1788630495215,
+      "last_failed_epoch_ms": 1788630495282,
+      "next_good_epoch_ms": 1788630495574,
+      "previous_good_epoch_ms": 1788630495152,
+      "statuses": [
+        0
+      ]
+    },
+    "public": {
+      "conservative_good_to_good_bracket_ms": 130,
+      "expected_status": 401,
+      "failed_sample_span_ms": 0,
+      "failed_samples": 1,
+      "first_failed_epoch_ms": 1788630495215,
+      "last_failed_epoch_ms": 1788630495215,
+      "next_good_epoch_ms": 1788630495282,
+      "previous_good_epoch_ms": 1788630495152,
+      "statuses": [
+        502
+      ]
+    },
+    "public_probe_semantics": "401 is the expected healthy response for a deliberately invalid API key; 502 is unavailable upstream.",
+    "samples": 449
+  },
+  "customer_entitlement_consumed": false,
+  "customer_identity_headers_sent": false,
+  "cutover_script_sha256": "9d6fd63cc1b406fd6981827696abc0de0587e384d2533c397a72f0d4984248ac",
+  "finished_at": "2026-09-05T17:51:37.732978Z",
+  "legacy_client_contract": {
+    "path": "POST /api/quickread/extract-block with the published job_id and next block_idx",
+    "resume_plan_endpoint_required": false,
+    "same_job_cached_repeat": true,
+    "verified": true
+  },
+  "manifest_sha256": "e81428e25433d23da2cb12372d15b555b28432520e5a5e42c9435e62e7160b2a",
+  "post_cutover_private_backup": {
+    "bucket": "castreader-voice-1323065328",
+    "bytes": 605823,
+    "object": "runtime-backups/20260904/quickread-20260906-playback-continuity-post-source-37d756949f2438c1.tar.gz",
+    "public": false,
+    "readback_sha256": "37d756949f2438c1236d438ee5760c75b50184a6e6dc8e5e32d7f05bb5bab1ad",
+    "receipt_path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/cn-post-cutover-backup-readback.json",
+    "receipt_sha256": "ac9a88507f5689510a22bb3de9a0bcd8c97f6e08fed5e39998b9aabce7eba3f5",
+    "region": "ap-shanghai",
+    "sha256": "37d756949f2438c1236d438ee5760c75b50184a6e6dc8e5e32d7f05bb5bab1ad",
+    "verified": true
+  },
+  "post_runtime": {
+    "current_target": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+    "health": {
+      "active": 0,
+      "concurrency": 3,
+      "jobs_cached": 1,
+      "ok": true,
+      "queue": 0
+    },
+    "pid": 1608646,
+    "process_cwd": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+    "production_manager": "systemd:castreader-quickread-cn.service",
+    "region": "cn",
+    "schema": "castreader.quickread-post-cutover-runtime.v1",
+    "start_ticks": 245729048,
+    "verified_at_epoch_ms": 1788630609316
+  },
+  "post_tree_verification": {
+    "file_count": 115,
+    "tree_sha256": "c9891423599d4f988b3eaeb9b623d0a0fbaa7ef1ccd6b0983a9cc8b99b9148e0",
+    "verified": true
+  },
+  "production_provider_continuation": {
+    "auth_rejection_status": 401,
+    "block0_seconds": 2.945,
+    "block0_text_chars": 140,
+    "block0_text_sha256": "f04c681b2d3e1b9807ee4c28b33b2a806e70d4bafba2fc5b4e2c763fdb43d9d9",
+    "block1_text_chars": 96,
+    "block1_text_sha256": "1e775e7474964815b6c1b23ccc24ff936d79e94505c4cc689d6ad2c5ba3ca6ae",
+    "cached_repeat_same_sha256": true,
+    "cached_repeat_seconds": 0.002,
+    "cached_repeat_status": 200,
+    "continuation_checkpoint_present": true,
+    "continuation_seconds": 4.575,
+    "continuation_status": 200,
+    "customer_entitlement_consumed": false,
+    "customer_identity_headers_sent": false,
+    "extract_plan_status": 200,
+    "fixture_version": "urban-tree-measurement-v1",
+    "generated_content_recorded": false,
+    "input_paragraphs": 8,
+    "input_sha256": "29f00673ccd8fac362cfbfb547b5dbb4777506644c3013756474aae997ee5215",
+    "job_id_sha256": "cfaec53a78d1601fe022acbd72b0d3f58254aa9770699095e568e36f029d37a3",
+    "localhost_port": 7777,
+    "output_language": "zh",
+    "plan_total_seconds": 6.699,
+    "provider_model": "deepseek-v4-pro",
+    "ready_checkpoint_present": true,
+    "region": "cn",
+    "retired_gif_fields_present": false,
+    "schema": "castreader.quickread-candidate-provider-probe.v1",
+    "server_first_block_ms": 2948,
+    "server_llm_ms": 6700,
+    "server_queue_ms": 1,
+    "sse_event_names": [
+      "stage",
+      "block0",
+      "done"
+    ],
+    "total_blocks": 5,
+    "tts_requested": false,
+    "verified": true,
+    "verified_at_epoch_ms": 1788630584078
+  },
+  "public_contract": {
+    "configured_key_invalid_body_status": 400,
+    "configured_key_transmitted_in_process_argv": false,
+    "public_host": "quickread.castreader.cn",
+    "region": "cn",
+    "response_body_recorded": false,
+    "schema": "castreader.quickread-public-contract.v1",
+    "verified": true,
+    "verified_at_epoch_ms": 1788630586281,
+    "wrong_key_status": 401
+  },
+  "region": "cn",
+  "review_payload_sha256": "2a6b4bcd9a1092c2f734190e141be54d7efd23b137c520e3e997bf6c976b5315",
+  "rollback_triggered": false,
+  "schema": "castreader.quickread-production-rollout.v1",
+  "tts_requested_by_validation": false,
+  "verified": true
+}

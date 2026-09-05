@@ -1,0 +1,15 @@
+{
+  "block_idx": 1,
+  "block_text_sha256": "38f7d513f3976a9e34ed242d3caa16d149f11e817ff74979849197d8b40539f2",
+  "customer_entitlement_consumed": false,
+  "customer_identity_headers_sent": false,
+  "elapsed_seconds": 0.005,
+  "generated_content_recorded": false,
+  "matches_pre_restart_sha256": true,
+  "provider_request_expected": false,
+  "region": "us",
+  "schema": "castreader.quickread-candidate-restart-recovery.v1",
+  "status": 200,
+  "verified": true,
+  "verified_at_epoch_ms": 1788627742800
+}

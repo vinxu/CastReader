@@ -1,0 +1,49 @@
+{
+  "candidate": {
+    "env_files": [],
+    "health": {
+      "active": 0,
+      "concurrency": 3,
+      "jobs_cached": 1,
+      "ok": true,
+      "queue": 0
+    },
+    "listen": "127.0.0.1:17778",
+    "node_modules_independent": true,
+    "path": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+    "pid": 1594311,
+    "source": {
+      "files": 115,
+      "matches": true,
+      "tree_sha256": "c9891423599d4f988b3eaeb9b623d0a0fbaa7ef1ccd6b0983a9cc8b99b9148e0"
+    },
+    "start_ticks": "245447764"
+  },
+  "checked_at_epoch_ms": 1788628019336,
+  "current_source": {
+    "files": 102,
+    "matches": true,
+    "tree_sha256": "0fc42c7339ec8acb36f79ded9cb252bac16a499dff3d147765790e87d48c4ac3"
+  },
+  "key_file_sha256": {
+    "server/job-assets.mjs": "a2217876634183d1fc064dd318573d81d8c6fba97c213c2f3c2a49bc9ccafe90",
+    "server/server.mjs": "b155806c93c4b098bdc3f6a44ddd2d596d6a7bed5be776af171b4426197ce0b0",
+    "tools/extract-content.mjs": "d83e14d89fb01b2ceb4e92d6ad16f5cf64d3a7fcdb974b4c80b339196a466469",
+    "tools/llm-deadline.mjs": "0066eb2a3a39e55539184b5275d6ffc6aa0e8e2d1e23cc2525bfd72a8d90bfde",
+    "tools/llm-provider.mjs": "7c0370aff30427bf5d85f47595c7b14c1a2dd1aff486c970f877a7926098e9d2",
+    "tools/regional-routing.mjs": "bb0d81ff4f61a8809f750632efd5fa58dbc9219a06561b723ce552488a4ccbbc"
+  },
+  "production": {
+    "current": "/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement",
+    "health": {
+      "active": 0,
+      "concurrency": 3,
+      "jobs_cached": 13,
+      "ok": true,
+      "queue": 0
+    },
+    "pid": 1067993,
+    "start_ticks": "232505929"
+  },
+  "region": "cn"
+}

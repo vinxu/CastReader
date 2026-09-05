@@ -1,0 +1,153 @@
+{
+  "activation": {
+    "after_tree": "308bf161596a15dab2d1de86d0548172ad8bad70eb3edce2b423b7da6050fe57",
+    "before_tree": "8da1d216c57215b062d10f94e007a9a5a17d81645256efaddb4d8407880bebfb",
+    "from": "/root/castreader/routing-releases/20260904-quickread-gif-retirement",
+    "health": {
+      "active": false,
+      "jobs_cached": 0,
+      "ok": true,
+      "queue": 0
+    },
+    "invalid_body_status": 400,
+    "new_pid": 543663,
+    "old_pid": 507570,
+    "region": "us",
+    "to": "/root/castreader/routing-releases/20260906-quickread-playback-continuity-3d68d82-us",
+    "wrong_key_status": 401
+  },
+  "availability_monitor": {
+    "claim": "Observed failed-sample interval and conservative adjacent-good bracket; not a claim of zero downtime.",
+    "first_epoch_ms": 1788629943974,
+    "last_epoch_ms": 1788629973914,
+    "loopback": {
+      "conservative_good_to_good_bracket_ms": 340,
+      "failed_sample_span_ms": 150,
+      "failed_samples": 3,
+      "first_failed_epoch_ms": 1788629950131,
+      "last_failed_epoch_ms": 1788629950281,
+      "next_good_epoch_ms": 1788629950383,
+      "previous_good_epoch_ms": 1788629950043,
+      "statuses": [
+        0
+      ]
+    },
+    "public": {
+      "conservative_good_to_good_bracket_ms": 340,
+      "failed_sample_span_ms": 150,
+      "failed_samples": 3,
+      "first_failed_epoch_ms": 1788629950131,
+      "last_failed_epoch_ms": 1788629950281,
+      "next_good_epoch_ms": 1788629950383,
+      "previous_good_epoch_ms": 1788629950043,
+      "statuses": [
+        502
+      ]
+    },
+    "samples": 423
+  },
+  "customer_entitlement_consumed": false,
+  "customer_identity_headers_sent": false,
+  "cutover_script_sha256": "ecc31860d5ca70b7c2bc5605d3efb7cbaace7ae4d4161597d448679f6fe7a69d",
+  "finished_at": "2026-09-05T17:45:23.741695Z",
+  "legacy_client_contract": {
+    "path": "POST /api/quickread/extract-block with the published job_id and next block_idx",
+    "resume_plan_endpoint_required": false,
+    "same_job_cached_repeat": true,
+    "verified": true
+  },
+  "manifest_sha256": "e81428e25433d23da2cb12372d15b555b28432520e5a5e42c9435e62e7160b2a",
+  "post_cutover_private_backup": {
+    "bucket": "castreader-tts-backups",
+    "bytes": 421460,
+    "object": "runtime-releases/us/quickread-20260906-playback-continuity/post-source-31ad3272d6ddc12f.tar.gz",
+    "public": false,
+    "readback_sha256": "31ad3272d6ddc12f30dc6922c8e1e1ff0b6648d49cdef425e11c09c8e9391cf8",
+    "receipt_path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/us-post-cutover-backup-readback.json",
+    "receipt_sha256": "f46aeb25c81f02f5650e59f9fc1b67a7fec86a7038788fc97606b2e1356de79b",
+    "sha256": "31ad3272d6ddc12f30dc6922c8e1e1ff0b6648d49cdef425e11c09c8e9391cf8",
+    "verified": true
+  },
+  "post_runtime": {
+    "current_target": "/root/castreader/routing-releases/20260906-quickread-playback-continuity-3d68d82-us",
+    "health": {
+      "active": false,
+      "jobs_cached": 1,
+      "ok": true,
+      "queue": 0
+    },
+    "pid": 543663,
+    "process_cwd": "/root/castreader/routing-releases/20260906-quickread-playback-continuity-3d68d82-us",
+    "production_manager": "pm2:quickread",
+    "region": "us",
+    "schema": "castreader.quickread-post-cutover-runtime.v1",
+    "start_ticks": 182086288,
+    "verified_at_epoch_ms": 1788630281123
+  },
+  "post_tree_verification": {
+    "file_count": 103,
+    "tree_sha256": "308bf161596a15dab2d1de86d0548172ad8bad70eb3edce2b423b7da6050fe57",
+    "verified": true
+  },
+  "production_provider_continuation": {
+    "auth_rejection_status": 401,
+    "block0_seconds": 1.566,
+    "block0_text_chars": 321,
+    "block0_text_sha256": "d061dd1ad50562ce2217fcea04ca237add9ae738567b04006e722c8dcd4315d7",
+    "block1_text_chars": 443,
+    "block1_text_sha256": "e653f51850233ed4ae3316d0d685de06933c4c58e622f308323f799edb255dea",
+    "cached_repeat_same_sha256": true,
+    "cached_repeat_seconds": 0.001,
+    "cached_repeat_status": 200,
+    "continuation_checkpoint_present": true,
+    "continuation_seconds": 2.063,
+    "continuation_status": 200,
+    "customer_entitlement_consumed": false,
+    "customer_identity_headers_sent": false,
+    "extract_plan_status": 200,
+    "fixture_version": "urban-tree-measurement-v1",
+    "generated_content_recorded": false,
+    "input_paragraphs": 8,
+    "input_sha256": "8d22b4270c41a1152eeb550f0dd9e30151b72f93b07773f77a65a0474707f8ff",
+    "job_id_sha256": "48683ccfae4e019e67d67b248eb1f918569a59e429c6025218caf64298a825e2",
+    "localhost_port": 7777,
+    "output_language": "en",
+    "plan_total_seconds": 2.94,
+    "provider_model": "gemini-3.5-flash",
+    "ready_checkpoint_present": true,
+    "region": "us",
+    "retired_gif_fields_present": false,
+    "schema": "castreader.quickread-candidate-provider-probe.v1",
+    "server_first_block_ms": 1567,
+    "server_llm_ms": 2943,
+    "server_queue_ms": 1,
+    "sse_event_names": [
+      "stage",
+      "block0",
+      "done"
+    ],
+    "total_blocks": 4,
+    "tts_requested": false,
+    "verified": true,
+    "verified_at_epoch_ms": 1788630097259
+  },
+  "public_contract": {
+    "configured_key_invalid_body_status": 400,
+    "configured_key_transmitted_in_process_argv": false,
+    "health_ok": true,
+    "health_status": 200,
+    "public_host": "qr.castreader.ai",
+    "region": "us",
+    "response_body_recorded": false,
+    "schema": "castreader.quickread-public-contract.v1",
+    "verified": true,
+    "verified_at_epoch_ms": 1788630107445,
+    "wrong_key_status": 401
+  },
+  "region": "us",
+  "review_payload_sha256": "2a6b4bcd9a1092c2f734190e141be54d7efd23b137c520e3e997bf6c976b5315",
+  "rollback_triggered": false,
+  "schema": "castreader.quickread-production-rollout.v1",
+  "tts_requested_by_validation": false,
+  "verified": true
+}

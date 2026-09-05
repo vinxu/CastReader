@@ -1,0 +1,32 @@
+{
+  "valuesReadOrRecorded": false,
+  "githubEnvironmentSecret": {
+    "name": "VERCEL_TOKEN",
+    "updatedAt": "2026-09-05T00:56:21Z"
+  },
+  "lastSuccessfulMaintenanceRun": {
+    "id": 33934272517,
+    "headCommit": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+    "startedAt": "2026-09-05T00:56:22Z",
+    "finishedAt": "2026-09-05T01:08:29Z",
+    "conclusion": "success"
+  },
+  "matchingCliOAuthCredential": {
+    "createdAt": "2026-09-05T00:27:27Z",
+    "expiredAt": "2026-09-05T08:27:27Z",
+    "shape": "short-lived access token with refresh-token-backed local CLI session",
+    "inference": "The one-second secret-update/run-start sequence and later natural expiry explain why the same workflow succeeded then and rejects the credential now."
+  },
+  "currentLocalCliCredential": {
+    "path": "/Users/xuxuheng/Library/Application Support/com.vercel.cli/auth.json",
+    "mode": "0600",
+    "login": "vinxucn-5010",
+    "shape": "short-lived access token plus refresh token",
+    "expiresAt": "2026-09-05T18:28:29Z",
+    "explicitScopeFieldPresent": false,
+    "observedAccess": "linked readout-web project and production environment metadata",
+    "safeForLongLivedGithubSecret": false
+  },
+  "recommendedCredentialShape": "A separately created project-scoped Vercel personal authentication token, stored only as the GitHub Production environment secret after control-plane review.",
+  "mutationPerformed": false
+}

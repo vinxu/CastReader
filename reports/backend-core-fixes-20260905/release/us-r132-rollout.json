@@ -1,0 +1,552 @@
+{
+  "backup": {
+    "objects": [
+      {
+        "bytes": 3324807745,
+        "full_readback_phase": "pre-cutover",
+        "full_readback_receipt_sha256": "afed696133d1abc8843684ff5a08b8d9de8551aba5133eceb88fbdef90b579a8",
+        "object": "runtime-releases/us/r130-compatible-20260903-bngg0e/castreader-runtime-local-equivalent.tar.zst",
+        "post_cutover_head_checked_at": "2026-09-05T17:18:56.039599+00:00",
+        "post_cutover_head_etag": "\"6c4cbd0531d7b68b77fad0c6ef7dd5d4-529\"",
+        "role": "shared-base",
+        "sha256": "659b6a46de3e86bad826657ffd64fb3e53490e951e991cba9f6c4c074c12b441"
+      },
+      {
+        "bytes": 244589,
+        "full_readback_phase": "post-cutover",
+        "full_readback_receipt_sha256": "2befb7e03c56fa4549bdfa458789accf5aef0e23b442c8971bf2fcc886b7b3db",
+        "object": "runtime-releases/us/r132-post-20260905-8xl7xr43/runtime-delta.tar.gz",
+        "role": "r132-delta",
+        "sha256": "d33cb156400f7fa78b12602069f29cc18bbe908ad0edf1adbdfc08530207790a"
+      },
+      {
+        "bytes": 901,
+        "full_readback_phase": "post-cutover",
+        "full_readback_receipt_sha256": "204d0fb306984925d862b9b5a23115b2c78f0ff272cc4027a61aecab0ba86a21",
+        "object": "runtime-releases/us/r132-post-20260905-8xl7xr43/metadata/backup-receipt.json",
+        "role": "r132-backup-receipt",
+        "sha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704"
+      }
+    ],
+    "post_cutover_complete_set_reread": false,
+    "post_cutover_head_is_not_full_readback": true,
+    "private": true,
+    "recovery_recipe": "verified shared R130 base plus exact R132 delta; R131 delta is not required",
+    "redundant_reread_boundary": {
+      "elapsed_seconds": 2046.079829,
+      "exit_code": 130,
+      "limitation": "The complete 3-object recovery set was not downloaded again in one post-cutover run.",
+      "operation": "verify-only repeated full GET of base + R132 delta + receipt",
+      "partial_bytes_not_used_as_evidence": true,
+      "plan": {
+        "bytes": 2785,
+        "sha256": "630486b1bb1eecc2b2b9bd4f9a4684427439dc0670b1d66b0c00a39f901eaf61"
+      },
+      "schema": "castreader.r132-redundant-base-reread-interrupted.v1",
+      "started_at": "2026-09-05T16:44:07.920171+00:00",
+      "stop_reason": "Operator-bounded stop after persistent storage egress throttling; parent approved avoiding an unbounded redundant 3.324 GB download.",
+      "stopped_at": "2026-09-05T17:18:14+00:00",
+      "storage_modified": false,
+      "success_receipt_created": false,
+      "successful_evidence_preserved": [
+        "fresh pre-cutover full GET/SHA of the immutable shared base object",
+        "post-cutover full GET/SHA of the R132 delta object",
+        "post-cutover full GET/SHA of the R132 backup receipt object",
+        "post-cutover read-only HEAD of base object size/ETag; HEAD is not treated as a full GET"
+      ]
+    },
+    "same_region": true,
+    "verified": true
+  },
+  "clone_tls_public_certificate": {
+    "checked_at": "2026-09-05T17:08:43.946743+00:00",
+    "endpoint": {
+      "container_port": 8888,
+      "presented_certificates": 1,
+      "public_port": 41221,
+      "url": "https://71.175.237.103:41221"
+    },
+    "excluded_candidate": {
+      "der_sha256": "6e095c50b626009b542b6f03e44fd55e1510ceca9d6325ebae04eb631f7b65c8",
+      "path": "/etc/instance.crt",
+      "reason": "Different Vast Jupyter leaf; does not match endpoint"
+    },
+    "interpretation": "The endpoint uses a self-signed leaf as its explicit TLS trust anchor. It is not a separate CA certificate with CA:TRUE. A client variable named VOICE_CLONE_WORKER_CA_CERT must contain this exact public origin certificate (or an independently verified identical PEM), never the private key.",
+    "origin_certificate_file": {
+      "der_sha256": "f0079767d403595d110541cf4fbe9ffb389bd8ef55acf6b8c06ba14244df7086",
+      "file_sha256": "fefc265b66aa92841411fd8ae2d8c9120a87ba788e20d0a8a258e8488329519a",
+      "mode": "0644",
+      "owner": "root:root",
+      "path": "/workspace/castreader-clone/tls/origin-cert.pem"
+    },
+    "presented_certificate": {
+      "basic_constraints_extension_present": false,
+      "der_sha256": "f0079767d403595d110541cf4fbe9ffb389bd8ef55acf6b8c06ba14244df7086",
+      "issuer": "CN=71.175.237.103",
+      "matches_origin_cert_file": true,
+      "not_after": "2027-08-25T19:59:13Z",
+      "not_before": "2026-08-25T19:59:13Z",
+      "san": [
+        "IP:71.175.237.103"
+      ],
+      "self_signed": true,
+      "serial": "3871ED97487747408FD233ADAACA5D7C7F295DBA",
+      "sha256_fingerprint": "F0:07:97:67:D4:03:59:5D:11:05:41:CF:4F:BE:9F:FB:38:9B:D8:EF:55:AC:F6:B8:C0:6B:A1:42:44:DF:70:86",
+      "subject": "CN=71.175.237.103"
+    },
+    "read_only": true,
+    "schema": "castreader.us-clone-tls-public-cert-proof.v1",
+    "secrets_included": false,
+    "terminator": {
+      "certificate_path": "/workspace/castreader-clone/tls/origin-cert.pem",
+      "config": "/workspace/castreader-clone/deploy/Caddyfile.clone-tls",
+      "config_lines": [
+        6,
+        7,
+        8
+      ],
+      "listener": "*:8888",
+      "process": "caddy",
+      "upstream": "127.0.0.1:8890"
+    },
+    "worker": {
+      "listener": "127.0.0.1:8890",
+      "process": "uvicorn clone_worker:app",
+      "tls_terminated_in_worker": false
+    }
+  },
+  "gateway_boundary": {
+    "diagnosis": "The current R132 worker returned complete decodable audio. The public 502 was caused upstream in the global gateway when stream=true produced two NDJSON documents and the request budget parsed the entire body as one JSON value.",
+    "direct_current_worker": {
+      "decode": {
+        "results": [
+          {
+            "concatenated": {
+              "decoded": true,
+              "frames": 203,
+              "sample_rates": [
+                24000
+              ],
+              "samples": 116928
+            },
+            "documents": [
+              {
+                "decoded": true,
+                "frames": 198,
+                "sample_rates": [
+                  24000
+                ],
+                "samples": 114048
+              },
+              {
+                "decoded": true,
+                "frames": 5,
+                "sample_rates": [
+                  24000
+                ],
+                "samples": 2880
+              }
+            ],
+            "id": "stream-default"
+          },
+          {
+            "concatenated": {
+              "decoded": true,
+              "frames": 203,
+              "sample_rates": [
+                24000
+              ],
+              "samples": 116928
+            },
+            "documents": [
+              {
+                "decoded": true,
+                "frames": 203,
+                "sample_rates": [
+                  24000
+                ],
+                "samples": 116928
+              }
+            ],
+            "id": "stream-false"
+          }
+        ],
+        "schema": "castreader.r132-direct-audio-decode.v1"
+      },
+      "shape": {
+        "configured_url_sha256": "5a7f59ff530184cccef8f7d17f725b9097085ac785bf51179f7990766547d454",
+        "input_length": 50,
+        "language": "en",
+        "results": [
+          {
+            "checked_at_epoch": 1788627242.744666,
+            "content_type": "application/json",
+            "documents": [
+              {
+                "audio_bytes": 76077,
+                "audio_format": "audio/mpeg",
+                "audio_sha256": "8de6763a0332914cfa2355750bd48e432cdd3e49fb00f51a7bd9e10aac4dabae",
+                "fields": [
+                  "audio",
+                  "audio_format",
+                  "timestamps"
+                ],
+                "index": 0,
+                "processed_text": null,
+                "text": null,
+                "timestamp_end": 4.804666666666667,
+                "timestamp_start": 0.06087500000000001,
+                "timestamps": 10
+              },
+              {
+                "audio_bytes": 1920,
+                "audio_format": "audio/mpeg",
+                "audio_sha256": "9f52e321aa87cdd810751cf9ed4337415a5a870e581de7b7a3035a042d391be5",
+                "fields": [
+                  "audio",
+                  "audio_format",
+                  "timestamps"
+                ],
+                "index": 1,
+                "processed_text": null,
+                "text": null,
+                "timestamp_end": null,
+                "timestamp_start": null,
+                "timestamps": 0
+              }
+            ],
+            "elapsed_seconds": 2.199863459,
+            "http": 200,
+            "id": "stream-default",
+            "json_documents": 2,
+            "raw_sha256": "37494014482f37f2d705633e0f7db492f9eb7be76ea0bec9fae3cd70290ff35d",
+            "request_id_match": true,
+            "response_bytes": 104734,
+            "sent_stream": "omitted-defaults-true"
+          },
+          {
+            "checked_at_epoch": 1788627244.944779,
+            "content_type": "application/json",
+            "documents": [
+              {
+                "audio_bytes": 77997,
+                "audio_format": "audio/mpeg",
+                "audio_sha256": "d7994936583bbb2c8d9f0ab0d98160ef489d2d05585613ce3b107901da896c77",
+                "fields": [
+                  "audio",
+                  "audio_format",
+                  "timestamps"
+                ],
+                "index": 0,
+                "processed_text": null,
+                "text": null,
+                "timestamp_end": 4.803,
+                "timestamp_start": 0.06087500000000001,
+                "timestamps": 10
+              }
+            ],
+            "elapsed_seconds": 2.952558958,
+            "http": 200,
+            "id": "stream-false",
+            "json_documents": 1,
+            "raw_sha256": "9aedf0fbac57e1f97421286b8d4cb27b3b366f5dc9593989bfdeedc0f089f274",
+            "request_id_match": true,
+            "response_bytes": 104664,
+            "sent_stream": false
+          }
+        ],
+        "schema": "castreader.r132-direct-stream-shape.v1",
+        "voice": "am_adam"
+      }
+    },
+    "gateway_fix_commit": "26d0832c7da8a604792abc7592e110cc6f2755e1",
+    "public_after_gateway_fix": {
+      "boundary": "An independent candidate success is not evidence that api.castreader.ai production is fixed.",
+      "candidate_deployment_id": "dpl_46biYYh2Lj8jMeZnii5JynpFWBKG",
+      "candidate_regression": [
+        {
+          "audioBytes": 77997,
+          "elapsedMs": 8136,
+          "httpStatus": 200,
+          "pcmSamples": 116928,
+          "region": "global",
+          "sampleRate": 24000,
+          "stream": "omitted",
+          "unprocessedCharacters": 0
+        },
+        {
+          "audioBytes": 77997,
+          "elapsedMs": 30719,
+          "httpStatus": 200,
+          "pcmSamples": 116928,
+          "region": "global",
+          "sampleRate": 24000,
+          "stream": true,
+          "unprocessedCharacters": 0
+        },
+        {
+          "audioBytes": 77997,
+          "elapsedMs": 7973,
+          "httpStatus": 200,
+          "pcmSamples": 116928,
+          "region": "global",
+          "sampleRate": 24000,
+          "stream": false,
+          "unprocessedCharacters": 0
+        }
+      ],
+      "candidate_validated_at": "2026-09-05T17:15:06.334Z",
+      "merge_commit": "186e20b745b0b89f426d27d7f9ddb44f979dcae2",
+      "pr": 24,
+      "production_blocker": "The production CI VERCEL_TOKEN is expired; the existing project OAuth cannot create a replacement project PAT.",
+      "public_route_still_old": true,
+      "public_trigger_repeated_after_candidate": false,
+      "status": "candidate-verified; production-not-deployed"
+    },
+    "public_before_gateway_fix": {
+      "audio_present": false,
+      "checked_at": "2026-09-05T16:51:13.021Z",
+      "detail_sha256": "7c8d0e6e9a2bc894ac7ccff445da810600784027070d0e876568b878af774700",
+      "http": 502,
+      "input_length": 50,
+      "language": "en",
+      "voice": "am_adam"
+    },
+    "worker_rollback_required": false
+  },
+  "generated_at": "2026-09-05T17:45:48.806689+00:00",
+  "production_real_pcm": {
+    "cases": [
+      {
+        "audio_bytes": 74925,
+        "audio_sha256": "dea265f1ca32d4786efdc9ddf08b30ba2debea63ebe94efb691f6d5b37fe4719",
+        "decoded_samples": 112320,
+        "elapsed_seconds": 0.5852715075016022,
+        "id": "r132-american-source",
+        "timestamps": 9
+      },
+      {
+        "audio_bytes": 70701,
+        "audio_sha256": "e4fedb14e964a0155155b00ce058734a21d6bab791a6c52bc4f798b7dc14b685",
+        "decoded_samples": 105984,
+        "elapsed_seconds": 1.1625039093196392,
+        "id": "r132-british-source",
+        "timestamps": 9
+      },
+      {
+        "audio_bytes": 74925,
+        "audio_sha256": "7a610f50c4b91bafcec28b39462cf1329a570a46bf09f6afcd38af558a871d29",
+        "decoded_samples": 112320,
+        "elapsed_seconds": 0.14910693001002073,
+        "id": "r132-american-audio-only-trigger",
+        "timestamps": 0
+      },
+      {
+        "audio_bytes": 49965,
+        "audio_sha256": "bb80567f33db4642405d15af4afb04e564af0b1e21bcafd5293fa2d2e00e614c",
+        "decoded_samples": 74880,
+        "elapsed_seconds": 0.1922967666760087,
+        "id": "r132-american-audio-only-control",
+        "timestamps": 0
+      },
+      {
+        "audio_bytes": 70701,
+        "audio_sha256": "bf2ca16536cdab62d024c359babefb963f4fe3c014d7d9f6f76dbd404342d5d1",
+        "decoded_samples": 105984,
+        "elapsed_seconds": 0.14271076768636703,
+        "id": "r132-british-audio-only-trigger",
+        "timestamps": 0
+      },
+      {
+        "audio_bytes": 48813,
+        "audio_sha256": "b0cd510b08936cb4cb621f88988aa9884acc457b57df4fef39bb412f00c34dd3",
+        "decoded_samples": 73152,
+        "elapsed_seconds": 0.16441004630178213,
+        "id": "r132-british-audio-only-control",
+        "timestamps": 0
+      },
+      {
+        "audio_bytes": 1254573,
+        "audio_sha256": "805b3743662cf15580799cacfc0bffdc56b33d44c82343384b887d6376c20d14",
+        "decoded_samples": 1881792,
+        "elapsed_seconds": 3.135903903283179,
+        "id": "r132-long-complete",
+        "timestamps": 145
+      }
+    ],
+    "long_case_reached_final_marker": true,
+    "passed_cases": 7,
+    "same_model_voice_region": true
+  },
+  "protected_services": {
+    "clone_and_nari_unchanged_during_cutover": true,
+    "identities_after_cutover": [
+      {
+        "argv_sha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e",
+        "cwd": "/workspace/castreader-clone",
+        "pid": 568834,
+        "ppid": 262,
+        "start_ticks": "524136804"
+      },
+      {
+        "argv_sha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2",
+        "cwd": "/workspace/nari-qwen3-tts-clean",
+        "pid": 4136837,
+        "ppid": 262,
+        "start_ticks": "519185503"
+      }
+    ],
+    "post_health": {
+      "checked_at": "2026-09-05T17:27:00.282377+00:00",
+      "clone": {
+        "health": {
+          "accepting": true,
+          "active_voice_tasks": 0,
+          "busy": false,
+          "http_status": 200,
+          "nari_ready": true,
+          "queue_depth": 0,
+          "status": "healthy"
+        },
+        "process": {
+          "argv_sha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e",
+          "cwd": "/workspace/castreader-clone",
+          "pid": 568834,
+          "ppid": 262,
+          "start_ticks": "524136804"
+        }
+      },
+      "current": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+      "kokoro": {
+        "health": {
+          "http_status": 200,
+          "status": "healthy"
+        },
+        "process": {
+          "argv_sha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83",
+          "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+          "pid": 2665473,
+          "ppid": 262,
+          "start_ticks": "541243790"
+        }
+      },
+      "nari": {
+        "health": {
+          "http_status": 200,
+          "ready": true,
+          "status": null
+        },
+        "process": {
+          "argv_sha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2",
+          "cwd": "/workspace/nari-qwen3-tts-clean",
+          "pid": 4136837,
+          "ppid": 262,
+          "start_ticks": "519185503"
+        }
+      },
+      "read_only": true,
+      "schema": "castreader.r132-post-health.v1"
+    }
+  },
+  "raw_private_evidence": {
+    "clone_tls": {
+      "bytes": 2222,
+      "sha256": "faed5f063238372b694d7ff43c05298e43c460bad8e7e24f7b81ce6d935537ba"
+    },
+    "cutover": {
+      "bytes": 4319,
+      "sha256": "062c2043956b49f9521df3e0b8f28181cdccacbedb83d186501274e82e99d666"
+    },
+    "direct_stream_decode": {
+      "bytes": 1011,
+      "sha256": "bdf29a6ce86baff27a6debbc70c920c11bef89e3f4a5de3ee46f13648f8613d0"
+    },
+    "direct_stream_shape": {
+      "bytes": 2793,
+      "sha256": "1565bceb540d1f19e4904300b30b2dc8b8c8ee82822f445d5adcc30c22b9956c"
+    },
+    "fresh_base_full_readback": {
+      "bytes": 3095,
+      "sha256": "afed696133d1abc8843684ff5a08b8d9de8551aba5133eceb88fbdef90b579a8"
+    },
+    "global_gateway_candidate_attestation": {
+      "bytes": 3116,
+      "sha256": "1153b86b6ade855c0f1f13c4c1cd3556d7da9d22ad4ec96f5b1a4293285a1a07"
+    },
+    "individual_object_recovery": {
+      "bytes": 2082,
+      "sha256": "5636e4e34412eca9dd41d70f10a43b5719ed02a09cec85e4808f553e2ec9a9df"
+    },
+    "loopback_window": {
+      "bytes": 698,
+      "sha256": "28c2d600f0be2602279b6e285f3bb2ed890cb9fbb31941eb416ecc5d232f0787"
+    },
+    "post_delta_full_readback": {
+      "bytes": 1313,
+      "sha256": "2befb7e03c56fa4549bdfa458789accf5aef0e23b442c8971bf2fcc886b7b3db"
+    },
+    "post_health": {
+      "bytes": 1125,
+      "sha256": "b7cec1722c98471b22d3601e592e99d4801e3dc32869fe866d85d1f337a39fa6"
+    },
+    "post_receipt_full_readback": {
+      "bytes": 1310,
+      "sha256": "204d0fb306984925d862b9b5a23115b2c78f0ff272cc4027a61aecab0ba86a21"
+    },
+    "public_502_headers": {
+      "bytes": 1005,
+      "sha256": "3af608a6d3f687f63af63ba4118a1cb19fdc377cfb35e033ba97f60fe99e5e66"
+    }
+  },
+  "region": "us",
+  "release": {
+    "candidate_tree_sha256": "0266b4f27b91c69b5c85000909bbead413291c45d28e876cab64b4931350bd5c",
+    "current": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+    "finished_at": "2026-09-05T16:38:43.304166+00:00",
+    "forced_kill_sent": false,
+    "passed": true,
+    "payload_sha256": "044e24f48010fdce3db67661751e060b2b4e562cc658588beb7581b1eeae1e11",
+    "single_kokoro_model_owner": true,
+    "source_commit": "dd613e1c6dab280d6110455f7b721301ddbbb857"
+  },
+  "release_tool_commit": "63f6447f560b867131a9db066df47e959462ce9b",
+  "restart_window": {
+    "meaning": "Single-instance loopback window between first observed old-service unavailability and first observed new-service health.",
+    "new_healthy_at": "2026-09-05T16:38:35.438641+00:00",
+    "observed_seconds": 23.095110893,
+    "observer": "local loopback health observer running across the production cutover",
+    "old_unavailable_at": "2026-09-05T16:38:12.343530+00:00",
+    "public_user_impact_known": false,
+    "public_user_impact_limitation": "No request-level Vercel logs were obtained for this exact interval, so this does not prove or exclude public 5xx or active-request termination.",
+    "raw_terminal_capture_persisted": false,
+    "schema": "castreader.r132-loopback-restart-window.v1"
+  },
+  "schema": "castreader.g2p-r132-us-rollout.v1",
+  "source_commit": "dd613e1c6dab280d6110455f7b721301ddbbb857",
+  "tests": {
+    "backup_and_release_contract_latest": {
+      "failed": 0,
+      "passed": 15
+    },
+    "existing_install_and_stage_contracts_latest": {
+      "failed": 0,
+      "passed": 30
+    },
+    "focused_installed_frontend_rerun": {
+      "failed": 0,
+      "passed": 9
+    },
+    "production_gpu_real_pcm": {
+      "failed": 0,
+      "passed": 7
+    },
+    "release_contract": {
+      "failed": 0,
+      "passed": 11
+    },
+    "source_regression_pre_release": {
+      "failed": 0,
+      "passed": 68
+    }
+  }
+}

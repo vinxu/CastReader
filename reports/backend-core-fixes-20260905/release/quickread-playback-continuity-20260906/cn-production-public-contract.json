@@ -1,0 +1,11 @@
+{
+  "configured_key_invalid_body_status": 400,
+  "configured_key_transmitted_in_process_argv": false,
+  "public_host": "quickread.castreader.cn",
+  "region": "cn",
+  "response_body_recorded": false,
+  "schema": "castreader.quickread-public-contract.v1",
+  "verified": true,
+  "verified_at_epoch_ms": 1788630586281,
+  "wrong_key_status": 401
+}

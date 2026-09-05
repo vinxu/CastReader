@@ -1,0 +1,37 @@
+{
+  "scope": "Global preset TTS gateway framing continuity",
+  "source": {
+    "previousProductionCommit": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+    "reviewedCommit": "26d0832c7da8a604792abc7592e110cc6f2755e1",
+    "mergedCommit": "186e20b745b0b89f426d27d7f9ddb44f979dcae2",
+    "pullRequest": "https://github.com/scmyyan/readout-web/pull/24",
+    "baseWasFresh": true,
+    "changedFiles": [
+      "src/shared/lib/tts-gateway.ts",
+      "src/shared/lib/tts-gateway.test.ts"
+    ]
+  },
+  "localValidation": {
+    "ttsGatewayAndRetryTests": { "passed": 29, "failed": 0 },
+    "voiceCloneContractTests": { "passed": 206, "failed": 0 },
+    "diffCheck": "passed"
+  },
+  "workflow": {
+    "id": 33979932773,
+    "url": "https://github.com/scmyyan/readout-web/actions/runs/33979932773",
+    "headCommit": "186e20b745b0b89f426d27d7f9ddb44f979dcae2",
+    "startedAt": "2026-09-05T17:06:51Z",
+    "finishedAt": "2026-09-05T17:10:11Z",
+    "status": "failed_before_candidate",
+    "failedGate": "Pull and audit the existing Global production configuration",
+    "failureClass": "GitHub production VERCEL_TOKEN invalid",
+    "candidateBuilt": false,
+    "productionPromoted": false
+  },
+  "productionAtFailure": {
+    "commit": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+    "releaseId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+    "unchanged": true
+  },
+  "controlPlaneGap": "beta is unprotected and the Production environment has no protection rules; this release used explicit user authorization and exact-source review only"
+}

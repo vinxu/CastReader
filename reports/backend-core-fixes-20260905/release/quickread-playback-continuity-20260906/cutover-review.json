@@ -1,0 +1,192 @@
+{
+  "activation_status": "not_executed",
+  "backend_source_commit": "3d68d82e307cba36710f1a8100f80ea50a1f178b",
+  "clean_probe_note": "The first post-cleanup harness invocation completed a candidate plan but looked in the old HOME path and therefore produced no verified receipt. The corrected invocation used each isolated candidate HOME and generated the attached fresh verified receipt. Neither invocation sent customer identity, consumed customer entitlement, or requested TTS.",
+  "continuity_boundary": {
+    "durability": "completed and in-progress QuickRead checkpoints use the existing same-host HOME state; host-loss HA is outside this release",
+    "expected_sequential_operator_window": "under 30 seconds when both services are idle; actual listener restart estimates are regional values above",
+    "known_fact": "The currently deployed worker has no admission-pause endpoint. The scripts therefore use repeated idle gates and immediate exact-service restart; they cannot prove that no new request arrives in the final check-to-restart interval.",
+    "not_claimed": "zero downtime or zero admission race",
+    "rollback": "atomic symlink restoration plus restart of only the exact regional service"
+  },
+  "exact_invocation": {
+    "cn_activate": "ssh -o BatchMode=yes -o ConnectTimeout=10 -i ~/.ssh/castreader_cn_deploy ubuntu@106.54.47.163 'sudo bash -s' < <cn-cutover.sh.txt>",
+    "cn_stage_manifest": "scp -q -o BatchMode=yes -o ConnectTimeout=10 -i ~/.ssh/castreader_cn_deploy <manifest-path> ubuntu@106.54.47.163:/tmp/castreader-quickread-playback-continuity-release-manifest.json",
+    "us_activate": "ssh -o BatchMode=yes -o ConnectTimeout=10 root@140.82.14.49 'bash -s' < <us-cutover.sh.txt>",
+    "us_stage_manifest": "scp -q -o BatchMode=yes -o ConnectTimeout=10 <manifest-path> root@140.82.14.49:/tmp/castreader-quickread-playback-continuity-release-manifest.json"
+  },
+  "extension_client_commit_not_in_this_release": "15f4e72aaa9db197a0d4c1ce551c6a162febc614",
+  "generated_at": "2026-09-05T17:37:03.659903Z",
+  "immutable_release_commit": "dae4e5ecd05b234a9235c26c88ce418a09b6c051",
+  "manifest": {
+    "path": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-desktop-quickread-cancellation-recovery-20260905/scripts/video-pipeline/deployments/20260906-playback-continuity/release-manifest.json",
+    "private_env_paths_excluded": true,
+    "sha256": "e81428e25433d23da2cb12372d15b555b28432520e5a5e42c9435e62e7160b2a",
+    "source_commit": "3d68d82e307cba36710f1a8100f80ea50a1f178b"
+  },
+  "operator_sequence": [
+    "Review this payload, both .sh.txt files, the exact manifest, and the two clean-candidate provider receipts.",
+    "Stage only the exact manifest at the default /tmp path on the target host; run each reviewed script over SSH stdin, US first and CN second.",
+    "Each script verifies full current-before and candidate-after source manifests, private config placement, independent dependencies, candidate identity and health.",
+    "Each script stops only its isolated candidate, requires three consecutive idle production observations plus one final idle check, atomically switches the symlink, restarts only the named QuickRead service, verifies process cwd/region/auth contract, and rolls back on a failed post-switch check.",
+    "After each region, capture the one-line JSON receipt from stdout and recheck the public same-region gateway separately without issuing a provider or TTS request.",
+    "Delete the transient /tmp manifest after both scripts finish."
+  ],
+  "private_env_exclusion_commit": "4ab07615ac4bb4781019775c853c8a51ce6a6aa0",
+  "production_current_untouched": true,
+  "regions": {
+    "cn": {
+      "after_source_files": 115,
+      "after_tree_sha256": "c9891423599d4f988b3eaeb9b623d0a0fbaa7ef1ccd6b0983a9cc8b99b9148e0",
+      "before_source_files": 102,
+      "before_tree_sha256": "0fc42c7339ec8acb36f79ded9cb252bac16a499dff3d147765790e87d48c4ac3",
+      "candidate_archive_bytes": 605823,
+      "candidate_archive_sha256": "37d756949f2438c1236d438ee5760c75b50184a6e6dc8e5e32d7f05bb5bab1ad",
+      "candidate_health": {
+        "active": 0,
+        "concurrency": 3,
+        "jobs_cached": 3,
+        "ok": true,
+        "queue": 0
+      },
+      "candidate_path": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+      "candidate_pid": 1594311,
+      "candidate_port": 17778,
+      "current_health": {
+        "active": 0,
+        "concurrency": 3,
+        "jobs_cached": 13,
+        "ok": true,
+        "queue": 0
+      },
+      "current_link": "/opt/castreader-quickread-cn/current",
+      "current_pid": 1067993,
+      "current_target": "/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement",
+      "cutover_script": {
+        "estimated_listener_restart_seconds": "1-3",
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/cn-cutover.sh.txt",
+        "sha256": "9d6fd63cc1b406fd6981827696abc0de0587e384d2533c397a72f0d4984248ac",
+        "syntax_check": "bash -n passed"
+      },
+      "dependencies": "independent node_modules directory, not a symlink",
+      "observed_at": "2026-09-05T17:26:09.837662036Z",
+      "private_backup_readback": {
+        "bytes": 6789087,
+        "object_sha256": "249be82a5c80c65a999c850a449795be511877e28f3bfae97b049a23ce8c8498",
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/cn-preinstall-backup-readback.json",
+        "sha256": "03a5a3f2437867be62a8343f928193e2ffeb537e84d2dd7707fdd178b3c2167f",
+        "storage": "private Tencent COS ap-shanghai",
+        "verified": true
+      },
+      "provider_receipt": {
+        "cached_repeat_same_sha256": true,
+        "continuation_status": 200,
+        "customer_entitlement_consumed": false,
+        "extract_plan_status": 200,
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/cn-clean-candidate-provider-receipt.json",
+        "provider_model": "deepseek-v4-pro",
+        "sha256": "0fa18035acfe13019e587ca8fb65753fb527256c77572350802fec7c7a14611a",
+        "tts_requested": false,
+        "verified": true
+      },
+      "runtime_config": "external /etc/castreader/quickread-cn.env; root:root 0600; no .env* in candidate release; source CAS excludes private env",
+      "ssh": "ubuntu@106.54.47.163 with ~/.ssh/castreader_cn_deploy and sudo"
+    },
+    "us": {
+      "after_source_files": 103,
+      "after_tree_sha256": "308bf161596a15dab2d1de86d0548172ad8bad70eb3edce2b423b7da6050fe57",
+      "before_source_files": 90,
+      "before_tree_sha256": "8da1d216c57215b062d10f94e007a9a5a17d81645256efaddb4d8407880bebfb",
+      "candidate_archive_bytes": 421460,
+      "candidate_archive_sha256": "31ad3272d6ddc12f30dc6922c8e1e1ff0b6648d49cdef425e11c09c8e9391cf8",
+      "candidate_health": {
+        "active": false,
+        "jobs_cached": 3,
+        "ok": true,
+        "queue": 0
+      },
+      "candidate_path": "/root/castreader/routing-releases/20260906-quickread-playback-continuity-3d68d82-us",
+      "candidate_pid": 540886,
+      "candidate_port": 17777,
+      "current_health": {
+        "active": false,
+        "jobs_cached": 216,
+        "ok": true,
+        "queue": 0
+      },
+      "current_link": "/root/castreader/video-pipeline",
+      "current_pid": 507570,
+      "current_target": "/root/castreader/routing-releases/20260904-quickread-gif-retirement",
+      "cutover_script": {
+        "estimated_listener_restart_seconds": "2-5",
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/us-cutover.sh.txt",
+        "sha256": "ecc31860d5ca70b7c2bc5605d3efb7cbaace7ae4d4161597d448679f6fe7a69d",
+        "syntax_check": "bash -n passed"
+      },
+      "dependencies": "independent node_modules directory, not a symlink",
+      "observed_at": "2026-09-05T17:26:11.499902767Z",
+      "private_backup_readback": {
+        "bytes": 5031520,
+        "object_sha256": "cc44b92e75616e62a888d34ec9a4b2c62112d26368778f2177c4fb01333d66af",
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/us-preinstall-backup-readback.json",
+        "sha256": "c0aac87881b48fdb3a021b18afb5f542b2febc1ed1819fd04401946b6fdcf37d",
+        "storage": "private same-region Supabase bucket",
+        "verified": true
+      },
+      "provider_receipt": {
+        "cached_repeat_same_sha256": true,
+        "continuation_status": 200,
+        "customer_entitlement_consumed": false,
+        "extract_plan_status": 200,
+        "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/us-clean-candidate-provider-receipt.json",
+        "provider_model": "gemini-3.5-flash",
+        "sha256": "46e492557d92032276952816afac98229badda54399ef40d8c92dc3aec4b6bfe",
+        "tts_requested": false,
+        "verified": true
+      },
+      "runtime_config": "single top-level .env copied from current authority; root:root 0600; no .env.* sibling; excluded from source CAS",
+      "ssh": "root@140.82.14.49"
+    }
+  },
+  "rollback_transaction_test": {
+    "cases": [
+      {
+        "exit_code": 65,
+        "name": "health_failure",
+        "rollback_count": 1
+      },
+      {
+        "exit_code": 65,
+        "name": "cwd_failure",
+        "rollback_count": 1
+      },
+      {
+        "exit_code": 65,
+        "name": "explicit_die",
+        "rollback_count": 1
+      },
+      {
+        "exit_code": 129,
+        "name": "hup",
+        "rollback_count": 1
+      }
+    ],
+    "passed": true,
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/cutover-transaction-selftest.sh.txt",
+    "production_side_effects": false,
+    "sha256": "90f54ae300454c389beb921ddb2d67b7239b0d408056b973a5e785771a5c9791",
+    "static_contracts": [
+      "one EXIT trap",
+      "no ERR trap",
+      "shared named flock",
+      "configured API key absent from curl argv",
+      "auth check uses in-memory Python HTTP request"
+    ]
+  },
+  "schema": "castreader.quickread-cutover-review.v1",
+  "transaction_lock": {
+    "contract": "candidate staging and immutable install on the same host must use this identical lock name",
+    "mode": "nonblocking exclusive flock for each regional activation",
+    "path": "/var/lock/castreader-quickread-release.lock"
+  }
+}

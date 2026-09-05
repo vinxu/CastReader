@@ -1,0 +1,113 @@
+{
+  "generated_at_utc": "2026-09-05T15:08:57.058926+00:00",
+  "release_control": {
+    "cloud_control_plane_gap": "A current Tencent/Seeta resource inventory and paid-capacity permission were not established; do not claim standby availability or create resources from these credentials.",
+    "cn_controller": {
+      "cos_backup_cli_readable": true,
+      "cos_cli_installed": false,
+      "observed_at_utc": "2026-09-05T15:08:10Z",
+      "production_mutation": "not exercised",
+      "release_and_env_readable": true,
+      "ssh": true,
+      "sudo_nopasswd": true,
+      "systemd_read_control": true,
+      "tencent_cli_installed": false
+    },
+    "cn_gpu": {
+      "production_mutation": "not exercised",
+      "ssh": "configured but live provider rejected repeated refresh; do not bypass or retry aggressively"
+    },
+    "github_repositories": {
+      "scmyyan/readout-web": {
+        "actions_permissions_endpoint": "404 for current gh identity; workflow dispatch permission was not tested",
+        "beta_head": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+        "beta_protected": false,
+        "default_branch": "beta",
+        "latest_backend_maintenance_release": {
+          "conclusion": "success",
+          "created_at": "2026-09-05T00:50:15Z",
+          "run_id": 33934272517,
+          "sha": "3ce12a7c794e3d9788a7982a66a62f70a9407678"
+        },
+        "main_branch": "not present",
+        "risk": "Unprotected production branch; core API release must use exact-SHA workflow input and an independent deployed-artifact/CAS gate.",
+        "workflow_runs_readable": true
+      },
+      "vinxu/readout-desktop": {
+        "actions_enabled": true,
+        "allowed_actions": "all",
+        "authenticated_account": "vinxu",
+        "beta_branch_observation": "REST lookup returned 404 at audit time",
+        "default_branch": "main",
+        "main_protected": false,
+        "note": "This is the QuickRead/source repository; it is not readout-web.",
+        "risk": "No protected main branch was reported; repo/workflow capability can publish changes, so server releases must independently require exact artifact SHA and production CAS.",
+        "token_scopes": [
+          "repo",
+          "workflow",
+          "read:org",
+          "gist"
+        ]
+      }
+    },
+    "us_gpu": {
+      "backup_restore": "Sep 4 private Supabase pre/post full readback receipts exist; current write permission was not tested",
+      "provider_instance_mutation": "not exercised; query access does not prove create/destroy authorization",
+      "ssh": true,
+      "supervisor_control_observed": true,
+      "vast_control_plane_query": true
+    },
+    "us_quickread": {
+      "backup_restore": "Sep 4 private off-host before/after readback receipts exist",
+      "pm2_read_control": true,
+      "production_mutation": "not exercised",
+      "ssh_root": true
+    }
+  },
+  "restore_evidence": {
+    "cn": "R131 pre/post delta receipts and complete 3.324807745 GB base in private ap-shanghai COS exist as of Sep 4; CN recovery does not depend on a US object.",
+    "freshness": "Existing receipts prove object bytes/readback at their recorded time. They do not prove current write credentials, current storage billing, or a rehearsed clean-node RTO.",
+    "index": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-evidence-20260904/iteration/kokoro/regional-backup-index.json",
+    "us": "R131 pre/post private Supabase receipts plus 3.324807745 GB complete shared readback exist as of Sep 4."
+  },
+  "same_region_capacity": {
+    "cn": {
+      "production_gpu": {
+        "alias": "castreader-cn4090",
+        "gpu": "RTX 4090 24GB",
+        "provider": "SeetaCloud",
+        "provider_zone_label": "bjb1",
+        "status": "last proven healthy; live refresh in this task blocked by SSH provider close"
+      },
+      "standby_conclusion": "No verified warm same-region CN Kokoro standby exists. Do not route CN traffic to the US node. Reusing the training node requires provider-region proof, active rental, complete local restore, model/voice parity, prewarm and isolated capacity tests.",
+      "training_candidate": {
+        "alias": "castreader-train6000",
+        "classification": "not a warm standby; physical mainland region, runtime readiness, billing and availability were not proven in this audit",
+        "gpu": "RTX PRO 6000 Blackwell Server Edition 96GB",
+        "provider_zone_label": "westd",
+        "ssh_observation": "connection refused at 2026-09-05 around 15:02Z"
+      }
+    },
+    "us": {
+      "control_plane_observed_at_utc": "2026-09-05T15:03:36Z",
+      "market_snapshot": "reports/backend-core-fixes-20260905/release/us-standby-offers.json; two different-machine on-demand candidates observed, $0.39941/h and $0.41704/h with 256GB storage; no rent action taken.",
+      "persistence_risk": "workspace_is_volume=false; instance loss can remove local releases, so off-host restore is mandatory.",
+      "provider": "Vast.ai",
+      "standby_conclusion": "The authenticated control-plane listing returned only the current production instance. No second US rented/warm GPU was visible. This proves absence in that listing at that time, not provider market availability.",
+      "visible_rented_instances": [
+        {
+          "disk_gb": 256.0,
+          "geolocation": "Pennsylvania, US",
+          "gpu": "RTX 4090",
+          "gpu_ram_mib": 24564,
+          "hourly_usd": 0.44355555555555554,
+          "instance_id": 42998411,
+          "machine_id": 9236,
+          "num_gpus": 1,
+          "status": "running"
+        }
+      ]
+    }
+  },
+  "scope": "read-only resource and release-control readiness; no instance purchase/create, no deploy, no restart, no synthesis"
+}

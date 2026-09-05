@@ -1,0 +1,176 @@
+{
+  "absent_before": {
+    "/etc/castreader/core-audio-monitor-cn.env": true,
+    "/etc/systemd/system/castreader-core-audio-monitor@.service": true,
+    "/etc/systemd/system/castreader-core-audio-monitor@.timer": true,
+    "/opt/castreader-core-audio-monitor/.current.new": true,
+    "/opt/castreader-core-audio-monitor/current": true,
+    "/opt/castreader-core-audio-monitor/releases/37d6f4d8-b12f3afd": true
+  },
+  "artifact": {
+    "bytes": 12257,
+    "path": "/tmp/castreader-core-audio-monitor-37d6f4d8.tar.gz",
+    "sha256": "b12f3afd80a209e3dba38892d9cf14120dd02576817937589d84c54b6d85d4eb"
+  },
+  "captured_at_utc": "2026-09-05T15:53:34.951505Z",
+  "host_role": "cn-api-controller",
+  "next_current_target": "/opt/castreader/release-20260904120513",
+  "next_release_tree": {
+    "contract": "sorted relative path + NUL + F|L + NUL + content_or_link_sha256 + LF",
+    "files": 7217,
+    "regular_file_bytes": 193756789,
+    "root": "/opt/castreader/release-20260904120513",
+    "sha256": "2c29803bdabc1573e5ecab0271b8446410684139f70ea4a71d5a588780b34d19"
+  },
+  "nginx_effective_sha256": "8a76a673812f30c04c421c0f77f63e8d825a8b93571864c8b406726a4471a759",
+  "quickread_current_target": "/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement",
+  "quickread_release_tree": {
+    "contract": "sorted relative path + NUL + F|L + NUL + content_or_link_sha256 + LF",
+    "files": 3459,
+    "regular_file_bytes": 35314591,
+    "root": "/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement",
+    "sha256": "34c11b05196d89e97706ae504e303ddc6df5aafa5cd6ab697a1e221e9e089802"
+  },
+  "runtime": {
+    "ffmpeg_path": "/usr/bin/ffmpeg",
+    "ffprobe_path": "/usr/bin/ffprobe",
+    "node": "v22.23.2",
+    "systemd_version": "systemd 249 (249.11-0ubuntu3.20)"
+  },
+  "safety": {
+    "environment_values_read": false,
+    "service_mutation": false,
+    "user_content_read": false
+  },
+  "schema_version": 1,
+  "services": {
+    "castreader-cn-clone-tunnel.service": {
+      "active_state": "active",
+      "config_combined_sha256": "baa5ed40b36566bed821ab6e0e2ed427726ca3a71386e4c776c0f4dae0782284",
+      "config_files": [
+        {
+          "path": "/etc/systemd/system/castreader-cn-clone-tunnel.service",
+          "sha256": "b260d7a97c0a031379f89a5a0030bb969c436c9043e90d5f94893eea6ca3233b"
+        }
+      ],
+      "process": {
+        "cwd": "/",
+        "pid": 2090236,
+        "start_ticks": "155500308"
+      },
+      "restart_count": 0,
+      "sub_state": "running",
+      "unit": "castreader-cn-clone-tunnel.service"
+    },
+    "castreader-cn-kokoro-tunnel.service": {
+      "active_state": "active",
+      "config_combined_sha256": "a4eb47ad5322924f28a3acc2197082a24eb743c76dd8db7c0ccea7af2c45e28a",
+      "config_files": [
+        {
+          "path": "/etc/systemd/system/castreader-cn-kokoro-tunnel.service",
+          "sha256": "aa79cd284aa13abe8da54bc7cf0f20c64ff9c66f2cd2acb456b022080b9588a2"
+        }
+      ],
+      "process": {
+        "cwd": "/",
+        "pid": 1029281,
+        "start_ticks": "231941478"
+      },
+      "restart_count": 0,
+      "sub_state": "running",
+      "unit": "castreader-cn-kokoro-tunnel.service"
+    },
+    "castreader-quickread-cn.service": {
+      "active_state": "active",
+      "config_combined_sha256": "c9bc8a260fdeb8f9296d4c1108428fc315f593454048d40a7055c3e5d7a0e77b",
+      "config_files": [
+        {
+          "path": "/etc/systemd/system/castreader-quickread-cn.service",
+          "sha256": "b612685fa76a9400cba042b5ba26f7cf07645bec1b0224f007207dd02ddd6a31"
+        }
+      ],
+      "process": {
+        "cwd": "/opt/castreader-quickread-cn/releases/20260904-quickread-gif-retirement",
+        "pid": 1067993,
+        "start_ticks": "232505929"
+      },
+      "restart_count": 0,
+      "sub_state": "running",
+      "unit": "castreader-quickread-cn.service"
+    },
+    "castreader-voice-gift-cn.service": {
+      "active_state": "active",
+      "config_combined_sha256": "28d049b5b60fe7313f39a639f2586cc559c710b487db866b0e01f6d333aeba6f",
+      "config_files": [
+        {
+          "path": "/etc/systemd/system/castreader-voice-gift-cn.service",
+          "sha256": "128eb7090509d283902ff2f6626c6783bd4aa9e95277afd118c30c205541bcf6"
+        }
+      ],
+      "process": {
+        "cwd": "/opt/castreader/voice-gift-cn/releases/8dc2b10162074471cc5acc7ffb1041d267eb9938",
+        "pid": 1048507,
+        "start_ticks": "232161420"
+      },
+      "restart_count": 0,
+      "sub_state": "running",
+      "unit": "castreader-voice-gift-cn.service"
+    },
+    "castreader.service": {
+      "active_state": "active",
+      "config_combined_sha256": "8ed5993cf37527279dcc1c7e1318e4c55268d07ef91a18bb4575975ed0ba572d",
+      "config_files": [
+        {
+          "path": "/etc/systemd/system/castreader.service",
+          "sha256": "ea65e5d6e69a8d22c30c962e660bcc646367f70d979303ca1dced2149fcd0e9e"
+        },
+        {
+          "path": "/etc/systemd/system/castreader.service.d/20-service-route.conf",
+          "sha256": "012a60b206c98af5afa6cc7dddc5593a2718c3597c0d4ba4e543bd43c52dcfc3"
+        },
+        {
+          "path": "/etc/systemd/system/castreader.service.d/25-quickread.conf",
+          "sha256": "2c4c90af68f8c37da53a9cece689dae7727e1cc9762a6ff15f7898d9d9c50622"
+        },
+        {
+          "path": "/etc/systemd/system/castreader.service.d/26-voice-clone.conf",
+          "sha256": "df312ab4749f53897fda533c14b332df67585bcca14d2bf88ecc07ad5b764688"
+        },
+        {
+          "path": "/etc/systemd/system/castreader.service.d/27-cn-tts.conf",
+          "sha256": "d3b5582b25f9753ea99bd146437087bb0c65ca7bd31304aa0b2979a28f620ef6"
+        },
+        {
+          "path": "/etc/systemd/system/castreader.service.d/30-release-id.conf",
+          "sha256": "5c7ea9e47f374b28d77caf6d2755e4743b2c2c4f957890832017084db90fca6c"
+        }
+      ],
+      "process": {
+        "cwd": "/opt/castreader/release-20260904120513",
+        "pid": 1048505,
+        "start_ticks": "232161420"
+      },
+      "restart_count": 0,
+      "sub_state": "running",
+      "unit": "castreader.service"
+    },
+    "nginx.service": {
+      "active_state": "active",
+      "config_combined_sha256": "12dfa8604b56c19bf28812b7d7933a7713d59268c529aa9371248e50200ea306",
+      "config_files": [
+        {
+          "path": "/lib/systemd/system/nginx.service",
+          "sha256": "a0178bda135048ad3071c49cedc680e52354e2e672f158ffc0cea298bb620e7e"
+        }
+      ],
+      "process": {
+        "cwd": "/",
+        "pid": 12692,
+        "start_ticks": "87123"
+      },
+      "restart_count": 0,
+      "sub_state": "running",
+      "unit": "nginx.service"
+    }
+  }
+}

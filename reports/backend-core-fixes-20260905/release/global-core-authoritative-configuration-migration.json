@@ -1,0 +1,27 @@
+{
+  "targetProjectId": "prj_EknF8IKAv8mDy4QEGb2z4VoX6n2f",
+  "scope": "New isolated candidate project only; existing production untouched",
+  "copied": [
+    "VOICE_CLONE_SUPABASE_URL",
+    "VOICE_CLONE_SUPABASE_BUCKET",
+    "VOICE_CLONE_SUPABASE_SERVICE_ROLE_KEY",
+    "VOICE_CLONE_WORKER_URL",
+    "QUICKREAD_API_KEY",
+    "PRO_INTERNAL_SECRET",
+    "VOICE_CLONE_WORKER_TOKEN",
+    "VOICE_CLONE_WORKER_CA_CERT"
+  ],
+  "notConfigured": [
+    "VOICE_CLONE_ENCRYPTION_KEY",
+    "VOICE_CLONE_WEB_BRIDGE_SECRET"
+  ],
+  "verifiedByMetadata": true,
+  "recordedAt": "2026-09-05T17:06:56.424750+00:00",
+  "workerTokenSource": "US GPU /workspace/castreader-clone/.api-token, root mode0600",
+  "publicOriginCertificate": {
+    "source": "US GPU /workspace/castreader-clone/tls/origin-cert.pem",
+    "sha256": "f0079767d403595d110541cf4fbe9ffb389bd8ef55acf6b8c06ba14244df7086",
+    "tlsVerified": true,
+    "type": "existing self-signed leaf trust anchor, no rotation"
+  }
+}

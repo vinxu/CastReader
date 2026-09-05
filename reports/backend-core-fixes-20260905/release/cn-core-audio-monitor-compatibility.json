@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "captured_at_utc": "2026-09-05T07:42:47Z",
+  "probe_observed_at_utc": "2026-09-05T07:43:18.930Z",
+  "scope": "read-only CN controller compatibility inspection plus one fixed, non-user, single-segment TTS request",
+  "host": {
+    "role": "cn-api-controller",
+    "address": "106.54.47.163",
+    "os": "Ubuntu 22.04 jammy",
+    "architecture": "x86_64",
+    "node": {
+      "path": "/usr/bin/node",
+      "version": "v22.23.2"
+    },
+    "ffmpeg": {
+      "path": "/usr/bin/ffmpeg",
+      "version_family": "4.4.2 Ubuntu package",
+      "ffprobe_present": true
+    },
+    "systemd_version": 249,
+    "root_filesystem_available_human": "approximately 35.1 GB",
+    "root_filesystem_used_percent": 29
+  },
+  "installation_collision_check": {
+    "monitor_release_root_present": false,
+    "monitor_state_root_present": false,
+    "matching_systemd_unit_present": false,
+    "matching_enabled_timer_present": false,
+    "matching_cron_entry_present": false,
+    "note": "The checks cover castreader/core-audio/tts/quickread names in systemd timers and system cron locations; they do not prove that no unrelated external scheduler exists."
+  },
+  "production_baseline": {
+    "castreader_service": {
+      "active": true,
+      "main_pid": 1048505,
+      "restart_count": 0,
+      "started_at_local": "2026-09-04T12:06:58+08:00",
+      "working_directory": "/opt/castreader/current",
+      "release_target": "/opt/castreader/release-20260904120513",
+      "unit_sha256_observed_prefix": "ea65e5",
+      "unit_sha256_status": "only the observed prefix is retained here; recapture the full digest immediately before installation",
+      "drop_in_names": [
+        "20-service-route",
+        "25-quickread",
+        "26-voice-clone",
+        "27-cn-tts",
+        "30-release-id"
+      ]
+    },
+    "kokoro_tunnel": {
+      "active": true,
+      "unit_sha256_observed_prefix": "aa79cd",
+      "unit_sha256_status": "only the observed prefix is retained here; recapture the full digest immediately before installation"
+    },
+    "nginx": {
+      "effective_config_sha256_observed_prefix": "8a76a673",
+      "effective_config_sha256_status": "only the observed prefix is retained here; recapture the full digest immediately before installation",
+      "route": "/api/captioned_speech_partly",
+      "proxy_target": "http://127.0.0.1:3000",
+      "proxy_timeout_seconds": 600,
+      "proxy_buffering": false,
+      "route_header": "cn-control"
+    },
+    "note": "The monitor installation is independent of these services and must not restart or rewrite them. Truncated baseline digests are evidence labels only and are deliberately ineligible for CAS."
+  },
+  "single_request_contract_probe": {
+    "request_count": 1,
+    "endpoint": "https://api.castreader.cn/api/captioned_speech_partly",
+    "method": "POST",
+    "redirect_followed": false,
+    "input_sha256": "1465ec2c5a379439a03e0ff20b475781b2f8ea4ab48ed89bb6aa69a188d6254a",
+    "input_characters": 61,
+    "input_class": "fixed repository diagnostic prose; no user text or clone voice",
+    "voice": "zf_001",
+    "http_status": 200,
+    "response_bytes": 77256,
+    "content_type": "application/json",
+    "headers": {
+      "x-castreader-tts-route": "cn-control",
+      "x-castreader-upstream-region": "cn",
+      "x-castreader-upstream-node": "castreader-cn4090",
+      "x-castreader-upstream-source": "cn-environment",
+      "x-castreader-upstream-revision": "0",
+      "x-castreader-tts-timing": "word"
+    },
+    "partition": {
+      "processed_characters": 16,
+      "remaining_characters": 45,
+      "exact_reconstruction": true,
+      "remainder_advanced": true
+    },
+    "audio": {
+      "bytes": 57644,
+      "mp3_header_valid": true,
+      "ffmpeg_exit_code": 0,
+      "decoded_duration_seconds": 3.6
+    },
+    "timestamps": {
+      "count": 1,
+      "valid_for_this_segment": true
+    },
+    "proves": [
+      "the public CN route accepted the fixed Kokoro request",
+      "the current route emits the exact upstream-region header required by the monitor",
+      "the first response advanced the remaining text and returned a decodable MP3 segment"
+    ],
+    "does_not_prove": [
+      "the whole fixed passage completes across two or more segments",
+      "continuous client playback or buffering",
+      "all voices or languages",
+      "QuickRead, clone, Nari, or GPU standby health",
+      "physical hosting geography independently of the route metadata"
+    ]
+  },
+  "initial_monitor_artifact_superseded_after_symlink_preflight": {
+    "source_commit": "37d6f4d80c22199e2707df9fdbb16e36a8ebfe00",
+    "archive_path_local": "/tmp/castreader-core-audio-monitor-37d6f4d8.tar.gz",
+    "archive_bytes": 12257,
+    "archive_sha256": "b12f3afd80a209e3dba38892d9cf14120dd02576817937589d84c54b6d85d4eb",
+    "network_free_tests": 18,
+    "superseded_by_commit": "272d3148d6a93cec079d7dc649a78d406e5fe36f",
+    "superseded_reason": "systemd executes through current symlink; lexical ESM entrypoint comparison skipped main()",
+    "files": {
+      "README.md": "67b79725d0566d6a8979631250b47bcf50d8a012f661da3405bd804b835bdc74",
+      "alert-envelope.schema.json": "369b79bdae103d4576a53beb48d482400b15410953ad4dea8990821c736e2828",
+      "probe-core.mjs": "ca57373856da1ffa69e49c85bee3d4c67d41eda75014baacea0f11d3eea11fbf",
+      "probe-core.test.mjs": "0bf962eabef6c51198bba758421f65a69fc35b461afa2a9daa37bd5f58781bc8",
+      "run.mjs": "9626a4c6cce9d5c515c34f4d08daee24c1284fc12abf87b22f61315f47adbbc4",
+      "state-store.mjs": "4f800b073d9e81e6ea59a9689e1fed4a3f6a0906c0fae0c5cbe941ef56e306c3",
+      "state-store.test.mjs": "05d0ca91b05f516ec9ed077ae33a8b6a1a8d345c76e4b614b9a7d102bdb0cd2c",
+      "systemd/castreader-core-audio-monitor@.service": "65fe20188f2b15af652e614d81e3fdf6b3e90de71670c1e352f5827a9e6f6916",
+      "systemd/castreader-core-audio-monitor@.timer": "d7cf2893eb75f9c9397958ce8fe0c3833228c9c6decedae2bee36b6bc076be92"
+    }
+  },
+  "safety": {
+    "production_writes": false,
+    "service_restart": false,
+    "timer_enabled": false,
+    "external_notification_sent": false,
+    "audio_persisted": false,
+    "user_content_used": false,
+    "secrets_recorded": false,
+    "additional_synthesis_after_probe": false
+  }
+}

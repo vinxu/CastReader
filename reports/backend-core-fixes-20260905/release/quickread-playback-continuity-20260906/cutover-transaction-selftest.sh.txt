@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Local-only transaction test. It uses a mock rollback and never connects to a
+# host, changes a symlink, or invokes a service manager.
+set -euo pipefail
+
+BASE=$(cd "$(dirname "$0")" && pwd)
+US="$BASE/us-cutover.sh.txt"
+CN="$BASE/cn-cutover.sh.txt"
+
+for script in "$US" "$CN"; do
+  [[ "$(grep -c '^trap on_exit EXIT$' "$script")" == 1 ]]
+  ! grep -Eq '^trap .*ERR' "$script"
+  grep -q '^LOCK_FILE=/var/lock/castreader-quickread-release.lock$' "$script"
+  grep -q '^flock -n 9 ' "$script"
+  grep -q '^read -r wrong_status right_status < <(auth_contract ' "$script"
+  ! grep -q 'X-API-Key: ${api_key}' "$script"
+done
+
+run_case() {
+  local scenario="$1" expected_rc="$2" events
+  events=$(mktemp)
+  set +e
+  ROLLBACK_EVENTS="$events" bash -s -- "$scenario" <<'CHILD'
+set -euo pipefail
+scenario="$1"
+SWITCHED=1
+die() { exit 65; }
+rollback() {
+  SWITCHED=0
+  trap - EXIT HUP INT TERM
+  set +e
+  printf 'rollback\n' >> "$ROLLBACK_EVENTS"
+}
+on_exit() {
+  local rc=$?
+  trap - EXIT HUP INT TERM
+  if [[ "$SWITCHED" == 1 ]]; then rollback; fi
+  exit "$rc"
+}
+trap on_exit EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+case "$scenario" in
+  health_failure) wait_live_health() { return 1; }; wait_live_health || die ;;
+  cwd_failure) [[ /wrong/cwd == /expected/cwd ]] || die ;;
+  explicit_die) die ;;
+  hup) kill -HUP $$ ;;
+  *) exit 99 ;;
+esac
+CHILD
+  rc=$?
+  set -e
+  count=$(wc -l < "$events" | tr -d ' ')
+  rm -f "$events"
+  [[ "$rc" == "$expected_rc" ]]
+  [[ "$count" == 1 ]]
+  printf '%s\t%s\t%s\n' "$scenario" "$rc" "$count"
+}
+
+run_case health_failure 65
+run_case cwd_failure 65
+run_case explicit_die 65
+run_case hup 129

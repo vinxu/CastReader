@@ -1,0 +1,13 @@
+{
+  "configured_key_invalid_body_status": 400,
+  "configured_key_transmitted_in_process_argv": false,
+  "health_ok": true,
+  "health_status": 200,
+  "public_host": "qr.castreader.ai",
+  "region": "us",
+  "response_body_recorded": false,
+  "schema": "castreader.quickread-public-contract.v1",
+  "verified": true,
+  "verified_at_epoch_ms": 1788630107445,
+  "wrong_key_status": 401
+}

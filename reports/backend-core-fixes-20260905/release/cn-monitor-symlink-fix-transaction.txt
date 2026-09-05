@@ -1,0 +1,3 @@
+fix_before_cas_ok
+monitor_current_fixed=/opt/castreader-core-audio-monitor/releases/272d3148-5c085a61
+run_sha=8f8972921d9fae2132111cdadefc4f80ecc9dc02fb473f5cf7e076e3604cfe2e

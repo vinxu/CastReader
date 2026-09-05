@@ -1,0 +1,63 @@
+{
+  "capturedAtUtc": "2026-09-05T16:18:00Z",
+  "count": 5,
+  "sharedEnvironmentVariables": [
+    {
+      "id": "env_tooLPlMhoktvmTuK8Dx4tn4L",
+      "key": "MYSQL_PASSWORD",
+      "linkedProjectIds": [],
+      "target": [
+        "development",
+        "preview",
+        "production"
+      ],
+      "type": "encrypted"
+    },
+    {
+      "id": "env_mQq3Sw7Dga78SB93gFjdkrCv",
+      "key": "MYSQL_USER",
+      "linkedProjectIds": [],
+      "target": [
+        "development",
+        "preview",
+        "production"
+      ],
+      "type": "encrypted"
+    },
+    {
+      "id": "env_bI7cSPGGgz6LjTyLt4TV3SAC",
+      "key": "MYSQL_DATABASE",
+      "linkedProjectIds": [],
+      "target": [
+        "development",
+        "preview",
+        "production"
+      ],
+      "type": "encrypted"
+    },
+    {
+      "id": "env_cff8fnE986e5kboYo5y6Vo2l",
+      "key": "MYSQL_PORT",
+      "linkedProjectIds": [],
+      "target": [
+        "development",
+        "preview",
+        "production"
+      ],
+      "type": "encrypted"
+    },
+    {
+      "id": "env_s7JIQVkrxfKjy2Fq5hq4flZY",
+      "key": "MYSQL_HOST",
+      "linkedProjectIds": [],
+      "target": [
+        "development",
+        "preview",
+        "production"
+      ],
+      "type": "encrypted"
+    }
+  ],
+  "team": "castreader",
+  "valuesRead": false
+}
