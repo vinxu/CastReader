@@ -1,0 +1,9 @@
+{
+  "verified": true,
+  "capturedAtUtc": "2026-09-05T18:15:24Z",
+  "tests": 11,
+  "passed": 11,
+  "failed": 0,
+  "activationScriptSha256": "f12323d5a6c14a8e101c892d83d3fee7f2b637e33f63a7f2a29ab8ba95118600",
+  "tapSha256": "12f47edcc396f684b6b7adb087c196e7de1a1d8cfb9871dc133cead9ac72444b"
+}

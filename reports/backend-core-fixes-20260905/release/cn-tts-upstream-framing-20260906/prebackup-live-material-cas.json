@@ -1,0 +1,35 @@
+{
+  "verified": true,
+  "capturedAtUtc": "2026-09-05T18:17:41Z",
+  "immutableBackup": {
+    "path": "/tmp/castreader-cn-next-before-tts-framing-20260906T0155Z.tar.gz",
+    "bytes": 43320534,
+    "sha256": "5957aa8545e9587687f99565d1f9bff6d3cf8e09532e0884cdf5e64389f124e8",
+    "privateShanghaiReadbackVerified": true
+  },
+  "backupMaterial": {
+    "release": {
+      "sha256": "643de15db357eefbe45861b0935ddb175220bb0a7046f853d9c06c30449e75cf",
+      "files": 7216,
+      "symlinks": 36
+    },
+    "config": {
+      "sha256": "4313613f7cfb850c498ae2213958a078bb7cf830cc7119ae0fe4fd46d4996520",
+      "files": 27,
+      "symlinks": 0
+    }
+  },
+  "liveMaterial": {
+    "release": {
+      "sha256": "643de15db357eefbe45861b0935ddb175220bb0a7046f853d9c06c30449e75cf",
+      "files": 7216,
+      "symlinks": 36
+    },
+    "config": {
+      "sha256": "4313613f7cfb850c498ae2213958a078bb7cf830cc7119ae0fe4fd46d4996520",
+      "files": 27,
+      "symlinks": 0
+    }
+  },
+  "valuesRead": false
+}

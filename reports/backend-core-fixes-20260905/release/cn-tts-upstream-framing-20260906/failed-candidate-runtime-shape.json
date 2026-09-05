@@ -1,0 +1,192 @@
+{
+  "failedCandidateInvocation": {
+    "systemdInvocationId": "32d3ec65f9f64d378e23921d5dafcc4f",
+    "startedAtUtc": "2026-09-05T18:24:03.446537Z",
+    "stoppingAtUtc": "2026-09-05T18:24:04.035254Z",
+    "lifetimeBeforeRollbackSeconds": 0.589,
+    "processIdUnavailableAfterExit": true,
+    "environmentSnapshotUnavailableAfterExit": true,
+    "manifestReleaseId": "release-20260906014729",
+    "manifestSourceCommit": "9d652ec87d48a65d05e088d4655e806777dead12"
+  },
+  "currentRolledBackBaseline": {
+    "currentPid": 1621449,
+    "safeValues": {
+      "CASTREADER_SERVICE_ROUTE": "cn",
+      "CASTREADER_RELEASE_ID": "release-20260904120513",
+      "VOICE_GIFT_CN_MINIMAL_ENABLED": "true",
+      "VOICE_GIFT_CN_MINIMAL_SCHEMA_READY": "true",
+      "VOICE_GIFT_CN_DRAFT_SCHEMA_READY": "true"
+    },
+    "credentialShape": {
+      "MOBILE_ROUTING_ADMIN_SECRET": {
+        "present": true,
+        "lengthAtLeast32": true,
+        "hasNewline": false,
+        "leadingOrTrailingWhitespace": false
+      },
+      "VOICE_GIFT_CN_INVITATION_SECRET": {
+        "present": true,
+        "lengthAtLeast32": true,
+        "hasNewline": false,
+        "leadingOrTrailingWhitespace": false
+      },
+      "VOICE_CLONE_WEB_BRIDGE_SECRET": {
+        "present": true,
+        "lengthAtLeast32": true,
+        "hasNewline": false,
+        "leadingOrTrailingWhitespace": false
+      },
+      "VOICE_GIFT_DRAFT_CAPABILITY_KEY": {
+        "present": false,
+        "lengthAtLeast32": false,
+        "hasNewline": false,
+        "leadingOrTrailingWhitespace": false
+      },
+      "VOICE_CLONE_ENCRYPTION_KEY": {
+        "present": true,
+        "lengthAtLeast32": true,
+        "hasNewline": false,
+        "leadingOrTrailingWhitespace": false
+      }
+    },
+    "threeCredentialValuesDistinct": true,
+    "systemdSources": [
+      {
+        "path": "/etc/systemd/system/castreader.service",
+        "exists": true,
+        "uid": 0,
+        "gid": 0,
+        "mode": "0644",
+        "directives": [
+          {
+            "line": 10,
+            "kind": "environmentFile",
+            "path": "/etc/castreader/castreader.env"
+          }
+        ]
+      },
+      {
+        "path": "/etc/systemd/system/castreader.service.d/20-service-route.conf",
+        "exists": true,
+        "uid": 0,
+        "gid": 0,
+        "mode": "0644",
+        "directives": [
+          {
+            "line": 4,
+            "kind": "environmentFile",
+            "path": "/etc/castreader/voice-clone.env"
+          },
+          {
+            "line": 5,
+            "kind": "environmentFile",
+            "path": "/etc/castreader/voice-gift-bridge.env"
+          },
+          {
+            "line": 8,
+            "kind": "safeValue",
+            "key": "CASTREADER_SERVICE_ROUTE",
+            "value": "cn"
+          },
+          {
+            "line": 9,
+            "kind": "safeValue",
+            "key": "VOICE_GIFT_CN_MINIMAL_SCHEMA_READY",
+            "value": "true"
+          },
+          {
+            "line": 10,
+            "kind": "safeValue",
+            "key": "VOICE_GIFT_CN_MINIMAL_ENABLED",
+            "value": "true"
+          },
+          {
+            "line": 13,
+            "kind": "safeValue",
+            "key": "VOICE_GIFT_CN_DRAFT_SCHEMA_READY",
+            "value": "true"
+          }
+        ]
+      },
+      {
+        "path": "/etc/systemd/system/castreader.service.d/25-quickread.conf",
+        "exists": true,
+        "uid": 0,
+        "gid": 0,
+        "mode": "0600",
+        "directives": []
+      },
+      {
+        "path": "/etc/systemd/system/castreader.service.d/26-voice-clone.conf",
+        "exists": true,
+        "uid": 0,
+        "gid": 0,
+        "mode": "0644",
+        "directives": [
+          {
+            "line": 2,
+            "kind": "environmentFile",
+            "path": "/etc/castreader/voice-clone.env"
+          }
+        ]
+      },
+      {
+        "path": "/etc/systemd/system/castreader.service.d/27-cn-tts.conf",
+        "exists": true,
+        "uid": 0,
+        "gid": 0,
+        "mode": "0644",
+        "directives": []
+      },
+      {
+        "path": "/etc/systemd/system/castreader.service.d/30-release-id.conf",
+        "exists": true,
+        "uid": 0,
+        "gid": 0,
+        "mode": "0644",
+        "directives": [
+          {
+            "line": 2,
+            "kind": "safeValue",
+            "key": "CASTREADER_RELEASE_ID",
+            "value": "release-20260904120513"
+          }
+        ]
+      },
+      {
+        "path": "/etc/castreader/castreader.env",
+        "exists": true,
+        "uid": 0,
+        "gid": 0,
+        "mode": "0600",
+        "directives": []
+      },
+      {
+        "path": "/etc/castreader/voice-clone.env",
+        "exists": true,
+        "uid": 0,
+        "gid": 0,
+        "mode": "0600",
+        "directives": []
+      },
+      {
+        "path": "/etc/castreader/voice-gift-bridge.env",
+        "exists": true,
+        "uid": 0,
+        "gid": 0,
+        "mode": "0600",
+        "directives": []
+      }
+    ]
+  },
+  "predicateAssessment": {
+    "currentBaselinePassesAllNonSecretShapePredicates": true,
+    "systemdInputsOtherThanReleaseDropinUnchanged": true,
+    "candidateWasStoppedBeforeReadinessWindowObservedInIsolatedCanary": true,
+    "isolatedCanaryNeededInitialRefusalPlusTwoSecondTimeoutBeforeHealth": true,
+    "mostLikelyCause": "runtime environment gate read MainPID before the newly started Type=simple service reached readiness; failed process environment was not retained, so the exact missing predicate is not directly proven",
+    "policyMismatchEvidence": false
+  },
+  "valuesOrHashesOfCredentialsRecorded": false
+}

@@ -1,0 +1,9 @@
+From https://github.com/scmyyan/readout-web
+ * branch              codex/cn-tts-upstream-framing-continuity-20260906 -> FETCH_HEAD
+{"ok":true,"head":"9d652ec87d48a65d05e088d4655e806777dead12","previousProductionSha":"62386e902cb7201919e9680e56c82c8627b47110","releaseRef":"origin/codex/cn-tts-upstream-framing-continuity-20260906"}
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+✓ 已保留全部旧发布目录与精确回滚目标
+✓ 中国区发布已通过运行时账本、声音克隆 Phase-0/邀请数据库、声音克隆合同与入口健康校验
+{"verified":true,"startedAtUtc":"2026-09-05T18:50:14Z","endedAtUtc":"2026-09-05T18:50:21Z","newNextPid":1630406,"releaseId":"release-20260906014729","sourceCommit":"9d652ec87d48a65d05e088d4655e806777dead12","oldReleasePreserved":true}
+{"samples":16,"http200":14,"non200":2,"maxGapBetween200Seconds":3.75,"errorTypes":["TimeoutError"]}

@@ -1,0 +1,18 @@
+{
+  "verified": true,
+  "capturedAtUtc": "2026-09-05T18:46:52Z",
+  "newReadinessTests": {
+    "passed": 5,
+    "failed": 0
+  },
+  "previousActivationTests": {
+    "passed": 11,
+    "failed": 0,
+    "receiptSha256": "7884ba9873790111abd7c2a15ff292a3801f8537789cdaf27057c251aa9cef71"
+  },
+  "activationScriptSha256": "5a4d14c5776d278ca3ef91a681c96dd3d97876dcee96117bdfb6f4ab73e3c5df",
+  "testSourceSha256": "01cda7e71ca2063c7e0aa3bb95c77aa03ab482553f3e822e0a280d8c1fd3dfbd",
+  "tapSha256": "eea02b2062bbdf13d4287b0d87e21cade2ffe3123a269909a43c84ead2592c08",
+  "productionEnvironmentReadinessReceiptSha256": "93769520178aaab9109b87f685b179b0699ee8e28a28e44fc95901fb0de92ca6",
+  "productionEnvironmentSynthesisRequests": 0
+}

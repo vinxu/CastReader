@@ -1,0 +1,9 @@
+{
+  "samples": 16,
+  "http200": 14,
+  "non200": 2,
+  "maxGapBetween200Seconds": 3.75,
+  "errorTypes": [
+    "TimeoutError"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "public": false,
+  "region": "ap-shanghai",
+  "bucket": "castreader-voice-1323065328",
+  "key": "runtime-backups/20260904/cn-next-after-tts-framing-20260906T1850Z.tar.gz",
+  "bytes": 41046123,
+  "sha256": "f2096aa02cbb173076f6a544aa023b5186c392a2d331cc282268da9ce470f04d",
+  "readback_sha256": "f2096aa02cbb173076f6a544aa023b5186c392a2d331cc282268da9ce470f04d",
+  "verified": true,
+  "verifiedAt": "2026-09-05T19:03:15.988Z"
+}

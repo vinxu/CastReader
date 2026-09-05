@@ -1,0 +1,237 @@
+{
+  "verified": true,
+  "capturedAtUtc": "2026-09-05T18:18:52Z",
+  "immutableBackupSha256": "5957aa8545e9587687f99565d1f9bff6d3cf8e09532e0884cdf5e64389f124e8",
+  "oldRelease": {
+    "aggregateSha256": "47f94a64144ffd559953b4c84ca3be32c374b0d9b4707e1f2474e343e940489c",
+    "files": 7216,
+    "symlinks": 36,
+    "rootOwnerUid": 998,
+    "rootOwnerGid": 998,
+    "rootMode": "0700"
+  },
+  "privateConfig": {
+    "aggregateSha256": "67821b02cb448cf3b4f7b077acca6663c43a5601a37aabd0a02d92ac8ee4c5c3",
+    "files": 27,
+    "symlinks": 0,
+    "entries": [
+      {
+        "type": "file",
+        "path": "etc/castreader/canary-core-2c9b8194.env",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "858ba4a19d41850dc5c7a8bc883ed399787618aaf60d7b6522bd80da69b0632d"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/canary-core-e60741cf.env",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "dfa5d87f36f60562844e6f30db2e9888d7bed4e7714681ac57d7a30d000e7f97"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/castreader-shadow-db.env",
+        "mode": "0640",
+        "uid": 0,
+        "gid": 998,
+        "sha256OrTarget": "0994b2e66691df0ebcafb9435847e04d1bcd8863e8b59c772f3c75978a63dfc0"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/castreader.env",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "0521dcc8b97159a0d468c47f755872e44fae9f7fa04bf8444fa28fdde9a560da"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/castreader.env.bak-20260814-sms-live",
+        "mode": "0640",
+        "uid": 0,
+        "gid": 998,
+        "sha256OrTarget": "78900824fb39cabb74c19796e9b00a7ebcce74b2f7dc40afcb4261e0d2a0eca9"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/castreader.env.bak-notify",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "23b291fc0f5027ccf055c12cca5c858dddaf83a03d08d410ee62b716a342843e"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/castreader.env.before-growth-20260824",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "4476b04913cfa7c90bb417430d7e2f5040bed86335f29a6f64f73a6c637e10a3"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/castreader.env.pre-build39-20260814225152",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "cdce168ee66988498469f481cd23b7739cfe70fd9dafd46b665f84026de92f25"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/castreader.env.pre-cn-local-db-20260826-190832",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "7a7e078e595d522375a4c02415c5f1856e66dfd1af51792c38610211886dbabd"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/castreader.env.pre-searchpath-20260826-184859",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "7a7e078e595d522375a4c02415c5f1856e66dfd1af51792c38610211886dbabd"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/castreader.env.pre-shared-authority-20260814",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "8e6c368cb9bbd52232a8dd3fd8a2c366cbf0cb8d98613d68d53a3c01bc3a65c5"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/cn-clone-tunnel",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "8c015b99cc9d3cf959bb40ff16ad613d0aa5897900b47ed831e38de40cbafdf1"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/cn-clone-tunnel.pub",
+        "mode": "0644",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "39d01fee52ec59a00d0874a8ec3b47ac58de629b4007f07623b85b233546d8d8"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/cn4090-known-hosts",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "5d3e147ce9a51a964fbe0625c6d1424a08c2dce71b344529c67ddd5ae79e0492"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/quickread-cn-internal.env",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "0d84dd212ad90ce0dcd462dc8fce1992d3b205752e3b2fb72f45c7aa3b32e7cb"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/quickread-cn.entitlement-candidate-20260904.env",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "7e59e30baf47089a514b9a7044a54f0bbcd2c29d5bb88dfc61debc01984ef001"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/quickread-cn.env",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "7e59e30baf47089a514b9a7044a54f0bbcd2c29d5bb88dfc61debc01984ef001"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/voice-clone.env",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "4b5a08f25d2f8a2679e87ef76e7cef7b128806ab97565fc71261cecbce23768f"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/voice-gift-bridge.env",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "ca0038d5f2294e21d480bfed8e99a4b6d298bb93c203a47f5cb95ee1cc0d10e1"
+      },
+      {
+        "type": "file",
+        "path": "etc/castreader/voice-gift-cn.env",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "437de2dc9bc6a177ee015cf6e0f7a37fc958788651cd727ec324332337679a6a"
+      },
+      {
+        "type": "file",
+        "path": "etc/nginx/sites-available/castreader",
+        "mode": "0644",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "a78ce00e3c8d9bf4e489c53d4231aa1e1d378669b7b758192e97aa1920b247de"
+      },
+      {
+        "type": "file",
+        "path": "etc/systemd/system/castreader.service",
+        "mode": "0644",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "ea65e5d6e69a8d22c30c962e660bcc646367f70d979303ca1dced2149fcd0e9e"
+      },
+      {
+        "type": "file",
+        "path": "etc/systemd/system/castreader.service.d/20-service-route.conf",
+        "mode": "0644",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "012a60b206c98af5afa6cc7dddc5593a2718c3597c0d4ba4e543bd43c52dcfc3"
+      },
+      {
+        "type": "file",
+        "path": "etc/systemd/system/castreader.service.d/25-quickread.conf",
+        "mode": "0600",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "2c4c90af68f8c37da53a9cece689dae7727e1cc9762a6ff15f7898d9d9c50622"
+      },
+      {
+        "type": "file",
+        "path": "etc/systemd/system/castreader.service.d/26-voice-clone.conf",
+        "mode": "0644",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "df312ab4749f53897fda533c14b332df67585bcca14d2bf88ecc07ad5b764688"
+      },
+      {
+        "type": "file",
+        "path": "etc/systemd/system/castreader.service.d/27-cn-tts.conf",
+        "mode": "0644",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "d3b5582b25f9753ea99bd146437087bb0c65ca7bd31304aa0b2979a28f620ef6"
+      },
+      {
+        "type": "file",
+        "path": "etc/systemd/system/castreader.service.d/30-release-id.conf",
+        "mode": "0644",
+        "uid": 0,
+        "gid": 0,
+        "sha256OrTarget": "5c7ea9e47f374b28d77caf6d2755e4743b2c2c4f957890832017084db90fca6c"
+      }
+    ]
+  },
+  "valuesRead": false
+}

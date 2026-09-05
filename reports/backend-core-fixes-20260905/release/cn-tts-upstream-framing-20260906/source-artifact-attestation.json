@@ -1,0 +1,48 @@
+{
+  "source": {
+    "worktree": "/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-cn-tts-upstream-framing-continuity-20260906",
+    "baseProductionCommit": "62386e902cb7201919e9680e56c82c8627b47110",
+    "candidateCommit": "9d652ec87d48a65d05e088d4655e806777dead12",
+    "remoteRef": "origin/codex/cn-tts-upstream-framing-continuity-20260906",
+    "worktreeClean": true,
+    "changedFiles": [
+      "src/shared/lib/tts-gateway.ts",
+      "src/shared/lib/tts-gateway.test.ts"
+    ]
+  },
+  "behavior": {
+    "presetUpstreamAlwaysReceivesStreamFalse": true,
+    "completeJsonBodyParsed": true,
+    "legacyFirstLineSelectionRemoved": true,
+    "cloneImplementationChanged": false,
+    "regionalRoutingChanged": false
+  },
+  "validation": {
+    "ttsGatewayTests": "25/25",
+    "speechBudgetAndRoutingTests": "19/19",
+    "voiceCloneContractTests": "206/206",
+    "cnRegionalReleaseTests": "94/94",
+    "typescript": "passed",
+    "nextBuild": "passed",
+    "patchedActivationTests": "11/11"
+  },
+  "artifact": {
+    "releaseId": "release-20260906014729",
+    "localArchive": "/tmp/castreader-cn-tts-framing-9d652ec87d48/release-20260906014729.clean.tar.gz",
+    "remoteRelease": "/opt/castreader/release-20260906014729",
+    "archiveBytes": 41225604,
+    "archiveSha256": "9bd9372292efd01f4d5bc91839b02d3d033eab297ece82504fb5b88a287dc2a0",
+    "treeSha256": "e6946fa061db2e203311b9d7a36c7b4539a28c4314b98c5cada79a36c6c8277f",
+    "regularFiles": 7214,
+    "symlinks": 36,
+    "appleMetadataFiles": 0,
+    "envFiles": 0
+  },
+  "activation": {
+    "reviewCopy": "activate-cn-release-preserve-rollback.sh.txt",
+    "sha256": "f12323d5a6c14a8e101c892d83d3fee7f2b637e33f63a7f2a29ab8ba95118600",
+    "preservesAllOldReleases": true,
+    "exitAndSignalRollback": true,
+    "productionCutoverPerformed": false
+  }
+}

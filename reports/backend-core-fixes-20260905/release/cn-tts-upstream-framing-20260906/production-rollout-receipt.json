@@ -1,0 +1,97 @@
+{
+  "schema": "castreader.cn-tts-framing-production-rollout.v1",
+  "status": "deployed-and-verified",
+  "production": {
+    "endpoint": "https://api.castreader.cn/api/captioned_speech_partly",
+    "releaseId": "release-20260906014729",
+    "sourceCommit": "9d652ec87d48a65d05e088d4655e806777dead12",
+    "nextPid": 1630406,
+    "startedAtUtc": "2026-09-05T18:50:14Z",
+    "committedAtUtc": "2026-09-05T18:50:21Z",
+    "oldReleasePreserved": true,
+    "restartBasedCutover": true,
+    "zeroDowntimeClaimed": false
+  },
+  "availabilityObservation": {
+    "samples": 16,
+    "http200": 14,
+    "non200": 2,
+    "maxGapBetween200Seconds": 3.75,
+    "errorTypes": [
+      "TimeoutError"
+    ],
+    "scope": "public capabilities sampling during this restart only",
+    "source": "cutover-attempt2-availability-summary.json"
+  },
+  "playbackContinuity": {
+    "verified": true,
+    "source": "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/monitor-legacy-contracts-20260906/cn-post-gateway-recovery-readback.json",
+    "automaticRuns": [
+      {
+        "observedAtUtc": "2026-09-05T18:52:32.133Z",
+        "kind": "recovery"
+      },
+      {
+        "observedAtUtc": "2026-09-05T18:57:43.813Z",
+        "kind": "healthy"
+      }
+    ],
+    "requestContracts": [
+      "stream_omitted",
+      "stream_true",
+      "stream_false"
+    ],
+    "segmentCount": 3,
+    "remainingCharacters": [
+      45,
+      23,
+      0
+    ],
+    "allAudioFullyDecoded": true,
+    "totalAudioBytes": 216324,
+    "totalDurationSeconds": 13.44,
+    "alignmentHealthy": true,
+    "sameRegionEvidence": {
+      "region": "cn",
+      "upstreamNode": "castreader-cn4090",
+      "upstreamSource": "cn-environment"
+    },
+    "gatewayHeaderCaveat": "vercel-r2 is a legacy static label and is not geographic routing evidence",
+    "userContentUsed": false
+  },
+  "postCutoverBackup": {
+    "public": false,
+    "region": "ap-shanghai",
+    "bucket": "castreader-voice-1323065328",
+    "key": "runtime-backups/20260904/cn-next-after-tts-framing-20260906T1850Z.tar.gz",
+    "bytes": 41046123,
+    "sha256": "f2096aa02cbb173076f6a544aa023b5186c392a2d331cc282268da9ce470f04d",
+    "readbackSha256": "f2096aa02cbb173076f6a544aa023b5186c392a2d331cc282268da9ce470f04d",
+    "verifiedAtUtc": "2026-09-05T19:03:15.988Z",
+    "source": "post-release-shanghai-cos-backup.json"
+  },
+  "unmodifiedServices": {
+    "quickReadPid": 1608646,
+    "quickReadCwd": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+    "kokoroTunnelPid": 1029281,
+    "cloneTunnelPid": 2090236,
+    "monitorRelease": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f"
+  },
+  "firstAttempt": {
+    "status": "rolled-back",
+    "observedAtUtc": "2026-09-05T18:24:03Z",
+    "strongestInference": "systemd Type=simple active preceded semantic Node readiness",
+    "exactFailedPredicateCaptured": false,
+    "policyMismatchEvidence": false,
+    "oldBaselineSubsequentlyVerified": true,
+    "retainedRootOnlyBackup": "/tmp/castreader-cn-tts-framing-outer-rollback.U1pYxU"
+  },
+  "canonicalReleaseTool": {
+    "commit": "ec117d38d935cacdc4300d86b76467cd2a9ea848",
+    "scriptSha256": "42c287dda361d4d4dea78c1e96e92c02d30088cce412cc8d88d000495a96a448",
+    "testsPassed": "15/15",
+    "productionApplicationRedeployedForTooling": false
+  },
+  "secretsRecorded": false,
+  "userContentRecorded": false
+}

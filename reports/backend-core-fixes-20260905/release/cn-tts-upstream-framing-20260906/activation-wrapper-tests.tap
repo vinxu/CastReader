@@ -1,0 +1,19 @@
+✔ CN release rejects a domestic ingress with an overseas upstream before submitting text (1490.569709ms)
+✔ schema gate recognizes strict consent checks deparsed by PostgreSQL 14 and newer releases (0.510667ms)
+✔ activation admits only the exact four CN guest bridge locations (122.985708ms)
+✔ activation rejects a legacy clone TTS location without its own trusted public-origin envelope (65.527208ms)
+✔ draft schema gate is conditional and validates the isolated draft contract (1467.006541ms)
+✔ runtime draft admission requires a usable capability key or encryption fallback (1375.939ms)
+✔ Phase-0 mismatch blocks CN activation before any host mutation (1517.677666ms)
+✔ runtime schema mismatch restores old symlink, nginx, and every drop-in without leaking the database URL (4343.699125ms)
+✔ runtime authority mismatch still rolls back before the database schema gate (3583.83325ms)
+✔ activation refuses to mutate a host without a verified rollback target (66.456708ms)
+✔ matching runtime authority and public health commit the new CN release (3794.891959ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 18037.477333

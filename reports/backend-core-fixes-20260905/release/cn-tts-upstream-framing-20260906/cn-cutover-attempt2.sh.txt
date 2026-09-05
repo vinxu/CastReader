@@ -1,0 +1,387 @@
+#!/usr/bin/env bash
+# Exact, one-use operator script for the 2026-09-06 CN TTS framing release.
+# It never prints environment values or the billing-authority fingerprint.
+set -Eeuo pipefail
+set +x
+
+WT=/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-cn-tts-upstream-framing-continuity-20260906
+OPS=/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/cn-tts-upstream-framing-20260906
+HOST=ubuntu@106.54.47.163
+KEY="$HOME/.ssh/castreader_cn_deploy"
+SOURCE=9d652ec87d48a65d05e088d4655e806777dead12
+BASE=62386e902cb7201919e9680e56c82c8627b47110
+REF=origin/codex/cn-tts-upstream-framing-continuity-20260906
+RELEASE=release-20260906014729
+ARCHIVE=/tmp/castreader-cn-tts-framing-9d652ec87d48/release-20260906014729.clean.tar.gz
+ARCHIVE_SHA=9bd9372292efd01f4d5bc91839b02d3d033eab297ece82504fb5b88a287dc2a0
+TREE_SHA=e6946fa061db2e203311b9d7a36c7b4539a28c4314b98c5cada79a36c6c8277f
+ACTIVATE_SHA=5a4d14c5776d278ca3ef91a681c96dd3d97876dcee96117bdfb6f4ab73e3c5df
+NGINX_SHA=a78ce00e3c8d9bf4e489c53d4231aa1e1d378669b7b758192e97aa1920b247de
+ROUTE_SHA=012a60b206c98af5afa6cc7dddc5593a2718c3597c0d4ba4e543bd43c52dcfc3
+TTS_ROUTE_SHA=d3b5582b25f9753ea99bd146437087bb0c65ca7bd31304aa0b2979a28f620ef6
+OLD_RELEASE_SHA=5c7ea9e47f374b28d77caf6d2755e4743b2c2c4f957890832017084db90fca6c
+NEW_RELEASE_SHA=5cbe9e641d9728bee6126765806a7e15ce7474a70cf054cb022abd97a7ee9317
+PREFLIGHT_SHA=18c3646ceec5df32824bfd425157e5102e4e76ac39dbbcb0d498fef69a4dd19c
+OLD_NEXT_PID=1621449
+QR_PID=1608646
+TUNNEL_PID=1029281
+CLONE_TUNNEL_PID=2090236
+QR_CWD=/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn
+MONITOR_CURRENT=/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f
+SAMPLES="$OPS/cutover-attempt2-availability-samples.ndjson"
+SUMMARY="$OPS/cutover-attempt2-availability-summary.json"
+IDLE="$OPS/pre-cutover-attempt2-idle.json"
+STOP="/tmp/castreader-cn-cutover-attempt2-sampler-stop-20260906014729"
+
+cd "$WT"
+git fetch --no-tags origin codex/cn-tts-upstream-framing-continuity-20260906
+test "$(git rev-parse HEAD)" = "$SOURCE"
+test "$(git rev-parse "$REF")" = "$SOURCE"
+test -z "$(git status --porcelain)"
+test "$(sha256sum "$ARCHIVE" | awk '{print $1}')" = "$ARCHIVE_SHA"
+test "$(stat -f %z "$ARCHIVE")" = 41225604
+test "$(sha256sum "$OPS/activate-cn-release-ready-rollback.sh.txt" | awk '{print $1}')" = "$ACTIVATE_SHA"
+CASTREADER_RELEASE_APPROVED=1 \
+CASTREADER_RELEASE_SHA="$SOURCE" \
+CASTREADER_PREVIOUS_PRODUCTION_SHA="$BASE" \
+CASTREADER_PRODUCTION_GIT_REF="$REF" \
+  node scripts/verify-production-source.mjs
+
+# Observe three consecutive connection-free samples before starting the
+# availability sampler. This reduces the chance of interrupting an in-flight
+# request but cannot make a restart-based release zero-downtime.
+test ! -e "$IDLE"
+ssh -i "$KEY" -o BatchMode=yes -o ConnectTimeout=10 "$HOST" \
+  'sudo bash -s' <<'REMOTE_IDLE' > "$IDLE"
+set -euo pipefail
+idle=0
+attempts=0
+while [ "$attempts" -lt 80 ]; do
+  attempts=$((attempts + 1))
+  connections=$(ss -Htn state established | awk '$4 ~ /:3000$/ || $5 ~ /:3000$/ {n++} END{print n+0}')
+  if [ "$connections" = 0 ]; then idle=$((idle + 1)); else idle=0; fi
+  if [ "$idle" -ge 3 ]; then break; fi
+  sleep 0.25
+done
+test "$idle" -ge 3
+python3 - "$attempts" <<'PY'
+import json,sys,time
+print(json.dumps({"verified":True,"consecutiveIdleSamples":3,"attempts":int(sys.argv[1]),"capturedAtUtc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())},indent=2))
+PY
+REMOTE_IDLE
+
+test ! -e "$SAMPLES"
+test ! -e "$SUMMARY"
+test ! -e "$STOP"
+sampler_pid=
+stop_sampler_on_exit() {
+  local status=$?
+  trap - EXIT INT TERM HUP
+  touch "$STOP"
+  if [ -n "$sampler_pid" ]; then wait "$sampler_pid" 2>/dev/null || true; fi
+  exit "$status"
+}
+trap stop_sampler_on_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+python3 - "$SAMPLES" "$STOP" <<'PY' &
+import http.client,json,os,sys,time
+output,stop=sys.argv[1:]
+deadline=time.monotonic()+420
+with open(output,'x') as f:
+ while not os.path.exists(stop) and time.monotonic()<deadline:
+  started=time.monotonic(); status=0; release=None; error=None
+  try:
+   conn=http.client.HTTPSConnection('api.castreader.cn',443,timeout=1.5)
+   conn.request('GET','/api/capabilities',headers={'User-Agent':'castreader-release-availability-v1','Cache-Control':'no-cache'})
+   response=conn.getresponse(); raw=response.read(262145); status=response.status
+   if status==200 and len(raw)<=262144:
+    release=json.loads(raw).get('releaseId')
+  except Exception as exc:
+   error=type(exc).__name__
+  row={'at':time.time(),'status':status,'latencyMs':round((time.monotonic()-started)*1000,1),'releaseId':release,'errorType':error}
+  f.write(json.dumps(row,separators=(',',':'))+'\n'); f.flush(); time.sleep(0.20)
+PY
+sampler_pid=$!
+
+set +e
+ssh -i "$KEY" -o BatchMode=yes -o ConnectTimeout=10 "$HOST" \
+  'sudo flock -n /run/lock/castreader-cn-next-release.lock /bin/bash -s' <<'REMOTE_CUTOVER'
+set -Eeuo pipefail
+set +x
+old=/opt/castreader/release-20260904120513
+candidate=/opt/castreader/release-20260906014729
+archive=/tmp/release-20260906014729.clean.tar.gz
+
+test "$(readlink -f /opt/castreader/current)" = "$old"
+python3 - "$old/.castreader-release.json" "$candidate/.castreader-release.json" <<'PY'
+import json,sys
+old,new=map(lambda p:json.load(open(p)),sys.argv[1:])
+assert old.get('releaseId')=='release-20260904120513'
+assert old.get('sourceCommit')=='62386e902cb7201919e9680e56c82c8627b47110'
+assert new.get('releaseId')=='release-20260906014729'
+assert new.get('sourceCommit')=='9d652ec87d48a65d05e088d4655e806777dead12'
+assert new.get('contract')=='voice-clone-v3'
+PY
+test "$(stat -c %s "$archive")" = 41225604
+test "$(sha256sum "$archive" | awk '{print $1}')" = 9bd9372292efd01f4d5bc91839b02d3d033eab297ece82504fb5b88a287dc2a0
+test "$(sha256sum /etc/nginx/sites-available/castreader | awk '{print $1}')" = a78ce00e3c8d9bf4e489c53d4231aa1e1d378669b7b758192e97aa1920b247de
+test "$(sha256sum /etc/systemd/system/castreader.service.d/20-service-route.conf | awk '{print $1}')" = 012a60b206c98af5afa6cc7dddc5593a2718c3597c0d4ba4e543bd43c52dcfc3
+test "$(sha256sum /etc/systemd/system/castreader.service.d/27-cn-tts.conf | awk '{print $1}')" = d3b5582b25f9753ea99bd146437087bb0c65ca7bd31304aa0b2979a28f620ef6
+test "$(sha256sum /etc/systemd/system/castreader.service.d/30-release-id.conf | awk '{print $1}')" = 5c7ea9e47f374b28d77caf6d2755e4743b2c2c4f957890832017084db90fca6c
+test "$(sha256sum /tmp/castreader-nginx.conf | awk '{print $1}')" = a78ce00e3c8d9bf4e489c53d4231aa1e1d378669b7b758192e97aa1920b247de
+test "$(sha256sum /tmp/castreader-cn-route.conf | awk '{print $1}')" = 012a60b206c98af5afa6cc7dddc5593a2718c3597c0d4ba4e543bd43c52dcfc3
+test "$(sha256sum /tmp/activate-cn-release-ready-rollback.sh | awk '{print $1}')" = 5a4d14c5776d278ca3ef91a681c96dd3d97876dcee96117bdfb6f4ab73e3c5df
+test "$(sha256sum /tmp/preflight-cn-runtime-billing-authority.sh | awk '{print $1}')" = 18c3646ceec5df32824bfd425157e5102e4e76ac39dbbcb0d498fef69a4dd19c
+python3 - <<'PY'
+import json
+receipt=json.load(open('/tmp/castreader-cn-next-before-tts-framing-20260906T0155Z.receipt.json'))
+assert receipt.get('verified') is True and receipt.get('public') is False
+assert receipt.get('region')=='ap-shanghai'
+assert receipt.get('bytes')==43320534
+assert receipt.get('sha256')==receipt.get('readback_sha256')=='5957aa8545e9587687f99565d1f9bff6d3cf8e09532e0884cdf5e64389f124e8'
+PY
+test "$(systemctl is-active castreader)" = active
+test "$(systemctl show castreader -p MainPID --value)" = 1621449
+test "$(systemctl show castreader -p NRestarts --value)" = 0
+test "$(systemctl is-active castreader-quickread-cn)" = active
+test "$(systemctl show castreader-quickread-cn -p MainPID --value)" = 1608646
+test "$(readlink -f /proc/1608646/cwd)" = /opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn
+test "$(systemctl is-active castreader-cn-kokoro-tunnel)" = active
+test "$(systemctl show castreader-cn-kokoro-tunnel -p MainPID --value)" = 1029281
+test "$(systemctl show castreader-cn-kokoro-tunnel -p NRestarts --value)" = 0
+test "$(systemctl is-active castreader-cn-clone-tunnel)" = active
+test "$(systemctl show castreader-cn-clone-tunnel -p MainPID --value)" = 2090236
+test "$(systemctl is-active castreader-core-audio-monitor@cn.timer)" = active
+test "$(systemctl is-enabled castreader-core-audio-monitor@cn.timer)" = enabled
+test "$(readlink -f /opt/castreader-core-audio-monitor/current)" = /opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f
+test "$(systemctl is-active castreader-tts-framing-candidate.service 2>/dev/null || true)" != active
+test -z "$(ss -H -ltn 'sport = :3102')"
+
+python3 - "$candidate" <<'PY'
+import hashlib,os,stat,sys
+root=sys.argv[1];records=[];files=links=apple=envfiles=0
+for base,dirs,names in os.walk(root,followlinks=False):
+ dirs.sort();names.sort()
+ for name in dirs:
+  path=os.path.join(base,name)
+  if os.path.islink(path):records.append('L\0'+os.path.relpath(path,root)+'\0'+os.readlink(path));links+=1
+ for name in names:
+  path=os.path.join(base,name);rel=os.path.relpath(path,root);mode=os.lstat(path).st_mode
+  apple+=int(name.startswith('._') or name=='.DS_Store')
+  envfiles+=int(name=='.env' or name.startswith('.env.'))
+  if stat.S_ISREG(mode):
+   digest=hashlib.sha256()
+   with open(path,'rb') as f:
+    for chunk in iter(lambda:f.read(1048576),b''):digest.update(chunk)
+   records.append('F\0'+rel+'\0'+digest.hexdigest());files+=1
+  elif stat.S_ISLNK(mode):records.append('L\0'+rel+'\0'+os.readlink(path));links+=1
+tree=hashlib.sha256('\n'.join(sorted(records)).encode()).hexdigest()
+assert (tree,files,links,apple,envfiles)==('e6946fa061db2e203311b9d7a36c7b4539a28c4314b98c5cada79a36c6c8277f',7214,36,0,0)
+PY
+
+# These expected digests came from the immutable Shanghai-COS pre-release
+# backup, not from this live read. Each record binds path, bytes/link target,
+# owner uid/gid and mode; a current-byte drift aborts before mutation.
+python3 - <<'PY'
+import hashlib,os,stat
+def stream_hash(path):
+ h=hashlib.sha256()
+ with open(path,'rb') as f:
+  for chunk in iter(lambda:f.read(1048576),b''):h.update(chunk)
+ return h.hexdigest()
+def record(path,rel):
+ st=os.lstat(path);mode=format(stat.S_IMODE(st.st_mode),'04o')
+ if stat.S_ISREG(st.st_mode):kind='file';value=stream_hash(path)
+ elif stat.S_ISLNK(st.st_mode):kind='symlink';value=os.readlink(path)
+ else:return None
+ return '\0'.join((kind,rel,mode,str(st.st_uid),str(st.st_gid),value))
+def walk(root,relroot):
+ paths=[]
+ if os.path.isfile(root) or os.path.islink(root):paths=[root]
+ else:
+  for base,dirs,names in os.walk(root,followlinks=False):
+   dirs.sort();names.sort()
+   paths += [os.path.join(base,name) for name in dirs if os.path.islink(os.path.join(base,name))]
+   paths += [os.path.join(base,name) for name in names]
+ return sorted(row for path in paths if (row:=record(path,relroot if path==root else relroot+'/'+os.path.relpath(path,root))))
+release=walk('/opt/castreader/release-20260904120513','opt/castreader/release-20260904120513')
+config=[]
+for root,rel in [('/etc/castreader','etc/castreader'),('/etc/systemd/system/castreader.service.d','etc/systemd/system/castreader.service.d'),('/etc/nginx/sites-available/castreader','etc/nginx/sites-available/castreader'),('/etc/systemd/system/castreader.service','etc/systemd/system/castreader.service')]:config+=walk(root,rel)
+aggregate=lambda rows:hashlib.sha256('\n'.join(sorted(rows)).encode()).hexdigest()
+st=os.stat('/opt/castreader/release-20260904120513')
+assert (aggregate(release),len([r for r in release if r.startswith('file\0')]),len([r for r in release if r.startswith('symlink\0')]),st.st_uid,st.st_gid,format(stat.S_IMODE(st.st_mode),'04o'))==('47f94a64144ffd559953b4c84ca3be32c374b0d9b4707e1f2474e343e940489c',7216,36,998,998,'0700')
+assert (aggregate(config),len([r for r in config if r.startswith('file\0')]),len([r for r in config if r.startswith('symlink\0')]))==('67821b02cb448cf3b4f7b077acca6663c43a5601a37aabd0a02d92ac8ee4c5c3',27,0)
+PY
+
+main_pid=$(systemctl show castreader -p MainPID --value)
+python3 - "$main_pid" <<'PY'
+import sys
+env={}
+for item in open('/proc/'+sys.argv[1]+'/environ','rb').read().split(b'\0'):
+ if b'=' in item:
+  key,value=item.split(b'=',1);env[key.decode()]=value.decode()
+assert env.get('CASTREADER_SERVICE_ROUTE')=='cn'
+assert env.get('TTS_UPSTREAM_URL')=='http://127.0.0.1:18880/dev/captioned_speech'
+PY
+
+fingerprint=$(bash /tmp/preflight-cn-runtime-billing-authority.sh 2>/dev/null)
+case "$fingerprint" in ba1_[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;; *) exit 1;; esac
+
+# A second transaction envelope protects the fixed postconditions below. If
+# the inner script already rolled back, baseline_matches prevents a duplicate
+# restart. If the inner script committed but a postcondition fails, this outer
+# EXIT trap restores the exact previous symlink and four configuration files.
+outer_backup=$(mktemp -d /tmp/castreader-cn-tts-framing-outer-rollback.XXXXXX)
+cp -p /etc/nginx/sites-available/castreader "$outer_backup/nginx.conf"
+cp -p /etc/systemd/system/castreader.service.d/20-service-route.conf "$outer_backup/20-service-route.conf"
+cp -p /etc/systemd/system/castreader.service.d/27-cn-tts.conf "$outer_backup/27-cn-tts.conf"
+cp -p /etc/systemd/system/castreader.service.d/30-release-id.conf "$outer_backup/30-release-id.conf"
+outer_mutation_started=0
+outer_committed=0
+baseline_matches() {
+  local pid
+  pid=$(systemctl show castreader -p MainPID --value 2>/dev/null || true)
+  [ "$(readlink -f /opt/castreader/current 2>/dev/null || true)" = "$old" ] &&
+    [ -n "$pid" ] && [ "$(readlink -f "/proc/$pid/cwd" 2>/dev/null || true)" = "$old" ] &&
+    [ "$(systemctl is-active castreader 2>/dev/null || true)" = active ] &&
+    [ "$(systemctl is-active nginx 2>/dev/null || true)" = active ] &&
+    nginx -t >/dev/null 2>&1 &&
+    [ "$(sha256sum /etc/nginx/sites-available/castreader 2>/dev/null | awk '{print $1}')" = a78ce00e3c8d9bf4e489c53d4231aa1e1d378669b7b758192e97aa1920b247de ] &&
+    [ "$(sha256sum /etc/systemd/system/castreader.service.d/20-service-route.conf 2>/dev/null | awk '{print $1}')" = 012a60b206c98af5afa6cc7dddc5593a2718c3597c0d4ba4e543bd43c52dcfc3 ] &&
+    [ "$(sha256sum /etc/systemd/system/castreader.service.d/27-cn-tts.conf 2>/dev/null | awk '{print $1}')" = d3b5582b25f9753ea99bd146437087bb0c65ca7bd31304aa0b2979a28f620ef6 ] &&
+    [ "$(sha256sum /etc/systemd/system/castreader.service.d/30-release-id.conf 2>/dev/null | awk '{print $1}')" = 5c7ea9e47f374b28d77caf6d2755e4743b2c2c4f957890832017084db90fca6c ]
+}
+wait_old_semantic_ready() {
+  local pid_before pid_after body code result=1 attempt
+  body=$(mktemp /tmp/castreader-old-release-readiness.XXXXXX)
+  chmod 0600 "$body"
+  for attempt in $(seq 1 30); do
+    : > "$body"
+    pid_before=$(systemctl show castreader -p MainPID --value 2>/dev/null || true)
+    code=$(curl --silent --show-error --output "$body" --write-out '%{http_code}' \
+      --connect-timeout 1 --max-time 2 --header 'Cache-Control: no-cache' \
+      "http://127.0.0.1:3000/api/capabilities?rollback_readiness=release-20260904120513&attempt=$attempt" \
+      2>/dev/null || true)
+    pid_after=$(systemctl show castreader -p MainPID --value 2>/dev/null || true)
+    if [ "$code" = 200 ] && [ "$pid_before" = "$pid_after" ] &&
+      [[ "$pid_before" =~ ^[1-9][0-9]*$ ]] &&
+      [ "$(readlink -f "/proc/$pid_before/exe" 2>/dev/null || true)" = /usr/bin/node ] &&
+      [ "$(readlink -f "/proc/$pid_before/cwd" 2>/dev/null || true)" = "$old" ] &&
+      [ "$(stat -c %s "$body")" -le 262144 ] &&
+      python3 - "$body" >/dev/null 2>&1 <<'PY'
+import json,sys
+d=json.load(open(sys.argv[1]))
+assert d.get('releaseId') == 'release-20260904120513'
+assert d.get('commitSha') == '62386e902cb7201919e9680e56c82c8627b47110'
+assert (d.get('voiceClone') or {}).get('serviceRoute') == 'cn'
+assert (d.get('voiceGift') or {}).get('serviceRoute') == 'cn'
+PY
+    then
+      result=0
+      break
+    fi
+    sleep 1
+  done
+  rm -f -- "$body"
+  return "$result"
+}
+restore_outer_baseline() {
+  local rollback_ok=0 active=0
+  ln -sfn "$old" /opt/castreader/current.outer-rollback || rollback_ok=1
+  mv -Tf /opt/castreader/current.outer-rollback /opt/castreader/current || rollback_ok=1
+  cp -p "$outer_backup/nginx.conf" /etc/nginx/sites-available/castreader || rollback_ok=1
+  cp -p "$outer_backup/20-service-route.conf" /etc/systemd/system/castreader.service.d/20-service-route.conf || rollback_ok=1
+  cp -p "$outer_backup/27-cn-tts.conf" /etc/systemd/system/castreader.service.d/27-cn-tts.conf || rollback_ok=1
+  cp -p "$outer_backup/30-release-id.conf" /etc/systemd/system/castreader.service.d/30-release-id.conf || rollback_ok=1
+  systemctl daemon-reload || rollback_ok=1
+  nginx -t || rollback_ok=1
+  systemctl restart castreader || rollback_ok=1
+  systemctl reload nginx || rollback_ok=1
+  for _ in $(seq 1 30); do
+    if [ "$(systemctl is-active castreader 2>/dev/null || true)" = active ]; then active=1; break; fi
+    sleep 1
+  done
+  [ "$active" = 1 ] || rollback_ok=1
+  baseline_matches || rollback_ok=1
+  wait_old_semantic_ready || rollback_ok=1
+  return "$rollback_ok"
+}
+outer_exit() {
+  local status=$?
+  local cleanup_backup=1
+  trap - EXIT INT TERM HUP
+  set +e
+  if [ "$outer_mutation_started" = 1 ] && [ "$outer_committed" != 1 ]; then
+    if baseline_matches && wait_old_semantic_ready; then
+      echo '✓ 内层已恢复旧版；外层未重复重启'
+    else
+      if ! restore_outer_baseline; then
+        status=1
+        cleanup_backup=0
+        echo "✗ 外层回滚未完整成功；保留 root-only 备份：$outer_backup" >&2
+      fi
+    fi
+  fi
+  if [ "$status" = 0 ] && [ "$outer_committed" != 1 ]; then status=1; fi
+  if [ "$cleanup_backup" = 1 ]; then
+    rm -rf -- "$outer_backup"
+  else
+    chmod 0700 "$outer_backup" 2>/dev/null || true
+  fi
+  exit "$status"
+}
+trap outer_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+
+baseline_matches
+wait_old_semantic_ready
+started=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+outer_mutation_started=1
+printf '%s\n' "$fingerprint" | bash /tmp/activate-cn-release-ready-rollback.sh /opt/castreader release-20260906014729
+unset fingerprint
+
+test "$(readlink -f /opt/castreader/current)" = "$candidate"
+test "$(systemctl is-active castreader)" = active
+test "$(sha256sum /etc/nginx/sites-available/castreader | awk '{print $1}')" = a78ce00e3c8d9bf4e489c53d4231aa1e1d378669b7b758192e97aa1920b247de
+test "$(sha256sum /etc/systemd/system/castreader.service.d/20-service-route.conf | awk '{print $1}')" = 012a60b206c98af5afa6cc7dddc5593a2718c3597c0d4ba4e543bd43c52dcfc3
+test "$(sha256sum /etc/systemd/system/castreader.service.d/27-cn-tts.conf | awk '{print $1}')" = d3b5582b25f9753ea99bd146437087bb0c65ca7bd31304aa0b2979a28f620ef6
+test "$(sha256sum /etc/systemd/system/castreader.service.d/30-release-id.conf | awk '{print $1}')" = 5cbe9e641d9728bee6126765806a7e15ce7474a70cf054cb022abd97a7ee9317
+test "$(systemctl show castreader-quickread-cn -p MainPID --value)" = 1608646
+test "$(readlink -f /proc/1608646/cwd)" = /opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn
+test "$(systemctl show castreader-cn-kokoro-tunnel -p MainPID --value)" = 1029281
+test "$(systemctl show castreader-cn-clone-tunnel -p MainPID --value)" = 2090236
+test "$(systemctl is-active castreader-core-audio-monitor@cn.timer)" = active
+test "$(readlink -f /opt/castreader-core-audio-monitor/current)" = /opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f
+test -d "$old"
+outer_committed=1
+trap - EXIT INT TERM HUP
+rm -rf -- "$outer_backup"
+ended=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+python3 - "$started" "$ended" "$(systemctl show castreader -p MainPID --value)" <<'PY'
+import json,sys
+print(json.dumps({'verified':True,'startedAtUtc':sys.argv[1],'endedAtUtc':sys.argv[2],'newNextPid':int(sys.argv[3]),'releaseId':'release-20260906014729','sourceCommit':'9d652ec87d48a65d05e088d4655e806777dead12','oldReleasePreserved':True},separators=(',',':')))
+PY
+REMOTE_CUTOVER
+cutover_status=$?
+set -e
+touch "$STOP"
+wait "$sampler_pid" || true
+sampler_pid=
+
+python3 - "$SAMPLES" "$SUMMARY" <<'PY'
+import json,sys
+rows=[json.loads(line) for line in open(sys.argv[1]) if line.strip()]
+ok=[row for row in rows if row['status']==200]
+bad=[row for row in rows if row['status']!=200]
+gaps=[]
+for left,right in zip(ok,ok[1:]):gaps.append(right['at']-left['at'])
+summary={'samples':len(rows),'http200':len(ok),'non200':len(bad),'maxGapBetween200Seconds':round(max(gaps,default=0),3),'errorTypes':sorted({row['errorType'] for row in bad if row['errorType']})}
+open(sys.argv[2],'w').write(json.dumps(summary,indent=2)+'\n')
+print(json.dumps(summary,separators=(',',':')))
+PY
+trap - EXIT INT TERM HUP
+exit "$cutover_status"

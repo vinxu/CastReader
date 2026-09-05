@@ -1,0 +1,53 @@
+{
+  "verified": true,
+  "capturedAtUtc": "2026-09-05T18:49:42Z",
+  "current": "/opt/castreader/release-20260904120513",
+  "next": {
+    "active": "active",
+    "pid": 1621449,
+    "nRestarts": 0,
+    "cwd": "/opt/castreader/release-20260904120513",
+    "exe": "/usr/bin/node"
+  },
+  "capabilities": {
+    "releaseId": "release-20260904120513",
+    "commitSha": "62386e902cb7201919e9680e56c82c8627b47110",
+    "voiceCloneServiceRoute": "cn",
+    "voiceGiftServiceRoute": "cn"
+  },
+  "quickRead": {
+    "active": "active",
+    "pid": 1608646,
+    "nRestarts": 0,
+    "cwd": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn"
+  },
+  "kokoroTunnel": {
+    "active": "active",
+    "pid": 1029281,
+    "nRestarts": 0
+  },
+  "cloneTunnel": {
+    "active": "active",
+    "pid": 2090236,
+    "nRestarts": 0
+  },
+  "nginx": {
+    "active": "active",
+    "pid": 12692,
+    "nRestarts": 0
+  },
+  "monitor": {
+    "current": "/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f",
+    "timerActive": "active",
+    "timerEnabled": "enabled"
+  },
+  "configSha256": {
+    "nginx": "a78ce00e3c8d9bf4e489c53d4231aa1e1d378669b7b758192e97aa1920b247de",
+    "route20": "012a60b206c98af5afa6cc7dddc5593a2718c3597c0d4ba4e543bd43c52dcfc3",
+    "tts27": "d3b5582b25f9753ea99bd146437087bb0c65ca7bd31304aa0b2979a28f620ef6",
+    "release30": "5c7ea9e47f374b28d77caf6d2755e4743b2c2c4f957890832017084db90fca6c",
+    "stagedActivation": "5a4d14c5776d278ca3ef91a681c96dd3d97876dcee96117bdfb6f4ab73e3c5df"
+  },
+  "candidatePort3102Listeners": 0,
+  "firstAttemptEvidencePreserved": true
+}

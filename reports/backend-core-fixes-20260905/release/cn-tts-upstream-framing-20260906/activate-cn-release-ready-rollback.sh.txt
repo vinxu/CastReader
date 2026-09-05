@@ -1,0 +1,2272 @@
+#!/usr/bin/env bash
+# Remote, transactional activation for api.castreader.cn and the dedicated
+# quickread.castreader.cn authenticated ingress.
+#
+# Production invocation reads the approved masked authority from stdin. It is
+# deliberately absent from argv, curl argv and logs. This script never changes
+# any global/.ai service or DNS record.
+
+cn_restore_file() {
+  local backup_file=$1
+  local destination=$2
+  local existed=$3
+  if [ "$existed" = "1" ]; then
+    install -m 0644 "$backup_file" "$destination"
+  else
+    rm -f -- "$destination"
+  fi
+}
+
+cn_wait_service_active() {
+  local attempt
+  for attempt in $(seq 1 10); do
+    if systemctl is-active --quiet castreader; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
+# Type=simple can become active before execve(2) and before the Node listener is
+# ready. Bind admission to one fresh, direct localhost response from the exact
+# process and immutable release that the operator approved.
+cn_wait_release_ready() {
+  local release=$1
+  local source_commit=$2
+  local expected_cwd=$3
+  local proc_root=$4
+  local attempt code main_pid_before main_pid_after exe_before exe_after
+  local cwd_before cwd_after body_bytes
+
+  [ -n "${CN_READINESS_BODY_FILE:-}" ] &&
+    rm -f -- "$CN_READINESS_BODY_FILE"
+  CN_READINESS_BODY_FILE=$(mktemp "${TMPDIR:-/tmp}/castreader-release-readiness.XXXXXX")
+  chmod 0600 "$CN_READINESS_BODY_FILE"
+  CN_READINESS_HTTP_CODE='000'
+  CN_READINESS_ATTEMPTS=0
+  CN_READINESS_MAIN_PID_BEFORE=''
+  CN_READINESS_MAIN_PID_AFTER=''
+  CN_READINESS_EXE_BEFORE=''
+  CN_READINESS_EXE_AFTER=''
+  CN_READINESS_CWD_BEFORE=''
+  CN_READINESS_CWD_AFTER=''
+  CN_READINESS_MATCHED=false
+
+  for attempt in $(seq 1 30); do
+    CN_READINESS_ATTEMPTS=$attempt
+    main_pid_before=$(systemctl show --property MainPID --value castreader 2>/dev/null || true)
+    exe_before=''
+    cwd_before=''
+    if [[ "$main_pid_before" =~ ^[1-9][0-9]*$ ]]; then
+      exe_before=$(readlink -f "$proc_root/$main_pid_before/exe" 2>/dev/null || true)
+      cwd_before=$(readlink -f "$proc_root/$main_pid_before/cwd" 2>/dev/null || true)
+    fi
+
+    : > "$CN_READINESS_BODY_FILE"
+    code=$(curl --silent --show-error --output "$CN_READINESS_BODY_FILE" \
+      --write-out '%{http_code}' --connect-timeout 1 --max-time 2 \
+      --request GET --header 'Cache-Control: no-cache' \
+      --header "X-CastReader-Release-Readiness: $release-$attempt" \
+      "http://127.0.0.1:3000/api/capabilities?release_readiness=$release&attempt=$attempt" \
+      2>/dev/null || true)
+
+    main_pid_after=$(systemctl show --property MainPID --value castreader 2>/dev/null || true)
+    exe_after=''
+    cwd_after=''
+    if [[ "$main_pid_after" =~ ^[1-9][0-9]*$ ]]; then
+      exe_after=$(readlink -f "$proc_root/$main_pid_after/exe" 2>/dev/null || true)
+      cwd_after=$(readlink -f "$proc_root/$main_pid_after/cwd" 2>/dev/null || true)
+    fi
+    body_bytes=$(stat -c %s "$CN_READINESS_BODY_FILE" 2>/dev/null || printf 0)
+
+    CN_READINESS_HTTP_CODE=$code
+    CN_READINESS_MAIN_PID_BEFORE=$main_pid_before
+    CN_READINESS_MAIN_PID_AFTER=$main_pid_after
+    CN_READINESS_EXE_BEFORE=$exe_before
+    CN_READINESS_EXE_AFTER=$exe_after
+    CN_READINESS_CWD_BEFORE=$cwd_before
+    CN_READINESS_CWD_AFTER=$cwd_after
+
+    if [ "$code" = "200" ] && [ "$body_bytes" -le 262144 ] &&
+      [ "$main_pid_before" = "$main_pid_after" ] &&
+      [[ "$main_pid_before" =~ ^[1-9][0-9]*$ ]] &&
+      [ "$exe_before" = "/usr/bin/node" ] &&
+      [ "$exe_after" = "/usr/bin/node" ] &&
+      [ "$cwd_before" = "$expected_cwd" ] &&
+      [ "$cwd_after" = "$expected_cwd" ] &&
+      python3 - "$CN_READINESS_BODY_FILE" "$release" "$source_commit" \
+        >/dev/null 2>&1 <<'PY'
+import json
+import sys
+
+manifest = json.load(open(sys.argv[1]))
+assert manifest.get('releaseId') == sys.argv[2]
+assert manifest.get('commitSha') == sys.argv[3]
+assert (manifest.get('voiceClone') or {}).get('serviceRoute') == 'cn'
+assert (manifest.get('voiceGift') or {}).get('serviceRoute') == 'cn'
+PY
+    then
+      CN_READINESS_MATCHED=true
+      CN_RUNTIME_MAIN_PID=$main_pid_before
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+# Persist only operational identity, public capability fields and safe secret
+# predicates. Values, hashes and exact lengths remain inside the process.
+cn_write_runtime_gate_receipt() {
+  local reason=$1
+  local release=$2
+  local source_commit=$3
+  local expected_cwd=$4
+  local proc_root=$5
+  local receipt temporary
+  local current_main_pid
+
+  current_main_pid=$(systemctl show --property MainPID --value castreader 2>/dev/null || true)
+  umask 077
+  receipt=$(mktemp "${TMPDIR:-/tmp}/castreader-cn-runtime-gate-$release-${CN_RUNTIME_GATE_INVOCATION_ID:-$$}.XXXXXX")
+  temporary="$receipt.tmp.$$"
+  if python3 - "$temporary" "$reason" "$release" "$source_commit" \
+    "$expected_cwd" "$proc_root" "$current_main_pid" \
+    "${CN_READINESS_BODY_FILE:-}" "${CN_READINESS_HTTP_CODE:-000}" \
+    "${CN_READINESS_ATTEMPTS:-0}" "${CN_READINESS_MAIN_PID_BEFORE:-}" \
+    "${CN_READINESS_MAIN_PID_AFTER:-}" "${CN_READINESS_EXE_BEFORE:-}" \
+    "${CN_READINESS_EXE_AFTER:-}" "${CN_READINESS_CWD_BEFORE:-}" \
+    "${CN_READINESS_CWD_AFTER:-}" "${CN_READINESS_MATCHED:-false}" <<'PY'
+import json
+import os
+import pathlib
+import sys
+import time
+
+(
+    output, reason, expected_release, expected_source, expected_cwd,
+    proc_root, current_pid, body_path, http_code, attempts,
+    pid_before, pid_after, exe_before, exe_after, cwd_before, cwd_after,
+    readiness_matched,
+) = sys.argv[1:]
+
+def read_environment(path):
+    result = {}
+    try:
+        for item in pathlib.Path(path).read_bytes().split(b'\0'):
+            if b'=' in item:
+                key, value = item.split(b'=', 1)
+                result[key.decode(errors='replace')] = value.decode(errors='replace')
+    except OSError:
+        pass
+    return result
+
+def safe_secret(value):
+    return {
+        'present': bool(value),
+        'lengthAtLeast32': len(value) >= 32,
+        'trimmed': value == value.strip(),
+        'containsNewline': '\n' in value or '\r' in value,
+    }
+
+def safe_link(path):
+    return os.path.realpath(path) if os.path.exists(path) else ''
+
+pid = current_pid if current_pid.isdigit() and int(current_pid) > 0 else ''
+environment = read_environment(os.path.join(proc_root, pid, 'environ')) if pid else {}
+capabilities = {}
+try:
+    raw = pathlib.Path(body_path).read_bytes()
+    if len(raw) <= 262144:
+        parsed = json.loads(raw)
+        capabilities = {
+            'jsonValid': True,
+            'releaseId': parsed.get('releaseId'),
+            'commitSha': parsed.get('commitSha'),
+            'voiceCloneServiceRoute': (parsed.get('voiceClone') or {}).get('serviceRoute'),
+            'voiceGiftServiceRoute': (parsed.get('voiceGift') or {}).get('serviceRoute'),
+        }
+except (OSError, ValueError, TypeError):
+    capabilities = {'jsonValid': False}
+
+admin = environment.get('MOBILE_ROUTING_ADMIN_SECRET', '')
+invitation = environment.get('VOICE_GIFT_CN_INVITATION_SECRET', '')
+bridge = environment.get('VOICE_CLONE_WEB_BRIDGE_SECRET', '')
+draft = environment.get('VOICE_GIFT_DRAFT_CAPABILITY_KEY', '')
+encryption = environment.get('VOICE_CLONE_ENCRYPTION_KEY', '')
+receipt = {
+    'capturedAtUtc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+    'reason': reason,
+    'expected': {
+        'releaseId': expected_release,
+        'commitSha': expected_source,
+        'serviceRoute': 'cn',
+        'exe': '/usr/bin/node',
+        'cwd': expected_cwd,
+    },
+    'readiness': {
+        'matched': readiness_matched == 'true',
+        'attempts': int(attempts) if attempts.isdigit() else 0,
+        'httpCode': int(http_code) if http_code.isdigit() else 0,
+        'mainPidBefore': int(pid_before) if pid_before.isdigit() else None,
+        'mainPidAfter': int(pid_after) if pid_after.isdigit() else None,
+        'samePid': bool(pid_before) and pid_before == pid_after,
+        'exeBefore': exe_before,
+        'exeAfter': exe_after,
+        'cwdBefore': cwd_before,
+        'cwdAfter': cwd_after,
+        'capabilities': capabilities,
+    },
+    'runtime': {
+        'mainPid': int(pid) if pid else None,
+        'matchesReadinessPid': bool(pid) and pid == pid_before == pid_after,
+        'exe': safe_link(os.path.join(proc_root, pid, 'exe')) if pid else '',
+        'cwd': safe_link(os.path.join(proc_root, pid, 'cwd')) if pid else '',
+        'serviceRoute': environment.get('CASTREADER_SERVICE_ROUTE', ''),
+        'releaseId': environment.get('CASTREADER_RELEASE_ID', ''),
+        'voiceGiftEnabled': environment.get('VOICE_GIFT_CN_MINIMAL_ENABLED', ''),
+        'voiceGiftSchemaReady': environment.get('VOICE_GIFT_CN_MINIMAL_SCHEMA_READY', ''),
+        'voiceGiftDraftSchemaReady': environment.get('VOICE_GIFT_CN_DRAFT_SCHEMA_READY', ''),
+        'secrets': {
+            'admin': safe_secret(admin),
+            'invitation': safe_secret(invitation),
+            'bridge': safe_secret(bridge),
+            'draftCapability': safe_secret(draft),
+            'encryption': safe_secret(encryption),
+            'invitationBridgeEncryptionPairwiseDistinct': (
+                bool(invitation and bridge and encryption)
+                and len({invitation, bridge, encryption}) == 3
+            ),
+        },
+    },
+}
+pathlib.Path(output).write_text(json.dumps(receipt, indent=2) + '\n')
+PY
+  then
+    chmod 0600 "$temporary"
+    mv -f -- "$temporary" "$receipt"
+    echo "! 已保存脱敏运行闸门证据：$receipt" >&2
+  else
+    rm -f -- "$temporary" "$receipt"
+    echo "! 脱敏运行闸门证据写入失败" >&2
+  fi
+}
+
+cn_read_runtime_environment() {
+  local process_environment=$1
+  CN_RUNTIME_ADMIN_SECRET=''
+  CN_RUNTIME_ROUTE=''
+  CN_RUNTIME_RELEASE_ID=''
+  CN_RUNTIME_VOICE_GIFT_ENABLED=''
+  CN_RUNTIME_VOICE_GIFT_SCHEMA_READY=''
+  CN_RUNTIME_VOICE_GIFT_DRAFT_SCHEMA_READY=''
+  CN_RUNTIME_VOICE_GIFT_INVITATION_SECRET=''
+  CN_RUNTIME_VOICE_GIFT_BRIDGE_SECRET=''
+  CN_RUNTIME_VOICE_GIFT_DRAFT_CAPABILITY_KEY=''
+  CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY=''
+
+  while IFS= read -r -d '' entry; do
+    case "$entry" in
+      MOBILE_ROUTING_ADMIN_SECRET=*)
+        CN_RUNTIME_ADMIN_SECRET=${entry#MOBILE_ROUTING_ADMIN_SECRET=}
+        ;;
+      CASTREADER_SERVICE_ROUTE=*)
+        CN_RUNTIME_ROUTE=${entry#CASTREADER_SERVICE_ROUTE=}
+        ;;
+      CASTREADER_RELEASE_ID=*)
+        CN_RUNTIME_RELEASE_ID=${entry#CASTREADER_RELEASE_ID=}
+        ;;
+      VOICE_GIFT_CN_MINIMAL_ENABLED=*)
+        CN_RUNTIME_VOICE_GIFT_ENABLED=${entry#VOICE_GIFT_CN_MINIMAL_ENABLED=}
+        ;;
+      VOICE_GIFT_CN_MINIMAL_SCHEMA_READY=*)
+        CN_RUNTIME_VOICE_GIFT_SCHEMA_READY=${entry#VOICE_GIFT_CN_MINIMAL_SCHEMA_READY=}
+        ;;
+      VOICE_GIFT_CN_DRAFT_SCHEMA_READY=*)
+        CN_RUNTIME_VOICE_GIFT_DRAFT_SCHEMA_READY=${entry#VOICE_GIFT_CN_DRAFT_SCHEMA_READY=}
+        ;;
+      VOICE_GIFT_CN_INVITATION_SECRET=*)
+        CN_RUNTIME_VOICE_GIFT_INVITATION_SECRET=${entry#VOICE_GIFT_CN_INVITATION_SECRET=}
+        ;;
+      VOICE_CLONE_WEB_BRIDGE_SECRET=*)
+        CN_RUNTIME_VOICE_GIFT_BRIDGE_SECRET=${entry#VOICE_CLONE_WEB_BRIDGE_SECRET=}
+        ;;
+      VOICE_GIFT_DRAFT_CAPABILITY_KEY=*)
+        CN_RUNTIME_VOICE_GIFT_DRAFT_CAPABILITY_KEY=${entry#VOICE_GIFT_DRAFT_CAPABILITY_KEY=}
+        ;;
+      VOICE_CLONE_ENCRYPTION_KEY=*)
+        CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY=${entry#VOICE_CLONE_ENCRYPTION_KEY=}
+        ;;
+    esac
+  done < "$process_environment"
+}
+
+cn_verify_runtime_authority() {
+  local expected_fingerprint=$1
+  local release=$2
+  local proc_root=$3
+  local expected_main_pid=$4
+  local source_commit=$5
+  local expected_cwd=$6
+  local main_pid code attempt draft_capability_key process_exe process_cwd
+
+  CN_RUNTIME_MAIN_PID=''
+
+  main_pid=$(systemctl show --property MainPID --value castreader) || return 1
+  process_exe=$(readlink -f "$proc_root/$main_pid/exe" 2>/dev/null || true)
+  process_cwd=$(readlink -f "$proc_root/$main_pid/cwd" 2>/dev/null || true)
+  if [[ ! "$main_pid" =~ ^[1-9][0-9]*$ ]] ||
+    [ "$main_pid" != "$expected_main_pid" ] ||
+    [ "$process_exe" != "/usr/bin/node" ] ||
+    [ "$process_cwd" != "$expected_cwd" ] ||
+    [ ! -r "$proc_root/$main_pid/environ" ]; then
+    cn_write_runtime_gate_receipt runtime-identity-unreadable "$release" \
+      "$source_commit" "$expected_cwd" "$proc_root" || true
+    echo "✗ 运行进程身份不可读，拒绝发布"
+    return 1
+  fi
+
+  cn_read_runtime_environment "$proc_root/$main_pid/environ"
+  if [ "$CN_RUNTIME_ROUTE" != "cn" ] ||
+    [ "$CN_RUNTIME_RELEASE_ID" != "$release" ] ||
+    [ -z "$CN_RUNTIME_ADMIN_SECRET" ] ||
+    [ "$CN_RUNTIME_VOICE_GIFT_ENABLED" != "true" ] ||
+    [ "$CN_RUNTIME_VOICE_GIFT_SCHEMA_READY" != "true" ] ||
+    { [ "$CN_RUNTIME_VOICE_GIFT_DRAFT_SCHEMA_READY" != "false" ] &&
+      [ "$CN_RUNTIME_VOICE_GIFT_DRAFT_SCHEMA_READY" != "true" ]; } ||
+    [ "${#CN_RUNTIME_VOICE_GIFT_INVITATION_SECRET}" -lt 32 ] ||
+    [ "${#CN_RUNTIME_VOICE_GIFT_BRIDGE_SECRET}" -lt 32 ] ||
+    [ -z "$CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY" ] ||
+    [ "$CN_RUNTIME_VOICE_GIFT_INVITATION_SECRET" = "$CN_RUNTIME_VOICE_GIFT_BRIDGE_SECRET" ] ||
+    [ "$CN_RUNTIME_VOICE_GIFT_INVITATION_SECRET" = "$CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY" ] ||
+    [ "$CN_RUNTIME_VOICE_GIFT_BRIDGE_SECRET" = "$CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY" ]; then
+    cn_write_runtime_gate_receipt runtime-policy-mismatch "$release" \
+      "$source_commit" "$expected_cwd" "$proc_root" || true
+    echo "✗ 运行进程线路、发布身份或中国区邀请录音配置不匹配，拒绝发布"
+    unset CN_RUNTIME_ADMIN_SECRET CN_RUNTIME_VOICE_GIFT_INVITATION_SECRET \
+      CN_RUNTIME_VOICE_GIFT_BRIDGE_SECRET CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY \
+      CN_RUNTIME_VOICE_GIFT_DRAFT_CAPABILITY_KEY \
+      CN_RUNTIME_VOICE_GIFT_DRAFT_SCHEMA_READY
+    return 1
+  fi
+  draft_capability_key=$CN_RUNTIME_VOICE_GIFT_DRAFT_CAPABILITY_KEY
+  if [ -z "$draft_capability_key" ]; then
+    draft_capability_key=$CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY
+  fi
+  if [ "$CN_RUNTIME_VOICE_GIFT_DRAFT_SCHEMA_READY" = "true" ] &&
+    { [ "${#draft_capability_key}" -lt 32 ] ||
+      [[ "$draft_capability_key" =~ ^[[:space:]] ]] ||
+      [[ "$draft_capability_key" =~ [[:space:]]$ ]]; }; then
+    cn_write_runtime_gate_receipt runtime-draft-capability-invalid "$release" \
+      "$source_commit" "$expected_cwd" "$proc_root" || true
+    echo "✗ 中国声音邀请草稿 capability 密钥未就绪，拒绝发布"
+    unset draft_capability_key CN_RUNTIME_ADMIN_SECRET \
+      CN_RUNTIME_VOICE_GIFT_INVITATION_SECRET \
+      CN_RUNTIME_VOICE_GIFT_BRIDGE_SECRET \
+      CN_RUNTIME_VOICE_GIFT_DRAFT_CAPABILITY_KEY \
+      CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY \
+      CN_RUNTIME_VOICE_GIFT_DRAFT_SCHEMA_READY
+    return 1
+  fi
+  unset draft_capability_key
+  if [[ "$CN_RUNTIME_ADMIN_SECRET" == *$'\n'* ]] ||
+    [[ "$CN_RUNTIME_ADMIN_SECRET" == *$'\r'* ]] ||
+    [[ "$CN_RUNTIME_VOICE_GIFT_INVITATION_SECRET" == *$'\n'* ]] ||
+    [[ "$CN_RUNTIME_VOICE_GIFT_INVITATION_SECRET" == *$'\r'* ]] ||
+    [[ "$CN_RUNTIME_VOICE_GIFT_BRIDGE_SECRET" == *$'\n'* ]] ||
+    [[ "$CN_RUNTIME_VOICE_GIFT_BRIDGE_SECRET" == *$'\r'* ]] ||
+    [[ "$CN_RUNTIME_VOICE_GIFT_DRAFT_CAPABILITY_KEY" == *$'\n'* ]] ||
+    [[ "$CN_RUNTIME_VOICE_GIFT_DRAFT_CAPABILITY_KEY" == *$'\r'* ]] ||
+    [[ "$CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY" == *$'\n'* ]] ||
+    [[ "$CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY" == *$'\r'* ]]; then
+    cn_write_runtime_gate_receipt runtime-secret-format-invalid "$release" \
+      "$source_commit" "$expected_cwd" "$proc_root" || true
+    echo "✗ 运行进程管理或邀请录音凭据格式非法，拒绝发布"
+    unset CN_RUNTIME_ADMIN_SECRET CN_RUNTIME_VOICE_GIFT_INVITATION_SECRET \
+      CN_RUNTIME_VOICE_GIFT_BRIDGE_SECRET \
+      CN_RUNTIME_VOICE_GIFT_DRAFT_CAPABILITY_KEY \
+      CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY
+    return 1
+  fi
+
+  CN_RUNTIME_HEADER_FILE=$(mktemp "${TMPDIR:-/tmp}/castreader-runtime-gate.XXXXXX")
+  chmod 0600 "$CN_RUNTIME_HEADER_FILE"
+  {
+    printf 'Authorization: Bearer %s\n' "$CN_RUNTIME_ADMIN_SECRET"
+    printf 'x-castreader-expected-billing-authority: %s\n' "$expected_fingerprint"
+    printf 'x-castreader-release-id: %s\n' "$release"
+  } > "$CN_RUNTIME_HEADER_FILE"
+  unset CN_RUNTIME_ADMIN_SECRET CN_RUNTIME_VOICE_GIFT_INVITATION_SECRET \
+    CN_RUNTIME_VOICE_GIFT_BRIDGE_SECRET \
+    CN_RUNTIME_VOICE_GIFT_DRAFT_CAPABILITY_KEY \
+    CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY \
+    expected_fingerprint
+
+  for attempt in $(seq 1 10); do
+    code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+      --max-time 10 --request POST \
+      --header "@$CN_RUNTIME_HEADER_FILE" \
+      http://127.0.0.1:3000/api/admin/billing-authority 2>/dev/null || true)
+    if [ "$code" = "204" ]; then
+      rm -f -- "$CN_RUNTIME_HEADER_FILE"
+      CN_RUNTIME_HEADER_FILE=''
+      unset CN_RUNTIME_ROUTE CN_RUNTIME_RELEASE_ID \
+        CN_RUNTIME_VOICE_GIFT_ENABLED CN_RUNTIME_VOICE_GIFT_SCHEMA_READY
+      CN_RUNTIME_MAIN_PID=$main_pid
+      return 0
+    fi
+    # These are deterministic authorization/input/authority failures. Retrying
+    # cannot make them safe and would only delay rollback.
+    if [ "$code" = "400" ] || [ "$code" = "401" ] || [ "$code" = "409" ]; then
+      break
+    fi
+    sleep 3
+  done
+
+  rm -f -- "$CN_RUNTIME_HEADER_FILE"
+  CN_RUNTIME_HEADER_FILE=''
+  unset CN_RUNTIME_ROUTE CN_RUNTIME_RELEASE_ID \
+    CN_RUNTIME_VOICE_GIFT_ENABLED CN_RUNTIME_VOICE_GIFT_SCHEMA_READY
+  cn_write_runtime_gate_receipt runtime-billing-authority-failed "$release" \
+    "$source_commit" "$expected_cwd" "$proc_root" || true
+  echo "✗ 运行时 billing authority 校验失败，拒绝发布"
+  return 1
+}
+
+cn_verify_voice_gift_schema() {
+  local proc_root=$1
+  local expected_main_pid=$2
+  local draft_schema_ready=$3
+  local verification_scope=${4:-full}
+  local process_environment current_main_pid
+
+  if [[ ! "$expected_main_pid" =~ ^[1-9][0-9]*$ ]] ||
+    { [ "$draft_schema_ready" != "false" ] &&
+      [ "$draft_schema_ready" != "true" ]; } ||
+    { [ "$verification_scope" != "phase0" ] &&
+      [ "$verification_scope" != "full" ]; } ||
+    [ ! -r "$proc_root/$expected_main_pid/environ" ]; then
+    echo "✗ 运行进程数据库身份不可读，拒绝发布"
+    return 1
+  fi
+  process_environment="$proc_root/$expected_main_pid/environ"
+
+  # Read DATABASE_URL inside the helper and decompose it into libpq's PG*
+  # environment. The URL is never copied to argv, stdout/stderr or a file, and
+  # the audit SQL reaches psql over stdin. psql output is captured and reduced
+  # to one fixed marker so connection errors cannot disclose URL components.
+  if ! python3 - "$process_environment" "$draft_schema_ready" \
+    "$verification_scope" <<'PY'
+import os
+import subprocess
+import sys
+import urllib.parse
+
+PHASE0_SCHEMA_MARKER = b'voice-clone-phase0-schema-v1'
+PHASE0_SCHEMA_QUERY = r"""
+SET statement_timeout = '15s';
+WITH target AS (
+  SELECT relation.oid
+  FROM pg_catalog.pg_class AS relation
+  JOIN pg_catalog.pg_namespace AS namespace
+    ON namespace.oid = relation.relnamespace
+  WHERE namespace.nspname = 'public'
+    AND relation.relname = 'voice_clone_voice'
+    AND relation.relkind IN ('r', 'p')
+),
+expected_columns(
+  column_name,
+  data_type,
+  is_not_null,
+  default_expression,
+  identity_kind,
+  generated_kind
+) AS (
+  VALUES
+    ('consent_receipt', 'jsonb', false, '', '', ''),
+    ('create_idempotency_key_hash', 'text', false, '', '', ''),
+    ('create_fingerprint', 'text', false, '', '', ''),
+    ('create_attempt_hash', 'text', false, '', '', ''),
+    ('create_lease_expires_at', 'timestamp with time zone', false, '', '', '')
+),
+actual_columns AS (
+  SELECT
+    attribute.attname::text AS column_name,
+    pg_catalog.format_type(attribute.atttypid, attribute.atttypmod)::text
+      AS data_type,
+    attribute.attnotnull AS is_not_null,
+    COALESCE(
+      pg_catalog.pg_get_expr(default_value.adbin, default_value.adrelid),
+      ''
+    ) AS default_expression,
+    attribute.attidentity::text AS identity_kind,
+    attribute.attgenerated::text AS generated_kind
+  FROM target
+  JOIN pg_catalog.pg_attribute AS attribute
+    ON attribute.attrelid = target.oid
+  LEFT JOIN pg_catalog.pg_attrdef AS default_value
+    ON default_value.adrelid = attribute.attrelid
+    AND default_value.adnum = attribute.attnum
+  WHERE attribute.attnum > 0
+    AND NOT attribute.attisdropped
+    AND attribute.attname IN (
+      SELECT column_name FROM expected_columns
+    )
+),
+column_gate AS (
+  SELECT
+    (SELECT count(*) FROM target) = 1
+    AND NOT EXISTS (
+      (SELECT * FROM expected_columns EXCEPT SELECT * FROM actual_columns)
+      UNION ALL
+      (SELECT * FROM actual_columns EXCEPT SELECT * FROM expected_columns)
+    ) AS passed
+),
+expected_checks(constraint_name, normalized_definition) AS (
+  VALUES
+    (
+      'voice_clone_voice_consent_receipt_check',
+      'checkconsent_receiptisnullorjsonb_typeofconsent_receipt=''object'''
+    ),
+    (
+      'voice_clone_voice_create_idempotency_check',
+      'checkcreate_idempotency_key_hashisnullandcreate_fingerprintisnullandcreate_attempt_hashisnullandcreate_lease_expires_atisnullorcreate_idempotency_key_hashisnotnullandcreate_fingerprintisnotnullandcreate_idempotency_key_hash~''^[0-9a-f]{64}$''andcreate_fingerprint~''^[0-9a-f]{64}$''andcreate_attempt_hashisnullandcreate_lease_expires_atisnullorcreate_attempt_hashisnotnullandcreate_lease_expires_atisnotnullandcreate_attempt_hash~''^[0-9a-f]{64}$''andstatus=''pending'''
+    )
+),
+actual_checks AS (
+  SELECT
+    constraint_value.conname::text AS constraint_name,
+    constraint_value.convalidated,
+    constraint_value.connoinherit,
+    replace(
+      regexp_replace(
+        lower(pg_catalog.pg_get_constraintdef(constraint_value.oid)),
+        '[[:space:]()"]',
+        '',
+        'g'
+      ),
+      '::text',
+      ''
+    ) AS normalized_definition
+  FROM target
+  JOIN pg_catalog.pg_constraint AS constraint_value
+    ON constraint_value.conrelid = target.oid
+    AND constraint_value.contype = 'c'
+    AND constraint_value.conname IN (
+      SELECT constraint_name FROM expected_checks
+    )
+),
+check_gate AS (
+  SELECT
+    (SELECT count(*) FROM actual_checks) =
+      (SELECT count(*) FROM expected_checks)
+    AND NOT EXISTS (
+      SELECT 1
+      FROM expected_checks AS expected
+      LEFT JOIN actual_checks AS actual
+        ON actual.constraint_name = expected.constraint_name
+      WHERE actual.constraint_name IS NULL
+        OR NOT actual.convalidated
+        OR actual.connoinherit
+        OR actual.normalized_definition IS DISTINCT FROM
+          expected.normalized_definition
+    ) AS passed
+),
+actual_index AS (
+  SELECT
+    index_relation.relname::text AS index_name,
+    index_value.indisunique,
+    index_value.indisprimary,
+    index_value.indisvalid,
+    index_value.indisready,
+    index_value.indislive,
+    access_method.amname::text AS access_method,
+    index_value.indnkeyatts,
+    index_value.indnatts,
+    index_value.indexprs IS NULL AS has_no_expressions,
+    ARRAY(
+      SELECT attribute.attname::text
+      FROM unnest(index_value.indkey::smallint[]) WITH ORDINALITY
+        AS key_value(attnum, position)
+      JOIN pg_catalog.pg_attribute AS attribute
+        ON attribute.attrelid = index_value.indrelid
+        AND attribute.attnum = key_value.attnum
+      WHERE key_value.position <= index_value.indnkeyatts
+      ORDER BY key_value.position
+    ) AS key_columns,
+    replace(
+      regexp_replace(
+        lower(COALESCE(
+          pg_catalog.pg_get_expr(index_value.indpred, index_value.indrelid),
+          ''
+        )),
+        '[[:space:]()"]',
+        '',
+        'g'
+      ),
+      '::text',
+      ''
+    ) AS normalized_predicate
+  FROM target
+  JOIN pg_catalog.pg_index AS index_value
+    ON index_value.indrelid = target.oid
+  JOIN pg_catalog.pg_class AS index_relation
+    ON index_relation.oid = index_value.indexrelid
+    AND index_relation.relnamespace = 'public'::regnamespace
+    AND index_relation.relname =
+      'uidx_voice_clone_voice_create_idempotency'
+  JOIN pg_catalog.pg_am AS access_method
+    ON access_method.oid = index_relation.relam
+),
+index_gate AS (
+  SELECT count(*) = 1
+    AND bool_and(
+      index_name = 'uidx_voice_clone_voice_create_idempotency'
+      AND indisunique
+      AND NOT indisprimary
+      AND indisvalid
+      AND indisready
+      AND indislive
+      AND access_method = 'btree'
+      AND indnkeyatts = 2
+      AND indnatts = 2
+      AND has_no_expressions
+      AND key_columns =
+        ARRAY['user_id', 'create_idempotency_key_hash']::text[]
+      AND normalized_predicate =
+        'create_idempotency_key_hashisnotnull'
+    ) AS passed
+  FROM actual_index
+)
+SELECT CASE
+  WHEN (SELECT passed FROM column_gate)
+    AND (SELECT passed FROM check_gate)
+    AND (SELECT passed FROM index_gate)
+    AND pg_catalog.has_table_privilege((SELECT oid FROM target), 'SELECT')
+    AND pg_catalog.has_table_privilege((SELECT oid FROM target), 'INSERT')
+    AND pg_catalog.has_table_privilege((SELECT oid FROM target), 'UPDATE')
+    AND pg_catalog.has_table_privilege((SELECT oid FROM target), 'DELETE')
+  THEN 'voice-clone-phase0-schema-v1'
+  ELSE 'voice-clone-phase0-schema-invalid'
+END;
+"""
+
+SCHEMA_MARKER = b'voice-gift-schema-v1'
+SCHEMA_QUERY = r"""
+SET statement_timeout = '15s';
+WITH target AS (
+  SELECT relation.oid
+  FROM pg_catalog.pg_class AS relation
+  JOIN pg_catalog.pg_namespace AS namespace
+    ON namespace.oid = relation.relnamespace
+  WHERE namespace.nspname = 'public'
+    AND relation.relname = 'voice_clone_invitation'
+    AND relation.relkind IN ('r', 'p')
+),
+expected_columns(column_name, data_type, is_not_null, default_expression) AS (
+  VALUES
+    ('id', 'text', true, ''),
+    ('requester_user_id', 'text', true, ''),
+    ('requester_provider', 'text', true, ''),
+    ('requester_locale', 'text', true, ''),
+    ('invite_token_hash', 'text', true, ''),
+    ('client_request_id_hash', 'text', true, ''),
+    ('status', 'text', true, '''pending''::text'),
+    ('voice_id', 'text', false, ''),
+    ('request_expires_at', 'timestamp with time zone', true, ''),
+    ('submission_idempotency_key_hash', 'text', false, ''),
+    ('submission_fingerprint', 'text', false, ''),
+    ('submission_subject_hash', 'text', false, ''),
+    ('reference_sha256', 'text', false, ''),
+    ('reference_language', 'text', false, ''),
+    ('processing_consent_version', 'text', false, ''),
+    ('processing_consent_receipt', 'jsonb', false, ''),
+    ('processing_attempt_hash', 'text', false, ''),
+    ('processing_lease_expires_at', 'timestamp with time zone', false, ''),
+    ('submitted_at', 'timestamp with time zone', false, ''),
+    ('fulfilled_at', 'timestamp with time zone', false, ''),
+    ('created_at', 'timestamp with time zone', true, 'now()'),
+    ('updated_at', 'timestamp with time zone', true, 'now()')
+),
+actual_columns AS (
+  SELECT
+    attribute.attname::text AS column_name,
+    pg_catalog.format_type(attribute.atttypid, attribute.atttypmod)::text
+      AS data_type,
+    attribute.attnotnull AS is_not_null,
+    COALESCE(
+      pg_catalog.pg_get_expr(default_value.adbin, default_value.adrelid),
+      ''
+    ) AS default_expression
+  FROM target
+  JOIN pg_catalog.pg_attribute AS attribute
+    ON attribute.attrelid = target.oid
+  LEFT JOIN pg_catalog.pg_attrdef AS default_value
+    ON default_value.adrelid = attribute.attrelid
+    AND default_value.adnum = attribute.attnum
+  WHERE attribute.attnum > 0
+    AND NOT attribute.attisdropped
+),
+column_gate AS (
+  SELECT
+    (SELECT count(*) FROM target) = 1
+    AND NOT EXISTS (
+      SELECT * FROM expected_columns EXCEPT SELECT * FROM actual_columns
+    ) AS passed
+),
+expected_checks(constraint_name) AS (
+  VALUES
+    ('voice_clone_invitation_hash_check'),
+    ('voice_clone_invitation_requester_check'),
+    ('voice_clone_invitation_locale_check'),
+    ('voice_clone_invitation_status_check'),
+    ('voice_clone_invitation_expiry_check'),
+    ('voice_clone_invitation_submission_hash_check'),
+    ('voice_clone_invitation_consent_check'),
+    ('voice_clone_invitation_state_check')
+),
+check_gate AS (
+  SELECT
+    count(*) FILTER (
+      WHERE constraint_value.convalidated
+        AND constraint_value.conname IN (
+          SELECT constraint_name FROM expected_checks
+        )
+    ) = (SELECT count(*) FROM expected_checks) AS passed
+  FROM target
+  JOIN pg_catalog.pg_constraint AS constraint_value
+    ON constraint_value.conrelid = target.oid
+    AND constraint_value.contype = 'c'
+),
+consent_gate AS (
+  SELECT
+    count(*) = 1
+    AND bool_and(
+      constraint_value.convalidated
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%processing_consent_receipt%'
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%source%'
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%web%'
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%consentversion%'
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%processing_consent_version%'
+      AND (
+        lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+          LIKE '%is not distinct from%'
+        OR (
+          -- PostgreSQL 14 deparses `a IS NOT DISTINCT FROM b` as
+          -- `NOT (a IS DISTINCT FROM b)`. Match both source and version
+          -- predicates after removing only formatting and text casts; merely
+          -- finding an unrelated NOT in the check is deliberately insufficient.
+          replace(
+            regexp_replace(
+              lower(pg_catalog.pg_get_constraintdef(constraint_value.oid)),
+              '[[:space:]()]',
+              '',
+              'g'
+            ),
+            '::text',
+            ''
+          ) LIKE '%notprocessing_consent_receipt->>''source''isdistinctfrom''web''%'
+          AND replace(
+            regexp_replace(
+              lower(pg_catalog.pg_get_constraintdef(constraint_value.oid)),
+              '[[:space:]()]',
+              '',
+              'g'
+            ),
+            '::text',
+            ''
+          ) LIKE '%notprocessing_consent_receipt->>''consentversion''isdistinctfromprocessing_consent_version%'
+        )
+      )
+    ) AS passed
+  FROM target
+  JOIN pg_catalog.pg_constraint AS constraint_value
+    ON constraint_value.conrelid = target.oid
+    AND constraint_value.contype = 'c'
+    AND constraint_value.conname = 'voice_clone_invitation_consent_check'
+),
+primary_key_gate AS (
+  SELECT count(*) = 1 AS passed
+  FROM target
+  JOIN pg_catalog.pg_constraint AS constraint_value
+    ON constraint_value.conrelid = target.oid
+    AND constraint_value.contype = 'p'
+    AND constraint_value.convalidated
+  WHERE cardinality(constraint_value.conkey) = 1
+    AND (
+      SELECT attribute.attname
+      FROM pg_catalog.pg_attribute AS attribute
+      WHERE attribute.attrelid = target.oid
+        AND attribute.attnum = constraint_value.conkey[1]
+    ) = 'id'
+),
+foreign_keys AS (
+  SELECT
+    source_attribute.attname::text AS source_column,
+    referenced_namespace.nspname::text AS referenced_schema,
+    referenced_relation.relname::text AS referenced_table,
+    referenced_attribute.attname::text AS referenced_column,
+    constraint_value.confdeltype,
+    constraint_value.confupdtype,
+    constraint_value.convalidated
+  FROM target
+  JOIN pg_catalog.pg_constraint AS constraint_value
+    ON constraint_value.conrelid = target.oid
+    AND constraint_value.contype = 'f'
+  JOIN pg_catalog.pg_class AS referenced_relation
+    ON referenced_relation.oid = constraint_value.confrelid
+  JOIN pg_catalog.pg_namespace AS referenced_namespace
+    ON referenced_namespace.oid = referenced_relation.relnamespace
+  JOIN pg_catalog.pg_attribute AS source_attribute
+    ON source_attribute.attrelid = target.oid
+    AND source_attribute.attnum = constraint_value.conkey[1]
+  JOIN pg_catalog.pg_attribute AS referenced_attribute
+    ON referenced_attribute.attrelid = referenced_relation.oid
+    AND referenced_attribute.attnum = constraint_value.confkey[1]
+  WHERE cardinality(constraint_value.conkey) = 1
+    AND cardinality(constraint_value.confkey) = 1
+),
+foreign_key_gate AS (
+  SELECT
+    (SELECT count(*) FROM foreign_keys) = 2
+    AND EXISTS (
+      SELECT 1 FROM foreign_keys
+      WHERE source_column = 'requester_user_id'
+        AND referenced_schema = 'public'
+        AND referenced_table = 'user'
+        AND referenced_column = 'id'
+        AND confdeltype = 'c'
+        AND confupdtype = 'a'
+        AND convalidated
+    )
+    AND EXISTS (
+      SELECT 1 FROM foreign_keys
+      WHERE source_column = 'voice_id'
+        AND referenced_schema = 'public'
+        AND referenced_table = 'voice_clone_voice'
+        AND referenced_column = 'id'
+        AND confdeltype = 'c'
+        AND confupdtype = 'a'
+        AND convalidated
+    ) AS passed
+),
+expected_indexes(
+  index_name,
+  is_unique,
+  is_primary,
+  key_columns,
+  needs_voice_predicate
+) AS (
+  VALUES
+    (
+      'voice_clone_invitation_pkey', true, true,
+      ARRAY['id']::text[], false
+    ),
+    (
+      'uidx_voice_clone_invitation_token', true, false,
+      ARRAY['invite_token_hash']::text[], false
+    ),
+    (
+      'uidx_voice_clone_invitation_client_request', true, false,
+      ARRAY['requester_user_id', 'client_request_id_hash']::text[], false
+    ),
+    (
+      'uidx_voice_clone_invitation_voice', true, false,
+      ARRAY['voice_id']::text[], true
+    ),
+    (
+      'idx_voice_clone_invitation_requester', false, false,
+      ARRAY['requester_user_id', 'created_at']::text[], false
+    ),
+    (
+      'idx_voice_clone_invitation_active', false, false,
+      ARRAY['requester_user_id', 'status', 'request_expires_at']::text[], false
+    ),
+    (
+      'idx_voice_clone_invitation_subject', false, false,
+      ARRAY['submission_subject_hash', 'submitted_at']::text[], false
+    )
+),
+actual_indexes AS (
+  SELECT
+    index_relation.relname::text AS index_name,
+    index_value.indisunique AS is_unique,
+    index_value.indisprimary AS is_primary,
+    index_value.indisvalid,
+    index_value.indisready,
+    index_value.indislive,
+    access_method.amname::text AS access_method,
+    index_value.indnkeyatts,
+    index_value.indnatts,
+    ARRAY(
+      SELECT attribute.attname::text
+      FROM unnest(index_value.indkey::smallint[]) WITH ORDINALITY
+        AS key_value(attnum, position)
+      JOIN pg_catalog.pg_attribute AS attribute
+        ON attribute.attrelid = index_value.indrelid
+        AND attribute.attnum = key_value.attnum
+      WHERE key_value.position <= index_value.indnkeyatts
+      ORDER BY key_value.position
+    ) AS key_columns,
+    pg_catalog.pg_get_expr(index_value.indpred, index_value.indrelid)
+      AS predicate
+  FROM target
+  JOIN pg_catalog.pg_index AS index_value
+    ON index_value.indrelid = target.oid
+  JOIN pg_catalog.pg_class AS index_relation
+    ON index_relation.oid = index_value.indexrelid
+  JOIN pg_catalog.pg_am AS access_method
+    ON access_method.oid = index_relation.relam
+),
+index_gate AS (
+  SELECT NOT EXISTS (
+    SELECT 1
+    FROM expected_indexes AS expected
+    LEFT JOIN actual_indexes AS actual
+      ON actual.index_name = expected.index_name
+    WHERE actual.index_name IS NULL
+      OR actual.is_unique IS DISTINCT FROM expected.is_unique
+      OR actual.is_primary IS DISTINCT FROM expected.is_primary
+      OR NOT actual.indisvalid
+      OR NOT actual.indisready
+      OR NOT actual.indislive
+      OR actual.access_method <> 'btree'
+      OR actual.indnkeyatts <> cardinality(expected.key_columns)
+      OR actual.indnatts <> actual.indnkeyatts
+      OR actual.key_columns IS DISTINCT FROM expected.key_columns
+      OR (
+        expected.needs_voice_predicate
+        AND regexp_replace(
+          COALESCE(actual.predicate, ''),
+          '[[:space:]()"]',
+          '',
+          'g'
+        ) <> 'voice_idISNOTNULL'
+      )
+      OR (
+        NOT expected.needs_voice_predicate
+        AND actual.predicate IS NOT NULL
+      )
+  ) AS passed
+)
+SELECT CASE
+  WHEN (SELECT passed FROM column_gate)
+    AND (SELECT passed FROM check_gate)
+    AND (SELECT passed FROM consent_gate)
+    AND (SELECT passed FROM primary_key_gate)
+    AND (SELECT passed FROM foreign_key_gate)
+    AND (SELECT passed FROM index_gate)
+    AND pg_catalog.has_table_privilege((SELECT oid FROM target), 'SELECT')
+    AND pg_catalog.has_table_privilege((SELECT oid FROM target), 'INSERT')
+    AND pg_catalog.has_table_privilege((SELECT oid FROM target), 'UPDATE')
+    AND pg_catalog.has_table_privilege((SELECT oid FROM target), 'DELETE')
+  THEN 'voice-gift-schema-v1'
+  ELSE 'voice-gift-schema-invalid'
+END;
+"""
+
+DRAFT_SCHEMA_MARKER = b'voice-gift-cn-draft-schema-v1'
+DRAFT_SCHEMA_QUERY = r"""
+SET statement_timeout = '15s';
+WITH invitation_target AS (
+  SELECT relation.oid
+  FROM pg_catalog.pg_class AS relation
+  JOIN pg_catalog.pg_namespace AS namespace
+    ON namespace.oid = relation.relnamespace
+  WHERE namespace.nspname = 'public'
+    AND relation.relname = 'voice_clone_invitation'
+    AND relation.relkind IN ('r', 'p')
+),
+draft_target AS (
+  SELECT relation.oid
+  FROM pg_catalog.pg_class AS relation
+  JOIN pg_catalog.pg_namespace AS namespace
+    ON namespace.oid = relation.relnamespace
+  WHERE namespace.nspname = 'public'
+    AND relation.relname = 'voice_clone_invitation_draft'
+    AND relation.relkind IN ('r', 'p')
+),
+expected_invitation_columns(
+  column_name,
+  data_type,
+  is_not_null,
+  default_expression
+) AS (
+  VALUES
+    ('send_consent_version', 'text', false, ''),
+    ('send_consent_receipt', 'jsonb', false, ''),
+    ('sent_at', 'timestamp with time zone', false, '')
+),
+actual_invitation_columns AS (
+  SELECT
+    attribute.attname::text AS column_name,
+    pg_catalog.format_type(attribute.atttypid, attribute.atttypmod)::text
+      AS data_type,
+    attribute.attnotnull AS is_not_null,
+    COALESCE(
+      pg_catalog.pg_get_expr(default_value.adbin, default_value.adrelid),
+      ''
+    ) AS default_expression
+  FROM invitation_target
+  JOIN pg_catalog.pg_attribute AS attribute
+    ON attribute.attrelid = invitation_target.oid
+  LEFT JOIN pg_catalog.pg_attrdef AS default_value
+    ON default_value.adrelid = attribute.attrelid
+    AND default_value.adnum = attribute.attnum
+  WHERE attribute.attnum > 0
+    AND NOT attribute.attisdropped
+    AND attribute.attname IN (
+      SELECT column_name FROM expected_invitation_columns
+    )
+),
+invitation_column_gate AS (
+  SELECT
+    (SELECT count(*) FROM invitation_target) = 1
+    AND NOT EXISTS (
+      (SELECT * FROM expected_invitation_columns
+        EXCEPT SELECT * FROM actual_invitation_columns)
+      UNION ALL
+      (SELECT * FROM actual_invitation_columns
+        EXCEPT SELECT * FROM expected_invitation_columns)
+    ) AS passed
+),
+expected_draft_columns(
+  column_name,
+  data_type,
+  is_not_null,
+  default_expression
+) AS (
+  VALUES
+    ('id', 'text', true, ''),
+    ('invitation_id', 'text', true, ''),
+    ('voice_id', 'text', true, ''),
+    ('attempt_number', 'integer', true, ''),
+    ('status', 'text', true, '''creating''::text'),
+    ('idempotency_key_hash', 'text', true, ''),
+    ('input_fingerprint', 'text', true, ''),
+    ('draft_capability_hash', 'text', true, ''),
+    ('requester_subject_hash', 'text', true, ''),
+    ('reference_sha256', 'text', true, ''),
+    ('reference_language', 'text', true, ''),
+    ('processing_consent_version', 'text', true, ''),
+    ('processing_consent_receipt', 'jsonb', true, ''),
+    ('expires_at', 'timestamp with time zone', true, ''),
+    ('creation_attempt_hash', 'text', false, ''),
+    ('creation_lease_expires_at', 'timestamp with time zone', false, ''),
+    ('preview_lease_hash', 'text', false, ''),
+    ('preview_lease_expires_at', 'timestamp with time zone', false, ''),
+    ('preview_attempt_count', 'integer', true, '0'),
+    ('preview_serve_count', 'integer', true, '0'),
+    ('superseded_at', 'timestamp with time zone', false, ''),
+    ('fulfilled_at', 'timestamp with time zone', false, ''),
+    ('failed_at', 'timestamp with time zone', false, ''),
+    ('cleanup_state', 'text', true, '''not_due''::text'),
+    ('cleanup_attempts', 'integer', true, '0'),
+    ('cleanup_lease_hash', 'text', false, ''),
+    ('cleanup_lease_expires_at', 'timestamp with time zone', false, ''),
+    ('created_at', 'timestamp with time zone', true, 'now()'),
+    ('updated_at', 'timestamp with time zone', true, 'now()')
+),
+actual_draft_columns AS (
+  SELECT
+    attribute.attname::text AS column_name,
+    pg_catalog.format_type(attribute.atttypid, attribute.atttypmod)::text
+      AS data_type,
+    attribute.attnotnull AS is_not_null,
+    COALESCE(
+      pg_catalog.pg_get_expr(default_value.adbin, default_value.adrelid),
+      ''
+    ) AS default_expression
+  FROM draft_target
+  JOIN pg_catalog.pg_attribute AS attribute
+    ON attribute.attrelid = draft_target.oid
+  LEFT JOIN pg_catalog.pg_attrdef AS default_value
+    ON default_value.adrelid = attribute.attrelid
+    AND default_value.adnum = attribute.attnum
+  WHERE attribute.attnum > 0
+    AND NOT attribute.attisdropped
+),
+draft_column_gate AS (
+  SELECT
+    (SELECT count(*) FROM draft_target) = 1
+    AND NOT EXISTS (
+      (SELECT * FROM expected_draft_columns EXCEPT SELECT * FROM actual_draft_columns)
+      UNION ALL
+      (SELECT * FROM actual_draft_columns EXCEPT SELECT * FROM expected_draft_columns)
+    ) AS passed
+),
+expected_draft_checks(constraint_name, required_tokens) AS (
+  VALUES
+    (
+      'voice_clone_invitation_draft_attempt_check',
+      ARRAY['attempt_number >= 1', 'attempt_number <= 3']::text[]
+    ),
+    (
+      'voice_clone_invitation_draft_status_check',
+      ARRAY[
+        'status', 'creating', 'ready', 'superseded', 'fulfilled', 'failed',
+        'expired'
+      ]::text[]
+    ),
+    (
+      'voice_clone_invitation_draft_hash_check',
+      ARRAY[
+        'idempotency_key_hash', 'input_fingerprint', 'draft_capability_hash',
+        'requester_subject_hash', 'reference_sha256', '[0-9a-f]{64}'
+      ]::text[]
+    ),
+    (
+      'voice_clone_invitation_draft_creation_lease_check',
+      ARRAY[
+        'creation_attempt_hash', 'creation_lease_expires_at', 'creating',
+        '[0-9a-f]{64}'
+      ]::text[]
+    ),
+    (
+      'voice_clone_invitation_draft_preview_lease_check',
+      ARRAY[
+        'preview_lease_hash', 'preview_lease_expires_at', 'ready',
+        '[0-9a-f]{64}'
+      ]::text[]
+    ),
+    (
+      'voice_clone_invitation_draft_preview_count_check',
+      ARRAY[
+        'preview_attempt_count >= 0', 'preview_attempt_count <= 3',
+        'preview_serve_count >= 0', 'preview_serve_count <= 12'
+      ]::text[]
+    ),
+    (
+      'voice_clone_invitation_draft_cleanup_check',
+      ARRAY[
+        'cleanup_state', 'not_due', 'pending', 'processing', 'done',
+        'cleanup_attempts >= 0', 'cleanup_attempts <= 20', 'cleanup_lease_hash',
+        'cleanup_lease_expires_at', '[0-9a-f]{64}'
+      ]::text[]
+    ),
+    (
+      'voice_clone_invitation_draft_processing_consent_check',
+      ARRAY[
+        'processing_consent_receipt', 'jsonb_typeof', 'source', 'web',
+        'consentversion', 'processing_consent_version'
+      ]::text[]
+    ),
+    (
+      'voice_clone_invitation_draft_expiry_check',
+      ARRAY['expires_at', 'created_at', '>']::text[]
+    ),
+    (
+      'voice_clone_invitation_draft_state_check',
+      ARRAY[
+        'creating', 'ready', 'superseded', 'fulfilled', 'failed', 'expired',
+        'creation_attempt_hash', 'creation_lease_expires_at',
+        'preview_lease_hash', 'preview_lease_expires_at', 'superseded_at',
+        'fulfilled_at', 'failed_at', 'cleanup_state'
+      ]::text[]
+    )
+),
+actual_draft_checks AS (
+  SELECT
+    constraint_value.conname::text AS constraint_name,
+    constraint_value.convalidated,
+    lower(pg_catalog.pg_get_constraintdef(constraint_value.oid)) AS definition
+  FROM draft_target
+  JOIN pg_catalog.pg_constraint AS constraint_value
+    ON constraint_value.conrelid = draft_target.oid
+    AND constraint_value.contype = 'c'
+),
+draft_check_gate AS (
+  SELECT
+    (SELECT count(*) FROM actual_draft_checks) =
+      (SELECT count(*) FROM expected_draft_checks)
+    AND NOT EXISTS (
+      SELECT 1
+      FROM expected_draft_checks AS expected
+      LEFT JOIN actual_draft_checks AS actual
+        ON actual.constraint_name = expected.constraint_name
+      WHERE actual.constraint_name IS NULL
+        OR NOT actual.convalidated
+        OR EXISTS (
+          SELECT 1
+          FROM unnest(expected.required_tokens) AS required(token)
+          WHERE actual.definition NOT LIKE '%' || required.token || '%'
+        )
+    ) AS passed
+),
+invitation_send_consent_gate AS (
+  SELECT count(*) = 1
+    AND bool_and(
+      constraint_value.convalidated
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%send_consent_receipt%'
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%source%'
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%web%'
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%consentversion%'
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%send_consent_version%'
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%sent_at%'
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%jsonb_typeof%'
+    ) AS passed
+  FROM invitation_target
+  JOIN pg_catalog.pg_constraint AS constraint_value
+    ON constraint_value.conrelid = invitation_target.oid
+    AND constraint_value.contype = 'c'
+    AND constraint_value.conname = 'voice_clone_invitation_send_consent_check'
+),
+invitation_state_gate AS (
+  SELECT count(*) = 1
+    AND bool_and(
+      constraint_value.convalidated
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%send_consent_version%'
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%send_consent_receipt%'
+      AND lower(pg_catalog.pg_get_constraintdef(constraint_value.oid))
+        LIKE '%sent_at%'
+    ) AS passed
+  FROM invitation_target
+  JOIN pg_catalog.pg_constraint AS constraint_value
+    ON constraint_value.conrelid = invitation_target.oid
+    AND constraint_value.contype = 'c'
+    AND constraint_value.conname = 'voice_clone_invitation_state_check'
+),
+expected_draft_key_constraints(
+  constraint_name,
+  constraint_type,
+  key_columns
+) AS (
+  VALUES
+    (
+      'voice_clone_invitation_draft_pkey', 'p', ARRAY['id']::text[]
+    ),
+    (
+      'uidx_voice_clone_invitation_draft_attempt', 'u',
+      ARRAY['invitation_id', 'attempt_number']::text[]
+    ),
+    (
+      'uidx_voice_clone_invitation_draft_idempotency', 'u',
+      ARRAY['invitation_id', 'idempotency_key_hash']::text[]
+    ),
+    (
+      'uidx_voice_clone_invitation_draft_voice', 'u',
+      ARRAY['voice_id']::text[]
+    )
+),
+actual_draft_key_constraints AS (
+  SELECT
+    constraint_value.conname::text AS constraint_name,
+    constraint_value.contype::text AS constraint_type,
+    constraint_value.convalidated,
+    ARRAY(
+      SELECT attribute.attname::text
+      FROM unnest(constraint_value.conkey::smallint[]) WITH ORDINALITY
+        AS key_value(attnum, position)
+      JOIN pg_catalog.pg_attribute AS attribute
+        ON attribute.attrelid = draft_target.oid
+        AND attribute.attnum = key_value.attnum
+      ORDER BY key_value.position
+    ) AS key_columns
+  FROM draft_target
+  JOIN pg_catalog.pg_constraint AS constraint_value
+    ON constraint_value.conrelid = draft_target.oid
+    AND constraint_value.contype IN ('p', 'u')
+),
+draft_key_constraint_gate AS (
+  SELECT
+    (SELECT count(*) FROM actual_draft_key_constraints) =
+      (SELECT count(*) FROM expected_draft_key_constraints)
+    AND NOT EXISTS (
+      SELECT 1
+      FROM expected_draft_key_constraints AS expected
+      LEFT JOIN actual_draft_key_constraints AS actual
+        ON actual.constraint_name = expected.constraint_name
+      WHERE actual.constraint_name IS NULL
+        OR actual.constraint_type IS DISTINCT FROM expected.constraint_type
+        OR actual.key_columns IS DISTINCT FROM expected.key_columns
+        OR NOT actual.convalidated
+    ) AS passed
+),
+draft_foreign_keys AS (
+  SELECT
+    source_attribute.attname::text AS source_column,
+    referenced_namespace.nspname::text AS referenced_schema,
+    referenced_relation.relname::text AS referenced_table,
+    referenced_attribute.attname::text AS referenced_column,
+    constraint_value.confdeltype,
+    constraint_value.confupdtype,
+    constraint_value.convalidated
+  FROM draft_target
+  JOIN pg_catalog.pg_constraint AS constraint_value
+    ON constraint_value.conrelid = draft_target.oid
+    AND constraint_value.contype = 'f'
+  JOIN pg_catalog.pg_class AS referenced_relation
+    ON referenced_relation.oid = constraint_value.confrelid
+  JOIN pg_catalog.pg_namespace AS referenced_namespace
+    ON referenced_namespace.oid = referenced_relation.relnamespace
+  JOIN pg_catalog.pg_attribute AS source_attribute
+    ON source_attribute.attrelid = draft_target.oid
+    AND source_attribute.attnum = constraint_value.conkey[1]
+  JOIN pg_catalog.pg_attribute AS referenced_attribute
+    ON referenced_attribute.attrelid = referenced_relation.oid
+    AND referenced_attribute.attnum = constraint_value.confkey[1]
+  WHERE cardinality(constraint_value.conkey) = 1
+    AND cardinality(constraint_value.confkey) = 1
+),
+draft_foreign_key_gate AS (
+  SELECT
+    (SELECT count(*) FROM draft_foreign_keys) = 2
+    AND EXISTS (
+      SELECT 1 FROM draft_foreign_keys
+      WHERE source_column = 'invitation_id'
+        AND referenced_schema = 'public'
+        AND referenced_table = 'voice_clone_invitation'
+        AND referenced_column = 'id'
+        AND confdeltype = 'c'
+        AND confupdtype = 'a'
+        AND convalidated
+    )
+    AND EXISTS (
+      SELECT 1 FROM draft_foreign_keys
+      WHERE source_column = 'voice_id'
+        AND referenced_schema = 'public'
+        AND referenced_table = 'voice_clone_voice'
+        AND referenced_column = 'id'
+        AND confdeltype = 'c'
+        AND confupdtype = 'a'
+        AND convalidated
+    ) AS passed
+),
+expected_draft_indexes(
+  index_name,
+  is_unique,
+  is_primary,
+  key_columns,
+  normalized_predicate
+) AS (
+  VALUES
+    (
+      'voice_clone_invitation_draft_pkey', true, true,
+      ARRAY['id']::text[], ''
+    ),
+    (
+      'uidx_voice_clone_invitation_draft_attempt', true, false,
+      ARRAY['invitation_id', 'attempt_number']::text[], ''
+    ),
+    (
+      'uidx_voice_clone_invitation_draft_idempotency', true, false,
+      ARRAY['invitation_id', 'idempotency_key_hash']::text[], ''
+    ),
+    (
+      'uidx_voice_clone_invitation_draft_voice', true, false,
+      ARRAY['voice_id']::text[], ''
+    ),
+    (
+      'uidx_voice_clone_invitation_draft_ready', true, false,
+      ARRAY['invitation_id']::text[], 'status=''ready'''
+    ),
+    (
+      'uidx_voice_clone_invitation_draft_creating', true, false,
+      ARRAY['invitation_id']::text[], 'status=''creating'''
+    ),
+    (
+      'idx_voice_clone_invitation_draft_subject_created', false, false,
+      ARRAY['requester_subject_hash', 'created_at']::text[], ''
+    ),
+    (
+      'idx_voice_clone_invitation_draft_expiry', false, false,
+      ARRAY['status', 'expires_at']::text[], ''
+    ),
+    (
+      'idx_voice_clone_invitation_draft_cleanup', false, false,
+      ARRAY['cleanup_state', 'updated_at']::text[], ''
+    )
+),
+actual_draft_indexes AS (
+  SELECT
+    index_relation.relname::text AS index_name,
+    index_value.indisunique AS is_unique,
+    index_value.indisprimary AS is_primary,
+    index_value.indisvalid,
+    index_value.indisready,
+    index_value.indislive,
+    access_method.amname::text AS access_method,
+    index_value.indnkeyatts,
+    index_value.indnatts,
+    index_value.indexprs IS NULL AS has_no_expressions,
+    ARRAY(
+      SELECT attribute.attname::text
+      FROM unnest(index_value.indkey::smallint[]) WITH ORDINALITY
+        AS key_value(attnum, position)
+      JOIN pg_catalog.pg_attribute AS attribute
+        ON attribute.attrelid = index_value.indrelid
+        AND attribute.attnum = key_value.attnum
+      WHERE key_value.position <= index_value.indnkeyatts
+      ORDER BY key_value.position
+    ) AS key_columns,
+    replace(
+      regexp_replace(
+        lower(COALESCE(
+          pg_catalog.pg_get_expr(index_value.indpred, index_value.indrelid),
+          ''
+        )),
+        '[[:space:]()"]',
+        '',
+        'g'
+      ),
+      '::text',
+      ''
+    ) AS normalized_predicate
+  FROM draft_target
+  JOIN pg_catalog.pg_index AS index_value
+    ON index_value.indrelid = draft_target.oid
+  JOIN pg_catalog.pg_class AS index_relation
+    ON index_relation.oid = index_value.indexrelid
+  JOIN pg_catalog.pg_am AS access_method
+    ON access_method.oid = index_relation.relam
+),
+draft_index_gate AS (
+  SELECT
+    (SELECT count(*) FROM actual_draft_indexes) =
+      (SELECT count(*) FROM expected_draft_indexes)
+    AND NOT EXISTS (
+      SELECT 1
+      FROM expected_draft_indexes AS expected
+      LEFT JOIN actual_draft_indexes AS actual
+        ON actual.index_name = expected.index_name
+      WHERE actual.index_name IS NULL
+        OR actual.is_unique IS DISTINCT FROM expected.is_unique
+        OR actual.is_primary IS DISTINCT FROM expected.is_primary
+        OR NOT actual.indisvalid
+        OR NOT actual.indisready
+        OR NOT actual.indislive
+        OR actual.access_method <> 'btree'
+        OR actual.indnkeyatts <> cardinality(expected.key_columns)
+        OR actual.indnatts <> actual.indnkeyatts
+        OR NOT actual.has_no_expressions
+        OR actual.key_columns IS DISTINCT FROM expected.key_columns
+        OR actual.normalized_predicate IS DISTINCT FROM
+          expected.normalized_predicate
+    ) AS passed
+)
+SELECT CASE
+  WHEN (SELECT passed FROM invitation_column_gate)
+    AND (SELECT passed FROM draft_column_gate)
+    AND (SELECT passed FROM draft_check_gate)
+    AND (SELECT passed FROM invitation_send_consent_gate)
+    AND (SELECT passed FROM invitation_state_gate)
+    AND (SELECT passed FROM draft_key_constraint_gate)
+    AND (SELECT passed FROM draft_foreign_key_gate)
+    AND (SELECT passed FROM draft_index_gate)
+    AND pg_catalog.has_table_privilege((SELECT oid FROM draft_target), 'SELECT')
+    AND pg_catalog.has_table_privilege((SELECT oid FROM draft_target), 'INSERT')
+    AND pg_catalog.has_table_privilege((SELECT oid FROM draft_target), 'UPDATE')
+    AND pg_catalog.has_table_privilege((SELECT oid FROM draft_target), 'DELETE')
+  THEN 'voice-gift-cn-draft-schema-v1'
+  ELSE 'voice-gift-cn-draft-schema-invalid'
+END;
+"""
+
+QUERY_ENVIRONMENT = {
+    'application_name': 'PGAPPNAME',
+    'channel_binding': 'PGCHANNELBINDING',
+    'client_encoding': 'PGCLIENTENCODING',
+    'connect_timeout': 'PGCONNECT_TIMEOUT',
+    'dbname': 'PGDATABASE',
+    'gssencmode': 'PGGSSENCMODE',
+    'host': 'PGHOST',
+    'hostaddr': 'PGHOSTADDR',
+    'keepalives': 'PGKEEPALIVES',
+    'keepalives_count': 'PGKEEPALIVESCOUNT',
+    'keepalives_idle': 'PGKEEPALIVESIDLE',
+    'keepalives_interval': 'PGKEEPALIVESINTERVAL',
+    'load_balance_hosts': 'PGLOADBALANCEHOSTS',
+    'options': 'PGOPTIONS',
+    'passfile': 'PGPASSFILE',
+    'password': 'PGPASSWORD',
+    'port': 'PGPORT',
+    'require_auth': 'PGREQUIREAUTH',
+    'requirepeer': 'PGREQUIREPEER',
+    'service': 'PGSERVICE',
+    'servicefile': 'PGSERVICEFILE',
+    'sslcert': 'PGSSLCERT',
+    'sslcompression': 'PGSSLCOMPRESSION',
+    'sslcrl': 'PGSSLCRL',
+    'sslcrldir': 'PGSSLCRLDIR',
+    'sslkey': 'PGSSLKEY',
+    'ssl_max_protocol_version': 'PGSSLMAXPROTOCOLVERSION',
+    'ssl_min_protocol_version': 'PGSSLMINPROTOCOLVERSION',
+    'sslmode': 'PGSSLMODE',
+    'sslnegotiation': 'PGSSLNEGOTIATION',
+    'sslpassword': 'PGSSLPASSWORD',
+    'sslrootcert': 'PGSSLROOTCERT',
+    'sslsni': 'PGSSLSNI',
+    'target_session_attrs': 'PGTARGETSESSIONATTRS',
+    'tcp_user_timeout': 'PGTCPUSER_TIMEOUT',
+    'user': 'PGUSER',
+}
+IGNORED_DRIVER_OPTIONS = {'pgbouncer'}
+
+
+def decode(value):
+    decoded = urllib.parse.unquote(value, errors='strict')
+    if '\x00' in decoded:
+        raise ValueError
+    return decoded
+
+
+def read_database_url(path):
+    entries = open(path, 'rb').read().split(b'\0')
+    prefix = b'DATABASE_URL='
+    values = [entry[len(prefix):] for entry in entries if entry.startswith(prefix)]
+    if len(values) != 1 or not values[0]:
+        raise ValueError
+    return values[0].decode('utf-8', errors='strict')
+
+
+def connection_environment(database_url):
+    parsed = urllib.parse.urlsplit(database_url)
+    if parsed.scheme not in ('postgres', 'postgresql') or parsed.fragment:
+        raise ValueError
+
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in ('DATABASE_URL', 'POSTGRES_URL') and not key.startswith('PG')
+    }
+    if parsed.hostname is not None:
+        environment['PGHOST'] = decode(parsed.hostname)
+    if parsed.port is not None:
+        environment['PGPORT'] = str(parsed.port)
+    if parsed.username is not None:
+        environment['PGUSER'] = decode(parsed.username)
+    if parsed.password is not None:
+        environment['PGPASSWORD'] = decode(parsed.password)
+    if parsed.path not in ('', '/'):
+        environment['PGDATABASE'] = decode(parsed.path[1:])
+
+    seen = set()
+    for field in parsed.query.split('&') if parsed.query else ():
+        if not field or '=' not in field:
+            raise ValueError
+        raw_key, raw_value = field.split('=', 1)
+        key = decode(raw_key)
+        if key in IGNORED_DRIVER_OPTIONS:
+            continue
+        if key not in QUERY_ENVIRONMENT or key in seen:
+            raise ValueError
+        seen.add(key)
+        environment[QUERY_ENVIRONMENT[key]] = decode(raw_value)
+
+    # Bound the release gate even if the runtime URL requests a longer wait.
+    environment['PGCONNECT_TIMEOUT'] = '10'
+    environment['PGAPPNAME'] = 'castreader-cn-voice-gift-schema-gate'
+    environment['LC_ALL'] = 'C'
+    return environment
+
+
+try:
+    child_environment = connection_environment(read_database_url(sys.argv[1]))
+    draft_schema_ready = sys.argv[2]
+    verification_scope = sys.argv[3]
+    if draft_schema_ready not in ('false', 'true'):
+        raise ValueError
+    if verification_scope not in ('phase0', 'full'):
+        raise ValueError
+
+    def verify(query, marker):
+        result = subprocess.run(
+            [
+                'psql',
+                '--no-psqlrc',
+                '--no-password',
+                '--tuples-only',
+                '--no-align',
+                '--quiet',
+                '--set=ON_ERROR_STOP=1',
+            ],
+            input=query.encode('utf-8'),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            env=child_environment,
+            timeout=30,
+            check=False,
+        )
+        if result.returncode != 0 or result.stdout.strip() != marker:
+            raise RuntimeError
+
+    verify(PHASE0_SCHEMA_QUERY, PHASE0_SCHEMA_MARKER)
+    if verification_scope == 'full':
+        verify(SCHEMA_QUERY, SCHEMA_MARKER)
+        if draft_schema_ready == 'true':
+            verify(DRAFT_SCHEMA_QUERY, DRAFT_SCHEMA_MARKER)
+except Exception:
+    raise SystemExit(1)
+PY
+  then
+    if [ "$verification_scope" = "phase0" ]; then
+      echo "✗ 中国声音克隆 Phase-0 数据库结构或权限未就绪，拒绝发布"
+    else
+      echo "✗ 中国声音邀请数据库结构或权限未就绪，拒绝发布"
+    fi
+    return 1
+  fi
+
+  current_main_pid=$(systemctl show --property MainPID --value castreader) || {
+    echo "✗ 数据库校验后运行进程身份不可读，拒绝发布"
+    return 1
+  }
+  if [ "$current_main_pid" != "$expected_main_pid" ] ||
+    [ ! -r "$proc_root/$current_main_pid/environ" ]; then
+    echo "✗ 数据库校验期间运行进程已变化，拒绝发布"
+    return 1
+  fi
+}
+
+cn_verify_public_health() {
+  local code attempt
+  for attempt in $(seq 1 10); do
+    code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+      --max-time 10 --resolve api.castreader.cn:443:127.0.0.1 \
+      https://api.castreader.cn/api/mobile-auth/sms/send -X POST \
+      -H 'Content-Type: application/json' -d '{"phone":"invalid"}' \
+      2>/dev/null || true)
+    if [ "$code" = "422" ]; then
+      return 0
+    fi
+    sleep 3
+  done
+  echo "✗ 中国网关健康检查失败，拒绝发布"
+  return 1
+}
+
+cn_verify_quickread_public_health() {
+  local code attempt
+  for attempt in $(seq 1 10); do
+    # An unauthenticated request must reach the dedicated Next.js handler and
+    # fail at cms_ session validation. 404 means the vhost/route is missing;
+    # 5xx means the handler or its deployment identity is not healthy.
+    code=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+      --max-time 10 --resolve quickread.castreader.cn:443:127.0.0.1 \
+      https://quickread.castreader.cn/api/quickread/extract-plan -X POST \
+      -H 'Content-Type: application/json' -d '{}' \
+      2>/dev/null || true)
+    if [ "$code" = "401" ]; then
+      return 0
+    fi
+    sleep 3
+  done
+  echo "✗ 中国 QuickRead 独立入口健康检查失败，拒绝发布"
+  return 1
+}
+
+cn_verify_staged_tts_routes() {
+  local staged_nginx=$1
+  local tts_location
+  tts_location=$(awk '
+    /location = \/api\/captioned_speech_partly/ { show = 1 }
+    show { print }
+    show && /^    }/ { exit }
+  ' "$staged_nginx")
+
+  if [ -z "$tts_location" ] ||
+    printf '%s\n' "$tts_location" | grep -q 'api\.castreader\.ai' ||
+    ! printf '%s\n' "$tts_location" |
+      grep -Eq 'proxy_pass https?://[^;[:space:]]+;' ||
+    ! printf '%s\n' "$tts_location" |
+      grep -Eq 'X-CastReader-TTS-Route cn-(direct|control)' ||
+    ! printf '%s\n' "$tts_location" |
+      grep -Fq 'proxy_set_header X-Forwarded-Host $host;' ||
+    ! printf '%s\n' "$tts_location" |
+      grep -Fq 'proxy_set_header X-Forwarded-Port 443;' ||
+    ! grep -Fq 'alias /opt/castreader/shared/tts-catalog/catalog.json;' "$staged_nginx" ||
+    ! grep -Fq 'alias /opt/castreader/shared/tts-catalog/voice-library/;' "$staged_nginx"; then
+    echo "✗ 中国 TTS 配置不是境内闭环，拒绝发布"
+    return 1
+  fi
+}
+
+cn_verify_staged_voice_gift_routes() {
+  local staged_nginx=$1
+  if ! python3 - "$staged_nginx" <<'PY'
+import re
+import sys
+
+raw = open(sys.argv[1], encoding='utf-8').read()
+
+
+def strip_comments(text):
+    output = []
+    quote = None
+    escaped = False
+    comment = False
+    for character in text:
+        if comment:
+            if character == '\n':
+                comment = False
+                output.append(character)
+            continue
+        if quote is not None:
+            output.append(character)
+            if escaped:
+                escaped = False
+            elif character == '\\':
+                escaped = True
+            elif character == quote:
+                quote = None
+            continue
+        if character == '#':
+            comment = True
+        else:
+            output.append(character)
+            if character in ("'", '"'):
+                quote = character
+    return ''.join(output)
+
+
+def matching_block(text, opening_brace):
+    depth = 0
+    quote = None
+    escaped = False
+    for index in range(opening_brace, len(text)):
+        character = text[index]
+        if quote is not None:
+            if escaped:
+                escaped = False
+            elif character == '\\':
+                escaped = True
+            elif character == quote:
+                quote = None
+            continue
+        if character in ("'", '"'):
+            quote = character
+        elif character == '{':
+            depth += 1
+        elif character == '}':
+            depth -= 1
+            if depth == 0:
+                return text[opening_brace + 1:index]
+    raise ValueError('unterminated block')
+
+
+def blocks(text, header_pattern):
+    result = []
+    for match in re.finditer(header_pattern + r'\s*\{', text, re.MULTILINE):
+        opening = text.find('{', match.start(), match.end())
+        result.append(matching_block(text, opening))
+    return result
+
+
+def compact(value):
+    return ' '.join(value.split())
+
+
+try:
+    effective = strip_comments(raw)
+    api_tls = [
+        block
+        for block in blocks(effective, r'(?<![A-Za-z0-9_-])server')
+        if re.search(r'(?<![A-Za-z0-9_-])server_name\s+api\.castreader\.cn\s*;', block)
+        and re.search(r'(?<![A-Za-z0-9_-])listen\s+443\s+ssl(?:\s+http2)?\s*;', block)
+    ]
+    if len(api_tls) != 1:
+        raise ValueError('api TLS vhost')
+    vhost = api_tls[0]
+    operations = (
+        'invitation',
+        'draft-prepare',
+        'draft-preview',
+        'fulfill-draft',
+    )
+    location_headers = [
+        compact(match.group(1))
+        for match in re.finditer(
+            r'(?<![A-Za-z0-9_-])location\s+([^{}]+?)\s*\{', vhost
+        )
+        if '/api/voice-clone/requests/' in match.group(1)
+    ]
+    expected_headers = sorted(
+        f'= /api/voice-clone/requests/{operation}' for operation in operations
+    )
+    if sorted(location_headers) != expected_headers:
+        raise ValueError('exact operation allowlist')
+    for operation in operations:
+        path = f'/api/voice-clone/requests/{operation}'
+        locations = blocks(
+            vhost,
+            rf'(?<![A-Za-z0-9_-])location\s*=\s*{re.escape(path)}',
+        )
+        if len(locations) != 1:
+            raise ValueError(path)
+        body = locations[0]
+        if re.findall(r'(?<![A-Za-z0-9_-])client_max_body_size\s+([^;]+);', body) != ['5m']:
+            raise ValueError(f'{path} body ceiling')
+        includes = re.findall(r'(?<![A-Za-z0-9_-])include\s+([^;]+);', body)
+        if includes != ['/etc/nginx/snippets/nginx-voice-gift-web-proxy.inc']:
+            raise ValueError(f'{path} bridge include')
+except Exception:
+    raise SystemExit(1)
+PY
+  then
+    echo "✗ 中国声音邀请 Web bridge 不是精确四路由，拒绝发布"
+    return 1
+  fi
+}
+
+cn_verify_tts_public_health() {
+  local evidence_dir catalog_code tts_code route_code
+  evidence_dir=$(mktemp -d "${TMPDIR:-/tmp}/castreader-cn-tts-health.XXXXXX")
+
+  # A cn-control Nginx header proves only the ingress. Verify the application's
+  # resolved GPU route without sending text before running the synthesis probe.
+  route_code=$(curl --silent --show-error --head \
+    --dump-header "$evidence_dir/route.headers" \
+    --output /dev/null --write-out '%{http_code}' \
+    --max-time 15 --resolve api.castreader.cn:443:127.0.0.1 \
+    'https://api.castreader.cn/api/captioned_speech_partly' 2>/dev/null || true)
+  if [ "$route_code" != "200" ] ||
+    ! grep -qi '^x-castreader-upstream-region: cn' "$evidence_dir/route.headers" ||
+    ! grep -qi '^x-castreader-upstream-node: castreader-cn4090' "$evidence_dir/route.headers" ||
+    ! grep -qi '^x-castreader-upstream-source: cn-environment' "$evidence_dir/route.headers"; then
+    rm -rf -- "$evidence_dir"
+    echo "✗ 中国 TTS 实际上游不是已验证的境内节点，禁止发送测试文本"
+    return 1
+  fi
+
+  catalog_code=$(curl --silent --show-error \
+    --dump-header "$evidence_dir/catalog.headers" \
+    --output "$evidence_dir/catalog.json" --write-out '%{http_code}' \
+    --max-time 15 --resolve api.castreader.cn:443:127.0.0.1 \
+    'https://api.castreader.cn/api/tts/catalog?contract=tts-voice-catalog-v1' \
+    2>/dev/null || true)
+  if [ "$catalog_code" != "200" ] ||
+    ! grep -qi '^x-castreader-tts-route: cn-static' "$evidence_dir/catalog.headers" ||
+    ! python3 - "$evidence_dir/catalog.json" <<'PY'
+import json, sys, urllib.parse
+catalog = json.load(open(sys.argv[1]))
+voices = catalog.get('voices') or []
+assert catalog.get('contract') == 'tts-voice-catalog-v1'
+assert len(voices) >= 1
+for voice in voices:
+    urls = [voice.get('sampleUrl')]
+    avatar = voice.get('avatar') or {}
+    urls.extend((avatar.get('url64'), avatar.get('url256')))
+    for value in filter(None, urls):
+        assert urllib.parse.urlparse(value).hostname == 'api.castreader.cn'
+PY
+  then
+    rm -rf -- "$evidence_dir"
+    echo "✗ 中国 TTS 静态目录健康检查失败，拒绝发布"
+    return 1
+  fi
+
+  tts_code=$(curl --silent --show-error \
+    --dump-header "$evidence_dir/tts.headers" \
+    --output "$evidence_dir/tts.json" --write-out '%{http_code}' \
+    --max-time 20 --resolve api.castreader.cn:443:127.0.0.1 \
+    'https://api.castreader.cn/api/captioned_speech_partly' \
+    -H 'Content-Type: application/json' \
+    -d '{"model":"kokoro","input":"中国区语音发布检查。","response_format":"mp3","return_timestamps":true,"speed":1,"stream":false,"language":"zh","voice_code":"zf_001"}' \
+    2>/dev/null || true)
+  if [ "$tts_code" != "200" ] ||
+    ! grep -Eqi '^x-castreader-tts-route: cn-(direct|control)' "$evidence_dir/tts.headers" ||
+    ! grep -qi '^x-castreader-upstream-region: cn' "$evidence_dir/tts.headers" ||
+    ! grep -qi '^x-castreader-upstream-node: castreader-cn4090' "$evidence_dir/tts.headers" ||
+    ! grep -qi '^x-castreader-upstream-source: cn-environment' "$evidence_dir/tts.headers" ||
+    ! python3 - "$evidence_dir/tts.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[1]))
+assert isinstance(result.get('audio'), str) and len(result['audio']) > 100
+assert isinstance(result.get('timestamps'), list) and result['timestamps']
+PY
+  then
+    rm -rf -- "$evidence_dir"
+    echo "✗ 中国 TTS 境内生成健康检查失败，拒绝发布"
+    return 1
+  fi
+
+  rm -rf -- "$evidence_dir"
+}
+
+cn_verify_voice_clone_contract() {
+  local expected_source_commit=$1
+  local draft_schema_ready=$2
+  local evidence_dir capability_code code endpoint
+  evidence_dir=$(mktemp -d "${TMPDIR:-/tmp}/castreader-cn-voice-contract.XXXXXX")
+
+  capability_code=$(curl --silent --show-error \
+    --dump-header "$evidence_dir/capability.headers" \
+    --output "$evidence_dir/capability.json" --write-out '%{http_code}' \
+    --max-time 15 --resolve api.castreader.cn:443:127.0.0.1 \
+    'https://api.castreader.cn/api/capabilities' 2>/dev/null || true)
+  if [ "$capability_code" != "200" ] ||
+    ! python3 - "$evidence_dir/capability.json" "$expected_source_commit" \
+      "$draft_schema_ready" <<'PY'
+import json, sys
+manifest = json.load(open(sys.argv[1]))
+assert manifest.get('commitSha') == sys.argv[2]
+draft_schema_ready = sys.argv[3]
+assert draft_schema_ready in ('false', 'true')
+voice = manifest.get('voiceClone') or {}
+assert voice.get('version') == 'voice-clone-v3'
+assert voice.get('serviceRoute') == 'cn'
+assert voice.get('clients', {}).get('ios') == ['global', 'cn']
+assert voice.get('clients', {}).get('android') == ['global', 'cn']
+assert voice.get('clients', {}).get('web') == ['global']
+assert voice.get('clients', {}).get('extension') == ['global']
+gift = manifest.get('voiceGift') or {}
+assert gift.get('version') == 'voice-gift-v1'
+assert gift.get('libraryVersion') == 'voice-library-v1'
+assert gift.get('enabled') is True
+assert gift.get('releaseEnabled') is True
+assert gift.get('schemaReady') is True
+assert gift.get('serviceRoute') == 'cn'
+assert gift.get('supportedRegions') == ['cn']
+assert gift.get('authorizationModes') == []
+assert gift.get('legacyExpiryDays') == []
+assert gift.get('routes') == {
+    'requests': '/api/voice-clone/requests',
+    'inspect': '/api/voice-clone/requests/invitation',
+    'library': '/api/voice-clone/library',
+}
+draft = gift.get('draftFlow') or {}
+if draft_schema_ready == 'true':
+    assert gift.get('draftSchemaReady') is True
+    assert draft.get('version') == 'voice-gift-draft-v1'
+    assert draft.get('processingConsentVersion') == \
+        'voice-gift-recording-processing-2026-09-v1'
+    assert draft.get('sendConsentVersion') == \
+        'voice-gift-cn-send-2026-09-v1'
+    assert draft.get('ttlSeconds') == 24 * 60 * 60
+    assert draft.get('maxRecordingAttempts') == 3
+    assert draft.get('previewPolicy') == 'fixed-cached-sample'
+    assert draft.get('capabilitiesInRequestBodyOnly') is True
+    assert draft.get('recoveryEmailEnabled') is False
+    assert draft.get('routes') == {
+        'prepare': '/api/voice-clone/requests/draft-prepare',
+        'preview': '/api/voice-clone/requests/draft-preview',
+        'fulfill': '/api/voice-clone/requests/fulfill-draft',
+    }
+else:
+    assert gift.get('draftSchemaReady') is False
+    assert draft == {
+        'version': 'voice-gift-submit-v1',
+        'routes': {'prepare': '/api/voice-clone/requests/draft-prepare'},
+    }
+for forbidden in ('claim', 'fulfill', 'shares', 'revoke', 'recovery'):
+    assert forbidden not in gift.get('routes', {})
+PY
+  then
+    rm -rf -- "$evidence_dir"
+    echo "✗ 中国声音克隆能力清单不匹配，拒绝发布"
+    return 1
+  fi
+
+  for endpoint in \
+    /api/voice-clone/voices \
+    /api/voice-clone/voices/vc_capability_probe/preview; do
+    code=$(curl --silent --show-error \
+      --dump-header "$evidence_dir/clone.headers" \
+      --output /dev/null --write-out '%{http_code}' \
+      --max-time 15 --resolve api.castreader.cn:443:127.0.0.1 \
+      "https://api.castreader.cn$endpoint" 2>/dev/null || true)
+    if [ "$code" != "401" ] ||
+      ! grep -qi '^x-castreader-voice-clone-contract: voice-clone-v3' \
+        "$evidence_dir/clone.headers"; then
+      rm -rf -- "$evidence_dir"
+      echo "✗ 中国声音克隆管理合同未生效，拒绝发布"
+      return 1
+    fi
+  done
+
+  for endpoint in \
+    /api/voice-clone/captioned-speech \
+    /api/captioned_speech_partly; do
+    code=$(curl --silent --show-error \
+      --dump-header "$evidence_dir/clone.headers" \
+      --output /dev/null --write-out '%{http_code}' \
+      --max-time 15 --resolve api.castreader.cn:443:127.0.0.1 \
+      "https://api.castreader.cn$endpoint" \
+      -H 'Content-Type: application/json' \
+      -d '{"input":"probe","voice":"vc_capability_probe","voice_code":"vc_capability_probe"}' \
+      2>/dev/null || true)
+    if [ "$code" != "401" ] ||
+      ! grep -qi '^x-castreader-voice-clone-contract: voice-clone-v3' \
+        "$evidence_dir/clone.headers"; then
+      rm -rf -- "$evidence_dir"
+      echo "✗ 中国声音克隆朗读合同未生效，拒绝发布"
+      return 1
+    fi
+  done
+
+  rm -rf -- "$evidence_dir"
+}
+
+cn_release_manifest_source() {
+  local manifest=$1
+  local expected_release=$2
+  python3 - "$manifest" "$expected_release" <<'PY'
+import json, re, sys
+manifest = json.load(open(sys.argv[1]))
+assert manifest.get('releaseId') == sys.argv[2]
+assert manifest.get('contract') == 'voice-clone-v3'
+source = manifest.get('sourceCommit')
+assert isinstance(source, str) and re.fullmatch(r'[0-9a-f]{40}', source)
+print(source, end='')
+PY
+}
+
+activate_cn_release() {
+  local remote_root=$1
+  local release=$2
+  local expected_fingerprint=$3
+  local nginx_destination=$4
+  local systemd_dropin_dir=$5
+  local proc_root=$6
+  local staged_nginx=$7
+  local staged_route=$8
+  local route_destination="$systemd_dropin_dir/20-service-route.conf"
+  local tts_route_destination="$systemd_dropin_dir/27-cn-tts.conf"
+  local release_destination="$systemd_dropin_dir/30-release-id.conf"
+  local new_release source_commit pre_activation_main_pid
+  local previous_target previous_release previous_source_commit backup_dir
+  local nginx_existed=0 route_existed=0 tts_route_existed=0 release_existed=0 rollback_pending=1
+  local CN_RUNTIME_HEADER_FILE=''
+  local CN_RUNTIME_ADMIN_SECRET=''
+  local CN_RUNTIME_ROUTE=''
+  local CN_RUNTIME_RELEASE_ID=''
+  local CN_RUNTIME_VOICE_GIFT_ENABLED=''
+  local CN_RUNTIME_VOICE_GIFT_SCHEMA_READY=''
+  local CN_RUNTIME_VOICE_GIFT_DRAFT_SCHEMA_READY=''
+  local CN_RUNTIME_VOICE_GIFT_INVITATION_SECRET=''
+  local CN_RUNTIME_VOICE_GIFT_BRIDGE_SECRET=''
+  local CN_RUNTIME_VOICE_GIFT_DRAFT_CAPABILITY_KEY=''
+  local CN_RUNTIME_VOICE_CLONE_ENCRYPTION_KEY=''
+  local CN_RUNTIME_MAIN_PID=''
+  local CN_READINESS_BODY_FILE=''
+  local CN_READINESS_HTTP_CODE='000'
+  local CN_READINESS_ATTEMPTS=0
+  local CN_READINESS_MAIN_PID_BEFORE=''
+  local CN_READINESS_MAIN_PID_AFTER=''
+  local CN_READINESS_EXE_BEFORE=''
+  local CN_READINESS_EXE_AFTER=''
+  local CN_READINESS_CWD_BEFORE=''
+  local CN_READINESS_CWD_AFTER=''
+  local CN_READINESS_MATCHED=false
+  local CN_RUNTIME_GATE_INVOCATION_ID
+
+  CN_RUNTIME_GATE_INVOCATION_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+
+  # Canonicalize once so rollback-target containment checks are not confused
+  # by platform aliases such as /var -> /private/var.
+  remote_root=$(readlink -f "$remote_root" 2>/dev/null || true)
+  new_release="$remote_root/$release"
+
+  if [ -z "$remote_root" ] || [[ ! "$release" =~ ^release-[0-9]{14}$ ]] ||
+    [[ ! "$expected_fingerprint" =~ ^ba1_[0-9a-f]{20}$ ]] ||
+    [ ! -d "$new_release" ] || [ ! -f "$staged_nginx" ] ||
+    [ ! -f "$staged_route" ]; then
+    echo "✗ 发布输入不完整，拒绝切换"
+    return 1
+  fi
+  source_commit=$(cn_release_manifest_source \
+    "$new_release/.castreader-release.json" "$release") || {
+    echo "✗ 发布源码清单无效，拒绝切换"
+    return 1
+  }
+  cn_verify_staged_tts_routes "$staged_nginx"
+  cn_verify_staged_voice_gift_routes "$staged_nginx"
+
+  previous_target=$(readlink -f "$remote_root/current" 2>/dev/null || true)
+  case "$previous_target" in
+    "$remote_root"/release-*) ;;
+    *)
+      echo "✗ 没有可验证的旧版本用于回滚，拒绝切换"
+      return 1
+      ;;
+  esac
+  if [ ! -d "$previous_target" ] || [ "$previous_target" = "$new_release" ]; then
+    echo "✗ 旧版本回滚目标无效，拒绝切换"
+    return 1
+  fi
+  previous_release=${previous_target##*/}
+  previous_source_commit=$(cn_release_manifest_source \
+    "$previous_target/.castreader-release.json" "$previous_release") || {
+    echo "✗ 旧版本回滚源码清单无效，拒绝切换"
+    return 1
+  }
+
+  # Phase 0 is shared by all three CN creation modes. Prove the live database
+  # has its exact columns, checks and idempotency index before changing files,
+  # symlinks, systemd configuration, nginx configuration or either process.
+  pre_activation_main_pid=$(systemctl show \
+    --property MainPID --value castreader) || {
+    echo "✗ 切换前运行进程身份不可读，拒绝发布"
+    return 1
+  }
+  cn_verify_voice_gift_schema "$proc_root" "$pre_activation_main_pid" \
+    false phase0
+
+  backup_dir=$(mktemp -d "${TMPDIR:-/tmp}/castreader-cn-rollback.XXXXXX")
+  if [ -f "$nginx_destination" ]; then
+    cp -p "$nginx_destination" "$backup_dir/nginx.conf"
+    nginx_existed=1
+  fi
+  if [ -f "$route_destination" ]; then
+    cp -p "$route_destination" "$backup_dir/route.conf"
+    route_existed=1
+  fi
+  if [ -f "$tts_route_destination" ]; then
+    cp -p "$tts_route_destination" "$backup_dir/tts-route.conf"
+    tts_route_existed=1
+  fi
+  if [ -f "$release_destination" ]; then
+    cp -p "$release_destination" "$backup_dir/release.conf"
+    release_existed=1
+  fi
+
+  cn_rollback_current_activation() {
+    local rollback_ok=0
+    set +e
+    trap - EXIT ERR INT TERM HUP
+    [ -n "$CN_RUNTIME_HEADER_FILE" ] && rm -f -- "$CN_RUNTIME_HEADER_FILE"
+    [ -n "$CN_READINESS_BODY_FILE" ] && rm -f -- "$CN_READINESS_BODY_FILE"
+    ln -sfn "$previous_target" "$remote_root/current.rollback" &&
+      mv -Tf "$remote_root/current.rollback" "$remote_root/current" ||
+      rollback_ok=1
+    cn_restore_file "$backup_dir/nginx.conf" "$nginx_destination" \
+      "$nginx_existed" || rollback_ok=1
+    cn_restore_file "$backup_dir/route.conf" "$route_destination" \
+      "$route_existed" || rollback_ok=1
+    cn_restore_file "$backup_dir/tts-route.conf" "$tts_route_destination" \
+      "$tts_route_existed" || rollback_ok=1
+    cn_restore_file "$backup_dir/release.conf" "$release_destination" \
+      "$release_existed" || rollback_ok=1
+    systemctl daemon-reload || rollback_ok=1
+    nginx -t || rollback_ok=1
+    systemctl restart castreader || rollback_ok=1
+    systemctl reload nginx || rollback_ok=1
+    cn_wait_service_active || rollback_ok=1
+    cn_wait_release_ready "$previous_release" "$previous_source_commit" \
+      "$previous_target" "$proc_root" || rollback_ok=1
+    [ -n "$CN_READINESS_BODY_FILE" ] && rm -f -- "$CN_READINESS_BODY_FILE"
+    CN_READINESS_BODY_FILE=''
+    if [ "$rollback_ok" = "0" ]; then
+      rm -rf -- "$backup_dir"
+      echo "✓ 已完整回滚到旧版中国区服务"
+    else
+      chmod 0700 "$backup_dir" 2>/dev/null || true
+      echo "✗ 自动回滚未完整成功；保留 root-only 备份：$backup_dir"
+    fi
+    return "$rollback_ok"
+  }
+
+  cn_activation_failure() {
+    local failure_status=$1
+    trap - EXIT ERR INT TERM HUP
+    if [ "$failure_status" = "0" ]; then failure_status=1; fi
+    if [ "$rollback_pending" = "1" ]; then
+      cn_rollback_current_activation || true
+    fi
+    exit "$failure_status"
+  }
+  # EXIT covers explicit exits and shell termination paths that do not raise ERR.
+  # ERR/INT/TERM/HUP keep the original immediate rollback behavior.
+  trap 'cn_activation_failure $?' EXIT
+  trap 'cn_activation_failure $?' ERR
+  trap 'cn_activation_failure 130' INT
+  trap 'cn_activation_failure 143' TERM
+  trap 'cn_activation_failure 129' HUP
+
+  chown -R castreader:castreader "$new_release"
+  install -m 0644 "$staged_nginx" "$nginx_destination"
+  install -d -m 0755 "$systemd_dropin_dir"
+  install -m 0644 "$staged_route" "$route_destination"
+  # The previous CN hotfix also installed a later 27-cn-tts.conf. Keep this
+  # managed override in the same transaction; otherwise it silently supersedes
+  # the newly approved route in 20-service-route.conf after daemon-reload.
+  {
+    printf '[Service]\n'
+    sed -n '/^Environment=TTS_UPSTREAM_URL=/p' "$staged_route"
+  } > "$tts_route_destination"
+  chmod 0644 "$tts_route_destination"
+  printf '[Service]\nEnvironment=CASTREADER_RELEASE_ID=%s\n' "$release" \
+    > "$release_destination"
+  chmod 0644 "$release_destination"
+  nginx -t
+
+  ln -sfn "$new_release" "$remote_root/current.new"
+  mv -Tf "$remote_root/current.new" "$remote_root/current"
+  systemctl daemon-reload
+  systemctl restart castreader
+  systemctl reload nginx
+  cn_wait_service_active
+
+  if ! cn_wait_release_ready "$release" "$source_commit" "$new_release" \
+    "$proc_root"; then
+    cn_write_runtime_gate_receipt release-readiness-timeout "$release" \
+      "$source_commit" "$new_release" "$proc_root" || true
+    echo "✗ 新版本未在本机端口证明发布身份、源码与中国区线路，拒绝发布"
+    return 1
+  fi
+
+  # All gates are tied to the same semantically-ready Node process. The first
+  # authenticated gate proves the enabled billing authority; the second
+  # rechecks Phase 0 and audits the live invitation tables before commit.
+  cn_verify_runtime_authority "$expected_fingerprint" "$release" "$proc_root" \
+    "$CN_RUNTIME_MAIN_PID" "$source_commit" "$new_release"
+  cn_verify_voice_gift_schema "$proc_root" "$CN_RUNTIME_MAIN_PID" \
+    "$CN_RUNTIME_VOICE_GIFT_DRAFT_SCHEMA_READY"
+  cn_verify_public_health
+  cn_verify_quickread_public_health
+  cn_verify_voice_clone_contract "$source_commit" \
+    "$CN_RUNTIME_VOICE_GIFT_DRAFT_SCHEMA_READY"
+  cn_verify_tts_public_health
+
+  rollback_pending=0
+  trap - EXIT ERR INT TERM HUP
+  [ -n "$CN_READINESS_BODY_FILE" ] && rm -f -- "$CN_READINESS_BODY_FILE"
+  CN_READINESS_BODY_FILE=''
+  rm -rf -- "$backup_dir"
+  # This continuity release deliberately retains every old immutable release.
+  # Cleanup is a separate reviewed operation after the observation window.
+  echo "✓ 已保留全部旧发布目录与精确回滚目标"
+  echo "✓ 中国区发布已通过运行时账本、声音克隆 Phase-0/邀请数据库、声音克隆合同与入口健康校验"
+}
+
+main() {
+  local expected_fingerprint
+  set +x
+  if [ "$#" -ne 2 ]; then
+    echo "✗ activate-cn-release 需要 remote root 与 release id"
+    return 2
+  fi
+  IFS= read -r expected_fingerprint || true
+  if [[ ! "$expected_fingerprint" =~ ^ba1_[0-9a-f]{20}$ ]]; then
+    echo "✗ 缺少有效的审批账本标识，拒绝切换"
+    return 2
+  fi
+  activate_cn_release \
+    "$1" "$2" "$expected_fingerprint" \
+    /etc/nginx/sites-available/castreader \
+    /etc/systemd/system/castreader.service.d \
+    /proc \
+    /tmp/castreader-nginx.conf \
+    /tmp/castreader-cn-route.conf
+  unset expected_fingerprint
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  set -Eeuo pipefail
+  main "$@"
+fi

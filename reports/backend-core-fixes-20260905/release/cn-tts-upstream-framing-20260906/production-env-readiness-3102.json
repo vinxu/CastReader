@@ -1,0 +1,67 @@
+{
+  "verified": true,
+  "capturedAtUtc": "2026-09-05T18:41:23Z",
+  "boundedReadiness": {
+    "attempts": 3,
+    "elapsedSeconds": 4,
+    "httpCode": 200,
+    "samePid": true,
+    "pid": 1627493,
+    "exe": "/usr/bin/node",
+    "cwd": "/opt/castreader/release-20260906014729"
+  },
+  "capabilities": {
+    "releaseId": "release-20260906014729",
+    "commitSha": "9d652ec87d48a65d05e088d4655e806777dead12",
+    "voiceCloneServiceRoute": "cn",
+    "voiceGiftServiceRoute": "cn"
+  },
+  "runtime": {
+    "serviceRoute": "cn",
+    "releaseId": "release-20260906014729",
+    "voiceGiftEnabled": "true",
+    "voiceGiftSchemaReady": "true",
+    "voiceGiftDraftSchemaReady": "true"
+  },
+  "secrets": {
+    "admin": {
+      "present": true,
+      "lengthAtLeast32": true,
+      "trimmed": true,
+      "containsNewline": false
+    },
+    "invitation": {
+      "present": true,
+      "lengthAtLeast32": true,
+      "trimmed": true,
+      "containsNewline": false
+    },
+    "bridge": {
+      "present": true,
+      "lengthAtLeast32": true,
+      "trimmed": true,
+      "containsNewline": false
+    },
+    "draftCapability": {
+      "present": false,
+      "lengthAtLeast32": false,
+      "trimmed": true,
+      "containsNewline": false
+    },
+    "encryption": {
+      "present": true,
+      "lengthAtLeast32": true,
+      "trimmed": true,
+      "containsNewline": false
+    },
+    "invitationBridgeEncryptionPairwiseDistinct": true
+  },
+  "negativeControls": {
+    "wrongReleaseRejected": true,
+    "wrongCommitRejected": true,
+    "wrongRouteRejected": true,
+    "disabledPolicyRejected": true
+  },
+  "productionServicesUntouched": true,
+  "synthesisRequests": 0
+}

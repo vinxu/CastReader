@@ -1,0 +1,13 @@
+✔ all application, schema, route, auth, clone and TTS gates remain byte-identical (1.488084ms)
+✔ semantic readiness ignores stale responses and accepts only the same exact Node process (191.465209ms)
+✔ readiness rejects a stable process serving a wrong release (175.743792ms)
+✔ failure receipts are unique, atomic, mode-safe and contain no secret values or exact lengths (88.801042ms)
+✔ release readiness precedes every original runtime and service gate and rollback assets survive rollback failure (0.506125ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 553.456667

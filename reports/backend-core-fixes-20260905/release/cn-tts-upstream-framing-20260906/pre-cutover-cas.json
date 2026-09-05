@@ -1,0 +1,46 @@
+{
+  "capturedAtUtc": "2026-09-05T18:01:45Z",
+  "next": {
+    "current": "/opt/castreader/release-20260904120513",
+    "pid": 1048505,
+    "cwd": "/opt/castreader/release-20260904120513",
+    "restarts": 0,
+    "releaseId": "release-20260904120513",
+    "sourceCommit": "62386e902cb7201919e9680e56c82c8627b47110"
+  },
+  "quickread": {
+    "pid": 1608646,
+    "cwd": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+    "active": "active"
+  },
+  "ttsTunnel": {
+    "pid": 1029281,
+    "active": "active",
+    "restarts": 0
+  },
+  "monitor": {
+    "timer": "castreader-core-audio-monitor@cn.timer",
+    "active": "active",
+    "enabled": "enabled"
+  },
+  "configSha256": {
+    "nginx": "a78ce00e3c8d9bf4e489c53d4231aa1e1d378669b7b758192e97aa1920b247de",
+    "serviceRoute": "012a60b206c98af5afa6cc7dddc5593a2718c3597c0d4ba4e543bd43c52dcfc3",
+    "ttsRoute": "d3b5582b25f9753ea99bd146437087bb0c65ca7bd31304aa0b2979a28f620ef6",
+    "releaseIdDropin": "5c7ea9e47f374b28d77caf6d2755e4743b2c2c4f957890832017084db90fca6c"
+  },
+  "candidate": {
+    "path": "/opt/castreader/release-20260906014729",
+    "sourceCommit": "9d652ec87d48a65d05e088d4655e806777dead12",
+    "archiveSha256": "9bd9372292efd01f4d5bc91839b02d3d033eab297ece82504fb5b88a287dc2a0",
+    "archiveBytes": 41225604,
+    "isolatedPort": 3102,
+    "isolatedUnitActive": "inactive",
+    "archivePath": "/tmp/castreader-cn-tts-framing-9d652ec87d48/release-20260906014729.clean.tar.gz",
+    "treeSha256": "e6946fa061db2e203311b9d7a36c7b4539a28c4314b98c5cada79a36c6c8277f",
+    "regularFiles": 7214,
+    "symlinks": 36,
+    "appleMetadataFiles": 0,
+    "envFiles": 0
+  }
+}

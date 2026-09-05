@@ -1,0 +1,13 @@
+From https://github.com/scmyyan/readout-web
+ * branch              codex/cn-tts-upstream-framing-continuity-20260906 -> FETCH_HEAD
+{"ok":true,"head":"9d652ec87d48a65d05e088d4655e806777dead12","previousProductionSha":"62386e902cb7201919e9680e56c82c8627b47110","releaseRef":"origin/codex/cn-tts-upstream-framing-continuity-20260906"}
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+✗ 运行进程线路、发布身份或中国区邀请录音配置不匹配，拒绝发布
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+✓ 已完整回滚到旧版中国区服务
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+✗ 外层回滚未完整成功；保留 root-only 备份：/tmp/castreader-cn-tts-framing-outer-rollback.U1pYxU
+{"samples":11,"http200":7,"non200":4,"maxGapBetween200Seconds":0.403,"errorTypes":[]}

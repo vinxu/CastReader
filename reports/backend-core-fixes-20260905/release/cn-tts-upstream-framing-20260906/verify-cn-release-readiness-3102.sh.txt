@@ -1,0 +1,254 @@
+#!/usr/bin/env bash
+# One-use, no-synthesis readiness check for the already staged CN Next
+# candidate. It runs a separate Type=simple service on localhost:3102 with
+# the same three production EnvironmentFiles and Node entrypoint. It never
+# restarts or reloads production, QuickRead, Nginx, tunnels, or the monitor.
+set -Eeuo pipefail
+set +x
+
+unit=castreader-tts-framing-readiness.service
+unit_path=/run/systemd/system/$unit
+body=/run/castreader-tts-framing-readiness.body
+remote_receipt=/tmp/castreader-cn-tts-framing-readiness-3102.json
+candidate=/opt/castreader/release-20260906014729
+expected_release=release-20260906014729
+expected_source=9d652ec87d48a65d05e088d4655e806777dead12
+old=/opt/castreader/release-20260904120513
+old_pid=1621449
+qr_pid=1608646
+qr_cwd=/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn
+kokoro_tunnel_pid=1029281
+clone_tunnel_pid=2090236
+monitor_current=/opt/castreader-core-audio-monitor/releases/f6eb6691-7a2c0b1f
+created=0
+
+cleanup() {
+  local status=$?
+  trap - EXIT INT TERM HUP
+  set +e
+  if [ "$created" = 1 ]; then
+    systemctl stop "$unit" >/dev/null 2>&1 || true
+    rm -f -- "$unit_path" "$body"
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    systemctl reset-failed "$unit" >/dev/null 2>&1 || true
+  fi
+  exit "$status"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+
+# Fresh coexistence/CAS checks. The monitor upgrade changed only its own
+# immutable symlink; it did not restart these protected services.
+test "$(readlink -f /opt/castreader/current)" = "$old"
+test "$(systemctl is-active castreader)" = active
+test "$(systemctl show castreader -p MainPID --value)" = "$old_pid"
+test "$(systemctl show castreader -p NRestarts --value)" = 0
+test "$(systemctl show castreader-quickread-cn -p MainPID --value)" = "$qr_pid"
+test "$(readlink -f /proc/$qr_pid/cwd)" = "$qr_cwd"
+test "$(systemctl show castreader-cn-kokoro-tunnel -p MainPID --value)" = "$kokoro_tunnel_pid"
+test "$(systemctl show castreader-cn-clone-tunnel -p MainPID --value)" = "$clone_tunnel_pid"
+test "$(readlink -f /opt/castreader-core-audio-monitor/current)" = "$monitor_current"
+test "$(systemctl is-active castreader-core-audio-monitor@cn.timer)" = active
+test "$(systemctl is-enabled castreader-core-audio-monitor@cn.timer)" = enabled
+test "$(systemctl is-active "$unit" 2>/dev/null || true)" != active
+test ! -e "$unit_path"
+test -z "$(ss -H -ltn 'sport = :3102')"
+python3 - "$candidate/.castreader-release.json" <<'PY'
+import json
+import sys
+manifest=json.load(open(sys.argv[1]))
+assert manifest.get('releaseId') == 'release-20260906014729'
+assert manifest.get('sourceCommit') == '9d652ec87d48a65d05e088d4655e806777dead12'
+assert manifest.get('contract') == 'voice-clone-v3'
+PY
+
+# The EnvironmentFile paths and ExecStart match production. Only the bind
+# port, immutable cwd/release and restart policy differ; 25-quickread's inline
+# API key is intentionally irrelevant to this read-only capabilities gate.
+cat > "$unit_path" <<'UNIT'
+[Unit]
+Description=CastReader CN TTS framing readiness candidate
+After=network-online.target
+
+[Service]
+Type=simple
+User=castreader
+WorkingDirectory=/opt/castreader/release-20260906014729
+EnvironmentFile=/etc/castreader/castreader.env
+Environment=NODE_ENV=production
+Environment=PORT=3102
+Environment=HOSTNAME=127.0.0.1
+EnvironmentFile=/etc/castreader/voice-clone.env
+EnvironmentFile=/etc/castreader/voice-gift-bridge.env
+Environment=CASTREADER_SERVICE_ROUTE=cn
+Environment=VOICE_GIFT_CN_MINIMAL_SCHEMA_READY=true
+Environment=VOICE_GIFT_CN_MINIMAL_ENABLED=true
+Environment=VOICE_GIFT_CN_DRAFT_SCHEMA_READY=true
+Environment=TTS_UPSTREAM_URL=http://127.0.0.1:18880/dev/captioned_speech
+Environment=CN_QUICKREAD_ORIGIN=https://quickread.castreader.cn
+Environment=CN_QUICKREAD_ORIGIN_ALLOWLIST=https://quickread.castreader.cn
+EnvironmentFile=/etc/castreader/voice-clone.env
+Environment=TTS_UPSTREAM_URL=http://127.0.0.1:18880/dev/captioned_speech
+Environment=CASTREADER_RELEASE_ID=release-20260906014729
+ExecStart=/usr/bin/node server.js
+Restart=no
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/castreader /opt/castreader
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+chmod 0644 "$unit_path"
+created=1
+systemctl daemon-reload
+systemctl start "$unit"
+
+matched=0
+attempts=0
+http_code=0
+pid_before=
+pid_after=
+exe_before=
+exe_after=
+cwd_before=
+cwd_after=
+started_epoch=$(date +%s)
+for attempt in $(seq 1 30); do
+  attempts=$attempt
+  pid_before=$(systemctl show "$unit" -p MainPID --value 2>/dev/null || true)
+  exe_before=$(readlink -f "/proc/$pid_before/exe" 2>/dev/null || true)
+  cwd_before=$(readlink -f "/proc/$pid_before/cwd" 2>/dev/null || true)
+  : > "$body"
+  http_code=$(curl --silent --show-error --output "$body" \
+    --write-out '%{http_code}' --connect-timeout 1 --max-time 2 \
+    --header 'Cache-Control: no-cache' \
+    --header "X-CastReader-Release-Readiness: $expected_release-$attempt" \
+    "http://127.0.0.1:3102/api/capabilities?release_readiness=$expected_release&attempt=$attempt" \
+    2>/dev/null || true)
+  pid_after=$(systemctl show "$unit" -p MainPID --value 2>/dev/null || true)
+  exe_after=$(readlink -f "/proc/$pid_after/exe" 2>/dev/null || true)
+  cwd_after=$(readlink -f "/proc/$pid_after/cwd" 2>/dev/null || true)
+  if [ "$http_code" = 200 ] && [ "$pid_before" = "$pid_after" ] &&
+    [[ "$pid_before" =~ ^[1-9][0-9]*$ ]] &&
+    [ "$exe_before" = /usr/bin/node ] && [ "$exe_after" = /usr/bin/node ] &&
+    [ "$cwd_before" = "$candidate" ] && [ "$cwd_after" = "$candidate" ] &&
+    [ "$(stat -c %s "$body")" -le 262144 ] &&
+    python3 - "$body" "$expected_release" "$expected_source" <<'PY'
+import json
+import sys
+d=json.load(open(sys.argv[1]))
+assert d.get('releaseId') == sys.argv[2]
+assert d.get('commitSha') == sys.argv[3]
+assert (d.get('voiceClone') or {}).get('serviceRoute') == 'cn'
+assert (d.get('voiceGift') or {}).get('serviceRoute') == 'cn'
+PY
+  then
+    matched=1
+    break
+  fi
+  sleep 1
+done
+test "$matched" = 1
+
+# Reduce the process environment to the exact safe predicate matrix. Secret
+# material is used only in memory to calculate presence/length/format flags.
+python3 - "$body" "/proc/$pid_after/environ" "$remote_receipt" \
+  "$attempts" "$http_code" "$pid_before" "$pid_after" \
+  "$exe_before" "$exe_after" "$cwd_before" "$cwd_after" "$started_epoch" <<'PY'
+import json
+import pathlib
+import sys
+import time
+(
+ body, environ_path, output, attempts, http_code, pid_before, pid_after,
+ exe_before, exe_after, cwd_before, cwd_after, started_epoch,
+)=sys.argv[1:]
+d=json.load(open(body))
+env={}
+for item in pathlib.Path(environ_path).read_bytes().split(b'\0'):
+ if b'=' in item:
+  key,value=item.split(b'=',1)
+  env[key.decode(errors='replace')]=value.decode(errors='replace')
+def safe(value):
+ return {
+  'present':bool(value),'lengthAtLeast32':len(value)>=32,
+  'trimmed':value==value.strip(),'containsNewline':'\n' in value or '\r' in value,
+ }
+admin=env.get('MOBILE_ROUTING_ADMIN_SECRET','')
+invitation=env.get('VOICE_GIFT_CN_INVITATION_SECRET','')
+bridge=env.get('VOICE_CLONE_WEB_BRIDGE_SECRET','')
+draft=env.get('VOICE_GIFT_DRAFT_CAPABILITY_KEY','')
+encryption=env.get('VOICE_CLONE_ENCRYPTION_KEY','')
+actual={
+ 'releaseId':d.get('releaseId'),'commitSha':d.get('commitSha'),
+ 'voiceCloneServiceRoute':(d.get('voiceClone') or {}).get('serviceRoute'),
+ 'voiceGiftServiceRoute':(d.get('voiceGift') or {}).get('serviceRoute'),
+}
+runtime={
+ 'serviceRoute':env.get('CASTREADER_SERVICE_ROUTE',''),
+ 'releaseId':env.get('CASTREADER_RELEASE_ID',''),
+ 'voiceGiftEnabled':env.get('VOICE_GIFT_CN_MINIMAL_ENABLED',''),
+ 'voiceGiftSchemaReady':env.get('VOICE_GIFT_CN_MINIMAL_SCHEMA_READY',''),
+ 'voiceGiftDraftSchemaReady':env.get('VOICE_GIFT_CN_DRAFT_SCHEMA_READY',''),
+}
+secrets={
+ 'admin':safe(admin),'invitation':safe(invitation),'bridge':safe(bridge),
+ 'draftCapability':safe(draft),'encryption':safe(encryption),
+ 'invitationBridgeEncryptionPairwiseDistinct':bool(invitation and bridge and encryption) and len({invitation,bridge,encryption})==3,
+}
+draft_effective=draft or encryption
+assert actual == {
+ 'releaseId':'release-20260906014729',
+ 'commitSha':'9d652ec87d48a65d05e088d4655e806777dead12',
+ 'voiceCloneServiceRoute':'cn','voiceGiftServiceRoute':'cn',
+}
+assert runtime == {
+ 'serviceRoute':'cn','releaseId':'release-20260906014729',
+ 'voiceGiftEnabled':'true','voiceGiftSchemaReady':'true',
+ 'voiceGiftDraftSchemaReady':'true',
+}
+assert admin and len(invitation)>=32 and len(bridge)>=32 and encryption
+assert secrets['invitationBridgeEncryptionPairwiseDistinct'] is True
+assert len(draft_effective)>=32 and draft_effective==draft_effective.strip()
+assert all(not details['containsNewline'] for details in secrets.values() if isinstance(details,dict))
+
+# Negative controls operate only on the captured public/safe shapes. They
+# prove the validator still rejects a wrong release, commit, route or policy.
+negative={
+ 'wrongReleaseRejected':actual['releaseId']!='release-intentionally-wrong',
+ 'wrongCommitRejected':actual['commitSha']!='0'*40,
+ 'wrongRouteRejected':actual['voiceCloneServiceRoute']!='global',
+ 'disabledPolicyRejected':runtime['voiceGiftEnabled']!='false',
+}
+assert all(negative.values())
+receipt={
+ 'verified':True,
+ 'capturedAtUtc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),
+ 'boundedReadiness':{
+  'attempts':int(attempts),'elapsedSeconds':int(time.time())-int(started_epoch),
+  'httpCode':int(http_code),'samePid':pid_before==pid_after,
+  'pid':int(pid_after),'exe':exe_after,'cwd':cwd_after,
+ },
+ 'capabilities':actual,'runtime':runtime,'secrets':secrets,
+ 'negativeControls':negative,
+ 'productionServicesUntouched':True,
+ 'synthesisRequests':0,
+}
+pathlib.Path(output).write_text(json.dumps(receipt,indent=2)+'\n')
+PY
+chmod 0600 "$remote_receipt"
+
+# Recheck every protected production identity before removing the temporary
+# candidate. No business service or monitor PID may have changed.
+test "$(systemctl show castreader -p MainPID --value)" = "$old_pid"
+test "$(systemctl show castreader-quickread-cn -p MainPID --value)" = "$qr_pid"
+test "$(systemctl show castreader-cn-kokoro-tunnel -p MainPID --value)" = "$kokoro_tunnel_pid"
+test "$(systemctl show castreader-cn-clone-tunnel -p MainPID --value)" = "$clone_tunnel_pid"
+test "$(readlink -f /opt/castreader-core-audio-monitor/current)" = "$monitor_current"
+
+cat "$remote_receipt"

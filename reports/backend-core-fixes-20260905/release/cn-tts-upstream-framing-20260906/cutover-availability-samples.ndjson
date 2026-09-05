@@ -1,0 +1,11 @@
+{"at":1788632640.7558432,"status":200,"latencyMs":216.4,"releaseId":"release-20260904120513","errorType":null}
+{"at":1788632641.149219,"status":200,"latencyMs":186.5,"releaseId":"release-20260904120513","errorType":null}
+{"at":1788632641.537646,"status":200,"latencyMs":180.5,"releaseId":"release-20260904120513","errorType":null}
+{"at":1788632641.895891,"status":200,"latencyMs":149.5,"releaseId":"release-20260904120513","errorType":null}
+{"at":1788632642.259917,"status":200,"latencyMs":160.5,"releaseId":"release-20260904120513","errorType":null}
+{"at":1788632642.663319,"status":200,"latencyMs":193.1,"releaseId":"release-20260904120513","errorType":null}
+{"at":1788632643.060711,"status":200,"latencyMs":189.6,"releaseId":"release-20260904120513","errorType":null}
+{"at":1788632643.438015,"status":502,"latencyMs":172.7,"releaseId":null,"errorType":null}
+{"at":1788632643.8421519,"status":502,"latencyMs":195.9,"releaseId":null,"errorType":null}
+{"at":1788632644.237226,"status":502,"latencyMs":187.0,"releaseId":null,"errorType":null}
+{"at":1788632644.607784,"status":502,"latencyMs":166.0,"releaseId":null,"errorType":null}

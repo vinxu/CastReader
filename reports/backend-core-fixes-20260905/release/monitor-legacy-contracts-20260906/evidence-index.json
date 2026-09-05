@@ -66,6 +66,11 @@
       "sha256": "9b02f87419c200a610c09e17751dd37ad30b02a04258c44296b141143a717d68"
     },
     {
+      "bytes": 5973,
+      "path": "cn-post-gateway-recovery-readback.json",
+      "sha256": "ac63aa648c351203b143ddf682c62a76eeb882096545d5c37a99992ffceeba86"
+    },
+    {
       "bytes": 1597,
       "path": "cn-prestage-after.json",
       "sha256": "6fbd2d678cef3a909eabd8f39c61781012ba45c375c8b52e120408e079b2a89c"
@@ -141,6 +146,6 @@
       "sha256": "7b5e8f1c1f3769aef09e2c8fa67dd65093381091ddbf1dc6d57542dfb6908fc1"
     }
   ],
-  "generated_at_utc": "2026-09-05T18:33:58.076724+00:00",
+  "generated_at_utc": "2026-09-05T18:59:29.870379+00:00",
   "schema": "castreader.monitor-evidence-index.v1"
 }
