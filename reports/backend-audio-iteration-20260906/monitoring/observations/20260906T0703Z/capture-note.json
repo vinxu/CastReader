@@ -1,0 +1,8 @@
+{
+  "schema": "castreader.audio-observation-preserved-snapshot.v1",
+  "collectedAtUtc": "2026-09-06T07:03:24.590170Z",
+  "preservedAtUtc": "2026-09-06T10:07:00.804943+00:00",
+  "note": "Preserved the completed 07:03 UTC collection before the newer heartbeat overwrites latest. No collection is asserted for 08:00 or 09:00 UTC.",
+  "readOnly": true,
+  "productionModified": false
+}

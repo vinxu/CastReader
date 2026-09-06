@@ -1,0 +1,50 @@
+{
+  "schema": "castreader.audio-observation-manifest.v1",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 4377,
+      "sha256": "a9890d15e5905fc7c7c777ebb48f1aa965fb1e29848a1c6c4a068982016a54db"
+    },
+    {
+      "path": "acceptance-initial-mobile-unavailable.json",
+      "bytes": 30291,
+      "sha256": "f3bf738311c25b16805fd75cb68da9ae14221857c2a1a7439493559219eaa44c"
+    },
+    {
+      "path": "acceptance.json",
+      "bytes": 52877,
+      "sha256": "4a92702bd85de7c3f5d07aba68d0497207b27190d805f8adc80efbe96353287a"
+    },
+    {
+      "path": "client-failure-details.json",
+      "bytes": 4372,
+      "sha256": "1900e69a4efb945518a69ee5429b7bfbf58a1bd869f10184f98435c448ead36b"
+    },
+    {
+      "path": "collector-config-recovery.json",
+      "bytes": 743,
+      "sha256": "065466854f2a5fd3226baeed0a5dacae3435a454761f4d0157c6a59d7d9f014f"
+    },
+    {
+      "path": "direct-5xx-details.json",
+      "bytes": 1589,
+      "sha256": "0a41c63d35065fc1a3a0196f6a137a35b048c05bcabb5661cc404dab1a87ab21"
+    },
+    {
+      "path": "mobile-recovered.json",
+      "bytes": 19041,
+      "sha256": "c02998f257c3b5f52d94238778e2f71070be6bc0053b47bedda165588634cfb6"
+    },
+    {
+      "path": "non-core-5xx-classification.json",
+      "bytes": 3086,
+      "sha256": "ef09cd5cdce95f0bd1c8a1abf2ce38f799bb6e9d6c85b3944f1f912e35b55067"
+    },
+    {
+      "path": "source-classification-review.json",
+      "bytes": 1307,
+      "sha256": "e6c18bb01814664b9dca1c95b6c4b7f656d8a9dd59c6484d917abaf64ba05349"
+    }
+  ]
+}

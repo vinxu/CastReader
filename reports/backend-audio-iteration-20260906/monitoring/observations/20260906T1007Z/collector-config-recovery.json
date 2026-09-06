@@ -1,0 +1,14 @@
+{
+  "schema": "castreader.audio-monitoring-config-recovery.v1",
+  "updatedAtUtc": "2026-09-06T10:13:33.115998+00:00",
+  "problem": "Previous temporary production env source no longer exists",
+  "oldSourcePath": "/tmp/castreader-core-audio-env-source-20260905/.vercel/.env.production.local",
+  "newSourcePath": "/Users/xuxuheng/Documents/MyProject/readout-web/.env.local",
+  "oldStateSha256": "3cd299cf937d4dc05c695170c60892e0d50cecdccbf44bb7495769d41434d0da",
+  "newStateSha256": "8d078e6d68553d8e90663c65247f542a4bb92e4d41832d359ab33b2c0b2008d3",
+  "databaseProjectScopeMatches": true,
+  "credentialRoleAndOriginValidated": true,
+  "credentialsCopied": false,
+  "productionConfigurationChanged": false,
+  "observationWindowUnchanged": true
+}

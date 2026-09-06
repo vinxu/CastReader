@@ -1,25 +1,46 @@
 {
   "schema": "castreader.audio-observation-alert-state.v1",
-  "recordedAtUtc": "2026-09-06T06:12:41.408004+00:00",
+  "recordedAtUtc": "2026-09-06T10:24:58.653763+00:00",
   "heartbeatAutomationId": "24",
   "window": {
     "endUtc": "2026-09-07T05:01:25Z",
     "requiredSeconds": 86400,
     "startUtc": "2026-09-06T05:01:25Z"
   },
-  "latestSnapshotDirectory": "observations/20260906T0603Z",
+  "latestSnapshotDirectory": "observations/20260906T1007Z",
   "alertEventKeys": [
-    "194cbc9c7aaeb2b962a9"
+    "194cbc9c7aaeb2b962a9",
+    "e744cc9e13c1ce37a508",
+    "17fdc8de28c31db425ca",
+    "2efcb7cf33b2ee717ab8",
+    "746346a4fb3395e8d30e"
   ],
   "alertKinds": [
     "ios_1233_kindle_navigation_failure",
-    "non_audio_google_play_reconcile_503"
+    "non_audio_google_play_reconcile_503",
+    "ios_1233_kindle_sync_dialog_blocked",
+    "ios_1233_tts_failed",
+    "android_1045_explain_pipeline_failed",
+    "direct_early_abort_recorded_504"
   ],
-  "nonAudio503Count": 2,
+  "nonAudio503Count": 10,
   "knownEvidenceLimitations": [
-    "ios_start_cohort_missing",
-    "clone_explain_first_output_missing",
-    "web_extension_end_to_end_not_collected"
+    "clone_first_output_absent_or_unattributed",
+    "web_extension_end_to_end_not_collected",
+    "first_output_does_not_prove_playback_completion",
+    "client_failure_underlying_exception_unavailable",
+    "direct_abort_cause_and_504_delivery_unconfirmed",
+    "hourly_identity_snapshots_absent_0800_0900_utc"
   ],
-  "nextRunPolicy": "Compare cumulative records with these keys; do not repeat unchanged alerts or already known sample gaps."
+  "nextRunPolicy": "Compare cumulative records with these keys; do not repeat unchanged alerts or already known sample gaps.",
+  "directRequestKeys": [
+    "5aff31cfb056a2d01086",
+    "0cb20e9c60e8856663f7"
+  ],
+  "nonAudio503Classification": "google_play_reconcile_incomplete",
+  "collectorRecovery": {
+    "mobileBackfillComplete": true,
+    "windowUnchanged": true,
+    "productionChanged": false
+  }
 }

@@ -1,0 +1,55 @@
+{
+  "schema": "castreader.direct-gateway-5xx-detail.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "additionalSynthesisStarted": false,
+  "readAtUtc": "2026-09-06T10:14:30.364858Z",
+  "query": {
+    "startInclusive": "2026-09-06T08:00:00Z",
+    "endExclusive": "2026-09-06T10:07:01.058070Z"
+  },
+  "coverage": {
+    "complete": true,
+    "journalParseErrors": 0,
+    "rowLimitReached": false
+  },
+  "runtimeSourceSha256": "53a4ca273a7b3d60b1ce24f3cb089985f57bb6006b2838b683549c69e93d26d5",
+  "configuredUpstreamTimeoutMs": 120000,
+  "failures": [
+    {
+      "key": "5aff31cfb056a2d01086",
+      "observedAt": "2026-09-06T08:55:29.053806Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": 504,
+      "elapsedMs": 1006,
+      "requestBytes": 606,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.45",
+      "error": {
+        "class": "timeout_or_abort",
+        "name": "AbortError"
+      },
+      "belowConfigured120SecondDeadline": true,
+      "neighboring2xxWithin10Seconds": 6
+    },
+    {
+      "key": "0cb20e9c60e8856663f7",
+      "observedAt": "2026-09-06T09:55:32.544948Z",
+      "method": "POST",
+      "path": "/api/captioned_speech_partly",
+      "status": 504,
+      "elapsedMs": 297,
+      "requestBytes": 5225,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.45",
+      "error": {
+        "class": "timeout_or_abort",
+        "name": "AbortError"
+      },
+      "belowConfigured120SecondDeadline": true,
+      "neighboring2xxWithin10Seconds": 1
+    }
+  ],
+  "rawLogOrUserContentExported": false
+}

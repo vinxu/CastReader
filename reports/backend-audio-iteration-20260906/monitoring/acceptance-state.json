@@ -60,7 +60,7 @@
     "cnSshIdentity": "~/.ssh/castreader_cn_deploy",
     "globalCapabilitiesTimeoutSeconds": 15,
     "globalCapabilitiesURL": "https://api.castreader.ai/api/capabilities",
-    "globalEnvFile": "/tmp/castreader-core-audio-env-source-20260905/.vercel/.env.production.local",
+    "globalEnvFile": "/Users/xuxuheng/Documents/MyProject/readout-web/.env.local",
     "kokoroSshTimeoutSeconds": 30,
     "mobileMaxPages": 100,
     "mobilePageSize": 1000,

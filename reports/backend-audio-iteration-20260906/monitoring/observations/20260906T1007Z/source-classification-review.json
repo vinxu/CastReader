@@ -1,0 +1,23 @@
+{
+  "schema": "castreader.audio-source-classification-review.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "directGateway": {
+    "sourceCommit": "b9e7e9129e49f882398289511bbb90dbda8c6c08",
+    "file": "ops/tts-direct-gateway/gateway.mjs",
+    "hardTimeoutMs": 120000,
+    "hardTimeoutLine": 15,
+    "sharedAbortControllerLines": [229, 234],
+    "abortError504ClassificationLines": [281, 285],
+    "statusLogLines": [296, 302],
+    "finding": "The hard timer and downstream response.close both abort the same controller. AbortError is classified as upstream timeout. Logged response.statusCode does not prove delivery to the client.",
+    "limits": "The two observed early AbortErrors do not establish a model timeout, deliberate user cancellation, or received HTTP 504."
+  },
+  "googlePlayReconcile": {
+    "sourceCommit": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+    "file": "src/shared/pro/google-play-reconcile.ts",
+    "incompleteLogLines": [112, 115],
+    "finding": "The observed incomplete tag identifies partial candidate reconciliation failure. The route operates on subscription verification and ledger state; it does not directly invoke TTS, cloning or Explain.",
+    "limits": "The safe log tag does not identify the underlying candidate verification or ledger exception."
+  }
+}

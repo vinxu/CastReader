@@ -1,0 +1,98 @@
+{
+  "schema": "castreader.audio-non-core-error-classification.v1",
+  "readOnly": true,
+  "readAtUtc": "2026-09-06T10:17:45.798772+00:00",
+  "rows": [
+    {
+      "observedAtUtc": "2026-09-06T09:45:33.309000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "observedAtUtc": "2026-09-06T09:15:33.599000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "observedAtUtc": "2026-09-06T08:45:33.231000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "observedAtUtc": "2026-09-06T08:15:33.420000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "observedAtUtc": "2026-09-06T07:45:33.227000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "observedAtUtc": "2026-09-06T07:15:33.389000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "observedAtUtc": "2026-09-06T06:45:33.310000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "observedAtUtc": "2026-09-06T06:15:33.240000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "observedAtUtc": "2026-09-06T05:45:33.077000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    },
+    {
+      "observedAtUtc": "2026-09-06T05:15:33.328000+00:00",
+      "status": 503,
+      "staticPath": "/api/cron/google-play-reconcile",
+      "deploymentId": "dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc",
+      "matchedSafeLogTags": [
+        "[google-play-reconcile] incomplete"
+      ]
+    }
+  ],
+  "rawLogsOrIdentifiersExported": false
+}
