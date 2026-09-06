@@ -1,0 +1,149 @@
+{
+  "schema": "castreader.vercel-504-cause-analysis.v1",
+  "readOnly": true,
+  "productionSourceCommit": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+  "allRecordsMatchProductionBaseline": true,
+  "observations": [
+    {
+      "requestKey": "e061a66c335ef6dece59",
+      "proxyRequestAtUtc": "2026-09-06T13:29:35.925000+00:00",
+      "functionEventAtUtc": "2026-09-06T13:29:35.950000+00:00",
+      "functionDurationMs": 28007,
+      "requestDurationMs": 28024,
+      "derivedFunctionEndUtc": "2026-09-06T13:30:03.957000+00:00",
+      "functionRegion": "iad1",
+      "edgeRegion": "iad1",
+      "httpStatus": 504,
+      "platformErrorCode": "",
+      "hasFunctionCrashed": false,
+      "functionMaxDurationSeconds": 300,
+      "startType": "hot",
+      "peakMemoryMB": 352,
+      "memoryLimitMB": 2048,
+      "providerConcurrency": 45,
+      "clientFamilyFromUserAgent": "chromium"
+    },
+    {
+      "requestKey": "0865d60458fd5519c2d1",
+      "proxyRequestAtUtc": "2026-09-06T13:29:36.132000+00:00",
+      "functionEventAtUtc": "2026-09-06T13:29:36.182000+00:00",
+      "functionDurationMs": 28006,
+      "requestDurationMs": 28079,
+      "derivedFunctionEndUtc": "2026-09-06T13:30:04.188000+00:00",
+      "functionRegion": "iad1",
+      "edgeRegion": "sfo1",
+      "httpStatus": 504,
+      "platformErrorCode": "",
+      "hasFunctionCrashed": false,
+      "functionMaxDurationSeconds": 300,
+      "startType": "hot",
+      "peakMemoryMB": 352,
+      "memoryLimitMB": 2048,
+      "providerConcurrency": 45,
+      "clientFamilyFromUserAgent": "castreader"
+    },
+    {
+      "requestKey": "498d54bede61726ce98c",
+      "proxyRequestAtUtc": "2026-09-06T13:29:49.696000+00:00",
+      "functionEventAtUtc": "2026-09-06T13:29:49.715000+00:00",
+      "functionDurationMs": 28033,
+      "requestDurationMs": 28041,
+      "derivedFunctionEndUtc": "2026-09-06T13:30:17.748000+00:00",
+      "functionRegion": "iad1",
+      "edgeRegion": "iad1",
+      "httpStatus": 504,
+      "platformErrorCode": "",
+      "hasFunctionCrashed": false,
+      "functionMaxDurationSeconds": 300,
+      "startType": "hot",
+      "peakMemoryMB": 352,
+      "memoryLimitMB": 2048,
+      "providerConcurrency": 44,
+      "clientFamilyFromUserAgent": "chromium"
+    },
+    {
+      "requestKey": "5e7c7c1c359ddd58195d",
+      "proxyRequestAtUtc": "2026-09-06T13:29:49.992000+00:00",
+      "functionEventAtUtc": "2026-09-06T13:29:50.023000+00:00",
+      "functionDurationMs": 28006,
+      "requestDurationMs": 28031,
+      "derivedFunctionEndUtc": "2026-09-06T13:30:18.029000+00:00",
+      "functionRegion": "iad1",
+      "edgeRegion": "iad1",
+      "httpStatus": 504,
+      "platformErrorCode": "",
+      "hasFunctionCrashed": false,
+      "functionMaxDurationSeconds": 300,
+      "startType": "hot",
+      "peakMemoryMB": 352,
+      "memoryLimitMB": 2048,
+      "providerConcurrency": 44,
+      "clientFamilyFromUserAgent": "chromium"
+    }
+  ],
+  "findings": [
+    {
+      "claim": "HTTP 504 is recorded on the function execution itself, with the CDN also recording 504.",
+      "evidence": "Each target functionEvents[].httpStatus and proxyEvents[].httpStatus is 504.",
+      "confidence": "direct_observation"
+    },
+    {
+      "claim": "The function execution ended at the configured application budget of approximately 28 seconds, well below its 300-second platform limit.",
+      "evidence": "Function durations are 28006, 28007, 28033, and 28006 ms; configured platform duration is 300 seconds; production partly budget is 28000 ms.",
+      "confidence": "direct_duration_plus_source_match"
+    },
+    {
+      "claim": "The most strongly supported generation path is application-level abort/timeout handling after the partly audio request exhausts its 28-second budget.",
+      "evidence": "Production POST catches proxy errors and gatewayError returns 504 for TimeoutError/AbortError without logging; all four end at that budget and have no platform error code or crash.",
+      "confidence": "high_confidence_inference_not_captured_exception"
+    },
+    {
+      "claim": "Platform max-duration timeout, cold start, and function crash do not explain the retrieved metadata.",
+      "evidence": "Actual duration is ~28s versus max300s, startType=hot, hasFunctionCrashed=false, runtime errorCode empty.",
+      "confidence": "direct_observation"
+    },
+    {
+      "claim": "The budget covers obtaining a complete upstream response body and JSON validation as well as retries/backoff.",
+      "evidence": "retrySpeechRequest wraps request and response.arrayBuffer in withinSpeechBudget; application receives a buffered complete response.",
+      "confidence": "production_source"
+    },
+    {
+      "claim": "The incoming request time is the proxy timestamp, not a measured completion timestamp.",
+      "evidence": "For all four, root timestamp equals proxyEvents.timestamp; provider reference defines proxy timestamp as when proxy request was made. Function timeline event follows 19–50ms later.",
+      "confidence": "provider_schema_and_observation"
+    },
+    {
+      "claim": "Three user-agent families classify as chromium and one as CastReader; no complete user agent was retained.",
+      "evidence": "Fixed-token classification performed in memory from clientUserAgent.",
+      "confidence": "caller_supplied_metadata"
+    }
+  ],
+  "unresolved": [
+    "No individual exception object/name/stack or response body is retained in these four logs, so TimeoutError versus parent AbortError is not directly observed.",
+    "No upstream attempt spans, attempt counts, first-byte timing, body-completion timing, or network failure codes were recovered. The evidence cannot distinguish connect delay, upstream queue/inference delay, stalled body transfer, or retryable responses.",
+    "traceId is empty; no request headers exist in the returned schema; the two requestTags contain no recognized correlation key. The application-generated x-request-id is not logged by its timeout catch, so no Vercel-to-upstream or Vercel-to-client event join is proven.",
+    "Concurrency 44–45 is provider metadata, not evidence by itself of CPU starvation or overload.",
+    "iad1 proves only Vercel function execution region, not full-chain regional compliance.",
+    "Derived function end times add the provider duration to the function event timestamp and are explicitly calculations, not separately captured response-completion log entries."
+  ],
+  "collectionNotes": {
+    "priorFailureCause": "vercel api only accepts API-base paths and rejected the full vercel.com URL before dispatch. This was a tool invocation limitation, not a production error.",
+    "resolvedMethod": "Read the exact request-logs endpoint used by installed vercel logs, using the existing CLI credential in memory; persist only sanitized fields.",
+    "queryWindow": "2026-09-06T13:29:30Z–13:30:00Z",
+    "traceLookupLimitation": "No traceId is available for a direct distributed trace lookup."
+  },
+  "officialReferences": [
+    {
+      "title": "Vercel Log Drains Reference",
+      "url": "https://vercel.com/docs/drains/reference/logs",
+      "supports": "proxy.timestamp marks when the proxy request was made; timestamp and executionRegion schema."
+    },
+    {
+      "title": "Vercel Runtime Logs",
+      "url": "https://vercel.com/docs/logs/runtime",
+      "supports": "Function metadata includes location, runtime, duration, memory and start type; events give request timeline."
+    }
+  ],
+  "rawContentExported": false,
+  "productionModified": false
+}

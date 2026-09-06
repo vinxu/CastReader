@@ -1,0 +1,1123 @@
+All excerpts from e3bbe903c0bed886a53b3b0ba2c8240c4fe6b9d6, original 1-based line numbers.
+
+CastReader/Services/AudioPlayerService.swift:34-108
+   34 enum AudioPlaybackTemporaryFiles {
+   35     static let directoryName = "CastReaderPlaybackAudio"
+   36     private static let legacyPrefixes = ["segment_", "prestage_"]
+   37     private static let audioExtensions: Set<String> = ["mp3", "wav"]
+   38 
+   39     static func prepare(
+   40         root: URL = FileManager.default.temporaryDirectory,
+   41         fileManager: FileManager = .default
+   42     ) -> URL {
+   43         let standardizedRoot = root.standardizedFileURL
+   44         let directory = standardizedRoot
+   45             .appendingPathComponent(directoryName, isDirectory: true)
+   46             .standardizedFileURL
+   47         if directory.deletingLastPathComponent() == standardizedRoot,
+   48            directory.lastPathComponent == directoryName {
+   49             try? fileManager.removeItem(at: directory)
+   50             try? fileManager.createDirectory(
+   51                 at: directory,
+   52                 withIntermediateDirectories: true
+   53             )
+   54         }
+   55 
+   56         guard let children = try? fileManager.contentsOfDirectory(
+   57             at: standardizedRoot,
+   58             includingPropertiesForKeys: [.isRegularFileKey],
+   59             options: [.skipsHiddenFiles]
+   60         ) else { return directory }
+   61         for candidate in children {
+   62             let name = candidate.lastPathComponent
+   63             guard legacyPrefixes.contains(where: { name.hasPrefix($0) }),
+   64                   audioExtensions.contains(
+   65                       candidate.pathExtension.lowercased()
+   66                   ),
+   67                   (try? candidate.resourceValues(
+   68                       forKeys: [.isRegularFileKey]
+   69                   ).isRegularFile) == true else { continue }
+   70             try? fileManager.removeItem(at: candidate)
+   71         }
+   72         return directory
+   73     }
+   74 
+   75     static func removeOwnedContents(
+   76         in directory: URL,
+   77         preserving preservedURLs: Set<URL> = [],
+   78         fileManager: FileManager = .default
+   79     ) {
+   80         let directory = directory.standardizedFileURL
+   81         guard directory.lastPathComponent == directoryName,
+   82               directory.path != "/" else { return }
+   83         let preserved = Set(preservedURLs.map(\.standardizedFileURL))
+   84         let children = (try? fileManager.contentsOfDirectory(
+   85             at: directory,
+   86             includingPropertiesForKeys: nil
+   87         )) ?? []
+   88         for child in children
+   89             where !preserved.contains(child.standardizedFileURL) {
+   90             try? fileManager.removeItem(at: child)
+   91         }
+   92         try? fileManager.createDirectory(
+   93             at: directory,
+   94             withIntermediateDirectories: true
+   95         )
+   96     }
+   97 
+   98     static func fileURL(
+   99         in directory: URL,
+  100         prefix: String,
+  101         segmentID: String,
+  102         fileExtension: String
+  103     ) -> URL {
+  104         directory.appendingPathComponent(
+  105             "\(prefix)\(segmentID)_\(UUID().uuidString).\(fileExtension)"
+  106         )
+  107     }
+  108 }
+
+CastReader/Services/AudioPlayerService.swift:986-1027
+  986     func loadSegment(
+  987         _ segment: AudioSegment,
+  988         autoPlay: Bool = true,
+  989         session token: AudioPlaybackSessionToken? = nil
+  990     ) -> Bool {
+  991         let effectiveSession = token
+  992         guard playbackOwnership.permitsQueueMutation(effectiveSession) else { return false }
+  993         if segmentsQueue.isEmpty {
+  994             guard playbackOwnership.attachQueue(to: effectiveSession) else { return false }
+  995         } else {
+  996             guard playbackOwnership.queueSession == effectiveSession else { return false }
+  997         }
+  998         print("🔊 loadSegment: Adding segment \(segment.segmentIndex) for paragraph \(segment.paragraphIndex), queueCount will be \(segmentsQueue.count + 1), waiting=\(isWaitingForNextSegment)")
+  999         ReaderRunLog.write(
+ 1000             "AUDIO enqueue segment=\(segment.id) queue=\(segmentsQueue.count + 1) " +
+ 1001             "waiting=\(isWaitingForNextSegment ? "Y" : "N") " +
+ 1002             "auto=\(autoPlay ? "Y" : "N")"
+ 1003         )
+ 1004         segmentsQueue.append(segment)
+ 1005 
+ 1006         guard !playbackSuspendedByInterruption else {
+ 1007             isWaitingForNextSegment = false
+ 1008             print("🔊 loadSegment: Queued while interrupted; waiting for user resume")
+ 1009             return true
+ 1010         }
+ 1011 
+ 1012         // If we were waiting for the next segment, play it now
+ 1013         if isWaitingForNextSegment, autoPlay {
+ 1014             print("🔊 loadSegment: Was waiting, now playing segment \(segmentsQueue.count - 1)")
+ 1015             isWaitingForNextSegment = false
+ 1016             playSegment(at: segmentsQueue.count - 1)
+ 1017         }
+ 1018         // If this is the first segment and we're not playing, start playback
+ 1019         else if autoPlay && segmentsQueue.count == 1 && !isPlaying {
+ 1020             print("🔊 loadSegment: First segment, starting playback")
+ 1021             playSegment(at: 0)
+ 1022         } else {
+ 1023             if !autoPlay { isWaitingForNextSegment = false }
+ 1024             print("🔊 loadSegment: Segment queued (autoPlay=\(autoPlay), isPlaying=\(isPlaying), queueCount=\(segmentsQueue.count))")
+ 1025         }
+ 1026         return true
+ 1027     }
+
+CastReader/Services/AudioPlayerService.swift:1100-1166
+ 1100     // MARK: Boundary pre-staging
+ 1101 
+ 1102     /// Files written ahead of playback, keyed by segment id.
+ 1103     ///
+ 1104     /// Measured on device, a paragraph boundary spends 50–72ms between staging
+ 1105     /// a segment and the item reporting `readyToPlay` — the disk write plus the
+ 1106     /// asset parse — and that shows up as a gap between paragraphs. Both can
+ 1107     /// happen while the previous paragraph is still playing.
+ 1108     private var stagedFiles: [String: URL] = [:]
+ 1109     private var stagedWarmupTasks: [String: Task<Void, Never>] = [:]
+ 1110     /// Bounded so a long prefetch chain cannot accumulate temp files.
+ 1111     private static let maximumStagedFiles = 6
+ 1112 
+ 1113     /// Write these segments to disk and warm their assets now, so the boundary
+ 1114     /// only has to hand an already-parsed URL to the player.
+ 1115     ///
+ 1116     /// Safe to call repeatedly: already-staged segments are skipped, and a
+ 1117     /// failure simply leaves the ordinary in-line staging path to do the work.
+ 1118     func prestageSegments(_ segments: [AudioSegment]) {
+ 1119         guard !segments.isEmpty else { return }
+ 1120         for segment in segments {
+ 1121             guard stagedFiles[segment.id] == nil, !segment.audioData.isEmpty else { continue }
+ 1122             if stagedFiles.count >= Self.maximumStagedFiles { break }
+ 1123             let ext = segment.isWavFormat ? "wav" : "mp3"
+ 1124             let url = AudioPlaybackTemporaryFiles.fileURL(
+ 1125                 in: playbackTemporaryDirectory,
+ 1126                 prefix: "prestage_",
+ 1127                 segmentID: segment.id,
+ 1128                 fileExtension: ext
+ 1129             )
+ 1130             do {
+ 1131                 try segment.audioData.write(to: url)
+ 1132             } catch {
+ 1133                 continue
+ 1134             }
+ 1135             stagedFiles[segment.id] = url
+ 1136             // Parsing the asset is the expensive half. Doing it here means the
+ 1137             // item created at the boundary reaches `readyToPlay` almost at once.
+ 1138             let asset = AVURLAsset(url: url)
+ 1139             stagedWarmupTasks[segment.id]?.cancel()
+ 1140             stagedWarmupTasks[segment.id] = Task.detached(priority: .utility) {
+ 1141                 _ = try? await asset.load(.duration, .tracks)
+ 1142             }
+ 1143         }
+ 1144     }
+ 1145 
+ 1146     private func takeStagedFile(for segment: AudioSegment) -> URL? {
+ 1147         guard let url = stagedFiles.removeValue(forKey: segment.id) else { return nil }
+ 1148         // The warmup is normally already complete. Dropping our handle lets it
+ 1149         // finish without making it part of the next playback session.
+ 1150         stagedWarmupTasks.removeValue(forKey: segment.id)
+ 1151         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+ 1152         return url
+ 1153     }
+ 1154 
+ 1155     /// Drop staged files that playback will never reach (jump, stop, new
+ 1156     /// generation). Temp files are cheap but not free.
+ 1157     func discardPrestagedSegments(
+ 1158         preserving preservedIDs: Set<String> = []
+ 1159     ) {
+ 1160         let discardedIDs = Set(stagedFiles.keys).subtracting(preservedIDs)
+ 1161         for id in discardedIDs {
+ 1162             stagedWarmupTasks.removeValue(forKey: id)?.cancel()
+ 1163             guard let url = stagedFiles.removeValue(forKey: id) else { continue }
+ 1164             try? FileManager.default.removeItem(at: url)
+ 1165         }
+ 1166     }
+
+CastReader/Services/AudioPlayerService.swift:1243-1276
+ 1243     func play(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+ 1244         guard playbackOwnership.permitsPlayback(requestedBy: token) else {
+ 1245             return false
+ 1246         }
+ 1247         guard let player else {
+ 1248             guard !segmentsQueue.isEmpty else {
+ 1249                 isPlaying = false
+ 1250                 updateNowPlayingInfo()
+ 1251                 return false
+ 1252             }
+ 1253             playbackSuspendedByInterruption = false
+ 1254             let index = segmentsQueue.indices.contains(currentSegmentIndex) ? currentSegmentIndex : 0
+ 1255             return playSegment(at: index)
+ 1256         }
+ 1257         guard currentItemCanPublishPlaybackState() else {
+ 1258             return false
+ 1259         }
+ 1260         playbackSuspendedByInterruption = false
+ 1261         do {
+ 1262             try AVAudioSession.sharedInstance().setActive(true)
+ 1263         } catch {
+ 1264             print("❌ Failed to activate audio session before play: \(error)")
+ 1265         }
+ 1266         player.playImmediately(atRate: playbackRate)
+ 1267         isPlaying = true
+ 1268         updateNowPlayingInfo()
+ 1269         return true
+ 1270     }
+ 1271 
+ 1272     private func pauseRegardlessOfOwnership() {
+ 1273         player?.pause()
+ 1274         isPlaying = false
+ 1275         updateNowPlayingInfo()
+ 1276     }
+
+CastReader/Services/AudioPlayerService.swift:1338-1369
+ 1338     private func stop(preservingPrestagedIDs: Set<String>) {
+ 1339         print("🔊 stop(): Stopping playback, player=\(player != nil ? "exists" : "nil")")
+ 1340         removeTimeObserver()
+ 1341         player?.pause()
+ 1342         player = nil
+ 1343         playerItem = nil
+ 1344         playerItemSession = nil
+ 1345         playerItemStatusCancellable?.cancel()
+ 1346         playerItemStatusCancellable = nil
+ 1347         playerStateCancellable?.cancel()
+ 1348         playerStateCancellable = nil
+ 1349         playerItemReadinessWorkItem?.cancel()
+ 1350         playerItemReadinessWorkItem = nil
+ 1351         playbackSuspendedByInterruption = false
+ 1352         isPlaying = false
+ 1353         currentTime = 0
+ 1354         duration = 0
+ 1355         currentSegment = nil
+ 1356         gatedSegmentIndex = nil
+ 1357         isBuffering = false
+ 1358         isWaitingForNextSegment = false
+ 1359         // 清理临时文件
+ 1360         if let tempURL = currentTempFileURL {
+ 1361             try? FileManager.default.removeItem(at: tempURL)
+ 1362             currentTempFileURL = nil
+ 1363         }
+ 1364         discardPrestagedSegments(preserving: preservingPrestagedIDs)
+ 1365         AudioPlaybackTemporaryFiles.removeOwnedContents(
+ 1366             in: playbackTemporaryDirectory,
+ 1367             preserving: Set(stagedFiles.values)
+ 1368         )
+ 1369         print("🔊 stop(): Playback stopped, currentSegment is now nil")
+
+CastReader/Services/AudioPlayerService.swift:1475-1615
+ 1475     @discardableResult
+ 1476     private func playSegment(
+ 1477         at index: Int,
+ 1478         initialProgress: Double? = nil,
+ 1479         autoPlayWhenReady: Bool = true
+ 1480     ) -> Bool {
+ 1481         let expectedSession = playbackOwnership.queueSession
+ 1482         guard playbackOwnership.permitsPlayback(requestedBy: expectedSession) else {
+ 1483             return false
+ 1484         }
+ 1485         guard index >= 0 && index < segmentsQueue.count else {
+ 1486             print("🔴 playSegment: index \(index) out of range (queue size: \(segmentsQueue.count))")
+ 1487             return false
+ 1488         }
+ 1489 
+ 1490         let segment = segmentsQueue[index]
+ 1491         if let canStartQueuedSegment, !canStartQueuedSegment(segment) {
+ 1492             gatedSegmentIndex = index
+ 1493             isPlaying = false
+ 1494             isBuffering = true
+ 1495             updateNowPlayingInfo()
+ 1496             print("🔊 playSegment[\(index)]: Held by queue-boundary gate")
+ 1497             return false
+ 1498         }
+ 1499         gatedSegmentIndex = nil
+ 1500         isBuffering = false
+ 1501 
+ 1502         // 删除上一个临时文件（释放磁盘空间）
+ 1503         if let oldURL = currentTempFileURL {
+ 1504             try? FileManager.default.removeItem(at: oldURL)
+ 1505         }
+ 1506 
+ 1507         currentSegmentIndex = index
+ 1508         // `currentTime` still belongs to the AVPlayerItem that just finished.
+ 1509         // Publish the new segment only after rebasing its clock, otherwise
+ 1510         // page-handoff observers can adopt the new segment with the old item's
+ 1511         // terminal time and permanently skip the first highlighted words.
+ 1512         currentTime = 0
+ 1513         duration = segment.duration
+ 1514         currentSegment = segment
+ 1515         ReaderRunLog.write(
+ 1516             "AUDIO stage segment=\(segment.id) index=\(index)/\(segmentsQueue.count) " +
+ 1517             "duration=\(String(format: "%.2f", segment.duration))"
+ 1518         )
+ 1519 
+ 1520         print("🔊 playSegment[\(index)]: audioData size: \(segment.audioData.count), duration: \(segment.duration)")
+ 1521 
+ 1522         // A paragraph boundary is the one moment where this work is audible, so
+ 1523         // reuse the file the prefetch already staged when there is one.
+ 1524         if let staged = takeStagedFile(for: segment) {
+ 1525             currentTempFileURL = staged
+ 1526             ReaderRunLog.write("AUDIO stage reused segment=\(segment.id)")
+ 1527             playAudio(
+ 1528                 from: staged,
+ 1529                 initialProgress: initialProgress,
+ 1530                 autoPlayWhenReady: autoPlayWhenReady,
+ 1531                 expectedSession: expectedSession
+ 1532             )
+ 1533             return true
+ 1534         }
+ 1535 
+ 1536         // Create temporary file for audio data
+ 1537         // Use .wav extension for local TTS (WAV format) or .mp3 for cloud TTS
+ 1538         let fileExtension = segment.isWavFormat ? "wav" : "mp3"
+ 1539         let tempURL = AudioPlaybackTemporaryFiles.fileURL(
+ 1540             in: playbackTemporaryDirectory,
+ 1541             prefix: "segment_",
+ 1542             segmentID: segment.id,
+ 1543             fileExtension: fileExtension
+ 1544         )
+ 1545         currentTempFileURL = tempURL
+ 1546 
+ 1547         do {
+ 1548             try segment.audioData.write(to: tempURL)
+ 1549             print("🔊 playSegment[\(index)]: Written to \(tempURL.lastPathComponent), calling playAudio")
+ 1550             playAudio(
+ 1551                 from: tempURL,
+ 1552                 initialProgress: initialProgress,
+ 1553                 autoPlayWhenReady: autoPlayWhenReady,
+ 1554                 expectedSession: expectedSession
+ 1555             )
+ 1556             return true
+ 1557         } catch {
+ 1558             let message = error.localizedDescription
+ 1559             ReaderRunLog.write(
+ 1560                 "AUDIO failed to stage segment=\(segment.id) error=\(message)"
+ 1561             )
+ 1562             print("🔴 playSegment[\(index)]: Failed to write audio data: \(error)")
+ 1563             isBuffering = false
+ 1564             isPlaying = false
+ 1565             updateNowPlayingInfo()
+ 1566             onPlaybackError?(message)
+ 1567             return false
+ 1568         }
+ 1569     }
+ 1570 
+ 1571     private func playAudio(
+ 1572         from url: URL,
+ 1573         initialProgress: Double? = nil,
+ 1574         autoPlayWhenReady: Bool = true,
+ 1575         expectedSession: AudioPlaybackSessionToken?
+ 1576     ) {
+ 1577         removeTimeObserver()
+ 1578 
+ 1579         // Ensure audio session is active
+ 1580         do {
+ 1581             try AVAudioSession.sharedInstance().setActive(true)
+ 1582         } catch {
+ 1583             print("Failed to activate audio session: \(error)")
+ 1584         }
+ 1585 
+ 1586         let asset = AVURLAsset(url: url)
+ 1587         playerItem = AVPlayerItem(asset: asset)
+ 1588         playerItem?.audioTimePitchAlgorithm = .timeDomain
+ 1589         playerItemSession = expectedSession
+ 1590         reportedPlaybackFailureItemID = nil
+ 1591         playerItemReadinessWorkItem?.cancel()
+ 1592         playerItemReadinessWorkItem = nil
+ 1593 
+ 1594         // Create or update player
+ 1595         if player == nil {
+ 1596             player = AVPlayer(playerItem: playerItem)
+ 1597         } else {
+ 1598             player?.replaceCurrentItem(with: playerItem)
+ 1599         }
+ 1600         observePlayerPlaybackState()
+ 1601 
+ 1602         isBuffering = true
+ 1603 
+ 1604         // Observe player item status
+ 1605         guard let observedItem = playerItem else { return }
+ 1606         playerItemStatusCancellable?.cancel()
+ 1607         playerItemStatusCancellable = observedItem.publisher(for: \.status)
+ 1608             .receive(on: DispatchQueue.main)
+ 1609             .sink { [weak self, weak observedItem] status in
+ 1610                 guard let self = self else { return }
+ 1611                 guard let observedItem,
+ 1612                       observedItem === self.playerItem,
+ 1613                       self.currentItemCanPublishPlaybackState() else {
+ 1614                     return
+ 1615                 }
+
+CastReader/Services/AudioPlayerService.swift:1652-1717
+ 1652                     } else if autoPlayWhenReady {
+ 1653                         self.player?.playImmediately(atRate: self.playbackRate)
+ 1654                         self.isPlaying = true
+ 1655                         self.updateNowPlayingInfo()
+ 1656                     } else {
+ 1657                         self.player?.pause()
+ 1658                         self.isPlaying = false
+ 1659                         self.updateNowPlayingInfo()
+ 1660                     }
+ 1661                     ReaderRunLog.write(
+ 1662                         "AUDIO ready segment=\(self.currentSegment?.id ?? "nil") " +
+ 1663                         "duration=\(String(format: "%.2f", seconds)) " +
+ 1664                         "auto=\(autoPlayWhenReady ? "Y" : "N")"
+ 1665                     )
+ 1666                     print("Audio ready to play, duration: \(seconds)")
+ 1667                 case .failed:
+ 1668                     self.playerItemReadinessWorkItem?.cancel()
+ 1669                     self.playerItemReadinessWorkItem = nil
+ 1670                     let message =
+ 1671                         observedItem.error?.localizedDescription
+ 1672                             ?? "Unknown audio error"
+ 1673                     self.reportPlaybackFailure(
+ 1674                         for: observedItem,
+ 1675                         message: message
+ 1676                     )
+ 1677                 default:
+ 1678                     break
+ 1679                 }
+ 1680             }
+ 1681 
+ 1682         let readinessItemID = ObjectIdentifier(observedItem)
+ 1683         let readinessWorkItem = DispatchWorkItem { [weak self, weak observedItem] in
+ 1684             guard let self,
+ 1685                   let observedItem,
+ 1686                   observedItem === self.playerItem,
+ 1687                   ObjectIdentifier(observedItem) == readinessItemID,
+ 1688                   observedItem.status == .unknown,
+ 1689                   self.currentItemCanPublishPlaybackState() else { return }
+ 1690             self.playerItemReadinessWorkItem = nil
+ 1691             self.reportPlaybackFailure(
+ 1692                 for: observedItem,
+ 1693                 message: AppLocalized("音频准备超时，请重试")
+ 1694             )
+ 1695         }
+ 1696         playerItemReadinessWorkItem = readinessWorkItem
+ 1697         DispatchQueue.main.asyncAfter(
+ 1698             deadline: .now() + 12,
+ 1699             execute: readinessWorkItem
+ 1700         )
+ 1701 
+ 1702         // Add time observer
+ 1703         addTimeObserver()
+ 1704 
+ 1705         // Observe when playback ends
+ 1706         NotificationCenter.default.addObserver(
+ 1707             self,
+ 1708             selector: #selector(playerDidFinishPlaying),
+ 1709             name: .AVPlayerItemDidPlayToEndTime,
+ 1710             object: playerItem
+ 1711         )
+ 1712         NotificationCenter.default.addObserver(
+ 1713             self,
+ 1714             selector: #selector(playerFailedToPlayToEnd),
+ 1715             name: .AVPlayerItemFailedToPlayToEndTime,
+ 1716             object: playerItem
+ 1717         )
+
+CastReader/Services/AudioPlayerService.swift:1744-1795
+ 1744     private func observePlayerPlaybackState() {
+ 1745         playerStateCancellable?.cancel()
+ 1746         playerStateCancellable = player?
+ 1747             .publisher(for: \.timeControlStatus)
+ 1748             .receive(on: DispatchQueue.main)
+ 1749             .sink { [weak self] _ in
+ 1750                 self?.syncPlaybackStateFromPlayer(reason: "time-control")
+ 1751             }
+ 1752     }
+ 1753 
+ 1754     private func syncPlaybackStateFromPlayer(reason: String) {
+ 1755         guard let player else {
+ 1756             if isPlaying {
+ 1757                 isPlaying = false
+ 1758                 updateNowPlayingInfo()
+ 1759             }
+ 1760             return
+ 1761         }
+ 1762         guard currentItemCanPublishPlaybackState() else {
+ 1763             return
+ 1764         }
+ 1765         let waiting = player.timeControlStatus == .waitingToPlayAtSpecifiedRate
+ 1766         if waiting {
+ 1767             isBuffering = true
+ 1768         } else if playerItem?.status == .readyToPlay
+ 1769                     || playerItem?.status == .failed {
+ 1770             isBuffering = false
+ 1771         }
+ 1772         let actuallyPlaying = player.timeControlStatus == .playing && player.rate > 0
+ 1773         guard actuallyPlaying != isPlaying else {
+ 1774             updateNowPlayingElapsedTime()
+ 1775             return
+ 1776         }
+ 1777         #if DEBUG
+ 1778         NSLog("CRDBG AUDIO syncPlayback reason=%@ actual=%@ uiWas=%@ rate=%.2f status=%ld interrupted=%@",
+ 1779               reason,
+ 1780               actuallyPlaying ? "playing" : "paused",
+ 1781               isPlaying ? "playing" : "paused",
+ 1782               Double(player.rate),
+ 1783               player.timeControlStatus.rawValue,
+ 1784               wasInterrupted ? "Y" : "N")
+ 1785         #endif
+ 1786         ReaderRunLog.write(
+ 1787             "AUDIO state reason=\(reason) " +
+ 1788             "actual=\(actuallyPlaying ? "playing" : "paused") " +
+ 1789             "waiting=\(waiting ? "Y" : "N") " +
+ 1790             "rate=\(String(format: "%.2f", player.rate)) " +
+ 1791             "segment=\(currentSegment?.id ?? "nil")"
+ 1792         )
+ 1793         isPlaying = actuallyPlaying
+ 1794         updateNowPlayingInfo()
+ 1795     }
+
+CastReader/Services/AudioPlayerService.swift:1850-1906
+ 1850     @objc private func playerFailedToPlayToEnd(_ notification: Notification) {
+ 1851         guard let failedItem = notification.object as? AVPlayerItem else {
+ 1852             return
+ 1853         }
+ 1854         let itemID = ObjectIdentifier(failedItem)
+ 1855         let message =
+ 1856             (notification.userInfo?[
+ 1857                 AVPlayerItemFailedToPlayToEndTimeErrorKey
+ 1858             ] as? Error)?.localizedDescription
+ 1859                 ?? failedItem.error?.localizedDescription
+ 1860                 ?? "Unknown audio error"
+ 1861         guard Thread.isMainThread else {
+ 1862             DispatchQueue.main.async { [weak self] in
+ 1863                 self?.handlePlayerFailedToPlayToEnd(
+ 1864                     itemID: itemID,
+ 1865                     message: message
+ 1866                 )
+ 1867             }
+ 1868             return
+ 1869         }
+ 1870         handlePlayerFailedToPlayToEnd(
+ 1871             itemID: itemID,
+ 1872             message: message
+ 1873         )
+ 1874     }
+ 1875 
+ 1876     private func handlePlayerFailedToPlayToEnd(
+ 1877         itemID: ObjectIdentifier,
+ 1878         message: String
+ 1879     ) {
+ 1880         guard let currentItem = playerItem,
+ 1881               ObjectIdentifier(currentItem) == itemID,
+ 1882               currentItemCanPublishPlaybackState() else {
+ 1883             return
+ 1884         }
+ 1885         reportPlaybackFailure(for: currentItem, message: message)
+ 1886     }
+ 1887 
+ 1888     private func reportPlaybackFailure(
+ 1889         for item: AVPlayerItem,
+ 1890         message: String
+ 1891     ) {
+ 1892         let itemID = ObjectIdentifier(item)
+ 1893         guard reportedPlaybackFailureItemID != itemID else { return }
+ 1894         reportedPlaybackFailureItemID = itemID
+ 1895         playerItemReadinessWorkItem?.cancel()
+ 1896         playerItemReadinessWorkItem = nil
+ 1897         player?.pause()
+ 1898         isBuffering = false
+ 1899         isPlaying = false
+ 1900         ReaderRunLog.write(
+ 1901             "AUDIO player item failed segment=\(currentSegment?.id ?? "nil") " +
+ 1902             "error=\(message)"
+ 1903         )
+ 1904         print("Player item failed: \(message)")
+ 1905         updateNowPlayingInfo()
+ 1906         onPlaybackError?(message)
+
+CastReader/ViewModels/ReadAloudViewModel.swift:150-185
+  150     func accountPlayback(
+  151         ownerID candidate: UUID,
+  152         segmentID: String,
+  153         position: Double,
+  154         milestoneSeconds: [Int] = [30, 180, 300, 600, 1800]
+  155     ) -> ReadAnalyticsPlaybackUpdate? {
+  156         guard ownerID == candidate, let current = session else { return nil }
+  157 
+  158         var playbackSeconds = current.playbackSeconds
+  159         var rawDelta: Double?
+  160         if current.lastSegmentID == segmentID,
+  161            let previous = current.lastPosition,
+  162            position >= previous {
+  163             let delta = position - previous
+  164             rawDelta = delta
+  165             playbackSeconds += min(2.0, delta)
+  166         }
+  167 
+  168         var milestones = current.milestones
+  169         let newlyReached = milestoneSeconds.filter {
+  170             playbackSeconds >= Double($0) && !milestones.contains($0)
+  171         }
+  172         milestones.formUnion(newlyReached)
+  173         session = ReadAnalyticsLogicalSessionSnapshot(
+  174             sessionID: current.sessionID,
+  175             startedAt: current.startedAt,
+  176             firstAudioTracked: current.firstAudioTracked,
+  177             playbackSeconds: playbackSeconds,
+  178             milestones: milestones,
+  179             lastSegmentID: segmentID,
+  180             lastPosition: position
+  181         )
+  182         return ReadAnalyticsPlaybackUpdate(
+  183             rawPlaybackDelta: rawDelta,
+  184             playbackSeconds: playbackSeconds,
+  185             newlyReachedMilestones: newlyReached
+
+CastReader/ViewModels/ReadAloudViewModel.swift:729-742
+  729         audio.onPlaybackError = { [weak self] message in
+  730             guard let self, self.ownsAudioQueue else { return }
+  731             ReaderRunLog.write(
+  732                 "READ playback error para=\(self.currentParagraphIndex) " +
+  733                 "error=\(message)"
+  734             )
+  735             self.status = .error(AppLocalized("音频播放失败，请重试"))
+  736             self.endAnalyticsReadSession(
+  737                 result: .failed,
+  738                 reason: "audio_playback_failed",
+  739                 errorStage: "player",
+  740                 errorCode: "player_item_failed"
+  741             )
+  742         }
+
+CastReader/ViewModels/ReadAloudViewModel.swift:2124-2127
+ 2124         if case .error = status {
+ 2125             generate(currentParagraphIndex)
+ 2126             return
+ 2127         }
+
+CastReader/ViewModels/ReadAloudViewModel.swift:2160-2206
+ 2160     /// Idempotent entry-point for external "Continue Listening" actions.
+ 2161     /// Reattaching while audio is playing or TTS is still loading must not pause
+ 2162     /// playback or start a duplicate generation request.
+ 2163     func ensurePlaying() {
+ 2164         liveWebTurnIntentSuspended = false
+ 2165         if ownsAudioQueue, audio.isPlaying { return }
+ 2166         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
+ 2167             self?.ensurePlaying()
+ 2168         }) {
+ 2169             return
+ 2170         }
+ 2171         if currentParagraphIndex < 0 {
+ 2172             start()
+ 2173             return
+ 2174         }
+ 2175         if !ownsAudioQueue {
+ 2176             guard currentAudioIsQuotaExempt
+ 2177                     || pro.isPro
+ 2178                     || quota.canStartListen(isPro: pro.isPro) else {
+ 2179                 refreshAccessThenRetryResume()
+ 2180                 return
+ 2181             }
+ 2182             beginAnalyticsReadSessionIfNeeded(resume: true)
+ 2183             rebuildCurrentParagraphAfterOwnershipChange()
+ 2184             return
+ 2185         }
+ 2186         if (status.isLoading || isBuffering || status.isStreaming),
+ 2187            audio.currentSegment == nil,
+ 2188            !audio.hasQueuedSegments {
+ 2189             return
+ 2190         }
+ 2191         guard currentAudioIsQuotaExempt
+ 2192                 || pro.isPro
+ 2193                 || quota.canStartListen(isPro: pro.isPro) else {
+ 2194             refreshAccessThenRetryResume()
+ 2195             return
+ 2196         }
+ 2197         invalidateAccessRetry()
+ 2198         if audio.currentSegment != nil || audio.hasQueuedSegments {
+ 2199             beginAnalyticsReadSessionIfNeeded(resume: true)
+ 2200             if let token = audioSessionToken {
+ 2201                 _ = audio.play(session: token)
+ 2202             }
+ 2203         } else if !isFinished {
+ 2204             jump(to: currentParagraphIndex)
+ 2205         }
+ 2206     }
+
+CastReader/ViewModels/ReadAloudViewModel.swift:2780-2802
+ 2780         pendingLiveWebCarryStartIndex = nil
+ 2781         generationEpoch &+= 1
+ 2782         let epoch = generationEpoch
+ 2783         let voice = voiceOverride ?? settings.voice(for: docLanguage)
+ 2784         let cloneRequestID = stableCloneRequestID(
+ 2785             paragraphIndex: index,
+ 2786             voice: voice
+ 2787         )
+ 2788         if pendingLiveWebResume?.paragraphIndex != index { pendingLiveWebResume = nil }
+ 2789         playbackVoiceID = voice
+ 2790         NSLog("CRDBG generate para=%d lang=%@ voice=%@ epoch=%llu web=%@", index, docLanguage, voice, epoch, document.sourceKind.isWebRendered ? "Y" : "N")
+ 2791         ReaderRunLog.write(
+ 2792             "READ generate start para=\(index) epoch=\(epoch) " +
+ 2793             "chars=\(paras[index].text.utf16.count)"
+ 2794         )
+ 2795         isFinished = false   // 开始播放某段 → 未完成
+ 2796         didSignalPageBoundaryApproaching = false
+ 2797         generationTask?.cancel()
+ 2798         resetLiveWebCarryPrewarmState()
+ 2799         clearPrefetch()   // 重新生成某段 → 作废旧预取
+ 2800 
+ 2801         _ = audio.clearQueue(session: session)
+ 2802         _ = audio.setMoreSegmentsExpected(true, session: session)
+
+CastReader/ViewModels/ReadAloudViewModel.swift:2833-2865
+ 2833                 try await TTSService.shared.generateTTSForParagraph(
+ 2834                     paragraphIndex: index,
+ 2835                     text: SpeechTextSanitizer.sanitizedForTTS(
+ 2836                         para.resolvedSpeechText
+ 2837                     ),
+ 2838                     voice: voice,
+ 2839                     speed: 1.0,                       // 1.0 生成，播放用 playbackRate
+ 2840                     language: self.docLanguage,
+ 2841                     includeVoiceCode: self.includeVoiceCodeForTTS,
+ 2842                     speaker: para.speaker,
+ 2843                     cloneRequestID: cloneRequestID
+ 2844                 ) { [weak self] segment in
+ 2845                     self?.appendSegment(
+ 2846                         segment,
+ 2847                         paragraph: index,
+ 2848                         epoch: epoch,
+ 2849                         session: session,
+ 2850                         autoPlay: autoPlay,
+ 2851                         voiceSwitchID: voiceSwitchID
+ 2852                     )
+ 2853                 }
+ 2854                 await MainActor.run {
+ 2855                     guard self.generationEpoch == epoch,
+ 2856                           self.currentParagraphIndex == index,
+ 2857                           self.audioSessionToken == session,
+ 2858                           self.audio.isPlaybackSessionActive(session) else { return }
+ 2859                     self.finishPendingLiveWebResumeIfNeeded(
+ 2860                         paragraph: index,
+ 2861                         session: session
+ 2862                     )
+ 2863                     _ = self.audio.finishStreamingProducer(session: session)
+ 2864                     self.status = .ready
+ 2865                     self.completeCloneRequestID(
+
+CastReader/ViewModels/ReadAloudViewModel.swift:2922-2944
+ 2922             } catch {
+ 2923                 await MainActor.run {
+ 2924                     guard self.generationEpoch == epoch,
+ 2925                           self.audioSessionToken == session,
+ 2926                           self.audio.isPlaybackSessionActive(session) else { return }
+ 2927                     _ = self.audio.setMoreSegmentsExpected(false, session: session)
+ 2928                     if self.currentParagraphIndex == index {
+ 2929                         ReaderRunLog.write(
+ 2930                             "READ generate failed para=\(index) epoch=\(epoch) " +
+ 2931                             "error=\(error.localizedDescription)"
+ 2932                         )
+ 2933                         self.status = .error(error.localizedDescription)
+ 2934                         if let voiceSwitchID, self.activeVoiceSwitchID == voiceSwitchID {
+ 2935                             VoiceSwitchStatusCenter.shared.finish(voiceSwitchID)
+ 2936                             self.activeVoiceSwitchID = nil
+ 2937                         }
+ 2938                         self.endAnalyticsReadSession(
+ 2939                             result: .failed,
+ 2940                             reason: "tts_failed",
+ 2941                             errorStage: "tts",
+ 2942                             errorCode: Self.analyticsErrorCode(error)
+ 2943                         )
+ 2944                     }
+
+CastReader/ViewModels/ReadAloudViewModel.swift:2950-2965
+ 2950     private func appendSegment(
+ 2951         _ segment: AudioSegment,
+ 2952         paragraph: Int,
+ 2953         epoch: UInt64,
+ 2954         session: AudioPlaybackSessionToken,
+ 2955         autoPlay: Bool,
+ 2956         voiceSwitchID: UUID?
+ 2957     ) {
+ 2958         guard epoch == generationEpoch,
+ 2959               paragraph == currentParagraphIndex,
+ 2960               audioSessionToken == session,
+ 2961               audio.isPlaybackSessionActive(session) else {
+ 2962             NSLog("CRDBG drop stale TTS segment para=%d epoch=%llu current=%llu", paragraph, epoch, generationEpoch)
+ 2963             return
+ 2964         }
+ 2965         segmentsByParagraph[paragraph, default: []].append(segment)
+
+CastReader/ViewModels/ReadAloudViewModel.swift:3005-3022
+ 3005         } else {
+ 3006             let loaded = audio.loadSegment(
+ 3007                 segment,
+ 3008                 autoPlay: shouldAutoPlay,
+ 3009                 session: session
+ 3010             )
+ 3011             guard loaded else {
+ 3012                 ReaderRunLog.write(
+ 3013                     "READ segment rejected para=\(paragraph) seg=\(segment.segmentIndex) " +
+ 3014                     "path=normal"
+ 3015                 )
+ 3016                 _ = audio.setMoreSegmentsExpected(false, session: session)
+ 3017                 status = .error(AppLocalized("音频队列已中断，请重试"))
+ 3018                 return
+ 3019             }
+ 3020         }
+ 3021         status = .streaming
+ 3022         // The clone worker is intentionally single-flight on one GPU. Starting
+
+CastReader/ViewModels/ReadAloudViewModel.swift:3187-3206
+ 3187                 guard let self,
+ 3188                       !Task.isCancelled,
+ 3189                       self.isActive,
+ 3190                       self.generationEpoch == epoch,
+ 3191                       self.prefetchingIndex == nextIndex else { return }
+ 3192                 // Publish the generated segments before doing cache I/O. The
+ 3193                 // player may reach this paragraph while the cache actor is
+ 3194                 // pruning/scanning a large store; playback must not wait for it.
+ 3195                 self.prefetchedSegments = collected
+ 3196                 self.prefetchedIndex = nextIndex
+ 3197                 self.prefetchingIndex = nil
+ 3198                 self.completeCloneRequestID(
+ 3199                     paragraphIndex: nextIndex,
+ 3200                     voice: voice,
+ 3201                     matching: cloneRequestID
+ 3202                 )
+ 3203                 // Do the disk write and asset parse now, while the current
+ 3204                 // paragraph is still playing. At the boundary this is the
+ 3205                 // difference between ~70ms of silence and almost none.
+ 3206                 self.audio.prestageSegments(collected)
+
+CastReader/ViewModels/ReadAloudViewModel.swift:4255-4279
+ 4255     private func beginAnalyticsReadSessionIfNeeded(resume: Bool) {
+ 4256         let startedNewSession = analyticsSessionCoordinator.begin(
+ 4257             ownerID: analyticsSessionOwnerID
+ 4258         )
+ 4259         guard startedNewSession else { return }
+ 4260         if preserveAppReviewSessionOnNextAnalyticsBegin {
+ 4261             preserveAppReviewSessionOnNextAnalyticsBegin = false
+ 4262         } else {
+ 4263             appReviewReadSession = AppReviewReadSessionProgress()
+ 4264             onAppReviewReadSessionInvalidated?()
+ 4265         }
+ 4266         let voice = settings.voice(for: docLanguage)
+ 4267         ProductAnalytics.shared.track(
+ 4268             .readStart,
+ 4269             context: analyticsEventContext,
+ 4270             properties: .init(
+ 4271                 contentSource: analyticsContext.source.rawValue,
+ 4272                 contentFormat: AnalyticsContentFormat(document.sourceKind).rawValue,
+ 4273                 language: docLanguage,
+ 4274                 voiceId: voice,
+ 4275                 speed: settings.effectiveSpeed(isPro: pro.isPro),
+ 4276                 resume: resume || analyticsContext.source == .history,
+ 4277                 storefront: analyticsContext.storefront
+ 4278             )
+ 4279         )
+
+CastReader/ViewModels/ReadAloudViewModel.swift:4282-4319
+ 4282     private func handlePlaybackState(_ playing: Bool) {
+ 4283         let ownedPlaying = playing && ownsAudioQueue
+ 4284         isPlaying = ownedPlaying
+ 4285         guard ownedPlaying else {
+ 4286             analyticsSessionCoordinator.resetPlaybackCursor(
+ 4287                 ownerID: analyticsSessionOwnerID
+ 4288             )
+ 4289             return
+ 4290         }
+ 4291         guard audio.currentSegment != nil,
+ 4292               let startedAt = analyticsSessionCoordinator.markFirstAudio(
+ 4293                 ownerID: analyticsSessionOwnerID
+ 4294               ) else { return }
+ 4295         let latency = max(0, Int(Date().timeIntervalSince(startedAt) * 1000))
+ 4296         ProductAnalytics.shared.track(
+ 4297             .readFirstAudio,
+ 4298             context: analyticsEventContext,
+ 4299             properties: .init(
+ 4300                 latencyMs: latency,
+ 4301                 language: docLanguage,
+ 4302                 voiceId: settings.voice(for: docLanguage),
+ 4303                 storefront: analyticsContext.storefront
+ 4304             )
+ 4305         )
+ 4306         GrowthLoopConversionCoordinator.shared.firstAudioBecameAudible(
+ 4307             document: document
+ 4308         )
+ 4309     }
+ 4310 
+ 4311     private func accountAnalyticsPlayback(_ currentTime: Double) {
+ 4312         guard ownsAudioQueue,
+ 4313               audio.isPlaying,
+ 4314               let segment = audio.currentSegment else { return }
+ 4315         guard let update = analyticsSessionCoordinator.accountPlayback(
+ 4316             ownerID: analyticsSessionOwnerID,
+ 4317             segmentID: segment.id,
+ 4318             position: currentTime
+ 4319         ) else { return }
+
+CastReader/ViewModels/ReadAloudViewModel.swift:4372-4394
+ 4372     private func endAnalyticsReadSession(
+ 4373         result: AnalyticsResult,
+ 4374         reason: String,
+ 4375         errorStage: String? = nil,
+ 4376         errorCode: String? = nil,
+ 4377         preserveAppReviewReadSession: Bool = false
+ 4378     ) -> Bool {
+ 4379         guard let ended = analyticsSessionCoordinator.end(
+ 4380             ownerID: analyticsSessionOwnerID
+ 4381         ) else { return false }
+ 4382         ProductAnalytics.shared.track(
+ 4383             .readEnd,
+ 4384             context: analyticsEventContext(readSessionID: ended.sessionID),
+ 4385             properties: .init(
+ 4386                 result: result.rawValue,
+ 4387                 errorStage: errorStage,
+ 4388                 errorCode: errorCode,
+ 4389                 playbackSeconds: Int(ended.playbackSeconds),
+ 4390                 completionBucket: analyticsCompletionBucket,
+ 4391                 endReason: reason,
+ 4392                 storefront: analyticsContext.storefront
+ 4393             )
+ 4394         )
+
+CastReader/Services/TTSService.swift:224-262
+  224                 ttsDebugLog("[TTSService] 📊 Cloud TTS response #\(segmentIndex):")
+  225                 ttsDebugLog("[TTSService] 📊 - Input text length: \(remainingText.count) chars")
+  226                 ttsDebugLog("[TTSService] 📊 - Processed text: \(response.processedText?.prefix(100) ?? "nil")...")
+  227                 ttsDebugLog("[TTSService] 📊 - Unprocessed text: \(response.unprocessedText?.prefix(100) ?? "nil")...")
+  228                 ttsDebugLog("[TTSService] 📊 - Duration: \(response.safeDuration)s")
+  229                 ttsDebugLog("[TTSService] 📊 - Timestamps count: \(response.safeTimestamps.count)")
+  230 
+  231                 guard let audioData = Data(base64Encoded: response.audio) else {
+  232                     throw TTSError.generationFailed("Failed to decode audio data")
+  233                 }
+  234 
+  235                 guard currentRequestId == requestId else {
+  236                     throw TTSError.cancelled
+  237                 }
+  238 
+  239                 let timestamps = TTSHighlightPolicy.displayTimestamps(
+  240                     response.safeTimestamps,
+  241                     language: language
+  242                 )
+  243                 let duration = response.safeDuration
+  244                 // 用 processedText 作为本 segment 文本（不是整段剩余文本）
+  245                 let segmentText = response.processedText ?? remainingText
+  246 
+  247                 let rawSegment = AudioSegment(
+  248                     paragraphIndex: paragraphIndex,
+  249                     segmentIndex: segmentIndex,
+  250                     audioData: audioData,
+  251                     timestamps: timestamps,
+  252                     duration: duration,
+  253                     text: segmentText,
+  254                     unprocessedText: response.unprocessedText ?? "",
+  255                     speaker: speaker
+  256                 )
+  257                 // 中文云端常无 duration（且无词时间戳）→ 用真实音频时长兜底，供解读时间线/进度。
+  258                 // 词时间戳不合成：朗读对齐扩展，无词时间戳语言走句子级高亮。
+  259                 let segment = ensureDuration(rawSegment)
+  260 
+  261                 try Task.checkCancellation()
+  262                 await onSegmentReady(segment)
+
+CastReader/Services/TTSService.swift:305-325
+  305     nonisolated private func ensureDuration(_ seg: AudioSegment) -> AudioSegment {
+  306         guard seg.duration <= 0.01 else { return seg }
+  307         let dur = audioDuration(seg.audioData)
+  308         guard dur > 0 else { return seg }
+  309         return AudioSegment(
+  310             paragraphIndex: seg.paragraphIndex,
+  311             segmentIndex: seg.segmentIndex,
+  312             audioData: seg.audioData,
+  313             timestamps: seg.timestamps,
+  314             duration: dur,
+  315             text: seg.text,
+  316             isWavFormat: seg.isWavFormat,
+  317             unprocessedText: seg.unprocessedText,
+  318             speaker: seg.speaker
+  319         )
+  320     }
+  321 
+  322     /// 解析 MP3/WAV 音频的真实时长（API duration 缺失时兜底）。
+  323     nonisolated private func audioDuration(_ data: Data) -> Double {
+  324         (try? AVAudioPlayer(data: data))?.duration ?? 0
+  325     }
+
+CastReader/Models/TTSTimestamp.swift:83-108
+   83 struct TTSResponse: Codable {
+   84     let audio: String // base64 encoded mp3
+   85     let audioFormat: String?
+   86     let timestamps: [TTSTimestamp]?  // Made optional
+   87     let duration: Double?  // Made optional
+   88     let processedText: String?
+   89     let unprocessedText: String?
+   90 
+   91     enum CodingKeys: String, CodingKey {
+   92         case audio
+   93         case audioFormat = "audio_format"
+   94         case timestamps
+   95         case duration
+   96         case processedText = "processed_text"
+   97         case unprocessedText = "unprocessed_text"
+   98     }
+   99 
+  100     // Provide defaults for optional fields
+  101     var safeDuration: Double {
+  102         duration ?? 0
+  103     }
+  104 
+  105     var safeTimestamps: [TTSTimestamp] {
+  106         timestamps ?? []
+  107     }
+  108 }
+
+CastReader/Models/TTSTimestamp.swift:388-413
+  388 // MARK: - Audio Segment
+  389 struct AudioSegment: Identifiable {
+  390     let id: String
+  391     let paragraphIndex: Int
+  392     let segmentIndex: Int
+  393     let audioData: Data
+  394     let timestamps: [TTSTimestamp]
+  395     let duration: Double
+  396     let text: String
+  397     let isWavFormat: Bool  // true for local TTS (WAV), false for cloud TTS (MP3)
+  398     let unprocessedText: String  // API 返回的未处理文本（用于流式渲染）
+  399     let speaker: String?  // 当前说话者 ID（如 "A", "B"）或 "narrator"
+  400 
+  401     init(paragraphIndex: Int, segmentIndex: Int, audioData: Data, timestamps: [TTSTimestamp], duration: Double, text: String, isWavFormat: Bool = false, unprocessedText: String = "", speaker: String? = nil) {
+  402         self.id = "\(paragraphIndex)-\(segmentIndex)"
+  403         self.paragraphIndex = paragraphIndex
+  404         self.segmentIndex = segmentIndex
+  405         self.audioData = audioData
+  406         self.timestamps = timestamps
+  407         self.duration = duration
+  408         self.text = text
+  409         self.isWavFormat = isWavFormat
+  410         self.unprocessedText = unprocessedText
+  411         self.speaker = speaker
+  412     }
+  413 }
+
+CastReader/Views/Reader/ReaderHostView.swift:1641-1663
+ 1641 enum ReaderRunLog {
+ 1642     static func write(_ message: String) {
+ 1643         #if DEBUG
+ 1644         let formatter = DateFormatter()
+ 1645         formatter.dateFormat = "HH:mm:ss.SSS"
+ 1646         let line = "\(formatter.string(from: Date())) \(message)\n"
+ 1647         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+ 1648             ?? FileManager.default.temporaryDirectory
+ 1649         let url = docs.appendingPathComponent("reader-refocus.log")
+ 1650         if !FileManager.default.fileExists(atPath: url.path) {
+ 1651             try? Data(line.utf8).write(to: url, options: .atomic)
+ 1652             return
+ 1653         }
+ 1654         guard let handle = try? FileHandle(forWritingTo: url) else { return }
+ 1655         do {
+ 1656             try handle.seekToEnd()
+ 1657             try handle.write(contentsOf: Data(line.utf8))
+ 1658             try handle.close()
+ 1659         } catch {
+ 1660             try? handle.close()
+ 1661         }
+ 1662         #endif
+ 1663     }
+
+CastReader/CastReaderApp.swift:182-215
+  182     func start() async {
+  183         guard !didStart else { return }
+  184         didStart = true
+  185 
+  186         // Resolve the product/account region first. All owned compute is then
+  187         // frozen to the same regional boundary; no authenticated payload may
+  188         // select a different region from network location.
+  189         let region = await AppRegion.prepareForCurrentProcess()
+  190         _ = await ServiceRouting.bootstrapForCurrentProcess(
+  191             appRegionResolution: region
+  192         )
+  193         _ = await ComputeRouting.bootstrapForCurrentProcess()
+  194         _ = TTSEndpoint.freezeForCurrentProcess()
+  195         _ = QuickReadEndpoint.freezeForCurrentProcess()
+  196 
+  197         // Everything below may capture the frozen route or its isolated storage
+  198         // namespace. None of it may move above the bootstrap calls.
+  199         _ = AudioPlaybackTemporaryFiles.prepare()
+  200         installLifecycleObservers()
+  201 
+  202         let launchType = SystemActionStore.shared.peekPendingOrigin()?.launchType ?? "cold"
+  203         ProductAnalytics.shared.startAppSession(launchType: launchType)
+  204         AppFirstOpenService.shared.start()
+  205         AdAttributionService.shared.start()
+  206         AnalyticsLibrarySyncReceiptOutbox.shared.start()
+  207         ProManager.shared.start()
+  208         QuotaManager.shared.rollIfNewDay()
+  209         VoiceCatalogService.shared.start()
+  210         NetworkReachability.shared.start()
+  211         YouTubeTranscriptService.resetWebsiteDataStoreIfNeeded()
+  212         ResumeReminderManager.shared.start()
+  213 
+  214         isReady = true
+  215     }
+
+CastReader/CastReaderApp.swift:253-261
+  253             NotificationCenter.default.addObserver(
+  254                 forName: UIApplication.didEnterBackgroundNotification,
+  255                 object: nil,
+  256                 queue: .main
+  257             ) { _ in
+  258                 Task { @MainActor in
+  259                     AdAttributionService.shared.didEnterBackground()
+  260                     ProductAnalytics.shared.didEnterBackground()
+  261                 }

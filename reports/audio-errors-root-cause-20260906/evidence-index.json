@@ -1,0 +1,161 @@
+{
+  "schema": "castreader.audio-cause-evidence-index.v1",
+  "readOnlyProduction": true,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 11827,
+      "sha256": "5aadd96176f6a5f7c333df75c6fa7110cb4b1f2a657c8eadad24503a096c514c"
+    },
+    {
+      "path": "client/inspect_sessions.py",
+      "bytes": 2556,
+      "sha256": "3022e079cd726e48482be244499731700aca5711d01a5751f4e58ce2a997e097"
+    },
+    {
+      "path": "client/session-evidence.json",
+      "bytes": 53038,
+      "sha256": "efbe04f42b7d3cffbb5d52779dd68e65fb789bc03c560fbd5a2529358acec177"
+    },
+    {
+      "path": "ios-player/baseline-evidence.txt",
+      "bytes": 51851,
+      "sha256": "c2fda9bf0ff7e88d373e19866a2ba4cf24164a22022d805f974ca5996bd1e313"
+    },
+    {
+      "path": "ios-player/failure_state_probe.swift",
+      "bytes": 1967,
+      "sha256": "ddf42dd29da8e96accbb266ccbc0b246f2aa154e504e828e7cfd9ea63c8807b4"
+    },
+    {
+      "path": "ios-player/failure_state_probe.txt",
+      "bytes": 200,
+      "sha256": "748e1c7c8791dfb05c7074f63f5bfddfc91b04e92bd3cdd5df6f9c9e2fa49553"
+    },
+    {
+      "path": "ios-player/fixtures/empty.mp3",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "ios-player/fixtures/json.mp3",
+      "bytes": 19,
+      "sha256": "8d2374cceace49e8ff92c9eb6ad93ac762aa3097695ac205e1fb02e8013357fd"
+    },
+    {
+      "path": "ios-player/fixtures/junk.mp3",
+      "bytes": 9,
+      "sha256": "e23b51a40d21aad70200ec1f08c6e4883d6ca40c22b6ffbdff306c9c62c408e4"
+    },
+    {
+      "path": "ios-player/fixtures/valid-silence-named.mp3",
+      "bytes": 1644,
+      "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+    },
+    {
+      "path": "ios-player/fixtures/valid-silence.wav",
+      "bytes": 1644,
+      "sha256": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908"
+    },
+    {
+      "path": "ios-player/local_payload_probe.swift",
+      "bytes": 3079,
+      "sha256": "c8445439bd51aa773a9e141210a9a4a3eeda29e6b6b489dc50f067af15b8ce37"
+    },
+    {
+      "path": "ios-player/local_payload_probe.txt",
+      "bytes": 1706,
+      "sha256": "c35778eaa4b5d26d163676f8d0de50f7bb19cf87aeb6655807e26b17bfd4da8d"
+    },
+    {
+      "path": "ios-player/report.md",
+      "bytes": 13384,
+      "sha256": "5e5aaea1c77288bb87b182ddd0677b98bc54629a8dd09613d408d2398026329b"
+    },
+    {
+      "path": "upstream/README.md",
+      "bytes": 6020,
+      "sha256": "401c6504811f42d7517ebdc8df57b992ddec97ba8bc19c30115aa1b39df940ad"
+    },
+    {
+      "path": "upstream/aggregate-stage-analysis.json",
+      "bytes": 4588,
+      "sha256": "3a360c3d0ccd239891f4dae11c722c506a713afbeaf521a05f5d379d6f4dc259"
+    },
+    {
+      "path": "upstream/burst-patterns-and-source-evidence.json",
+      "bytes": 43449,
+      "sha256": "1328a0f5e14d5e6256e09c625ce51215a0c916b6f37c029c7d08c5860297cb79"
+    },
+    {
+      "path": "upstream/collect_burst_remote.py",
+      "bytes": 3737,
+      "sha256": "be0219a1328b061f4b399bd3b59e7af5cea9f66c67b074c42345e3a37195b624"
+    },
+    {
+      "path": "upstream/collect_remote.py",
+      "bytes": 8968,
+      "sha256": "9ed7e0bedb5064addb33842a628371eb9741114f37f937967b2a08886c71b87b"
+    },
+    {
+      "path": "upstream/derive_summary.py",
+      "bytes": 3353,
+      "sha256": "e11f1d5a5bcb523ee89e7fcc3ee6514bfb145d4661f04e28fd0b606e096b595c"
+    },
+    {
+      "path": "upstream/local-fixture-prefix-match.json",
+      "bytes": 486,
+      "sha256": "449f2997364e889099c99696b335a507a07858570d97db32b32a1e73078a447a"
+    },
+    {
+      "path": "upstream/match_local_fixture_prefix.py",
+      "bytes": 2754,
+      "sha256": "179d57454192d0ffac34be8de512740104337d1af0d17779f7b5963ad81141f4"
+    },
+    {
+      "path": "upstream/upstream-window-evidence.json",
+      "bytes": 637080,
+      "sha256": "49410fc277d46c43f2364de620052a229a7ac8a37b45ee90172c3759918ca960"
+    },
+    {
+      "path": "vercel/README.md",
+      "bytes": 3502,
+      "sha256": "90afbcd0579e83c1ab590a6b7fb38e58ca48e6bdebaee1044d9dd5a179fef1b2"
+    },
+    {
+      "path": "vercel/cause-analysis.json",
+      "bytes": 7506,
+      "sha256": "633fc263326d03da30f46216ec37eee2d081bfad4300505978fb9a08531a4ec4"
+    },
+    {
+      "path": "vercel/inspect_requests.py",
+      "bytes": 8158,
+      "sha256": "f55fbb9beb4793325692256cdc5cd97257a7c6022bc4aab7242be5d4e17cf714"
+    },
+    {
+      "path": "vercel/production-partly-route.ts",
+      "bytes": 1094,
+      "sha256": "faae4a9e3bd11980a83f602cb793a7ba85ebe1822d272bd7b6041236b2c420aa"
+    },
+    {
+      "path": "vercel/production-source-index.json",
+      "bytes": 852,
+      "sha256": "71997ab237bcf5d189aab2bac6f1cd15c430cda41f3563d915b20cc85001b02b"
+    },
+    {
+      "path": "vercel/production-speech-request-budget.ts",
+      "bytes": 3459,
+      "sha256": "1a0a233ee894f4b9773fc6123ce9c51fca2df8204d93001580c7c14ec1735f09"
+    },
+    {
+      "path": "vercel/production-tts-gateway-excerpts.ts",
+      "bytes": 2211,
+      "sha256": "b5020d7de6c03394083d869db4f183027bb46e5c51a832c48caeae3181d99536"
+    },
+    {
+      "path": "vercel/request-details.json",
+      "bytes": 20415,
+      "sha256": "b3f31184c0af2d8b1265c5de1b6124c2ff7587284a75044da277b9a5291fed03"
+    }
+  ]
+}

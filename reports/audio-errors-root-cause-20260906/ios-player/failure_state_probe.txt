@@ -1,0 +1,4 @@
+failure_callback vm=error item=2 readEndCount=1
+next_producer_segment vm=streaming item=2
+producer_finished vm=ready item=2 readEndCount=1
+retry_branch_selected=false (ReadVM:2124 checks only .error)

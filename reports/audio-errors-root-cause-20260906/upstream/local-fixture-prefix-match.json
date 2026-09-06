@@ -1,0 +1,11 @@
+{
+  "readOnly": true,
+  "method": "Bounded local quoted literal prefix hash search including reports and scripts, max 2MB/file, excluding common dependency/build directories. No literal text exported; no match cannot exclude dynamic text or external callers.",
+  "hash": "3ba4f07afc0f07b8d66970d7d1702e45f710409c26bc652a5922345900db6627",
+  "scannedFiles": {
+    "CastReader": 1961,
+    "readout-web": 1810,
+    "CastReader-Android-kindle-feedback-20260905": 767
+  },
+  "matches": []
+}

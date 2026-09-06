@@ -37,8 +37,10 @@
     "direct_abort_cause_and_504_delivery_unconfirmed",
     "hourly_identity_snapshots_absent_0800_0900_utc",
     "hourly_identity_snapshot_absent_1206_utc",
-    "global_tts_504_duration_and_underlying_cause_unavailable",
-    "new_player_events_not_correlated_to_gateway_requests"
+    "new_player_events_not_correlated_to_gateway_requests",
+    "global_tts_individual_slow_stage_unavailable",
+    "repeated_prefix_traffic_origin_unknown",
+    "ios_player_initial_error_stage_and_nserror_unavailable"
   ],
   "nextRunPolicy": "Compare cumulative records with these keys; do not repeat unchanged alerts or already known sample gaps.",
   "directRequestKeys": [
@@ -55,12 +57,17 @@
   "latestClientTechnicalFailureCount": 8,
   "lastDecision": "NOTIFY",
   "lastDecisionReason": "Two new iOS player failures, four new global TTS HTTP504 records and one new early-abort direct log504; no observed production identity drift.",
-  "latestCauseAnalysis": "reports/backend-audio-failure-analysis-20260906/README.md",
+  "latestCauseAnalysis": "reports/audio-errors-root-cause-20260906/README.md",
   "confirmedCodeFindings": [
     "kindle_sync_dialog_blocked_also_covers_mode_change",
     "ios_tts_wrapping_erases_underlying_error_type",
     "android_pdf_generic_exception_catch_includes_cancellation",
-    "android_failed_completion_bucket_not_document_completion"
+    "android_failed_completion_bucket_not_document_completion",
+    "gateway_combines_timeout_and_abort_as_504_without_diagnostics",
+    "ios_player_failure_state_can_be_overwritten_by_producer",
+    "ios_player_retry_can_reuse_failed_item",
+    "ios_first_audio_event_uses_optimistic_is_playing",
+    "ios_base64_validation_does_not_prove_playable_media"
   ],
   "individualUnderlyingExceptionsRecovered": false,
   "latestVercelCore5xxCount": 4,
@@ -72,5 +79,20 @@
     "0865d60458fd5519c2d1",
     "498d54bede61726ce98c",
     "5e7c7c1c359ddd58195d"
-  ]
+  ],
+  "causeAnalysisUpdatedAtUtc": "2026-09-06T15:27:50.447479+00:00",
+  "globalTts504Analysis": {
+    "functionDurationMs": [
+      28007,
+      28006,
+      28033,
+      28006
+    ],
+    "platformMaxDurationSeconds": 300,
+    "applicationBudgetMs": 28000,
+    "classification": "high_confidence_application_budget_expiration_not_captured_exception",
+    "individualUpstreamSlowStageConfirmed": false,
+    "concurrentAggregateBacklogObserved": true,
+    "correlatedToNewPlayerFailures": false
+  }
 }

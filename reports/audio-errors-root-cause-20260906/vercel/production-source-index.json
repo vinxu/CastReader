@@ -1,0 +1,20 @@
+[
+  {
+    "repositoryPath": "src/shared/lib/tts-gateway.ts",
+    "productionCommit": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+    "sourceSha256": "34bb577e10dd67ff9281916d31a91e9a54efbdd9fa1cd6e008b899b3418b175d",
+    "evidenceFile": "production-tts-gateway-excerpts.ts"
+  },
+  {
+    "repositoryPath": "src/shared/lib/speech-request-budget.ts",
+    "productionCommit": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+    "sourceSha256": "2b10141f4171571d3f2f90a9f00c4c75d8a9f560baec6233d766e5b708a9104d",
+    "evidenceFile": "production-speech-request-budget.ts"
+  },
+  {
+    "repositoryPath": "src/app/api/captioned_speech_partly/route.ts",
+    "productionCommit": "e8a755d4ea9602397cad138e6b3bbd3d91f7fa54",
+    "sourceSha256": "68ffe38c83f87f86744229322482cdd9976f60fcea2abf2b36ece74b28fb83c2",
+    "evidenceFile": "production-partly-route.ts"
+  }
+]

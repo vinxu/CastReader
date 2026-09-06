@@ -1,0 +1,1689 @@
+{
+  "chunkPrefixGroups": [
+    {
+      "count": 124,
+      "firstUTC": "2026-09-06T13:29:20+00:00",
+      "lastUTC": "2026-09-06T13:30:10+00:00",
+      "loggedPrefixCharCount": 53,
+      "loggedPrefixSHA256": "3ba4f07afc0f07b8d66970d7d1702e45f710409c26bc652a5922345900db6627",
+      "wholeRequestTextCharCounts": {
+        "82": 124
+      }
+    },
+    {
+      "count": 5,
+      "firstUTC": "2026-09-06T13:23:36+00:00",
+      "lastUTC": "2026-09-06T13:30:34+00:00",
+      "loggedPrefixCharCount": 45,
+      "loggedPrefixSHA256": "b1adb34f66e43d55da94d05143d49dce21211a68842f862ae962f13b577eec71",
+      "wholeRequestTextCharCounts": {
+        "45": 5
+      }
+    },
+    {
+      "count": 5,
+      "firstUTC": "2026-09-06T13:26:31+00:00",
+      "lastUTC": "2026-09-06T13:29:59+00:00",
+      "loggedPrefixCharCount": 53,
+      "loggedPrefixSHA256": "80060726f9f0cf995d4b36becb3847d6f79b962a60ad09bd10de040c316050f2",
+      "wholeRequestTextCharCounts": {
+        "135": 5
+      }
+    },
+    {
+      "count": 5,
+      "firstUTC": "2026-09-06T13:27:40+00:00",
+      "lastUTC": "2026-09-06T13:31:37+00:00",
+      "loggedPrefixCharCount": 53,
+      "loggedPrefixSHA256": "a71cbf9d3d215a9c07abb6aa71999c97baeacafd979476daf22547e375b5ac89",
+      "wholeRequestTextCharCounts": {
+        "161": 5
+      }
+    },
+    {
+      "count": 4,
+      "firstUTC": "2026-09-06T13:23:23+00:00",
+      "lastUTC": "2026-09-06T13:28:54+00:00",
+      "loggedPrefixCharCount": 53,
+      "loggedPrefixSHA256": "c0e04934ba0cdc5001830e1e9ec0d83e6f55f92d091ff313c7ea574df41ec8f7",
+      "wholeRequestTextCharCounts": {
+        "139": 4
+      }
+    },
+    {
+      "count": 3,
+      "firstUTC": "2026-09-06T13:29:36+00:00",
+      "lastUTC": "2026-09-06T13:30:04+00:00",
+      "loggedPrefixCharCount": 38,
+      "loggedPrefixSHA256": "e7d14bbe05d774ccb9fcf7e152ee87c5e4ee69be3180b5fd31ae5da851a46e5c",
+      "wholeRequestTextCharCounts": {
+        "38": 3
+      }
+    },
+    {
+      "count": 3,
+      "firstUTC": "2026-09-06T13:30:59+00:00",
+      "lastUTC": "2026-09-06T13:32:39+00:00",
+      "loggedPrefixCharCount": 53,
+      "loggedPrefixSHA256": "f299c0976168ec6c1c8942fd3cc0b8438746abbeaac61dc98c1e72d7adf9a9e0",
+      "wholeRequestTextCharCounts": {
+        "81": 3
+      }
+    },
+    {
+      "count": 2,
+      "firstUTC": "2026-09-06T13:25:34+00:00",
+      "lastUTC": "2026-09-06T13:30:34+00:00",
+      "loggedPrefixCharCount": 53,
+      "loggedPrefixSHA256": "470b56c8b9725f9bc4ce3e0d40f8519ee6fcc402005c4e99b710154447ab7fc8",
+      "wholeRequestTextCharCounts": {
+        "58": 2
+      }
+    }
+  ],
+  "languageCounts": {
+    "a": 590,
+    "e": 24,
+    "z": 1
+  },
+  "logClockTimezone": [
+    "UTC",
+    "UTC"
+  ],
+  "provenanceConclusion": "Repeated identical logged prefixes can establish repeated inputs, but cannot identify probe/retry/user intent. Logged prefix is first50 characters plus possible ellipsis, not full input text.",
+  "readOnly": true,
+  "requestTextLengthCounts": {
+    "2": 1,
+    "4": 1,
+    "5": 1,
+    "7": 1,
+    "8": 1,
+    "9": 3,
+    "10": 2,
+    "11": 1,
+    "12": 4,
+    "13": 2,
+    "14": 2,
+    "16": 3,
+    "17": 5,
+    "18": 1,
+    "19": 2,
+    "20": 27,
+    "21": 1,
+    "22": 1,
+    "23": 3,
+    "24": 2,
+    "25": 3,
+    "26": 3,
+    "27": 2,
+    "28": 2,
+    "29": 2,
+    "31": 2,
+    "32": 2,
+    "33": 2,
+    "35": 4,
+    "36": 1,
+    "37": 2,
+    "38": 6,
+    "39": 3,
+    "40": 3,
+    "41": 6,
+    "42": 2,
+    "43": 1,
+    "44": 3,
+    "45": 6,
+    "46": 1,
+    "47": 2,
+    "48": 2,
+    "49": 7,
+    "50": 3,
+    "52": 4,
+    "53": 2,
+    "55": 2,
+    "56": 3,
+    "57": 2,
+    "58": 3,
+    "59": 3,
+    "61": 1,
+    "62": 2,
+    "64": 2,
+    "65": 2,
+    "66": 1,
+    "67": 2,
+    "68": 3,
+    "69": 3,
+    "70": 2,
+    "71": 2,
+    "72": 2,
+    "73": 3,
+    "74": 1,
+    "75": 2,
+    "76": 1,
+    "77": 1,
+    "78": 2,
+    "79": 1,
+    "80": 2,
+    "81": 6,
+    "82": 127,
+    "83": 4,
+    "84": 3,
+    "85": 2,
+    "86": 4,
+    "87": 3,
+    "88": 1,
+    "89": 2,
+    "90": 2,
+    "91": 2,
+    "92": 3,
+    "93": 2,
+    "94": 3,
+    "95": 3,
+    "96": 4,
+    "97": 3,
+    "98": 2,
+    "100": 2,
+    "101": 5,
+    "103": 7,
+    "104": 4,
+    "105": 3,
+    "106": 4,
+    "107": 3,
+    "108": 1,
+    "109": 1,
+    "110": 2,
+    "111": 2,
+    "112": 5,
+    "114": 1,
+    "115": 1,
+    "116": 3,
+    "117": 4,
+    "118": 1,
+    "119": 2,
+    "121": 2,
+    "122": 1,
+    "123": 2,
+    "124": 1,
+    "125": 4,
+    "126": 2,
+    "127": 2,
+    "128": 4,
+    "129": 1,
+    "132": 2,
+    "133": 2,
+    "134": 2,
+    "135": 5,
+    "136": 2,
+    "137": 4,
+    "138": 2,
+    "139": 6,
+    "140": 2,
+    "141": 1,
+    "142": 2,
+    "143": 1,
+    "144": 3,
+    "145": 2,
+    "147": 1,
+    "149": 2,
+    "150": 2,
+    "151": 3,
+    "152": 1,
+    "155": 1,
+    "158": 2,
+    "159": 2,
+    "160": 1,
+    "161": 5,
+    "162": 1,
+    "163": 3,
+    "164": 2,
+    "165": 2,
+    "166": 3,
+    "167": 1,
+    "168": 2,
+    "169": 1,
+    "170": 1,
+    "171": 2,
+    "172": 1,
+    "173": 1,
+    "174": 2,
+    "175": 1,
+    "176": 1,
+    "178": 3,
+    "179": 2,
+    "180": 1,
+    "181": 1,
+    "183": 2,
+    "185": 1,
+    "187": 1,
+    "188": 1,
+    "189": 1,
+    "190": 1,
+    "192": 1,
+    "196": 1,
+    "197": 1,
+    "198": 1,
+    "200": 1,
+    "203": 4,
+    "204": 2,
+    "205": 1,
+    "209": 3,
+    "211": 2,
+    "215": 1,
+    "216": 1,
+    "217": 2,
+    "218": 1,
+    "222": 1,
+    "224": 1,
+    "225": 1,
+    "227": 1,
+    "229": 1,
+    "230": 2,
+    "231": 1,
+    "232": 1,
+    "235": 2,
+    "239": 1,
+    "243": 1,
+    "245": 1,
+    "246": 1,
+    "253": 1,
+    "254": 1,
+    "262": 2,
+    "267": 1,
+    "269": 1,
+    "271": 1,
+    "272": 1,
+    "273": 1,
+    "278": 1,
+    "283": 1,
+    "284": 1,
+    "289": 1,
+    "290": 3,
+    "291": 1,
+    "300": 2,
+    "303": 1,
+    "309": 1,
+    "311": 1,
+    "313": 1,
+    "315": 1,
+    "316": 1,
+    "317": 1,
+    "318": 1,
+    "323": 1,
+    "325": 1,
+    "326": 1,
+    "330": 1,
+    "339": 1,
+    "343": 1,
+    "347": 1,
+    "358": 1,
+    "361": 2,
+    "363": 1,
+    "365": 2,
+    "369": 1,
+    "370": 1,
+    "372": 1,
+    "378": 1,
+    "380": 1,
+    "384": 1,
+    "403": 1,
+    "410": 1,
+    "434": 1,
+    "452": 1
+  },
+  "schema": "castreader.upstream-burst-patterns.v1",
+  "sourceEvidence": [
+    {
+      "lines": [
+        {
+          "code": "class TTSService:",
+          "line": 58
+        },
+        {
+          "code": "    \"\"\"Text-to-speech service.\"\"\"",
+          "line": 59
+        },
+        {
+          "code": "",
+          "line": 60
+        },
+        {
+          "code": "    # Limit concurrent chunk processing",
+          "line": 61
+        },
+        {
+          "code": "    _chunk_semaphore = asyncio.Semaphore(4)",
+          "line": 62
+        },
+        {
+          "code": "    # KPipeline instances are cached per language and are not safe to iterate",
+          "line": 63
+        },
+        {
+          "code": "    # concurrently. Keep cross-language GPU concurrency while serializing work",
+          "line": 64
+        },
+        {
+          "code": "    # that shares one pipeline.",
+          "line": 65
+        },
+        {
+          "code": "    _language_locks: dict[str, asyncio.Lock] = {}",
+          "line": 66
+        },
+        {
+          "code": "",
+          "line": 67
+        },
+        {
+          "code": "    @classmethod",
+          "line": 68
+        },
+        {
+          "code": "    def _language_lock(cls, lang_code: Optional[str], voice_name: str) -> asyncio.Lock:",
+          "line": 69
+        },
+        {
+          "code": "        key = (lang_code or voice_name[:1] or \"unknown\").lower()",
+          "line": 70
+        },
+        {
+          "code": "        return cls._language_locks.setdefault(key, asyncio.Lock())",
+          "line": 71
+        },
+        {
+          "code": "    ) -> AsyncGenerator[AudioChunk, None]:",
+          "line": 132
+        },
+        {
+          "code": "        \"\"\"Process tokens into audio.\"\"\"",
+          "line": 133
+        },
+        {
+          "code": "        async with self._chunk_semaphore:",
+          "line": 134
+        },
+        {
+          "code": "            try:",
+          "line": 135
+        },
+        {
+          "code": "                # Handle stream finalization",
+          "line": 136
+        },
+        {
+          "code": "                if is_last:",
+          "line": 137
+        },
+        {
+          "code": "                    # Skip format conversion for raw audio mode",
+          "line": 138
+        },
+        {
+          "code": "                    if not output_format:",
+          "line": 139
+        },
+        {
+          "code": "                        yield AudioChunk(np.array([], dtype=np.int16), output=b\"\")",
+          "line": 140
+        },
+        {
+          "code": "                        return",
+          "line": 141
+        },
+        {
+          "code": "                    chunk_data = await AudioService.convert_audio(",
+          "line": 142
+        },
+        {
+          "code": "                        AudioChunk(",
+          "line": 143
+        },
+        {
+          "code": "                            np.array([], dtype=np.float32)",
+          "line": 144
+        },
+        {
+          "code": "                        ),  # Dummy data for type checking",
+          "line": 145
+        },
+        {
+          "code": "                        output_format,",
+          "line": 146
+        },
+        {
+          "code": "                        writer,",
+          "line": 147
+        },
+        {
+          "code": "                        speed,",
+          "line": 148
+        },
+        {
+          "code": "                        \"\",",
+          "line": 149
+        },
+        {
+          "code": "                        normalizer=normalizer,",
+          "line": 150
+        },
+        {
+          "code": "                        is_last_chunk=True,",
+          "line": 151
+        },
+        {
+          "code": "                    )",
+          "line": 152
+        },
+        {
+          "code": "                    yield chunk_data",
+          "line": 153
+        },
+        {
+          "code": "                    return",
+          "line": 154
+        },
+        {
+          "code": "",
+          "line": 155
+        },
+        {
+          "code": "                # Skip empty chunks",
+          "line": 156
+        },
+        {
+          "code": "                if not tokens and not chunk_text:",
+          "line": 157
+        },
+        {
+          "code": "                    return",
+          "line": 158
+        },
+        {
+          "code": "",
+          "line": 159
+        },
+        {
+          "code": "                # Get backend",
+          "line": 160
+        },
+        {
+          "code": "                backend = self.model_manager.get_backend()",
+          "line": 161
+        },
+        {
+          "code": "",
+          "line": 162
+        },
+        {
+          "code": "                requires_audio = _requires_generated_audio(chunk_text)",
+          "line": 163
+        },
+        {
+          "code": "                # Generate audio using pre-warmed model",
+          "line": 164
+        },
+        {
+          "code": "                if isinstance(backend, KokoroV1):",
+          "line": 165
+        },
+        {
+          "code": "                    # For Kokoro V1, pass text and voice info with lang_code",
+          "line": 166
+        },
+        {
+          "code": "                    async with self._language_lock(lang_code, voice_name):",
+          "line": 167
+        },
+        {
+          "code": "                        for attempt in range(2):",
+          "line": 168
+        },
+        {
+          "code": "    @staticmethod",
+          "line": 377
+        },
+        {
+          "code": "    async def _split_for_generation(text, backend, lang_code, options):",
+          "line": 378
+        },
+        {
+          "code": "        try:",
+          "line": 379
+        },
+        {
+          "code": "            plan = [chunk async for chunk in smart_split(",
+          "line": 380
+        },
+        {
+          "code": "                text, lang_code=lang_code, normalization_options=options",
+          "line": 381
+        },
+        {
+          "code": "            )]",
+          "line": 382
+        },
+        {
+          "code": "        except Exception as error:",
+          "line": 383
+        },
+        {
+          "code": "            if not isinstance(backend, KokoroV1):",
+          "line": 384
+        },
+        {
+          "code": "                raise",
+          "line": 385
+        },
+        {
+          "code": "            event(\"splitter_unavailable\", error, text_chars=len(text))",
+          "line": 386
+        },
+        {
+          "code": "            # Kokoro has its own real G2P/model chunker. This pass only arranges",
+          "line": 387
+        },
+        {
+          "code": "            # units; a failure in its auxiliary token estimate must not prevent",
+          "line": 388
+        },
+        {
+          "code": "            # that real frontend from receiving all the original text.",
+          "line": 389
+        },
+        {
+          "code": "            plan = []",
+          "line": 390
+        },
+        {
+          "code": "            parts = re.split(r\"\\[pause:(\\d+(?:\\.\\d+)?)s\\]\", text, flags=re.IGNORECASE)",
+          "line": 391
+        },
+        {
+          "code": "            for index, part in enumerate(parts):",
+          "line": 392
+        },
+        {
+          "code": "                if index % 2:",
+          "line": 393
+        },
+        {
+          "code": "                    plan.append((\"\", [], float(part)))",
+          "line": 394
+        },
+        {
+          "code": "                elif part.strip():",
+          "line": 395
+        },
+        {
+          "code": "                    plan.append((part, [], None))",
+          "line": 396
+        },
+        {
+          "code": "        for chunk in plan:",
+          "line": 397
+        },
+        {
+          "code": "            yield chunk",
+          "line": 398
+        },
+        {
+          "code": "        try:",
+          "line": 417
+        },
+        {
+          "code": "            # Get backend",
+          "line": 418
+        },
+        {
+          "code": "            backend = self.model_manager.get_backend()",
+          "line": 419
+        },
+        {
+          "code": "",
+          "line": 420
+        },
+        {
+          "code": "            # Get voice path, handling combined voices",
+          "line": 421
+        },
+        {
+          "code": "            voice_name, voice_path = await self._get_voices_path(voice)",
+          "line": 422
+        },
+        {
+          "code": "            logger.debug(f\"Using voice path: {voice_path}\")",
+          "line": 423
+        },
+        {
+          "code": "",
+          "line": 424
+        },
+        {
+          "code": "            # Use provided lang_code or determine from voice name",
+          "line": 425
+        },
+        {
+          "code": "            pipeline_lang_code = lang_code if lang_code else voice[:1].lower()",
+          "line": 426
+        },
+        {
+          "code": "            logger.info(",
+          "line": 427
+        },
+        {
+          "code": "                f\"Using lang_code '{pipeline_lang_code}' for voice '{voice_name}' in audio stream\"",
+          "line": 428
+        },
+        {
+          "code": "            )",
+          "line": 429
+        },
+        {
+          "code": "",
+          "line": 430
+        },
+        {
+          "code": "            split_options = normalization_options or NormalizationOptions()",
+          "line": 431
+        },
+        {
+          "code": "            if (",
+          "line": 432
+        },
+        {
+          "code": "                isinstance(backend, KokoroV1)",
+          "line": 433
+        },
+        {
+          "code": "                and return_timestamps",
+          "line": 434
+        },
+        {
+          "code": "                and pipeline_lang_code.lower().replace(\"_\", \"-\")",
+          "line": 435
+        },
+        {
+          "code": "                in {\"a\", \"b\", \"en\", \"en-us\", \"en-gb\"}",
+          "line": 436
+        },
+        {
+          "code": "            ):",
+          "line": 437
+        },
+        {
+          "code": "                # English source-word timestamps must see the original numbers",
+          "line": 438
+        },
+        {
+          "code": "                # and dates. Let the existing Misaki frontend pronounce them;",
+          "line": 439
+        },
+        {
+          "code": "                # do not irreversibly expand them before the model's mapping.",
+          "line": 440
+        },
+        {
+          "code": "                split_options = split_options.model_copy(update={\"normalize\": False})",
+          "line": 441
+        },
+        {
+          "code": "",
+          "line": 442
+        },
+        {
+          "code": "            # Process text in chunks with smart splitting, handling pause tags",
+          "line": 443
+        },
+        {
+          "code": "            async for chunk_text, tokens, pause_duration_s in self._split_for_generation(",
+          "line": 444
+        },
+        {
+          "code": "                    text, backend, pipeline_lang_code, split_options",
+          "line": 445
+        },
+        {
+          "code": "    async def generate_audio(",
+          "line": 561
+        },
+        {
+          "code": "            self,",
+          "line": 562
+        },
+        {
+          "code": "            text: str,",
+          "line": 563
+        },
+        {
+          "code": "            voice: str,",
+          "line": 564
+        },
+        {
+          "code": "            writer: StreamingAudioWriter,",
+          "line": 565
+        },
+        {
+          "code": "            speed: float = 1.0,",
+          "line": 566
+        },
+        {
+          "code": "            return_timestamps: bool = False,",
+          "line": 567
+        },
+        {
+          "code": "            volume_multiplier: Optional[float] = 1.0,",
+          "line": 568
+        },
+        {
+          "code": "            normalization_options: Optional[NormalizationOptions] = NormalizationOptions(),",
+          "line": 569
+        },
+        {
+          "code": "            lang_code: Optional[str] = None,",
+          "line": 570
+        },
+        {
+          "code": "            vn: Optional[str] = None",
+          "line": 571
+        },
+        {
+          "code": "    ) -> AudioChunk:",
+          "line": 572
+        },
+        {
+          "code": "        \"\"\"Generate complete audio for text using streaming internally.\"\"\"",
+          "line": 573
+        },
+        {
+          "code": "        audio_data_chunks = []",
+          "line": 574
+        },
+        {
+          "code": "",
+          "line": 575
+        },
+        {
+          "code": "        try:",
+          "line": 576
+        },
+        {
+          "code": "            async for audio_stream_data in self.generate_audio_stream(",
+          "line": 577
+        },
+        {
+          "code": "                    text,",
+          "line": 578
+        },
+        {
+          "code": "                    voice,",
+          "line": 579
+        },
+        {
+          "code": "                    writer,",
+          "line": 580
+        },
+        {
+          "code": "                    speed=speed,",
+          "line": 581
+        },
+        {
+          "code": "                    volume_multiplier=volume_multiplier,",
+          "line": 582
+        },
+        {
+          "code": "                    normalization_options=normalization_options,",
+          "line": 583
+        },
+        {
+          "code": "                    return_timestamps=return_timestamps,",
+          "line": 584
+        },
+        {
+          "code": "                    lang_code=lang_code,",
+          "line": 585
+        },
+        {
+          "code": "                    output_format=None,",
+          "line": 586
+        },
+        {
+          "code": "                    vn=vn,",
+          "line": 587
+        },
+        {
+          "code": "            ):",
+          "line": 588
+        },
+        {
+          "code": "                if len(audio_stream_data.audio) > 0:",
+          "line": 589
+        }
+      ],
+      "path": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/services/tts_service.py",
+      "sha256": "ac1ec2b158f4b2fd9857bf53d743631419eb934729070c5df73d285430b1a910"
+    },
+    {
+      "lines": [
+        {
+          "code": "    start_time = time.time()",
+          "line": 157
+        },
+        {
+          "code": "    chunk_count = 0",
+          "line": 158
+        },
+        {
+          "code": "    logger.info(f\"Starting smart split for {len(text)} chars\")",
+          "line": 159
+        },
+        {
+          "code": "",
+          "line": 329
+        },
+        {
+          "code": "    # --- End of parts loop ---",
+          "line": 330
+        },
+        {
+          "code": "    total_time = time.time() - start_time",
+          "line": 331
+        },
+        {
+          "code": "    logger.info(",
+          "line": 332
+        },
+        {
+          "code": "        f\"Split completed in {total_time * 1000:.2f}ms, produced {chunk_count} chunks (including pauses)\"",
+          "line": 333
+        },
+        {
+          "code": "    )",
+          "line": 334
+        }
+      ],
+      "path": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/services/text_processing/text_processor.py",
+      "sha256": "36929c095ab36876ce017e5b3da7384d2d1207639db2f38c947e332a2abad4b1"
+    },
+    {
+      "lines": [
+        {
+          "code": "            voice_name = self._voice_name(voice)",
+          "line": 895
+        },
+        {
+          "code": "            requested_lang_code = (",
+          "line": 896
+        },
+        {
+          "code": "                lang_code",
+          "line": 897
+        },
+        {
+          "code": "                if lang_code",
+          "line": 898
+        },
+        {
+          "code": "                else (",
+          "line": 899
+        },
+        {
+          "code": "                    settings.default_voice_code",
+          "line": 900
+        },
+        {
+          "code": "                    if settings.default_voice_code",
+          "line": 901
+        },
+        {
+          "code": "                    else voice_name[0].lower()",
+          "line": 902
+        },
+        {
+          "code": "                )",
+          "line": 903
+        },
+        {
+          "code": "            )",
+          "line": 904
+        },
+        {
+          "code": "            route = self._registry.resolve(voice_name, requested_lang_code)",
+          "line": 905
+        },
+        {
+          "code": "            package = route.package",
+          "line": 906
+        },
+        {
+          "code": "            pipeline = self._get_package_pipeline(package.package_id, route.lang_code)",
+          "line": 907
+        },
+        {
+          "code": "            model = self._models[package.package_id]",
+          "line": 908
+        },
+        {
+          "code": "            logger.info(",
+          "line": 909
+        },
+        {
+          "code": "                \"TTS route voice='{}' language='{}' package='{}' reason='{}'\",",
+          "line": 910
+        },
+        {
+          "code": "                voice_name,",
+          "line": 911
+        },
+        {
+          "code": "                route.lang_code,",
+          "line": 912
+        },
+        {
+          "code": "                package.package_id,",
+          "line": 913
+        },
+        {
+          "code": "                route.reason,",
+          "line": 914
+        },
+        {
+          "code": "            )",
+          "line": 915
+        },
+        {
+          "code": "            async with self._activated_voice_adapter(package, voice_name):",
+          "line": 930
+        },
+        {
+          "code": "                if route.lang_code in (\"a\", \"b\"):",
+          "line": 931
+        },
+        {
+          "code": "                    from .compatible_english_timestamps import (",
+          "line": 932
+        },
+        {
+          "code": "                        prepare_english_chunks,",
+          "line": 933
+        },
+        {
+          "code": "                        source_timed_audio,",
+          "line": 934
+        },
+        {
+          "code": "                    )",
+          "line": 935
+        },
+        {
+          "code": "",
+          "line": 936
+        },
+        {
+          "code": "                    voice_input = (",
+          "line": 937
+        },
+        {
+          "code": "                        voice_name if package.voice_source == \"repository\"",
+          "line": 938
+        },
+        {
+          "code": "                        else await self._prepare_file_voice(voice, voice_name)",
+          "line": 939
+        },
+        {
+          "code": "                    )",
+          "line": 940
+        },
+        {
+          "code": "                    voice_pack = pipeline.load_voice(voice_input).to(model.device)",
+          "line": 941
+        },
+        {
+          "code": "                    chunks = None",
+          "line": 942
+        },
+        {
+          "code": "                    if return_timestamps:",
+          "line": 943
+        },
+        {
+          "code": "                        try:",
+          "line": 944
+        },
+        {
+          "code": "                            # Finish source bookkeeping before any model call.",
+          "line": 945
+        },
+        {
+          "code": "                            chunks = prepare_english_chunks(pipeline, text, model.vocab)",
+          "line": 946
+        },
+        {
+          "code": "                        except Exception as error:",
+          "line": 947
+        },
+        {
+          "code": "                            event(\"source_frontend_unavailable\", error, text_chars=len(text))",
+          "line": 948
+        },
+        {
+          "code": "                    if chunks is None:",
+          "line": 949
+        },
+        {
+          "code": "                        # Same full text, installed G2P, model and selected voice.",
+          "line": 950
+        },
+        {
+          "code": "                        # Bypass optional source bookkeeping and upstream's",
+          "line": 951
+        },
+        {
+          "code": "                        # join_timestamps (which can throw before yielding PCM).",
+          "line": 952
+        },
+        {
+          "code": "                        for phonemes in self._audio_only_english_chunks(pipeline, text):",
+          "line": 953
+        },
+        {
+          "code": "                            with torch.inference_mode():",
+          "line": 954
+        },
+        {
+          "code": "                                output = KPipeline.infer(model, phonemes, voice_pack, speed)",
+          "line": 955
+        },
+        {
+          "code": "                            if output.audio is None:",
+          "line": 956
+        }
+      ],
+      "path": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/inference/kokoro_v1.py",
+      "sha256": "591f6d910fa7c02297cf46f9df9bbfdf7327222d2cce4e96c9c4580f66377d9f"
+    },
+    {
+      "lines": [
+        {
+          "code": "def event(stage, error=None, **counts):",
+          "line": 50
+        },
+        {
+          "code": "    \"\"\"Only fixed stages, scalar counts and stack locations; never str(error).\"\"\"",
+          "line": 51
+        },
+        {
+          "code": "    configure()",
+          "line": 52
+        },
+        {
+          "code": "    payload = {\"time_unix\": time.time(), \"request_id\": request_id.get(), \"stage\": stage,",
+          "line": 53
+        },
+        {
+          "code": "               \"release\": _release.name}",
+          "line": 54
+        },
+        {
+          "code": "    payload.update({key: value for key, value in counts.items() if isinstance(value, (bool, int, float))})",
+          "line": 55
+        },
+        {
+          "code": "    if error is not None:",
+          "line": 56
+        },
+        {
+          "code": "        chain, seen = [], set()",
+          "line": 57
+        },
+        {
+          "code": "        while error is not None and id(error) not in seen and len(chain) < 6:",
+          "line": 58
+        },
+        {
+          "code": "            seen.add(id(error))",
+          "line": 59
+        },
+        {
+          "code": "            frames = [{\"file\": Path(frame.filename).name, \"line\": frame.lineno, \"function\": frame.name}",
+          "line": 60
+        },
+        {
+          "code": "                      for frame in traceback.extract_tb(error.__traceback__)[-8:]]",
+          "line": 61
+        },
+        {
+          "code": "            chain.append({\"type\": type(error).__name__, \"frames\": frames})",
+          "line": 62
+        },
+        {
+          "code": "            error = error.__cause__ or error.__context__",
+          "line": 63
+        },
+        {
+          "code": "        payload[\"causes\"] = chain",
+          "line": 64
+        },
+        {
+          "code": "        payload[\"fingerprint\"] = hashlib.sha256(json.dumps(chain, sort_keys=True).encode()).hexdigest()[:16]",
+          "line": 65
+        },
+        {
+          "code": "",
+          "line": 71
+        },
+        {
+          "code": "class RequestDiagnosticsMiddleware:",
+          "line": 72
+        },
+        {
+          "code": "    \"\"\"ASGI middleware keeps correlation alive for the full streaming iterator.\"\"\"",
+          "line": 73
+        },
+        {
+          "code": "",
+          "line": 74
+        },
+        {
+          "code": "    def __init__(self, app):",
+          "line": 75
+        },
+        {
+          "code": "        self.app = app",
+          "line": 76
+        },
+        {
+          "code": "",
+          "line": 77
+        },
+        {
+          "code": "    async def __call__(self, scope, receive, send):",
+          "line": 78
+        },
+        {
+          "code": "        if scope[\"type\"] != \"http\":",
+          "line": 79
+        },
+        {
+          "code": "            return await self.app(scope, receive, send)",
+          "line": 80
+        },
+        {
+          "code": "        headers = dict(scope.get(\"headers\", []))",
+          "line": 81
+        },
+        {
+          "code": "        value = new_request_id(headers.get(b\"x-request-id\", b\"\").decode(\"ascii\", errors=\"ignore\"))",
+          "line": 82
+        },
+        {
+          "code": "        token = request_id.set(value)",
+          "line": 83
+        },
+        {
+          "code": "        started = time.monotonic()",
+          "line": 84
+        },
+        {
+          "code": "        status = None",
+          "line": 85
+        },
+        {
+          "code": "",
+          "line": 86
+        },
+        {
+          "code": "        async def traced_send(message):",
+          "line": 87
+        },
+        {
+          "code": "            nonlocal status",
+          "line": 88
+        },
+        {
+          "code": "            if message[\"type\"] == \"http.response.start\":",
+          "line": 89
+        },
+        {
+          "code": "                status = message[\"status\"]",
+          "line": 90
+        },
+        {
+          "code": "                message = dict(message)",
+          "line": 91
+        },
+        {
+          "code": "                message[\"headers\"] = [*message.get(\"headers\", []), (b\"x-request-id\", value.encode())]",
+          "line": 92
+        },
+        {
+          "code": "            await send(message)",
+          "line": 93
+        },
+        {
+          "code": "",
+          "line": 94
+        },
+        {
+          "code": "        try:",
+          "line": 95
+        },
+        {
+          "code": "            await self.app(scope, receive, traced_send)",
+          "line": 96
+        },
+        {
+          "code": "        except Exception as error:",
+          "line": 97
+        },
+        {
+          "code": "            event(\"request_exception\", error)",
+          "line": 98
+        },
+        {
+          "code": "            raise",
+          "line": 99
+        },
+        {
+          "code": "        finally:",
+          "line": 100
+        },
+        {
+          "code": "            if status is not None and status >= 400:",
+          "line": 101
+        },
+        {
+          "code": "                event(\"request_failed\", status=status, elapsed_ms=int((time.monotonic()-started)*1000))",
+          "line": 102
+        },
+        {
+          "code": "            request_id.reset(token)",
+          "line": 103
+        }
+      ],
+      "path": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/core/playback_diagnostics.py",
+      "sha256": "027cb5fd9ecf2a2dd41a5a20ccb583d04497526c6cf585bb6f285e3edfb2138a"
+    },
+    {
+      "lines": [
+        {
+          "code": "def setup_logger():",
+          "line": 24
+        },
+        {
+          "code": "    \"\"\"Configure loguru logger with custom formatting\"\"\"",
+          "line": 25
+        },
+        {
+          "code": "    config = {",
+          "line": 26
+        },
+        {
+          "code": "        \"handlers\": [",
+          "line": 27
+        },
+        {
+          "code": "            {",
+          "line": 28
+        },
+        {
+          "code": "                \"sink\": sys.stdout,",
+          "line": 29
+        },
+        {
+          "code": "                \"format\": \"<fg #2E8B57>{time:hh:mm:ss A}</fg #2E8B57> | \"",
+          "line": 30
+        },
+        {
+          "code": "                \"{level: <8} | \"",
+          "line": 31
+        },
+        {
+          "code": "                \"<fg #4169E1>{module}:{line}</fg #4169E1> | \"",
+          "line": 32
+        },
+        {
+          "code": "                \"{message}\",",
+          "line": 33
+        },
+        {
+          "code": "                \"colorize\": True,",
+          "line": 34
+        },
+        {
+          "code": "                \"level\": \"INFO\",",
+          "line": 35
+        }
+      ],
+      "path": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/main.py",
+      "sha256": "eb404ec87f6f1614b5b10235b82d8e6c27384bf9c9a6248103e45ab15546dfb7"
+    },
+    {
+      "lines": [
+        {
+          "code": "MAX_REQUEST_BYTES = 256 * 1024",
+          "line": 35
+        },
+        {
+          "code": "MAX_PROBE_BYTES = 2 * 1024 * 1024",
+          "line": 36
+        },
+        {
+          "code": "UPSTREAM_TIMEOUT_SECONDS = 180",
+          "line": 37
+        },
+        {
+          "code": "REQUEST_BODY_TIMEOUT_SECONDS = 30",
+          "line": 38
+        },
+        {
+          "code": "",
+          "line": 301
+        },
+        {
+          "code": "    async def start(self):",
+          "line": 302
+        },
+        {
+          "code": "        if self.session is None:",
+          "line": 303
+        },
+        {
+          "code": "            self.session = ClientSession(",
+          "line": 304
+        },
+        {
+          "code": "                connector=TCPConnector(limit=0, use_dns_cache=False, force_close=True),",
+          "line": 305
+        },
+        {
+          "code": "                timeout=ClientTimeout(",
+          "line": 306
+        },
+        {
+          "code": "                    total=UPSTREAM_TIMEOUT_SECONDS,",
+          "line": 307
+        },
+        {
+          "code": "                    connect=5,",
+          "line": 308
+        },
+        {
+          "code": "                    sock_connect=5,",
+          "line": 309
+        },
+        {
+          "code": "                    sock_read=UPSTREAM_TIMEOUT_SECONDS,",
+          "line": 310
+        },
+        {
+          "code": "                ),",
+          "line": 311
+        },
+        {
+          "code": "                auto_decompress=False,",
+          "line": 312
+        },
+        {
+          "code": "        )",
+          "line": 402
+        },
+        {
+          "code": "",
+          "line": 403
+        },
+        {
+          "code": "    async def await_upstream_headers(self, request, task):",
+          "line": 404
+        },
+        {
+          "code": "        \"\"\"Cancel generation when the only downstream has actually disconnected.\"\"\"",
+          "line": 405
+        },
+        {
+          "code": "        completed = False",
+          "line": 406
+        },
+        {
+          "code": "        try:",
+          "line": 407
+        },
+        {
+          "code": "            while True:",
+          "line": 408
+        },
+        {
+          "code": "                done, _ = await asyncio.wait({task}, timeout=0.1)",
+          "line": 409
+        },
+        {
+          "code": "                if task in done:",
+          "line": 410
+        },
+        {
+          "code": "                    completed = True",
+          "line": 411
+        },
+        {
+          "code": "                    return task.result()",
+          "line": 412
+        },
+        {
+          "code": "                transport = request.transport",
+          "line": 413
+        },
+        {
+          "code": "                if transport is None or transport.is_closing():",
+          "line": 414
+        },
+        {
+          "code": "                    raise DownstreamDisconnected(",
+          "line": 415
+        },
+        {
+          "code": "                        \"Downstream disconnected before response headers\"",
+          "line": 416
+        },
+        {
+          "code": "                    )",
+          "line": 417
+        },
+        {
+          "code": "        finally:",
+          "line": 418
+        },
+        {
+          "code": "            if not completed:",
+          "line": 419
+        },
+        {
+          "code": "                task.cancel()",
+          "line": 420
+        },
+        {
+          "code": "                try:",
+          "line": 421
+        },
+        {
+          "code": "                    await task",
+          "line": 422
+        },
+        {
+          "code": "                except BaseException:",
+          "line": 423
+        },
+        {
+          "code": "            request_id = request.headers.get(\"x-request-id\")",
+          "line": 460
+        },
+        {
+          "code": "            if request_id and REQUEST_ID.fullmatch(request_id):",
+          "line": 461
+        },
+        {
+          "code": "                headers[\"x-request-id\"] = request_id",
+          "line": 462
+        },
+        {
+          "code": "            upstream_task = asyncio.create_task(",
+          "line": 463
+        },
+        {
+          "code": "                self.session.post(",
+          "line": 464
+        },
+        {
+          "code": "                    SLOT_URLS[slot] + \"/dev/captioned_speech\",",
+          "line": 465
+        },
+        {
+          "code": "                    data=body,",
+          "line": 466
+        },
+        {
+          "code": "                    headers=headers,",
+          "line": 467
+        },
+        {
+          "code": "                    allow_redirects=False,",
+          "line": 468
+        },
+        {
+          "code": "                )",
+          "line": 469
+        },
+        {
+          "code": "            )",
+          "line": 470
+        },
+        {
+          "code": "            upstream = await self.await_upstream_headers(request, upstream_task)",
+          "line": 471
+        },
+        {
+          "code": "        except asyncio.TimeoutError:",
+          "line": 492
+        },
+        {
+          "code": "            if downstream is not None and downstream.prepared:",
+          "line": 493
+        },
+        {
+          "code": "                if request.transport is not None:",
+          "line": 494
+        },
+        {
+          "code": "                    request.transport.abort()",
+          "line": 495
+        },
+        {
+          "code": "                raise",
+          "line": 496
+        },
+        {
+          "code": "            return web.json_response({\"detail\": \"TTS origin timed out\"}, status=504)",
+          "line": 497
+        },
+        {
+          "code": "        except DownstreamDisconnected:",
+          "line": 498
+        },
+        {
+          "code": "            if request.transport is not None:",
+          "line": 499
+        },
+        {
+          "code": "                request.transport.close()",
+          "line": 500
+        },
+        {
+          "code": "            return web.Response(status=499)",
+          "line": 501
+        },
+        {
+          "code": "        except (ClientError, ConnectionError):",
+          "line": 502
+        },
+        {
+          "code": "            if downstream is not None and downstream.prepared:",
+          "line": 503
+        },
+        {
+          "code": "                if request.transport is not None:",
+          "line": 504
+        },
+        {
+          "code": "                    request.transport.abort()",
+          "line": 505
+        },
+        {
+          "code": "                raise",
+          "line": 506
+        },
+        {
+          "code": "            return web.json_response({\"detail\": \"TTS origin unavailable\"}, status=502)",
+          "line": 507
+        },
+        {
+          "code": "        finally:",
+          "line": 508
+        },
+        {
+          "code": "            if upstream is not None:",
+          "line": 509
+        },
+        {
+          "code": "                upstream.release()",
+          "line": 510
+        },
+        {
+          "code": "            release_task = asyncio.create_task(self.store.release(slot))",
+          "line": 511
+        },
+        {
+          "code": "            try:",
+          "line": 512
+        },
+        {
+          "code": "                await asyncio.shield(release_task)",
+          "line": 513
+        },
+        {
+          "code": "            except asyncio.CancelledError:",
+          "line": 514
+        },
+        {
+          "code": "                await release_task",
+          "line": 515
+        },
+        {
+          "code": "                raise",
+          "line": 516
+        },
+        {
+          "code": "    public_runner = web.AppRunner(",
+          "line": 676
+        },
+        {
+          "code": "        proxy.public_app(), access_log=None, handler_cancellation=True",
+          "line": 677
+        },
+        {
+          "code": "    )",
+          "line": 678
+        },
+        {
+          "code": "    admin_runner = web.AppRunner(proxy.admin_app(), access_log=None)",
+          "line": 679
+        }
+      ],
+      "path": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260906-v1/r133_stable_proxy.py",
+      "sha256": "927226ad967e7781a43ef6c37f4d1ed13380f23ca295b12062fd43e480085e44"
+    }
+  ],
+  "uniqueLoggedPrefixCount": 506,
+  "userTextExported": false,
+  "windowUTC": [
+    "2026-09-06T13:23:00Z",
+    "2026-09-06T13:32:59Z"
+  ]
+}

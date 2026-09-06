@@ -1,0 +1,19 @@
+OS=Version 26.2 (Build 25C56)
+BASE64 empty baselinePass=true newPresetPass=false bytes=0
+BASE64 base64_junk baselinePass=true newPresetPass=true bytes=9
+BASE64 base64_json baselinePass=true newPresetPass=true bytes=19
+BASE64 url_literal baselinePass=false newPresetPass=false bytes=-1
+BASE64 data_url baselinePass=false newPresetPass=false bytes=-1
+BASE64 invalid_base64 baselinePass=false newPresetPass=false bytes=-1
+BASE64 base64_with_linebreak baselinePass=false newPresetPass=false bytes=-1
+DURATION empty.mp3 bytes=0 ensureDurationFallback=0.0
+DURATION junk.mp3 bytes=9 ensureDurationFallback=0.0
+DURATION json.mp3 bytes=19 ensureDurationFallback=0.0
+DURATION valid-silence.wav bytes=1644 ensureDurationFallback=0.1
+DURATION valid-silence-named.mp3 bytes=1644 ensureDurationFallback=0.1
+ITEM empty.mp3 status=2 error=AVFoundationErrorDomain:-11849:Operation Stopped <- NSOSStatusErrorDomain:-12873:The operation couldn’t be completed. (OSStatus error -12873.) playbackRate=0.0
+ITEM junk.mp3 status=2 error=AVFoundationErrorDomain:-11849:Operation Stopped <- NSOSStatusErrorDomain:-12873:The operation couldn’t be completed. (OSStatus error -12873.) playbackRate=0.0
+ITEM json.mp3 status=2 error=AVFoundationErrorDomain:-11849:Operation Stopped <- NSOSStatusErrorDomain:-12873:The operation couldn’t be completed. (OSStatus error -12873.) playbackRate=0.0
+ITEM valid-silence.wav status=1 error=none playbackRate=0.0
+ITEM valid-silence-named.mp3 status=1 error=none playbackRate=0.0
+ITEM missing.mp3 status=2 error=AVFoundationErrorDomain:-11800:The operation could not be completed <- NSOSStatusErrorDomain:-17913:The operation couldn’t be completed. (OSStatus error -17913.) playbackRate=0.0
