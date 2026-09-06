@@ -1,0 +1,116 @@
+{
+  "newWrapperSha256": "f18465674b2821cc78ab63c2157a5763282f4152b1d8101bf85e6d76ffb4269c",
+  "observed": {
+    "blueConfigSha256": "d25647b4735984ab678cd2b4ad13c621cd5d3bfb8295dcda8102fb555e5a177c",
+    "blueConnectionObservations": [
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:28:18.762069+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:28:19.781101+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:28:20.800071+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:28:21.823526+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:28:22.842521+00:00"
+      }
+    ],
+    "blueScriptSha256": "3dd1fdbcf60b984a14db5142de9b7d2de3011e7123b0f75e0b82d4f6dba50a28",
+    "connectionSamplesDoNotProveNoLegacyTraffic": true,
+    "current": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+    "gpu": {
+      "freeMiB": 5003,
+      "totalMiB": 24564,
+      "usedMiB": 19090,
+      "utilizationPercent": 3
+    },
+    "legacyPublicPortMayStillReachBlue": true,
+    "observedAt": "2026-09-06T18:28:23.883491+00:00",
+    "processes": {
+      "blue": {
+        "argvSha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83",
+        "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 4114885,
+        "startTicks": "550418819"
+      },
+      "clone": {
+        "argvSha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e",
+        "cwd": "/workspace/castreader-clone",
+        "exe": "/usr/bin/python3.12",
+        "pid": 568834,
+        "startTicks": "524136804"
+      },
+      "green": {
+        "argvSha256": "cf47eee9611d26e23306d3bedb41a71145a41cc13ce8ed4741595b4be4026a8b",
+        "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 3459850,
+        "startTicks": "545406132"
+      },
+      "nari": {
+        "argvSha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2",
+        "cwd": "/workspace/nari-qwen3-tts-clean",
+        "exe": "/usr/bin/python3.12",
+        "pid": 4136837,
+        "startTicks": "519185503"
+      },
+      "proxy": {
+        "argvSha256": "739764da1c5a84c8befeb83848212d68c5079c3a2d0087d020b273427823671f",
+        "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 4031530,
+        "startTicks": "549868431"
+      }
+    },
+    "state": {
+      "bootId": "4d514bb3f2f74c54bb723b3fb33c3e4f",
+      "cleanShutdown": false,
+      "currentSlot": "green",
+      "lastOperationId": "ops-r134-disable-old-blue-20260907",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "revision": 3,
+      "schema": "castreader.us-tts-origin-proxy-state.v1",
+      "slots": {
+        "blue": {
+          "enabled": false,
+          "receiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+          "releaseId": "20260905-kokoro-english-g2p-us-r132"
+        },
+        "green": {
+          "enabled": true,
+          "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+        }
+      },
+      "updatedAt": "2026-09-06T18:07:10.424088+00:00"
+    }
+  },
+  "planSha256": "0f3c2b0d36fb38c6b8327bf718d92a60755fd0e5eac71596d3cd17ca0a4ecdae",
+  "readOnly": true,
+  "schema": "castreader.us-r134-supervised-handoff-inspect.v1",
+  "selectedPaths": {
+    "blue": {
+      "CASTREADER_APP_ROOT": "",
+      "CASTREADER_MODEL_PACKAGES": "/workspace/castreader-runtime/current/api/src/inference/model_packages.json",
+      "MODEL_DIR": "/workspace/castreader-runtime/current/api/src/models",
+      "VOICES_DIR": "/workspace/castreader-runtime/current/api/src/voices/v1_0"
+    },
+    "green": {
+      "CASTREADER_APP_ROOT": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+      "CASTREADER_MODEL_PACKAGES": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/inference/model_packages.json",
+      "MODEL_DIR": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/models",
+      "VOICES_DIR": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/voices/v1_0"
+    }
+  },
+  "verified": true
+}

@@ -1,0 +1,136 @@
+{
+  "audioOrInputRetained": false,
+  "cases": [
+    {
+      "complete": false,
+      "errorClass": "RuntimeError",
+      "host": "api.castreader.ai",
+      "kind": "silent",
+      "stream": null
+    },
+    {
+      "complete": false,
+      "errorClass": "RuntimeError",
+      "host": "api.castreader.ai",
+      "kind": "mixed",
+      "stream": null
+    },
+    {
+      "complete": false,
+      "errorClass": "RuntimeError",
+      "host": "api.castreader.ai",
+      "kind": "silent",
+      "stream": true
+    },
+    {
+      "complete": false,
+      "errorClass": "RuntimeError",
+      "host": "api.castreader.ai",
+      "kind": "mixed",
+      "stream": true
+    },
+    {
+      "complete": false,
+      "errorClass": "RuntimeError",
+      "host": "api.castreader.ai",
+      "kind": "silent",
+      "stream": false
+    },
+    {
+      "complete": false,
+      "errorClass": "RuntimeError",
+      "host": "api.castreader.ai",
+      "kind": "mixed",
+      "stream": false
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 0.154,
+      "host": "tts.castreader.ai",
+      "kind": "silent",
+      "steps": [
+        {
+          "audioBytes": 2733,
+          "decodedSamples": 4032,
+          "durationSeconds": 0.168,
+          "remainingCharacters": 0,
+          "requestKey": "4ec88e1c9c99e38d2215",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 0
+        }
+      ],
+      "stream": null
+    },
+    {
+      "complete": false,
+      "errorClass": "RuntimeError",
+      "host": "tts.castreader.ai",
+      "kind": "mixed",
+      "stream": null
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 0.108,
+      "host": "tts.castreader.ai",
+      "kind": "silent",
+      "steps": [
+        {
+          "audioBytes": 2733,
+          "decodedSamples": 4032,
+          "durationSeconds": 0.168,
+          "remainingCharacters": 0,
+          "requestKey": "fe9877a9e30f16b45b14",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 0
+        }
+      ],
+      "stream": true
+    },
+    {
+      "complete": false,
+      "errorClass": "RuntimeError",
+      "host": "tts.castreader.ai",
+      "kind": "mixed",
+      "stream": true
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 0.101,
+      "host": "tts.castreader.ai",
+      "kind": "silent",
+      "steps": [
+        {
+          "audioBytes": 2733,
+          "decodedSamples": 4032,
+          "durationSeconds": 0.168,
+          "remainingCharacters": 0,
+          "requestKey": "6891a5e1ed7b0c643205",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 0
+        }
+      ],
+      "stream": false
+    },
+    {
+      "complete": false,
+      "errorClass": "RuntimeError",
+      "host": "tts.castreader.ai",
+      "kind": "mixed",
+      "stream": false
+    }
+  ],
+  "fixedNonUserText": true,
+  "probeOrigin": "existing US control host",
+  "schema": "castreader.r134-public-audio-validation.v1",
+  "verified": false,
+  "verifiedAtUTC": "2026-09-06T18:35:15.244396+00:00"
+}

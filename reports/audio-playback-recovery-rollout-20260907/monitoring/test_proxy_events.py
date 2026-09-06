@@ -1,13 +1,49 @@
 """Synthetic fixtures: privacy boundary, lifecycle counting, bounded evidence."""
 from datetime import datetime, timezone
+from copy import deepcopy
 import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import collect_proxy_events as local
 import remote_proxy_events as remote
+
+
+def frozen_identity():
+    model = {"slot": "blue", "releaseId": "20260907-kokoro-silent-separators-us-r134",
+             "version": "c" * 40,
+             "releasePath": remote.MODEL_DIRECTORY + "20260907-kokoro-silent-separators-us-r134",
+             "sourceRelativePath": "api/src/services/tts_service.py", "sourceSha256": "d" * 64}
+    expected = {"sourcePath": remote.PROXY_DIRECTORY + "/r133_stable_proxy.py",
+                "sourceSha256": local.EXPECTED_PROXY_SHA, "sourceCommit": "e" * 40,
+                "proxyReleaseId": local.EXPECTED_RELEASE, "revision": 6, "currentSlot": model["slot"],
+                "currentReleaseId": model["releaseId"], "currentReceiptSha256": "a" * 64,
+                "process": {"pid": 10001, "startTicks": "600000001", "cwd": remote.PROXY_DIRECTORY},
+                "modelProcess": {"pid": 10002, "startTicks": "600000000", "cwd": model["releasePath"]},
+                "modelSourceSha256": model["sourceSha256"]}
+    return expected, model
+
+
+def observed_identity(expected, model):
+    process = deepcopy(expected["process"])
+    model_process = deepcopy(expected["modelProcess"])
+    measured = {key: expected[key] for key in ("sourcePath", "sourceSha256", "proxyReleaseId",
+                    "revision", "currentSlot", "currentReleaseId", "currentReceiptSha256")}
+    measured.update(processIds=[process["pid"]], listenerProcessIds=[process["pid"]], currentEnabled=True)
+    measured["currentModel"] = {"slot": model["slot"], "fixedReleaseId": model["releaseId"],
+        "stateReleaseId": model["releaseId"], "stateReceiptSha256": expected["currentReceiptSha256"],
+        "runtimeReleasePath": model["releasePath"], "runtimeSourceSha256": model["sourceSha256"],
+        "runtimeSourceRelativePath": model["sourceRelativePath"], "stateEnabled": True,
+        "internalPort": remote.MODEL_PORTS[model["slot"]],
+        "supervisorProgram": remote.MODEL_PROGRAMS[model["slot"]], "supervisorState": "RUNNING",
+        "supervisorPid": model_process["pid"], "supervisorCwd": model_process["cwd"],
+        "supervisorProcess": deepcopy(model_process), "listenerProcessIds": [model_process["pid"]],
+        "listenerProcesses": [deepcopy(model_process)]}
+    health = {key: expected[key] for key in ("proxyReleaseId", "revision", "currentSlot", "currentReleaseId")}
+    health.update(ok=True, drainTrusted=True)
+    return {"identity": measured, "health": health}, process, model_process
 
 
 class MonitoringTests(unittest.TestCase):
@@ -94,6 +130,136 @@ class MonitoringTests(unittest.TestCase):
         self.assertEqual(expected["process"]["pid"], 4031530)
         self.assertEqual(expected["sourceSha256"], local.EXPECTED_PROXY_SHA)
         self.assertEqual(remote.parse_utc(confirmed), remote.parse_utc("2026-09-06T16:36:52.292087Z"))
+
+    def test_frozen_new_identity_and_bound_local_evidence(self):
+        expected, model = frozen_identity()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            evidence = root / "independent-identity.json"
+            evidence.write_text(json.dumps({"verified": True, "identity": expected}))
+            receipt = {"schema": local.IDENTITY_RECEIPT_SCHEMA, "verified": True,
+                       "verifiedAtUTC": "2026-09-06T18:00:00Z", "expected": expected,
+                       "modelExpectation": model,
+                       "deploymentEvidence": [{"path": str(evidence), "sha256": local.sha(evidence.read_bytes())}]}
+            path = root / "frozen.json"
+            path.write_text(json.dumps(receipt))
+            actual, confirmed, provenance, actual_model = local.load_identity_receipt(path, root)
+            self.assertEqual(actual, expected)
+            self.assertEqual(actual_model, model)
+            self.assertEqual(confirmed, receipt["verifiedAtUTC"])
+            self.assertEqual(provenance["identityReceiptSha256"], local.sha(path.read_bytes()))
+            evidence.write_text('{"verified":false}')
+            with self.assertRaisesRegex(ValueError, "binding"):
+                local.load_identity_receipt(path, root)
+
+    def test_forged_paths_and_inconsistent_receipt_fields_fail_closed(self):
+        expected, model = frozen_identity()
+        mutations = [
+            ("expected", "sourcePath", remote.PROXY_DIRECTORY + "/../other/r133_stable_proxy.py"),
+            ("expected", "sourceSha256", "f" * 64), ("expected", "sourceCommit", "short"),
+            ("expected", "currentSlot", "green"), ("expected", "modelSourceSha256", "b" * 64),
+            ("expected", "revision", True), ("model", "version", "bad"),
+            ("model", "releasePath", remote.MODEL_DIRECTORY + "../elsewhere"),
+            ("model", "sourceRelativePath", "api/src/../private.py"),
+            ("model", "sourceRelativePath", "/tmp/private.py"),
+            ("model", "sourceRelativePath", "api//src/source.py"),
+        ]
+        for target, key, value in mutations:
+            with self.subTest(target=target, key=key, value=value):
+                values = {"expected": deepcopy(expected), "model": deepcopy(model)}
+                values[target][key] = value
+                with self.assertRaises(ValueError):
+                    remote.validate_expected(values["expected"], values["model"])
+        for field in ("process", "modelProcess"):
+            for key, value in (("pid", True), ("startTicks", ""), ("cwd", "/tmp/alias")):
+                other = deepcopy(expected)
+                other[field][key] = value
+                with self.assertRaises(ValueError):
+                    remote.validate_expected(other, model)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "allowed"
+            root.mkdir()
+            outside = Path(directory) / "outside.json"
+            outside.write_text('{}')
+            alias = root / "alias.json"
+            alias.symlink_to(outside)
+            for path in (str(outside), str(alias), str(root / ".." / "outside.json")):
+                with self.assertRaises(ValueError):
+                    local.read_bound_json(path, root)
+
+    def test_runtime_drift_same_v2_release_does_not_pass(self):
+        expected, model = frozen_identity()
+        remote.validate_expected(expected, model)
+        value, process, model_process = observed_identity(expected, model)
+        self.assertEqual(remote.identity_issues(value, expected, process, model_process, model), [])
+        for field, replacement in (("revision", 2), ("currentSlot", "green"),
+                                   ("currentReleaseId", "old-r133"), ("currentReceiptSha256", "b" * 64)):
+            other = deepcopy(value)
+            other["identity"][field] = replacement
+            self.assertTrue(remote.identity_issues(other, expected, process, model_process, model))
+
+    def test_explicit_model_expectation_reaches_helper_and_argv_is_restored(self):
+        expected, model = frozen_identity()
+        value, process, model_process = observed_identity(expected, model)
+        helper = '''import json,sys
+def main():
+    assert sys.argv[2] == "--model-expectation-json"
+    assert json.loads(sys.argv[3]) == MODEL
+    print(json.dumps(VALUE))
+def process_metadata(pid):
+    return PROCESSES[str(pid)]
+'''.replace("MODEL", repr(model)).replace("VALUE", repr(value)).replace(
+            "PROCESSES", repr({str(process["pid"]): process, str(model_process["pid"]): model_process}))
+        payload = {"expected": expected, "modelExpectation": model,
+                   "identityHelperSource": helper, "productionActiveFromUTC": "2026-09-06T18:00:00Z"}
+        original_argv = remote.sys.argv
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "supervisor.log"
+            log.write_text("")
+            source_path = Mock()
+            source_path.resolve.return_value = source_path
+            def local_path(path):
+                if path == expected["sourcePath"]:
+                    return source_path
+                if path == "/var/log/supervisor/supervisord.log":
+                    return log
+                return Path(directory) / "unavailable-proc-stat"
+            with patch.object(remote, "Path", side_effect=local_path):
+                result = remote.runtime_identity(payload)
+        self.assertTrue(result["verified"])
+        self.assertIs(remote.sys.argv, original_argv)
+        for which in ("proxy", "model"):
+            p, mp = deepcopy(process), deepcopy(model_process)
+            (p if which == "proxy" else mp)["startTicks"] = "600000999"
+            self.assertTrue(remote.identity_issues(value, expected, p, mp, model))
+        for field, replacement in (("runtimeSourceSha256", "b" * 64),
+                ("runtimeSourceRelativePath", "api/src/private.py"),
+                ("runtimeReleasePath", remote.MODEL_DIRECTORY + "old-r133"),
+                ("supervisorState", "STOPPED"), ("stateEnabled", False), ("internalPort", 18880)):
+            other = deepcopy(value)
+            other["identity"]["currentModel"][field] = replacement
+            self.assertTrue(remote.identity_issues(other, expected, process, model_process, model))
+
+    def test_old_slot_events_in_new_window_make_coverage_incomplete(self):
+        expected, model = frozen_identity()
+        start = remote.parse_utc("2026-09-06T18:01:00Z")
+        rows = [{"schema": remote.EVENT_SCHEMA, "stage": "request_finished", "time_unix": start + n,
+                 "proxyReleaseId": expected["proxyReleaseId"], "slot": slot, "revision": revision,
+                 "releaseId": release, "status": 200, "outcome": "complete"}
+                for n, (slot, revision, release) in enumerate([
+                    ("green", 2, "old-r133"), ("blue", 6, model["releaseId"])])]
+        payload = {"startUTC": remote.utc(start), "endUTC": remote.utc(start + 5),
+                   "productionActiveFromUTC": remote.utc(start - 1), "expected": expected,
+                   "maxScanMiB": 1, "includeEvents": True, "maxEvents": 20, "maxRequests": 20}
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "synthetic.log"
+            log.write_text('\n'.join(json.dumps(v) for v in rows) + '\n')
+            with patch.object(remote, "runtime_identity", return_value={"verified": True}), \
+                    patch.object(remote, "Path", return_value=log):
+                result = remote.collect(payload)
+        self.assertFalse(result["identityAndCoverageVerified"])
+        self.assertEqual(result["coverage"]["unexpectedRoutingIdentityEvents"], 1)
+        self.assertEqual(result["counts"]["finishedReportedStatuses"], {"200": 1})
 
 
 if __name__ == "__main__":

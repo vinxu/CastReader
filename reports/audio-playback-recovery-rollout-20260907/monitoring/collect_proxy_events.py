@@ -5,16 +5,16 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 
-from remote_proxy_events import parse_utc
+from remote_proxy_events import parse_utc, validate_expected, EXPECTED_RELEASE, EXPECTED_PROXY_SHA
 
 HERE = Path(__file__).resolve().parent
 PREFIX = "CASTREADER_SANITIZED_PROXY_WINDOW="
 MODEL_SOURCE_SHA = "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e"
-EXPECTED_RELEASE = "us-tts-origin-proxy-20260907-v2"
-EXPECTED_PROXY_SHA = "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
+IDENTITY_RECEIPT_SCHEMA = "castreader.us-proxy-monitor-identity-receipt.v1"
 
 
 def sha(raw):
@@ -66,13 +66,62 @@ def load_expected(apply_path, status_path):
     return expected, confirmed, provenance
 
 
+def read_bound_json(path, root):
+    """Only canonical regular JSON evidence inside this rollout; no secret paths."""
+    if (not isinstance(path, str) or not Path(path).is_absolute()
+            or Path(path).suffix != ".json"):
+        raise ValueError("evidence_path_invalid")
+    candidate = Path(path)
+    resolved = candidate.resolve(strict=True)
+    resolved.relative_to(root.resolve(strict=True))
+    if (str(candidate) != path or resolved != candidate or not candidate.is_file()
+            or not 0 < candidate.stat().st_size <= 8 * 1024 * 1024):
+        raise ValueError("evidence_path_not_canonical_regular_json")
+    raw = candidate.read_bytes()
+    value = json.loads(raw)
+    if not isinstance(value, dict):
+        raise ValueError("evidence_object_required")
+    return raw, value
+
+
+def load_identity_receipt(path, evidence_root=None):
+    root = evidence_root if evidence_root is not None else HERE.parent
+    raw, receipt = read_bound_json(str(path), root)
+    if (set(receipt) != {"schema", "verified", "verifiedAtUTC", "expected",
+                         "modelExpectation", "deploymentEvidence"}
+            or receipt["schema"] != IDENTITY_RECEIPT_SCHEMA or receipt["verified"] is not True):
+        raise ValueError("verified_identity_receipt_required")
+    confirmed = receipt["verifiedAtUTC"]
+    parse_utc(confirmed)
+    expected, model = receipt["expected"], receipt["modelExpectation"]
+    validate_expected(expected, model)
+    evidence = receipt["deploymentEvidence"]
+    if not isinstance(evidence, list) or not 1 <= len(evidence) <= 16:
+        raise ValueError("deployment_evidence_required")
+    seen = set()
+    for row in evidence:
+        if (not isinstance(row, dict) or set(row) != {"path", "sha256"}
+                or not isinstance(row["sha256"], str)
+                or re.fullmatch(r"[a-f0-9]{64}", row["sha256"]) is None):
+            raise ValueError("deployment_evidence_shape_invalid")
+        evidence_raw, _ = read_bound_json(row["path"], root)
+        if row["path"] in seen or row["path"] == str(path) or sha(evidence_raw) != row["sha256"]:
+            raise ValueError("deployment_evidence_binding_invalid")
+        seen.add(row["path"])
+    return expected, confirmed, {
+        "identityReceiptPath": str(path), "identityReceiptSha256": sha(raw),
+        "deploymentEvidence": evidence,
+    }, model
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--start-utc", required=True)
     parser.add_argument("--end-utc", required=True, help="Explicit UTC timestamp, or now")
     parser.add_argument("--production-active-from-utc", help="Must be at/after the status receipt confirmation")
-    parser.add_argument("--production-receipt", type=Path, default=HERE.parent / "us-proxy-apply.json")
-    parser.add_argument("--status-receipt", type=Path, default=HERE.parent / "us-proxy-status.json")
+    parser.add_argument("--identity-receipt", type=Path, help="Explicit frozen identity after a verified model/proxy transition")
+    parser.add_argument("--production-receipt", type=Path)
+    parser.add_argument("--status-receipt", type=Path)
     parser.add_argument("--max-scan-mib", type=int, default=64, help="1–128 MiB tail of the combined log")
     parser.add_argument("--max-events", type=int, default=2000, help="1–10000 exported event rows")
     parser.add_argument("--max-requests", type=int, default=2000, help="1–10000 exported anonymous request groups")
@@ -82,7 +131,17 @@ def main():
     if not (1 <= args.max_scan_mib <= 128 and 1 <= args.max_events <= 10000
             and 1 <= args.max_requests <= 10000):
         parser.error("scan/export limits are outside the bounded range")
-    expected, confirmed, provenance = load_expected(args.production_receipt.resolve(), args.status_receipt.resolve())
+    if args.identity_receipt is not None:
+        if args.production_receipt is not None or args.status_receipt is not None:
+            parser.error("identity receipt and legacy receipt arguments cannot be combined")
+        # Do not resolve here: the loader must reject a symlink alias rather than
+        # silently turning it into an approved-looking evidence path.
+        expected, confirmed, provenance, model = load_identity_receipt(args.identity_receipt.absolute())
+    else:
+        expected, confirmed, provenance = load_expected(
+            (args.production_receipt or HERE.parent / "us-proxy-apply.json").resolve(),
+            (args.status_receipt or HERE.parent / "us-proxy-status.json").resolve())
+        model = None
     active_from = args.production_active_from_utc or confirmed
     end = datetime.now(timezone.utc).isoformat() if args.end_utc == "now" else args.end_utc
     if not (parse_utc(confirmed) <= parse_utc(active_from) <= parse_utc(args.start_utc) < parse_utc(end)):
@@ -94,6 +153,8 @@ def main():
                "expected": expected, "identityHelperSource": helper.decode(),
                "maxScanMiB": args.max_scan_mib, "maxEvents": args.max_events,
                "maxRequests": args.max_requests, "includeEvents": args.include_events}
+    if model is not None:
+        payload["modelExpectation"] = model
     # stdin contains code and reviewed scalar configuration, never user content.
     source = remote.decode() + "\nprint(" + repr(PREFIX) + " + json.dumps(collect(json.loads(" + repr(
         json.dumps(payload)) + ")), sort_keys=True))\n"
@@ -108,6 +169,8 @@ def main():
     if result.get("schema") != "castreader.us-proxy-event-window.v1":
         raise RuntimeError("remote_collection_schema_invalid")
     result["expectedProductionIdentity"] = expected
+    if model is not None:
+        result["expectedModelIdentity"] = model
     result["collector"] = {**provenance, "sshAlias": "castreader-us4090",
                            "identityHelperSourceSha256": sha(helper), "remoteCollectorSourceSha256": sha(remote),
                            "localCollectorSourceSha256": sha(Path(__file__).read_bytes())}

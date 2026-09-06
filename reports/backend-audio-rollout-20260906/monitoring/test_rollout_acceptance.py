@@ -1,9 +1,14 @@
 from datetime import datetime, timedelta, timezone
+import copy
+import hashlib
 import json
 from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 
-from collect_rollout_acceptance import evaluate, merge_proxy_evidence
+from collect_rollout_acceptance import evaluate, merge_proxy_evidence, proxy_identity_args
+import remote_proxy_identity as remote_identity
 
 
 HERE = Path(__file__).resolve().parent
@@ -238,6 +243,203 @@ class ProxyAcceptanceTests(unittest.TestCase):
         report, expected, document = fixtures()
         report["evaluation"].update(windowStarted=False, automaticVerdict="waiting_release")
         self.assertEqual(merge_proxy_evidence(report, expected, document), report)
+
+
+def new_release_fixtures():
+    report, config = evaluated_report()
+    _, expected, document = fixtures()
+    release_id = "20260907-fixture-silent-unit-v2"
+    release_path = str(remote_identity.RELEASES / release_id)
+    expected.update(
+        currentSlot="blue", currentReleaseId=release_id,
+        activeFromUtc="2026-09-06T23:59:00Z", verifiedAtUtc="2026-09-06T23:59:45Z",
+    )
+    config["requiredComponents"]["usOriginProxy"] = expected
+    config["requiredComponents"]["usKokoro"].update(
+        runtimeReleasePath=release_path,
+        runtimeSourceRelativePath="api/src/services/tts_service.py",
+    )
+    document["identity"].update(currentSlot="blue", currentReleaseId=release_id)
+    document["health"].update(currentSlot="blue", currentReleaseId=release_id)
+    model = document["identity"]["currentModel"]
+    model.update(
+        slot="blue", internalPort=8880,
+        fixedReleaseId=release_id, stateReleaseId=release_id,
+        runtimeReleasePath=release_path,
+        runtimeSourceRelativePath="api/src/services/tts_service.py",
+        expectedVersion=config["requiredComponents"]["usKokoro"]["version"],
+        supervisorProgram="castreader-tts", supervisorCwd=release_path,
+        supervisorProcess={"pid": 456, "cwd": release_path},
+        listenerProcesses=[{"pid": 456, "cwd": release_path}],
+    )
+    return report, config, expected, document
+
+
+class ConfiguredModelAcceptanceTests(unittest.TestCase):
+    def test_reviewed_new_blue_release_passes_and_is_explicitly_forwarded(self):
+        report, config, expected, document = new_release_fixtures()
+        original = copy.deepcopy(config)
+        arguments = proxy_identity_args(config)
+        self.assertEqual(arguments[:2], [expected["runtimeSourcePath"], "--model-expectation-json"])
+        transmitted = json.loads(arguments[2])
+        self.assertEqual(transmitted["slot"], "blue")
+        self.assertEqual(transmitted["releaseId"], expected["currentReleaseId"])
+        self.assertEqual(transmitted["sourceRelativePath"], "api/src/services/tts_service.py")
+        self.assertEqual(transmitted["sourceSha256"], KOKORO_SOURCE)
+        self.assertEqual(config, original)
+        result = merge_proxy_evidence(report, expected, document, config)
+        self.assertEqual(result["evaluation"]["automaticVerdict"], "pass")
+
+    def test_new_model_path_slot_source_hash_version_and_process_drift_cannot_pass(self):
+        mutations = (
+            ("runtimeReleasePath", str(remote_identity.RELEASES / "wrong")),
+            ("slot", "green"), ("internalPort", 18880),
+            ("runtimeSourceRelativePath", "api/src/inference/english_g2p_recovery.py"),
+            ("runtimeSourceSha256", "0" * 64), ("expectedVersion", "0" * 40),
+            ("supervisorProgram", "other-program"),
+            ("supervisorPid", 999), ("listenerProcessIds", [999]),
+        )
+        for key, value in mutations:
+            with self.subTest(key=key):
+                report, config, expected, document = new_release_fixtures()
+                document["identity"]["currentModel"][key] = value
+                result = merge_proxy_evidence(report, expected, document, config)
+                self.assertNotEqual(result["evaluation"]["automaticVerdict"], "pass")
+
+    def test_unreviewed_or_malformed_local_model_expectation_is_not_forwarded(self):
+        for component in ("usKokoro", "usOriginProxy"):
+            _, config, _, _ = new_release_fixtures()
+            config["requiredComponents"][component]["verified"] = False
+            with self.assertRaisesRegex(ValueError, "not_verified"):
+                proxy_identity_args(config)
+        _, config, _, _ = new_release_fixtures()
+        config["requiredComponents"]["usKokoro"]["runtimeSourceRelativePath"] = "../tts_service.py"
+        with self.assertRaisesRegex(ValueError, "source_path_invalid"):
+            proxy_identity_args(config)
+
+    def test_legacy_acceptance_state_still_uses_source_only_invocation(self):
+        _, expected, _ = fixtures()
+        config = acceptance_config()
+        config["requiredComponents"]["usOriginProxy"] = expected
+        self.assertEqual(proxy_identity_args(config), [expected["runtimeSourcePath"]])
+
+
+class RemoteModelIdentityTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.temporary = Path(temporary.name).resolve()
+        self.releases = self.temporary / "releases"
+        self.releases.mkdir()
+        self.release_id = "20260907-fixture-silent-unit-v2"
+        self.release = self.releases / self.release_id
+        self.relative = "api/src/services/tts_service.py"
+        self.source = self.release / self.relative
+        self.source.parent.mkdir(parents=True)
+        self.source.write_bytes(b"# deterministic model source fixture\n")
+        self.expected = {
+            "slot": "blue", "releaseId": self.release_id, "version": "a" * 40,
+            "releasePath": str(self.release), "sourceRelativePath": self.relative,
+            "sourceSha256": hashlib.sha256(self.source.read_bytes()).hexdigest(),
+        }
+        self.state = {"currentSlot": "blue", "slots": {"blue": {
+            "releaseId": self.release_id, "receiptSha256": "b" * 64, "enabled": True,
+        }}}
+        slots = copy.deepcopy(remote_identity.SLOTS)
+        for slot in slots.values():
+            slot["releasePath"] = self.releases / slot["releaseId"]
+        for name, replacement in (("RELEASES", self.releases), ("SLOTS", slots)):
+            patcher = patch.object(remote_identity, name, replacement)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        process = {"pid": 456, "cwd": str(self.release)}
+        self.listeners = patch.object(remote_identity, "listener_processes", return_value=[process])
+        self.supervisor = patch.object(remote_identity, "supervisor_identity", return_value={
+            "program": "castreader-tts", "state": "RUNNING", "pid": 456, "process": process,
+        })
+        self.listener_mock = self.listeners.start()
+        self.supervisor_mock = self.supervisor.start()
+        self.addCleanup(self.listeners.stop)
+        self.addCleanup(self.supervisor.stop)
+
+    def test_new_source_is_hashed_with_fixed_blue_process_and_port(self):
+        result = remote_identity.current_model_identity(self.state, self.expected)
+        self.assertEqual(result["runtimeSourceSha256"], self.expected["sourceSha256"])
+        self.assertEqual(result["runtimeSourceRelativePath"], self.relative)
+        self.assertEqual(result["runtimeReleasePath"], str(self.release))
+        self.assertEqual(result["expectedVersion"], "a" * 40)
+        self.assertEqual(result["internalPort"], 8880)
+        self.listener_mock.assert_called_once_with(8880)
+        self.supervisor_mock.assert_called_once_with("castreader-tts")
+
+    def test_explicit_expectation_never_learns_release_or_slot_from_online_state(self):
+        for key, value in (("releaseId", "unreviewed-online-release"), ("currentSlot", "green")):
+            state = copy.deepcopy(self.state)
+            if key == "currentSlot":
+                state[key] = value
+                state["slots"]["green"] = state["slots"]["blue"]
+            else:
+                state["slots"]["blue"][key] = value
+            with self.assertRaisesRegex(ValueError, "route_mismatch"):
+                remote_identity.current_model_identity(state, self.expected)
+        self.listener_mock.assert_not_called()
+
+    def test_invalid_configuration_paths_hashes_and_port_override_are_rejected(self):
+        mutations = (
+            ("releasePath", str(self.temporary / "outside")),
+            ("releaseId", "../escape"), ("slot", "other"),
+            ("sourceRelativePath", "../tts_service.py"),
+            ("sourceRelativePath", "/api/src/services/tts_service.py"),
+            ("sourceRelativePath", "api/src/../services/tts_service.py"),
+            ("sourceRelativePath", "api//src/services/tts_service.py"),
+            ("sourceRelativePath", "api/src/services/missing.py"),
+            ("sourceSha256", "0" * 64), ("version", "unreviewed"),
+            ("port", 18880),
+        )
+        for key, value in mutations:
+            with self.subTest(key=key, value=value):
+                expected = dict(self.expected, **{key: value})
+                with self.assertRaises((ValueError, OSError)):
+                    remote_identity.current_model_identity(self.state, expected)
+        self.listener_mock.assert_not_called()
+
+    def test_source_and_release_symlink_escape_or_alias_are_rejected(self):
+        outside = self.temporary / "outside.py"
+        outside.write_bytes(self.source.read_bytes())
+        self.source.unlink()
+        self.source.symlink_to(outside)
+        with self.assertRaises(ValueError):
+            remote_identity.current_model_identity(self.state, self.expected)
+        self.source.unlink()
+        alias = self.release / "other.py"
+        alias.write_bytes(outside.read_bytes())
+        self.source.symlink_to(alias)
+        with self.assertRaisesRegex(ValueError, "source_path_not_canonical"):
+            remote_identity.current_model_identity(self.state, self.expected)
+        self.source.unlink()
+        self.source.write_bytes(outside.read_bytes())
+        moved = self.releases / "other-release"
+        self.release.rename(moved)
+        self.release.symlink_to(moved, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "release_path_not_canonical"):
+            remote_identity.current_model_identity(self.state, self.expected)
+        self.listener_mock.assert_not_called()
+
+    def test_no_optional_argument_preserves_frozen_legacy_release_and_source(self):
+        for slot_name, settings in remote_identity.SLOTS.items():
+            legacy_source = settings["releasePath"] / remote_identity.SOURCE_RELATIVE
+            legacy_source.parent.mkdir(parents=True)
+            legacy_source.write_bytes(b"# legacy fixture\n")
+            state = {"currentSlot": slot_name, "slots": {slot_name: {
+                "releaseId": settings["releaseId"], "receiptSha256": "c" * 64, "enabled": True,
+            }}}
+            result = remote_identity.current_model_identity(state)
+            self.assertEqual(result["fixedReleaseId"], settings["releaseId"])
+            self.assertEqual(result["runtimeSourceRelativePath"], remote_identity.SOURCE_RELATIVE.as_posix())
+            self.assertEqual(result["runtimeSourceSha256"], hashlib.sha256(b"# legacy fixture\n").hexdigest())
+            self.assertNotIn("expectedVersion", result)
+            self.listener_mock.assert_called_with(settings["port"])
+            self.supervisor_mock.assert_called_with(settings["supervisorProgram"])
 
 
 if __name__ == "__main__":

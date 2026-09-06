@@ -14,6 +14,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import ssl
 import subprocess
 import sys
@@ -93,7 +94,9 @@ def deep_override(config, arguments):
 def run_remote_script(host_arguments, script, script_arguments, timeout):
     command = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10"]
     command.extend(host_arguments)
-    command.extend(["python3", "-", *script_arguments])
+    # SSH joins remote command arguments for a shell; quote the Python argv as
+    # one command while retaining any reviewed host_arguments suffix (sudo).
+    command.append(shlex.join(["python3", "-", *script_arguments]))
     completed = subprocess.run(
         command,
         input=script.read_text(),

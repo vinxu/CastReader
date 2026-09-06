@@ -1,0 +1,42 @@
+{
+  "readOnly": true,
+  "selectedStartupPaths": {
+    "VOICES_DIR": "/workspace/castreader-runtime/current/api/src/voices/v1_0",
+    "CASTREADER_MODEL_PACKAGES": "/workspace/castreader-runtime/current/api/src/inference/model_packages.json",
+    "MODEL_DIR": "/workspace/castreader-runtime/current/api/src/models"
+  },
+  "uvicornVersion": "0.34.0",
+  "captureSignalsSource": "    @contextlib.contextmanager\n    def capture_signals(self) -> Generator[None, None, None]:\n        # Signals can only be listened to from the main thread.\n        if threading.current_thread() is not threading.main_thread():\n            yield\n            return\n        # always use signal.signal, even if loop.add_signal_handler is available\n        # this allows to restore previous signal handlers later on\n        original_handlers = {sig: signal.signal(sig, self.handle_exit) for sig in HANDLED_SIGNALS}\n        try:\n            yield\n        finally:\n            for sig, handler in original_handlers.items():\n                signal.signal(sig, handler)\n        # If we did gracefully shut down due to a signal, try to\n        # trigger the expected behaviour now; multiple signals would be\n        # done LIFO, see https://stackoverflow.com/questions/48434964\n        for captured_signal in reversed(self._captured_signals):\n            signal.raise_signal(captured_signal)\n",
+  "supervisorEvents": [
+    {
+      "at": "2026-09-06 18:07:22,844",
+      "event": "exited",
+      "terminatedBy": "SIGTERM",
+      "expected": false
+    },
+    {
+      "at": "2026-09-06 18:07:23,313",
+      "event": "spawned",
+      "pid": 4114885
+    },
+    {
+      "at": "2026-09-06 18:07:32,032",
+      "event": "success"
+    },
+    {
+      "at": "2026-09-06 18:07:22,844",
+      "event": "exited",
+      "terminatedBy": "SIGTERM",
+      "expected": false
+    },
+    {
+      "at": "2026-09-06 18:07:23,313",
+      "event": "spawned",
+      "pid": 4114885
+    },
+    {
+      "at": "2026-09-06 18:07:32,032",
+      "event": "success"
+    }
+  ]
+}

@@ -1,6 +1,24 @@
 {
   "cutoverState": "observing",
+  "maintenanceEvents": [
+    {
+      "actualProxyRevision": 3,
+      "atUTC": "2026-09-06T18:08:09.783483+00:00",
+      "evidence": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r134/start-blue-interruption-status.json",
+      "operation": "inactive_blue_disabled_before_model_candidate",
+      "servingModelChanged": false
+    },
+    {
+      "atUTC": "2026-09-06T18:37:52.522573+00:00",
+      "evidence": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r134/production-final-status.json",
+      "modelsRestartedByRegistry": false,
+      "operation": "R134_model_and_registry_live_verified",
+      "proxyRestarted": true,
+      "registryStopToReadyUpperBoundSeconds": 6.295
+    }
+  ],
   "policy": {
+    "interimWindowRetainedAt": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/interim-before-r134/acceptance-state.json",
     "minimumProductionStartsByPlatform": {
       "android": 1,
       "ios": 1
@@ -8,11 +26,52 @@
     "monitorExpectedCadenceSeconds": 300,
     "monitorMaxBoundaryLagSeconds": 900,
     "monitorMaxObservedGapSeconds": 900,
-    "observationReason": "User requested post-iteration observation; new window after all three backend releases verified, historical window retained separately",
+    "observationReason": "Fixed 24h after complete final backend iteration including R134, public audio validation, independent runtime readback and same-region private backup. Earlier windows retained.",
     "parentWindowRetainedAt": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/acceptance-state.json",
     "requireAndroid145GatewaySample": true
   },
-  "releaseHistory": [],
+  "releaseHistory": [
+    {
+      "activationTimeSemantics": "First independent production identity readback after successful full release workflow",
+      "activeFromUtc": "2026-09-06T16:45:55.382733+00:00",
+      "component": "globalGateway",
+      "routeRevision": 1,
+      "routeSource": "database",
+      "sourceCommit": "33e49a945e36940618457d5c33f8277652e7b92d",
+      "supersededAtUtc": "2026-09-06T17:26:40.829093+00:00",
+      "upstreamReceiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "upstreamURL": "http://71.175.237.103:41209/dev/captioned_speech",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T16:45:55.382733+00:00",
+      "version": "dpl_E3vhShktBut8yrPjXLViPqhp1zRt"
+    },
+    {
+      "activeFromUtc": "2026-09-06T04:14:09.225793+00:00",
+      "component": "usKokoro",
+      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+      "runtimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
+      "supersededAtUtc": "2026-09-06T18:37:52.522573+00:00",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T04:17:43.595454+00:00",
+      "version": "ca857ee91c3367999fb905de1f0924a6e28edd81"
+    },
+    {
+      "activationTimeSemantics": "First independent confirmed production identity after proxy upgrade; actual switch was earlier within apply receipt interval",
+      "activeFromUtc": "2026-09-06T16:36:52.292087+00:00",
+      "component": "usOriginProxy",
+      "currentReceiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+      "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
+      "currentSlot": "green",
+      "routeRevision": 3,
+      "runtimeSourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
+      "runtimeSourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba",
+      "sourceCommit": "21cad1b1823d28b9b7c257744dc0b1704403931a",
+      "supersededAtUtc": "2026-09-06T18:37:52.522573+00:00",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T16:36:52.292087+00:00",
+      "version": "us-tts-origin-proxy-20260907-v2"
+    }
+  ],
   "requiredComponents": {
     "directGateway": {
       "activeFromUtc": "2026-09-06T16:51:50.888941+00:00",
@@ -24,36 +83,38 @@
     },
     "globalGateway": {
       "activationTimeSemantics": "First independent production identity readback after successful full release workflow",
-      "activeFromUtc": "2026-09-06T16:45:55.382733+00:00",
-      "routeRevision": 1,
+      "activeFromUtc": "2026-09-06T17:26:40.829093+00:00",
+      "routeRevision": 2,
       "routeSource": "database",
-      "sourceCommit": "33e49a945e36940618457d5c33f8277652e7b92d",
-      "upstreamReceiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "sourceCommit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+      "upstreamReceiptSha256": "493ae5a2309cb6a6fc65142a8756c019e6b4cdd40ad41a9edc972718162051c1",
       "upstreamURL": "http://71.175.237.103:41209/dev/captioned_speech",
       "verified": true,
-      "verifiedAtUtc": "2026-09-06T16:45:55.382733+00:00",
-      "version": "dpl_E3vhShktBut8yrPjXLViPqhp1zRt"
+      "verifiedAtUtc": "2026-09-06T17:26:40.829093+00:00",
+      "version": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5"
     },
     "usKokoro": {
-      "activeFromUtc": "2026-09-06T04:14:09.225793+00:00",
-      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
-      "runtimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
+      "activationTimeSemantics": "Conservative first independent final identity confirmation after public complete-audio validation; route applied at 18:34:44Z",
+      "activeFromUtc": "2026-09-06T18:37:52.522573+00:00",
+      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+      "runtimeSourceRelativePath": "api/src/services/tts_service.py",
+      "runtimeSourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
       "verified": true,
-      "verifiedAtUtc": "2026-09-06T04:17:43.595454+00:00",
-      "version": "ca857ee91c3367999fb905de1f0924a6e28edd81"
+      "verifiedAtUtc": "2026-09-06T18:37:52.522573+00:00",
+      "version": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52"
     },
     "usOriginProxy": {
-      "activationTimeSemantics": "First independent confirmed production identity after proxy upgrade; actual switch was earlier within apply receipt interval",
-      "activeFromUtc": "2026-09-06T16:36:52.292087+00:00",
-      "currentReceiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
-      "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
-      "currentSlot": "green",
-      "routeRevision": 2,
+      "activationTimeSemantics": "Final independently verified R134 routing and restarted v2 process; binary unchanged",
+      "activeFromUtc": "2026-09-06T18:37:52.522573+00:00",
+      "currentReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+      "currentReleaseId": "20260907-kokoro-silent-separators-us-r134",
+      "currentSlot": "blue",
+      "routeRevision": 6,
       "runtimeSourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
       "runtimeSourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba",
       "sourceCommit": "21cad1b1823d28b9b7c257744dc0b1704403931a",
       "verified": true,
-      "verifiedAtUtc": "2026-09-06T16:36:52.292087+00:00",
+      "verifiedAtUtc": "2026-09-06T18:37:52.522573+00:00",
       "version": "us-tts-origin-proxy-20260907-v2"
     }
   },
@@ -82,8 +143,8 @@
     "vercelWallClockBudgetSeconds": 300
   },
   "window": {
-    "endUtc": "2026-09-07T16:52:02.916356+00:00",
+    "endUtc": "2026-09-07T18:37:52.522573+00:00",
     "requiredSeconds": 86400,
-    "startUtc": "2026-09-06T16:52:02.916356+00:00"
+    "startUtc": "2026-09-06T18:37:52.522573+00:00"
   }
 }

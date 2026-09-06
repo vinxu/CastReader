@@ -1,0 +1,12 @@
+{
+  "candidateModelLoaded": false,
+  "candidateTreeSha256": "e1e37519b0f53dd9e16dbc2c9b366e1e2fd343df4e40de56036e45ab898c47c6",
+  "helperSourceSha256": "33299ca01af3743c56672f89bdb81da802a4c12b1992a7dfe7616ccca17a2311",
+  "hostSourceSha256": "bc79b1c7b56cdb8bed8f3403475c55ee3be2696ffa073e8010d872de992d6e54",
+  "installReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+  "processesUnchanged": true,
+  "releaseId": "20260907-kokoro-silent-separators-us-r134",
+  "schema": "castreader.us-kokoro-r134-stage.v1",
+  "sourceCommit": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52",
+  "verified": true
+}

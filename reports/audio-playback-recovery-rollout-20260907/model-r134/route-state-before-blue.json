@@ -1,0 +1,22 @@
+{
+  "bootId": "6aa7a9945aa341ff8926bfe66877cb79",
+  "cleanShutdown": false,
+  "currentSlot": "green",
+  "lastOperationId": "r134-registry-b857b765e90a0b68c160",
+  "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+  "revision": 4,
+  "schema": "castreader.us-tts-origin-proxy-state.v1",
+  "slots": {
+    "blue": {
+      "enabled": false,
+      "receiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+      "releaseId": "20260907-kokoro-silent-separators-us-r134"
+    },
+    "green": {
+      "enabled": true,
+      "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+      "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+    }
+  },
+  "updatedAt": "2026-09-06T18:32:11.429209Z"
+}

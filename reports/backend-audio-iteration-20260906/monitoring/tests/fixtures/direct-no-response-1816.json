@@ -1,0 +1,17 @@
+{
+  "sourceRelativeToReports": "audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1816Z/acceptance.json",
+  "sourceSha256": "f155f572747ab5c6b09aeeb5f84fb3daf4eb9969bd0fa08c84ae482a41599826",
+  "aggregate": {
+    "statusCounts": {
+      "200": 1254,
+      "no_response": 3
+    },
+    "android145Preset": {
+      "requests": 1254,
+      "statusCounts": {
+        "200": 1253,
+        "no_response": 1
+      }
+    }
+  }
+}

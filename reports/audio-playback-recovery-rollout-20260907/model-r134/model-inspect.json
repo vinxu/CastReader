@@ -1,0 +1,106 @@
+{
+  "candidateTreeSha256": "e1e37519b0f53dd9e16dbc2c9b366e1e2fd343df4e40de56036e45ab898c47c6",
+  "helperSourceSha256": "33299ca01af3743c56672f89bdb81da802a4c12b1992a7dfe7616ccca17a2311",
+  "hostSourceSha256": "bc79b1c7b56cdb8bed8f3403475c55ee3be2696ffa073e8010d872de992d6e54",
+  "installReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+  "observed": {
+    "blueConfigSha256": "d25647b4735984ab678cd2b4ad13c621cd5d3bfb8295dcda8102fb555e5a177c",
+    "blueConnectionObservations": [
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:02:42.403959+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:02:43.422607+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:02:44.442073+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:02:45.460628+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:02:46.479879+00:00"
+      }
+    ],
+    "blueScriptSha256": "3dd1fdbcf60b984a14db5142de9b7d2de3011e7123b0f75e0b82d4f6dba50a28",
+    "connectionSamplesDoNotProveNoLegacyTraffic": true,
+    "current": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+    "gpu": {
+      "freeMiB": 4049,
+      "totalMiB": 24564,
+      "usedMiB": 20044,
+      "utilizationPercent": 0
+    },
+    "legacyPublicPortMayStillReachBlue": true,
+    "observedAt": "2026-09-06T18:02:47.519739+00:00",
+    "processes": {
+      "blue": {
+        "argvSha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83",
+        "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 2665473,
+        "startTicks": "541243790"
+      },
+      "clone": {
+        "argvSha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e",
+        "cwd": "/workspace/castreader-clone",
+        "exe": "/usr/bin/python3.12",
+        "pid": 568834,
+        "startTicks": "524136804"
+      },
+      "green": {
+        "argvSha256": "cf47eee9611d26e23306d3bedb41a71145a41cc13ce8ed4741595b4be4026a8b",
+        "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 3459850,
+        "startTicks": "545406132"
+      },
+      "nari": {
+        "argvSha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2",
+        "cwd": "/workspace/nari-qwen3-tts-clean",
+        "exe": "/usr/bin/python3.12",
+        "pid": 4136837,
+        "startTicks": "519185503"
+      },
+      "proxy": {
+        "argvSha256": "739764da1c5a84c8befeb83848212d68c5079c3a2d0087d020b273427823671f",
+        "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 4031530,
+        "startTicks": "549868431"
+      }
+    },
+    "state": {
+      "bootId": "4d514bb3f2f74c54bb723b3fb33c3e4f",
+      "cleanShutdown": false,
+      "currentSlot": "green",
+      "lastOperationId": "ops-r133-route-green-20260906",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "revision": 2,
+      "schema": "castreader.us-tts-origin-proxy-state.v1",
+      "slots": {
+        "blue": {
+          "enabled": true,
+          "receiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+          "releaseId": "20260905-kokoro-english-g2p-us-r132"
+        },
+        "green": {
+          "enabled": true,
+          "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+        }
+      },
+      "updatedAt": "2026-09-06T04:14:09.225793+00:00"
+    }
+  },
+  "planSha256": "8aa1d1a47f45aa3aa7a458c291606530451a429048e1973a3aaf2c32da9654ea",
+  "readOnly": true,
+  "schema": "castreader.us-kokoro-r134-inspect.v1",
+  "sourceCommit": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52",
+  "verified": true
+}

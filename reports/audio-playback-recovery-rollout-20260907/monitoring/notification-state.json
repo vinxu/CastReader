@@ -1,22 +1,33 @@
 {
-  "schema": "castreader.audio-observation-alert-state.v1",
-  "recordedAtUtc": "2026-09-06T16:58:16.614630+00:00",
-  "heartbeatAutomationId": "24",
-  "window": {
-    "endUtc": "2026-09-07T16:52:02.916356+00:00",
-    "requiredSeconds": 86400,
-    "startUtc": "2026-09-06T16:52:02.916356+00:00"
-  },
-  "latestSnapshotDirectory": "observations/20260906T1655Z",
   "alertEventKeys": [],
   "directRequestKeys": [],
-  "vercelCoreRequestKeys": [],
+  "heartbeatAutomationId": "24",
+  "historicalAlertState": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/notification-state.json",
+  "knownModel400RequestKeys": [
+    "7fe6315b3454e3737bc7",
+    "e4331852bd595754975e",
+    "8a0585d2909dc89be5b7"
+  ],
+  "knownPriorNoResponseRequestKeys": [
+    "2b60c5feb2b28a42e069",
+    "a5d5c1c85ca337486620",
+    "139ec3e2bd125e8c7db9"
+  ],
+  "lastDecision": "DONT_NOTIFY",
+  "lastDecisionReason": "First 481 seconds of final R134 observation: actual sources complete, no technical failures, 93 direct HTTP200, one paired iOS start/first audio, Android new-session and 24h samples still insufficient. Deployment completion is reported separately by parent turn.",
+  "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/README.md",
   "latestClientTechnicalFailureCount": 0,
-  "latestVercelCore5xxCount": 0,
   "latestDirect5xxCount": 0,
   "latestDirectNoResponseCount": 0,
-  "lastDecision": "DONT_NOTIFY",
-  "lastDecisionReason": "First short post-release window, no new technical failures in collected sources; native start samples not yet present. Not a full playback or 24-hour pass.",
-  "historicalAlertState": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/observations/notification-state.json",
-  "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/README.md"
+  "latestSnapshotDirectory": "observations/20260906T1845Z",
+  "latestVercelCore5xxCount": 0,
+  "previousWindowRetainedAt": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/interim-before-r134/notification-state.json",
+  "recordedAtUtc": "2026-09-06T18:45:53.895616Z",
+  "schema": "castreader.audio-observation-alert-state.v1",
+  "vercelCoreRequestKeys": [],
+  "window": {
+    "endUtc": "2026-09-07T18:37:52.522573+00:00",
+    "requiredSeconds": 86400,
+    "startUtc": "2026-09-06T18:37:52.522573+00:00"
+  }
 }

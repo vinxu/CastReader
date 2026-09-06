@@ -1,0 +1,442 @@
+{
+  "audioOrInputRetained": false,
+  "cases": [
+    {
+      "complete": true,
+      "elapsedSeconds": 0.234,
+      "host": "api.castreader.ai",
+      "kind": "silent",
+      "steps": [
+        {
+          "audioBytes": 678,
+          "decodedSamples": 3456,
+          "durationSeconds": 0.144,
+          "remainingCharacters": 0,
+          "requestKey": "d6140063b57430cde8a1",
+          "routingHeaders": {
+            "x-castreader-gateway": "vercel-r2",
+            "x-castreader-tts-noop": "punctuation-only"
+          },
+          "status": 200,
+          "timestamps": 0
+        }
+      ],
+      "stream": null
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 1.418,
+      "host": "api.castreader.ai",
+      "kind": "mixed",
+      "steps": [
+        {
+          "audioBytes": 23085,
+          "decodedSamples": 34560,
+          "durationSeconds": 1.44,
+          "remainingCharacters": 30,
+          "requestKey": "2b6560226d386ac07351",
+          "routingHeaders": {
+            "x-castreader-gateway": "vercel-r2",
+            "x-castreader-tts-timing": "word",
+            "x-castreader-upstream-node": "castreader-us4090",
+            "x-castreader-upstream-region": "global",
+            "x-castreader-upstream-revision": "2",
+            "x-castreader-upstream-source": "database"
+          },
+          "status": 200,
+          "timestamps": 2
+        },
+        {
+          "audioBytes": 678,
+          "decodedSamples": 3456,
+          "durationSeconds": 0.144,
+          "remainingCharacters": 28,
+          "requestKey": "80f611c3a5bc7f4bf7b9",
+          "routingHeaders": {
+            "x-castreader-gateway": "vercel-r2",
+            "x-castreader-tts-noop": "punctuation-only"
+          },
+          "status": 200,
+          "timestamps": 0
+        },
+        {
+          "audioBytes": 32685,
+          "decodedSamples": 48960,
+          "durationSeconds": 2.04,
+          "remainingCharacters": 0,
+          "requestKey": "ee60e01fae60b62131d7",
+          "routingHeaders": {
+            "x-castreader-gateway": "vercel-r2",
+            "x-castreader-tts-timing": "word",
+            "x-castreader-upstream-node": "castreader-us4090",
+            "x-castreader-upstream-region": "global",
+            "x-castreader-upstream-revision": "2",
+            "x-castreader-upstream-source": "database"
+          },
+          "status": 200,
+          "timestamps": 5
+        }
+      ],
+      "stream": null
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 0.137,
+      "host": "api.castreader.ai",
+      "kind": "silent",
+      "steps": [
+        {
+          "audioBytes": 678,
+          "decodedSamples": 3456,
+          "durationSeconds": 0.144,
+          "remainingCharacters": 0,
+          "requestKey": "00ccc97bc3faeb11b1ff",
+          "routingHeaders": {
+            "x-castreader-gateway": "vercel-r2",
+            "x-castreader-tts-noop": "punctuation-only"
+          },
+          "status": 200,
+          "timestamps": 0
+        }
+      ],
+      "stream": true
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 1.271,
+      "host": "api.castreader.ai",
+      "kind": "mixed",
+      "steps": [
+        {
+          "audioBytes": 23085,
+          "decodedSamples": 34560,
+          "durationSeconds": 1.44,
+          "remainingCharacters": 30,
+          "requestKey": "ee9490687b49e9173c36",
+          "routingHeaders": {
+            "x-castreader-gateway": "vercel-r2",
+            "x-castreader-tts-timing": "word",
+            "x-castreader-upstream-node": "castreader-us4090",
+            "x-castreader-upstream-region": "global",
+            "x-castreader-upstream-revision": "2",
+            "x-castreader-upstream-source": "database"
+          },
+          "status": 200,
+          "timestamps": 2
+        },
+        {
+          "audioBytes": 678,
+          "decodedSamples": 3456,
+          "durationSeconds": 0.144,
+          "remainingCharacters": 28,
+          "requestKey": "4e79900ed0f2d5a274aa",
+          "routingHeaders": {
+            "x-castreader-gateway": "vercel-r2",
+            "x-castreader-tts-noop": "punctuation-only"
+          },
+          "status": 200,
+          "timestamps": 0
+        },
+        {
+          "audioBytes": 32685,
+          "decodedSamples": 48960,
+          "durationSeconds": 2.04,
+          "remainingCharacters": 0,
+          "requestKey": "891c0722f14533c93887",
+          "routingHeaders": {
+            "x-castreader-gateway": "vercel-r2",
+            "x-castreader-tts-timing": "word",
+            "x-castreader-upstream-node": "castreader-us4090",
+            "x-castreader-upstream-region": "global",
+            "x-castreader-upstream-revision": "2",
+            "x-castreader-upstream-source": "database"
+          },
+          "status": 200,
+          "timestamps": 5
+        }
+      ],
+      "stream": true
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 0.177,
+      "host": "api.castreader.ai",
+      "kind": "silent",
+      "steps": [
+        {
+          "audioBytes": 678,
+          "decodedSamples": 3456,
+          "durationSeconds": 0.144,
+          "remainingCharacters": 0,
+          "requestKey": "1b6d150d2e16688fcbb2",
+          "routingHeaders": {
+            "x-castreader-gateway": "vercel-r2",
+            "x-castreader-tts-noop": "punctuation-only"
+          },
+          "status": 200,
+          "timestamps": 0
+        }
+      ],
+      "stream": false
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 1.523,
+      "host": "api.castreader.ai",
+      "kind": "mixed",
+      "steps": [
+        {
+          "audioBytes": 23085,
+          "decodedSamples": 34560,
+          "durationSeconds": 1.44,
+          "remainingCharacters": 30,
+          "requestKey": "d9f5134a9fcc4454949f",
+          "routingHeaders": {
+            "x-castreader-gateway": "vercel-r2",
+            "x-castreader-tts-timing": "word",
+            "x-castreader-upstream-node": "castreader-us4090",
+            "x-castreader-upstream-region": "global",
+            "x-castreader-upstream-revision": "2",
+            "x-castreader-upstream-source": "database"
+          },
+          "status": 200,
+          "timestamps": 2
+        },
+        {
+          "audioBytes": 678,
+          "decodedSamples": 3456,
+          "durationSeconds": 0.144,
+          "remainingCharacters": 28,
+          "requestKey": "5ade9823d6212c709abb",
+          "routingHeaders": {
+            "x-castreader-gateway": "vercel-r2",
+            "x-castreader-tts-noop": "punctuation-only"
+          },
+          "status": 200,
+          "timestamps": 0
+        },
+        {
+          "audioBytes": 32685,
+          "decodedSamples": 48960,
+          "durationSeconds": 2.04,
+          "remainingCharacters": 0,
+          "requestKey": "139848fc2fe037e2598e",
+          "routingHeaders": {
+            "x-castreader-gateway": "vercel-r2",
+            "x-castreader-tts-timing": "word",
+            "x-castreader-upstream-node": "castreader-us4090",
+            "x-castreader-upstream-region": "global",
+            "x-castreader-upstream-revision": "2",
+            "x-castreader-upstream-source": "database"
+          },
+          "status": 200,
+          "timestamps": 5
+        }
+      ],
+      "stream": false
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 0.101,
+      "host": "tts.castreader.ai",
+      "kind": "silent",
+      "steps": [
+        {
+          "audioBytes": 2733,
+          "decodedSamples": 4032,
+          "durationSeconds": 0.168,
+          "remainingCharacters": 0,
+          "requestKey": "4ec88e1c9c99e38d2215",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 0
+        }
+      ],
+      "stream": null
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 1.104,
+      "host": "tts.castreader.ai",
+      "kind": "mixed",
+      "steps": [
+        {
+          "audioBytes": 23085,
+          "decodedSamples": 34560,
+          "durationSeconds": 1.44,
+          "remainingCharacters": 30,
+          "requestKey": "0ceb88e3821afa827324",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 2
+        },
+        {
+          "audioBytes": 2733,
+          "decodedSamples": 4032,
+          "durationSeconds": 0.168,
+          "remainingCharacters": 28,
+          "requestKey": "bbfd41fee0fad25f8d2d",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 0
+        },
+        {
+          "audioBytes": 32685,
+          "decodedSamples": 48960,
+          "durationSeconds": 2.04,
+          "remainingCharacters": 0,
+          "requestKey": "5e82601c3ab0f5c9ebdd",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 5
+        }
+      ],
+      "stream": null
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 0.096,
+      "host": "tts.castreader.ai",
+      "kind": "silent",
+      "steps": [
+        {
+          "audioBytes": 2733,
+          "decodedSamples": 4032,
+          "durationSeconds": 0.168,
+          "remainingCharacters": 0,
+          "requestKey": "fe9877a9e30f16b45b14",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 0
+        }
+      ],
+      "stream": true
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 1.092,
+      "host": "tts.castreader.ai",
+      "kind": "mixed",
+      "steps": [
+        {
+          "audioBytes": 22701,
+          "decodedSamples": 33984,
+          "durationSeconds": 1.416,
+          "remainingCharacters": 30,
+          "requestKey": "77b85aa740be579bfb47",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 2
+        },
+        {
+          "audioBytes": 2733,
+          "decodedSamples": 4032,
+          "durationSeconds": 0.168,
+          "remainingCharacters": 28,
+          "requestKey": "d6cb00fd379b9e1ff82c",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 0
+        },
+        {
+          "audioBytes": 32685,
+          "decodedSamples": 48960,
+          "durationSeconds": 2.04,
+          "remainingCharacters": 0,
+          "requestKey": "fc6b06d23a53f1a42567",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 5
+        }
+      ],
+      "stream": true
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 0.097,
+      "host": "tts.castreader.ai",
+      "kind": "silent",
+      "steps": [
+        {
+          "audioBytes": 2733,
+          "decodedSamples": 4032,
+          "durationSeconds": 0.168,
+          "remainingCharacters": 0,
+          "requestKey": "6891a5e1ed7b0c643205",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 0
+        }
+      ],
+      "stream": false
+    },
+    {
+      "complete": true,
+      "elapsedSeconds": 1.89,
+      "host": "tts.castreader.ai",
+      "kind": "mixed",
+      "steps": [
+        {
+          "audioBytes": 23085,
+          "decodedSamples": 34560,
+          "durationSeconds": 1.44,
+          "remainingCharacters": 30,
+          "requestKey": "ab09461db8aceefb254b",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 2
+        },
+        {
+          "audioBytes": 2733,
+          "decodedSamples": 4032,
+          "durationSeconds": 0.168,
+          "remainingCharacters": 28,
+          "requestKey": "f1dac4fb69870e4037e1",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 0
+        },
+        {
+          "audioBytes": 32685,
+          "decodedSamples": 48960,
+          "durationSeconds": 2.04,
+          "remainingCharacters": 0,
+          "requestKey": "c8a6bbcbde9a47220803",
+          "routingHeaders": {
+            "x-castreader-gateway": "direct-us"
+          },
+          "status": 200,
+          "timestamps": 5
+        }
+      ],
+      "stream": false
+    }
+  ],
+  "fixedNonUserText": true,
+  "probeOrigin": "existing US control host",
+  "schema": "castreader.r134-public-audio-validation.v1",
+  "verified": true,
+  "verifiedAtUTC": "2026-09-06T18:37:38.090430+00:00"
+}

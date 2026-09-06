@@ -4,6 +4,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -15,7 +16,7 @@ MONITORING = HERE.parent
 sys.path.insert(0, str(MONITORING))
 
 from acceptance_core import aggregate_mobile, evaluate, parse_utc  # noqa: E402
-from collect_acceptance import collect_global_capabilities, main as collect_main  # noqa: E402
+from collect_acceptance import collect_global_capabilities, main as collect_main, run_remote_script  # noqa: E402
 from remote_monitor_snapshot import consecutive_summary  # noqa: E402
 from remote_tts_gateway_snapshot import aggregate_entries  # noqa: E402
 
@@ -275,6 +276,53 @@ class AcceptanceEvaluationTests(unittest.TestCase):
             "android_145_gateway_sample_missing",
             {item["code"] for item in result["sampleGaps"]},
         )
+
+    def test_1816_no_response_is_retained_without_fabricated_http_failure(self):
+        fixture = json.loads((HERE / "fixtures/direct-no-response-1816.json").read_text())
+        sources = healthy_sources()
+        sources["direct_gateway"]["aggregate"].update(deepcopy(fixture["aggregate"]))
+        before = deepcopy(sources["direct_gateway"])
+        result = evaluate(config(), sources, now=datetime(2026, 9, 8, 1, tzinfo=timezone.utc))
+        self.assertEqual(result["automaticVerdict"], "pass")
+        self.assertNotIn("android_145_gateway_non_2xx", {x["code"] for x in result["technicalFailures"]})
+        advisory = next(x for x in result["advisories"] if x["code"] == "android_145_gateway_no_http_response")
+        self.assertIn("1;", advisory["detail"])
+        # The original non-HTTP records are neither deleted nor relabeled 200.
+        self.assertEqual(sources["direct_gateway"], before)
+        self.assertEqual(before["aggregate"]["statusCounts"], {"200": 1254, "no_response": 3})
+        self.assertEqual(before["aggregate"]["android145Preset"]["statusCounts"], {"200": 1253, "no_response": 1})
+
+    def test_real_android_http_failures_survive_alongside_no_response(self):
+        fixture = json.loads((HERE / "fixtures/direct-no-response-1816.json").read_text())
+        for status in ("400", "504"):
+            with self.subTest(status=status):
+                sources = healthy_sources()
+                aggregate = sources["direct_gateway"]["aggregate"]
+                aggregate.update(deepcopy(fixture["aggregate"]))
+                aggregate["statusCounts"][status] = 1
+                aggregate["android145Preset"]["requests"] += 1
+                aggregate["android145Preset"]["statusCounts"][status] = 1
+                result = evaluate(config(), sources, now=datetime(2026, 9, 8, 1, tzinfo=timezone.utc))
+                self.assertEqual(result["automaticVerdict"], "fail")
+                failure = next(x for x in result["technicalFailures"] if x["code"] == "android_145_gateway_non_2xx")
+                self.assertEqual(failure["detail"], "1")
+                self.assertIn("android_145_gateway_no_http_response", {x["code"] for x in result["advisories"]})
+                if status == "504":
+                    self.assertIn("direct_gateway_5xx", {x["code"] for x in result["technicalFailures"]})
+
+    def test_non_http_only_is_not_a_successful_android_http_sample(self):
+        for label in ("no_response", "unclassified"):
+            with self.subTest(label=label):
+                sources = healthy_sources()
+                sources["direct_gateway"]["aggregate"]["android145Preset"] = {
+                    "requests": 1, "statusCounts": {label: 1},
+                }
+                result = evaluate(config(), sources, now=datetime(2026, 9, 8, 1, tzinfo=timezone.utc))
+                self.assertEqual(result["automaticVerdict"], "inconclusive")
+                self.assertIn("android_145_gateway_sample_missing", {x["code"] for x in result["sampleGaps"]})
+                self.assertNotIn("android_145_gateway_non_2xx", {x["code"] for x in result["technicalFailures"]})
+                if label == "unclassified":
+                    self.assertIn("android_145_gateway_status_unclassified", {x["code"] for x in result["dataOrCoverageGaps"]})
 
     def test_healthy_probes_do_not_override_client_failure(self):
         sources = healthy_sources()
@@ -664,6 +712,32 @@ class MobileAggregationTests(unittest.TestCase):
         )
         self.assertEqual(result["aggregate"]["technicalFailureEvents"], 1)
         self.assertEqual(result["aggregate"]["cancelledEvents"], 0)
+
+
+class RemoteArgumentTests(unittest.TestCase):
+    def test_real_remote_shell_roundtrip_preserves_json_and_literal_shell_text(self):
+        local_run = subprocess.run
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            script = root / "echo_arguments.py"
+            script.write_text("import json,sys\nprint(json.dumps({'argv':sys.argv[1:]}))\n")
+            marker = root / "shell-must-not-execute"
+            arguments = [json.dumps({"slot": "blue", "note": 'quoted "value" and a newline\n'}),
+                         "$(touch " + str(marker) + ")", "`touch " + str(marker) + "`",
+                         "literal 'quotes'; $HOME; \\ and spaces\n"]
+            for host_arguments in (["fixture-us"], ["-i", "fixture identity key", "fixture-cn", "sudo"]):
+                with self.subTest(host_arguments=host_arguments):
+                    def emulate_ssh(command, **kwargs):
+                        self.assertEqual(command[:-1], ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", *host_arguments])
+                        remote = " ".join(command[-2:] if host_arguments[-1] == "sudo" else command[-1:])
+                        # Model the remote shell exactly; the local sudo stand-in
+                        # forwards argv without changing privileges or quoting.
+                        remote = 'sudo() { "$@"; }; ' + remote
+                        return local_run(["/bin/sh", "-c", remote], **kwargs)
+                    with patch("collect_acceptance.subprocess.run", side_effect=emulate_ssh):
+                        result = run_remote_script(host_arguments, script, arguments, 10)
+                    self.assertEqual(result, {"argv": arguments})
+                    self.assertFalse(marker.exists())
 
 
 if __name__ == "__main__":

@@ -1,0 +1,159 @@
+{
+  "admin": {
+    "accepting": true,
+    "active": {
+      "blue": 0,
+      "green": 0
+    },
+    "drainTrusted": true,
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "state": {
+      "bootId": "6aa7a9945aa341ff8926bfe66877cb79",
+      "cleanShutdown": false,
+      "currentSlot": "blue",
+      "lastOperationId": "ops-r134-route-blue-20260907",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "revision": 6,
+      "schema": "castreader.us-tts-origin-proxy-state.v1",
+      "slots": {
+        "blue": {
+          "enabled": true,
+          "receiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134"
+        },
+        "green": {
+          "enabled": true,
+          "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+        }
+      },
+      "updatedAt": "2026-09-06T18:34:44.147195+00:00"
+    }
+  },
+  "checks": {
+    "acceptingAndTrusted": true,
+    "blueExactProcessMatch": true,
+    "blueSupervisorMatches": true,
+    "cloneExactProcessMatch": true,
+    "exactRouteStateMatches": true,
+    "greenDrained": true,
+    "greenExactProcessMatch": true,
+    "greenSupervisorMatches": true,
+    "healthMatches": true,
+    "markerMatches": true,
+    "markerSourceAndTreeMatch": true,
+    "modelListenerAndSupervisorMatch": true,
+    "modelSourceMatches": true,
+    "nariExactProcessMatch": true,
+    "proxyCommandAndListenerMatch": true,
+    "proxyExactProcessMatch": true,
+    "proxySourceMatches": true,
+    "proxySupervisorMatches": true,
+    "revision6CurrentBlue": true,
+    "wrapperMatches": true
+  },
+  "completedAtUTC": "2026-09-06T18:37:52.522573+00:00",
+  "listenerProcesses": {
+    "blue": [
+      {
+        "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+        "exe": "/venv/main/bin/python3.12",
+        "parentPid": 262,
+        "pid": 4137311,
+        "startTicks": "550555282"
+      }
+    ],
+    "clone": [
+      {
+        "cwd": "/workspace/castreader-clone",
+        "exe": "/usr/bin/python3.12",
+        "parentPid": 262,
+        "pid": 568834,
+        "startTicks": "524136804"
+      }
+    ],
+    "green": [
+      {
+        "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+        "exe": "/venv/main/bin/python3.12",
+        "parentPid": 262,
+        "pid": 3459850,
+        "startTicks": "545406132"
+      }
+    ],
+    "nari": [
+      {
+        "cwd": "/workspace/nari-qwen3-tts-clean",
+        "exe": "/usr/bin/python3.12",
+        "parentPid": 262,
+        "pid": 4136837,
+        "startTicks": "519185503"
+      }
+    ],
+    "proxy": [
+      {
+        "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+        "exe": "/venv/main/bin/python3.12",
+        "parentPid": 262,
+        "pid": 4140383,
+        "startTicks": "550575438"
+      }
+    ]
+  },
+  "localHelperSha256": "21e871df4e56264ba8ed2777226a158fa5d17ad2f234585eabab92470ade1657",
+  "marker": {
+    "base_release_id": "20260906-kokoro-repeated-digits-us-r133",
+    "base_tree_sha256": "d9bcd4d1f6f578eb90728dc82650ae7abc43e1756ffd63196baffcf1e7d508fe",
+    "candidate_tree_sha256": "e1e37519b0f53dd9e16dbc2c9b366e1e2fd343df4e40de56036e45ab898c47c6",
+    "overlay_sha256": "7fb6419628c1c1fa469ead456d132888afb5bc9d310644eff738d0308bace3bc",
+    "recovery_index_sha256": "fbfe8bfe7eace04fe2c46d8b34f9c93717a94bdd69ca96c5fd157f357da0550c",
+    "schema": "castreader.us-kokoro-r134-install.v1",
+    "source_commit": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52"
+  },
+  "modelInstallReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+  "modelWrapperSha256": "f18465674b2821cc78ab63c2157a5763282f4152b1d8101bf85e6d76ffb4269c",
+  "productionModified": false,
+  "readOnly": true,
+  "schema": "castreader.us-r134-final-status.v1",
+  "startedAtUTC": "2026-09-06T18:37:52.026989+00:00",
+  "supervisors": {
+    "blue": {
+      "pid": 4137311,
+      "process": {
+        "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+        "exe": "/venv/main/bin/python3.12",
+        "parentPid": 262,
+        "pid": 4137311,
+        "startTicks": "550555282"
+      },
+      "program": "castreader-tts",
+      "state": "RUNNING"
+    },
+    "green": {
+      "pid": 3459850,
+      "process": {
+        "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+        "exe": "/venv/main/bin/python3.12",
+        "parentPid": 262,
+        "pid": 3459850,
+        "startTicks": "545406132"
+      },
+      "program": "castreader-tts-r133-green",
+      "state": "RUNNING"
+    },
+    "proxy": {
+      "pid": 4140383,
+      "process": {
+        "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+        "exe": "/venv/main/bin/python3.12",
+        "parentPid": 262,
+        "pid": 4140383,
+        "startTicks": "550575438"
+      },
+      "program": "castreader-tts-origin-proxy",
+      "state": "RUNNING"
+    }
+  },
+  "synthesisStarted": false,
+  "verified": true
+}

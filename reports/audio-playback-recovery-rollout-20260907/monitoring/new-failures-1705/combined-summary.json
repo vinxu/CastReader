@@ -1,5 +1,5 @@
 {
-  "schema": "castreader.client-direct-predeployment-failure-analysis.v1",
+  "schema": "castreader.client-direct-model-predeployment-failure-analysis.v2",
   "readOnly": true,
   "productionModified": false,
   "rawContentExported": false,
@@ -27,8 +27,19 @@
       "status": 400,
       "directElapsedMs": 14,
       "requestBytes": 583,
-      "directErrorGenerationLayer": "unavailable_legacy_log",
-      "downstreamDisconnectedEvidence": "unavailable_legacy_log"
+      "directErrorGenerationLayer": "upstream_R133_model_confirmed",
+      "downstreamDisconnectedEvidence": "unavailable_legacy_log",
+      "clientToDirectEvidenceGrade": "strong_temporal_and_platform_version_association_only",
+      "directToModelEvidenceGrade": "exact_anonymous_request_key_join",
+      "exactDirectToModelCorrelationAvailable": true,
+      "modelFailureAtUtc": "2026-09-06T16:04:04.890209+00:00",
+      "modelElapsedMs": 2,
+      "modelFailureCode": "no_speakable_content",
+      "modelFailureCodeEvidence": "same_request_ValueError_at_pinned_generate_audio_line_595",
+      "modelOriginalTextClassification": "unavailable_not_queried",
+      "modelRequestLanguage": null,
+      "modelRequestVoice": null,
+      "modelRequestTextChars": null
     },
     {
       "eventKey": "798ead151458637a016f",
@@ -44,8 +55,19 @@
       "status": 400,
       "directElapsedMs": 13,
       "requestBytes": 583,
-      "directErrorGenerationLayer": "unavailable_legacy_log",
-      "downstreamDisconnectedEvidence": "unavailable_legacy_log"
+      "directErrorGenerationLayer": "upstream_R133_model_confirmed",
+      "downstreamDisconnectedEvidence": "unavailable_legacy_log",
+      "clientToDirectEvidenceGrade": "strong_temporal_and_platform_version_association_only",
+      "directToModelEvidenceGrade": "exact_anonymous_request_key_join",
+      "exactDirectToModelCorrelationAvailable": true,
+      "modelFailureAtUtc": "2026-09-06T16:04:17.951893+00:00",
+      "modelElapsedMs": 2,
+      "modelFailureCode": "no_speakable_content",
+      "modelFailureCodeEvidence": "same_request_ValueError_at_pinned_generate_audio_line_595",
+      "modelOriginalTextClassification": "unavailable_not_queried",
+      "modelRequestLanguage": null,
+      "modelRequestVoice": null,
+      "modelRequestTextChars": null
     },
     {
       "eventKey": "855d7b43d4f616193757",
@@ -61,16 +83,108 @@
       "status": 400,
       "directElapsedMs": 357,
       "requestBytes": 165,
-      "directErrorGenerationLayer": "unavailable_legacy_log",
-      "downstreamDisconnectedEvidence": "unavailable_legacy_log"
+      "directErrorGenerationLayer": "upstream_R133_model_confirmed",
+      "downstreamDisconnectedEvidence": "unavailable_legacy_log",
+      "clientToDirectEvidenceGrade": "strong_temporal_and_platform_version_association_only",
+      "directToModelEvidenceGrade": "exact_anonymous_request_key_join",
+      "exactDirectToModelCorrelationAvailable": true,
+      "modelFailureAtUtc": "2026-09-06T16:13:12.943763+00:00",
+      "modelElapsedMs": 2,
+      "modelFailureCode": "no_speakable_content",
+      "modelFailureCodeEvidence": "same_request_ValueError_at_pinned_generate_audio_line_595",
+      "modelOriginalTextClassification": "unavailable_not_queried",
+      "modelRequestLanguage": null,
+      "modelRequestVoice": null,
+      "modelRequestTextChars": null
     }
   ],
   "evidenceBoundaries": [
-    "The three candidates match within 27ms using client-supplied occurred_at and server journal time, but no request/trace key connects them exactly.",
+    "The three client-to-Direct candidates match within 27ms using client-supplied occurred_at and server journal time; platform/version agrees, but no client request/trace key connects them exactly.",
     "All client received_at timestamps also precede all three backend cutovers, so this timing conclusion does not depend solely on the client clock.",
-    "Old Direct code logs no 400 response body, error code, generation layer or abort source. These 400s do not prove a timeout or cancellation.",
-    "Positive requestBytes shows old gateway finished reading the inbound body before failure; invalid JSON/input validation and forwarded upstream 400 remain distinguishable only with further diagnostics.",
-    "A first-audio event and later failure can occur in the same reading session; it is not a successful-playback completion metric.",
-    "No additional production scans were performed after client/session and Direct400 collection."
-  ]
+    "All three Direct400 anonymous request keys exactly match R133 structured complete_audio_failed and request_failed status400 events. Their ValueError frame at pinned tts_service.py generate_audio line595 identifies the no_speakable_content branch; these three 400s originated in the upstream model, not Direct local input validation.",
+    "The model branch establishes that generation returned no audio and the existing requires-generated-audio guard was false. It does not reveal the original text, prove punctuation-only input, or establish per-request language/voice/textChars.",
+    "The 16MiB ordinary combined-log tail starts at 16:13:12.943049 UTC and covers only the third requested window. The first two windows have no ordinary log metadata. Third-window one-second logs have no request ID/PID and interleave different text lengths and language routes; adjacent textChars=1/language/voice rows are unjoined context, not per-request evidence.",
+    "Old Direct logs do not record the 400 response body, error code, abort source/stage or downstream disconnection state. Model correlation establishes the generation layer but does not fill these unavailable gateway fields. These 400s do not prove timeout, cancellation or user intent.",
+    "A first-audio event and later failure can occur in the same reading session; first audio is not a successful-playback completion metric.",
+    "US incident diagnosis uses only the existing three +/-2-second model window artifact and pinned static source. A separately authorized CN static source/process read confirms identical service/router SHA-256 and the same branch, but no CN failure events or synthesis were queried."
+  ],
+  "modelEvidence": {
+    "artifact": "model400-windows.json",
+    "artifactSha256": "75dd5bcf71629960e8f71fb1d4633724e24e97f1e88359849479872cc1b33256",
+    "collectedAtUtc": "2026-09-06T17:32:56.940990+00:00",
+    "exactDirectModelRequestKeyJoins": 3,
+    "modelReleaseId": "20260906-kokoro-repeated-digits-us-r133",
+    "generationLayer": "model_service_no_audio_terminal_branch",
+    "classification": "no_speakable_content",
+    "classificationBasis": "request_key_matched_ValueError_frame_generate_audio_line_595_and_pinned_source",
+    "serviceSourceSha256": "ac1ec2b158f4b2fd9857bf53d743631419eb934729070c5df73d285430b1a910",
+    "serviceSourceLine": 595,
+    "routerSourceSha256": "080365da6cf0b4c0f6636dd6ca5026d5ab3d247f6f0a842bc05a0dd47bee42b3",
+    "routerValueErrorHttpStatus": 400,
+    "originalTextOrPunctuationOnlyInputProven": false,
+    "perRequestLanguageVoiceTextCharsAvailable": false,
+    "ordinaryLogWindowsCovered": [
+      3
+    ],
+    "ordinaryLogMetadataRequestJoined": false
+  },
+  "cnStaticRiskCheck": {
+    "artifact": "cn-static-path.json",
+    "artifactSha256": "4abe6ccd3a577c79263750bcb7923936cea5aab240dae21a38ce24b70010aaf4",
+    "readAtUtc": "2026-09-06T17:42:48.781694+00:00",
+    "sameServiceAndRouterSha256AsUsR133": true,
+    "sameNoSpeakableContentBranch": true,
+    "actualCnFailureEventsQueried": false,
+    "synthesisStarted": false,
+    "productionModified": false
+  },
+  "candidateCodeReview": {
+    "worktree": "/Users/xuxuheng/Documents/MyProject/.worktrees/castreader-tts-silent-separators-20260907",
+    "reviewMode": "independent_read_only_source_review",
+    "reviewedFileSha256": {
+      "api/src/services/tts_service.py": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+      "api/src/routers/development.py": "8cf5bd113485d361a6db3a0b82d40941b48c50af4a4f8db5b198e40caddf5cdf",
+      "api/src/services/streaming_audio_writer.py": "752274ecd95d5427e8e3f0dd7c9913417dd2eda4a08518f51f177ea7694aecc5",
+      "api/tests/test_compatible_atomic_generation.py": "7300c03de9b10eb882307caad405a7feb765034b205f7ed51a9316a25c1e4d10"
+    },
+    "blockingFindings": [],
+    "resolvedFindings": [
+      "Broad Unicode punctuation classification replaced with explicit silent-separator allowlist to preserve readable/unknown symbols.",
+      "Silent event renamed silent_request_audio_ready with encoded flag; it is not an HTTP-success event.",
+      "Opus final muxer page is read after container close; other codecs retain prior streaming order."
+    ],
+    "recoveryBenefit": "Known sentence/wrapping separators and whitespace produce one complete bounded 100ms silent asset; middle separator-only units do not fail the surrounding readable generation.",
+    "gatewayCompatibility": "Global requires nonempty audio but does not require timestamps; complete processed_text with explicit empty unprocessed_text passes both Direct and Global.",
+    "verification": {
+      "implementingAgentReportedTestsPassed": 43,
+      "silentCodecStreamCombinations": 36,
+      "covers": "Six codecs, stream omitted/true/false, two silent inputs; normal full/streaming PCM/WAV/MP3/Opus, readable-symbol failure behavior, middle-unit continuation and final encoder bytes.",
+      "independentChecks": "Actual allowlist AST excludes readable/unknown fixtures; exact evidence joins, source hashes and ordinary-log coverage checked.",
+      "productionReproduction": false,
+      "productionSynthesisByReviewer": false
+    },
+    "historicalInputRecoveryGuaranteed": false,
+    "historicalInputLimitation": "Original text was not queried; old no-speakable-content guard false is broader than the new conservative silent allowlist. Cannot claim all three historical requests are reproduced or guaranteed recovered."
+  },
+  "cnReleaseAssessment": {
+    "samePatchDeployed": false,
+    "currentModelRelease": "20260904-kokoro-playback-cn-r131b",
+    "modelPort": 8880,
+    "modelPid": 640207,
+    "gatewayUpstreamPort": 18880,
+    "canaryPortOnModelHost": 18880,
+    "portsOnDifferentHosts": true,
+    "existingCandidateCapability": "Loopback temporary canary, not a routable standby slot; requires fresh capacity/identity evidence.",
+    "existingCutoverCapability": "Atomic current symlink plus exact-process SIGTERM, up to180s graceful drain, watchdog starts replacement on8880.",
+    "admissionSwitchOrQueueAvailableInReviewedTools": false,
+    "seamlessCnSyncSupportedByExistingTools": false,
+    "specificAvailabilityLimit": "Uvicorn stops accepting new requests while draining and during replacement model startup. Existing active requests may finish, but new synthesis cannot be handed to another serving slot.",
+    "legacyToolsFixedTargets": "Existing r131 operator/host pins r130 to r131b; cannot directly deploy a new release.",
+    "backupDirectory": "/Users/xuxuheng/Backups/CastReader/tts/20260904-r131-cn-post-cos.9zabgg5k",
+    "backupReceiptSha256": "aabe42617e7a7c8869b48e20bbbd9b1e8cec341e91d8ef46642ecf109fbe6522",
+    "backupRegion": "ap-shanghai",
+    "backupLocalBindingsVerified": true,
+    "remoteBackupFreshlyDownloadedByReviewer": false,
+    "decision": "Keep CN unchanged this round; complete US path with observed faults. CN shared static risk and release limitation remain explicit; no broad CN incident scan."
+  }
 }

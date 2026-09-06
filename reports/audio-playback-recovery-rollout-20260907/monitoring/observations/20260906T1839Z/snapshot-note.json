@@ -1,0 +1,6 @@
+{
+  "schema": "castreader.observation-note.v1",
+  "technicalFailureEvents": 0,
+  "directHttp200": 38,
+  "note": "First 118-second final-model snapshot retains real collector argument-quoting failure and no US persisted cycle yet. Independent proxy identity/phase collector succeeds. Do not interpret this collection gap as model outage."
+}

@@ -1,0 +1,14 @@
+{
+  "automationId": "24",
+  "finalWindowDeadlineUTC": "2026-09-07T18:37:52.522573Z",
+  "fixedDeadlineNoAutomaticExtension": true,
+  "name": "\u6838\u5fc3\u97f3\u9891\u4fee\u590d\u4e0a\u7ebf\u540e24\u5c0f\u65f6\u89c2\u5bdf",
+  "promptSha256": "250fa15ad66cc50f49afa9865fc72d57d1c0a57a142e1b201a2e5a2cc84325c3",
+  "quietUnlessMeaningfulChange": true,
+  "scheduleDescription": "hourly",
+  "schema": "castreader.audio-observation-automation-readback.v1",
+  "status": "ACTIVE",
+  "targetThreadId": "01a06667-570e-70f2-8e02-ed20755d6709",
+  "updatedAtEpochMs": 1788720093518,
+  "verified": true
+}

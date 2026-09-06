@@ -1,84 +1,90 @@
-> **本轮后端已部署完成**：国际区主网关 `33e49a94 / dpl_E3vhShktBut8yrPjXLViPqhp1zRt`，US入口 `us-tts-origin-proxy-20260907-v2`，旧版Direct入口 `1213fcd3`。最后组件于 2026-09-06 16:52:02.916 UTC 完成验证/排空；新24小时观察已开始。下方“发布前”“发布中”是执行过程的历史记录。iOS恢复仍需新App版本，不等同后端生效。
+# 核心音频错误归因、修复与部署
 
-# 核心音频错误归因、恢复修复与发布
+Global 主网关、旧版 Direct 网关和美国稳定代理已部署。美国模型 R134 已于2026-09-06 18:34:44.148939 UTC切入生产，18:37:52.522573 UTC独立确认通过，开始最终版本24小时观察。CN本次模型补丁未部署。iOS 恢复包已上传并获 Apple VALID，尚未替换商店版本；上传不视为商店生效。
 
-用户授权：继续归因错误，完成迭代和部署，并观察部署后的错误。本目录接续 9 月 6 日的原因调查与固定窗口监控，实施中；候选提交和构建不视为线上生效。
+## 错误原因与证据边界
 
-## 发布前事实
+| 现象 | 确证原因与边界 | 处理状态 |
+| --- | --- | --- |
+| 3条模型/Direct HTTP400 | 三个匿名请求键的 R133 complete_audio_failed 均指向 generate_audio:595：没有生成音频且旧可读内容 guard 为 false 时，该行抛出 no_speakable_content；随后模型和Direct以相同键记录400，生成层已精确确认为模型。历史正文未读取，不能断言具体字符、语言或音色。 | R134已在US生产生效，明确句读/空白可正常完成并推进后文；CN未部署。 |
+| 原4条Global504 | 约28秒应用预算到期；Vercel hasFunctionCrashed=false，并非已证实函数崩溃。附近有大量相同文本前缀请求，不能据此认定完整请求全部重复或精确GPU排队。 | 保持旧客户端预算，补逐尝试诊断、同区有界恢复、完全相同的在途请求合成复用；已部署。 |
+| 原4条Direct504 | 旧代码将下游断开与上游期限共用Abort，笼统记504；实际297–1006毫秒结束，不能解释为120秒预算耗尽。旧日志不能证明取消来源或504是否送达用户。 | 区分连接断开、本地超时和未知上游失败，关闭的连接不再写504；已部署。 |
+| iOS恢复失效 | 可复现缺陷是复用失败播放器，或旧生成回调覆盖终止状态。历史播放器错误没有底层NSError，初始诱因仍未证实。另有Kindle所有权修复。 | 同一音频重建播放器、保留位置和队列、使旧回调失效；build55已上传VALID，尚未商店发布。 |
 
-- Global 主网关仍为 `e8a755d4ea9602397cad138e6b3bbd3d91f7fa54` / `dpl_9fnjABFoGBgj2ni2KAgf59Pa2jRc`；US 稳定入口 rev2 / green，模型仍 R133。本轮尚未更新这些组件。
-- 16:03:32 UTC 基线快照：客户端技术失败 9；Global 核心 504 为原 4 条；Direct 日志 504 由 3 增至 4。新 Direct 记录发生在 15:56:07.783 UTC，314 毫秒 AbortError，无法解释为 120 秒预算耗尽，具体取消来源和 HTTP 是否送达仍未证实。
-- App Store 已发布现场错误来自 1.2.33 / build53。另一个发布任务的 **1.2.34 / build54 已包含 `09dcb64`、`814030a`，处于 WAITING_FOR_REVIEW**；不应继续笼统写成所有旧补丁都未进入送审包。
-- b54 不包含 `47f9541` 的 Kindle 所有权修复，也不包含本轮播放器恢复。新 iOS 整合基于完整 b54 源码 `578bd91`，保留已送审 Kobo / Google Books 等改动，不能从脏的主工作树打包覆盖。
-- Android `0663a5b` / `d6ab63b` 仍在独立修复工作树；其发行状态需要单独确认，不能用服务端上线代替手机升级。
+累计客户端技术失败9增至12的三条，发生于2026-09-06 16:04:04.923、16:04:17.983、16:13:12.965 UTC，均在本轮后端切换之前发生并上报，来自同一匿名Android1.0.45/build52设备。它们与三个Direct400相差15–27毫秒，是强时间关联；客户端没有远端请求键，不能声称已逐条精确贯通客户端到模型。
 
-## 本轮实施范围
+三个模型请求各以约2毫秒记录400，结合精确请求键、堆栈行号和固定源码可确认失败分支，不能解释为模型超时。普通文本日志仅覆盖第三个时间窗，而且同秒存在多个并发请求；相邻无请求键的 textChars=1、语言或音色都没有归属到这三个请求。旧 guard 为 false 的范围比新恢复白名单更宽，原始输入未知，因此不能宣称已重现或保证修复全部三条历史输入。
 
-1. Global 普通 TTS：保留已发布客户端 30 秒首响应约束内的 28 秒预算，补齐逐请求/尝试/阶段诊断及关联 ID，区分取消和超时；对确认无可用音频的成功响应增加同区有界恢复。现有 JSON/读体重试不能重复宣传为新功能。
-2. US 稳定代理：仅在同槽位、完整 body 和影响响应的 headers 全部一致时合并正在进行的非流式合成；不缓存无人等待的结果，不合并不同音色/内容。资源上限退出合并而不是拒绝朗读。一个订阅者取消不能影响其他订阅者；最后一个取消释放上游。
-3. iOS：从内存中的同一段音频重写文件和重建播放器，保留播放位置/队列/所有权；最终失败后阻止旧生成回调覆盖错误状态；使用允许的匿名机器错误码，并以实际播放时钟推进记录首音频。
+中国区现网 r131b 的 tts_service.py 与development router源码SHA与US R133相同，存在同一个静态风险；本次只读检查未证明中国区实际发生同事故。CN仍未部署本次模型补丁，不能将US候选验证写作两区修复生效。
 
-各变更在干净独立工作树中实现，生产由主任务统一进行版本核验、候选验证、切换和回执。现有地区、音色、原文、会员/额度语义保留，时间戳与高亮不作为音频播放硬门槛。
+[三条新增故障详细归因](monitoring/new-failures-1705/README.md) · [模型原位脱敏堆栈](monitoring/new-failures-1705/model400-windows.json) · [中国区静态证据](monitoring/new-failures-1705/cn-static-path.json) · [前期调查](../audio-errors-root-cause-20260906/README.md)
 
-当前 iOS 1.2.34 尚在审核，Apple 不允许创建下一 App Store 版本。发布技能规定不能未经授权撤回已有审核；先完成可审阅新产物与上传验证，再处理实际提交边界。后端上线不等待 Apple 审核。
+## 已核验生产版本
 
-## 证据
+| 组件 | 实际版本 | 独立确认时间（UTC） |
+| --- | --- | --- |
+| Global主网关 | 1f9a483c7f75c9acee30129c984ea9bc622c5ea1 / dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5 | 2026-09-06 17:26:40.829 |
+| Direct旧入口 | 1213fcd3f9f616e92e9fd3a8f1e817b5095986c5；运行SHA 2ca971e8…282d | 16:52:02.916，永久实例验证及候选排空完成 |
+| 美国稳定代理 | us-tts-origin-proxy-20260907-v2；源码21cad1b1823d28b9b7c257744dc0b1704403931a；内部revision6、当前blue | 本次重启及模型路由独立确认18:37:52.522573 |
+| 美国Kokoro | R134 / 5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52；blue槽，服务源码SHA d6d1871a…d8682 | 切入18:34:44.148939；独立确认18:37:52.522573 |
 
-- [发布前累计快照](baseline-acceptance.json)
-- [新增 Direct 错误原位脱敏详情](direct-recent-failures.json)
-- [上一轮具体原因与缺口](../audio-errors-root-cause-20260906/README.md)
+Global注册已通过既有CAS从数据库revision1更新至revision2，仍指向同一个美国节点；proxy版本v2、证明文件SHA 493ae5a2309cb6a6fc65142a8756c019e6b4cdd40ad41a9edc972718162051c1。数据库revision与代理内部revision是独立序号。
 
-发布完成后将在此补齐实际部署 ID、提交、测试、切换时间及监控分段结果。原 24 小时窗口和历史失败保持可追溯，不把候选测试或旧版本数据算成新版本效果。
+Global网关源码经PR28、PR29合入现有beta发布链，完整生产维护流程成功，保留固定版本、候选验证、正式检查和回滚机制，没有新增Global发布入口。模型源码提交为5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52，部署工具为e4f6beb；R134完整源码树、安装回执、进程/启动标识、监听、Supervisor、代理状态和回退green实例均经独立核对，20项全部通过。原R133 green实例保留。
 
-## 美国稳定入口已上线
+[最终生产身份](global-final-identity.json) · [最终工作流](global-final-workflow-result.json) · [路由CAS与探针](global-final-artifacts/global-tts-routing-reconcile-34047976980-1/evidence.json) · [Direct发布回执](../audio-errors-root-cause-20260906/direct-gateway-release-20260907/README.md) · [代理切换回执](us-proxy-apply.json)
 
-- 生产版本 `us-tts-origin-proxy-20260907-v2`，源码提交 `21cad1b1823d28b9b7c257744dc0b1704403931a`，运行文件 SHA256 `0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba`。
-- 候选验证：两条并发请求、一次合成、返回字节一致；54,573 字节 MP3 完整解码，81,792 个采样，固定测试句尾覆盖。时间戳用于该固定探针尾部验证，不是生产播放闸门。
-- 生产切换前两次 active=0；仅重启入口代理，旧请求排空，Kokoro blue/green 与两个克隆模型进程的 PID/startTicks 全部不变。停止到 ready 上界 0.748 秒；存在短暂新连接接受间隙，不能称为绝对零间断。
-- 独立生产身份确认 `2026-09-06T16:36:52.292087Z`，公网健康回读为 v2 / revision2 / green / R133。旧版本身份已留在 releaseHistory，观察窗口保持原起止。
-- [候选验证](us-proxy-validation.json)、[切换回执](us-proxy-apply.json)、[生产身份](us-proxy-status.json)、[公网健康回读](us-proxy-public-health.json)。
+[R134生产切换](model-r134/route-blue-apply.json) · [最终模型与代理身份](model-r134/production-final-identity.json) · [20项独立核对](model-r134/production-final-status.json) · [冻结监控身份](model-r134/proxy-monitor-identity.json)
 
-## 国际区主网关发布中
+## 修复约束与验证
 
-PR [28](https://github.com/scmyyan/readout-web/pull/28) 已合并为 `33e49a945e36940618457d5c33f8277652e7b92d`，完整保留已合并 PR27 的 Google Play 诊断及门禁。46 项 TTS 回归通过；执行既有生产发布流程 [34045884046](https://github.com/scmyyan/readout-web/actions/runs/34045884046)，上线前旧生产仍为 e8a755。不能将合并或候选构建标记为生产完成。
+- 音频优先：时间戳缺失、高亮降级不拦截有效音频；会员和额度仍按业务规则执行。
+- 内容完整：有限恢复保留原文、音色和余文；不以静音掩盖正文生成失败。
+- 并发复用只限同槽位、完整body与影响响应headers相同的非流式请求；资源上限回到独立转发，一个订阅者取消不影响其他订阅者。
+- 本轮请求、恢复和回滚均使用原地区，未增加中国区与国际区之间的回退；这些检查仍不足以证明项目全部链路无跨境。
 
-先前 workflow 34043509566 卡在过期 VERCEL_TOKEN、未部署。此次用现有已授权 CLI 登录经 stdin 更新已有 production secret，未转移 refreshToken 或扩大权限；仅留[脱敏回执](vercel-credential-handoff.json)。
+Global 46项TTS回归、最终20项发布元数据回归通过；完整生产流程的鉴权、区域、音频、克隆与礼物端到端检查通过。Direct 17项回归通过，候选与永久实例均验证stream省略/true/false三种旧协议、完整MP3解码。代理26项测试通过，双请求只产生一次合成，返回54,573字节一致音频，完整解码81,792采样。
 
-## Direct 候选已验证
+R134的43项本地模型测试通过，其中6种编码×3种stream设置×2种无声输入共36种组合能完整解码；正文、可读符号和未知字符不被当作静音。候选模型另通过6个无声/混合输入用例、9语言及1个重复数字用例。完整保留编码器尾部，短Opus最后一页也经验证。
 
-最小错误来源修复提交 `1213fcd3f9f616e92e9fd3a8f1e817b5095986c5`，17 个测试通过，包括真实 socket 在首响应前/读体中关闭、真实计时器到期、未知上游 Abort、上传中断。连接断开只记事实与匿名请求键，不再尝试向已关闭连接返回 504；没有本地期限证据的上游 Abort 按上游失败处理，不伪装成功，也不认定是用户主动取消。
+公开入口校正后的验证为12/12通过：Global与Direct各覆盖stream省略/true/false、纯句读及混合文本；6个混合用例均完成3段并到达末词sunflower。首次公开验证失败记录保留，其原因是探针把可选的余文字段缺省当成错误；iOS将nil视为结束，Android可按text/timestamps推导，本次全部消费完成的固定样例允许该字段缺省。修正范围是探针的此项协议判断，不把任意缺省余文都判定为完整，也不抹去首次失败证据。
 
-旧入口 fresh baseline / candidate 已验证，stream 省略、true、false 三种旧契约都返回完整可解码音频且采样数一致。原配置与回滚产物已在既有同区私有存储完成写入及下载校验。生产切换与最终回执见[Direct 发布目录](../audio-errors-root-cause-20260906/direct-gateway-release-20260907/README.md)。
+本次R134注册调整在代理active归零后维护，停止至ready的接入间隙上界为6.295秒，不能称绝对无间断；原green模型实例保留。Direct原发布保留解读与Caddy进程。R134生产恢复增量已在同区私有存储回读校验，`verified=true / public=false`，与已有完整基线恢复链配合使用。
 
-采集器已兼容匿名 requestKey / no_response / abortSource，继续保留旧日志中的 timeout_or_abort 和历史四条504，不通过改口径删除历史失败。
+[本地验证](model-r134/model-local-validation.json) · [模型候选验证](model-r134/model-validation.json) · [公开验证12/12](model-r134/public-audio-validation-corrected.json) · [保留的首次公开验证](model-r134/public-audio-validation.json) · [注册维护回执](model-r134/registry-apply.json) · [生产私有备份回读](model-r134/production-private-backup-readback.json)
 
-## 本轮完成与后续观察
+## 部署后数据
 
-- Global：完整生产流程成功，候选和生产均做完整音频、克隆/礼物端到端及区域/鉴权检查；实际生产版本已[独立回读](global-identity-readback.json)。[工作流步骤结果](global-workflow-result.json)。
-- Direct：同区备份、候选三种契约完整解码、旧请求排空、永久实例验证、原路由精确恢复、候选排空退出、上线产物私有备份均完成。解读与Caddy进程保持原PID；模型未修改。
-- 新观察窗口为 **北京时间9月7日00:52:02至9月8日00:52:02**，自动化24每小时只读采集。旧窗口保持到原北京时间9月7日13:01:25并单独归档。旧失败不清零；新版本单独统计。
-- 首份新窗口样本只有196秒：Direct 9条请求全部记为200，无断开记录；两区已有供给采集未见失败，Global核心5xx为0。该短窗未收到原生客户端start事件，因此只可写继续观察，不能写持续播放验收通过。
-- 美国代理从独立确认至16:55:17 UTC的18分钟窗口：1,182个请求，其中1,181个已完整响应200、1个窗口末仍未结束，未记失败/取消；完成耗时p95 2,807ms。没有并发相同请求合并样本（joined=0），来源未逐条归因，不能称全部是真实用户或据此证明端到端播放。
-- 最新数据与边界见 [监控快照](monitoring/latest-acceptance.json)、[US阶段证据](monitoring/proxy-first-window.json)。
+R134独立确认后的首个约119秒窗口（18:37:52.522573–18:39:51.372598 UTC）有96条代理请求完整返回200，failure为0；运行身份和扫描覆盖均通过，窗口内无错误release/slot/revision事件。这只是短窗HTTP阶段证据，不是24小时验收或用户完整播放保证。
 
-## iOS 修复包已经上传，尚未替换当前商店版本
+[R134代理首窗](monitoring/proxy-model-r134-first-window.json)
 
-完整发布分支基于1.2.34全部改动，恢复修复 `a8954ca`（原 `b0b9dc1`），Kindle所有权 `20bc640`（原 `47f9541`），归档源码 `b234463`，证据提交 `fe2c3f7`。
+截至18:45:53.895 UTC，最终版本已观察481秒：汇总采集来源完整，technicalFailures与数据/覆盖缺口均为空，判定为observing。Direct有93条HTTP200，无4xx/5xx或no_response；Global核心5xx为0，另1条非音频503单列。iOS有1组朗读启动与首音频配对，首音频1,168毫秒，暂无技术失败；没有新的Android客户端启动队列，不能把旧Android持续请求替代启动样本。美国探针1轮、中国探针2轮均健康，地区不匹配0。仍缺24小时、解读/克隆及Web/扩展完整播放证据。
 
-1.2.35/build55 已上传并经 Apple 确认为 VALID / APP_STORE_ELIGIBLE，build ID `e275d303-958c-430d-8fc8-39a6b4c35c10`。40个受影响单元测试与1个阅读模式切换UI测试通过，Release归档/签名/无测试书架和源文件哈希审计通过。
+第一轮18:39汇总的只读SSH命令曾丢失JSON参数中的引号，导致模型/代理身份采集失败；原快照保留。只修改本地采集器的shell参数引用，真实shell字面值测试与单项生产只读验证通过，18:45全量重采恢复。独立代理采集始终正常，该采集错误不列为生产音频故障。
 
-目前1.2.34/build54仍在WAITING_FOR_REVIEW，阻挡下一版本送审。主任务已向用户请求撤回旧审核、改送修复版的明确授权；在收到前保持原审核。上传VALID并非商店用户已升级。更丰富的48条本地播放器诊断也不是完整远端遥测；远端只有固定安全NSError分类，首音频口径需按build区分。
+[最终版本首份完整汇总](monitoring/final-model-first-summary.json) · [18:45原始快照](monitoring/observations/20260906T1845Z/latest-acceptance.json) · [采集传参修复验证](model-r134/collector-remote-args-validation.json) · [观察自动化回读](monitoring/automation-final-readback.json)
 
-[上传与证据报告](/Users/xuxuheng/Documents/.worktrees/CastReader-ios-audio-recovery-release-1.2.35/docs/iOS-1.2.35-Upload-Report.md)。
 
-## 17:05 UTC 累计新增三条的时间归因
+此前18:16:39.996 UTC中间版本快照覆盖16:52:02之后约85分钟，包含两个Global版本区间，不包含R134修复：
 
-原窗口客户端累计由9增至12。新增三条都在本轮全部部署之前发生并上报：16:04:04.923、16:04:17.983、16:13:12.965 UTC。均为同一匿名设备的 Android1.0.45/build52，Global网页朗读，固定分类 tts_failed / generation_failed。英文、西语及继续播放会话此前有首音频事件；终止时累计播放44、0、48秒。
+- 原生端100条生产标记事件、9个匿名设备；21次朗读启动（iOS9、Android12）均有同会话首音频，技术失败0。生产标记不能排除人工测试，首音频不能证明整本读完。
+- Direct 1,254条HTTP200，HTTP4xx/5xx为0；另3次连接在等待上游响应头时关闭，单列no_response/downstream_closed。其中Android1.0.45为1,253条200加1次351毫秒断开，另外2次断开来自1.0.46。未返回HTTP响应的记录不算HTTP成功、HTTP失败、模型超时或用户主动取消，断开原因及用户实际结果仍未知。
+- Global核心5xx为0，3条其他项目503另列。两区既有供给探针各16轮健康，所覆盖请求余文完整、地区不匹配0。
+- 两次解读被额度限制，归业务阻断。本窗没有解读首输出、克隆原生首输出或Web/扩展完整播放证据，仍需继续观察。
 
-当前旧日志未携带请求/trace关联和底层HTTP错误，不能把这些客户端事件直接等同模型超时、或与同窗Direct400强行合并。它们属于刚查到的部署前故障，不是新部署产生的三条回归。[事件与会话证据](monitoring/new-failures-1705/client-delta.json)。历史Global4条和Direct4条504没有增加。
+原18:16快照曾因Android1.0.45专项将1条no_response计作非2xx而自动fail，原文件保留不修改。监控已将实际HTTP非2xx与无HTTP响应分开：断开保留独立提示，未知结果不补写为成功；若只有断开，则不满足HTTP样本要求。按修正口径对原证据内存重评为observing，技术失败项为0。新增3项回归在内的31项监控测试通过，真实400/504与断开并存时仍为fail，未放宽真实HTTP错误。
 
-## 发布证据一致性闭合
+早期Global阶段窗口另有812条完整响应，通过匿名请求键和attempt全部精确关联美国代理；该数字不是812个用户或812次完整播放。
 
-旧Global路由登记引用的是v1二进制的证明文件，不应当作永久入口版本沿用。已冻结v2完整回执 `493ae5a2…2051c1`，更正发布常量和production workflow的两项非密钥环境配置；只允许精确旧v1/revision1经既有CAS更新。代理URL/node/模型不变，不添加发布入口。
+[18:16原始快照（保留旧判定）](monitoring/observations/20260906T1816Z/acceptance.json) · [监控口径说明](../backend-audio-iteration-20260906/monitoring/README.md) · [阶段关联摘要](monitoring/vercel-proxy-first-summary.json) · [最新验收](monitoring/latest-acceptance.json)
 
-PR [29](https://github.com/scmyyan/readout-web/pull/29) 已把这些修正和线上Direct源码合并至 `1f9a483c7f75c9acee30129c984ea9bc622c5ea1`，执行既有维护流程 [34047976980](https://github.com/scmyyan/readout-web/actions/runs/34047976980)；完成后还会回读最终版本和路由证据。此前已上线的音频修复保持工作。
+## 观察与iOS发布边界
+
+自动化24每小时只读采集。最终版本正式观察窗口为 **2026-09-06T18:37:52.522573Z → 2026-09-07T18:37:52.522573Z**，起点采用独立生产确认时间。旧05:01:25窗口以及原16:52:02.916356窗口均保留，历史错误不清零；中间版本原state/latest/通知状态已归档至 `monitoring/observations/interim-before-r134/`。首窗正常不代表已完成24小时观察。
+
+[中间窗口归档记录](monitoring/observations/interim-before-r134/archive-metadata.json) · [中间窗口原状态](monitoring/observations/interim-before-r134/acceptance-state.json) · [中间窗口最后快照](monitoring/observations/interim-before-r134/latest-acceptance.json)
+
+iOS1.2.35/build55，build ID e275d303-958c-430d-8fc8-39a6b4c35c10，已上传VALID/APP_STORE_ELIGIBLE。基于完整build54整合，40项受影响单测和1项UI测试通过，归档签名与源码审核完成。当前1.2.34仍等待审核；发布技能要求撤回已有审核需用户明确授权，该确认已发出，收到前保持原审核。后端修复不等待Apple审核。
+
+[iOS上传报告](/Users/xuxuheng/Documents/.worktrees/CastReader-ios-audio-recovery-release-1.2.35/docs/iOS-1.2.35-Upload-Report.md) · [早期执行历史](execution-history-through-global-release.md)

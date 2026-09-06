@@ -1,0 +1,17 @@
+{
+  "selectedPaths": {
+    "blue": {
+      "VOICES_DIR": "/workspace/castreader-runtime/current/api/src/voices/v1_0",
+      "CASTREADER_MODEL_PACKAGES": "/workspace/castreader-runtime/current/api/src/inference/model_packages.json",
+      "MODEL_DIR": "/workspace/castreader-runtime/current/api/src/models"
+    },
+    "green": {
+      "VOICES_DIR": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/voices/v1_0",
+      "CASTREADER_MODEL_PACKAGES": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/inference/model_packages.json",
+      "CASTREADER_APP_ROOT": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+      "MODEL_DIR": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/models"
+    }
+  },
+  "wrapperSha256": "3dd1fdbcf60b984a14db5142de9b7d2de3011e7123b0f75e0b82d4f6dba50a28",
+  "greenConfigSha256": "9fafc5dfbd48122f9bff4ce26647ecbffeb6452f7cf405a3ba9d704a4eef1250"
+}

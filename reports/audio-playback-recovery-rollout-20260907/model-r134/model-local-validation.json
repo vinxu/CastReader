@@ -1,0 +1,35 @@
+{
+  "schema": "castreader.us-kokoro-r134-local-validation.v1",
+  "verified": true,
+  "modelSourceCommit": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52",
+  "modelTestCount": 43,
+  "deploymentFailureTestCount": 7,
+  "realCodecSilentCombinations": 36,
+  "codecs": [
+    "mp3",
+    "wav",
+    "pcm",
+    "flac",
+    "opus",
+    "aac"
+  ],
+  "streamModes": [
+    "omitted",
+    true,
+    false
+  ],
+  "completeNormalAudioCodecs": [
+    "pcm",
+    "wav",
+    "mp3",
+    "opus"
+  ],
+  "usesInjectedCpuModel": true,
+  "productionModelInferencePerformed": false,
+  "productionChanged": false,
+  "limitations": [
+    "Historical failed inputs were not retained; the new strict separator whitelist cannot be proven to cover all three historical requests.",
+    "Full private backup receipts were read and hashes checked; no backup was reuploaded in this subtask.",
+    "CN shares static source risk but is unchanged by this US candidate."
+  ]
+}

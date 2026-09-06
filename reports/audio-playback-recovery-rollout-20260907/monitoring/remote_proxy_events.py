@@ -32,6 +32,98 @@ ERROR_CLASSES = {
 }
 NUMBERS = {"elapsedMs", "connectMs", "bodyBytes", "responseBytes", "peakReplayBytes", "subscribers"}
 ANONYMOUS_KEYS = ("requestKey", "flightKey", "upstreamRequestKey")
+EXPECTED_RELEASE = "us-tts-origin-proxy-20260907-v2"
+EXPECTED_PROXY_SHA = "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
+PROXY_DIRECTORY = "/workspace/castreader-runtime/proxy-releases/" + EXPECTED_RELEASE
+MODEL_DIRECTORY = "/workspace/castreader-runtime/releases/"
+MODEL_PROGRAMS = {"blue": "castreader-tts", "green": "castreader-tts-r133-green"}
+MODEL_PORTS = {"blue": 8880, "green": 18880}
+
+
+def validate_expected(expected, model):
+    """Validate frozen local inputs; no live state participates in expectation."""
+    keys = {"sourcePath", "sourceSha256", "sourceCommit", "proxyReleaseId", "revision",
+            "currentSlot", "currentReleaseId", "currentReceiptSha256", "process",
+            "modelProcess", "modelSourceSha256"}
+    model_keys = {"slot", "releaseId", "version", "releasePath", "sourceRelativePath", "sourceSha256"}
+    if (not isinstance(expected, dict) or set(expected) != keys
+            or not isinstance(model, dict) or set(model) != model_keys):
+        raise ValueError("expected_identity_shape_invalid")
+    def matches(value, pattern):
+        return isinstance(value, str) and re.fullmatch(pattern, value) is not None
+    if (expected["proxyReleaseId"] != EXPECTED_RELEASE
+            or expected["sourceSha256"] != EXPECTED_PROXY_SHA
+            or expected["sourcePath"] != PROXY_DIRECTORY + "/r133_stable_proxy.py"
+            or not matches(expected["sourceCommit"], r"[a-f0-9]{40}")
+            or type(expected["revision"]) is not int or not 1 <= expected["revision"] <= 2**53 - 1
+            or not matches(expected["currentReceiptSha256"], r"[a-f0-9]{64}")):
+        raise ValueError("expected_proxy_identity_invalid")
+    if (not isinstance(model["slot"], str) or model["slot"] not in MODEL_PORTS
+            or not matches(model["releaseId"], r"[A-Za-z0-9][A-Za-z0-9._-]{0,159}")
+            or model["releasePath"] != MODEL_DIRECTORY + model["releaseId"]
+            or not matches(model["sourceRelativePath"], r"api/src/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\.py")
+            or not matches(model["version"], r"[a-f0-9]{40}")
+            or not matches(model["sourceSha256"], r"[a-f0-9]{64}")
+            or expected["currentSlot"] != model["slot"]
+            or expected["currentReleaseId"] != model["releaseId"]
+            or expected["modelSourceSha256"] != model["sourceSha256"]):
+        raise ValueError("expected_model_identity_invalid")
+    for key, cwd in (("process", PROXY_DIRECTORY), ("modelProcess", model["releasePath"])):
+        process = expected[key]
+        if (not isinstance(process, dict) or set(process) != {"pid", "startTicks", "cwd"}
+                or type(process["pid"]) is not int or not 1 <= process["pid"] <= 2**31 - 1
+                or not matches(process["startTicks"], r"[1-9][0-9]{0,19}")
+                or process["cwd"] != cwd):
+            raise ValueError("expected_process_identity_invalid")
+
+
+def identity_issues(value, expected, process, model_process, model_expectation=None):
+    actual = value["identity"]
+    issues = []
+    for key in ("sourcePath", "sourceSha256", "proxyReleaseId", "revision", "currentSlot",
+                "currentReleaseId", "currentReceiptSha256"):
+        if actual.get(key) != expected.get(key):
+            issues.append(key + "_mismatch")
+    pids = actual.get("processIds")
+    if pids != [expected["process"]["pid"]] or actual.get("listenerProcessIds") != pids:
+        issues.append("proxy_process_listener_mismatch")
+    for label, measured, pinned in (("proxy", process, expected["process"]),
+                                    ("model", model_process, expected["modelProcess"])):
+        for key in ("pid", "startTicks", "cwd"):
+            if measured.get(key) != pinned.get(key):
+                issues.append(label + "_process_" + key + "_mismatch")
+    model = actual.get("currentModel", {})
+    model_fields = {"slot": expected["currentSlot"], "fixedReleaseId": expected["currentReleaseId"],
+                    "stateReleaseId": expected["currentReleaseId"],
+                    "stateReceiptSha256": expected["currentReceiptSha256"],
+                    "runtimeReleasePath": expected["modelProcess"]["cwd"],
+                    "runtimeSourceSha256": expected["modelSourceSha256"],
+                    "internalPort": MODEL_PORTS[expected["currentSlot"]],
+                    "supervisorProgram": MODEL_PROGRAMS[expected["currentSlot"]],
+                    "supervisorState": "RUNNING", "supervisorPid": expected["modelProcess"]["pid"],
+                    "supervisorCwd": expected["modelProcess"]["cwd"],
+                    "listenerProcessIds": [expected["modelProcess"]["pid"]]}
+    if model_expectation is not None:
+        model_fields["runtimeSourceRelativePath"] = model_expectation["sourceRelativePath"]
+    for key, pinned in model_fields.items():
+        if model.get(key) != pinned:
+            issues.append("model_" + key + "_mismatch")
+    if actual.get("currentEnabled") is not True or model.get("stateEnabled") is not True:
+        issues.append("current_model_disabled")
+    supervisor = model.get("supervisorProcess") or {}
+    if any(supervisor.get(key) != expected["modelProcess"].get(key) for key in ("pid", "startTicks", "cwd")):
+        issues.append("model_supervisor_process_mismatch")
+    listeners = model.get("listenerProcesses")
+    if (not isinstance(listeners, list) or len(listeners) != 1
+            or any(listeners[0].get(key) != expected["modelProcess"].get(key) for key in ("pid", "startTicks", "cwd"))):
+        issues.append("model_listener_process_identity_mismatch")
+    health = value.get("health", {})
+    if health.get("ok") is not True or health.get("drainTrusted") is not True:
+        issues.append("health_or_drain_untrusted")
+    for key in ("proxyReleaseId", "revision", "currentSlot", "currentReleaseId"):
+        if health.get(key) != expected.get(key):
+            issues.append("health_" + key + "_mismatch")
+    return issues
 
 
 def utc(ts):
@@ -39,6 +131,8 @@ def utc(ts):
 
 
 def parse_utc(value):
+    if not isinstance(value, str):
+        raise ValueError("UTC_timestamp_required")
     dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if dt.tzinfo is None or dt.utcoffset().total_seconds() != 0:
         raise ValueError("UTC_timestamp_required")
@@ -93,46 +187,31 @@ def percentiles(values):
 
 
 def runtime_identity(payload):
+    expected = payload["expected"]
+    model_expectation = payload.get("modelExpectation")
+    if model_expectation is not None:
+        validate_expected(expected, model_expectation)
+    source_path = Path(expected["sourcePath"])
+    if source_path.resolve(strict=True) != source_path:
+        raise ValueError("proxy_source_path_not_canonical")
     module = types.ModuleType("audited_proxy_identity")
     exec(compile(payload["identityHelperSource"], "remote_proxy_identity.py", "exec"), module.__dict__)
     original_argv = sys.argv
     captured = io.StringIO()
     try:
-        sys.argv = ["remote_proxy_identity.py", payload["expected"]["sourcePath"]]
+        sys.argv = ["remote_proxy_identity.py", expected["sourcePath"]]
+        if model_expectation is not None:
+            sys.argv += ["--model-expectation-json", json.dumps(model_expectation)]
         with redirect_stdout(captured):
             module.main()
         value = json.loads(captured.getvalue())
     finally:
         sys.argv = original_argv
     actual = value["identity"]
-    expected = payload["expected"]
-    issues = []
-    for key in ("sourcePath", "sourceSha256", "proxyReleaseId", "revision", "currentSlot",
-                "currentReleaseId", "currentReceiptSha256"):
-        if actual.get(key) != expected.get(key):
-            issues.append(key + "_mismatch")
-    pids = actual.get("processIds")
-    if pids != [expected["process"]["pid"]] or actual.get("listenerProcessIds") != pids:
-        issues.append("proxy_process_listener_mismatch")
     process = module.process_metadata(expected["process"]["pid"])
-    for key in ("pid", "startTicks", "cwd"):
-        if process.get(key) != expected["process"].get(key):
-            issues.append("proxy_process_" + key + "_mismatch")
-    model = actual.get("currentModel", {})
-    if model.get("runtimeSourceSha256") != expected["modelSourceSha256"]:
-        issues.append("model_source_sha_mismatch")
-    if model.get("listenerProcessIds") != [expected["modelProcess"]["pid"]]:
-        issues.append("model_process_mismatch")
     model_process = module.process_metadata(expected["modelProcess"]["pid"])
-    for key in ("pid", "startTicks", "cwd"):
-        if model_process.get(key) != expected["modelProcess"].get(key):
-            issues.append("model_process_" + key + "_mismatch")
+    issues = identity_issues(value, expected, process, model_process, model_expectation)
     health = value.get("health", {})
-    if health.get("ok") is not True or health.get("drainTrusted") is not True:
-        issues.append("health_or_drain_untrusted")
-    for key in ("proxyReleaseId", "revision", "currentSlot", "currentReleaseId"):
-        if health.get(key) != expected.get(key):
-            issues.append("health_" + key + "_mismatch")
     # Linux process creation time is separate from readiness; keep it as an
     # estimate, never replace the operator's later production confirmation.
     startup = None
@@ -202,6 +281,7 @@ def collect(payload):
     events = []
     failure_events = []
     unexpected_release = 0
+    unexpected_routing = 0
     malformed = 0
     scanned_proxy_records = 0
     with p.open("rb") as stream:
@@ -236,6 +316,11 @@ def collect(payload):
                 continue
             if event.get("proxyReleaseId") != payload["expected"]["proxyReleaseId"]:
                 unexpected_release += 1
+                continue
+            if any(event.get(event_key) != payload["expected"].get(expected_key)
+                   for event_key, expected_key in (("slot", "currentSlot"),
+                        ("revision", "revision"), ("releaseId", "currentReleaseId"))):
+                unexpected_routing += 1
                 continue
             stage = event["stage"]
             stages[stage] += 1
@@ -294,6 +379,8 @@ def collect(payload):
         issues.append("window_end_is_in_future")
     if unexpected_release:
         issues.append("unexpected_proxy_release_events_in_window")
+    if unexpected_routing:
+        issues.append("unexpected_proxy_routing_identity_events_in_window")
     if malformed:
         issues.append("malformed_proxy_events_seen_in_scanned_log")
     joined = stages["flight_joined"]
@@ -321,7 +408,8 @@ def collect(payload):
                          "firstProxyEventUTC": utc(first_proxy) if first_proxy else None,
                          "lastProxyEventUTC": utc(last_proxy) if last_proxy else None,
                          "scannedProxyEventCount": scanned_proxy_records,
-                         "unexpectedReleaseEvents": unexpected_release},
+                         "unexpectedReleaseEvents": unexpected_release,
+                         "unexpectedRoutingIdentityEvents": unexpected_routing},
             "counts": {"stages": stages, "phases": phases, "finishedOutcomes": outcomes,
                        "finishedReportedStatuses": statuses, "receivedAttempts": attempts,
                        "failureScopesAndLastObservedPhases": failures, "errorClasses": error_classes},

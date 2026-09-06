@@ -1,0 +1,67 @@
+{
+  "atUTC": "2026-09-06T18:08:09.783483+00:00",
+  "blueSupervisorStatus": "castreader-tts                   RUNNING   pid 4114885, uptime 0:00:46",
+  "current": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+  "health": {
+    "active": {
+      "blue": 0,
+      "green": 0
+    },
+    "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
+    "currentSlot": "green",
+    "drainTrusted": true,
+    "inflightReuse": {
+      "producersStarted": 5234,
+      "replayBytes": 0,
+      "responsesRetained": 0,
+      "subscribersJoined": 3
+    },
+    "ok": true,
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 3
+  },
+  "models": {
+    "blue": {
+      "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+      "pid": 4114885,
+      "startTicks": "550418819"
+    },
+    "clone": {
+      "cwd": "/workspace/castreader-clone",
+      "pid": 568834,
+      "startTicks": "524136804"
+    },
+    "green": {
+      "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+      "pid": 3459850,
+      "startTicks": "545406132"
+    },
+    "nari": {
+      "cwd": "/workspace/nari-qwen3-tts-clean",
+      "pid": 4136837,
+      "startTicks": "519185503"
+    }
+  },
+  "state": {
+    "bootId": "4d514bb3f2f74c54bb723b3fb33c3e4f",
+    "cleanShutdown": false,
+    "currentSlot": "green",
+    "lastOperationId": "ops-r134-disable-old-blue-20260907",
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 3,
+    "schema": "castreader.us-tts-origin-proxy-state.v1",
+    "slots": {
+      "blue": {
+        "enabled": false,
+        "receiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+        "releaseId": "20260905-kokoro-english-g2p-us-r132"
+      },
+      "green": {
+        "enabled": true,
+        "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+        "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+      }
+    },
+    "updatedAt": "2026-09-06T18:07:10.424088+00:00"
+  }
+}

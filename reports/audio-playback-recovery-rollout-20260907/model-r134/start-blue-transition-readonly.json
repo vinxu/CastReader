@@ -1,0 +1,332 @@
+{
+  "readOnly": true,
+  "samples": [
+    {
+      "at": "2026-09-06T18:08:38.486655+00:00",
+      "current": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+      "state": {
+        "state": {
+          "bootId": "4d514bb3f2f74c54bb723b3fb33c3e4f",
+          "cleanShutdown": false,
+          "currentSlot": "green",
+          "lastOperationId": "ops-r134-disable-old-blue-20260907",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "revision": 3,
+          "schema": "castreader.us-tts-origin-proxy-state.v1",
+          "slots": {
+            "blue": {
+              "enabled": false,
+              "receiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+              "releaseId": "20260905-kokoro-english-g2p-us-r132"
+            },
+            "green": {
+              "enabled": true,
+              "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+              "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+            }
+          },
+          "updatedAt": "2026-09-06T18:07:10.424088+00:00"
+        },
+        "active": {
+          "blue": 0,
+          "green": 1
+        },
+        "accepting": true,
+        "drainTrusted": true,
+        "proxyReleaseId": "us-tts-origin-proxy-20260907-v2"
+      },
+      "supervisorStatus": "RUNNING",
+      "supervisorPid": 4114885,
+      "listeners": {
+        "blue": {
+          "pid": 4114885,
+          "startTicks": "550418819",
+          "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+          "exe": "/venv/main/bin/python3.12",
+          "argvSha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83"
+        },
+        "green": {
+          "pid": 3459850,
+          "startTicks": "545406132",
+          "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+          "exe": "/venv/main/bin/python3.12",
+          "argvSha256": "cf47eee9611d26e23306d3bedb41a71145a41cc13ce8ed4741595b4be4026a8b"
+        },
+        "proxy": {
+          "pid": 4031530,
+          "startTicks": "549868431",
+          "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+          "exe": "/venv/main/bin/python3.12",
+          "argvSha256": "739764da1c5a84c8befeb83848212d68c5079c3a2d0087d020b273427823671f"
+        },
+        "clone": {
+          "pid": 568834,
+          "startTicks": "524136804",
+          "cwd": "/workspace/castreader-clone",
+          "exe": "/usr/bin/python3.12",
+          "argvSha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e"
+        },
+        "nari": {
+          "pid": 4136837,
+          "startTicks": "519185503",
+          "cwd": "/workspace/nari-qwen3-tts-clean",
+          "exe": "/usr/bin/python3.12",
+          "argvSha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2"
+        }
+      },
+      "oldBlueProcExists": false
+    },
+    {
+      "at": "2026-09-06T18:08:39.802633+00:00",
+      "current": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+      "state": {
+        "state": {
+          "bootId": "4d514bb3f2f74c54bb723b3fb33c3e4f",
+          "cleanShutdown": false,
+          "currentSlot": "green",
+          "lastOperationId": "ops-r134-disable-old-blue-20260907",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "revision": 3,
+          "schema": "castreader.us-tts-origin-proxy-state.v1",
+          "slots": {
+            "blue": {
+              "enabled": false,
+              "receiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+              "releaseId": "20260905-kokoro-english-g2p-us-r132"
+            },
+            "green": {
+              "enabled": true,
+              "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+              "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+            }
+          },
+          "updatedAt": "2026-09-06T18:07:10.424088+00:00"
+        },
+        "active": {
+          "blue": 0,
+          "green": 0
+        },
+        "accepting": true,
+        "drainTrusted": true,
+        "proxyReleaseId": "us-tts-origin-proxy-20260907-v2"
+      },
+      "supervisorStatus": "RUNNING",
+      "supervisorPid": 4114885,
+      "listeners": {
+        "blue": {
+          "pid": 4114885,
+          "startTicks": "550418819",
+          "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+          "exe": "/venv/main/bin/python3.12",
+          "argvSha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83"
+        },
+        "green": {
+          "pid": 3459850,
+          "startTicks": "545406132",
+          "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+          "exe": "/venv/main/bin/python3.12",
+          "argvSha256": "cf47eee9611d26e23306d3bedb41a71145a41cc13ce8ed4741595b4be4026a8b"
+        },
+        "proxy": {
+          "pid": 4031530,
+          "startTicks": "549868431",
+          "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+          "exe": "/venv/main/bin/python3.12",
+          "argvSha256": "739764da1c5a84c8befeb83848212d68c5079c3a2d0087d020b273427823671f"
+        },
+        "clone": {
+          "pid": 568834,
+          "startTicks": "524136804",
+          "cwd": "/workspace/castreader-clone",
+          "exe": "/usr/bin/python3.12",
+          "argvSha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e"
+        },
+        "nari": {
+          "pid": 4136837,
+          "startTicks": "519185503",
+          "cwd": "/workspace/nari-qwen3-tts-clean",
+          "exe": "/usr/bin/python3.12",
+          "argvSha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2"
+        }
+      },
+      "oldBlueProcExists": false
+    },
+    {
+      "at": "2026-09-06T18:08:41.081825+00:00",
+      "current": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+      "state": {
+        "state": {
+          "bootId": "4d514bb3f2f74c54bb723b3fb33c3e4f",
+          "cleanShutdown": false,
+          "currentSlot": "green",
+          "lastOperationId": "ops-r134-disable-old-blue-20260907",
+          "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+          "revision": 3,
+          "schema": "castreader.us-tts-origin-proxy-state.v1",
+          "slots": {
+            "blue": {
+              "enabled": false,
+              "receiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+              "releaseId": "20260905-kokoro-english-g2p-us-r132"
+            },
+            "green": {
+              "enabled": true,
+              "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+              "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+            }
+          },
+          "updatedAt": "2026-09-06T18:07:10.424088+00:00"
+        },
+        "active": {
+          "blue": 0,
+          "green": 1
+        },
+        "accepting": true,
+        "drainTrusted": true,
+        "proxyReleaseId": "us-tts-origin-proxy-20260907-v2"
+      },
+      "supervisorStatus": "RUNNING",
+      "supervisorPid": 4114885,
+      "listeners": {
+        "blue": {
+          "pid": 4114885,
+          "startTicks": "550418819",
+          "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+          "exe": "/venv/main/bin/python3.12",
+          "argvSha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83"
+        },
+        "green": {
+          "pid": 3459850,
+          "startTicks": "545406132",
+          "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+          "exe": "/venv/main/bin/python3.12",
+          "argvSha256": "cf47eee9611d26e23306d3bedb41a71145a41cc13ce8ed4741595b4be4026a8b"
+        },
+        "proxy": {
+          "pid": 4031530,
+          "startTicks": "549868431",
+          "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+          "exe": "/venv/main/bin/python3.12",
+          "argvSha256": "739764da1c5a84c8befeb83848212d68c5079c3a2d0087d020b273427823671f"
+        },
+        "clone": {
+          "pid": 568834,
+          "startTicks": "524136804",
+          "cwd": "/workspace/castreader-clone",
+          "exe": "/usr/bin/python3.12",
+          "argvSha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e"
+        },
+        "nari": {
+          "pid": 4136837,
+          "startTicks": "519185503",
+          "cwd": "/workspace/nari-qwen3-tts-clean",
+          "exe": "/usr/bin/python3.12",
+          "argvSha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2"
+        }
+      },
+      "oldBlueProcExists": false
+    }
+  ],
+  "supervisorEvents": [
+    {
+      "at": "2026-07-23 16:33:16,409",
+      "event": "success"
+    },
+    {
+      "at": "2026-07-23 18:59:41,147",
+      "event": "stopped"
+    },
+    {
+      "at": "2026-07-23 18:59:49,600",
+      "event": "success"
+    },
+    {
+      "at": "2026-07-24 01:01:29,768",
+      "event": "stopped"
+    },
+    {
+      "at": "2026-07-24 01:01:38,032",
+      "event": "success"
+    },
+    {
+      "at": "2026-07-24 05:13:35,852",
+      "event": "stopped"
+    },
+    {
+      "at": "2026-07-24 05:13:44,295",
+      "event": "success"
+    },
+    {
+      "at": "2026-07-24 05:38:51,461",
+      "event": "stopped"
+    },
+    {
+      "at": "2026-07-24 05:38:59,770",
+      "event": "success"
+    },
+    {
+      "at": "2026-08-20 03:07:42,293",
+      "event": "exited"
+    },
+    {
+      "at": "2026-08-20 03:07:51,442",
+      "event": "success"
+    },
+    {
+      "at": "2026-08-24 16:07:12,612",
+      "event": "exited"
+    },
+    {
+      "at": "2026-08-24 16:07:20,646",
+      "event": "success"
+    },
+    {
+      "at": "2026-09-03 12:51:25,391",
+      "event": "stopped"
+    },
+    {
+      "at": "2026-09-03 12:51:33,972",
+      "event": "success"
+    },
+    {
+      "at": "2026-09-04 04:03:51,552",
+      "event": "exited"
+    },
+    {
+      "at": "2026-09-04 04:03:59,880",
+      "event": "success"
+    },
+    {
+      "at": "2026-09-04 04:04:15,825",
+      "event": "exited"
+    },
+    {
+      "at": "2026-09-04 04:04:24,081",
+      "event": "success"
+    },
+    {
+      "at": "2026-09-04 04:07:46,537",
+      "event": "exited"
+    },
+    {
+      "at": "2026-09-04 04:07:54,833",
+      "event": "success"
+    },
+    {
+      "at": "2026-09-05 16:38:13,020",
+      "event": "exited"
+    },
+    {
+      "at": "2026-09-05 16:38:21,144",
+      "event": "success"
+    },
+    {
+      "at": "2026-09-06 18:07:22,844",
+      "event": "exited"
+    },
+    {
+      "at": "2026-09-06 18:07:32,032",
+      "event": "success"
+    }
+  ]
+}

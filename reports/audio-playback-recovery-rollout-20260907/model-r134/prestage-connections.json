@@ -1,0 +1,56 @@
+{
+  "atUTC": "2026-09-06T17:54:42.265164+00:00",
+  "blueAndGreenTcpStateCounts": {
+    "18880": {
+      "06": 55,
+      "0A": 1
+    },
+    "8880": {
+      "0A": 1
+    }
+  },
+  "models": {
+    "blue": {
+      "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+      "pid": 2665473,
+      "startTicks": "541243790"
+    },
+    "clone": {
+      "cwd": "/workspace/castreader-clone",
+      "pid": 568834,
+      "startTicks": "524136804"
+    },
+    "green": {
+      "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+      "pid": 3459850,
+      "startTicks": "545406132"
+    },
+    "nari": {
+      "cwd": "/workspace/nari-qwen3-tts-clean",
+      "pid": 4136837,
+      "startTicks": "519185503"
+    }
+  },
+  "productionModified": false,
+  "proxyHealth": {
+    "active": {
+      "blue": 0,
+      "green": 0
+    },
+    "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
+    "currentSlot": "green",
+    "drainTrusted": true,
+    "inflightReuse": {
+      "producersStarted": 4551,
+      "replayBytes": 0,
+      "responsesRetained": 0,
+      "subscribersJoined": 3
+    },
+    "ok": true,
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 2
+  },
+  "readOnly": true,
+  "schema": "castreader.r134-prestage-readonly.v1",
+  "synthesisStarted": false
+}

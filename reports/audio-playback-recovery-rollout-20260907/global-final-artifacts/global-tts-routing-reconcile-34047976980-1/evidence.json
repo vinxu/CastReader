@@ -1,0 +1,112 @@
+{
+  "schema": "castreader.global-tts-routing-reconcile.v1",
+  "status": "passed",
+  "startedAt": "2026-09-06T17:25:27.294Z",
+  "productionHost": "api.castreader.ai",
+  "expectedCommitSha": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+  "incidentId": "gh-34047976980-1-stable-proxy",
+  "target": {
+    "url": "http://71.175.237.103:41209/dev/captioned_speech",
+    "nodeId": "castreader-us4090",
+    "releaseId": "us-tts-origin-proxy-20260907-v2",
+    "receiptSha256": "493ae5a2309cb6a6fc65142a8756c019e6b4cdd40ad41a9edc972718162051c1",
+    "verifiedLanguages": [
+      "en",
+      "zh",
+      "ja",
+      "es",
+      "fr",
+      "de",
+      "pt",
+      "it",
+      "hi"
+    ]
+  },
+  "priorState": {
+    "schemaVersion": 1,
+    "current": {
+      "url": "http://71.175.237.103:41209/dev/captioned_speech",
+      "nodeId": "castreader-us4090",
+      "releaseId": "us-tts-origin-proxy-20260906-v1",
+      "receiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "verifiedLanguages": [
+        "en",
+        "zh",
+        "ja",
+        "es",
+        "fr",
+        "de",
+        "pt",
+        "it",
+        "hi"
+      ]
+    },
+    "previous": {
+      "url": "http://71.175.237.103:41209/dev/captioned_speech",
+      "nodeId": "castreader-us4090",
+      "releaseId": "us-tts-origin-proxy-20260906-v1",
+      "receiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "verifiedLanguages": []
+    },
+    "revision": 1,
+    "updatedAt": "2026-09-06T04:57:09.285Z",
+    "incidentId": "gh-34012365932-1-stable-proxy"
+  },
+  "updateOutcome": "applied",
+  "updateProbe": {
+    "ok": true,
+    "status": 200,
+    "elapsedMs": 507,
+    "audioBase64Chars": 46140,
+    "timestamps": 4
+  },
+  "confirmedState": {
+    "schemaVersion": 1,
+    "current": {
+      "url": "http://71.175.237.103:41209/dev/captioned_speech",
+      "nodeId": "castreader-us4090",
+      "releaseId": "us-tts-origin-proxy-20260907-v2",
+      "receiptSha256": "493ae5a2309cb6a6fc65142a8756c019e6b4cdd40ad41a9edc972718162051c1",
+      "verifiedLanguages": [
+        "en",
+        "zh",
+        "ja",
+        "es",
+        "fr",
+        "de",
+        "pt",
+        "it",
+        "hi"
+      ]
+    },
+    "previous": {
+      "url": "http://71.175.237.103:41209/dev/captioned_speech",
+      "nodeId": "castreader-us4090",
+      "releaseId": "us-tts-origin-proxy-20260906-v1",
+      "receiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "verifiedLanguages": [
+        "en",
+        "zh",
+        "ja",
+        "es",
+        "fr",
+        "de",
+        "pt",
+        "it",
+        "hi"
+      ]
+    },
+    "revision": 2,
+    "updatedAt": "2026-09-06T17:25:28.780Z",
+    "incidentId": "gh-34047976980-1-stable-proxy"
+  },
+  "expectedAuditKey": "tts_upstream_routing_audit_v1:0000000002",
+  "effectiveRoute": {
+    "region": "global",
+    "nodeId": "castreader-us4090",
+    "revision": 2,
+    "source": "database",
+    "consecutiveMatches": 2
+  },
+  "completedAt": "2026-09-06T17:25:33.496Z"
+}

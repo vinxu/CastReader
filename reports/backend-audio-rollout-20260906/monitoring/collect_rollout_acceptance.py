@@ -10,6 +10,8 @@ import subprocess
 import sys
 import tempfile
 
+from remote_proxy_identity import validate_model_expectation
+
 
 HERE = Path(__file__).resolve().parent
 LEGACY = HERE.parent.parent / "backend-audio-iteration-20260906" / "monitoring"
@@ -26,6 +28,42 @@ from collect_acceptance import (
 PROXY_DOCUMENT_SCHEMA = "castreader.us-origin-proxy-identity.v1"
 KOKORO_DOCUMENT_SCHEMA = "castreader.kokoro-runtime-identity.v1"
 MODEL_SLOT_PORTS = {"blue": 8880, "green": 18880}
+MODEL_SLOT_SUPERVISORS = {"blue": "castreader-tts", "green": "castreader-tts-r133-green"}
+
+
+def model_expectation_from_components(config):
+    components = config.get("requiredComponents", {})
+    model = components.get("usKokoro", {})
+    if "runtimeSourceRelativePath" not in model:
+        return None
+    proxy = components.get("usOriginProxy", {})
+    if model.get("verified") is not True or proxy.get("verified") is not True:
+        raise ValueError("model_expected_identity_not_verified")
+    return validate_model_expectation({
+        "slot": proxy.get("currentSlot"),
+        "releaseId": proxy.get("currentReleaseId"),
+        "version": model.get("version"),
+        "releasePath": model.get("runtimeReleasePath"),
+        "sourceRelativePath": model.get("runtimeSourceRelativePath"),
+        "sourceSha256": model.get("runtimeSourceSha256"),
+    })
+
+
+def proxy_identity_args(config):
+    """Only the reviewed local acceptance state can supply new model expectations."""
+    expected = config.get("requiredComponents", {}).get("usOriginProxy", {})
+    source = expected.get("runtimeSourcePath", "")
+    if (
+        not isinstance(source, str)
+        or not re.fullmatch(r"/workspace/[A-Za-z0-9._/-]+/r133_stable_proxy\.py", source)
+        or any(part in (".", "..") for part in source.split("/"))
+    ):
+        raise ValueError("proxy_expected_path_invalid")
+    arguments = [source]
+    model = model_expectation_from_components(config)
+    if model is not None:
+        arguments += ["--model-expectation-json", json.dumps(model, sort_keys=True, separators=(",", ":"))]
+    return arguments
 
 
 def current_model_document(document):
@@ -190,6 +228,22 @@ def merge_proxy_evidence(report, expected, document, config=None):
     if not isinstance(model, dict):
         model = {}
         issues.append("proxy_current_model_shape_invalid")
+    if config is not None:
+        try:
+            model_expected = model_expectation_from_components(config)
+        except (TypeError, ValueError, AttributeError):
+            model_expected = None
+            issues.append("proxy_current_model_expected_identity_invalid")
+        if model_expected is not None:
+            model_comparisons = {
+                "slot": "slot", "fixedReleaseId": "releaseId",
+                "runtimeReleasePath": "releasePath",
+                "runtimeSourceRelativePath": "sourceRelativePath",
+                "runtimeSourceSha256": "sourceSha256", "expectedVersion": "version",
+            }
+            if any(model.get(actual) != model_expected[expected_key]
+                   for actual, expected_key in model_comparisons.items()):
+                issues.append("proxy_current_model_expected_identity_mismatch")
     current_slot = identity.get("currentSlot")
     expected_port = MODEL_SLOT_PORTS.get(current_slot)
     if (
@@ -218,6 +272,7 @@ def merge_proxy_evidence(report, expected, document, config=None):
         or not isinstance(supervisor_pid, int)
         or model_listener_pids != [supervisor_pid]
         or model.get("supervisorState") != "RUNNING"
+        or model.get("supervisorProgram") != MODEL_SLOT_SUPERVISORS.get(current_slot)
         or model.get("supervisorCwd") != model.get("runtimeReleasePath")
         or not isinstance(supervisor_process, dict)
         or supervisor_process.get("pid") != supervisor_pid
@@ -276,11 +331,8 @@ def main():
     expected = state.get("requiredComponents", {}).get("usOriginProxy", {})
     if report.get("evaluation", {}).get("windowStarted"):
         try:
-            source = expected.get("runtimeSourcePath", "")
-            if not re.fullmatch(r"/workspace/[A-Za-z0-9._/-]+/r133_stable_proxy\.py", source):
-                raise ValueError("proxy_expected_path_invalid")
             document = run_remote_script(
-                ["castreader-us4090"], HERE / "remote_proxy_identity.py", [source], 30
+                ["castreader-us4090"], HERE / "remote_proxy_identity.py", proxy_identity_args(state), 30
             )
         except Exception as error:
             document = safe_error("origin_proxy_us", error)

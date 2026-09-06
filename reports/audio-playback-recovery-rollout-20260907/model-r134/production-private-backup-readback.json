@@ -1,0 +1,37 @@
+{
+  "bucket": "castreader-tts-backups",
+  "created_at": "2026-09-06T18:35:22.195101+00:00",
+  "downloaded_bytes": 62321,
+  "expected_bytes": 62321,
+  "expected_files": 1,
+  "expected_objects": 1,
+  "files": [
+    {
+      "bytes": 62321,
+      "downloaded_bytes": 62321,
+      "name": "complete-production-delta.tar.gz",
+      "object_base": "runtime-releases/us/20260907-kokoro-silent-separators-r134/complete-production-delta.tar.gz",
+      "parts": [
+        {
+          "bytes": 62321,
+          "downloaded_bytes": 62321,
+          "object": "runtime-releases/us/20260907-kokoro-silent-separators-r134/complete-production-delta.tar.gz",
+          "offset": 0,
+          "readback_sha256": "a166135adfe06c0a777f422dd0489a09b05075d8fa3f7b48a3a0c0a234c84f18",
+          "sha256": "a166135adfe06c0a777f422dd0489a09b05075d8fa3f7b48a3a0c0a234c84f18",
+          "verified": true
+        }
+      ],
+      "readback_sha256": "a166135adfe06c0a777f422dd0489a09b05075d8fa3f7b48a3a0c0a234c84f18",
+      "sha256": "a166135adfe06c0a777f422dd0489a09b05075d8fa3f7b48a3a0c0a234c84f18",
+      "verified": true
+    }
+  ],
+  "plan_sha256": "057a99207b819fcbb8f0ececf56d1089c5e2c274e39c8472b02b0f85afb69df9",
+  "project_ref": "zqxgmqygirtpttnrvjpf",
+  "public": false,
+  "schema": "castreader.backup-readback.v1",
+  "verified": true,
+  "verified_files": 1,
+  "verified_objects": 1
+}

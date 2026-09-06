@@ -1,0 +1,450 @@
+{
+  "schema": "castreader.cn-no-speakable-static-identity.v1",
+  "readAtUtc": "2026-09-06T17:42:48.781694+00:00",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "connectionRoute": "existing_REGIONS_cn_same_region_gateway_jump",
+  "release": "/root/autodl-tmp/castreader-runtime/releases/20260904-kokoro-playback-cn-r131b",
+  "process": {
+    "pid": 640207,
+    "startTicks": "2020118568",
+    "cwd": "/root/autodl-tmp/castreader-runtime/releases/20260904-kokoro-playback-cn-r131b",
+    "argvSha256": "062db979d0deab2ff2b3b78fc6c35a3d733d03c97928c756c14524a8dab42d45"
+  },
+  "sources": [
+    {
+      "path": "api/src/services/tts_service.py",
+      "sha256": "ac1ec2b158f4b2fd9857bf53d743631419eb934729070c5df73d285430b1a910",
+      "bytes": 31663,
+      "lines": [
+        {
+          "line": 30,
+          "code": "def _requires_generated_audio(text: str) -> bool:"
+        },
+        {
+          "line": 31,
+          "code": "    \"\"\"Do not mistake readable symbols/numbers for punctuation-only input."
+        },
+        {
+          "line": 32,
+          "code": ""
+        },
+        {
+          "line": 33,
+          "code": "    This is an empty-output guard, not a pronunciation/word-coverage heuristic."
+        },
+        {
+          "line": 34,
+          "code": "    Unicode symbol categories include currencies and math; some spoken symbols"
+        },
+        {
+          "line": 35,
+          "code": "    (notably ampersand and percent) are classified as punctuation instead."
+        },
+        {
+          "line": 36,
+          "code": "    \"\"\""
+        },
+        {
+          "line": 37,
+          "code": "    return any("
+        },
+        {
+          "line": 38,
+          "code": "        character.isalnum()"
+        },
+        {
+          "line": 39,
+          "code": "        or unicodedata.category(character).startswith(\"S\")"
+        },
+        {
+          "line": 40,
+          "code": "        or character in \"&@#%\u2030\u2031\""
+        },
+        {
+          "line": 41,
+          "code": "        for character in text"
+        },
+        {
+          "line": 42,
+          "code": "    )"
+        },
+        {
+          "line": 589,
+          "code": "                if len(audio_stream_data.audio) > 0:"
+        },
+        {
+          "line": 590,
+          "code": "                    audio_data_chunks.append(audio_stream_data)"
+        },
+        {
+          "line": 591,
+          "code": ""
+        },
+        {
+          "line": 592,
+          "code": "            if not audio_data_chunks:"
+        },
+        {
+          "line": 593,
+          "code": "                if _requires_generated_audio(text):"
+        },
+        {
+          "line": 594,
+          "code": "                    raise RuntimeError(\"Readable request completed without audio\")"
+        },
+        {
+          "line": 595,
+          "code": "                raise ValueError(\"Text contains no speakable content\")"
+        },
+        {
+          "line": 596,
+          "code": "            # This non-streaming boundary never returns a prefix: every iterator"
+        },
+        {
+          "line": 597,
+          "code": "            # and transform must complete before PCM is combined or encoded."
+        },
+        {
+          "line": 598,
+          "code": "            combined_audio_data = AudioChunk.combine(audio_data_chunks)"
+        },
+        {
+          "line": 599,
+          "code": "            return combined_audio_data"
+        },
+        {
+          "line": 600,
+          "code": "        except Exception as e:"
+        },
+        {
+          "line": 601,
+          "code": "            event(\"complete_audio_failed\", e)"
+        },
+        {
+          "line": 602,
+          "code": "            raise"
+        },
+        {
+          "line": 603,
+          "code": ""
+        },
+        {
+          "line": 604,
+          "code": "    async def combine_voices(self, voices: List[str]) -> torch.Tensor:"
+        },
+        {
+          "line": 605,
+          "code": "        \"\"\"Combine multiple voices."
+        },
+        {
+          "line": 606,
+          "code": ""
+        },
+        {
+          "line": 607,
+          "code": "        Returns:"
+        },
+        {
+          "line": 608,
+          "code": "            Combined voice tensor"
+        },
+        {
+          "line": 609,
+          "code": "        \"\"\""
+        },
+        {
+          "line": 610,
+          "code": ""
+        },
+        {
+          "line": 611,
+          "code": "        return await self._voice_manager.combine_voices(voices)"
+        },
+        {
+          "line": 612,
+          "code": ""
+        },
+        {
+          "line": 613,
+          "code": "    async def list_voices(self) -> List[str]:"
+        }
+      ]
+    },
+    {
+      "path": "api/src/routers/development.py",
+      "sha256": "080365da6cf0b4c0f6636dd6ca5026d5ab3d247f6f0a842bc05a0dd47bee42b3",
+      "bytes": 17691,
+      "lines": [
+        {
+          "line": 65,
+          "code": "            return PhonemeResponse(phonemes=result.phonemes, tokens=[])"
+        },
+        {
+          "line": 66,
+          "code": ""
+        },
+        {
+          "line": 67,
+          "code": "        raise ValueError(\"Failed to generate phonemes\")"
+        },
+        {
+          "line": 68,
+          "code": "    except ValueError as e:"
+        },
+        {
+          "line": 69,
+          "code": "        logger.error(f\"Error in phoneme generation: {str(e)}\")"
+        },
+        {
+          "line": 70,
+          "code": "        raise HTTPException("
+        },
+        {
+          "line": 71,
+          "code": "            status_code=500, detail={\"error\": \"Server error\", \"message\": str(e)}"
+        },
+        {
+          "line": 72,
+          "code": "        )"
+        },
+        {
+          "line": 73,
+          "code": "    except Exception as e:"
+        },
+        {
+          "line": 74,
+          "code": "        logger.error(f\"Error in phoneme generation: {str(e)}\")"
+        },
+        {
+          "line": 75,
+          "code": "        raise HTTPException("
+        },
+        {
+          "line": 76,
+          "code": "            status_code=500, detail={\"error\": \"Server error\", \"message\": str(e)}"
+        },
+        {
+          "line": 77,
+          "code": "        )"
+        },
+        {
+          "line": 78,
+          "code": ""
+        },
+        {
+          "line": 79,
+          "code": ""
+        },
+        {
+          "line": 80,
+          "code": "@router.post(\"/dev/generate_from_phonemes\")"
+        },
+        {
+          "line": 81,
+          "code": "async def generate_from_phonemes("
+        },
+        {
+          "line": 82,
+          "code": "        request: GenerateFromPhonemesRequest,"
+        },
+        {
+          "line": 83,
+          "code": "        client_request: Request,"
+        },
+        {
+          "line": 84,
+          "code": "        tts_service: TTSService = Depends(get_tts_service),"
+        },
+        {
+          "line": 85,
+          "code": ") -> StreamingResponse:"
+        },
+        {
+          "line": 86,
+          "code": "    \"\"\"Generate audio directly from phonemes using Kokoro's phoneme format\"\"\""
+        },
+        {
+          "line": 138,
+          "code": "            },"
+        },
+        {
+          "line": 139,
+          "code": "        )"
+        },
+        {
+          "line": 140,
+          "code": ""
+        },
+        {
+          "line": 141,
+          "code": "    except ValueError as e:"
+        },
+        {
+          "line": 142,
+          "code": "        logger.error(f\"Error generating audio: {str(e)}\")"
+        },
+        {
+          "line": 143,
+          "code": "        raise HTTPException("
+        },
+        {
+          "line": 144,
+          "code": "            status_code=400,"
+        },
+        {
+          "line": 145,
+          "code": "            detail={"
+        },
+        {
+          "line": 146,
+          "code": "                \"error\": \"validation_error\","
+        },
+        {
+          "line": 147,
+          "code": "                \"message\": str(e),"
+        },
+        {
+          "line": 148,
+          "code": "                \"type\": \"invalid_request_error\","
+        },
+        {
+          "line": 149,
+          "code": "            },"
+        },
+        {
+          "line": 150,
+          "code": "        )"
+        },
+        {
+          "line": 151,
+          "code": "    except Exception as e:"
+        },
+        {
+          "line": 152,
+          "code": "        logger.error(f\"Error generating audio: {str(e)}\")"
+        },
+        {
+          "line": 153,
+          "code": "        raise HTTPException("
+        },
+        {
+          "line": 154,
+          "code": "            status_code=500,"
+        },
+        {
+          "line": 155,
+          "code": "            detail={"
+        },
+        {
+          "line": 156,
+          "code": "                \"error\": \"processing_error\","
+        },
+        {
+          "line": 157,
+          "code": "                \"message\": str(e),"
+        },
+        {
+          "line": 158,
+          "code": "                \"type\": \"server_error\","
+        },
+        {
+          "line": 159,
+          "code": "            },"
+        },
+        {
+          "line": 386,
+          "code": "                    # another failure exists, it retains its original cause."
+        },
+        {
+          "line": 387,
+          "code": "                    event(\"audio_writer_cleanup_failed\", close_error)"
+        },
+        {
+          "line": 388,
+          "code": ""
+        },
+        {
+          "line": 389,
+          "code": "    except ValueError as e:"
+        },
+        {
+          "line": 390,
+          "code": "        import traceback"
+        },
+        {
+          "line": 391,
+          "code": "        logger.error(traceback.format_exc())"
+        },
+        {
+          "line": 392,
+          "code": "        # Handle validation errors"
+        },
+        {
+          "line": 393,
+          "code": "        logger.warning(f\"Invalid request: {str(e)}\")"
+        },
+        {
+          "line": 394,
+          "code": ""
+        },
+        {
+          "line": 395,
+          "code": "        try:"
+        },
+        {
+          "line": 396,
+          "code": "            writer.close()"
+        },
+        {
+          "line": 397,
+          "code": "        except:"
+        },
+        {
+          "line": 398,
+          "code": "            pass"
+        },
+        {
+          "line": 399,
+          "code": ""
+        },
+        {
+          "line": 400,
+          "code": "        raise HTTPException("
+        },
+        {
+          "line": 401,
+          "code": "            status_code=400,"
+        },
+        {
+          "line": 402,
+          "code": "            detail={"
+        },
+        {
+          "line": 403,
+          "code": "                \"error\": \"validation_error\","
+        },
+        {
+          "line": 404,
+          "code": "                \"message\": str(e),"
+        },
+        {
+          "line": 405,
+          "code": "                \"type\": \"invalid_request_error\","
+        },
+        {
+          "line": 406,
+          "code": "            },"
+        },
+        {
+          "line": 407,
+          "code": "        )"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Static source and live process identity only; no CN historical incident logs or production synthesis queried."
+  ]
+}

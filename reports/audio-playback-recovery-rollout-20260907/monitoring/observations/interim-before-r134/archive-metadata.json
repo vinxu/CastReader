@@ -1,0 +1,7 @@
+{
+  "schema": "castreader.partial-observation-archive.v1",
+  "supersededAtUtc": "2026-09-06T18:37:52.522573+00:00",
+  "reason": "R134 final model now independently verified; preserve earlier mixed-version window and all prior observations",
+  "partialWindow": true,
+  "oldPlannedWindowRetained": true
+}

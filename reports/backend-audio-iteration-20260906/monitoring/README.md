@@ -53,6 +53,8 @@ direct gateway 解析器只保留固定字段和匿名聚合，不输出正文�
 
 “旧 Android 1.0.45 没有自然请求”和“服务供给失败”是两件事：前者只进入 `sampleGaps`，供给维度仍可通过，但总体验证证据不足。探针成功而客户端仍报告技术失败时，总结会明确保留矛盾，不能用探针覆盖客户端事件。
 
+Android 1.0.45 专项只把实际 HTTP 状态（100–599）中的非 2xx 计入 `android_145_gateway_non_2xx`；真实 400/504 等仍触发失败。未写出 HTTP 响应的 `no_response` 保留原始脱敏聚合与 `downstream_closed` 分类，并单列 advisory `android_145_gateway_no_http_response`，不计作 HTTP 成功、HTTP 失败、模型超时或用户主动取消；其下游结果与断开原因仍不确定。仅有 `no_response` 时不满足 HTTP 样本要求；其他未知状态进入数据缺口。回归 fixture 摘自 2026-09-06 18:16 快照（原文件 SHA 绑定保存在 `tests/fixtures/direct-no-response-1816.json`），旧快照不修改；混入真实 400/504 的测试仍必须为 `fail`。
+
 同样，窗口内出现朗读启动但没有同会话后续首音频，只进入 `sampleGaps`：会话可能跨越窗口边界，不能据此生成技术故障；不过客户端证据必须是 `insufficient_sample`，总判定不能为 `pass`。没有 session id 的启动也无法配对。首音频只证明已经开始输出，不证明正文全部播放完成。
 
 `evidenceLimitations` 固定列出 Web 与扩展客户端事件未采集、首输出不等于完整播放，并按本轮自然样本说明克隆音色和解读是否出现过同窗口首输出证据。缺少克隆或解读自然样本本身不伪装成服务故障，也不会被普通音色朗读样本替代。

@@ -1,0 +1,122 @@
+{
+  "after": {
+    "blueConfigSha256": "d25647b4735984ab678cd2b4ad13c621cd5d3bfb8295dcda8102fb555e5a177c",
+    "blueConnectionObservations": [
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:30:31.287970+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:30:32.307030+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:30:33.326195+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:30:34.345292+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:30:35.364217+00:00"
+      }
+    ],
+    "blueScriptSha256": "f18465674b2821cc78ab63c2157a5763282f4152b1d8101bf85e6d76ffb4269c",
+    "connectionSamplesDoNotProveNoLegacyTraffic": true,
+    "current": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+    "gpu": {
+      "freeMiB": 4979,
+      "totalMiB": 24564,
+      "usedMiB": 19114,
+      "utilizationPercent": 0
+    },
+    "legacyPublicPortMayStillReachBlue": true,
+    "observedAt": "2026-09-06T18:30:36.404027+00:00",
+    "processes": {
+      "blue": {
+        "argvSha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83",
+        "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 4137311,
+        "startTicks": "550555282"
+      },
+      "clone": {
+        "argvSha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e",
+        "cwd": "/workspace/castreader-clone",
+        "exe": "/usr/bin/python3.12",
+        "pid": 568834,
+        "startTicks": "524136804"
+      },
+      "green": {
+        "argvSha256": "cf47eee9611d26e23306d3bedb41a71145a41cc13ce8ed4741595b4be4026a8b",
+        "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 3459850,
+        "startTicks": "545406132"
+      },
+      "nari": {
+        "argvSha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2",
+        "cwd": "/workspace/nari-qwen3-tts-clean",
+        "exe": "/usr/bin/python3.12",
+        "pid": 4136837,
+        "startTicks": "519185503"
+      },
+      "proxy": {
+        "argvSha256": "739764da1c5a84c8befeb83848212d68c5079c3a2d0087d020b273427823671f",
+        "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 4031530,
+        "startTicks": "549868431"
+      }
+    },
+    "state": {
+      "bootId": "4d514bb3f2f74c54bb723b3fb33c3e4f",
+      "cleanShutdown": false,
+      "currentSlot": "green",
+      "lastOperationId": "ops-r134-disable-old-blue-20260907",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "revision": 3,
+      "schema": "castreader.us-tts-origin-proxy-state.v1",
+      "slots": {
+        "blue": {
+          "enabled": false,
+          "receiptSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+          "releaseId": "20260905-kokoro-english-g2p-us-r132"
+        },
+        "green": {
+          "enabled": true,
+          "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+        }
+      },
+      "updatedAt": "2026-09-06T18:07:10.424088+00:00"
+    }
+  },
+  "blueProcess": {
+    "argvSha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83",
+    "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+    "exe": "/venv/main/bin/python3.12",
+    "pid": 4137311,
+    "startTicks": "550555282"
+  },
+  "completedAt": "2026-09-06T18:30:36.404053+00:00",
+  "currentChangedOnlyAfterOldExit": true,
+  "noForcedKill": true,
+  "proxyRestarted": false,
+  "resourceProof": {
+    "files": 405,
+    "treeSha256": "f86936100541fc66bce98f380c9e2e153a2d0d1b974cf70063a2c682c08fb9b1",
+    "verified": true,
+    "versions": [
+      "r132",
+      "r133",
+      "r134"
+    ]
+  },
+  "resumedModelPlanSha256": "6897a7b6f725e889bed8dd4f12ea3da90f41cca3b0ca3b4a6017740b35ab1bcc",
+  "schema": "castreader.us-r134-supervised-handoff-apply.v1",
+  "verified": true,
+  "wrapperSha256": "f18465674b2821cc78ab63c2157a5763282f4152b1d8101bf85e6d76ffb4269c"
+}

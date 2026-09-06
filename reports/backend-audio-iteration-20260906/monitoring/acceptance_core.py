@@ -1044,19 +1044,36 @@ def evaluate(config, sources, now=None):
         if all_5xx:
             technical.append(issue("direct_gateway_5xx", "direct_gateway", str(all_5xx)))
         legacy = aggregate.get("android145Preset", {})
-        legacy_requests = int(legacy.get("requests") or 0)
-        if policy.get("requireAndroid145GatewaySample", True) and legacy_requests == 0:
+        legacy_statuses = legacy.get("statusCounts", {})
+        legacy_http = {
+            status: int(count) for status, count in legacy_statuses.items()
+            if status.isdigit() and 100 <= int(status) <= 599
+        }
+        if policy.get("requireAndroid145GatewaySample", True) and sum(legacy_http.values()) == 0:
             legacy_sample_adequate = False
             sample_gaps.append(
-                issue("android_145_gateway_sample_missing", "direct_gateway", "zero matching requests")
+                issue("android_145_gateway_sample_missing", "direct_gateway", "zero matching HTTP responses")
             )
         legacy_errors = sum(
             int(count)
-            for status, count in legacy.get("statusCounts", {}).items()
-            if not status.isdigit() or int(status) < 200 or int(status) >= 300
+            for status, count in legacy_http.items()
+            if int(status) < 200 or int(status) >= 300
         )
         if legacy_errors:
             technical.append(issue("android_145_gateway_non_2xx", "direct_gateway", str(legacy_errors)))
+        # A disconnected request with no response has no HTTP status. Preserve
+        # this observation without inventing success, timeout, or user intent.
+        legacy_no_response = int(legacy_statuses.get("no_response") or 0)
+        if legacy_no_response:
+            advisories.append(issue("android_145_gateway_no_http_response", "direct_gateway",
+                                    f"{legacy_no_response}; downstream outcome and user intent unknown"))
+        legacy_unknown_status = sum(
+            int(count) for status, count in legacy_statuses.items()
+            if status != "no_response" and status not in legacy_http
+        )
+        if legacy_unknown_status:
+            data_gaps.append(issue("android_145_gateway_status_unclassified", "direct_gateway",
+                                   str(legacy_unknown_status)))
 
     if monitors_healthy and mobile_technical_failures:
         technical.append(

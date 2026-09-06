@@ -1,0 +1,10 @@
+{
+  "schema": "castreader.r134-supervised-handoff-local-tests.v1",
+  "verified": true,
+  "commit": "71be445",
+  "tests": 11,
+  "productionChanged": false,
+  "synthesisPerformed": false,
+  "independentReview": "ios_player_incident: no remaining blockers",
+  "oldFailedPlanPreserved": true
+}

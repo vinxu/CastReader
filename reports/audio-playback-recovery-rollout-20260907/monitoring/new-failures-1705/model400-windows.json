@@ -1,0 +1,887 @@
+{
+  "collectedAtUTC": "2026-09-06T17:32:56.940990+00:00",
+  "collectorSha256": "2994cc86f1090ab80ab7a8a9c76a1f4ae7609c22e2003dedb289b0c6def63132",
+  "combinedLogCoverage": {
+    "bytesAtRead": 15190412800,
+    "bytesScanned": 16777216,
+    "path": "/var/log/onstart.log",
+    "scanStartOffset": 15173635584,
+    "sourceCountsInsideWindows": {
+      "development:391": 1,
+      "development:393": 1,
+      "kokoro_v1:909": 2,
+      "text_processor:159": 3,
+      "text_processor:188": 2,
+      "text_processor:308": 2,
+      "text_processor:332": 3,
+      "tts_service:427": 3
+    },
+    "structuredFirstUTC": "2026-09-06T16:13:12.943049+00:00",
+    "structuredLastUTC": "2026-09-06T17:32:55.928319+00:00"
+  },
+  "currentModelIdentity": {
+    "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+    "g2pSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
+    "pid": 3459850,
+    "startTicks": "545406132"
+  },
+  "diagnosticCoverage": {
+    "bytesAtRead": 4041406,
+    "bytesScanned": 4041406,
+    "firstStructuredUTC": "2026-09-04T04:04:14.255055+00:00",
+    "lastStructuredUTC": "2026-09-06T17:29:46.713821+00:00",
+    "path": "/workspace/castreader-runtime/logs/playback.jsonl",
+    "rotatedFilesRead": false,
+    "scanStartOffset": 0
+  },
+  "limitations": [
+    "Only the three requested +/-2-second windows are selected; no synthesis or model changes occurred.",
+    "Loguru timestamps have one-second precision and no date/PID/request ID. Nearby structured Unix times provide date context; concurrent model-slot attribution is not exact for these text log rows.",
+    "Uvicorn access records have no timestamp; only the nearest preceding timed log is exported.",
+    "R133 structured diagnostics do carry release and request ID, hashed remotely to the same 20-character key as Direct.",
+    "Missing voice/language/textChars means no allowed field was observed, not an empty request.",
+    "The bounded active diagnostic file and log tail are not automatically expanded if they do not cover the requested windows."
+  ],
+  "productionModified": false,
+  "rawUserDataExported": false,
+  "readOnly": true,
+  "schema": "castreader.model-400-three-window.v1",
+  "sourceEvidence": [
+    {
+      "lines": [
+        {
+          "code": "@router.post(\"/dev/captioned_speech\")",
+          "line": 163
+        },
+        {
+          "code": "async def create_captioned_speech(",
+          "line": 164
+        },
+        {
+          "code": "        request: CaptionedSpeechRequest,",
+          "line": 165
+        },
+        {
+          "code": "        client_request: Request,",
+          "line": 166
+        },
+        {
+          "code": "        x_raw_response: str = Header(None, alias=\"x-raw-response\"),",
+          "line": 167
+        },
+        {
+          "code": "        tts_service: TTSService = Depends(get_tts_service),",
+          "line": 168
+        },
+        {
+          "code": "):",
+          "line": 169
+        },
+        {
+          "code": "    \"\"\"Generate audio with word-level timestamps using streaming approach\"\"\"",
+          "line": 170
+        },
+        {
+          "code": "",
+          "line": 171
+        },
+        {
+          "code": "    try:",
+          "line": 172
+        },
+        {
+          "code": "        # model_name = get_model_name(request.model)",
+          "line": 173
+        },
+        {
+          "code": "        tts_service = await get_tts_service()",
+          "line": 174
+        },
+        {
+          "code": "        vn = request.voice",
+          "line": 175
+        },
+        {
+          "code": "        import re",
+          "line": 176
+        },
+        {
+          "code": "        pattern = r'^(zf|zm)_\\d{3}$'",
+          "line": 177
+        },
+        {
+          "code": "        if re.fullmatch(pattern, vn, re.IGNORECASE):",
+          "line": 178
+        },
+        {
+          "code": "            voice_name = vn",
+          "line": 179
+        },
+        {
+          "code": "        else:",
+          "line": 180
+        },
+        {
+          "code": "            voice_name = await process_and_validate_voices(request.voice, tts_service)",
+          "line": 181
+        },
+        {
+          "code": "",
+          "line": 388
+        },
+        {
+          "code": "    except ValueError as e:",
+          "line": 389
+        },
+        {
+          "code": "        import traceback",
+          "line": 390
+        },
+        {
+          "code": "        logger.error(traceback.format_exc())",
+          "line": 391
+        },
+        {
+          "code": "        # Handle validation errors",
+          "line": 392
+        },
+        {
+          "code": "        logger.warning(f\"Invalid request: {str(e)}\")",
+          "line": 393
+        },
+        {
+          "code": "",
+          "line": 394
+        },
+        {
+          "code": "        try:",
+          "line": 395
+        },
+        {
+          "code": "            writer.close()",
+          "line": 396
+        },
+        {
+          "code": "        except:",
+          "line": 397
+        },
+        {
+          "code": "            pass",
+          "line": 398
+        },
+        {
+          "code": "",
+          "line": 399
+        },
+        {
+          "code": "        raise HTTPException(",
+          "line": 400
+        },
+        {
+          "code": "            status_code=400,",
+          "line": 401
+        },
+        {
+          "code": "            detail={",
+          "line": 402
+        },
+        {
+          "code": "                \"error\": \"validation_error\",",
+          "line": 403
+        },
+        {
+          "code": "                \"message\": str(e),",
+          "line": 404
+        },
+        {
+          "code": "                \"type\": \"invalid_request_error\",",
+          "line": 405
+        },
+        {
+          "code": "            },",
+          "line": 406
+        }
+      ],
+      "path": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/routers/development.py",
+      "sha256": "080365da6cf0b4c0f6636dd6ca5026d5ab3d247f6f0a842bc05a0dd47bee42b3"
+    },
+    {
+      "lines": [
+        {
+          "code": "",
+          "line": 45
+        },
+        {
+          "code": "def new_request_id(incoming=None):",
+          "line": 46
+        },
+        {
+          "code": "    return incoming if isinstance(incoming, str) and re.fullmatch(r\"[A-Za-z0-9_-]{8,80}\", incoming) else uuid.uuid4().hex",
+          "line": 47
+        },
+        {
+          "code": "",
+          "line": 48
+        },
+        {
+          "code": "",
+          "line": 49
+        },
+        {
+          "code": "def event(stage, error=None, **counts):",
+          "line": 50
+        },
+        {
+          "code": "    \"\"\"Only fixed stages, scalar counts and stack locations; never str(error).\"\"\"",
+          "line": 51
+        },
+        {
+          "code": "    configure()",
+          "line": 52
+        },
+        {
+          "code": "    payload = {\"time_unix\": time.time(), \"request_id\": request_id.get(), \"stage\": stage,",
+          "line": 53
+        },
+        {
+          "code": "               \"release\": _release.name}",
+          "line": 54
+        },
+        {
+          "code": "    async def __call__(self, scope, receive, send):",
+          "line": 78
+        },
+        {
+          "code": "        if scope[\"type\"] != \"http\":",
+          "line": 79
+        },
+        {
+          "code": "            return await self.app(scope, receive, send)",
+          "line": 80
+        },
+        {
+          "code": "        headers = dict(scope.get(\"headers\", []))",
+          "line": 81
+        },
+        {
+          "code": "        value = new_request_id(headers.get(b\"x-request-id\", b\"\").decode(\"ascii\", errors=\"ignore\"))",
+          "line": 82
+        },
+        {
+          "code": "        token = request_id.set(value)",
+          "line": 83
+        },
+        {
+          "code": "        started = time.monotonic()",
+          "line": 84
+        },
+        {
+          "code": "        status = None",
+          "line": 85
+        },
+        {
+          "code": "",
+          "line": 86
+        },
+        {
+          "code": "        async def traced_send(message):",
+          "line": 87
+        },
+        {
+          "code": "            nonlocal status",
+          "line": 88
+        },
+        {
+          "code": "            if message[\"type\"] == \"http.response.start\":",
+          "line": 89
+        },
+        {
+          "code": "                status = message[\"status\"]",
+          "line": 90
+        },
+        {
+          "code": "                message = dict(message)",
+          "line": 91
+        },
+        {
+          "code": "                message[\"headers\"] = [*message.get(\"headers\", []), (b\"x-request-id\", value.encode())]",
+          "line": 92
+        },
+        {
+          "code": "            await send(message)",
+          "line": 93
+        },
+        {
+          "code": "",
+          "line": 94
+        },
+        {
+          "code": "        try:",
+          "line": 95
+        },
+        {
+          "code": "            await self.app(scope, receive, traced_send)",
+          "line": 96
+        },
+        {
+          "code": "        except Exception as error:",
+          "line": 97
+        },
+        {
+          "code": "            event(\"request_exception\", error)",
+          "line": 98
+        },
+        {
+          "code": "            raise",
+          "line": 99
+        },
+        {
+          "code": "        finally:",
+          "line": 100
+        },
+        {
+          "code": "            if status is not None and status >= 400:",
+          "line": 101
+        },
+        {
+          "code": "                event(\"request_failed\", status=status, elapsed_ms=int((time.monotonic()-started)*1000))",
+          "line": 102
+        },
+        {
+          "code": "            request_id.reset(token)",
+          "line": 103
+        }
+      ],
+      "path": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/core/playback_diagnostics.py",
+      "sha256": "027cb5fd9ecf2a2dd41a5a20ccb583d04497526c6cf585bb6f285e3edfb2138a"
+    },
+    {
+      "lines": [
+        {
+          "code": "                    writer,",
+          "line": 580
+        },
+        {
+          "code": "                    speed=speed,",
+          "line": 581
+        },
+        {
+          "code": "                    volume_multiplier=volume_multiplier,",
+          "line": 582
+        },
+        {
+          "code": "                    normalization_options=normalization_options,",
+          "line": 583
+        },
+        {
+          "code": "                    return_timestamps=return_timestamps,",
+          "line": 584
+        },
+        {
+          "code": "                    lang_code=lang_code,",
+          "line": 585
+        },
+        {
+          "code": "                    output_format=None,",
+          "line": 586
+        },
+        {
+          "code": "                    vn=vn,",
+          "line": 587
+        },
+        {
+          "code": "            ):",
+          "line": 588
+        },
+        {
+          "code": "                if len(audio_stream_data.audio) > 0:",
+          "line": 589
+        },
+        {
+          "code": "                    audio_data_chunks.append(audio_stream_data)",
+          "line": 590
+        },
+        {
+          "code": "",
+          "line": 591
+        },
+        {
+          "code": "            if not audio_data_chunks:",
+          "line": 592
+        },
+        {
+          "code": "                if _requires_generated_audio(text):",
+          "line": 593
+        },
+        {
+          "code": "                    raise RuntimeError(\"Readable request completed without audio\")",
+          "line": 594
+        },
+        {
+          "code": "                raise ValueError(\"Text contains no speakable content\")",
+          "line": 595
+        },
+        {
+          "code": "            # This non-streaming boundary never returns a prefix: every iterator",
+          "line": 596
+        },
+        {
+          "code": "            # and transform must complete before PCM is combined or encoded.",
+          "line": 597
+        },
+        {
+          "code": "            combined_audio_data = AudioChunk.combine(audio_data_chunks)",
+          "line": 598
+        }
+      ],
+      "path": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/services/tts_service.py",
+      "sha256": "ac1ec2b158f4b2fd9857bf53d743631419eb934729070c5df73d285430b1a910"
+    },
+    {
+      "lines": [
+        {
+          "code": "                # complete BCP-47/language route in their first character.  If",
+          "line": 116
+        },
+        {
+          "code": "                # the matched package is unambiguously single-language, that",
+          "line": 117
+        },
+        {
+          "code": "                # package is the authority for direct-phoneme and legacy calls",
+          "line": 118
+        },
+        {
+          "code": "                # that omit a language code.",
+          "line": 119
+        },
+        {
+          "code": "                if (",
+          "line": 120
+        },
+        {
+          "code": "                    package.languages",
+          "line": 121
+        },
+        {
+          "code": "                    and resolved_lang not in package.languages",
+          "line": 122
+        },
+        {
+          "code": "                    and len(package.languages) == 1",
+          "line": 123
+        },
+        {
+          "code": "                ):",
+          "line": 124
+        },
+        {
+          "code": "                    resolved_lang = next(iter(package.languages))",
+          "line": 125
+        },
+        {
+          "code": "                if package.languages and resolved_lang not in package.languages:",
+          "line": 126
+        },
+        {
+          "code": "                    raise ValueError(",
+          "line": 127
+        },
+        {
+          "code": "                        f\"voice '{voice_name}' is not compatible with language \"",
+          "line": 128
+        },
+        {
+          "code": "                        f\"'{resolved_lang}' in package '{package.package_id}'\"",
+          "line": 129
+        },
+        {
+          "code": "                    )",
+          "line": 130
+        },
+        {
+          "code": "                return RouteDecision(package, resolved_lang, \"voice\")",
+          "line": 131
+        },
+        {
+          "code": "",
+          "line": 132
+        },
+        {
+          "code": "        for package in self._routes:",
+          "line": 133
+        },
+        {
+          "code": "            if (",
+          "line": 134
+        },
+        {
+          "code": "                package.route_by_language",
+          "line": 135
+        },
+        {
+          "code": "                and normalized_lang in package.route_languages",
+          "line": 136
+        },
+        {
+          "code": "            ):",
+          "line": 137
+        },
+        {
+          "code": "                return RouteDecision(package, normalized_lang, \"language\")",
+          "line": 138
+        },
+        {
+          "code": "",
+          "line": 139
+        },
+        {
+          "code": "        default_package = self.get(self.default_package_id)",
+          "line": 140
+        },
+        {
+          "code": "        if default_package.languages and normalized_lang not in default_package.languages:",
+          "line": 141
+        },
+        {
+          "code": "            raise ValueError(",
+          "line": 142
+        },
+        {
+          "code": "                f\"language '{normalized_lang}' has no enabled model package\"",
+          "line": 143
+        },
+        {
+          "code": "            )",
+          "line": 144
+        }
+      ],
+      "path": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/inference/model_packages.py",
+      "sha256": "a84cb16a33805359a8e667be50c439b0216086c15d35b087b29a9abf342b7f35"
+    },
+    {
+      "lines": [
+        {
+          "code": "",
+          "line": 120
+        },
+        {
+          "code": "        mapped_voice[0] = _openai_mappings[\"voices\"].get(",
+          "line": 121
+        },
+        {
+          "code": "            mapped_voice[0], mapped_voice[0]",
+          "line": 122
+        },
+        {
+          "code": "        )",
+          "line": 123
+        },
+        {
+          "code": "",
+          "line": 124
+        },
+        {
+          "code": "        if mapped_voice[0] not in available_voices:",
+          "line": 125
+        },
+        {
+          "code": "            raise ValueError(",
+          "line": 126
+        },
+        {
+          "code": "                f\"Voice '{mapped_voice[0]}' not found. Available voices: {', '.join(sorted(available_voices))}\"",
+          "line": 127
+        },
+        {
+          "code": "            )",
+          "line": 128
+        },
+        {
+          "code": "",
+          "line": 129
+        }
+      ],
+      "path": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133/api/src/routers/openai_compatible.py",
+      "sha256": "88bf782747daae8896f4ee91279513120233b04bce606358fe6edaeadd0ce83a"
+    }
+  ],
+  "synthesisStarted": false,
+  "windows": [
+    {
+      "diagnostics": [
+        {
+          "atUTC": "2026-09-06T16:04:04.889303+00:00",
+          "causes": [
+            {
+              "frames": [
+                {
+                  "file": "tts_service.py",
+                  "function": "generate_audio",
+                  "line": 595
+                }
+              ],
+              "type": "ValueError"
+            }
+          ],
+          "matchesDirectRequestKey": true,
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133",
+          "requestKey": "7fe6315b3454e3737bc7",
+          "stage": "complete_audio_failed"
+        },
+        {
+          "atUTC": "2026-09-06T16:04:04.890209+00:00",
+          "causes": [],
+          "elapsed_ms": 2,
+          "matchesDirectRequestKey": true,
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133",
+          "requestKey": "7fe6315b3454e3737bc7",
+          "stage": "request_failed",
+          "status": 400
+        }
+      ],
+      "directCompletionUTC": "2026-09-06T16:04:04.896206Z",
+      "directRequestKey": "7fe6315b3454e3737bc7",
+      "endUTCInclusive": "2026-09-06T16:04:06.896206+00:00",
+      "modelAccessRecords": [],
+      "modelLogEvents": [],
+      "startUTC": "2026-09-06T16:04:02.896206+00:00"
+    },
+    {
+      "diagnostics": [
+        {
+          "atUTC": "2026-09-06T16:04:17.951230+00:00",
+          "causes": [
+            {
+              "frames": [
+                {
+                  "file": "tts_service.py",
+                  "function": "generate_audio",
+                  "line": 595
+                }
+              ],
+              "type": "ValueError"
+            }
+          ],
+          "matchesDirectRequestKey": true,
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133",
+          "requestKey": "e4331852bd595754975e",
+          "stage": "complete_audio_failed"
+        },
+        {
+          "atUTC": "2026-09-06T16:04:17.951893+00:00",
+          "causes": [],
+          "elapsed_ms": 2,
+          "matchesDirectRequestKey": true,
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133",
+          "requestKey": "e4331852bd595754975e",
+          "stage": "request_failed",
+          "status": 400
+        }
+      ],
+      "directCompletionUTC": "2026-09-06T16:04:17.957222Z",
+      "directRequestKey": "e4331852bd595754975e",
+      "endUTCInclusive": "2026-09-06T16:04:19.957222+00:00",
+      "modelAccessRecords": [],
+      "modelLogEvents": [],
+      "startUTC": "2026-09-06T16:04:15.957222+00:00"
+    },
+    {
+      "diagnostics": [
+        {
+          "atUTC": "2026-09-06T16:13:12.943049+00:00",
+          "causes": [
+            {
+              "frames": [
+                {
+                  "file": "tts_service.py",
+                  "function": "generate_audio",
+                  "line": 595
+                }
+              ],
+              "type": "ValueError"
+            }
+          ],
+          "matchesDirectRequestKey": true,
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133",
+          "requestKey": "8a0585d2909dc89be5b7",
+          "stage": "complete_audio_failed"
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12.943763+00:00",
+          "causes": [],
+          "elapsed_ms": 2,
+          "matchesDirectRequestKey": true,
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133",
+          "requestKey": "8a0585d2909dc89be5b7",
+          "stage": "request_failed",
+          "status": 400
+        }
+      ],
+      "directCompletionUTC": "2026-09-06T16:13:12.950192Z",
+      "directRequestKey": "8a0585d2909dc89be5b7",
+      "endUTCInclusive": "2026-09-06T16:13:14.950192+00:00",
+      "modelAccessRecords": [],
+      "modelLogEvents": [
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173716010,
+          "language": "e",
+          "level": "INFO",
+          "source": "tts_service:427",
+          "stage": "audio_stream_started",
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173716152,
+          "level": "INFO",
+          "source": "text_processor:159",
+          "stage": "split_started",
+          "textChars": 54,
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173716275,
+          "level": "INFO",
+          "source": "text_processor:188",
+          "stage": "message_omitted",
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173716428,
+          "level": "INFO",
+          "source": "text_processor:308",
+          "stage": "message_omitted",
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173716618,
+          "level": "INFO",
+          "source": "text_processor:332",
+          "stage": "message_omitted",
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173716771,
+          "language": "e",
+          "level": "INFO",
+          "source": "kokoro_v1:909",
+          "stage": "model_route_selected",
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173716933,
+          "language": "a",
+          "level": "INFO",
+          "source": "tts_service:427",
+          "stage": "audio_stream_started",
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173717076,
+          "level": "INFO",
+          "source": "text_processor:159",
+          "stage": "split_started",
+          "textChars": 89,
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173717199,
+          "level": "INFO",
+          "source": "text_processor:308",
+          "stage": "message_omitted",
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173717389,
+          "level": "INFO",
+          "source": "text_processor:332",
+          "stage": "message_omitted",
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173717542,
+          "language": "a",
+          "level": "INFO",
+          "source": "kokoro_v1:909",
+          "stage": "model_route_selected",
+          "timestampPrecisionSeconds": 1,
+          "voice": "af_heart"
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173717705,
+          "language": "e",
+          "level": "INFO",
+          "source": "tts_service:427",
+          "stage": "audio_stream_started",
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173717847,
+          "level": "INFO",
+          "source": "text_processor:159",
+          "stage": "split_started",
+          "textChars": 1,
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173717969,
+          "level": "INFO",
+          "source": "text_processor:188",
+          "stage": "message_omitted",
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173718122,
+          "level": "INFO",
+          "source": "text_processor:332",
+          "stage": "message_omitted",
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173718586,
+          "level": "ERROR",
+          "source": "development:391",
+          "stage": "message_omitted",
+          "timestampPrecisionSeconds": 1
+        },
+        {
+          "fileOffset": 15173719115,
+          "fixedClassification": "no_speakable_content",
+          "nearestPrecedingLogUTC": "2026-09-06T16:13:12+00:00",
+          "timestampExact": false
+        },
+        {
+          "fileOffset": 15173719174,
+          "fixedClassification": "no_speakable_content",
+          "nearestPrecedingLogUTC": "2026-09-06T16:13:12+00:00",
+          "timestampExact": false
+        },
+        {
+          "atUTC": "2026-09-06T16:13:12+00:00",
+          "fileOffset": 15173719222,
+          "fixedClassification": "no_speakable_content",
+          "level": "WARNING",
+          "source": "development:393",
+          "timestampPrecisionSeconds": 1
+        }
+      ],
+      "startUTC": "2026-09-06T16:13:10.950192+00:00"
+    }
+  ]
+}

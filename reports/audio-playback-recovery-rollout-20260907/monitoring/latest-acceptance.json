@@ -9,7 +9,7 @@
     "coverageVerdict": "observing",
     "cutoverState": "observing",
     "dataOrCoverageGaps": [],
-    "endUtc": "2026-09-07T16:52:02.916356Z",
+    "endUtc": "2026-09-07T18:37:52.522573Z",
     "evidenceLimitations": [
       {
         "code": "automatic_verdict_scoped_to_configured_sources",
@@ -44,20 +44,20 @@
       "The stable US proxy is checked against its expected live source and current model slot; it shares the GPU host failure domain."
     ],
     "finalVersionObservationRequirementMet": false,
-    "finalVersionObservationSeconds": 196,
-    "latestActiveComponent": "directGateway",
-    "latestActiveComponentAtUtc": "2026-09-06T16:51:50.888941Z",
-    "latestRequiredComponent": "directGateway",
-    "latestRequiredComponentVerifiedAtUtc": "2026-09-06T16:52:02.916356Z",
+    "finalVersionObservationSeconds": 481,
+    "latestActiveComponent": "usKokoro",
+    "latestActiveComponentAtUtc": "2026-09-06T18:37:52.522573Z",
+    "latestRequiredComponent": "usKokoro",
+    "latestRequiredComponentVerifiedAtUtc": "2026-09-06T18:37:52.522573Z",
     "mixedVersionWindow": false,
     "observationRequirementMet": false,
-    "observationSeconds": 196,
+    "observationSeconds": 481,
     "releaseTransitionsInsideWindow": [],
     "requiredObservationSeconds": 86400,
     "sampleGaps": [
       {
         "code": "final_version_observation_incomplete",
-        "detail": "latest=directGateway; observed=196s; required=86400s",
+        "detail": "latest=usKokoro; observed=481s; required=86400s",
         "source": "state"
       },
       {
@@ -69,19 +69,9 @@
         "code": "mobile_read_first_output_sample_missing",
         "detail": "android:0 same-window read start-to-first-audio sessions",
         "source": "mobile"
-      },
-      {
-        "code": "mobile_read_start_sample_insufficient",
-        "detail": "ios:0/1",
-        "source": "mobile"
-      },
-      {
-        "code": "mobile_read_first_output_sample_missing",
-        "detail": "ios:0 same-window read start-to-first-audio sessions",
-        "source": "mobile"
       }
     ],
-    "startUtc": "2026-09-06T16:52:02.916356Z",
+    "startUtc": "2026-09-06T18:37:52.522573Z",
     "stopAtConfiguredEnd": true,
     "supplyVerdict": "observing",
     "technicalFailures": [],
@@ -89,40 +79,40 @@
     "versionSegments": {
       "directGateway": [
         {
-          "endUtc": "2026-09-07T16:52:02.916356Z",
+          "endUtc": "2026-09-07T18:37:52.522573Z",
           "seconds": 86400,
-          "startUtc": "2026-09-06T16:52:02.916356Z",
+          "startUtc": "2026-09-06T18:37:52.522573Z",
           "version": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5"
         }
       ],
       "globalGateway": [
         {
-          "endUtc": "2026-09-07T16:52:02.916356Z",
+          "endUtc": "2026-09-07T18:37:52.522573Z",
           "seconds": 86400,
-          "startUtc": "2026-09-06T16:52:02.916356Z",
-          "version": "dpl_E3vhShktBut8yrPjXLViPqhp1zRt"
+          "startUtc": "2026-09-06T18:37:52.522573Z",
+          "version": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5"
         }
       ],
       "usKokoro": [
         {
-          "endUtc": "2026-09-07T16:52:02.916356Z",
+          "endUtc": "2026-09-07T18:37:52.522573Z",
           "seconds": 86400,
-          "startUtc": "2026-09-06T16:52:02.916356Z",
-          "version": "ca857ee91c3367999fb905de1f0924a6e28edd81"
+          "startUtc": "2026-09-06T18:37:52.522573Z",
+          "version": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52"
         }
       ],
       "usOriginProxy": [
         {
-          "endUtc": "2026-09-07T16:52:02.916356Z",
+          "endUtc": "2026-09-07T18:37:52.522573Z",
           "seconds": 86400,
-          "startUtc": "2026-09-06T16:52:02.916356Z",
+          "startUtc": "2026-09-06T18:37:52.522573Z",
           "version": "us-tts-origin-proxy-20260907-v2"
         }
       ]
     },
     "windowStarted": true
   },
-  "generatedAtUtc": "2026-09-06T16:55:19.241734Z",
+  "generatedAtUtc": "2026-09-06T18:45:53.895616Z",
   "limitations": [
     "This run reads existing monitors, journals and telemetry; it starts no synthetic audio request.",
     "A production-tagged mobile event can still come from an operator or manual test.",
@@ -145,36 +135,38 @@
     },
     "globalGateway": {
       "activationTimeSemantics": "First independent production identity readback after successful full release workflow",
-      "activeFromUtc": "2026-09-06T16:45:55.382733+00:00",
-      "routeRevision": 1,
+      "activeFromUtc": "2026-09-06T17:26:40.829093+00:00",
+      "routeRevision": 2,
       "routeSource": "database",
-      "sourceCommit": "33e49a945e36940618457d5c33f8277652e7b92d",
-      "upstreamReceiptSha256": "09a5b95ffce55750bf4551e27674c8d31c70e6bdccea73959d25c07a0605c877",
+      "sourceCommit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+      "upstreamReceiptSha256": "493ae5a2309cb6a6fc65142a8756c019e6b4cdd40ad41a9edc972718162051c1",
       "upstreamURL": "http://71.175.237.103:41209/dev/captioned_speech",
       "verified": true,
-      "verifiedAtUtc": "2026-09-06T16:45:55.382733+00:00",
-      "version": "dpl_E3vhShktBut8yrPjXLViPqhp1zRt"
+      "verifiedAtUtc": "2026-09-06T17:26:40.829093+00:00",
+      "version": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5"
     },
     "usKokoro": {
-      "activeFromUtc": "2026-09-06T04:14:09.225793+00:00",
-      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
-      "runtimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
+      "activationTimeSemantics": "Conservative first independent final identity confirmation after public complete-audio validation; route applied at 18:34:44Z",
+      "activeFromUtc": "2026-09-06T18:37:52.522573+00:00",
+      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+      "runtimeSourceRelativePath": "api/src/services/tts_service.py",
+      "runtimeSourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
       "verified": true,
-      "verifiedAtUtc": "2026-09-06T04:17:43.595454+00:00",
-      "version": "ca857ee91c3367999fb905de1f0924a6e28edd81"
+      "verifiedAtUtc": "2026-09-06T18:37:52.522573+00:00",
+      "version": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52"
     },
     "usOriginProxy": {
-      "activationTimeSemantics": "First independent confirmed production identity after proxy upgrade; actual switch was earlier within apply receipt interval",
-      "activeFromUtc": "2026-09-06T16:36:52.292087+00:00",
-      "currentReceiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
-      "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
-      "currentSlot": "green",
-      "routeRevision": 2,
+      "activationTimeSemantics": "Final independently verified R134 routing and restarted v2 process; binary unchanged",
+      "activeFromUtc": "2026-09-06T18:37:52.522573+00:00",
+      "currentReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+      "currentReleaseId": "20260907-kokoro-silent-separators-us-r134",
+      "currentSlot": "blue",
+      "routeRevision": 6,
       "runtimeSourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
       "runtimeSourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba",
       "sourceCommit": "21cad1b1823d28b9b7c257744dc0b1704403931a",
       "verified": true,
-      "verifiedAtUtc": "2026-09-06T16:36:52.292087+00:00",
+      "verifiedAtUtc": "2026-09-06T18:37:52.522573+00:00",
       "version": "us-tts-origin-proxy-20260907-v2"
     }
   },
@@ -186,70 +178,71 @@
         "android145Preset": {
           "attribution": "client_supplied_platform_and_version_headers",
           "elapsedMs": {
-            "max": 2848.0,
-            "p50": 1041.0,
-            "p95": 2848.0,
-            "samples": 9
+            "max": 2363.0,
+            "p50": 448.0,
+            "p95": 1032.0,
+            "samples": 93
           },
-          "firstRequestAtUtc": "2026-09-06T16:54:07.859059Z",
-          "lastRequestAtUtc": "2026-09-06T16:55:13.625602Z",
-          "requests": 9,
+          "firstRequestAtUtc": "2026-09-06T18:37:52.832054Z",
+          "lastRequestAtUtc": "2026-09-06T18:45:50.263041Z",
+          "requests": 93,
           "statusCounts": {
-            "200": 9
+            "200": 93
           }
         },
         "clientStatusCounts": [
           {
             "clientPlatform": "android",
             "clientVersion": "1.0.45",
-            "count": 9,
+            "count": 93,
             "status": "200"
           }
         ],
         "consoleErrorClassCounts": {},
+        "downstreamConnectionStateUnknownRequests": 0,
         "downstreamDisconnectedRequests": 0,
         "duplicateRequestLogBlocks": 0,
         "elapsedMs": {
-          "max": 2848.0,
-          "p50": 1041.0,
-          "p95": 2848.0,
-          "samples": 9
+          "max": 2363.0,
+          "p50": 448.0,
+          "p95": 1032.0,
+          "samples": 93
         },
-        "firstJournalAtUtc": "2026-09-06T16:54:07.859059Z",
-        "firstRequestAtUtc": "2026-09-06T16:54:07.859059Z",
+        "firstJournalAtUtc": "2026-09-06T18:37:52.832054Z",
+        "firstRequestAtUtc": "2026-09-06T18:37:52.832054Z",
         "hourlyStatusCounts": [
           {
-            "count": 9,
-            "hourUtc": "2026-09-06T16:00:00Z",
+            "count": 93,
+            "hourUtc": "2026-09-06T18:00:00Z",
             "status": "200"
           }
         ],
         "incompleteConsoleBlocks": 0,
-        "journalRowsRead": 126,
-        "lastJournalAtUtc": "2026-09-06T16:55:13.625602Z",
-        "lastRequestAtUtc": "2026-09-06T16:55:13.625602Z",
-        "logicalGatewayBlocks": 9,
+        "journalRowsRead": 1302,
+        "lastJournalAtUtc": "2026-09-06T18:45:50.263041Z",
+        "lastRequestAtUtc": "2026-09-06T18:45:50.263041Z",
+        "logicalGatewayBlocks": 93,
         "malformedRequestBlocks": 0,
         "nonHttpRequestCount": 0,
         "nonHttpRequests": [],
         "nonHttpRequestsTruncated": false,
         "pathStatusCounts": [
           {
-            "count": 9,
+            "count": 93,
             "path": "/api/captioned_speech_partly",
             "status": "200"
           }
         ],
         "requestBytes": {
-          "max": 351.0,
-          "p50": 276.0,
-          "p95": 351.0,
-          "samples": 9
+          "max": 315.0,
+          "p50": 207.0,
+          "p95": 293.0,
+          "samples": 93
         },
         "statusCounts": {
-          "200": 9
+          "200": 93
         },
-        "uniqueRequestIds": 9
+        "uniqueRequestIds": 93
       },
       "coverage": {
         "complete": true,
@@ -257,7 +250,7 @@
         "journalRowLimitReached": false,
         "note": "No request body, text, raw message, request id, header, IP, or credential is exported."
       },
-      "hostClockUtc": "2026-09-06T16:55:29.068966Z",
+      "hostClockUtc": "2026-09-06T18:46:00.448908Z",
       "limitations": [
         "clientPlatform and clientVersion are caller-supplied headers and cannot exclude spoofing or manual tests.",
         "Absence of request records can mean no traffic; it is not by itself proof of journal retention coverage.",
@@ -266,12 +259,12 @@
       "probeStarted": false,
       "productionModified": false,
       "query": {
-        "endExclusive": "2026-09-06T16:55:19.241734Z",
+        "endExclusive": "2026-09-06T18:45:53.895616Z",
         "maxJournalRows": 250000,
-        "startInclusive": "2026-09-06T16:52:02.916356Z",
+        "startInclusive": "2026-09-06T18:37:52.522573Z",
         "unit": "castreader-tts-gateway.service"
       },
-      "readAtUtc": "2026-09-06T16:55:29.068966Z",
+      "readAtUtc": "2026-09-06T18:46:00.448908Z",
       "readOnly": true,
       "schema": "castreader.direct-tts-gateway-journal.v1",
       "source": {
@@ -295,8 +288,8 @@
         "tlsCertificateVerification": true
       },
       "identity": {
-        "commitSha": "33e49a945e36940618457d5c33f8277652e7b92d",
-        "deploymentId": "dpl_E3vhShktBut8yrPjXLViPqhp1zRt",
+        "commitSha": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+        "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
         "region": "global"
       },
       "limitations": [
@@ -309,7 +302,7 @@
         "endpoint": "https://api.castreader.ai/api/capabilities",
         "method": "GET"
       },
-      "readAtUtc": "2026-09-06T16:55:36.962445Z",
+      "readAtUtc": "2026-09-06T18:46:05.537758Z",
       "readOnly": true,
       "schema": "castreader.global-capabilities-identity.v1"
     },
@@ -319,20 +312,20 @@
       },
       "diagnosticFunctionExecuted": false,
       "identity": {
-        "internalPort": 18880,
+        "internalPort": 8880,
         "listenerProcessIds": [
-          3459850
+          4137311
         ],
-        "routeReceiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
-        "routeReleaseId": "20260906-kokoro-repeated-digits-us-r133",
-        "routeSlot": "green",
-        "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
-        "runtimeSourceBytes": 6886,
-        "runtimeSourceRelativePath": "api/src/inference/english_g2p_recovery.py",
-        "runtimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
-        "supervisorCwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
-        "supervisorPid": 3459850,
-        "supervisorProgram": "castreader-tts-r133-green",
+        "routeReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+        "routeReleaseId": "20260907-kokoro-silent-separators-us-r134",
+        "routeSlot": "blue",
+        "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+        "runtimeSourceBytes": 33974,
+        "runtimeSourceRelativePath": "api/src/services/tts_service.py",
+        "runtimeSourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+        "supervisorCwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+        "supervisorPid": 4137311,
+        "supervisorProgram": "castreader-tts",
         "supervisorState": "RUNNING"
       },
       "limitations": [
@@ -340,7 +333,7 @@
       ],
       "modelLoadedByCollector": false,
       "productionModified": false,
-      "readAtUtc": "2026-09-06T16:55:50.043219+00:00",
+      "readAtUtc": "2026-09-06T18:46:17.504293+00:00",
       "readOnly": true,
       "schema": "castreader.kokoro-runtime-identity.v1"
     },
@@ -351,10 +344,10 @@
       "diagnosticFunctionExecuted": false,
       "identity": {
         "currentLink": "/workspace/castreader-runtime/current",
-        "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
-        "runtimeSourceBytes": 6549,
+        "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+        "runtimeSourceBytes": 6886,
         "runtimeSourceRelativePath": "api/src/inference/english_g2p_recovery.py",
-        "runtimeSourceSha256": "756be3fbe02d5f44bdbe756503f8d08dcb9fe09ee52db13c0be19bfaa791822a"
+        "runtimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e"
       },
       "limitations": [
         "This read verifies the current symlink target and one release-critical source file; it does not execute G2P or load the model.",
@@ -362,15 +355,15 @@
       ],
       "modelLoaded": false,
       "productionModified": false,
-      "readAtUtc": "2026-09-06T16:55:34.417972Z",
+      "readAtUtc": "2026-09-06T18:46:03.323018Z",
       "readOnly": true,
       "schema": "castreader.kokoro-runtime-identity.v1"
     },
     "mobile": {
       "aggregate": {
         "cancelledEvents": 0,
-        "devices": 0,
-        "events": 0,
+        "devices": 1,
+        "events": 2,
         "explainStartsByPlatform": {},
         "firstOutputLatencyMs": {
           "android": {
@@ -380,17 +373,50 @@
             "samples": 0
           },
           "ios": {
-            "max": null,
-            "p50": null,
-            "p95": null,
-            "samples": 0
+            "max": 1168.0,
+            "p50": 1168.0,
+            "p95": 1168.0,
+            "samples": 1
           }
         },
-        "groups": [],
+        "groups": [
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "file",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          }
+        ],
         "otherBlockedEvents": 0,
         "quotaBlockedByPlatform": {},
         "quotaBlockedEvents": 0,
-        "readStartsByPlatform": {},
+        "readStartsByPlatform": {
+          "ios": 1
+        },
         "routeMismatchEvents": 0,
         "sessionCohorts": {
           "explain": {
@@ -406,40 +432,68 @@
             "withoutFirstOutputInsideWindow": 0
           },
           "read": {
-            "byPlatform": {},
-            "pairedFirstOutputByVoiceFamily": {},
+            "byPlatform": {
+              "ios": {
+                "pairedFirstOutputByVoiceFamily": {
+                  "preset": 1
+                },
+                "startEventsMissingSessionId": 0,
+                "startedSessions": 1,
+                "withEnd": 0,
+                "withFirstOutput": 1,
+                "withQuotaBlock": 0,
+                "withTechnicalFailure": 0,
+                "withoutEndInsideWindow": 1,
+                "withoutFirstOutputInsideWindow": 0
+              }
+            },
+            "pairedFirstOutputByVoiceFamily": {
+              "preset": 1
+            },
             "startEventsMissingSessionId": 0,
-            "startedSessions": 0,
+            "startedSessions": 1,
             "withEnd": 0,
-            "withFirstOutput": 0,
+            "withFirstOutput": 1,
             "withQuotaBlock": 0,
             "withTechnicalFailure": 0,
-            "withoutEndInsideWindow": 0,
+            "withoutEndInsideWindow": 1,
             "withoutFirstOutputInsideWindow": 0
           }
         },
-        "sessionEvidenceByPlatform": {},
-        "startEventsByPlatform": {},
+        "sessionEvidenceByPlatform": {
+          "ios": {
+            "pairedFirstOutputByVoiceFamily": {
+              "preset": 1
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 1,
+            "withFirstOutput": 1,
+            "withoutFirstOutputInsideWindow": 0
+          }
+        },
+        "startEventsByPlatform": {
+          "ios": 1
+        },
         "technicalFailureEvents": 0,
         "technicalFailuresByPlatform": {}
       },
       "coverage": {
         "complete": true,
         "duplicateRows": 0,
-        "expectedRowsAllEnvironments": 0,
-        "firstProductionReceivedAt": null,
+        "expectedRowsAllEnvironments": 2,
+        "firstProductionReceivedAt": "2026-09-06T18:42:37.130000Z",
         "invalidSelectedRows": 0,
-        "lastProductionReceivedAt": null,
+        "lastProductionReceivedAt": "2026-09-06T18:42:37.130000Z",
         "nonProductionRowsExcluded": 0,
         "pageBudgetExhausted": false,
         "pages": 1,
         "productionTagCannotExcludeManualTests": true,
-        "productionTaggedRows": 0,
-        "returnedRowsAllEnvironments": 0,
+        "productionTaggedRows": 2,
+        "returnedRowsAllEnvironments": 2,
         "serverClockColumn": "received_at",
         "source": "authenticated HTTPS PostgREST; credential values not exported",
         "tlsCertificateVerification": true,
-        "uniqueSelectedRowsAllEnvironments": 0,
+        "uniqueSelectedRowsAllEnvironments": 2,
         "wallClockBudgetExhausted": false,
         "wallClockBudgetSeconds": 180.0
       },
@@ -451,8 +505,8 @@
         "Device counts are installations, not verified people."
       ],
       "query": {
-        "endExclusive": "2026-09-06T16:55:19.241734Z",
-        "startInclusive": "2026-09-06T16:52:02.916356Z"
+        "endExclusive": "2026-09-06T18:45:53.895616Z",
+        "startInclusive": "2026-09-06T18:37:52.522573Z"
       },
       "readOnly": true,
       "schema": "castreader.mobile-funnel-acceptance.v1"
@@ -466,13 +520,13 @@
           "maximumConsecutiveCycles": 0,
           "recoveryEvents": []
         },
-        "completeRemainderDecodedCycles": 1,
+        "completeRemainderDecodedCycles": 2,
         "completeRemainderDecodedRatio": 1.0,
-        "cycles": 1,
+        "cycles": 2,
         "executedRequestContractCounts": {
-          "stream_false": 1,
-          "stream_omitted": 1,
-          "stream_true": 1
+          "stream_false": 2,
+          "stream_omitted": 2,
+          "stream_true": 2
         },
         "failedRequestContractCounts": {},
         "failureCodeCounts": {},
@@ -480,24 +534,24 @@
           "max": 3.576,
           "p50": 3.576,
           "p95": 3.576,
-          "samples": 1
+          "samples": 2
         },
-        "largestObservedGapSeconds": null,
+        "largestObservedGapSeconds": 309.767,
         "observedGapSeconds": {
-          "max": null,
-          "p50": null,
-          "p95": null,
-          "samples": 0
+          "max": 309.767,
+          "p50": 309.767,
+          "p95": 309.767,
+          "samples": 1
         },
         "probeElapsedMs": {
-          "max": 2479.0,
-          "p50": 2479.0,
-          "p95": 2479.0,
-          "samples": 1
+          "max": 2670.0,
+          "p50": 2438.0,
+          "p95": 2670.0,
+          "samples": 2
         },
         "regionMismatchCycles": 0,
         "statusCounts": {
-          "healthy": 1
+          "healthy": 2
         },
         "supplyFailureSequence": {
           "currentConsecutiveCycles": 0,
@@ -505,16 +559,16 @@
           "maximumConsecutiveCycles": 0,
           "recoveryEvents": []
         },
-        "supplyOkCycles": 1,
+        "supplyOkCycles": 2,
         "totalAudioDurationSeconds": {
           "max": 13.44,
           "p50": 13.44,
           "p95": 13.44,
-          "samples": 1
+          "samples": 2
         },
         "upstreamMetadata": [
           {
-            "cyclesContainingVariant": 1,
+            "cyclesContainingVariant": 2,
             "gateway": "vercel-r2",
             "upstreamNode": "castreader-cn4090",
             "upstreamRevision": "0",
@@ -526,7 +580,7 @@
         "completeRead": true,
         "note": "Persisted result schema does not distinguish timer from manual invocation.",
         "originAttributionAvailable": false,
-        "selectedCycles": 1
+        "selectedCycles": 2
       },
       "limitations": [
         "observedAt is probe completion time, not request start time.",
@@ -541,10 +595,10 @@
       "probeStarted": false,
       "productionModified": false,
       "query": {
-        "endExclusive": "2026-09-06T16:55:19.241734Z",
-        "startInclusive": "2026-09-06T16:52:02.916356Z"
+        "endExclusive": "2026-09-06T18:45:53.895616Z",
+        "startInclusive": "2026-09-06T18:37:52.522573Z"
       },
-      "readAtUtc": "2026-09-06T16:55:26.174899Z",
+      "readAtUtc": "2026-09-06T18:45:57.493961Z",
       "readOnly": true,
       "region": "cn",
       "schema": "castreader.monitor-window-readback.v2",
@@ -552,16 +606,16 @@
         "conflictingObservedAt": [],
         "exactDuplicatesSkipped": 0,
         "firstAvailableObservedAt": "2026-09-05T15:58:13.669Z",
-        "firstSelectedObservedAt": "2026-09-06T16:54:42.247Z",
+        "firstSelectedObservedAt": "2026-09-06T18:38:42.441Z",
         "invalidResults": [],
-        "lastAvailableObservedAt": "2026-09-06T16:54:42.247Z",
-        "lastSelectedObservedAt": "2026-09-06T16:54:42.247Z",
-        "lastSelectedToWindowEndSeconds": 36.995,
-        "resultFilesScanned": 291,
+        "lastAvailableObservedAt": "2026-09-06T18:43:52.208Z",
+        "lastSelectedObservedAt": "2026-09-06T18:43:52.208Z",
+        "lastSelectedToWindowEndSeconds": 121.688,
+        "resultFilesScanned": 312,
         "resultsDirectory": "/var/lib/castreader-core-audio-monitor/cn/results",
-        "uniqueResultCycles": 291,
-        "validResultFiles": 291,
-        "windowStartToFirstSelectedSeconds": 159.331
+        "uniqueResultCycles": 312,
+        "validResultFiles": 312,
+        "windowStartToFirstSelectedSeconds": 49.918
       },
       "systemd": {
         "service": {
@@ -573,7 +627,7 @@
         },
         "timer": {
           "ActiveState": "active",
-          "LastTriggerUSec": "Mon 2026-09-07 00:54:39 CST",
+          "LastTriggerUSec": "Mon 2026-09-07 02:43:49 CST",
           "NextElapseUSecRealtime": "",
           "SubState": "waiting",
           "UnitFileState": "enabled"
@@ -612,9 +666,9 @@
           "samples": 0
         },
         "probeElapsedMs": {
-          "max": 6244.0,
-          "p50": 6244.0,
-          "p95": 6244.0,
+          "max": 2078.0,
+          "p50": 2078.0,
+          "p95": 2078.0,
           "samples": 1
         },
         "regionMismatchCycles": 0,
@@ -639,7 +693,7 @@
             "cyclesContainingVariant": 1,
             "gateway": "vercel-r2",
             "upstreamNode": "castreader-us4090",
-            "upstreamRevision": "1",
+            "upstreamRevision": "2",
             "upstreamSource": "database"
           }
         ]
@@ -663,10 +717,10 @@
       "probeStarted": false,
       "productionModified": false,
       "query": {
-        "endExclusive": "2026-09-06T16:55:19.241734Z",
-        "startInclusive": "2026-09-06T16:52:02.916356Z"
+        "endExclusive": "2026-09-06T18:45:53.895616Z",
+        "startInclusive": "2026-09-06T18:37:52.522573Z"
       },
-      "readAtUtc": "2026-09-06T16:55:24.430424Z",
+      "readAtUtc": "2026-09-06T18:45:56.596791Z",
       "readOnly": true,
       "region": "us",
       "schema": "castreader.monitor-window-readback.v2",
@@ -674,16 +728,16 @@
         "conflictingObservedAt": [],
         "exactDuplicatesSkipped": 0,
         "firstAvailableObservedAt": "2026-09-05T16:15:00.370Z",
-        "firstSelectedObservedAt": "2026-09-06T16:54:42.907Z",
+        "firstSelectedObservedAt": "2026-09-06T18:42:58.726Z",
         "invalidResults": [],
-        "lastAvailableObservedAt": "2026-09-06T16:54:42.907Z",
-        "lastSelectedObservedAt": "2026-09-06T16:54:42.907Z",
-        "lastSelectedToWindowEndSeconds": 36.335,
-        "resultFilesScanned": 287,
+        "lastAvailableObservedAt": "2026-09-06T18:42:58.726Z",
+        "lastSelectedObservedAt": "2026-09-06T18:42:58.726Z",
+        "lastSelectedToWindowEndSeconds": 175.17,
+        "resultFilesScanned": 308,
         "resultsDirectory": "/var/lib/castreader-core-audio-monitor/us/results",
-        "uniqueResultCycles": 287,
-        "validResultFiles": 287,
-        "windowStartToFirstSelectedSeconds": 159.991
+        "uniqueResultCycles": 308,
+        "validResultFiles": 308,
+        "windowStartToFirstSelectedSeconds": 306.203
       },
       "systemd": {
         "service": {
@@ -695,7 +749,7 @@
         },
         "timer": {
           "ActiveState": "active",
-          "LastTriggerUSec": "Sun 2026-09-06 16:54:36 UTC",
+          "LastTriggerUSec": "Sun 2026-09-06 18:42:56 UTC",
           "NextElapseUSecRealtime": "",
           "SubState": "waiting",
           "UnitFileState": "enabled"
@@ -710,63 +764,64 @@
       "health": {
         "active": {
           "blue": 0,
-          "green": 1
+          "green": 0
         },
-        "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
-        "currentSlot": "green",
+        "currentReleaseId": "20260907-kokoro-silent-separators-us-r134",
+        "currentSlot": "blue",
         "drainTrusted": true,
         "ok": true,
         "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
-        "revision": 2
+        "revision": 6
       },
       "identity": {
         "currentEnabled": true,
         "currentModel": {
-          "fixedReleaseId": "20260906-kokoro-repeated-digits-us-r133",
-          "internalPort": 18880,
+          "expectedVersion": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52",
+          "fixedReleaseId": "20260907-kokoro-silent-separators-us-r134",
+          "internalPort": 8880,
           "listenerProcessIds": [
-            3459850
+            4137311
           ],
           "listenerProcesses": [
             {
-              "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+              "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
               "exe": "/venv/main/bin/python3.12",
               "parentPid": 262,
-              "pid": 3459850,
-              "startTicks": "545406132"
+              "pid": 4137311,
+              "startTicks": "550555282"
             }
           ],
-          "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
-          "runtimeSourceBytes": 6886,
-          "runtimeSourceRelativePath": "api/src/inference/english_g2p_recovery.py",
-          "runtimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
-          "slot": "green",
+          "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+          "runtimeSourceBytes": 33974,
+          "runtimeSourceRelativePath": "api/src/services/tts_service.py",
+          "runtimeSourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+          "slot": "blue",
           "stateEnabled": true,
-          "stateReceiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
-          "stateReleaseId": "20260906-kokoro-repeated-digits-us-r133",
-          "supervisorCwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
-          "supervisorPid": 3459850,
+          "stateReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+          "stateReleaseId": "20260907-kokoro-silent-separators-us-r134",
+          "supervisorCwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+          "supervisorPid": 4137311,
           "supervisorProcess": {
-            "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+            "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
             "exe": "/venv/main/bin/python3.12",
             "parentPid": 262,
-            "pid": 3459850,
-            "startTicks": "545406132"
+            "pid": 4137311,
+            "startTicks": "550555282"
           },
-          "supervisorProgram": "castreader-tts-r133-green",
+          "supervisorProgram": "castreader-tts",
           "supervisorState": "RUNNING"
         },
-        "currentReceiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
-        "currentReleaseId": "20260906-kokoro-repeated-digits-us-r133",
-        "currentSlot": "green",
+        "currentReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+        "currentReleaseId": "20260907-kokoro-silent-separators-us-r134",
+        "currentSlot": "blue",
         "listenerProcessIds": [
-          4031530
+          4140383
         ],
         "processIds": [
-          4031530
+          4140383
         ],
         "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
-        "revision": 2,
+        "revision": 6,
         "sourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
         "sourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
       },
@@ -774,7 +829,7 @@
         "Point-in-time source, process and routing identity; existing continuous probes provide the interval evidence."
       ],
       "productionModified": false,
-      "readAtUtc": "2026-09-06T16:55:50.043219+00:00",
+      "readAtUtc": "2026-09-06T18:46:17.504293+00:00",
       "readOnly": true,
       "schema": "castreader.us-origin-proxy-identity.v1",
       "synthesisStarted": false
@@ -783,25 +838,37 @@
       "aggregate": {
         "core5xxRecords": 0,
         "deploymentCounts": [],
-        "failureCodeCounts": [],
-        "otherProject5xxRecords": 0,
-        "routeStatusCounts": [],
-        "unique5xxRecords": 0
+        "failureCodeCounts": [
+          {
+            "count": 1,
+            "failureCode": "http_503_unclassified",
+            "routeGroup": "other"
+          }
+        ],
+        "otherProject5xxRecords": 1,
+        "routeStatusCounts": [
+          {
+            "count": 1,
+            "routeGroup": "other",
+            "status": "503"
+          }
+        ],
+        "unique5xxRecords": 1
       },
       "coverage": {
         "cacheHits": 0,
         "cacheMisses": 1,
         "complete": true,
         "failedShards": 0,
-        "firstReturnedAtUtc": null,
-        "lastReturnedAtUtc": null,
+        "firstReturnedAtUtc": "2026-09-06T18:45:33.351000Z",
+        "lastReturnedAtUtc": "2026-09-06T18:45:33.351000Z",
         "pages": [
           {
             "cache": "miss",
-            "endExclusive": "2026-09-06T16:55:19.241734Z",
-            "returnedRows": 0,
-            "startInclusive": "2026-09-06T16:52:02.916356Z",
-            "uniqueRows": 0
+            "endExclusive": "2026-09-06T18:45:53.895616Z",
+            "returnedRows": 1,
+            "startInclusive": "2026-09-06T18:37:52.522573Z",
+            "uniqueRows": 1
           }
         ],
         "queryBudgetExhausted": false,
@@ -816,12 +883,12 @@
       ],
       "query": {
         "cacheSafetyLagSeconds": 900.0,
-        "endExclusive": "2026-09-06T16:55:19.241734Z",
+        "endExclusive": "2026-09-06T18:45:53.895616Z",
         "environment": "production",
         "projectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
         "queriesUsed": 1,
         "queryBudget": 80,
-        "startInclusive": "2026-09-06T16:52:02.916356Z",
+        "startInclusive": "2026-09-06T18:37:52.522573Z",
         "statusCode": "5xx",
         "wallClockBudgetSeconds": 300.0
       },
@@ -852,9 +919,9 @@
     "vercel"
   ],
   "window": {
-    "collectedThroughExclusive": "2026-09-06T16:55:19.241734Z",
+    "collectedThroughExclusive": "2026-09-06T18:45:53.895616Z",
     "configuredSeconds": 86400,
-    "endExclusive": "2026-09-07T16:52:02.916356Z",
-    "startInclusive": "2026-09-06T16:52:02.916356Z"
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "startInclusive": "2026-09-06T18:37:52.522573Z"
   }
 }

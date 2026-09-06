@@ -1,0 +1,35 @@
+{
+  "automaticVerdict": "observing",
+  "dataOrCoverageGaps": [],
+  "directHTTP200": 93,
+  "directHTTP4xx5xx": 0,
+  "directNoResponse": 0,
+  "evidence": {
+    "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1845Z/latest-acceptance.json",
+    "sha256": "4ea714e1dc27c6c8e07d3b272d4363c707e954d5c4e9859e11f3beb572160f15"
+  },
+  "generatedAtUtc": "2026-09-06T18:45:53.895616Z",
+  "globalCore5xx": 0,
+  "limitations": [
+    "Eight-minute window, not 24h acceptance",
+    "No new Android mobile start cohort; Direct Android version uses caller-supplied headers",
+    "No same-window clone/Explain/Web/extension completed-playback evidence",
+    "First audio and HTTP completion do not prove full document playback"
+  ],
+  "mobileFirstAudioMilliseconds": 1168,
+  "mobilePairedFirstAudioSessions": 1,
+  "mobileProductionTaggedEvents": 2,
+  "mobileStartedSessions": 1,
+  "mobileTechnicalFailures": 0,
+  "monitorCNHealthyCycles": 2,
+  "monitorUSHealthyCycles": 1,
+  "otherProject5xx": 1,
+  "schema": "castreader.r134-first-acceptance-summary.v1",
+  "technicalFailures": [],
+  "window": {
+    "collectedThroughExclusive": "2026-09-06T18:45:53.895616Z",
+    "configuredSeconds": 86400,
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "startInclusive": "2026-09-06T18:37:52.522573Z"
+  }
+}

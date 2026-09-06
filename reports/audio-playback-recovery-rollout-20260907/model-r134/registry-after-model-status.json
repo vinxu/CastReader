@@ -1,0 +1,102 @@
+{
+  "helperSourceSha256": "33299ca01af3743c56672f89bdb81da802a4c12b1992a7dfe7616ccca17a2311",
+  "hostSourceSha256": "bc79b1c7b56cdb8bed8f3403475c55ee3be2696ffa073e8010d872de992d6e54",
+  "observed": {
+    "blueConfigSha256": "d25647b4735984ab678cd2b4ad13c621cd5d3bfb8295dcda8102fb555e5a177c",
+    "blueConnectionObservations": [
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:34:08.302586+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:34:09.321082+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:34:10.339588+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:34:11.358244+00:00"
+      },
+      {
+        "connections": 0,
+        "observedAt": "2026-09-06T18:34:12.376395+00:00"
+      }
+    ],
+    "blueScriptSha256": "f18465674b2821cc78ab63c2157a5763282f4152b1d8101bf85e6d76ffb4269c",
+    "connectionSamplesDoNotProveNoLegacyTraffic": true,
+    "current": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+    "gpu": {
+      "freeMiB": 4199,
+      "totalMiB": 24564,
+      "usedMiB": 19894,
+      "utilizationPercent": 0
+    },
+    "legacyPublicPortMayStillReachBlue": true,
+    "observedAt": "2026-09-06T18:34:13.416180+00:00",
+    "processes": {
+      "blue": {
+        "argvSha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83",
+        "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 4137311,
+        "startTicks": "550555282"
+      },
+      "clone": {
+        "argvSha256": "162fd8c0c1c6dc2bb84053c514b082d0c926b1492ec4744195b085962f37ea3e",
+        "cwd": "/workspace/castreader-clone",
+        "exe": "/usr/bin/python3.12",
+        "pid": 568834,
+        "startTicks": "524136804"
+      },
+      "green": {
+        "argvSha256": "cf47eee9611d26e23306d3bedb41a71145a41cc13ce8ed4741595b4be4026a8b",
+        "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 3459850,
+        "startTicks": "545406132"
+      },
+      "nari": {
+        "argvSha256": "3ac624e517515f24dfc63e658d65e2ef9726e853526c9ef7766337737a801bc2",
+        "cwd": "/workspace/nari-qwen3-tts-clean",
+        "exe": "/usr/bin/python3.12",
+        "pid": 4136837,
+        "startTicks": "519185503"
+      },
+      "proxy": {
+        "argvSha256": "739764da1c5a84c8befeb83848212d68c5079c3a2d0087d020b273427823671f",
+        "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+        "exe": "/venv/main/bin/python3.12",
+        "pid": 4140383,
+        "startTicks": "550575438"
+      }
+    },
+    "state": {
+      "bootId": "6aa7a9945aa341ff8926bfe66877cb79",
+      "cleanShutdown": false,
+      "currentSlot": "green",
+      "lastOperationId": "r134-registry-b857b765e90a0b68c160",
+      "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+      "revision": 4,
+      "schema": "castreader.us-tts-origin-proxy-state.v1",
+      "slots": {
+        "blue": {
+          "enabled": false,
+          "receiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+          "releaseId": "20260907-kokoro-silent-separators-us-r134"
+        },
+        "green": {
+          "enabled": true,
+          "receiptSha256": "a74f4c6a76772ef3a736bfaf126b0ea7e2970be4491ccf1241c1d106de492314",
+          "releaseId": "20260906-kokoro-repeated-digits-us-r133"
+        }
+      },
+      "updatedAt": "2026-09-06T18:32:11.429209Z"
+    }
+  },
+  "readOnly": true,
+  "schema": "castreader.us-kokoro-r134-status.v1",
+  "verified": true
+}

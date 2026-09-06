@@ -1,0 +1,22 @@
+{
+  "blue": {
+    "pid": 4114885,
+    "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+    "argvSha256": "8082ded996b648abd04f5d510a6e61e51ac81b5d8f2589c168d2630ca5783c83",
+    "moduleInvocation": true,
+    "explicitAppDir": false,
+    "pythonPathConfigured": false,
+    "pythonPathContainsCurrent": false,
+    "pythonHomeConfigured": false
+  },
+  "green": {
+    "pid": 3459850,
+    "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+    "argvSha256": "cf47eee9611d26e23306d3bedb41a71145a41cc13ce8ed4741595b4be4026a8b",
+    "moduleInvocation": true,
+    "explicitAppDir": false,
+    "pythonPathConfigured": false,
+    "pythonPathContainsCurrent": false,
+    "pythonHomeConfigured": false
+  }
+}

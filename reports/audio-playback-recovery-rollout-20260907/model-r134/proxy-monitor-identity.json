@@ -1,0 +1,64 @@
+{
+  "deploymentEvidence": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r134/production-final-identity.json",
+      "sha256": "aecc6c225cd8acd635f8262f8f5a55eb3c183c78de6d8cb279828837e646b295"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r134/production-final-status.json",
+      "sha256": "7388bb8eb1667b734619e59fa6de93de76fca79109d7eb070f7805b4ad4e66ac"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r134/route-blue-apply.json",
+      "sha256": "e833d8146664404a2a2b92df2a8a87cd489834211ed3d38286a3b4fe80973ef7"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r134/registry-apply.json",
+      "sha256": "3fef86f5ce6e0fcb4d972f46aedf5aaf92c510c5618d6a1beaf3c5565e87e696"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r134/model-validation.json",
+      "sha256": "2198ef12e25ada87cd8fdbe7cd903ea62558a939cffe9384d7602e6b10fb0e35"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r134/public-audio-validation-corrected.json",
+      "sha256": "6de6ad67beb7f96dd949c14b358b346d181d7be933692f7ed0f56f3e85cfadc8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r134/production-private-backup-readback.json",
+      "sha256": "a8a69a4be2603dace01f29f5dd69820424e4d15fdd353628591de63497ca7bbf"
+    }
+  ],
+  "expected": {
+    "currentReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+    "currentReleaseId": "20260907-kokoro-silent-separators-us-r134",
+    "currentSlot": "blue",
+    "modelProcess": {
+      "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+      "pid": 4137311,
+      "startTicks": "550555282"
+    },
+    "modelSourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+    "process": {
+      "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+      "pid": 4140383,
+      "startTicks": "550575438"
+    },
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 6,
+    "sourceCommit": "21cad1b1823d28b9b7c257744dc0b1704403931a",
+    "sourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
+    "sourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
+  },
+  "modelExpectation": {
+    "releaseId": "20260907-kokoro-silent-separators-us-r134",
+    "releasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+    "slot": "blue",
+    "sourceRelativePath": "api/src/services/tts_service.py",
+    "sourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+    "version": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52"
+  },
+  "schema": "castreader.us-proxy-monitor-identity-receipt.v1",
+  "verified": true,
+  "verifiedAtUTC": "2026-09-06T18:37:52.522573+00:00"
+}

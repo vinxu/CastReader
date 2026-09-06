@@ -1,0 +1,113 @@
+{
+  "coverage": {
+    "complete": true
+  },
+  "diagnosticFunctionExecuted": false,
+  "health": {
+    "active": {
+      "blue": 0,
+      "green": 0
+    },
+    "currentReleaseId": "20260907-kokoro-silent-separators-us-r134",
+    "currentSlot": "blue",
+    "drainTrusted": true,
+    "ok": true,
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 6
+  },
+  "identity": {
+    "currentEnabled": true,
+    "currentModel": {
+      "expectedVersion": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52",
+      "fixedReleaseId": "20260907-kokoro-silent-separators-us-r134",
+      "internalPort": 8880,
+      "listenerProcessIds": [
+        4137311
+      ],
+      "listenerProcesses": [
+        {
+          "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+          "exe": "/venv/main/bin/python3.12",
+          "parentPid": 262,
+          "pid": 4137311,
+          "startTicks": "550555282"
+        }
+      ],
+      "runtimeReleasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+      "runtimeSourceBytes": 33974,
+      "runtimeSourceRelativePath": "api/src/services/tts_service.py",
+      "runtimeSourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+      "slot": "blue",
+      "stateEnabled": true,
+      "stateReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+      "stateReleaseId": "20260907-kokoro-silent-separators-us-r134",
+      "supervisorCwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+      "supervisorPid": 4137311,
+      "supervisorProcess": {
+        "cwd": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+        "exe": "/venv/main/bin/python3.12",
+        "parentPid": 262,
+        "pid": 4137311,
+        "startTicks": "550555282"
+      },
+      "supervisorProgram": "castreader-tts",
+      "supervisorState": "RUNNING"
+    },
+    "currentReceiptSha256": "46194b37bfd80a48b4d674e5156b83e5015c82f69471d9adcd4c4fdf5fe28589",
+    "currentReleaseId": "20260907-kokoro-silent-separators-us-r134",
+    "currentSlot": "blue",
+    "listenerProcessIds": [
+      4140383
+    ],
+    "processIds": [
+      4140383
+    ],
+    "proxyReleaseId": "us-tts-origin-proxy-20260907-v2",
+    "revision": 6,
+    "sourcePath": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2/r133_stable_proxy.py",
+    "sourceSha256": "0502fc2d9b3793be6309ae6f13ea544380404721857e55162b3eae060daa7eba"
+  },
+  "independentVerification": {
+    "checks": {
+      "acceptingAndTrusted": true,
+      "blueExactProcessMatch": true,
+      "blueSupervisorMatches": true,
+      "cloneExactProcessMatch": true,
+      "exactRouteStateMatches": true,
+      "greenDrained": true,
+      "greenExactProcessMatch": true,
+      "greenSupervisorMatches": true,
+      "healthMatches": true,
+      "markerMatches": true,
+      "markerSourceAndTreeMatch": true,
+      "modelListenerAndSupervisorMatch": true,
+      "modelSourceMatches": true,
+      "nariExactProcessMatch": true,
+      "proxyCommandAndListenerMatch": true,
+      "proxyExactProcessMatch": true,
+      "proxySourceMatches": true,
+      "proxySupervisorMatches": true,
+      "revision6CurrentBlue": true,
+      "wrapperMatches": true
+    },
+    "completedAtUTC": "2026-09-06T18:37:52.522573+00:00",
+    "expectedModel": {
+      "releaseId": "20260907-kokoro-silent-separators-us-r134",
+      "releasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+      "slot": "blue",
+      "sourceRelativePath": "api/src/services/tts_service.py",
+      "sourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+      "version": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52"
+    },
+    "verified": true
+  },
+  "limitations": [
+    "Point-in-time source, process and routing identity; existing continuous probes provide the interval evidence."
+  ],
+  "localHelperSha256": "21e871df4e56264ba8ed2777226a158fa5d17ad2f234585eabab92470ade1657",
+  "productionModified": false,
+  "readAtUtc": "2026-09-06T18:37:52.158031+00:00",
+  "readOnly": true,
+  "schema": "castreader.us-origin-proxy-identity.v1",
+  "synthesisStarted": false
+}
