@@ -1,0 +1,10 @@
+{
+  "version": "1.2.34",
+  "build": "54",
+  "buildAttached": true,
+  "reviewDetailsPresent": true,
+  "reviewContactComplete": true,
+  "demoAccountRequired": false,
+  "contentRightsDeclaration": "USES_THIRD_PARTY_CONTENT",
+  "usesNonExemptEncryption": false
+}

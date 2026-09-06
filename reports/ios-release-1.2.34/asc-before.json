@@ -1,0 +1,25 @@
+{
+  "appId": "6757636395",
+  "latestVersion": {
+    "id": "97e22d84-6451-4a1a-a67b-ae31a8367a52",
+    "version": "1.2.33",
+    "state": "READY_FOR_SALE",
+    "releaseType": "AFTER_APPROVAL"
+  },
+  "suggestedVersion": "1.2.34",
+  "nextVersionCreation": {
+    "allowed": true,
+    "blockingState": null
+  },
+  "highestUploadedBuild": 53,
+  "suggestedBuild": 54,
+  "activeReviewSubmissions": [
+
+  ],
+  "appInfos": [
+    {
+      "id": "042f6e8b-74c1-4858-aac2-022dc8db5652",
+      "state": "READY_FOR_SALE"
+    }
+  ]
+}

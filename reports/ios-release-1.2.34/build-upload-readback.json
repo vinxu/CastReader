@@ -1,0 +1,11 @@
+{
+  "available": false,
+  "httpStatus": 403,
+  "errors": [
+    {
+      "code": "FORBIDDEN_ERROR",
+      "title": "The given operation is not allowed",
+      "detail": "The resource 'buildUploads' does not allow 'GET_COLLECTION'. Allowed operations are: CREATE, DELETE, GET_INSTANCE"
+    }
+  ]
+}

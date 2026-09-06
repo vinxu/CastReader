@@ -1,0 +1,46 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "5E6C9500-D581-413A-8D75-A8586AB3C60B",
+        "deviceName" : "CastReader Google Books QA",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 0,
+      "passedTests" : 19,
+      "skippedTests" : 1,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReader · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 0,
+  "finishTime" : 1788665430.099,
+  "passedTests" : 19,
+  "result" : "Passed",
+  "skippedTests" : 1,
+  "startTime" : 1788665410.078,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+
+  ],
+  "title" : "Test - CastReader",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "34% of duration",
+      "text" : "1 longest test run with outlier durations exceeding 4.94s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 20
+}

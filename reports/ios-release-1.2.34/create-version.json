@@ -1,0 +1,11 @@
+{
+  "resumed": false,
+  "version": {
+    "id": "1db5a12c-64cd-4961-ad04-4ff117646723",
+    "version": "1.2.34",
+    "state": "PREPARE_FOR_SUBMISSION",
+    "releaseType": "AFTER_APPROVAL"
+  },
+  "pendingAppInfoId": "e294ba0d-2332-4cf5-b253-f97d3eb8e7c7",
+  "baselineAppInfoId": "042f6e8b-74c1-4858-aac2-022dc8db5652"
+}
