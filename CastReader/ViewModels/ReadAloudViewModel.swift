@@ -563,7 +563,7 @@ final class ReadAloudViewModel: ObservableObject {
     @Published var showPaywall: Bool = false
     @Published var autoScrollEnabled: Bool = true
 
-    private let audio = AudioPlayerService.shared
+    private let audio: AudioPlayerService
     private let settings = AppSettings.shared
     private let pro = ProManager.shared
     private let quota = QuotaManager.shared
@@ -713,6 +713,7 @@ final class ReadAloudViewModel: ObservableObject {
     private func installAudioCompletionCallback() {
         audio.onPlaybackComplete = { [weak self] in
             guard let self else { return }
+            guard !self.audio.hasTerminalPlaybackFailure else { return }
             guard self.ownsAudioQueue else {
                 ReaderRunLog.write(
                     "READ completion ignored reason=ownership-lost " +
@@ -726,18 +727,21 @@ final class ReadAloudViewModel: ObservableObject {
             )
             self.advance()
         }
-        audio.onPlaybackError = { [weak self] message in
+        audio.onPlaybackError = { [weak self] code in
             guard let self, self.ownsAudioQueue else { return }
-            ReaderRunLog.write(
-                "READ playback error para=\(self.currentParagraphIndex) " +
-                "error=\(message)"
-            )
+            // Local player reconstruction has already exhausted its one retry.
+            // Fence callbacks already in flight as well as cancelling the task.
+            self.generationEpoch &+= 1
+            self.generationTask?.cancel()
+            self.generationTask = nil
+            self.clearPrefetch()
+            self.setMoreSegmentsExpected(false)
             self.status = .error(AppLocalized("音频播放失败，请重试"))
             self.endAnalyticsReadSession(
                 result: .failed,
                 reason: "audio_playback_failed",
                 errorStage: "player",
-                errorCode: "player_item_failed"
+                errorCode: code
             )
         }
     }
@@ -766,8 +770,10 @@ final class ReadAloudViewModel: ObservableObject {
     init(
         document: ReadingDocument,
         analyticsContext: AnalyticsContentContext? = nil,
-        analyticsSessionCoordinator: ReadAnalyticsSessionCoordinator? = nil
+        analyticsSessionCoordinator: ReadAnalyticsSessionCoordinator? = nil,
+        audioService: AudioPlayerService = .shared
     ) {
+        self.audio = audioService
         self.document = document
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         self.analyticsSessionCoordinator = analyticsSessionCoordinator
@@ -2162,6 +2168,10 @@ final class ReadAloudViewModel: ObservableObject {
     /// playback or start a duplicate generation request.
     func ensurePlaying() {
         liveWebTurnIntentSuspended = false
+        if case .error = status, currentParagraphIndex >= 0 {
+            generate(currentParagraphIndex)
+            return
+        }
         if ownsAudioQueue, audio.isPlaying { return }
         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
             self?.ensurePlaying()
@@ -2234,11 +2244,11 @@ final class ReadAloudViewModel: ObservableObject {
             clearPrefetch()
             _ = audio.clearQueue(session: token)
             _ = audio.setMoreSegmentsExpected(false, session: token)
-            _ = audio.loadSegments(
+            guard audio.loadSegments(
                 cached,
                 autoPlay: true,
                 session: token
-            )
+            ) else { return }
             isFinished = false
             status = .ready
         case .regenerateParagraph:
@@ -2852,16 +2862,7 @@ final class ReadAloudViewModel: ObservableObject {
                     )
                 }
                 await MainActor.run {
-                    guard self.generationEpoch == epoch,
-                          self.currentParagraphIndex == index,
-                          self.audioSessionToken == session,
-                          self.audio.isPlaybackSessionActive(session) else { return }
-                    self.finishPendingLiveWebResumeIfNeeded(
-                        paragraph: index,
-                        session: session
-                    )
-                    _ = self.audio.finishStreamingProducer(session: session)
-                    self.status = .ready
+                    guard self.finishGeneratedAudio(paragraph: index, epoch: epoch, session: session) else { return }
                     self.completeCloneRequestID(
                         paragraphIndex: index,
                         voice: voice,
@@ -2947,7 +2948,21 @@ final class ReadAloudViewModel: ObservableObject {
         }
     }
 
-    private func appendSegment(
+    /// Shared completion boundary also exercised with an offline producer in
+    /// regression tests. A player failure invalidates this producer's epoch.
+    @discardableResult
+    func finishGeneratedAudio(paragraph: Int, epoch: UInt64, session: AudioPlaybackSessionToken) -> Bool {
+        guard generationEpoch == epoch, currentParagraphIndex == paragraph,
+              audioSessionToken == session, audio.isPlaybackSessionActive(session),
+              !audio.hasTerminalPlaybackFailure else { return false }
+        finishPendingLiveWebResumeIfNeeded(paragraph: paragraph, session: session)
+        guard generationEpoch == epoch, !audio.hasTerminalPlaybackFailure,
+              audio.finishStreamingProducer(session: session) else { return false }
+        status = .ready
+        return true
+    }
+
+    func appendSegment(
         _ segment: AudioSegment,
         paragraph: Int,
         epoch: UInt64,
@@ -3018,6 +3033,7 @@ final class ReadAloudViewModel: ObservableObject {
                 return
             }
         }
+        guard epoch == generationEpoch, !audio.hasTerminalPlaybackFailure else { return }
         status = .streaming
         // The clone worker is intentionally single-flight on one GPU. Starting
         // the next paragraph after only the first segment makes prefetch race
@@ -3129,7 +3145,7 @@ final class ReadAloudViewModel: ObservableObject {
 
     /// 当前段生成完后调用：后台预生成下一段 TTS 到缓存（不入队播放），advance 命中时秒接，消除段间等首字节的 gap。
     private func preloadNext(after index: Int) {
-        guard isActive else { return }
+        guard isActive, !audio.hasTerminalPlaybackFailure else { return }
         guard let pos = readableIndices.firstIndex(of: index) else { return }
         let nextPos = pos + 1
         guard nextPos < readableIndices.count else { return }
@@ -3298,11 +3314,11 @@ final class ReadAloudViewModel: ObservableObject {
 
         // 完整缓存一次性入队；无 moreSegmentsExpected，播完正常 advance。
         _ = audio.setMoreSegmentsExpected(false, session: session)
-        _ = audio.loadSegments(
+        guard audio.loadSegments(
             segs,
             autoPlay: !liveWebTurnIntentSuspended,
             session: session
-        )
+        ) else { return }
         status = .ready
 
         // 立即预取再下一段，保持「始终领先一段」。
@@ -3645,6 +3661,7 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func onTick(_ t: Double) {
         guard ownsAudioQueue else { return }
+        if audio.hasAudibleProgress { handlePlaybackState(audio.isPlaying) }
         accountAnalyticsPlayback(t)
         accountListen(t)
         saveYouTubeProgress(t)
@@ -4288,7 +4305,7 @@ final class ReadAloudViewModel: ObservableObject {
             )
             return
         }
-        guard audio.currentSegment != nil,
+        guard audio.hasAudibleProgress, audio.currentSegment != nil,
               let startedAt = analyticsSessionCoordinator.markFirstAudio(
                 ownerID: analyticsSessionOwnerID
               ) else { return }

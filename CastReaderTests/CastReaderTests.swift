@@ -9,6 +9,7 @@ import XCTest
 import UIKit
 import WebKit
 import AuthenticationServices
+import AVFoundation
 @testable import CastReader
 
 class CastReaderTests: XCTestCase {
@@ -4693,5 +4694,202 @@ final class EmailOTPNetworkPolicyTests: XCTestCase {
         case .emailOTPFailed: return .failed
         default: return .other
         }
+    }
+}
+
+@MainActor
+final class AudioPlaybackFailureRecoveryTests: XCTestCase {
+    private func temporaryRoot() throws -> URL {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: root) }
+        return root
+    }
+
+    private func silence() -> Data {
+        func little<T: FixedWidthInteger>(_ value: T) -> Data {
+            var copy = value.littleEndian
+            return withUnsafeBytes(of: &copy) { Data($0) }
+        }
+        let bytes: UInt32 = 32_000
+        var data = Data("RIFF".utf8)
+        data += little(36 + bytes)
+        data += Data("WAVEfmt ".utf8)
+        data += little(UInt32(16))
+        data += little(UInt16(1)); data += little(UInt16(1))
+        data += little(UInt32(8000)); data += little(UInt32(16000))
+        data += little(UInt16(2)); data += little(UInt16(16))
+        data += Data("data".utf8); data += little(bytes)
+        data += Data(repeating: 0, count: Int(bytes))
+        return data
+    }
+
+    private func segment(_ data: Data, index: Int = 0) -> AudioSegment {
+        AudioSegment(paragraphIndex: 0, segmentIndex: index, audioData: data,
+                     timestamps: [], duration: 2, text: "Offline fixture", isWavFormat: true)
+    }
+
+    private func waitUntil(_ condition: @MainActor () -> Bool) async throws {
+        for _ in 0..<150 {
+            if condition() { return }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        XCTFail("Player condition did not resolve within three seconds")
+    }
+
+    func testCorruptItemRetriesOnceAndCannotBeRevivedByPlayOrLateProducer() async throws {
+        let audio = AudioPlayerService(testTemporaryRoot: try temporaryRoot())
+        defer { audio.stop() }
+        let token = audio.claimPlaybackSession(owner: .readAloud)
+        XCTAssertTrue(audio.clearQueue(session: token))
+        XCTAssertTrue(audio.setMoreSegmentsExpected(true, session: token))
+        var errors: [String] = []
+        audio.onPlaybackError = { errors.append($0) }
+        XCTAssertTrue(audio.loadSegment(segment(Data("not audio".utf8)), session: token))
+        try await waitUntil { audio.hasTerminalPlaybackFailure }
+        XCTAssertEqual(audio.recoveryBudget.attempts, 1)
+        XCTAssertEqual(errors.count, 1)
+        XCTAssertTrue(errors[0].hasPrefix("player_status_failed_"))
+        XCTAssertFalse(audio.play(session: token))
+        XCTAssertFalse(audio.finishStreamingProducer(session: token))
+        XCTAssertFalse(audio.loadSegment(segment(silence(), index: 1), session: token))
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertFalse(audio.moreSegmentsExpected)
+        XCTAssertEqual(audio.currentSegment?.id, "0-0")
+    }
+
+    func testMissingPausedFileRebuildsSameSegmentAtPositionAndKeepsQueueAndOwner() async throws {
+        let root = try temporaryRoot()
+        let audio = AudioPlayerService(testTemporaryRoot: root)
+        defer { audio.stop() }
+        let token = audio.claimPlaybackSession(owner: .readAloud)
+        let first = segment(silence())
+        XCTAssertTrue(audio.loadSegments([first, segment(silence(), index: 1)], autoPlay: false, session: token))
+        XCTAssertTrue(audio.startQueuedSegment(id: first.id, progress: 0.3, autoPlay: false, session: token))
+        try await waitUntil { audio.currentTime >= 0.59 }
+        let oldItem = try XCTUnwrap(audio.currentItemForTesting)
+        let directory = root.appendingPathComponent(AudioPlaybackTemporaryFiles.directoryName)
+        for file in try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) {
+            try FileManager.default.removeItem(at: file)
+        }
+        XCTAssertTrue(audio.play(session: token))
+        try await waitUntil {
+            audio.currentItemForTesting !== oldItem
+                && (audio.currentItemForTesting?.currentTime().seconds ?? 0) >= 0.59
+        }
+        XCTAssertTrue(audio.pause(session: token))
+        XCTAssertEqual(audio.recoveryBudget.attempts, 1)
+        XCTAssertFalse(audio.hasTerminalPlaybackFailure)
+        XCTAssertEqual(audio.currentSegment?.id, first.id)
+        XCTAssertEqual(audio.queuedTailSegmentID, "0-1")
+        XCTAssertEqual(audio.activePlaybackSession, token)
+        XCTAssertTrue(audio.isQueueOwned(by: token))
+        XCTAssertTrue(audio.lastPlaybackFailureCode?.hasPrefix("player_resume_failed") == true)
+    }
+
+    func testSynchronousStagingFailureReturnsFalseAndFencesReadProducerCallbacks() throws {
+        let root = try temporaryRoot()
+        let audio = AudioPlayerService(testTemporaryRoot: root)
+        defer { audio.stop() }
+        let doc = DocumentBuilder.fromPlainText("Offline playback regression.", title: "Offline fixture")
+        let vm = ReadAloudViewModel(document: doc, audioService: audio)
+        vm.activate()
+        vm.currentParagraphIndex = 0
+        let token = try XCTUnwrap(audio.activePlaybackSession)
+        XCTAssertTrue(audio.clearQueue(session: token))
+        let directory = root.appendingPathComponent(AudioPlaybackTemporaryFiles.directoryName)
+        try FileManager.default.removeItem(at: directory)
+        try Data("blocking file".utf8).write(to: directory)
+
+        vm.appendSegment(segment(silence()), paragraph: 0, epoch: 0, session: token,
+                         autoPlay: true, voiceSwitchID: nil)
+        XCTAssertTrue(audio.hasTerminalPlaybackFailure)
+        XCTAssertFalse(audio.play(session: token))
+        guard case .error = vm.status else { return XCTFail("Playback failure must remain an error") }
+        let displayed = vm.processedDisplayText
+        vm.appendSegment(segment(silence(), index: 1), paragraph: 0, epoch: 0, session: token,
+                         autoPlay: true, voiceSwitchID: nil)
+        XCTAssertFalse(vm.finishGeneratedAudio(paragraph: 0, epoch: 0, session: token))
+        XCTAssertEqual(vm.processedDisplayText, displayed)
+        guard case .error = vm.status else { return XCTFail("Late producer replaced playback error") }
+        XCTAssertTrue(audio.lastPlaybackFailureCode?.hasPrefix("file_write_failed") == true)
+    }
+
+    func testModeChangeRejectsOldPlayerFailureNotification() async throws {
+        let audio = AudioPlayerService(testTemporaryRoot: try temporaryRoot())
+        defer { audio.stop() }
+        let read = audio.claimPlaybackSession(owner: .readAloud)
+        XCTAssertTrue(audio.loadSegments([segment(silence())], session: read))
+        let oldItem = try XCTUnwrap(audio.currentItemForTesting)
+        let oldTimeSample = try XCTUnwrap(audio.timeSampleForTesting)
+        let explain = audio.claimPlaybackSession(owner: .explain)
+        XCTAssertTrue(audio.clearQueue(session: explain))
+        XCTAssertTrue(audio.loadSegments([segment(silence(), index: 1)], autoPlay: false, session: explain))
+        NotificationCenter.default.post(name: .AVPlayerItemFailedToPlayToEndTime, object: oldItem)
+        oldTimeSample(CMTime(seconds: 999, preferredTimescale: 600))
+        oldTimeSample(CMTime(seconds: 1000, preferredTimescale: 600))
+        XCTAssertEqual(audio.currentTime, 0, "A removed observer cannot publish into a new queue")
+        XCTAssertFalse(audio.hasAudibleProgress)
+        try await Task.sleep(nanoseconds: 60_000_000)
+        XCTAssertEqual(audio.activePlaybackSession, explain)
+        XCTAssertEqual(audio.recoveryBudget.attempts, 0)
+        XCTAssertFalse(audio.hasTerminalPlaybackFailure)
+        XCTAssertFalse(audio.play(session: read))
+    }
+
+    func testFirstAudioRequiresAdvancingClockRatherThanPlayFlagOrSeek() {
+        var evidence = AudioPlaybackProgressEvidence()
+        evidence.observe(position: 0, actuallyPlaying: true)
+        evidence.observe(position: 0, actuallyPlaying: true)
+        XCTAssertFalse(evidence.hasAdvanced)
+        evidence.observe(position: 123, actuallyPlaying: false)
+        evidence.observe(position: 150, actuallyPlaying: true)
+        XCTAssertFalse(evidence.hasAdvanced)
+        evidence.observe(position: 150.05, actuallyPlaying: true)
+        XCTAssertTrue(evidence.hasAdvanced)
+    }
+
+    func testDiagnosticsDoNotIncludeNSErrorTextOrIdentityAndBoundUnderlyingChain() throws {
+        let secret = "user@example.invalid/private-book?token=secret"
+        let error = NSError(domain: secret, code: 7, userInfo: [
+            NSLocalizedDescriptionKey: secret,
+            NSUnderlyingErrorKey: NSError(domain: NSOSStatusErrorDomain, code: -12873,
+                                           userInfo: [NSFilePathErrorKey: secret])
+        ])
+        let codes = AudioPlaybackFailureDiagnostic.errorCodes(error)
+        XCTAssertEqual(codes, ["other_p7", "os_n12873"])
+        XCTAssertFalse(codes.joined().contains(secret))
+        XCTAssertEqual(AudioPlaybackFailureDiagnostic.mediaKind(silence()), "wav")
+        XCTAssertEqual(AudioPlaybackFailureDiagnostic.mediaKind(Data(secret.utf8)), "unknown")
+        let code = "player_status_failed_av_n11800_os_p1954115647"
+        XCTAssertNotNil(code.range(of: "^[a-z0-9_]{1,64}$", options: .regularExpression))
+        XCTAssertNoThrow(try AnalyticsSchema.validate(.readEnd, properties: .init(
+            result: "failed", errorStage: "player", errorCode: code,
+            playbackSeconds: 0, completionBucket: "unknown", endReason: "audio_playback_failed"
+        )))
+        let large = AudioPlaybackFailureDiagnostic(
+            timestamp: 0, stage: .itemStatus,
+            errors: ["cocoa_n9223372036854775808", "other_p9223372036854775807"],
+            byteCount: 0, mediaKind: "empty", fileExists: false, fileBytes: nil,
+            itemStatus: nil, playerStatus: nil, timeControlStatus: nil,
+            position: 0, recoveryAttempt: 1
+        )
+        XCTAssertNotNil(large.analyticsCode.range(of: "^[a-z0-9_]{1,64}$", options: .regularExpression))
+        XCTAssertEqual(large.analyticsCode, "player_status_failed_cocoa_n9223372036854775808")
+    }
+
+    func testLoadReturnsFalseWhenBothFileWriteAttemptsFail() throws {
+        let root = try temporaryRoot()
+        let audio = AudioPlayerService(testTemporaryRoot: root)
+        defer { audio.stop() }
+        let token = audio.claimPlaybackSession(owner: .readAloud)
+        let directory = root.appendingPathComponent(AudioPlaybackTemporaryFiles.directoryName)
+        try FileManager.default.removeItem(at: directory)
+        try Data().write(to: directory)
+        var failures = 0
+        audio.onPlaybackError = { _ in failures += 1 }
+        XCTAssertFalse(audio.loadSegment(segment(silence()), session: token))
+        XCTAssertEqual(failures, 1)
+        XCTAssertEqual(audio.recoveryBudget.attempts, 1)
     }
 }

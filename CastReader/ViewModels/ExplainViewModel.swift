@@ -425,15 +425,22 @@ final class ExplainViewModel: ObservableObject {
             guard let self, self.ownsAudioQueue else { return }
             self.onBlockComplete()
         }
-        audio.onPlaybackError = { [weak self] _ in
+        audio.onPlaybackError = { [weak self] code in
             guard let self, self.ownsAudioQueue else { return }
+            self.contentGeneration &+= 1
+            self.orchestrationTask?.cancel()
+            self.orchestrationTask = nil
+            self.fastTask?.cancel()
+            self.fastTask = nil
+            self.clearPagePrefetch()
+            self.setMoreSegmentsExpected(false)
             self.isPreparingNext = false
             self.status = .error(AppLocalized("音频播放失败，请重试"))
             self.endAnalyticsExplainSession(
                 result: .failed,
                 reason: "audio_playback_failed",
                 errorStage: "player",
-                errorCode: "player_item_failed"
+                errorCode: code
             )
         }
     }
@@ -1254,6 +1261,10 @@ final class ExplainViewModel: ObservableObject {
 
     func togglePlayPause() {
         liveWebTurnIntentSuspended = false
+        if audio.hasTerminalPlaybackFailure {
+            recoverPlaybackAfterOwnershipChange()
+            return
+        }
         guard ownsAudioQueue,
               audio.currentSegment != nil || audio.hasQueuedSegments else {
             recoverPlaybackAfterOwnershipChange()
