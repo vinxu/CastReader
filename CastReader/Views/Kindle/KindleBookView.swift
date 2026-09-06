@@ -5838,7 +5838,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return (key, sessionId)
     }
 
-    private func requestKindlePageTurnTarget(_ direction: KindlePageTurnDirection, oldKey: String) async throws -> (targetKey: String, result: [String: Any]) {
+    private func requestKindlePageTurnTarget(
+        _ direction: KindlePageTurnDirection,
+        oldKey: String,
+        onDispatchEvidence: ((KindlePageTurnDispatchEvidence) -> Void)? = nil
+    ) async throws -> (targetKey: String, result: [String: Any]) {
         try requireReaderOperation(.pageTurn, reason: "dispatch-target-\(direction.logName)")
         lastConfirmedTurnFingerprint = nil
         guard isReaderSurfaceAttached, webView.window != nil else {
@@ -5852,7 +5856,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         }
 
         var result = try await requestKindlePageTurn(direction)
-        guard Self.boolValue(result["ok"]), Self.int(from: result["dispatchCount"]) == 1 else {
+        let dispatchCount = Self.int(from: result["dispatchCount"])
+        if dispatchCount == 0 {
+            onDispatchEvidence?(.notDispatched)
+        } else if dispatchCount == 1 {
+            onDispatchEvidence?(.dispatched)
+        }
+        guard Self.boolValue(result["ok"]), dispatchCount == 1 else {
             throw KindleBookError.captureFailed(result["reason"] as? String ?? "semantic-page-action-unavailable")
         }
 
@@ -9634,7 +9644,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         continuationMode: ReaderMode,
         status: String,
         reason: String,
-        appReviewReadSession: AppReviewReadSessionProgress? = nil
+        appReviewReadSession: AppReviewReadSessionProgress? = nil,
+        recoveryAttempt: Int = 0
     ) async {
         guard readerOperationAllowed(.automaticPageTurn, reason: reason) else { return }
         // Retain the page owner until the next page has actually claimed the
@@ -9642,6 +9653,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         // that claim, this owner is still responsible for the one terminal
         // read_end event.
         let completedReadOwner = continuationMode == .read ? readVM : nil
+        let completedExplainOwner = continuationMode == .explain ? explainVM : nil
+        let completedReadSession = continuationMode == .read ? activeReadPageSession : nil
         let liveProgressAtBoundary = livePage?.progress
         let storedProgressAtBoundary = book.progressLabel
         func finishReadSession(
@@ -9684,9 +9697,30 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         let previousSnapshot = currentPreparedPageSnapshot()
         var attemptedForwardTurn = false
         var confirmedForwardTurn = false
+        var activatedNextPage = false
+        var dispatchEvidence = KindlePageTurnDispatchEvidence.unknown
         statusText = status
         pendingCaptureKey = nil
         invalidatePagePreloads(clearPrepared: false, reason: "\(reason)-generation")
+        let recoveryEpoch = preloadEpoch
+        func recoveryStillOwned() -> Bool {
+            guard !Task.isCancelled,
+                  preloadEpoch == recoveryEpoch,
+                  mode == continuationMode,
+                  isAdvancingLivePage,
+                  !isKindleSyncDialogVisible,
+                  isReaderSurfaceAttached,
+                  webView.window != nil,
+                  !hasActivePlaybackSession else {
+                return false
+            }
+            switch continuationMode {
+            case .read:
+                return readVM === completedReadOwner && activeReadPageSession == completedReadSession
+            case .explain:
+                return explainVM === completedExplainOwner
+            }
+        }
 
         do {
             try await ensureCaptureScriptInstalled(reason: reason)
@@ -9694,7 +9728,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             _ = try? await evaluateJSON("window.__crKindleLiveClear && window.__crKindleLiveClear()")
 
             attemptedForwardTurn = true
-            let targetKey = try await requestNativeNextPageForAutoAdvance(oldKey: oldKey, reason: reason)
+            let targetKey = try await requestNativeNextPageForAutoAdvance(
+                oldKey: oldKey,
+                reason: reason,
+                onDispatchEvidence: { dispatchEvidence = $0 }
+            )
             confirmedForwardTurn = true
             guard mode == continuationMode, !isKindleSyncDialogVisible else {
                 KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance suspended sync-dialog old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(targetKey)) reason=\(reason)")
@@ -9708,12 +9746,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                 targetKey: targetKey,
                 mode: continuationMode
             )
+            guard recoveryStillOwned() else {
+                KindleRunLog.write(
+                    "KINDLE \(continuationMode.rawValue) auto advance abandoned-before-activate " +
+                    "old=\(Self.keyLog(oldKey)) reason=\(reason)"
+                )
+                return
+            }
             let singlePageDoc = try await activatePreparedNextPage(
                 prepared,
                 oldKey: oldKey,
                 startOverride: prepared.startParagraphIndex,
                 startKindOverride: .sourceParagraph
             )
+            activatedNextPage = true
             guard !isKindleSyncDialogVisible else {
                 KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance suspended-before-play sync-dialog old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(prepared.page.key)) reason=\(reason)")
                 finishInterruptedReadSession(errorCode: "sync_dialog_before_play")
@@ -9737,6 +9783,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance success old=\(Self.keyLog(oldKey)) new=\(Self.keyLog(prepared.page.key)) reason=\(reason)")
         } catch {
             pendingCaptureKey = nil
+            if error is CancellationError || (!activatedNextPage && !recoveryStillOwned()) {
+                KindleRunLog.write(
+                    "KINDLE \(continuationMode.rawValue) auto advance abandoned-context-change " +
+                    "old=\(Self.keyLog(oldKey)) reason=\(reason)"
+                )
+                return
+            }
             let reachedNaturalEnd = continuationMode == .read &&
                 attemptedForwardTurn &&
                 !confirmedForwardTurn &&
@@ -9752,11 +9805,102 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                     "KINDLE read auto advance reached terminal page old=\(Self.keyLog(oldKey)) " +
                     "progress=\(liveProgressAtBoundary ?? storedProgressAtBoundary) reason=\(reason)"
                 )
-            } else {
-                statusText = AppLocalized("已停在当前页，请点击播放继续。")
-                finishInterruptedReadSession(errorCode: "page_turn_failed")
-                KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance failed old=\(Self.keyLog(oldKey)) reason=\(reason) error=\(error.localizedDescription)")
+                return
             }
+
+            if !(error is CancellationError), attemptedForwardTurn, !activatedNextPage {
+                let visibleKey = await observedAutoAdvanceRecoveryKey(oldKey: oldKey)
+                guard recoveryStillOwned() else {
+                    KindleRunLog.write(
+                        "KINDLE \(continuationMode.rawValue) auto advance recovery-abandoned-after-observe " +
+                        "old=\(Self.keyLog(oldKey)) reason=\(reason)"
+                    )
+                    return
+                }
+                switch KindleAutoAdvanceRecoveryContract.action(
+                    oldKey: oldKey,
+                    visibleKey: visibleKey,
+                    retryAttempt: recoveryAttempt,
+                    dispatchEvidence: dispatchEvidence
+                ) {
+                case .resumeVisiblePage(let targetKey):
+                    do {
+                        pendingCaptureKey = targetKey
+                        let prepared = try await preparedPageForNativeAutoAdvance(
+                            afterKey: oldKey,
+                            targetKey: targetKey,
+                            mode: continuationMode
+                        )
+                        guard recoveryStillOwned() else {
+                            KindleRunLog.write(
+                                "KINDLE \(continuationMode.rawValue) auto advance recovery-abandoned-before-activate " +
+                                "old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(targetKey)) reason=\(reason)"
+                            )
+                            return
+                        }
+                        let singlePageDoc = try await activatePreparedNextPage(
+                            prepared,
+                            oldKey: oldKey,
+                            startOverride: prepared.startParagraphIndex,
+                            startKindOverride: .sourceParagraph
+                        )
+                        guard mode == continuationMode, !isKindleSyncDialogVisible else {
+                            throw KindleBookError.captureFailed("auto-recovery-context-changed")
+                        }
+                        if let previousSnapshot {
+                            pageBackStack.append(previousSnapshot)
+                            pageForwardStack.removeAll()
+                        }
+                        mode = continuationMode
+                        try await restartPlaybackAfterPageTurn(
+                            document: singlePageDoc,
+                            target: prepared,
+                            oldKey: oldKey,
+                            reason: "\(reason)-visible-recovery",
+                            appReviewReadSession: appReviewReadSession,
+                            continueLogicalReadSession: continuationMode == .read
+                        )
+                        KindleRunLog.write(
+                            "KINDLE \(continuationMode.rawValue) auto advance recovered-visible " +
+                            "old=\(Self.keyLog(oldKey)) new=\(Self.keyLog(prepared.page.key)) reason=\(reason)"
+                        )
+                        return
+                    } catch {
+                        pendingCaptureKey = nil
+                        if error is CancellationError || !recoveryStillOwned() {
+                            KindleRunLog.write(
+                                "KINDLE \(continuationMode.rawValue) auto advance recovery-abandoned-context-change " +
+                                "old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(targetKey)) reason=\(reason)"
+                            )
+                            return
+                        }
+                        KindleRunLog.write(
+                            "KINDLE \(continuationMode.rawValue) auto advance visible-recovery failed " +
+                            "old=\(Self.keyLog(oldKey)) target=\(Self.keyLog(targetKey)) reason=\(reason)"
+                        )
+                    }
+                case .retryPageTurn:
+                    KindleRunLog.write(
+                        "KINDLE \(continuationMode.rawValue) auto advance retry-stable-old " +
+                        "attempt=\(recoveryAttempt + 1) old=\(Self.keyLog(oldKey)) reason=\(reason)"
+                    )
+                    await advanceByNativePageTurnAndContinue(
+                        oldKey: oldKey,
+                        continuationMode: continuationMode,
+                        status: status,
+                        reason: reason,
+                        appReviewReadSession: appReviewReadSession,
+                        recoveryAttempt: recoveryAttempt + 1
+                    )
+                    return
+                case .stop:
+                    break
+                }
+            }
+
+            statusText = AppLocalized("已停在当前页，请点击播放继续。")
+            finishInterruptedReadSession(errorCode: "page_turn_failed")
+            KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance failed old=\(Self.keyLog(oldKey)) reason=\(reason) error=\(error.localizedDescription)")
             #if DEBUG
             NSLog("CRDBG KINDLE auto advance failed mode=%@ old=%@ error=%@",
                   continuationMode.rawValue,
@@ -9764,6 +9908,26 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                   error.localizedDescription)
             #endif
         }
+    }
+
+    /// Confirmation can time out while Kindle is still publishing the page it
+    /// already turned to. Observe that page before any retry; never issue a
+    /// second semantic action merely because the first confirmation timed out.
+    private func observedAutoAdvanceRecoveryKey(oldKey: String) async -> String {
+        var latestKey = ""
+        for sample in 0..<8 {
+            guard !Task.isCancelled else { return "" }
+            latestKey = normalizedPageKey(await currentVisibleKindlePageKey())
+            if !latestKey.isEmpty, latestKey != oldKey { return latestKey }
+            if sample < 7 {
+                do {
+                    try await Task.sleep(nanoseconds: 250_000_000)
+                } catch {
+                    return ""
+                }
+            }
+        }
+        return latestKey
     }
 
     private func preparedPageForNativeAutoAdvance(
@@ -9828,9 +9992,17 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         return preparedCandidate(afterKey: oldKey, targetKey: targetKey)
     }
 
-    private func requestNativeNextPageForAutoAdvance(oldKey: String, reason: String) async throws -> String {
+    private func requestNativeNextPageForAutoAdvance(
+        oldKey: String,
+        reason: String,
+        onDispatchEvidence: ((KindlePageTurnDispatchEvidence) -> Void)? = nil
+    ) async throws -> String {
         try requireReaderOperation(.automaticPageTurn, reason: reason)
-        let target = try await requestKindlePageTurnTarget(.next, oldKey: oldKey)
+        let target = try await requestKindlePageTurnTarget(
+            .next,
+            oldKey: oldKey,
+            onDispatchEvidence: onDispatchEvidence
+        )
         let result = target.result
         let ok = Self.boolValue(result["ok"])
         let strategy = result["strategy"] as? String ?? ""

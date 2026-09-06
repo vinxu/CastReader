@@ -1595,6 +1595,56 @@ class CastReaderTests: XCTestCase {
         XCTAssertFalse(KindleTurnContract.confirms(progress: .backward, beforeFingerprint: "a", afterFingerprint: "b", semanticActionDispatched: true, stableVisualSamples: 2))
         XCTAssertEqual(KindleTurnContract.progress(beforeLocation: 2, afterLocation: 2, beforeRenderer: 10, afterRenderer: 11), .forward)
         XCTAssertEqual(KindleTurnContract.progressNumber("स्थान १२३"), 123)
+        XCTAssertEqual(
+            KindleAutoAdvanceRecoveryContract.action(
+                oldKey: "page-10",
+                visibleKey: "page-11",
+                retryAttempt: 0,
+                dispatchEvidence: .dispatched
+            ),
+            .resumeVisiblePage("page-11"),
+            "A delayed but completed first turn must resume the visible page without another click"
+        )
+        XCTAssertEqual(
+            KindleAutoAdvanceRecoveryContract.action(
+                oldKey: "page-10",
+                visibleKey: "page-10",
+                retryAttempt: 0,
+                dispatchEvidence: .notDispatched
+            ),
+            .retryPageTurn,
+            "An unchanged, stable page gets one bounded recovery attempt"
+        )
+        XCTAssertEqual(
+            KindleAutoAdvanceRecoveryContract.action(
+                oldKey: "page-10",
+                visibleKey: "page-10",
+                retryAttempt: 1,
+                dispatchEvidence: .notDispatched
+            ),
+            .stop,
+            "A second failed action must not loop or repeatedly advance"
+        )
+        XCTAssertEqual(
+            KindleAutoAdvanceRecoveryContract.action(
+                oldKey: "page-10",
+                visibleKey: "",
+                retryAttempt: 0,
+                dispatchEvidence: .unknown
+            ),
+            .stop,
+            "An unknown visual page cannot authorize a non-idempotent retry"
+        )
+        XCTAssertEqual(
+            KindleAutoAdvanceRecoveryContract.action(
+                oldKey: "page-10",
+                visibleKey: "page-10",
+                retryAttempt: 0,
+                dispatchEvidence: .dispatched
+            ),
+            .stop,
+            "A known dispatched action must never be sent again while its visual result is uncertain"
+        )
         XCTAssertTrue(KindleWebScripts.pageCaptureBootstrap.contains("crKindleOcrMaxWidth = 2048"))
         XCTAssertTrue(KindleWebScripts.pageCaptureBootstrap.contains("toDataURL('image/png')"))
         XCTAssertFalse(KindleWebScripts.pageCaptureBootstrap.contains("toDataURL('image/jpeg', quality)"))

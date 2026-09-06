@@ -547,6 +547,45 @@ enum KindleTurnContract {
     }
 }
 
+enum KindleAutoAdvanceRecoveryAction: Equatable {
+    case resumeVisiblePage(String)
+    case retryPageTurn
+    case stop
+}
+
+enum KindlePageTurnDispatchEvidence: Equatable {
+    case unknown
+    case notDispatched
+    case dispatched
+}
+
+/// A Kindle page action is not idempotent. Inspect the rendered page before
+/// deciding whether one bounded retry is safe, so a delayed first action can
+/// never be followed blindly by another action that skips a page.
+enum KindleAutoAdvanceRecoveryContract {
+    static let maximumPageTurnRetries = 1
+
+    static func action(
+        oldKey rawOldKey: String,
+        visibleKey rawVisibleKey: String,
+        retryAttempt: Int,
+        dispatchEvidence: KindlePageTurnDispatchEvidence
+    ) -> KindleAutoAdvanceRecoveryAction {
+        let oldKey = rawOldKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let visibleKey = rawVisibleKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !visibleKey.isEmpty, visibleKey != oldKey {
+            return .resumeVisiblePage(visibleKey)
+        }
+        if dispatchEvidence == .notDispatched,
+           !oldKey.isEmpty,
+           visibleKey == oldKey,
+           retryAttempt < maximumPageTurnRetries {
+            return .retryPageTurn
+        }
+        return .stop
+    }
+}
+
 /// External Kindle navigation is user intent, not a visual-layout heuristic.
 /// OCR preloading and React surface reconciliation can temporarily change the
 /// candidate reported by `__crKindleState`; that visual drift must never stop
