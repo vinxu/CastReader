@@ -10,6 +10,339 @@ import UIKit
 
 class CastReaderUITests: XCTestCase {
 
+    /// Explicitly opt in only after the account owner authorizes syncing the
+    /// already signed-in Kobo session. This test never enters credentials or
+    /// clears the shared WebKit profile, and ordinary CI skips it.
+    func testKoboAuthorizedLiveShelfSync() throws {
+        let environment = ProcessInfo.processInfo.environment
+        try XCTSkipUnless(
+            environment["CASTREADER_KOBO_LIVE_SYNC"] == "1",
+            "Live Kobo sync requires CASTREADER_KOBO_LIVE_SYNC=1 after user authorization"
+        )
+        guard let rawCount = environment["CASTREADER_KOBO_LIVE_EXPECTED_BOOKS"],
+              let expectedCount = Int(rawCount), expectedCount > 0 else {
+            XCTFail("Set CASTREADER_KOBO_LIVE_EXPECTED_BOOKS to the verified positive book count")
+            return
+        }
+
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-CastReaderKoboHomeValidation",
+            "-CastReaderSkipLibraryOnboarding",
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-interfaceLanguage", "en",
+        ]
+        app.launch()
+        openKoboConnectionFromHome(app)
+
+        let sync = app.buttons["koboSyncButton"]
+        let syncReady = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == true AND hittable == true AND enabled == true"),
+            object: sync
+        )
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [syncReady], timeout: 60), .completed,
+            "The already authorized Kobo shelf must reach a tappable native sync action"
+        )
+        XCTAssertTrue(
+            app.staticTexts["Found \(expectedCount) books, ready to sync."].exists,
+            "The complete shelf must match the independently verified account book count"
+        )
+        keepScreenshot(of: app, named: "Kobo-authorized-live-\(expectedCount)-ready")
+
+        sync.tap()
+        XCTAssertTrue(
+            app.staticTexts["Synced \(expectedCount) books."].waitForExistence(timeout: 15),
+            "The authorized live shelf must commit with the same verified count"
+        )
+        keepScreenshot(of: app, named: "Kobo-authorized-live-\(expectedCount)-synced")
+        returnFromKoboConnectionToHome(app)
+        let homeBooks = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfBook.kobo."))
+        XCTAssertTrue(homeBooks.firstMatch.waitForExistence(timeout: 10))
+        XCTAssertEqual(homeBooks.count, expectedCount)
+        keepScreenshot(of: app, named: "Kobo-live-home-after-sync")
+        let bookIDs = homeBooks.allElementsBoundByIndex.map(\.identifier)
+        for (index, identifier) in bookIDs.enumerated() {
+            let book = app.buttons[identifier]
+            scrollTo(book, in: app)
+            XCTAssertTrue(book.isHittable)
+            book.tap()
+            let reader = app.webViews["koboReaderWebView"]
+            XCTAssertTrue(reader.waitForExistence(timeout: 30), "Home book must enter the actual reader")
+            XCTAssertTrue(app.buttons["readerMinimizeButton"].exists)
+            // Actual parsed-content readiness is checked below after the
+            // official reader loads; a native title alone is not evidence.
+            let expectedUUID = String(identifier.dropFirst("homeShelfBook.kobo.".count))
+            XCTAssertTrue(waitForKoboReadablePage(reader, bookUUID: expectedUUID, timeout: 90), "Official Kobo reader must provide real parsed text")
+            keepScreenshot(of: app, named: "Kobo-live-book-\(index + 1)-readable")
+            let before = reader.value as? String
+            let next = app.buttons["readerNextPageButton"]
+            XCTAssertTrue(next.isHittable)
+            next.tap()
+            XCTAssertTrue(waitForKoboReadablePage(reader, bookUUID: expectedUUID, excluding: before, timeout: 30), "Next page must produce different real text")
+            keepScreenshot(of: app, named: "Kobo-live-book-\(index + 1)-next-page")
+            app.buttons["readerMinimizeButton"].tap()
+        }
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(homeBooks.firstMatch.waitForExistence(timeout: 15))
+        XCTAssertEqual(homeBooks.count, expectedCount, "A fresh process must reload the shelf on Home")
+        keepScreenshot(of: app, named: "Kobo-live-home-persisted-after-relaunch")
+    }
+
+    private func koboHomeLaunchArguments() -> [String] {
+        ["-CastReaderKoboHomeValidation", "-CastReaderSkipLibraryOnboarding",
+         "-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en"]
+    }
+
+    private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<10 where !element.isHittable { app.swipeUp() }
+    }
+
+    private func openKoboConnectionFromHome(_ app: XCUIApplication) {
+        let sources = app.buttons["homeShelfSourcesButton"]
+        XCTAssertTrue(sources.waitForExistence(timeout: 15))
+        sources.tap()
+        let connect = app.buttons["shelfSourcePrimaryAction.kobo"]
+        XCTAssertTrue(connect.waitForExistence(timeout: 10))
+        scrollTo(connect, in: app)
+        connect.tap()
+        XCTAssertTrue(app.webViews["koboBindingWebView"].waitForExistence(timeout: 15))
+    }
+
+    private func returnFromKoboConnectionToHome(_ app: XCUIApplication) {
+        app.buttons["Done"].tap()
+        let close = app.buttons["Close"].firstMatch
+        XCTAssertTrue(close.waitForExistence(timeout: 10))
+        close.tap()
+        XCTAssertTrue(app.buttons["homeShelfSourcesButton"].waitForExistence(timeout: 10))
+    }
+
+    private func waitForKoboReadablePage(_ reader: XCUIElement, bookUUID: String, excluding previous: String? = nil, timeout: TimeInterval) -> Bool {
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            guard let value = reader.value as? String else { return false }
+            let fields = value.split(separator: ":").map(String.init)
+            guard fields.count == 4, fields[0] == "ready", fields[1] == bookUUID,
+                  let count = Int(fields[2]), count > 0 else { return false }
+            return previous?.split(separator: ":").last.map(String.init) != fields[3]
+        }, object: reader)
+        return XCTWaiter.wait(for: [ready], timeout: timeout) == .completed
+    }
+
+    func testKoboHundredBooksBindSyncAndPersistOnHome() throws {
+        let app = XCUIApplication()
+        app.launchArguments = koboHomeLaunchArguments() + [
+            "-CastReaderKoboHundredShelfFixture", "-CastReaderResetKoboHundredFixture",
+        ]
+        app.launch()
+        openKoboConnectionFromHome(app)
+        let sync = app.buttons["koboSyncButton"]
+        XCTAssertTrue(sync.waitForExistence(timeout: 50))
+        XCTAssertTrue(app.staticTexts["Found 100 books, ready to sync."].exists)
+        keepScreenshot(of: app, named: "Kobo-100-four-pages-ready")
+        sync.tap()
+        XCTAssertTrue(app.staticTexts["Synced 100 books."].waitForExistence(timeout: 15))
+        returnFromKoboConnectionToHome(app)
+        let rail = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "homeShelfBook.kobo."))
+        XCTAssertTrue(rail.firstMatch.waitForExistence(timeout: 10))
+        let viewAll = app.descendants(matching: .any)["homeShelfViewAll.kobo"].firstMatch
+        let tree = XCTAttachment(string: app.debugDescription)
+        tree.name = "Kobo-100-home-accessibility"
+        tree.lifetime = .keepAlways
+        add(tree)
+        scrollTo(viewAll, in: app)
+        XCTAssertTrue(viewAll.isHittable)
+        keepScreenshot(of: app, named: "Kobo-100-home-rail")
+        viewAll.tap()
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        for number in [1, 25, 26, 50, 51, 75, 76, 100] {
+            search.tap()
+            if let old = search.value as? String, old.contains("合成测试书") {
+                search.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: old.count))
+            }
+            search.typeText(String(format: "合成测试书 %03d", number))
+            let uuid = String(format: "b1000000-0000-4000-8000-%012d", number)
+            XCTAssertTrue(app.buttons["koboLibraryBook.\(uuid)"].waitForExistence(timeout: 5),
+                          "Every page boundary, including book 100, must be available in the saved library")
+        }
+        keepScreenshot(of: app, named: "Kobo-100-last-book-in-library")
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "-CastReaderResetKoboHundredFixture" }
+        app.launch()
+        XCTAssertTrue(rail.firstMatch.waitForExistence(timeout: 15))
+        app.buttons["homeShelfSourcesButton"].tap()
+        XCTAssertTrue(app.buttons["shelfSourcePrimaryAction.kobo"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Synced 100 books."].waitForExistence(timeout: 10),
+                      "After restart the actual source UI must report the full persisted count")
+        keepScreenshot(of: app, named: "Kobo-100-count-persisted-after-relaunch")
+    }
+
+    /// A local form exercises the real binding UI without credentials or an
+    /// identity-provider request. In particular, delayed shelf probes must not
+    /// put the native sign-in card back over an already visible login form.
+    func testKoboLoginFixtureKeepsFormUsableWithoutNativeOverlay() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-CastReaderKoboLoginFixture",
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-interfaceLanguage", "en",
+        ]
+        app.launch()
+
+        let web = app.webViews["koboBindingWebView"]
+        XCTAssertTrue(web.waitForExistence(timeout: 15))
+        let email = web.textFields["Email"]
+        let password = web.secureTextFields["Password"]
+        XCTAssertTrue(email.waitForExistence(timeout: 10))
+        XCTAssertTrue(password.exists)
+        XCTAssertTrue(app.buttons["koboReloadButton"].exists)
+
+        let card = app.descendants(matching: .any)["koboBindingCard"].firstMatch
+        XCTAssertTrue(waitForDisappearance(card, timeout: 5))
+        let cardReappears = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == true"), object: card
+        )
+        cardReappears.isInverted = true
+        XCTAssertEqual(
+            XCTWaiter.wait(for: [cardReappears], timeout: 2), .completed,
+            "The original bug reclassified the login page during its first four probes"
+        )
+        XCTAssertFalse(app.buttons["koboSignInButton"].exists)
+
+        email.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        email.typeText("fixture@example.invalid")
+        XCTAssertEqual(email.value as? String, "fixture@example.invalid")
+        XCTAssertFalse(card.exists, "The keyboard must never bring back a native overlay")
+        keepScreenshot(of: app, named: "Kobo-login-email-keyboard-unobstructed")
+
+        for _ in 0..<3 where !password.isHittable { web.swipeUp() }
+        XCTAssertTrue(password.isHittable, "The webpage password field must remain reachable")
+        password.tap()
+        password.typeText("local-fixture-only")
+        XCTAssertFalse(card.exists)
+        XCTAssertFalse(app.buttons["koboSignInButton"].exists)
+
+        let submit = web.buttons["Continue"]
+        for _ in 0..<3 where !submit.isHittable { web.swipeUp() }
+        XCTAssertTrue(submit.isHittable, "The webpage action must be tappable with the keyboard open")
+        keepScreenshot(of: app, named: "Kobo-login-password-action-unobstructed")
+        submit.tap()
+        XCTAssertTrue(
+            web.staticTexts["Form submitted locally"].waitForExistence(timeout: 5),
+            "The local form must actually submit, without a network request"
+        )
+        keepScreenshot(of: app, named: "Kobo-login-local-form-submitted")
+    }
+
+    /// A blank document must resolve to visible recovery controls instead of
+    /// leaving a hidden error or a permanent loading state over the WebView.
+    func testKoboBlankFixtureShowsVisibleRetryWithoutCoveringWebView() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-CastReaderKoboBlankFixture",
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-interfaceLanguage", "en",
+        ]
+        app.launch()
+
+        let web = app.webViews["koboBindingWebView"]
+        XCTAssertTrue(web.waitForExistence(timeout: 15))
+        let error = app.staticTexts["koboBindingError"]
+        XCTAssertTrue(error.waitForExistence(timeout: 10))
+        XCTAssertTrue(error.isHittable, "The retry explanation must be visible")
+        let reload = app.buttons["koboReloadButton"]
+        XCTAssertTrue(reload.isHittable)
+        XCTAssertTrue(reload.isEnabled)
+
+        let card = app.descendants(matching: .any)["koboBindingCard"].firstMatch
+        XCTAssertTrue(card.exists)
+        XCTAssertLessThanOrEqual(
+            web.frame.maxY, card.frame.minY + 1,
+            "The compact status must occupy space below the webpage, not cover it"
+        )
+        keepScreenshot(of: app, named: "Kobo-blank-visible-retry-below-webpage")
+    }
+
+    /// Kobo can open an empty popup first and fill it with its official form.
+    /// The native sign-in action must retain that WebKit window and provide a
+    /// local close path without treating cancellation as login success.
+    func testKoboPopupFixtureKeepsBlankWindowLoginAndCloseUsable() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-CastReaderKoboPopupFixture",
+            "-AppleLanguages", "(en)",
+            "-AppleLocale", "en_US",
+            "-interfaceLanguage", "en",
+        ]
+        app.launch()
+
+        let main = app.webViews["koboBindingWebView"]
+        XCTAssertTrue(main.waitForExistence(timeout: 15))
+        let signIn = app.buttons["koboSignInButton"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 10))
+        XCTAssertTrue(signIn.isHittable)
+        signIn.tap()
+
+        let popup = app.webViews["koboLoginPopupWebView"]
+        XCTAssertTrue(popup.waitForExistence(timeout: 10))
+        let password = popup.secureTextFields["Password"]
+        XCTAssertTrue(password.waitForExistence(timeout: 5))
+        keepScreenshot(of: app, named: "Kobo-popup-before-input")
+        // Exercise a real touch at the rendered control: WebKit's about:blank
+        // popup can report no AX hit point even with a visible input frame.
+        password.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        password.typeText("local-popup-only")
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        XCTAssertFalse((password.value as? String ?? "").isEmpty,
+                       "The popup must accept real keyboard input")
+        XCTAssertFalse(
+            app.descendants(matching: .any)["koboBindingCard"].firstMatch.exists,
+            "Native shelf status must not cover an authentication popup"
+        )
+        let closePopup = app.buttons["koboClosePopupButton"]
+        XCTAssertTrue(closePopup.isHittable)
+        keepScreenshot(of: app, named: "Kobo-popup-local-login-unobstructed")
+
+        closePopup.tap()
+        XCTAssertTrue(waitForDisappearance(popup, timeout: 5))
+        XCTAssertTrue(main.exists)
+        XCTAssertTrue(signIn.waitForExistence(timeout: 10))
+        XCTAssertTrue(signIn.isHittable)
+        XCTAssertFalse(app.buttons["koboClosePopupButton"].exists)
+        keepScreenshot(of: app, named: "Kobo-popup-cancel-returns-to-sign-in")
+    }
+
+    /// Runs the real connection view and commit path against an isolated,
+    /// delayed four-page shelf. No Kobo account or remote book data is used.
+    func testKoboFourPageShelfFixtureCollectsAndCommits77Books() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-CastReaderKoboShelfFixture",
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN",
+        ]
+        app.launch()
+        let sync = app.buttons["koboSyncButton"]
+        XCTAssertTrue(sync.waitForExistence(timeout: 45))
+        let ready = app.staticTexts.matching(NSPredicate(
+            format: "label == %@ OR label == %@", "找到 77 本书，可以同步。", "Found 77 books, ready to sync."
+        )).firstMatch
+        XCTAssertTrue(ready.exists, "Only the union of all four pages may enable sync")
+        keepScreenshot(of: app, named: "Kobo-4-pages-77-ready")
+        sync.tap()
+        let synced = app.staticTexts.matching(NSPredicate(
+            format: "label == %@ OR label == %@", "已同步 77 本书。", "Synced 77 books."
+        )).firstMatch
+        XCTAssertTrue(synced.waitForExistence(timeout: 10), "The verified 77-book shelf must commit")
+        XCTAssertFalse(sync.exists)
+        keepScreenshot(of: app, named: "Kobo-4-pages-77-synced")
+    }
+
     /// 声音克隆发布后必须显示「已创建」入口；未登录测试态仍由账号闸门保护。
     func testVoiceBrowserShowsCreatedTabAndKeepsAccountGate() throws {
         let app = launchZh()

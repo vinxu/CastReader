@@ -330,6 +330,81 @@ enum KoboBookValidator {
     }
 }
 
+/// One automatic origin reload is allowed before the first readable page.
+/// A ticket separates the timeout decision from its delayed WebKit action so
+/// a page that commits in the meantime can permanently cancel that action.
+struct KoboInitialReaderRecoveryPolicy {
+    enum Decision: Equatable {
+        case scheduleReload(UUID)
+        case wait
+        case showError
+        case ignore
+
+        static func == (lhs: Self, rhs: Self) -> Bool {
+            switch (lhs, rhs) {
+            case (.scheduleReload(let lhs), .scheduleReload(let rhs)):
+                return lhs == rhs
+            case (.wait, .wait), (.showError, .showError), (.ignore, .ignore):
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
+    private var didScheduleReload = false
+    private var hasCommittedPage = false
+    private var pendingReload: UUID?
+    private var pendingBookID: String?
+
+    mutating func readinessTimedOut(
+        readerURL: URL?,
+        bookID: String,
+        isActive: Bool,
+        recoveryInProgress: Bool
+    ) -> Decision {
+        guard !hasCommittedPage else { return .ignore }
+        guard Self.matchesBoundBook(readerURL, bookID: bookID) else {
+            return .showError
+        }
+        if pendingReload != nil || recoveryInProgress { return .wait }
+        guard !didScheduleReload, isActive else { return .showError }
+        let ticket = UUID()
+        didScheduleReload = true
+        pendingReload = ticket
+        pendingBookID = bookID
+        return .scheduleReload(ticket)
+    }
+
+    mutating func consumeReload(
+        _ ticket: UUID,
+        readerURL: URL?,
+        bookID: String,
+        isActive: Bool
+    ) -> Bool {
+        guard pendingReload == ticket else { return false }
+        let scheduledBookID = pendingBookID
+        pendingReload = nil
+        pendingBookID = nil
+        return !hasCommittedPage && isActive && scheduledBookID == bookID
+            && Self.matchesBoundBook(readerURL, bookID: bookID)
+    }
+
+    mutating func pageDidCommit() {
+        hasCommittedPage = true
+        pendingReload = nil
+        pendingBookID = nil
+    }
+
+    private static func matchesBoundBook(_ url: URL?, bookID: String) -> Bool {
+        guard let canonical = KoboBookValidator.usableReaderURL(url?.absoluteString),
+              let bookUUID = KoboBookValidator.bookUUID(from: canonical) else {
+            return false
+        }
+        return KoboBookValidator.stableID(bookUUID: bookUUID) == bookID
+    }
+}
+
 enum KoboWebAccessPolicy {
     static func allowsReaderNavigation(_ url: URL?) -> Bool {
         guard let components = strictHTTPSComponents(url),
@@ -465,6 +540,10 @@ struct KoboScanResult {
     var hasAccountEvidence: Bool
     var isShelfContext: Bool
     var isCompleteSnapshot: Bool
+    var atScrollEnd: Bool
+    var hasPendingWork: Bool
+    var pageFingerprint: String
+    var pagination: KoboShelfPagination
     var account: KoboScanAccountEvidence?
     var books: [KoboBook]
 
@@ -473,6 +552,10 @@ struct KoboScanResult {
         hasAccountEvidence = raw["hasAccountEvidence"] as? Bool ?? false
         isShelfContext = raw["isShelfContext"] as? Bool ?? false
         isCompleteSnapshot = raw["isCompleteSnapshot"] as? Bool ?? false
+        atScrollEnd = raw["atScrollEnd"] as? Bool ?? false
+        hasPendingWork = raw["hasPendingWork"] as? Bool ?? true
+        pageFingerprint = raw["pageFingerprint"] as? String ?? ""
+        pagination = KoboShelfPagination(raw["pagination"] as? [String: Any])
         let declaredAuthenticated = raw["authenticated"] as? Bool ?? false
         authenticated = declaredAuthenticated
             && hasAccountEvidence
@@ -574,9 +657,11 @@ enum KoboShelfSyncContract {
         bookCount: Int,
         account: KoboAccountInfo?,
         reachedEnd: Bool,
-        stableEndPasses: Int
+        stableEndPasses: Int,
+        completeTraversal: Bool = false
     ) -> Bool {
-        guard isStableSnapshot(
+        guard completeTraversal, account?.isCompleteSnapshot == true,
+              isStableSnapshot(
             bookCount: bookCount,
             reachedEnd: reachedEnd,
             stableEndPasses: stableEndPasses
@@ -592,5 +677,251 @@ enum KoboShelfSyncContract {
             return account?.isCompleteSnapshot == true
         }
         return true
+    }
+}
+
+/// Navigation evidence belongs to one page, never to the whole library.
+/// Missing pagination data is deliberately untrusted (including old scripts).
+struct KoboShelfPagination {
+    let hasPagination: Bool
+    let currentPage: Int?
+    let totalPages: Int?
+    let isFirstPage: Bool
+    let isLastPage: Bool
+    let hasNextPage: Bool
+    let canGoToFirstPage: Bool
+    let blocked: Bool
+    let pageKey: String
+
+    init(_ raw: [String: Any]?) {
+        hasPagination = raw?["hasPagination"] as? Bool ?? false
+        currentPage = (raw?["currentPage"] as? Int).flatMap { $0 > 0 ? $0 : nil }
+        totalPages = (raw?["totalPages"] as? Int).flatMap { $0 > 0 ? $0 : nil }
+        isFirstPage = raw?["isFirstPage"] as? Bool ?? false
+        isLastPage = raw?["isLastPage"] as? Bool ?? false
+        hasNextPage = raw?["hasNextPage"] as? Bool ?? false
+        canGoToFirstPage = raw?["canGoToFirstPage"] as? Bool ?? false
+        blocked = raw?["blocked"] as? Bool ?? true
+        pageKey = raw?["pageKey"] as? String ?? ""
+    }
+}
+
+/// A deterministic, navigation-independent scan. Only this accumulator can
+/// promote a page's completion flag into trusted whole-library completion.
+struct KoboShelfScanPolicy {
+    enum Decision: Equatable {
+        case wait
+        case resetToFirstPage
+        case advancePage
+        case complete
+        case failed(String)
+    }
+
+    private struct Transition {
+        let pageKey: String
+        let fingerprint: String
+        let expectedPage: Int?
+        let returningToFirst: Bool
+        let deadline: TimeInterval
+    }
+
+    static let scanTimeout: TimeInterval = 180
+    static let transitionTimeout: TimeInterval = 20
+    private let startedAt: TimeInterval
+    private var identity: String?
+    private var currentPageKey: String?
+    private var transition: Transition?
+    private var visitedPageKeys: Set<String> = []
+    private var visitedFingerprints: Set<String> = []
+    private var pageBooks: [String: KoboBook] = [:]
+    private var stableSignature: String?
+    private var terminalDecision: Decision?
+    private(set) var stableEndPasses = 0
+    private(set) var books: [String: KoboBook] = [:]
+    private(set) var completedPageCount = 0
+    private(set) var account: KoboAccountInfo?
+    private(set) var completeTraversal = false
+
+    init(startedAt: TimeInterval) {
+        self.startedAt = startedAt
+    }
+
+    var isAwaitingPageChange: Bool { transition != nil }
+    var collectedBookCount: Int { Set(books.keys).union(pageBooks.keys).count }
+
+    mutating func observe(_ result: KoboScanResult?, now: TimeInterval) -> Decision {
+        if let terminalDecision { return terminalDecision }
+        guard now - startedAt < Self.scanTimeout else {
+            return fail("scan_timeout")
+        }
+        if let transition, now >= transition.deadline {
+            return fail("page_transition_timeout")
+        }
+        guard let result else {
+            resetStability()
+            return .wait
+        }
+
+        // An explicit different account is never a hydration retry. Compare it
+        // before accepting books, even when the rest of the DOM is incomplete.
+        if let candidate = result.account?.identity,
+           let identity, candidate != identity {
+            return fail("account_changed")
+        }
+        guard result.authenticated,
+              let evidence = result.account,
+              KoboAccountIdentity.isValidStoredIdentity(evidence.identity),
+              let candidateIdentity = evidence.identity else {
+            resetStability()
+            return .wait
+        }
+        if identity == nil { identity = candidateIdentity }
+        guard !result.hasPendingWork else {
+            resetStability()
+            return .wait
+        }
+
+        let page = result.pagination
+        guard !page.blocked, !page.pageKey.isEmpty else {
+            // A full navigation can expose an authenticated shell before its
+            // paginator hydrates. Its transition deadline remains the limit.
+            if transition != nil {
+                resetStability()
+                return .wait
+            }
+            return fail("pagination_unrecognized")
+        }
+        if let current = page.currentPage, let total = page.totalPages,
+           current > total {
+            return fail("pagination_inconsistent")
+        }
+        if !page.hasPagination,
+           (!page.isFirstPage || !page.isLastPage || page.hasNextPage) {
+            return fail("pagination_inconsistent")
+        }
+
+        if let transition {
+            let reachedExpectedPage = transition.returningToFirst
+                ? page.isFirstPage && (page.currentPage == nil || page.currentPage == 1)
+                : transition.expectedPage.map { page.currentPage == $0 } ?? true
+            // The URL/page number can change before old cards are replaced.
+            // Require independently changed book content before accepting it.
+            guard reachedExpectedPage,
+                  page.pageKey != transition.pageKey,
+                  result.pageFingerprint != transition.fingerprint,
+                  !result.pageFingerprint.isEmpty else {
+                resetStability()
+                return .wait
+            }
+            guard !visitedPageKeys.contains(page.pageKey),
+                  !visitedFingerprints.contains(result.pageFingerprint) else {
+                return fail("pagination_loop")
+            }
+            self.transition = nil
+            currentPageKey = page.pageKey
+            pageBooks = [:]
+            resetStability()
+        } else if let currentPageKey {
+            guard currentPageKey == page.pageKey else {
+                return fail("unexpected_page_change")
+            }
+        } else {
+            guard page.isFirstPage,
+                  page.currentPage == nil || page.currentPage == 1 else {
+                guard page.canGoToFirstPage else {
+                    return fail("first_page_unverified")
+                }
+                transition = Transition(
+                    pageKey: page.pageKey,
+                    fingerprint: result.pageFingerprint,
+                    expectedPage: 1,
+                    returningToFirst: true,
+                    deadline: now + Self.transitionTimeout
+                )
+                return .resetToFirstPage
+            }
+            currentPageKey = page.pageKey
+        }
+
+        for book in result.books {
+            pageBooks[book.id] = KoboBookMetadata.merged(
+                existing: pageBooks[book.id], incoming: book
+            )
+        }
+        guard result.atScrollEnd else {
+            resetStability()
+            return .wait
+        }
+        // A transient empty paginated page is not a usable destination.
+        guard !page.hasPagination || !pageBooks.isEmpty else {
+            resetStability()
+            return .wait
+        }
+        let signature = page.pageKey + "\n" + result.pageFingerprint
+            + "\n" + pageBooks.keys.sorted().joined(separator: "|")
+        if stableSignature == signature {
+            stableEndPasses += 1
+        } else {
+            stableSignature = signature
+            stableEndPasses = 1
+        }
+        guard stableEndPasses >= KoboShelfSyncContract.requiredStablePasses(
+            bookCount: pageBooks.count
+        ) else { return .wait }
+
+        if page.hasNextPage {
+            guard !page.isLastPage,
+                  page.totalPages == nil || page.currentPage != page.totalPages else {
+                return fail("pagination_inconsistent")
+            }
+            finishCurrentPage(result)
+            transition = Transition(
+                pageKey: page.pageKey,
+                fingerprint: result.pageFingerprint,
+                expectedPage: page.currentPage.map { $0 + 1 },
+                returningToFirst: false,
+                deadline: now + Self.transitionTimeout
+            )
+            resetStability()
+            return .advancePage
+        }
+
+        guard page.isLastPage, result.isCompleteSnapshot else {
+            return fail("shelf_end_unverified")
+        }
+        // Numeric pagination also proves there were no skipped pages.
+        if let total = page.totalPages, completedPageCount + 1 != total {
+            return fail("incomplete_page_traversal")
+        }
+        finishCurrentPage(result)
+        var completedAccount = KoboAccountInfo(label: evidence)
+        completedAccount.isCompleteSnapshot = true
+        account = completedAccount
+        completeTraversal = true
+        terminalDecision = .complete
+        return .complete
+    }
+
+    private mutating func finishCurrentPage(_ result: KoboScanResult) {
+        for book in pageBooks.values {
+            books[book.id] = KoboBookMetadata.merged(
+                existing: books[book.id], incoming: book
+            )
+        }
+        visitedPageKeys.insert(result.pagination.pageKey)
+        visitedFingerprints.insert(result.pageFingerprint)
+        completedPageCount += 1
+    }
+
+    private mutating func resetStability() {
+        stableSignature = nil
+        stableEndPasses = 0
+    }
+
+    private mutating func fail(_ reason: String) -> Decision {
+        completeTraversal = false
+        account = nil
+        terminalDecision = .failed(reason)
+        return .failed(reason)
     }
 }

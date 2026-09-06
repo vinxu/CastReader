@@ -2,6 +2,10 @@ import XCTest
 @testable import CastReader
 
 final class VoiceCloneTests: XCTestCase {
+    func testAdaptiveVoiceCreationHasEndToEndTimeoutHeadroom() {
+        XCTAssertEqual(VoiceCloneService.creationRequestTimeout, 150)
+    }
+
     @MainActor
     func testRecordingVisualLevelExpandsSpeechAndReleasesSmoothly() {
         let silence = VoiceCloneRecorder.visualLevel(

@@ -55,6 +55,7 @@ struct GoogleBooksHomeSection: View {
                         }
                     }
                 }
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("homeShelfSection.google_books")
             }
         }
@@ -147,6 +148,7 @@ enum GoogleBooksReaderLauncher {
 struct GoogleBooksLibraryConnectView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var model: GoogleBooksLibrarySyncViewModel
+    @State private var keyboardIsVisible = false
 
     init(
         analyticsSession: AnalyticsLibraryConnectionSession? = nil,
@@ -166,19 +168,19 @@ struct GoogleBooksLibraryConnectView: View {
 
     var body: some View {
         NavigationView {
-            ZStack(alignment: .bottom) {
-                GoogleBooksWebViewContainer(webView: model.webView)
-                    .accessibilityIdentifier("googleBooksBindingWebView")
-                    .ignoresSafeArea(edges: .bottom)
-                if let popupWebView = model.popupWebView {
-                    GoogleBooksWebViewContainer(webView: popupWebView)
-                        .accessibilityIdentifier("googleBooksLoginPopupWebView")
-                        .background(AppTheme.background)
-                        .ignoresSafeArea(edges: .bottom)
-                }
-                // A Google-owned popup must have the full viewport. Native
-                // bottom chrome would otherwise cover password/passkey fields.
-                if model.popupWebView == nil {
+            VStack(spacing: 0) {
+                GoogleBooksWebViewContainer(webView: model.activeWebView)
+                    .id(ObjectIdentifier(model.activeWebView))
+                    .accessibilityIdentifier(model.popupWebView == nil
+                        ? "googleBooksBindingWebView" : "googleBooksLoginPopupWebView")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
+                // Recovery remains reachable even on a failed credential
+                // page; the footer reserves space instead of covering fields.
+                if let error = model.errorText {
+                    inlineError(error).padding(12)
+                        .background(.regularMaterial)
+                } else if !keyboardIsVisible, model.popupWebView == nil {
                     if model.showsSyncBar {
                         syncBar
                     } else if model.showsLoginGuide {
@@ -192,12 +194,38 @@ struct GoogleBooksLibraryConnectView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(AppLocalized("关闭")) { dismiss() }
                 }
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    if model.popupWebView != nil {
+                        Button { model.closePopup() } label: {
+                            Image(systemName: "xmark")
+                        }
+                        .accessibilityLabel(AppLocalized("关闭"))
+                        .accessibilityIdentifier("googleBooksClosePopupButton")
+                    }
+                    Button { model.goBack() } label: {
+                        Image(systemName: "chevron.left")
+                    }
+                    .disabled(!model.canGoBack)
+                    .accessibilityLabel(AppLocalized("返回"))
+                    .accessibilityIdentifier("googleBooksBackButton")
+                    Button { model.reloadActivePage() } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .accessibilityLabel(AppLocalized("重新加载"))
+                    .accessibilityIdentifier("googleBooksReloadButton")
+                }
             }
             .onAppear {
                 model.recordConnectionPresented()
                 model.loadIfNeeded()
             }
             .onDisappear { model.closeConnection() }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                keyboardIsVisible = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                keyboardIsVisible = false
+            }
             .onChange(of: model.liveLoginGateDidSync) { _, didSync in
                 if didSync { dismiss() }
             }
@@ -206,7 +234,7 @@ struct GoogleBooksLibraryConnectView: View {
     }
 
     private var loginGuideBar: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "person.badge.key")
                     .font(.title3.weight(.semibold))
@@ -216,10 +244,6 @@ struct GoogleBooksLibraryConnectView: View {
                     Text(AppLocalized("请登录你的 Google 账号"))
                         .font(.subheadline.weight(.semibold))
                         .foregroundColor(AppTheme.foreground)
-                    Text(AppLocalized("登录后会自动打开「我的图书」，供你同步到 CastReader。CastReader 不会保存你的密码。"))
-                        .font(.caption)
-                        .foregroundColor(AppTheme.mutedForeground)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }
@@ -237,16 +261,12 @@ struct GoogleBooksLibraryConnectView: View {
                     Text(AppLocalized("登录"))
                 }
                     .font(.headline)
-                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
             }
             .buttonStyle(.borderedProminent)
             .tint(AppTheme.primary)
             .disabled(model.isStartingSignIn)
             .accessibilityIdentifier("googleBooksSignInButton")
-            if let error = model.errorText {
-                inlineError(error)
-            }
         }
         .padding(14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
@@ -284,9 +304,6 @@ struct GoogleBooksLibraryConnectView: View {
                         .lineLimit(2)
                 }
                 Spacer()
-            }
-            if let error = model.errorText {
-                inlineError(error)
             }
             if model.showsSyncAction && model.canSyncLibrary {
                 Button {
@@ -330,6 +347,7 @@ struct GoogleBooksLibraryConnectView: View {
                 .font(.caption)
                 .foregroundColor(AppTheme.destructive)
                 .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("googleBooksBindingError")
             Spacer(minLength: 4)
             Button(AppLocalized("重试")) { model.retry() }
                 .font(.caption.weight(.semibold))
@@ -391,10 +409,13 @@ struct GoogleBooksLibraryView: View {
             }
             .padding(18)
         }
+        .reservesMiniPlayerSpace()
         .background(AppTheme.background.ignoresSafeArea())
         .navigationTitle(AppLocalized("Google Play 图书书架"))
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $query, prompt: AppLocalized("搜索 Google Play 图书"))
+        .searchable(text: $query,
+                    placement: .navigationBarDrawer(displayMode: .always),
+                    prompt: AppLocalized("搜索 Google Play 图书"))
         .onChange(of: query) { _, _ in page = 1 }
         .onChange(of: sort) { _, _ in page = 1 }
         .sheet(isPresented: $showConnect) { GoogleBooksLibraryConnectView() }
@@ -546,865 +567,584 @@ final class GoogleBooksLibrarySyncViewModel: NSObject, ObservableObject, WKNavig
     @Published var statusText = AppLocalized("正在打开 Google Play 图书…")
     @Published var errorText: String?
     @Published private(set) var popupWebView: WKWebView?
+    @Published private(set) var canGoBack = false
     @Published private(set) var isStartingSignIn = false
-    /// DEBUG-only live-account UI tests use this signal to close the sheet
-    /// after the real shelf has been scanned and persisted. Production builds
-    /// never set it.
     @Published private(set) var liveLoginGateDidSync = false
 
     let webView: WKWebView
-    private let store = GoogleBooksLibraryStore.shared
-    private let accountBoundaryToken = AccountContentIsolation.captureBoundaryToken()
+    var activeWebView: WKWebView { popupWebView ?? webView }
+    private let store: GoogleBooksLibraryStore
+    private let accountBoundaryToken: AccountContentBoundaryToken?
+    private let storageBoundary: UUID?
+    private let fixtureKind: String?
     private var didLoad = false
+    private var isClosed = false
+    private var popupStack: [WKWebView] = []
+    private var generation = 0
+    private var navigationTokens: [ObjectIdentifier: WKNavigation] = [:]
+    // Retain retired objects: a bare ObjectIdentifier can be reused after its
+    // WKNavigation dies, incorrectly rejecting a later real navigation.
+    private var retiredNavigations: [ObjectIdentifier: WKNavigation] = [:]
+    private var committedWindows: Set<ObjectIdentifier> = []
+    private var completedScan: GoogleBooksShelfScanPolicy?
     private var pendingBooks: [String: GoogleBooksBook] = [:]
     private var pendingAccount: GoogleBooksAccountInfo?
+    private var observationTask: Task<Void, Never>?
     private var loginPollingTask: Task<Void, Never>?
     private var previewTask: Task<Void, Never>?
     private var shelfRecoveryTask: Task<Void, Never>?
     private var signInLaunchTask: Task<Void, Never>?
-    private var signInRequestGeneration = 0
-    private var activeSignInNavigation: WKNavigation?
     private var didEnterCredentialFlow = false
+    private var backObservation: NSKeyValueObservation?
     private let requestLoader: (WKWebView, URLRequest) -> WKNavigation?
     private let signInURLResolver: (WKWebView) async -> URL?
-    /// Only a settled scan can be committed. `pendingAccount` becomes complete
-    /// on early virtual-list passes too, so it is not sufficient on its own.
-    private var hasStableShelfSnapshot = false
     private let analyticsSession: AnalyticsLibraryConnectionSession
     private let connectionAnalytics: AnalyticsLibraryConnectionRecorder
+    private var lastBindingBlockRescueAt: TimeInterval = -.infinity
 
-    var showsSyncBar: Bool {
-        GoogleBooksBindingFlowContract.showsSyncBar(for: bindingPhase)
-    }
-
-    var showsLoginGuide: Bool {
-        GoogleBooksBindingFlowContract.showsLoginGuide(for: bindingPhase)
-    }
-
-    var showsSyncAction: Bool {
-        GoogleBooksBindingFlowContract.showsSyncAction(for: bindingPhase)
-    }
-
+    var showsSyncBar: Bool { GoogleBooksBindingFlowContract.showsSyncBar(for: bindingPhase) }
+    var showsLoginGuide: Bool { GoogleBooksBindingFlowContract.showsLoginGuide(for: bindingPhase) }
+    var showsSyncAction: Bool { GoogleBooksBindingFlowContract.showsSyncAction(for: bindingPhase) }
     var secondaryStatus: String {
-        if availableCount > 0 {
-            return String(format: AppLocalized("书架中有 %d 本书可以同步"), availableCount)
-        }
+        if availableCount > 0 { return String(format: AppLocalized("书架中有 %d 本书可以同步"), availableCount) }
+        if completedScan?.completeTraversal == true { return AppLocalized("书架为空") }
         if store.books.isEmpty { return AppLocalized("登录成功后将自动进入书架。") }
         return String(format: AppLocalized("已在本机同步 %d 本书。"), store.books.count)
     }
-
     var canSyncLibrary: Bool {
-        hasStableShelfSnapshot && (
-            !pendingBooks.isEmpty
-            || pendingAccount?.hasAccountEvidence == true
-                && pendingAccount?.isShelfContext == true
-                && pendingAccount?.isCompleteSnapshot == true
-        )
+        accountBoundaryToken != nil && storageBoundary != nil
+            && completedScan?.completeTraversal == true && popupWebView == nil
+            && committedWindows.contains(ObjectIdentifier(webView)) && isCurrent(generation)
     }
 
     override convenience init() {
-        self.init(
-            requestLoader: { webView, request in webView.load(request) },
-            signInURLResolver: { webView in
-                await Self.currentPageSignInURL(in: webView)
-            },
-            analyticsSession: AnalyticsLibraryConnectionSession(
-                source: .googleBooks,
-                entryPoint: "google_books_connect"
-            ),
-            entryTapAlreadyTracked: false
-        )
+        self.init(requestLoader: { $0.load($1) }, signInURLResolver: { await Self.currentPageSignInURL(in: $0) })
     }
-
-    convenience init(
-        analyticsSession: AnalyticsLibraryConnectionSession,
-        entryTapAlreadyTracked: Bool
-    ) {
-        self.init(
-            requestLoader: { webView, request in webView.load(request) },
-            signInURLResolver: { webView in
-                await Self.currentPageSignInURL(in: webView)
-            },
-            analyticsSession: analyticsSession,
-            entryTapAlreadyTracked: entryTapAlreadyTracked
-        )
+    convenience init(analyticsSession: AnalyticsLibraryConnectionSession, entryTapAlreadyTracked: Bool) {
+        self.init(requestLoader: { $0.load($1) }, signInURLResolver: { await Self.currentPageSignInURL(in: $0) },
+                  analyticsSession: analyticsSession, entryTapAlreadyTracked: entryTapAlreadyTracked)
     }
-
-    /// Internal injection points keep the native login button contract
-    /// testable without requiring a live Google account.
     init(
         requestLoader: @escaping (WKWebView, URLRequest) -> WKNavigation?,
         signInURLResolver: @escaping (WKWebView) async -> URL?,
-        analyticsSession: AnalyticsLibraryConnectionSession = AnalyticsLibraryConnectionSession(
-            source: .googleBooks,
-            entryPoint: "google_books_connect"
-        ),
+        analyticsSession: AnalyticsLibraryConnectionSession = AnalyticsLibraryConnectionSession(source: .googleBooks, entryPoint: "google_books_connect"),
         entryTapAlreadyTracked: Bool = false
     ) {
+#if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        fixtureKind = args.contains("-CastReaderGoogleBooksLoginFixture") ? "login"
+            : args.contains("-CastReaderGoogleBooksBlankFixture") ? "blank"
+            : args.contains("-CastReaderGoogleBooksPopupFixture") ? "popup"
+            : args.contains("-CastReaderGoogleBooksHundredShelfFixture") ? "hundred" : nil
+#else
+        fixtureKind = nil
+#endif
+        if let fixtureKind, fixtureKind != "hundred" {
+            store = GoogleBooksLibraryStore(defaults: UserDefaults(suiteName: "googlebooks.binding.fixture.\(UUID().uuidString)")!, historyStore: .shared)
+        } else {
+            store = .shared
+        }
+        storageBoundary = store.captureStorageBoundary()
+        accountBoundaryToken = AccountContentIsolation.captureBoundaryToken()
         let config = WKWebViewConfiguration()
-        // 与阅读器共用同一个 data store：这里登录一次，阅读器就是已登录状态。
-        config.websiteDataStore = GoogleWebSession.websiteDataStore
+        config.websiteDataStore = fixtureKind == nil ? GoogleWebSession.websiteDataStore : .nonPersistent()
         config.defaultWebpagePreferences.preferredContentMode = .mobile
+#if DEBUG
+        if fixtureKind == "popup" { config.preferences.javaScriptCanOpenWindowsAutomatically = true }
+#endif
         webView = WKWebView(frame: .zero, configuration: config)
         self.requestLoader = requestLoader
         self.signInURLResolver = signInURLResolver
         self.analyticsSession = analyticsSession
-        self.connectionAnalytics = AnalyticsLibraryConnectionRecorder(
-            session: analyticsSession,
-            entryTapAlreadyTracked: entryTapAlreadyTracked
-        )
+        connectionAnalytics = AnalyticsLibraryConnectionRecorder(session: analyticsSession, entryTapAlreadyTracked: entryTapAlreadyTracked)
         super.init()
-        // Google 会用 UA 判定「不安全的浏览器」并拒绝登录 —— 必须是完整 Mobile Safari UA。
-        webView.customUserAgent = GoogleBooksWebScripts.mobileSafariUserAgent
-        webView.navigationDelegate = self
-        webView.uiDelegate = self
+        configure(webView)
+        observeActiveWindow()
+    }
+
+    private func configure(_ view: WKWebView) {
+        view.customUserAgent = GoogleBooksWebScripts.mobileSafariUserAgent
+        view.navigationDelegate = self
+        view.uiDelegate = self
 #if DEBUG
-        webView.isInspectable = true
+        view.isInspectable = true
 #endif
+    }
+    private func isCurrent(_ revision: Int) -> Bool {
+        guard !isClosed, revision == generation else { return false }
+        if let token = accountBoundaryToken, !AccountContentIsolation.isCurrent(token) { return false }
+        if let storageBoundary, !store.isCurrentStorageBoundary(storageBoundary) { return false }
+        return true
+    }
+    private func isActive(_ view: WKWebView) -> Bool { !isClosed && view === activeWebView }
+    private func isOwned(_ view: WKWebView) -> Bool {
+        !isClosed && (view === webView || popupStack.contains { $0 === view })
+    }
+    private func isCurrentCallback(_ view: WKWebView, _ navigation: WKNavigation?) -> Bool {
+        guard isOwned(view) else { return false }
+        guard let navigation else { return true }
+        guard retiredNavigations[ObjectIdentifier(navigation)] == nil else { return false }
+        return navigationTokens[ObjectIdentifier(view)].map { $0 === navigation } ?? true
+    }
+    private func observeActiveWindow() {
+        backObservation = activeWebView.observe(\.canGoBack, options: [.initial, .new]) { [weak self] _, _ in
+            Task { @MainActor [weak self] in self?.canGoBack = self?.activeWebView.canGoBack ?? false }
+        }
+    }
+    private func cancelFlowTasks() {
+        observationTask?.cancel(); observationTask = nil
+        loginPollingTask?.cancel(); loginPollingTask = nil
+        previewTask?.cancel(); previewTask = nil
+        shelfRecoveryTask?.cancel(); shelfRecoveryTask = nil
+        isScanning = false
+    }
+    private func invalidateSnapshot() {
+        generation &+= 1
+        cancelFlowTasks()
+        completedScan = nil
+        pendingBooks = [:]; pendingAccount = nil; availableCount = 0
+        errorText = nil
+    }
+    private func track(_ navigation: WKNavigation?, in view: WKWebView) {
+        let id = ObjectIdentifier(view)
+        if let old = navigationTokens[id], old !== navigation { retiredNavigations[ObjectIdentifier(old)] = old }
+        navigationTokens[id] = navigation
+        committedWindows.remove(id)
     }
 
     func loadIfNeeded() {
         guard !didLoad else { return }
         didLoad = true
 #if DEBUG
-        // XCUI can intermittently omit SwiftUI controls layered above a
-        // WKWebView from its accessibility tree. The opt-in live gate should
-        // test Google's real sign-in and shelf, not the reliability of tapping
-        // that overlay, so enter the same production sign-in route directly.
-        if Self.isLiveLoginGate {
-            openSignIn()
+        if let fixtureKind {
+            let html = fixtureKind == "login" ? GoogleBooksDebugFixtures.login
+                : fixtureKind == "blank" ? GoogleBooksDebugFixtures.blank
+                : fixtureKind == "popup" ? GoogleBooksDebugFixtures.popup
+                : GoogleBooksWebScripts.debugHundredBookShelfFixture
+            let base = fixtureKind == "login" ? GoogleBooksWebScripts.signInURL : GoogleBooksWebScripts.shelfURL
+            track(webView.loadHTMLString(html, baseURL: base), in: webView)
             return
         }
+        if Self.isLiveLoginGate { openSignIn(); return }
 #endif
-        webView.load(URLRequest(url: GoogleBooksWebScripts.homeURL))
+        track(requestLoader(webView, URLRequest(url: GoogleBooksWebScripts.homeURL)), in: webView)
     }
-
-    func recordConnectionPresented() {
-        connectionAnalytics.presented()
-    }
-
-    func closeConnection() {
-        connectionAnalytics.close()
-        stop()
+    func recordConnectionPresented() { if fixtureKind == nil { connectionAnalytics.presented() } }
+    func closeConnection() { if fixtureKind == nil { connectionAnalytics.close() }; stop() }
+    func stop() {
+        isClosed = true
+        invalidateSnapshot()
+        signInLaunchTask?.cancel(); signInLaunchTask = nil
+        isStartingSignIn = false
+        activeWebView.stopLoading()
+        popupStack.forEach { $0.stopLoading() }
+        popupStack = []; popupWebView = nil
+        navigationTokens = [:]; retiredNavigations = [:]; committedWindows = []
+        backObservation = nil
     }
 
     func openSignIn() {
-        guard bindingPhase == .needsSignIn, !isStartingSignIn else { return }
+        guard !isClosed, bindingPhase == .needsSignIn, !isStartingSignIn else { return }
+#if DEBUG
+        if fixtureKind == "popup" {
+            webView.evaluateJavaScript("window.openGoogleBooksFixtureLogin()", completionHandler: nil)
+            return
+        }
+#endif
         recordConnectionStage(.loginStarted, result: .started)
-        stop()
+        invalidateSnapshot()
         webView.stopLoading()
         store.clearError()
-        errorText = nil
-        hasStableShelfSnapshot = false
         statusText = AppLocalized("请先登录 Google 账号，登录后会自动进入书架。")
         isStartingSignIn = true
-        signInRequestGeneration &+= 1
-        let generation = signInRequestGeneration
+        let revision = generation
         signInLaunchTask = Task { [weak self] in
             guard let self else { return }
             let dynamicURL = await self.signInURLResolver(self.webView)
-            guard !Task.isCancelled,
-                  generation == self.signInRequestGeneration else {
-                return
-            }
-
-            // A stale home-page didFinish can start preview/polling again
-            // between the tap and this asynchronous DOM lookup.
-            self.cancelFlowTasks()
-            self.webView.stopLoading()
+            guard !Task.isCancelled, self.isCurrent(revision) else { return }
             let target = dynamicURL ?? GoogleBooksWebScripts.signInURL
             guard Self.allowedTopLevelURL(target) != nil,
-                  let navigation = self.requestLoader(
-                      self.webView,
-                      URLRequest(url: target)
-                  ) else {
-                self.signInLaunchTask = nil
-                self.isStartingSignIn = false
+                  let navigation = self.requestLoader(self.webView, URLRequest(url: target)) else {
+                self.isStartingSignIn = false; self.signInLaunchTask = nil
                 self.bindingPhase = .needsSignIn
                 self.errorText = AppLocalized("内容暂时无法打开，请重试")
                 return
             }
-
-            // Only hide the native card after WebKit accepts a real
-            // credential navigation. didStart keeps this token current across
-            // later password/2FA form submissions.
-            self.activeSignInNavigation = navigation
-            self.didEnterCredentialFlow = false
+            self.track(navigation, in: self.webView)
             self.bindingPhase = .signingIn
-            self.signInLaunchTask = nil
-            self.isStartingSignIn = false
+            self.didEnterCredentialFlow = false
+            self.isStartingSignIn = false; self.signInLaunchTask = nil
         }
     }
-
-    func retry() {
-        stop()
-        errorText = nil
-        hasStableShelfSnapshot = false
-        let isCredentialPage =
-            GoogleBooksBindingFlowContract.isGoogleCredentialURL(webView.url)
-        statusText = isCredentialPage
-            ? AppLocalized("请先登录 Google 账号，登录后会自动进入书架。")
-            : AppLocalized("正在打开 Google Play 图书…")
-        let target = isCredentialPage
-            ? GoogleBooksWebScripts.signInURL
-            : GoogleBooksWebScripts.homeURL
-        guard let navigation = requestLoader(webView, URLRequest(url: target)) else {
-            bindingPhase = .needsSignIn
-            errorText = AppLocalized("内容暂时无法打开，请重试")
-            return
-        }
-        bindingPhase = isCredentialPage ? .signingIn : .needsSignIn
-        activeSignInNavigation = isCredentialPage ? navigation : nil
-        didEnterCredentialFlow = isCredentialPage
-    }
-
-    func stop() {
-        signInRequestGeneration &+= 1
-        signInLaunchTask?.cancel()
-        signInLaunchTask = nil
-        isStartingSignIn = false
-        activeSignInNavigation = nil
-        didEnterCredentialFlow = false
-        cancelFlowTasks()
-        popupWebView?.stopLoading()
-        popupWebView = nil
-    }
-
-    private func cancelFlowTasks() {
-        loginPollingTask?.cancel()
-        loginPollingTask = nil
-        previewTask?.cancel()
-        previewTask = nil
-        shelfRecoveryTask?.cancel()
-        shelfRecoveryTask = nil
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        didStartProvisionalNavigation navigation: WKNavigation!
-    ) {
-        guard webView === self.webView || webView === popupWebView else { return }
-        if bindingPhase == .signingIn, webView === self.webView {
-            activeSignInNavigation = navigation
-        }
-        synchronizeCredentialState(for: webView.url)
-    }
-
-    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-        guard webView === self.webView || webView === popupWebView else { return }
-        if bindingPhase == .signingIn, webView === self.webView {
-            activeSignInNavigation = navigation
-        }
-        synchronizeCredentialState(for: webView.url)
-    }
-
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        synchronizeCredentialState(for: webView.url)
-        if webView === popupWebView,
-           let url = webView.url,
-           didEnterCredentialFlow,
-           Self.isShelfRecoveryDestination(url) {
-            popupWebView = nil
-            recoverShelfAfterLogin()
-            return
-        }
-        guard webView === self.webView else { return }
-        if bindingPhase == .signingIn, popupWebView != nil {
-            return
-        }
-        if bindingPhase == .signingIn,
-           let activeSignInNavigation,
-           let navigation,
-           navigation !== activeSignInNavigation {
-            // This is the late completion of the Play Books page that was
-            // visible before the native Sign In tap.
-            return
-        }
-        if GoogleBooksBindingFlowContract.shouldRecoverShelfAfterLogin(
-            phase: bindingPhase,
-            didEnterCredentialFlow: didEnterCredentialFlow,
-            isBlankDocument: Self.isBlankDocument(webView.url),
-            isPlayBooksDestination:
-                webView.url.map(Self.isShelfRecoveryDestination) ?? false,
-            hasAccountEvidence: false,
-            isShelfContext: false
-        ) {
-            recoverShelfAfterLogin()
-            return
-        }
-        previewTask?.cancel()
-        previewTask = Task { [weak self] in await self?.handleFinishedPage() }
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        didFailProvisionalNavigation navigation: WKNavigation!,
-        withError error: Error
-    ) {
-        let nsError = error as NSError
-        guard nsError.code != NSURLErrorCancelled else { return }
-        if shouldIgnoreStaleSignInCallback(from: webView, navigation: navigation) {
-            return
-        }
-        recordNavigationError()
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        didFail navigation: WKNavigation!,
-        withError error: Error
-    ) {
-        let nsError = error as NSError
-        guard nsError.code != NSURLErrorCancelled else { return }
-        if shouldIgnoreStaleSignInCallback(from: webView, navigation: navigation) {
-            return
-        }
-        recordNavigationError()
-    }
-
-    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        if webView === popupWebView {
-            popupWebView = nil
-        }
-        recordNavigationError()
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        decidePolicyFor navigationAction: WKNavigationAction,
-        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-    ) {
-        if navigationAction.targetFrame?.isMainFrame != false,
-           GoogleBooksBindingFlowContract.isGoogleCredentialURL(
-               navigationAction.request.url
-           ) {
-            enterCredentialFlow()
-        }
-        if let targetFrame = navigationAction.targetFrame, !targetFrame.isMainFrame {
-            decisionHandler(.allow)
-            return
-        }
-        guard let url = navigationAction.request.url,
-              Self.allowedTopLevelURL(url) != nil else {
-            reportBlockedTopLevelNavigation(navigationAction.request.url)
-            // Google may finish 2FA on a short-lived hop outside our allowlist.
-            // By this point its session cookies are already stored, so returning
-            // to the shelf is safer than leaving the user on a dead continuation.
-            if navigationAction.targetFrame?.isMainFrame == true,
-               consumeBindingBlockRescue() {
-                errorText = nil
-                Task { [weak webView] in
-                    webView?.load(URLRequest(url: GoogleBooksWebScripts.shelfURL))
-                }
-            } else {
-                errorText = AppLocalized("内容暂时无法打开，请重试")
-            }
-            decisionHandler(.cancel)
-            return
-        }
-        decisionHandler(.allow)
-    }
-
-    /// Only one recovery navigation may be issued per eight-second window.
-    private var lastBindingBlockRescueAt: TimeInterval = -.infinity
-
-    func consumeBindingBlockRescue(
-        now: TimeInterval = ProcessInfo.processInfo.systemUptime
-    ) -> Bool {
-        guard now - lastBindingBlockRescueAt >= 8 else { return false }
-        lastBindingBlockRescueAt = now
-        return true
-    }
-
-    /// Report URL shape only. Query values can contain account data and must
-    /// never enter analytics.
-    private func reportBlockedTopLevelNavigation(_ url: URL?) {
-        ProductAnalytics.shared.track(
-            .contentFailed,
-            context: AnalyticsEventContext(
-                productArea: .reader,
-                surface: "google_books_binding",
-                entryPoint: analyticsSession.entryPoint
-            ),
-            properties: AnalyticsProperties(
-                contentSource: AnalyticsContentSource.googleBooks.rawValue,
-                contentFormat: AnalyticsContentFormat.googleBooks.rawValue,
-                result: AnalyticsResult.blocked.rawValue,
-                errorStage: "blocked_main_navigation",
-                errorCode: Self.blockedNavigationShape(url)
-            )
-        )
-    }
-
-    static func blockedNavigationShape(_ url: URL?) -> String {
-        guard let url,
-              let components = URLComponents(
-                url: url,
-                resolvingAgainstBaseURL: false
-              ) else {
-            return "unparseable"
-        }
-        let names = (components.queryItems ?? [])
-            .map(\.name)
-            .sorted()
-            .joined(separator: ",")
-            .prefix(120)
-        return "\(components.host ?? "")\(components.path)?[\(names)]"
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        createWebViewWith configuration: WKWebViewConfiguration,
-        for navigationAction: WKNavigationAction,
-        windowFeatures: WKWindowFeatures
-    ) -> WKWebView? {
-        guard navigationAction.targetFrame == nil,
-              let url = navigationAction.request.url,
-              Self.allowedTopLevelURL(url) != nil else { return nil }
-        if GoogleBooksBindingFlowContract.isGoogleCredentialURL(url) {
-            enterCredentialFlow()
-        }
-        let popup = WKWebView(frame: .zero, configuration: configuration)
-        popup.customUserAgent = GoogleBooksWebScripts.mobileSafariUserAgent
-        popup.navigationDelegate = self
-        popup.uiDelegate = self
+    func retry() { reloadActivePage() }
+    func reloadActivePage() {
+        guard !isClosed else { return }
+        invalidateSnapshot()
+        signInLaunchTask?.cancel(); signInLaunchTask = nil; isStartingSignIn = false
 #if DEBUG
-        popup.isInspectable = true
+        if fixtureKind != nil, popupWebView == nil { didLoad = false; loadIfNeeded(); return }
 #endif
-        popupWebView = popup
-        return popup
-    }
-
-    func webViewDidClose(_ webView: WKWebView) {
-        guard webView === popupWebView else { return }
-        popupWebView = nil
-        if bindingPhase == .signingIn, didEnterCredentialFlow {
-            recoverShelfAfterLogin()
+        let view = activeWebView
+        if let url = view.url, Self.allowedTopLevelURL(url) != nil, url.absoluteString != "about:blank" {
+            track(view.reload(), in: view)
+        } else if popupWebView != nil {
+            closePopup()
         } else {
-            self.webView.load(URLRequest(url: GoogleBooksWebScripts.homeURL))
+            track(requestLoader(webView, URLRequest(url: GoogleBooksWebScripts.homeURL)), in: webView)
         }
     }
-
-    func syncLibrary() async -> Bool {
-        guard let accountBoundaryToken,
-              AccountContentIsolation.isCurrent(accountBoundaryToken) else {
-            return false
-        }
-        guard !isSyncing else { return false }
-        recordConnectionStage(.syncStarted, result: .started)
-        if !canSyncLibrary { await refreshPreview() }
-        guard AccountContentIsolation.isCurrent(accountBoundaryToken) else {
-            return false
-        }
-        guard canSyncLibrary else {
-            recordConnectionStage(
-                .failed,
-                result: .failed,
-                errorCode: "sync_snapshot_unavailable"
-            )
-            return false
-        }
-        isSyncing = true
-        errorText = nil
-        defer { isSyncing = false }
-        store.mergeScrapedBooks(Array(pendingBooks.values), account: pendingAccount)
-        if let commitError = store.lastError {
-            errorText = commitError
-            recordConnectionStage(
-                .failed,
-                result: .failed,
-                errorCode: "local_commit_failed"
-            )
-            return false
-        }
-        let verifiedBookCount = pendingBooks.count
-        guard recordConnectionStage(
-            .syncCompleted,
-            result: .success,
-            bookCount: verifiedBookCount
-        ) else {
-            errorText = AppLocalized("书架已保存，但同步确认未完成，请重试。")
-            return false
-        }
-        statusText = String(
-            format: AppLocalized("已同步 %d 本 Google Play 图书。"),
-            verifiedBookCount
-        )
-        return true
+    func goBack() {
+        guard activeWebView.canGoBack else { return }
+        invalidateSnapshot()
+        track(activeWebView.goBack(), in: activeWebView)
     }
-
-    private func handleFinishedPage() async {
-        let result: GoogleBooksScanResult
-        do {
-            result = try await evaluate(GoogleBooksWebScripts.sessionProbe)
-        } catch {
-            guard !Task.isCancelled else { return }
-            recordNavigationError()
-            return
-        }
-        guard !Task.isCancelled else { return }
-        if !result.authRequired,
-           GoogleBooksBindingFlowContract.shouldRecoverShelfAfterLogin(
-            phase: bindingPhase,
-            didEnterCredentialFlow: didEnterCredentialFlow,
-            isBlankDocument: Self.isBlankDocument(webView.url),
-            isPlayBooksDestination:
-                webView.url.map(Self.isShelfRecoveryDestination) ?? false,
-            hasAccountEvidence: result.hasAccountEvidence,
-            isShelfContext: result.isShelfContext
-        ) {
-            recoverShelfAfterLogin()
-            return
-        }
-        if result.authRequired || !result.authenticated {
-            // While Google is showing its own credential/account-picker page,
-            // keep our bottom card hidden. It is not a failed login yet.
-            if isCredentialFlowVisible {
-                enterCredentialFlow()
-                startLoginPolling()
-                return
-            }
-            if bindingPhase == .signingIn || bindingPhase == .awaitingShelf {
-                startLoginPolling()
-                return
-            }
-            resetUnauthenticatedPreview()
-            statusText = AppLocalized("请先登录 Google 账号，登录后会自动进入书架。")
-            startLoginPolling()
-            return
-        }
-        recordConnectionStage(.loginSucceeded, result: .success)
-        loginPollingTask?.cancel()
-        loginPollingTask = nil
-        activeSignInNavigation = nil
+    func closePopup() {
+        guard let popup = popupStack.popLast() else { return }
+        popup.stopLoading()
+        navigationTokens.removeValue(forKey: ObjectIdentifier(popup))
+        committedWindows.remove(ObjectIdentifier(popup))
+        popupWebView = popupStack.last
+        invalidateSnapshot()
+        // Closing a credential window is cancellation, not authorization.
+        // The opener's own DOM can still prove a completed login, but a
+        // cancelled popup must not trigger a fresh shelf navigation.
         didEnterCredentialFlow = false
-        bindingPhase = .scanning
-        await refreshPreview()
+        observeActiveWindow()
+        bindingPhase = GoogleBooksBindingFlowContract.isGoogleCredentialURL(activeWebView.url) ? .signingIn : .needsSignIn
+        startDocumentObservation()
+    }
+
+    func webView(_ view: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        guard isOwned(view), navigation.map({ retiredNavigations[ObjectIdentifier($0)] == nil }) ?? true else { return }
+        if !isActive(view) { track(navigation, in: view); return }
+        invalidateSnapshot()
+        track(navigation, in: view)
+        if GoogleBooksBindingFlowContract.isGoogleCredentialURL(view.url) { enterCredentialFlow() }
+        else if bindingPhase != .signingIn { bindingPhase = .awaitingShelf }
+        startDocumentObservation()
+    }
+    func webView(_ view: WKWebView, didCommit navigation: WKNavigation!) {
+        guard isCurrentCallback(view, navigation) else { return }
+        committedWindows.insert(ObjectIdentifier(view))
+        guard isActive(view) else { return }
+        if GoogleBooksBindingFlowContract.isGoogleCredentialURL(view.url) { enterCredentialFlow() }
+        startDocumentObservation()
+    }
+    func webView(_ view: WKWebView, didFinish navigation: WKNavigation!) {
+        guard isCurrentCallback(view, navigation) else { return }
+        committedWindows.insert(ObjectIdentifier(view))
+        guard isActive(view) else { return }
+        startDocumentObservation()
+    }
+    func webView(_ view: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        if (error as NSError).code != NSURLErrorCancelled, isActive(view), isCurrentCallback(view, navigation) { recordNavigationError() }
+    }
+    func webView(_ view: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        if (error as NSError).code != NSURLErrorCancelled, isActive(view), isCurrentCallback(view, navigation) { recordNavigationError() }
+    }
+    func webViewWebContentProcessDidTerminate(_ view: WKWebView) {
+        if isActive(view) { recordNavigationError() }
+    }
+
+    /// Watch the active committed document, independently of ad/image loading.
+    /// Never probe a covered opener or let a prior navigation change this one.
+    private func startDocumentObservation() {
+        guard observationTask == nil, !isScanning, completedScan == nil, !isClosed else { return }
+        let revision = generation
+        let surface = activeWebView
+        observationTask = Task { [weak self, weak surface] in
+            guard let self, let surface else { return }
+            defer { if revision == self.generation { self.observationTask = nil } }
+            let start = ProcessInfo.processInfo.systemUptime
+            while !Task.isCancelled, self.isCurrent(revision), self.isActive(surface) {
+                let elapsed = ProcessInfo.processInfo.systemUptime - start
+                if self.committedWindows.contains(ObjectIdentifier(surface)),
+                   let result = try? await self.evaluate(GoogleBooksWebScripts.sessionProbe, in: surface) {
+                    guard !Task.isCancelled, self.isCurrent(revision), self.isActive(surface) else { return }
+                    if result.hasCredentialForm {
+                        self.enterCredentialFlow(); self.startLoginPolling(); return
+                    }
+                    if result.authenticated, result.isDocumentReady, result.hasShelfSurface {
+                        if surface !== self.webView { self.finishPopupAuthorization(); return }
+                        self.recordConnectionStage(.loginSucceeded, result: .success)
+                        self.previewTask = Task { [weak self] in await self?.refreshPreview() }
+                        return
+                    }
+                    if result.authenticated {
+                        self.bindingPhase = .awaitingShelf
+                        self.statusText = AppLocalized("正在检测书架中的书籍，请稍候。")
+                        self.startLoginPolling(); return
+                    }
+                    if self.didEnterCredentialFlow,
+                       surface.url.map(Self.isShelfRecoveryDestination) == true {
+                        self.recoverShelfAfterLogin(); return
+                    }
+                    let content = try? await surface.evaluateJavaScript("!!(document.body && (document.body.innerText.trim().length > 0 || document.querySelector('form,input,button,iframe'))) ") as? Bool
+                    guard !Task.isCancelled, self.isCurrent(revision) else { return }
+                    if content == true {
+                        self.bindingPhase = GoogleBooksBindingFlowContract.isGoogleCredentialURL(surface.url) ? .signingIn : .needsSignIn
+                        self.startLoginPolling(); return
+                    }
+                    if elapsed >= 4, !surface.isLoading { self.recordNavigationError(); return }
+                }
+                if elapsed >= 25 { self.recordNavigationError(); return }
+                try? await Task.sleep(for: .milliseconds(400))
+            }
+        }
+    }
+    private func startLoginPolling() {
+        guard loginPollingTask == nil, !isClosed, !isScanning, completedScan == nil else { return }
+        let revision = generation
+        let surface = activeWebView
+        loginPollingTask = Task { [weak self, weak surface] in
+            guard let self, let surface else { return }
+            defer { if revision == self.generation { self.loginPollingTask = nil } }
+            for _ in 0..<180 {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled, self.isCurrent(revision), self.isActive(surface) else { return }
+                // A didFinish observer may have started traversal while this
+                // earlier login task slept. Its probe rewinds the shelf, so it
+                // must relinquish ownership before scanning begins.
+                guard !self.isScanning, self.completedScan == nil else { return }
+                guard let result = try? await self.evaluate(GoogleBooksWebScripts.sessionProbe, in: surface) else { continue }
+                guard !Task.isCancelled, self.isCurrent(revision), self.isActive(surface) else { return }
+                guard !self.isScanning, self.completedScan == nil else { return }
+                if result.hasCredentialForm { self.enterCredentialFlow(); continue }
+                if result.authenticated, result.isDocumentReady, result.hasShelfSurface {
+                    if surface !== self.webView { self.finishPopupAuthorization(); return }
+                    self.recordConnectionStage(.loginSucceeded, result: .success)
+                    await self.refreshPreview(); return
+                }
+                if self.didEnterCredentialFlow, surface.url.map(Self.isShelfRecoveryDestination) == true {
+                    self.recoverShelfAfterLogin(); return
+                }
+            }
+            if self.isCurrent(revision) { self.recordNavigationError() }
+        }
     }
 
     private func refreshPreview() async {
-        guard !isScanning else { return }
-        isScanning = true
-        hasStableShelfSnapshot = false
-        bindingPhase = .scanning
-        errorText = nil
-        defer { isScanning = false }
-        pendingBooks = [:]
-        pendingAccount = nil
-        availableCount = 0
-        var all: [String: GoogleBooksBook] = [:]
-        var stableAtEndPasses = 0
-        var account: GoogleBooksAccountInfo?
-        var reachedEnd = false
-        // `sessionProbe` rewinds the actual scroll owner to the beginning.
-        // Give Google's virtual list one render frame before reading cards.
+        guard !isScanning, popupWebView == nil,
+              committedWindows.contains(ObjectIdentifier(webView)) else { return }
+        let revision = generation
+        isScanning = true; completedScan = nil; bindingPhase = .scanning; errorText = nil
+        statusText = AppLocalized("正在扫描 Google Play 图书书架…")
+        defer { if revision == generation { isScanning = false } }
+        var scan = GoogleBooksShelfScanPolicy(startedAt: ProcessInfo.processInfo.systemUptime)
+        // Rewind only when starting a complete traversal. Probes never consume
+        // the first viewport; wait for the virtual list to render that position.
+        guard let initial = try? await evaluate(GoogleBooksWebScripts.sessionProbe),
+              !Task.isCancelled, isCurrent(revision), initial.authenticated else {
+            if isCurrent(revision) { finishScanWithoutSnapshot(AppLocalized("网络连接失败，请重试。")) }
+            return
+        }
         try? await Task.sleep(for: .milliseconds(250))
-        for pass in 0..<24 {
-            guard !Task.isCancelled else { return }
-            statusText = AppLocalized("正在扫描 Google Play 图书书架…")
+        while !Task.isCancelled, isCurrent(revision) {
             let result: GoogleBooksScanResult
-            do {
-                result = try await evaluate(GoogleBooksWebScripts.libraryScan)
-            } catch {
-                guard !Task.isCancelled else { return }
-                if pass >= 2 {
-                    finishScanWithoutSnapshot(
-                        AppLocalized("网络连接失败，请重试。")
-                    )
-                    return
-                }
-                continue
-            }
-            guard !Task.isCancelled else { return }
-            if result.authRequired || !result.authenticated, all.isEmpty {
-                resetUnauthenticatedPreview()
-                statusText = AppLocalized("请先登录 Google 账号，登录后会自动进入书架。")
-                startLoginPolling()
+            do { result = try await evaluate(GoogleBooksWebScripts.libraryScan) }
+            catch {
+                if !Task.isCancelled, isCurrent(revision) { finishScanWithoutSnapshot(AppLocalized("网络连接失败，请重试。")) }
                 return
             }
-            if let label = result.account { account = GoogleBooksAccountInfo(label: label) }
-            let before = all.count
-            result.books.forEach { all[$0.id] = $0 }
-            pendingBooks = all
-            pendingAccount = account
-            availableCount = all.count
-            // `libraryScan` advances the actual document/virtual-list scroll
-            // owner after observing the current viewport. Do not scroll again
-            // here or a virtualized shelf can skip an entire viewport.
-            reachedEnd = result.isCompleteSnapshot
-            stableAtEndPasses =
-                reachedEnd && all.count == before ? stableAtEndPasses + 1 : 0
-            if GoogleBooksShelfSyncContract.isStableSnapshot(
-                bookCount: all.count,
-                reachedEnd: reachedEnd,
-                stableEndPasses: stableAtEndPasses
-            ) { break }
-            try? await Task.sleep(for: .milliseconds(700))
-        }
-        guard GoogleBooksShelfSyncContract.canCommit(
-            bookCount: all.count,
-            account: account,
-            reachedEnd: reachedEnd,
-            stableEndPasses: stableAtEndPasses
-        ) else {
-            finishScanWithoutSnapshot(
-                AppLocalized("没有找到书架书籍。请在 Google Play 图书的「我的图书」页登录后重试。")
-            )
-            return
-        }
-        hasStableShelfSnapshot = true
-        bindingPhase = .ready
-        statusText = String(format: AppLocalized("已找到 %d 本 Google Play 图书。"), all.count)
-        await autoSyncForLiveLoginGateIfRequested()
-    }
-
-    private func startLoginPolling() {
-        guard loginPollingTask == nil else { return }
-        loginPollingTask = Task { [weak self] in
-            guard let self else { return }
-            defer { self.loginPollingTask = nil }
-            for _ in 0..<180 {
-                guard !Task.isCancelled else { return }
-                try? await Task.sleep(for: .seconds(1))
-                guard let result = try? await self.evaluate(GoogleBooksWebScripts.sessionProbe),
-                      !Task.isCancelled else { continue }
-                if !result.authRequired,
-                   GoogleBooksBindingFlowContract.shouldRecoverShelfAfterLogin(
-                    phase: self.bindingPhase,
-                    didEnterCredentialFlow: self.didEnterCredentialFlow,
-                    isBlankDocument: Self.isBlankDocument(self.webView.url),
-                    isPlayBooksDestination:
-                        self.webView.url.map(Self.isShelfRecoveryDestination) ?? false,
-                    hasAccountEvidence: result.hasAccountEvidence,
-                    isShelfContext: result.isShelfContext
-                ) {
-                    self.recoverShelfAfterLogin()
-                    return
-                }
-                guard !result.authRequired, result.authenticated else { continue }
-                self.recordConnectionStage(.loginSucceeded, result: .success)
-                self.statusText = AppLocalized("登录成功，正在进入书架…")
-                self.bindingPhase = .scanning
-                await self.refreshPreview()
+            guard !Task.isCancelled, isCurrent(revision) else { return }
+            let decision = scan.observe(result, now: ProcessInfo.processInfo.systemUptime)
+            pendingBooks = scan.books; availableCount = scan.books.count
+            statusText = availableCount > 0
+                ? String(format: AppLocalized("正在扫描 Google Play 图书书架…（%d）"), availableCount)
+                : AppLocalized("正在检测书架中的书籍，请稍候。")
+            switch decision {
+            case .wait: break
+            case .complete:
+                completedScan = scan; pendingAccount = scan.account; bindingPhase = .ready
+                statusText = String(format: AppLocalized("已找到 %d 本 Google Play 图书。"), availableCount)
+                isScanning = false
+                await autoSyncForLiveLoginGateIfRequested()
+                return
+            case .failed(let reason):
+                ReaderRunLog.write("GBOOKS shelf scan failed reason=\(reason)")
+                finishScanWithoutSnapshot(reason == "active_shelf_filter"
+                    ? AppLocalized("请清除书架的搜索或进度筛选后重试。")
+                    : AppLocalized("书架尚未完整加载，请重试。"))
                 return
             }
-            guard !Task.isCancelled else { return }
-            if self.isCredentialFlowVisible {
-                self.bindingPhase = .signingIn
-            } else {
-                self.bindingPhase = .needsSignIn
-                self.errorText = AppLocalized("网络连接失败，请重试。")
-            }
+            await waitForShelfUpdate()
         }
     }
 
-    private func resetUnauthenticatedPreview() {
-        bindingPhase = .needsSignIn
-        activeSignInNavigation = nil
-        didEnterCredentialFlow = false
-        availableCount = 0
-        pendingBooks = [:]
-        pendingAccount = nil
-        hasStableShelfSnapshot = false
-        errorText = nil
+    /// Wake when the shelf renders its next window. The timeout only provides
+    /// a fallback; completion is still decided from traversal and DOM evidence.
+    private func waitForShelfUpdate() async {
+        _ = try? await webView.callAsyncJavaScript(#"""
+            return await new Promise(function (resolve) {
+              var root = document.querySelector('gpb-shelf-page,main,[role="main"],[role="list"],[role="grid"]') || document.body;
+              if (!root) { resolve(false); return; }
+              var settled = null;
+              var observer = new MutationObserver(function () {
+                if (settled) clearTimeout(settled);
+                settled = setTimeout(finish, 100);
+              });
+              var deadline = setTimeout(finish, 700);
+              function finish() {
+                observer.disconnect();
+                clearTimeout(deadline);
+                if (settled) clearTimeout(settled);
+                resolve(true);
+              }
+              observer.observe(root, { childList: true, subtree: true, characterData: true,
+                attributes: true, attributeFilter: ['aria-busy', 'data-loading', 'href', 'src'] });
+            });
+            """#, arguments: [:], in: nil, contentWorld: .page)
     }
-
-    private func recordNavigationError() {
-        recordConnectionStage(
-            .failed,
-            result: .failed,
-            errorCode: "navigation_failed"
-        )
-        cancelFlowTasks()
-        errorText = AppLocalized("网络连接失败，请重试。")
-        if isCredentialFlowVisible {
-            bindingPhase = .signingIn
-        } else if !showsSyncBar {
-            bindingPhase = .needsSignIn
-            activeSignInNavigation = nil
-            didEnterCredentialFlow = false
+    func syncLibrary() async -> Bool {
+        guard !isSyncing, let accountBoundaryToken,
+              AccountContentIsolation.isCurrent(accountBoundaryToken),
+              let storageBoundary, store.isCurrentStorageBoundary(storageBoundary),
+              canSyncLibrary, let scan = completedScan else { return false }
+        let revision = generation
+        isSyncing = true; errorText = nil
+        defer { isSyncing = false }
+        recordConnectionStage(.syncStarted, result: .started)
+        guard let latest = try? await evaluate(GoogleBooksWebScripts.sessionProbe),
+              !Task.isCancelled, isCurrent(revision), popupWebView == nil,
+              scan.matchesCurrentAccount(latest) else {
+            if isCurrent(revision) { finishScanWithoutSnapshot(AppLocalized("书架信息已变化，请重新同步。")) }
+            return false
         }
+        guard store.mergeScrapedBooks(scan.collectedBooks, account: scan.account, expectedStorageBoundary: storageBoundary) else {
+            errorText = store.lastError ?? AppLocalized("网络连接失败，请重试。")
+            return false
+        }
+        // The successful commit may rotate the provider storage boundary.
+        // It is already durable; analytics cannot turn it into a fake failure.
+        recordConnectionStage(.syncCompleted, result: .success, bookCount: scan.books.count)
+        statusText = String(format: AppLocalized("已同步 %d 本 Google Play 图书。"), scan.books.count)
+        return true
     }
-
     private func finishScanWithoutSnapshot(_ message: String) {
-        hasStableShelfSnapshot = false
-        bindingPhase = .ready
-        errorText = message
+        completedScan = nil; pendingAccount = nil
+        bindingPhase = .ready; errorText = message
     }
-
-    private func recoverShelfAfterLogin() {
-        guard bindingPhase == .signingIn,
-              didEnterCredentialFlow,
-              shelfRecoveryTask == nil else {
-            return
-        }
-        // Do not let the old credential-page poll race the redirected shelf
-        // and commit its transient empty DOM.
-        loginPollingTask?.cancel()
-        loginPollingTask = nil
-        activeSignInNavigation = nil
-        hasStableShelfSnapshot = false
-        bindingPhase = .awaitingShelf
-        statusText = AppLocalized("登录成功，正在进入书架…")
-        recordConnectionStage(.loginSucceeded, result: .success)
-        shelfRecoveryTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(350))
-            guard let self, !Task.isCancelled else { return }
-            self.shelfRecoveryTask = nil
-            guard self.bindingPhase == .awaitingShelf else { return }
-            self.webView.load(URLRequest(url: GoogleBooksWebScripts.shelfURL))
-        }
+    private func recordNavigationError() {
+        invalidateSnapshot()
+        errorText = AppLocalized("网络连接失败，请重试。")
+        recordConnectionStage(.failed, result: .failed, errorCode: "navigation_failed")
     }
-
-    private func autoSyncForLiveLoginGateIfRequested() async {
-#if DEBUG
-        guard Self.isLiveLoginGate, !liveLoginGateDidSync else { return }
-        if await syncLibrary() {
-            liveLoginGateDidSync = true
-        }
-#endif
-    }
-
-#if DEBUG
-    private static var isLiveLoginGate: Bool {
-        ProcessInfo.processInfo.arguments.contains("-CastReaderGoogleBooksLiveLoginGate")
-    }
-#endif
-
-    private var isCredentialFlowVisible: Bool {
-        GoogleBooksBindingFlowContract.isGoogleCredentialURL(webView.url)
-            || GoogleBooksBindingFlowContract.isGoogleCredentialURL(
-                popupWebView?.url
-            )
-    }
-
     private func enterCredentialFlow() {
-        previewTask?.cancel()
-        previewTask = nil
-        shelfRecoveryTask?.cancel()
-        shelfRecoveryTask = nil
-        hasStableShelfSnapshot = false
+        completedScan = nil
         didEnterCredentialFlow = true
-        errorText = nil
         bindingPhase = .signingIn
     }
-
+    private func finishPopupAuthorization() {
+        popupStack.forEach { $0.stopLoading() }
+        popupStack = []; popupWebView = nil
+        observeActiveWindow()
+        recoverShelfAfterLogin()
+    }
+    private func recoverShelfAfterLogin() {
+        guard !isClosed, shelfRecoveryTask == nil else { return }
+        invalidateSnapshot()
+        // Consume this return once. The shelf may need time to hydrate after
+        // the redirect; its own URL must not trigger another reload loop.
+        didEnterCredentialFlow = false
+        bindingPhase = .awaitingShelf
+        statusText = AppLocalized("登录成功，正在进入书架…")
+        let revision = generation
+        shelfRecoveryTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(350))
+            guard let self, !Task.isCancelled, self.isCurrent(revision) else { return }
+            self.shelfRecoveryTask = nil
+            self.track(self.requestLoader(self.webView, URLRequest(url: GoogleBooksWebScripts.shelfURL)), in: self.webView)
+        }
+    }
+    private func autoSyncForLiveLoginGateIfRequested() async {
+#if DEBUG
+        if Self.isLiveLoginGate, !liveLoginGateDidSync, await syncLibrary() { liveLoginGateDidSync = true }
+#endif
+    }
+#if DEBUG
+    private static var isLiveLoginGate: Bool { ProcessInfo.processInfo.arguments.contains("-CastReaderGoogleBooksLiveLoginGate") }
+#endif
     @discardableResult
-    private func recordConnectionStage(
-        _ stage: AnalyticsLibraryConnectionStage,
-        result: AnalyticsResult,
-        errorCode: String? = nil,
-        bookCount: Int? = nil
-    ) -> Bool {
-        connectionAnalytics.record(
-            stage,
-            result: result,
-            errorCode: errorCode,
-            bookCount: bookCount
-        )
+    private func recordConnectionStage(_ stage: AnalyticsLibraryConnectionStage, result: AnalyticsResult, errorCode: String? = nil, bookCount: Int? = nil) -> Bool {
+        if fixtureKind != nil { return true }
+        return connectionAnalytics.record(stage, result: result, errorCode: errorCode, bookCount: bookCount)
     }
 
-    private func synchronizeCredentialState(for url: URL?) {
-        if GoogleBooksBindingFlowContract.isGoogleCredentialURL(url) {
-            enterCredentialFlow()
+    func webView(_ view: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard navigationAction.targetFrame?.isMainFrame != false else { decisionHandler(.allow); return }
+        guard isOwned(view), let url = navigationAction.request.url, Self.allowedTopLevelURL(url) != nil else {
+            if isActive(view) {
+                reportBlockedTopLevelNavigation(navigationAction.request.url)
+                if didEnterCredentialFlow, navigationAction.targetFrame?.isMainFrame == true, consumeBindingBlockRescue() {
+                    finishPopupAuthorization()
+                } else { recordNavigationError() }
+            }
+            decisionHandler(.cancel); return
         }
+        if isActive(view), GoogleBooksBindingFlowContract.isGoogleCredentialURL(url) { enterCredentialFlow() }
+        decisionHandler(.allow)
     }
-
-    private func shouldIgnoreStaleSignInCallback(
-        from webView: WKWebView,
-        navigation: WKNavigation?
-    ) -> Bool {
-        guard webView === self.webView,
-              bindingPhase == .signingIn,
-              let activeSignInNavigation,
-              let navigation else {
-            return false
-        }
-        return navigation !== activeSignInNavigation
+    func webView(_ view: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        guard isActive(view), navigationAction.targetFrame == nil,
+              let url = navigationAction.request.url, Self.allowedTopLevelURL(url) != nil else { return nil }
+        invalidateSnapshot()
+        let popup = WKWebView(frame: .zero, configuration: configuration)
+        configure(popup)
+        popupStack.append(popup); popupWebView = popup
+        observeActiveWindow()
+        // about:blank can be the first document of a real popup form. Keep
+        // the opener alive and wait for its content instead of dismissing it.
+        if GoogleBooksBindingFlowContract.isGoogleCredentialURL(url) { enterCredentialFlow() }
+        startDocumentObservation()
+        return popup
     }
-
-    private static func currentPageSignInURL(in webView: WKWebView) async -> URL? {
-        let value: Any?
-        do {
-            value = try await webView.evaluateJavaScript(
-                GoogleBooksWebScripts.currentPageSignInURL
-            )
-        } catch {
-            return nil
-        }
-        guard let raw = value as? String,
-              let url = URL(string: raw),
-              allowedTopLevelURL(url) != nil,
-              GoogleBooksBindingFlowContract.isGoogleCredentialURL(url) else {
-            return nil
-        }
+    func webViewDidClose(_ view: WKWebView) { if view === popupWebView { closePopup() } }
+    func consumeBindingBlockRescue(now: TimeInterval = ProcessInfo.processInfo.systemUptime) -> Bool {
+        guard now - lastBindingBlockRescueAt >= 8 else { return false }
+        lastBindingBlockRescueAt = now; return true
+    }
+    private func reportBlockedTopLevelNavigation(_ url: URL?) {
+        ProductAnalytics.shared.track(.contentFailed,
+            context: AnalyticsEventContext(productArea: .reader, surface: "google_books_binding", entryPoint: analyticsSession.entryPoint),
+            properties: AnalyticsProperties(contentSource: AnalyticsContentSource.googleBooks.rawValue,
+                contentFormat: AnalyticsContentFormat.googleBooks.rawValue, result: AnalyticsResult.blocked.rawValue,
+                errorStage: "blocked_main_navigation", errorCode: Self.blockedNavigationShape(url)))
+    }
+    static func blockedNavigationShape(_ url: URL?) -> String {
+        guard let url, let c = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return "unparseable" }
+        let names = (c.queryItems ?? []).map(\.name).sorted().joined(separator: ",").prefix(120)
+        return "\(c.host ?? "")\(c.path)?[\(names)]"
+    }
+    private static func currentPageSignInURL(in view: WKWebView) async -> URL? {
+        guard let raw = try? await view.evaluateJavaScript(GoogleBooksWebScripts.currentPageSignInURL) as? String,
+              let url = URL(string: raw), allowedTopLevelURL(url) != nil,
+              GoogleBooksBindingFlowContract.isGoogleCredentialURL(url) else { return nil }
         return url
     }
-
     private static func allowedTopLevelURL(_ url: URL) -> URL? {
         if url.absoluteString == "about:blank" { return url }
-        guard url.scheme?.lowercased() == "https",
-              url.user == nil,
-              url.password == nil,
-              let host = url.host?.lowercased() else { return nil }
-        let allowed =
-            host == "google.com"
-                || host.hasSuffix(".google.com")
-                || host == "googleusercontent.com"
-                || host.hasSuffix(".googleusercontent.com")
-        return allowed ? url : nil
+        guard url.scheme?.lowercased() == "https", url.user == nil, url.password == nil,
+              url.port == nil || url.port == 443, let host = url.host?.lowercased() else { return nil }
+        return host == "google.com" || host.hasSuffix(".google.com")
+            || host == "googleusercontent.com" || host.hasSuffix(".googleusercontent.com") ? url : nil
     }
-
     private static func isPlayBooksDestination(_ url: URL) -> Bool {
-        guard url.scheme?.lowercased() == "https",
-              url.host?.lowercased() == "play.google.com" else { return false }
-        return url.path.hasPrefix("/books")
+        url.scheme?.lowercased() == "https" && url.host?.lowercased() == "play.google.com" && url.path.hasPrefix("/books")
     }
-
-    /// Google commonly finishes a password/passkey challenge on CheckCookie
-    /// before following the `continue` URL. In WKWebView that final redirect
-    /// can stall on a visually blank document, so treat the trusted
-    /// Play-Books continuation itself as success evidence and reload the shelf
-    /// from the shared authenticated data store.
     static func isShelfRecoveryDestination(_ url: URL) -> Bool {
-        if isPlayBooksDestination(url) { return true }
-        if isGoogleLandingDestination(url) { return true }
-        guard url.scheme?.lowercased() == "https",
-              url.host?.lowercased() == "accounts.google.com",
+        if isPlayBooksDestination(url) || isGoogleLandingDestination(url) { return true }
+        guard url.scheme?.lowercased() == "https", url.host?.lowercased() == "accounts.google.com",
               url.path.lowercased() == "/checkcookie",
-              let components = URLComponents(
-                url: url,
-                resolvingAgainstBaseURL: false
-              ),
-              let rawContinue = components.queryItems?
-                .first(where: { $0.name == "continue" })?.value,
-              let continueURL = URL(string: rawContinue) else {
-            return false
-        }
-        return isPlayBooksDestination(continueURL)
-            || isGoogleLandingDestination(continueURL)
+              let c = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let raw = c.queryItems?.first(where: { $0.name == "continue" })?.value,
+              let target = URL(string: raw) else { return false }
+        return isPlayBooksDestination(target) || isGoogleLandingDestination(target)
     }
-
-    /// Google can route the post-2FA continuation through this landing page
-    /// before returning to Play Books. Treat it as authenticated shelf evidence.
     private static func isGoogleLandingDestination(_ url: URL) -> Bool {
-        guard url.scheme?.lowercased() == "https",
-              url.host?.lowercased() == "gds.google.com" else { return false }
-        return url.path.lowercased().hasPrefix("/web/landing")
+        url.scheme?.lowercased() == "https" && url.host?.lowercased() == "gds.google.com" && url.path.lowercased().hasPrefix("/web/landing")
     }
-
-    private static func isBlankDocument(_ url: URL?) -> Bool {
-        url?.absoluteString.lowercased() == "about:blank"
-    }
-
-    private func evaluate(_ js: String) async throws -> GoogleBooksScanResult {
-        let value: Any = try await withCheckedThrowingContinuation { continuation in
-            webView.evaluateJavaScript(js) { value, error in
-                if let error { continuation.resume(throwing: error) }
-                else { continuation.resume(returning: value as Any) }
-            }
-        }
-        guard let raw = value as? [String: Any] else {
+    private func evaluate(_ js: String, in surface: WKWebView? = nil) async throws -> GoogleBooksScanResult {
+        guard let raw = try await (surface ?? webView).evaluateJavaScript(js) as? [String: Any] else {
             throw NSError(domain: "GoogleBooks", code: 1)
         }
         return GoogleBooksScanResult(raw)

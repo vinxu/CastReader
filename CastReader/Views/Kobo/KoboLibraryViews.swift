@@ -94,6 +94,7 @@ struct KoboHomeSection: View {
                         }
                     }
                 }
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("homeShelfSection.kobo")
             }
         }
@@ -182,12 +183,16 @@ struct KoboLibraryView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("koboLibraryBook.\(book.bookUUID)")
                 }
             }
         }
+        .reservesMiniPlayerSpace()
         .navigationTitle("Kobo")
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $query, prompt: AppLocalized("搜索书名或作者"))
+        .searchable(text: $query,
+                    placement: .navigationBarDrawer(displayMode: .always),
+                    prompt: AppLocalized("搜索书名或作者"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -268,17 +273,13 @@ struct KoboLibraryConnectView: View {
 
     var body: some View {
         NavigationView {
-            ZStack(alignment: .bottom) {
-                KoboWebViewContainer(webView: model.webView)
-                    .ignoresSafeArea(edges: .bottom)
-                    .accessibilityIdentifier("koboBindingWebView")
-                if let popup = model.popupWebView {
-                    KoboWebViewContainer(webView: popup)
-                        .background(AppTheme.background)
-                        .ignoresSafeArea(edges: .bottom)
-                        .accessibilityIdentifier("koboLoginPopupWebView")
-                }
-                if model.popupWebView == nil, model.showsBottomCard {
+            VStack(spacing: 0) {
+                KoboWebViewContainer(
+                    webView: model.popupWebView ?? model.webView,
+                    identifier: model.popupWebView == nil
+                        ? "koboBindingWebView" : "koboLoginPopupWebView"
+                )
+                if model.showsBottomCard {
                     bottomCard
                 }
             }
@@ -287,6 +288,26 @@ struct KoboLibraryConnectView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(AppLocalized("关闭")) { dismiss() }
+                }
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button { model.goBack() } label: {
+                        Image(systemName: "chevron.left")
+                    }
+                    .disabled(!model.canGoBack)
+                    .accessibilityLabel(AppLocalized("返回"))
+                    .accessibilityIdentifier("koboBackButton")
+                    Button { model.reloadPage() } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .accessibilityLabel(AppLocalized("重新加载"))
+                    .accessibilityIdentifier("koboReloadButton")
+                    if model.popupWebView != nil {
+                        Button { model.closePopup() } label: {
+                            Image(systemName: "xmark.rectangle")
+                        }
+                        .accessibilityLabel(AppLocalized("关闭"))
+                        .accessibilityIdentifier("koboClosePopupButton")
+                    }
                 }
             }
             .onAppear {
@@ -300,8 +321,8 @@ struct KoboLibraryConnectView: View {
 
     @ViewBuilder
     private var bottomCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 11) {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 10) {
                 if model.isWorking {
                     ProgressView().tint(AppTheme.primary)
                 } else {
@@ -314,73 +335,78 @@ struct KoboLibraryConnectView: View {
                     Text(model.statusText)
                         .font(.subheadline.weight(.semibold))
                         .foregroundColor(AppTheme.foreground)
+                        .lineLimit(2)
                     Text(model.detailText)
                         .font(.caption)
                         .foregroundColor(AppTheme.mutedForeground)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(2)
+                        .accessibilityIdentifier("koboBindingDetail")
                 }
                 Spacer(minLength: 0)
-            }
-
-            if model.canSync {
-                Button {
-                    model.commitShelf()
-                } label: {
-                    Label(AppLocalized("同步 Kobo 书架"), systemImage: "arrow.clockwise")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                if model.canSync {
+                    Button(AppLocalized("同步")) { model.commitShelf() }
+                        .accessibilityIdentifier("koboSyncButton")
+                } else if model.bindingPhase == .awaitingLogin {
+                    Button(AppLocalized("登录")) { model.openSignIn() }
+                        .accessibilityIdentifier("koboSignInButton")
+                } else if model.didSync {
+                    Button(AppLocalized("完成")) { dismiss() }
+                } else if model.bindingPhase == .failed {
+                    Button(AppLocalized("重新加载")) { model.reloadPage() }
+                        .accessibilityIdentifier("koboRetryButton")
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(AppTheme.primary)
-                .accessibilityIdentifier("koboSyncButton")
-            } else if !model.isSignedIn {
-                Button {
-                    model.openSignIn()
-                } label: {
-                    Label(AppLocalized("登录"), systemImage: "person.crop.circle.badge.checkmark")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(AppTheme.primary)
-                .disabled(model.isWorking)
-                .accessibilityIdentifier("koboSignInButton")
-            } else if model.didSync {
-                Button(AppLocalized("完成")) { dismiss() }
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .buttonStyle(.borderedProminent)
-                    .tint(AppTheme.primary)
             }
+            .buttonStyle(.bordered)
+            .tint(AppTheme.primary)
 
             if let error = model.errorText {
                 Text(error)
                     .font(.caption)
                     .foregroundColor(AppTheme.destructive)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(3)
+                    .accessibilityIdentifier("koboBindingError")
             }
         }
-        .padding(14)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
-        .padding(.horizontal, 14)
-        .padding(.bottom, 12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.regularMaterial)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("koboBindingCard")
     }
 }
 
 struct KoboWebViewContainer: UIViewRepresentable {
     let webView: WKWebView
+    let identifier: String
 
-    func makeUIView(context: Context) -> WKWebView {
-        configureAppearance(webView)
-        return webView
+    func makeUIView(context: Context) -> UIView {
+        let container = UIView()
+        container.backgroundColor = .systemBackground
+        installWebView(in: container)
+        return container
     }
 
-    func updateUIView(_ uiView: WKWebView, context: Context) {
-        configureAppearance(uiView)
+    func updateUIView(_ uiView: UIView, context: Context) {
+        installWebView(in: uiView)
+    }
+
+    private func installWebView(in container: UIView) {
+        configureAppearance(webView)
+        webView.accessibilityIdentifier = identifier
+        guard webView.superview !== container else { return }
+        // Keep opener WebViews alive in the model, but attach only the active
+        // window. Stacked WebViews can expose the covered page to hit testing
+        // and VoiceOver even when SwiftUI marks it accessibilityHidden.
+        container.subviews.forEach { $0.removeFromSuperview() }
+        webView.removeFromSuperview()
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(webView)
+        NSLayoutConstraint.activate([
+            webView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            webView.topAnchor.constraint(equalTo: container.topAnchor),
+            webView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+        ])
     }
 
     private func configureAppearance(_ webView: WKWebView) {
@@ -392,481 +418,748 @@ struct KoboWebViewContainer: UIViewRepresentable {
 }
 
 @MainActor
-final class KoboLibrarySyncViewModel:
-    NSObject,
-    ObservableObject,
-    WKNavigationDelegate,
-    WKUIDelegate
-{
-    @Published var statusText = AppLocalized("正在打开 Kobo…")
-    @Published var detailText =
-        AppLocalized("登录后会自动打开你的书架，CastReader 不会保存密码。")
-    @Published var errorText: String?
-    @Published var isWorking = false
-    @Published var isSignedIn = false
-    @Published var canSync = false
-    @Published var didSync = false
+final class KoboLibrarySyncViewModel: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate {
+    @Published private(set) var bindingPhase: KoboBindingPhase = .opening
+    @Published private(set) var statusText = AppLocalized("正在打开 Kobo…")
+    @Published private(set) var detailText = AppLocalized("登录成功后将自动进入书架。")
+    @Published private(set) var errorText: String?
     @Published private(set) var popupWebView: WKWebView?
+    @Published private(set) var canGoBack = false
 
     let webView: WKWebView
-    var showsBottomCard: Bool { !isCredentialPage || canSync || didSync }
+    var isWorking: Bool { bindingPhase == .opening || bindingPhase == .scanning }
+    var isSignedIn: Bool { bindingPhase == .scanning || bindingPhase == .ready || bindingPhase == .synced }
+    var canSync: Bool { bindingPhase == .ready && completedScan?.completeTraversal == true }
+    var didSync: Bool { bindingPhase == .synced }
+    var showsBottomCard: Bool { bindingPhase != .authenticating }
 
-    private let store = KoboLibraryStore.shared
-    private var didLoad = false
-    private var isCredentialPage = false
-    private var pendingBooks: [String: KoboBook] = [:]
-    private var pendingAccount: KoboAccountInfo?
-    private var stableEndPasses = 0
-    private var previousStableCount = -1
-    private var workTask: Task<Void, Never>?
-    private var probeGeneration = 0
-    private var isScanningShelf = false
+    private var activeWebView: WKWebView { popupWebView ?? webView }
+    private let store: KoboLibraryStore
+    private let storageBoundary: UUID?
     private let connectionAnalytics: AnalyticsLibraryConnectionRecorder
+    private let fixtureKind: String?
+    private var didLoad = false
+    private var isClosed = false
+    private var flowGeneration = 0
+    private var workTask: Task<Void, Never>?
+    private var isScanningShelf = false
+    private var awaitingAutomaticPageChange = false
+    private var navigations: [ObjectIdentifier: WKNavigation] = [:]
+    private var committedDocuments: Set<ObjectIdentifier> = []
+    private var suspendedPopups: [WKWebView] = []
+    private var navigationHasFailed = false
+    private var pendingFailureCode: String?
+    private var mainHistoryObservation: NSKeyValueObservation?
+    private var popupHistoryObservation: NSKeyValueObservation?
+    private var didRecoverContinuation = false
+    private var latestShelfURL = KoboWebScripts.shelfURL
+    private var completedScan: KoboShelfScanPolicy?
+    private var completedPageKey: String?
+    private var completedFingerprint: String?
+    private var resolvedShelfAccount: (identity: String, label: String)?
 
     override convenience init() {
-        self.init(
-            analyticsSession: AnalyticsLibraryConnectionSession(
-                source: .kobo,
-                entryPoint: "kobo_connect"
-            ),
-            entryTapAlreadyTracked: false
-        )
+        self.init(analyticsSession: AnalyticsLibraryConnectionSession(source: .kobo, entryPoint: "kobo_connect"), entryTapAlreadyTracked: false)
     }
 
-    init(
-        analyticsSession: AnalyticsLibraryConnectionSession,
-        entryTapAlreadyTracked: Bool
-    ) {
+    init(analyticsSession: AnalyticsLibraryConnectionSession, entryTapAlreadyTracked: Bool) {
         let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = KoboWebSession.websiteDataStore
+#if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        fixtureKind = arguments.contains("-CastReaderKoboLoginFixture") ? "login"
+            : arguments.contains("-CastReaderKoboBlankFixture") ? "blank"
+            : arguments.contains("-CastReaderKoboPopupFixture") ? "popup"
+            : arguments.contains("-CastReaderKoboHundredShelfFixture") ? "hundred"
+            : arguments.contains("-CastReaderKoboShelfFixture") ? "shelf" : nil
+#else
+        fixtureKind = nil
+#endif
+        if fixtureKind != nil {
+            let profile = WKWebsiteDataStore.nonPersistent()
+            configuration.websiteDataStore = profile
+            let suite = "castreader.kobo.shelf-fixture.v1"
+            let defaults = UserDefaults(suiteName: suite)!
+            defaults.removePersistentDomain(forName: suite)
+            let history = HistoryStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent("KoboFixture-" + UUID().uuidString))
+            store = fixtureKind == "hundred" ? .shared
+                : KoboLibraryStore(defaults: defaults, historyStore: history, websiteDataStore: profile)
+        } else {
+            configuration.websiteDataStore = KoboWebSession.websiteDataStore
+            store = .shared
+        }
         configuration.defaultWebpagePreferences.preferredContentMode = .mobile
         webView = WKWebView(frame: .zero, configuration: configuration)
-        connectionAnalytics = AnalyticsLibraryConnectionRecorder(
-            session: analyticsSession,
-            entryTapAlreadyTracked: entryTapAlreadyTracked
-        )
+        connectionAnalytics = AnalyticsLibraryConnectionRecorder(session: analyticsSession, entryTapAlreadyTracked: entryTapAlreadyTracked)
+        storageBoundary = store.captureStorageBoundary()
         super.init()
-        webView.customUserAgent = GoogleBooksWebScripts.mobileSafariUserAgent
-        webView.navigationDelegate = self
-        webView.uiDelegate = self
+        configure(webView)
+        mainHistoryObservation = observeHistory(webView)
+        let tap = UITapGestureRecognizer(target: self, action: #selector(shelfTouched))
+        tap.cancelsTouchesInView = false
+        webView.addGestureRecognizer(tap)
+        webView.scrollView.panGestureRecognizer.addTarget(self, action: #selector(shelfTouched))
+    }
+
+    private func configure(_ view: WKWebView) {
+        view.customUserAgent = GoogleBooksWebScripts.mobileSafariUserAgent
+        view.navigationDelegate = self
+        view.uiDelegate = self
 #if DEBUG
-        webView.isInspectable = true
+        view.isInspectable = true
 #endif
     }
 
-    func recordConnectionPresented() { connectionAnalytics.presented() }
+    private func observeHistory(_ view: WKWebView) -> NSKeyValueObservation {
+        view.observe(\.canGoBack, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor [weak self] in self?.updateHistory() }
+        }
+    }
+
+    private func updateHistory() {
+        canGoBack = popupWebView != nil || activeWebView.canGoBack
+    }
+
+    func recordConnectionPresented() { if fixtureKind == nil { connectionAnalytics.presented() } }
+
+    @discardableResult
+    private func recordConnection(_ stage: AnalyticsLibraryConnectionStage, result: AnalyticsResult, errorCode: String? = nil, bookCount: Int? = nil) -> Bool {
+        if fixtureKind != nil { return true }
+        return connectionAnalytics.record(stage, result: result, errorCode: errorCode, bookCount: bookCount)
+    }
 
     func closeConnection() {
-        connectionAnalytics.close()
+        if bindingPhase == .failed, let pendingFailureCode {
+            recordConnection(.failed, result: .failed, errorCode: pendingFailureCode)
+        }
+        if fixtureKind == nil { connectionAnalytics.close() }
         stop()
     }
 
     func loadIfNeeded() {
         guard !didLoad else { return }
         didLoad = true
-        webView.load(URLRequest(url: KoboWebScripts.shelfURL))
+        isClosed = false
+        loadShelf()
+    }
+
+    private func loadShelf() {
+        cancelWork()
+        committedDocuments.remove(ObjectIdentifier(webView))
+        navigationHasFailed = false
+        setPhase(.opening)
+#if DEBUG
+        if let fixtureKind {
+            let html = fixtureKind == "login" ? Self.loginFixture
+                : fixtureKind == "blank" ? "<!doctype html><html><body></body></html>"
+                : fixtureKind == "popup" ? Self.popupFixture
+                : fixtureKind == "hundred" ? KoboWebScripts.debugHundredBookShelfFixture
+                : KoboWebScripts.debugShelfFixture
+            navigations[ObjectIdentifier(webView)] = webView.loadHTMLString(html, baseURL: KoboWebScripts.shelfURL)
+            return
+        }
+#endif
+        navigations[ObjectIdentifier(webView)] = webView.load(URLRequest(url: latestShelfURL))
+        scheduleObservation()
     }
 
     func stop() {
-        probeGeneration += 1
+        isClosed = true
+        cancelWork()
+        webView.stopLoading()
+        discardPopup()
+    }
+
+    private func cancelWork() {
+        flowGeneration += 1
         workTask?.cancel()
         workTask = nil
         isScanningShelf = false
-        popupWebView?.stopLoading()
-        popupWebView = nil
+        awaitingAutomaticPageChange = false
+        webView.isUserInteractionEnabled = true
+        webView.configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
+        popupWebView?.configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
+        completedScan = nil
+        completedPageKey = nil
+        completedFingerprint = nil
+        resolvedShelfAccount = nil
+    }
+
+    private func setPhase(_ phase: KoboBindingPhase) {
+        if bindingPhase != phase {
+            ReaderRunLog.write("KOBO binding phase=\(phase) surface=\(popupWebView == nil ? "main" : "popup")")
+        }
+        bindingPhase = phase
+        if phase != .failed { errorText = nil; pendingFailureCode = nil }
+        switch phase {
+        case .opening:
+            statusText = AppLocalized("正在打开 Kobo…")
+            detailText = AppLocalized("登录成功后将自动进入书架。")
+        case .awaitingLogin:
+            statusText = AppLocalized("请登录你的 Kobo 账号")
+            detailText = AppLocalized("登录成功后会自动继续，无需再点按钮。")
+        case .authenticating:
+            statusText = AppLocalized("请完成 Kobo 登录")
+            detailText = AppLocalized("登录页面会使用完整空间，完成后自动返回书架。")
+        case .scanning:
+            statusText = AppLocalized("正在同步 Kobo 书架…")
+            detailText = AppLocalized("正在等待书架完整加载，请稍候。")
+        case .ready:
+            statusText = AppLocalized("Kobo 书架已加载")
+        case .synced:
+            statusText = AppLocalized("Kobo 书架已同步")
+        case .failed:
+            statusText = AppLocalized("Kobo 内容暂时无法打开，请重试。")
+            detailText = AppLocalized("重新加载")
+        }
+        if phase == .authenticating || phase == .failed {
+            webView.isUserInteractionEnabled = true
+            popupWebView?.isUserInteractionEnabled = true
+        }
+        updateHistory()
+    }
+
+    private func fail(_ code: String, message: String? = nil) {
+        cancelWork()
+        navigationHasFailed = true
+        setPhase(.failed)
+        errorText = message ?? AppLocalized("内容暂时无法打开，请重试")
+        pendingFailureCode = code
+        log("failed reason=\(code)", view: activeWebView)
+        // A visible retry is still the same connection attempt. The recorder's
+        // failed stage is terminal, so emit it only if the user closes here.
     }
 
     func openSignIn() {
-        guard !isWorking else { return }
-        connectionAnalytics.record(.loginStarted, result: .started)
-        errorText = nil
-        isWorking = true
-        webView.evaluateJavaScript(
-            KoboWebScripts.currentPageSignInURL
-        ) { [weak self] value, _ in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                if let raw = value as? String,
-                   let url = URL(string: raw),
-                   KoboWebScripts.allowsBindingNavigation(url) {
-                    self.isCredentialPage = true
-                    self.webView.load(URLRequest(url: url))
-                    self.isWorking = false
-                    return
-                }
-                let click = #"""
-                (function () {
-                  var node = document.querySelector(
-                    'a[data-testid*="sign-in" i], a[href*="/signin" i], a[href*="/login" i], button[data-testid*="sign-in" i]'
-                  );
-                  if (!node) return false;
-                  node.click();
-                  return true;
-                })();
-                """#
-                self.webView.evaluateJavaScript(click) { [weak self] value, _ in
-                    Task { @MainActor [weak self] in
-                        guard let self else { return }
-                        self.isWorking = false
-                        if value as? Bool == true {
-                            self.isCredentialPage = true
-                        } else {
-                            self.errorText =
-                                AppLocalized("请点击页面中的登录入口后继续。")
-                        }
-                    }
-                }
+        guard bindingPhase == .awaitingLogin else { return }
+        cancelWork()
+        didRecoverContinuation = false
+        recordConnection(.loginStarted, result: .started)
+        setPhase(.authenticating)
+        let generation = flowGeneration
+        let view = activeWebView
+        // A native tap is not a WebKit user gesture. Permit the site's actual
+        // click handler to create its validated popup only during this action.
+        view.configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
+        workTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { view.configuration.preferences.javaScriptCanOpenWindowsAutomatically = false }
+            let raw = await self.evaluate(KoboWebScripts.activateSignIn, in: view, purpose: "sign_in_action")
+            guard self.isCurrent(generation), view === self.activeWebView else { return }
+            if raw as? String == "form" || raw as? String == "clicked" {
+                self.scheduleObservation()
+            } else {
+                self.fail("sign_in_control_unavailable", message: AppLocalized("请点击页面中的登录入口后继续。"))
             }
         }
     }
 
-    func commitShelf() {
-        guard canSync, let account = pendingAccount else { return }
-        connectionAnalytics.record(.syncStarted, result: .started)
-        isWorking = true
-        store.mergeScrapedBooks(
-            Array(pendingBooks.values),
-            account: account
-        )
-        isWorking = false
-        if let error = store.lastError {
-            errorText = error
-            connectionAnalytics.record(
-                .failed,
-                result: .failed,
-                errorCode: "local_commit_failed"
-            )
+    func reloadPage() {
+        guard !isClosed else { return }
+        cancelWork()
+        didRecoverContinuation = false
+        navigationHasFailed = false
+        let view = activeWebView
+        setPhase(KoboBindingFlowContract.isCredentialURL(view.url) ? .authenticating : .opening)
+#if DEBUG
+        if fixtureKind != nil, popupWebView == nil { loadShelf(); return }
+#endif
+        if KoboWebScripts.allowsBindingNavigation(view.url) {
+            let navigation = view.reload()
+            navigations[ObjectIdentifier(view)] = navigation
+            scheduleObservation()
         } else {
-            let verifiedBookCount = pendingBooks.count
-            guard connectionAnalytics.record(
-                .syncCompleted,
-                result: .success,
-                bookCount: verifiedBookCount
-            ) else {
-                errorText = AppLocalized("书架已保存，但同步确认未完成，请重试。")
-                canSync = true
-                return
+            discardPopup()
+            loadShelf()
+        }
+    }
+
+    func goBack() {
+        cancelWork()
+        navigationHasFailed = false
+        if activeWebView.canGoBack {
+            setPhase(.opening)
+            let navigation = activeWebView.goBack()
+            navigations[ObjectIdentifier(activeWebView)] = navigation
+            scheduleObservation()
+        } else if popupWebView != nil {
+            closePopup()
+        }
+    }
+
+    func closePopup() {
+        guard popupWebView != nil else { return }
+        cancelWork()
+        navigationHasFailed = false
+        if let opener = suspendedPopups.popLast() {
+            if let popupWebView {
+                navigations.removeValue(forKey: ObjectIdentifier(popupWebView))
+                committedDocuments.remove(ObjectIdentifier(popupWebView))
             }
-            didSync = true
-            canSync = false
-            statusText = AppLocalized("Kobo 书架已同步")
-            detailText = String(
-                format: AppLocalized("已同步 %d 本书。"),
-                verifiedBookCount
-            )
-        }
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        didStartProvisionalNavigation navigation: WKNavigation!
-    ) {
-        updateCredentialState(webView.url)
-        if webView === self.webView,
-           KoboWebScripts.isShelfURL(webView.url) {
-            presentShelfLoading()
-        }
-    }
-
-    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-        updateCredentialState(webView.url)
-        if webView === self.webView, KoboWebScripts.isShelfURL(webView.url) {
-            presentShelfLoading()
-            ReaderRunLog.write(
-                "KOBO shelf committed; session probe scheduled immediately"
-            )
-            scheduleProbe(delayNanoseconds: 80_000_000)
-        }
-    }
-
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        updateCredentialState(webView.url)
-        if webView === popupWebView,
-           KoboWebScripts.isShelfURL(webView.url) {
-            popupWebView = nil
-            self.webView.load(URLRequest(url: KoboWebScripts.shelfURL))
+            popupWebView?.stopLoading()
+            popupWebView?.navigationDelegate = nil
+            popupWebView?.uiDelegate = nil
+            popupWebView = opener
+            popupHistoryObservation = observeHistory(opener)
+            setPhase(.authenticating)
+            scheduleObservation()
             return
         }
-        guard webView === self.webView || popupWebView == nil else { return }
-        scheduleProbe(delayNanoseconds: 80_000_000)
+        discardPopup()
+        // Closing a window proves neither success nor cancellation. Recheck
+        // the same persistent session through the actual Kobo shelf.
+        loadShelf()
     }
 
-    func webView(
-        _ webView: WKWebView,
-        decidePolicyFor navigationAction: WKNavigationAction,
-        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-    ) {
-        guard navigationAction.targetFrame?.isMainFrame != false else {
-            decisionHandler(.allow)
-            return
+    private func discardPopup() {
+        if let popupWebView {
+            navigations.removeValue(forKey: ObjectIdentifier(popupWebView))
+            committedDocuments.remove(ObjectIdentifier(popupWebView))
         }
-        guard KoboWebScripts.allowsBindingNavigation(
-            navigationAction.request.url
-        ) else {
+        popupWebView?.stopLoading()
+        popupWebView?.navigationDelegate = nil
+        popupWebView?.uiDelegate = nil
+        popupWebView = nil
+        popupHistoryObservation = nil
+        suspendedPopups.forEach {
+            navigations.removeValue(forKey: ObjectIdentifier($0))
+            committedDocuments.remove(ObjectIdentifier($0))
+            $0.stopLoading()
+            $0.navigationDelegate = nil
+            $0.uiDelegate = nil
+        }
+        suspendedPopups = []
+        updateHistory()
+    }
+
+    @objc private func shelfTouched(_ gesture: UIGestureRecognizer) {
+        guard canSync, gesture.state == .began || gesture.state == .ended else { return }
+        cancelWork()
+        setPhase(.opening)
+        scheduleObservation(delay: 500_000_000)
+    }
+
+    private func isCurrent(_ generation: Int) -> Bool {
+        !Task.isCancelled && !isClosed && generation == flowGeneration
+            && storageBoundary.map(store.isCurrentStorageBoundary) == true
+    }
+
+    private func isKnown(_ view: WKWebView) -> Bool {
+        view === webView || view === popupWebView || suspendedPopups.contains { $0 === view }
+    }
+
+    private func isStale(_ navigation: WKNavigation?, in view: WKWebView) -> Bool {
+        guard let navigation,
+              let current = navigations[ObjectIdentifier(view)] else { return false }
+        return navigation !== current
+    }
+
+    func webView(_ view: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        guard isKnown(view), !isClosed else { return }
+        committedDocuments.remove(ObjectIdentifier(view))
+        navigations[ObjectIdentifier(view)] = navigation
+        log("navigation_start", view: view)
+        if view === activeWebView, !(isScanningShelf && awaitingAutomaticPageChange && view === webView) {
+            navigationHasFailed = false
+            cancelWork()
+            setPhase(KoboBindingFlowContract.isCredentialURL(view.url) ? .authenticating : .opening)
+            scheduleObservation()
+        }
+    }
+
+    func webView(_ view: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation!) {
+        guard isKnown(view) else { return }
+        log("navigation_redirect", view: view)
+        if view === activeWebView, KoboBindingFlowContract.isCredentialURL(view.url) {
+            setPhase(.authenticating)
+        }
+    }
+
+    func webView(_ view: WKWebView, didCommit navigation: WKNavigation!) {
+        guard isKnown(view), !isStale(navigation, in: view), !isClosed else { return }
+        committedDocuments.insert(ObjectIdentifier(view))
+        log("navigation_commit", view: view)
+        guard view === activeWebView, !navigationHasFailed else { return }
+        if KoboBindingFlowContract.isCredentialURL(view.url) { setPhase(.authenticating) }
+        scheduleObservation()
+    }
+
+    func webView(_ view: WKWebView, didFinish navigation: WKNavigation!) {
+        guard isKnown(view), !isStale(navigation, in: view), !isClosed else { return }
+        log("navigation_finish", view: view)
+        updateHistory()
+        guard view === activeWebView, !navigationHasFailed else { return }
+        scheduleObservation()
+    }
+
+    private func permits(_ url: URL?, in view: WKWebView) -> Bool {
+        if KoboWebScripts.allowsBindingNavigation(url) { return true }
+        return (view === popupWebView || suspendedPopups.contains { $0 === view })
+            && (url == nil || url?.absoluteString == "about:blank")
+    }
+
+    func webView(_ view: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard isKnown(view), !isClosed else { decisionHandler(.cancel); return }
+        guard action.targetFrame?.isMainFrame != false else { decisionHandler(.allow); return }
+        let blankPopup = action.targetFrame == nil && KoboBindingFlowContract.allowsPopupBootstrap(action.request.url, openerURL: action.sourceFrame.request.url)
+        guard permits(action.request.url, in: view) || blankPopup else {
             decisionHandler(.cancel)
+            log("navigation_blocked destination=\(KoboBindingFlowContract.safeRouteLabel(action.request.url))", view: view)
+            if view === activeWebView {
+                fail("navigation_blocked", message: AppLocalized("Kobo 内容暂时无法打开，请重试。"))
+            }
             return
+        }
+        log("navigation_allowed destination=\(KoboBindingFlowContract.safeRouteLabel(action.request.url))", view: view)
+        if view === activeWebView, action.targetFrame?.isMainFrame == true,
+           !(isScanningShelf && awaitingAutomaticPageChange && KoboWebScripts.isShelfURL(action.request.url)) {
+            committedDocuments.remove(ObjectIdentifier(view))
+            navigationHasFailed = false
+            cancelWork()
+            setPhase(KoboBindingFlowContract.isCredentialURL(action.request.url) ? .authenticating : .opening)
         }
         decisionHandler(.allow)
     }
 
-    func webView(
-        _ webView: WKWebView,
-        createWebViewWith configuration: WKWebViewConfiguration,
-        for navigationAction: WKNavigationAction,
-        windowFeatures: WKWindowFeatures
-    ) -> WKWebView? {
-        guard let url = navigationAction.request.url,
-              KoboWebScripts.allowsBindingNavigation(url) else {
+    func webView(_ view: WKWebView, decidePolicyFor response: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        guard response.isForMainFrame else { decisionHandler(.allow); return }
+        guard isKnown(view), permits(response.response.url, in: view) else {
+            decisionHandler(.cancel)
+            if isKnown(view), view === activeWebView { fail("response_destination_blocked") }
+            return
+        }
+        if let http = response.response as? HTTPURLResponse {
+            log("response status=\(http.statusCode)", view: view)
+            if http.statusCode >= 400, view === activeWebView {
+                fail("http_\(http.statusCode)", message: AppLocalized("网络连接失败，请重试。"))
+            }
+        }
+        decisionHandler(.allow)
+    }
+
+    func webView(_ view: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for action: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        guard isKnown(view), !isClosed,
+              suspendedPopups.count < 3,
+              KoboWebScripts.allowsBindingNavigation(action.request.url)
+                || KoboBindingFlowContract.allowsPopupBootstrap(action.request.url, openerURL: action.sourceFrame.request.url) else {
+            log("popup_blocked", view: view)
             return nil
         }
-        // Reuse the exact configuration supplied by WebKit, then force the
-        // app-wide persistent profile so OAuth/popup state returns to shelf.
-        configuration.websiteDataStore = KoboWebSession.websiteDataStore
+        cancelWork()
+        // Keep the opener's profile and WebKit-supplied configuration: this
+        // preserves popup/opener relationships without exposing credentials.
+        configuration.websiteDataStore = view.configuration.websiteDataStore
+        if let existing = popupWebView { suspendedPopups.append(existing) }
+        navigationHasFailed = false
         let popup = WKWebView(frame: .zero, configuration: configuration)
-        popup.customUserAgent = GoogleBooksWebScripts.mobileSafariUserAgent
-        popup.navigationDelegate = self
-        popup.uiDelegate = self
-#if DEBUG
-        popup.isInspectable = true
-#endif
+        configure(popup)
         popupWebView = popup
-        isCredentialPage = true
+        popupHistoryObservation = observeHistory(popup)
+        setPhase(.authenticating)
+        recordConnection(.loginStarted, result: .started)
+        log("popup_created", view: popup)
+        scheduleObservation()
         return popup
     }
 
-    func webViewDidClose(_ webView: WKWebView) {
-        guard webView === popupWebView else { return }
-        popupWebView = nil
-        isCredentialPage = false
-        statusText = AppLocalized("登录成功，正在进入书架…")
-        self.webView.load(URLRequest(url: KoboWebScripts.shelfURL))
+    func webViewDidClose(_ view: WKWebView) {
+        if view === popupWebView { closePopup() }
+        else { removeSuspendedPopup(view) }
     }
 
-    func webView(
-        _ webView: WKWebView,
-        didFailProvisionalNavigation navigation: WKNavigation!,
-        withError error: Error
-    ) {
-        recordNavigationError(error)
+    private func removeSuspendedPopup(_ view: WKWebView) {
+        guard suspendedPopups.contains(where: { $0 === view }) else { return }
+        suspendedPopups.removeAll { $0 === view }
+        navigations.removeValue(forKey: ObjectIdentifier(view))
+        committedDocuments.remove(ObjectIdentifier(view))
+        view.navigationDelegate = nil
+        view.uiDelegate = nil
+        view.stopLoading()
     }
 
-    func webView(
-        _ webView: WKWebView,
-        didFail navigation: WKNavigation!,
-        withError error: Error
-    ) {
-        recordNavigationError(error)
+    func webView(_ view: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        navigationFailed(view, navigation: navigation, error: error)
     }
 
-    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        if webView === popupWebView {
-            popupWebView = nil
-        }
-        isCredentialPage = false
-        errorText = AppLocalized("内容暂时无法打开，请重试")
+    func webView(_ view: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        navigationFailed(view, navigation: navigation, error: error)
     }
 
-    private func updateCredentialState(_ url: URL?) {
-        guard let host = url?.host?.lowercased() else { return }
-        isCredentialPage =
-            !KoboWebScripts.isShelfURL(url)
-                && (
-                    host.contains("rakuten")
-                        || host == "accounts.google.com"
-                        || host == "appleid.apple.com"
-                        || url?.path.lowercased().contains("signin") == true
-                        || url?.path.lowercased().contains("login") == true
-                )
-        if KoboWebScripts.isShelfURL(url), !didSync {
-            presentShelfLoading()
-        }
-        if isCredentialPage {
-            statusText = AppLocalized("请完成 Kobo 登录")
-            detailText =
-                AppLocalized("登录页面会使用完整空间，完成后自动返回书架。")
-        }
+    private func navigationFailed(_ view: WKWebView, navigation: WKNavigation?, error: Error) {
+        guard isKnown(view), view === activeWebView, !isStale(navigation, in: view) else { return }
+        let nsError = error as NSError
+        guard !(nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled) else { return }
+        log("navigation_failed domain=\(nsError.domain) code=\(nsError.code)", view: view)
+        fail("navigation_failed", message: AppLocalized("网络连接失败，请重试。"))
     }
 
-    private func presentShelfLoading() {
-        guard !didSync else { return }
-        isCredentialPage = false
-        isWorking = true
-        errorText = nil
-        statusText = AppLocalized("正在同步 Kobo 书架…")
-        detailText = AppLocalized("正在检测书架中的书籍，请稍候。")
+    func webViewWebContentProcessDidTerminate(_ view: WKWebView) {
+        guard isKnown(view) else { return }
+        guard view === activeWebView else { removeSuspendedPopup(view); return }
+        log("web_process_terminated", view: view)
+        fail("web_process_terminated")
     }
 
-    private func scheduleProbe(
-        delayNanoseconds: UInt64 = 120_000_000
-    ) {
-        guard !isScanningShelf, !didSync else { return }
-        probeGeneration += 1
-        let generation = probeGeneration
+    private func scheduleObservation(delay: UInt64 = 80_000_000) {
+        guard !isClosed, !navigationHasFailed, !isScanningShelf, !didSync, !canSync else { return }
+        flowGeneration += 1
+        let generation = flowGeneration
         workTask?.cancel()
         workTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: delayNanoseconds)
-            guard let self,
-                  !Task.isCancelled,
-                  generation == self.probeGeneration else { return }
-            await self.runSessionProbeLoop(generation: generation)
+            try? await Task.sleep(nanoseconds: delay)
+            guard let self, self.isCurrent(generation) else { return }
+            await self.observePage(generation: generation)
         }
     }
 
-    private func recordNavigationError(_ error: Error) {
-        let nsError = error as NSError
-        guard nsError.code != NSURLErrorCancelled else { return }
-        if webView.url == nil, popupWebView == nil {
-            isCredentialPage = false
-        }
-        isWorking = false
-        errorText = AppLocalized("网络连接失败，请重试。")
-    }
-
-    private enum SessionProbeOutcome {
-        case retry
-        case finished
-    }
-
-    private func runSessionProbeLoop(generation: Int) async {
-        for attempt in 0..<60 {
-            guard !Task.isCancelled,
-                  generation == probeGeneration else { return }
-            if await probeSession(
-                acceptSignedOutResult: attempt >= 4
-            ) == .finished { return }
-            try? await Task.sleep(nanoseconds: 250_000_000)
-        }
-        guard !Task.isCancelled,
-              generation == probeGeneration else { return }
-        isWorking = false
-        errorText = AppLocalized("书架仍在加载，请稍后重试。")
-    }
-
-    private func probeSession(
-        acceptSignedOutResult: Bool
-    ) async -> SessionProbeOutcome {
-        guard let raw = await evaluate(KoboWebScripts.sessionProbe),
-              let dictionary = raw as? [String: Any] else {
-            if KoboWebScripts.isShelfURL(webView.url) {
-                presentShelfLoading()
-                return .retry
+    private func observePage(generation: Int) async {
+        var blankSince: TimeInterval?
+        var unavailableSince: TimeInterval?
+        var loadingSince: TimeInterval?
+        var lastDiagnostic = ""
+        while isCurrent(generation) {
+            let view = activeWebView
+            let raw = await evaluate(KoboWebScripts.bindingPageProbe, in: view, purpose: "binding_probe")
+            guard isCurrent(generation), view === activeWebView else { return }
+            let now = ProcessInfo.processInfo.systemUptime
+            guard let dictionary = raw as? [String: Any] else {
+                unavailableSince = unavailableSince ?? now
+                if now - (unavailableSince ?? now) > 25 {
+                    fail("page_probe_unavailable")
+                    return
+                }
+                try? await Task.sleep(nanoseconds: 700_000_000)
+                continue
             }
-            if !isCredentialPage {
-                isWorking = false
-                errorText = AppLocalized("内容暂时无法打开，请重试")
-            }
-            return .finished
-        }
-        let result = KoboScanResult(dictionary)
-        guard result.authenticated else {
-            isSignedIn = false
-            canSync = false
-            if result.authRequired, acceptSignedOutResult {
-                isWorking = false
-                statusText = AppLocalized("请登录你的 Kobo 账号")
-                detailText =
-                    AppLocalized("可选择 Kobo 支持的 Google、Rakuten 或邮箱登录。")
-                return .finished
-            }
-            presentShelfLoading()
-            return .retry
-        }
+            unavailableSince = nil
+            let probe = KoboBindingPageProbe(dictionary)
+            let diagnostic = "form=\(probe.hasCredentialForm) shelf=\(probe.isShelfContext) account=\(probe.hasAccountEvidence) blank=\(probe.isBlank) loading=\(probe.isLoading)"
+            if diagnostic != lastDiagnostic { log("probe " + diagnostic, view: view); lastDiagnostic = diagnostic }
 
-        isSignedIn = true
-        connectionAnalytics.record(.loginSucceeded, result: .success)
-        isCredentialPage = false
-        statusText = AppLocalized("正在同步 Kobo 书架…")
-        detailText = AppLocalized("正在等待书架完整加载，请稍候。")
-        ReaderRunLog.write("KOBO shelf authenticated; scan started")
-        isScanningShelf = true
-        await scanShelf()
-        isScanningShelf = false
-        return .finished
-    }
-
-    private func scanShelf() async {
-        guard workTask == nil || !Task.isCancelled else { return }
-        isWorking = true
-        pendingBooks = [:]
-        pendingAccount = nil
-        stableEndPasses = 0
-        previousStableCount = -1
-
-        for attempt in 0..<36 {
-            guard !Task.isCancelled,
-                  let raw = await evaluate(KoboWebScripts.libraryScan),
-                  let dictionary = raw as? [String: Any] else {
-                break
-            }
-            let result = KoboScanResult(dictionary)
-            guard result.authenticated,
-                  let evidence = result.account else {
-                break
-            }
-            result.books.forEach { book in
-                pendingBooks[book.id] = KoboBookMetadata.merged(
-                    existing: pendingBooks[book.id],
-                    incoming: book
-                )
-            }
-            let account = KoboAccountInfo(label: evidence)
-            pendingAccount = account
-            if attempt == 0 {
-                ReaderRunLog.write(
-                    "KOBO shelf first scan books=\(pendingBooks.count) " +
-                    "complete=\(result.isCompleteSnapshot ? "Y" : "N")"
-                )
-            }
-
-            if result.isCompleteSnapshot {
-                if previousStableCount == pendingBooks.count {
-                    stableEndPasses += 1
-                } else {
-                    previousStableCount = pendingBooks.count
-                    stableEndPasses = 1
+            // Visible forms always win over URL/account-menu hints, including
+            // login forms rendered in-place at /library/books.
+            if probe.hasCredentialForm {
+                blankSince = nil
+                loadingSince = nil
+                setPhase(.authenticating)
+            } else if probe.canStartShelfScan(at: view.url, hasCommittedDocument: committedDocuments.contains(ObjectIdentifier(view))) {
+                blankSince = nil
+                if let url = view.url, KoboWebScripts.isShelfURL(url) { latestShelfURL = url }
+                if view === popupWebView {
+                    discardPopup()
+                    loadShelf()
+                    return
+                }
+                recordConnection(.loginSucceeded, result: .success)
+                await scanShelf(generation: generation)
+                return
+            } else if probe.isBlank {
+                blankSince = blankSince ?? now
+                let duration = now - (blankSince ?? now)
+                if !view.isLoading, !probe.isLoading, !didRecoverContinuation,
+                   let target = KoboBindingFlowContract.trustedShelfContinuation(view.url),
+                   target != view.url {
+                    didRecoverContinuation = true
+                    latestShelfURL = target
+                    discardPopup()
+                    loadShelf()
+                    return
+                }
+                if duration > (view.isLoading || probe.isLoading ? 25 : 4) {
+                    fail("blank_page", message: AppLocalized("Kobo 内容暂时无法打开，请重试。"))
+                    return
                 }
             } else {
-                stableEndPasses = 0
-                previousStableCount = -1
+                blankSince = nil
+                if view.isLoading || probe.isLoading {
+                    loadingSince = loadingSince ?? now
+                    if now - (loadingSince ?? now) > 25 {
+                        fail("page_loading_stalled", message: AppLocalized("网络连接失败，请重试。"))
+                        return
+                    }
+                } else { loadingSince = nil }
+                if KoboBindingFlowContract.isCredentialURL(view.url) || view === popupWebView {
+                    setPhase(.authenticating)
+                } else if probe.hasSignInControl {
+                    setPhase(.awaitingLogin)
+                } else {
+                    // An unrecognized nonempty page must stay navigable. Do
+                    // not turn a polling failure into a second login screen.
+                    setPhase(.authenticating)
+                }
             }
+            try? await Task.sleep(nanoseconds: 700_000_000)
+        }
+    }
 
-            if KoboShelfSyncContract.canCommit(
-                bookCount: pendingBooks.count,
-                account: account,
-                reachedEnd: result.isCompleteSnapshot,
-                stableEndPasses: stableEndPasses
-            ) {
-                canSync = true
-                isWorking = false
-                statusText = AppLocalized("Kobo 书架已加载")
-                detailText = String(
-                    format: AppLocalized("找到 %d 本书，可以同步。"),
-                    pendingBooks.count
-                )
-                ReaderRunLog.write(
-                    "KOBO shelf ready books=\(pendingBooks.count) " +
-                    "stable=\(stableEndPasses)"
-                )
+    private func scanShelf(generation: Int) async {
+        guard isCurrent(generation), popupWebView == nil else { return }
+        setPhase(.scanning)
+        isScanningShelf = true
+        var policy = KoboShelfScanPolicy(startedAt: ProcessInfo.processInfo.systemUptime)
+        defer {
+            if generation == flowGeneration {
+                isScanningShelf = false
+                awaitingAutomaticPageChange = false
+                webView.isUserInteractionEnabled = true
+            }
+        }
+        while isCurrent(generation) {
+            let raw = await evaluate(KoboWebScripts.libraryScan, in: webView, purpose: "shelf_scan")
+            guard isCurrent(generation) else { return }
+            var snapshot = (raw as? [String: Any]).map(KoboScanResult.init)
+            // Losing authentication releases input immediately. Page changes
+            // may briefly lose the JS context; the policy can retry that case.
+            let credentialForm = (raw as? [String: Any])?["hasCredentialForm"] as? Bool == true
+            if credentialForm || KoboBindingFlowContract.isCredentialURL(webView.url)
+                || (snapshot?.authenticated == false && !webView.isLoading && !awaitingAutomaticPageChange) {
+                isScanningShelf = false
+                awaitingAutomaticPageChange = false
+                webView.isUserInteractionEnabled = true
+                setPhase(.authenticating)
+                scheduleObservation()
+                return
+            }
+            if snapshot?.authenticated == true, snapshot?.account?.identity == nil {
+                if resolvedShelfAccount == nil {
+                    let account = await resolveShelfAccount()
+                    guard isCurrent(generation) else { return }
+                    guard let account else {
+                        fail("account_identity_unavailable", message: AppLocalized("请先登录 Kobo 并进入你的书架。"))
+                        return
+                    }
+                    resolvedShelfAccount = account
+                }
+                snapshot = snapshot.map(applyingResolvedAccount)
+            }
+            let decision = policy.observe(snapshot, now: ProcessInfo.processInfo.systemUptime)
+            awaitingAutomaticPageChange = policy.isAwaitingPageChange
+            // Only proven shelf pages can be locked while collecting. Never
+            // lock an authentication form based on a prior snapshot.
+            webView.isUserInteractionEnabled = snapshot?.authenticated != true
+            switch decision {
+            case .wait: break
+            case .resetToFirstPage, .advancePage:
+                awaitingAutomaticPageChange = true
+                let script = decision == .resetToFirstPage ? KoboWebScripts.resetShelfToFirstPage : KoboWebScripts.advanceShelfPage
+                let clicked = await evaluate(script, in: webView, purpose: "shelf_page_action")
+                guard isCurrent(generation) else { return }
+                if let clicked = clicked as? Bool, !clicked { fail("page_action_unavailable"); return }
+                log("shelf page action=\(decision == .advancePage ? "next" : "first") completedPages=\(policy.completedPageCount) books=\(policy.collectedBookCount)", view: webView)
+            case .complete:
+                guard KoboShelfSyncContract.canCommit(bookCount: policy.books.count, account: policy.account, reachedEnd: policy.completeTraversal, stableEndPasses: policy.stableEndPasses, completeTraversal: policy.completeTraversal) else {
+                    fail("whole_shelf_unverified"); return
+                }
+                completedScan = policy
+                completedPageKey = snapshot?.pagination.pageKey
+                completedFingerprint = snapshot?.pageFingerprint
+                setPhase(.ready)
+                detailText = String(format: AppLocalized("找到 %d 本书，可以同步。"), policy.books.count)
+                log("shelf ready books=\(policy.books.count) pages=\(policy.completedPageCount)", view: webView)
+                return
+            case .failed(let code):
+                fail(code, message: AppLocalized("书架仍在加载，请稍后重试。"))
                 return
             }
             try? await Task.sleep(nanoseconds: 350_000_000)
         }
-
-        isWorking = false
-        canSync = false
-        errorText = AppLocalized("书架仍在加载，请稍后重试。")
-        connectionAnalytics.record(
-            .failed,
-            result: .failed,
-            errorCode: "sync_snapshot_unavailable"
-        )
     }
 
-    private func evaluate(_ script: String) async -> Any? {
-        await withCheckedContinuation { continuation in
-            webView.evaluateJavaScript(script) { value, _ in
-                continuation.resume(returning: value)
+    func commitShelf() {
+        guard canSync, let scan = completedScan, let account = scan.account else { return }
+        let generation = flowGeneration
+        setPhase(.scanning)
+        workTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            // Re-read the profile before writing, so an account change during
+            // a multi-page traversal cannot inherit the previous user's books.
+            if self.resolvedShelfAccount != nil {
+                let verified = await self.resolveShelfAccount()
+                guard self.isCurrent(generation) else { return }
+                guard verified?.identity == account.identity else {
+                    self.fail("account_changed"); return
+                }
             }
+            let raw = await self.evaluate(KoboWebScripts.shelfSnapshot, in: self.webView, purpose: "commit_snapshot")
+            guard self.isCurrent(generation) else { return }
+            guard let dictionary = raw as? [String: Any] else { self.fail("commit_snapshot_unavailable"); return }
+            let current = self.applyingResolvedAccount(KoboScanResult(dictionary))
+            guard current.authenticated, current.account?.identity == account.identity,
+                  !current.hasPendingWork, current.isCompleteSnapshot, !current.pagination.blocked,
+                  current.pagination.isLastPage, !current.pagination.hasNextPage,
+                  current.pagination.totalPages == nil || current.pagination.totalPages == scan.completedPageCount,
+                  current.pagination.pageKey == self.completedPageKey,
+                  current.pageFingerprint == self.completedFingerprint else {
+                self.fail("commit_snapshot_changed"); return
+            }
+            self.recordConnection(.syncStarted, result: .started)
+            self.store.mergeScrapedBooks(Array(scan.books.values), account: account,
+                                        expectedStorageBoundary: self.storageBoundary)
+            if let error = self.store.lastError { self.fail("local_commit_failed", message: error); return }
+            guard self.recordConnection(.syncCompleted, result: .success, bookCount: scan.books.count) else {
+                self.fail("sync_confirmation_failed", message: AppLocalized("书架已保存，但同步确认未完成，请重试。")); return
+            }
+            self.setPhase(.synced)
+            self.detailText = String(format: AppLocalized("已同步 %d 本书。"), scan.books.count)
         }
     }
+
+    private func resolveShelfAccount() async -> (identity: String, label: String)? {
+        do {
+            let raw = try await webView.callAsyncJavaScript(
+                KoboWebScripts.accountSettingsIdentity, arguments: [:], in: nil, contentWorld: .page
+            )
+            guard let value = raw as? [String: Any],
+                  let identity = value["identity"] as? String,
+                  KoboAccountIdentity.isValidStoredIdentity(identity) else { return nil }
+            return (identity, value["label"] as? String ?? "Kobo")
+        } catch {
+            let error = error as NSError
+            log("account_lookup_failed domain=\(error.domain) code=\(error.code)", view: webView)
+            return nil
+        }
+    }
+
+    private func applyingResolvedAccount(_ result: KoboScanResult) -> KoboScanResult {
+        guard result.authenticated, result.account?.identity == nil,
+              let resolvedShelfAccount else { return result }
+        var copy = result
+        copy.account = KoboScanAccountEvidence(
+            displayLabel: resolvedShelfAccount.label, identity: resolvedShelfAccount.identity,
+            hasAccountEvidence: result.hasAccountEvidence, isShelfContext: result.isShelfContext,
+            isCompleteSnapshot: result.isCompleteSnapshot
+        )
+        return copy
+    }
+
+    private func evaluate(_ script: String, in view: WKWebView, purpose: String) async -> Any? {
+        do { return try await view.evaluateJavaScript(script) }
+        catch {
+            let error = error as NSError
+            log("js_failed purpose=\(purpose) domain=\(error.domain) code=\(error.code)", view: view)
+            return nil
+        }
+    }
+
+    private func log(_ message: String, view: WKWebView) {
+        ReaderRunLog.write("KOBO \(message) surface=\(view === webView ? "main" : "popup") route=\(KoboBindingFlowContract.safeRouteLabel(view.url))")
+    }
+
+#if DEBUG
+    private static let popupFixture = #"""
+    <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+    <body><h1>Local Kobo popup fixture</h1>
+    <a href="#signin" onclick="event.preventDefault();var w=window.open('about:blank','kobo-local-auth');if(w){w.document.write('<!doctype html><html><head><meta name=viewport content=width=device-width,initial-scale=1><style>body{font:17px -apple-system;padding:20px}label{display:block;margin:20px 0}input{display:block;font:inherit;padding:12px;width:85%}</style></head><body><h1>Local authorization</h1><form><label>Email<input type=email autocomplete=username aria-label=Email></label><label>Password<input type=password aria-label=Password></label></form></body></html>');w.document.close();}">Sign in</a>
+    </body></html>
+    """#
+
+    private static let loginFixture = #"""
+    <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+    <style>body{font:17px -apple-system;padding:20px}label{display:block;margin:20px 0}input{display:block;font:inherit;padding:12px;width:85%}button{font:inherit;padding:14px}header{background:#fff1d8;padding:12px}</style></head>
+    <body><header>Local Kobo login fixture · no network</header><h1>Sign in to Kobo</h1>
+    <form onsubmit="event.preventDefault();this.outerHTML='<p>Form submitted locally</p>'">
+    <label>Email<input aria-label="Email" type="email" autocomplete="username"></label>
+    <label>Password<input aria-label="Password" type="password" autocomplete="current-password"></label>
+    <button type="submit">Continue</button></form></body></html>
+    """#
+#endif
 }

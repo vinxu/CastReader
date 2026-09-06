@@ -59,19 +59,25 @@ struct GoogleBooksAccountInfo: Codable, Equatable {
     var hasAccountEvidence: Bool
     var isShelfContext: Bool
     var isCompleteSnapshot: Bool
+    var hasExplicitEmptyShelf: Bool
+    var unrecognizedBookCandidateCount: Int
 
     init(
         label: String?,
         identity: String? = nil,
         hasAccountEvidence: Bool = false,
         isShelfContext: Bool = false,
-        isCompleteSnapshot: Bool = false
+        isCompleteSnapshot: Bool = false,
+        hasExplicitEmptyShelf: Bool = false,
+        unrecognizedBookCandidateCount: Int = 0
     ) {
         self.label = label
         self.identity = identity
         self.hasAccountEvidence = hasAccountEvidence
         self.isShelfContext = isShelfContext
         self.isCompleteSnapshot = isCompleteSnapshot
+        self.hasExplicitEmptyShelf = hasExplicitEmptyShelf
+        self.unrecognizedBookCandidateCount = max(0, unrecognizedBookCandidateCount)
     }
 
     /// Keeps the existing binding view call site source-compatible while
@@ -82,10 +88,13 @@ struct GoogleBooksAccountInfo: Codable, Equatable {
         hasAccountEvidence = evidence.hasAccountEvidence
         isShelfContext = evidence.isShelfContext
         isCompleteSnapshot = evidence.isCompleteSnapshot
+        hasExplicitEmptyShelf = evidence.hasExplicitEmptyShelf
+        unrecognizedBookCandidateCount = evidence.unrecognizedBookCandidateCount
     }
 
     private enum CodingKeys: String, CodingKey {
         case label, identity, hasAccountEvidence, isShelfContext, isCompleteSnapshot
+        case hasExplicitEmptyShelf, unrecognizedBookCandidateCount
     }
 
     init(from decoder: Decoder) throws {
@@ -98,6 +107,11 @@ struct GoogleBooksAccountInfo: Codable, Equatable {
             try values.decodeIfPresent(Bool.self, forKey: .isShelfContext) ?? false
         isCompleteSnapshot =
             try values.decodeIfPresent(Bool.self, forKey: .isCompleteSnapshot) ?? false
+        hasExplicitEmptyShelf =
+            try values.decodeIfPresent(Bool.self, forKey: .hasExplicitEmptyShelf) ?? false
+        unrecognizedBookCandidateCount = max(
+            0, try values.decodeIfPresent(Int.self, forKey: .unrecognizedBookCandidateCount) ?? 0
+        )
     }
 }
 
@@ -194,7 +208,11 @@ enum GoogleBooksBookValidator {
 
     static func isLikelyLibraryBook(_ book: GoogleBooksBook) -> Bool {
         let title = book.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty, usableReaderURL(book.readerURL) != nil else { return false }
+        guard !title.isEmpty,
+              let canonical = usableReaderURL(book.readerURL),
+              let volumeID = volumeID(from: canonical),
+              book.id == stableID(volumeID: volumeID, readerURL: canonical, title: title),
+              book.volumeID == nil || book.volumeID == volumeID else { return false }
         // 书架页上的功能入口/占位卡片会带同样的链接形状，靠标题排掉。
         let discarded = [
             "google play", "play books", "google play 图书", "我的图书", "my books",
@@ -351,6 +369,8 @@ struct GoogleBooksScanAccountEvidence: Equatable {
     let hasAccountEvidence: Bool
     let isShelfContext: Bool
     let isCompleteSnapshot: Bool
+    let hasExplicitEmptyShelf: Bool
+    let unrecognizedBookCandidateCount: Int
 }
 
 struct GoogleBooksScanResult {
@@ -359,6 +379,20 @@ struct GoogleBooksScanResult {
     var hasAccountEvidence: Bool
     var isShelfContext: Bool
     var isCompleteSnapshot: Bool
+    var hasExplicitEmptyShelf: Bool
+    var unrecognizedBookCandidateCount: Int
+    var atScrollEnd: Bool
+    var hasPendingWork: Bool
+    var hasUnsupportedPagination: Bool
+    var hasActiveShelfFilter: Bool
+    var hasCredentialForm: Bool
+    var isDocumentReady: Bool
+    var hasShelfSurface: Bool
+    var pageFingerprint: String
+    var scrollPosition: Double?
+    var scrollExtent: Double?
+    var viewportHeight: Double?
+    var hasInvalidBooks: Bool
     var account: GoogleBooksScanAccountEvidence?
     var books: [GoogleBooksBook]
 
@@ -366,7 +400,21 @@ struct GoogleBooksScanResult {
         authRequired = raw["authRequired"] as? Bool ?? true
         hasAccountEvidence = raw["hasAccountEvidence"] as? Bool ?? false
         isShelfContext = raw["isShelfContext"] as? Bool ?? false
-        isCompleteSnapshot = raw["isCompleteSnapshot"] as? Bool ?? false
+        isCompleteSnapshot = false
+        hasExplicitEmptyShelf = raw["hasExplicitEmptyShelf"] as? Bool ?? false
+        unrecognizedBookCandidateCount = max(0, (raw["unrecognizedBookCandidateCount"] as? NSNumber)?.intValue ?? 0)
+        atScrollEnd = raw["atScrollEnd"] as? Bool ?? false
+        hasPendingWork = raw["hasPendingWork"] as? Bool ?? true
+        hasUnsupportedPagination = raw["hasUnsupportedPagination"] as? Bool ?? false
+        hasActiveShelfFilter = raw["hasActiveShelfFilter"] as? Bool ?? false
+        hasCredentialForm = raw["hasCredentialForm"] as? Bool ?? false
+        isDocumentReady = raw["isDocumentReady"] as? Bool ?? false
+        hasShelfSurface = raw["hasShelfSurface"] as? Bool ?? false
+        pageFingerprint = raw["pageFingerprint"] as? String ?? ""
+        scrollPosition = Self.finiteNumber(raw["scrollPosition"])
+        scrollExtent = Self.finiteNumber(raw["scrollExtent"])
+        viewportHeight = Self.finiteNumber(raw["viewportHeight"])
+        hasInvalidBooks = false
         let declaredAuthenticated = raw["authenticated"] as? Bool ?? false
         // A public preview can contain valid reader links. Books alone are
         // therefore never authentication evidence.
@@ -374,20 +422,10 @@ struct GoogleBooksScanResult {
             && hasAccountEvidence
             && isShelfContext
             && !authRequired
-        if hasAccountEvidence {
-            account = GoogleBooksScanAccountEvidence(
-                displayLabel: raw["account"] as? String,
-                identity: GoogleBooksAccountIdentity.hash(
-                    raw["accountIdentitySource"] as? String
-                ),
-                hasAccountEvidence: true,
-                isShelfContext: isShelfContext,
-                isCompleteSnapshot: isCompleteSnapshot
-            )
-        } else {
-            account = nil
-        }
-        books = (raw["books"] as? [[String: Any]] ?? []).compactMap { item in
+            && !hasCredentialForm
+        let rawEntries = raw["books"] as? [Any]
+        let rawBooks = rawEntries?.compactMap { $0 as? [String: Any] } ?? []
+        books = rawBooks.compactMap { item in
             let rawURL = item["readerURL"] as? String ?? ""
             let title = (item["title"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             guard let url = GoogleBooksBookValidator.usableReaderURL(rawURL), !title.isEmpty else { return nil }
@@ -404,7 +442,32 @@ struct GoogleBooksScanResult {
                 lastSyncedAt: Date(),
                 lastReaderURL: nil
             )
-        }
+        }.filter(GoogleBooksBookValidator.isLikelyLibraryBook)
+        hasInvalidBooks = rawEntries == nil
+            || rawBooks.count != rawEntries?.count
+            || books.count != rawBooks.count
+        isCompleteSnapshot = raw["isCompleteSnapshot"] as? Bool == true
+            && authenticated && atScrollEnd && !hasPendingWork
+            && !hasUnsupportedPagination && !hasActiveShelfFilter && !hasInvalidBooks
+            && isDocumentReady && hasShelfSurface
+            && unrecognizedBookCandidateCount == 0
+            && (!books.isEmpty || hasExplicitEmptyShelf)
+            && (!hasExplicitEmptyShelf || books.isEmpty)
+        account = hasAccountEvidence ? GoogleBooksScanAccountEvidence(
+            displayLabel: raw["account"] as? String,
+            identity: GoogleBooksAccountIdentity.hash(raw["accountIdentitySource"] as? String),
+            hasAccountEvidence: true,
+            isShelfContext: isShelfContext,
+            isCompleteSnapshot: isCompleteSnapshot,
+            hasExplicitEmptyShelf: hasExplicitEmptyShelf,
+            unrecognizedBookCandidateCount: unrecognizedBookCandidateCount
+        ) : nil
+    }
+
+    private static func finiteNumber(_ value: Any?) -> Double? {
+        guard let value = value as? NSNumber else { return nil }
+        let number = value.doubleValue
+        return number.isFinite ? number : nil
     }
 
     static func normalizedCoverURL(_ raw: String) -> String? {
@@ -509,12 +572,202 @@ enum GoogleBooksShelfSyncContract {
             reachedEnd: reachedEnd,
             stableEndPasses: stableEndPasses
         ) else { return false }
-        guard bookCount > 0 else {
-            return account?.hasAccountEvidence == true
-                && account?.isShelfContext == true
-                && account?.isCompleteSnapshot == true
+        return account?.hasAccountEvidence == true
+            && account?.isShelfContext == true
+            && account?.isCompleteSnapshot == true
+            && GoogleBooksAccountIdentity.isValidStoredIdentity(account?.identity)
+            && account?.unrecognizedBookCandidateCount == 0
+            && (bookCount > 0 || account?.hasExplicitEmptyShelf == true)
+            && (account?.hasExplicitEmptyShelf != true || bookCount == 0)
+    }
+}
+
+/// Preserve metadata and local reading state when a virtualized card briefly
+/// renders only its title while authors or covers are still hydrating.
+enum GoogleBooksBookMetadata {
+    static func merged(existing: GoogleBooksBook?, incoming: GoogleBooksBook) -> GoogleBooksBook {
+        guard var result = existing else { return incoming }
+        let title = incoming.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let author = incoming.author.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !title.isEmpty { result.title = title }
+        if !author.isEmpty { result.author = author }
+        if let cover = incoming.coverURL.flatMap(GoogleBooksScanResult.normalizedCoverURL) {
+            result.coverURL = cover
         }
-        return true
+        result.readerURL = incoming.readerURL
+        result.volumeID = incoming.volumeID
+        if !incoming.progressLabel.isEmpty { result.progressLabel = incoming.progressLabel }
+        result.lastSyncedAt = max(result.lastSyncedAt, incoming.lastSyncedAt)
+        if let opened = incoming.lastOpenedAt,
+           result.lastOpenedAt == nil || opened > result.lastOpenedAt! {
+            result.lastOpenedAt = opened
+            result.lastReaderURL = incoming.lastReaderURL ?? result.lastReaderURL
+        }
+        return result
+    }
+}
+
+/// Evidence for one complete traversal of Google's virtualized shelf. A
+/// complete viewport flag alone is insufficient: the scan must begin at the
+/// top, retain one account, cover each viewport, and settle at the bottom.
+struct GoogleBooksShelfScanPolicy {
+    enum Decision: Equatable {
+        case wait
+        case complete
+        case failed(String)
+
+        static func == (lhs: Self, rhs: Self) -> Bool {
+            switch (lhs, rhs) {
+            case (.wait, .wait), (.complete, .complete): return true
+            case (.failed(let lhs), .failed(let rhs)): return lhs == rhs
+            default: return false
+            }
+        }
+    }
+
+    static let scanTimeout: TimeInterval = 180
+    static let unverifiedContentTimeout: TimeInterval = 12
+    private(set) var books: [String: GoogleBooksBook] = [:]
+    private(set) var account: GoogleBooksAccountInfo?
+    private(set) var completeTraversal = false
+    private let startedAt: TimeInterval
+    private var identity: String?
+    private var previousPosition: Double?
+    private var previousViewport: Double?
+    private var stableSignature: String?
+    private var stableSince: TimeInterval?
+    private var stablePasses = 0
+    private var unverifiedContentSince: TimeInterval?
+    private var unrecognizedCardPosition: Double?
+    private var terminalDecision: Decision?
+
+    init(startedAt: TimeInterval) { self.startedAt = startedAt }
+
+    var collectedBooks: [GoogleBooksBook] { Array(books.values) }
+
+    func matchesCurrentAccount(_ result: GoogleBooksScanResult) -> Bool {
+        result.authenticated && !result.authRequired && result.isShelfContext
+            && result.account?.identity == identity && identity != nil
+            && result.unrecognizedBookCandidateCount == 0 && !result.hasInvalidBooks
+            && !result.hasActiveShelfFilter
+            && result.isDocumentReady && result.hasShelfSurface
+            && (!books.isEmpty
+                ? !result.hasExplicitEmptyShelf
+                : result.hasExplicitEmptyShelf && result.books.isEmpty && !result.hasPendingWork)
+    }
+
+    mutating func observe(_ result: GoogleBooksScanResult, now: TimeInterval) -> Decision {
+        if let terminalDecision { return terminalDecision }
+        guard now - startedAt <= Self.scanTimeout else { return fail("scan_timeout") }
+        guard result.authenticated, !result.authRequired,
+              let evidence = result.account,
+              let incomingIdentity = evidence.identity,
+              GoogleBooksAccountIdentity.isValidStoredIdentity(incomingIdentity) else {
+            return fail("account_unverified")
+        }
+        if let identity, identity != incomingIdentity { return fail("account_changed") }
+        identity = incomingIdentity
+        guard result.hasShelfSurface else { return fail("shelf_surface_unverified") }
+        guard result.isDocumentReady else {
+            resetStability()
+            unverifiedContentSince = nil
+            return .wait
+        }
+        guard !result.hasUnsupportedPagination else { return fail("pagination_unverified") }
+        guard !result.hasActiveShelfFilter else { return fail("active_shelf_filter") }
+        guard !result.hasInvalidBooks else { return fail("invalid_shelf_books") }
+        guard let position = result.scrollPosition,
+              let extent = result.scrollExtent,
+              let viewport = result.viewportHeight,
+              position >= 0, extent >= 0, viewport > 0,
+              position <= extent + 4 else { return fail("scroll_evidence_unavailable") }
+        if let unrecognizedCardPosition,
+           abs(position - unrecognizedCardPosition) > 4 {
+            return fail("unrecognized_card_skipped")
+        }
+        if let previousPosition, let previousViewport {
+            guard position + 4 >= previousPosition,
+                  position - previousPosition <= max(previousViewport, viewport) + 4 else {
+                return fail("scroll_traversal_interrupted")
+            }
+        } else if position > 4 {
+            return fail("shelf_start_unverified")
+        }
+        previousPosition = position
+        previousViewport = viewport
+        if result.unrecognizedBookCandidateCount > 0 {
+            // Keep an unresolved viewport in the traversal even if the next
+            // script pass no longer includes those virtualized DOM nodes.
+            if unrecognizedCardPosition == nil { unrecognizedCardPosition = position }
+        } else if !result.hasPendingWork,
+                  !result.books.isEmpty || result.hasExplicitEmptyShelf {
+            // The unresolved position above must first be revisited and
+            // positively recognized; a transient blank/loading pass cannot
+            // release it and let the next scroll skip missing cards.
+            unrecognizedCardPosition = nil
+        }
+        for book in result.books {
+            books[book.id] = GoogleBooksBookMetadata.merged(existing: books[book.id], incoming: book)
+        }
+        let hasUnverifiedContent = result.unrecognizedBookCandidateCount > 0
+            || unrecognizedCardPosition != nil
+            || (result.books.isEmpty && !result.hasExplicitEmptyShelf)
+            || (result.hasExplicitEmptyShelf && !books.isEmpty)
+        if hasUnverifiedContent {
+            resetStability()
+            if unrecognizedCardPosition != nil || result.atScrollEnd && !result.hasPendingWork {
+                if unverifiedContentSince == nil { unverifiedContentSince = now }
+                if now - (unverifiedContentSince ?? now) >= Self.unverifiedContentTimeout {
+                    return fail("unrecognized_shelf_content")
+                }
+            } else {
+                unverifiedContentSince = nil
+            }
+            return .wait
+        }
+        unverifiedContentSince = nil
+        guard result.isCompleteSnapshot, result.atScrollEnd,
+              !result.hasPendingWork, position >= extent - 8 else {
+            resetStability()
+            return .wait
+        }
+        let metadata = books.keys.sorted().map { id in
+            let book = books[id]!
+            return [id, book.title, book.author, book.coverURL ?? "", book.progressLabel]
+                .joined(separator: "\u{001F}")
+        }.joined(separator: "\n")
+        let signature = [incomingIdentity, String(extent), result.pageFingerprint, metadata]
+            .joined(separator: "\n")
+        if stableSignature == signature {
+            stablePasses += 1
+        } else {
+            stableSignature = signature
+            stableSince = now
+            stablePasses = 1
+        }
+        let minimumSettleTime: TimeInterval = books.isEmpty ? 7 : 3
+        guard GoogleBooksShelfSyncContract.isStableSnapshot(
+            bookCount: books.count, reachedEnd: true, stableEndPasses: stablePasses
+        ), now - (stableSince ?? now) >= minimumSettleTime else { return .wait }
+        var completedAccount = GoogleBooksAccountInfo(label: evidence)
+        completedAccount.isCompleteSnapshot = true
+        account = completedAccount
+        completeTraversal = true
+        terminalDecision = .complete
+        return .complete
+    }
+
+    private mutating func resetStability() {
+        stableSignature = nil
+        stableSince = nil
+        stablePasses = 0
+    }
+
+    private mutating func fail(_ reason: String) -> Decision {
+        completeTraversal = false
+        account = nil
+        terminalDecision = .failed(reason)
+        return .failed(reason)
     }
 }
 

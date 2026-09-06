@@ -555,6 +555,8 @@ struct ReaderHostView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(AppTheme.foreground)
             }
+            .accessibilityIdentifier("readerMinimizeButton")
+            .accessibilityLabel(Text(AppLocalized("返回")))
             Text(document.title)
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)

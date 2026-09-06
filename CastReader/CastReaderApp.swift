@@ -137,6 +137,9 @@ enum AppOrientationLock {
 /// 的生命周期不受影响；只有主动登出才会销毁它们，这与登出语义一致。
 struct RootAuthGate: View {
     @ObservedObject private var auth = AuthService.shared
+#if DEBUG
+    @State private var didOpenGoogleBooksDebugConnection = false
+#endif
 
     /// UI 测试无法走真实的 Google/Apple 授权，所以它们需要一条绕过。沿用
     /// BoundLibraryOnboardingStore 既有的 launch-argument 约定。
@@ -145,12 +148,36 @@ struct RootAuthGate: View {
 
     var body: some View {
         Group {
-            if auth.isSignedIn || bypassesGate {
+#if DEBUG
+            // Exercise the real Kobo connection UI against a local four-page
+            // shelf. The fixture and its isolated WebView/store exist only in
+            // Debug builds; release builds always use the normal auth gate.
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderKoboShelfFixture")
+                || ProcessInfo.processInfo.arguments.contains("-CastReaderKoboLoginFixture")
+                || ProcessInfo.processInfo.arguments.contains("-CastReaderKoboBlankFixture")
+                || ProcessInfo.processInfo.arguments.contains("-CastReaderKoboPopupFixture") {
+                KoboLibraryConnectView()
+            } else if ProcessInfo.processInfo.arguments.contains("-CastReaderGoogleBooksLoginFixture")
+                || ProcessInfo.processInfo.arguments.contains("-CastReaderGoogleBooksBlankFixture")
+                || ProcessInfo.processInfo.arguments.contains("-CastReaderGoogleBooksPopupFixture") {
+                GoogleBooksLibraryConnectView()
+            } else if ProcessInfo.processInfo.arguments.contains("-CastReaderKoboHomeValidation")
+                || ProcessInfo.processInfo.arguments.contains("-CastReaderGoogleBooksHomeValidation") {
                 MainTabView()
-                    .id(auth.accountBoundaryID)
+                    .task {
+                        guard ProcessInfo.processInfo.arguments.contains("-CastReaderGoogleBooksOpenConnection"),
+                              !didOpenGoogleBooksDebugConnection else { return }
+                        didOpenGoogleBooksDebugConnection = true
+                        try? await Task.sleep(for: .milliseconds(500))
+                        guard !Task.isCancelled else { return }
+                        NotificationCenter.default.post(name: .castReaderGoogleBooksRebindRequested, object: nil)
+                    }
             } else {
-                LoginView(isRootGate: true)
+                authenticatedRoot
             }
+#else
+            authenticatedRoot
+#endif
         }
         .alert(
             AppLocalized("注销申请已提交"),
@@ -165,6 +192,16 @@ struct RootAuthGate: View {
             }
         } message: { receipt in
             Text(receipt.userFacingMessage)
+        }
+    }
+
+    @ViewBuilder
+    private var authenticatedRoot: some View {
+        if auth.isSignedIn || bypassesGate {
+            MainTabView()
+                .id(auth.accountBoundaryID)
+        } else {
+            LoginView(isRootGate: true)
         }
     }
 }
