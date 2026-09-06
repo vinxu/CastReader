@@ -1,0 +1,314 @@
+{
+  "counts": {
+    "directNoResponse": 7,
+    "exactProxyMatches": 7,
+    "unambiguousMatches": 7
+  },
+  "limitations": [
+    "Keys join Direct caller to US proxy only; no client-session/request linkage is inferred",
+    "Downstream closed is not evidence of voluntary user cancellation",
+    "No headers were observed for these requests; underlying model or client cause is not established",
+    "Cancelled flight is not an HTTP 200 success"
+  ],
+  "productionModified": false,
+  "readOnly": true,
+  "rows": [
+    {
+      "direct": {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 3141,
+        "key": "8c8b84541970494ab13d",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:00:45.252998Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 1614,
+        "status": null
+      },
+      "exactAnonymousKeyMatch": true,
+      "proxy": {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": null,
+        "firstUTC": "2026-09-06T19:00:42.117548+00:00",
+        "flightKeys": [
+          "744f224e9643a46f9a86"
+        ],
+        "lastUTC": "2026-09-06T19:00:45.256633+00:00",
+        "outcomes": {
+          "cancelled": 1
+        },
+        "phases": [
+          "admission",
+          "cancellation",
+          "completion",
+          "connect",
+          "inbound_body"
+        ],
+        "receivedEvents": 1,
+        "requestKey": "8c8b84541970494ab13d"
+      },
+      "singleProxyAdmission": true
+    },
+    {
+      "direct": {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 939,
+        "key": "a58bd8bfc90cf70a7f82",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:00:46.291252Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 453,
+        "status": null
+      },
+      "exactAnonymousKeyMatch": true,
+      "proxy": {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": null,
+        "firstUTC": "2026-09-06T19:00:45.354773+00:00",
+        "flightKeys": [
+          "cbf45311d93f2f2cd0fd"
+        ],
+        "lastUTC": "2026-09-06T19:00:46.293989+00:00",
+        "outcomes": {
+          "cancelled": 1
+        },
+        "phases": [
+          "admission",
+          "cancellation",
+          "completion",
+          "connect",
+          "inbound_body"
+        ],
+        "receivedEvents": 1,
+        "requestKey": "a58bd8bfc90cf70a7f82"
+      },
+      "singleProxyAdmission": true
+    },
+    {
+      "direct": {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 669,
+        "key": "c8aba42cc4befb6eae5b",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:01:16.637459Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 202,
+        "status": null
+      },
+      "exactAnonymousKeyMatch": true,
+      "proxy": {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": null,
+        "firstUTC": "2026-09-06T19:01:15.977148+00:00",
+        "flightKeys": [
+          "e415f2f5a27d9c2b2300"
+        ],
+        "lastUTC": "2026-09-06T19:01:16.643370+00:00",
+        "outcomes": {
+          "cancelled": 1
+        },
+        "phases": [
+          "admission",
+          "cancellation",
+          "completion",
+          "connect",
+          "inbound_body"
+        ],
+        "receivedEvents": 1,
+        "requestKey": "c8aba42cc4befb6eae5b"
+      },
+      "singleProxyAdmission": true
+    },
+    {
+      "direct": {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 852,
+        "key": "7c3617a7bb14615ddf8a",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:15:19.483229Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 269,
+        "status": null
+      },
+      "exactAnonymousKeyMatch": true,
+      "proxy": {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": null,
+        "firstUTC": "2026-09-06T19:15:18.645210+00:00",
+        "flightKeys": [
+          "95a8b5b9aff9c29e8ae6"
+        ],
+        "lastUTC": "2026-09-06T19:15:19.487681+00:00",
+        "outcomes": {
+          "cancelled": 1
+        },
+        "phases": [
+          "admission",
+          "cancellation",
+          "completion",
+          "connect",
+          "inbound_body"
+        ],
+        "receivedEvents": 1,
+        "requestKey": "7c3617a7bb14615ddf8a"
+      },
+      "singleProxyAdmission": true
+    },
+    {
+      "direct": {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 227,
+        "key": "a55fc8cccb8c112a3f51",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:31:48.538629Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 167,
+        "status": null
+      },
+      "exactAnonymousKeyMatch": true,
+      "proxy": {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": null,
+        "firstUTC": "2026-09-06T19:31:48.318092+00:00",
+        "flightKeys": [
+          "a79e341640a05edf9d92"
+        ],
+        "lastUTC": "2026-09-06T19:31:48.543750+00:00",
+        "outcomes": {
+          "cancelled": 1
+        },
+        "phases": [
+          "admission",
+          "cancellation",
+          "completion",
+          "connect",
+          "inbound_body"
+        ],
+        "receivedEvents": 1,
+        "requestKey": "a55fc8cccb8c112a3f51"
+      },
+      "singleProxyAdmission": true
+    },
+    {
+      "direct": {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 996,
+        "key": "830340491d782f37bd75",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:31:51.569058Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 214,
+        "status": null
+      },
+      "exactAnonymousKeyMatch": true,
+      "proxy": {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": null,
+        "firstUTC": "2026-09-06T19:31:50.581062+00:00",
+        "flightKeys": [
+          "068aa37189f7895fcc72"
+        ],
+        "lastUTC": "2026-09-06T19:31:51.575982+00:00",
+        "outcomes": {
+          "cancelled": 1
+        },
+        "phases": [
+          "admission",
+          "cancellation",
+          "completion",
+          "connect",
+          "inbound_body"
+        ],
+        "receivedEvents": 1,
+        "requestKey": "830340491d782f37bd75"
+      },
+      "singleProxyAdmission": true
+    },
+    {
+      "direct": {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.46",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 350,
+        "key": "82e5f8bfb9348d6a82d4",
+        "method": "POST",
+        "observedAt": "2026-09-06T19:43:00.790079Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 282,
+        "status": null
+      },
+      "exactAnonymousKeyMatch": true,
+      "proxy": {
+        "ambiguousRepeatedRequestKey": false,
+        "attempt": null,
+        "firstUTC": "2026-09-06T19:43:00.448610+00:00",
+        "flightKeys": [
+          "6e20c602be5a178d4ccd"
+        ],
+        "lastUTC": "2026-09-06T19:43:00.797546+00:00",
+        "outcomes": {
+          "cancelled": 1
+        },
+        "phases": [
+          "admission",
+          "cancellation",
+          "completion",
+          "connect",
+          "inbound_body"
+        ],
+        "receivedEvents": 1,
+        "requestKey": "82e5f8bfb9348d6a82d4"
+      },
+      "singleProxyAdmission": true
+    }
+  ],
+  "schema": "castreader.direct-proxy-cancellation-join.v1",
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T1949Z-complete.json",
+      "sha256": "e6ae2bdf8c55cd85f8e0df5e9c6ac1d9205302c4ef307ae5b8f339990b268c76"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/latest-acceptance.json",
+      "sha256": "03a38b84e6f494d15908a96f4b46664ba390540eb760747bc7eb87196333130e"
+    }
+  ],
+  "synthesisStarted": false,
+  "window": {
+    "endUTCExclusive": "2026-09-06T19:50:40.765372+00:00",
+    "productionActiveFromUTC": "2026-09-06T18:37:52.522573+00:00",
+    "startUTC": "2026-09-06T18:49:55.965457+00:00"
+  }
+}

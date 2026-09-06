@@ -1,10 +1,21 @@
 {
   "cutoverState": "observing",
   "evaluation": {
-    "advisories": [],
+    "advisories": [
+      {
+        "code": "business_quota_blocked_separate",
+        "detail": "1",
+        "source": "mobile"
+      },
+      {
+        "code": "client_cancelled_separate",
+        "detail": "9",
+        "source": "mobile"
+      }
+    ],
     "automaticExtensionAllowed": false,
-    "automaticVerdict": "observing",
-    "clientEvidenceVerdict": "observing",
+    "automaticVerdict": "fail",
+    "clientEvidenceVerdict": "fail",
     "configuredWindowSeconds": 86400,
     "coverageVerdict": "observing",
     "cutoverState": "observing",
@@ -44,37 +55,48 @@
       "The stable US proxy is checked against its expected live source and current model slot; it shares the GPU host failure domain."
     ],
     "finalVersionObservationRequirementMet": false,
-    "finalVersionObservationSeconds": 723,
+    "finalVersionObservationSeconds": 4368,
     "latestActiveComponent": "usKokoro",
     "latestActiveComponentAtUtc": "2026-09-06T18:37:52.522573Z",
     "latestRequiredComponent": "usKokoro",
     "latestRequiredComponentVerifiedAtUtc": "2026-09-06T18:37:52.522573Z",
     "mixedVersionWindow": false,
     "observationRequirementMet": false,
-    "observationSeconds": 723,
+    "observationSeconds": 4368,
     "releaseTransitionsInsideWindow": [],
     "requiredObservationSeconds": 86400,
     "sampleGaps": [
       {
         "code": "final_version_observation_incomplete",
-        "detail": "latest=usKokoro; observed=723s; required=86400s",
+        "detail": "latest=usKokoro; observed=4368s; required=86400s",
         "source": "state"
       },
       {
-        "code": "mobile_read_start_sample_insufficient",
-        "detail": "android:0/1",
+        "code": "mobile_read_start_without_first_output",
+        "detail": "android:1; boundary sessions are not classified as technical failures",
         "source": "mobile"
       },
       {
-        "code": "mobile_read_first_output_sample_missing",
-        "detail": "android:0 same-window read start-to-first-audio sessions",
+        "code": "mobile_read_start_without_first_output",
+        "detail": "ios:1; boundary sessions are not classified as technical failures",
         "source": "mobile"
       }
     ],
     "startUtc": "2026-09-06T18:37:52.522573Z",
     "stopAtConfiguredEnd": true,
     "supplyVerdict": "observing",
-    "technicalFailures": [],
+    "technicalFailures": [
+      {
+        "code": "client_technical_failure",
+        "detail": "2",
+        "source": "mobile"
+      },
+      {
+        "code": "healthy_probe_client_failure_contradiction",
+        "detail": "probe supply success cannot override client technical failures",
+        "source": "cross_source"
+      }
+    ],
     "verdictScope": "configured_existing_sources_only",
     "versionSegments": {
       "directGateway": [
@@ -112,7 +134,7 @@
     },
     "windowStarted": true
   },
-  "generatedAtUtc": "2026-09-06T18:49:56.069366Z",
+  "generatedAtUtc": "2026-09-06T19:50:40.854045Z",
   "limitations": [
     "This run reads existing monitors, journals and telemetry; it starts no synthetic audio request.",
     "A production-tagged mobile event can still come from an operator or manual test.",
@@ -174,75 +196,213 @@
   "sources": {
     "direct_gateway": {
       "aggregate": {
-        "abortSourceCounts": {},
+        "abortSourceCounts": {
+          "downstream_closed": 7
+        },
         "android145Preset": {
           "attribution": "client_supplied_platform_and_version_headers",
           "elapsedMs": {
             "max": 2363.0,
-            "p50": 448.0,
-            "p95": 1391.0,
-            "samples": 94
+            "p50": 478.0,
+            "p95": 1214.0,
+            "samples": 695
           },
           "firstRequestAtUtc": "2026-09-06T18:37:52.832054Z",
-          "lastRequestAtUtc": "2026-09-06T18:45:56.455099Z",
-          "requests": 94,
+          "lastRequestAtUtc": "2026-09-06T19:50:39.247868Z",
+          "requests": 695,
           "statusCounts": {
-            "200": 94
+            "200": 695
           }
         },
         "clientStatusCounts": [
           {
             "clientPlatform": "android",
             "clientVersion": "1.0.45",
-            "count": 94,
+            "count": 695,
             "status": "200"
+          },
+          {
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "count": 621,
+            "status": "200"
+          },
+          {
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "count": 7,
+            "status": "no_response"
           }
         ],
-        "consoleErrorClassCounts": {},
+        "consoleErrorClassCounts": {
+          "downstream_closed": 7
+        },
         "downstreamConnectionStateUnknownRequests": 0,
-        "downstreamDisconnectedRequests": 0,
+        "downstreamDisconnectedRequests": 7,
         "duplicateRequestLogBlocks": 0,
         "elapsedMs": {
-          "max": 2363.0,
-          "p50": 448.0,
-          "p95": 1391.0,
-          "samples": 94
+          "max": 5530.0,
+          "p50": 486.0,
+          "p95": 1156.0,
+          "samples": 1323
         },
         "firstJournalAtUtc": "2026-09-06T18:37:52.832054Z",
         "firstRequestAtUtc": "2026-09-06T18:37:52.832054Z",
         "hourlyStatusCounts": [
           {
-            "count": 94,
+            "count": 171,
             "hourUtc": "2026-09-06T18:00:00Z",
             "status": "200"
+          },
+          {
+            "count": 1145,
+            "hourUtc": "2026-09-06T19:00:00Z",
+            "status": "200"
+          },
+          {
+            "count": 7,
+            "hourUtc": "2026-09-06T19:00:00Z",
+            "status": "no_response"
           }
         ],
         "incompleteConsoleBlocks": 0,
-        "journalRowsRead": 1316,
-        "lastJournalAtUtc": "2026-09-06T18:45:56.455099Z",
-        "lastRequestAtUtc": "2026-09-06T18:45:56.455099Z",
-        "logicalGatewayBlocks": 94,
+        "journalRowsRead": 18578,
+        "lastJournalAtUtc": "2026-09-06T19:50:39.247868Z",
+        "lastRequestAtUtc": "2026-09-06T19:50:39.247868Z",
+        "logicalGatewayBlocks": 1330,
         "malformedRequestBlocks": 0,
-        "nonHttpRequestCount": 0,
-        "nonHttpRequests": [],
+        "nonHttpRequestCount": 7,
+        "nonHttpRequests": [
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 3141,
+            "key": "8c8b84541970494ab13d",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:00:45.252998Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 1614,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 939,
+            "key": "a58bd8bfc90cf70a7f82",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:00:46.291252Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 453,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 669,
+            "key": "c8aba42cc4befb6eae5b",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:01:16.637459Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 202,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 852,
+            "key": "7c3617a7bb14615ddf8a",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:15:19.483229Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 269,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 227,
+            "key": "a55fc8cccb8c112a3f51",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:31:48.538629Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 167,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 996,
+            "key": "830340491d782f37bd75",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:31:51.569058Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 214,
+            "status": null
+          },
+          {
+            "abortSource": "downstream_closed",
+            "abortStage": "upstream_headers",
+            "clientPlatform": "android",
+            "clientVersion": "1.0.46",
+            "downstreamDisconnected": true,
+            "downstreamDisconnectedFieldObserved": true,
+            "elapsedMs": 350,
+            "key": "82e5f8bfb9348d6a82d4",
+            "method": "POST",
+            "observedAt": "2026-09-06T19:43:00.790079Z",
+            "path": "/api/captioned_speech_partly",
+            "requestBytes": 282,
+            "status": null
+          }
+        ],
         "nonHttpRequestsTruncated": false,
         "pathStatusCounts": [
           {
-            "count": 94,
+            "count": 1316,
             "path": "/api/captioned_speech_partly",
             "status": "200"
+          },
+          {
+            "count": 7,
+            "path": "/api/captioned_speech_partly",
+            "status": "no_response"
           }
         ],
         "requestBytes": {
-          "max": 315.0,
-          "p50": 207.0,
-          "p95": 293.0,
-          "samples": 94
+          "max": 1614.0,
+          "p50": 214.0,
+          "p95": 318.0,
+          "samples": 1323
         },
         "statusCounts": {
-          "200": 94
+          "200": 1316,
+          "no_response": 7
         },
-        "uniqueRequestIds": 94
+        "uniqueRequestIds": 1323
       },
       "coverage": {
         "complete": true,
@@ -250,7 +410,7 @@
         "journalRowLimitReached": false,
         "note": "No request body, text, raw message, request id, header, IP, or credential is exported."
       },
-      "hostClockUtc": "2026-09-06T18:50:03.499101Z",
+      "hostClockUtc": "2026-09-06T19:50:50.650091Z",
       "limitations": [
         "clientPlatform and clientVersion are caller-supplied headers and cannot exclude spoofing or manual tests.",
         "Absence of request records can mean no traffic; it is not by itself proof of journal retention coverage.",
@@ -259,12 +419,12 @@
       "probeStarted": false,
       "productionModified": false,
       "query": {
-        "endExclusive": "2026-09-06T18:49:56.069366Z",
+        "endExclusive": "2026-09-06T19:50:40.854045Z",
         "maxJournalRows": 250000,
         "startInclusive": "2026-09-06T18:37:52.522573Z",
         "unit": "castreader-tts-gateway.service"
       },
-      "readAtUtc": "2026-09-06T18:50:03.499101Z",
+      "readAtUtc": "2026-09-06T19:50:50.650091Z",
       "readOnly": true,
       "schema": "castreader.direct-tts-gateway-journal.v1",
       "source": {
@@ -302,7 +462,7 @@
         "endpoint": "https://api.castreader.ai/api/capabilities",
         "method": "GET"
       },
-      "readAtUtc": "2026-09-06T18:50:08.779537Z",
+      "readAtUtc": "2026-09-06T19:50:56.728795Z",
       "readOnly": true,
       "schema": "castreader.global-capabilities-identity.v1"
     },
@@ -333,7 +493,7 @@
       ],
       "modelLoadedByCollector": false,
       "productionModified": false,
-      "readAtUtc": "2026-09-06T18:50:21.603792+00:00",
+      "readAtUtc": "2026-09-06T19:51:19.847018+00:00",
       "readOnly": true,
       "schema": "castreader.kokoro-runtime-identity.v1"
     },
@@ -355,34 +515,171 @@
       ],
       "modelLoaded": false,
       "productionModified": false,
-      "readAtUtc": "2026-09-06T18:50:06.600222Z",
+      "readAtUtc": "2026-09-06T19:50:54.142009Z",
       "readOnly": true,
       "schema": "castreader.kokoro-runtime-identity.v1"
     },
     "mobile": {
       "aggregate": {
-        "cancelledEvents": 0,
-        "devices": 1,
-        "events": 2,
-        "explainStartsByPlatform": {},
+        "cancelledEvents": 9,
+        "devices": 7,
+        "events": 75,
+        "explainStartsByPlatform": {
+          "android": 2
+        },
         "firstOutputLatencyMs": {
           "android": {
-            "max": null,
-            "p50": null,
-            "p95": null,
-            "samples": 0
+            "max": 3037.0,
+            "p50": 982.0,
+            "p95": 3037.0,
+            "samples": 10
           },
           "ios": {
-            "max": 1168.0,
+            "max": 1550.0,
             "p50": 1168.0,
-            "p95": 1168.0,
-            "samples": 1
+            "p95": 1550.0,
+            "samples": 5
           }
         },
         "groups": [
           {
             "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "completed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "success",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "url",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "explain_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 4,
+            "endReason": "content_closed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "mode_switched",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "tts_failed",
+            "errorCode": "generation_failed",
+            "errorStage": "tts",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "failed",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "completed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "success",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 3,
+            "endReason": "completed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "success",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
             "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 1,
+            "endReason": "listen_quota",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "blocked",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 4,
+            "endReason": "closed",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_end",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "cancelled",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
             "contentSource": "unknown",
             "count": 1,
             "endReason": "unspecified",
@@ -391,7 +688,127 @@
             "event": "read_first_audio",
             "ingressRoute": "global",
             "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 9,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 5,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_first_audio",
+            "ingressRoute": "global",
+            "language": "en",
             "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "unknown",
+            "count": 2,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "unknown",
+            "count": 10,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "unknown",
+            "count": 11,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_milestone",
+            "ingressRoute": "global",
+            "language": "unknown",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "unknown"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "file",
+            "count": 4,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.46",
+            "contentSource": "url",
+            "count": 6,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.0.45",
+            "contentSource": "youtube_android",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "android",
             "result": "unspecified",
             "voiceFamily": "preset"
           },
@@ -409,91 +826,161 @@
             "platform": "ios",
             "result": "unspecified",
             "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "history",
+            "count": 1,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
+          },
+          {
+            "clientRoute": "global",
+            "clientVersion": "1.2.33",
+            "contentSource": "kindle",
+            "count": 4,
+            "endReason": "unspecified",
+            "errorCode": "unspecified",
+            "errorStage": "unspecified",
+            "event": "read_start",
+            "ingressRoute": "global",
+            "language": "en",
+            "platform": "ios",
+            "result": "unspecified",
+            "voiceFamily": "preset"
           }
         ],
         "otherBlockedEvents": 0,
-        "quotaBlockedByPlatform": {},
-        "quotaBlockedEvents": 0,
-        "readStartsByPlatform": {
+        "quotaBlockedByPlatform": {
           "ios": 1
+        },
+        "quotaBlockedEvents": 1,
+        "readStartsByPlatform": {
+          "android": 11,
+          "ios": 6
         },
         "routeMismatchEvents": 0,
         "sessionCohorts": {
           "explain": {
-            "byPlatform": {},
+            "byPlatform": {
+              "android": {
+                "pairedFirstOutputByVoiceFamily": {},
+                "startEventsMissingSessionId": 0,
+                "startedSessions": 2,
+                "withEnd": 2,
+                "withFirstOutput": 0,
+                "withQuotaBlock": 0,
+                "withTechnicalFailure": 0,
+                "withoutEndInsideWindow": 0,
+                "withoutFirstOutputInsideWindow": 2
+              }
+            },
             "pairedFirstOutputByVoiceFamily": {},
             "startEventsMissingSessionId": 0,
-            "startedSessions": 0,
-            "withEnd": 0,
+            "startedSessions": 2,
+            "withEnd": 2,
             "withFirstOutput": 0,
             "withQuotaBlock": 0,
             "withTechnicalFailure": 0,
             "withoutEndInsideWindow": 0,
-            "withoutFirstOutputInsideWindow": 0
+            "withoutFirstOutputInsideWindow": 2
           },
           "read": {
             "byPlatform": {
-              "ios": {
+              "android": {
                 "pairedFirstOutputByVoiceFamily": {
-                  "preset": 1
+                  "preset": 10
                 },
                 "startEventsMissingSessionId": 0,
-                "startedSessions": 1,
-                "withEnd": 0,
-                "withFirstOutput": 1,
+                "startedSessions": 11,
+                "withEnd": 10,
+                "withFirstOutput": 10,
                 "withQuotaBlock": 0,
+                "withTechnicalFailure": 2,
+                "withoutEndInsideWindow": 1,
+                "withoutFirstOutputInsideWindow": 1
+              },
+              "ios": {
+                "pairedFirstOutputByVoiceFamily": {
+                  "preset": 5
+                },
+                "startEventsMissingSessionId": 0,
+                "startedSessions": 6,
+                "withEnd": 5,
+                "withFirstOutput": 5,
+                "withQuotaBlock": 1,
                 "withTechnicalFailure": 0,
                 "withoutEndInsideWindow": 1,
-                "withoutFirstOutputInsideWindow": 0
+                "withoutFirstOutputInsideWindow": 1
               }
             },
             "pairedFirstOutputByVoiceFamily": {
-              "preset": 1
+              "preset": 15
             },
             "startEventsMissingSessionId": 0,
-            "startedSessions": 1,
-            "withEnd": 0,
-            "withFirstOutput": 1,
-            "withQuotaBlock": 0,
-            "withTechnicalFailure": 0,
-            "withoutEndInsideWindow": 1,
-            "withoutFirstOutputInsideWindow": 0
+            "startedSessions": 17,
+            "withEnd": 15,
+            "withFirstOutput": 15,
+            "withQuotaBlock": 1,
+            "withTechnicalFailure": 2,
+            "withoutEndInsideWindow": 2,
+            "withoutFirstOutputInsideWindow": 2
           }
         },
         "sessionEvidenceByPlatform": {
-          "ios": {
+          "android": {
             "pairedFirstOutputByVoiceFamily": {
-              "preset": 1
+              "preset": 10
             },
             "startEventsMissingSessionId": 0,
-            "startedSessions": 1,
-            "withFirstOutput": 1,
-            "withoutFirstOutputInsideWindow": 0
+            "startedSessions": 13,
+            "withFirstOutput": 10,
+            "withoutFirstOutputInsideWindow": 3
+          },
+          "ios": {
+            "pairedFirstOutputByVoiceFamily": {
+              "preset": 5
+            },
+            "startEventsMissingSessionId": 0,
+            "startedSessions": 6,
+            "withFirstOutput": 5,
+            "withoutFirstOutputInsideWindow": 1
           }
         },
         "startEventsByPlatform": {
-          "ios": 1
+          "android": 13,
+          "ios": 6
         },
-        "technicalFailureEvents": 0,
-        "technicalFailuresByPlatform": {}
+        "technicalFailureEvents": 2,
+        "technicalFailuresByPlatform": {
+          "android": 2
+        }
       },
       "coverage": {
         "complete": true,
         "duplicateRows": 0,
-        "expectedRowsAllEnvironments": 2,
+        "expectedRowsAllEnvironments": 75,
         "firstProductionReceivedAt": "2026-09-06T18:42:37.130000Z",
         "invalidSelectedRows": 0,
-        "lastProductionReceivedAt": "2026-09-06T18:42:37.130000Z",
+        "lastProductionReceivedAt": "2026-09-06T19:49:32.655000Z",
         "nonProductionRowsExcluded": 0,
         "pageBudgetExhausted": false,
         "pages": 1,
         "productionTagCannotExcludeManualTests": true,
-        "productionTaggedRows": 2,
-        "returnedRowsAllEnvironments": 2,
+        "productionTaggedRows": 75,
+        "returnedRowsAllEnvironments": 75,
         "serverClockColumn": "received_at",
         "source": "authenticated HTTPS PostgREST; credential values not exported",
         "tlsCertificateVerification": true,
-        "uniqueSelectedRowsAllEnvironments": 2,
+        "uniqueSelectedRowsAllEnvironments": 75,
         "wallClockBudgetExhausted": false,
         "wallClockBudgetSeconds": 180.0
       },
@@ -505,7 +992,7 @@
         "Device counts are installations, not verified people."
       ],
       "query": {
-        "endExclusive": "2026-09-06T18:49:56.069366Z",
+        "endExclusive": "2026-09-06T19:50:40.854045Z",
         "startInclusive": "2026-09-06T18:37:52.522573Z"
       },
       "readOnly": true,
@@ -520,13 +1007,13 @@
           "maximumConsecutiveCycles": 0,
           "recoveryEvents": []
         },
-        "completeRemainderDecodedCycles": 3,
+        "completeRemainderDecodedCycles": 14,
         "completeRemainderDecodedRatio": 1.0,
-        "cycles": 3,
+        "cycles": 14,
         "executedRequestContractCounts": {
-          "stream_false": 3,
-          "stream_omitted": 3,
-          "stream_true": 3
+          "stream_false": 14,
+          "stream_omitted": 14,
+          "stream_true": 14
         },
         "failedRequestContractCounts": {},
         "failureCodeCounts": {},
@@ -534,24 +1021,24 @@
           "max": 3.576,
           "p50": 3.576,
           "p95": 3.576,
-          "samples": 3
+          "samples": 14
         },
-        "largestObservedGapSeconds": 310.004,
+        "largestObservedGapSeconds": 320.426,
         "observedGapSeconds": {
-          "max": 310.004,
-          "p50": 309.767,
-          "p95": 310.004,
-          "samples": 2
+          "max": 320.426,
+          "p50": 312.197,
+          "p95": 320.426,
+          "samples": 13
         },
         "probeElapsedMs": {
-          "max": 2670.0,
-          "p50": 2444.0,
-          "p95": 2670.0,
-          "samples": 3
+          "max": 3126.0,
+          "p50": 2670.0,
+          "p95": 3126.0,
+          "samples": 14
         },
         "regionMismatchCycles": 0,
         "statusCounts": {
-          "healthy": 3
+          "healthy": 14
         },
         "supplyFailureSequence": {
           "currentConsecutiveCycles": 0,
@@ -559,16 +1046,16 @@
           "maximumConsecutiveCycles": 0,
           "recoveryEvents": []
         },
-        "supplyOkCycles": 3,
+        "supplyOkCycles": 14,
         "totalAudioDurationSeconds": {
           "max": 13.44,
           "p50": 13.44,
           "p95": 13.44,
-          "samples": 3
+          "samples": 14
         },
         "upstreamMetadata": [
           {
-            "cyclesContainingVariant": 3,
+            "cyclesContainingVariant": 14,
             "gateway": "vercel-r2",
             "upstreamNode": "castreader-cn4090",
             "upstreamRevision": "0",
@@ -580,7 +1067,7 @@
         "completeRead": true,
         "note": "Persisted result schema does not distinguish timer from manual invocation.",
         "originAttributionAvailable": false,
-        "selectedCycles": 3
+        "selectedCycles": 14
       },
       "limitations": [
         "observedAt is probe completion time, not request start time.",
@@ -595,10 +1082,10 @@
       "probeStarted": false,
       "productionModified": false,
       "query": {
-        "endExclusive": "2026-09-06T18:49:56.069366Z",
+        "endExclusive": "2026-09-06T19:50:40.854045Z",
         "startInclusive": "2026-09-06T18:37:52.522573Z"
       },
-      "readAtUtc": "2026-09-06T18:50:00.495141Z",
+      "readAtUtc": "2026-09-06T19:50:44.839174Z",
       "readOnly": true,
       "region": "cn",
       "schema": "castreader.monitor-window-readback.v2",
@@ -608,13 +1095,13 @@
         "firstAvailableObservedAt": "2026-09-05T15:58:13.669Z",
         "firstSelectedObservedAt": "2026-09-06T18:38:42.441Z",
         "invalidResults": [],
-        "lastAvailableObservedAt": "2026-09-06T18:49:02.212Z",
-        "lastSelectedObservedAt": "2026-09-06T18:49:02.212Z",
-        "lastSelectedToWindowEndSeconds": 53.857,
-        "resultFilesScanned": 313,
+        "lastAvailableObservedAt": "2026-09-06T19:46:32.548Z",
+        "lastSelectedObservedAt": "2026-09-06T19:46:32.548Z",
+        "lastSelectedToWindowEndSeconds": 248.306,
+        "resultFilesScanned": 324,
         "resultsDirectory": "/var/lib/castreader-core-audio-monitor/cn/results",
-        "uniqueResultCycles": 313,
-        "validResultFiles": 313,
+        "uniqueResultCycles": 324,
+        "validResultFiles": 324,
         "windowStartToFirstSelectedSeconds": 49.918
       },
       "systemd": {
@@ -627,7 +1114,7 @@
         },
         "timer": {
           "ActiveState": "active",
-          "LastTriggerUSec": "Mon 2026-09-07 02:48:59 CST",
+          "LastTriggerUSec": "Mon 2026-09-07 03:46:29 CST",
           "NextElapseUSecRealtime": "",
           "SubState": "waiting",
           "UnitFileState": "enabled"
@@ -643,12 +1130,12 @@
           "maximumConsecutiveCycles": 0,
           "recoveryEvents": []
         },
-        "completeRemainderDecodedCycles": 2,
+        "completeRemainderDecodedCycles": 13,
         "completeRemainderDecodedRatio": 1.0,
-        "cycles": 2,
+        "cycles": 13,
         "executedRequestContractCounts": {
-          "stream_omitted": 2,
-          "stream_true": 2
+          "stream_omitted": 13,
+          "stream_true": 13
         },
         "failedRequestContractCounts": {},
         "failureCodeCounts": {},
@@ -656,24 +1143,24 @@
           "max": 23.088,
           "p50": 23.088,
           "p95": 23.088,
-          "samples": 2
+          "samples": 13
         },
-        "largestObservedGapSeconds": 309.372,
+        "largestObservedGapSeconds": 321.468,
         "observedGapSeconds": {
-          "max": 309.372,
-          "p50": 309.372,
-          "p95": 309.372,
-          "samples": 1
+          "max": 321.468,
+          "p50": 310.811,
+          "p95": 321.468,
+          "samples": 12
         },
         "probeElapsedMs": {
-          "max": 2264.0,
-          "p50": 2078.0,
-          "p95": 2264.0,
-          "samples": 2
+          "max": 3879.0,
+          "p50": 2411.0,
+          "p95": 3879.0,
+          "samples": 13
         },
         "regionMismatchCycles": 0,
         "statusCounts": {
-          "healthy": 2
+          "healthy": 13
         },
         "supplyFailureSequence": {
           "currentConsecutiveCycles": 0,
@@ -681,16 +1168,16 @@
           "maximumConsecutiveCycles": 0,
           "recoveryEvents": []
         },
-        "supplyOkCycles": 2,
+        "supplyOkCycles": 13,
         "totalAudioDurationSeconds": {
           "max": 37.464,
           "p50": 37.464,
           "p95": 37.464,
-          "samples": 2
+          "samples": 13
         },
         "upstreamMetadata": [
           {
-            "cyclesContainingVariant": 2,
+            "cyclesContainingVariant": 13,
             "gateway": "vercel-r2",
             "upstreamNode": "castreader-us4090",
             "upstreamRevision": "2",
@@ -702,7 +1189,7 @@
         "completeRead": true,
         "note": "Persisted result schema does not distinguish timer from manual invocation.",
         "originAttributionAvailable": false,
-        "selectedCycles": 2
+        "selectedCycles": 13
       },
       "limitations": [
         "observedAt is probe completion time, not request start time.",
@@ -717,10 +1204,10 @@
       "probeStarted": false,
       "productionModified": false,
       "query": {
-        "endExclusive": "2026-09-06T18:49:56.069366Z",
+        "endExclusive": "2026-09-06T19:50:40.854045Z",
         "startInclusive": "2026-09-06T18:37:52.522573Z"
       },
-      "readAtUtc": "2026-09-06T18:49:59.369138Z",
+      "readAtUtc": "2026-09-06T19:50:43.725276Z",
       "readOnly": true,
       "region": "us",
       "schema": "castreader.monitor-window-readback.v2",
@@ -730,13 +1217,13 @@
         "firstAvailableObservedAt": "2026-09-05T16:15:00.370Z",
         "firstSelectedObservedAt": "2026-09-06T18:42:58.726Z",
         "invalidResults": [],
-        "lastAvailableObservedAt": "2026-09-06T18:48:08.098Z",
-        "lastSelectedObservedAt": "2026-09-06T18:48:08.098Z",
-        "lastSelectedToWindowEndSeconds": 107.971,
-        "resultFilesScanned": 309,
+        "lastAvailableObservedAt": "2026-09-06T19:45:45.026Z",
+        "lastSelectedObservedAt": "2026-09-06T19:45:45.026Z",
+        "lastSelectedToWindowEndSeconds": 295.828,
+        "resultFilesScanned": 320,
         "resultsDirectory": "/var/lib/castreader-core-audio-monitor/us/results",
-        "uniqueResultCycles": 309,
-        "validResultFiles": 309,
+        "uniqueResultCycles": 320,
+        "validResultFiles": 320,
         "windowStartToFirstSelectedSeconds": 306.203
       },
       "systemd": {
@@ -749,7 +1236,7 @@
         },
         "timer": {
           "ActiveState": "active",
-          "LastTriggerUSec": "Sun 2026-09-06 18:48:05 UTC",
+          "LastTriggerUSec": "Sun 2026-09-06 19:45:42 UTC",
           "NextElapseUSecRealtime": "",
           "SubState": "waiting",
           "UnitFileState": "enabled"
@@ -763,7 +1250,7 @@
       "diagnosticFunctionExecuted": false,
       "health": {
         "active": {
-          "blue": 1,
+          "blue": 0,
           "green": 0
         },
         "currentReleaseId": "20260907-kokoro-silent-separators-us-r134",
@@ -829,7 +1316,7 @@
         "Point-in-time source, process and routing identity; existing continuous probes provide the interval evidence."
       ],
       "productionModified": false,
-      "readAtUtc": "2026-09-06T18:50:21.603792+00:00",
+      "readAtUtc": "2026-09-06T19:51:19.847018+00:00",
       "readOnly": true,
       "schema": "castreader.us-origin-proxy-identity.v1",
       "synthesisStarted": false
@@ -840,40 +1327,47 @@
         "deploymentCounts": [],
         "failureCodeCounts": [
           {
-            "count": 1,
+            "count": 3,
             "failureCode": "http_503_unclassified",
             "routeGroup": "other"
           }
         ],
-        "otherProject5xxRecords": 1,
+        "otherProject5xxRecords": 3,
         "routeStatusCounts": [
           {
-            "count": 1,
+            "count": 3,
             "routeGroup": "other",
             "status": "503"
           }
         ],
-        "unique5xxRecords": 1
+        "unique5xxRecords": 3
       },
       "coverage": {
         "cacheHits": 0,
-        "cacheMisses": 1,
+        "cacheMisses": 2,
         "complete": true,
         "failedShards": 0,
         "firstReturnedAtUtc": "2026-09-06T18:45:33.351000Z",
-        "lastReturnedAtUtc": "2026-09-06T18:45:33.351000Z",
+        "lastReturnedAtUtc": "2026-09-06T19:45:33.378000Z",
         "pages": [
           {
             "cache": "miss",
-            "endExclusive": "2026-09-06T18:49:56.069366Z",
-            "returnedRows": 1,
+            "endExclusive": "2026-09-06T19:37:52.522573Z",
+            "returnedRows": 2,
             "startInclusive": "2026-09-06T18:37:52.522573Z",
+            "uniqueRows": 2
+          },
+          {
+            "cache": "miss",
+            "endExclusive": "2026-09-06T19:50:40.854045Z",
+            "returnedRows": 1,
+            "startInclusive": "2026-09-06T19:37:52.522573Z",
             "uniqueRows": 1
           }
         ],
         "queryBudgetExhausted": false,
         "queryFailures": [],
-        "successfulShards": 1,
+        "successfulShards": 2,
         "wallClockBudgetExhausted": false
       },
       "limitations": [
@@ -883,10 +1377,10 @@
       ],
       "query": {
         "cacheSafetyLagSeconds": 900.0,
-        "endExclusive": "2026-09-06T18:49:56.069366Z",
+        "endExclusive": "2026-09-06T19:50:40.854045Z",
         "environment": "production",
         "projectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
-        "queriesUsed": 1,
+        "queriesUsed": 2,
         "queryBudget": 80,
         "startInclusive": "2026-09-06T18:37:52.522573Z",
         "statusCode": "5xx",
@@ -919,7 +1413,7 @@
     "vercel"
   ],
   "window": {
-    "collectedThroughExclusive": "2026-09-06T18:49:56.069366Z",
+    "collectedThroughExclusive": "2026-09-06T19:50:40.854045Z",
     "configuredSeconds": 86400,
     "endExclusive": "2026-09-07T18:37:52.522573Z",
     "startInclusive": "2026-09-06T18:37:52.522573Z"

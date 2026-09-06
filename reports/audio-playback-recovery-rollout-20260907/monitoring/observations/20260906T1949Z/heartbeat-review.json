@@ -1,0 +1,179 @@
+{
+  "schema": "castreader.audio-heartbeat-review.v1",
+  "automationId": "24",
+  "reviewedAtUTC": "2026-09-06T20:05:52.687056+00:00",
+  "decision": "NOTIFY",
+  "deliveryContext": "user requested clarification of diagnosis versus deployment",
+  "productionModified": false,
+  "synthesisStarted": false,
+  "finalWindow": {
+    "collectedThroughExclusive": "2026-09-06T19:50:40.854045Z",
+    "configuredSeconds": 86400,
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "startInclusive": "2026-09-06T18:37:52.522573Z"
+  },
+  "finalWindowVerdict": "fail",
+  "newFinalWindowTechnicalFailures": [
+    {
+      "clientBuild": 53.0,
+      "clientRoute": "global",
+      "clientVersion": "1.0.46",
+      "completionBucket": "none",
+      "contentSessionKey": "95603b6f35582e29fb0e",
+      "contentSource": "unknown",
+      "deviceKey": "11c7f0aa40907814a4a9",
+      "endReason": "tts_failed",
+      "environment": "production",
+      "errorCode": "generation_failed",
+      "errorStage": "tts",
+      "event": "read_end",
+      "eventKey": "14826f73872753709911",
+      "ingressRoute": "global",
+      "language": "unknown",
+      "occurredAtUtc": "2026-09-06T19:05:24.873000Z",
+      "platform": "android",
+      "playbackSeconds": 115.0,
+      "readSessionKey": "eeb996efb3a4593b6e2a",
+      "receiptLagSeconds": 14.807,
+      "receivedAtUtc": "2026-09-06T19:05:39.680000Z",
+      "result": "failed",
+      "voiceFamily": "unknown"
+    },
+    {
+      "clientBuild": 53.0,
+      "clientRoute": "global",
+      "clientVersion": "1.0.46",
+      "completionBucket": "unknown",
+      "contentSessionKey": "95603b6f35582e29fb0e",
+      "contentSource": "unknown",
+      "deviceKey": "11c7f0aa40907814a4a9",
+      "endReason": "tts_failed",
+      "environment": "production",
+      "errorCode": "generation_failed",
+      "errorStage": "tts",
+      "event": "read_end",
+      "eventKey": "75181424100861e4d767",
+      "ingressRoute": "global",
+      "language": "unknown",
+      "occurredAtUtc": "2026-09-06T19:05:31.492000Z",
+      "platform": "android",
+      "playbackSeconds": 0.0,
+      "readSessionKey": "b34d673c4fdbe5cfefa8",
+      "receiptLagSeconds": 8.188,
+      "receivedAtUtc": "2026-09-06T19:05:39.680000Z",
+      "result": "failed",
+      "voiceFamily": "unknown"
+    }
+  ],
+  "finalWindowCounts": {
+    "mobileTechnicalFailures": 2,
+    "mobileEvents": 75,
+    "mobileDevices": 7,
+    "readStarts": 17,
+    "pairedReadFirstAudio": 15,
+    "direct200": 1316,
+    "direct4xx5xx": 0,
+    "directNoResponse": 7,
+    "globalCore5xx": 0,
+    "usHealthyCycles": 13,
+    "cnHealthyCycles": 14
+  },
+  "cumulativeHistoricalFailureCounts": {
+    "mobile": 14,
+    "direct400": 3,
+    "direct5xx": 5,
+    "directNoResponse": 10,
+    "globalCore5xx": 4
+  },
+  "incrementalProxyCounts": {
+    "errorClasses": {},
+    "failureScopesAndLastObservedPhases": {},
+    "finishedOutcomes": {
+      "cancelled": 7,
+      "complete": 2662
+    },
+    "finishedReportedStatuses": {
+      "200": 2662
+    },
+    "phases": {
+      "admission": 5336,
+      "cancellation": 7,
+      "coalescing": 2,
+      "completion": 2669,
+      "connect": 5334,
+      "inbound_body": 2669,
+      "response_body": 2660,
+      "response_complete": 2660,
+      "response_headers": 2660
+    },
+    "receivedAttempts": {
+      "1": 1440,
+      "unavailable": 1229
+    },
+    "stages": {
+      "flight_created": 2667,
+      "flight_joined": 2,
+      "request_body_read": 2669,
+      "request_finished": 2669,
+      "request_received": 2669,
+      "upstream_cancelled": 7,
+      "upstream_complete": 2660,
+      "upstream_connect_started": 2667,
+      "upstream_connected": 2667,
+      "upstream_first_body": 2660,
+      "upstream_headers": 2660
+    }
+  },
+  "globalProxyExactJoinCounts": {
+    "ambiguous": 6,
+    "attempts": 1433,
+    "matched": 1433,
+    "matchedProxyComplete": 1427
+  },
+  "findings": [
+    "Two new Android 1.0.46/build53 production-tagged read failures belong to the same anonymous device and PDF content session.",
+    "First failure followed 115 cumulative playback seconds. Next resume failed after 19ms without first audio. Third resume produced first audio in 2300ms and accumulated 1894 playback seconds before content_closed.",
+    "The reviewed 3fe41d62 source routes generation_failed through the generic exception exit in PlaybackController; CancellationException is rethrown first and obsolete playback work is ignored.",
+    "A partial cached prefix can be synchronously enqueued before a new HTTP request. This is a possible local fast-failure path, not proof of the incident cause.",
+    "No underlying client exception or client-to-server request key was retained. Seven Direct disconnects exactly match proxy cancellations but are not linked to either 19:05 client failure.",
+    "Previous Global, Direct, US proxy and R134 releases remain deployed. This observation and source audit contain no new fix or deployment for these two failures."
+  ],
+  "limitations": [
+    "HTTP/probe success does not override client failures or prove playable audio and continuous playback.",
+    "Version/build does not prove installation channel or exact affected-client artifact.",
+    "Historical 17:38 Play review receipt does not establish current release status.",
+    "24-hour observation remains incomplete; clone/Explain first-output and Web/extension completed playback evidence remains insufficient.",
+    "Provider ingestion completeness is unverified.",
+    "CN R134 patch not deployed; iOS build55 uploaded, not published."
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/latest-acceptance.json",
+      "sha256": "03a38b84e6f494d15908a96f4b46664ba390540eb760747bc7eb87196333130e"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/mobile-new-failures.json",
+      "sha256": "cd1850eefa236a512231fe5a160fb98c589c4988ccf2d6aceebe36db8c07734d"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/direct-proxy-cancellations.json",
+      "sha256": "089f70b44423ba1ca026890eab5136baf76bee227e65984374d2de64da777ab1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/android-generation-failed-source-evidence.json",
+      "sha256": "2fc55437dae634498cfc681bf77d3c09d64acbfe0b5b2c679c923be0a9ca70e8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/vercel-proxy-join-summary.json",
+      "sha256": "df25efbc4ef04da18abb305e0f734fa7fdd5149e5f328e67cb822e7bd742aa30"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T1949Z-complete.json",
+      "sha256": "e6ae2bdf8c55cd85f8e0df5e9c6ac1d9205302c4ef307ae5b8f339990b268c76"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/android-generation-failed-source-audit.md",
+      "sha256": "d854073e289776bde6e10029f66528ceabb38807d76d24785e10735b98ed2b24"
+    }
+  ]
+}

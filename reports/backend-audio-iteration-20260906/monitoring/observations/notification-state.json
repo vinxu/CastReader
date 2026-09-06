@@ -11,7 +11,9 @@
     "e17fc636d1daf5bf701c",
     "e08918341c4265a32e2a",
     "798ead151458637a016f",
-    "855d7b43d4f616193757"
+    "855d7b43d4f616193757",
+    "14826f73872753709911",
+    "75181424100861e4d767"
   ],
   "alertKinds": [
     "android_1045_explain_pipeline_failed",
@@ -80,7 +82,7 @@
     "ios_player_initial_error_stage_and_nserror_unavailable"
   ],
   "lastDecision": "NOTIFY",
-  "lastDecisionReason": "Newly discovered actual Direct502 at 18:33:29UTC during proxy maintenance, before final R134 observation. Current final-version window remains free of collected technical failures. Report once; keep historical failure.",
+  "lastDecisionReason": "Two new Android 1.0.46/build53 PDF read failures after R134 deployment; subsequent recovery does not erase failures. User informed that these newly investigated incidents have no new fix/deployment yet.",
   "lastNewEventSummary": {
     "clientBuild": 53,
     "clientVersion": "1.2.33",
@@ -101,16 +103,16 @@
     "798ead151458637a016f",
     "855d7b43d4f616193757"
   ],
-  "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/heartbeat-review.json",
+  "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/heartbeat-review.json",
   "latestClientIterationReport": "reports/backend-audio-failure-analysis-20260906/iteration.md",
-  "latestClientTechnicalFailureCount": 12,
+  "latestClientTechnicalFailureCount": 14,
   "latestDirect5xxCount": 5,
-  "latestSnapshotDirectory": "observations/20260906T1849Z",
+  "latestSnapshotDirectory": "observations/20260906T1949Z",
   "latestVercelCore5xxCount": 4,
   "nextRunPolicy": "Compare cumulative records with these keys; do not repeat unchanged alerts or already known sample gaps.",
   "nonAudio503Classification": "google_play_reconcile_incomplete",
-  "nonAudio503Count": 28,
-  "recordedAtUtc": "2026-09-06T18:59:07.945118+00:00",
+  "nonAudio503Count": 30,
+  "recordedAtUtc": "2026-09-06T20:05:52.687056+00:00",
   "schema": "castreader.audio-observation-alert-state.v1",
   "vercelCoreRequestKeys": [
     "e061a66c335ef6dece59",
@@ -122,5 +124,31 @@
     "endUtc": "2026-09-07T05:01:25Z",
     "requiredSeconds": 86400,
     "startUtc": "2026-09-06T05:01:25Z"
+  },
+  "knownPostFinalWindowNoResponseRequestKeys": [
+    "8c8b84541970494ab13d",
+    "a58bd8bfc90cf70a7f82",
+    "c8aba42cc4befb6eae5b",
+    "7c3617a7bb14615ddf8a",
+    "a55fc8cccb8c112a3f51",
+    "830340491d782f37bd75",
+    "82e5f8bfb9348d6a82d4"
+  ],
+  "latestDirectNoResponseCount": 10,
+  "latestProxyWindowEndUTC": "2026-09-06T19:50:40.765372+00:00",
+  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T1949Z-complete.json",
+  "newAndroid1046Incident": {
+    "eventKeys": [
+      "14826f73872753709911",
+      "75181424100861e4d767"
+    ],
+    "status": "diagnosis_only_no_new_fix_or_deployment",
+    "underlyingExceptionRecovered": false,
+    "clientToServerRequestJoinAvailable": false,
+    "subsequentPlaybackSeconds": 1894,
+    "ordinaryCoroutineCancellationExplainsThisSource": false
+  },
+  "confirmedCodeFindingVersionBoundaries": {
+    "android_pdf_generic_exception_catch_includes_cancellation": "Historical source finding; does not apply to reviewed 1.0.46/build53 source 3fe41d62, which explicitly rethrows CancellationException."
   }
 }

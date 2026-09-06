@@ -1,0 +1,141 @@
+{
+  "ambiguousJoins": [
+    {
+      "attempt": 1,
+      "proxyOutcomes": {
+        "complete": 2
+      },
+      "proxyReceivedEvents": 2,
+      "requestKey": "0f3efa9bdcadd00f0443",
+      "vercelInvocations": 2,
+      "vercelStatuses": {
+        "200": 2
+      }
+    },
+    {
+      "attempt": 1,
+      "proxyOutcomes": {
+        "complete": 2
+      },
+      "proxyReceivedEvents": 2,
+      "requestKey": "991831ffce89138a7614",
+      "vercelInvocations": 2,
+      "vercelStatuses": {
+        "200": 2
+      }
+    },
+    {
+      "attempt": 1,
+      "proxyOutcomes": {
+        "complete": 2
+      },
+      "proxyReceivedEvents": 2,
+      "requestKey": "b7d14c540557b0518798",
+      "vercelInvocations": 2,
+      "vercelStatuses": {
+        "200": 2
+      }
+    }
+  ],
+  "collectedAtUTC": "2026-09-06T19:54:31.625424Z",
+  "collectionStartedUTC": "2026-09-06T19:52:13.296685Z",
+  "counts": {
+    "ambiguousApplicationKeys": 3,
+    "attemptStarts": {
+      "1": 1433
+    },
+    "bodiesWithByteCount": 1433,
+    "bodiesZeroBytes": 0,
+    "bodyBytesMax": 908736,
+    "bodyBytesMin": 13506,
+    "events": {
+      "attempt_start": 1433,
+      "request_finished": 1433,
+      "request_start": 1433,
+      "upstream_body": 1433,
+      "upstream_headers": 1433
+    },
+    "failureCodes": {},
+    "globalApplicationKeyIntersectionWithDirectProxyCancelled": 0,
+    "join": {
+      "ambiguous": 6,
+      "attempts": 1433,
+      "matched": 1433,
+      "matchedProxyComplete": 1427
+    },
+    "knownDirectProxyCancelledRequestKeys": 7,
+    "requestsMissingHeadersOrBodyOrFinish": 0,
+    "terminalCodes": {},
+    "vercelRequests": 1433,
+    "vercelStatuses": {
+      "200": 1433
+    }
+  },
+  "coverage": {
+    "proxyAnonymousRequestsTruncated": false,
+    "proxyCoverageComplete": true,
+    "proxyCoversWindow": true,
+    "proxyEventDetailTruncationIgnoredForJoin": false,
+    "proxyRuntimeVerified": true,
+    "vercel": {
+      "completeForReturnedRequestCohort": true,
+      "ingestionCompletenessVerified": false,
+      "issues": [],
+      "pagesRead": 30,
+      "paginationMode": "backward_timestamp_windows_with_1ms_overlap",
+      "parserCounts": {
+        "duplicateProviderRows": 30,
+        "duplicateSafeEvents": 150
+      },
+      "providerHasMoreRows": false,
+      "providerRowsRead": 1463,
+      "requestsMissingStartOrFinish": 0,
+      "structuredEventsObserved": true,
+      "tlsCertificateAndHostnameVerified": true,
+      "uniqueProviderRequests": 1433
+    }
+  },
+  "expectedDeployment": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+  "findings": [
+    "All currently returned Global requests have request_start, attempt1, upstream_headers, nonempty upstream_body, request_finished and provider200; no structured cancellation, retry or failure code was returned.",
+    "Six Vercel invocations reuse three application request keys at attempt1; corresponding proxy groups each contain two complete outcomes. This prevents a unique per-invocation join but is not evidence of a failed or retried gateway attempt.",
+    "None of the seven exact Direct-to-proxy cancelled request keys appears in the returned Global application-key cohort; no Global correlation to those cancellations is established."
+  ],
+  "limitations": [
+    "Correlation uses application requestKey + attempt, never provider ID or timing alone.",
+    "Application key reuse across Vercel invocations or duplicate proxy groups is marked ambiguous.",
+    "The complete proxy anonymous request-group list is used; its truncated event-detail list is not the join source.",
+    "A matched complete upstream request is not evidence of audio decode quality or successful user playback.",
+    "Provider search/ingestion completeness remains unverified despite complete pagination and lifecycle records.",
+    "Provider request-start cohorts and proxy wall-clock event windows differ; nested completion can be outside the selected cohort end.",
+    "No client-to-server request key has been established by this phase-only comparison.",
+    "Observed body byte count and complete HTTP stages do not prove device receipt, audio decoding or completed playback."
+  ],
+  "productionModified": false,
+  "rawContentExported": false,
+  "readOnly": true,
+  "schema": "castreader.vercel-proxy-heartbeat-phase-summary.v1",
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260906T1949Z.json",
+      "sha256": "1fc50ad879375c9a692e02b4260cfd831d3f8d74fe1418c9d505c436ae5b1075"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T1949Z-complete.json",
+      "sha256": "e6ae2bdf8c55cd85f8e0df5e9c6ac1d9205302c4ef307ae5b8f339990b268c76"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-proxy-join-model-r134-20260906T1949Z.json",
+      "sha256": "7ccc8afe24dd2bdcc2b432ce3c3a1e23b7bbbabdd377486c09e1d4d2b4d2924f"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/direct-proxy-cancellations.json",
+      "sha256": "089f70b44423ba1ca026890eab5136baf76bee227e65984374d2de64da777ab1"
+    }
+  ],
+  "synthesisStarted": false,
+  "window": {
+    "requestStartExclusiveUTC": "2026-09-06T19:50:40.765372Z",
+    "requestStartInclusiveUTC": "2026-09-06T18:49:55.965457Z"
+  }
+}
