@@ -1,0 +1,2688 @@
+{
+  "schema": "castreader.vercel-5xx-observation.v2",
+  "sinceInclusive": "2026-09-05T18:50:21Z",
+  "untilExclusive": "2026-09-06T00:24:11Z",
+  "queriedAtUtc": "2026-09-06T00:47:43.566257Z",
+  "readOnly": true,
+  "projectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
+  "query": {
+    "environment": "production",
+    "statusCode": "5xx",
+    "pageLimit": 1000,
+    "initialShardSeconds": 1800,
+    "timeoutSecondsPerQuery": 45
+  },
+  "coverage": {
+    "successfulShards": 12,
+    "failedShards": 0,
+    "pages": [
+      {
+        "since": "2026-09-05T18:50:21Z",
+        "untilExclusive": "2026-09-05T19:20:21Z",
+        "returnedRows": 12,
+        "depth": 0
+      },
+      {
+        "since": "2026-09-05T19:20:21Z",
+        "untilExclusive": "2026-09-05T19:50:21Z",
+        "returnedRows": 13,
+        "depth": 0
+      },
+      {
+        "since": "2026-09-05T19:50:21Z",
+        "untilExclusive": "2026-09-05T20:20:21Z",
+        "returnedRows": 13,
+        "depth": 0
+      },
+      {
+        "since": "2026-09-05T20:20:21Z",
+        "untilExclusive": "2026-09-05T20:50:21Z",
+        "returnedRows": 13,
+        "depth": 0
+      },
+      {
+        "since": "2026-09-05T20:50:21Z",
+        "untilExclusive": "2026-09-05T21:20:21Z",
+        "returnedRows": 11,
+        "depth": 0
+      },
+      {
+        "since": "2026-09-05T21:20:21Z",
+        "untilExclusive": "2026-09-05T21:50:21Z",
+        "returnedRows": 13,
+        "depth": 0
+      },
+      {
+        "since": "2026-09-05T21:50:21Z",
+        "untilExclusive": "2026-09-05T22:20:21Z",
+        "returnedRows": 13,
+        "depth": 0
+      },
+      {
+        "since": "2026-09-05T22:20:21Z",
+        "untilExclusive": "2026-09-05T22:50:21Z",
+        "returnedRows": 12,
+        "depth": 0
+      },
+      {
+        "since": "2026-09-05T22:50:21Z",
+        "untilExclusive": "2026-09-05T23:20:21Z",
+        "returnedRows": 12,
+        "depth": 0
+      },
+      {
+        "since": "2026-09-05T23:20:21Z",
+        "untilExclusive": "2026-09-05T23:50:21Z",
+        "returnedRows": 13,
+        "depth": 0
+      },
+      {
+        "since": "2026-09-05T23:50:21Z",
+        "untilExclusive": "2026-09-06T00:20:21Z",
+        "returnedRows": 13,
+        "depth": 0
+      },
+      {
+        "since": "2026-09-06T00:20:21Z",
+        "untilExclusive": "2026-09-06T00:24:11Z",
+        "returnedRows": 2,
+        "depth": 0
+      }
+    ],
+    "queryFailures": [],
+    "uniqueReturned5xxRecords": 140,
+    "core5xxRecords": 129,
+    "otherProject5xxRecords": 11,
+    "hitPageLimit": false
+  },
+  "aggregates": {
+    "statusByRouteGroup": [
+      {
+        "routeGroup": "other",
+        "status": "503",
+        "count": 11
+      },
+      {
+        "routeGroup": "tts",
+        "status": "502",
+        "count": 129
+      }
+    ],
+    "pathStatus": [
+      {
+        "path": "/api/captioned_speech_partly",
+        "status": "502",
+        "count": 129
+      },
+      {
+        "path": "[other_project_path]",
+        "status": "503",
+        "count": 11
+      }
+    ],
+    "failureCodeByRouteGroup": [
+      {
+        "routeGroup": "other",
+        "failureCode": "http_503_unclassified",
+        "count": 11
+      },
+      {
+        "routeGroup": "tts",
+        "failureCode": "http_502_unclassified",
+        "count": 129
+      }
+    ],
+    "deploymentStatus": [
+      {
+        "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+        "status": "502",
+        "count": 129
+      },
+      {
+        "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+        "status": "503",
+        "count": 11
+      }
+    ],
+    "domainStatus": [
+      {
+        "domainClass": "[vercel_deployment_domain]",
+        "status": "503",
+        "count": 11
+      },
+      {
+        "domainClass": "api.castreader.ai",
+        "status": "502",
+        "count": 129
+      }
+    ]
+  },
+  "limitations": [
+    "Counts are unique Vercel runtime log records returned by the CLI, not unique users.",
+    "Vercel retention, ingestion, or sampling can make historical logs incomplete; no request denominator was available from metrics because the account returned payment_required.",
+    "No monitor-versus-client attribution is asserted because these records expose no trustworthy client identity or user-agent field.",
+    "Unknown request paths are collapsed; request/trace ids are one-way hashed; raw messages, nested logs, text, headers, IPs, and bodies are not persisted."
+  ],
+  "requests": [
+    {
+      "requestKey": "cfea5cf058f12e13",
+      "traceKey": null,
+      "atUtc": "2026-09-05T18:50:21.610000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "9b2dc4e7bef2b32c",
+      "traceKey": null,
+      "atUtc": "2026-09-05T18:55:09.888000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "d586dfbfa4d916ff",
+      "traceKey": null,
+      "atUtc": "2026-09-05T18:55:16.378000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "b4b1a322e207bf9f",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:00:26.742000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "9c1e42def3abe673",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:00:35.662000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "866f13df5d02668c",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:05:36.730000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "9829dcf077a69f5f",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:05:55.115000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "0ea490e091736e83",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:10:46.732000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "05b4fa07820be204",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:10:59.324000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "e78785ce09bb04e9",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:15:33.327000Z",
+      "routeGroup": "other",
+      "path": "[other_project_path]",
+      "method": "GET",
+      "status": 503,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "[vercel_deployment_domain]",
+      "source": "serverless",
+      "level": "error",
+      "failureCodes": [
+        "http_503_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "3190ec2cab08092c",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:15:51.737000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "22fe411b0f7fbbf8",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:15:59.929000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "2677aad1a2b39d8b",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:21:06.730000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "c4e034ee7d5cff51",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:21:20.746000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "938afad14244ba43",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:26:26.725000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "aca7f6c8c2c9554c",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:26:34.490000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "e519f2c1be6897c3",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:31:46.730000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "8cdc275812bccdea",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:31:54.715000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "add44b88433febf3",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:37:06.729000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "976a155e392ba21d",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:37:21.932000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "e428696d60639239",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:42:16.732000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "5346f0a6d30848fd",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:42:28.566000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "d4bcc4bdeffa7031",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:45:33.396000Z",
+      "routeGroup": "other",
+      "path": "[other_project_path]",
+      "method": "GET",
+      "status": 503,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "[vercel_deployment_domain]",
+      "source": "serverless",
+      "level": "error",
+      "failureCodes": [
+        "http_503_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "e5d19bab90be7202",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:47:26.730000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "21dac03bca6b590f",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:47:48.937000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "9efeaca4f9443f91",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:52:36.737000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "4b1ba8aa42fd00ed",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:52:50.733000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "be4efc6d0d31d9da",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:57:46.728000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "d103e1470abe75d1",
+      "traceKey": null,
+      "atUtc": "2026-09-05T19:58:05.040000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "1979e4a685cd48d7",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:03:06.732000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "c6b05ca04a3e9aed",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:03:20.374000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "993d2ab1a4c59709",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:08:16.735000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "5ca997518bd14196",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:08:34.616000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "58325aaf0b0fa73a",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:13:26.728000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "9f9a182101a446db",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:13:44.230000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "fb3edfa250cd20b0",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:15:33.177000Z",
+      "routeGroup": "other",
+      "path": "[other_project_path]",
+      "method": "GET",
+      "status": 503,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "[vercel_deployment_domain]",
+      "source": "serverless",
+      "level": "error",
+      "failureCodes": [
+        "http_503_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "b21a11580962ae6b",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:18:36.750000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "9ed041fac5ea4f6c",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:18:44.382000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "75eb4525c053bb6e",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:23:46.730000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "b683701baf0f6574",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:23:56.522000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "8eb83a28747b72e8",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:29:06.729000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "1bc8ec49659b1b98",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:29:22.350000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "0a84c9b33c96d1f6",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:34:19.993000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "ea7ccf0e9e6da173",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:34:27.095000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "ee7e4d8cffcb9626",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:39:26.732000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "136cf46de74a08db",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:39:35.413000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "0563d9fe044bc78d",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:44:36.737000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "348eb76b0f2cc048",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:44:44.386000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "1422e24f6d847228",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:45:33.544000Z",
+      "routeGroup": "other",
+      "path": "[other_project_path]",
+      "method": "GET",
+      "status": 503,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "[vercel_deployment_domain]",
+      "source": "serverless",
+      "level": "error",
+      "failureCodes": [
+        "http_503_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "7a765bc784db1204",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:49:46.724000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "3817712aadd431fb",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:49:54.940000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "1e038a727da90bcb",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:54:56.731000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "09e24aaba21999d5",
+      "traceKey": null,
+      "atUtc": "2026-09-05T20:55:04.353000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "3dff06733c17fe00",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:00:16.746000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "86085a3b6c2ed9f0",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:00:23.670000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "4f5ff2b20084f8fb",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:05:36.731000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "99b5c8924dabc68f",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:05:47.017000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "f716c171731f5212",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:10:46.730000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "e3736a1173eecd0d",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:10:57.417000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "99e99da568a35142",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:15:33.457000Z",
+      "routeGroup": "other",
+      "path": "[other_project_path]",
+      "method": "GET",
+      "status": 503,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "[vercel_deployment_domain]",
+      "source": "serverless",
+      "level": "error",
+      "failureCodes": [
+        "http_503_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "48e0e07501dcab57",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:16:06.728000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "51c142de414eb96a",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:16:19.351000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "a478bcca914fad03",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:21:16.723000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "f2c5e862c57b8294",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:21:23.088000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "63f3243426791dc1",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:26:26.748000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "f3f2236a826e9f0f",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:26:37.082000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "e1f67da769cc206b",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:31:45.240000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "bf1ad2243487b3dc",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:32:09.238000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "1c11f5ba90f0e32b",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:37:06.732000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "c2bccd84cf25f5c5",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:37:21.948000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "577ca00d0630e2bb",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:42:14.954000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "0b3bfb0a9142e4f6",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:42:25.888000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "74c5a6afb892fd19",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:45:33.430000Z",
+      "routeGroup": "other",
+      "path": "[other_project_path]",
+      "method": "GET",
+      "status": 503,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "[vercel_deployment_domain]",
+      "source": "serverless",
+      "level": "error",
+      "failureCodes": [
+        "http_503_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "727779a6527ac35b",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:47:26.730000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "ce979d8dbb68d0f5",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:47:34.476000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "669ba507a48151d0",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:52:46.729000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "9f25f134766907af",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:53:09.644000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "d659033184c6219d",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:57:56.738000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "3330b4d697c32e96",
+      "traceKey": null,
+      "atUtc": "2026-09-05T21:58:17.080000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "183ef564b70a15eb",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:03:16.731000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "f4754853cbfac06c",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:03:23.814000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "265c5204b7c27305",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:08:31.037000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "3fc18385eb6d55da",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:08:37.615000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "eacb57a5782f7672",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:13:44.992000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "9c8911d6c4ed7425",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:13:51.643000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "5e6613166dd9311c",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:15:33.317000Z",
+      "routeGroup": "other",
+      "path": "[other_project_path]",
+      "method": "GET",
+      "status": 503,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "[vercel_deployment_domain]",
+      "source": "serverless",
+      "level": "error",
+      "failureCodes": [
+        "http_503_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "bbc8880d923f5db2",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:18:56.739000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "68791c9ca92ddd8e",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:19:04.577000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "304ec54ecaf12816",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:24:06.731000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "c11f94269a007b68",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:24:13.145000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "191a3c89514046cf",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:29:26.738000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "ce7add3a464c339e",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:29:33.437000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "37d34a2a20d94dc2",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:34:42.496000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "7e9305d47cb1717f",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:34:48.959000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "8dd5053405283e91",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:39:56.729000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "0ddc4ca1db07a75e",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:40:03.263000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "86f05509b784b1fe",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:45:06.728000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "d71bb2f52c887864",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:45:13.160000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "b335f17762111183",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:45:33.097000Z",
+      "routeGroup": "other",
+      "path": "[other_project_path]",
+      "method": "GET",
+      "status": 503,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "[vercel_deployment_domain]",
+      "source": "serverless",
+      "level": "error",
+      "failureCodes": [
+        "http_503_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "390782dfffdc4cb0",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:50:16.732000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "d602e83360ed6f34",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:50:24.938000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "5a47e5d63aeda58f",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:55:34.106000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "ba047c44133066a1",
+      "traceKey": null,
+      "atUtc": "2026-09-05T22:55:46.040000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "d3bb005223b5f925",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:00:46.738000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "076f9a1696d13167",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:00:54.211000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "22c31a20fc5e873d",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:05:56.754000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "cb1cb87065cff42a",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:06:03.143000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "d34fe948871c4d96",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:11:06.732000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "df2d1de265ddfa12",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:11:22.285000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "cc657a35bb15e3fe",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:15:33.154000Z",
+      "routeGroup": "other",
+      "path": "[other_project_path]",
+      "method": "GET",
+      "status": 503,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "[vercel_deployment_domain]",
+      "source": "serverless",
+      "level": "error",
+      "failureCodes": [
+        "http_503_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "83abe85b5f965ae7",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:16:14.700000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "ab994337a34cc1ee",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:16:21.033000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "6376220ca9bd1324",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:21:26.725000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "2c41009fcafd21d1",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:21:35.109000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "a1b140c22076cf3f",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:26:36.730000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "8a6c95183d827bd9",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:26:43.471000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "5352285aec5398c8",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:31:46.730000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "77e4f0062592aef5",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:31:57.298000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "181e81d7a4877146",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:36:56.728000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "683f39e860979f16",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:37:08.009000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "0172b5450b03deb0",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:42:06.730000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "6e51f11fbd345a35",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:42:13.034000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "f70ba9a5c18b9a62",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:45:33.060000Z",
+      "routeGroup": "other",
+      "path": "[other_project_path]",
+      "method": "GET",
+      "status": 503,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "[vercel_deployment_domain]",
+      "source": "serverless",
+      "level": "error",
+      "failureCodes": [
+        "http_503_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "5de2a9a15d63faff",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:47:16.786000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "e6b1e33678baf11d",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:47:26.398000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "12f6a84ea10f1bf6",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:52:26.646000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "6783b52ba983b192",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:52:33.217000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "50eccf7031196bbc",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:57:36.726000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "9e763bb975e5cf48",
+      "traceKey": null,
+      "atUtc": "2026-09-05T23:57:44.483000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "d7b99d28accc9e7c",
+      "traceKey": null,
+      "atUtc": "2026-09-06T00:02:56.725000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "62721c14beaff670",
+      "traceKey": null,
+      "atUtc": "2026-09-06T00:03:03.038000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "8dddf3c7fbef16a3",
+      "traceKey": null,
+      "atUtc": "2026-09-06T00:08:06.731000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "03984b8d6660a5f3",
+      "traceKey": null,
+      "atUtc": "2026-09-06T00:08:17.247000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "b992590071e8cfa1",
+      "traceKey": null,
+      "atUtc": "2026-09-06T00:13:26.728000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "fb3a084647119ee0",
+      "traceKey": null,
+      "atUtc": "2026-09-06T00:13:43.381000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "6c5c07a3bf01f603",
+      "traceKey": null,
+      "atUtc": "2026-09-06T00:15:33.249000Z",
+      "routeGroup": "other",
+      "path": "[other_project_path]",
+      "method": "GET",
+      "status": 503,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "[vercel_deployment_domain]",
+      "source": "serverless",
+      "level": "error",
+      "failureCodes": [
+        "http_503_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "2f48f9757226ebf2",
+      "traceKey": null,
+      "atUtc": "2026-09-06T00:18:36.736000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "767cdbbe2d2352eb",
+      "traceKey": null,
+      "atUtc": "2026-09-06T00:18:51.698000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "e1c92cc4fc6caca6",
+      "traceKey": null,
+      "atUtc": "2026-09-06T00:23:46.748000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    },
+    {
+      "requestKey": "c65b71571d2acbfc",
+      "traceKey": null,
+      "atUtc": "2026-09-06T00:24:02.971000Z",
+      "routeGroup": "tts",
+      "path": "/api/captioned_speech_partly",
+      "method": "POST",
+      "status": 502,
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "domainClass": "api.castreader.ai",
+      "source": "serverless",
+      "level": "info",
+      "failureCodes": [
+        "http_502_unclassified"
+      ],
+      "advisories": [],
+      "originClassification": "unclassified_no_request_identity"
+    }
+  ]
+}

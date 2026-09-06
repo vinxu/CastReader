@@ -1,0 +1,748 @@
+{
+  "cutoffUtcInclusive": "2026-09-06T00:24:11Z",
+  "deduplication": "results/*.json only; exclude latest.json copy; then exact content SHA and observedAt",
+  "generatedAtUtc": "2026-09-06T00:35:08.866653+00:00",
+  "mainComparisonWindow": {
+    "endInclusive": "2026-09-06T00:24:11Z",
+    "startInclusive": "2026-09-05T18:50:21Z"
+  },
+  "monitorContractEvolution": {
+    "272d3148": {
+      "persistedRequestContractField": false,
+      "requestShape": "every segment sent stream:false",
+      "sourceCommit": "272d3148d6a93cec079d7dc649a78d406e5fe36f"
+    },
+    "boundary": "source commits and exact cutover transaction receipts, not inferred from result filenames",
+    "f6eb6691": {
+      "persistedRequestContractField": true,
+      "requestShape": "remainder segments rotate stream omitted, true, false; retries preserve the segment contract",
+      "sourceCommit": "f6eb669178c665defff239fd8a60210b54894aeb"
+    },
+    "gatewayDeploymentIdAvailableInPersistedResults": false
+  },
+  "regions": {
+    "cn": {
+      "currentReadbackAfterCutoff": {
+        "latestFailureCode": null,
+        "latestObservedAt": "2026-09-06T00:24:02.342Z",
+        "latestStatus": "healthy",
+        "readAtUtc": "2026-09-06T00:27:15.911905+00:00",
+        "state": {
+          "consecutiveAlignmentDegradations": 0,
+          "consecutiveSupplyFailures": 0,
+          "lastAlertAt": "2026-09-05T18:52:32.133Z",
+          "lastHealthyAt": "2026-09-06T00:24:02.342Z",
+          "lastStatus": "healthy",
+          "schemaVersion": 1,
+          "updatedAt": "2026-09-06T00:24:02.342Z"
+        },
+        "timer": {
+          "ActiveState": "active",
+          "LastTriggerUSec": "Sun 2026-09-06 08:23:59 CST",
+          "NextElapseUSecRealtime": "",
+          "SubState": "waiting",
+          "UnitFileState": "enabled"
+        }
+      },
+      "f6Upgrade": {
+        "firstConfirmedCurrent": "2026-09-05T18:31:43.116174Z",
+        "firstResult": "2026-09-05T18:31:49.911Z",
+        "receipt": "reports/backend-core-fixes-20260905/release/monitor-legacy-contracts-20260906/cn-transaction-receipt.json",
+        "transactionStart": "2026-09-05T18:31:42.170655Z"
+      },
+      "monitorSourceTransitions": [
+        {
+          "release": "272d3148",
+          "throughBefore": "2026-09-05T18:31:42.170655Z"
+        },
+        {
+          "confirmedCurrentBy": "2026-09-05T18:31:43.116174Z",
+          "firstPersistedResult": "2026-09-05T18:31:49.911Z",
+          "release": "f6eb6691"
+        }
+      ],
+      "windows": {
+        "f6PostUpgrade": {
+          "alignmentDegradationCycles": 0,
+          "cadence": {
+            "largestObservedGap": {
+              "from": "2026-09-05T23:11:18.984Z",
+              "seconds": 323.467,
+              "to": "2026-09-05T23:16:42.451Z"
+            },
+            "lastObservedToCutoffSeconds": 8.658,
+            "note": "observedAt is completion time; gaps include probe duration, timer randomization and any manual invocation",
+            "observedGapSeconds": {
+              "max": 323.467,
+              "p50": 310.112,
+              "p95": 320.109,
+              "samples": 68
+            },
+            "windowStartToFirstObservedSeconds": 6.795
+          },
+          "completeRemainderDecoded": {
+            "cycles": 65,
+            "denominatorAllCycles": 69,
+            "denominatorSupplyOkCycles": 65,
+            "ratioAllCycles": 0.942029,
+            "ratioSupplyOkCycles": 1.0
+          },
+          "cycles": 69,
+          "endInclusive": "2026-09-06T00:24:11Z",
+          "executedSegmentContractCounts": {
+            "stream_false": 65,
+            "stream_omitted": 65,
+            "stream_true": 65
+          },
+          "failedRequestContractCounts": {
+            "stream_omitted": 4
+          },
+          "failureCodeCounts": {
+            "http_502": 4
+          },
+          "failureStreaks": [
+            {
+              "actualStreakCyclesThroughCutoff": 4,
+              "actualStreakStartThroughCutoff": "2026-09-05T18:31:49.911Z",
+              "cyclesInWindow": 4,
+              "firstFailureInWindow": "2026-09-05T18:31:49.911Z",
+              "lastFailureInWindow": "2026-09-05T18:47:31.950Z",
+              "openAtCutoff": false,
+              "recoveryObservedAt": "2026-09-05T18:52:32.133Z",
+              "startedBeforeWindow": false
+            }
+          ],
+          "firstObservedAt": "2026-09-05T18:31:49.911Z",
+          "lastObservedAt": "2026-09-06T00:24:02.342Z",
+          "localAlertEvents": [
+            {
+              "consecutiveAlignmentDegradations": 0,
+              "consecutiveSupplyFailures": 1,
+              "failureCode": "http_502",
+              "notificationPolicy": "dry-run",
+              "observedAt": "2026-09-05T18:31:49.911Z",
+              "severity": "warning",
+              "type": "supply_failed"
+            },
+            {
+              "consecutiveAlignmentDegradations": 0,
+              "consecutiveSupplyFailures": 2,
+              "failureCode": "http_502",
+              "notificationPolicy": "dry-run",
+              "observedAt": "2026-09-05T18:37:06.461Z",
+              "severity": "critical",
+              "type": "supply_failed"
+            },
+            {
+              "consecutiveAlignmentDegradations": 0,
+              "consecutiveSupplyFailures": 0,
+              "failureCode": null,
+              "notificationPolicy": "dry-run",
+              "observedAt": "2026-09-05T18:52:32.133Z",
+              "severity": "warning",
+              "type": "recovery"
+            }
+          ],
+          "originCounts": {
+            "manual_confirmed_by_transaction_receipt": 1,
+            "not_encoded_in_result": 68
+          },
+          "regionMismatchCycles": 0,
+          "regionValidatedSuccessfulCycles": 65,
+          "regionValidationUnavailableBeforeSuccess": 4,
+          "startInclusive": "2026-09-05T18:31:43.116174Z",
+          "statusCounts": {
+            "healthy": 65,
+            "supply_failed": 4
+          },
+          "timing": {
+            "firstSegmentAudioDurationSeconds": {
+              "max": 3.576,
+              "p50": 3.576,
+              "p95": 3.576,
+              "samples": 65
+            },
+            "firstSegmentGenerationLatency": {
+              "available": false,
+              "reason": "persisted schema has no per-segment request elapsed or time-to-first-audio field"
+            },
+            "percentileMethod": "nearest-rank",
+            "probeTotalElapsedMs": {
+              "max": 15101.0,
+              "p50": 2650.0,
+              "p95": 6658.0,
+              "samples": 69
+            },
+            "totalDecodedAudioDurationSeconds": {
+              "max": 13.44,
+              "p50": 13.44,
+              "p95": 13.44,
+              "samples": 65
+            }
+          },
+          "upstreamMetadata": [
+            {
+              "cyclesContainingVariant": 65,
+              "gateway": "vercel-r2",
+              "upstreamNode": "castreader-cn4090",
+              "upstreamRevision": "0",
+              "upstreamSource": "cn-environment"
+            }
+          ]
+        },
+        "mainComparison": {
+          "alignmentDegradationCycles": 0,
+          "cadence": {
+            "largestObservedGap": {
+              "from": "2026-09-05T23:11:18.984Z",
+              "seconds": 323.467,
+              "to": "2026-09-05T23:16:42.451Z"
+            },
+            "lastObservedToCutoffSeconds": 8.658,
+            "note": "observedAt is completion time; gaps include probe duration, timer randomization and any manual invocation",
+            "observedGapSeconds": {
+              "max": 323.467,
+              "p50": 310.112,
+              "p95": 320.109,
+              "samples": 64
+            },
+            "windowStartToFirstObservedSeconds": 131.133
+          },
+          "completeRemainderDecoded": {
+            "cycles": 65,
+            "denominatorAllCycles": 65,
+            "denominatorSupplyOkCycles": 65,
+            "ratioAllCycles": 1.0,
+            "ratioSupplyOkCycles": 1.0
+          },
+          "cycles": 65,
+          "endInclusive": "2026-09-06T00:24:11Z",
+          "executedSegmentContractCounts": {
+            "stream_false": 65,
+            "stream_omitted": 65,
+            "stream_true": 65
+          },
+          "failedRequestContractCounts": {},
+          "failureCodeCounts": {},
+          "failureStreaks": [],
+          "firstObservedAt": "2026-09-05T18:52:32.133Z",
+          "lastObservedAt": "2026-09-06T00:24:02.342Z",
+          "localAlertEvents": [
+            {
+              "consecutiveAlignmentDegradations": 0,
+              "consecutiveSupplyFailures": 0,
+              "failureCode": null,
+              "notificationPolicy": "dry-run",
+              "observedAt": "2026-09-05T18:52:32.133Z",
+              "severity": "warning",
+              "type": "recovery"
+            }
+          ],
+          "originCounts": {
+            "not_encoded_in_result": 65
+          },
+          "regionMismatchCycles": 0,
+          "regionValidatedSuccessfulCycles": 65,
+          "regionValidationUnavailableBeforeSuccess": 0,
+          "startInclusive": "2026-09-05T18:50:21Z",
+          "statusCounts": {
+            "healthy": 65
+          },
+          "timing": {
+            "firstSegmentAudioDurationSeconds": {
+              "max": 3.576,
+              "p50": 3.576,
+              "p95": 3.576,
+              "samples": 65
+            },
+            "firstSegmentGenerationLatency": {
+              "available": false,
+              "reason": "persisted schema has no per-segment request elapsed or time-to-first-audio field"
+            },
+            "percentileMethod": "nearest-rank",
+            "probeTotalElapsedMs": {
+              "max": 15101.0,
+              "p50": 2631.0,
+              "p95": 5502.0,
+              "samples": 65
+            },
+            "totalDecodedAudioDurationSeconds": {
+              "max": 13.44,
+              "p50": 13.44,
+              "p95": 13.44,
+              "samples": 65
+            }
+          },
+          "upstreamMetadata": [
+            {
+              "cyclesContainingVariant": 65,
+              "gateway": "vercel-r2",
+              "upstreamNode": "castreader-cn4090",
+              "upstreamRevision": "0",
+              "upstreamSource": "cn-environment"
+            }
+          ]
+        },
+        "observedHistory": {
+          "alignmentDegradationCycles": 0,
+          "cadence": {
+            "largestObservedGap": {
+              "from": "2026-09-05T23:11:18.984Z",
+              "seconds": 323.467,
+              "to": "2026-09-05T23:16:42.451Z"
+            },
+            "lastObservedToCutoffSeconds": 8.658,
+            "note": "observedAt is completion time; gaps include probe duration, timer randomization and any manual invocation",
+            "observedGapSeconds": {
+              "max": 323.467,
+              "p50": 310.149,
+              "p95": 320.075,
+              "samples": 99
+            },
+            "windowStartToFirstObservedSeconds": 0.0
+          },
+          "completeRemainderDecoded": {
+            "cycles": 96,
+            "denominatorAllCycles": 100,
+            "denominatorSupplyOkCycles": 96,
+            "ratioAllCycles": 0.96,
+            "ratioSupplyOkCycles": 1.0
+          },
+          "cycles": 100,
+          "endInclusive": "2026-09-06T00:24:11Z",
+          "executedSegmentContractCounts": {
+            "stream_false": 65,
+            "stream_omitted": 65,
+            "stream_true": 65
+          },
+          "failedRequestContractCounts": {
+            "stream_omitted": 4
+          },
+          "failureCodeCounts": {
+            "http_502": 4
+          },
+          "failureStreaks": [
+            {
+              "actualStreakCyclesThroughCutoff": 4,
+              "actualStreakStartThroughCutoff": "2026-09-05T18:31:49.911Z",
+              "cyclesInWindow": 4,
+              "firstFailureInWindow": "2026-09-05T18:31:49.911Z",
+              "lastFailureInWindow": "2026-09-05T18:47:31.950Z",
+              "openAtCutoff": false,
+              "recoveryObservedAt": "2026-09-05T18:52:32.133Z",
+              "startedBeforeWindow": false
+            }
+          ],
+          "firstObservedAt": "2026-09-05T15:58:13.669Z",
+          "lastObservedAt": "2026-09-06T00:24:02.342Z",
+          "localAlertEvents": [
+            {
+              "consecutiveAlignmentDegradations": 0,
+              "consecutiveSupplyFailures": 1,
+              "failureCode": "http_502",
+              "notificationPolicy": "dry-run",
+              "observedAt": "2026-09-05T18:31:49.911Z",
+              "severity": "warning",
+              "type": "supply_failed"
+            },
+            {
+              "consecutiveAlignmentDegradations": 0,
+              "consecutiveSupplyFailures": 2,
+              "failureCode": "http_502",
+              "notificationPolicy": "dry-run",
+              "observedAt": "2026-09-05T18:37:06.461Z",
+              "severity": "critical",
+              "type": "supply_failed"
+            },
+            {
+              "consecutiveAlignmentDegradations": 0,
+              "consecutiveSupplyFailures": 0,
+              "failureCode": null,
+              "notificationPolicy": "dry-run",
+              "observedAt": "2026-09-05T18:52:32.133Z",
+              "severity": "warning",
+              "type": "recovery"
+            }
+          ],
+          "originCounts": {
+            "manual_confirmed_by_transaction_receipt": 2,
+            "not_encoded_in_result": 98
+          },
+          "regionMismatchCycles": 0,
+          "regionValidatedSuccessfulCycles": 96,
+          "regionValidationUnavailableBeforeSuccess": 4,
+          "startInclusive": "2026-09-05T15:58:13.669000Z",
+          "statusCounts": {
+            "healthy": 96,
+            "supply_failed": 4
+          },
+          "timing": {
+            "firstSegmentAudioDurationSeconds": {
+              "max": 3.576,
+              "p50": 3.576,
+              "p95": 3.576,
+              "samples": 96
+            },
+            "firstSegmentGenerationLatency": {
+              "available": false,
+              "reason": "persisted schema has no per-segment request elapsed or time-to-first-audio field"
+            },
+            "percentileMethod": "nearest-rank",
+            "probeTotalElapsedMs": {
+              "max": 15101.0,
+              "p50": 2650.0,
+              "p95": 6492.0,
+              "samples": 100
+            },
+            "totalDecodedAudioDurationSeconds": {
+              "max": 13.44,
+              "p50": 13.44,
+              "p95": 13.44,
+              "samples": 96
+            }
+          },
+          "upstreamMetadata": [
+            {
+              "cyclesContainingVariant": 96,
+              "gateway": "vercel-r2",
+              "upstreamNode": "castreader-cn4090",
+              "upstreamRevision": "0",
+              "upstreamSource": "cn-environment"
+            }
+          ]
+        }
+      }
+    },
+    "us": {
+      "currentReadbackAfterCutoff": {
+        "latestFailureCode": "http_502",
+        "latestObservedAt": "2026-09-06T00:24:20.760Z",
+        "latestStatus": "supply_failed",
+        "readAtUtc": "2026-09-06T00:27:18.263636+00:00",
+        "state": {
+          "consecutiveAlignmentDegradations": 0,
+          "consecutiveSupplyFailures": 73,
+          "lastAlertAt": "2026-09-05T18:13:54.458Z",
+          "lastHealthyAt": "2026-09-05T18:04:40.724Z",
+          "lastStatus": "supply_failed",
+          "schemaVersion": 1,
+          "updatedAt": "2026-09-06T00:24:20.760Z"
+        },
+        "timer": {
+          "ActiveState": "active",
+          "LastTriggerUSec": "Sun 2026-09-06 00:23:46 UTC",
+          "NextElapseUSecRealtime": "",
+          "SubState": "waiting",
+          "UnitFileState": "enabled"
+        }
+      },
+      "f6Upgrade": {
+        "firstConfirmedCurrent": "2026-09-05T18:08:19.708702Z",
+        "firstResult": "2026-09-05T18:08:34.685Z",
+        "receipt": "reports/backend-core-fixes-20260905/release/monitor-legacy-contracts-20260906/transaction-receipt.json",
+        "transactionStart": "2026-09-05T18:08:19.304908Z"
+      },
+      "monitorSourceTransitions": [
+        {
+          "release": "272d3148",
+          "throughBefore": "2026-09-05T18:08:19.304908Z"
+        },
+        {
+          "confirmedCurrentBy": "2026-09-05T18:08:19.708702Z",
+          "firstPersistedResult": "2026-09-05T18:08:34.685Z",
+          "release": "f6eb6691"
+        }
+      ],
+      "windows": {
+        "f6PostUpgrade": {
+          "alignmentDegradationCycles": 0,
+          "cadence": {
+            "largestObservedGap": {
+              "from": "2026-09-05T19:32:01.622Z",
+              "seconds": 344.391,
+              "to": "2026-09-05T19:37:46.013Z"
+            },
+            "lastObservedToCutoffSeconds": 305.648,
+            "note": "observedAt is completion time; gaps include probe duration, timer randomization and any manual invocation",
+            "observedGapSeconds": {
+              "max": 344.391,
+              "p50": 312.22,
+              "p95": 333.417,
+              "samples": 71
+            },
+            "windowStartToFirstObservedSeconds": 14.976
+          },
+          "completeRemainderDecoded": {
+            "cycles": 0,
+            "denominatorAllCycles": 72,
+            "denominatorSupplyOkCycles": 0,
+            "ratioAllCycles": 0.0,
+            "ratioSupplyOkCycles": null
+          },
+          "cycles": 72,
+          "endInclusive": "2026-09-06T00:24:11Z",
+          "executedSegmentContractCounts": {},
+          "failedRequestContractCounts": {
+            "stream_omitted": 72
+          },
+          "failureCodeCounts": {
+            "http_502": 72
+          },
+          "failureStreaks": [
+            {
+              "actualStreakCyclesThroughCutoff": 72,
+              "actualStreakStartThroughCutoff": "2026-09-05T18:08:34.685Z",
+              "cyclesInWindow": 72,
+              "firstFailureInWindow": "2026-09-05T18:08:34.685Z",
+              "lastFailureInWindow": "2026-09-06T00:19:05.352Z",
+              "openAtCutoff": true,
+              "recoveryObservedAt": null,
+              "startedBeforeWindow": false
+            }
+          ],
+          "firstObservedAt": "2026-09-05T18:08:34.685Z",
+          "lastObservedAt": "2026-09-06T00:19:05.352Z",
+          "localAlertEvents": [
+            {
+              "consecutiveAlignmentDegradations": 0,
+              "consecutiveSupplyFailures": 1,
+              "failureCode": "http_502",
+              "notificationPolicy": "dry-run",
+              "observedAt": "2026-09-05T18:08:34.685Z",
+              "severity": "warning",
+              "type": "supply_failed"
+            },
+            {
+              "consecutiveAlignmentDegradations": 0,
+              "consecutiveSupplyFailures": 2,
+              "failureCode": "http_502",
+              "notificationPolicy": "dry-run",
+              "observedAt": "2026-09-05T18:13:54.458Z",
+              "severity": "critical",
+              "type": "supply_failed"
+            }
+          ],
+          "originCounts": {
+            "manual_confirmed_by_transaction_receipt": 1,
+            "not_encoded_in_result": 71
+          },
+          "regionMismatchCycles": 0,
+          "regionValidatedSuccessfulCycles": 0,
+          "regionValidationUnavailableBeforeSuccess": 72,
+          "startInclusive": "2026-09-05T18:08:19.708702Z",
+          "statusCounts": {
+            "supply_failed": 72
+          },
+          "timing": {
+            "firstSegmentAudioDurationSeconds": null,
+            "firstSegmentGenerationLatency": {
+              "available": false,
+              "reason": "persisted schema has no per-segment request elapsed or time-to-first-audio field"
+            },
+            "percentileMethod": "nearest-rank",
+            "probeTotalElapsedMs": {
+              "max": 48852.0,
+              "p50": 16709.0,
+              "p95": 38056.0,
+              "samples": 72
+            },
+            "totalDecodedAudioDurationSeconds": null
+          },
+          "upstreamMetadata": []
+        },
+        "mainComparison": {
+          "alignmentDegradationCycles": 0,
+          "cadence": {
+            "largestObservedGap": {
+              "from": "2026-09-05T19:32:01.622Z",
+              "seconds": 344.391,
+              "to": "2026-09-05T19:37:46.013Z"
+            },
+            "lastObservedToCutoffSeconds": 305.648,
+            "note": "observedAt is completion time; gaps include probe duration, timer randomization and any manual invocation",
+            "observedGapSeconds": {
+              "max": 344.391,
+              "p50": 311.931,
+              "p95": 333.417,
+              "samples": 63
+            },
+            "windowStartToFirstObservedSeconds": 11.079
+          },
+          "completeRemainderDecoded": {
+            "cycles": 0,
+            "denominatorAllCycles": 64,
+            "denominatorSupplyOkCycles": 0,
+            "ratioAllCycles": 0.0,
+            "ratioSupplyOkCycles": null
+          },
+          "cycles": 64,
+          "endInclusive": "2026-09-06T00:24:11Z",
+          "executedSegmentContractCounts": {},
+          "failedRequestContractCounts": {
+            "stream_omitted": 64
+          },
+          "failureCodeCounts": {
+            "http_502": 64
+          },
+          "failureStreaks": [
+            {
+              "actualStreakCyclesThroughCutoff": 72,
+              "actualStreakStartThroughCutoff": "2026-09-05T18:08:34.685Z",
+              "cyclesInWindow": 64,
+              "firstFailureInWindow": "2026-09-05T18:50:32.079Z",
+              "lastFailureInWindow": "2026-09-06T00:19:05.352Z",
+              "openAtCutoff": true,
+              "recoveryObservedAt": null,
+              "startedBeforeWindow": true
+            }
+          ],
+          "firstObservedAt": "2026-09-05T18:50:32.079Z",
+          "lastObservedAt": "2026-09-06T00:19:05.352Z",
+          "localAlertEvents": [],
+          "originCounts": {
+            "not_encoded_in_result": 64
+          },
+          "regionMismatchCycles": 0,
+          "regionValidatedSuccessfulCycles": 0,
+          "regionValidationUnavailableBeforeSuccess": 64,
+          "startInclusive": "2026-09-05T18:50:21Z",
+          "statusCounts": {
+            "supply_failed": 64
+          },
+          "timing": {
+            "firstSegmentAudioDurationSeconds": null,
+            "firstSegmentGenerationLatency": {
+              "available": false,
+              "reason": "persisted schema has no per-segment request elapsed or time-to-first-audio field"
+            },
+            "percentileMethod": "nearest-rank",
+            "probeTotalElapsedMs": {
+              "max": 48852.0,
+              "p50": 18488.0,
+              "p95": 38056.0,
+              "samples": 64
+            },
+            "totalDecodedAudioDurationSeconds": null
+          },
+          "upstreamMetadata": []
+        },
+        "observedHistory": {
+          "alignmentDegradationCycles": 0,
+          "cadence": {
+            "largestObservedGap": {
+              "from": "2026-09-05T19:32:01.622Z",
+              "seconds": 344.391,
+              "to": "2026-09-05T19:37:46.013Z"
+            },
+            "lastObservedToCutoffSeconds": 305.648,
+            "note": "observedAt is completion time; gaps include probe duration, timer randomization and any manual invocation",
+            "observedGapSeconds": {
+              "max": 344.391,
+              "p50": 310.851,
+              "p95": 330.9,
+              "samples": 94
+            },
+            "windowStartToFirstObservedSeconds": 0.0
+          },
+          "completeRemainderDecoded": {
+            "cycles": 23,
+            "denominatorAllCycles": 95,
+            "denominatorSupplyOkCycles": 23,
+            "ratioAllCycles": 0.242105,
+            "ratioSupplyOkCycles": 1.0
+          },
+          "cycles": 95,
+          "endInclusive": "2026-09-06T00:24:11Z",
+          "executedSegmentContractCounts": {},
+          "failedRequestContractCounts": {
+            "stream_omitted": 72
+          },
+          "failureCodeCounts": {
+            "http_502": 72
+          },
+          "failureStreaks": [
+            {
+              "actualStreakCyclesThroughCutoff": 72,
+              "actualStreakStartThroughCutoff": "2026-09-05T18:08:34.685Z",
+              "cyclesInWindow": 72,
+              "firstFailureInWindow": "2026-09-05T18:08:34.685Z",
+              "lastFailureInWindow": "2026-09-06T00:19:05.352Z",
+              "openAtCutoff": true,
+              "recoveryObservedAt": null,
+              "startedBeforeWindow": false
+            }
+          ],
+          "firstObservedAt": "2026-09-05T16:15:00.370Z",
+          "lastObservedAt": "2026-09-06T00:19:05.352Z",
+          "localAlertEvents": [
+            {
+              "consecutiveAlignmentDegradations": 0,
+              "consecutiveSupplyFailures": 1,
+              "failureCode": "http_502",
+              "notificationPolicy": "dry-run",
+              "observedAt": "2026-09-05T18:08:34.685Z",
+              "severity": "warning",
+              "type": "supply_failed"
+            },
+            {
+              "consecutiveAlignmentDegradations": 0,
+              "consecutiveSupplyFailures": 2,
+              "failureCode": "http_502",
+              "notificationPolicy": "dry-run",
+              "observedAt": "2026-09-05T18:13:54.458Z",
+              "severity": "critical",
+              "type": "supply_failed"
+            }
+          ],
+          "originCounts": {
+            "manual_confirmed_by_transaction_receipt": 2,
+            "not_encoded_in_result": 93
+          },
+          "regionMismatchCycles": 0,
+          "regionValidatedSuccessfulCycles": 23,
+          "regionValidationUnavailableBeforeSuccess": 72,
+          "startInclusive": "2026-09-05T16:15:00.370000Z",
+          "statusCounts": {
+            "healthy": 23,
+            "supply_failed": 72
+          },
+          "timing": {
+            "firstSegmentAudioDurationSeconds": {
+              "max": 23.088,
+              "p50": 23.088,
+              "p95": 23.088,
+              "samples": 23
+            },
+            "firstSegmentGenerationLatency": {
+              "available": false,
+              "reason": "persisted schema has no per-segment request elapsed or time-to-first-audio field"
+            },
+            "percentileMethod": "nearest-rank",
+            "probeTotalElapsedMs": {
+              "max": 48852.0,
+              "p50": 15316.0,
+              "p95": 36342.0,
+              "samples": 95
+            },
+            "totalDecodedAudioDurationSeconds": {
+              "max": 37.464,
+              "p50": 37.464,
+              "p95": 37.464,
+              "samples": 23
+            }
+          },
+          "upstreamMetadata": [
+            {
+              "cyclesContainingVariant": 23,
+              "gateway": "vercel-r2",
+              "upstreamNode": "castreader-us4090",
+              "upstreamRevision": "0",
+              "upstreamSource": "fallback"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "schema": "castreader.monitor-postdeploy-observation.v1"
+}

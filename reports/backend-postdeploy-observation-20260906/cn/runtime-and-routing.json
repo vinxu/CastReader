@@ -1,0 +1,111 @@
+{
+  "capturedAtUtc": "2026-09-06T00:44:33.120601Z",
+  "cutoffUtcInclusive": "2026-09-06T00:24:11Z",
+  "dependencies": {
+    "cloneTunnel": {
+      "activeState": "active",
+      "mainPid": 2090236,
+      "nRestarts": 0,
+      "targetShape": {
+        "hostClass": "loopback",
+        "port": 18890,
+        "scheme": "http"
+      },
+      "unit": "castreader-cn-clone-tunnel.service"
+    },
+    "database": {
+      "connectionConfigured": true,
+      "provider": "postgresql"
+    },
+    "kokoroTunnel": {
+      "activeState": "active",
+      "mainPid": 1029281,
+      "nRestarts": 0,
+      "targetShape": {
+        "hostClass": "loopback",
+        "path": "/dev/captioned_speech",
+        "port": 18880,
+        "scheme": "http"
+      },
+      "unit": "castreader-cn-kokoro-tunnel.service"
+    },
+    "monitorTimer": {
+      "activeState": "active",
+      "subState": "waiting",
+      "unit": "castreader-core-audio-monitor@cn.timer"
+    },
+    "nginx": {
+      "activeState": "active",
+      "mainPid": 12692,
+      "nRestarts": 0,
+      "unit": "nginx.service"
+    },
+    "quickReadOrigin": {
+      "allowlistEntryCount": 1,
+      "hostClass": "loopback",
+      "port": 7777
+    },
+    "storage": {
+      "configuredRegion": "ap-shanghai",
+      "credentialPresenceChecked": true,
+      "provider": "Tencent COS"
+    }
+  },
+  "kernelJournal": {
+    "interpretation": "No retained kernel records matched either window. This is not proof that the host could never have emitted an unavailable or already-vacuumed kernel event.",
+    "nextAndCommonWindow": {
+      "oomMarkerRecords": 0,
+      "queryOk": true,
+      "retainedRecords": 0
+    },
+    "quickReadWindow": {
+      "oomMarkerRecords": 0,
+      "queryOk": true,
+      "retainedRecords": 0
+    }
+  },
+  "next": {
+    "activeState": "active",
+    "currentTarget": "/opt/castreader/release-20260906014729",
+    "mainPid": 1630406,
+    "nRestarts": 0,
+    "releaseId": "release-20260906014729",
+    "sourceCommit": "9d652ec87d48a65d05e088d4655e806777dead12",
+    "startedAt": "2026-09-05T18:50:15Z",
+    "subState": "running",
+    "unit": "castreader.service"
+  },
+  "quickRead": {
+    "activeState": "active",
+    "currentTarget": "/opt/castreader-quickread-cn/releases/20260906-quickread-playback-continuity-3d68d82-cn",
+    "mainPid": 1608646,
+    "nRestarts": 0,
+    "startedAt": "2026-09-05T17:48:15Z",
+    "subState": "running",
+    "treeSha256": "c9891423599d4f988b3eaeb9b623d0a0fbaa7ef1ccd6b0983a9cc8b99b9148e0",
+    "unit": "castreader-quickread-cn.service"
+  },
+  "routeConfiguration": {
+    "cloneWorkerLoopback": true,
+    "quickReadOriginLoopback": true,
+    "requiredSecretValuesRecorded": false,
+    "serviceRoute": "cn",
+    "ttsUpstreamLoopback": true
+  },
+  "schema": "castreader.cn.postdeploy.runtime.v1",
+  "sourceEvidence": [
+    "/opt/castreader/current/.castreader-release.json",
+    "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/cn-tts-upstream-framing-20260906/production-rollout-receipt.json",
+    "/Users/xuxuheng/Documents/CastReader/reports/backend-core-fixes-20260905/release/quickread-playback-continuity-20260906/cn-production-rollout-receipt.json"
+  ],
+  "windows": {
+    "nextAndCommon": {
+      "endInclusive": "2026-09-06T00:24:11Z",
+      "startInclusive": "2026-09-05T18:50:21Z"
+    },
+    "quickRead": {
+      "endInclusive": "2026-09-06T00:24:11Z",
+      "startInclusive": "2026-09-05T17:51:37Z"
+    }
+  }
+}

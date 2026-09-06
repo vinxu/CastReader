@@ -1,0 +1,50 @@
+{
+  "cutoffUtcInclusive": "2026-09-06T00:24:11Z",
+  "files": [
+    {
+      "bytes": 9956,
+      "path": "README.md",
+      "sha256": "e86a601558cdb466baaa84269328feeaa4d2f4f19fda3c99ef312bca0b134683"
+    },
+    {
+      "bytes": 2544,
+      "path": "business-ledger-aggregate.json",
+      "sha256": "daea7248284dc99a622ea27e76c71e3183c170c034221915d67f5eba29b9757b"
+    },
+    {
+      "bytes": 2053,
+      "path": "log-and-error-observability.json",
+      "sha256": "545dd44699b3acb5ba56bcf5f31a50306550335a7c507b4b2808b0cfcb97eb4e"
+    },
+    {
+      "bytes": 1872,
+      "path": "monitor-evidence-reference.json",
+      "sha256": "fd7e43f8e7280070160f500df75e276a367772ca62e81851684be0dcc87c2046"
+    },
+    {
+      "bytes": 5401,
+      "path": "nginx-tts-aggregate.json",
+      "sha256": "4ec12d6dbf9e9fc0f1cf437f83d2c4318903222772df15ab2f70c3238db9a9b4"
+    },
+    {
+      "bytes": 2831,
+      "path": "quickread-observation.json",
+      "sha256": "980e02ce920602420d81dbd0d7ba649e62400df18771dcb9902419282d354f33"
+    },
+    {
+      "bytes": 3438,
+      "path": "runtime-and-routing.json",
+      "sha256": "9c97fa8071c734643474e461a5556c0062bf0921e0efee98141625462cd04931"
+    }
+  ],
+  "schema": "castreader.cn.postdeploy.evidence-index.v1",
+  "validation": {
+    "credentialsStored": false,
+    "ipOrIdentityStored": false,
+    "jsonFilesParsed": true,
+    "productionWritesPerformed": false,
+    "rawProductionLogsStored": false,
+    "synthesisRequestsStarted": false,
+    "userContentStored": false
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "service": "US QuickRead production",
+  "window": {
+    "from": "2026-09-05T17:45:23Z",
+    "to": "2026-09-06T00:24:11Z"
+  },
+  "runtime": {
+    "pid": 543663,
+    "processStartedAt": "2026-09-05T17:39:10.223Z",
+    "cwd": "/root/castreader/routing-releases/20260906-quickread-playback-continuity-3d68d82-us",
+    "executable": "/usr/bin/node",
+    "restartObservedInWindow": false,
+    "versionDriftObserved": false
+  },
+  "applicationLog": {
+    "identityEntitlementAllowed": 25,
+    "businessQuotaDenied": 1,
+    "entitlementTechnicalFailOpen": 0,
+    "loggedTechnicalError": 0,
+    "loggedTimeout": 0,
+    "note": "An entitlement allow is an admitted identity-bearing request, not proof that every downstream block was played."
+  },
+  "durableJobs": {
+    "stateFilesInWindow": 25,
+    "alsoInCommonWindow": 25,
+    "status": {
+      "streaming": 25
+    },
+    "streamStateStatus": {
+      "ready": 25
+    },
+    "withAtLeastBlock0": 25,
+    "allServerBlocksGenerated": 20,
+    "partialButStillReady": 5,
+    "partialSectionTotalPairs": {
+      "1/2": 1,
+      "1/3": 1,
+      "1/7": 1,
+      "2/4": 1,
+      "8/13": 1
+    },
+    "allNextIndexConsistentWithStoredSections": 25,
+    "withServerAudioBySection": 0,
+    "withCrashRecoveryFlag": 0,
+    "note": "Twenty complete plans mean all requested explanation blocks were generated and checkpointed on the QuickRead server. They do not prove client playback completion. The five partial jobs remain resumable and may reflect a user stopping, a client disconnect, or a missing continuation request."
+  },
+  "proxyJournal": {
+    "incompleteResponseContextCanceled": 1,
+    "eventAt": "2026-09-05T19:44:50.745Z",
+    "nearbyDurableJobState": "1/7 blocks, ready",
+    "interpretation": "The block-0 checkpoint survived. The journal event does not carry enough information to distinguish navigation/client cancellation from a network failure and does not prove an HTTP 5xx."
+  },
+  "observability": {
+    "caddyAccessLogConfigured": false,
+    "exactTotalHttpRequestsKnown": false,
+    "exactHttpStatusDistributionKnown": false,
+    "humanUserVsOperationsMarkerAvailable": false,
+    "note": "Known rollout fixtures predate this window. The 25 admitted jobs used identity-bearing production paths and external-origin URLs, but the retained logs do not classify each caller as human, monitor, or operator."
+  },
+  "postCutoffHealthSnapshot": {
+    "observedAt": "2026-09-06T00:51:21.274316Z",
+    "httpStatus": 200,
+    "active": false,
+    "queue": 0,
+    "scope": "Current health only; excluded from window outcome counts."
+  }
+}

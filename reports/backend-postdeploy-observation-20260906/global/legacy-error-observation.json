@@ -1,0 +1,184 @@
+{
+  "schema": "castreader.global-client-observation.v1",
+  "since": "2026-09-05T18:50:21Z",
+  "untilExclusive": "2026-09-06T00:24:11Z",
+  "queriedAtUtc": "2026-09-06T00:53:22.915Z",
+  "readOnly": true,
+  "tlsCertificateVerification": true,
+  "source": "same Global database project via authenticated HTTPS PostgREST",
+  "limitations": [
+    "analytics_events created_at can be client-controlled; mobile_funnel received_at is server-clocked.",
+    "Tables overlap and must not be summed.",
+    "Device counts are installations, not verified unique people; manual testing cannot be excluded with certainty.",
+    "Starts and ends inside one window are not a cohort completion rate.",
+    "No raw event properties, identifiers, content or credentials are persisted."
+  ],
+  "results": [
+    {
+      "table": "analytics_events",
+      "clock": "created_at",
+      "pages": 1,
+      "expectedRows": 4,
+      "rawRows": 4,
+      "duplicateRows": 0,
+      "complete": true,
+      "scope": "tts_error and quickread_pipeline_error only",
+      "rows": 4,
+      "devices": 4,
+      "groups": [
+        {
+          "event": "tts_error",
+          "platform": "other",
+          "clientRoute": "unspecified",
+          "ingressRoute": "unspecified",
+          "result": "unspecified",
+          "endReason": "unspecified",
+          "errorClass": "network",
+          "errorCode": "tts_network_error",
+          "errorStage": "tts_generation",
+          "environment": "unspecified",
+          "contentOrigin": "real",
+          "httpStatus": null,
+          "count": 1,
+          "devices": 1,
+          "routeMismatchCount": 0,
+          "firstObserved": "2026-09-05T20:05:20.511+00:00",
+          "lastObserved": "2026-09-05T20:05:20.511+00:00",
+          "latencyMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null,
+            "sum": 0
+          },
+          "playbackSeconds": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null,
+            "sum": 0
+          }
+        },
+        {
+          "event": "quickread_pipeline_error",
+          "platform": "other",
+          "clientRoute": "unspecified",
+          "ingressRoute": "unspecified",
+          "result": "unspecified",
+          "endReason": "unspecified",
+          "errorClass": "other",
+          "errorCode": "server_error_400",
+          "errorStage": "unspecified",
+          "environment": "unspecified",
+          "contentOrigin": "unspecified",
+          "httpStatus": null,
+          "count": 1,
+          "devices": 1,
+          "routeMismatchCount": 0,
+          "firstObserved": "2026-09-05T21:08:22.067+00:00",
+          "lastObserved": "2026-09-05T21:08:22.067+00:00",
+          "latencyMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null,
+            "sum": 0
+          },
+          "playbackSeconds": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null,
+            "sum": 0
+          }
+        },
+        {
+          "event": "tts_error",
+          "platform": "other",
+          "clientRoute": "unspecified",
+          "ingressRoute": "unspecified",
+          "result": "unspecified",
+          "endReason": "unspecified",
+          "errorClass": "other",
+          "errorCode": "tts_response_invalid",
+          "errorStage": "tts_generation",
+          "environment": "unspecified",
+          "contentOrigin": "real",
+          "httpStatus": null,
+          "count": 1,
+          "devices": 1,
+          "routeMismatchCount": 0,
+          "firstObserved": "2026-09-05T21:16:03.904+00:00",
+          "lastObserved": "2026-09-05T21:16:03.904+00:00",
+          "latencyMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null,
+            "sum": 0
+          },
+          "playbackSeconds": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null,
+            "sum": 0
+          }
+        },
+        {
+          "event": "quickread_pipeline_error",
+          "platform": "other",
+          "clientRoute": "unspecified",
+          "ingressRoute": "unspecified",
+          "result": "unspecified",
+          "endReason": "unspecified",
+          "errorClass": "other",
+          "errorCode": "extraction_empty",
+          "errorStage": "unspecified",
+          "environment": "unspecified",
+          "contentOrigin": "unspecified",
+          "httpStatus": null,
+          "count": 1,
+          "devices": 1,
+          "routeMismatchCount": 0,
+          "firstObserved": "2026-09-05T21:37:25.425+00:00",
+          "lastObserved": "2026-09-05T21:37:25.425+00:00",
+          "latencyMs": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null,
+            "sum": 0
+          },
+          "playbackSeconds": {
+            "n": 0,
+            "p50": null,
+            "p95": null,
+            "max": null,
+            "sum": 0
+          }
+        }
+      ],
+      "readSessionCohorts": [
+        {
+          "platform": "ios",
+          "startedDistinctSessions": 0,
+          "withFirstAudio": 0,
+          "withFailureEnd": 0,
+          "withSuccessEnd": 0,
+          "withoutEndWithinWindow": 0,
+          "failurePatterns": []
+        },
+        {
+          "platform": "android",
+          "startedDistinctSessions": 0,
+          "withFirstAudio": 0,
+          "withFailureEnd": 0,
+          "withSuccessEnd": 0,
+          "withoutEndWithinWindow": 0,
+          "failurePatterns": []
+        }
+      ]
+    }
+  ]
+}

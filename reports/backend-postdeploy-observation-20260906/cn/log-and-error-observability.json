@@ -1,0 +1,45 @@
+{
+  "latencyLimitation": "The effective Nginx access format has neither request_time nor upstream_response_time. Only the fixed monitor has elapsed values; no real-client backend latency percentile exists.",
+  "nextLogLimitation": "The append-only Next files do not timestamp current entries, and no deployment-time byte offset was retained. File-wide pattern counts cannot be assigned honestly to either audit window and are excluded from the incident rate.",
+  "nextStderr": {
+    "bytesAtRead": 3715458,
+    "hostPath": "/var/log/castreader/error.log",
+    "isoTimestampOccurrences": 9,
+    "latestIsoTimestampUtc": "2026-09-02T13:50:38.601Z",
+    "linesAtRead": 87275,
+    "mtimeUtc": "2026-09-05T23:42:01.478520Z"
+  },
+  "nextStdout": {
+    "bytesAtRead": 9072,
+    "hostPath": "/var/log/castreader/app.log",
+    "isoTimestampOccurrences": 0,
+    "linesAtRead": 378,
+    "mtimeUtc": "2026-09-05T18:50:16.289593Z"
+  },
+  "nginxErrorLog": {
+    "bytesAtRead": 2766,
+    "commonWindow": {
+      "prematureUpstreamCloses": 0,
+      "records": 2,
+      "tlsHandshakeRelated": 2,
+      "upstreamConnectFailures": 0,
+      "upstreamTimeouts": 0
+    },
+    "hostPath": "/var/log/nginx/error.log",
+    "interpretation": "The six local port 3000 connection failures occurred during the deployment/reload interval and ended six seconds before the common window. The two later TLS handshake records never reached an HTTP application route.",
+    "linesAtRead": 13,
+    "parsedLines": 13,
+    "quickReadWindow": {
+      "connectFailureFirstUtc": "2026-09-05T18:24:03Z",
+      "connectFailureLastUtc": "2026-09-05T18:50:15Z",
+      "connectFailureLocalPort": 3000,
+      "nginxReloadNotices": 4,
+      "otherApplicationRouteErrors": 0,
+      "records": 12,
+      "tlsHandshakeRelated": 2,
+      "upstreamConnectFailures": 6
+    }
+  },
+  "schema": "castreader.cn.postdeploy.logs.v1",
+  "statusVsPlaybackLimitation": "Nginx 200 means an HTTP response status and observed bytes, not full MP3 decode, remaining-text closure, client queueing, or audible playback."
+}

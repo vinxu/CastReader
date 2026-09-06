@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "host": "US GPU production",
+  "windows": {
+    "kokoro": {
+      "from": "2026-09-05T16:38:43Z",
+      "to": "2026-09-06T00:24:11Z"
+    },
+    "common": {
+      "from": "2026-09-05T18:50:21Z",
+      "to": "2026-09-06T00:24:11Z"
+    }
+  },
+  "runtime": {
+    "kokoro": {
+      "pid": 2665473,
+      "cwd": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+      "processStartedAt": "2026-09-05T16:38:12Z",
+      "restartObservedInKokoroWindow": false,
+      "versionDriftObserved": false
+    },
+    "cloneRestartObservedInWindow": false,
+    "nariRestartObservedInWindow": false,
+    "supervisorLifecycleEventsInWindow": 0
+  },
+  "kokoroDiagnostics": {
+    "fullWindow": {
+      "diagnosticEvents": 223,
+      "correlationIdsWithDiagnosticEvents": 129,
+      "http500Responses": 6,
+      "http500CorrelationGroups": 2,
+      "http500ResponsesPerCorrelationGroup": [
+        3,
+        3
+      ],
+      "http500FirstAt": "2026-09-05T17:32:59.753515Z",
+      "http500LastAt": "2026-09-05T17:33:09.636921Z",
+      "http500ElapsedMs": {
+        "minimum": 635,
+        "median": 956,
+        "maximum": 1320
+      },
+      "failureChainCounts": {
+        "englishG2pRecoveryFailed": 24,
+        "modelGenerationFailed": 12,
+        "modelUnitRetry": 6,
+        "modelUnitFailed": 6,
+        "audioUnitFailed": 6,
+        "audioGenerationFailed": 6,
+        "completeAudioFailed": 6,
+        "captionedSpeechFailed": 6,
+        "requestFailed": 6
+      },
+      "failedGenerationUnitCharacters": 2,
+      "failedGenerationUnitScope": "Internal model unit only; this is not the original request length.",
+      "successfulOrNonblockingSignals": {
+        "englishG2pRecovered": 66,
+        "trimPreservedCompletePcm": 25,
+        "sourceFrontendUnavailable": 54
+      },
+      "sourceClassification": "Unknown. The two correlation values did not match any of 127 retained release-receipt files checked locally; this does not prove either operator or user origin."
+    },
+    "commonWindow": {
+      "diagnosticEvents": 90,
+      "correlationIdsWithDiagnosticEvents": 90,
+      "httpFailureEvents": 0,
+      "englishG2pRecoveryFailed": 0,
+      "modelGenerationFailed": 0,
+      "englishG2pRecovered": 48,
+      "trimPreservedCompletePcm": 13,
+      "sourceFrontendUnavailable": 29,
+      "firstDiagnosticAt": "2026-09-05T18:59:48Z",
+      "lastDiagnosticAt": "2026-09-06T00:05:11.849466Z"
+    },
+    "countBoundary": "Diagnostics are emitted only for failures and selected recovery/degradation paths. Correlation counts are a lower bound, not total synthesis requests or successful requests. source_frontend_unavailable is an auxiliary timing/frontend degradation signal and is not by itself an audio failure."
+  },
+  "androidSpanishFailureWindow": {
+    "clientWindow": {
+      "from": "2026-09-05T23:50:17.079Z",
+      "to": "2026-09-05T23:53:09.907Z"
+    },
+    "clientReportedSessions": 31,
+    "clientVoice": "ef_dora",
+    "clientLanguage": "es",
+    "gpuHttp400Or500OrTimeoutEvents": 0,
+    "nearbyGpuDiagnostics": [
+      {
+        "at": "2026-09-05T23:52:03.481448Z",
+        "stage": "english_g2p_recovered"
+      },
+      {
+        "at": "2026-09-05T23:52:20.002775Z",
+        "stage": "trim_preserved_complete_pcm"
+      },
+      {
+        "at": "2026-09-05T23:54:23.015562Z",
+        "stage": "source_frontend_unavailable"
+      }
+    ],
+    "voiceAssetPresent": true,
+    "modelRegistrySupportsVoicePrefixLanguage": true,
+    "conclusion": "There is no retained evidence of a Spanish ef_dora rejection or generation failure at the GPU. Without a shared trace ID, the nearby diagnostics cannot be assigned to the client sessions, and the absence of GPU failures cannot prove those requests reached the worker."
+  },
+  "cloneDiagnostics": {
+    "fullWindow": {
+      "successfulCaptionedSpeechJobs": 5,
+      "successfulDenoisePromptBuildJobs": 1,
+      "structuredFailedRejectedOrUnavailableEvents": 0,
+      "queueWaitMs": {
+        "median": 0.03,
+        "p95": 0.06,
+        "maximum": 0.07
+      },
+      "runMs": {
+        "median": 146.4,
+        "p95": 672.5,
+        "maximum": 833.54
+      },
+      "acceptedXVectorFallbacks": 5,
+      "acceptedGeneratedAudioFastPaths": 5,
+      "timestampBuilds": 5,
+      "nonblockingQualityWarnings": 1
+    },
+    "commonWindow": {
+      "successfulCaptionedSpeechJobs": 1,
+      "structuredFailedRejectedOrUnavailableEvents": 0,
+      "sampleSizeWarning": "One synthesis is insufficient to generalize service stability."
+    },
+    "postCutoffHealthSnapshot": {
+      "httpStatus": 200,
+      "schedulerAccepting": true,
+      "busy": false,
+      "queue": 0,
+      "queueCapacity": 64,
+      "cumulativeSinceServiceStart": {
+        "submitted": 141,
+        "completed": 141,
+        "failed": 0,
+        "expired": 0
+      },
+      "scope": "Current/cumulative health after cutoff; excluded from fixed-window request counts."
+    },
+    "countBoundary": "The structured clone log has no human/monitor/operator source marker. Untimestamped legacy lines cannot support a fixed-window HTTP status denominator."
+  },
+  "endToEndBoundary": "A worker 200 or successful PCM diagnostic does not establish Global API or client success. The Global gateway was still on the separately audited 3ce12 deployment during this observation period."
+}

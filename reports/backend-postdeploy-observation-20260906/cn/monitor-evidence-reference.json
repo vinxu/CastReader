@@ -1,0 +1,56 @@
+{
+  "authoritativeAggregate": "/Users/xuxuheng/Documents/CastReader/reports/backend-postdeploy-observation-20260906/monitor/aggregate.json",
+  "cn": {
+    "alignmentDegradationCycles": 0,
+    "contracts": {
+      "stream_false": 65,
+      "stream_omitted": 65,
+      "stream_true": 65
+    },
+    "cycles": 65,
+    "firstObservedAt": "2026-09-05T18:52:32.133Z",
+    "firstSegmentGenerationLatency": {
+      "available": false,
+      "reason": "persisted schema has no per-segment request elapsed or time-to-first-audio field"
+    },
+    "fullyDecodedRemainderClosedCycles": 65,
+    "lastObservedAt": "2026-09-06T00:24:02.342Z",
+    "lastObservedToCutoffSeconds": 8.658,
+    "probeTotalElapsedMs": {
+      "max": 15101,
+      "p50": 2631,
+      "p95": 5502,
+      "percentileMethod": "nearest-rank",
+      "samples": 65
+    },
+    "regionMismatchCycles": 0,
+    "regionValidatedSuccessfulCycles": 65,
+    "segmentRequests": 195,
+    "statuses": {
+      "healthy": 65
+    },
+    "upstreamMetadata": {
+      "gateway": "vercel-r2",
+      "gatewayCaveat": "legacy static label; not geographic evidence",
+      "upstreamNode": "castreader-cn4090",
+      "upstreamRevision": "0",
+      "upstreamSource": "cn-environment"
+    }
+  },
+  "preCommonWindowKnownFailure": {
+    "failedContract": "stream_omitted",
+    "failedCycles": 4,
+    "failureCode": "http_502",
+    "first": "2026-09-05T18:31:49.911Z",
+    "last": "2026-09-05T18:47:31.950Z",
+    "nginxAttempts": 8,
+    "recoveredAt": "2026-09-05T18:52:32.133Z",
+    "windowStart": "2026-09-05T18:31:43.116174Z"
+  },
+  "schema": "castreader.cn.postdeploy.monitor-reference.v1",
+  "scope": "Fixed synthetic preset-voice content only; this validates backend audio supply and remainder closure, not real-client playback.",
+  "window": {
+    "endInclusive": "2026-09-06T00:24:11Z",
+    "startInclusive": "2026-09-05T18:50:21Z"
+  }
+}

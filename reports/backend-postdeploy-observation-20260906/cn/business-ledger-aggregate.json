@@ -1,0 +1,73 @@
+{
+  "legacyAnalytics": {
+    "allTableRowsAtRead": 259,
+    "commonWindowSelectedReadOrExplainRows": 0,
+    "distinctDevices": 0,
+    "interpretation": "created_at can be client controlled for legacy analytics, so it is supporting telemetry only.",
+    "latestCreatedAtUtc": "2026-09-05T21:33:51.077Z"
+  },
+  "listenAccounting": {
+    "consumedSeconds": 0,
+    "interpretation": "No server-authoritative playback acknowledgement was available to prove that any of the 72 client-like HTTP responses were actually played.",
+    "legacyListenUsageRowsUpdated": 0,
+    "mobileListenUsageEventRows": 0,
+    "requestedSeconds": 0
+  },
+  "mobileFunnel": {
+    "allTableRowsAtRead": 122,
+    "commonWindowReadOrExplainRows": 0,
+    "distinctInstalls": 0,
+    "exactErrorEndEvents": 0,
+    "interpretation": "The table was active in the overall period, but contained no selected read/explain events in the audit windows.",
+    "latestReceivedAtUtc": "2026-09-05T21:33:52.322Z",
+    "quickReadWindowReadOrExplainRows": 0
+  },
+  "mobileQuickReadJob": {
+    "allTableRowsAtRead": 1,
+    "commonWindowRows": 0,
+    "distinctUsers": 0,
+    "interpretation": "This table records successful authenticated mobile job mappings, not every request or failure.",
+    "latestTableCreatedAtUtc": "2026-09-04T08:34:08.960558Z",
+    "quickReadWindowRows": 0,
+    "routes": {}
+  },
+  "nginxSupportingIngress": {
+    "clientClass": "android_client_likely",
+    "eventsRequests": 3,
+    "eventsStatus": {
+      "200": 3
+    },
+    "proListenTrackRequests": 0,
+    "proStatusRequests": 14,
+    "proStatusStatus": {
+      "200": 14
+    },
+    "sourceAddressOverlapWithTtsClientLike": 0
+  },
+  "privacy": {
+    "connectionStringRecorded": false,
+    "identifiersSelected": false,
+    "rawPropertiesSelected": false,
+    "textHashesSelected": false,
+    "voiceIdsSelected": false
+  },
+  "query": {
+    "databaseUrlOrCredentialsRecorded": false,
+    "executedAtAfterCutoff": true,
+    "readOnlySelects": true,
+    "windowEndInclusive": "2026-09-06T00:24:11Z",
+    "windowStartInclusive": "2026-09-05T18:50:21Z"
+  },
+  "schema": "castreader.cn.postdeploy.business-ledger.v1",
+  "voiceCloneUsageLedger": {
+    "actualMsTotal": 0,
+    "allTableRowsAtRead": 425,
+    "distinctRequests": 0,
+    "distinctUsers": 0,
+    "distinctVoices": 0,
+    "interpretation": "The active ledger is populated historically, but no normal quota reservation was created in the common window.",
+    "latestTableCreatedAtUtc": "2026-09-03T15:58:29.790630Z",
+    "states": {},
+    "windowRows": 0
+  }
+}
