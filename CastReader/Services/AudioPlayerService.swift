@@ -28,6 +28,127 @@ struct AudioPlaybackResumeHandle: Equatable, Sendable {
     fileprivate let bookID: String?
 }
 
+/// One local rebuild per selected item. A failed retry remains terminal until
+/// the caller explicitly selects/regenerates audio; readiness alone cannot
+/// replenish the budget for a corrupt item that repeatedly fails at playback.
+struct AudioPlaybackRecoveryBudget {
+    private(set) var attempts = 0
+    private(set) var isTerminal = false
+
+    mutating func claimRetry() -> Bool {
+        guard attempts < 1, !isTerminal else {
+            isTerminal = true
+            return false
+        }
+        attempts += 1
+        return true
+    }
+}
+
+struct AudioPlaybackProgressEvidence {
+    private var previousPosition: Double?
+    private var previousWasPlaying = false
+    private(set) var hasAdvanced = false
+
+    mutating func observe(position: Double, actuallyPlaying: Bool) {
+        guard position.isFinite, position >= 0 else { return }
+        defer {
+            previousPosition = position
+            previousWasPlaying = actuallyPlaying
+        }
+        guard actuallyPlaying, previousWasPlaying, let previousPosition,
+              position > previousPosition + 0.005 else { return }
+        hasAdvanced = true
+    }
+}
+
+enum AudioPlaybackFailureStage: String, Codable {
+    case staging = "file_write_failed"
+    case itemStatus = "player_status_failed"
+    case itemEnd = "player_end_failed"
+    case readiness = "player_ready_timeout"
+    case resume = "player_resume_failed"
+}
+
+/// Only bounded machine values leave the error boundary. NSError descriptions,
+/// userInfo, paths, URLs, document text and account identifiers are never stored.
+struct AudioPlaybackFailureDiagnostic: Codable {
+    let timestamp: Double
+    let stage: AudioPlaybackFailureStage
+    let errors: [String]
+    let byteCount: Int
+    let mediaKind: String
+    let fileExists: Bool
+    let fileBytes: Int?
+    let itemStatus: Int?
+    let playerStatus: Int?
+    let timeControlStatus: Int?
+    let position: Double
+    let recoveryAttempt: Int
+
+    var analyticsCode: String {
+        var code = stage.rawValue
+        for error in errors.prefix(2) where code.count + error.count + 1 <= 64 {
+            code += "_" + error
+        }
+        return code
+    }
+
+    static func errorCodes(_ error: Error?) -> [String] {
+        var codes: [String] = []
+        var current = error as NSError?
+        while let value = current, codes.count < 3 {
+            let domain: String
+            switch value.domain {
+            case AVFoundationErrorDomain: domain = "av"
+            case NSOSStatusErrorDomain: domain = "os"
+            case NSPOSIXErrorDomain: domain = "posix"
+            case NSCocoaErrorDomain: domain = "cocoa"
+            case NSURLErrorDomain: domain = "url"
+            default: domain = "other"
+            }
+            let decimal = String(value.code)
+            let number = decimal.hasPrefix("-") ? "n" + decimal.dropFirst() : "p" + decimal
+            codes.append("\(domain)_\(number)")
+            current = value.userInfo[NSUnderlyingErrorKey] as? NSError
+        }
+        return codes
+    }
+
+    static func mediaKind(_ data: Data) -> String {
+        let bytes = Array(data.prefix(12))
+        if bytes.isEmpty { return "empty" }
+        if bytes.starts(with: [0x49, 0x44, 0x33]) { return "mp3_id3" }
+        if bytes.count >= 2, bytes[0] == 0xff, bytes[1] & 0xe0 == 0xe0 { return "mpeg_audio" }
+        if bytes.starts(with: [0x52, 0x49, 0x46, 0x46]),
+           bytes.suffix(4) == [0x57, 0x41, 0x56, 0x45] { return "wav" }
+        if bytes.starts(with: [0x4f, 0x67, 0x67, 0x53]) { return "ogg" }
+        if bytes.count >= 8, Array(bytes[4..<8]) == [0x66, 0x74, 0x79, 0x70] { return "mp4" }
+        return "unknown"
+    }
+}
+
+enum AudioPlaybackDiagnostics {
+    private static let queue = DispatchQueue(label: "com.same.castreader.audio-diagnostics")
+
+    static func record(_ diagnostic: AudioPlaybackFailureDiagnostic) {
+        queue.async {
+            guard let data = try? JSONEncoder().encode(diagnostic),
+                  let line = String(data: data, encoding: .utf8) else { return }
+            NSLog("CRAudio %@", line)
+            guard let directory = FileManager.default.urls(
+                for: .applicationSupportDirectory, in: .userDomainMask
+            ).first else { return }
+            try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let url = directory.appendingPathComponent("audio-playback-diagnostics.jsonl")
+            let old = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+            let retained = old.split(separator: "\n").suffix(47).map(String.init)
+            let output = (retained + [line]).joined(separator: "\n") + "\n"
+            try? Data(output.utf8).write(to: url, options: .atomic)
+        }
+    }
+}
+
 /// The player owns one narrowly scoped temporary directory. Cleaning it never
 /// touches imports, previews or any other subsystem's files. Legacy root-level
 /// names are removed only when they match the old exact prefix + extension.
@@ -205,6 +326,10 @@ class AudioPlayerService: NSObject, ObservableObject {
     @Published private(set) var moreSegmentsExpected = false
     /// True after the current queue drains while its producer is still active.
     @Published private(set) var isWaitingForNextSegment = false
+    @Published private(set) var hasAudibleProgress = false
+    private(set) var recoveryBudget = AudioPlaybackRecoveryBudget()
+    private(set) var lastPlaybackFailureCode: String?
+    var hasTerminalPlaybackFailure: Bool { recoveryBudget.isTerminal }
 
     // Book/Chapter info
     @Published var currentBookId: String?
@@ -233,6 +358,9 @@ class AudioPlayerService: NSObject, ObservableObject {
     private var playerItemReadinessWorkItem: DispatchWorkItem?
     private var wasInterrupted = false
     private var playbackSuspendedByInterruption = false
+    private var playbackRequested = false
+    private var progressEvidence = AudioPlaybackProgressEvidence()
+    private var isSeekingInitialPosition = false
 
     // Segments queue
     private var segmentsQueue: [AudioSegment] = []
@@ -433,7 +561,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     private func currentItemCanPublishPlaybackState() -> Bool {
-        playbackOwnership.permitsCallback(from: playerItemSession)
+        !hasTerminalPlaybackFailure && playbackOwnership.permitsCallback(from: playerItemSession)
     }
 
     @discardableResult
@@ -468,7 +596,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     func finishStreamingProducer(
         session token: AudioPlaybackSessionToken
     ) -> Bool {
-        guard playbackOwnership.permitsQueueMutation(token) else { return false }
+        guard playbackOwnership.permitsQueueMutation(token), !hasTerminalPlaybackFailure else { return false }
         moreSegmentsExpected = false
         guard StreamingQueueDrainContract.shouldCompletePlayback(
             producerFinishedSuccessfully: true,
@@ -511,6 +639,17 @@ class AudioPlayerService: NSObject, ObservableObject {
         setupAudioSession()
         setupRemoteCommandCenter()
     }
+
+    #if DEBUG
+    var currentItemForTesting: AVPlayerItem? { playerItem }
+    private(set) var timeSampleForTesting: ((CMTime) -> Void)?
+    /// Isolated player for offline failure/recovery tests; never claims remote
+    /// commands or removes the application's playback directory.
+    init(testTemporaryRoot: URL) {
+        playbackTemporaryDirectory = AudioPlaybackTemporaryFiles.prepare(root: testTemporaryRoot)
+        super.init()
+    }
+    #endif
 
     private func setupAudioSession() {
         do {
@@ -1001,6 +1140,7 @@ class AudioPlayerService: NSObject, ObservableObject {
             "waiting=\(isWaitingForNextSegment ? "Y" : "N") " +
             "auto=\(autoPlay ? "Y" : "N")"
         )
+        guard !hasTerminalPlaybackFailure else { return false }
         segmentsQueue.append(segment)
 
         guard !playbackSuspendedByInterruption else {
@@ -1013,12 +1153,12 @@ class AudioPlayerService: NSObject, ObservableObject {
         if isWaitingForNextSegment, autoPlay {
             print("🔊 loadSegment: Was waiting, now playing segment \(segmentsQueue.count - 1)")
             isWaitingForNextSegment = false
-            playSegment(at: segmentsQueue.count - 1)
+            return playSegment(at: segmentsQueue.count - 1)
         }
         // If this is the first segment and we're not playing, start playback
         else if autoPlay && segmentsQueue.count == 1 && !isPlaying {
             print("🔊 loadSegment: First segment, starting playback")
-            playSegment(at: 0)
+            return playSegment(at: 0)
         } else {
             if !autoPlay { isWaitingForNextSegment = false }
             print("🔊 loadSegment: Segment queued (autoPlay=\(autoPlay), isPlaying=\(isPlaying), queueCount=\(segmentsQueue.count))")
@@ -1049,7 +1189,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         // Start playback from the first segment
         if !segmentsQueue.isEmpty, autoPlay {
             print("🔊 loadSegments: Starting playSegment(at: 0)")
-            playSegment(at: 0)
+            return playSegment(at: 0)
         } else {
             print("🔴 loadSegments: No segments to play!")
         }
@@ -1244,6 +1384,13 @@ class AudioPlayerService: NSObject, ObservableObject {
         guard playbackOwnership.permitsPlayback(requestedBy: token) else {
             return false
         }
+        guard !hasTerminalPlaybackFailure else { return false }
+        playbackSuspendedByInterruption = false
+        if playerItem?.status == .failed || player?.status == .failed
+            || (currentTempFileURL.map { !FileManager.default.fileExists(atPath: $0.path) } ?? false) {
+            playbackRequested = true
+            return recoverPlaybackFailure(stage: .resume, error: playerItem?.error ?? player?.error)
+        }
         guard let player else {
             guard !segmentsQueue.isEmpty else {
                 isPlaying = false
@@ -1258,6 +1405,9 @@ class AudioPlayerService: NSObject, ObservableObject {
             return false
         }
         playbackSuspendedByInterruption = false
+        playbackRequested = true
+        progressEvidence = AudioPlaybackProgressEvidence()
+        hasAudibleProgress = false
         do {
             try AVAudioSession.sharedInstance().setActive(true)
         } catch {
@@ -1270,6 +1420,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     private func pauseRegardlessOfOwnership() {
+        playbackRequested = false
         player?.pause()
         isPlaying = false
         updateNowPlayingInfo()
@@ -1349,6 +1500,11 @@ class AudioPlayerService: NSObject, ObservableObject {
         playerItemReadinessWorkItem?.cancel()
         playerItemReadinessWorkItem = nil
         playbackSuspendedByInterruption = false
+        playbackRequested = false
+        recoveryBudget = AudioPlaybackRecoveryBudget()
+        lastPlaybackFailureCode = nil
+        progressEvidence = AudioPlaybackProgressEvidence()
+        hasAudibleProgress = false
         isPlaying = false
         currentTime = 0
         duration = 0
@@ -1375,6 +1531,8 @@ class AudioPlayerService: NSObject, ObservableObject {
         session token: AudioPlaybackSessionToken? = nil
     ) -> Bool {
         guard playbackOwnership.permitsPlayback(requestedBy: token) else { return false }
+        progressEvidence = AudioPlaybackProgressEvidence()
+        hasAudibleProgress = false
         let cmTime = CMTime(seconds: time, preferredTimescale: 600)
         player?.seek(to: cmTime)
         currentTime = time
@@ -1419,6 +1577,7 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     @discardableResult
     func nextSegment(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        guard !hasTerminalPlaybackFailure else { return false }
         let effectiveSession: AudioPlaybackSessionToken?
         if let token {
             effectiveSession = token
@@ -1476,7 +1635,8 @@ class AudioPlayerService: NSObject, ObservableObject {
     private func playSegment(
         at index: Int,
         initialProgress: Double? = nil,
-        autoPlayWhenReady: Bool = true
+        autoPlayWhenReady: Bool = true,
+        recoveryPosition: Double? = nil
     ) -> Bool {
         let expectedSession = playbackOwnership.queueSession
         guard playbackOwnership.permitsPlayback(requestedBy: expectedSession) else {
@@ -1499,6 +1659,19 @@ class AudioPlayerService: NSObject, ObservableObject {
         gatedSegmentIndex = nil
         isBuffering = false
 
+        if recoveryPosition == nil {
+            recoveryBudget = AudioPlaybackRecoveryBudget()
+            lastPlaybackFailureCode = nil
+        }
+        playbackRequested = autoPlayWhenReady
+
+        // Release the previous asset and callbacks before removing its file.
+        removeTimeObserver()
+        playerItemStatusCancellable?.cancel()
+        player?.pause()
+        player?.replaceCurrentItem(with: nil)
+        playerItem = nil
+
         // 删除上一个临时文件（释放磁盘空间）
         if let oldURL = currentTempFileURL {
             try? FileManager.default.removeItem(at: oldURL)
@@ -1509,9 +1682,13 @@ class AudioPlayerService: NSObject, ObservableObject {
         // Publish the new segment only after rebasing its clock, otherwise
         // page-handoff observers can adopt the new segment with the old item's
         // terminal time and permanently skip the first highlighted words.
-        currentTime = 0
-        duration = segment.duration
-        currentSegment = segment
+        if let recoveryPosition {
+            currentTime = recoveryPosition
+        } else {
+            currentTime = 0
+            duration = segment.duration
+            currentSegment = segment
+        }
         ReaderRunLog.write(
             "AUDIO stage segment=\(segment.id) index=\(index)/\(segmentsQueue.count) " +
             "duration=\(String(format: "%.2f", segment.duration))"
@@ -1521,12 +1698,13 @@ class AudioPlayerService: NSObject, ObservableObject {
 
         // A paragraph boundary is the one moment where this work is audible, so
         // reuse the file the prefetch already staged when there is one.
-        if let staged = takeStagedFile(for: segment) {
+        if recoveryPosition == nil, let staged = takeStagedFile(for: segment) {
             currentTempFileURL = staged
             ReaderRunLog.write("AUDIO stage reused segment=\(segment.id)")
             playAudio(
                 from: staged,
                 initialProgress: initialProgress,
+                initialSeconds: recoveryPosition,
                 autoPlayWhenReady: autoPlayWhenReady,
                 expectedSession: expectedSession
             )
@@ -1545,32 +1723,26 @@ class AudioPlayerService: NSObject, ObservableObject {
         currentTempFileURL = tempURL
 
         do {
-            try segment.audioData.write(to: tempURL)
+            try FileManager.default.createDirectory(at: playbackTemporaryDirectory, withIntermediateDirectories: true)
+            try segment.audioData.write(to: tempURL, options: .atomic)
             print("🔊 playSegment[\(index)]: Written to \(tempURL.lastPathComponent), calling playAudio")
             playAudio(
                 from: tempURL,
                 initialProgress: initialProgress,
+                initialSeconds: recoveryPosition,
                 autoPlayWhenReady: autoPlayWhenReady,
                 expectedSession: expectedSession
             )
             return true
         } catch {
-            let message = error.localizedDescription
-            ReaderRunLog.write(
-                "AUDIO failed to stage segment=\(segment.id) error=\(message)"
-            )
-            print("🔴 playSegment[\(index)]: Failed to write audio data: \(error)")
-            isBuffering = false
-            isPlaying = false
-            updateNowPlayingInfo()
-            onPlaybackError?(message)
-            return false
+            return recoverPlaybackFailure(stage: .staging, error: error)
         }
     }
 
     private func playAudio(
         from url: URL,
         initialProgress: Double? = nil,
+        initialSeconds: Double? = nil,
         autoPlayWhenReady: Bool = true,
         expectedSession: AudioPlaybackSessionToken?
     ) {
@@ -1587,6 +1759,9 @@ class AudioPlayerService: NSObject, ObservableObject {
         playerItem = AVPlayerItem(asset: asset)
         playerItem?.audioTimePitchAlgorithm = .timeDomain
         playerItemSession = expectedSession
+        progressEvidence = AudioPlaybackProgressEvidence()
+        hasAudibleProgress = false
+        isSeekingInitialPosition = initialSeconds != nil || initialProgress != nil
         reportedPlaybackFailureItemID = nil
         playerItemReadinessWorkItem?.cancel()
         playerItemReadinessWorkItem = nil
@@ -1630,30 +1805,38 @@ class AudioPlayerService: NSObject, ObservableObject {
                         print("Audio ready but suspended by interruption; waiting for user resume")
                         return
                     }
-                    if let initialProgress, seconds.isFinite, seconds > 0 {
-                        let targetSeconds = seconds * min(0.98, max(0, initialProgress))
+                    if (initialProgress != nil || initialSeconds != nil), seconds.isFinite, seconds > 0 {
+                        let requestedSeconds = initialSeconds ?? seconds * min(0.98, max(0, initialProgress ?? 0))
+                        let targetSeconds = min(max(0, seconds - 0.001), max(0, requestedSeconds))
                         let target = CMTime(seconds: targetSeconds, preferredTimescale: 600)
                         let expectedItem = self.playerItem
                         self.player?.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self, weak expectedItem] _ in
-                            guard let self,
-                                  expectedItem === self.playerItem,
-                                  self.currentItemCanPublishPlaybackState() else { return }
-                            self.currentTime = targetSeconds
-                            if autoPlayWhenReady {
-                                self.player?.playImmediately(atRate: self.playbackRate)
-                                self.isPlaying = true
-                            } else {
-                                self.player?.pause()
-                                self.isPlaying = false
+                            DispatchQueue.main.async {
+                                guard let self,
+                                      expectedItem === self.playerItem,
+                                      self.currentItemCanPublishPlaybackState() else { return }
+                                self.progressEvidence = AudioPlaybackProgressEvidence()
+                                self.hasAudibleProgress = false
+                                self.isSeekingInitialPosition = false
+                                self.currentTime = targetSeconds
+                                if self.playbackRequested && !self.playbackSuspendedByInterruption {
+                                    self.player?.playImmediately(atRate: self.playbackRate)
+                                    self.isPlaying = true
+                                } else {
+                                    self.player?.pause()
+                                    self.isPlaying = false
+                                }
+                                self.updateNowPlayingInfo()
+                                print("Audio restored at \(targetSeconds)s / \(seconds)s")
                             }
-                            self.updateNowPlayingInfo()
-                            print("Audio restored at \(targetSeconds)s / \(seconds)s")
                         }
-                    } else if autoPlayWhenReady {
+                    } else if self.playbackRequested {
+                        self.isSeekingInitialPosition = false
                         self.player?.playImmediately(atRate: self.playbackRate)
                         self.isPlaying = true
                         self.updateNowPlayingInfo()
                     } else {
+                        self.isSeekingInitialPosition = false
                         self.player?.pause()
                         self.isPlaying = false
                         self.updateNowPlayingInfo()
@@ -1667,12 +1850,10 @@ class AudioPlayerService: NSObject, ObservableObject {
                 case .failed:
                     self.playerItemReadinessWorkItem?.cancel()
                     self.playerItemReadinessWorkItem = nil
-                    let message =
-                        observedItem.error?.localizedDescription
-                            ?? "Unknown audio error"
                     self.reportPlaybackFailure(
                         for: observedItem,
-                        message: message
+                        stage: .itemStatus,
+                        error: observedItem.error
                     )
                 default:
                     break
@@ -1690,7 +1871,8 @@ class AudioPlayerService: NSObject, ObservableObject {
             self.playerItemReadinessWorkItem = nil
             self.reportPlaybackFailure(
                 for: observedItem,
-                message: AppLocalized("音频准备超时，请重试")
+                stage: .readiness,
+                error: nil
             )
         }
         playerItemReadinessWorkItem = readinessWorkItem
@@ -1721,9 +1903,19 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     private func addTimeObserver() {
         let interval = CMTime(seconds: 0.05, preferredTimescale: 600) // 50ms updates for smooth highlighting
-        timeObserver = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+        guard let observedItem = playerItem, let observedPlayer = player else { return }
+        let onTime: (CMTime) -> Void = { [weak self, weak observedItem, weak observedPlayer] time in
             guard let self = self,
+                  observedItem === self.playerItem,
+                  observedPlayer === self.player,
+                  !self.isSeekingInitialPosition,
                   self.currentItemCanPublishPlaybackState() else { return }
+            self.progressEvidence.observe(
+                position: time.seconds,
+                actuallyPlaying: self.player?.timeControlStatus == .playing
+                    && (self.player?.rate ?? 0) > 0
+            )
+            self.hasAudibleProgress = self.progressEvidence.hasAdvanced
             self.currentTime = time.seconds
 
             // Update Now Playing info every second for lock screen progress
@@ -1732,6 +1924,10 @@ class AudioPlayerService: NSObject, ObservableObject {
                 self.updateNowPlayingElapsedTime()
             }
         }
+        #if DEBUG
+        timeSampleForTesting = onTime
+        #endif
+        timeObserver = observedPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main, using: onTime)
     }
 
     private func updateNowPlayingElapsedTime() {
@@ -1852,58 +2048,100 @@ class AudioPlayerService: NSObject, ObservableObject {
             return
         }
         let itemID = ObjectIdentifier(failedItem)
-        let message =
+        let error =
             (notification.userInfo?[
                 AVPlayerItemFailedToPlayToEndTimeErrorKey
-            ] as? Error)?.localizedDescription
-                ?? failedItem.error?.localizedDescription
-                ?? "Unknown audio error"
+            ] as? Error) ?? failedItem.error
         guard Thread.isMainThread else {
             DispatchQueue.main.async { [weak self] in
                 self?.handlePlayerFailedToPlayToEnd(
                     itemID: itemID,
-                    message: message
+                    error: error
                 )
             }
             return
         }
         handlePlayerFailedToPlayToEnd(
             itemID: itemID,
-            message: message
+            error: error
         )
     }
 
     private func handlePlayerFailedToPlayToEnd(
         itemID: ObjectIdentifier,
-        message: String
+        error: Error?
     ) {
         guard let currentItem = playerItem,
               ObjectIdentifier(currentItem) == itemID,
               currentItemCanPublishPlaybackState() else {
             return
         }
-        reportPlaybackFailure(for: currentItem, message: message)
+        reportPlaybackFailure(for: currentItem, stage: .itemEnd, error: error)
     }
 
     private func reportPlaybackFailure(
         for item: AVPlayerItem,
-        message: String
+        stage: AudioPlaybackFailureStage,
+        error: Error?
     ) {
         let itemID = ObjectIdentifier(item)
-        guard reportedPlaybackFailureItemID != itemID else { return }
+        guard item === playerItem, currentItemCanPublishPlaybackState(),
+              reportedPlaybackFailureItemID != itemID else { return }
         reportedPlaybackFailureItemID = itemID
+        _ = recoverPlaybackFailure(stage: stage, error: error)
+    }
+
+    @discardableResult
+    private func recoverPlaybackFailure(stage: AudioPlaybackFailureStage, error: Error?) -> Bool {
+        guard playbackOwnership.permitsPlayback(requestedBy: playbackOwnership.queueSession),
+              segmentsQueue.indices.contains(currentSegmentIndex) else { return false }
+        let segment = segmentsQueue[currentSegmentIndex]
+        let attributes = currentTempFileURL.flatMap { try? FileManager.default.attributesOfItem(atPath: $0.path) }
+        let diagnostic = AudioPlaybackFailureDiagnostic(
+            timestamp: Date().timeIntervalSince1970,
+            stage: stage,
+            errors: AudioPlaybackFailureDiagnostic.errorCodes(error),
+            byteCount: segment.audioData.count,
+            mediaKind: AudioPlaybackFailureDiagnostic.mediaKind(segment.audioData),
+            fileExists: currentTempFileURL.map { FileManager.default.fileExists(atPath: $0.path) } ?? false,
+            fileBytes: (attributes?[.size] as? NSNumber)?.intValue,
+            itemStatus: playerItem.map { $0.status.rawValue },
+            playerStatus: player.map { $0.status.rawValue },
+            timeControlStatus: player.map { $0.timeControlStatus.rawValue },
+            position: currentTime.isFinite ? max(0, currentTime) : 0,
+            recoveryAttempt: recoveryBudget.attempts
+        )
+        AudioPlaybackDiagnostics.record(diagnostic)
+        lastPlaybackFailureCode = diagnostic.analyticsCode
+        let position = diagnostic.position
+        let shouldResume = playbackRequested && !playbackSuspendedByInterruption
         playerItemReadinessWorkItem?.cancel()
         playerItemReadinessWorkItem = nil
         player?.pause()
-        isBuffering = false
         isPlaying = false
-        ReaderRunLog.write(
-            "AUDIO player item failed segment=\(currentSegment?.id ?? "nil") " +
-            "error=\(message)"
-        )
-        print("Player item failed: \(message)")
+
+        if recoveryBudget.claimRetry() {
+            // Rebuild from already-generated bytes, at the same segment-local
+            // clock. No new TTS request, voice/route change or queue replacement.
+            removeTimeObserver()
+            playerItemStatusCancellable?.cancel()
+            playerStateCancellable?.cancel()
+            player = nil
+            playerItem = nil
+            return playSegment(
+                at: currentSegmentIndex,
+                autoPlayWhenReady: shouldResume,
+                recoveryPosition: position
+            )
+        }
+
+        isBuffering = false
+        moreSegmentsExpected = false
+        isWaitingForNextSegment = false
+        playbackRequested = false
         updateNowPlayingInfo()
-        onPlaybackError?(message)
+        onPlaybackError?(diagnostic.analyticsCode)
+        return false
     }
 }
 
