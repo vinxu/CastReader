@@ -1,0 +1,74 @@
+{
+  "schema": "castreader.direct-proxy-cancellation-review.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "window": {
+    "endUTCExclusive": "2026-09-06T21:51:47.178000+00:00",
+    "productionActiveFromUTC": "2026-09-06T18:37:52.522573+00:00",
+    "startUTC": "2026-09-06T20:51:30+00:00"
+  },
+  "rows": [
+    {
+      "direct": {
+        "abortSource": "downstream_closed",
+        "abortStage": "upstream_headers",
+        "clientPlatform": "android",
+        "clientVersion": "1.0.45",
+        "downstreamDisconnected": true,
+        "downstreamDisconnectedFieldObserved": true,
+        "elapsedMs": 161,
+        "key": "bab861a2f6665c24c0c0",
+        "method": "POST",
+        "observedAt": "2026-09-06T21:16:46.933193Z",
+        "path": "/api/captioned_speech_partly",
+        "requestBytes": 421,
+        "status": null
+      },
+      "proxy": [
+        {
+          "ambiguousRepeatedRequestKey": false,
+          "attempt": null,
+          "firstUTC": "2026-09-06T21:16:46.777704+00:00",
+          "flightKeys": [
+            "33e8548f7cc10fc8cbf6"
+          ],
+          "lastUTC": "2026-09-06T21:16:46.936908+00:00",
+          "outcomes": {
+            "cancelled": 1
+          },
+          "phases": [
+            "admission",
+            "cancellation",
+            "completion",
+            "connect",
+            "inbound_body"
+          ],
+          "receivedEvents": 1,
+          "requestKey": "bab861a2f6665c24c0c0"
+        }
+      ],
+      "exactAnonymousKeyMatch": true,
+      "singleProxyAdmission": true
+    }
+  ],
+  "counts": {
+    "newDirectNoResponse": 1,
+    "exactProxyMatches": 1,
+    "newDirectHttpFailures": 0
+  },
+  "limitations": [
+    "Direct downstream_closed has no HTTP response; playback outcome and user intent remain unknown.",
+    "No client-to-server request key joins this cancellation to the new Android Explain failure."
+  ],
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/latest-acceptance.json",
+      "sha256": "54140e18b4d43e56eb493ee52d8b2d3c2f8611535f5ea38bee34423d4e71d28c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2151Z.json",
+      "sha256": "22750c563fefda1cfa2c6be7a648543ebda9312723a9e90c63cea999d325a547"
+    }
+  ]
+}

@@ -13,7 +13,8 @@
     "798ead151458637a016f",
     "855d7b43d4f616193757",
     "14826f73872753709911",
-    "75181424100861e4d767"
+    "75181424100861e4d767",
+    "a6fbedfbaf4a619cc70c"
   ],
   "alertKinds": [
     "android_1045_explain_pipeline_failed",
@@ -81,8 +82,8 @@
     "repeated_prefix_traffic_origin_unknown",
     "ios_player_initial_error_stage_and_nserror_unavailable"
   ],
-  "lastDecision": "DONT_NOTIFY",
-  "lastDecisionReason": "Exact client event keys and HTTP failure counts unchanged; runtime and source coverage checks pass. Four new unknown downstream disconnects match proxy cancellations without a client failure association. New blocked event follows defined non-Pro preview-paywall branch; entitlement correctness was not independently audited. No new actionable production change or 24h completion.",
+  "lastDecision": "NOTIFY",
+  "lastDecisionReason": "New client Explain failure and confirmed source lifecycle gap, plus separately identified new blog-page timeout incident. Current observation is read-only and includes no fix or deployment.",
   "lastNewEventSummary": {
     "clientBuild": 53,
     "clientVersion": "1.2.33",
@@ -103,16 +104,16 @@
     "798ead151458637a016f",
     "855d7b43d4f616193757"
   ],
-  "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/heartbeat-review.json",
+  "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/heartbeat-review.json",
   "latestClientIterationReport": "reports/backend-audio-failure-analysis-20260906/iteration.md",
-  "latestClientTechnicalFailureCount": 14,
+  "latestClientTechnicalFailureCount": 15,
   "latestDirect5xxCount": 5,
-  "latestSnapshotDirectory": "observations/20260906T2050Z",
+  "latestSnapshotDirectory": "observations/20260906T2151Z",
   "latestVercelCore5xxCount": 4,
   "nextRunPolicy": "Compare cumulative records with these keys; do not repeat unchanged alerts or already known sample gaps.",
   "nonAudio503Classification": "google_play_reconcile_incomplete",
-  "nonAudio503Count": 32,
-  "recordedAtUtc": "2026-09-06T20:58:57.855530+00:00",
+  "nonAudio503Count": 34,
+  "recordedAtUtc": "2026-09-06T22:05:45.980039+00:00",
   "schema": "castreader.audio-observation-alert-state.v1",
   "vercelCoreRequestKeys": [
     "e061a66c335ef6dece59",
@@ -136,11 +137,12 @@
     "3e4a240e0eda0aa81373",
     "3f60bf396bd2ccad244e",
     "0b307fa7ad7f8e17d591",
-    "97de8b3977234c2030c9"
+    "97de8b3977234c2030c9",
+    "bab861a2f6665c24c0c0"
   ],
-  "latestDirectNoResponseCount": 14,
-  "latestProxyWindowEndUTC": "2026-09-06T20:51:30+00:00",
-  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2050Z.json",
+  "latestDirectNoResponseCount": 15,
+  "latestProxyWindowEndUTC": "2026-09-06T21:51:47.178000+00:00",
+  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2151Z.json",
   "newAndroid1046Incident": {
     "eventKeys": [
       "14826f73872753709911",
@@ -158,5 +160,42 @@
   "knownBusinessBlockedEventKeys": [
     "aa6e8229818cfd9e4305"
   ],
-  "latestObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/heartbeat-review.json"
+  "latestObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/heartbeat-review.json",
+  "knownBlog504RequestKeys": [
+    "4fe0c35911b8e6fb74bd",
+    "9a63dcd73bd7e95593ca",
+    "dbe2e67466a20c375c80",
+    "3f63606861dbf140c54c",
+    "25d4082e741f6e1497d4",
+    "65810a5298b904802fcb",
+    "1c3d1d28c828b4093bcd",
+    "e2548ae4213e3400c72c",
+    "20b76f6a7bd4826979d7",
+    "1bccdc2763bbbf940263",
+    "79512f5ca81ee39904f9",
+    "4d86ccebbc0bf2483ebb",
+    "50f21af9569a2b5290ef",
+    "5c3042d933daa3ae4b83",
+    "6e7bf62be9aeca0a168e",
+    "398caddcf08c2aa6395b",
+    "346738e888e3bb023f97",
+    "2b8c8fa72a9d37a038e3",
+    "8b6d20df5ff45d0c2774",
+    "35c862bec9927e8578ab",
+    "1243910e644b38aa4eb7",
+    "84c0b1c2630441087564"
+  ],
+  "blog504Count": 22,
+  "newAndroid1046ExplainIncident": {
+    "eventKey": "a6fbedfbaf4a619cc70c",
+    "status": "source_lifecycle_gap_confirmed_individual_exception_unresolved_no_new_fix_deployment",
+    "explainFirstBlockMs": 39719,
+    "parallelReadFirstAudioMs": 1180,
+    "laterReadMilestoneSeconds": 600,
+    "explainRecoveryEstablished": false,
+    "lateCatchDirectlyStopsRead": false,
+    "fixed120SecondTimerEstablished": false,
+    "underlyingExceptionRecovered": false,
+    "clientToServerRequestJoinAvailable": false
+  }
 }

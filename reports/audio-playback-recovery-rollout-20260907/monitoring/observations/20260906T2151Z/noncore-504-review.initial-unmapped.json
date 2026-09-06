@@ -1,0 +1,1487 @@
+{
+  "schema": "castreader.noncore-504-metadata.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawIdentityExported": false,
+  "rawContentExported": false,
+  "TLSCertificateAndHostnameVerification": true,
+  "query": {
+    "projectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
+    "environment": "production",
+    "statusCode": 504,
+    "startInclusive": "2026-09-06T20:51:42.476216Z",
+    "endExclusive": "2026-09-06T21:52:41.458505Z",
+    "queriesUsed": 1
+  },
+  "sourceRouteManifestCommit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+  "observedAtUtc": "2026-09-06T21:57:29.754090Z",
+  "coverage": {
+    "returnedRows": 22,
+    "selectedRows": 22,
+    "rejectedRows": 0,
+    "hasMoreRows": false,
+    "completePagination": true,
+    "providerIngestionComplete": null
+  },
+  "records": [
+    {
+      "requestKey": "84c0b1c2630441087564",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300063,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:10:27.195000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300000,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:10:27.254000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 221,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:10:27.213000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300000,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 221,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 79,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "1243910e644b38aa4eb7",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300054,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:59.653000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:59.698000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 223,
+            "durationMs": 9,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:59.666000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "cle1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 223,
+            "durationMs": 9,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 79,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "35c862bec9927e8578ab",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300056,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:58.623000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:58.670000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 224,
+            "durationMs": 12,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:58.635000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "cle1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 224,
+            "durationMs": 12,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "8b6d20df5ff45d0c2774",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300071,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:58.053000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:58.120000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 221,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:58.070000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 221,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "2b8c8fa72a9d37a038e3",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300048,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:54.223000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300000,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:54.268000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 221,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:54.237000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300000,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 221,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 79,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "346738e888e3bb023f97",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300083,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:26.409000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:26.482000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 7,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:26.419000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "cle1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 7,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "398caddcf08c2aa6395b",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300055,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:25.873000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:25.918000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 9,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:25.888000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "cle1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 9,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "6e7bf62be9aeca0a168e",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300067,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:14.193000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:14.255000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 221,
+            "durationMs": 12,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:14.211000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 221,
+            "durationMs": 12,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "5c3042d933daa3ae4b83",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300048,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:08:59.213000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300000,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:08:59.258000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 220,
+            "durationMs": 10,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:08:59.228000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300000,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 220,
+            "durationMs": 10,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "50f21af9569a2b5290ef",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300055,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:58.181000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:58.232000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 220,
+            "durationMs": 6,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:58.202000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 220,
+            "durationMs": 6,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "4d86ccebbc0bf2483ebb",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300052,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:56.431000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300002,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:56.473000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 220,
+            "durationMs": 9,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:56.444000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300002,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 220,
+            "durationMs": 9,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "79512f5ca81ee39904f9",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300043,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:35.236000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:35.275000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 220,
+            "durationMs": 6,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:35.251000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 589,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 220,
+            "durationMs": 6,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 79,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "1bccdc2763bbbf940263",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300191,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:29.256000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:29.369000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 217,
+            "durationMs": 6,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "hnd1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:29.268000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "hnd1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 217,
+            "durationMs": 6,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "hnd1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 79,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "20b76f6a7bd4826979d7",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300061,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:22.264000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:22.321000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 220,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:22.291000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 220,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "e2548ae4213e3400c72c",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300051,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:19.312000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:19.358000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:19.331000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 79,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "1c3d1d28c828b4093bcd",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300067,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:03.377000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:03.438000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:03.407000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "65810a5298b904802fcb",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300059,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:06:47.300000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:06:47.354000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 7,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:06:47.312000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 7,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "25d4082e741f6e1497d4",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300069,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:06:32.243000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:06:32.308000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:06:32.275000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 8,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "3f63606861dbf140c54c",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300053,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:06:16.181000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300000,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:06:16.231000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 6,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:06:16.199000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300000,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 6,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "dbe2e67466a20c375c80",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300062,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:06:09.914000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300000,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:06:09.968000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 217,
+            "durationMs": 11,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:06:09.929000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "cle1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300000,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 217,
+            "durationMs": 11,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "9a63dcd73bd7e95593ca",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300052,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:05:59.164000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:05:59.212000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 7,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:05:59.180000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300001,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 7,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    },
+    {
+      "requestKey": "4fe0c35911b8e6fb74bd",
+      "path": "[unmapped_route]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "statusCode": 504,
+      "requestDurationMs": 300067,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:05:47.158000Z",
+      "requestPath": "[unmapped_route]",
+      "events": {
+        "events": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300000,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:05:47.204000Z"
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 7,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:05:47.173000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "functionMaxMemoryUsed": 612,
+            "durationMs": 300000,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 300,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "functionMaxMemoryUsed": 219,
+            "durationMs": 7,
+            "functionMemorySize": 2048,
+            "functionColdStartDurationMs": -1,
+            "functionMaxDuration": 60,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false
+    }
+  ],
+  "limitations": [
+    "Provider request-start cohort; completion may follow the end bound.",
+    "No body, audio, message or arbitrary nested log was inspected.",
+    "An unknown route stays unknown; other is not automatically non-audio.",
+    "No matching mobile TTS/LLM request or trace key has been established."
+  ]
+}

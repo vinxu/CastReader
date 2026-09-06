@@ -1,0 +1,205 @@
+{
+  "ambiguousJoins": [
+    {
+      "attempt": 1,
+      "classification": "reused_application_key_multiple_complete_invocations_not_unique_per_invocation_join",
+      "proxyGroups": [
+        {
+          "ambiguousRepeatedRequestKey": true,
+          "attempt": 1,
+          "firstUTC": "2026-09-06T21:46:20.513321+00:00",
+          "flightKeys": [
+            "191ded9b56eb7e9d241b",
+            "1a023297fefc79cb76a5",
+            "f9e44d12f29f07f158fb"
+          ],
+          "lastUTC": "2026-09-06T21:46:57.223538+00:00",
+          "outcomes": {
+            "complete": 3
+          },
+          "phases": [
+            "admission",
+            "completion",
+            "connect",
+            "inbound_body",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 3,
+          "requestKey": "f2f7dcede0b572c78f4d"
+        }
+      ],
+      "requestKey": "f2f7dcede0b572c78f4d",
+      "vercelInvocations": 3,
+      "vercelStatuses": {
+        "200": 3
+      }
+    }
+  ],
+  "boundaryRequests": [],
+  "collectedAtUTC": "2026-09-06T21:54:17.163210Z",
+  "collectionStartedUTC": "2026-09-06T21:52:37.122227Z",
+  "comparisonWithPreviousWindow": {
+    "currentAmbiguousJoinCount": 3,
+    "currentGlobalFailureCodes": {},
+    "meaning": "No newly observed Global error or pinned-runtime drift. Repeated application keys preserve correlation ambiguity, not a new technical failure.",
+    "newObservedGlobalFailure": false,
+    "previousAmbiguousJoinCount": 0,
+    "previousGlobalFailureCodes": {},
+    "sameExpectedDeployment": true
+  },
+  "counts": {
+    "ambiguousApplicationKeys": 1,
+    "attemptStarts": {
+      "1": 1010
+    },
+    "bodiesWithByteCount": 1010,
+    "bodiesZeroBytes": 0,
+    "bodyBytesMax": 998324,
+    "bodyBytesMin": 5825,
+    "events": {
+      "attempt_start": 1010,
+      "request_finished": 1010,
+      "request_start": 1010,
+      "upstream_body": 1010,
+      "upstream_headers": 1010
+    },
+    "failureCodes": {},
+    "globalApplicationKeyIntersectionWithProxyCancelled": 0,
+    "join": {
+      "ambiguous": 3,
+      "attempts": 1010,
+      "matched": 1010,
+      "matchedProxyComplete": 1007
+    },
+    "matchedUnambiguousRequestsWithoutProxyCompletionInsideSlice": 0,
+    "proxyCancellationKeys": 1,
+    "requestsMissingHeadersOrBodyOrFinish": 0,
+    "terminalCodes": {},
+    "vercelRequests": 1010,
+    "vercelStatuses": {
+      "200": 1010
+    }
+  },
+  "coverage": {
+    "proxyAnonymousRequestsTruncated": false,
+    "proxyCoverageComplete": true,
+    "proxyCoversWindow": true,
+    "proxyEventDetailTruncationIgnoredForJoin": false,
+    "proxyRuntimeVerified": true,
+    "vercel": {
+      "completeForReturnedRequestCohort": true,
+      "ingestionCompletenessVerified": false,
+      "issues": [],
+      "pagesRead": 21,
+      "paginationMode": "backward_timestamp_windows_with_1ms_overlap",
+      "parserCounts": {
+        "duplicateProviderRows": 20,
+        "duplicateSafeEvents": 100
+      },
+      "providerHasMoreRows": false,
+      "providerRowsRead": 1030,
+      "requestsMissingStartOrFinish": 0,
+      "structuredEventsObserved": true,
+      "tlsCertificateAndHostnameVerified": true,
+      "uniqueProviderRequests": 1010
+    }
+  },
+  "expectedDeployment": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+  "findings": [
+    "All 1010 currently returned Global requests have provider200, attempt1, upstream headers, nonempty upstream body and request_finished. No cancellation, retry or failure code was returned.",
+    "All 1010 key/attempt pairs match proxy. 1007 are unambiguous complete joins. Three distinct provider invocations share one application key and the corresponding proxy group has three complete outcomes; individual invocation mapping remains ambiguous.",
+    "The single proxy cancellation key does not appear in this returned Global cohort. No Global correlation to that cancellation is established.",
+    "Prior boundary request f962765303258f0d02ca is now exactly connected across adjacent windows by application key, attempt1 and same flight key; its proxy complete occurred in this window without a new admission."
+  ],
+  "identity": {
+    "expectedModelIdentity": {
+      "releaseId": "20260907-kokoro-silent-separators-us-r134",
+      "releasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+      "slot": "blue",
+      "sourceRelativePath": "api/src/services/tts_service.py",
+      "sourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+      "version": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52"
+    },
+    "modelProcessComparisonSource": "runtime.identity.currentModel.supervisorProcess",
+    "proxyIdentityAndCoverageVerified": true,
+    "sameExpectedModelAsPreviousWindow": true,
+    "sameModelProcessAsPreviousWindow": true,
+    "sameProxyProcessAsPreviousWindow": true,
+    "unexpectedReleaseEvents": 0,
+    "unexpectedRoutingIdentityEvents": 0
+  },
+  "limitations": [
+    "Correlation uses application requestKey + attempt, never provider ID or timing alone.",
+    "Application key reuse across Vercel invocations or duplicate proxy groups is marked ambiguous.",
+    "The complete proxy anonymous request-group list is used; its truncated event-detail list is not the join source.",
+    "A matched complete upstream request is not evidence of audio decode quality or successful user playback.",
+    "Provider search/ingestion completeness remains unverified despite complete pagination and lifecycle records.",
+    "Provider request-start cohorts and proxy wall-clock event windows differ; nested completion can be outside the selected cohort end. Application elapsed milliseconds do not provide exact event UTC timestamps.",
+    "Observed body byte count and complete HTTP stages do not prove device receipt, audio decoding or completed playback."
+  ],
+  "priorBoundaryResolution": [
+    {
+      "attempt": 1,
+      "classification": "prior_window_request_completed_in_current_slice_not_a_failure",
+      "currentGroups": [
+        {
+          "ambiguousRepeatedRequestKey": false,
+          "attempt": 1,
+          "firstUTC": "2026-09-06T20:51:30.429365+00:00",
+          "flightKeys": [
+            "4c989e73bceb4c9b91c8"
+          ],
+          "lastUTC": "2026-09-06T20:51:30.447838+00:00",
+          "outcomes": {
+            "complete": 1
+          },
+          "phases": [
+            "completion",
+            "response_body",
+            "response_complete",
+            "response_headers"
+          ],
+          "receivedEvents": 0,
+          "requestKey": "f962765303258f0d02ca"
+        }
+      ],
+      "newAdmissionInsideCurrentWindow": 0,
+      "priorHadProxyCompletion": false,
+      "requestKey": "f962765303258f0d02ca",
+      "sameFlightKeyAcrossAdjacentWindows": true
+    }
+  ],
+  "productionModified": false,
+  "rawContentExported": false,
+  "readOnly": true,
+  "schema": "castreader.vercel-proxy-heartbeat-phase-summary.v1",
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260906T2151Z.json",
+      "sha256": "d4e15eab9bcfc97ce1013691d3f5dbca79eb0231c73aaec7ab51477e39af30ad"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2151Z.json",
+      "sha256": "22750c563fefda1cfa2c6be7a648543ebda9312723a9e90c63cea999d325a547"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-proxy-join-model-r134-20260906T2151Z.json",
+      "sha256": "38606decd94a4a30cb7652ad294a5516470963cc28551e8dfea33d64887184d8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/vercel-proxy-join-summary.json",
+      "sha256": "f11ccc17d89b98426c940bef2efbb03ef0f49692e689e50f335fa5059fb0fcf6"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2050Z.json",
+      "sha256": "8dd5424021605e726745e9371bb6194878218c6395ba4688c2d2481662c4051c"
+    }
+  ],
+  "synthesisStarted": false,
+  "window": {
+    "requestStartExclusiveUTC": "2026-09-06T21:51:47.178000Z",
+    "requestStartInclusiveUTC": "2026-09-06T20:51:30Z"
+  }
+}

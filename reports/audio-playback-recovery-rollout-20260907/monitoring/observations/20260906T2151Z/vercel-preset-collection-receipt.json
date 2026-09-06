@@ -1,0 +1,49 @@
+{
+  "authentication": "existing_official_cli_auth_reused_in_memory",
+  "collectionExitCode": 0,
+  "collectionLimits": {
+    "maxPages": 100,
+    "maxRows": 5000
+  },
+  "credentialsModified": false,
+  "expectedDeployment": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+  "joinExitCode": 0,
+  "productionModified": false,
+  "pythonExecutable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+  "rawContentExported": false,
+  "readOnly": true,
+  "recordedAtUTC": "2026-09-06T21:55:59.137308+00:00",
+  "schema": "castreader.vercel-preset-collection-receipt.v1",
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/collect_vercel_preset_events.py",
+      "sha256": "3321bf0143cc7c0910b84de526962799462ffe0f51e5c61c1633e8ee638ee3c8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/join_vercel_proxy_events.py",
+      "sha256": "0add996821d71efe5db12d86ac08bc5eddff63832ea1a94a52e79fdb333619f1"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260906T2151Z.json",
+      "sha256": "d4e15eab9bcfc97ce1013691d3f5dbca79eb0231c73aaec7ab51477e39af30ad"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2151Z.json",
+      "sha256": "22750c563fefda1cfa2c6be7a648543ebda9312723a9e90c63cea999d325a547"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-proxy-join-model-r134-20260906T2151Z.json",
+      "sha256": "38606decd94a4a30cb7652ad294a5516470963cc28551e8dfea33d64887184d8"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2151Z/vercel-proxy-join-summary.json",
+      "sha256": "c8f35913d8d525e685f0d182dd6a11fd9adec98994697f669cf1cf14b85d20c7"
+    }
+  ],
+  "synthesisStarted": false,
+  "tlsCertificateAndHostnameVerified": true,
+  "window": {
+    "requestStartExclusiveUTC": "2026-09-06T21:51:47.178000Z",
+    "requestStartInclusiveUTC": "2026-09-06T20:51:30Z"
+  }
+}

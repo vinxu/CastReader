@@ -1,0 +1,2109 @@
+{
+  "schema": "castreader.noncore-504-metadata.v1",
+  "readOnly": true,
+  "productionModified": false,
+  "synthesisStarted": false,
+  "rawIdentityExported": false,
+  "rawContentExported": false,
+  "TLSCertificateAndHostnameVerification": true,
+  "query": {
+    "projectId": "prj_wYf9gRnrKR28vEUtOP9hY7ITa7tK",
+    "environment": "production",
+    "statusCode": 504,
+    "startInclusive": "2026-09-06T20:51:42.476216Z",
+    "endExclusive": "2026-09-06T21:52:41.458505Z",
+    "queriesUsed": 1
+  },
+  "sourceRouteManifestCommit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+  "observedAtUtc": "2026-09-06T21:59:26.931672Z",
+  "coverage": {
+    "returnedRows": 22,
+    "selectedRows": 22,
+    "rejectedRows": 0,
+    "hasMoreRows": false,
+    "completePagination": true,
+    "providerIngestionComplete": null
+  },
+  "records": [
+    {
+      "requestKey": "4fe0c35911b8e6fb74bd",
+      "path": "/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300067,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:05:47.158000Z",
+      "requestPath": "/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300000,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:05:47.204000Z"
+          },
+          {
+            "durationMs": 7,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:05:47.173000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300000,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 7,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 3,
+        "normalizedStaticSegments": [
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "unprefixed",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:10:47.225000Z"
+    },
+    {
+      "requestKey": "9a63dcd73bd7e95593ca",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300052,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:05:59.164000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:05:59.212000Z"
+          },
+          {
+            "durationMs": 7,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:05:59.180000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 7,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "en",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "en",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:10:59.216000Z"
+    },
+    {
+      "requestKey": "dbe2e67466a20c375c80",
+      "path": "/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300062,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:06:09.914000Z",
+      "requestPath": "/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300000,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:06:09.968000Z"
+          },
+          {
+            "durationMs": 11,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 217,
+            "functionMemorySize": 2048,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:06:09.929000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "cle1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300000,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 11,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 217,
+            "functionMemorySize": 2048,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 3,
+        "normalizedStaticSegments": [
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "unprefixed",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:11:09.976000Z"
+    },
+    {
+      "requestKey": "3f63606861dbf140c54c",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300053,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:06:16.181000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300000,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:06:16.231000Z"
+          },
+          {
+            "durationMs": 6,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:06:16.199000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300000,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 6,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "en",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "en",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:11:16.234000Z"
+    },
+    {
+      "requestKey": "25d4082e741f6e1497d4",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300069,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:06:32.243000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:06:32.308000Z"
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:06:32.275000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "en",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "en",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:11:32.312000Z"
+    },
+    {
+      "requestKey": "65810a5298b904802fcb",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300059,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:06:47.300000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:06:47.354000Z"
+          },
+          {
+            "durationMs": 7,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:06:47.312000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 7,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "en",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "en",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:11:47.359000Z"
+    },
+    {
+      "requestKey": "1c3d1d28c828b4093bcd",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300067,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:03.377000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:03.438000Z"
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:03.407000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "en",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "en",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:12:03.444000Z"
+    },
+    {
+      "requestKey": "e2548ae4213e3400c72c",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300051,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:19.312000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:19.358000Z"
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:19.331000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "zh",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 79,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "zh",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:12:19.363000Z"
+    },
+    {
+      "requestKey": "20b76f6a7bd4826979d7",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300061,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:22.264000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:22.321000Z"
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 220,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:22.291000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 220,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "en",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "en",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:12:22.325000Z"
+    },
+    {
+      "requestKey": "1bccdc2763bbbf940263",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300191,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:29.256000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:29.369000Z"
+          },
+          {
+            "durationMs": 6,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 217,
+            "functionMemorySize": 2048,
+            "region": "hnd1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:29.268000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "hnd1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 612,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 6,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 217,
+            "functionMemorySize": 2048,
+            "region": "hnd1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "zh",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 79,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "zh",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:12:29.447000Z"
+    },
+    {
+      "requestKey": "79512f5ca81ee39904f9",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300043,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:35.236000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:35.275000Z"
+          },
+          {
+            "durationMs": 6,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 220,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:35.251000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 6,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 220,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "zh",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 79,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "zh",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:12:35.279000Z"
+    },
+    {
+      "requestKey": "4d86ccebbc0bf2483ebb",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300052,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:56.431000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300002,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:56.473000Z"
+          },
+          {
+            "durationMs": 9,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 220,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:56.444000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300002,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 9,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 220,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "en",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "en",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:12:56.483000Z"
+    },
+    {
+      "requestKey": "50f21af9569a2b5290ef",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300055,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:07:58.181000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:07:58.232000Z"
+          },
+          {
+            "durationMs": 6,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 220,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:07:58.202000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 6,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 220,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "en",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "en",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:12:58.236000Z"
+    },
+    {
+      "requestKey": "5c3042d933daa3ae4b83",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300048,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:08:59.213000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300000,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:08:59.258000Z"
+          },
+          {
+            "durationMs": 10,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 220,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:08:59.228000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300000,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 10,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 220,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "en",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "en",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:13:59.261000Z"
+    },
+    {
+      "requestKey": "6e7bf62be9aeca0a168e",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300067,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:14.193000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:14.255000Z"
+          },
+          {
+            "durationMs": 12,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 221,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:14.211000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 12,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 221,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "en",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "en",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:14:14.260000Z"
+    },
+    {
+      "requestKey": "398caddcf08c2aa6395b",
+      "path": "/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300055,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:25.873000Z",
+      "requestPath": "/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:25.918000Z"
+          },
+          {
+            "durationMs": 9,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:25.888000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "cle1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 9,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 3,
+        "normalizedStaticSegments": [
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "unprefixed",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:14:25.928000Z"
+    },
+    {
+      "requestKey": "346738e888e3bb023f97",
+      "path": "/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300083,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:26.409000Z",
+      "requestPath": "/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:26.482000Z"
+          },
+          {
+            "durationMs": 7,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:26.419000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "cle1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 7,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 219,
+            "functionMemorySize": 2048,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 3,
+        "normalizedStaticSegments": [
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "unprefixed",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:14:26.492000Z"
+    },
+    {
+      "requestKey": "2b8c8fa72a9d37a038e3",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300048,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:54.223000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300000,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:54.268000Z"
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 221,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:54.237000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300000,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 221,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "zh",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 79,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "zh",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:14:54.271000Z"
+    },
+    {
+      "requestKey": "8b6d20df5ff45d0c2774",
+      "path": "/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300071,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:58.053000Z",
+      "requestPath": "/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:58.120000Z"
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 221,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:58.070000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 221,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 3,
+        "normalizedStaticSegments": [
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "unprefixed",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:14:58.124000Z"
+    },
+    {
+      "requestKey": "35c862bec9927e8578ab",
+      "path": "/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300056,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:58.623000Z",
+      "requestPath": "/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:58.670000Z"
+          },
+          {
+            "durationMs": 12,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 224,
+            "functionMemorySize": 2048,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:58.635000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "cle1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 12,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 224,
+            "functionMemorySize": 2048,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 3,
+        "normalizedStaticSegments": [
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 1,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "unprefixed",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:14:58.679000Z"
+    },
+    {
+      "requestKey": "1243910e644b38aa4eb7",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300054,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:09:59.653000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:09:59.698000Z"
+          },
+          {
+            "durationMs": 9,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 223,
+            "functionMemorySize": 2048,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:09:59.666000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "cle1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300001,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 9,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 223,
+            "functionMemorySize": 2048,
+            "region": "cle1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "zh",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 79,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "zh",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:14:59.707000Z"
+    },
+    {
+      "requestKey": "84c0b1c2630441087564",
+      "path": "/[locale]/blog/[slug]",
+      "deploymentId": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+      "requestDurationMs": 300063,
+      "statusCode": 504,
+      "errorCode": "FUNCTION_INVOCATION_TIMEOUT",
+      "requestMethod": "GET",
+      "hasFunctionCrashed": false,
+      "timestamp": "2026-09-06T21:10:27.195000Z",
+      "requestPath": "/[locale]/blog/[slug]",
+      "events": {
+        "events": [
+          {
+            "durationMs": 300000,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": "2026-09-06T21:10:27.254000Z"
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 221,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": "2026-09-06T21:10:27.213000Z"
+          }
+        ],
+        "proxyEvents": [
+          {
+            "region": "iad1",
+            "timestamp": null
+          }
+        ],
+        "functionEvents": [
+          {
+            "durationMs": 300000,
+            "functionMaxDuration": 300,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 589,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "nodejs22.x",
+            "timestamp": null
+          },
+          {
+            "durationMs": 8,
+            "functionMaxDuration": 60,
+            "functionColdStartDurationMs": -1,
+            "functionMaxMemoryUsed": 221,
+            "functionMemorySize": 2048,
+            "region": "iad1",
+            "functionRuntime": "edge",
+            "timestamp": null
+          }
+        ]
+      },
+      "requestPathShape": {
+        "isLeadingSlash": true,
+        "isAbsoluteURL": false,
+        "segmentCount": 4,
+        "normalizedStaticSegments": [
+          "zh",
+          "blog",
+          "[dynamic_or_unknown]"
+        ]
+      },
+      "nestedLogCount": 79,
+      "bodyOrMessagesInspected": false,
+      "component": "blog_page_render",
+      "componentClassificationEvidence": "normalized request path + frozen route source and locale middleware",
+      "sourcePage": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "localePrefix": "zh",
+      "estimatedEndFromRequestTimestampAndDurationUtc": "2026-09-06T21:15:27.258000Z"
+    }
+  ],
+  "limitations": [
+    "Both metadata queries returned all 22 rows with hasMoreRows=false; this establishes returned pagination completeness, not retention/ingestion completeness.",
+    "The full final-release cohort has 22 HTTP504 in the acceptance snapshot; all 22 observed here are in the narrower incremental window. Exact acceptance-cache row-key matching was not available.",
+    "Request timestamp is the provider request-start field. Estimated end is computed from request timestamp plus provider full requestDurationMs, not directly observed completion UTC.",
+    "No request/response body, audio, arbitrary log message, raw request ID, client account/device ID, query parameters or credential was exported.",
+    "Blog component classification uses the observed normalized path and frozen routing code. No stack establishes the internal awaited operation responsible for timeout.",
+    "Client event occurred time is client-supplied. Similar time or shared deployment alone is not request correlation; the PDF Explain failure remains separately unresolved."
+  ],
+  "investigation": {
+    "totalMetadataQueries": 2,
+    "initialRecordSetMatchesFinal": true,
+    "bodyOrMessagesInspected": false,
+    "routeNormalizationRefinedFromSavedSafePathShape": true,
+    "apiRoutesObserved": 0,
+    "pageRoutesObserved": 22
+  },
+  "aggregate": {
+    "uniqueRequestCount": 22,
+    "routeCounts": {
+      "/blog/[slug]": 6,
+      "/[locale]/blog/[slug]": 16
+    },
+    "localePrefixCounts": {
+      "unprefixed": 6,
+      "en": 10,
+      "zh": 6
+    },
+    "methodCounts": {
+      "GET": 22
+    },
+    "failureCodeCounts": {
+      "FUNCTION_INVOCATION_TIMEOUT": 22
+    },
+    "deploymentCounts": {
+      "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5": 22
+    },
+    "hasFunctionCrashedCounts": {
+      "false": 22
+    },
+    "firstRequestAtUtc": "2026-09-06T21:05:47.158000Z",
+    "lastRequestAtUtc": "2026-09-06T21:10:27.195000Z",
+    "requestDurationMsRange": [
+      300043,
+      300191
+    ],
+    "latestEstimatedRequestEndUtc": "2026-09-06T21:15:27.258000Z"
+  },
+  "conclusion": {
+    "established": "22 GET blog-page Node function invocations hit the 300-second function duration limit; all are the final Global deployment.",
+    "notEstablished": [
+      "Which awaited/rendering operation inside each blog function failed to complete.",
+      "Any direct association with the 21:27 Android PDF Explain pipeline failure.",
+      "Whether unrelated workloads shared an underlying resource incident."
+    ],
+    "audioApi504CountInThis22RecordSet": 0,
+    "mobileFailureRemainsSeparate": true
+  },
+  "sourceEvidence": [
+    {
+      "path": "src/app/[locale]/(landing)/blog/[slug]/page.tsx",
+      "commit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+      "sha256": "17626752f357574575a7ce7d4ecffbfe51e3eb0ac51a5ef4c3928508c856791c",
+      "gitBlob": "50e02c476bbdcdda74fd906a7d412150c602b924",
+      "excerpts": [
+        {
+          "startLine": 20,
+          "endLine": 34,
+          "lines": [
+            "export async function generateMetadata({",
+            "  params,",
+            "}: {",
+            "  params: Promise<{ locale: string; slug: string }>;",
+            "}) {",
+            "  const { locale, slug } = await params;",
+            "  const t = await getTranslations({ locale, namespace: 'blog.metadata' });",
+            "  const baseUrl = envConfigs.app_url.replace(/\\/+$/, '');",
+            "",
+            "  // Canonical URL respects locale — Chinese posts canonical to /zh/blog/",
+            "  const localePrefix = locale === 'en' ? '' : `/${locale}`;",
+            "  const canonicalUrl = `${baseUrl}${localePrefix}/blog/${slug}`;",
+            "",
+            "  const post = await getPost({ slug, locale });",
+            ""
+          ]
+        },
+        {
+          "startLine": 112,
+          "endLine": 152,
+          "lines": [
+            "export default async function BlogDetailPage({",
+            "  params,",
+            "}: {",
+            "  params: Promise<{ locale: string; slug: string }>;",
+            "}) {",
+            "  const { locale, slug } = await params;",
+            "  setRequestLocale(locale);",
+            "",
+            "  // load blog data",
+            "  const t = await getTranslations({ locale, namespace: 'blog' });",
+            "",
+            "  const post = await getPost({ slug, locale });",
+            "",
+            "  // Redirect stub — permanent redirect to target post",
+            "  if (post && (post as any).redirect) {",
+            "    const localePrefix = locale === 'en' ? '' : `/${locale}`;",
+            "    permanentRedirect(`${localePrefix}/blog/${(post as any).redirect}`);",
+            "  }",
+            "",
+            "  if (!post) {",
+            "    // Fallback: when slug isn't available in the current locale, look it up in",
+            "    // other SEO locales and 301 there. Many of our blog slugs live as a single",
+            "    // locale variant (e.g. only .zh.mdx exists), but Google has historically",
+            "    // discovered the unprefixed /blog/{slug} URL and keeps re-crawling it,",
+            "    // which renders an empty placeholder = soft 404 in GSC. Redirecting to the",
+            "    // canonical locale removes the soft 404 signal and keeps users on real",
+            "    // content.",
+            "    const altLocales = ['zh', 'en'];",
+            "    for (const altLocale of altLocales) {",
+            "      if (altLocale === locale) continue;",
+            "      try {",
+            "        const altPost = await getPost({ slug, locale: altLocale });",
+            "        if (altPost && !(altPost as any).redirect) {",
+            "          const altPrefix = altLocale === 'en' ? '' : `/${altLocale}`;",
+            "          permanentRedirect(`${altPrefix}/blog/${slug}`);",
+            "        }",
+            "      } catch {",
+            "        // ignore and continue to next locale",
+            "      }",
+            "    }",
+            "    return <Empty message={`Post not found`} />;"
+          ]
+        },
+        {
+          "startLine": 206,
+          "endLine": 215,
+          "lines": [
+            "  const Page = await getThemePage('blog-detail');",
+            "",
+            "  return (",
+            "    <>",
+            "      <script",
+            "        type=\"application/ld+json\"",
+            "        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}",
+            "      />",
+            "      <Page locale={locale} post={post} />",
+            "    </>"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/shared/models/post.tsx",
+      "commit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+      "sha256": "75619f7beea4ca0f27da59872d75f39027e2a9bb26d9194755e49856bf221463",
+      "gitBlob": "1e93abd2e3f95121e2ddd3a443e7153a08acc5f6",
+      "excerpts": [
+        {
+          "startLine": 57,
+          "endLine": 78,
+          "lines": [
+            "export async function findPost({",
+            "  id,",
+            "  slug,",
+            "  status,",
+            "}: {",
+            "  id?: string;",
+            "  slug?: string;",
+            "  status?: PostStatus;",
+            "}) {",
+            "  const [result] = await db()",
+            "    .select()",
+            "    .from(post)",
+            "    .where(",
+            "      and(",
+            "        id ? eq(post.id, id) : undefined,",
+            "        slug ? eq(post.slug, slug) : undefined,",
+            "        status ? eq(post.status, status) : undefined",
+            "      )",
+            "    )",
+            "    .limit(1);",
+            "",
+            "  return result;"
+          ]
+        },
+        {
+          "startLine": 141,
+          "endLine": 196,
+          "lines": [
+            "// get single post, both from local file and database",
+            "// database post has higher priority",
+            "export async function getPost({",
+            "  slug,",
+            "  locale,",
+            "  postPrefix = '/blog/',",
+            "}: {",
+            "  slug: string;",
+            "  locale: string;",
+            "  postPrefix?: string;",
+            "}): Promise<BlogPostType | null> {",
+            "  let post: BlogPostType | null = null;",
+            "",
+            "  try {",
+            "    // get post from database",
+            "    const postData = await findPost({ slug, status: PostStatus.PUBLISHED });",
+            "    if (postData) {",
+            "      // post exist in database",
+            "      const content = postData.content || '';",
+            "",
+            "      // Convert markdown content to MarkdownContent component",
+            "      const body = content ? <MarkdownContent content={content} /> : undefined;",
+            "",
+            "      // Generate TOC from content",
+            "      const toc = content ? generateTOC(content) : undefined;",
+            "",
+            "      post = {",
+            "        id: postData.id,",
+            "        slug: postData.slug,",
+            "        title: postData.title || '',",
+            "        description: postData.description || '',",
+            "        content: '',",
+            "        body: body,",
+            "        toc: toc,",
+            "        created_at:",
+            "          getPostDate({",
+            "            created_at: postData.createdAt.toISOString(),",
+            "            locale,",
+            "          }) || '',",
+            "        author_name: postData.authorName || '',",
+            "        author_image: postData.authorImage || '',",
+            "        author_role: '',",
+            "        url: `${postPrefix}${postData.slug}`,",
+            "      };",
+            "",
+            "      return post;",
+            "    }",
+            "  } catch (e) {",
+            "    console.log('get post from database failed:', e);",
+            "  }",
+            "",
+            "  // get post from locale file",
+            "  const localPost = await getLocalPost({ slug, locale, postPrefix });",
+            "",
+            "  return localPost;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src/middleware.ts",
+      "commit": "1f9a483c7f75c9acee30129c984ea9bc622c5ea1",
+      "sha256": "768e13c2a7ec014b5b45ba6fe4f606d1d5cbc4aa12d7bfd722f3a6f94108f1e4",
+      "gitBlob": "71cf4b05bb0c7e32c5ab712b42e25bf524a454b8",
+      "excerpts": [
+        {
+          "startLine": 106,
+          "endLine": 119,
+          "lines": [
+            "  // 2. 检查是否有语言前缀",
+            "  const pathnameHasLocale = locales.some(",
+            "    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`",
+            "  );",
+            "",
+            "  if (pathnameHasLocale) {",
+            "    const detectedLocale = pathname.split('/')[1];",
+            "",
+            "    // /en/X is an EXPLICIT user choice to view English — let it through.",
+            "    // Previously we 301-stripped /en/ for SEO dedup, but that meant",
+            "    // Chinese-browser users typing /en/X ended up at /zh/X (no way to",
+            "    // force English via URL). SEO dedup is now handled by canonical",
+            "    // <link> tags in the page head, not middleware redirects.",
+            "    const response = NextResponse.next();"
+          ]
+        },
+        {
+          "startLine": 138,
+          "endLine": 158,
+          "lines": [
+            "  // 3. 计算语言",
+            "  const locale = getLocale(request);",
+            "",
+            "  // 4. 构建新 URL (保留 search 参数)",
+            "  const newUrl = new URL(request.url);",
+            "  newUrl.pathname = `/${locale}${pathname}`;",
+            "",
+            "  // For default locale, use rewrite (no redirect) to avoid 307 latency",
+            "  // This serves /en content at / without a visible redirect",
+            "  if (locale === defaultLocale) {",
+            "    const response = NextResponse.rewrite(newUrl);",
+            "    response.headers.set('x-locale', locale);",
+            "    // Phase D: noindex content/landing pages served unprefixed (default en).",
+            "    if (phaseDNoindex(pathname)) {",
+            "      response.headers.set('X-Robots-Tag', 'noindex, follow');",
+            "    }",
+            "    return response;",
+            "  }",
+            "",
+            "  const response = NextResponse.redirect(newUrl);",
+            "  response.headers.set('x-locale', locale);"
+          ]
+        }
+      ]
+    }
+  ]
+}
