@@ -1,0 +1,334 @@
+{
+  "recordedAt": "2026-09-06T14:18:22.046276+00:00",
+  "android": {
+    "testGlobalDebugUnitTest": {
+      "tests": 156,
+      "failures": 0,
+      "errors": 0,
+      "suites": [
+        {
+          "name": "com.same.castreader.data.local.VoiceCloneStateReducerTest",
+          "tests": "17",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.802Z"
+        },
+        {
+          "name": "com.same.castreader.TTSRequestContractTest",
+          "tests": "5",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:15:58.402Z"
+        },
+        {
+          "name": "com.same.castreader.analytics.AnalyticsContractTest",
+          "tests": "20",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.380Z"
+        },
+        {
+          "name": "com.same.castreader.ui.screens.settings.VoiceCloneUiProjectionTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:22.623Z"
+        },
+        {
+          "name": "com.same.castreader.data.model.VoiceCloneIdentityContractTest",
+          "tests": "5",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.835Z"
+        },
+        {
+          "name": "com.same.castreader.data.remote.QuickReadCancellableCallTest",
+          "tests": "2",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.922Z"
+        },
+        {
+          "name": "com.same.castreader.VoiceCloneAudioProcessorTest",
+          "tests": "7",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:15:58.816Z"
+        },
+        {
+          "name": "com.same.castreader.VoiceClonePolicyTest",
+          "tests": "12",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.317Z"
+        },
+        {
+          "name": "com.same.castreader.data.local.VoiceCloneCreateOperationStoreTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.769Z"
+        },
+        {
+          "name": "com.same.castreader.data.model.VoiceClonePcmContainerDecoderTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.839Z"
+        },
+        {
+          "name": "com.same.castreader.VoiceCloneApiContractTest",
+          "tests": "12",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:15:58.630Z"
+        },
+        {
+          "name": "com.same.castreader.ui.screens.settings.VoiceCloneLayoutPolicyTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:22.622Z"
+        },
+        {
+          "name": "com.same.castreader.data.remote.PresetTtsFallbackPolicyTest",
+          "tests": "7",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.896Z"
+        },
+        {
+          "name": "com.same.castreader.VoiceCloneUploadAudioContractTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.321Z"
+        },
+        {
+          "name": "com.same.castreader.analytics.ExplainCompletionTest",
+          "tests": "2",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.425Z"
+        },
+        {
+          "name": "com.same.castreader.VoiceCloneAndroidContractTest",
+          "tests": "14",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:15:58.521Z"
+        },
+        {
+          "name": "com.same.castreader.data.remote.VoiceCloneGenerationRoutingTest",
+          "tests": "2",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:21.942Z"
+        },
+        {
+          "name": "com.same.castreader.data.local.VoiceCloneIdentityStoreTest",
+          "tests": "2",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.789Z"
+        },
+        {
+          "name": "com.same.castreader.ui.screens.pdfreader.PdfExplainPipelineTest",
+          "tests": "9",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:22.355Z"
+        },
+        {
+          "name": "com.same.castreader.analytics.YouTubeAnalyticsContractTest",
+          "tests": "8",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.492Z"
+        },
+        {
+          "name": "com.same.castreader.data.model.VoiceCloneReferenceGoldenTest",
+          "tests": "11",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:16.845Z"
+        }
+      ]
+    },
+    "testCnDebugUnitTest": {
+      "tests": 156,
+      "failures": 0,
+      "errors": 0,
+      "suites": [
+        {
+          "name": "com.same.castreader.data.local.VoiceCloneStateReducerTest",
+          "tests": "17",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:43.216Z"
+        },
+        {
+          "name": "com.same.castreader.TTSRequestContractTest",
+          "tests": "5",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:24.682Z"
+        },
+        {
+          "name": "com.same.castreader.analytics.AnalyticsContractTest",
+          "tests": "20",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:42.889Z"
+        },
+        {
+          "name": "com.same.castreader.ui.screens.settings.VoiceCloneUiProjectionTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:48.779Z"
+        },
+        {
+          "name": "com.same.castreader.data.model.VoiceCloneIdentityContractTest",
+          "tests": "5",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:43.234Z"
+        },
+        {
+          "name": "com.same.castreader.data.remote.QuickReadCancellableCallTest",
+          "tests": "2",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:43.334Z"
+        },
+        {
+          "name": "com.same.castreader.VoiceCloneAudioProcessorTest",
+          "tests": "7",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:25.102Z"
+        },
+        {
+          "name": "com.same.castreader.VoiceClonePolicyTest",
+          "tests": "12",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:42.824Z"
+        },
+        {
+          "name": "com.same.castreader.data.local.VoiceCloneCreateOperationStoreTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:43.033Z"
+        },
+        {
+          "name": "com.same.castreader.data.model.VoiceClonePcmContainerDecoderTest",
+          "tests": "3",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:43.239Z"
+        },
+        {
+          "name": "com.same.castreader.VoiceCloneApiContractTest",
+          "tests": "12",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:24.874Z"
+        },
+        {
+          "name": "com.same.castreader.ui.screens.settings.VoiceCloneLayoutPolicyTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:48.778Z"
+        },
+        {
+          "name": "com.same.castreader.data.remote.PresetTtsFallbackPolicyTest",
+          "tests": "7",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:43.320Z"
+        },
+        {
+          "name": "com.same.castreader.VoiceCloneUploadAudioContractTest",
+          "tests": "6",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:42.833Z"
+        },
+        {
+          "name": "com.same.castreader.analytics.ExplainCompletionTest",
+          "tests": "2",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:42.934Z"
+        },
+        {
+          "name": "com.same.castreader.VoiceCloneAndroidContractTest",
+          "tests": "14",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:24.749Z"
+        },
+        {
+          "name": "com.same.castreader.data.remote.VoiceCloneGenerationRoutingTest",
+          "tests": "2",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:48.355Z"
+        },
+        {
+          "name": "com.same.castreader.data.local.VoiceCloneIdentityStoreTest",
+          "tests": "2",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:43.185Z"
+        },
+        {
+          "name": "com.same.castreader.ui.screens.pdfreader.PdfExplainPipelineTest",
+          "tests": "9",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:48.509Z"
+        },
+        {
+          "name": "com.same.castreader.analytics.YouTubeAnalyticsContractTest",
+          "tests": "8",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:42.944Z"
+        },
+        {
+          "name": "com.same.castreader.data.model.VoiceCloneReferenceGoldenTest",
+          "tests": "11",
+          "failures": "0",
+          "errors": "0",
+          "timestamp": "2026-09-06T14:16:43.248Z"
+        }
+      ]
+    }
+  },
+  "ios": {
+    "serviceRouting": {
+      "result": "Passed",
+      "passedTests": 93,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "totalTestCount": 93
+    },
+    "kindlePageEvidence": {
+      "result": "Passed",
+      "passedTests": 1,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "totalTestCount": 1
+    }
+  },
+  "commits": {
+    "ios": "47f9541a0a9d08ff9d415a1692005b2d81c35eec",
+    "android": "d6ab63b0f13b9a45316cd32f7ec4acf51b1d7d4a"
+  },
+  "releaseStatus": "committed_in_isolated_worktrees_not_published_to_mobile_stores"
+}
