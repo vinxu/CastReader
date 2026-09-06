@@ -1,0 +1,56 @@
+{
+  "schema": "castreader.audio-failure-analysis-manifest.v1",
+  "createdAtUtc": "2026-09-06T12:01:28.178058+00:00",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 9199,
+      "sha256": "6173e9d7f95f237908ae1096be9d0031fe4088af0649d04572f5b8e5ba6727b8"
+    },
+    {
+      "path": "android-local-log-summary.json",
+      "bytes": 362,
+      "sha256": "bcfc273e311fcf52b88b9ea07daef07448e72b4d75b5d1ee9afdea23e69d1ab7"
+    },
+    {
+      "path": "android-quickread-current-endpoint.json",
+      "bytes": 234,
+      "sha256": "b22723867082007727acc28a6e08c356881e02d0b2188fdb2ba7f2c489ecd744"
+    },
+    {
+      "path": "connected-device-attribution.json",
+      "bytes": 188,
+      "sha256": "469934100f21b2224c520df1097203362c836b33ef5c63f00bbb83b0d2b082b1"
+    },
+    {
+      "path": "event-property-audit.json",
+      "bytes": 8283,
+      "sha256": "1b96e6c304b66b62333700b92c9f6775f57cf74ae5ae03fe9c0a4a46c2e2d1fb"
+    },
+    {
+      "path": "ios-4xx-windows.json",
+      "bytes": 414,
+      "sha256": "1be6d03688941fb226968c3d86b8ae96c09e58b672fd3326d6eba7899f955bdb"
+    },
+    {
+      "path": "quickread-log-evidence.json",
+      "bytes": 984,
+      "sha256": "90c003d067d97f3ed62341647b40c3843b1cdcadc1b890868aa7a06aeb58c553"
+    },
+    {
+      "path": "released-source-excerpts.txt",
+      "bytes": 16997,
+      "sha256": "37978b7d3cfe52453e0bb202d396df9ac8e06e28e78af800ed0660ada9662e6b"
+    },
+    {
+      "path": "session-timelines.json",
+      "bytes": 14404,
+      "sha256": "c48ce9dc571efc9c2f11eacd7cd924392c851a397170f834eb36dc7a71f48f2a"
+    },
+    {
+      "path": "vercel-failure-windows.json",
+      "bytes": 18724,
+      "sha256": "2aa48441b9fea7223403cceb170d2bd7fa309b80566cf5ce1c55387e6fbb3cda"
+    }
+  ]
+}

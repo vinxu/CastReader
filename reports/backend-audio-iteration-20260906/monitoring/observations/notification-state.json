@@ -46,5 +46,13 @@
   },
   "latestClientTechnicalFailureCount": 6,
   "lastDecision": "NOTIFY",
-  "lastDecisionReason": "One newly deduplicated Android 1.0.45 Explain pipeline failure after first block"
+  "lastDecisionReason": "One newly deduplicated Android 1.0.45 Explain pipeline failure after first block",
+  "latestCauseAnalysis": "reports/backend-audio-failure-analysis-20260906/README.md",
+  "confirmedCodeFindings": [
+    "kindle_sync_dialog_blocked_also_covers_mode_change",
+    "ios_tts_wrapping_erases_underlying_error_type",
+    "android_pdf_generic_exception_catch_includes_cancellation",
+    "android_failed_completion_bucket_not_document_completion"
+  ],
+  "individualUnderlyingExceptionsRecovered": false
 }

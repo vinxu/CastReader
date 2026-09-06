@@ -1,0 +1,21 @@
+{
+  "readOnly": true,
+  "windows": [
+    {
+      "window": "ios_epub",
+      "start": "2026-09-06T09:05:00Z",
+      "end": "2026-09-06T09:08:00Z",
+      "complete": true,
+      "all4xxRows": 20,
+      "tts4xx": []
+    },
+    {
+      "window": "ios_clipboard",
+      "start": "2026-09-06T10:04:00Z",
+      "end": "2026-09-06T10:06:10Z",
+      "complete": true,
+      "all4xxRows": 2,
+      "tts4xx": []
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "readOnly": true,
+  "startUtc": "2026-09-06T08:50:00Z",
+  "endUtc": "2026-09-06T10:47:00Z",
+  "logs": [
+    {
+      "file": "quickread-out.log",
+      "linesRead": 24870,
+      "timestampedWindowLines": 104,
+      "fixedErrorTagCounts": {},
+      "unattributedUndatedOrOtherDayTagCounts": {
+        "compose-block error:": 49,
+        "fast-block0 error:": 4,
+        "extract-block error:": 43,
+        "extract-plan error:": 9
+      }
+    },
+    {
+      "file": "quickread-error.log",
+      "linesRead": 394,
+      "timestampedWindowLines": 0,
+      "fixedErrorTagCounts": {},
+      "unattributedUndatedOrOtherDayTagCounts": {}
+    }
+  ],
+  "limitations": [
+    "Only fixed route error tags are counted; arbitrary content words such as failing are not errors",
+    "Undated lines cannot be assigned to the six client events",
+    "No client/server request correlation exists; zero matching tags does not prove no LLM or network failure"
+  ],
+  "rawUserContentExported": false
+}

@@ -1,0 +1,428 @@
+{
+  "readOnly": true,
+  "queryStartUtc": "2026-09-06T04:00:00Z",
+  "queryEndUtc": "2026-09-06T11:05:38.744925Z",
+  "preAcceptanceDataUsedOnlyForDiagnosis": true,
+  "distinctFailureDevices": 5,
+  "failures": [
+    {
+      "eventKey": "194cbc9c7aaeb2b962a9",
+      "deviceKey": "9ea952eae96040507d80",
+      "appSessionKey": "e154dd40d9f7e111c3ae",
+      "contentSessionKey": "3434419be02d66eab63e",
+      "sameSessionEventCount": 4,
+      "selectedTimeline": [
+        {
+          "event": "read_milestone",
+          "receivedAtUtc": "2026-09-06T04:08:41.056+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T04:08:38.873Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "surface": "kindle_reader",
+            "entry_point": "kindle_library",
+            "playbackSeconds": "600",
+            "completionBucket": "80_99"
+          }
+        },
+        {
+          "event": "read_milestone",
+          "receivedAtUtc": "2026-09-06T04:36:46.894+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T04:36:44.414Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "surface": "kindle_reader",
+            "entry_point": "kindle_library",
+            "playbackSeconds": "1800",
+            "completionBucket": "25_49"
+          }
+        },
+        {
+          "event": "read_end",
+          "receivedAtUtc": "2026-09-06T05:15:01.942+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T05:14:59.770Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "surface": "kindle_reader",
+            "entry_point": "kindle_library",
+            "result": "failed",
+            "endReason": "kindle_page_advance_failed",
+            "errorCode": "page_turn_failed",
+            "errorStage": "navigation",
+            "playbackSeconds": "3432",
+            "completionBucket": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "eventKey": "e744cc9e13c1ce37a508",
+      "deviceKey": "a0dcf4d40f662fc51764",
+      "appSessionKey": "8b6bc690b14524103450",
+      "contentSessionKey": "f2d79b5ced89093b41df",
+      "sameSessionEventCount": 4,
+      "selectedTimeline": [
+        {
+          "event": "read_start",
+          "receivedAtUtc": "2026-09-06T08:53:41.99+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T08:53:37.931Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "contentFormat": "kindle",
+            "contentSource": "kindle",
+            "surface": "kindle_reader",
+            "entry_point": "kindle_library",
+            "language": "en"
+          }
+        },
+        {
+          "event": "read_first_audio",
+          "receivedAtUtc": "2026-09-06T08:53:41.99+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T08:53:39.697Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "surface": "kindle_reader",
+            "entry_point": "kindle_library",
+            "language": "en"
+          }
+        },
+        {
+          "event": "read_milestone",
+          "receivedAtUtc": "2026-09-06T08:54:14.598+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T08:54:12.274Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "surface": "kindle_reader",
+            "entry_point": "kindle_library",
+            "playbackSeconds": "30",
+            "completionBucket": "80_99"
+          }
+        },
+        {
+          "event": "read_end",
+          "receivedAtUtc": "2026-09-06T08:54:21.417+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T08:54:19.065Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "surface": "kindle_reader",
+            "entry_point": "kindle_library",
+            "result": "failed",
+            "endReason": "kindle_page_advance_failed",
+            "errorCode": "sync_dialog_blocked",
+            "errorStage": "navigation",
+            "playbackSeconds": "36",
+            "completionBucket": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "eventKey": "17fdc8de28c31db425ca",
+      "deviceKey": "d9512089a828e3624939",
+      "appSessionKey": "e21ef4279b64992ebb01",
+      "contentSessionKey": "a176775bfb4fb18b8c98",
+      "sameSessionEventCount": 8,
+      "selectedTimeline": [
+        {
+          "event": "read_start",
+          "receivedAtUtc": "2026-09-06T07:58:10.638+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T07:58:08.370Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "contentFormat": "epub",
+            "contentSource": "history",
+            "surface": "reader",
+            "entry_point": "history_resume",
+            "language": "en"
+          }
+        },
+        {
+          "event": "read_first_audio",
+          "receivedAtUtc": "2026-09-06T07:58:14.896+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T07:58:12.165Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "surface": "reader",
+            "entry_point": "history_resume",
+            "language": "en"
+          }
+        },
+        {
+          "event": "read_milestone",
+          "receivedAtUtc": "2026-09-06T08:13:08.442+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T08:13:06.235Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "surface": "reader",
+            "entry_point": "history_resume",
+            "playbackSeconds": "600",
+            "completionBucket": "80_99"
+          }
+        },
+        {
+          "event": "read_milestone",
+          "receivedAtUtc": "2026-09-06T08:40:51.681+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T08:40:49.495Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "surface": "reader",
+            "entry_point": "history_resume",
+            "playbackSeconds": "1800",
+            "completionBucket": "80_99"
+          }
+        },
+        {
+          "event": "read_end",
+          "receivedAtUtc": "2026-09-06T09:11:37.922+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T09:07:13.107Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "surface": "reader",
+            "entry_point": "history_resume",
+            "result": "failed",
+            "endReason": "tts_failed",
+            "errorCode": "tts_failed",
+            "errorStage": "tts",
+            "playbackSeconds": "2447",
+            "completionBucket": "80_99"
+          }
+        }
+      ]
+    },
+    {
+      "eventKey": "2efcb7cf33b2ee717ab8",
+      "deviceKey": "71b57193e28a25922792",
+      "appSessionKey": "f78abcc6d0414a537f4f",
+      "contentSessionKey": "9dea2890e4a2cde180d0",
+      "sameSessionEventCount": 5,
+      "selectedTimeline": [
+        {
+          "event": "explain_start",
+          "receivedAtUtc": "2026-09-06T08:55:40.669+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T08:55:28.025Z",
+            "client_version": "1.0.45",
+            "client_build": "52",
+            "contentFormat": "pdf",
+            "contentSource": "file",
+            "surface": "reader",
+            "entry_point": "explain",
+            "language": "en"
+          }
+        },
+        {
+          "event": "explain_first_block",
+          "receivedAtUtc": "2026-09-06T08:55:53.914+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T08:55:50.400Z",
+            "client_version": "1.0.45",
+            "client_build": "52",
+            "surface": "reader",
+            "entry_point": "explain"
+          }
+        },
+        {
+          "event": "explain_milestone",
+          "receivedAtUtc": "2026-09-06T08:56:14.215+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T08:56:11.183Z",
+            "client_version": "1.0.45",
+            "client_build": "52",
+            "surface": "reader",
+            "entry_point": "explain",
+            "blocksStarted": "1",
+            "blocksCompleted": "1",
+            "milestone": "first_block_completed"
+          }
+        },
+        {
+          "event": "explain_milestone",
+          "receivedAtUtc": "2026-09-06T08:56:27.785+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T08:56:24.728Z",
+            "client_version": "1.0.45",
+            "client_build": "52",
+            "surface": "reader",
+            "entry_point": "explain",
+            "blocksStarted": "2",
+            "blocksCompleted": "1",
+            "milestone": "second_block_started"
+          }
+        },
+        {
+          "event": "explain_end",
+          "receivedAtUtc": "2026-09-06T09:31:35.604+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T09:31:27.428Z",
+            "client_version": "1.0.45",
+            "client_build": "52",
+            "surface": "reader",
+            "entry_point": "explain",
+            "result": "failed",
+            "endReason": "pipeline_failed",
+            "errorCode": "unexpected_error",
+            "errorStage": "pipeline",
+            "blocksStarted": "2",
+            "blocksCompleted": "10",
+            "completionBucket": "complete"
+          }
+        }
+      ]
+    },
+    {
+      "eventKey": "746346a4fb3395e8d30e",
+      "deviceKey": "49aa0f00e9a53c9686a2",
+      "appSessionKey": "18b9dc8d77b094e07bb3",
+      "contentSessionKey": "79755c9bc29686cdcf1d",
+      "sameSessionEventCount": 2,
+      "selectedTimeline": [
+        {
+          "event": "read_start",
+          "receivedAtUtc": "2026-09-06T10:04:40.482+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T10:04:39.866Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "contentFormat": "text",
+            "contentSource": "clipboard",
+            "surface": "reader",
+            "entry_point": "clipboard_prompt",
+            "language": "en"
+          }
+        },
+        {
+          "event": "read_end",
+          "receivedAtUtc": "2026-09-06T10:05:50.553+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T10:05:50.070Z",
+            "client_version": "1.2.33",
+            "client_build": "53",
+            "surface": "reader",
+            "entry_point": "clipboard_prompt",
+            "result": "failed",
+            "endReason": "tts_failed",
+            "errorCode": "tts_failed",
+            "errorStage": "tts",
+            "playbackSeconds": "0",
+            "completionBucket": "lt_25"
+          }
+        }
+      ]
+    },
+    {
+      "eventKey": "f12f08ecb06c1f31d891",
+      "deviceKey": "71b57193e28a25922792",
+      "appSessionKey": "1c4be03a3b7284c1fa1a",
+      "contentSessionKey": "a36a427a6699b139fa47",
+      "sameSessionEventCount": 5,
+      "selectedTimeline": [
+        {
+          "event": "explain_start",
+          "receivedAtUtc": "2026-09-06T09:31:36.992+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T09:31:33.679Z",
+            "client_version": "1.0.45",
+            "client_build": "52",
+            "contentFormat": "pdf",
+            "contentSource": "file",
+            "surface": "reader",
+            "entry_point": "explain",
+            "language": "en"
+          }
+        },
+        {
+          "event": "explain_first_block",
+          "receivedAtUtc": "2026-09-06T09:31:52.934+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T09:31:49.881Z",
+            "client_version": "1.0.45",
+            "client_build": "52",
+            "surface": "reader",
+            "entry_point": "explain"
+          }
+        },
+        {
+          "event": "explain_milestone",
+          "receivedAtUtc": "2026-09-06T09:32:09.91+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T09:32:06.863Z",
+            "client_version": "1.0.45",
+            "client_build": "52",
+            "surface": "reader",
+            "entry_point": "explain",
+            "blocksStarted": "1",
+            "blocksCompleted": "1",
+            "milestone": "first_block_completed"
+          }
+        },
+        {
+          "event": "explain_milestone",
+          "receivedAtUtc": "2026-09-06T09:32:44.251+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T09:32:41.207Z",
+            "client_version": "1.0.45",
+            "client_build": "52",
+            "surface": "reader",
+            "entry_point": "explain",
+            "blocksStarted": "2",
+            "blocksCompleted": "1",
+            "milestone": "second_block_started"
+          }
+        },
+        {
+          "event": "explain_end",
+          "receivedAtUtc": "2026-09-06T10:44:54.885+00:00",
+          "properties": {
+            "environment": "production",
+            "occurred_at": "2026-09-06T10:44:51.863Z",
+            "client_version": "1.0.45",
+            "client_build": "52",
+            "surface": "reader",
+            "entry_point": "explain",
+            "result": "failed",
+            "endReason": "pipeline_failed",
+            "errorCode": "unexpected_error",
+            "errorStage": "pipeline",
+            "blocksStarted": "2",
+            "blocksCompleted": "12",
+            "completionBucket": "complete"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "readOnly": true,
+  "currentConfiguredScheme": "https",
+  "currentConfiguredHost": "qr.castreader.ai",
+  "currentConfiguredPort": null,
+  "basePresent": true,
+  "historicalConfigAtFailureNotProven": true,
+  "keyExported": false
+}

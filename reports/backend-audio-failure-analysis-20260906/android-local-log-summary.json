@@ -1,0 +1,11 @@
+{
+  "readOnly": true,
+  "source": "connected Android app private diagnostic log",
+  "linesRead": 4722,
+  "firstCurrentDateTimestamp": "09-06 18:41:22.565",
+  "lastCurrentDateTimestamp": "09-06 19:44:37.581",
+  "pdfFailures": [],
+  "analyticsLogFieldNames": [],
+  "deviceAttribution": "not_yet_matched_to_production_anonymous_id",
+  "rawContentExported": false
+}

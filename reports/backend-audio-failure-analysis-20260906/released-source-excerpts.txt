@@ -1,0 +1,313 @@
+
+SOURCE e3bbe903c0bed886a53b3b0ba2c8240c4fe6b9d6:CastReader/Views/Kindle/KindleBookView.swift
+
+9668:             }
+9669:         }
+9670:         func finishInterruptedReadSession(errorCode: String) {
+9671:             finishReadSession(
+9672:                 result: .failed,
+9673:                 endReason: "kindle_page_advance_failed",
+9674:                 errorStage: "navigation",
+9675:                 errorCode: errorCode
+9676:             )
+9677:         }
+9678:         guard mode == continuationMode, !isKindleSyncDialogVisible else {
+9679:             KindleRunLog.write("KINDLE auto advance blocked sync-dialog mode=\(continuationMode.rawValue) reason=\(reason)")
+9680:             finishInterruptedReadSession(errorCode: "sync_dialog_blocked")
+9681:             return
+9682:         }
+9683:         let oldKey = rawOldKey.trimmingCharacters(in: .whitespacesAndNewlines)
+9735:                 continueLogicalReadSession: continuationMode == .read
+9736:             )
+9737:             KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance success old=\(Self.keyLog(oldKey)) new=\(Self.keyLog(prepared.page.key)) reason=\(reason)")
+9738:         } catch {
+9739:             pendingCaptureKey = nil
+9740:             let reachedNaturalEnd = continuationMode == .read &&
+9741:                 attemptedForwardTurn &&
+9742:                 !confirmedForwardTurn &&
+9743:                 !(error is CancellationError) &&
+9744:                 KindleTurnContract.isTerminalPage(
+9745:                     liveProgress: liveProgressAtBoundary,
+9746:                     storedProgress: storedProgressAtBoundary
+9747:                 )
+9748:             if reachedNaturalEnd {
+9749:                 statusText = AppLocalized("已读完这本书。")
+9750:                 finishReadSession(result: .success, endReason: "completed")
+9751:                 KindleRunLog.write(
+9752:                     "KINDLE read auto advance reached terminal page old=\(Self.keyLog(oldKey)) " +
+9753:                     "progress=\(liveProgressAtBoundary ?? storedProgressAtBoundary) reason=\(reason)"
+9754:                 )
+9755:             } else {
+9756:                 statusText = AppLocalized("已停在当前页，请点击播放继续。")
+9757:                 finishInterruptedReadSession(errorCode: "page_turn_failed")
+9758:                 KindleRunLog.write("KINDLE \(continuationMode.rawValue) auto advance failed old=\(Self.keyLog(oldKey)) reason=\(reason) error=\(error.localizedDescription)")
+9759:             }
+
+SOURCE e3bbe903c0bed886a53b3b0ba2c8240c4fe6b9d6:CastReader/ViewModels/ReadAloudViewModel.swift
+
+2920:                     voiceSwitchID: voiceSwitchID
+2921:                 )
+2922:             } catch {
+2923:                 await MainActor.run {
+2924:                     guard self.generationEpoch == epoch,
+2925:                           self.audioSessionToken == session,
+2926:                           self.audio.isPlaybackSessionActive(session) else { return }
+2927:                     _ = self.audio.setMoreSegmentsExpected(false, session: session)
+2928:                     if self.currentParagraphIndex == index {
+2929:                         ReaderRunLog.write(
+2930:                             "READ generate failed para=\(index) epoch=\(epoch) " +
+2931:                             "error=\(error.localizedDescription)"
+2932:                         )
+2933:                         self.status = .error(error.localizedDescription)
+2934:                         if let voiceSwitchID, self.activeVoiceSwitchID == voiceSwitchID {
+2935:                             VoiceSwitchStatusCenter.shared.finish(voiceSwitchID)
+2936:                             self.activeVoiceSwitchID = nil
+2937:                         }
+2938:                         self.endAnalyticsReadSession(
+2939:                             result: .failed,
+2940:                             reason: "tts_failed",
+2941:                             errorStage: "tts",
+2942:                             errorCode: Self.analyticsErrorCode(error)
+2943:                         )
+2944:                     }
+2945:                 }
+2946:             }
+4427: 
+4428:     private static func analyticsErrorCode(_ error: Error) -> String {
+4429:         if error is URLError { return "network" }
+4430:         if error is CancellationError { return "cancelled" }
+4431:         let description = String(describing: error).lowercased()
+4432:         if description.contains("401") { return "http_401" }
+4433:         if description.contains("402") { return "http_402" }
+4434:         if description.contains("429") { return "http_429" }
+4435:         if description.contains("timeout") { return "timeout" }
+4436:         return "tts_failed"
+4437:     }
+
+SOURCE e3bbe903c0bed886a53b3b0ba2c8240c4fe6b9d6:CastReader/Services/TTSService.swift
+
+274:             } catch is CancellationError {
+275:                 throw TTSError.cancelled
+276:             } catch let error as VoiceCloneError {
+277:                 // Preserve quota/reset, entitlement and cloned-voice worker
+278:                 // semantics all the way to the reader UI. Wrapping these in a
+279:                 // generic TTSError makes an exhausted monthly allowance look
+280:                 // like an unexplained service failure.
+281:                 throw error
+282:             } catch let error as TTSError {
+283:                 throw error
+284:             } catch {
+285:                 ttsDebugLog("[TTSService] Cloud TTS failed: \(error)")
+286:                 throw TTSError.generationFailed(error.localizedDescription)
+287:             }
+
+SOURCE e3bbe903c0bed886a53b3b0ba2c8240c4fe6b9d6:CastReader/Services/APIService.swift
+
+176:         self.ttsSessions = Dictionary(
+177:             uniqueKeysWithValues: ServiceRoute.allCases.map { route in
+178:                 (
+179:                     route,
+180:                     OwnedAPIURLSession.makeExplicitCredentialSession(
+181:                         route: route,
+182:                         requestTimeout: 30,
+183:                         resourceTimeout: 60
+184:                     )
+185:                 )
+186:             }
+241:             if let errorBody = String(data: data, encoding: .utf8) {
+242:                 apiDebugLog("🔴 [API] HTTP \(httpResponse.statusCode) error response: \(errorBody)")
+243:             }
+244:             throw APIError.httpError(httpResponse.statusCode)
+245:         }
+246: 
+247:         do {
+248:             return try decoder.decode(T.self, from: data)
+249:         } catch {
+250:             // Debug: print raw response and detailed error
+251:             if let jsonString = String(data: data, encoding: .utf8) {
+252:                 apiDebugLog("🔴 Decoding failed. Raw response: \(String(jsonString.prefix(1500)))")
+253:             }
+254:             apiDebugLog("🔴 Decoding error details: \(error)")
+255:             throw APIError.decodingError(error)
+256:         }
+257:     }
+258: 
+259: 
+260:     // MARK: - Library API
+261: 
+262:     func fetchDocuments(limit: Int = 100, offset: Int = 0) async throws -> [Document] {
+263:         var components = URLComponents(string: Constants.API.documents)
+264:         components?.queryItems = [
+265:             URLQueryItem(name: "limit", value: "\(limit)"),
+266:             URLQueryItem(name: "offset", value: "\(offset)")
+267:         ]
+268: 
+269:         guard let url = components?.url else {
+270:             throw APIError.invalidURL
+648:         let route = ComputeRouting.current
+649:         guard let url = URL(
+650:             string: TTSEndpoint.partlyURL(base: route.apiGatewayBaseURL)
+651:         ) else {
+652:             throw APIError.invalidURL
+653:         }
+654:         return try await request(
+655:             url,
+656:             method: "POST",
+657:             body: bodyData,
+658:             session: ttsSessions[route]
+659:         )
+660:     }
+661: 
+
+SOURCE e3bbe903c0bed886a53b3b0ba2c8240c4fe6b9d6:CastReader/Models/TTSTimestamp.swift
+
+83: struct TTSResponse: Codable {
+84:     let audio: String // base64 encoded mp3
+85:     let audioFormat: String?
+86:     let timestamps: [TTSTimestamp]?  // Made optional
+87:     let duration: Double?  // Made optional
+88:     let processedText: String?
+89:     let unprocessedText: String?
+90: 
+91:     enum CodingKeys: String, CodingKey {
+92:         case audio
+93:         case audioFormat = "audio_format"
+94:         case timestamps
+95:         case duration
+96:         case processedText = "processed_text"
+97:         case unprocessedText = "unprocessed_text"
+98:     }
+99: 
+100:     // Provide defaults for optional fields
+101:     var safeDuration: Double {
+102:         duration ?? 0
+103:     }
+104: 
+105:     var safeTimestamps: [TTSTimestamp] {
+106:         timestamps ?? []
+107:     }
+108: }
+109: 
+110: // MARK: - TTS Timestamp
+111: struct TTSTimestamp: Codable {
+112:     let word: String
+113:     let startTime: Double
+114:     let endTime: Double
+115: 
+116:     enum CodingKeys: String, CodingKey {
+117:         case word
+118:         case startTime = "start_time"
+119:         case endTime = "end_time"
+120:     }
+121: }
+122: 
+123: /// Response-level safety gate shared by every reader source. This validates
+124: /// the shape and text coverage of a candidate word timeline. The separate
+125: /// `TTSHighlightPolicy` first decides whether the reading language is allowed
+
+SOURCE e74e5dc1e433cf98a644f8a724b00890e72faec9:app/src/main/java/com/same/castreader/ui/screens/pdfreader/PdfReaderViewModel.kt
+
+523:                 _uiState.update { it.copy(showPaywall = true) }
+524:             } catch (e: com.same.castreader.data.remote.QuickReadHttpException) {
+525:                 productAnalytics.endExplain(com.same.castreader.analytics.AnalyticsResult.FAILED, "request_failed", errorStage = "network", errorCode = if (e.code == 400) "unsupported_content" else "http_error")
+526:                 // 重试仍失败：400 多为内容太短/不适合解读 → 友好提示，不裸露 HTTP 码
+527:                 emitSubtitle(if (e.code == 400) context.getString(com.same.castreader.R.string.explain_unsupported) else context.getString(com.same.castreader.R.string.web_explain_failed, "HTTP ${e.code}"))
+528:             } catch (e: Exception) {
+529:                 productAnalytics.endExplain(com.same.castreader.analytics.AnalyticsResult.FAILED, "pipeline_failed", errorStage = "pipeline", errorCode = "unexpected_error")
+530:                 FileLog.log("{\"type\":\"pdfexplain\",\"stage\":\"failed\",\"error_class\":\"${e.javaClass.simpleName}\"}")
+531:                 emitSubtitle(context.getString(com.same.castreader.R.string.web_explain_failed, e.message ?: ""))
+532:             }
+533:             _uiState.update { it.copy(explaining = false, explainFinished = true, subtitle = null) }
+534:             explainActive = false
+535:         }
+659:                 val range = batches[bi]
+660:                 val plan = prefetched?.takeIf { it.batchIndex == bi } ?: planBatch(base, key, texts, range, explainLang, settings, prevSummary = prevSummary)
+661:                 prefetched = null
+662:                 if (plan == null) continue
+663:                 _uiState.update { it.copy(explainTotal = plan.total) }
+664:                 val nextBi = bi + 1
+665:                 if (nextBi < batches.size) viewModelScope.launch {
+666:                     prefetched = runCatching { planBatch(base, key, texts, batches[nextBi], explainLang, settings, prevSummary = makeContinuitySummary(prevSummary, range, texts)) }.getOrNull()?.also { it.batchIndex = nextBi }
+667:                 }
+668:                 var nextBlock: kotlinx.coroutines.Deferred<PreparedSection?>? = null
+669:                 for (idx in 0 until plan.total) {   // idx = 质道内部 index（fetch/compose 用）；emit/进度用 globalIdx
+670:                     if (!explainActive) break
+671:                     _uiState.update { it.copy(explainSection = globalIdx) }
+672:                     val prepared: PreparedSection? = if (nextBlock != null) {
+673:                         if (!nextBlock!!.isCompleted) _uiState.update { it.copy(isLoadingTTS = true) }
+674:                         val p = runCatching { nextBlock!!.await() }.getOrNull()
+675:                         _uiState.update { it.copy(isLoadingTTS = false) }
+676:                         p
+677:                     } else {
+678:                         _uiState.update { it.copy(isLoadingTTS = true) }
+679:                         val s = fetchSection(base, key, plan.identity, plan.jobId, idx, plan.block0)
+680:                         val p = s?.let { prepareSection(base, key, plan.identity, plan.jobId, idx, it, explainLang, voice) }?.copy(sourceRange = range)
+681:                         _uiState.update { it.copy(isLoadingTTS = false) }
+682:                         p
+683:                     }
+684:                     nextBlock = null
+685:                     val nextIdx = idx + 1
+686:                     if (nextIdx < plan.total) nextBlock = viewModelScope.async {
+687:                         val s = fetchSection(base, key, plan.identity, plan.jobId, nextIdx, plan.block0)
+688:                         s?.let { prepareSection(base, key, plan.identity, plan.jobId, nextIdx, it, explainLang, voice) }?.copy(sourceRange = range)
+718:         }.getOrNull()
+719: 
+720:     /** 预备一块：TTS（可多段）+ compose-block → 可直接播放的 PreparedSection（供块内预取：播当前块时后台备下一块）。 */
+721:     private suspend fun prepareSection(base: String, key: String?, identity: ProRequestIdentity, jobId: String, idx: Int, section: QrSection, lang: String, voice: String, skipCompose: Boolean = false): PreparedSection? {
+722:         if (section.text.isBlank()) return null
+723:         val effectiveVoice = voiceCatalogRepository.resolveVoiceId(
+724:             settingsRepository.current().voiceFor(lang),
+725:             lang,
+726:             proManager.current().isPro
+727:         )
+728:         var remaining = section.text
+729:         val segs = ArrayList<Pair<ByteArray, Double>>(); val timeline = ArrayList<QrWordTs>(); var offset = 0.0; var guard = 0
+730:         while (remaining.isNotBlank() && guard++ < 24) {
+731:             val input = remaining.take(MAX_QR_TTS_INPUT)
+732:             val tts = runCatching { readerApi.generateTTS(TTSRequest(input = input, voice = effectiveVoice, language = lang)) }.getOrNull() ?: break
+733:             val audio = runCatching { Base64.decode(tts.audio, Base64.DEFAULT) }.getOrNull() ?: break
+734:             val ts0 = tts.timestamps?.map { QrWordTs(it.word, it.startTime, it.endTime) } ?: emptyList()
+735:             val processedLen = (input.length - (tts.unprocessedText?.length ?: 0)).coerceIn(0, input.length)
+736:             val processedText = input.take(processedLen)
+737:             // 段时长用 MP3 实际解码时长（estimate/tts.duration 与真实播放不符 → totalMs/priorMs 偏离 → 段边界字幕跳回）
+738:             val realDur = withContext(Dispatchers.IO) { mp3DurationSec(audio) }
+878:                     done.await(); poller.cancel()
+879:                 } finally { runCatching { mp.release() }; narrationPlayer = null; runCatching { file.delete() } }
+880:                 priorMs += seg.second * 1000.0
+881:             }
+882:             events.forEachIndexed { i, e -> if (!fired[i]) addMark(e, i, sourceRange) }
+883:             productAnalytics.noteExplainBlockCompleted(idx + 1)
+884:         } catch (e: Exception) {
+885:             Log.w(TAG, "playAudioWithMarks failed error=${e.javaClass.simpleName}")
+886:         }
+887:     }
+
+SOURCE e74e5dc1e433cf98a644f8a724b00890e72faec9:app/src/main/java/com/same/castreader/analytics/ProductAnalytics.kt
+
+755:     fun endExplain(
+756:         result: AnalyticsResult = AnalyticsResult.SUCCESS,
+757:         endReason: String,
+758:         totalBlocks: Int = 0,
+759:         errorStage: String? = null,
+760:         errorCode: String? = null
+761:     ) = synchronized(stateLock) {
+762:         val session = explain ?: return
+763:         val completionTotal = if (totalBlocks > 0) {
+764:             totalBlocks
+765:         } else {
+766:             maxOf(session.blocksStarted, session.blocksCompleted)
+767:         }
+768:         emit(
+769:             AnalyticsEventName.EXPLAIN_END,
+770:             session.eventContext(),
+771:             AnalyticsProperties(
+772:                 result = result.wireName,
+773:                 endReason = controlled(endReason),
+774:                 blocksStarted = session.blocksStarted,
+775:                 blocksCompleted = session.blocksCompleted,
+776:                 completionBucket = completionBucket(session.blocksCompleted, completionTotal),
+777:                 errorStage = errorStage?.let(::controlled),
+778:                 errorCode = errorCode?.let(::controlled),
+779:                 storefront = session.context.storefront
+780:             )
+781:         )

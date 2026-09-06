@@ -1,0 +1,625 @@
+{
+  "readOnly": true,
+  "rawLogsExported": false,
+  "windows": [
+    {
+      "window": "ios_epub",
+      "start": "2026-09-06T09:06:00Z",
+      "end": "2026-09-06T09:08:00Z",
+      "complete": false,
+      "returnedRows": 1000,
+      "selected": [
+        {
+          "requestKey": "aed558c8d50d01a2edb2",
+          "timestamp": 1788685675560,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "ebd5659055321e4f00cc",
+          "timestamp": 1788685670636,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "6b500949460ab7fb6550",
+          "timestamp": 1788685669191,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "3850c74b834068e8191f",
+          "timestamp": 1788685667475,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "15275b6454bbc03d383a",
+          "timestamp": 1788685662381,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "fb5d06b3b3acd8f9888c",
+          "timestamp": 1788685658074,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "907ba57ed85abc271aec",
+          "timestamp": 1788685657435,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "54dab8ab3f15a20bdaa0",
+          "timestamp": 1788685656748,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "fcae1fc4ba6d7b7de1c3",
+          "timestamp": 1788685648587,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "b705e6c885c900f1b804",
+          "timestamp": 1788685643637,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "6e7ec66122abf229e025",
+          "timestamp": 1788685639381,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "0faacaa1256e74854786",
+          "timestamp": 1788685632694,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "41414723737ab4db00fc",
+          "timestamp": 1788685627453,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "117221aa337fe71cf687",
+          "timestamp": 1788685627386,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        }
+      ],
+      "exit": 0,
+      "duplicateSelectedRows": 266,
+      "uniqueSelectedRows": 14,
+      "coverageNote": "The CLI repeated request IDs and reached the result limit; this query is incomplete and cannot certify all-status request coverage."
+    },
+    {
+      "window": "ios_clipboard",
+      "start": "2026-09-06T10:04:00Z",
+      "end": "2026-09-06T10:06:10Z",
+      "complete": false,
+      "returnedRows": 1000,
+      "selected": [
+        {
+          "requestKey": "3b1e44bdd66271bc7d80",
+          "timestamp": 1788689169081,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "f08fb3d0fa9760037b4f",
+          "timestamp": 1788689168423,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "abae1ae9ca3407fa0f39",
+          "timestamp": 1788689167655,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "890fc9b6c293a8cff8d9",
+          "timestamp": 1788689167022,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "bb4e68aa34b4a6b4137f",
+          "timestamp": 1788689164527,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "c3bd289baeb89bc08311",
+          "timestamp": 1788689163089,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "9b91f4010017e2b3fbca",
+          "timestamp": 1788689161859,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "d4bcc0aad6ee99660f8a",
+          "timestamp": 1788689161446,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "f674705cf74c54f0851a",
+          "timestamp": 1788689160342,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "c4e4cd912d394d479f53",
+          "timestamp": 1788689158876,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "9d319f15de0c10d4f26b",
+          "timestamp": 1788689158298,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "1cea7f1bbf2e83350d40",
+          "timestamp": 1788689157412,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "1e339780627438617ae7",
+          "timestamp": 1788689157091,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "e4037453e61414c5dcad",
+          "timestamp": 1788689156582,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "6f34f46510bff10850c4",
+          "timestamp": 1788689155830,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "64b6a8baa8414a098931",
+          "timestamp": 1788689154429,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "4ea430756fed5797f3e4",
+          "timestamp": 1788689152948,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "7c46b2c94a3710076239",
+          "timestamp": 1788689152718,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "0de4fed1c838faf8b918",
+          "timestamp": 1788689151682,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "ad9429759eb0d222429f",
+          "timestamp": 1788689151550,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "cd5d1d550831b1399c48",
+          "timestamp": 1788689149539,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "cb46484c179d0f6ccee5",
+          "timestamp": 1788689149245,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "a881e0c2605b328175a8",
+          "timestamp": 1788689148298,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "243eca5d0da124e4c07e",
+          "timestamp": 1788689147930,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "3593bf51b6bad6f5c926",
+          "timestamp": 1788689146814,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "7f296cd64a808d3e8ea2",
+          "timestamp": 1788689145172,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "da108cbfd2f2109fa80a",
+          "timestamp": 1788689144397,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "5d03d423f7c7135a89b1",
+          "timestamp": 1788689144257,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        }
+      ],
+      "exit": 0,
+      "duplicateSelectedRows": 532,
+      "uniqueSelectedRows": 28,
+      "coverageNote": "The CLI repeated request IDs and reached the result limit; this query is incomplete and cannot certify all-status request coverage."
+    },
+    {
+      "window": "android_pdf_1",
+      "start": "2026-09-06T09:30:00Z",
+      "end": "2026-09-06T09:32:00Z",
+      "complete": false,
+      "returnedRows": 1000,
+      "selected": [
+        {
+          "requestKey": "4aee44066bf09250c07a",
+          "timestamp": 1788687108682,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "5418fcf2e2975cafd20c",
+          "timestamp": 1788687101703,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "43257495497a4fd759dc",
+          "timestamp": 1788687092833,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "049cfb9634bdfc57b8ca",
+          "timestamp": 1788687088205,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "eef20cf3b6096a86c5b8",
+          "timestamp": 1788687086419,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "dd48274b0400fbbf1273",
+          "timestamp": 1788687079833,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "e5a3ca533345ece9da82",
+          "timestamp": 1788687079293,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "68f45644f09f80817a20",
+          "timestamp": 1788687077706,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        }
+      ],
+      "exit": 0,
+      "duplicateSelectedRows": 152,
+      "uniqueSelectedRows": 8,
+      "coverageNote": "The CLI repeated request IDs and reached the result limit; this query is incomplete and cannot certify all-status request coverage."
+    },
+    {
+      "window": "android_pdf_2",
+      "start": "2026-09-06T10:43:00Z",
+      "end": "2026-09-06T10:46:00Z",
+      "complete": false,
+      "returnedRows": 1000,
+      "selected": [
+        {
+          "requestKey": "278a032b10c0d5dfd930",
+          "timestamp": 1788691555705,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "c01353adf67eb089f362",
+          "timestamp": 1788691554507,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "cd244e348528d5e8eaa7",
+          "timestamp": 1788691554001,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "e2bcf6156657d38bd1b9",
+          "timestamp": 1788691552969,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "cfc2ae70ee2ac11a2c56",
+          "timestamp": 1788691549142,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "ef7b17c6dc816d26cbe4",
+          "timestamp": 1788691549132,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "214abc3df4ab236602db",
+          "timestamp": 1788691545858,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "ac1d2d6d03d6a55ce631",
+          "timestamp": 1788691545263,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "ce3979b7bca9f8886f4d",
+          "timestamp": 1788691536659,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "169a0d5fc44c89a4ac8d",
+          "timestamp": 1788691536492,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "2a0179be752e393b026c",
+          "timestamp": 1788691534814,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "db86d02f2426b0746700",
+          "timestamp": 1788691534269,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        },
+        {
+          "requestKey": "a65e909fd60d6c5b29f0",
+          "timestamp": 1788691532845,
+          "path": "/api/captioned_speech_partly",
+          "status": 200,
+          "level": "info",
+          "safeLogTags": [],
+          "nestedLogCount": 0
+        }
+      ],
+      "exit": 0,
+      "duplicateSelectedRows": 247,
+      "uniqueSelectedRows": 13,
+      "coverageNote": "The CLI repeated request IDs and reached the result limit; this query is incomplete and cannot certify all-status request coverage."
+    }
+  ]
+}
