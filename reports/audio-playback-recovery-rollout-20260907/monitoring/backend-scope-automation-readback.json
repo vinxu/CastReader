@@ -1,0 +1,20 @@
+{
+  "schema": "castreader.backend-observation-scope-update.v1",
+  "recordedAtUtc": "2026-09-06T23:30:11.443112+00:00",
+  "productionModified": false,
+  "automationId": "24",
+  "configuration": {
+    "version": 1,
+    "id": "24",
+    "kind": "heartbeat",
+    "name": "核心音频修复上线后24小时观察",
+    "prompt": "只跟进 CastReader 中国区与国际区后端 TTS（Kokoro、克隆）及解读服务的数据与故障归因。这是用户最新范围：不再排查或通知客户端播放器、Kindle 翻页、模式切换、界面、客户端发包或商店审核；不扩展到博客、SEO、支付对账等无关服务。客户端失败本身不是后端故障证据。历史记录保留，不清零、不改写为成功。\n\n先读 /Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/README.md、monitoring/backend-observation-scope.md、monitoring/acceptance-state.json，以及旧 reports/backend-audio-iteration-20260906/monitoring/acceptance-state.json 和两份 notification-state.json。生产身份以冻结部署ID、源码SHA、路径和实际回读为准：Global 1f9a483c / dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5；Direct 1213fcd3；US proxy v2源码0502fc2d、revision6/blue R134；模型5dddb1b9。详细期望在 model-r134/proxy-monitor-identity.json、production-final-identity.json、production-final-status.json。中国区本轮R134补丁未部署，不因美国验证通过就宣布两区完成。\n\n最终固定观察窗口为2026-09-06T18:37:52.522573Z至2026-09-07T18:37:52.522573Z，保持不变。旧窗口2026-09-06T05:01:25Z至2026-09-07T05:01:25Z保留；到期首次将旧state.cutoverState设为window_complete，保持原起止进行最后采集、快照和归档，之后停止重复采集旧窗。中间版本窗口已在 monitoring/observations/interim-before-r134 归档，不当成最终版本。最终到期同样标window_complete、完成按版本和地区的后端汇总，保留其他配置将自动化24设PAUSED，不自行延期。\n\n每小时只读运行 /Users/xuxuheng/Documents/CastReader/reports/backend-audio-rollout-20260906/monitoring/collect_rollout_acceptance.py，传 --state-file /Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/acceptance-state.json --output /Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/latest-acceptance.json --cache-dir /Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/cache，保留不可覆盖的每轮快照。旧窗未归档则用原默认参数另采集。现有采集器若同时返回移动端汇总，只作为原始历史附件保留，不追加移动端事件查询、客户端源码审计或客户端告警；不要为此修改采集器业务逻辑。\n\n依 monitoring/README.md 用 collect_proxy_events.py --identity-receipt /Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r134/proxy-monitor-identity.json，从通知状态所指上一份代理窗口endUTCExclusive接续，到当前或固定截止；采用足够的匿名请求导出上限，保存新文件，不覆盖历史。结合现有Global tts-preset阶段脚本按匿名requestKey+attempt关联，保留重复键、窗口边界和反向未归属请求。身份/扫描/分页不足须说明，不从实时值自动改预期；attempt头本身不能证明调用方、部署或跨区。\n\n后端分别核对两区Kokoro、克隆和QuickRead实际服务入口与上游：请求量、真实HTTP/流内错误、响应首字节或服务端首输出、完整响应与余文、重试/超时/取消、服务进程及部署稳定性、模型/LLM供给和地区路由。使用现有五分钟探针结果与真实服务端日志，不额外发合成请求。Global主网关/Direct/US代理的200不能覆盖全部QuickRead或克隆；旧全球QuickRead可能直达qr.castreader.ai，按已知部署资料只读核对真实后端入口，中国区同理。缺少某条后端链路的真实样本或日志时明确标证据不足，不以TTS探针代替全部解读/克隆验收。不读取正文、音频、录音、任意日志消息、原始账号设备ID或密钥，仅取固定脱敏错误/阶段/耗时/部署/路由字段，并保持TLS验证和同区凭据边界。\n\n另写本轮backendVerdict，按服务端供给/HTTP/流内错误、时延与既有预算、完整输出、版本/地区及覆盖证据判定符合预期、存在异常或证据不足。原始automaticVerdict包含客户端失败，只是历史综合判定，不能直接用作本任务后端结论；也不能把后端200当成用户完整播放成功。时间戳/高亮缺失不拦截或否定有效音频；权益/额度限制按业务拒绝单列。downstream_closed/no_response是无HTTP响应且结果未知的断开，不算HTTP失败、成功、模型超时或用户主动取消；真实400/502/504和流内技术错误保留。\n\n按两份notification-state中的匿名键去重，保留历史Global4条504、Direct4条504及维护502、模型3条400等事实，不重报未变化旧案。客户端已知失败及博客22条504不再触发本任务通知。正常或已知且无实质变化时静默；仅后端TTS/克隆/解读新增故障、已证实后端原因、实质退化/恢复、关键服务端覆盖或版本/地区变化、所需用户行动及到期后端结论才通知。所有生产动作只读，不合成、重启、发布、改路由、改权益、购买资源、发客户邮件、操作Apple审核或修改其他任务代码。",
+    "status": "ACTIVE",
+    "rrule": "FREQ=HOURLY;INTERVAL=1",
+    "target_thread_id": "01a06667-570e-70f2-8e02-ed20755d6709",
+    "created_at": 1788659406842,
+    "updated_at": 1788737350757
+  },
+  "promptSha256": "dd2aeac87d602d16af70a30d92b900d8316db485d8e257a1e225b4f97c8610eb",
+  "verified": true
+}

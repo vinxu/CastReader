@@ -122,5 +122,15 @@
     "unrepresentedAttempt1CompleteGroups": 31,
     "reviewPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2252Z/vercel-proxy-join-summary.json",
     "callerOrDeploymentIdentityEstablished": false
-  }
+  },
+  "observationScope": "backend_tts_clone_quickread_only",
+  "scopeUpdatedAtUtc": "2026-09-06T23:30:11.443112+00:00",
+  "scopeDocument": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/backend-observation-scope.md",
+  "excludeFromFutureNotifications": [
+    "client_only_playback_or_navigation_failures",
+    "client_release_or_review_status",
+    "blog_page_failures",
+    "payment_reconciliation"
+  ],
+  "preserveHistoricalFailures": true
 }
