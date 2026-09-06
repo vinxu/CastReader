@@ -1,6 +1,8 @@
-# iOS 1.2.34 发布范围待确认
+# iOS 1.2.34 发布范围与执行记录
 
-核对日期：2026-09-06。用户要求先确认范围，再打包、检测并提交 App Store；当前尚未归档或上传。
+核对日期：2026-09-06。用户已明确授权“直接把现有的更新打包提交 appstore”。
+
+正式整合目录：`/Users/xuxuheng/Documents/.worktrees/CastReader-ios-release-1.2.34`，分支 `codex/ios-release-1.2.34`。下列六项已整合，正在执行发布验证。
 
 ## 发布基线
 
