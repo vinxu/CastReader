@@ -8,21 +8,26 @@
     "e4331852bd595754975e",
     "8a0585d2909dc89be5b7"
   ],
+  "knownPreFinalWindowDirect502RequestKeys": [
+    "f8e7fb8493043b5638ae"
+  ],
   "knownPriorNoResponseRequestKeys": [
     "2b60c5feb2b28a42e069",
     "a5d5c1c85ca337486620",
     "139ec3e2bd125e8c7db9"
   ],
-  "lastDecision": "DONT_NOTIFY",
-  "lastDecisionReason": "First 481 seconds of final R134 observation: actual sources complete, no technical failures, 93 direct HTTP200, one paired iOS start/first audio, Android new-session and 24h samples still insufficient. Deployment completion is reported separately by parent turn.",
-  "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/README.md",
+  "lastDecision": "NOTIFY",
+  "lastDecisionReason": "Newly discovered actual Direct502 at 18:33:29UTC during proxy maintenance, before final R134 observation. Current final-version window remains free of collected technical failures. Report once; keep historical failure.",
+  "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/heartbeat-review.json",
   "latestClientTechnicalFailureCount": 0,
   "latestDirect5xxCount": 0,
   "latestDirectNoResponseCount": 0,
-  "latestSnapshotDirectory": "observations/20260906T1845Z",
+  "latestProxyWindowEndUTC": "2026-09-06T18:49:55.965457+00:00",
+  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T1849Z.json",
+  "latestSnapshotDirectory": "observations/20260906T1849Z",
   "latestVercelCore5xxCount": 0,
   "previousWindowRetainedAt": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/interim-before-r134/notification-state.json",
-  "recordedAtUtc": "2026-09-06T18:45:53.895616Z",
+  "recordedAtUtc": "2026-09-06T18:59:07.945118+00:00",
   "schema": "castreader.audio-observation-alert-state.v1",
   "vercelCoreRequestKeys": [],
   "window": {

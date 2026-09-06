@@ -79,6 +79,8 @@ R134独立确认后的首个约119秒窗口（18:37:52.522573–18:39:51.372598 
 
 [18:16原始快照（保留旧判定）](monitoring/observations/20260906T1816Z/acceptance.json) · [监控口径说明](../backend-audio-iteration-20260906/monitoring/README.md) · [阶段关联摘要](monitoring/vercel-proxy-first-summary.json) · [最新验收](monitoring/latest-acceptance.json)
 
+18:49 UTC例行回读另发现一条此前未报告的Direct502，发生于18:33:29代理维护停止/重启间隙，最终R134观察起点之前。旧窗口Direct5xx从4增至5，不能被新窗口零失败抵消。已单独归因并通知；新窗口截至18:49仍为observing。[本轮502调查与证据边界](monitoring/observations/20260906T1849Z/README.md)
+
 ## 观察与iOS发布边界
 
 自动化24每小时只读采集。最终版本正式观察窗口为 **2026-09-06T18:37:52.522573Z → 2026-09-07T18:37:52.522573Z**，起点采用独立生产确认时间。旧05:01:25窗口以及原16:52:02.916356窗口均保留，历史错误不清零；中间版本原state/latest/通知状态已归档至 `monitoring/observations/interim-before-r134/`。首窗正常不代表已完成24小时观察。

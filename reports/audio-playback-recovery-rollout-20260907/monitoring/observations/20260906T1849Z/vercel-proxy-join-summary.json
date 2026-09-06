@@ -1,0 +1,62 @@
+{
+  "composition": "Concatenate anonymous groups from two exactly adjacent same-frozen-runtime windows; repeated keys stay ambiguous, not forcibly merged.",
+  "counts": {
+    "ambiguous": 0,
+    "attempts": 673,
+    "matched": 673,
+    "matchedProxyComplete": 673
+  },
+  "coverage": {
+    "proxyAnonymousRequestsTruncated": false,
+    "proxyCoverageComplete": true,
+    "proxyCoversWindow": true,
+    "proxyEventDetailTruncationIgnoredForJoin": true,
+    "proxyRuntimeVerified": true,
+    "vercel": {
+      "completeForReturnedRequestCohort": true,
+      "ingestionCompletenessVerified": false,
+      "issues": [],
+      "pagesRead": 14,
+      "paginationMode": "backward_timestamp_windows_with_1ms_overlap",
+      "parserCounts": {
+        "duplicateProviderRows": 13,
+        "duplicateSafeEvents": 65
+      },
+      "providerHasMoreRows": false,
+      "providerRowsRead": 686,
+      "requestsMissingStartOrFinish": 0,
+      "structuredEventsObserved": true,
+      "tlsCertificateAndHostnameVerified": true,
+      "uniqueProviderRequests": 673
+    }
+  },
+  "expectedDeployment": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+  "limitations": [
+    "Correlation uses application requestKey + attempt, never provider ID or timing alone.",
+    "Application key reuse across Vercel invocations or duplicate proxy groups is marked ambiguous.",
+    "The complete proxy anonymous request-group list is used; its truncated event-detail list is not the join source.",
+    "A matched complete upstream request is not evidence of audio decode quality or successful user playback."
+  ],
+  "productionModified": false,
+  "rawContentExported": false,
+  "readOnly": true,
+  "schema": "castreader.vercel-proxy-contiguous-join-summary.v1",
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-first-window.json",
+      "sha256": "5fb86b148c859450928e057390f0497ce03a92199b7fedde360010c55756c67b"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T1849Z.json",
+      "sha256": "92a821d61a6f2fcb846d773b26560c01d26f11e1bfa5bfb1c86d271810e55d35"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260906T1849Z.json",
+      "sha256": "854fbf98724e6b6a054348d5ab0ae48ec17ed3917b999e83bbdc183ffb717ca5"
+    }
+  ],
+  "window": {
+    "requestStartExclusiveUTC": "2026-09-06T18:49:55.965457Z",
+    "requestStartInclusiveUTC": "2026-09-06T18:37:52.522573Z"
+  }
+}

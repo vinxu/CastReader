@@ -1,0 +1,126 @@
+{
+  "collectedAtUTC": "2026-09-06T18:55:35.273964+00:00",
+  "coverage": {
+    "complete": false,
+    "completeMeaning": "Conservative full timestamp-bracketing check; false here because current log ends at the final success event, before requested end. The entire existing file was read with all four target events parsed.",
+    "entireCurrentLogFileRead": true,
+    "firstParsedTimestampUTC": "2026-06-28T15:48:46.136000+00:00",
+    "knownTargetEventsParsed": true,
+    "lastParsedTimestampUTC": "2026-09-06T18:33:34.755000+00:00",
+    "targetLines": 4,
+    "timestampBracketsRequestedEnd": false,
+    "unparsedTargetLines": 0
+  },
+  "events": [
+    {
+      "atUTC": "2026-09-06T18:33:28.745000Z",
+      "exitStatus": null,
+      "pid": null,
+      "pidExplicitlyLogged": false,
+      "program": "castreader-tts-origin-proxy",
+      "signal": null,
+      "stage": "waiting_to_stop"
+    },
+    {
+      "atUTC": "2026-09-06T18:33:28.769000Z",
+      "exitStatus": 0,
+      "pid": null,
+      "pidExplicitlyLogged": false,
+      "program": "castreader-tts-origin-proxy",
+      "signal": null,
+      "stage": "stopped"
+    },
+    {
+      "atUTC": "2026-09-06T18:33:29.505000Z",
+      "exitStatus": null,
+      "pid": 4140383,
+      "pidExplicitlyLogged": true,
+      "program": "castreader-tts-origin-proxy",
+      "signal": null,
+      "stage": "spawned"
+    },
+    {
+      "atUTC": "2026-09-06T18:33:34.755000Z",
+      "exitStatus": null,
+      "pid": null,
+      "pidExplicitlyLogged": false,
+      "program": "castreader-tts-origin-proxy",
+      "signal": null,
+      "stage": "success"
+    }
+  ],
+  "limitations": [
+    "Stopped and success Supervisor events omit PID; only spawned explicitly logs new PID 4140383. Old PID attribution uses the independently captured registry baseline and exact-process release operation, not a fabricated PID in the stopped row.",
+    "Host timezone is UTC. No independent cross-host clock-offset measurement was performed; comparisons use recorded UTC timestamps.",
+    "Supervisor RUNNING is the process readiness criterion, not evidence of a completed user playback.",
+    "No raw log messages, request IDs, user text, credentials or exception messages were exported."
+  ],
+  "oldProcessAttribution": {
+    "basis": "independently_read_registry_baseline_and_apply_exact_process_precondition",
+    "process": {
+      "cwd": "/workspace/castreader-runtime/proxy-releases/us-tts-origin-proxy-20260907-v2",
+      "pid": 4031530,
+      "startTicks": "549868431"
+    },
+    "stopEventExplicitPidAvailable": false
+  },
+  "productionModified": false,
+  "provenance": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r134/registry-apply.json",
+      "sha256": "3fef86f5ce6e0fcb4d972f46aedf5aaf92c510c5618d6a1beaf3c5565e87e696"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/model-r134/registry-inspect.json",
+      "sha256": "31f0df9cd84ce6e52b42b57923396cad71d4abebec5371fc74bad27c05c95cd9"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-first-window.json",
+      "sha256": "5fb86b148c859450928e057390f0497ce03a92199b7fedde360010c55756c67b"
+    }
+  ],
+  "queryScriptSha256": "175288a13f769e3aa657b1e6e5d01503adac8608c813b891d51b59d2a3a7fdb3",
+  "rawMessagesExported": false,
+  "readOnly": true,
+  "registryMaintenance": {
+    "modelsRestartedByTool": false,
+    "newConnectionsMayHaveBriefGap": true,
+    "registryWrittenAtUTC": "2026-09-06T18:33:29.128818+00:00",
+    "stopToReadyUpperBoundSeconds": 6.295,
+    "zeroActiveReadbacks": [
+      {
+        "active": {
+          "blue": 0,
+          "green": 0
+        },
+        "atUTC": "2026-09-06T18:33:27.490579+00:00",
+        "zero": true
+      },
+      {
+        "active": {
+          "blue": 0,
+          "green": 0
+        },
+        "atUTC": "2026-09-06T18:33:28.491311+00:00",
+        "zero": true
+      }
+    ]
+  },
+  "schema": "castreader.proxy-maintenance-supervisor-window.v1",
+  "source": {
+    "bytesScanned": 106482,
+    "fileBytesAtRead": 106482,
+    "path": "/var/log/supervisor/supervisord.log",
+    "scanStartOffset": 0
+  },
+  "synthesisStarted": false,
+  "timestampSemantics": {
+    "hostDaylight": 0,
+    "hostTimezoneOffsetSecondsWest": 0,
+    "supervisorTimestampTimezoneAssumed": "UTC"
+  },
+  "window": {
+    "endUTCExclusive": "2026-09-06T18:33:40+00:00",
+    "startUTC": "2026-09-06T18:33:20+00:00"
+  }
+}

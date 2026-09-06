@@ -1,0 +1,110 @@
+{
+  "automationId": "24",
+  "cumulativeHistoricalFailureCounts": {
+    "direct400": 3,
+    "direct5xx": 5,
+    "directNoResponse": 3,
+    "globalCore5xx": 4,
+    "mobile": 12
+  },
+  "decision": "NOTIFY",
+  "finalWindow": {
+    "collectedThroughExclusive": "2026-09-06T18:49:56.069366Z",
+    "configuredSeconds": 86400,
+    "endExclusive": "2026-09-07T18:37:52.522573Z",
+    "startInclusive": "2026-09-06T18:37:52.522573Z"
+  },
+  "finalWindowCounts": {
+    "cnHealthyCycles": 3,
+    "direct200": 94,
+    "direct4xx5xx": 0,
+    "directNoResponse": 0,
+    "globalCore5xx": 0,
+    "mobilePairedFirstAudioSessions": 1,
+    "mobileTechnicalFailures": 0,
+    "usHealthyCycles": 2
+  },
+  "finalWindowVerdict": "observing",
+  "globalProxyExactJoinCounts": {
+    "ambiguous": 0,
+    "attempts": 673,
+    "matched": 673,
+    "matchedProxyComplete": 673
+  },
+  "incrementalProxyCounts": {
+    "errorClasses": {},
+    "failureScopesAndLastObservedPhases": {},
+    "finishedOutcomes": {
+      "complete": 729
+    },
+    "finishedReportedStatuses": {
+      "200": 729
+    },
+    "phases": {
+      "admission": 1455,
+      "coalescing": 1,
+      "completion": 729,
+      "connect": 1454,
+      "inbound_body": 728,
+      "response_body": 728,
+      "response_complete": 728,
+      "response_headers": 728
+    },
+    "receivedAttempts": {
+      "1": 673,
+      "unavailable": 55
+    },
+    "stages": {
+      "flight_created": 727,
+      "flight_joined": 1,
+      "request_body_read": 728,
+      "request_finished": 729,
+      "request_received": 728,
+      "upstream_complete": 728,
+      "upstream_connect_started": 727,
+      "upstream_connected": 727,
+      "upstream_first_body": 728,
+      "upstream_headers": 728
+    }
+  },
+  "limitations": [
+    "Fixed 24h observation incomplete",
+    "No new Android mobile start cohort",
+    "HTTP completion and first audio do not prove full user playback",
+    "No clone/Explain/Web/extension completed-playback evidence",
+    "Provider ingestion completeness unverified",
+    "CN R134 not deployed; iOS55 not published"
+  ],
+  "newFinalWindowTechnicalFailures": [],
+  "newlyDiscoveredPreFinalWindowFailure": {
+    "causeEvidence": "Strong temporal evidence of proxy maintenance unavailability: stopped 18:33:28.769, spawned 18:33:29.505; errno, request-level proxy join and independent clock-offset proof unavailable.",
+    "code": "TTS_UPSTREAM_UNAVAILABLE",
+    "elapsedMs": 10,
+    "key": "f8e7fb8493043b5638ae",
+    "observedAtUTC": "2026-09-06T18:33:29.126051Z",
+    "stage": "upstream_headers",
+    "status": 502
+  },
+  "productionModified": false,
+  "reviewedAtUTC": "2026-09-06T18:59:07.945118+00:00",
+  "schema": "castreader.audio-heartbeat-review.v1",
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/latest-acceptance.json",
+      "sha256": "d020ac8dfa827a30cb5b92dd6db6c05bcd20a7a1efb0af3c3456e23d7188f7f4"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/direct-new-502.json",
+      "sha256": "26266ed8af25d3d9979518970ffd585769a837f3bf170490dfb72da48bee7d92"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/direct-502-maintenance-timeline.json",
+      "sha256": "7ae390cd83cdfc4fdf9b131098eb0364a4a31d3c0d5013b3dbb1e5435bc41daf"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/vercel-proxy-join-summary.json",
+      "sha256": "b198a9999f541cc8ddac64ff489a6ce2f4165359ec0b2ff44df113638821dbd2"
+    }
+  ],
+  "synthesisStarted": false
+}

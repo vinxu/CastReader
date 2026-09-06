@@ -1,0 +1,115 @@
+{
+  "analysis": {
+    "basis": "same_anonymous_request_key_502_and_fixed_TTS_UPSTREAM_UNAVAILABLE_error",
+    "downstreamClosedEvidence": false,
+    "finalR134ObservationFailure": false,
+    "generationLayer": "direct_gateway_catch_path_before_upstream_response_headers",
+    "knownNoResponseCountUnchanged": 3,
+    "maintenanceCorrelation": {
+      "afterProxyStoppedMs": 357.051,
+      "beforeNewProxySpawnedMs": 378.949,
+      "betweenRecordedProxyStopAndSpawn": true,
+      "crossHostClockOffsetIndependentlyMeasured": false,
+      "evidenceGrade": "strong_recorded_time_overlap_with_confirmed_proxy_stop_to_spawn_interval",
+      "exactRequestJoinedToProxy": false,
+      "inference": "Transient upstream unavailability during the proxy registry maintenance is strongly supported; no recorded errno or network trace establishes the exact transport mechanism.",
+      "registryWriteAfterGateway502Ms": 2.767
+    },
+    "newAnonymousRequestKey": "f8e7fb8493043b5638ae",
+    "newDirect502Count": 1,
+    "notificationReason": "One newly identified actual HTTP502 during the release maintenance window; preserve it even though the final R134 observation is currently healthy. Report it once by anonymous request key, separately from the four historical504s and three no_response events.",
+    "notificationRecommendation": "NOTIFY",
+    "previousKnownDirect504Count": 4,
+    "timeoutEvidence": false,
+    "underlyingTransportError": "unavailable_not_logged"
+  },
+  "collectedAtUTC": "2026-09-06T18:53:25.500815Z",
+  "coverage": {
+    "complete": true,
+    "duplicate502Blocks": 0,
+    "firstJournalAtUTC": "2026-09-06T18:16:00.605628Z",
+    "incompleteConsoleBlocks": 0,
+    "journalParseErrors": 0,
+    "journalRowLimitReached": false,
+    "journalRows": 6266,
+    "lastJournalAtUTC": "2026-09-06T18:37:59.645763Z",
+    "logicalBlocks": 448,
+    "malformedRequestBlocks": 0
+  },
+  "currentIdentity": {
+    "sourceMatchesRelease": true,
+    "sourceSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d",
+    "systemd": {
+      "ActiveState": "active",
+      "ExecMainStartTimestamp": "Sun 2026-09-06 16:51:50 UTC",
+      "FragmentPath": "/etc/systemd/system/castreader-tts-gateway.service",
+      "MainPID": "576327",
+      "NRestarts": "0",
+      "SubState": "running"
+    }
+  },
+  "limitations": [
+    "Journal timestamp is request completion/log observation time.",
+    "An HTTP response does not prove client receipt or completed playback.",
+    "Client platform/version are caller-supplied headers; production traffic may include tests.",
+    "Fixed upstream-unavailable code identifies the gateway catch path; it does not identify DNS/TCP/reset/model queue stages or underlying exception.",
+    "Maintenance overlap is temporal evidence only without a request-level downstream-to-upstream join.",
+    "Current identity readback alone does not prove the entire historical interval had the same runtime."
+  ],
+  "productionModified": false,
+  "provenance": {
+    "directStatusReceiptPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-errors-root-cause-20260906/direct-gateway-release-20260907/status-receipt.json",
+    "directStatusReceiptSha256": "7f75ac995f88e7c955a231e06bc26fc32380cb51231e3e1df4ed789681bce6fd",
+    "helperPath": "/Users/xuxuheng/Documents/CastReader/reports/backend-audio-iteration-20260906/monitoring/remote_tts_gateway_snapshot.py",
+    "helperSha256": "f6a1c14271f69096e2a18af9d28960eba461bb88d2a070b9a631aa4056fa9acd",
+    "maintenanceTimelinePath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1849Z/direct-502-maintenance-timeline.json",
+    "maintenanceTimelineSha256": "7ae390cd83cdfc4fdf9b131098eb0364a4a31d3c0d5013b3dbb1e5435bc41daf",
+    "queryScriptSha256": "b33264cfd18aadab866a71b9167ec74a8354bfa289ff50130ce5440778cd11c7"
+  },
+  "rawUserDataExported": false,
+  "readOnly": true,
+  "release": {
+    "firstNewTrafficAtUTC": "2026-09-06T16:51:50.888941+00:00",
+    "sourceCommit": "1213fcd3f9f616e92e9fd3a8f1e817b5095986c5",
+    "sourceSha256": "2ca971e8f61fd004cb638a9740a6dcd459423fbcdb16956261154ed580ec282d"
+  },
+  "requests": [
+    {
+      "abortSource": null,
+      "abortStage": null,
+      "afterDirectRelease": true,
+      "beforeFinalR134ObservationStart": true,
+      "clientPlatform": "android",
+      "clientVersion": "1.0.45",
+      "downstreamDisconnected": false,
+      "downstreamDisconnectedFieldObserved": true,
+      "elapsedMs": 10,
+      "errorLinkBasis": "exact_anonymous_request_key",
+      "key": "f8e7fb8493043b5638ae",
+      "matchedErrorEvents": [
+        {
+          "abortSource": null,
+          "abortStage": null,
+          "code": "TTS_UPSTREAM_UNAVAILABLE",
+          "downstreamDisconnected": false,
+          "errorClass": "upstream_unavailable",
+          "observedAtUTC": "2026-09-06T18:33:29.126051Z",
+          "stage": "upstream_headers"
+        }
+      ],
+      "method": "POST",
+      "observedAt": "2026-09-06T18:33:29.126051Z",
+      "path": "/api/captioned_speech_partly",
+      "requestBytes": 224,
+      "stage": "upstream_headers",
+      "status": 502
+    }
+  ],
+  "schema": "castreader.direct-gateway-new-502-incident.v1",
+  "status502Count": 1,
+  "synthesisStarted": false,
+  "window": {
+    "endUTCExclusive": "2026-09-06T18:38:00Z",
+    "startUTC": "2026-09-06T18:16:00Z"
+  }
+}
