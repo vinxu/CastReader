@@ -1,0 +1,48 @@
+{
+  "baselineRecovery": {
+    "bytes": 3325053235,
+    "public": false,
+    "receiptSha256": "9d3bef6cc8fe05065efc4bffb77f68d8fa1989f207473adf903bdf204c18b0e7",
+    "verified": true
+  },
+  "canary": {
+    "candidateGpuContext": false,
+    "candidateStopped": true,
+    "cases": 7,
+    "cloneAndNariUnchanged": true,
+    "device": "cpu",
+    "modelUnitRetry": 0,
+    "passed": true,
+    "productionKokoroUnchanged": true,
+    "recoveryFailed": 0
+  },
+  "candidateRelease": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+  "candidateTreeSha256": "d9bcd4d1f6f578eb90728dc82650ae7abc43e1756ffd63196baffcf1e7d508fe",
+  "cutoverGuard": {
+    "cloneAndNariIdentityProtected": true,
+    "crossRegionFallback": false,
+    "exactReviewedPayloadRequired": true,
+    "forcedKillAllowed": false,
+    "rollbackTarget": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+    "separateApplyAction": true,
+    "singleKokoroModelOwner": true
+  },
+  "deploymentBlocker": "Global Vercel gateway is not yet restored to the complete-audio contract and there is no warm Kokoro standby; do not add a supply window before that path is healthy.",
+  "productionReleaseCondition": "Gateway recovery alone must not trigger cutover. Continuous same-US supply must be provisioned and validated before an explicit reviewed R133 traffic switch.",
+  "overlay": {
+    "diffLinesAdded": 8,
+    "diffLinesRemoved": 1,
+    "files": 1,
+    "path": "api/src/inference/english_g2p_recovery.py",
+    "sourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e"
+  },
+  "payloadSha256ForReview": "7eba7a0ff855e1533d0c82b80194c8bbcc51df6899ec132bc0da71d7e7932fc1",
+  "preparedAt": "2026-09-06T02:17:36.136950+00:00",
+  "productionRelease": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+  "productionSwitched": false,
+  "readyForReviewedCutover": false,
+  "readyForContinuousSupplyDesignReview": true,
+  "releaseToolingCommit": "982023795bb132e61f3de9622068cdd28dfc91c3",
+  "schema": "castreader.r133-release-readiness.v1",
+  "sourceCommit": "ca857ee91c3367999fb905de1f0924a6e28edd81"
+}

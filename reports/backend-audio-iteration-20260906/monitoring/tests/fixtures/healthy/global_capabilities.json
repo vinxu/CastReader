@@ -1,0 +1,8 @@
+{
+  "coverage": {"complete": true, "fieldErrors": []},
+  "identity": {
+    "deploymentId": "dpl_expected",
+    "commitSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "region": "global"
+  }
+}

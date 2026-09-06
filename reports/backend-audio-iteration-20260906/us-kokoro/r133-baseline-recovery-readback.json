@@ -1,0 +1,47 @@
+{
+  "bucket": "castreader-tts-backups",
+  "createdAt": "2026-09-06T02:13:48.724725+00:00",
+  "downloadedBytes": 3325053235,
+  "expectedBytes": 3325053235,
+  "expectedFiles": 3,
+  "objects": [
+    {
+      "bytes": 3324807745,
+      "downloadedBytes": 3324807745,
+      "object": "runtime-releases/us/r130-compatible-20260903-bngg0e/castreader-runtime-local-equivalent.tar.zst",
+      "parts": 1,
+      "readbackSha256": "659b6a46de3e86bad826657ffd64fb3e53490e951e991cba9f6c4c074c12b441",
+      "role": "shared-r130-base",
+      "sha256": "659b6a46de3e86bad826657ffd64fb3e53490e951e991cba9f6c4c074c12b441",
+      "verified": true
+    },
+    {
+      "bytes": 244589,
+      "downloadedBytes": 244589,
+      "object": "runtime-releases/us/r132-post-20260905-8xl7xr43/runtime-delta.tar.gz",
+      "parts": 1,
+      "readbackSha256": "d33cb156400f7fa78b12602069f29cc18bbe908ad0edf1adbdfc08530207790a",
+      "role": "r132-delta",
+      "sha256": "d33cb156400f7fa78b12602069f29cc18bbe908ad0edf1adbdfc08530207790a",
+      "verified": true
+    },
+    {
+      "bytes": 901,
+      "downloadedBytes": 901,
+      "object": "runtime-releases/us/r132-post-20260905-8xl7xr43/metadata/backup-receipt.json",
+      "parts": 1,
+      "readbackSha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+      "role": "r132-backup-receipt",
+      "sha256": "bf9157eb024fed43a7b5b33ba29a371f6a1c66a1b8aaca3613923826aa6d6704",
+      "verified": true
+    }
+  ],
+  "projectRef": "zqxgmqygirtpttnrvjpf",
+  "public": false,
+  "region": "us",
+  "schema": "castreader.r133-baseline-recovery-readback.v1",
+  "sourceReceiptSha256": "9d3bef6cc8fe05065efc4bffb77f68d8fa1989f207473adf903bdf204c18b0e7",
+  "storageModified": false,
+  "verified": true,
+  "verifiedFiles": 3
+}

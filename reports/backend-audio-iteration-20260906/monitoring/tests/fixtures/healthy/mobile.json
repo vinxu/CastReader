@@ -1,0 +1,46 @@
+{
+  "coverage": {
+    "complete": true,
+    "invalidSelectedRows": 0,
+    "productionTagCannotExcludeManualTests": true
+  },
+  "aggregate": {
+    "startEventsByPlatform": {"ios": 2, "android": 2},
+    "readStartsByPlatform": {"ios": 2, "android": 2},
+    "technicalFailureEvents": 0,
+    "routeMismatchEvents": 0,
+    "quotaBlockedEvents": 0,
+    "cancelledEvents": 0,
+    "sessionCohorts": {
+      "read": {
+        "startedSessions": 4,
+        "withFirstOutput": 4,
+        "withoutFirstOutputInsideWindow": 0,
+        "pairedFirstOutputByVoiceFamily": {"preset": 4},
+        "byPlatform": {
+          "ios": {
+            "startedSessions": 2,
+            "withFirstOutput": 2,
+            "withoutFirstOutputInsideWindow": 0,
+            "startEventsMissingSessionId": 0,
+            "pairedFirstOutputByVoiceFamily": {"preset": 2}
+          },
+          "android": {
+            "startedSessions": 2,
+            "withFirstOutput": 2,
+            "withoutFirstOutputInsideWindow": 0,
+            "startEventsMissingSessionId": 0,
+            "pairedFirstOutputByVoiceFamily": {"preset": 2}
+          }
+        }
+      },
+      "explain": {
+        "startedSessions": 0,
+        "withFirstOutput": 0,
+        "withoutFirstOutputInsideWindow": 0,
+        "pairedFirstOutputByVoiceFamily": {},
+        "byPlatform": {}
+      }
+    }
+  }
+}

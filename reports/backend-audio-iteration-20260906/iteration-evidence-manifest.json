@@ -1,0 +1,221 @@
+{
+  "schema": "castreader.audio-iteration-evidence-manifest.v1",
+  "createdAtUtc": "2026-09-06T02:36:43.335259Z",
+  "scope": "Iteration evidence at handoff. Ongoing README and monitoring state/latest output are intentionally excluded; initial state is snapshotted under release/.",
+  "mutablePathsExcluded": [
+    "README.md",
+    "monitoring/README.md",
+    "monitoring/acceptance-state.json",
+    "monitoring/latest-acceptance.json"
+  ],
+  "credentialPatternScanFindings": 0,
+  "jsonFilesValidated": 31,
+  "pythonFilesParsed": 10,
+  "files": [
+    {
+      "path": "clients/README.md",
+      "bytes": 5086,
+      "sha256": "d9d501988fcec6b25672fd5765c10d0951985a5d0d0886ebb5cb17036e1d0834"
+    },
+    {
+      "path": "direct-gateway/android-failure-window.json",
+      "bytes": 14030,
+      "sha256": "3fd4d2b67d9eda1b95849ea97e8bbc93afaff96da41dcad5ba53671f03067de6"
+    },
+    {
+      "path": "direct-gateway/apply-receipt.json",
+      "bytes": 185,
+      "sha256": "4d8a6664d8b8b0039c003dce697ae1c500afc89fcea0ef380755959acb49b9db"
+    },
+    {
+      "path": "direct-gateway/backup-same-region.py",
+      "bytes": 4744,
+      "sha256": "56b7c0d285b776c71c5f975aa7447988a90c45c0f3c47aba83efc129700e34a0"
+    },
+    {
+      "path": "direct-gateway/es-synthetic-probe.json",
+      "bytes": 1167,
+      "sha256": "118f3f7c3550db70972833f779252e8f55dc8f2bc1dd77e374398f87fe1e86a9"
+    },
+    {
+      "path": "direct-gateway/ios-failure-window.json",
+      "bytes": 96,
+      "sha256": "801c4ffe35375cd4cf6ff0dea3a5dce326a20cb0e12a5ba16a610a96ac51f3fa"
+    },
+    {
+      "path": "direct-gateway/offhost-production-readback.json",
+      "bytes": 1329,
+      "sha256": "1683db9b91d33e8e8330b442ac2cdef5e471399c3d56e2b0cfa1ebc25be2887d"
+    },
+    {
+      "path": "direct-gateway/offhost-readback.json",
+      "bytes": 1323,
+      "sha256": "96b17d8e16577c70ef195be934f74928ad91fc591647a6228a62f91d8a7e6328"
+    },
+    {
+      "path": "direct-gateway/operate-release.py",
+      "bytes": 3379,
+      "sha256": "988436deb370bba045670af821a87377e38c3520483e5a1807fe7527b042fda5"
+    },
+    {
+      "path": "direct-gateway/pre-release-baseline.json",
+      "bytes": 961,
+      "sha256": "1f284443058cc6577c39129d77011bfad165c0a3ee6c55bade541774c9e8e6b1"
+    },
+    {
+      "path": "direct-gateway/public-production-probe.json",
+      "bytes": 1398,
+      "sha256": "028caed44b4a1386d0ecbdb96cc8838eea6a2a16b2fd24d0e4a4e301cec6d72e"
+    },
+    {
+      "path": "direct-gateway/release-host-fault-tests.json",
+      "bytes": 859,
+      "sha256": "f176f0016a5dbab22f3a49c2d52931a7a5456607e2f9a18b1d2d4e4a58b09e35"
+    },
+    {
+      "path": "direct-gateway/release-host.py",
+      "bytes": 21038,
+      "sha256": "1a0803a85992f43c57025c099b94276a2a6a871f5a9234b6680b0432101023cc"
+    },
+    {
+      "path": "direct-gateway/stage-receipt.json",
+      "bytes": 2493,
+      "sha256": "ea3cbcf9248882967cf376ac0e585b692afe1a5fd24ccb8a720502497110526c"
+    },
+    {
+      "path": "direct-gateway/status-receipt.json",
+      "bytes": 2350,
+      "sha256": "a220815d673c3b589dc64b6fd8a1bbbe63e13485c9804c48ceb17a4aa1feafb3"
+    },
+    {
+      "path": "direct-gateway/test_release_host.py",
+      "bytes": 10826,
+      "sha256": "91d44385c87ff10e507fd304f2090f883967c8d6b2854304da283da036b2ae1c"
+    },
+    {
+      "path": "monitoring/acceptance_core.py",
+      "bytes": 47371,
+      "sha256": "c37afce45bbf97e26ac509c2220f89ecb40d79ba25d0c447652cf1b5905c7e06"
+    },
+    {
+      "path": "monitoring/collect_acceptance.py",
+      "bytes": 31550,
+      "sha256": "eacd542634ed42c5851b47c6ad0d14d104e33d487916a9c6723219fd10154169"
+    },
+    {
+      "path": "monitoring/remote_kokoro_identity.py",
+      "bytes": 1918,
+      "sha256": "effd3cb4e61f53de1671cf075925c6213267682df0124411b9c479e9f443b22b"
+    },
+    {
+      "path": "monitoring/remote_monitor_snapshot.py",
+      "bytes": 13549,
+      "sha256": "be7224c90b9e824931089892a76131782807730d204ed4241effccba40ebacb8"
+    },
+    {
+      "path": "monitoring/remote_tts_gateway_snapshot.py",
+      "bytes": 12848,
+      "sha256": "37dee85000c5e9a499b79a4aaece104cc8a184b366ef1d4f6340dbf27b44bc26"
+    },
+    {
+      "path": "monitoring/tests/fixtures/healthy/direct_gateway.json",
+      "bytes": 332,
+      "sha256": "1ee17b3f1f76f7ebd368e4572d50934634608d9b8ecb898ba2655c13d1ba8082"
+    },
+    {
+      "path": "monitoring/tests/fixtures/healthy/global_capabilities.json",
+      "bytes": 197,
+      "sha256": "ec03d0374e0b9dc0abc88108ce78c38159b9b0e5105301f8f6c0c21c4f599a78"
+    },
+    {
+      "path": "monitoring/tests/fixtures/healthy/kokoro_us.json",
+      "bytes": 225,
+      "sha256": "067513356851f0309066cd423a33dc7373bcf98cf8816f85dbcf28f27ddbb06f"
+    },
+    {
+      "path": "monitoring/tests/fixtures/healthy/mobile.json",
+      "bytes": 1342,
+      "sha256": "27317542331bb2603f7375607e762efb1ce2984b33ddb278b0c2be38a27422c3"
+    },
+    {
+      "path": "monitoring/tests/fixtures/healthy/monitor_cn.json",
+      "bytes": 462,
+      "sha256": "d3063f2f98094031cc6d9ceeb734accf41b4b011032e37aa6bd6f7de309c22a0"
+    },
+    {
+      "path": "monitoring/tests/fixtures/healthy/monitor_us.json",
+      "bytes": 462,
+      "sha256": "d3063f2f98094031cc6d9ceeb734accf41b4b011032e37aa6bd6f7de309c22a0"
+    },
+    {
+      "path": "monitoring/tests/fixtures/healthy/vercel.json",
+      "bytes": 111,
+      "sha256": "c0b05a7e0089bcda21516fc98744e8481495be890e1563aa72218e2dce512f1c"
+    },
+    {
+      "path": "monitoring/tests/test_monitoring.py",
+      "bytes": 27978,
+      "sha256": "e826909e3dd7d1150c07e9a3f66d842d808579808be6e0c44b6489f4ff742ddb"
+    },
+    {
+      "path": "release/acceptance-state-at-iteration.json",
+      "bytes": 2777,
+      "sha256": "9b4f246ced4f1b3969fb6137d75479e8dc5d4dc2720dc84ccbad937bf55d4367"
+    },
+    {
+      "path": "release/automation-receipt.json",
+      "bytes": 1022,
+      "sha256": "04a2e923f16e01d40e7d01c9189abdf758f372549bc734a7c57e4a61774b4cc3"
+    },
+    {
+      "path": "release/latest-global-status.json",
+      "bytes": 1542,
+      "sha256": "26319f203a8f3131fe286734b68cfd5070d062615bcea771f0cc77183691733a"
+    },
+    {
+      "path": "release/validation-summary.json",
+      "bytes": 1408,
+      "sha256": "2607a38839d14ee9d1047b3fefd1bd2950f6dd6f07d5b87cc67fa7c9f0f8bb04"
+    },
+    {
+      "path": "us-kokoro/README.md",
+      "bytes": 9423,
+      "sha256": "c7d922e8b4d0d135f4f2c983f0feaed50615158aae1b17b60c841c25e4c6863f"
+    },
+    {
+      "path": "us-kokoro/post-cutoff-g2p-forensic-probe.json",
+      "bytes": 649,
+      "sha256": "0383e775f57a7f9fdf9b8c32d84ae4db2a65a970e2a440449d11edd1be72e6fd"
+    },
+    {
+      "path": "us-kokoro/r133-baseline-recovery-readback.json",
+      "bytes": 1756,
+      "sha256": "89178834db2fa7017355bf6a50ca85bce925ab3173137b17de796f8a01f7c296"
+    },
+    {
+      "path": "us-kokoro/r133-capacity-cutover-assessment.json",
+      "bytes": 2647,
+      "sha256": "a962875fc78e384f52eea8553b020d5b2bcb9fb078565eccd2abeaf29725a9ba"
+    },
+    {
+      "path": "us-kokoro/r133-cpu-canary.json",
+      "bytes": 4493,
+      "sha256": "c42cb77420a51463eb36cc4f7ce9cfcc2078a3075efd5036324d1e021a3d826e"
+    },
+    {
+      "path": "us-kokoro/r133-evidence-manifest.json",
+      "bytes": 1920,
+      "sha256": "16412c3acfb06e9217ba4e072f0bae02974cc6a15e6762211c96c4669f8bda2e"
+    },
+    {
+      "path": "us-kokoro/r133-release-readiness.json",
+      "bytes": 2157,
+      "sha256": "e67a8d573288e0928d4b49833076f425e0e74816c3ca02f4558ff6dd7bc5658d"
+    },
+    {
+      "path": "us-kokoro/r133-stage.json",
+      "bytes": 1445,
+      "sha256": "91f7da9ca2edc331b789ac272e8fef449c8ff87df7e56facc3b8ea0569a71e27"
+    }
+  ]
+}

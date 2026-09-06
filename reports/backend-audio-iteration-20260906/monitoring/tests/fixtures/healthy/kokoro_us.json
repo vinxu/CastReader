@@ -1,0 +1,7 @@
+{
+  "coverage": {"complete": true},
+  "identity": {
+    "runtimeReleasePath": "/workspace/castreader-runtime/releases/r133",
+    "runtimeSourceSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  }
+}

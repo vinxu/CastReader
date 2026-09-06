@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "classification": "operator forensic probe",
+  "source": "standalone G2P-only invocation from the Codex forensic subtask",
+  "from": "2026-09-06T01:29:31.417946Z",
+  "to": "2026-09-06T01:29:32.160114Z",
+  "events": 12,
+  "stageCounts": {
+    "english_g2p_recovery_failed": 2,
+    "english_g2p_recovered": 10
+  },
+  "requestIdClass": "internal",
+  "synthesisPerformed": false,
+  "serviceRestarted": false,
+  "productionConfigurationChanged": false,
+  "userDataUsedOrRecorded": false,
+  "fixedObservationWindowAffected": false,
+  "futureObservationRule": "Exclude these 12 events from user and service traffic aggregates."
+}

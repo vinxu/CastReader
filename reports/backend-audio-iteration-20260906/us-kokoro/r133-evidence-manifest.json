@@ -1,0 +1,49 @@
+{
+  "schema": "castreader.r133-safe-evidence-manifest.v1",
+  "sourceCommit": "ca857ee91c3367999fb905de1f0924a6e28edd81",
+  "releaseToolingCommit": "982023795bb132e61f3de9622068cdd28dfc91c3",
+  "candidateTreeSha256": "d9bcd4d1f6f578eb90728dc82650ae7abc43e1756ffd63196baffcf1e7d508fe",
+  "reviewedPayloadSha256": "7eba7a0ff855e1533d0c82b80194c8bbcc51df6899ec132bc0da71d7e7932fc1",
+  "productionSwitched": false,
+  "productionRelease": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+  "candidateRelease": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+  "automaticCutoverOnGatewayRecovery": false,
+  "nextRequiredStep": "Provision and validate continuous same-US supply before an explicit reviewed traffic switch.",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 9423,
+      "sha256": "c7d922e8b4d0d135f4f2c983f0feaed50615158aae1b17b60c841c25e4c6863f"
+    },
+    {
+      "path": "post-cutoff-g2p-forensic-probe.json",
+      "bytes": 649,
+      "sha256": "0383e775f57a7f9fdf9b8c32d84ae4db2a65a970e2a440449d11edd1be72e6fd"
+    },
+    {
+      "path": "r133-baseline-recovery-readback.json",
+      "bytes": 1756,
+      "sha256": "89178834db2fa7017355bf6a50ca85bce925ab3173137b17de796f8a01f7c296"
+    },
+    {
+      "path": "r133-stage.json",
+      "bytes": 1445,
+      "sha256": "91f7da9ca2edc331b789ac272e8fef449c8ff87df7e56facc3b8ea0569a71e27"
+    },
+    {
+      "path": "r133-cpu-canary.json",
+      "bytes": 4493,
+      "sha256": "c42cb77420a51463eb36cc4f7ce9cfcc2078a3075efd5036324d1e021a3d826e"
+    },
+    {
+      "path": "r133-release-readiness.json",
+      "bytes": 2157,
+      "sha256": "e67a8d573288e0928d4b49833076f425e0e74816c3ca02f4558ff6dd7bc5658d"
+    },
+    {
+      "path": "r133-capacity-cutover-assessment.json",
+      "bytes": 2647,
+      "sha256": "a962875fc78e384f52eea8553b020d5b2bcb9fb078565eccd2abeaf29725a9ba"
+    }
+  ]
+}

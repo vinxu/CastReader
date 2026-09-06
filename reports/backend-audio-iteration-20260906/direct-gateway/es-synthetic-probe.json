@@ -1,0 +1,51 @@
+{
+  "endpoint": "https://tts.castreader.ai/api/captioned_speech_partly",
+  "language": "es",
+  "voice": "ef_dora",
+  "keys": [
+    "audio",
+    "audio_format",
+    "timestamps",
+    "voice_code",
+    "processed_text",
+    "unprocessed_text"
+  ],
+  "fieldTypes": {
+    "audio": "str",
+    "audio_format": "str",
+    "timestamps": "list",
+    "voice_code": "str",
+    "processed_text": "str",
+    "unprocessed_text": "str"
+  },
+  "responseBytes": 51993,
+  "headers": [
+    "HTTP/1.1 200 Connection established",
+    "HTTP/2 200 ",
+    "content-type: application/json; charset=utf-8",
+    "x-castreader-gateway: direct-us"
+  ],
+  "audioBytes": 38445,
+  "decodeExit": 0,
+  "timestampSample": [
+    {
+      "word": "Esta",
+      "start_time": 0,
+      "end_time": 0.22970833333333335
+    },
+    {
+      "word": "es",
+      "start_time": 0.22970833333333335,
+      "end_time": 0.4172083333333333
+    },
+    {
+      "word": "una",
+      "start_time": 0.4172083333333333,
+      "end_time": 0.6422083333333334
+    }
+  ],
+  "textFields": {
+    "processed_text": "Esta es una prueba de lectura continua.",
+    "unprocessed_text": "La voz debe terminar la frase completa."
+  }
+}

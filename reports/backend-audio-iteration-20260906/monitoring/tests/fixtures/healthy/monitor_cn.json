@@ -1,0 +1,18 @@
+{
+  "coverage": {"completeRead": true},
+  "source": {
+    "windowStartToFirstSelectedSeconds": 300,
+    "lastSelectedToWindowEndSeconds": 300
+  },
+  "systemd": {
+    "timer": {"ActiveState": "active", "UnitFileState": "enabled"}
+  },
+  "aggregate": {
+    "cycles": 288,
+    "statusCounts": {"healthy": 288},
+    "regionMismatchCycles": 0,
+    "completeRemainderDecodedCycles": 288,
+    "alignmentDegradationCycles": 0,
+    "largestObservedGapSeconds": 305
+  }
+}

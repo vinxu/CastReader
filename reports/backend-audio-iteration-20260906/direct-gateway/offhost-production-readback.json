@@ -1,0 +1,37 @@
+{
+  "schema": "castreader.backup-readback.v1",
+  "created_at": "2026-09-06T02:02:52.405633+00:00",
+  "project_ref": "zqxgmqygirtpttnrvjpf",
+  "bucket": "castreader-tts-backups",
+  "public": false,
+  "plan_sha256": "723fb04f32c348e32ae91988c5c36b4f0761b5f093d92df97c8dc571d2ecf776",
+  "expected_files": 1,
+  "verified_files": 1,
+  "expected_objects": 1,
+  "verified_objects": 1,
+  "expected_bytes": 5061,
+  "downloaded_bytes": 5061,
+  "files": [
+    {
+      "name": "complete-production.tar.gz",
+      "object_base": "runtime-releases/us/20260906-direct-gateway-339a49fe/complete-production.tar.gz",
+      "bytes": 5061,
+      "sha256": "524f7f00133d281f76deb48a2df53bf3d4d4a3849b2e1b14f9f9dc723e180774",
+      "downloaded_bytes": 5061,
+      "readback_sha256": "524f7f00133d281f76deb48a2df53bf3d4d4a3849b2e1b14f9f9dc723e180774",
+      "parts": [
+        {
+          "object": "runtime-releases/us/20260906-direct-gateway-339a49fe/complete-production.tar.gz",
+          "offset": 0,
+          "bytes": 5061,
+          "sha256": "524f7f00133d281f76deb48a2df53bf3d4d4a3849b2e1b14f9f9dc723e180774",
+          "downloaded_bytes": 5061,
+          "readback_sha256": "524f7f00133d281f76deb48a2df53bf3d4d4a3849b2e1b14f9f9dc723e180774",
+          "verified": true
+        }
+      ],
+      "verified": true
+    }
+  ],
+  "verified": true
+}

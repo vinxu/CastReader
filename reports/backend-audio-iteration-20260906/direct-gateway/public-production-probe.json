@@ -1,0 +1,56 @@
+{
+  "observedAt": "2026-09-06T02:06:59.124013+00:00",
+  "endpoint": "https://tts.castreader.ai/api/captioned_speech_partly",
+  "requestOrigin": "US control host",
+  "fixedNonUserText": true,
+  "results": [
+    {
+      "language": "en",
+      "voice": "af_heart",
+      "streamContract": "omitted",
+      "status": 200,
+      "gateway": "direct-us",
+      "audioBytes": 132141,
+      "pcmSamples": 198144,
+      "decodedCompletely": true,
+      "remainingCharacters": 0,
+      "elapsedSeconds": 3.156
+    },
+    {
+      "language": "en",
+      "voice": "af_heart",
+      "streamContract": true,
+      "status": 200,
+      "gateway": "direct-us",
+      "audioBytes": 132141,
+      "pcmSamples": 198144,
+      "decodedCompletely": true,
+      "remainingCharacters": 0,
+      "elapsedSeconds": 2.054
+    },
+    {
+      "language": "en",
+      "voice": "af_heart",
+      "streamContract": false,
+      "status": 200,
+      "gateway": "direct-us",
+      "audioBytes": 132141,
+      "pcmSamples": 198144,
+      "decodedCompletely": true,
+      "remainingCharacters": 0,
+      "elapsedSeconds": 1.48
+    },
+    {
+      "language": "es",
+      "voice": "ef_dora",
+      "streamContract": false,
+      "status": 200,
+      "gateway": "direct-us",
+      "audioBytes": 38445,
+      "pcmSamples": 57600,
+      "decodedCompletely": true,
+      "remainingCharacters": 0,
+      "elapsedSeconds": 0.939
+    }
+  ]
+}

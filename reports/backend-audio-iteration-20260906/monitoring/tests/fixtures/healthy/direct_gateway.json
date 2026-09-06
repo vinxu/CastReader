@@ -1,0 +1,12 @@
+{
+  "coverage": {"complete": true},
+  "source": {"sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"},
+  "systemd": {"ActiveState": "active", "SubState": "running"},
+  "aggregate": {
+    "statusCounts": {"200": 3},
+    "android145Preset": {
+      "requests": 1,
+      "statusCounts": {"200": 1}
+    }
+  }
+}

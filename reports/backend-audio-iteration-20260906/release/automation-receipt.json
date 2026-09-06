@@ -1,0 +1,28 @@
+{
+  "schema": "castreader.audio-observation-automation-receipt.v1",
+  "recordedAtUtc": "2026-09-06T02:27:25.572324Z",
+  "automationId": "24",
+  "name": "核心音频迭代后24小时验收",
+  "kind": "heartbeat",
+  "status": "ACTIVE",
+  "intervalHours": 1,
+  "cutoverState": "waiting_release",
+  "observationStarted": false,
+  "requiredObservationSeconds": 86400,
+  "notificationIntent": "Quiet while unchanged; notify actionable changes, release completion, or final assessment.",
+  "requiredReleaseComponents": [
+    "globalGateway",
+    "directGateway",
+    "usKokoro"
+  ],
+  "unverifiedReleaseComponents": [
+    "globalGateway",
+    "usKokoro"
+  ],
+  "globalCredentialUpdatedAtBaselineUtc": "2026-09-05T00:56:21Z",
+  "automaticGpuRestartOnGlobalRecovery": false,
+  "gpuReleaseGate": "Continuous same-US supply must be validated before production cutover; CPU candidate validation alone is insufficient.",
+  "fixedWindowEndsAfter24Hours": true,
+  "pauseAfterFinalAssessment": true,
+  "clientBinariesReleased": false
+}

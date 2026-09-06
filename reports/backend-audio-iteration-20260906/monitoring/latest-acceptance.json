@@ -1,0 +1,95 @@
+{
+  "cutoverState": "waiting_release",
+  "evaluation": {
+    "advisories": [],
+    "automaticVerdict": "waiting_release",
+    "clientEvidenceVerdict": "waiting_release",
+    "coverageVerdict": "waiting_release",
+    "dataOrCoverageGaps": [],
+    "evidenceLimitations": [
+      {
+        "code": "automatic_verdict_scoped_to_configured_sources",
+        "detail": "automaticVerdict assesses only the configured, successfully collected sources; it does not certify the complete iOS, Android, Web and extension chain or prove every request stayed in-region.",
+        "source": "evaluation"
+      },
+      {
+        "code": "web_client_events_not_collected",
+        "detail": "No Web client start-to-first-output session telemetry is collected by this tool.",
+        "source": "mobile"
+      },
+      {
+        "code": "extension_client_events_not_collected",
+        "detail": "No extension client start-to-first-output session telemetry is collected by this tool.",
+        "source": "mobile"
+      },
+      {
+        "code": "first_output_is_not_playback_completion",
+        "detail": "A paired first-output event proves initial output only; it does not prove that the whole document played to completion.",
+        "source": "mobile"
+      },
+      {
+        "code": "clone_first_output_evidence_absent_or_unattributed",
+        "detail": "No same-window mobile start-to-first-output session was attributed to a clone voice; this is an evidence limitation, not a clone failure.",
+        "source": "mobile"
+      },
+      {
+        "code": "explain_first_output_evidence_absent",
+        "detail": "No same-window mobile explain start-to-first-block session was observed; this is an evidence limitation, not an Explain failure.",
+        "source": "mobile"
+      }
+    ],
+    "note": "No 24-hour observation time accrues before every required release is verified.",
+    "observationSeconds": 0,
+    "requiredObservationSeconds": 86400,
+    "sampleGaps": [],
+    "supplyVerdict": "waiting_release",
+    "technicalFailures": [],
+    "unverifiedComponents": [
+      "globalGateway",
+      "usKokoro"
+    ],
+    "verdictScope": "configured_existing_sources_only",
+    "windowStarted": false
+  },
+  "generatedAtUtc": "2026-09-06T02:29:58.686743Z",
+  "limitations": [
+    "The 24-hour clock has not started because required production releases are not all verified.",
+    "automaticVerdict is scoped to configured existing sources and cannot certify the complete iOS, Android, Web and extension chain or prove every request stayed in-region."
+  ],
+  "probeStarted": false,
+  "productionModified": false,
+  "readOnly": true,
+  "requiredComponents": {
+    "directGateway": {
+      "activeFromUtc": "2026-09-06T01:59:23.714979Z",
+      "candidateRuntimeSourceSha256": "0bfb14b9363d25de01d78fdd3777b203d1ec86966e71389d9815bb62a8b66cb0",
+      "candidateVersion": "339a49fe201609ca4aa51055e360607cc2eb0656",
+      "runtimeSourceSha256": "0bfb14b9363d25de01d78fdd3777b203d1ec86966e71389d9815bb62a8b66cb0",
+      "sourceCommit": "339a49fe201609ca4aa51055e360607cc2eb0656",
+      "verified": true,
+      "verifiedAtUtc": "2026-09-06T01:59:29.619742Z",
+      "version": "339a49fe201609ca4aa51055e360607cc2eb0656"
+    },
+    "globalGateway": {
+      "activeFromUtc": null,
+      "candidateSourceCommit": "186e20b745b0b89f426d27d7f9ddb44f979dcae2",
+      "candidateVersion": "186e20b745b0b89f426d27d7f9ddb44f979dcae2",
+      "sourceCommit": null,
+      "verified": false,
+      "verifiedAtUtc": null,
+      "version": null
+    },
+    "usKokoro": {
+      "activeFromUtc": null,
+      "candidateRuntimeSourceSha256": "06953419d01f961c70b22b12b4d59ecdfaa187e699cc555b3be4109522368e4e",
+      "candidateVersion": "ca857ee91c3367999fb905de1f0924a6e28edd81",
+      "runtimeReleasePath": null,
+      "runtimeSourceSha256": null,
+      "verified": false,
+      "verifiedAtUtc": null,
+      "version": null
+    }
+  },
+  "schema": "castreader.audio-acceptance-run.v1",
+  "sourcesQueried": []
+}

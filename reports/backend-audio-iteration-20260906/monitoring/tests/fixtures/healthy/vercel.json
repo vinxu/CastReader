@@ -1,0 +1,7 @@
+{
+  "coverage": {"complete": true},
+  "aggregate": {
+    "core5xxRecords": 0,
+    "deploymentCounts": []
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "action": "cpu-canary",
+  "baseRelease": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+  "candidateRelease": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+  "candidateTreeSha256": "d9bcd4d1f6f578eb90728dc82650ae7abc43e1756ffd63196baffcf1e7d508fe",
+  "changesProduction": false,
+  "freshPrivateReadbackBytes": 3325053235,
+  "freshPrivateReadbackSha256": "9d3bef6cc8fe05065efc4bffb77f68d8fa1989f207473adf903bdf204c18b0e7",
+  "hostScriptSha256": "1bbf44182b42e35fc87a238ce933366df95d41a6106bc69330d2056dff0018ae",
+  "loadsCandidateGpuModel": false,
+  "operatorScriptSha256": "ecb33099f3cc43ef1a5dd7077599ca0f04d79db0eccdfc52e5d0e4d307497f41",
+  "overlayFiles": 1,
+  "overlaySha256": "fc8e55efc64f5999568eae6e6db4ceba260d0d3179de86f8a93125c007863ae7",
+  "payloadSha256": "7eba7a0ff855e1533d0c82b80194c8bbcc51df6899ec132bc0da71d7e7932fc1",
+  "result": {
+    "candidate_gpu_context": false,
+    "candidate_process": {
+      "argv_sha256": "634f9b51a2530318a5c3e67b6bda5b38bdcf70cab90a5287aa124f7e0a7f1312",
+      "cwd": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+      "pid": 3353899,
+      "ppid": 3353730,
+      "start_ticks": "544704225"
+    },
+    "candidate_stopped": true,
+    "cuda_visible_devices": "empty",
+    "device": "cpu",
+    "diagnosticSummary": {
+      "bytes": 1689,
+      "files": 1,
+      "malformedLines": 0,
+      "modelUnitRetry": 0,
+      "recoveryFailed": 0,
+      "requestIds": [
+        "ops-r133-american-repeated-zero-source",
+        "ops-r133-british-repeated-zero-source",
+        "ops-r133-long-complete"
+      ],
+      "stages": {
+        "english_g2p_recovered": 7
+      }
+    },
+    "evidence_directory": "/workspace/castreader-runtime/canaries/r133-cpu/run-_kletifc",
+    "finished_at": "2026-09-06T02:15:45.185160+00:00",
+    "gpu_compute_pids_after": [
+      1092172,
+      1439959,
+      2127971
+    ],
+    "gpu_compute_pids_before": [
+      1092172,
+      1439959,
+      2127971
+    ],
+    "passed": true,
+    "pcm_cases": [
+      {
+        "audio_bytes": 64941,
+        "audio_sha256": "f785fd69a44a2f5b29c945e23e5ebf592e6bcbadc78d083bc3d94d9dd254ac0d",
+        "decoded_samples": 97344,
+        "elapsed_seconds": 1.365476050414145,
+        "id": "ops-r133-american-repeated-zero-source",
+        "timestamps": 9
+      },
+      {
+        "audio_bytes": 62637,
+        "audio_sha256": "80f7c4e71e65f8044a0c3fd929320b7803d9c7fe1640f479bf723fc0f95c3f00",
+        "decoded_samples": 93888,
+        "elapsed_seconds": 1.9077658476307988,
+        "id": "ops-r133-british-repeated-zero-source",
+        "timestamps": 9
+      },
+      {
+        "audio_bytes": 58413,
+        "audio_sha256": "329bd7adc67d8743fe6958780a3e3c885b874ac875a091b3c3c18f4e5cbd80a4",
+        "decoded_samples": 87552,
+        "elapsed_seconds": 0.8105261484161019,
+        "id": "ops-r133-american-audio-only-trigger",
+        "timestamps": 0
+      },
+      {
+        "audio_bytes": 51885,
+        "audio_sha256": "85e72f1a8cba302e54000ae321157ddb89c1a2a0307b0a0452534b931da6714d",
+        "decoded_samples": 77760,
+        "elapsed_seconds": 0.7586496090516448,
+        "id": "ops-r133-american-audio-only-control",
+        "timestamps": 0
+      },
+      {
+        "audio_bytes": 56109,
+        "audio_sha256": "b43d64beb20517b377ed6831eae7c1fb2d8ae72a1fab9294fb8bef0cf45ddc6c",
+        "decoded_samples": 84096,
+        "elapsed_seconds": 0.830110996030271,
+        "id": "ops-r133-british-audio-only-trigger",
+        "timestamps": 0
+      },
+      {
+        "audio_bytes": 51117,
+        "audio_sha256": "86a4d700ed6b2d40e61aa42c6013eff9cd2214ffe60023e858ac8630cc919cd9",
+        "decoded_samples": 76608,
+        "elapsed_seconds": 0.7326425714418292,
+        "id": "ops-r133-british-audio-only-control",
+        "timestamps": 0
+      },
+      {
+        "audio_bytes": 1024557,
+        "audio_sha256": "7f92b11d767ee92bb0d6bf6750272ca10a5bb9483bf098692406f69f415145ba",
+        "decoded_samples": 1536768,
+        "elapsed_seconds": 20.060812663286924,
+        "id": "ops-r133-long-complete",
+        "timestamps": 145
+      }
+    ],
+    "production_kokoro_unchanged": true,
+    "protected_processes_unchanged": true,
+    "region": "us",
+    "release": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133"
+  },
+  "schema": "castreader.r133-operator-receipt.v1",
+  "sourceCommit": "ca857ee91c3367999fb905de1f0924a6e28edd81",
+  "verified": true
+}

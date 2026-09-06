@@ -1,0 +1,28 @@
+{
+  "action": "stage",
+  "baseRelease": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+  "candidateRelease": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+  "candidateTreeSha256": "d9bcd4d1f6f578eb90728dc82650ae7abc43e1756ffd63196baffcf1e7d508fe",
+  "changesProduction": false,
+  "freshPrivateReadbackBytes": 3325053235,
+  "freshPrivateReadbackSha256": "9d3bef6cc8fe05065efc4bffb77f68d8fa1989f207473adf903bdf204c18b0e7",
+  "hostScriptSha256": "1bbf44182b42e35fc87a238ce933366df95d41a6106bc69330d2056dff0018ae",
+  "loadsCandidateGpuModel": false,
+  "operatorScriptSha256": "ecb33099f3cc43ef1a5dd7077599ca0f04d79db0eccdfc52e5d0e4d307497f41",
+  "overlayFiles": 1,
+  "overlaySha256": "fc8e55efc64f5999568eae6e6db4ceba260d0d3179de86f8a93125c007863ae7",
+  "payloadSha256": "7eba7a0ff855e1533d0c82b80194c8bbcc51df6899ec132bc0da71d7e7932fc1",
+  "result": {
+    "candidate_files": 778,
+    "candidate_model_loaded": false,
+    "candidate_tree_sha256": "d9bcd4d1f6f578eb90728dc82650ae7abc43e1756ffd63196baffcf1e7d508fe",
+    "current_unchanged": true,
+    "production_model_loaded": false,
+    "protected_processes_unchanged": true,
+    "release": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+    "staged": true
+  },
+  "schema": "castreader.r133-operator-receipt.v1",
+  "sourceCommit": "ca857ee91c3367999fb905de1f0924a6e28edd81",
+  "verified": true
+}

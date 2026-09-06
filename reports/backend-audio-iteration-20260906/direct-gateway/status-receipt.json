@@ -1,0 +1,74 @@
+{
+  "production.json": {
+    "status": "production_verified",
+    "firstNewTrafficAt": "2026-09-06T01:59:23.714979+00:00",
+    "verifiedAt": "2026-09-06T01:59:29.169056+00:00",
+    "sourceCommit": "339a49fe201609ca4aa51055e360607cc2eb0656",
+    "sourceSha256": "0bfb14b9363d25de01d78fdd3777b203d1ec86966e71389d9815bb62a8b66cb0",
+    "mainPid": "553831",
+    "runtimeIdentity": {
+      "MainPID": "553831",
+      "argvSha256": "cd11429ca20e0d1263c7e208926c085a6b1260dc9d2132f8bf0161e927eeebe6",
+      "cwd": "/opt/castreader-tts-gateway",
+      "inFlight": 0
+    },
+    "caddyRestoredExactly": true,
+    "oldRequestsDrainedBeforeRestart": true,
+    "shadowCleanupPending": true,
+    "offhostBackup": {
+      "receiptSha256": "790d07754fbfa8d658e65c5e5aed6ab9fd066e206f41de3ce9302144447c61b3",
+      "createdAt": "2026-09-06T01:47:16.006380+00:00"
+    },
+    "validation": {
+      "label": "permanent gateway before route restore",
+      "observedAt": "2026-09-06T01:59:28.962811+00:00",
+      "fixedNonUserText": true,
+      "results": [
+        {
+          "contract": "omitted",
+          "audioBytes": 132141,
+          "pcmSamples": 198144,
+          "audioSha256": "2b246efc4c9fa2ba59fea232e310ca82b80482a088e3c5bc994dc6184587c7de",
+          "elapsedSeconds": 1.973
+        },
+        {
+          "contract": true,
+          "audioBytes": 132141,
+          "pcmSamples": 198144,
+          "audioSha256": "223312dcadebffb26cab1076a82d6f8098d863221469a40f3a2463d1008f66ee",
+          "elapsedSeconds": 1.993
+        },
+        {
+          "contract": false,
+          "audioBytes": 132141,
+          "pcmSamples": 198144,
+          "audioSha256": "6d9692a117bdbf02d8387cdd02756f3e87225687e5384e8d8ec7305fd4943eac",
+          "elapsedSeconds": 0.902
+        }
+      ]
+    },
+    "protectedPids": {
+      "caddy": "4980",
+      "quickreadListeners": [
+        "543663"
+      ]
+    }
+  },
+  "cleanup.json": {
+    "status": "production_cleanup_complete",
+    "completedAt": "2026-09-06T01:59:29.619742+00:00",
+    "mainPid": "553831",
+    "shadowStopped": true,
+    "shadowDrainedBeforeStop": true
+  },
+  "transaction.json": {
+    "phase": "shadow_serving",
+    "switchedAt": "2026-09-06T01:59:23.714979+00:00"
+  },
+  "transactionUnit": {
+    "Result": "success",
+    "ExecMainStatus": "0",
+    "ActiveState": "inactive",
+    "SubState": "dead"
+  }
+}

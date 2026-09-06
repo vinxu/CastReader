@@ -1,0 +1,42 @@
+{
+  "schema": "castreader.audio-iteration-validation.v1",
+  "recordedAtUtc": "2026-09-06T02:36:43.335259Z",
+  "monitoring": {
+    "tests": 28,
+    "passed": 28,
+    "productionSourcesQueriedByDefault": 0,
+    "observedSecondsByDefault": 0
+  },
+  "directGateway": {
+    "sourceCommit": "339a49fe201609ca4aa51055e360607cc2eb0656",
+    "contractTestsPassed": 8,
+    "publisherFaultTestsPassed": 5,
+    "publicCompleteAudioCasesPassed": 4,
+    "productionSwitched": true
+  },
+  "usKokoro": {
+    "sourceCommit": "ca857ee91c3367999fb905de1f0924a6e28edd81",
+    "toolingHead": "982023795bb132e61f3de9622068cdd28dfc91c3",
+    "relatedTestsPassed": 77,
+    "cpuCandidateCompleteAudioCasesPassed": 7,
+    "productionSwitched": false,
+    "candidateIsWarmStandby": false
+  },
+  "android": {
+    "sourceCommit": "0663a5bf32c125df5c581346731477383a676169",
+    "globalTargetedTestsPassed": 12,
+    "cnTargetedTestsPassed": 12,
+    "testEvidence": "Gradle JUnit XML readback; failures=errors=skipped=0",
+    "released": false
+  },
+  "ios": {
+    "ttsCommit": "09dcb64b136cac25e7989718fb261ec6208e425e",
+    "kindleCommit": "814030a62fe5f359c4dc896d30ba4d86f394f659",
+    "targetedTestsPassed": 94,
+    "testEvidence": "xcresult summary readback; failedTests=skippedTests=0",
+    "released": false
+  },
+  "allFourSourceWorktreesClean": true,
+  "allBackendChangesInProduction": false,
+  "acceptance24HoursStarted": false
+}

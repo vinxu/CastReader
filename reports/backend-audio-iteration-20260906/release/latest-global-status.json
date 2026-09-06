@@ -1,0 +1,48 @@
+{
+  "schema": "castreader.global-release-block.v1",
+  "readAtUtc": "2026-09-06T02:20:09.108444Z",
+  "readOnly": true,
+  "productionIdentity": {
+    "schema": "castreader.global-capabilities-identity.v1",
+    "readOnly": true,
+    "productionModified": false,
+    "probeStarted": false,
+    "readAtUtc": "2026-09-06T02:20:03.428139Z",
+    "query": {
+      "endpoint": "https://api.castreader.ai/api/capabilities",
+      "method": "GET"
+    },
+    "coverage": {
+      "complete": true,
+      "tlsCertificateVerification": true,
+      "fieldErrors": []
+    },
+    "identity": {
+      "deploymentId": "dpl_58jqfHzCrV91FpC8s2unBG7XXcfX",
+      "commitSha": "3ce12a7c794e3d9788a7982a66a62f70a9407678",
+      "region": "global"
+    },
+    "limitations": [
+      "Only deploymentId, commitSha and the published service region are retained from the response.",
+      "This identity GET performs no synthesis and does not provide a traffic denominator."
+    ]
+  },
+  "ciCredentialMetadata": [
+    {
+      "name": "VERCEL_TOKEN",
+      "updatedAt": "2026-09-05T00:56:21Z"
+    }
+  ],
+  "lastReleaseRun": {
+    "conclusion": "failure",
+    "headSha": "186e20b745b0b89f426d27d7f9ddb44f979dcae2",
+    "status": "completed",
+    "updatedAt": "2026-09-05T17:10:11Z",
+    "url": "https://github.com/scmyyan/readout-web/actions/runs/33979932773"
+  },
+  "beta": {
+    "name": "beta",
+    "sha": "186e20b745b0b89f426d27d7f9ddb44f979dcae2"
+  },
+  "block": "Existing production Vercel CI token metadata is unchanged; approved release has not reached production."
+}

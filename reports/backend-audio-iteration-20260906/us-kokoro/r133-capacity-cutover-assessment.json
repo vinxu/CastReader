@@ -1,0 +1,62 @@
+{
+  "assessment": {
+    "automaticCutoverOnGatewayRecovery": false,
+    "doNotUseCpuCanaryAsStandby": true,
+    "expectedSupplyBoundary": "This single-port path has a model restart window. The most recent comparable R132 cutover measured 23.095 seconds; R133 has not been switched, so its actual window is unknown.",
+    "minimumNextStep": "Provision and validate continuous same-US supply first: either a separate warm worker, or a reviewed proxy and dual-model-port design with peak GPU safety proven alongside Clone and Nari. Validate real audio, concurrency, health, drain and rollback through the intended route before an explicit reviewed cutover.",
+    "reason": "The validated CPU candidate is stopped and not capacity-tested, and the fixed public Kokoro mapping reaches only internal port 8880. Existing GPU jobs use about 13.9 GiB; loading a second Kokoro may fit nominal free VRAM but simultaneous peak safety was not validated.",
+    "warmStandbyAvailableNow": false,
+    "singleOwnerRestartAuthorized": false,
+    "zeroGapRequiresAdditionalWork": "Provision and validate a separate same-US warm worker or introduce a reviewed local proxy/model-port architecture, then CAS both public gateways to it. Neither exists today."
+  },
+  "candidateListener18880": false,
+  "candidateRelease": "/workspace/castreader-runtime/releases/20260906-kokoro-repeated-digits-us-r133",
+  "candidateRunning": false,
+  "cpu": {
+    "load1": 0.903,
+    "logicalCount": 24,
+    "memoryAvailableBytes": 98593853440,
+    "memoryFreeBytes": 10955890688,
+    "memoryTotalBytes": 134983618560
+  },
+  "cpuCanary": {
+    "capacityOrConcurrencyTested": false,
+    "cases": 7,
+    "productionStandbyQualified": false,
+    "startupToReadySeconds": null,
+    "sumSynthesisSeconds": 26.466
+  },
+  "gpu": {
+    "existingComputeUsedMiB": [
+      5656,
+      2750,
+      5528
+    ],
+    "freeMiB": 10137,
+    "totalMiB": 24564,
+    "usedMiB": 13956,
+    "utilizationPercent": 1
+  },
+  "network": {
+    "activeKokoroInternalPort": 8880,
+    "activeKokoroPublicPort": 41228,
+    "candidateHasPublicMapping": false,
+    "candidateInternalPort": 18880,
+    "unusedAllocatedPorts": [
+      {
+        "containerPort": 8000,
+        "publicPort": 41273
+      },
+      {
+        "containerPort": 8889,
+        "publicPort": 41209
+      }
+    ]
+  },
+  "observedAt": "2026-09-06T02:21:15.685597+00:00",
+  "productionRelease": "/workspace/castreader-runtime/releases/20260905-kokoro-english-g2p-us-r132",
+  "readOnly": true,
+  "r132HistoricalSwitchWindowSeconds": 23.095,
+  "r133ProductionCutoverDurationSeconds": null,
+  "schema": "castreader.r133-capacity-cutover-assessment.v1"
+}

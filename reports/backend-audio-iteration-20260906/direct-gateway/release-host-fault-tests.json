@@ -1,0 +1,23 @@
+{
+  "cases": [
+    "dead old 7778 routes to shadow until restored owner is healthy",
+    "independent Caddy bytes are not overwritten and shadow is retained",
+    "production receipt failure rolls back before durable commit",
+    "post-commit shadow cleanup failure does not roll back verified production",
+    "runtime Caddy dial parser isolates tts.castreader.ai"
+  ],
+  "liveReadback": {
+    "host": "tts.castreader.ai",
+    "publicHealthOk": true,
+    "readOnly": true,
+    "runtimeDials": [
+      "127.0.0.1:7778"
+    ]
+  },
+  "observedAt": "2026-09-06T01:58:36.867641+00:00",
+  "passed": true,
+  "releaseHostSha256": "1a0803a85992f43c57025c099b94276a2a6a871f5a9234b6680b0432101023cc",
+  "schema": "castreader.direct-gateway-release-host-tests.v1",
+  "testSourceSha256": "91d44385c87ff10e507fd304f2090f883967c8d6b2854304da283da036b2ae1c",
+  "tests": 5
+}
