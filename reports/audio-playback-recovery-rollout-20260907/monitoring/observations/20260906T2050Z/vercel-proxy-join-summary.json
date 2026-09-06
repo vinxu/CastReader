@@ -1,0 +1,142 @@
+{
+  "boundaryRequests": [
+    {
+      "attempt": 1,
+      "classification": "no_proxy_completion_in_selected_slice_not_a_failure",
+      "globalHasNonemptyBodyAndFinished200": true,
+      "providerRequestStartUTC": "2026-09-06T20:51:29.811000Z",
+      "proxyFirstUTC": "2026-09-06T20:51:29.912630+00:00",
+      "proxyLastUTCInsideSlice": "2026-09-06T20:51:29.913246+00:00",
+      "proxyOutcomesInsideSlice": {},
+      "proxyPhasesInsideSlice": [
+        "admission",
+        "connect",
+        "inbound_body"
+      ],
+      "requestKey": "f962765303258f0d02ca",
+      "vercelStatus": 200
+    }
+  ],
+  "collectedAtUTC": "2026-09-06T20:55:16.046912Z",
+  "collectionStartedUTC": "2026-09-06T20:51:48.569079Z",
+  "comparisonWithPreviousWindow": {
+    "currentAmbiguousJoinCount": 0,
+    "currentGlobalFailureCodes": {},
+    "meaning": "No new observed Global failure or pinned-runtime drift. Known prior Android failures and maintenance502 are outside this phase-only change assessment.",
+    "newObservedGlobalFailure": false,
+    "previousAmbiguousJoinCount": 6,
+    "previousGlobalFailureCodes": {},
+    "sameExpectedDeployment": true
+  },
+  "counts": {
+    "attemptStarts": {
+      "1": 2130
+    },
+    "bodiesWithByteCount": 2130,
+    "bodiesZeroBytes": 0,
+    "bodyBytesMax": 951404,
+    "bodyBytesMin": 15043,
+    "events": {
+      "attempt_start": 2130,
+      "request_finished": 2130,
+      "request_start": 2130,
+      "upstream_body": 2130,
+      "upstream_headers": 2130
+    },
+    "failureCodes": {},
+    "globalApplicationKeyIntersectionWithProxyCancelled": 0,
+    "join": {
+      "ambiguous": 0,
+      "attempts": 2130,
+      "matched": 2130,
+      "matchedProxyComplete": 2129
+    },
+    "matchedRequestsWithoutProxyCompletionInsideSlice": 1,
+    "proxyCancellationKeys": 4,
+    "requestsMissingHeadersOrBodyOrFinish": 0,
+    "terminalCodes": {},
+    "vercelRequests": 2130,
+    "vercelStatuses": {
+      "200": 2130
+    }
+  },
+  "coverage": {
+    "proxyAnonymousRequestsTruncated": false,
+    "proxyCoverageComplete": true,
+    "proxyCoversWindow": true,
+    "proxyEventDetailTruncationIgnoredForJoin": false,
+    "proxyRuntimeVerified": true,
+    "vercel": {
+      "completeForReturnedRequestCohort": true,
+      "ingestionCompletenessVerified": false,
+      "issues": [],
+      "pagesRead": 44,
+      "paginationMode": "backward_timestamp_windows_with_1ms_overlap",
+      "parserCounts": {
+        "duplicateProviderRows": 43,
+        "duplicateSafeEvents": 215
+      },
+      "providerHasMoreRows": false,
+      "providerRowsRead": 2173,
+      "requestsMissingStartOrFinish": 0,
+      "structuredEventsObserved": true,
+      "tlsCertificateAndHostnameVerified": true,
+      "uniqueProviderRequests": 2130
+    }
+  },
+  "expectedDeployment": "dpl_EYb2UAVcLJvk7qaYchgmPhYoHYC5",
+  "findings": [
+    "All 2130 currently returned Global requests have attempt1, upstream headers, nonempty upstream body and finished200. No cancellation, retry or failure code was returned.",
+    "All 2130 key/attempt pairs match proxy without ambiguity; 2129 have a proxy complete event inside the selected slice. One admitted near the slice end has no proxy completion inside it while its Global request-start cohort contains body and finished200; this is not a new failure.",
+    "None of the four proxy-cancelled application keys appears in this returned Global cohort. No Global correlation to those cancellations is established."
+  ],
+  "identity": {
+    "expectedModelIdentity": {
+      "releaseId": "20260907-kokoro-silent-separators-us-r134",
+      "releasePath": "/workspace/castreader-runtime/releases/20260907-kokoro-silent-separators-us-r134",
+      "slot": "blue",
+      "sourceRelativePath": "api/src/services/tts_service.py",
+      "sourceSha256": "d6d1871af73c8991254717fcb274bbc3603e6ff619a169d963e4bf85a93d8682",
+      "version": "5dddb1b9f96e431e76e4c3a8305e1a3fe3963c52"
+    },
+    "proxyIdentityAndCoverageVerified": true,
+    "unexpectedReleaseEvents": 0,
+    "unexpectedRoutingIdentityEvents": 0
+  },
+  "limitations": [
+    "Correlation uses application requestKey + attempt, never provider ID or timing alone.",
+    "Application key reuse across Vercel invocations or duplicate proxy groups is marked ambiguous.",
+    "The complete proxy anonymous request-group list is used; its truncated event-detail list is not the join source.",
+    "A matched complete upstream request is not evidence of audio decode quality or successful user playback.",
+    "Provider search/ingestion completeness remains unverified despite complete pagination and lifecycle records.",
+    "Provider request-start cohorts and proxy wall-clock event windows differ; nested completion can be outside the selected cohort end. Application elapsed milliseconds do not provide exact event UTC timestamps.",
+    "Observed body byte count and complete HTTP stages do not prove device receipt, audio decoding or completed playback."
+  ],
+  "productionModified": false,
+  "rawContentExported": false,
+  "readOnly": true,
+  "schema": "castreader.vercel-proxy-heartbeat-phase-summary.v1",
+  "sources": [
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-preset-model-r134-20260906T2050Z.json",
+      "sha256": "78a23a00ed87751a1731f33e4449dbc19c8868978c67d62c414fa79fe87bb859"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2050Z.json",
+      "sha256": "8dd5424021605e726745e9371bb6194878218c6395ba4688c2d2481662c4051c"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/vercel-proxy-join-model-r134-20260906T2050Z.json",
+      "sha256": "b9d0863d7b025382e42ab0cf8b11069b538c95432f29afecac6cd90a23459410"
+    },
+    {
+      "path": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/vercel-proxy-join-summary.json",
+      "sha256": "df25efbc4ef04da18abb305e0f734fa7fdd5149e5f328e67cb822e7bd742aa30"
+    }
+  ],
+  "synthesisStarted": false,
+  "window": {
+    "requestStartExclusiveUTC": "2026-09-06T20:51:30Z",
+    "requestStartInclusiveUTC": "2026-09-06T19:50:40.765372Z"
+  }
+}

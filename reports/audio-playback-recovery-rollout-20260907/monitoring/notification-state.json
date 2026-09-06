@@ -19,18 +19,18 @@
     "a5d5c1c85ca337486620",
     "139ec3e2bd125e8c7db9"
   ],
-  "lastDecision": "NOTIFY",
-  "lastDecisionReason": "Two new Android 1.0.46/build53 PDF read failures after R134 deployment; subsequent recovery does not erase failures. User informed that these newly investigated incidents have no new fix/deployment yet.",
+  "lastDecision": "DONT_NOTIFY",
+  "lastDecisionReason": "Exact client event keys and HTTP failure counts unchanged; runtime and source coverage checks pass. Four new unknown downstream disconnects match proxy cancellations without a client failure association. New blocked event follows defined non-Pro preview-paywall branch; entitlement correctness was not independently audited. No new actionable production change or 24h completion.",
   "latestCauseAnalysis": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T1949Z/heartbeat-review.json",
   "latestClientTechnicalFailureCount": 2,
   "latestDirect5xxCount": 0,
-  "latestDirectNoResponseCount": 7,
-  "latestProxyWindowEndUTC": "2026-09-06T19:50:40.765372+00:00",
-  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T1949Z-complete.json",
-  "latestSnapshotDirectory": "observations/20260906T1949Z",
+  "latestDirectNoResponseCount": 11,
+  "latestProxyWindowEndUTC": "2026-09-06T20:51:30+00:00",
+  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2050Z.json",
+  "latestSnapshotDirectory": "observations/20260906T2050Z",
   "latestVercelCore5xxCount": 0,
   "previousWindowRetainedAt": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/interim-before-r134/notification-state.json",
-  "recordedAtUtc": "2026-09-06T20:05:52.687056+00:00",
+  "recordedAtUtc": "2026-09-06T20:58:57.855530+00:00",
   "schema": "castreader.audio-observation-alert-state.v1",
   "vercelCoreRequestKeys": [],
   "window": {
@@ -45,7 +45,11 @@
     "7c3617a7bb14615ddf8a",
     "a55fc8cccb8c112a3f51",
     "830340491d782f37bd75",
-    "82e5f8bfb9348d6a82d4"
+    "82e5f8bfb9348d6a82d4",
+    "3e4a240e0eda0aa81373",
+    "3f60bf396bd2ccad244e",
+    "0b307fa7ad7f8e17d591",
+    "97de8b3977234c2030c9"
   ],
   "newAndroid1046Incident": {
     "eventKeys": [
@@ -57,5 +61,10 @@
     "clientToServerRequestJoinAvailable": false,
     "subsequentPlaybackSeconds": 1894,
     "ordinaryCoroutineCancellationExplainsThisSource": false
-  }
+  },
+  "knownBusinessBlockedEventKeys": [
+    "aa6e8229818cfd9e4305"
+  ],
+  "latestObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/heartbeat-review.json",
+  "nonAudio503Count": 5
 }

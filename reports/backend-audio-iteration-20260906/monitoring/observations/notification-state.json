@@ -81,8 +81,8 @@
     "repeated_prefix_traffic_origin_unknown",
     "ios_player_initial_error_stage_and_nserror_unavailable"
   ],
-  "lastDecision": "NOTIFY",
-  "lastDecisionReason": "Two new Android 1.0.46/build53 PDF read failures after R134 deployment; subsequent recovery does not erase failures. User informed that these newly investigated incidents have no new fix/deployment yet.",
+  "lastDecision": "DONT_NOTIFY",
+  "lastDecisionReason": "Exact client event keys and HTTP failure counts unchanged; runtime and source coverage checks pass. Four new unknown downstream disconnects match proxy cancellations without a client failure association. New blocked event follows defined non-Pro preview-paywall branch; entitlement correctness was not independently audited. No new actionable production change or 24h completion.",
   "lastNewEventSummary": {
     "clientBuild": 53,
     "clientVersion": "1.2.33",
@@ -107,12 +107,12 @@
   "latestClientIterationReport": "reports/backend-audio-failure-analysis-20260906/iteration.md",
   "latestClientTechnicalFailureCount": 14,
   "latestDirect5xxCount": 5,
-  "latestSnapshotDirectory": "observations/20260906T1949Z",
+  "latestSnapshotDirectory": "observations/20260906T2050Z",
   "latestVercelCore5xxCount": 4,
   "nextRunPolicy": "Compare cumulative records with these keys; do not repeat unchanged alerts or already known sample gaps.",
   "nonAudio503Classification": "google_play_reconcile_incomplete",
-  "nonAudio503Count": 30,
-  "recordedAtUtc": "2026-09-06T20:05:52.687056+00:00",
+  "nonAudio503Count": 32,
+  "recordedAtUtc": "2026-09-06T20:58:57.855530+00:00",
   "schema": "castreader.audio-observation-alert-state.v1",
   "vercelCoreRequestKeys": [
     "e061a66c335ef6dece59",
@@ -132,11 +132,15 @@
     "7c3617a7bb14615ddf8a",
     "a55fc8cccb8c112a3f51",
     "830340491d782f37bd75",
-    "82e5f8bfb9348d6a82d4"
+    "82e5f8bfb9348d6a82d4",
+    "3e4a240e0eda0aa81373",
+    "3f60bf396bd2ccad244e",
+    "0b307fa7ad7f8e17d591",
+    "97de8b3977234c2030c9"
   ],
-  "latestDirectNoResponseCount": 10,
-  "latestProxyWindowEndUTC": "2026-09-06T19:50:40.765372+00:00",
-  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T1949Z-complete.json",
+  "latestDirectNoResponseCount": 14,
+  "latestProxyWindowEndUTC": "2026-09-06T20:51:30+00:00",
+  "latestProxyWindowPath": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/proxy-model-r134-20260906T2050Z.json",
   "newAndroid1046Incident": {
     "eventKeys": [
       "14826f73872753709911",
@@ -150,5 +154,9 @@
   },
   "confirmedCodeFindingVersionBoundaries": {
     "android_pdf_generic_exception_catch_includes_cancellation": "Historical source finding; does not apply to reviewed 1.0.46/build53 source 3fe41d62, which explicitly rethrows CancellationException."
-  }
+  },
+  "knownBusinessBlockedEventKeys": [
+    "aa6e8229818cfd9e4305"
+  ],
+  "latestObservationReview": "/Users/xuxuheng/Documents/CastReader/reports/audio-playback-recovery-rollout-20260907/monitoring/observations/20260906T2050Z/heartbeat-review.json"
 }
